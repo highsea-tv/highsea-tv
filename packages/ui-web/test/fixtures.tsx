@@ -130,10 +130,10 @@ export function KitchenSink({ rail = false }: { rail?: boolean }) {
                 ]}
               />
             </Field>
-            <Field label="Start on boot">
+            <Field inline label="Start on boot" hint="Runs the server when this machine starts.">
               <Switch defaultChecked />
             </Field>
-            <Field label="Monitored">
+            <Field inline label="Monitored">
               <Checkbox defaultChecked />
             </Field>
             <SegmentedControl

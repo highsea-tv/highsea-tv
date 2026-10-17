@@ -13,7 +13,8 @@
     "format": "biome format --write .",
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun test",
-    "explorations": "bunx serve design/explorations -l 4400"
+    "explorations": "bunx serve design/explorations -l 4400",
+    "storybook": "bun run --filter @highsea/storybook storybook"
   },
   "engines": {
     "bun": ">=1.4",

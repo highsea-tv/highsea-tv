@@ -1,0 +1,7 @@
+{
+  "extends": "@highsea/config/tsconfig/react-library.json",
+  "compilerOptions": {
+    "types": ["bun", "vite/client"]
+  },
+  "include": ["src", "test", ".storybook"]
+}

@@ -1,0 +1,9 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+@import "@highsea/ui-web/styles.css";
+
+@source "./";
+
+/* Storybook's docs pages render stories inside its own chrome; keep them on highsea surfaces. */
+.docs-story {
+  background: var(--color-bg);
+}

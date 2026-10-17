@@ -8,7 +8,7 @@ export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 export type ButtonSize = 'md' | 'sm'
 
 const base =
-  'inline-flex shrink-0 cursor-pointer select-none items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-transparent font-medium transition-press motion-safe:active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 [&_svg]:shrink-0'
+  'inline-flex shrink-0 cursor-pointer select-none items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-transparent font-medium transition-press focus-visible:scale-(--scale-button) motion-safe:active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 [&_svg]:shrink-0'
 
 export const buttonVariants: Record<ButtonVariant, string> = {
   // one per view (color.md): the accent fill with a 600 label, no subpixel thinning

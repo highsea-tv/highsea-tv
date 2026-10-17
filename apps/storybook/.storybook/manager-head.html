@@ -1,0 +1,31 @@
+<link rel="icon" type="image/svg+xml" href="./brand-icons/favicon.svg" />
+<link rel="preload" href="./fonts/Geist-Variable.woff2" as="font" type="font/woff2" crossorigin />
+<style>
+  @font-face {
+    font-family: "Geist";
+    src: url("./fonts/Geist-Variable.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Geist Mono";
+    src: url("./fonts/GeistMono-Variable.woff2") format("woff2");
+    font-weight: 100 900;
+    font-display: swap;
+  }
+  /* the selected sidebar row as in the product's nav: a raised surface, the icon in accent */
+  /* the doubled class outranks Storybook's own rule, which paints it in colorSecondary */
+  .sidebar-item.sidebar-item[data-selected="true"] {
+    background: #28282c;
+    color: #ededee;
+  }
+  .sidebar-item.sidebar-item[data-selected="true"] svg {
+    color: #d6cfc2;
+  }
+  /* the row's action buttons mask the label behind them (a fill plus a soft shadow), so both
+     take the row's surface */
+  .sidebar-item.sidebar-item[data-selected="true"] button {
+    background: #28282c;
+    box-shadow: 0 0 5px 5px #28282c;
+  }
+</style>

@@ -42,12 +42,14 @@ export type FieldProps = {
   error?: ReactNode
   /** Use when the control renders its own id. */
   id?: string
+  /** The control first, with the label and hint beside it: for a Switch or Checkbox. */
+  inline?: boolean
   className?: string
   children: ReactNode
 }
 
 /** A visible label, the control, then the hint or error, all tied together. */
-export function Field({ label, hint, error, id, className, children }: FieldProps) {
+export function Field({ label, hint, error, id, inline, className, children }: FieldProps) {
   const auto = useId()
   const controlId = id ?? `${auto}-control`
   const ids: FieldIds = {
@@ -58,16 +60,30 @@ export function Field({ label, hint, error, id, className, children }: FieldProp
   }
   return (
     <FieldContext.Provider value={ids}>
-      <div className={cn('grid min-w-0 gap-1.5', className)}>
+      <div
+        className={cn(
+          'grid min-w-0',
+          // inline: the control in the first column, aligned with the label; text in the second
+          inline ? 'grid-cols-[auto_1fr] items-center gap-x-2.5 gap-y-1' : 'gap-1.5',
+          className,
+        )}
+      >
+        {inline && children}
         <Label htmlFor={controlId}>{label}</Label>
-        {children}
+        {!inline && children}
         {hint && (
-          <p id={ids.hintId} className="text-caption text-text-3">
+          <p id={ids.hintId} className={cn('text-caption text-text-3', inline && 'col-start-2')}>
             {hint}
           </p>
         )}
         {error && (
-          <p id={ids.errorId} className="flex items-start gap-1.5 text-badge-danger text-caption">
+          <p
+            id={ids.errorId}
+            className={cn(
+              'flex items-start gap-1.5 text-badge-danger text-caption',
+              inline && 'col-start-2',
+            )}
+          >
             <Icon name="alert" size={14} className="mt-px shrink-0" />
             {error}
           </p>

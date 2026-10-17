@@ -130,10 +130,14 @@ Everything later depends on this, so it comes first and is finalized before any 
    - shell components: Sidebar, CommandPalette, WidgetFrame, Banner;
    - focus-complete, with reduced-motion support.
 
-   **✅ Built (2026-10-16), awaiting review.** See [`packages/ui-web`](../packages/ui-web/README.md). It also has Menu, Switch, Checkbox, SegmentedControl, the `Icon` set with the custom glyphs, browser UI sound, and the TV spatial navigator. Behavior, axe and stylesheet tests run with `bun test`.
+   **✅ Done (2026-10-16).** See [`packages/ui-web`](../packages/ui-web/README.md). It also has Menu, Switch, Checkbox, SegmentedControl, the `Icon` set with the custom glyphs, browser UI sound, and the TV spatial navigator. Behavior, axe and stylesheet tests run with `bun test`.
 7. **`apps/storybook`**: the living style guide for tokens, themes, components, motion and a sound board, with a theme switcher and a11y addon.
 
+   **✅ Done (2026-10-16).** See [`apps/storybook`](../apps/storybook/README.md) (`bun run storybook`). Foundations pages for brand, color with the contrast audit, icons, layout, motion, the sound board, a theme editor and typography; every component; the media and admin shell compositions; and a TV home with D-pad focus. Every story renders and passes axe under `bun test`.
+
 **Exit criteria**: direction chosen and refined, docs written, tokens/brand/ui-web core published in the repo, Storybook running, user sign-off → design system **v1.0**.
+
+**✅ Phase 1 signed off (2026-10-16): design system v1.0.**
 
 ## Phase 2: Design prototypes (gate: user sign-off)
 `design/prototypes` is a Vite + React clickable prototype app built on the **real** tokens and ui-web, with SDK-shaped mock fixtures. It has device frames and a platform switcher (desktop/web, mobile, TV 1920×1080 with D-pad/arrow-key focus navigation). Each flow is also specced in `docs/product/`.

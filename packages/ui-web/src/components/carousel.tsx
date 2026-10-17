@@ -152,10 +152,12 @@ export function CarouselRow({
   )
 
   return (
+    // min-w-0 and a minmax(0, 1fr) column: otherwise the row, as a grid or flex item, and its own
+    // column grow to the whole track's width instead of scrolling it
     <section
       aria-labelledby={headingId}
       className={cn(
-        'group/row relative grid gap-3 [--row-gutter:1rem] medium:[--row-gutter:2rem] wide:[--row-gutter:4rem]',
+        'group/row relative grid min-w-0 grid-cols-1 gap-3 [--row-gutter:1rem] medium:[--row-gutter:2rem] wide:[--row-gutter:4rem]',
         className,
       )}
     >
@@ -175,7 +177,7 @@ export function CarouselRow({
           onFocus={(e) => {
             if (roving && e.target instanceof HTMLElement) setRoving(e.target)
           }}
-          className="flex snap-x snap-mandatory scroll-px-(--row-gutter) gap-3 overflow-x-auto overscroll-x-contain px-(--row-gutter) py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          className="relative flex snap-x snap-mandatory scroll-px-(--row-gutter) gap-3 overflow-x-auto overscroll-x-contain px-(--row-gutter) py-3 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
         >
           {items.map((child, i) => (
             <li

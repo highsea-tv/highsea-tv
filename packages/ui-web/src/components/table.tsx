@@ -28,7 +28,8 @@ export function TableToolbar({ className, ...props }: ComponentProps<'div'>) {
 
 export function Table({ className, ...props }: ComponentProps<'table'>) {
   return (
-    <div className="overflow-x-auto">
+    // relative: absolutely positioned content (sr-only text) stays inside the scroller
+    <div className="relative overflow-x-auto">
       <table className={cn('w-full border-collapse text-ui', className)} {...props} />
     </div>
   )

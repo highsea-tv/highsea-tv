@@ -1,0 +1,112 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+import { BackdropHero, Button, CarouselRow, Poster, QualityTag } from '@highsea/ui-web'
+import type { Meta, StoryObj } from '@storybook/react-vite'
+import { useEffect, useState } from 'react'
+import { art, byId, titles } from '../fixtures/media.ts'
+
+const meta = {
+  title: 'Media/Hero and rows',
+  parameters: { layout: 'fullscreen' },
+} satisfies Meta
+
+export default meta
+type Story = StoryObj<typeof meta>
+
+const heroActions = (
+  <>
+    <Button variant="primary" icon="play">
+      Play
+    </Button>
+    <Button icon="info">Details</Button>
+  </>
+)
+
+const heroItem = (id: string, eyebrow = 'Featured') => {
+  const t = byId(id)
+  return {
+    id: t.id,
+    title: t.title,
+    backdrop: art(t).backdrop,
+    eyebrow,
+    synopsis: t.synopsis,
+    meta: (
+      <>
+        <span>{t.year}</span>
+        <span>{t.runtime}</span>
+        <span>{t.genre}</span>
+        {t.quality.map((q) => (
+          <QualityTag key={q} overlay>
+            {q}
+          </QualityTag>
+        ))}
+      </>
+    ),
+  }
+}
+
+export const Hero: Story = {
+  name: 'Backdrop hero',
+  render: () => <BackdropHero item={heroItem('sintel')} actions={heroActions} />,
+}
+
+const rotation = ['sintel', 'spring', 'sprite-fright', 'tears-of-steel']
+
+export const HeroRotation: Story = {
+  name: 'Backdrop hero, rotating',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Changes every four seconds. The new artwork loads behind and cross-fades in once decoded; the copy leaves downward and the new copy enters from above.',
+      },
+    },
+  },
+  render: function Render() {
+    const [i, setI] = useState(0)
+    useEffect(() => {
+      const t = setInterval(() => setI((n) => (n + 1) % rotation.length), 4000)
+      return () => clearInterval(t)
+    }, [])
+    return (
+      <BackdropHero
+        item={heroItem(rotation[i] as string, `Featured · ${i + 1} of ${rotation.length}`)}
+        actions={heroActions}
+      />
+    )
+  },
+}
+
+export const Rows: Story = {
+  name: 'Carousel rows',
+  render: () => (
+    <div className="grid gap-10 py-8">
+      <CarouselRow title="Recently added" action={<a href="#all">See all</a>}>
+        {titles.map((t) => (
+          <Poster
+            key={t.id}
+            title={t.title}
+            src={art(t).poster}
+            href={`#${t.id}`}
+            quality={t.quality.slice(0, 1)}
+          />
+        ))}
+      </CarouselRow>
+      <CarouselRow title="Staff picks" suffix="by Harbor" itemClassName="w-64">
+        {titles
+          .slice()
+          .reverse()
+          .map((t) => (
+            <Poster
+              key={t.id}
+              title={t.title}
+              src={art(t).still}
+              aspect="still"
+              href={`#${t.id}`}
+              showTitle
+              caption={`${t.year} · ${t.genre}`}
+            />
+          ))}
+      </CarouselRow>
+    </div>
+  ),
+}

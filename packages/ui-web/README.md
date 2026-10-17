@@ -29,7 +29,7 @@ import { UIProvider } from '@highsea/ui-web'
 | Group | Components |
 | --- | --- |
 | Actions | `Button` (primary, secondary, ghost, danger; `icon`, `loading`, `asChild`), `Kbd` |
-| Forms | `Field` (label, hint and error wired to the control), `Input`, `Textarea`, `Select`, `Switch`, `Checkbox`, `SegmentedControl`, `RatingInput` |
+| Forms | `Field` (label, hint and error wired to the control; `inline` puts a Switch or Checkbox before its label), `Input`, `Textarea`, `Select`, `Switch`, `Checkbox`, `SegmentedControl`, `RatingInput` |
 | Overlays | `Dialog`, `ConfirmDialog`, `Sheet` (bottom, left, right), `Popover`, `Menu`, `Tooltip`, `toast()` with `Toaster` |
 | Data | `Table` with `TableFrame`, `TableToolbar`, `TitleCell`, `RowActions`; `Badge`, `QualityTag`, `Progress`, `Skeleton`, `Tabs` |
 | Media | `Poster`, `BackdropHero`, `CarouselRow`, `Rating` |
@@ -45,7 +45,7 @@ Every component is keyboard-complete and has one focus ring (`focus`, 2px, 2px o
 
 ## TV and spatial focus
 
-Set `data-platform="tv"` on the root for the TV hover and focus scales. D-pad navigation uses `useSpatialNavigation(ref)` on a root element with this markup:
+Set `data-platform="tv"` on the root for the TV focus appearance ([tv.md](../../docs/design-language/platforms/tv.md#focus-appearance)): posters lift to 1.09 and buttons to their TV scale, and the ring becomes a 0.2u outline in `text`, flush with the item. D-pad navigation uses `useSpatialNavigation(ref)` on a root element with this markup:
 
 | Attribute | Meaning |
 | --- | --- |

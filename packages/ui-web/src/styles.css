@@ -165,9 +165,13 @@
   --scale-button: 1;
 }
 
+/* TV focus (platforms/tv.md#focus-appearance): a 0.2u ring in `text`, flush with the item */
 [data-platform="tv"] {
   --scale-poster: var(--tv-scale-poster);
   --scale-button: var(--tv-scale-button);
+  --focus-ring-width: var(--tv-focus-ring-width);
+  --focus-ring-offset: 0px;
+  --color-focus: var(--color-text);
 }
 
 @layer base {

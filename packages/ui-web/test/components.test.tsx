@@ -10,6 +10,7 @@ import {
   Banner,
   Button,
   CarouselRow,
+  Checkbox,
   CommandPalette,
   ConfirmDialog,
   Field,
@@ -106,6 +107,21 @@ describe('Field', () => {
       </Field>,
     )
     expect(getByLabelText('Name').hasAttribute('aria-invalid')).toBe(false)
+  })
+
+  test('inline puts the control first and keeps the label and hint tied to it', async () => {
+    const { getByLabelText, getByText } = render(
+      <Field inline label="Monitored" hint="Searches for upgrades.">
+        <Checkbox />
+      </Field>,
+    )
+    const box = getByLabelText('Monitored')
+    expect(box.parentElement?.firstElementChild).toBe(box)
+    expect(document.getElementById(box.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
+      'Searches for upgrades.',
+    )
+    await userEvent.click(getByText('Monitored'))
+    expect(box.getAttribute('aria-checked')).toBe('true')
   })
 })
 

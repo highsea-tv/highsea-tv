@@ -98,6 +98,8 @@ export type ContrastResult = {
   fg: ColorRole
   /** The surface where the pairing measured weakest. */
   on: BaseRole
+  /** The fill painted over that surface, when the check has one. */
+  fill?: ColorRole
   lc: number
   ratio: number
   min: number
@@ -123,6 +125,7 @@ export function auditTheme(theme: ResolvedTheme): ThemeAudit {
           label: check.label,
           fg: check.fg,
           on,
+          ...(check.fill ? { fill: check.fill } : {}),
           lc,
           ratio: wcagRatio(fg, backdrop),
           min: Math.max(check.min, theme.minimums?.[check.id] ?? 0),
