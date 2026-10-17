@@ -1,0 +1,43 @@
+# deps
+node_modules/
+
+# builds
+.next/
+dist/
+build/
+out/
+storybook-static/
+*.tsbuildinfo
+
+# runtime data (local dev)
+/config-dev/
+/data-dev/
+*.db
+*.db-shm
+*.db-wal
+
+# env
+.env
+.env.*
+!.env.example
+
+# os / editor
+.DS_Store
+*.log
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# tooling caches
+graft/.cache/
+.turbo/
+coverage/
+playwright-report/
+test-results/
+.playwright-mcp/
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
+
+# local browser-automation output
+.playwright-mcp/

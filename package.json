@@ -1,0 +1,27 @@
+{
+  "name": "highsea",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*",
+    "design/*"
+  ],
+  "scripts": {
+    "lint": "biome check .",
+    "format": "biome format --write .",
+    "typecheck": "bun run --filter '*' typecheck",
+    "test": "bun test",
+    "explorations": "bunx serve design/explorations -l 4400"
+  },
+  "engines": {
+    "bun": ">=1.4",
+    "node": ">=24"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.15",
+    "@types/bun": "^1.4.3",
+    "typescript": "^7.0.2"
+  }
+}

@@ -1,0 +1,272 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Brand Direction — highsea.tv</title>
+    <meta name="description" content="Phase 1 brand direction explorations for highsea.tv." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Geist+Mono&display=swap" rel="stylesheet" />
+    <style>
+      :root {
+        --bg: #09090b;
+        --s1: #111114;
+        --s2: #18181c;
+        --line: rgb(255 255 255 / 0.08);
+        --text: #f1f1f3;
+        --text-2: #a6a6ae;
+        --text-3: #74747c;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      html {
+        color-scheme: dark;
+        -webkit-font-smoothing: antialiased;
+      }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font: 15px/1.6 Geist, ui-sans-serif, system-ui, sans-serif;
+      }
+      main {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 72px 16px 120px;
+      }
+      .label {
+        font-family: 'Geist Mono', ui-monospace, monospace;
+        font-size: 11px;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        color: var(--text-3);
+      }
+      h1 {
+        margin: 12px 0 14px;
+        font-weight: 600;
+        letter-spacing: -0.035em;
+        font-size: clamp(36px, 6vw, 60px);
+        line-height: 1;
+      }
+      .lede {
+        max-width: 64ch;
+        color: var(--text-2);
+        font-size: 17px;
+        margin: 0;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 16px;
+        margin-top: 48px;
+      }
+      .dir {
+        display: grid;
+        grid-template-rows: auto 1fr;
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: var(--s1);
+        overflow: hidden;
+        text-decoration: none;
+        color: inherit;
+        transition:
+          transform 220ms cubic-bezier(0.2, 0.8, 0.2, 1),
+          border-color 200ms;
+      }
+      .dir:hover,
+      .dir:focus-visible {
+        transform: translateY(-3px);
+        border-color: rgb(255 255 255 / 0.18);
+        outline: none;
+      }
+      .preview {
+        position: relative;
+        aspect-ratio: 16 / 11;
+        overflow: hidden;
+        background: #000;
+        border-bottom: 1px solid var(--line);
+      }
+      .preview iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1280px;
+        height: 880px;
+        border: 0;
+        transform-origin: 0 0;
+        pointer-events: none;
+      }
+      .body {
+        padding: 18px 20px 22px;
+        display: grid;
+        gap: 8px;
+        align-content: start;
+      }
+      .body h2 {
+        margin: 0;
+        font-size: 22px;
+        letter-spacing: -0.02em;
+        font-weight: 600;
+      }
+      .body p {
+        margin: 0;
+        color: var(--text-2);
+      }
+      .open {
+        margin-top: 6px;
+        font-size: 13px;
+        color: var(--text);
+      }
+      .lead {
+        margin-top: 48px;
+        grid-template-columns: 1.35fr 1fr;
+        grid-template-rows: none;
+      }
+      .lead .preview {
+        aspect-ratio: auto;
+        min-height: 300px;
+        border-bottom: 0;
+        border-right: 1px solid var(--line);
+      }
+      .lead .body {
+        align-content: center;
+        padding: 28px;
+      }
+      .section-label {
+        margin-top: 56px;
+      }
+      .section-label + .grid {
+        margin-top: 14px;
+      }
+      .panel {
+        margin-top: 56px;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+      .card {
+        border-radius: 18px;
+        border: 1px solid var(--line);
+        background: var(--s1);
+        padding: 24px;
+      }
+      .card h3 {
+        margin: 0 0 12px;
+        font-size: 16px;
+      }
+      ol,
+      ul {
+        margin: 0;
+        padding-left: 20px;
+        color: var(--text-2);
+        display: grid;
+        gap: 8px;
+      }
+      code,
+      kbd {
+        font-family: 'Geist Mono', ui-monospace, monospace;
+        font-size: 13px;
+        color: var(--text);
+      }
+      kbd {
+        display: inline-block;
+        margin: 0 1px;
+        padding: 0 5px;
+        border: 1px solid var(--line);
+        border-radius: 4px;
+        background: var(--s2);
+        font-size: 12px;
+      }
+      a {
+        color: var(--text);
+      }
+      @media (max-width: 900px) {
+        .grid,
+        .panel,
+        .lead {
+          grid-template-columns: 1fr;
+        }
+        .lead .preview {
+          min-height: 0;
+          aspect-ratio: 16 / 11;
+          border-right: 0;
+          border-bottom: 1px solid var(--line);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="label">highsea.tv · Phase 1 · Brand &amp; design language</div>
+      <h1>Brand direction</h1>
+      <p class="lede">
+        The official direction is <strong>Abyss Neutral with the Bone accent</strong>, locked on 16 Oct 2026. Its
+        specification is in <a href="../../docs/brand/direction.md">docs/brand/direction.md</a>. The four original
+        explorations below are kept as a record and are no longer maintained.
+      </p>
+
+      <a class="dir lead" href="a2-abyss-neutral.html">
+        <div class="preview"><iframe src="a2-abyss-neutral.html" title="Abyss Neutral preview" loading="lazy" tabindex="-1" scrolling="no"></iframe></div>
+        <div class="body">
+          <span class="label">Official direction · v1.0</span>
+          <h2>Abyss Neutral</h2>
+          <p>The chosen direction. Neutral graphite surfaces, no glows, a white focus ring and a warm <b>Bone</b> accent. Layouts: Hero + rows (TV), Tabs + carousel (phone) and Sidebar + widgets (admin). Sounds are dry felt-and-wood taps with almost no tail.</p>
+          <span class="open">Open board →</span>
+        </div>
+      </a>
+
+      <div class="label section-label">Archived explorations</div>
+      <div class="grid">
+        <a class="dir" href="a-abyss.html">
+          <div class="preview"><iframe src="a-abyss.html" title="Abyss preview" loading="lazy" tabindex="-1" scrolling="no"></iframe></div>
+          <div class="body">
+            <span class="label">Direction A</span>
+            <h2>Abyss</h2>
+            <p>Calm depth, a bioluminescent teal accent, Geist throughout. Sonar-like sounds; springs that settle like a buoy.</p>
+            <span class="open">Open board →</span>
+          </div>
+        </a>
+        <a class="dir" href="b-signal.html">
+          <div class="preview"><iframe src="b-signal.html" title="Signal preview" loading="lazy" tabindex="-1" scrolling="no"></iframe></div>
+          <div class="body">
+            <span class="label">Direction B</span>
+            <h2>Signal</h2>
+            <p>A precise graphite instrument with one ember accent. Space Grotesk + Inter, dry tactile clicks, snappy critically damped motion.</p>
+            <span class="open">Open board →</span>
+          </div>
+        </a>
+        <a class="dir" href="c-nocturne.html">
+          <div class="preview"><iframe src="c-nocturne.html" title="Nocturne preview" loading="lazy" tabindex="-1" scrolling="no"></iframe></div>
+          <div class="body">
+            <span class="label">Direction C</span>
+            <h2>Nocturne</h2>
+            <p>Cinematic plum-black with a twilight gradient. Fraunces serif titles, marimba and glass sounds, expressive overshoot.</p>
+            <span class="open">Open board →</span>
+          </div>
+        </a>
+        <a class="dir" href="d-jolly-roger.html">
+          <div class="preview"><iframe src="d-jolly-roger.html" title="Jolly Roger preview" loading="lazy" tabindex="-1" scrolling="no"></iframe></div>
+          <div class="body">
+            <span class="label">Direction D</span>
+            <h2>Jolly Roger</h2>
+            <p>Leans into the name: “sailing the high seas.” Tarred black and parchment, with brass and lantern gold. Pirata One titles. The TV home is a ship’s manifest; the admin is a captain’s ledger with a bounty board. Optional Pirate English copy, plus bells, a concertina and a bosun’s pipe.</p>
+            <span class="open">Open board →</span>
+          </div>
+        </a>
+      </div>
+    </main>
+    <script>
+      // scale each preview iframe to its card width
+      const fit = () => {
+        for (const f of document.querySelectorAll('.preview iframe')) {
+          f.style.transform = `scale(${f.parentElement.clientWidth / 1280})`
+        }
+      }
+      fit()
+      addEventListener('resize', fit)
+    </script>
+  </body>
+</html>

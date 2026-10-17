@@ -1,0 +1,192 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>A · Abyss Neutral — highsea.tv</title>
+    <meta
+      name="description"
+      content="highsea.tv brand direction A, refined: neutral graphite surfaces and a quiet, desaturated accent."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="shared/board.css" />
+    <link rel="stylesheet" href="shared/layouts.css" />
+    <style>
+      /* Abyss refined: neutral graphite (no blue tint), no glows, and the Bone accent (a warm
+         off-white). The chrome stays neutral, so the artwork carries the color. */
+      :root {
+        --bg: #0b0b0c;
+        --s1: #121214;
+        --s2: #18181b;
+        --s3: #1f1f22;
+        --s4: #28282c;
+        --line: rgb(255 255 255 / 0.07);
+        --line-strong: rgb(255 255 255 / 0.13);
+        --text: #ededee;
+        --text-2: #c7c7cb;
+        --text-3: #a2a2a7;
+        --accent: #d6cfc2;
+        --accent-2: #8c8678;
+        --accent-ink: #0b0b0c;
+        --accent-fill: #ebe6dc;
+        --on-accent: #0b0b0c;
+        --accent-text: #d6cfc2;
+        --danger-fill: #a23a3a;
+        --accent-soft: color-mix(in oklab, var(--accent) 13%, transparent);
+        --success: #7cc4a0;
+        --warning: #dcb06a;
+        --danger: #e88787;
+        --info: #8fb0d6;
+        --focus: var(--accent);
+
+        --radius-sm: 8px;
+        --radius: 12px;
+        --radius-lg: 16px;
+        --radius-xl: 28px;
+        --radius-poster: 10px;
+
+        --font-display: 'Geist', ui-sans-serif, system-ui, sans-serif;
+        --font-body: 'Geist', ui-sans-serif, system-ui, sans-serif;
+        --font-mono: 'Geist Mono', ui-monospace, monospace;
+        --display-weight: 600;
+        --display-tracking: -0.035em;
+
+        --cover-bg:
+          radial-gradient(ellipse 80% 60% at 72% 12%, rgb(255 255 255 / 0.055), transparent 62%),
+          linear-gradient(180deg, #131315, #0b0b0c);
+        --icon-bg: radial-gradient(circle at 50% 28%, #2c2c30, #0f0f11 72%);
+        --tv-focus: 0 0 0 3px #ededee, 0 14px 32px -10px rgb(0 0 0 / 0.7);
+        --nav-active-bg: rgb(255 255 255 / 0.06);
+        --btn-primary-shadow: none;
+      }
+
+      body {
+        background: var(--bg);
+      }
+
+      .tv-inner {
+        --tv-focus: 0 0 0 calc(var(--u) * 0.2) #ededee, 0 calc(var(--u) * 0.8) calc(var(--u) * 2)
+          calc(var(--u) * -0.6) rgb(0 0 0 / 0.75);
+      }
+
+      /* placeholder artwork: muted, so the chrome doesn't borrow saturation from it */
+      .art {
+        --poster-art:
+          radial-gradient(120% 70% at 50% -5%, hsl(var(--h) 38% 36% / 0.9), transparent 70%),
+          linear-gradient(180deg, hsl(var(--h) 22% 19%), hsl(calc(var(--h) + 30) 20% 8%));
+        --poster-motif-sat: 38%;
+        --poster-motif-l: 72%;
+      }
+
+      .wm {
+        font-family: var(--font-display);
+        font-weight: 600;
+        letter-spacing: -0.045em;
+        line-height: 1;
+      }
+
+      .wm-tld {
+        color: var(--text-3);
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>This board needs JavaScript.</noscript>
+    <script>
+      window.HS_DIRECTION = {
+        id: 'abyss-neutral',
+        letter: 'A',
+        name: 'Abyss Neutral',
+        kicker: 'Official direction · v1.0',
+        headline: 'Light below the surface.',
+        tagline:
+          'Abyss with the neon taken out. Neutral graphite surfaces, no glows, and a warm bone accent. The color comes from the artwork, not the chrome.',
+        keywords: ['Deep', 'Calm', 'Neutral', 'Nautical', 'Precise'],
+        fonts: { display: 'Geist SemiBold', body: 'Geist', mono: 'Geist Mono' },
+        identityNote:
+          'The same mark as A: a moon over the horizon, cut by two swells, now in bone. Lowercase wordmark with a quiet <code>.tv</code>.',
+        typeNote:
+          'Geist throughout for a single, modern voice: tight-tracked semibold for display, regular for UI, Geist Mono for figures. Neutral type keeps the identity in color and motion.',
+        motionNote: 'Calm, physical springs that barely overshoot. Things settle like a buoy, not a bounce.',
+        soundNote:
+          'Felt and wood: short, dry taps with a warm body and almost no tail. Nothing glides or echoes, so the sounds feel physical, like the bone accent, rather than electronic.',
+        soundEngine: 'triangle + noise · dry room',
+        iconStroke: 1.75,
+        mark: `<svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="abn-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-2)"/></linearGradient><mask id="abn-m"><rect width="48" height="48" fill="#fff"/><path d="M1 29.5c7.7-4.4 15.3-4.4 23 0s15.3 4.4 23 0" stroke="#000" stroke-width="3.2" fill="none" stroke-linecap="round"/><path d="M1 37c7.7-4.4 15.3-4.4 23 0s15.3 4.4 23 0" stroke="#000" stroke-width="3.2" fill="none" stroke-linecap="round"/></mask></defs><circle cx="24" cy="24" r="21" fill="url(#abn-g)" mask="url(#abn-m)"/></svg>`,
+        wordmark: '<span class="wm">highsea<span class="wm-tld">.tv</span></span>',
+        layouts: { tv: 'hero', mobile: 'stack', admin: 'sidebar' },
+        motion: { spring: { stiffness: 120, damping: 20 }, stagger: 45, enterY: 14, enterScale: 0.98 },
+        soundGain: 0.9,
+        // a short room reflection, not an echo: only notify and arrival use it
+        echo: { time: 0.045, fb: 0.12, mix: 0.14, lp: 1800 },
+        sounds: {
+          // felt tick: a tiny noise transient with a faint body
+          navigate: [
+            { w: 'noise', bp: 3400, q: 1.4, d: 0.012, g: 0.08, a: 0.0005 },
+            { w: 'triangle', f: 1180, lp: 2400, d: 0.022, g: 0.05, a: 0.001 },
+          ],
+          // wood tock: firm and short; everything is gone within ~80 ms
+          select: [
+            { w: 'noise', bp: 2600, q: 1.1, d: 0.014, g: 0.07, a: 0.0005 },
+            { w: 'triangle', f: 560, lp: 2200, d: 0.06, g: 0.13, a: 0.001 },
+            { f: 1120, d: 0.03, g: 0.03, a: 0.001 },
+          ],
+          // the same tock, lower and softer
+          back: [
+            { w: 'noise', bp: 1900, q: 1.1, d: 0.012, g: 0.05, a: 0.0005 },
+            { w: 'triangle', f: 400, f2: 370, lp: 1600, d: 0.065, g: 0.11, a: 0.001 },
+          ],
+          // two felt-piano notes, a rising major third
+          success: [
+            { w: 'triangle', f: 523.25, lp: 2400, d: 0.2, g: 0.08, a: 0.002, p: [[1, 1], [2, 0.18, 0.5]] },
+            { w: 'triangle', f: 659.25, t: 0.075, lp: 2400, d: 0.28, g: 0.08, a: 0.002, p: [[1, 1], [2, 0.18, 0.5]] },
+          ],
+          // two muted thuds, no pitch slide
+          error: [
+            { w: 'triangle', f: 220, lp: 900, d: 0.09, g: 0.15, a: 0.001 },
+            { w: 'noise', bp: 900, q: 0.9, d: 0.02, g: 0.05, a: 0.0005 },
+            { w: 'triangle', f: 196, t: 0.11, lp: 900, d: 0.11, g: 0.14, a: 0.001 },
+          ],
+          // a soft two-note chime in a small room
+          notify: [
+            { w: 'triangle', f: 659.25, lp: 2600, d: 0.32, g: 0.09, a: 0.002, echo: 1, p: [[1, 1], [2, 0.2, 0.45]] },
+            { w: 'triangle', f: 987.77, t: 0.09, lp: 2600, d: 0.42, g: 0.07, a: 0.002, echo: 1, p: [[1, 1], [2, 0.16, 0.45]] },
+          ],
+          // launch: a warm low swell, then three felt notes (C major), about 1.3 s in all
+          arrival: [
+            { w: 'triangle', f: 130.81, lp: 700, d: 1.0, g: 0.08, a: 0.25 },
+            { w: 'triangle', f: 196, lp: 900, d: 0.9, g: 0.05, a: 0.3 },
+            { w: 'triangle', f: 523.25, t: 0.32, lp: 2400, d: 0.45, g: 0.055, a: 0.003, echo: 1 },
+            { w: 'triangle', f: 659.25, t: 0.42, lp: 2400, d: 0.5, g: 0.05, a: 0.003, echo: 1 },
+            { w: 'triangle', f: 783.99, t: 0.52, lp: 2400, d: 0.7, g: 0.05, a: 0.003, echo: 1 },
+          ],
+        },
+        notes: {
+          why: [
+            'Keeps everything that made A the strongest contender: structure, type, motion and sound.',
+            'Neutral graphite does not tint the artwork, so posters and backdrops look as their makers intended.',
+            'With the glow gone, the accent reads as a material, not a light source. It feels cinematic rather than sci-fi.',
+          ],
+          shines: [
+            'Living rooms: a white focus ring with a soft drop shadow is legible from 10 feet without blooming on OLED.',
+            'Admin: neutral surfaces make status colors (green, amber, red) stand out more, because they no longer compete with a bright accent.',
+            'Custom themes: owner-chosen accents and server branding sit naturally on neutral greys.',
+          ],
+          risks: [
+            'Neutral dark UIs are common (Apple TV, Infuse, Plex’s newer apps). Identity now rests more on the mark, motion and sound.',
+            'A muted accent is quieter for focus and selection, so focus has to be carried by the ring, scale and motion rather than by color.',
+            'Bone is the most neutral accent and the least ownable on its own. The mark and the sound family carry more of the brand.',
+          ],
+        },
+      }
+    </script>
+    <script src="shared/board.js"></script>
+  </body>
+</html>

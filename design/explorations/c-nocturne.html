@@ -1,0 +1,223 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>C · Nocturne — highsea.tv</title>
+    <meta name="description" content="highsea.tv brand direction C: Nocturne — cinematic, warm, a twilight gradient." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght,SOFT@0,9..144,400..600,100;1,9..144,400..600,100&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=DM+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="shared/board.css" />
+    <link rel="stylesheet" href="shared/layouts.css" />
+    <style>
+      :root {
+        --bg: #0c0a10;
+        --s1: #141119;
+        --s2: #1b1722;
+        --s3: #241e2d;
+        --s4: #2e2639;
+        --line: rgb(230 210 255 / 0.08);
+        --line-strong: rgb(230 210 255 / 0.15);
+        --text: #f6f0fb;
+        --text-2: #c9bfd4;
+        --text-3: #a79cb7;
+        --accent: #b69cff;
+        --accent-2: #ff8fab;
+        --accent-ink: #170b2c;
+        --accent-fill: #5b3df5;
+        --on-accent: #ffffff;
+        --accent-text: #c4afff;
+        --danger-fill: #b3264a;
+        --accent-soft: rgb(182 156 255 / 0.16);
+        --success: #6fe0b0;
+        --warning: #ffc978;
+        --danger: #ff7a93;
+        --info: #8cc8ff;
+        --focus: #b69cff;
+
+        --radius-sm: 10px;
+        --radius: 14px;
+        --radius-lg: 20px;
+        --radius-xl: 32px;
+        --radius-poster: 14px;
+
+        --font-display: 'Fraunces', ui-serif, Georgia, serif;
+        --font-body: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
+        --font-mono: 'DM Mono', ui-monospace, monospace;
+        --display-weight: 500;
+        --display-tracking: -0.02em;
+
+        --cover-bg:
+          radial-gradient(ellipse 70% 70% at 82% 8%, rgb(182 156 255 / 0.3), transparent 60%),
+          radial-gradient(ellipse 60% 60% at 8% 100%, rgb(255 143 171 / 0.24), transparent 60%),
+          linear-gradient(180deg, #130f1a, #0c0a10);
+        --icon-bg: linear-gradient(140deg, #2c2042, #110d17);
+        --tv-focus: 0 0 0 3px #f6f0fb, 0 18px 50px -10px rgb(182 156 255 / 0.6);
+        --tv-btn-radius: 999px;
+        --btn-radius: 999px;
+        /* deepened twilight so white labels clear APCA Lc 75 at both ends */
+        --btn-primary-bg: linear-gradient(135deg, #5b3df5, #c93a6e);
+        --btn-primary-shadow: 0 10px 30px -12px rgb(201 58 110 / 0.6);
+        --nav-active-bg: linear-gradient(90deg, rgb(182 156 255 / 0.16), rgb(255 143 171 / 0.06));
+      }
+
+      body {
+        background:
+          radial-gradient(ellipse 80% 30% at 80% -6%, rgb(182 156 255 / 0.08), transparent),
+          var(--bg);
+      }
+
+      .tv-inner {
+        --tv-focus: 0 0 0 calc(var(--u) * 0.2) #f6f0fb, 0 calc(var(--u) * 1) calc(var(--u) * 3) calc(var(--u) * -0.4) rgb(182 156 255 / 0.65);
+        --tv-btn-radius: 999px;
+      }
+
+      .art {
+        --poster-art:
+          radial-gradient(90% 60% at 28% 18%, hsl(var(--h) 85% 62% / 0.55), transparent 62%),
+          radial-gradient(80% 70% at 82% 92%, hsl(calc(var(--h) + 50) 85% 58% / 0.45), transparent 62%),
+          linear-gradient(170deg, hsl(var(--h) 42% 22%), hsl(calc(var(--h) + 30) 40% 8%));
+        --poster-motif-o: 0.5;
+        --poster-motif-l: 82%;
+        --poster-weight: 500;
+        --poster-tracking: -0.01em;
+        --poster-size: 1.2em;
+      }
+
+      .poster-title {
+        font-variation-settings: 'opsz' 72, 'SOFT' 100;
+      }
+
+      .sec-title,
+      .cover h1,
+      .t-display,
+      .t-h1,
+      .tv-title,
+      .type-hero .big,
+      .stat,
+      .admin-top h2,
+      .ac-hero h2,
+      .al-head h2,
+      .mi-title,
+      .mf-t {
+        font-variation-settings: 'opsz' 144, 'SOFT' 100;
+      }
+
+      .stat {
+        font-family: var(--font-body);
+        font-weight: 600;
+        letter-spacing: -0.02em;
+      }
+
+      .tv-eyebrow {
+        background: linear-gradient(90deg, var(--accent), var(--accent-2));
+        -webkit-background-clip: text;
+        background-clip: text;
+        color: transparent;
+      }
+
+      .wm {
+        font-family: var(--font-display);
+        font-weight: 500;
+        letter-spacing: -0.02em;
+        line-height: 1;
+        font-variation-settings: 'opsz' 144, 'SOFT' 100;
+      }
+
+      .wm em {
+        font-style: italic;
+        font-weight: 400;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>This board needs JavaScript.</noscript>
+    <script>
+      const M = [
+        [1, 1, 1],
+        [4, 0.18, 0.35],
+        [10, 0.05, 0.15],
+      ]
+      const BELL = [
+        [1, 1, 1],
+        [2.76, 0.4, 0.5],
+        [5.4, 0.2, 0.3],
+      ]
+      window.HS_DIRECTION = {
+        id: 'nocturne',
+        letter: 'C',
+        name: 'Nocturne',
+        headline: 'Every night is premiere night.',
+        tagline:
+          'Cinematic, warm and a little theatrical: plum-black velvet, soft light and a twilight gradient. It should feel like the lights dimming before the film starts.',
+        keywords: ['Cinematic', 'Warm', 'Expressive', 'Soft', 'Premium'],
+        fonts: { display: 'Fraunces (soft, optical size)', body: 'DM Sans', mono: 'DM Mono' },
+        identityNote:
+          'Two sails over a gentle hull in a twilight gradient: a journey, a premiere, an evening out. A soft-serif wordmark with an italic <em>sea</em>. Here <code>.tv</code> lives in the domain, not the mark.',
+        typeNote:
+          'Fraunces, a soft optical-size serif, gives titles cinematic character. DM Sans keeps UI clean and friendly, and DM Mono handles figures. In admin, the serif stays in headings only.',
+        motionNote: 'Expressive springs with a visible, joyful overshoot, saved for content moments. Admin chrome uses a damped variant.',
+        soundNote: 'Warm marimba and glass bells in a soft room echo.',
+        soundEngine: 'marimba + bell partials · warm echo',
+        iconStroke: 1.6,
+        mark: `<svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="nc-g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-2)"/></linearGradient></defs><path d="M25 5c6.5 7.5 11 16.5 12.5 27H25z" fill="url(#nc-g)"/><path d="M22 10c-4.6 6.2-8 13.6-9.5 22H22z" fill="url(#nc-g)" opacity=".6"/><path d="M8 37.5c10.5 4 21.5 4 32 0" stroke="url(#nc-g)" stroke-width="3.2" stroke-linecap="round" fill="none"/></svg>`,
+        wordmark: '<span class="wm">high<em>sea</em></span>',
+        layouts: { tv: 'spotlight', mobile: 'immersive', admin: 'cards' },
+        motion: { spring: { stiffness: 170, damping: 15 }, stagger: 55, enterY: 22, enterScale: 0.92 },
+        soundGain: 0.95,
+        echo: { time: 0.22, fb: 0.25, mix: 0.28, lp: 3500 },
+        sounds: {
+          navigate: [{ f: 1046.5, d: 0.16, g: 0.06, p: M }],
+          select: [
+            { f: 659.3, d: 0.25, g: 0.08, p: M },
+            { f: 987.8, t: 0.07, d: 0.3, g: 0.07, p: M, echo: 1 },
+          ],
+          back: [
+            { f: 987.8, d: 0.2, g: 0.07, p: M },
+            { f: 784, t: 0.07, d: 0.25, g: 0.06, p: M },
+          ],
+          success: [523.3, 659.3, 784, 1046.5].map((f, i) => ({ f, t: i * 0.065, d: 0.45, g: 0.07, p: M, echo: 1 })),
+          error: [
+            { w: 'triangle', f: 233.1, d: 0.35, g: 0.1, lp: 1200 },
+            { w: 'triangle', f: 220, t: 0.02, d: 0.35, g: 0.1, lp: 1200 },
+          ],
+          notify: [
+            { f: 1568, d: 1.4, g: 0.06, p: BELL, echo: 1 },
+            { f: 2349.3, t: 0.12, d: 1.2, g: 0.04, p: BELL.slice(0, 2), echo: 1 },
+          ],
+          arrival: [
+            { w: 'triangle', f: 130.8, d: 2, g: 0.07, a: 0.6, lp: 1200 },
+            { w: 'triangle', f: 196, d: 2, g: 0.06, a: 0.6, lp: 1400 },
+            { w: 'triangle', f: 329.6, d: 2, g: 0.05, a: 0.7, lp: 1800 },
+            { f: 1046.5, t: 0.8, d: 1, g: 0.05, p: M, echo: 1 },
+            { f: 1318.5, t: 0.95, d: 1, g: 0.045, p: M, echo: 1 },
+            { f: 1568, t: 1.1, d: 1.4, g: 0.045, p: M, echo: 1 },
+          ],
+        },
+        notes: {
+          why: [
+            'The most consumer-feeling direction: closest to Apple TV and Infuse, furthest from "server software".',
+            'A serif display face gives titles a cinematic weight no competitor has.',
+            'The gradient accent creates a memorable, ownable brand moment.',
+          ],
+          shines: [
+            'Household and friends-and-family clients: inviting, premium, non-technical.',
+            'Featured sections and announcements read like a curated cinema program.',
+            'App-store presence: the most distinctive icon in the category.',
+          ],
+          risks: [
+            'Serif titles in dense admin tables can feel ornate, so admin needs the sans for data.',
+            'Gradients and overshoot can feel playful, or like a consumer app, to power users.',
+            'Purple-pink is near Twitch and Arc territory. The gradient must be used sparingly.',
+          ],
+        },
+      }
+    </script>
+    <script src="shared/board.js"></script>
+  </body>
+</html>

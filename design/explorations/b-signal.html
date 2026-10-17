@@ -1,0 +1,197 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>B · Signal — highsea.tv</title>
+    <meta name="description" content="highsea.tv brand direction B: Signal — a precise graphite instrument with one ember of color." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="shared/board.css" />
+    <link rel="stylesheet" href="shared/layouts.css" />
+    <style>
+      :root {
+        --bg: #0a0a0b;
+        --s1: #111113;
+        --s2: #17171a;
+        --s3: #1e1e22;
+        --s4: #27272c;
+        --line: rgb(255 255 255 / 0.07);
+        --line-strong: rgb(255 255 255 / 0.13);
+        --text: #f3f3f1;
+        --text-2: #c3c3bf;
+        --text-3: #a1a19d;
+        --accent: #ff6b3d;
+        --accent-2: #ffb23d;
+        --accent-ink: #1c0800;
+        --accent-fill: #c43d0f;
+        --on-accent: #ffffff;
+        --accent-text: #ff9f81;
+        --danger-fill: #b02a3a;
+        --accent-soft: rgb(255 107 61 / 0.14);
+        --success: #3ccf7e;
+        --warning: #f5c542;
+        --danger: #ff4d6a;
+        --info: #7aa7ff;
+        --focus: #ff6b3d;
+
+        --radius-sm: 6px;
+        --radius: 8px;
+        --radius-lg: 10px;
+        --radius-xl: 14px;
+        --radius-poster: 6px;
+
+        --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+        --font-body: 'Inter', ui-sans-serif, system-ui, sans-serif;
+        --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+        --display-weight: 600;
+        --display-tracking: -0.03em;
+
+        --cover-bg:
+          linear-gradient(rgb(255 255 255 / 0.035) 1px, transparent 1px) 0 0 / 44px 44px,
+          linear-gradient(90deg, rgb(255 255 255 / 0.035) 1px, transparent 1px) 0 0 / 44px 44px,
+          radial-gradient(ellipse 50% 60% at 86% 14%, rgb(255 107 61 / 0.22), transparent 60%),
+          #0a0a0b;
+        --icon-bg: linear-gradient(180deg, #1c1c20, #0e0e10);
+        --tv-focus: 0 0 0 3px var(--bg), 0 0 0 6px #f3f3f1;
+        --tv-btn-radius: 6px;
+        --btn-radius: 6px;
+        --badge-radius: 4px;
+        --nav-active-bg: var(--s3);
+      }
+
+      body {
+        font-feature-settings: 'cv11', 'ss01';
+      }
+
+      .tv-inner {
+        --tv-focus: 0 0 0 calc(var(--u) * 0.18) var(--bg), 0 0 0 calc(var(--u) * 0.4) #f3f3f1;
+        --tv-btn-radius: calc(var(--u) * 0.35);
+      }
+
+      .art {
+        --poster-art: linear-gradient(165deg, hsl(var(--h) 42% 30%), hsl(var(--h) 30% 11%) 72%);
+        --poster-motif-sat: 70%;
+        --poster-motif-l: 62%;
+        --poster-motif-o: 0.75;
+        --poster-case: uppercase;
+        --poster-tracking: 0.02em;
+        --poster-size: 0.86em;
+      }
+
+      .nav-item.on::before {
+        content: '';
+        position: absolute;
+        left: -10px;
+        top: 8px;
+        bottom: 8px;
+        width: 2px;
+        border-radius: 2px;
+        background: var(--accent);
+      }
+
+      .sec-title {
+        font-weight: 500;
+      }
+
+      .wm {
+        display: inline-flex;
+        align-items: center;
+        font-family: var(--font-display);
+        font-weight: 600;
+        font-size: 0.62em;
+        letter-spacing: 0.18em;
+        text-transform: uppercase;
+        line-height: 1;
+      }
+
+      .wm-tld {
+        margin-left: 0.55em;
+        padding: 0.18em 0.32em 0.14em 0.4em;
+        border: 1.5px solid var(--accent);
+        border-radius: 0.22em;
+        font-size: 0.72em;
+        letter-spacing: 0.1em;
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>This board needs JavaScript.</noscript>
+    <script>
+      window.HS_DIRECTION = {
+        id: 'signal',
+        letter: 'B',
+        name: 'Signal',
+        headline: 'Signal over noise.',
+        tagline:
+          'A precise graphite instrument with one ember of color. Media management feels like a pro tool, and streaming feels like a well-made console.',
+        keywords: ['Precise', 'Technical', 'Editorial', 'Confident', 'Fast'],
+        fonts: { display: 'Space Grotesk', body: 'Inter', mono: 'JetBrains Mono' },
+        identityNote:
+          'A geometric lowercase h whose ascender flies a signal pennant: navigation, intent, a flag planted on your own server. Spaced uppercase wordmark with a boxed TV tag.',
+        typeNote:
+          'Space Grotesk gives display type an engineered, slightly quirky voice. Inter does the heavy lifting in UI, and JetBrains Mono handles all figures.',
+        motionNote: 'Fast and critically damped. No overshoot; everything snaps exactly into place.',
+        soundNote: 'Dry, tactile clicks and pips, like a well-built instrument panel.',
+        soundEngine: 'square + noise · dry',
+        iconStroke: 1.75,
+        mark: `<svg viewBox="0 0 48 48" aria-hidden="true"><path d="M13 8.5h4.6v31H13z" style="fill:var(--text)"/><path d="M17.6 22.2h7.6a9 9 0 0 1 9 9v8.3h-4.6v-8.3a4.4 4.4 0 0 0-4.4-4.4h-7.6z" style="fill:var(--text)"/><path d="M17.6 8.5 30 13.6l-12.4 5.1z" style="fill:var(--accent)"/></svg>`,
+        wordmark: '<span class="wm">highsea<span class="wm-tld">TV</span></span>',
+        layouts: { tv: 'rail', mobile: 'list', admin: 'topbar' },
+        motion: { spring: { stiffness: 420, damping: 40 }, stagger: 25, enterY: 8, enterScale: 1 },
+        soundGain: 0.9,
+        echo: null,
+        sounds: {
+          navigate: [{ w: 'noise', hp: 4500, d: 0.012, g: 0.22 }],
+          select: [
+            { w: 'square', f: 1760, d: 0.025, g: 0.035, lp: 6000 },
+            { w: 'noise', hp: 3000, d: 0.01, g: 0.15 },
+          ],
+          back: [{ w: 'square', f: 1180, d: 0.025, g: 0.03, lp: 5000 }],
+          success: [
+            { w: 'square', f: 1320, d: 0.04, g: 0.035, lp: 5000 },
+            { w: 'square', f: 1760, t: 0.07, d: 0.06, g: 0.035, lp: 5000 },
+          ],
+          error: [
+            { w: 'sawtooth', f: 150, d: 0.09, g: 0.06, lp: 900 },
+            { w: 'sawtooth', f: 150, t: 0.12, d: 0.09, g: 0.06, lp: 900 },
+          ],
+          notify: [
+            { w: 'triangle', f: 2093, d: 0.05, g: 0.09 },
+            { w: 'triangle', f: 2093, t: 0.09, d: 0.05, g: 0.09 },
+            { w: 'triangle', f: 2637, t: 0.18, d: 0.12, g: 0.09 },
+          ],
+          arrival: [
+            { w: 'triangle', f: 440, f2: 1760, d: 0.35, g: 0.07, glide: 0.3 },
+            { w: 'square', f: 1760, t: 0.38, d: 0.06, g: 0.03, lp: 5000 },
+            { w: 'square', f: 2637, t: 0.48, d: 0.14, g: 0.03, lp: 5000 },
+          ],
+        },
+        notes: {
+          why: [
+            'Positions highsea as the serious, professional replacement for the *arr stack.',
+            'Neutral graphite gives artwork maximum fidelity, with no color cast.',
+            'A warm ember accent is rare in self-hosted tooling, which is a sea of blue.',
+          ],
+          shines: [
+            'Admin density: tables, logs and settings feel at home.',
+            'Perceived speed: snappy motion makes the app feel fast.',
+            'Recognition: the pennant-h is ownable even at 16 px.',
+          ],
+          risks: [
+            'Can feel cold, like a developer tool, on household-facing TV clients.',
+            'Orange sits near Plex\'s yellow-orange. It must stay redder and be used sparingly.',
+            'An uppercase spaced wordmark is less friendly for non-technical household members.',
+          ],
+        },
+      }
+    </script>
+    <script src="shared/board.js"></script>
+  </body>
+</html>

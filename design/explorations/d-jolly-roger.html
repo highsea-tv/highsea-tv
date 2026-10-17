@@ -1,0 +1,320 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>D · Jolly Roger — highsea.tv</title>
+    <meta
+      name="description"
+      content="highsea.tv brand direction D: Jolly Roger. Sailing the high seas: bone, brass and a ship's log."
+    />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Pirata+One&family=Alegreya+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Courier+Prime:wght@400;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="shared/board.css" />
+    <link rel="stylesheet" href="shared/layouts.css" />
+    <style>
+      :root {
+        --bg: #0b0d10;
+        --s1: #13161a;
+        --s2: #191d22;
+        --s3: #20252b;
+        --s4: #282e35;
+        --line: rgb(236 227 207 / 0.08);
+        --line-strong: rgb(236 227 207 / 0.16);
+        --text: #ece3cf;
+        --text-2: #cec5b1;
+        --text-3: #aba390;
+        --accent: #e9b949;
+        --accent-2: #d2553f;
+        --accent-ink: #0b0a08;
+        --accent-fill: #f2c862;
+        --on-accent: #0b0a08;
+        --accent-text: #f2c862;
+        --accent-soft: rgb(233 185 73 / 0.14);
+        --success: #5cc79a;
+        --warning: #f0a74a;
+        --danger: #ff6b5e;
+        --danger-fill: #a3302a;
+        --info: #7fb2e5;
+        --focus: #f2c862;
+
+        --radius-sm: 4px;
+        --radius: 6px;
+        --radius-lg: 8px;
+        --radius-xl: 14px;
+        --radius-poster: 3px;
+
+        --font-display: 'Pirata One', 'UnifrakturCook', Georgia, serif;
+        --font-body: 'Alegreya Sans', ui-sans-serif, system-ui, sans-serif;
+        --font-mono: 'Courier Prime', 'Courier New', ui-monospace, monospace;
+        --display-weight: 400;
+        --display-tracking: 0.01em;
+
+        --cover-bg:
+          radial-gradient(ellipse 60% 70% at 78% 40%, rgb(233 185 73 / 0.1), transparent 62%),
+          radial-gradient(ellipse 60% 50% at 6% 104%, rgb(210 85 63 / 0.16), transparent 60%),
+          linear-gradient(180deg, #11151b, #0b0d10);
+        --icon-bg: radial-gradient(circle at 50% 30%, #222a33, #0b0d10 76%);
+        --tv-focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent), 0 0 0 6px var(--bg), 0 0 0 7px var(--accent);
+        --tv-btn-radius: 4px;
+        --btn-radius: 4px;
+        --badge-radius: 3px;
+        --nav-active-bg: linear-gradient(90deg, rgb(233 185 73 / 0.14), rgb(233 185 73 / 0.02));
+        --btn-primary-shadow: 0 1px 0 rgb(255 255 255 / 0.25) inset, 0 -2px 0 rgb(0 0 0 / 0.18) inset;
+        --wanted-bg: color-mix(in oklab, var(--accent) 5%, var(--s1));
+      }
+
+      body {
+        background:
+          radial-gradient(ellipse 80% 30% at 70% -6%, rgb(233 185 73 / 0.06), transparent),
+          var(--bg);
+      }
+
+      .tv-inner {
+        --tv-focus:
+          0 0 0 calc(var(--u) * 0.15) var(--bg), 0 0 0 calc(var(--u) * 0.3) var(--accent),
+          0 0 0 calc(var(--u) * 0.45) var(--bg), 0 0 0 calc(var(--u) * 0.55) var(--accent);
+        --tv-btn-radius: calc(var(--u) * 0.3);
+      }
+
+      .art {
+        --poster-art:
+          radial-gradient(90% 60% at 30% 18%, hsl(var(--h) 32% 38% / 0.75), transparent 65%),
+          linear-gradient(175deg, hsl(var(--h) 22% 22%), hsl(calc(var(--h) + 15) 25% 8%));
+        --poster-motif-sat: 32%;
+        --poster-motif-l: 76%;
+        --poster-motif-o: 0.6;
+        --poster-weight: 400;
+        --poster-tracking: 0.01em;
+        --poster-size: 1.3em;
+      }
+
+      .cover-art {
+        position: absolute;
+        inset: 0;
+        z-index: -1;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+
+      .cover h1 {
+        max-width: 7.5ch;
+        font-size: clamp(60px, 10.5vw, 128px);
+      }
+
+      .sec-title {
+        font-size: 36px;
+      }
+
+      .label {
+        letter-spacing: 0.1em;
+      }
+
+      .tv-eyebrow {
+        font-family: var(--font-mono);
+        font-weight: 700;
+        letter-spacing: 0.12em;
+      }
+
+      /* blackletter is for display only; figures always use the sans */
+      .stat,
+      .al-strip b,
+      .ring b {
+        font-family: var(--font-body);
+        font-weight: 700;
+        letter-spacing: -0.01em;
+      }
+
+      .wm {
+        font-family: var(--font-display);
+        font-size: 1.14em;
+        letter-spacing: 0.01em;
+        line-height: 1;
+      }
+
+      .wm-tld {
+        color: var(--accent);
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>This board needs JavaScript.</noscript>
+    <script>
+      // chart-room cover: a chart grid, rhumb lines and a compass rose
+      const rose = (() => {
+        const out = []
+        for (let i = 0; i < 32; i++) {
+          const a = (i * Math.PI) / 16
+          out.push(
+            `<path d="M0 0L${(Math.cos(a) * 1100).toFixed(1)} ${(Math.sin(a) * 1100).toFixed(1)}" opacity="${i % 4 === 0 ? 0.26 : 0.1}"/>`,
+          )
+        }
+        const point = (deg, len, w) => {
+          const a = ((deg - 90) * Math.PI) / 180
+          const [dx, dy, px, py] = [Math.cos(a), Math.sin(a), -Math.sin(a), Math.cos(a)]
+          const tip = `${(dx * len).toFixed(1)} ${(dy * len).toFixed(1)}`
+          const side = (s) => `${(px * w * s).toFixed(1)} ${(py * w * s).toFixed(1)}`
+          return `<path d="M0 0L${tip}L${side(1)}Z" style="fill:var(--accent)" stroke="none"/><path d="M0 0L${tip}L${side(-1)}Z" style="fill:var(--accent)" opacity=".35" stroke="none"/>`
+        }
+        const star = [45, 135, 225, 315].map((d) => point(d, 82, 13)).join('') +
+          [0, 90, 180, 270].map((d) => point(d, 150, 19)).join('')
+        return `<g transform="translate(960 310) scale(.82)" style="stroke:var(--accent)" fill="none" stroke-width="1" vector-effect="non-scaling-stroke">
+          <g opacity=".5">${out.join('')}</g>
+          <circle r="176" opacity=".5"/><circle r="166" stroke-dasharray="1.2 7.5" stroke-width="7" opacity=".45"/><circle r="112" opacity=".3"/>
+          <g opacity=".85">${star}</g><circle r="7" style="fill:var(--bg)"/>
+          <text y="-190" text-anchor="middle" font-size="38" stroke="none" style="fill:var(--accent);font-family:var(--font-display)">N</text>
+        </g>`
+      })()
+
+      const BELL = [
+        [1, 1, 1],
+        [2.32, 0.45, 0.6],
+        [4.07, 0.25, 0.4],
+        [5.4, 0.12, 0.3],
+      ]
+      // a concertina reed: a detuned saw and square pair, softened by a lowpass
+      const REED = (f, t = 0, d = 0.26, g = 0.04) => [
+        { w: 'sawtooth', f, t, d, g, a: 0.025, lp: 1600, det: -7 },
+        { w: 'square', f, t, d, g: g * 0.6, a: 0.03, lp: 1300, det: 7 },
+      ]
+
+      window.HS_DIRECTION = {
+        id: 'jolly-roger',
+        letter: 'D',
+        name: 'Jolly Roger',
+        server: 'Tortuga',
+        headline: 'Hoist the colours.',
+        tagline:
+          "Lean into the name. A captain's chart room after dark: bone-white paper, brass instruments and a ship's log for a library. The joke is in the name, so the craft has to be serious.",
+        keywords: ['Adventurous', 'Nautical', 'Crafted', 'Wry', 'Bone & brass'],
+        fonts: { display: 'Pirata One', body: 'Alegreya Sans', mono: 'Courier Prime' },
+        identityNote:
+          'A bone-white flag on a brass pole. The emblem is a play button over crossed bones (no skull), knocked out of the cloth. The wordmark is set in Pirata One with a brass <code>.tv</code>. At small sizes the flag reads as a simple pennant.',
+        typeNote:
+          "Pirata One, a blackletter display face, for the wordmark, titles and the manifest. Alegreya Sans, a humanist sans with calligraphic roots, for UI and body. Courier Prime for figures and logs, like a typewritten ship's log. Stats use the sans, never blackletter.",
+        motionNote:
+          "A ship's sway: a slightly loose spring with a visible roll, and entrances that tilt in by a degree and a half before they settle. TV focus is a brass double ring.",
+        soundNote:
+          "Below decks: a wooden knock for navigation, a concertina for select and back, a bosun's pipe for success, a low drum for errors and \"two bells\" from the ship's bell for notifications. The arrival sound is a distant cannon, then bells and a chord.",
+        soundEngine: 'noise knocks · reed chords · bell partials · short hull echo',
+        iconStroke: 1.75,
+        coverArt: `<svg class="cover-art" viewBox="0 0 1200 600" preserveAspectRatio="xMaxYMid slice" aria-hidden="true">
+          <defs><pattern id="jr-grid" width="60" height="60" patternUnits="userSpaceOnUse"><path d="M60 0H0V60" fill="none" style="stroke:var(--text)" stroke-opacity=".06"/></pattern></defs>
+          <rect width="1200" height="600" fill="url(#jr-grid)"/>${rose}
+        </svg>`,
+        mark: `<svg viewBox="0 0 48 48" aria-hidden="true"><defs><mask id="jr-flag" maskUnits="userSpaceOnUse" x="0" y="0" width="48" height="48"><rect width="48" height="48" fill="#fff"/><path d="M18.5 12.5 31.5 24M18.5 24 31.5 12.5" stroke="#000" stroke-width="2.3" stroke-linecap="round"/><g fill="#000"><circle cx="17.6" cy="11.3" r="1.6"/><circle cx="32.4" cy="11.3" r="1.6"/><circle cx="17.6" cy="25.2" r="1.6"/><circle cx="32.4" cy="25.2" r="1.6"/></g><path d="M22.6 13.6 29.4 18.2 22.6 22.8Z" fill="#fff" stroke="#fff" stroke-width="3.4" stroke-linejoin="round"/><path d="M22.6 13.6 29.4 18.2 22.6 22.8Z" fill="#000" stroke="#000" stroke-width="1" stroke-linejoin="round"/></mask></defs><path d="M10 6.5V44" stroke-width="2.6" stroke-linecap="round" style="stroke:var(--accent)"/><circle cx="10" cy="4.6" r="2.4" style="fill:var(--accent)"/><path d="M11.6 8.2c6-2.2 11 1.6 17 .4 4-.8 7-2.4 10.6-1.4v21.4c-3.6-1-6.6.6-10.6 1.4-6 1.2-11-2.6-17-.4z" mask="url(#jr-flag)" style="fill:var(--text)"/></svg>`,
+        wordmark: '<span class="wm">highsea<span class="wm-tld">.tv</span></span>',
+        layouts: { tv: 'manifest', mobile: 'manifest', admin: 'ledger' },
+        plateCaption: '20°03′N 72°47′W · Plate I',
+        motion: {
+          spring: { stiffness: 150, damping: 13 },
+          stagger: 50,
+          enterY: 18,
+          enterScale: 0.96,
+          enterRotate: -1.5,
+        },
+        vocabName: 'Pirate English',
+        vocab: {
+          play: 'Set sail',
+          details: 'Spyglass',
+          maintenance: 'Tortuga is in dry dock Sunday 02:00–03:00 for repairs',
+          featured: "Captain's picks",
+          picks: "Captain's picks",
+          continue: 'Unfinished voyages',
+          home: 'Deck',
+          movies: 'The Hold',
+          library: 'The Hold',
+          settings: 'Rigging',
+          offline: 'Stowed',
+          you: 'Captain',
+          manifest: "Tonight's voyage",
+          manifestTitle: "Ship's manifest",
+          announce: 'Message in a bottle',
+          announceTitle: 'All hands: movie night Friday',
+          announceBody: "All hands for movie night on Friday. A new 4K collection is in Captain's picks.",
+          dashboard: 'The Bridge',
+          discover: 'Charts',
+          activity: "Ship's log",
+          downloads: 'The Haul',
+          queue: 'The Haul',
+          indexers: 'Lookouts',
+          subtitles: 'Parley',
+          curation: 'Proclamations',
+          system: 'Below decks',
+          clients: 'crew aboard',
+          search: 'Search the seven seas',
+          customize: 'Refit',
+          addMovie: 'Add to the hold',
+          greeting: 'Ahoy, Captain',
+          arriving: 'Inbound',
+          storage: 'Cargo space',
+          logEntry: 'Log day',
+          wanted: 'Bounties',
+          wantedPoster: 'Wanted',
+          reward: 'Bounty',
+          statusDownloading: 'Hauling',
+          statusImporting: 'Stowing',
+          statusStalled: 'Becalmed',
+          statusQueued: 'In port',
+        },
+        soundGain: 0.9,
+        echo: { time: 0.16, fb: 0.22, mix: 0.2, lp: 2200 },
+        sounds: {
+          navigate: [
+            { w: 'noise', d: 0.03, g: 0.32, bp: 1100, q: 5 },
+            { w: 'sine', f: 340, f2: 190, glide: 0.05, d: 0.07, g: 0.13 },
+          ],
+          select: [...REED(293.66), ...REED(369.99), ...REED(440)],
+          back: [...REED(440, 0, 0.14), ...REED(329.63, 0.09, 0.22)],
+          success: [
+            { w: 'sine', f: 1320, f2: 2350, glide: 0.16, d: 0.2, g: 0.07, a: 0.02 },
+            { w: 'sine', f: 2350, f2: 2280, t: 0.2, d: 0.28, g: 0.06, echo: 1 },
+            { w: 'sine', f: 2280, f2: 1760, glide: 0.12, t: 0.5, d: 0.16, g: 0.05, echo: 1 },
+          ],
+          error: [
+            { w: 'sine', f: 120, f2: 52, glide: 0.22, d: 0.32, g: 0.32 },
+            { w: 'noise', d: 0.07, g: 0.18, lp: 500 },
+          ],
+          notify: [
+            { f: 740, d: 1.6, g: 0.06, p: BELL, echo: 1 },
+            { f: 740, t: 0.34, d: 1.8, g: 0.055, p: BELL, echo: 1 },
+          ],
+          arrival: [
+            { w: 'noise', d: 0.95, g: 0.5, lp: 240, a: 0.005 },
+            { w: 'sine', f: 72, f2: 34, glide: 0.9, d: 1.1, g: 0.45 },
+            { f: 740, t: 0.75, d: 1.6, g: 0.055, p: BELL, echo: 1 },
+            { f: 740, t: 1.05, d: 1.8, g: 0.05, p: BELL, echo: 1 },
+            ...REED(293.66, 1.45, 1.4, 0.032),
+            ...REED(369.99, 1.45, 1.4, 0.028),
+            ...REED(440, 1.45, 1.4, 0.028),
+            ...REED(587.33, 1.45, 1.4, 0.02),
+          ],
+        },
+        notes: {
+          why: [
+            'It owns the joke in the name. "highsea" already reads as "sailing the high seas", and this direction says so with confidence instead of hiding it.',
+            "The strongest personality of the four. A ship's log, brass instruments and a chart room give every surface a story: manifest lists, wanted posters for missing titles, a message in a bottle for announcements.",
+            'Bone and brass on blue-black stays calm enough for daily use. The theme lives in type, ornament, sound and copy more than in color.',
+          ],
+          shines: [
+            'Friends-and-family servers: the owner gets to be the captain. Announcements, featured picks and the opt-in "Pirate English" copy make the server feel like theirs.',
+            'The TV manifest layout: a numbered list is the fastest thing to scan with a remote.',
+            "Sound: knocks, a concertina and a ship's bell make the most distinctive sound identity in the category.",
+          ],
+          risks: [
+            'Perception is the big one. Overt piracy imagery on an app with a built-in torrent client invites "this is a piracy tool" judgments from Apple, Google, TV app stores, and payment or hosting partners. That can mean rejection or removal, and it undercuts the legitimate-use story. The emblem avoids a skull, but the risk remains.',
+            'Kitsch: pirate copy wears thin fast. It should stay opt-in, with plain English as the default.',
+            'Legibility: Pirata One is blackletter. It is for display sizes only (titles of 20px and up, and the wordmark). Body copy, data and labels stay in Alegreya Sans and Courier Prime.',
+          ],
+        },
+      }
+    </script>
+    <script src="shared/board.js"></script>
+  </body>
+</html>

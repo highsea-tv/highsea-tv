@@ -1,0 +1,171 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>A · Abyss — highsea.tv</title>
+    <meta name="description" content="highsea.tv brand direction A: Abyss — calm depth with a bioluminescent accent." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="shared/board.css" />
+    <link rel="stylesheet" href="shared/layouts.css" />
+    <style>
+      :root {
+        --bg: #060a10;
+        --s1: #0b111a;
+        --s2: #101824;
+        --s3: #16202e;
+        --s4: #1d2939;
+        --line: rgb(140 170 210 / 0.09);
+        --line-strong: rgb(140 170 210 / 0.17);
+        --text: #e8f0f8;
+        --text-2: #b7c4d4;
+        --text-3: #94a2b4;
+        --accent: #5ce1d6;
+        --accent-2: #3a7bff;
+        --accent-ink: #021412;
+        --accent-fill: #6ee7dd;
+        --on-accent: #021412;
+        --accent-text: #5ce1d6;
+        --danger-fill: #b02a3a;
+        --accent-soft: rgb(92 225 214 / 0.14);
+        --success: #46d996;
+        --warning: #f2b84b;
+        --danger: #ff6378;
+        --info: #6aa8ff;
+        --focus: #5ce1d6;
+
+        --radius-sm: 8px;
+        --radius: 12px;
+        --radius-lg: 16px;
+        --radius-xl: 28px;
+        --radius-poster: 10px;
+
+        --font-display: 'Geist', ui-sans-serif, system-ui, sans-serif;
+        --font-body: 'Geist', ui-sans-serif, system-ui, sans-serif;
+        --font-mono: 'Geist Mono', ui-monospace, monospace;
+        --display-weight: 600;
+        --display-tracking: -0.035em;
+
+        --cover-bg:
+          radial-gradient(ellipse 80% 60% at 72% 18%, rgb(58 123 255 / 0.24), transparent 60%),
+          radial-gradient(ellipse 60% 50% at 18% 92%, rgb(92 225 214 / 0.18), transparent 60%),
+          linear-gradient(180deg, #08111d, #060a10);
+        --icon-bg: radial-gradient(circle at 50% 28%, #143553, #070c14 72%);
+        --tv-focus: 0 0 0 3px #e8f0f8, 0 0 30px 4px rgb(92 225 214 / 0.38);
+        --nav-active-bg: linear-gradient(90deg, rgb(92 225 214 / 0.12), rgb(92 225 214 / 0.02));
+        --btn-primary-shadow: 0 8px 24px -10px rgb(92 225 214 / 0.5);
+      }
+
+      body {
+        background:
+          radial-gradient(ellipse 90% 35% at 50% -8%, rgb(58 123 255 / 0.09), transparent),
+          var(--bg);
+      }
+
+      .tv-inner {
+        --tv-focus: 0 0 0 calc(var(--u) * 0.2) #e8f0f8, 0 0 calc(var(--u) * 2.4) calc(var(--u) * 0.3) rgb(92 225 214 / 0.4);
+      }
+
+      .art {
+        --poster-art:
+          radial-gradient(120% 70% at 50% -5%, hsl(var(--h) 75% 40% / 0.9), transparent 70%),
+          linear-gradient(180deg, hsl(var(--h) 50% 20%), hsl(calc(var(--h) + 35) 60% 7%));
+        --poster-motif-sat: 85%;
+        --poster-motif-l: 72%;
+      }
+
+      .wm {
+        font-family: var(--font-display);
+        font-weight: 600;
+        letter-spacing: -0.045em;
+        line-height: 1;
+      }
+
+      .wm-tld {
+        color: var(--text-3);
+        font-weight: 500;
+      }
+    </style>
+  </head>
+  <body>
+    <noscript>This board needs JavaScript.</noscript>
+    <script>
+      window.HS_DIRECTION = {
+        id: 'abyss',
+        letter: 'A',
+        name: 'Abyss',
+        headline: 'Light below the surface.',
+        tagline:
+          'Calm depth and a single bioluminescent accent. The interface recedes into deep water so the artwork can surface.',
+        keywords: ['Deep', 'Calm', 'Luminous', 'Nautical', 'Precise'],
+        fonts: { display: 'Geist SemiBold', body: 'Geist', mono: 'Geist Mono' },
+        identityNote:
+          'A moon over the horizon, cut by two swells. The mark reads as a porthole, a sunrise on open water, or a status light. Lowercase wordmark with a quiet <code>.tv</code>.',
+        typeNote:
+          'Geist throughout for a single, modern voice: tight-tracked semibold for display, regular for UI, Geist Mono for figures. Neutral type keeps the identity in color and motion.',
+        motionNote: 'Calm, physical springs that barely overshoot. Things settle like a buoy, not a bounce.',
+        soundNote: 'Sonar and water: soft sine pings with a short underwater echo.',
+        soundEngine: 'sine · sonar echo',
+        iconStroke: 1.75,
+        mark: `<svg viewBox="0 0 48 48" aria-hidden="true"><defs><linearGradient id="ab-g" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--accent)"/><stop offset="1" style="stop-color:var(--accent-2)"/></linearGradient><mask id="ab-m"><rect width="48" height="48" fill="#fff"/><path d="M1 29.5c7.7-4.4 15.3-4.4 23 0s15.3 4.4 23 0" stroke="#000" stroke-width="3.2" fill="none" stroke-linecap="round"/><path d="M1 37c7.7-4.4 15.3-4.4 23 0s15.3 4.4 23 0" stroke="#000" stroke-width="3.2" fill="none" stroke-linecap="round"/></mask></defs><circle cx="24" cy="24" r="21" fill="url(#ab-g)" mask="url(#ab-m)"/></svg>`,
+        wordmark: '<span class="wm">highsea<span class="wm-tld">.tv</span></span>',
+        layouts: { tv: 'hero', mobile: 'stack', admin: 'sidebar' },
+        motion: { spring: { stiffness: 120, damping: 20 }, stagger: 45, enterY: 14, enterScale: 0.98 },
+        soundGain: 0.9,
+        echo: { time: 0.18, fb: 0.32, mix: 0.35, lp: 2600 },
+        sounds: {
+          navigate: [{ f: 1250, f2: 1020, d: 0.06, g: 0.07, a: 0.002 }],
+          select: [
+            { f: 720, f2: 1080, d: 0.11, g: 0.11, glide: 0.05 },
+            { f: 1440, t: 0.04, d: 0.16, g: 0.04, echo: 1 },
+          ],
+          back: [{ f: 980, f2: 640, d: 0.12, g: 0.09 }],
+          success: [
+            { f: 660, d: 0.3, g: 0.08, echo: 1 },
+            { f: 880, t: 0.07, d: 0.3, g: 0.08, echo: 1 },
+            { f: 1320, t: 0.14, d: 0.5, g: 0.07, echo: 1 },
+          ],
+          error: [
+            { w: 'triangle', f: 330, f2: 220, d: 0.18, g: 0.14, lp: 1400 },
+            { w: 'triangle', f: 300, f2: 200, t: 0.13, d: 0.22, g: 0.12, lp: 1400 },
+          ],
+          notify: [
+            { f: 1480, d: 1.1, g: 0.13, a: 0.004, echo: 1 },
+            { f: 2960, d: 0.4, g: 0.025 },
+          ],
+          arrival: [
+            { f: 98, f2: 196, d: 1.8, g: 0.16, a: 0.5, glide: 1.2, lp: 900 },
+            { f: 392, t: 0.35, d: 1.4, g: 0.05, a: 0.3, echo: 1 },
+            { f: 587.3, t: 0.55, d: 1.4, g: 0.05, a: 0.3, echo: 1 },
+            { f: 784, t: 0.75, d: 1.6, g: 0.045, a: 0.3, echo: 1 },
+            { f: 1480, t: 1.05, d: 1.2, g: 0.06, echo: 1 },
+          ],
+        },
+        notes: {
+          why: [
+            'Expresses the name directly: depth, horizon, light below the surface.',
+            'A cool, calm palette lets artwork carry all the color.',
+            'A bioluminescent accent is distinctive in a category of reds (Netflix, YouTube) and yellows (Plex).',
+          ],
+          shines: [
+            'OLED TVs and dark living rooms: deep blue-black is gentler than pure black.',
+            'Glow makes focus states legible from 10 feet.',
+            'Admin data viz (speeds, health) reads naturally in teal and blue.',
+          ],
+          risks: [
+            'Teal-on-navy is a common developer-tool palette. It needs restraint to feel cinematic rather than technical.',
+            'Glows get heavy fast, so reserve them for focus and primary actions.',
+            'Blue-tinted neutrals slightly shift how artwork is perceived, so scrims need tuning.',
+          ],
+        },
+      }
+    </script>
+    <script src="shared/board.js"></script>
+  </body>
+</html>
