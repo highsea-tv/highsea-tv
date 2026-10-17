@@ -62,7 +62,7 @@ These are measured by rendering the sound offline through the same synthesis gra
 
 ## Recipe format
 
-Sounds are synthesized with Web Audio at runtime (and with the platform equivalent on native), so a pack is data, not audio files. A pack is:
+A pack is data, not audio files. The web synthesizes it with Web Audio at runtime. Native clients play it rendered to audio by the offline renderer in `@highsea/tokens`; the default pack ships pre-rendered in `@highsea/brand` ([sources](../../design/assets/sounds/README.md)). A pack is:
 
 ```ts
 type SoundPack = {

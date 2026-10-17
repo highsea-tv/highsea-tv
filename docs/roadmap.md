@@ -122,6 +122,8 @@ Everything later depends on this, so it comes first and is finalized before any 
    - final logo, wordmark, app icons (all platform sizes), favicon;
    - fonts;
    - **default sound pack**: short UI sounds, procedurally synthesized or CC0, with sources in `design/assets/sounds`.
+
+   **✅ Done (2026-10-16).** See [`packages/brand`](../packages/brand/README.md) and [logo and app icons](brand/logo.md). The custom icon glyphs moved to `ui-web` (step 6).
 6. **`@highsea/ui-web` core** on Radix + Tailwind v4 + `motion/react`:
    - primitives: Button, Input, Select, Dialog, Sheet, Popover, Tabs, Table, Badge, Toast, Tooltip, Skeleton, Progress;
    - media components: Poster, Backdrop hero, Carousel row, Rating;

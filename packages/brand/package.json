@@ -1,0 +1,30 @@
+{
+  "name": "@highsea/brand",
+  "version": "1.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./fonts.css": "./fonts/fonts.css",
+    "./fonts/*": "./fonts/*",
+    "./logo/*": "./assets/logo/*",
+    "./icons/*": "./assets/icons/*",
+    "./sounds/*": "./sounds/*"
+  },
+  "scripts": {
+    "build": "bun scripts/build.ts",
+    "check": "bun scripts/build.ts --check",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea/tokens": "workspace:*"
+  },
+  "devDependencies": {
+    "@highsea/config": "workspace:*",
+    "@resvg/resvg-js": "2.6.2",
+    "@types/opentype.js": "1.3.10",
+    "geist": "1.8.1",
+    "opentype.js": "2.0.0"
+  }
+}

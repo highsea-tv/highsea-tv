@@ -24,7 +24,7 @@ These are drawn to Lucide's rules (24 grid, 2px padding, the same stroke, round 
 - **Media types:** movie, series, music, book, audiobook, podcast, online video. Check Lucide first: `film`, `tv`, `music`, `book`, `headphones`, `podcast` and `clapperboard` may already cover them.
 - **Domain:** indexer, seeding (an upload with a leaf), subtitle sync (captions with a waveform), catalog.
 
-Sources live in `design/assets/icons`. `@highsea/brand` ships them alongside the Lucide subset.
+Sources live in `design/assets/icons`. `@highsea/ui-web` ships them with the Lucide subset through one `Icon` component.
 
 ## Not icons
 
