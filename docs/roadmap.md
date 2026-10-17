@@ -101,7 +101,7 @@ Everything later depends on this, so it comes first and is finalized before any 
    A starting hypothesis for one direction: "deep sea", meaning near-black blue-tinted surfaces, one luminous accent, and calm, physical motion. **User picks one direction; we refine it.**
 
    **✅ Done (2026-10-16).** The owner locked **Abyss Neutral with the Bone accent**. See [`docs/brand/direction.md`](brand/direction.md) and [ADR 0013](adr/0013-brand-direction-abyss-neutral.md).
-3. **Design language docs** (`docs/design-language/`):
+3. **Design language docs** (`docs/design-language/`). **✅ Done (2026-10-16).** v1.0 signed off; see [`docs/design-language/`](design-language/README.md).
    - principles;
    - color (semantic roles, contrast rules);
    - typography scale;

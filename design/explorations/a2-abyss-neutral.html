@@ -75,6 +75,22 @@
           calc(var(--u) * -0.6) rgb(0 0 0 / 0.75);
       }
 
+      /* TV safe area: 4.5u from the sides and 3.2u from the top, inside tvOS's 80 × 60px */
+      .tv-server,
+      .tv-announce {
+        top: calc(var(--u) * 3.2);
+      }
+
+      .tv-announce {
+        right: calc(var(--u) * 4.5);
+      }
+
+      /* admin tables: figures right-aligned so magnitudes line up */
+      th.num,
+      td.num {
+        text-align: right;
+      }
+
       /* placeholder artwork: muted, so the chrome doesn't borrow saturation from it */
       .art {
         --poster-art:

@@ -1129,7 +1129,7 @@
 
   const queueTable = ({ numbered = false } = {}) => `
     <table>
-      <thead><tr>${numbered ? '<th>№</th>' : ''}<th>Title</th><th>Size</th><th>Progress</th><th>↓</th><th class="col-up">↑</th><th>ETA</th><th>Status</th></tr></thead>
+      <thead><tr>${numbered ? '<th>№</th>' : ''}<th>Title</th><th class="num">Size</th><th>Progress</th><th class="num">↓</th><th class="num col-up">↑</th><th class="num">ETA</th><th>Status</th></tr></thead>
       <tbody>${DL.map(
         (d, i) => `<tr data-dl="${i}" style="--p:${d.p}">
           ${numbered ? `<td class="num">${String(i + 1).padStart(2, '0')}</td>` : ''}
@@ -1757,15 +1757,31 @@
       for (const el of tvEl.querySelectorAll('.focused')) el.classList.remove('focused')
     })
     const DIRS = { ArrowRight: 'right', ArrowLeft: 'left', ArrowUp: 'up', ArrowDown: 'down' }
+    // At the edge of a list, focus stays put and nudges 0.2u toward the press, silently.
+    // `translate` composes with the focus scale on `transform`, so the two don't fight.
+    const nudge = (el, dir) => {
+      if (reduceMotion) return
+      const d = (tvEl.clientWidth / 100) * 0.2
+      const [x, y] = { right: [d, 0], left: [-d, 0], down: [0, d], up: [0, -d] }[dir]
+      el.animate([{ translate: '0 0' }, { translate: `${x}px ${y}px` }, { translate: '0 0' }], {
+        duration: 240,
+        easing: 'ease-out',
+      })
+    }
+    // Held keys auto-repeat faster than the ear wants: navigate sounds at most every 80ms.
+    let lastNavSound = 0
     tvEl.addEventListener('keydown', (e) => {
       const dir = DIRS[e.key]
       if (dir) {
         e.preventDefault()
         const next = pick(dir)
         if (next) {
-          Sound.play('navigate')
+          if (e.timeStamp - lastNavSound >= 80) {
+            Sound.play('navigate')
+            lastNavSound = e.timeStamp
+          }
           go(next)
-        } else Sound.play('error')
+        } else nudge(cur, dir)
       } else if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault()
         Sound.play('select')
@@ -1782,9 +1798,11 @@
             { duration: 280, easing: 'ease-out' },
           )
       } else if (e.key === 'Escape' || e.key === 'Backspace') {
+        // At the home root, the first Back returns to the first item and the second exits.
         e.preventDefault()
         Sound.play('back')
-        go(initial())
+        if (cur === initial()) tvEl.blur()
+        else go(initial())
       }
     })
     tvEl.addEventListener('click', (e) => {

@@ -97,18 +97,7 @@ highsea.tv collapses a home media setup into one product: acquisition, managemen
 
 ### 7.1 Contrast policy
 
-Every theme, built-in or custom, must pass these checks against its rendered colors. Translucent fills and gradients are measured as rendered, and each gradient stop is checked.
-
-| Role | APCA Lc minimum | Also |
-| --- | --- | --- |
-| Primary text (titles, values) | 75 (90 preferred) | WCAG 2 ≥ 4.5:1 |
-| Secondary text | 70 | |
-| Tertiary text (metadata, captions) | 50 | Never used for anything the user must read to act |
-| Accent used as text | 60 | |
-| Button labels (primary, destructive) | 75 | Weight ≥ 600; on-fill color is its own token |
-| Badges | 60 | |
-
-Buttons and other filled controls use dedicated tokens: `--accent-fill` with `--on-accent`, and `--danger-fill` with `--on-danger`. These are separate from the decorative accent and from `--accent-text`. A bright accent therefore never has to double as a fill under white text (the v0.1 failure). The theme engine enforces this table, and each exploration board shows it as a live contrast audit.
+Moved to [design language › color › contrast policy](../design-language/color.md#contrast-policy).
 
 ## 8. Direction review: answers
 
