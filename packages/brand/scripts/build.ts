@@ -5,6 +5,7 @@ import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
 import { SOUND_EVENTS } from '@highsea/tokens'
 import { Resvg } from '@resvg/resvg-js'
+import { appleTextFiles, TVOS_IMAGES } from '../src/apple.ts'
 import { FONT_FILES, fontsCss } from '../src/fonts.ts'
 import { CONTAINERS, ICON_SVGS, IMAGES, webManifest } from '../src/icons.ts'
 import { type LogoPaint, lockupSvg, wordmarkSvg } from '../src/logo.ts'
@@ -45,13 +46,14 @@ export function textOutputs(): Record<string, string> {
     out[`assets/logo/lockup${suffix}.svg`] = `${lockupSvg({ paint, title })}\n`
   }
   for (const [file, svg] of Object.entries(ICON_SVGS)) out[`assets/icons/${file}`] = `${svg()}\n`
+  for (const [file, text] of Object.entries(appleTextFiles())) out[`assets/icons/${file}`] = text
   return out
 }
 
 /** Binary outputs, built lazily. `--check` only confirms they exist. */
 export function binaryOutputs(): Record<string, () => Uint8Array> {
   const out: Record<string, () => Uint8Array> = {}
-  for (const spec of IMAGES)
+  for (const spec of [...IMAGES, ...TVOS_IMAGES])
     out[`assets/icons/${spec.file}`] = () =>
       rasterize(spec.svg(), spec.width, spec.height, spec.opaque)
   for (const spec of CONTAINERS)

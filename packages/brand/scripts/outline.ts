@@ -94,7 +94,7 @@ export function wordmarkDataTs(): string {
   const wordmark = outline(
     [
       { font: 'semibold', text: 'highsea' },
-      { font: 'medium', text: '.tv' },
+      { font: 'medium', text: ' tv' },
     ],
     tracking.wordmark,
   )

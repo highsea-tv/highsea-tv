@@ -20,7 +20,7 @@ The structure, type and motion stayed as they were in A.
 ## Identity
 
 - **Mark:** a disc over the horizon, cut by two swells. It reads as a porthole, a sunrise on open water, or a status light. It is filled with a vertical gradient from `--accent` to `--accent-2` (Bone to its darker sibling).
-- **Wordmark:** lowercase `highsea` in Geist SemiBold, tracked −0.045em. The `.tv` is part of the lockup, set in `--text-3` at weight 500. It is quiet, but always present.
+- **Wordmark:** lowercase `highsea tv`. `highsea` is Geist SemiBold, tracked −0.045em. `tv` follows after a word space, set in `--text-3` at weight 500. It is quiet, but always present. (The owner replaced the earlier `.tv` with ` tv` on 2026-10-16.)
 - **Construction, variants, clear space and app icons:** [logo and app icons](logo.md).
 - **Server first:** clients lead with the *server's* name and identity (for example "Harbor"). highsea is the hull, not the cargo.
 

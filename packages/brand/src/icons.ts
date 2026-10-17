@@ -185,33 +185,7 @@ export const IMAGES: ImageSpec[] = [
   sq('web/icon-192.png', 192, false, (s) => iconSvg('shaped', s)),
   sq('web/icon-512.png', 512, false, (s) => iconSvg('shaped', s)),
   sq('web/icon-maskable-512.png', 512, true, (s) => iconSvg('tile', s)),
-  // tvOS: layered app icon (back + front) and the top shelf, flattened copies alongside
-  ...[
-    ['icon', 400, 240],
-    ['icon@2x', 800, 480],
-    ['icon-app-store', 1280, 768],
-  ].flatMap(([name, w, h]) => [
-    img(`tvos/${name}-back.png`, w as number, h as number, true, () =>
-      backgroundSvg(w as number, h as number),
-    ),
-    img(`tvos/${name}-front.png`, w as number, h as number, false, () =>
-      bannerSvg(w as number, h as number, 0.56, { background: false }),
-    ),
-    img(`tvos/${name}.png`, w as number, h as number, true, () =>
-      bannerSvg(w as number, h as number, 0.56),
-    ),
-  ]),
-  ...[
-    ['top-shelf', 1920, 720],
-    ['top-shelf@2x', 3840, 1440],
-    ['top-shelf-wide', 2320, 720],
-    ['top-shelf-wide@2x', 4640, 1440],
-  ].map(([name, w, h]) =>
-    img(`tvos/${name}.png`, w as number, h as number, true, () =>
-      // the lockup keeps one size relative to the shelf's height: 30% of the 1920 shelf
-      bannerSvg(w as number, h as number, (576 * ((h as number) / 720)) / (w as number)),
-    ),
-  ),
+  // tvOS lives in the asset catalog: see apple.ts
   // Android TV / Google TV launcher banner
   img('android-tv/banner.png', 320, 180, true, () => bannerSvg(320, 180, 0.64)),
   img('android-tv/banner-xhdpi.png', 1280, 720, true, () => bannerSvg(1280, 720, 0.64)),

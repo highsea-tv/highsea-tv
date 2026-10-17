@@ -18,8 +18,8 @@ A disc over the horizon, cut by two swells. It is drawn on a 48-unit grid:
 
 ## The wordmark and lockup
 
-- **Wordmark:** lowercase `highsea` in Geist SemiBold, plus `.tv` in Geist Medium. Both are tracked −0.045em, with Geist's own kerning.
-  - In the logo files, `highsea` uses `text` (`#ededee`) and `.tv` uses `text-3` (`#a2a2a7`).
+- **Wordmark:** lowercase `highsea tv`. `highsea` is Geist SemiBold; a word space and `tv` follow in Geist Medium. All of it is tracked −0.045em, with Geist's own kerning. There is no dot.
+  - In the logo files, `highsea` uses `text` (`#ededee`) and `tv` uses `text-3` (`#a2a2a7`).
   - The letters are outlined, so the files never depend on an installed font.
 - **Lockup:** the mark sits in a box 1.15em square, 0.42em before the wordmark, with both vertically centered. These are the reference board's `.lockup` measurements.
   - In product UI, build the lockup from live text and `markSvg()` rather than the outlined file, so it stays crisp and selectable.
@@ -30,7 +30,7 @@ A disc over the horizon, cut by two swells. It is drawn on a 48-unit grid:
 | --- | --- |
 | `mark.svg`, `wordmark.svg`, `lockup.svg` | Default. Dark backgrounds (`bg` to `s4`, dark imagery). |
 | `*-mono.svg` | Single color. Everything is `currentColor`, so set the color where the logo is placed: embossing, watermarks, one-color print. |
-| `*-ink.svg` | Light backgrounds and print. Near-black `#0b0b0c`, with `.tv` in `#6e6e73`. |
+| `*-ink.svg` | Light backgrounds and print. Near-black `#0b0b0c`, with `tv` in `#6e6e73`. |
 | `mark-small*.svg` | The mark at 16–23px |
 
 ## Clear space and minimum size
@@ -48,7 +48,7 @@ A disc over the horizon, cut by two swells. It is drawn on a 48-unit grid:
   - The logo files and app icons always use the default Bone.
 - Don't add glows, outlines, shadows or a background disc. The app icon tile is the only container.
 - Don't stretch, rotate or re-space the lockup, and don't set the wordmark in another typeface.
-- Don't drop `.tv` from the wordmark. Use the mark alone when space is short.
+- Don't drop `tv` from the wordmark, and don't write it as `.tv`. Use the mark alone when space is short. The domain `highsea.tv` is still written with its dot in running text and URLs.
 - Don't put the mark inline in running text or redraw it at icon stroke weights ([iconography](../design-language/iconography.md#not-icons)).
 - **Server first.** In clients the server's identity leads. The highsea mark is used for launch, about screens and the server pill, not as decoration.
 
@@ -63,12 +63,13 @@ A disc over the horizon, cut by two swells. It is drawn on a 48-unit grid:
 
 | Platform | Files (`assets/icons/`) | Notes |
 | --- | --- | --- |
-| iOS, iPadOS | `ios/icon.png`, `icon-dark.png`, `icon-tinted.png` (1024) | Opaque, full-bleed tile. The system applies the mask. Dark is the mark on transparent. Tinted is a white mark on black, which the system tints. |
+| iOS, iPadOS, macOS (Xcode 26+) | `apple/AppIcon.icon` | **The primary Apple icon.** An Icon Composer document: the tile gradient as the fill and the outlined mark as one Liquid Glass layer. The system derives the dark, clear and tinted appearances. Add it to the Xcode target as is. |
+| iOS, iPadOS (flat) | `ios/icon.png`, `icon-dark.png`, `icon-tinted.png` (1024) | For tools that take flat images (Expo `ios.icon`, older Xcode). Opaque, full-bleed tile; the system applies the mask. Dark is the mark on transparent. Tinted is a white mark on black, which the system tints. |
 | Android | `android/adaptive-{foreground,background,monochrome}.png` (1024), `play-store.png` (512) | The adaptive foreground keeps the mark at 58% of the visible 72/108 area (38.7% of the canvas). Monochrome is for themed icons. |
-| macOS | `macos/icon-1024.png`, `desktop/icon.icns` | Apple's template: an 824/1024 rounded square (radius 185.4) with a drop shadow. |
+| macOS (flat) | `macos/icon-1024.png`, `desktop/icon.icns` | For macOS 15 and earlier, and Tauri. Apple's template: an 824/1024 rounded square (radius 185.4) with a drop shadow. |
 | Windows, Linux (Tauri) | `desktop/32x32.png`, `128x128.png`, `128x128@2x.png`, `icon.png` (512), `icon.ico` (16–256) | The shaped tile, inset by 1/16 so it sits evenly beside other desktop icons |
 | Web | `web/favicon.svg`, `favicon.ico` (16/32/48), `apple-touch-icon.png` (180), `icon-192.png`, `icon-512.png`, `icon-maskable-512.png`, `manifest.webmanifest` | Favicons draw the small mark |
-| tvOS | `tvos/icon{,@2x,-app-store}{-back,-front,}.png`, `top-shelf{,-wide}{,@2x}.png` | Layered app icons: back is the tile, front is the lockup at 56% of the width. Flattened copies sit alongside. Top shelf images carry the lockup at a fixed 30% of the 1920 shelf. |
+| tvOS | `tvos/App Icon & Top Shelf Image.brandassets` | Drop into an Xcode asset catalog. Two image stacks (the Home screen icon at 400×240 @1x/@2x and the App Store icon at 1280×768), each with a **Back** layer (the tile) and a **Front** layer (the lockup at 56% of the width, transparent), so the icon gets the system's parallax. Xcode compiles them to the runtime `.lsr` format. The top shelf images (1920×720 and the wide 2320×720, @1x/@2x) carry the lockup at a fixed 30% of the 1920 shelf. |
 | Android TV, Google TV | `android-tv/banner.png` (320×180), `banner-xhdpi.png` (1280×720) | The lockup at 64% of the width |
 | LG webOS | `webos/icon-80.png`, `icon-130.png` | `icon` and `largeIcon` in `appinfo.json` |
 | Samsung Tizen | `tizen/icon.png` (512×423) | |
@@ -77,12 +78,14 @@ A disc over the horizon, cut by two swells. It is drawn on a 48-unit grid:
 
 PNGs that platforms require to be opaque (the App Store icon and the full-bleed tiles) are written without an alpha channel.
 
-**Not yet covered:**
-- Apple's layered Icon Composer (`.icon`) format;
-- Windows Store tile logos;
-- tvOS image stacks (`.lsr`).
+**Verified with Apple's tools.**
+- `ictool` renders `AppIcon.icon` correctly in every iOS appearance (default, dark, clear, tinted) and on macOS.
+- `actool` compiles it for iPhone, iPad and macOS without warnings.
+- `actool` compiles the tvOS brand assets for Apple TV without warnings: both icons become layered image stacks, and the top shelf images register as the primary and wide shelf images.
 
-These are produced from the same builders when the client apps are set up (Phase 4).
+**Not yet covered:** Windows Store tile logos. They are produced from the same builders when the desktop app is set up (Phase 4).
+
+**The outlined mark.** Icon Composer and the tvOS layers use `markOutline()`: the mark as three filled pieces with the swells as real gaps rather than a mask. It matches the masked mark to within anti-aliasing at 1024px.
 
 ## Fonts and sounds
 

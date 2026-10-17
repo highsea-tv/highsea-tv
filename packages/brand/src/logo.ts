@@ -6,19 +6,19 @@ import { MARK_GRID, type MarkPaint, markElements } from './mark.ts'
 import { wordmarkOutline } from './wordmark-data.ts'
 
 export type LogoPaint =
-  /** Bone mark, `text` name and `text-3` `.tv`, for dark backgrounds. */
+  /** Bone mark, `text` name and `text-3` `tv`, for dark backgrounds. */
   | 'brand'
   /** Everything `currentColor`, for single-color use. */
   | 'mono'
   /** Near-black, for light backgrounds and print. */
   | 'ink'
 
-export const INK = { name: defaultTheme.colors.bg, tld: '#6e6e73' } as const
+export const INK = { name: defaultTheme.colors.bg, tv: '#6e6e73' } as const
 
-const PAINTS: Record<LogoPaint, { mark: MarkPaint; name: string; tld: string }> = {
-  brand: { mark: 'bone', name: defaultTheme.colors.text, tld: defaultTheme.colors['text-3'] },
-  mono: { mark: 'mono', name: 'currentColor', tld: 'currentColor' },
-  ink: { mark: { solid: INK.name }, name: INK.name, tld: INK.tld },
+const PAINTS: Record<LogoPaint, { mark: MarkPaint; name: string; tv: string }> = {
+  brand: { mark: 'bone', name: defaultTheme.colors.text, tv: defaultTheme.colors['text-3'] },
+  mono: { mark: 'mono', name: 'currentColor', tv: 'currentColor' },
+  ink: { mark: { solid: INK.name }, name: INK.name, tv: INK.tv },
 }
 
 /** Lockup layout in em (the wordmark's font size), as on the reference board's `.lockup`. */
@@ -45,9 +45,9 @@ function svg(box: Box, body: string, title?: string) {
 
 function words(paint: LogoPaint, dx = 0, dy = 0) {
   const p = PAINTS[paint]
-  const [name, tld] = wordmarkOutline.paths
+  const [name, tv] = wordmarkOutline.paths
   const move = dx || dy ? ` transform="translate(${r2(dx)} ${r2(dy)})"` : ''
-  return `<g${move}><path fill="${p.name}" d="${name}"/><path fill="${p.tld}" d="${tld}"/></g>`
+  return `<g${move}><path fill="${p.name}" d="${name}"/><path fill="${p.tv}" d="${tv}"/></g>`
 }
 
 /** The wordmark alone, cropped to its ink. Units are 100 per em. */

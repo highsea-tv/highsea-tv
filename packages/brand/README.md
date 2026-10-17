@@ -8,7 +8,7 @@ The highsea logo, app icons, fonts and default sounds. Usage rules, the icon spe
 | --- | --- |
 | `@highsea/brand` | SVG builders (`markSvg`, `wordmarkSvg`, `lockupSvg`, `iconSvg`), the icon list, font names and sound file names |
 | `@highsea/brand/logo/*` | `mark`, `mark-small`, `wordmark` and `lockup` SVGs, each with `-mono` and `-ink` variants |
-| `@highsea/brand/icons/*` | App icons for iOS, Android, macOS, desktop, web, tvOS, Android TV, webOS and Tizen, plus the link preview and splash images |
+| `@highsea/brand/icons/*` | App icons for iOS, Android, macOS, desktop, web, tvOS, Android TV, webOS and Tizen, plus the link preview and splash images. Apple platforms get their source formats: an Icon Composer document (`apple/AppIcon.icon`) and the tvOS brand assets with layered image stacks. |
 | `@highsea/brand/fonts.css` | `@font-face` for Geist and Geist Mono (variable `woff2`) |
 | `@highsea/brand/fonts/*` | The font files and their license (`OFL.txt`) |
 | `@highsea/brand/sounds/*` | The default sound pack as 48 kHz, 16-bit mono WAV, one file per event |
@@ -43,5 +43,5 @@ SOUND_FILES.select // 'felt-select.wav'
 
 - **Mark:** the geometry in `src/mark.ts` is the signed-off reference board's.
 - **Wordmark:** outlined from Geist by `scripts/outline.ts` into `src/wordmark-data.ts`.
-- **Icons:** `src/icons.ts` describes every image. `scripts/build.ts` rasterizes them with resvg and writes the PNG, ICO and ICNS files itself.
+- **Icons:** `src/icons.ts` describes every image, and `src/apple.ts` the Apple documents. `scripts/build.ts` rasterizes them with resvg and writes the PNG, ICO and ICNS files itself.
 - **Sounds:** rendered from the recipes in `@highsea/tokens`, which remain the source ([`design/assets/sounds`](../../design/assets/sounds/README.md)).

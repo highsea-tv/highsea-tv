@@ -14,7 +14,7 @@ Both are licensed under SIL OFL 1.1 and are bundled with the apps by `@highsea/b
 | Weight | Use |
 | --- | --- |
 | 400 | Body and UI text |
-| 500 | Buttons (secondary), nav items, the wordmark's `.tv` |
+| 500 | Buttons (secondary), nav items, the wordmark's `tv` |
 | 600 | Display, headings, titles, filled-button labels, badges |
 
 - 700 isn't used. Hierarchy comes from size and color first.

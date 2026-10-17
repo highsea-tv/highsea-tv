@@ -5,13 +5,15 @@ import { defaultTheme } from '@highsea/tokens'
 
 export const MARK_GRID = 48
 
+/** One swell: a crest then a trough across the full width, from (1, y) to (47, y). */
+export const swellPath = (y: number) => `M1 ${y}c7.7-4.4 15.3-4.4 23 0s15.3 4.4 23 0`
+
 export const markGeometry = {
   disc: { cx: 24, cy: 24, r: 21 },
+  /** Baselines of the two swells. */
+  swellY: [29.5, 37],
   /** Each swell is one stroked wave across the disc; the stroke is cut out of the disc. */
-  swells: [
-    'M1 29.5c7.7-4.4 15.3-4.4 23 0s15.3 4.4 23 0',
-    'M1 37c7.7-4.4 15.3-4.4 23 0s15.3 4.4 23 0',
-  ],
+  swells: [swellPath(29.5), swellPath(37)],
   cut: 3.2,
   /** Heavier cuts keep the swells open at 16–24px. */
   cutSmall: 4.2,
