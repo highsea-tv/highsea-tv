@@ -10,7 +10,8 @@
       "!packages/tokens/generated",
       "!packages/brand/assets",
       "!packages/brand/fonts",
-      "!packages/brand/src/wordmark-data.ts"
+      "!packages/brand/src/wordmark-data.ts",
+      "!packages/ui-web/src/icons/glyphs.ts"
     ]
   },
   "formatter": {
@@ -19,6 +20,7 @@
     "indentWidth": 2,
     "lineWidth": 100
   },
+  "css": { "parser": { "tailwindDirectives": true } },
   "javascript": {
     "formatter": { "quoteStyle": "single", "semicolons": "asNeeded", "trailingCommas": "all" }
   },
@@ -28,6 +30,10 @@
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },
   "overrides": [
+    {
+      "includes": ["design/assets/icons/**"],
+      "linter": { "rules": { "a11y": { "noSvgWithoutTitle": "off" } } }
+    },
     {
       "includes": ["design/explorations/**"],
       "linter": {

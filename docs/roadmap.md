@@ -129,6 +129,8 @@ Everything later depends on this, so it comes first and is finalized before any 
    - media components: Poster, Backdrop hero, Carousel row, Rating;
    - shell components: Sidebar, CommandPalette, WidgetFrame, Banner;
    - focus-complete, with reduced-motion support.
+
+   **✅ Built (2026-10-16), awaiting review.** See [`packages/ui-web`](../packages/ui-web/README.md). It also has Menu, Switch, Checkbox, SegmentedControl, the `Icon` set with the custom glyphs, browser UI sound, and the TV spatial navigator. Behavior, axe and stylesheet tests run with `bun test`.
 7. **`apps/storybook`**: the living style guide for tokens, themes, components, motion and a sound board, with a theme switcher and a11y addon.
 
 **Exit criteria**: direction chosen and refined, docs written, tokens/brand/ui-web core published in the repo, Storybook running, user sign-off → design system **v1.0**.

@@ -21,10 +21,10 @@
 
 These are drawn to Lucide's rules (24 grid, 2px padding, the same stroke, round caps) only where Lucide has no fitting icon:
 
-- **Media types:** movie, series, music, book, audiobook, podcast, online video. Check Lucide first: `film`, `tv`, `music`, `book`, `headphones`, `podcast` and `clapperboard` may already cover them.
 - **Domain:** indexer, seeding (an upload with a leaf), subtitle sync (captions with a waveform), catalog.
+- **Media types use Lucide**, which covers them: `film` (movie), `tv` (series), `music`, `book`, `headphones` (audiobook), `podcast` and `monitor-play` (online video).
 
-Sources live in `design/assets/icons`. `@highsea/ui-web` ships them with the Lucide subset through one `Icon` component.
+Sources live in `design/assets/icons`. `@highsea/ui-web` ships them with the Lucide subset through one `Icon` component, by semantic name (`<Icon name="seeding" />`), so a glyph can be redrawn or swapped without touching product code.
 
 ## Not icons
 

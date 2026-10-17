@@ -1,0 +1,215 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/*
+ * @highsea/ui-web: the Tailwind entry for apps. Import this one file; add `@source` lines for the
+ * app's own files. Values come from @highsea/tokens; rules from docs/design-language/.
+ */
+@import "tailwindcss";
+@import "@highsea/tokens/tailwind.css";
+@import "@highsea/brand/fonts.css";
+
+@source "./";
+
+/* ---------- motion ---------- */
+
+@theme {
+  /* overlays rise with spring.base and leave with a 140ms fade (motion.md#choreography) */
+  --animate-fade-in: hs-fade-in var(--duration-reduced-fade) var(--ease-out) both;
+  --animate-fade-out: hs-fade-out var(--duration-fade-out) linear both;
+  --animate-dialog-in: hs-dialog-in var(--duration-spring) var(--ease-spring) both;
+  --animate-pop-in: hs-pop-in var(--duration-spring) var(--ease-spring) both;
+  --animate-sheet-in-bottom: hs-sheet-in-bottom var(--duration-spring) var(--ease-spring) both;
+  --animate-sheet-in-right: hs-sheet-in-right var(--duration-spring) var(--ease-spring) both;
+  --animate-sheet-in-left: hs-sheet-in-left var(--duration-spring) var(--ease-spring) both;
+  --animate-toast-in: hs-toast-in var(--duration-spring) var(--ease-spring) both;
+  --animate-shimmer: hs-shimmer 1.6s linear infinite;
+  --animate-indeterminate: hs-indeterminate 1.4s var(--ease-out) infinite;
+
+  @keyframes hs-fade-in {
+    from {
+      opacity: 0;
+    }
+  }
+  @keyframes hs-fade-out {
+    to {
+      opacity: 0;
+    }
+  }
+  @keyframes hs-dialog-in {
+    from {
+      opacity: 0;
+      scale: 0.98;
+    }
+  }
+  @keyframes hs-pop-in {
+    from {
+      opacity: 0;
+      scale: 0.98;
+    }
+  }
+  @keyframes hs-sheet-in-bottom {
+    from {
+      translate: 0 100%;
+    }
+  }
+  @keyframes hs-sheet-in-right {
+    from {
+      translate: 100% 0;
+    }
+  }
+  @keyframes hs-sheet-in-left {
+    from {
+      translate: -100% 0;
+    }
+  }
+  @keyframes hs-toast-in {
+    from {
+      opacity: 0;
+      translate: 0 14px;
+    }
+  }
+  @keyframes hs-shimmer {
+    from {
+      background-position: 100% 0;
+    }
+    to {
+      background-position: -100% 0;
+    }
+  }
+  @keyframes hs-indeterminate {
+    from {
+      translate: -100% 0;
+    }
+    to {
+      translate: 250% 0;
+    }
+  }
+}
+
+/* Press feedback: scale on spring.quick, color on duration.color. */
+@utility transition-press {
+  transition-property:
+    scale, translate, transform, background-color, border-color, color, box-shadow, filter, opacity;
+  transition-duration:
+    var(--duration-spring-quick), var(--duration-spring-quick), var(--duration-spring-quick),
+    var(--duration-color), var(--duration-color), var(--duration-color), var(--duration-color),
+    var(--duration-color), var(--duration-color);
+  transition-timing-function:
+    var(--ease-spring-quick), var(--ease-spring-quick), var(--ease-spring-quick), var(--ease-out),
+    var(--ease-out), var(--ease-out), var(--ease-out), var(--ease-out), var(--ease-out);
+}
+
+/* Focus and hover lift: scale and translate on spring.base, color on duration.color. */
+@utility transition-lift {
+  transition-property:
+    scale, translate, transform, background-color, border-color, color, box-shadow, filter, opacity;
+  transition-duration:
+    var(--duration-spring), var(--duration-spring), var(--duration-spring), var(--duration-color),
+    var(--duration-color), var(--duration-color), var(--duration-color), var(--duration-color),
+    var(--duration-color);
+  transition-timing-function:
+    var(--ease-spring), var(--ease-spring), var(--ease-spring), var(--ease-out), var(--ease-out),
+    var(--ease-out), var(--ease-out), var(--ease-out), var(--ease-out);
+}
+
+/* State color changes only. */
+@utility transition-tint {
+  transition-property: background-color, border-color, color, box-shadow, opacity, width;
+  transition-duration: var(--duration-color);
+  transition-timing-function: var(--ease-out);
+}
+
+/* The focus ring for elements whose own outline is clipped: drawn inside the box. */
+@utility focus-ring-inset {
+  &:focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: calc(var(--focus-ring-width) * -1);
+  }
+}
+
+/* Translucent chrome over moving or image content, with a solid fallback (elevation.md#blur). */
+@utility glass-bar {
+  background: color-mix(in srgb, var(--color-bg) 96%, transparent);
+  @supports (backdrop-filter: blur(1px)) {
+    background: color-mix(in srgb, var(--color-bg) 82%, transparent);
+    backdrop-filter: blur(var(--blur-bar)) saturate(var(--blur-bar-saturate));
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    background: color-mix(in srgb, var(--color-bg) 96%, transparent);
+    backdrop-filter: none;
+  }
+}
+
+@utility glass-scrim {
+  background: color-mix(in srgb, var(--color-bg) 60%, transparent);
+  backdrop-filter: blur(var(--blur-scrim));
+  @media (prefers-reduced-transparency: reduce) {
+    background: color-mix(in srgb, var(--color-bg) 85%, transparent);
+    backdrop-filter: none;
+  }
+}
+
+@utility glass-badge {
+  background: rgb(0 0 0 / 0.45);
+  backdrop-filter: blur(var(--blur-badge));
+  @media (prefers-reduced-transparency: reduce) {
+    background: rgb(0 0 0 / 0.8);
+    backdrop-filter: none;
+  }
+}
+
+/* ---------- base ---------- */
+
+:root {
+  /* hover and keyboard focus scale for posters and tiles; TV builds use the TV scale */
+  --scale-poster: 1.04;
+  --scale-button: 1;
+}
+
+[data-platform="tv"] {
+  --scale-poster: var(--tv-scale-poster);
+  --scale-button: var(--tv-scale-button);
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+    background: var(--color-bg);
+    color: var(--color-text);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* the one focus ring: 2px `focus`, 2px offset (accessibility.md#operable) */
+  :focus-visible {
+    outline: var(--focus-ring-width) solid var(--color-focus);
+    outline-offset: var(--focus-ring-offset);
+  }
+
+  ::selection {
+    background: var(--color-accent-soft);
+    color: var(--color-text);
+  }
+
+  /* figures that change or get compared are tabular (typography.md#figures) */
+  .font-mono,
+  td,
+  [data-figures] {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Reduced motion keeps opacity changes of 150ms or less and drops the rest (motion.md). */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --scale-poster: 1;
+    --scale-button: 1;
+  }
+}
+
+/* The focus ring as a utility, for rings drawn on a child of the focused element. */
+@utility ring-focus {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
