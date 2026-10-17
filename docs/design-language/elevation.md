@@ -20,6 +20,7 @@ The shadows come from the reference board: level 2 is the segmented-control thum
   - `line` on level-1 surfaces;
   - `line-strong` on inputs and on the admin frame;
   - no border on levels 3–4 when the shadow already separates them.
+- **Text on `s4`:** use `text` only. `text-2` and `text-3` fall just short of their minimums there (Lc 69 and 49), so secondary content in menus and popovers sits on `s3` or uses `text`.
 
 ## Blur
 

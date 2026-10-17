@@ -27,7 +27,7 @@ These values are locked in [direction.md](../brand/direction.md#shape).
 | Token | px | Use |
 | --- | --- | --- |
 | `radius-sm` | 8 | Buttons, inputs, nav items, small controls |
-| `radius` | 12 | Widgets, popovers, menus |
+| `radius-md` | 12 | Widgets, popovers, menus |
 | `radius-lg` | 16 | Cards, panels, the admin frame |
 | `radius-xl` | 28 | Sheets, large modals |
 | `radius-poster` | 10 | Posters and stills (scaled on TV, see platform guide) |

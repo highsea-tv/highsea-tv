@@ -87,6 +87,7 @@ Every theme, built-in or custom, must pass these checks against its rendered col
 | Badges | 60 | |
 
 - **Method:** APCA (0.0.98G) is the gate, with the WCAG 2 ratio reported alongside. Measure each pairing over the backdrop it actually sits on. The reference board's audit does this live.
+- **Automated audit:** `auditTheme()` in `@highsea/tokens` checks every built-in and custom theme. Text roles are measured on `bg` through `s3` (`s4` carries `text` only; see [elevation](elevation.md#elevation-is-tone-first-shadow-second)), accent text on `bg` and `s1`, and buttons and badges on `s1`. The weakest surface decides.
 - **Default theme results:**
   - text Lc 96;
   - text-2 72;
@@ -104,7 +105,7 @@ The theme engine (`@highsea/tokens`) ships three built-in themes. All three pass
 | --- | --- |
 | **Default** | The locked Abyss Neutral (Bone) values |
 | **OLED black** | `bg` is `#000000`. Surfaces step up from about `#0b0b0c` so cards still separate. Everything else is unchanged |
-| **High contrast** | `text-2` and `text-3` meet Lc 75. `line-strong` is about 30% white. Badges mix at 85% toward `text`. Focus rings are 1.5× wider |
+| **High contrast** | `text-2` (`#dedee1`) and `text-3` (`#d2d2d5`) meet Lc 75 on every surface. `line-strong` is 30% white. Badge labels take a 40% status share (30% for danger), so they reach Lc 75. Focus rings are 1.5× wider |
 
 ## Custom themes and server branding
 

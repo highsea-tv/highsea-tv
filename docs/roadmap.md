@@ -116,6 +116,8 @@ Everything later depends on this, so it comes first and is finalized before any 
    - a platform-agnostic token source (color roles, type, space, radius, elevation, blur, density, breakpoints, focus rings, **motion tokens** shared by Motion and Reanimated, **sound tokens**);
    - build outputs: CSS vars + Tailwind v4 `@theme` preset, and a typed RN object;
    - the **theme engine**: a theme is a validated partial override with contrast checks. It ships built-in themes (default dark, OLED black, high contrast) and supports custom themes with share codes.
+
+   **✅ Done (2026-10-16).** See [`packages/tokens`](../packages/tokens/README.md).
 5. **`@highsea/brand`**:
    - final logo, wordmark, app icons (all platform sizes), favicon;
    - fonts;

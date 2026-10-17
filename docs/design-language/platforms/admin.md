@@ -29,7 +29,7 @@ This layout is locked in [direction.md](../../brand/direction.md#layouts).
 - **Widget grid:**
   - 4 columns with a 12px gap; widgets span 1 or 2 columns;
   - the default arrangement is Network (2), Storage, Indexers, Subtitles, Upcoming (2), Announcement;
-  - widgets use `s1`, a `line` border, `radius`, and 14px padding.
+  - widgets use `s1`, a `line` border, `radius-md`, and 14px padding.
 - **Queue:** full width below the widgets, in a card with a header (title, live summary, filter tabs) and the queue table.
 
 ### Customizing

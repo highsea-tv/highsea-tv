@@ -20,13 +20,14 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 
 | Region | Position / size |
 | --- | --- |
-| Server identity (mark + server name) | Top 2.2u, left 4.5u (move to top 3.2u; see safe area) |
-| Announcement pill | Top 2.2u, right 3u (move to top 3.2u, right 4.5u) |
+| Server identity (mark + server name) | Top 3.2u, left 4.5u |
+| Announcement pill | Top 3.2u, right 4.5u |
 | Hero artwork | Full width, top 62% of the screen; two layers that cross-fade |
 | Hero copy (eyebrow, title, meta, synopsis, actions) | Left 4.5u, top 7.5u, max width 38u |
 | Rows | Bottom 47% of the screen, left inset 4.5u, bleeding off the right edge |
 | Poster | 10.5u wide (2:3), with a 1.2u gap |
 | Wide tile (continue watching) | 16:9 with a progress bar 7% in from the edges |
+| Radii | Posters and buttons 0.5u (≈ 10px at 1080p); quality pills 0.3u |
 
 **Safe area.**
 - Text and focusable items stay at least 4.5u (≈ 86px) from the left and right edges, and 3.2u (≈ 61px) from the top and bottom. This meets the tvOS guideline of 80 × 60px.
