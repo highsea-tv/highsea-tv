@@ -134,6 +134,7 @@ export type MediaItem = {
   type: MediaType
   parentId: string | null
   title: string
+  originalTitle?: string | null
   sortTitle: string
   year: number
   runtimeMinutes: number
@@ -151,6 +152,7 @@ export type MediaItem = {
   releaseDate: ISODate
   status: MediaStatus
   versions: MediaVersion[]
+  quality: string[]
   art: { poster: string; backdrop: string; still: string }
 }
 
@@ -218,6 +220,69 @@ export type CustomFormat = {
 }
 
 export type DecisionReason = { kind: 'accepted' | 'rejected' | 'warning'; message: string }
+
+/** A discoverable movie (TMDB catalog simulation). */
+export type DiscoverMovie = {
+  id: string
+  tmdbId: number
+  title: string
+  year: number
+  runtimeMinutes: number
+  genres: string[]
+  synopsis: string
+  rating: number
+  releaseDate: ISODate
+  art: { poster: string; backdrop: string; still: string }
+  inLibrary: boolean
+}
+
+export type AddMovieInput = {
+  tmdbId?: number
+  title: string
+  year: number
+  rootFolder: string
+  qualityProfileId: string
+  languageProfileId: string
+  monitored: boolean
+  minimumAvailability: MinimumAvailability
+  searchNow?: boolean
+}
+
+export type SubtitleSearchResult = {
+  id: string
+  language: string
+  releaseName: string
+  provider: string
+  score: number
+  forced: boolean
+  hi: boolean
+  format: 'srt' | 'ass' | 'vtt'
+}
+
+export type SubtitleProvider = {
+  id: string
+  name: string
+  enabled: boolean
+  rateLimitRemaining: number
+  rateLimitMax: number
+  requiresAuth: boolean
+  username?: string
+}
+
+export type TorrentLimits = {
+  downRateLimit: number
+  upRateLimit: number
+  vpnConnected: boolean
+  vpnInterface: string
+  vpnIp: string
+}
+
+export type AddTorrentInput = {
+  urlOrMagnet: string
+  category: string
+  savePath: string
+  startImmediately?: boolean
+}
 
 /** A search result with the decision engine's verdict and its reasons. */
 export type Release = {
@@ -618,10 +683,12 @@ export type ServerEvent =
   | { type: 'torrents.updated' }
   | { type: 'queue.changed' }
   | { type: 'item.updated'; id: string }
+  | { type: 'movies.updated' }
+  | { type: 'history.updated' }
   | { type: 'jobs.updated' }
   | { type: 'indexers.updated' }
   | { type: 'health.updated' }
-  | { type: 'subtitles.updated'; itemId: string }
+  | { type: 'subtitles.updated'; itemId?: string }
   | { type: 'announcements.updated' }
   | { type: 'layout.updated' }
   | { type: 'server.updated' }

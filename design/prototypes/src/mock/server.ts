@@ -1,18 +1,28 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // An in-memory highsea server: state, the handlers behind each API call, and a simulation driven by
 // the clock. Screens never touch this directly; they go through the client (client.ts).
+import { backdropArt, posterArt, stillArt } from '@highsea/fixtures'
 import { type Clock, createEmitter, createRandom, type Emitter, iso } from './clock.ts'
-import { MB, type ServerState, seed } from './seed.ts'
+import { GB, MB, type ServerState, seed } from './seed.ts'
 import type {
+  AddMovieInput,
+  AddTorrentInput,
   Announcement,
+  DiscoverMovie,
   HardlinkCheck,
+  Indexer,
+  LanguageProfile,
   MediaFile,
   MediaItem,
   QueueItem,
+  Release,
   SetupInput,
   SignInResult,
+  SubtitleSearchResult,
   SubtitleStats,
+  SubtitleTrack,
   Torrent,
+  TorrentLimits,
   User,
   UserRole,
   WidgetLayout,
@@ -80,6 +90,90 @@ export const memoryStorage = (): Storage => {
     load: (k) => (m.has(k) ? JSON.parse(m.get(k) as string) : undefined),
     save: (k, v) => void (v === undefined ? m.delete(k) : m.set(k, JSON.stringify(v))),
   }
+}
+
+function setItemStatus(state: ServerState, id: string | null, status: MediaItem['status']) {
+  const m = state.items.find((x) => x.id === id)
+  if (m) m.status = status
+}
+
+function fileFor(state: ServerState, m: MediaItem): MediaFile | undefined {
+  const v = [...m.versions].reverse().find((x) => x.fileId)
+  return state.files.find((f) => f.id === v?.fileId)
+}
+
+function importTorrent(state: ServerState, clock: Clock, t: Torrent, m: MediaItem, now: number) {
+  if (t.files.some((f) => /\.(exe|lnk|scr|zipx)$/i.test(f.path))) {
+    t.state = 'import-blocked'
+    t.stateReason = 'The release contains an executable file. It wasn’t imported.'
+    return
+  }
+  t.state = 'seeding'
+  t.upRate = 600_000
+  const version = m.versions.find((v) => !v.fileId) ?? m.versions[m.versions.length - 1]
+  if (version) {
+    const uhd = t.name.includes('2160p')
+    const f: MediaFile = {
+      id: `f-${version.id}`,
+      itemId: m.id,
+      versionId: version.id,
+      path: `${m.path}/${m.title.replace(/[:/]/g, '')} (${m.year}) [${uhd ? '2160p' : '1080p'}].mkv`,
+      size: t.size - 40 * MB,
+      quality: {
+        resolution: uhd ? '2160p' : '1080p',
+        source: uhd ? 'WEB-DL' : 'Bluray',
+        codec: uhd ? 'HEVC' : 'x264',
+      },
+      releaseGroup: null,
+      sceneName: t.name,
+      addedAt: iso(now),
+      streams: [
+        {
+          index: 0,
+          type: 'video',
+          codec: uhd ? 'hevc' : 'h264',
+          width: uhd ? 3840 : 1920,
+          height: uhd ? 2160 : 1080,
+          hdr: t.name.includes('HDR') ? 'hdr10' : 'none',
+          bitrate: uhd ? 28_000_000 : 9_000_000,
+        },
+        {
+          index: 1,
+          type: 'audio',
+          codec: 'eac3',
+          language: 'en',
+          channels: '5.1',
+          title: null,
+          default: true,
+        },
+      ],
+    }
+    state.files = state.files.filter((x) => x.id !== f.id)
+    state.files.push(f)
+    version.fileId = f.id
+  }
+  m.status = 'available'
+  addHistory(state, clock, m, 'imported', `Hardlinked to ${m.path}`, t)
+}
+
+function addHistory(
+  state: ServerState,
+  clock: Clock,
+  m: MediaItem,
+  type: ServerState['history'][number]['type'],
+  message: string,
+  t?: Torrent,
+) {
+  state.history.unshift({
+    id: `h-${type}-${m.id}-${clock.now()}`,
+    itemId: m.id,
+    type,
+    date: iso(clock.now()),
+    sourceTitle: t?.name ?? m.title,
+    quality: t?.quality ?? null,
+    indexer: t?.indexer ?? null,
+    message,
+  })
 }
 
 export function createServer(
@@ -153,7 +247,7 @@ export function createServer(
     if (next && active < ACTIVE_DOWNLOADS) {
       next.state = 'downloading'
       baseRate.set(next.id, 6.5 * MB)
-      setItemStatus(next.itemId, 'downloading')
+      setItemStatus(state, next.itemId, 'downloading')
       queueChanged = torrentsChanged = true
     }
 
@@ -165,7 +259,7 @@ export function createServer(
       const m = state.items.find((x) => x.id === p.itemId)
       if (!t || !m) continue
       if (p.stage === 'importing') {
-        importTorrent(t, m, now)
+        importTorrent(state, clock, t, m, now)
         state.pipeline.push({
           ...p,
           stage: 'subtitle-search',
@@ -174,7 +268,7 @@ export function createServer(
         queueChanged = torrentsChanged = true
         events.emit({ type: 'item.updated', id: m.id })
       } else if (p.stage === 'subtitle-search') {
-        const f = fileFor(m)
+        const f = fileFor(state, m)
         if (f && m.year >= 1930) {
           state.subtitles.push({
             id: `st-${f.id}-en`,
@@ -190,7 +284,13 @@ export function createServer(
             sync: { status: 'syncing', confidence: null, offsetMs: 0 },
             path: f.path.replace(/\.mkv$/, '.en.srt'),
           })
-          addHistory(m, 'subtitle-downloaded', 'English subtitles from OpenSubtitles (score 96)')
+          addHistory(
+            state,
+            clock,
+            m,
+            'subtitle-downloaded',
+            'English subtitles from OpenSubtitles (score 96)',
+          )
           state.pipeline.push({
             ...p,
             stage: 'subtitle-sync',
@@ -203,6 +303,8 @@ export function createServer(
         if (track) {
           track.sync = { status: 'synced', confidence: 0.93, offsetMs: -1840 }
           addHistory(
+            state,
+            clock,
             m,
             'subtitle-synced',
             'Synced to the audio: moved 1.84 s earlier, confidence 0.93',
@@ -284,88 +386,6 @@ export function createServer(
     }
   }
 
-  function setItemStatus(id: string | null, status: MediaItem['status']) {
-    const m = state.items.find((x) => x.id === id)
-    if (m) m.status = status
-  }
-
-  function fileFor(m: MediaItem): MediaFile | undefined {
-    const v = [...m.versions].reverse().find((x) => x.fileId)
-    return state.files.find((f) => f.id === v?.fileId)
-  }
-
-  function importTorrent(t: Torrent, m: MediaItem, now: number) {
-    if (t.files.some((f) => /\.(exe|lnk|scr|zipx)$/i.test(f.path))) {
-      t.state = 'import-blocked'
-      t.stateReason = 'The release contains an executable file. It wasn’t imported.'
-      return
-    }
-    t.state = 'seeding'
-    t.upRate = 600_000
-    const version = m.versions.find((v) => !v.fileId) ?? m.versions[m.versions.length - 1]
-    if (version) {
-      const uhd = t.name.includes('2160p')
-      const f: MediaFile = {
-        id: `f-${version.id}`,
-        itemId: m.id,
-        versionId: version.id,
-        path: `${m.path}/${m.title.replace(/[:/]/g, '')} (${m.year}) [${uhd ? '2160p' : '1080p'}].mkv`,
-        size: t.size - 40 * MB,
-        quality: {
-          resolution: uhd ? '2160p' : '1080p',
-          source: uhd ? 'WEB-DL' : 'Bluray',
-          codec: uhd ? 'HEVC' : 'x264',
-        },
-        releaseGroup: null,
-        sceneName: t.name,
-        addedAt: iso(now),
-        streams: [
-          {
-            index: 0,
-            type: 'video',
-            codec: uhd ? 'hevc' : 'h264',
-            width: uhd ? 3840 : 1920,
-            height: uhd ? 2160 : 1080,
-            hdr: t.name.includes('HDR') ? 'hdr10' : 'none',
-            bitrate: uhd ? 28_000_000 : 9_000_000,
-          },
-          {
-            index: 1,
-            type: 'audio',
-            codec: 'eac3',
-            language: 'en',
-            channels: '5.1',
-            title: null,
-            default: true,
-          },
-        ],
-      }
-      state.files = state.files.filter((x) => x.id !== f.id)
-      state.files.push(f)
-      version.fileId = f.id
-    }
-    m.status = 'available'
-    addHistory(m, 'imported', `Hardlinked to ${m.path}`, t)
-  }
-
-  function addHistory(
-    m: MediaItem,
-    type: ServerState['history'][number]['type'],
-    message: string,
-    t?: Torrent,
-  ) {
-    state.history.unshift({
-      id: `h-${type}-${m.id}-${clock.now()}`,
-      itemId: m.id,
-      type,
-      date: iso(clock.now()),
-      sourceTitle: t?.name ?? m.title,
-      quality: t?.quality ?? null,
-      indexer: t?.indexer ?? null,
-      message,
-    })
-  }
-
   const unsubscribe = clock.onAdvance((dt) => step(dt))
   return { kind, state, clock, events, step, dispose: unsubscribe }
 }
@@ -378,6 +398,154 @@ export type Ctx = { userId: string; storage?: Storage }
  * The handlers behind each API call, grouped as @highsea/sdk will group them. Each returns plain
  * data; the client makes them async and applies the toolbar's data state.
  */
+function generateReleases(m: MediaItem, state: ServerState): Release[] {
+  const isUhd = m.versions.some((v) => v.qualityProfileId === 'qp-uhd') || m.quality.includes('4K')
+  const cleanTitle = m.title.replace(/[^\w\s]/gi, '').replace(/\s+/g, '.')
+  const availableIndexers = state.indexers.filter((i) => i.enabled).map((i) => i.name)
+  const ix = (n: number, fallback: string) =>
+    availableIndexers[n % availableIndexers.length] ?? fallback
+
+  return [
+    {
+      guid: `rel-${m.id}-1`,
+      title: `${cleanTitle}.${m.year}.2160p.WEB-DL.DDP5.1.Atmos.DV.HDR.H.265-FLUX`,
+      indexerId: 'ix-anchorage',
+      indexer: ix(0, 'Anchorage'),
+      size: 14.8 * GB,
+      seeders: 86,
+      leechers: 12,
+      ageHours: 18,
+      quality: 'WEB 2160p',
+      customFormats: ['Dolby Vision', 'HDR10', 'x265'],
+      formatScore: 2600,
+      approved: isUhd,
+      reasons: isUhd
+        ? [
+            { kind: 'accepted', message: 'Matches target WEB 2160p' },
+            { kind: 'accepted', message: 'Dolby Vision format score +1500' },
+            { kind: 'accepted', message: 'HDR10 format score +1000' },
+            { kind: 'accepted', message: 'x265 codec bonus +100' },
+          ]
+        : [{ kind: 'rejected', message: 'Quality WEB 2160p is not allowed in HD-1080p profile' }],
+    },
+    {
+      guid: `rel-${m.id}-2`,
+      title: `${cleanTitle}.${m.year}.1080p.BluRay.x264.DTS-HD.MA.5.1-EPSiLON`,
+      indexerId: 'ix-driftnet',
+      indexer: ix(1, 'Driftnet'),
+      size: 8.4 * GB,
+      seeders: 42,
+      leechers: 5,
+      ageHours: 120,
+      quality: 'Bluray 1080p',
+      customFormats: ['DTS-HD MA'],
+      formatScore: 400,
+      approved: true,
+      reasons: [
+        { kind: 'accepted', message: 'Matches Bluray 1080p' },
+        { kind: 'accepted', message: 'DTS-HD MA audio format score +400' },
+      ],
+    },
+    {
+      guid: `rel-${m.id}-3`,
+      title: `${cleanTitle}.${m.year}.1080p.WEB-DL.AAC2.0.H.264-NTb`,
+      indexerId: 'ix-keel',
+      indexer: ix(2, 'Keel'),
+      size: 3.2 * GB,
+      seeders: 19,
+      leechers: 2,
+      ageHours: 240,
+      quality: 'WEB 1080p',
+      customFormats: [],
+      formatScore: 0,
+      approved: true,
+      reasons: [{ kind: 'accepted', message: 'Matches WEB 1080p' }],
+    },
+    {
+      guid: `rel-${m.id}-4`,
+      title: `${cleanTitle}.${m.year}.720p.HDTV.x264-DEADPOOL`,
+      indexerId: 'ix-flotsam',
+      indexer: ix(3, 'Flotsam'),
+      size: 1.1 * GB,
+      seeders: 2,
+      leechers: 0,
+      ageHours: 850,
+      quality: 'HDTV 720p',
+      customFormats: ['Low Quality'],
+      formatScore: -10000,
+      approved: false,
+      reasons: [
+        { kind: 'rejected', message: 'Low Quality format score (-10000) below minimum cutoff' },
+        { kind: 'rejected', message: 'Seeders (2) below minimum threshold of 3' },
+      ],
+    },
+    {
+      guid: `rel-${m.id}-5`,
+      title: `${cleanTitle}.${m.year}.CAM.XviD-UNKNOWN`,
+      indexerId: 'ix-public',
+      indexer: 'PublicTracker',
+      size: 700 * MB,
+      seeders: 0,
+      leechers: 1,
+      ageHours: 1200,
+      quality: 'CAM',
+      customFormats: ['Low Quality'],
+      formatScore: -10000,
+      approved: false,
+      reasons: [
+        { kind: 'rejected', message: 'Quality CAM is not allowed in any profile' },
+        { kind: 'rejected', message: 'No seeders available' },
+      ],
+    },
+  ]
+}
+
+function generateSubtitleResults(m: MediaItem, lang = 'en'): SubtitleSearchResult[] {
+  const cleanTitle = m.title.replace(/[^\w\s]/gi, '').replace(/\s+/g, '.')
+  return [
+    {
+      id: `sub-res-${m.id}-1`,
+      language: lang,
+      releaseName: `${cleanTitle}.${m.year}.2160p.WEB-DL.DDP5.1.Atmos.DV.HDR.H.265-FLUX`,
+      provider: 'OpenSubtitles.com',
+      score: 98,
+      forced: false,
+      hi: false,
+      format: 'srt',
+    },
+    {
+      id: `sub-res-${m.id}-2`,
+      language: lang,
+      releaseName: `${cleanTitle}.${m.year}.1080p.BluRay.x264.DTS-HD.MA.5.1-EPSiLON`,
+      provider: 'SubSource',
+      score: 92,
+      forced: false,
+      hi: true,
+      format: 'srt',
+    },
+    {
+      id: `sub-res-${m.id}-3`,
+      language: lang,
+      releaseName: `${cleanTitle}.${m.year}.Forced.Foreign.Parts.Only`,
+      provider: 'YIFY Subtitles',
+      score: 85,
+      forced: true,
+      hi: false,
+      format: 'ass',
+    },
+    {
+      id: `sub-res-${m.id}-4`,
+      language: lang,
+      releaseName: `${cleanTitle}.${m.year}.Hearing.Impaired.CC`,
+      provider: 'Podnapisi',
+      score: 79,
+      forced: false,
+      hi: true,
+      format: 'vtt',
+    },
+  ]
+}
+
 export function createApi(srv: MockServer, ctx: Ctx) {
   const { state } = srv
   const storage = ctx.storage ?? memoryStorage()
@@ -527,6 +695,86 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         requireStaff()
         return state.indexers
       },
+      catalog: () => state.catalog,
+      add: (definitionId: string, _settings: Record<string, string> = {}) => {
+        requireStaff()
+        const def = state.catalog.find((c) => c.id === definitionId)
+        if (!def) throw new ApiError(404, 'not-found', 'Indexer definition not found.')
+        const existing = state.indexers.find((i) => i.definitionId === definitionId)
+        if (existing) return existing
+        const newIndexer: Indexer = {
+          id: `ix-${def.id}`,
+          definitionId: def.id,
+          name: def.name,
+          privacy: def.privacy,
+          enabled: true,
+          priority: 25,
+          health: 'healthy',
+          backoffUntil: null,
+          lastError: null,
+          stats: {
+            queries24h: 0,
+            grabs24h: 0,
+            avgResponseMs: 145,
+            successRate: 1.0,
+          },
+        }
+        state.indexers.push(newIndexer)
+        srv.events.emit({ type: 'indexers.updated' })
+        srv.events.emit({ type: 'health.updated' })
+        return newIndexer
+      },
+      update: (id: string, patch: Partial<Indexer>) => {
+        requireStaff()
+        const ix = state.indexers.find((x) => x.id === id)
+        if (!ix) throw new ApiError(404, 'not-found', 'Indexer not found.')
+        Object.assign(ix, patch)
+        srv.events.emit({ type: 'indexers.updated' })
+        return ix
+      },
+      remove: (id: string) => {
+        requireStaff()
+        state.indexers = state.indexers.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'indexers.updated' })
+        srv.events.emit({ type: 'health.updated' })
+      },
+      test: (idOrDefId: string, _settings?: Record<string, string>) => {
+        requireStaff()
+        const ix = state.indexers.find((x) => x.id === idOrDefId || x.definitionId === idOrDefId)
+        const def = state.catalog.find((x) => x.id === idOrDefId)
+        if (ix?.health === 'failing') {
+          return {
+            ok: false,
+            message: 'Connection timed out (504 Gateway Timeout).',
+            latencyMs: 3200,
+          }
+        }
+        return {
+          ok: true,
+          message: `Successfully connected to ${ix?.name ?? def?.name ?? 'indexer'}. 1,420 releases indexed in test category.`,
+          latencyMs: 165,
+        }
+      },
+      clearBackoff: (id: string) => {
+        requireStaff()
+        const ix = state.indexers.find((x) => x.id === id)
+        if (ix) {
+          ix.health = 'healthy'
+          ix.backoffUntil = null
+          ix.lastError = null
+          state.health = state.health.filter((h) => h.id !== `h-${ix.definitionId}`)
+          srv.events.emit({ type: 'indexers.updated' })
+          srv.events.emit({ type: 'health.updated' })
+        }
+      },
+      toggle: (id: string, enabled: boolean) => {
+        requireStaff()
+        const ix = state.indexers.find((x) => x.id === id)
+        if (!ix) throw new ApiError(404, 'not-found', 'Indexer not found.')
+        ix.enabled = enabled
+        srv.events.emit({ type: 'indexers.updated' })
+        return ix
+      },
     },
 
     movies: {
@@ -548,16 +796,598 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           .filter((m) => m.status === 'available')
           .sort((a, b) => Date.parse(b.addedAt) - Date.parse(a.addedAt))
           .slice(0, limit),
+      discover: (query = '') => {
+        const q = query.trim().toLowerCase()
+        const libraryItems: DiscoverMovie[] = state.items.map((m) => ({
+          id: `disc-lib-${m.id}`,
+          tmdbId: m.tmdbId ?? 1000000,
+          title: m.title,
+          year: m.year,
+          runtimeMinutes: m.runtimeMinutes,
+          genres: m.genres,
+          synopsis: m.synopsis,
+          rating: m.rating,
+          releaseDate: m.releaseDate,
+          art: m.art,
+          inLibrary: true,
+        }))
+        const unaddedItems = (state.discoverCatalog ?? []).map((d) => ({
+          ...d,
+          inLibrary: state.items.some(
+            (m) =>
+              (m.tmdbId && m.tmdbId === d.tmdbId) ||
+              m.title.toLowerCase() === d.title.toLowerCase(),
+          ),
+        }))
+        const all = [...unaddedItems, ...libraryItems]
+        if (!q) return all
+        return all.filter(
+          (m) =>
+            m.title.toLowerCase().includes(q) ||
+            m.genres.some((g) => g.toLowerCase().includes(q)) ||
+            m.year.toString().includes(q),
+        )
+      },
+      add: (input: AddMovieInput) => {
+        requireStaff()
+        const slug = input.title
+          .toLowerCase()
+          .replace(/[^\w\s-]/g, '')
+          .replace(/\s+/g, '-')
+        const existing = state.items.find(
+          (x) =>
+            x.id === slug ||
+            (input.tmdbId && x.tmdbId === input.tmdbId) ||
+            x.title.toLowerCase() === input.title.toLowerCase(),
+        )
+        if (existing) return existing
+
+        const id = slug
+        const isUhd = input.qualityProfileId === 'qp-uhd'
+        const newItem: MediaItem = {
+          id,
+          type: 'movie',
+          parentId: null,
+          tmdbId: input.tmdbId ?? 1000000 + state.items.length,
+          title: input.title,
+          originalTitle: null,
+          sortTitle: input.title.toLowerCase().replace(/^(the|a|an)\s+/i, ''),
+          year: input.year,
+          runtimeMinutes: 14,
+          genres: ['Animation', 'Short'],
+          synopsis: 'A newly added film to the harbor catalog.',
+          rating: 7.8,
+          status: 'missing',
+          monitored: input.monitored,
+          minimumAvailability: input.minimumAvailability,
+          languageProfileId: input.languageProfileId || 'lp-default',
+          rootFolder: input.rootFolder || '/data/media/movies',
+          releaseDate: iso(now() - 30 * 86_400_000),
+          addedAt: iso(now()),
+          path: `${input.rootFolder}/${input.title} (${input.year})`,
+          versions: [
+            {
+              id: `${id}-v1`,
+              label: isUhd ? '4K HDR' : '1080p',
+              qualityProfileId: input.qualityProfileId,
+              fileId: null,
+            },
+          ],
+          quality: isUhd ? ['4K', 'HDR'] : ['1080p'],
+          art: {
+            poster: posterArt(input.title),
+            backdrop: backdropArt(input.title),
+            still: stillArt(input.title),
+          },
+        }
+
+        state.items.push(newItem)
+
+        if (input.searchNow) {
+          const releases = generateReleases(newItem, state)
+          const chosen = releases.find((r) => r.approved) ?? releases[0]
+          if (chosen) {
+            const torrentId = `t-${id}-${Date.now().toString(36)}`
+            const newTorrent: Torrent = {
+              id: torrentId,
+              name: chosen.title,
+              infoHash: `hash-${id}-${Date.now().toString(36)}`,
+              itemId: id,
+              category: 'movies',
+              size: chosen.size,
+              downloaded: 0,
+              uploaded: 0,
+              progress: 0.05,
+              downRate: 18.5 * MB,
+              upRate: 1.2 * MB,
+              eta: 140,
+              peers: { connected: 34, total: 48 },
+              seeds: { connected: chosen.seeders, total: chosen.seeders + 10 },
+              ratio: 0,
+              state: 'downloading',
+              stateReason: null,
+              indexer: chosen.indexer,
+              quality: chosen.quality,
+              addedAt: iso(now()),
+              completedAt: null,
+              savePath: '/data/downloads/complete/movies',
+              files: [
+                {
+                  path: `${chosen.title}/${chosen.title}.mkv`,
+                  size: chosen.size - 40 * MB,
+                  progress: 0.05,
+                  priority: 'normal',
+                },
+              ],
+              trackers: [
+                {
+                  url: `udp://tracker.${chosen.indexer.toLowerCase()}.example:6969/announce`,
+                  status: 'working',
+                  peers: chosen.seeders,
+                  message: null,
+                },
+              ],
+              seedingRule: { ratio: 2, minutes: 7 * 24 * 60 },
+            }
+            state.torrents.unshift(newTorrent)
+            newItem.status = 'downloading'
+            state.history.unshift({
+              id: `h-grab-${id}-${now()}`,
+              itemId: id,
+              type: 'grabbed',
+              date: iso(now()),
+              sourceTitle: chosen.title,
+              quality: chosen.quality,
+              indexer: chosen.indexer,
+              message: `Grabbed from ${chosen.indexer} (format score ${chosen.formatScore})`,
+            })
+            srv.events.emit({ type: 'torrents.updated' })
+            srv.events.emit({ type: 'queue.changed' })
+            srv.events.emit({ type: 'history.updated' })
+          }
+        }
+
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'item.updated', id })
+        return newItem
+      },
+      update: (id: string, patch: Partial<MediaItem>) => {
+        requireStaff()
+        const m = state.items.find((x) => x.id === id)
+        if (!m) throw new ApiError(404, 'not-found', 'That movie isn’t in the library.')
+        Object.assign(m, patch)
+        srv.events.emit({ type: 'item.updated', id })
+        srv.events.emit({ type: 'movies.updated' })
+        return m
+      },
+      delete: (id: string, opts: { deleteFiles?: boolean } = {}) => {
+        requireStaff()
+        const m = state.items.find((x) => x.id === id)
+        if (!m) return
+        state.items = state.items.filter((x) => x.id !== id)
+        state.torrents = state.torrents.filter((t) => t.itemId !== id)
+        state.subtitles = state.subtitles.filter((s) => s.itemId !== id)
+        if (opts.deleteFiles) {
+          state.files = state.files.filter((f) => f.itemId !== id)
+        }
+        state.history.unshift({
+          id: `h-del-${id}-${now()}`,
+          itemId: id,
+          type: 'deleted',
+          date: iso(now()),
+          sourceTitle: m.title,
+          quality: null,
+          indexer: null,
+          message: opts.deleteFiles
+            ? 'Removed movie and deleted files from disk.'
+            : 'Removed movie from library.',
+        })
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'history.updated' })
+      },
+      bulkUpdate: (ids: string[], patch: Partial<MediaItem>) => {
+        requireStaff()
+        for (const id of ids) {
+          const m = state.items.find((x) => x.id === id)
+          if (m) Object.assign(m, patch)
+        }
+        srv.events.emit({ type: 'movies.updated' })
+      },
+      bulkDelete: (ids: string[], deleteFiles = false) => {
+        requireStaff()
+        for (const id of ids) {
+          state.items = state.items.filter((x) => x.id !== id)
+          state.torrents = state.torrents.filter((t) => t.itemId !== id)
+          state.subtitles = state.subtitles.filter((s) => s.itemId !== id)
+          if (deleteFiles) {
+            state.files = state.files.filter((f) => f.itemId !== id)
+          }
+        }
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.changed' })
+      },
+      bulkSearch: (ids: string[]) => {
+        requireStaff()
+        for (const id of ids) {
+          const m = state.items.find((x) => x.id === id)
+          if (!m || m.status === 'available' || m.status === 'downloading') continue
+          const releases = generateReleases(m, state)
+          const chosen = releases.find((r) => r.approved) ?? releases[0]
+          if (chosen) {
+            const torrentId = `t-${id}-${Date.now().toString(36)}`
+            const newTorrent: Torrent = {
+              id: torrentId,
+              name: chosen.title,
+              infoHash: `hash-${id}-${Date.now().toString(36)}`,
+              itemId: id,
+              category: 'movies',
+              size: chosen.size,
+              downloaded: 0,
+              uploaded: 0,
+              progress: 0.08,
+              downRate: 15.2 * MB,
+              upRate: 800_000,
+              eta: 180,
+              peers: { connected: 22, total: 38 },
+              seeds: { connected: chosen.seeders, total: chosen.seeders + 8 },
+              ratio: 0,
+              state: 'downloading',
+              stateReason: null,
+              indexer: chosen.indexer,
+              quality: chosen.quality,
+              addedAt: iso(now()),
+              completedAt: null,
+              savePath: '/data/downloads/complete/movies',
+              files: [
+                {
+                  path: `${chosen.title}/${chosen.title}.mkv`,
+                  size: chosen.size - 40 * MB,
+                  progress: 0.08,
+                  priority: 'normal',
+                },
+              ],
+              trackers: [
+                {
+                  url: `udp://tracker.${chosen.indexer.toLowerCase()}.example:6969/announce`,
+                  status: 'working',
+                  peers: chosen.seeders,
+                  message: null,
+                },
+              ],
+              seedingRule: { ratio: 2, minutes: 7 * 24 * 60 },
+            }
+            state.torrents.unshift(newTorrent)
+            m.status = 'downloading'
+          }
+        }
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.changed' })
+      },
+      files: (id: string) => {
+        return state.files.filter((f) => f.itemId === id)
+      },
+      history: (id: string) => {
+        return state.history.filter((h) => h.itemId === id)
+      },
+      interactiveSearch: (id: string) => {
+        requireStaff()
+        const m = state.items.find((x) => x.id === id)
+        if (!m) throw new ApiError(404, 'not-found', 'Movie not found.')
+        return generateReleases(m, state)
+      },
+      grabRelease: (id: string, releaseGuid: string) => {
+        requireStaff()
+        const m = state.items.find((x) => x.id === id)
+        if (!m) throw new ApiError(404, 'not-found', 'Movie not found.')
+        const releases = generateReleases(m, state)
+        const chosen = releases.find((r) => r.guid === releaseGuid) ?? releases[0]
+        if (!chosen) throw new ApiError(404, 'not-found', 'That release is no longer available.')
+        const torrentId = `t-${id}-${Date.now().toString(36)}`
+        const newTorrent: Torrent = {
+          id: torrentId,
+          name: chosen.title,
+          infoHash: `hash-${id}-${Date.now().toString(36)}`,
+          itemId: id,
+          category: 'movies',
+          size: chosen.size,
+          downloaded: 0,
+          uploaded: 0,
+          progress: 0.02,
+          downRate: 22.4 * MB,
+          upRate: 1.4 * MB,
+          eta: 110,
+          peers: { connected: 28, total: 42 },
+          seeds: { connected: chosen.seeders, total: chosen.seeders + 12 },
+          ratio: 0,
+          state: 'downloading',
+          stateReason: null,
+          indexer: chosen.indexer,
+          quality: chosen.quality,
+          addedAt: iso(now()),
+          completedAt: null,
+          savePath: '/data/downloads/complete/movies',
+          files: [
+            {
+              path: `${chosen.title}/${chosen.title}.mkv`,
+              size: chosen.size - 40 * MB,
+              progress: 0.02,
+              priority: 'normal',
+            },
+          ],
+          trackers: [
+            {
+              url: `udp://tracker.${chosen.indexer.toLowerCase()}.example:6969/announce`,
+              status: 'working',
+              peers: chosen.seeders,
+              message: null,
+            },
+          ],
+          seedingRule: { ratio: 2, minutes: 7 * 24 * 60 },
+        }
+        state.torrents.unshift(newTorrent)
+        m.status = 'downloading'
+        state.history.unshift({
+          id: `h-grab-${id}-${now()}`,
+          itemId: id,
+          type: 'grabbed',
+          date: iso(now()),
+          sourceTitle: chosen.title,
+          quality: chosen.quality,
+          indexer: chosen.indexer,
+          message: `Manually grabbed from ${chosen.indexer}`,
+        })
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'history.updated' })
+        return newTorrent
+      },
+      qualityProfiles: () => state.qualityProfiles,
+      languageProfiles: () => state.languageProfiles,
+      rootFolders: () => ['/data/media/movies', '/data/media/movies-4k'],
     },
 
     queue: {
       list: () => state.torrents.filter((t) => t.itemId && t.state !== 'completed').map(queueItem),
+      pause: (torrentId: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === torrentId)
+        if (t) {
+          t.state = 'paused'
+          t.downRate = 0
+          t.eta = null
+          srv.events.emit({ type: 'torrents.updated' })
+          srv.events.emit({ type: 'queue.changed' })
+        }
+      },
+      resume: (torrentId: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === torrentId)
+        if (t) {
+          t.state = 'downloading'
+          t.downRate = 12 * MB
+          srv.events.emit({ type: 'torrents.updated' })
+          srv.events.emit({ type: 'queue.changed' })
+        }
+      },
+      remove: (torrentId: string, _deleteData = false) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === torrentId)
+        if (t?.itemId) {
+          const m = state.items.find((x) => x.id === t.itemId)
+          if (m && m.status === 'downloading') {
+            m.status = fileFor(state, m) ? 'available' : 'missing'
+          }
+        }
+        state.torrents = state.torrents.filter((x) => x.id !== torrentId)
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'movies.updated' })
+      },
+      forceImport: (torrentId: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === torrentId)
+        if (!t?.itemId) return
+        const m = state.items.find((x) => x.id === t.itemId)
+        if (!m) return
+        // remove executable or problematic file
+        t.files = t.files.filter((f) => !/\.(exe|lnk|scr|zipx)$/i.test(f.path))
+        t.state = 'importing'
+        t.stateReason = null
+        importTorrent(state, srv.clock, t, m, now())
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'history.updated' })
+      },
+      searchAlternative: (torrentId: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === torrentId)
+        if (!t?.itemId) return
+        const m = state.items.find((x) => x.id === t.itemId)
+        if (!m) return
+        // add to blocklist
+        state.blocklist.unshift({
+          id: `bl-${t.id}-${now()}`,
+          itemId: m.id,
+          sourceTitle: t.name,
+          indexer: t.indexer ?? 'Unknown',
+          reason: t.stateReason ?? 'User marked release as bad',
+          date: iso(now()),
+        })
+        state.torrents = state.torrents.filter((x) => x.id !== torrentId)
+        const releases = generateReleases(m, state).filter((r) => r.title !== t.name)
+        const next = releases.find((r) => r.approved) ?? releases[0]
+        if (next) {
+          const newTorrent: Torrent = {
+            id: `t-${m.id}-${Date.now().toString(36)}`,
+            name: next.title,
+            infoHash: `hash-${m.id}-${Date.now().toString(36)}`,
+            itemId: m.id,
+            category: 'movies',
+            size: next.size,
+            downloaded: 0,
+            uploaded: 0,
+            progress: 0.04,
+            downRate: 16.8 * MB,
+            upRate: 1.1 * MB,
+            eta: 130,
+            peers: { connected: 24, total: 36 },
+            seeds: { connected: next.seeders, total: next.seeders + 6 },
+            ratio: 0,
+            state: 'downloading',
+            stateReason: null,
+            indexer: next.indexer,
+            quality: next.quality,
+            addedAt: iso(now()),
+            completedAt: null,
+            savePath: '/data/downloads/complete/movies',
+            files: [
+              {
+                path: `${next.title}/${next.title}.mkv`,
+                size: next.size - 40 * MB,
+                progress: 0.04,
+                priority: 'normal',
+              },
+            ],
+            trackers: [
+              {
+                url: `udp://tracker.${next.indexer.toLowerCase()}.example:6969/announce`,
+                status: 'working',
+                peers: next.seeders,
+                message: null,
+              },
+            ],
+            seedingRule: { ratio: 2, minutes: 7 * 24 * 60 },
+          }
+          state.torrents.unshift(newTorrent)
+        }
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'history.updated' })
+      },
+    },
+
+    history: {
+      list: () => state.history,
+      clear: () => {
+        requireStaff()
+        state.history = []
+        srv.events.emit({ type: 'history.updated' })
+      },
+    },
+
+    blocklist: {
+      list: () => state.blocklist,
+      remove: (id: string) => {
+        requireStaff()
+        state.blocklist = state.blocklist.filter((b) => b.id !== id)
+        srv.events.emit({ type: 'history.updated' })
+      },
     },
 
     downloads: {
       list: () => {
         requireStaff()
         return state.torrents
+      },
+      get: (id: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === id)
+        if (!t) throw new ApiError(404, 'not-found', 'Torrent not found.')
+        return t
+      },
+      add: (input: AddTorrentInput) => {
+        requireStaff()
+        const name = input.urlOrMagnet.startsWith('magnet:')
+          ? decodeURIComponent(
+              input.urlOrMagnet.split('&dn=')[1]?.split('&')[0] ?? 'Custom.Magnet.Release',
+            )
+          : (input.urlOrMagnet.split('/').pop() ?? 'Custom.Torrent.Release')
+        const newTorrent: Torrent = {
+          id: `t-manual-${Date.now().toString(36)}`,
+          name,
+          infoHash: `hash-${Date.now().toString(36)}`,
+          itemId: null,
+          category: input.category || 'movies',
+          size: 4.8 * GB,
+          downloaded: 0,
+          uploaded: 0,
+          progress: 0.01,
+          downRate: input.startImmediately !== false ? 14.5 * MB : 0,
+          upRate: input.startImmediately !== false ? 800_000 : 0,
+          eta: input.startImmediately !== false ? 320 : null,
+          peers: { connected: 16, total: 30 },
+          seeds: { connected: 24, total: 32 },
+          ratio: 0,
+          state: input.startImmediately !== false ? 'downloading' : 'paused',
+          stateReason: null,
+          indexer: 'Manual',
+          quality: 'WEB 1080p',
+          addedAt: iso(now()),
+          completedAt: null,
+          savePath: input.savePath || '/data/downloads/complete/movies',
+          files: [
+            {
+              path: `${name}/${name}.mkv`,
+              size: 4.76 * GB,
+              progress: 0.01,
+              priority: 'normal',
+            },
+          ],
+          trackers: [
+            {
+              url: 'udp://tracker.open.example:6969/announce',
+              status: 'working',
+              peers: 24,
+              message: null,
+            },
+          ],
+          seedingRule: { ratio: 2, minutes: 7 * 24 * 60 },
+        }
+        state.torrents.unshift(newTorrent)
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.changed' })
+        return newTorrent
+      },
+      delete: (id: string, _deleteFiles = false) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === id)
+        if (t?.itemId) {
+          const m = state.items.find((x) => x.id === t.itemId)
+          if (m && m.status === 'downloading') {
+            m.status = fileFor(state, m) ? 'available' : 'missing'
+          }
+        }
+        state.torrents = state.torrents.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'movies.updated' })
+      },
+      pause: (id: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === id)
+        if (t) {
+          t.state = 'paused'
+          t.downRate = 0
+          t.eta = null
+          srv.events.emit({ type: 'torrents.updated' })
+          srv.events.emit({ type: 'queue.changed' })
+        }
+      },
+      resume: (id: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === id)
+        if (t) {
+          t.state = 'downloading'
+          t.downRate = 14 * MB
+          srv.events.emit({ type: 'torrents.updated' })
+          srv.events.emit({ type: 'queue.changed' })
+        }
       },
       pauseAll: () => {
         requireStaff()
@@ -575,6 +1405,29 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         for (const t of state.torrents) if (t.state === 'paused') t.state = 'queued'
         srv.events.emit({ type: 'torrents.updated' })
         srv.events.emit({ type: 'queue.changed' })
+      },
+      setFilePriority: (
+        torrentId: string,
+        filePath: string,
+        priority: 'skip' | 'normal' | 'high',
+      ) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === torrentId)
+        const f = t?.files.find((file) => file.path === filePath)
+        if (f) {
+          f.priority = priority
+          srv.events.emit({ type: 'torrents.updated' })
+        }
+      },
+      limits: () => {
+        requireStaff()
+        return state.torrentLimits
+      },
+      setLimits: (patch: Partial<TorrentLimits>) => {
+        requireStaff()
+        Object.assign(state.torrentLimits, patch)
+        srv.events.emit({ type: 'torrents.updated' })
+        return state.torrentLimits
       },
     },
 
@@ -597,6 +1450,159 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         }
       },
       languages: () => state.languages,
+      wanted: () => {
+        requireStaff()
+        const results: { movie: MediaItem; missingLanguages: string[] }[] = []
+        for (const m of state.items) {
+          if (m.status !== 'available') continue
+          const tracks = state.subtitles.filter((s) => s.itemId === m.id)
+          const missing: string[] = []
+          if (!tracks.some((t) => t.language === 'en')) missing.push('en')
+          if (!tracks.some((t) => t.language === 'es')) missing.push('es')
+          if (missing.length > 0) {
+            results.push({ movie: m, missingLanguages: missing })
+          }
+        }
+        return results
+      },
+      forItem: (id: string) => {
+        return state.subtitles.filter((s) => s.itemId === id)
+      },
+      search: (id: string, language = 'en') => {
+        requireStaff()
+        const m = state.items.find((x) => x.id === id)
+        if (!m) throw new ApiError(404, 'not-found', 'Movie not found.')
+        return generateSubtitleResults(m, language)
+      },
+      download: (id: string, result: SubtitleSearchResult) => {
+        requireStaff()
+        const m = state.items.find((x) => x.id === id)
+        if (!m) throw new ApiError(404, 'not-found', 'Movie not found.')
+        const f = fileFor(state, m)
+        const newTrack: SubtitleTrack = {
+          id: `st-${id}-${result.language}-${Date.now().toString(36)}`,
+          itemId: id,
+          fileId: f?.id ?? `f-${id}-v1`,
+          language: result.language,
+          kind: 'external',
+          format: result.format,
+          forced: result.forced,
+          hi: result.hi,
+          provider: result.provider,
+          score: result.score,
+          sync: { status: 'synced', confidence: 0.96, offsetMs: -120 },
+          path: `${m.path}/${m.title} (${m.year}).${result.language}.${result.format}`,
+        }
+        state.subtitles.push(newTrack)
+        state.history.unshift({
+          id: `h-sub-${id}-${now()}`,
+          itemId: id,
+          type: 'subtitle-downloaded',
+          date: iso(now()),
+          sourceTitle: result.releaseName,
+          quality: null,
+          indexer: result.provider,
+          message: `Downloaded ${result.language.toUpperCase()} subtitles from ${result.provider} (score ${result.score})`,
+        })
+        srv.events.emit({ type: 'subtitles.updated', itemId: id })
+        srv.events.emit({ type: 'history.updated' })
+        return newTrack
+      },
+      sync: (trackId: string) => {
+        requireStaff()
+        const track = state.subtitles.find((s) => s.id === trackId)
+        if (!track) throw new ApiError(404, 'not-found', 'Subtitle track not found.')
+        track.sync = {
+          status: 'synced',
+          confidence: 0.98,
+          offsetMs: -350,
+        }
+        const m = state.items.find((x) => x.id === track.itemId)
+        if (m) {
+          state.history.unshift({
+            id: `h-sync-${trackId}-${now()}`,
+            itemId: track.itemId,
+            type: 'subtitle-synced',
+            date: iso(now()),
+            sourceTitle: m.title,
+            quality: null,
+            indexer: null,
+            message: `Audio sync completed: offset -350 ms, confidence 98%`,
+          })
+        }
+        srv.events.emit({ type: 'subtitles.updated', itemId: track.itemId })
+        srv.events.emit({ type: 'history.updated' })
+        return track
+      },
+      setOffset: (trackId: string, offsetMs: number) => {
+        requireStaff()
+        const track = state.subtitles.find((s) => s.id === trackId)
+        if (!track) throw new ApiError(404, 'not-found', 'Subtitle track not found.')
+        track.sync.offsetMs = offsetMs
+        srv.events.emit({ type: 'subtitles.updated', itemId: track.itemId })
+        return track
+      },
+      delete: (trackId: string) => {
+        requireStaff()
+        const track = state.subtitles.find((s) => s.id === trackId)
+        if (!track) return
+        state.subtitles = state.subtitles.filter((s) => s.id !== trackId)
+        srv.events.emit({ type: 'subtitles.updated', itemId: track.itemId })
+      },
+      providers: () => {
+        requireStaff()
+        return state.providers ?? []
+      },
+      toggleProvider: (id: string, enabled: boolean) => {
+        requireStaff()
+        const p = state.providers.find((x) => x.id === id)
+        if (!p) throw new ApiError(404, 'not-found', 'Provider not found.')
+        p.enabled = enabled
+        srv.events.emit({ type: 'subtitles.updated' })
+        return p
+      },
+      languageProfiles: () => state.languageProfiles,
+      saveLanguageProfile: (profile: LanguageProfile) => {
+        requireStaff()
+        const existingIdx = state.languageProfiles.findIndex((lp) => lp.id === profile.id)
+        if (existingIdx >= 0) {
+          state.languageProfiles[existingIdx] = profile
+        } else {
+          state.languageProfiles.push(profile)
+        }
+        srv.events.emit({ type: 'subtitles.updated' })
+        return profile
+      },
+      deleteLanguageProfile: (id: string) => {
+        requireStaff()
+        state.languageProfiles = state.languageProfiles.filter((lp) => lp.id !== id)
+        srv.events.emit({ type: 'subtitles.updated' })
+      },
+      searchAllMissing: () => {
+        requireStaff()
+        for (const m of state.items) {
+          if (m.status !== 'available') continue
+          const hasEn = state.subtitles.some((s) => s.itemId === m.id && s.language === 'en')
+          if (!hasEn) {
+            const f = fileFor(state, m)
+            state.subtitles.push({
+              id: `st-${m.id}-en-auto`,
+              itemId: m.id,
+              fileId: f?.id ?? `f-${m.id}-v1`,
+              language: 'en',
+              kind: 'external',
+              format: 'srt',
+              forced: false,
+              hi: false,
+              provider: 'OpenSubtitles.com',
+              score: 95,
+              sync: { status: 'synced', confidence: 0.94, offsetMs: -80 },
+              path: `${m.path}/${m.title} (${m.year}).en.srt`,
+            })
+          }
+        }
+        srv.events.emit({ type: 'subtitles.updated' })
+      },
     },
 
     announcements: {

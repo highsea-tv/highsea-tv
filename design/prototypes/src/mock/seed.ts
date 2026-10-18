@@ -7,10 +7,12 @@ import { art, backdropArt, library, posterArt, stillArt, type Title } from '@hig
 import { iso } from './clock.ts'
 import type {
   Announcement,
+  BlocklistEntry,
   CatalogDefinition,
   CustomFormat,
   Device,
   DiscoveredServer,
+  DiscoverMovie,
   FeaturedSection,
   HealthCheck,
   HistoryEvent,
@@ -25,9 +27,11 @@ import type {
   Server,
   SpeedSample,
   Stream,
+  SubtitleProvider,
   SubtitleTrack,
   SystemStatus,
   Torrent,
+  TorrentLimits,
   TorrentState,
   User,
 } from './types.ts'
@@ -59,11 +63,14 @@ export type ServerState = {
   customFormats: CustomFormat[]
   torrents: Torrent[]
   history: HistoryEvent[]
+  blocklist: BlocklistEntry[]
   catalog: CatalogDefinition[]
   indexers: Indexer[]
   languageProfiles: LanguageProfile[]
   languages: Language[]
   subtitles: SubtitleTrack[]
+  providers: SubtitleProvider[]
+  torrentLimits: TorrentLimits
   announcements: Announcement[]
   featured: FeaturedSection[]
   jobs: Job[]
@@ -72,6 +79,7 @@ export type ServerState = {
   speeds: SpeedSample[]
   fs: Record<string, FsNode>
   discovered: DiscoveredServer[]
+  discoverCatalog: DiscoverMovie[]
   pipeline: PipelineStep[]
   /** Announcement ids the signed-in user dismissed or acknowledged. */
   seen: Record<string, string[]>
@@ -514,6 +522,7 @@ function item(t: Title, i: number, now: number): MediaItem {
         fileId: null,
       },
     ],
+    quality: t.quality,
     art: art(t),
   }
 }
@@ -684,6 +693,165 @@ function torrent(
   }
 }
 
+const defaultProviders: SubtitleProvider[] = [
+  {
+    id: 'prov-opensubtitles',
+    name: 'OpenSubtitles.com',
+    enabled: true,
+    rateLimitRemaining: 184,
+    rateLimitMax: 200,
+    requiresAuth: true,
+    username: 'harbor_admin',
+  },
+  {
+    id: 'prov-subsource',
+    name: 'SubSource',
+    enabled: true,
+    rateLimitRemaining: 95,
+    rateLimitMax: 100,
+    requiresAuth: false,
+  },
+  {
+    id: 'prov-podnapisi',
+    name: 'Podnapisi',
+    enabled: true,
+    rateLimitRemaining: 49,
+    rateLimitMax: 50,
+    requiresAuth: false,
+  },
+  {
+    id: 'prov-addic7ed',
+    name: 'Addic7ed',
+    enabled: false,
+    rateLimitRemaining: 0,
+    rateLimitMax: 100,
+    requiresAuth: true,
+  },
+  {
+    id: 'prov-yify',
+    name: 'YIFY Subtitles',
+    enabled: true,
+    rateLimitRemaining: 480,
+    rateLimitMax: 500,
+    requiresAuth: false,
+  },
+]
+
+const defaultTorrentLimits: TorrentLimits = {
+  downRateLimit: 0,
+  upRateLimit: 0,
+  vpnConnected: true,
+  vpnInterface: 'wg0',
+  vpnIp: '10.2.0.15',
+}
+
+const discoverPool: DiscoverMovie[] = [
+  {
+    id: 'disc-charge',
+    tmdbId: 1002341,
+    title: 'Charge',
+    year: 2022,
+    runtimeMinutes: 14,
+    genres: ['Animation', 'Action', 'Sci-Fi'],
+    synopsis:
+      'In an old battery factory, an elderly warrior finds himself hunted by security droids while retrieving a vital energy core.',
+    rating: 8.2,
+    releaseDate: '2022-12-15T00:00:00.000Z',
+    art: {
+      poster: posterArt('Charge'),
+      backdrop: backdropArt('Charge'),
+      still: stillArt('Charge'),
+    },
+    inLibrary: false,
+  },
+  {
+    id: 'disc-sprite-fright',
+    tmdbId: 1002342,
+    title: 'Sprite Fright',
+    year: 2021,
+    runtimeMinutes: 11,
+    genres: ['Animation', 'Comedy', 'Horror'],
+    synopsis:
+      'When a group of rowdy teenagers venture into an isolated forest, they encounter cheerful sprites with a deadly vendetta against litterbugs.',
+    rating: 7.9,
+    releaseDate: '2021-10-29T00:00:00.000Z',
+    art: {
+      poster: posterArt('Sprite Fright'),
+      backdrop: backdropArt('Sprite Fright'),
+      still: stillArt('Sprite Fright'),
+    },
+    inLibrary: false,
+  },
+  {
+    id: 'disc-cosmos-laundromat',
+    tmdbId: 1002343,
+    title: 'Cosmos Laundromat',
+    year: 2015,
+    runtimeMinutes: 12,
+    genres: ['Animation', 'Fantasy', 'Sci-Fi'],
+    synopsis:
+      'On a desolate windswept island, a depressed sheep named Franck is offered the adventure of a lifetime by a mysterious salesman named Victor.',
+    rating: 8.4,
+    releaseDate: '2015-08-10T00:00:00.000Z',
+    art: {
+      poster: posterArt('Cosmos Laundromat'),
+      backdrop: backdropArt('Cosmos Laundromat'),
+      still: stillArt('Cosmos Laundromat'),
+    },
+    inLibrary: false,
+  },
+  {
+    id: 'disc-coffee-run',
+    tmdbId: 1002344,
+    title: 'Coffee Run',
+    year: 2020,
+    runtimeMinutes: 3,
+    genres: ['Animation', 'Comedy'],
+    synopsis:
+      'Fueled by an acute craving for coffee, a solitary traveler journeys across dimensions and surrealist landscapes.',
+    rating: 7.1,
+    releaseDate: '2020-05-29T00:00:00.000Z',
+    art: {
+      poster: posterArt('Coffee Run'),
+      backdrop: backdropArt('Coffee Run'),
+      still: stillArt('Coffee Run'),
+    },
+    inLibrary: false,
+  },
+  {
+    id: 'disc-agent-327',
+    tmdbId: 1002345,
+    title: 'Agent 327: Operation Barbershop',
+    year: 2017,
+    runtimeMinutes: 4,
+    genres: ['Animation', 'Action', 'Comedy'],
+    synopsis:
+      'Secret agent Hendrik IJzerbroot investigates a covert intelligence ring operating out of a quiet neighborhood barbershop.',
+    rating: 7.8,
+    releaseDate: '2017-05-15T00:00:00.000Z',
+    art: {
+      poster: posterArt('Agent 327'),
+      backdrop: backdropArt('Agent 327'),
+      still: stillArt('Agent 327'),
+    },
+    inLibrary: false,
+  },
+  {
+    id: 'disc-hero',
+    tmdbId: 1002346,
+    title: 'Hero',
+    year: 2018,
+    runtimeMinutes: 4,
+    genres: ['Animation', 'Fantasy', 'Action'],
+    synopsis:
+      'A brave warrior faces the greatest challenge of his life in a dark underground cavern filled with ancient perils.',
+    rating: 7.4,
+    releaseDate: '2018-04-16T00:00:00.000Z',
+    art: { poster: posterArt('Hero'), backdrop: backdropArt('Hero'), still: stillArt('Hero') },
+    inLibrary: false,
+  },
+]
+
 // ---------------------------------------------------------------- the two servers
 
 export function seed(kind: 'populated' | 'empty', now: number): ServerState {
@@ -699,6 +867,9 @@ export function seed(kind: 'populated' | 'empty', now: number): ServerState {
     catalog,
     languageProfiles,
     languages,
+    providers: defaultProviders,
+    torrentLimits: defaultTorrentLimits,
+    discoverCatalog: discoverPool,
     jobs: jobs(now, kind === 'empty'),
     status: status(now, kind === 'empty'),
     fs: structuredClone(fs),
@@ -715,6 +886,7 @@ export function seed(kind: 'populated' | 'empty', now: number): ServerState {
       files: [],
       torrents: [],
       history: [],
+      blocklist: [],
       indexers: [],
       subtitles: [],
       announcements: [],
@@ -1036,6 +1208,32 @@ export function seed(kind: 'populated' | 'empty', now: number): ServerState {
     files,
     torrents,
     history,
+    blocklist: [
+      {
+        id: 'bl-1',
+        itemId: 'charge',
+        sourceTitle: 'Charge.2022.2160p.WEB-DL.DDP5.1.Atmos.H.265-SAMPLE.mkv',
+        indexer: 'Anchorage',
+        reason: 'Sample file detected (< 150MB length)',
+        date: iso(now - 3 * DAY),
+      },
+      {
+        id: 'bl-2',
+        itemId: 'agent-327',
+        sourceTitle: 'Agent.327.Operation.Barbershop.1080p.Setup.exe',
+        indexer: 'Driftnet',
+        reason: 'Malicious payload: contains Windows executable',
+        date: iso(now - 5 * DAY),
+      },
+      {
+        id: 'bl-3',
+        itemId: 'cosmos-laundromat',
+        sourceTitle: 'Cosmos.Laundromat.2015.1080p.BluRay.x264-PASSWORD.rar',
+        indexer: 'Keel',
+        reason: 'Password protected archive',
+        date: iso(now - 9 * DAY),
+      },
+    ],
     indexers,
     subtitles,
     announcements,
