@@ -215,6 +215,7 @@
   --size-main-padding: 24px;
   --size-widget-gap: 12px;
   --size-widget-padding: 14px;
+  --size-widget-row: 84px;
   --blur-bar-saturate: 1.4;
   --blur-fallback-opacity: 0.96;
   --u: 1cqw;

@@ -5,17 +5,22 @@ import {
   Button,
   type CommandGroup,
   CommandPalette,
+  EmptyState,
   Kbd,
   Lockup,
   modKey,
   NavGroup,
   NavItem,
+  PageHeader,
   Progress,
+  SearchTrigger,
   ServerCard,
   Sidebar,
   type SidebarMode,
   SkeletonText,
   Stat,
+  StatusBar,
+  StatusItem,
   toast,
   useCommandPaletteShortcut,
   WidgetFrame,
@@ -227,6 +232,101 @@ export const Widgets: Story = {
       </div>
     )
   },
+}
+
+export const PageFurniture: Story = {
+  name: 'Page header and empty states',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'Every admin page starts with `PageHeader`: the title, the search that opens the palette, then actions with the primary last. Below medium the search folds to an icon. `EmptyState` stands in for content that isn’t there; the `error` tone is announced and always offers a retry.',
+      },
+    },
+  },
+  render: () => (
+    <div className="grid gap-6 bg-bg p-6">
+      <PageHeader
+        title="Dashboard"
+        search={<SearchTrigger onClick={() => toast({ title: 'Opens the command palette' })} />}
+        actions={<Button icon="grid">Customize</Button>}
+      />
+      <PageHeader
+        title="Dashboard"
+        description="Drag a widget by its handle to move it, or by its corner to resize it. Nothing is saved until you press Done."
+        actions={
+          <>
+            <Button icon="add">Add widget</Button>
+            <Button variant="ghost">Cancel</Button>
+            <Button variant="primary" icon="check">
+              Done
+            </Button>
+          </>
+        }
+      />
+      <div className="grid gap-4 medium:grid-cols-3">
+        <WidgetFrame title="Queue">
+          <EmptyState size="sm" icon="downloads" title="The queue is empty">
+            Movies you add show here while they download and import.
+          </EmptyState>
+        </WidgetFrame>
+        <WidgetFrame title="Indexers">
+          <EmptyState
+            size="sm"
+            icon="indexer"
+            title="No indexers yet"
+            action={
+              <Button size="sm" variant="primary">
+                Add indexers
+              </Button>
+            }
+          />
+        </WidgetFrame>
+        <WidgetFrame title="Storage">
+          <EmptyState
+            size="sm"
+            tone="error"
+            title="Couldn’t load storage"
+            action={<Button size="sm">Try again</Button>}
+          >
+            Harbor isn’t responding. It may be restarting.
+          </EmptyState>
+        </WidgetFrame>
+      </div>
+      <EmptyState icon="lock" title="Only owners and admins can open Downloads">
+        Ask the server’s owner if you need access.
+      </EmptyState>
+    </div>
+  ),
+}
+
+export const StatusBarStory: Story = {
+  name: 'Status bar',
+  parameters: {
+    docs: {
+      description: {
+        story:
+          'One thin row under the content column. Values update in place without motion or announcements. Resources hide below expanded; the jobs summary holds the end.',
+      },
+    },
+  },
+  render: () => (
+    <div className="grid gap-4 bg-bg p-6">
+      <StatusBar>
+        <StatusItem dot="success">Harbor</StatusItem>
+        <StatusItem hideBelow="medium">v1.0.0</StatusItem>
+        <StatusItem hideBelow="medium">4 clients</StatusItem>
+        <StatusItem hideBelow="expanded">CPU 12%</StatusItem>
+        <StatusItem hideBelow="expanded">RAM 1.2 GB</StatusItem>
+        <StatusItem hideBelow="expanded">6.2 TB free</StatusItem>
+        <StatusItem end>2 jobs running · RSS sync in 9m</StatusItem>
+      </StatusBar>
+      <StatusBar aria-label="Server status, disconnected">
+        <StatusItem dot="danger">Not connected</StatusItem>
+        <StatusItem end>Retrying every few seconds</StatusItem>
+      </StatusBar>
+    </div>
+  ),
 }
 
 export const AdminShell: Story = {

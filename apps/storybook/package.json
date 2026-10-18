@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@highsea/brand": "workspace:*",
+    "@highsea/fixtures": "workspace:*",
     "@highsea/tokens": "workspace:*",
     "@highsea/ui-web": "workspace:*",
     "motion": "14.3.0",

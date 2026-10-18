@@ -1,0 +1,4 @@
+{
+  "extends": "@highsea/config/tsconfig/library.json",
+  "include": ["src"]
+}

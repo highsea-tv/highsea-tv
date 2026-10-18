@@ -137,7 +137,7 @@ Everything later depends on this, so it comes first and is finalized before any 
 
 **Exit criteria**: direction chosen and refined, docs written, tokens/brand/ui-web core published in the repo, Storybook running, user sign-off → design system **v1.0**.
 
-**✅ Phase 1 signed off (2026-10-16): design system v1.0.**
+**✅ Phase 1 signed off (2026-10-16): design system v1.0.** Phase 2 starts from [`docs/plans/phase-2-prototypes.md`](plans/phase-2-prototypes.md).
 
 ## Phase 2: Design prototypes (gate: user sign-off)
 `design/prototypes` is a Vite + React clickable prototype app built on the **real** tokens and ui-web, with SDK-shaped mock fixtures. It has device frames and a platform switcher (desktop/web, mobile, TV 1920×1080 with D-pad/arrow-key focus navigation). Each flow is also specced in `docs/product/`.
@@ -163,6 +163,8 @@ Everything later depends on this, so it comes first and is finalized before any 
 - settings: themes, sounds, home layout customization.
 
 Exit: user sign-off on the prototypes, which then serve as the build reference.
+
+The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`](plans/phase-2-prototypes.md).
 
 ## Phase 3: Server milestone 1 (implementation)
 

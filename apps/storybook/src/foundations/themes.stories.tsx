@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
+import { art, titles } from '@highsea/fixtures'
 import {
   type BuiltInThemeId,
   builtInThemes,
@@ -27,7 +29,6 @@ import {
 } from '@highsea/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useMemo, useState } from 'react'
-import { art, titles } from '../fixtures/media.ts'
 import { Page, Section } from './page.tsx'
 
 const meta = { title: 'Foundations/Themes', parameters: { layout: 'fullscreen' } } satisfies Meta

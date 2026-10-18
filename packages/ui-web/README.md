@@ -33,7 +33,8 @@ import { UIProvider } from '@highsea/ui-web'
 | Overlays | `Dialog`, `ConfirmDialog`, `Sheet` (bottom, left, right), `Popover`, `Menu`, `Tooltip`, `toast()` with `Toaster` |
 | Data | `Table` with `TableFrame`, `TableToolbar`, `TitleCell`, `RowActions`; `Badge`, `QualityTag`, `Progress`, `Skeleton`, `Tabs` |
 | Media | `Poster`, `BackdropHero`, `CarouselRow`, `Rating` |
-| Shell | `Sidebar` with `NavGroup`, `NavItem`, `ServerCard`; `CommandPalette`; `WidgetGrid`, `WidgetFrame`, `Stat`; `Banner` |
+| Shell | `Sidebar` with `NavGroup`, `NavItem`, `ServerCard`; `CommandPalette`; `WidgetGrid`, `WidgetFrame` (an editor passes its own `handle` and `resize` in edit mode), `Stat`; `Banner`; `StatusBar` with `StatusItem` |
+| Page | `PageHeader` (title, search, actions), `SearchTrigger` (opens the palette, with the ⌘K hint), `EmptyState` (nothing yet, nothing matches, or an `error` with a retry) |
 | Brand | `Mark` (switches to the small cut below 24px, follows the theme accent), `Lockup` (live text) |
 | Icons | `Icon` by semantic name (`<Icon name="downloads" />`): the Lucide subset plus highsea's [custom glyphs](../../design/assets/icons/README.md) |
 

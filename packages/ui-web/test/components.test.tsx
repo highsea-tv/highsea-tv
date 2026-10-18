@@ -13,20 +13,25 @@ import {
   Checkbox,
   CommandPalette,
   ConfirmDialog,
+  EmptyState,
   Field,
   Input,
   Lockup,
   Mark,
   NavGroup,
   NavItem,
+  PageHeader,
   Poster,
   Progress,
   Rating,
   RatingInput,
+  SearchTrigger,
   SegmentedControl,
   ServerCard,
   Sidebar,
   SoundProvider,
+  StatusBar,
+  StatusItem,
   Tabs,
   TabsContent,
   TabsList,
@@ -35,6 +40,7 @@ import {
   toast,
   UIProvider,
   useCommandPaletteShortcut,
+  WidgetFrame,
 } from '../src/index.ts'
 import type { SoundPlayer } from '../src/sound/player.ts'
 
@@ -483,5 +489,92 @@ describe('ServerCard', () => {
       unmount()
     }
     expect(onClick).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('page furniture', () => {
+  test('SearchTrigger is named by its label and announces its shortcut', () => {
+    const onClick = mock()
+    const { getByRole } = render(<SearchTrigger onClick={onClick} label="Search the library" />)
+    const trigger = getByRole('button', { name: 'Search the library' })
+    expect(trigger.getAttribute('aria-keyshortcuts')).toBe('Meta+K Control+K')
+    fireEvent.click(trigger)
+    expect(onClick).toHaveBeenCalled()
+  })
+
+  test('PageHeader gives the page its one h1, with search and actions beside it', () => {
+    const { getByRole, getAllByRole } = render(
+      <PageHeader
+        title="Dashboard"
+        description="Everything at a glance."
+        search={<SearchTrigger onClick={() => {}} />}
+        actions={<Button>Customize</Button>}
+      />,
+    )
+    expect(getAllByRole('heading', { level: 1 }).map((h) => h.textContent)).toEqual(['Dashboard'])
+    expect(getByRole('button', { name: 'Customize' })).toBeTruthy()
+  })
+
+  test('EmptyState: an error is an alert with its retry; otherwise it stays quiet', () => {
+    const onRetry = mock()
+    const { getByRole, queryByRole, rerender } = render(
+      <EmptyState title="Nothing here yet">Add a movie to start.</EmptyState>,
+    )
+    expect(queryByRole('alert')).toBeNull()
+    rerender(
+      <EmptyState
+        tone="error"
+        title="Couldn’t load the queue"
+        action={<Button onClick={onRetry}>Try again</Button>}
+      >
+        Harbor isn’t responding.
+      </EmptyState>,
+    )
+    expect(getByRole('alert').textContent).toContain('Couldn’t load the queue')
+    fireEvent.click(getByRole('button', { name: 'Try again' }))
+    expect(onRetry).toHaveBeenCalled()
+  })
+
+  test('StatusBar is a labelled region; items say their status in words', () => {
+    const { getByRole } = render(
+      <StatusBar>
+        <StatusItem dot="danger">Not connected</StatusItem>
+        <StatusItem end>Retrying every few seconds</StatusItem>
+      </StatusBar>,
+    )
+    const bar = getByRole('region', { name: 'Server status' })
+    expect(bar.textContent).toBe('Not connectedRetrying every few seconds')
+    // the dot is decorative: the words carry the status
+    expect(bar.querySelector('[aria-hidden]')?.textContent).toBe('')
+  })
+})
+
+describe('WidgetFrame', () => {
+  test('in edit mode an editor’s handle and corner replace the decorative ones', () => {
+    const { getByRole, container, rerender } = render(
+      <WidgetFrame title="Network" editing>
+        body
+      </WidgetFrame>,
+    )
+    expect(container.querySelector('.cursor-se-resize')).toBeTruthy()
+    rerender(
+      <WidgetFrame
+        title="Network"
+        editing
+        handle={<button type="button">Move Network</button>}
+        resize={<span data-testid="corner" />}
+      >
+        body
+      </WidgetFrame>,
+    )
+    expect(getByRole('button', { name: 'Move Network' })).toBeTruthy()
+    expect(container.querySelector('.cursor-se-resize')).toBeNull()
+    expect(container.querySelector('[data-testid="corner"]')).toBeTruthy()
+    rerender(
+      <WidgetFrame title="Network" handle={<button type="button">Move Network</button>}>
+        body
+      </WidgetFrame>,
+    )
+    expect(container.querySelector('button')).toBeNull()
   })
 })

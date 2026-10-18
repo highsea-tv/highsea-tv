@@ -1,4 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
+import { art, titles } from '@highsea/fixtures'
 import {
   choreography,
   durations,
@@ -19,7 +21,6 @@ import {
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
-import { art, titles } from '../fixtures/media.ts'
 import { Page, Section } from './page.tsx'
 
 const meta = { title: 'Foundations/Motion', parameters: { layout: 'fullscreen' } } satisfies Meta

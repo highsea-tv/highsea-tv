@@ -29,7 +29,7 @@ The Accessibility panel runs axe on each story; a violation fails the story's te
 | Shell | Admin: the sidebar (full and rail), command palette, widget dashboard and a full admin layout |
 | TV | Home: a 1920×1080 TV home on screen units with D-pad focus. Click into it, then use the arrow keys, Enter and Escape |
 
-The placeholder artwork is generated (`src/fixtures/art.ts`), and the titles are Blender's open movies (`src/fixtures/media.ts`), so the guide ships no third-party images.
+The titles and their generated placeholder artwork come from [`@highsea/fixtures`](../../packages/fixtures/README.md), shared with the Phase 2 prototypes, so the guide ships no third-party images.
 
 ## Tests
 

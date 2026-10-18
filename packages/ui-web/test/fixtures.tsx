@@ -11,6 +11,7 @@ import {
   ConfirmDialog,
   Dialog,
   DialogContent,
+  EmptyState,
   Field,
   Icon,
   Input,
@@ -25,6 +26,7 @@ import {
   MenuTrigger,
   NavGroup,
   NavItem,
+  PageHeader,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -34,6 +36,7 @@ import {
   Rating,
   RatingInput,
   RowActions,
+  SearchTrigger,
   SegmentedControl,
   Select,
   SelectGroup,
@@ -46,6 +49,8 @@ import {
   Skeleton,
   SkeletonText,
   Stat,
+  StatusBar,
+  StatusItem,
   Switch,
   Table,
   TableBody,
@@ -89,7 +94,12 @@ export function KitchenSink({ rail = false }: { rail?: boolean }) {
           </NavGroup>
         </Sidebar>
         <main className="grid gap-6 p-6">
-          <h1 className="text-heading">Kitchen sink</h1>
+          <PageHeader
+            title="Kitchen sink"
+            description="Every component, once."
+            search={<SearchTrigger onClick={() => {}} />}
+            actions={<Button icon="grid">Customize</Button>}
+          />
           <Banner title="Server maintenance tonight" onDismiss={() => {}}>
             Streams pause for about ten minutes after 2 am.
           </Banner>
@@ -241,7 +251,28 @@ export function KitchenSink({ rail = false }: { rail?: boolean }) {
               <Skeleton className="h-6 w-24" />
               <SkeletonText />
             </WidgetFrame>
+            <WidgetFrame
+              title="Indexers"
+              editing
+              handle={
+                <button type="button" aria-label="Move Indexers">
+                  <Icon name="drag" size={16} />
+                </button>
+              }
+              resize={<span aria-hidden className="absolute end-0 bottom-0 size-6" />}
+            >
+              <EmptyState size="sm" icon="indexer" title="No indexers yet">
+                Add one from the catalog.
+              </EmptyState>
+            </WidgetFrame>
           </WidgetGrid>
+          <EmptyState
+            tone="error"
+            title="Couldn’t load the queue"
+            action={<Button>Try again</Button>}
+          >
+            Harbor isn’t responding. It may be restarting.
+          </EmptyState>
 
           <BackdropHero
             item={{
@@ -312,6 +343,12 @@ export function KitchenSink({ rail = false }: { rail?: boolean }) {
           </Menu>
         </main>
       </div>
+      <StatusBar>
+        <StatusItem dot="success">Harbor</StatusItem>
+        <StatusItem>v1.0.0</StatusItem>
+        <StatusItem hideBelow="expanded">CPU 12%</StatusItem>
+        <StatusItem end>2 jobs running</StatusItem>
+      </StatusBar>
     </UIProvider>
   )
 }

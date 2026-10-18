@@ -14,7 +14,8 @@
     "typecheck": "bun run --filter '*' typecheck",
     "test": "bun test",
     "explorations": "bunx serve design/explorations -l 4400",
-    "storybook": "bun run --filter @highsea/storybook storybook"
+    "storybook": "bun run --filter @highsea/storybook storybook",
+    "prototypes": "bun run --filter @highsea/prototypes dev"
   },
   "engines": {
     "bun": ">=1.4",
@@ -24,5 +25,11 @@
     "@biomejs/biome": "2.5.15",
     "@types/bun": "^1.4.3",
     "typescript": "^7.0.2"
+  },
+  "overrides": {
+    "@dnd-kit/abstract": "0.5.0",
+    "@dnd-kit/collision": "0.5.0",
+    "@dnd-kit/geometry": "0.5.0",
+    "@dnd-kit/state": "0.5.0"
   }
 }

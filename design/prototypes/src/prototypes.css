@@ -1,0 +1,62 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+@import "@highsea/ui-web/styles.css";
+
+@source "./";
+
+/*
+ * The toolbar's Reduced motion toggle, without touching the OS setting: the same overrides
+ * tokens.css and ui-web apply under `prefers-reduced-motion: reduce`. Motion components get
+ * `MotionConfig reducedMotion="always"` and hooks a matchMedia shim (src/screen/environment.ts).
+ */
+:root[data-reduced-motion] {
+  --duration-spring: 1ms;
+  --duration-spring-quick: 1ms;
+  --stagger: 0ms;
+  --scale-poster: 1;
+  --scale-button: 1;
+}
+:root[data-reduced-motion][data-platform="tv"],
+:root[data-reduced-motion] [data-platform="tv"] {
+  --scale-poster: 1;
+  --scale-button: 1;
+}
+
+/* Text 200%: rem-based type doubles; layouts must reflow (accessibility.md#perceivable). */
+:root[data-large-text] {
+  font-size: 200%;
+}
+
+/* A screen fills its frame; the frame, not the page, scrolls the document. */
+html[data-screen],
+html[data-screen] body,
+html[data-screen] #root {
+  height: 100%;
+}
+html[data-screen] body {
+  margin: 0;
+}
+
+/* The chrome around the frames: a neutral stage, never a product surface. */
+html[data-chrome],
+html[data-chrome] body,
+html[data-chrome] #root {
+  height: 100%;
+  overflow: hidden;
+}
+html[data-chrome] body {
+  margin: 0;
+}
+
+/*
+ * Customize mode (src/kit/widget-editor.tsx). While a widget is dragged, dnd-kit leaves a copy
+ * in the grid to hold its place; it shows as an empty dashed slot where the widget will land.
+ */
+:root [data-widget-id][data-dnd-placeholder][data-dnd-placeholder] {
+  visibility: visible;
+  border: 1px dashed var(--color-accent);
+  background: var(--color-accent-soft);
+  box-shadow: none;
+}
+:root [data-widget-id][data-dnd-placeholder] > * {
+  visibility: hidden;
+}

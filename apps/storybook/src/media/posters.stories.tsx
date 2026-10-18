@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+
+import { art, byId, titles } from '@highsea/fixtures'
 import { Button, Poster, Rating } from '@highsea/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
-import { art, byId, titles } from '../fixtures/media.ts'
 
 const meta = {
   title: 'Media/Posters',

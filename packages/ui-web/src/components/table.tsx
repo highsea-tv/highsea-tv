@@ -89,7 +89,7 @@ export function TableCell({ className, numeric, align, ...props }: ComponentProp
   )
 }
 
-export type TitleCellProps = ComponentProps<'td'> & {
+export type TitleCellProps = Omit<ComponentProps<'td'>, 'title'> & {
   title: ReactNode
   /** The release name or path: mono 11px `text-3`, one line, truncated, full value on hover. */
   detail?: string

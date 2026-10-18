@@ -59,6 +59,8 @@ export const density = {
   mainPadding: 24,
   widgetGap: 12,
   widgetPadding: 14,
+  /** One row of the widget grid: a small widget is two rows (180px with the gap). */
+  widgetRow: 84,
 } as const
 
 /** Pointer and touch target minimums. */
