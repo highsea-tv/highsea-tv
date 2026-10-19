@@ -18,6 +18,7 @@ import {
 import { type ReactNode, useState } from 'react'
 import { left, meta, qualityTags, useHome } from '../client/data.ts'
 import type { ClientItem, HomeSection } from '../mock/types.ts'
+import { useProto } from '../screen/screen.tsx'
 import { Banners, gutter, webHref } from './shell.tsx'
 
 export type HomeOption = 'a' | 'b'
@@ -161,13 +162,18 @@ function Rows({ sections }: { sections: HomeSection[] }) {
   return (
     <div className="mx-auto grid max-w-[1680px] gap-8 pb-16">
       {sections.map((s) =>
-        s.layout === 'continue' ? (
-          <ContinueRow key={s.id} section={s} />
-        ) : s.layout === 'spotlight' ? (
-          <SpotlightRow key={s.id} section={s} />
-        ) : s.layout === 'row' ? (
-          <PosterRow key={s.id} title={s.title} suffix={s.suffix} items={s.items} />
-        ) : null,
+        s.layout === 'hero' ? null : (
+          // data-section: a curation preview scrolls to the section being edited
+          <div key={s.id} data-section={s.id} className="grid">
+            {s.layout === 'continue' ? (
+              <ContinueRow section={s} />
+            ) : s.layout === 'spotlight' ? (
+              <SpotlightRow section={s} />
+            ) : (
+              <PosterRow title={s.title} suffix={s.suffix} items={s.items} />
+            )}
+          </div>
+        ),
       )}
     </div>
   )
@@ -198,7 +204,7 @@ function OptionSwitch({ option }: { option: HomeOption }) {
 }
 
 function HomeStates({ children }: { children: (sections: HomeSection[]) => ReactNode }) {
-  const home = useHome()
+  const home = useHome('web')
   if (home.status === 'loading')
     return (
       <div aria-busy className={cn('mx-auto grid max-w-[1680px] gap-8 pt-24', gutter)}>
@@ -243,7 +249,7 @@ function OptionA({ sections }: { sections: HomeSection[] }) {
   return (
     <main>
       {hero && item && (
-        <div className="medium:-mt-16">
+        <div data-section={hero.id} className="medium:-mt-16">
           <BackdropHero
             item={{
               id: item.id,
@@ -305,6 +311,7 @@ function OptionB({ sections }: { sections: HomeSection[] }) {
       {hero && item && (
         <section
           aria-label={hero.title}
+          data-section={hero.id}
           className={cn(
             'mx-auto grid w-full max-w-[1680px] gap-4 expanded:grid-cols-[minmax(0,1fr)_20rem]',
             gutter,
@@ -365,6 +372,7 @@ function OptionB({ sections }: { sections: HomeSection[] }) {
 }
 
 export function WebHome({ option }: { option: HomeOption }) {
+  const { preview } = useProto()
   return (
     <>
       <HomeStates>
@@ -372,7 +380,7 @@ export function WebHome({ option }: { option: HomeOption }) {
           option === 'a' ? <OptionA sections={sections} /> : <OptionB sections={sections} />
         }
       </HomeStates>
-      <OptionSwitch option={option} />
+      {!preview && <OptionSwitch option={option} />}
     </>
   )
 }

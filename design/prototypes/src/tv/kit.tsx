@@ -65,6 +65,10 @@ export function TvButton({
   )
 }
 
+/** A key on an on-screen keyboard (sign-in, search): a grid cell that fills with `text` on focus. */
+export const tvKey =
+  'grid h-[3cqw] place-items-center rounded-[0.4cqw] bg-text/10 font-semibold text-(length:--tv-text-button) outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg'
+
 /**
  * Top left: the server's mark and name; "Connected remotely" under it when that's how. It sits at
  * the top of the page and scrolls away with it, so it never covers the rows.

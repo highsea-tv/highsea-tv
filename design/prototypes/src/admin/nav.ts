@@ -34,11 +34,18 @@ export const pageGroups: Page[][] = [
       keywords: ['library'],
     },
     {
+      id: 'wanted',
+      label: 'Wanted',
+      icon: 'calendar',
+      path: '/wanted',
+      keywords: ['missing', 'cutoff', 'calendar', 'upcoming', 'ical'],
+    },
+    {
       id: 'activity',
       label: 'Activity',
       icon: 'activity',
       path: '/activity',
-      keywords: ['queue', 'history', 'blocklist'],
+      keywords: ['queue', 'history', 'blocklist', 'manual import'],
     },
     {
       id: 'downloads',
@@ -72,8 +79,7 @@ export const pageGroups: Page[][] = [
       icon: 'curation',
       path: '/curation',
       staff: true,
-      keywords: ['announcements', 'featured'],
-      checkpoint: 4,
+      keywords: ['announcements', 'featured', 'hero', 'home screen'],
     },
   ],
   [
@@ -83,8 +89,7 @@ export const pageGroups: Page[][] = [
       icon: 'settings',
       path: '/settings',
       staff: true,
-      keywords: ['preferences', 'appearance', 'users'],
-      checkpoint: 4,
+      keywords: ['preferences', 'appearance', 'users', 'devices', 'themes', 'api keys', 'security'],
     },
     {
       id: 'system',
@@ -92,8 +97,7 @@ export const pageGroups: Page[][] = [
       icon: 'system',
       path: '/system',
       staff: true,
-      keywords: ['logs', 'health', 'backups', 'tasks'],
-      checkpoint: 4,
+      keywords: ['logs', 'health', 'backups', 'tasks', 'events', 'updates', 'restore'],
     },
   ],
 ]

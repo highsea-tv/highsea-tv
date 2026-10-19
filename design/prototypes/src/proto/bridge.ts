@@ -2,10 +2,15 @@
 // The chrome and the screen talk over postMessage. The screen is an iframe so each platform gets a
 // real viewport (breakpoints, `h-screen`, safe areas); postMessage works even from file://, where
 // the two documents count as different origins.
+import type { CurationPreview } from '../mock/types.ts'
 import type { ProtoState } from './state.ts'
 
-/** Chrome → screen. */
-export type ChromeMessage = { hs: 'state'; state: ProtoState } | { hs: 'navigate'; path: string }
+/** Chrome → screen, and the admin's curation composer → its client preview (A11). */
+export type ChromeMessage =
+  | { hs: 'state'; state: ProtoState }
+  | { hs: 'navigate'; path: string }
+  /** `reveal`: the featured section to bring into view. */
+  | { hs: 'preview'; preview: CurationPreview; draftId?: string; reveal?: string }
 
 /** Screen → chrome. */
 export type ScreenMessage =

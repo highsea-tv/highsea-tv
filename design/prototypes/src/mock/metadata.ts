@@ -668,6 +668,10 @@ export function movieMetadata(state: ServerState, id: string, now: number) {
   } satisfies MovieMetadata
 }
 
+/** Every collection the metadata knows, for rule sources (A11). */
+export const collectionRefs = () =>
+  Object.entries(collections).map(([id, c]) => ({ id, name: c.name }))
+
 export function collection(state: ServerState, id: string): Collection | null {
   const c = collections[id]
   if (!c) return null

@@ -1,14 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The web/desktop client (C1–C8). Checkpoint 3 builds connect, home (two options), library, item
-// detail and the player; Search, Downloads and Settings come at checkpoint 4.
+// The web/desktop client (C1–C8): connect, home (two options), library, item detail, the player,
+// search, settings, the profile and downloads. The device's own theme and sound apply over all.
+import { Button, EmptyState } from '@highsea/ui-web'
 import { Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
-import { NotBuilt } from '../kit/not-built.tsx'
+import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { WebDetail } from './detail.tsx'
 import { savedOption, WebHome } from './home.tsx'
 import { WebLibrary } from './library.tsx'
 import { WebPlayer } from './player.tsx'
-import { WebShell } from './shell.tsx'
+import { WebSearch } from './search.tsx'
+import { WebDownloads, WebProfile, WebSettings } from './settings.tsx'
+import { WebShell, webHref } from './shell.tsx'
 
 function Connect() {
   const [, navigate] = useLocation()
@@ -16,6 +19,15 @@ function Connect() {
 }
 
 export function WebApp() {
+  return (
+    <>
+      <ApplyDevicePrefs platform="web" />
+      <Routes />
+    </>
+  )
+}
+
+function Routes() {
   return (
     <Switch>
       <Route path="/connect">
@@ -52,9 +64,41 @@ export function WebApp() {
           <WebDetail />
         </WebShell>
       </Route>
+      <Route path="/search">
+        <WebShell>
+          <WebSearch />
+        </WebShell>
+      </Route>
+      <Route path="/settings/:section?">
+        <WebShell>
+          <WebSettings />
+        </WebShell>
+      </Route>
+      <Route path="/profile">
+        <WebShell>
+          <WebProfile />
+        </WebShell>
+      </Route>
+      <Route path="/downloads">
+        <WebShell>
+          <WebDownloads />
+        </WebShell>
+      </Route>
       <Route>
         <WebShell>
-          <NotBuilt what="This page of the web client" checkpoint={4} className="min-h-[70vh]" />
+          <main className="grid min-h-[70vh] place-items-center px-4">
+            <EmptyState
+              icon="search"
+              title="There’s nothing at this address"
+              action={
+                <Button variant="primary" asChild>
+                  <a href={webHref('/')}>Go home</a>
+                </Button>
+              }
+            >
+              It may have moved. Search finds every title on Harbor.
+            </EmptyState>
+          </main>
         </WebShell>
       </Route>
     </Switch>

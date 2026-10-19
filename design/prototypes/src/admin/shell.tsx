@@ -34,7 +34,7 @@ import {
   useState,
 } from 'react'
 import { useLocation } from 'wouter'
-import { Inline } from '../kit/inline.tsx'
+import { Cta, Inline } from '../kit/inline.tsx'
 import { useClient, useNow, useQuery } from '../mock/hooks.tsx'
 import type { Announcement, UserRole } from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'
@@ -266,7 +266,6 @@ function usePaletteGroups(role: UserRole, shell: Pick<Shell, 'setCustomizing'>):
 
 // ---------------------------------------------------------------- announcements
 
-/** Bold is the only markdown a banner needs; the composer (A11) has the full preview. */
 const tone = (a: Announcement) =>
   a.severity === 'critical' ? 'danger' : a.severity === 'warning' ? 'warning' : 'announcement'
 
@@ -288,6 +287,7 @@ function Announcements() {
             tone={tone(a)}
             onDismiss={a.acknowledgement === 'dismiss' ? done : undefined}
             onAcknowledge={a.acknowledgement === 'require' ? done : undefined}
+            action={a.cta ? <Cta cta={a.cta} /> : undefined}
           >
             <Inline text={a.body} />
           </Banner>

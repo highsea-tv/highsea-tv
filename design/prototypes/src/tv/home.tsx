@@ -132,8 +132,8 @@ function usePageOffset() {
   const [offset, setOffset] = useState(0)
   useEffect(() => {
     const el = page.current
-    const onFocus = (e: FocusEvent) => {
-      const row = (e.target as HTMLElement).closest<HTMLElement>('[data-row]')
+    const reveal = (target: EventTarget | null) => {
+      const row = (target as HTMLElement | null)?.closest<HTMLElement>('[data-row]')
       if (!el?.parentElement) return
       if (!row || row.dataset.row === '0') return setOffset(0)
       // layout positions: both boxes carry the same transform
@@ -142,8 +142,15 @@ function usePageOffset() {
       const max = el.scrollHeight - el.parentElement.clientHeight
       setOffset(Math.max(0, Math.min(top - safe, max)))
     }
+    const onFocus = (e: FocusEvent) => reveal(e.target)
+    // a curation preview (A11) asks for the section being edited, without moving focus
+    const onReveal = (e: Event) => reveal((e as CustomEvent<HTMLElement>).detail)
     el?.addEventListener('focusin', onFocus)
-    return () => el?.removeEventListener('focusin', onFocus)
+    window.addEventListener('highsea:reveal', onReveal)
+    return () => {
+      el?.removeEventListener('focusin', onFocus)
+      window.removeEventListener('highsea:reveal', onReveal)
+    }
   }, [])
   const style = { transform: `translateY(${-offset}px)`, transition: reduced ? 'none' : undefined }
   return { page, style, lifted: offset > 0 }
@@ -193,7 +200,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
             className="relative grid grid-cols-1 gap-[1.6cqw] pt-[28.5cqw] pb-(--tv-safe-y)"
           >
             {rows.map((s, i) => (
-              <div key={s.id} data-row={i} className="grid grid-cols-1">
+              <div key={s.id} data-row={i} data-section={s.id} className="grid grid-cols-1">
                 <Row section={s} featured={s.id === hero?.id} onFocusItem={setFocused} />
               </div>
             ))}
@@ -211,7 +218,15 @@ function AcknowledgeScreen() {
   if (!m) return null
   return (
     <main className="grid h-full place-items-center bg-bg">
-      <div className="grid max-w-[44cqw] gap-[1.4cqw] rounded-[1cqw] bg-s1 p-[2.4cqw]">
+      <div className="grid max-w-[44cqw] gap-[1.4cqw] overflow-hidden rounded-[1cqw] bg-s1 p-[2.4cqw]">
+        {m.image && (
+          // the TV can't follow a link, so a call to action stays on the other apps
+          <img
+            src={m.image}
+            alt=""
+            className="-mx-[2.4cqw] -mt-[2.4cqw] mb-[0.4cqw] aspect-[21/9] w-[calc(100%+4.8cqw)] max-w-none object-cover"
+          />
+        )}
         <p className="flex items-center gap-[0.6cqw] font-semibold text-(length:--tv-text-eyebrow) text-accent-text uppercase tracking-eyebrow">
           <Icon name="announcement" size={24} className="size-[1.1cqw]" />
           From the server’s owner
@@ -231,7 +246,7 @@ function AcknowledgeScreen() {
 }
 
 export function TvHome() {
-  const home = useHome()
+  const home = useHome('tv')
   const a = useAnnouncements('tv')
   if (a.modal) return <AcknowledgeScreen />
   if (home.status === 'loading')

@@ -17,7 +17,7 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 
 - **Sidebar** ([admin.md › Sidebar](../design-language/platforms/admin.md#sidebar)):
   - the lockup at the top, or the mark alone in the rail;
-  - three nav groups separated by hairlines: Dashboard, Discover, Movies, Activity, Downloads · Indexers, Subtitles, Curation · Settings, System;
+  - three nav groups separated by hairlines: Dashboard, Discover, Movies, Wanted, Activity, Downloads · Indexers, Subtitles, Curation · Settings, System;
   - counts in mono `text-3` on Movies (the library size) and Activity (the queue length);
   - the **server card** pinned to the bottom: a status dot, the server name, and "v{version} · {n} clients".
 - **Main area:** an optional announcement banner stack, then the page. Each page starts with a `PageHeader` row: the title, the search trigger (with a ⌘K hint at medium and up), and the page's actions.

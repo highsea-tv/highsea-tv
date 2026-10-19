@@ -18,6 +18,7 @@ import { type BaseLocationHook, Router, useLocation } from 'wouter'
 import { navigate, useHashLocation } from 'wouter/use-hash-location'
 import { createClient, type Mock } from '../mock/client.ts'
 import { ClientProvider } from '../mock/hooks.tsx'
+import { applyPreview } from '../mock/server.ts'
 import { inFrame, isMessage, post } from '../proto/bridge.ts'
 import {
   loadState,
@@ -97,6 +98,29 @@ export function ScreenApp({
   )
 }
 
+/**
+ * Brings a home section into view once the preview has re-rendered: the TV lifts its page (it
+ * scrolls by transform, not natively); the web and mobile scroll to it.
+ */
+function reveal(sectionId: string) {
+  setTimeout(() => {
+    const el = document.querySelector<HTMLElement>(`[data-section="${CSS.escape(sectionId)}"]`)
+    if (!el) return
+    if (el.closest('[data-platform="tv"]'))
+      window.dispatchEvent(new CustomEvent('highsea:reveal', { detail: el }))
+    else {
+      // not scrollIntoView: inside the admin's preview frame it would scroll the admin too
+      let scroller: HTMLElement | null = el.parentElement
+      while (scroller && !/(auto|scroll)/.test(getComputedStyle(scroller).overflowY))
+        scroller = scroller.parentElement
+      const box = scroller ?? document.scrollingElement
+      if (!box) return
+      const top = scroller ? scroller.getBoundingClientRect().top : 0
+      box.scrollTop += el.getBoundingClientRect().top - top - 72
+    }
+  }, 400)
+}
+
 /** Reports the route to the chrome, so its hash and toolbar follow the screen. */
 function RouteReporter() {
   const [location] = useLocation()
@@ -121,6 +145,10 @@ export function FramedScreen({ mock }: { mock: Mock }) {
       if (e.source !== window.parent || !isMessage(e.data)) return
       if (e.data.hs === 'state') setState(e.data.state)
       else if (e.data.hs === 'navigate') navigate(e.data.path)
+      else if (e.data.hs === 'preview') {
+        applyPreview(mock.servers.populated, e.data.preview, e.data.draftId)
+        if (e.data.reveal) reveal(e.data.reveal)
+      }
     }
     window.addEventListener('message', onMessage)
     post(window.parent, { hs: 'ready' })

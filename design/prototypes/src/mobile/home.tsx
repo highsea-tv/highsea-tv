@@ -12,14 +12,17 @@ import { AnnouncementCard, gutter, Header, mobileHref } from './shell.tsx'
 export function MobileRow({
   title,
   suffix,
+  section,
   children,
 }: {
   title: string
   suffix?: string | null
+  /** A home section's id, so a curation preview can scroll to it. */
+  section?: string
   children: ReactNode
 }) {
   return (
-    <section aria-label={title} className="grid gap-2.5">
+    <section aria-label={title} data-section={section} className="grid gap-2.5">
       <h2 className={cn('font-semibold text-[17px]', gutter)}>
         {title}
         {suffix && <span className="font-normal text-text-2"> {suffix}</span>}
@@ -92,7 +95,7 @@ function Featured({ section }: { section: HomeSection }) {
 }
 
 export function MobileHome() {
-  const home = useHome()
+  const home = useHome('mobile')
   return (
     <div className="grid gap-6 pt-1">
       <Header />
@@ -129,9 +132,11 @@ export function MobileHome() {
       ) : (
         home.data.map((s) =>
           s.layout === 'hero' ? (
-            <Featured key={s.id} section={s} />
+            <div key={s.id} data-section={s.id} className="grid">
+              <Featured section={s} />
+            </div>
           ) : s.layout === 'continue' ? (
-            <MobileRow key={s.id} title={s.title}>
+            <MobileRow key={s.id} title={s.title} section={s.id}>
               {s.items.map((m) => (
                 <li key={m.id} className="w-[62%] shrink-0 snap-start">
                   <Poster
@@ -148,7 +153,7 @@ export function MobileHome() {
             </MobileRow>
           ) : (
             // spotlights read as rows on a phone: there's no room for a synopsis beside the art
-            <MobileRow key={s.id} title={s.title} suffix={s.suffix}>
+            <MobileRow key={s.id} title={s.title} suffix={s.suffix} section={s.id}>
               <PosterItems items={s.items} />
             </MobileRow>
           ),

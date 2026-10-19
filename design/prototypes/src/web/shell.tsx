@@ -18,8 +18,9 @@ import {
   MenuLabel,
   MenuSeparator,
   MenuTrigger,
+  toast,
 } from '@highsea/ui-web'
-import { type ReactNode, useEffect, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { relative } from '../admin/format.ts'
 import {
@@ -29,7 +30,7 @@ import {
   useKnownServers,
   useServer,
 } from '../client/data.ts'
-import { Inline } from '../kit/inline.tsx'
+import { Cta, Inline } from '../kit/inline.tsx'
 import { useNow } from '../mock/hooks.tsx'
 
 export const webHref = (path: string) => clientHref('web', path)
@@ -121,6 +122,9 @@ function Profile() {
       </MenuTrigger>
       <MenuContent>
         <MenuLabel>Ines</MenuLabel>
+        <MenuItem icon="user" onSelect={() => navigate('/profile')}>
+          Account
+        </MenuItem>
         <MenuItem icon="settings" onSelect={() => navigate('/settings')}>
           Settings
         </MenuItem>
@@ -214,6 +218,7 @@ export function Banners() {
           title={b.title}
           tone={b.severity === 'warning' ? 'warning' : 'announcement'}
           onDismiss={() => a.dismiss(b.id)}
+          action={b.cta ? <Cta cta={b.cta} /> : undefined}
         >
           <Inline text={b.body} />
         </Banner>
@@ -236,16 +241,24 @@ function AnnouncementModal() {
         onPointerDownOutside={(e) => e.preventDefault()}
         footer={
           m && (
-            <Button variant="primary" onClick={() => a.dismiss(m.id)}>
-              Got it
-            </Button>
+            <>
+              <Cta cta={m.cta} />
+              <Button variant="primary" onClick={() => a.dismiss(m.id)}>
+                Got it
+              </Button>
+            </>
           )
         }
       >
         {m && (
-          <p className="text-body text-text-2">
-            <Inline text={m.body} />
-          </p>
+          <div className="grid gap-4">
+            {m.image && (
+              <img src={m.image} alt="" className="aspect-[21/9] w-full rounded-md object-cover" />
+            )}
+            <p className="text-body text-text-2">
+              <Inline text={m.body} />
+            </p>
+          </div>
         )}
       </DialogContent>
     </Dialog>
@@ -278,6 +291,21 @@ export function Unreachable() {
   )
 }
 
+/** Toast-placed announcements: shown once when the app opens, then counted as seen. */
+function AnnouncementToasts() {
+  const a = useAnnouncements('web')
+  const shown = useRef(new Set<string>())
+  useEffect(() => {
+    for (const t of a.toasts) {
+      if (shown.current.has(t.id)) continue
+      shown.current.add(t.id)
+      toast({ title: t.title, description: <Inline text={t.body} />, tone: 'info' })
+      a.dismiss(t.id)
+    }
+  }, [a])
+  return null
+}
+
 export function WebShell({
   children,
   overHero = false,
@@ -290,7 +318,12 @@ export function WebShell({
     <div className="min-h-screen bg-bg text-text">
       <TopBar overHero={overHero && connection !== 'offline'} />
       {connection === 'offline' ? <Unreachable /> : children}
-      {connection !== 'offline' && <AnnouncementModal />}
+      {connection !== 'offline' && (
+        <>
+          <AnnouncementModal />
+          <AnnouncementToasts />
+        </>
+      )}
     </div>
   )
 }

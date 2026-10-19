@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What the three client apps share: their data calls, addresses and formatting. Each platform
 // draws its own screens (web, mobile and TV differ in layout, input and units), on the same data.
+import { useEffect, useState } from 'react'
 import { useAction, useQuery } from '../mock/hooks.tsx'
 import type { ClientItem, ClientType } from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'
@@ -18,14 +19,35 @@ export const clientType: Record<ClientPlatform, ClientType> = {
 export const clientHref = (platform: ClientPlatform, path: string) =>
   `#/${platform}${path === '/' ? '' : path}`
 
-export const useHome = () =>
-  useQuery('client:home', (c) => c.home.sections(), ['movies.updated', 'watch.updated'])
+/** Home for this app: featured sections whose audience includes it, in the owner's order. */
+export const useHome = (platform: ClientPlatform) =>
+  useQuery(`client:home:${platform}`, (c) => c.home.sections(clientType[platform]), [
+    'movies.updated',
+    'watch.updated',
+    'curation.updated',
+  ])
 
 export const useLibrary = () =>
   useQuery('client:library', (c) => c.library.list(), ['movies.updated', 'watch.updated'])
 
 export const useItem = (id: string) =>
   useQuery(`client:item:${id}`, (c) => c.library.item(id), ['movies.updated', 'watch.updated'])
+
+/** Search (C6): results for the query once it settles, so typing doesn't flood the server. */
+export function useSearch(query: string) {
+  const [settled, setSettled] = useState(query)
+  useEffect(() => {
+    const t = setTimeout(() => setSettled(query), 150)
+    return () => clearTimeout(t)
+  }, [query])
+  const results = useQuery(`client:search:${settled}`, (c) => c.library.search(settled), [
+    'movies.updated',
+  ])
+  return { results, settled, typing: settled !== query }
+}
+
+/** Quick picks for an empty search. */
+export const searchSuggestions = ['Comedy', 'Horror', 'Animation', 'Science fiction', 'Fritz Lang']
 
 export const useServer = () => useQuery('server', (c) => c.system.server(), ['server.updated'])
 
@@ -46,6 +68,8 @@ export function useAnnouncements(platform: ClientPlatform) {
       (a) => a.placements.includes('banner') && a.acknowledgement === 'dismiss',
     ),
     cards: unseen.filter((a) => a.placements.includes('card') && a.acknowledgement === 'dismiss'),
+    /** Shown once as a toast on the web and desktop, then marked seen. */
+    toasts: unseen.filter((a) => a.placements.includes('toast') && a.acknowledgement === 'dismiss'),
     /** The newest, for the TV's pill. */
     latest: unseen[0],
     dismiss: (id: string) => done.run(id),

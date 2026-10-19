@@ -44,10 +44,18 @@ export function Activity() {
   const [tab, setTab] = useState<Tab>('queue')
   const queue = useQuery('queue', (c) => c.queue.list(), ['queue.changed', 'torrents.updated'])
   const blocklist = useQuery('blocklist', (c) => c.blocklist.list(), ['history.updated'])
+  const staff = isStaff(useShell().role)
   return (
     <AdminPage
       title="Activity"
       description="What’s downloading for the library, what happened, and the releases highsea won’t grab again."
+      actions={
+        staff && (
+          <Button icon="import" asChild>
+            <a href={adminHref('/activity/import')}>Manual import</a>
+          </Button>
+        )
+      }
     >
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} variant="line">
         <TabsList aria-label="Activity sections">

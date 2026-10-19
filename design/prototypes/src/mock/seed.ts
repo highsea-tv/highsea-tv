@@ -5,8 +5,12 @@
 // nothing else does.
 import { art, backdropArt, library, posterArt, stillArt, type Title } from '@highsea/fixtures'
 import { iso } from './clock.ts'
+import { defaultSettings, type Settings } from './settings.ts'
 import type {
   Announcement,
+  ApiKey,
+  Appearance,
+  Backup,
   BlocklistEntry,
   CatalogDefinition,
   CustomFormat,
@@ -16,6 +20,7 @@ import type {
   FeaturedSection,
   HealthCheck,
   HistoryEvent,
+  HomeLayout,
   Indexer,
   ISODate,
   Job,
@@ -94,6 +99,12 @@ export type ServerState = {
   pipeline: PipelineStep[]
   /** Announcement ids the signed-in user dismissed or acknowledged. */
   seen: Record<string, string[]>
+  appearance: Appearance
+  apiKeys: ApiKey[]
+  settings: Settings
+  backups: Backup[]
+  /** Per user: their own order and hidden rows on Home (C7). */
+  homeLayouts: Record<string, HomeLayout>
 }
 
 // ---------------------------------------------------------------- shared by both servers
@@ -1060,6 +1071,55 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
     prefs: {},
     pipeline: [],
     seen: {},
+    appearance: {
+      defaultTheme: 'default',
+      // what an owner might build: OLED black with a sea-glass accent (the toolbar's Harbor)
+      themes: [{ id: 'harbor', name: 'Harbor', base: 'oled', accent: '#8fbfb7' }],
+      sound: { tv: true, phone: false, web: false, volume: 0.8, pack: 'felt' },
+    } satisfies Appearance,
+    apiKeys: (kind === 'empty'
+      ? []
+      : [
+          {
+            id: 'k-ha',
+            name: 'Home Assistant',
+            prefix: 'hs_7Kq2',
+            scope: 'read',
+            createdAt: iso(now - 40 * DAY),
+            lastUsed: iso(now - 5 * MIN),
+          },
+          {
+            id: 'k-backup',
+            name: 'Nightly backup script',
+            prefix: 'hs_Rm9x',
+            scope: 'full',
+            createdAt: iso(now - 120 * DAY),
+            lastUsed: iso(now - 20 * HOUR),
+          },
+        ]) satisfies ApiKey[],
+    settings: defaultSettings(),
+    homeLayouts: {},
+    backups: [
+      ...Array.from(
+        { length: kind === 'empty' ? 0 : 7 },
+        (_, i): Backup => ({
+          id: `b-${i}`,
+          createdAt: iso(now - (17 * HOUR + i * DAY)),
+          size: 48_200_000 - i * 310_000,
+          kind: 'scheduled',
+        }),
+      ),
+      ...(kind === 'empty'
+        ? []
+        : [
+            {
+              id: 'b-migration',
+              createdAt: iso(now - 9 * DAY - 4 * HOUR),
+              size: 44_900_000,
+              kind: 'pre-migration',
+            } satisfies Backup,
+          ]),
+    ],
   }
   if (kind === 'empty')
     return {
@@ -1405,6 +1465,8 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
   })()
   return {
     ...base,
+    // two of the household have already seen Friday's movie night
+    seen: { 'u-theo': ['an-movie-night'], 'u-sam': ['an-movie-night'] },
     devices,
     items,
     files,

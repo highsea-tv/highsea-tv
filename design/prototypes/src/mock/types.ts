@@ -95,6 +95,30 @@ export type Device = {
 
 export type Session = { user: User; deviceId: string; expiresAt: ISODate }
 
+export type InviteInput = {
+  displayName: string
+  /** Optional: the invite can go by email, or as a link the owner shares. */
+  email: string | null
+  role: Exclude<UserRole, 'owner'>
+  libraries: 'all' | string[]
+}
+
+/** A pending user and the single-use link that finishes their account. */
+export type Invite = { user: User; link: string; expiresAt: ISODate }
+
+/** For scripts and other apps (Home Assistant, a backup job). The secret shows once. */
+export type ApiKey = {
+  id: string
+  name: string
+  /** The first characters, to tell keys apart: `hs_7Kq2…`. */
+  prefix: string
+  scope: 'read' | 'full'
+  createdAt: ISODate
+  lastUsed: ISODate | null
+}
+
+export type CreatedApiKey = ApiKey & { secret: string }
+
 export type SignInResult =
   | { status: 'signed-in'; session: Session }
   | { status: 'two-factor'; challenge: string }
@@ -488,6 +512,21 @@ export type ImportList = {
   enabled: boolean
   lastSync: ISODate | null
   items: number
+  /** Adds what it finds as monitored, and searches for it. */
+  search: boolean
+  profileId: string
+}
+
+/** A file manual import (A17) found, and what highsea thinks it is. */
+export type ImportCandidate = {
+  path: string
+  size: number
+  quality: string
+  language: string
+  /** The movie it matched, by name; null when nothing did. */
+  itemId: string | null
+  /** Why it would be skipped, when it would. */
+  skip: string | null
 }
 
 /** Root folders and the hardlink check (roadmap › Docker: a single `/data` root). */
@@ -647,6 +686,50 @@ export type FeaturedSection = {
   order: number
 }
 
+export type CurationStatus = 'draft' | 'scheduled' | 'live' | 'ended'
+
+/** An announcement in the admin's list: how many of its audience have seen it. */
+export type AnnouncementSummary = Announcement & { seenBy: number; audienceSize: number }
+
+/** A featured section in the admin's list: what its source resolves to right now. */
+export type SectionSummary = FeaturedSection & {
+  status: Exclude<CurationStatus, 'draft'>
+  itemCount: number
+  /** The first few titles, for the list's art strip. */
+  sample: { id: string; title: string; poster: string }[]
+}
+
+/** The curation a client preview renders: the saved lists with the draft merged in. */
+export type CurationPreview = { announcements: Announcement[]; featured: FeaturedSection[] }
+
+// ---------------------------------------------------------------- appearance (A12)
+
+/** A custom theme: a partial override of a built-in one (the theme engine's `ThemeInput`). */
+export type CustomTheme = {
+  id: string
+  name: string
+  base: 'default' | 'oled' | 'high-contrast'
+  accent: string
+  colors?: Record<string, string>
+}
+
+/** What clients play until someone changes it on their own device. */
+export type SoundDefaults = {
+  tv: boolean
+  phone: boolean
+  web: boolean
+  /** 0–1. */
+  volume: number
+  pack: string
+}
+
+export type Appearance = {
+  /** A built-in theme id or a custom theme's. Clients use it until someone picks their own. */
+  defaultTheme: string
+  themes: CustomTheme[]
+  sound: SoundDefaults
+}
+
 // ---------------------------------------------------------------- personalization
 
 export type WidgetKind =
@@ -774,6 +857,9 @@ export type ServerEvent =
   | { type: 'health.updated' }
   | { type: 'subtitles.updated'; itemId?: string }
   | { type: 'announcements.updated' }
+  | { type: 'curation.updated' }
+  | { type: 'users.updated' }
+  | { type: 'settings.updated' }
   | { type: 'layout.updated' }
   | { type: 'server.updated' }
   | { type: 'watch.updated' }
@@ -817,6 +903,15 @@ export type HomeSection = {
   layout: 'hero' | 'row' | 'spotlight' | 'continue'
   items: ClientItem[]
 }
+
+/** Search (C6): titles, then the people in them. */
+export type SearchResults = {
+  titles: ClientItem[]
+  people: { id: string; name: string; photo: string; titles: number }[]
+}
+
+/** A person's own home screen order (C7): ids of featured sections and `continue`. */
+export type HomeLayout = { order: string[]; hidden: string[] }
 
 export type ClientTrack = {
   id: string

@@ -3,22 +3,44 @@
 // the clock. Screens never touch this directly; they go through the client (client.ts).
 import { backdropArt, posterArt, stillArt } from '@highsea/fixtures'
 import { type Clock, createEmitter, createRandom, type Emitter, iso } from './clock.ts'
-import { collection, knownTitles, movieMetadata, person, recommendations } from './metadata.ts'
+import {
+  collection,
+  collectionRefs,
+  knownTitles,
+  movieMetadata,
+  person,
+  recommendations,
+} from './metadata.ts'
 import { GB, MB, type ServerState, seed } from './seed.ts'
+import type { Settings, SettingsSection } from './settings.ts'
 import type {
   AddMovieInput,
   AddTorrentInput,
   Announcement,
+  AnnouncementSummary,
+  ApiKey,
+  Appearance,
+  Audience,
+  Backup,
   ClientDetail,
   ClientItem,
   ClientTrack,
   ClientType,
   ClientVersion,
+  CreatedApiKey,
+  CurationPreview,
+  CurationStatus,
+  CustomTheme,
   FeaturedSection,
   HardlinkCheck,
+  HomeLayout,
   HomeSection,
+  ImportCandidate,
   Indexer,
+  Invite,
+  InviteInput,
   LanguageProfile,
+  LogEntry,
   MediaFile,
   MediaItem,
   Pairing,
@@ -26,6 +48,9 @@ import type {
   ProbeResult,
   QueueItem,
   Release,
+  SearchResults,
+  SectionSummary,
+  Server,
   SetupInput,
   SignInResult,
   SubtitleSearchResult,
@@ -185,6 +210,33 @@ function addHistory(
     indexer: t?.indexer ?? null,
     message,
   })
+}
+
+/** A draft stays a draft; otherwise the schedule decides. */
+export function curationStatus(
+  schedule: { start: string; end: string | null },
+  now: number,
+  draft = false,
+): CurationStatus {
+  if (draft) return 'draft'
+  if (Date.parse(schedule.start) > now) return 'scheduled'
+  if (schedule.end && Date.parse(schedule.end) <= now) return 'ended'
+  return 'live'
+}
+
+/**
+ * A client preview (A11): this server shows the curation it's given, as if it were saved. The
+ * admin's composer runs the clients' home screens in a frame against their own copy of the server,
+ * so the draft never reaches the real one. The draft shows even if it was seen before.
+ */
+export function applyPreview(srv: MockServer, preview: CurationPreview, draftId?: string): void {
+  srv.state.announcements = structuredClone(preview.announcements)
+  srv.state.featured = structuredClone(preview.featured)
+  if (draftId)
+    for (const [u, ids] of Object.entries(srv.state.seen))
+      srv.state.seen[u] = ids.filter((id) => id !== draftId)
+  srv.events.emit({ type: 'announcements.updated' })
+  srv.events.emit({ type: 'curation.updated' })
 }
 
 export function createServer(
@@ -593,13 +645,27 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     }
   }
 
-  const visible = (a: Announcement, client: ClientType) => {
-    const u = me()
-    if (a.audience.kind === 'roles') return a.audience.roles.includes(u.role)
-    if (a.audience.kind === 'users') return a.audience.userIds.includes(u.id)
-    if (a.audience.kind === 'clients') return a.audience.clients.includes(client)
+  const inAudience = (audience: Audience, u: User, client: ClientType) => {
+    if (audience.kind === 'roles') return audience.roles.includes(u.role)
+    if (audience.kind === 'users') return audience.userIds.includes(u.id)
+    if (audience.kind === 'clients') return audience.clients.includes(client)
     return true
   }
+  const visible = (a: { audience: Audience }, client: ClientType) =>
+    inAudience(a.audience, me(), client)
+  /** The people an audience reaches, on any app (invites not yet accepted don't count). */
+  const audienceOf = (audience: Audience) =>
+    state.users.filter(
+      (u) =>
+        !u.invited &&
+        (audience.kind === 'roles'
+          ? audience.roles.includes(u.role)
+          : audience.kind === 'users'
+            ? audience.userIds.includes(u.id)
+            : true),
+    )
+  const announcementStatus = (a: Announcement) =>
+    curationStatus(a.schedule, now(), a.status === 'draft')
 
   // ---- the clients' view of the library (C2–C5)
 
@@ -642,7 +708,9 @@ export function createApi(srv: MockServer, ctx: Ctx) {
             })
           : rule === 'genre'
             ? all.filter((m) => m.genres.some((g) => g.toLowerCase() === value.toLowerCase()))
-            : all
+            : rule === 'collection'
+              ? all.filter((m) => movieMetadata(state, m.id, now())?.collection?.id === value)
+              : all
     return picked.map((m) => clientItem(m, tagline(m.id)))
   }
 
@@ -759,6 +827,96 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         requireStaff()
         return state.speeds
       },
+      /** Starts a scheduled job now; it runs on the next tick. */
+      runJob: (id: string) => {
+        requireStaff()
+        const j = state.jobs.find((x) => x.id === id)
+        if (!j || j.state === 'running') return
+        j.nextRun = iso(now())
+        srv.events.emit({ type: 'jobs.updated' })
+      },
+      /** The server's log, newest first: imports, grabs, jobs, health and the odd error. */
+      logs: (): LogEntry[] => {
+        requireStaff()
+        const title = (id: string) => state.items.find((m) => m.id === id)?.title ?? 'A movie'
+        const fromHistory = state.history.map(
+          (h): LogEntry => ({
+            time: h.date,
+            level:
+              h.type === 'import-failed' ? 'error' : h.type === 'blocklisted' ? 'warn' : 'info',
+            logger:
+              h.type === 'grabbed' ? 'Download' : h.type === 'imported' ? 'Import' : 'History',
+            message:
+              h.type === 'grabbed'
+                ? `Grabbed ${h.sourceTitle} from ${h.indexer ?? 'an indexer'}`
+                : h.type === 'imported'
+                  ? `Imported ${title(h.itemId)} (${h.quality ?? 'unknown quality'})`
+                  : `${title(h.itemId)}: ${h.message ?? h.type}`,
+          }),
+        )
+        const fromHealth = state.health.map(
+          (c): LogEntry => ({
+            time: c.since,
+            level: c.level === 'error' ? 'error' : c.level === 'ok' ? 'info' : 'warn',
+            logger: c.source,
+            message: c.message,
+          }),
+        )
+        const fromJobs = state.jobs.flatMap((j): LogEntry[] =>
+          j.lastRun
+            ? [{ time: j.lastRun, level: 'info', logger: 'Jobs', message: `${j.name} finished` }]
+            : [],
+        )
+        const debug: LogEntry[] = [
+          {
+            time: iso(now() - 90_000),
+            level: 'debug',
+            logger: 'Discovery',
+            message: 'Answered a discovery broadcast from 192.168.1.44',
+          },
+          {
+            time: iso(now() - 260_000),
+            level: 'debug',
+            logger: 'Http',
+            message: 'GET /api/v1/home 200 in 14 ms (Living room Apple TV)',
+          },
+        ]
+        return [...fromHistory, ...fromHealth, ...fromJobs, ...debug].sort(
+          (a, b) => Date.parse(b.time) - Date.parse(a.time),
+        )
+      },
+      backups: () => {
+        requireStaff()
+        return [...state.backups].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+      },
+      backupNow: (): Backup => {
+        requireStaff()
+        const b: Backup = {
+          id: `b-${now().toString(36)}`,
+          createdAt: iso(now()),
+          size: 48_400_000,
+          kind: 'manual',
+        }
+        state.backups.unshift(b)
+        srv.events.emit({ type: 'jobs.updated' })
+        return b
+      },
+      /** Restores a backup: the server restarts on it. Media files aren't touched. */
+      restore: (id: string) => {
+        requireStaff()
+        if (!state.backups.some((b) => b.id === id))
+          throw new ApiError(404, 'not-found', 'That backup is gone.')
+      },
+      updates: () => ({
+        current: state.server.version,
+        latest: '1.0.1',
+        channel: state.settings.general.updateChannel,
+        notes: [
+          'Subtitle sync handles films with long silent openings.',
+          'The TV app remembers your place in long rows.',
+          'Fixes a crash when an indexer returns an empty page.',
+        ],
+      }),
     },
 
     auth: {
@@ -1309,6 +1467,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         return newTorrent
       },
       qualityProfiles: () => state.qualityProfiles,
+      customFormats: () => state.customFormats,
       languageProfiles: () => state.languageProfiles,
       rootFolders: () => ['/data/media/movies', '/data/media/movies-4k'],
     },
@@ -1769,13 +1928,142 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       active: (client: ClientType = 'admin') => {
         const seen = state.seen[me().id] ?? []
         return state.announcements
-          .filter((a) => a.status === 'live' && visible(a, client))
+          .filter((a) => announcementStatus(a) === 'live' && visible(a, client))
           .map((a) => ({ ...a, seen: seen.includes(a.id) }))
       },
       dismiss: (id: string) => {
         const u = me().id
         state.seen[u] = [...(state.seen[u] ?? []), id]
         srv.events.emit({ type: 'announcements.updated' })
+      },
+    },
+
+    curation: {
+      /** Every announcement, newest first within live, scheduled, drafts, then ended. */
+      announcements: (): AnnouncementSummary[] => {
+        requireStaff()
+        const order: CurationStatus[] = ['live', 'scheduled', 'draft', 'ended']
+        return state.announcements
+          .map((a) => {
+            const audience = audienceOf(a.audience)
+            return {
+              ...a,
+              status: announcementStatus(a),
+              audienceSize: audience.length,
+              seenBy: audience.filter((u) => state.seen[u.id]?.includes(a.id)).length,
+            }
+          })
+          .sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status))
+      },
+      announcement: (id: string): Announcement => {
+        requireStaff()
+        const a = state.announcements.find((x) => x.id === id)
+        if (!a) throw new ApiError(404, 'not-found', 'There’s no announcement with that id.')
+        return { ...a, status: announcementStatus(a) }
+      },
+      /** Saves a new or edited announcement. `status: 'draft'` keeps it off every screen. */
+      saveAnnouncement: (a: Announcement): Announcement => {
+        requireStaff()
+        if (!a.title.trim()) throw new ApiError(400, 'invalid', 'Give the announcement a title.')
+        if (!a.placements.length)
+          throw new ApiError(400, 'invalid', 'Choose at least one place to show it.')
+        if (a.schedule.end && Date.parse(a.schedule.end) <= Date.parse(a.schedule.start))
+          throw new ApiError(400, 'invalid', 'The end has to come after the start.')
+        const saved = { ...a, seen: false, status: announcementStatus(a) }
+        const i = state.announcements.findIndex((x) => x.id === a.id)
+        if (i >= 0) state.announcements[i] = saved
+        else state.announcements.unshift(saved)
+        srv.events.emit({ type: 'announcements.updated' })
+        return saved
+      },
+      /** Ends it now: it leaves every screen, and stays in the list as ended. */
+      endAnnouncement: (id: string) => {
+        requireStaff()
+        const a = state.announcements.find((x) => x.id === id)
+        if (!a) return
+        a.schedule = { ...a.schedule, end: iso(now()) }
+        a.status = 'ended'
+        srv.events.emit({ type: 'announcements.updated' })
+      },
+      deleteAnnouncement: (id: string) => {
+        requireStaff()
+        state.announcements = state.announcements.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'announcements.updated' })
+      },
+
+      /** The featured sections in the home screen's order, with what each resolves to now. */
+      sections: (): SectionSummary[] => {
+        requireStaff()
+        return [...state.featured]
+          .sort((a, b) => a.order - b.order)
+          .map((f) => {
+            const items = sectionItems(f)
+            return {
+              ...f,
+              status: curationStatus(f.schedule, now()) as SectionSummary['status'],
+              itemCount: items.length,
+              sample: items.slice(0, 6).map((m) => ({
+                id: m.id,
+                title: m.title,
+                poster: m.art.poster,
+              })),
+            }
+          })
+      },
+      section: (id: string): FeaturedSection => {
+        requireStaff()
+        const f = state.featured.find((x) => x.id === id)
+        if (!f) throw new ApiError(404, 'not-found', 'There’s no featured section with that id.')
+        return f
+      },
+      /** What rule sources can pick from: the library's genres and the known collections. */
+      ruleOptions: () => {
+        requireStaff()
+        return {
+          genres: [...new Set(watchable().flatMap((m) => m.genres))].sort(),
+          collections: collectionRefs(),
+        }
+      },
+      /** The titles a source picks right now (the composer's list). */
+      resolve: (f: FeaturedSection): ClientItem[] => {
+        requireStaff()
+        return sectionItems(f)
+      },
+      saveSection: (f: FeaturedSection): FeaturedSection => {
+        requireStaff()
+        if (!f.title.trim()) throw new ApiError(400, 'invalid', 'Give the section a title.')
+        if (f.source.kind === 'manual' && !f.source.itemIds.length)
+          throw new ApiError(400, 'invalid', 'Add at least one title.')
+        const i = state.featured.findIndex((x) => x.id === f.id)
+        if (i >= 0) state.featured[i] = f
+        else state.featured.push({ ...f, order: state.featured.length })
+        srv.events.emit({ type: 'curation.updated' })
+        return f
+      },
+      deleteSection: (id: string) => {
+        requireStaff()
+        state.featured = state.featured
+          .filter((x) => x.id !== id)
+          .sort((a, b) => a.order - b.order)
+          .map((f, order) => ({ ...f, order }))
+        srv.events.emit({ type: 'curation.updated' })
+      },
+      /** Moves a section up (-1) or down (1) the home screen. */
+      moveSection: (id: string, by: -1 | 1) => {
+        requireStaff()
+        const list = [...state.featured].sort((a, b) => a.order - b.order)
+        const i = list.findIndex((x) => x.id === id)
+        const j = i + by
+        if (i < 0 || j < 0 || j >= list.length) return
+        const [f] = list.splice(i, 1)
+        if (f) list.splice(j, 0, f)
+        state.featured = list.map((x, order) => ({ ...x, order }))
+        srv.events.emit({ type: 'curation.updated' })
+      },
+      /** The saved curation, for a preview to merge a draft into. */
+      snapshot: (): CurationPreview => {
+        requireStaff()
+        return { announcements: state.announcements, featured: state.featured }
       },
     },
 
@@ -1838,10 +2126,9 @@ export function createApi(srv: MockServer, ctx: Ctx) {
 
     home: {
       /** The home screen: featured sections in order, with Continue watching after the hero. */
-      sections: (): HomeSection[] => {
+      sections: (client: ClientType = 'web'): HomeSection[] => {
         const live = state.featured
-          .filter((f) => Date.parse(f.schedule.start) <= now())
-          .filter((f) => !f.schedule.end || Date.parse(f.schedule.end) > now())
+          .filter((f) => curationStatus(f.schedule, now()) === 'live' && visible(f, client))
           .sort((a, b) => a.order - b.order)
           .map(
             (f): HomeSection => ({
@@ -1873,13 +2160,81 @@ export function createApi(srv: MockServer, ctx: Ctx) {
             ]
           : []
         const [first, ...rest] = live
-        return first?.layout === 'hero' ? [first, ...resume, ...rest] : [...resume, ...live]
+        const all = first?.layout === 'hero' ? [first, ...resume, ...rest] : [...resume, ...live]
+        // the person's own order and hidden rows; the hero stays on top
+        const mine = state.homeLayouts[me().id]
+        if (!mine) return all
+        const shown = all.filter((s) => !mine.hidden.includes(s.id))
+        const pinned = shown.filter((s) => s.layout === 'hero')
+        const rows = shown
+          .filter((s) => s.layout !== 'hero')
+          .sort((a, b) => {
+            const i = mine.order.indexOf(a.id)
+            const j = mine.order.indexOf(b.id)
+            return (i < 0 ? 999 : i) - (j < 0 ? 999 : j)
+          })
+        return [...pinned, ...rows]
+      },
+      /** The rows this person can arrange: everything below the hero, in their order. */
+      layout: (): HomeLayout & { rows: { id: string; title: string }[] } => {
+        const mine = state.homeLayouts[me().id] ?? { order: [], hidden: [] }
+        const rows = [
+          { id: 'continue', title: 'Continue watching' },
+          ...[...state.featured]
+            .filter((f) => f.layout !== 'hero' && curationStatus(f.schedule, now()) === 'live')
+            .sort((a, b) => a.order - b.order)
+            .map((f) => ({ id: f.id, title: f.title })),
+        ]
+        const pos = (id: string) => {
+          const i = mine.order.indexOf(id)
+          return i < 0 ? 999 + rows.findIndex((r) => r.id === id) : i
+        }
+        return { ...mine, rows: rows.sort((a, b) => pos(a.id) - pos(b.id)) }
+      },
+      saveLayout: (layout: HomeLayout) => {
+        state.homeLayouts[me().id] = layout
+        srv.events.emit({ type: 'curation.updated' })
+        return layout
       },
     },
 
     library: {
       /** Everything the household can watch. */
       list: () => watchable().map((m) => clientItem(m)),
+      /** Titles by name, genre or person, and the people whose names match. */
+      search: (query: string): SearchResults => {
+        const q = query.trim().toLowerCase()
+        if (!q) return { titles: [], people: [] }
+        const people = new Map<
+          string,
+          { id: string; name: string; photo: string; titles: number }
+        >()
+        const titles = watchable().filter((m) => {
+          const meta = movieMetadata(state, m.id, now())
+          const credits = [...(meta?.cast ?? []), ...(meta?.crew ?? [])]
+          for (const c of credits)
+            if (c.name.toLowerCase().includes(q)) {
+              const p = people.get(c.personId)
+              people.set(c.personId, {
+                id: c.personId,
+                name: c.name,
+                photo: c.photo,
+                titles: (p?.titles ?? 0) + 1,
+              })
+            }
+          return (
+            m.title.toLowerCase().includes(q) ||
+            m.genres.some((g) => g.toLowerCase().startsWith(q)) ||
+            credits.some((c) => c.name.toLowerCase().includes(q))
+          )
+        })
+        // titles whose name matches come first
+        const named = (m: MediaItem) => (m.title.toLowerCase().includes(q) ? 0 : 1)
+        return {
+          titles: titles.sort((a, b) => named(a) - named(b)).map((m) => clientItem(m)),
+          people: [...people.values()].sort((a, b) => b.titles - a.titles).slice(0, 8),
+        }
+      },
       item: (id: string): ClientDetail => {
         const m = state.items.find((x) => x.id === id)
         if (!m || !playable(m))
@@ -1975,12 +2330,238 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         requireStaff()
         return state.users
       },
+      /** A pending account and the single-use link that finishes it (valid for a week). */
+      invite: (input: InviteInput): Invite => {
+        requireStaff()
+        const name = input.displayName.trim()
+        if (!name)
+          throw new ApiError(400, 'invalid', 'Give them a name, as the household knows them.')
+        const username = name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+        if (state.users.some((u) => u.username === username))
+          throw new ApiError(409, 'taken', `There’s already someone called ${name}.`)
+        const user: User = {
+          id: `u-${username}`,
+          username,
+          displayName: name,
+          role: input.role,
+          permissions:
+            input.role === 'admin'
+              ? ['request', 'autoApprove', 'download', 'manageLibrary']
+              : input.role === 'member'
+                ? ['request']
+                : [],
+          libraries: input.libraries,
+          twoFactor: false,
+          lastSeen: null,
+          invited: true,
+        }
+        state.users.push(user)
+        srv.events.emit({ type: 'users.updated' })
+        return {
+          user,
+          link: `https://harbor.example.net/invite/${username.slice(0, 3).toUpperCase()}-${(now() % 9000) + 1000}`,
+          expiresAt: iso(now() + 7 * 86_400_000),
+        }
+      },
+      update: (id: string, patch: Partial<Pick<User, 'role' | 'permissions' | 'libraries'>>) => {
+        requireStaff()
+        const u = state.users.find((x) => x.id === id)
+        if (!u) throw new ApiError(404, 'not-found', 'There’s no one with that id.')
+        if (u.role === 'owner' && patch.role && patch.role !== 'owner')
+          throw new ApiError(
+            400,
+            'owner',
+            'The owner stays the owner. Hand ownership over in Security first.',
+          )
+        if (patch.role === 'owner')
+          throw new ApiError(400, 'owner', 'There’s one owner. Hand ownership over in Security.')
+        Object.assign(u, patch)
+        srv.events.emit({ type: 'users.updated' })
+        return u
+      },
+      remove: (id: string) => {
+        requireStaff()
+        const u = state.users.find((x) => x.id === id)
+        if (!u) return
+        if (u.role === 'owner') throw new ApiError(400, 'owner', 'The owner can’t be removed.')
+        if (u.id === me().id) throw new ApiError(400, 'self', 'You can’t remove yourself.')
+        state.users = state.users.filter((x) => x.id !== id)
+        state.devices = state.devices.filter((d) => d.userId !== id)
+        srv.events.emit({ type: 'users.updated' })
+      },
+      /** Emails a link to choose a new password; their devices stay signed in. */
+      resetPassword: (id: string) => {
+        requireStaff()
+        return state.users.find((x) => x.id === id)?.displayName ?? ''
+      },
     },
 
     devices: {
       list: () => {
         requireStaff()
         return state.devices
+      },
+      /** The signed-in person's own devices, for the clients' settings. */
+      mine: () => state.devices.filter((d) => d.userId === me().id),
+      /** Signs a device out: its token stops working at once. */
+      revoke: (id: string) => {
+        const d = state.devices.find((x) => x.id === id)
+        if (!d) return
+        if (d.userId !== me().id) requireStaff()
+        if (id === 'd-admin')
+          throw new ApiError(400, 'self', 'That’s the browser you’re using. Sign out instead.')
+        state.devices = state.devices.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'users.updated' })
+      },
+    },
+
+    apiKeys: {
+      list: () => {
+        requireStaff()
+        return state.apiKeys
+      },
+      create: (name: string, scope: ApiKey['scope']): CreatedApiKey => {
+        requireStaff()
+        if (!name.trim()) throw new ApiError(400, 'invalid', 'Name the key after what will use it.')
+        const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
+        const pick = createRandom(now())
+        let secret = 'hs_'
+        for (let i = 0; i < 40; i++) secret += alphabet[Math.floor(pick() * alphabet.length)]
+        const key: ApiKey = {
+          id: `k-${now().toString(36)}`,
+          name: name.trim(),
+          prefix: secret.slice(0, 7),
+          scope,
+          createdAt: iso(now()),
+          lastUsed: null,
+        }
+        state.apiKeys.unshift(key)
+        srv.events.emit({ type: 'users.updated' })
+        return { ...key, secret }
+      },
+      revoke: (id: string) => {
+        requireStaff()
+        state.apiKeys = state.apiKeys.filter((k) => k.id !== id)
+        srv.events.emit({ type: 'users.updated' })
+      },
+    },
+
+    manualImport: {
+      /** What's in a folder that could be imported, matched to the library by name. */
+      scan: (path: string): ImportCandidate[] => {
+        requireStaff()
+        if (!state.fs[path])
+          throw new ApiError(404, 'not-found', `${path} doesn’t exist on the server.`)
+        if (path !== '/data/downloads/complete') return []
+        const find = (title: string) => state.items.find((m) => m.title === title)?.id ?? null
+        return [
+          {
+            path: `${path}/The.Last.Man.on.Earth.1964.720p.WEB-DL.AAC.x264-OLDIES/The.Last.Man.on.Earth.1964.720p.WEB-DL.mkv`,
+            size: 1.9 * GB,
+            quality: 'WEB 720p',
+            language: 'English',
+            itemId: find('The Last Man on Earth'),
+            skip: null,
+          },
+          {
+            path: `${path}/Royal Wedding (1951) [1080p]/Royal.Wedding.1951.1080p.BluRay.mkv`,
+            size: 6.4 * GB,
+            quality: 'Bluray 1080p',
+            language: 'English',
+            itemId: find('Royal Wedding'),
+            skip: null,
+          },
+          {
+            path: `${path}/Royal Wedding (1951) [1080p]/sample.mkv`,
+            size: 18 * MB,
+            quality: 'Bluray 1080p',
+            language: 'English',
+            itemId: find('Royal Wedding'),
+            skip: 'A sample (18 MB). Skipped.',
+          },
+          {
+            path: `${path}/home-movies/Lisbon 2019.mp4`,
+            size: 2.2 * GB,
+            quality: 'Unknown',
+            language: 'Unknown',
+            itemId: null,
+            skip: null,
+          },
+        ]
+      },
+      /** Imports the files into their movies: hardlinked (or copied, or moved) and renamed. */
+      run: (files: { path: string; itemId: string }[], mode: 'hardlink' | 'move') => {
+        requireStaff()
+        for (const f of files) {
+          const m = state.items.find((x) => x.id === f.itemId)
+          if (!m) continue
+          m.status = 'available'
+          state.history.unshift({
+            id: `h-${now().toString(36)}-${m.id}`,
+            itemId: m.id,
+            type: 'imported',
+            date: iso(now()),
+            sourceTitle: f.path.split('/').pop() ?? f.path,
+            quality: null,
+            indexer: null,
+            message: mode === 'move' ? 'Moved by manual import' : 'Hardlinked by manual import',
+          })
+        }
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'history.updated' })
+        return files.length
+      },
+    },
+
+    appearance: {
+      /** Everyone reads it: clients take the default theme and sounds from here. */
+      get: (): Appearance & { branding: Server['branding'] } => ({
+        ...state.appearance,
+        branding: state.server.branding,
+      }),
+      save: (patch: Partial<Appearance> & { name?: string; accent?: string | null }) => {
+        requireStaff()
+        const { name, accent, ...rest } = patch
+        if (name !== undefined) {
+          if (!name.trim()) throw new ApiError(400, 'invalid', 'The server needs a name.')
+          state.server.name = name.trim()
+          state.server.branding.name = name.trim()
+          storage.save(`server:${srv.kind}:name`, name.trim())
+        }
+        if (accent !== undefined) state.server.branding.accent = accent
+        Object.assign(state.appearance, rest)
+        srv.events.emit({ type: 'server.updated' })
+        return state.appearance
+      },
+      saveTheme: (theme: CustomTheme) => {
+        requireStaff()
+        const i = state.appearance.themes.findIndex((t) => t.id === theme.id)
+        if (i >= 0) state.appearance.themes[i] = theme
+        else state.appearance.themes.push(theme)
+        srv.events.emit({ type: 'server.updated' })
+        return theme
+      },
+      deleteTheme: (id: string) => {
+        requireStaff()
+        state.appearance.themes = state.appearance.themes.filter((t) => t.id !== id)
+        if (state.appearance.defaultTheme === id) state.appearance.defaultTheme = 'default'
+        srv.events.emit({ type: 'server.updated' })
+      },
+    },
+
+    settings: {
+      get: <K extends SettingsSection>(section: K): Settings[K] => {
+        requireStaff()
+        return state.settings[section]
+      },
+      save: <K extends SettingsSection>(section: K, value: Settings[K]): Settings[K] => {
+        requireStaff()
+        state.settings[section] = value
+        srv.events.emit({ type: 'settings.updated' })
+        return value
       },
     },
   }

@@ -17,7 +17,7 @@ Where the household starts: what the server's owner is featuring, where you left
 
 ## Layout
 
-The sections come from the server in the owner's order: featured sections (hero, row, spotlight) with **Continue watching** right after the hero.
+The sections come from the server in the owner's order: featured sections (hero, row, spotlight) with **Continue watching** right after the hero. Each person can reorder or hide the rows under the hero in Settings › Home screen ([client-settings.md](client-settings.md)); the order follows them to every device. The owner composes the sections and announcements in Curation ([curation.md](curation.md)).
 
 ### Web and desktop: two options
 
@@ -59,6 +59,8 @@ Server identity (top left) · the announcement pill (top right) · the hero (top
 | Banner | Under the hero (A) or above it (B), dismissible | n/a (card instead) | n/a (pill instead) |
 | Card | n/a | Under the header, dismissible | n/a |
 | Pill | n/a | n/a | Top right: the newest one's title |
+| Toast | Once, when the app opens; then counted as seen | n/a | n/a |
+| Image and button | The image tops the dialog; the button sits on banners and dialogs | The same, on cards and dialogs | The image tops the acknowledge screen; no button (a TV can't follow a link) |
 
 Audience rules apply per client type, so an owner can address the TVs only, or leave the admin out.
 
@@ -91,11 +93,11 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 
 ## Data
 
-- `home.sections()` → `GET /api/v1/home`: `HomeSection[]` (`hero`, `row`, `spotlight`, `continue`), resolved per user: audience and schedule applied, rule sources evaluated, overrides merged, and only playable titles.
+- `home.sections(client)` → `GET /api/v1/home?client=`: `HomeSection[]` (`hero`, `row`, `spotlight`, `continue`), resolved per user and app: audience and schedule applied, rule sources evaluated, overrides merged, only playable titles, then the person's own order and hidden rows.
 - `announcements.active(client)` → `GET /api/v1/announcements?client=`: live ones for this person and this client type, with `seen`.
 - `announcements.dismiss(id)` → `POST /api/v1/announcements/{id}/seen` (dismiss and acknowledge alike, tracked per user).
 - `system.server()` for the name and branding.
-- Events: `announcements.updated`, `watch.updated`, `movies.updated`.
+- Events: `announcements.updated`, `curation.updated`, `watch.updated`, `movies.updated`.
 
 ## Decisions
 

@@ -11,7 +11,7 @@ This layout is locked in [direction.md](../../brand/direction.md#layouts).
 - 216px wide on `s1`, with a `line` border on the right.
 - **Lockup:** the highsea mark and wordmark at the top. When server branding is set, the server's name and mark lead instead.
 - **Nav groups,** separated by hairlines:
-  1. Dashboard, Discover, Movies, Activity, Downloads;
+  1. Dashboard, Discover, Movies, Wanted, Activity, Downloads (Wanted joined in Phase 2, [wanted.md](../../product/wanted.md));
   2. Indexers, Subtitles, Curation;
   3. Settings, System.
 

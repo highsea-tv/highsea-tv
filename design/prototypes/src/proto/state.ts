@@ -23,6 +23,8 @@ export type ProtoState = {
   sound: Record<Platform, boolean>
   time: TimeMode
   connection: Connection
+  /** A client preview inside the admin (`?preview`): no prototype affordances. */
+  preview: boolean
 }
 
 export const defaultState: ProtoState = {
@@ -35,6 +37,7 @@ export const defaultState: ProtoState = {
   sound: { admin: false, web: false, mobile: false, tv: true },
   time: 'play',
   connection: 'local',
+  preview: false,
 }
 
 export const platforms: { id: Platform; label: string }[] = [
@@ -107,7 +110,8 @@ export function saveState(state: ProtoState): void {
 
 /**
  * URL parameters override the state, so a screen can be opened on its own at a known state:
- * `?screen&data=empty&theme=oled&role=member&motion=reduced&text=200&time=pause&connection=remote`.
+ * `?screen&data=empty&theme=oled&role=member&motion=reduced&text=200&time=pause&connection=remote`;
+ * `&preview` marks a client preview inside the admin.
  */
 export function stateFromParams(params: URLSearchParams, base: ProtoState): ProtoState {
   const pick = <T extends string>(key: string, allowed: readonly T[]): T | undefined => {
@@ -124,6 +128,7 @@ export function stateFromParams(params: URLSearchParams, base: ProtoState): Prot
     connection: pick('connection', ['local', 'remote', 'offline']) ?? base.connection,
     reducedMotion: params.has('motion') ? params.get('motion') === 'reduced' : base.reducedMotion,
     largeText: params.has('text') ? params.get('text') === '200' : base.largeText,
+    preview: params.has('preview'),
     sound:
       sound === 'on' || sound === 'off'
         ? { admin: sound === 'on', web: sound === 'on', mobile: sound === 'on', tv: sound === 'on' }

@@ -6,6 +6,10 @@ import { Button, EmptyState } from '@highsea/ui-web'
 import type { ReactNode } from 'react'
 import { Route, Switch, useLocation } from 'wouter'
 import { Activity } from './activity/activity.tsx'
+import { ManualImport } from './activity/import.tsx'
+import { AnnouncementEditor } from './curation/announcement-editor.tsx'
+import { Curation } from './curation/curation.tsx'
+import { SectionEditor } from './curation/section-editor.tsx'
 import { Dashboard } from './dashboard/dashboard.tsx'
 import { Discover } from './discover/discover.tsx'
 import { Downloads } from './downloads/downloads.tsx'
@@ -15,9 +19,26 @@ import { PersonPage } from './media/person.tsx'
 import { MovieDetail } from './movies/detail.tsx'
 import { MoviesLibrary } from './movies/library.tsx'
 import { isStaff, type Page, pageGroups } from './nav.ts'
+import { Appearance } from './settings/appearance.tsx'
+import {
+  Backups,
+  Connections,
+  DownloadClient,
+  General,
+  ImportLists,
+  MediaManagement,
+  Network,
+  Profiles,
+  QualitySizes,
+  Security,
+} from './settings/reference.tsx'
+import { SettingsArea, SettingsIndex } from './settings/settings.tsx'
+import { UsersDevices } from './settings/users.tsx'
 import { Setup } from './setup/setup.tsx'
 import { AdminPage, AdminShell, useShell } from './shell.tsx'
 import { Subtitles } from './subtitles/subtitles.tsx'
+import { System, type SystemTab } from './system/system.tsx'
+import { Wanted, type WantedTab } from './wanted/wanted.tsx'
 
 /** Owners and admins only: anyone else sees why, and the way back. */
 function Staff({ page, children }: { page: Page; children: ReactNode }) {
@@ -72,9 +93,30 @@ const built: Record<string, () => ReactNode> = {
   downloads: Downloads,
   indexers: Indexers,
   subtitles: Subtitles,
+  curation: () => <Curation />,
+  settings: SettingsIndex,
+  system: () => <System />,
+  wanted: () => <Wanted />,
+}
+
+/** `/settings/{area}`: A12 and A13 are core; the rest are reference pages (A15). */
+const settingsAreas: Record<string, () => ReactNode> = {
+  general: General,
+  appearance: Appearance,
+  network: Network,
+  security: Security,
+  backups: Backups,
+  users: UsersDevices,
+  media: MediaManagement,
+  profiles: Profiles,
+  quality: QualitySizes,
+  lists: ImportLists,
+  downloads: DownloadClient,
+  connections: Connections,
 }
 
 const pages = pageGroups.flat().filter((p) => p.path !== '/')
+const page = (id: string) => pages.find((p) => p.id === id) as Page
 
 export function AdminApp() {
   return (
@@ -96,6 +138,39 @@ export function AdminApp() {
             </Route>
             <Route path="/people/:id">
               <PersonPage />
+            </Route>
+            <Route path="/curation/featured">
+              <Staff page={page('curation')}>
+                <Curation tab="featured" />
+              </Staff>
+            </Route>
+            <Route path="/curation/featured/:id">
+              <Staff page={page('curation')}>
+                <SectionEditor />
+              </Staff>
+            </Route>
+            <Route path="/wanted/:tab">{(p) => <Wanted tab={p.tab as WantedTab} />}</Route>
+            <Route path="/system/:tab">
+              {(p) => (
+                <Staff page={page('system')}>
+                  <System tab={p.tab as SystemTab} />
+                </Staff>
+              )}
+            </Route>
+            <Route path="/activity/import">
+              <Staff page={{ ...page('activity'), label: 'Manual import', staff: true }}>
+                <ManualImport />
+              </Staff>
+            </Route>
+            <Route path="/settings/:area">
+              <Staff page={page('settings')}>
+                <SettingsArea pages={settingsAreas} />
+              </Staff>
+            </Route>
+            <Route path="/curation/announcements/:id">
+              <Staff page={page('curation')}>
+                <AnnouncementEditor />
+              </Staff>
             </Route>
             {pages.map((p) => {
               const Page = built[p.id]

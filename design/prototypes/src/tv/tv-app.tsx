@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The TV client (C1–C7), in screen units with D-pad focus. Checkpoint 3 builds sign-in, home,
-// library, item detail and the player; Search and Settings come at checkpoint 4. Back goes up a
-// level: each screen says what that means (close a panel, hide the player's chrome), else Home.
+// The TV client (C1–C7), in screen units with D-pad focus: sign-in, home, library, item detail,
+// the player, search and settings. Back goes up a level: each screen says what that means (close
+// a panel, hide the player's chrome), else Home.
 import { useMemo, useState } from 'react'
 import { Route, Switch, useLocation } from 'wouter'
 import { useConnection, useServer } from '../client/data.ts'
+import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { TvRoot } from '../kit/tv/tv-root.tsx'
 import { BackContext, type BackRegistry, useBack } from './back.ts'
 import { TvConnect } from './connect.tsx'
@@ -13,6 +14,8 @@ import { TvHome } from './home.tsx'
 import { GlobalNav, ServerIdentity, TvButton, TvMessage, tvHref } from './kit.tsx'
 import { TvLibrary } from './library.tsx'
 import { TvPlayer } from './player.tsx'
+import { TvSearch } from './search.tsx'
+import { TvSettings } from './settings.tsx'
 
 function Detail() {
   const [panel, setPanel] = useState(false)
@@ -46,7 +49,7 @@ function Unreachable() {
   )
 }
 
-function NotYet() {
+function NotFound() {
   useBack(() => history.back())
   return (
     <>
@@ -54,14 +57,14 @@ function NotYet() {
       <GlobalNav down="message" />
       <div data-group="message" data-go-up="nav" className="h-full">
         <TvMessage
-          title="Not in the prototype yet"
+          title="There’s nothing here"
           actions={
             <TvButton primary initial href={tvHref('/')}>
               Home
             </TvButton>
           }
         >
-          Checkpoint 4 builds this screen.
+          It may have moved.
         </TvMessage>
       </div>
     </>
@@ -92,8 +95,14 @@ function Screens() {
       <Route path="/movies/:id">
         <Detail />
       </Route>
+      <Route path="/search">
+        <TvSearch />
+      </Route>
+      <Route path="/settings">
+        <TvSettings />
+      </Route>
       <Route>
-        <NotYet />
+        <NotFound />
       </Route>
     </Switch>
   )
@@ -115,6 +124,7 @@ export function TvApp() {
               ?.focus()
         }}
       >
+        <ApplyDevicePrefs platform="tv" />
         <Screens />
       </TvRoot>
     </BackContext.Provider>

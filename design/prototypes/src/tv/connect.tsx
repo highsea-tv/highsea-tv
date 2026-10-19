@@ -9,7 +9,7 @@ import { useLocation } from 'wouter'
 import { useDiscovery, useSignIn } from '../client/connect.ts'
 import { useQuery } from '../mock/hooks.tsx'
 import { useBack } from './back.ts'
-import { TvButton, useInitialFocus } from './kit.tsx'
+import { TvButton, tvKey, useInitialFocus } from './kit.tsx'
 
 /** In the prototype, the phone's approval arrives after this long. */
 export const APPROVAL_MS = 8000
@@ -77,8 +77,6 @@ function Keyboard({
   useInitialFocus(true, field, '[data-group="keys"] [data-focusable]')
   const type = (k: string) => setValues((v) => ({ ...v, [field]: v[field] + k }))
   const del = () => setValues((v) => ({ ...v, [field]: v[field].slice(0, -1) }))
-  const key =
-    'grid h-[3cqw] place-items-center rounded-[0.4cqw] bg-text/10 font-semibold text-(length:--tv-text-button) outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg'
   return (
     <div className="grid w-[56cqw] gap-[1.4cqw]">
       <div className="grid grid-cols-2 gap-[1cqw]">
@@ -95,7 +93,11 @@ function Keyboard({
             </span>
             <span className="h-[1.6cqw] font-mono text-(length:--tv-text-button)">
               {f === 'password' ? '•'.repeat(values.password.length) : values.username}
-              {field === f && <span className="animate-pulse">|</span>}
+              {field === f && (
+                <span aria-hidden className="text-text-3">
+                  |
+                </span>
+              )}
             </span>
           </div>
         ))}
@@ -107,7 +109,7 @@ function Keyboard({
       )}
       <div data-group="keys" className="grid grid-cols-10 gap-[0.5cqw]">
         {KEYS.map((k) => (
-          <button key={k} type="button" data-focusable="" onClick={() => type(k)} className={key}>
+          <button key={k} type="button" data-focusable="" onClick={() => type(k)} className={tvKey}>
             {k}
           </button>
         ))}

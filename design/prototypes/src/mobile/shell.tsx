@@ -26,7 +26,7 @@ import {
   useKnownServers,
   useServer,
 } from '../client/data.ts'
-import { Inline } from '../kit/inline.tsx'
+import { Cta, Inline } from '../kit/inline.tsx'
 import { MobileScreen, safeArea } from '../kit/mobile/device.tsx'
 import { useNow } from '../mock/hooks.tsx'
 
@@ -179,7 +179,13 @@ export function AnnouncementCard() {
   if (!card) return null
   return (
     <div className={gutter}>
-      <Banner title={card.title} tone="announcement" onDismiss={() => a.dismiss(card.id)}>
+      <Banner
+        title={card.title}
+        tone="announcement"
+        variant="card"
+        onDismiss={() => a.dismiss(card.id)}
+        action={card.cta ? <Cta cta={card.cta} /> : undefined}
+      >
         <Inline text={card.body} />
       </Banner>
     </div>
@@ -206,9 +212,14 @@ function AnnouncementDialog() {
         }
       >
         {m && (
-          <p className="text-body text-text-2">
-            <Inline text={m.body} />
-          </p>
+          <div className="grid gap-4">
+            {m.image && (
+              <img src={m.image} alt="" className="aspect-[16/9] w-full rounded-md object-cover" />
+            )}
+            <p className="text-body text-text-2">
+              <Inline text={m.body} />
+            </p>
+          </div>
         )}
       </DialogContent>
     </Dialog>
