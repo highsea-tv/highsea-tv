@@ -19,16 +19,14 @@ export const glyphs = {
   ],
   'seeding': [
     ['path', { d: 'M12 21V4', key: '0' }],
-    ['path', { d: 'm6.5 9.5 5.5-5.5 5.5 5.5', key: '1' }],
-    ['path', { d: 'M12 17c0-3 2.2-5 5.5-5 0 3-2.2 5-5.5 5z', key: '2' }],
+    ['path', { d: 'm8 8 4-4 4 4', key: '1' }],
+    ['path', { d: 'M12 17c-.4-2.8-2.4-4.5-6-4.5.3 2.9 2.4 4.5 6 4.5z', key: '2' }],
+    ['path', { d: 'M12 14c.4-2.8 2.4-4.5 6-4.5-.3 2.9-2.4 4.5-6 4.5z', key: '3' }],
   ],
   'subtitle-sync': [
-    ['rect', { x: '3', y: '5', width: '18', height: '14', rx: '2.5', key: '0' }],
-    ['path', { d: 'M7 9.5h10', key: '1' }],
-    ['path', { d: 'M7 13.5v2', key: '2' }],
-    ['path', { d: 'M9.5 12.5v4', key: '3' }],
-    ['path', { d: 'M12 13v3', key: '4' }],
-    ['path', { d: 'M14.5 12v5', key: '5' }],
-    ['path', { d: 'M17 13.5v2', key: '6' }],
+    ['rect', { x: '3', y: '5', width: '18', height: '14', rx: '2', key: '0' }],
+    ['path', { d: 'm7 10.5 2-2 2 3.5 2-3.5 2 3.5 2-1.5', key: '1' }],
+    ['path', { d: 'M7 15h4', key: '2' }],
+    ['path', { d: 'M14 15h3', key: '3' }],
   ],
 } satisfies Record<string, IconNode>

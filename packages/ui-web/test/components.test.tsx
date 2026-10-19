@@ -359,6 +359,44 @@ describe('Poster', () => {
   })
 })
 
+describe('Table', () => {
+  test('a table wider than its frame scrolls by keyboard too: a named, focusable region', () => {
+    const box = (prop: 'scrollWidth' | 'clientWidth', value: number) =>
+      Object.defineProperty(HTMLElement.prototype, prop, { configurable: true, get: () => value })
+    box('scrollWidth', 600)
+    box('clientWidth', 320)
+    try {
+      const { getByRole } = render(
+        <Table aria-label="Custom formats">
+          <TableBody>
+            <TableRow>
+              <td>x265</td>
+            </TableRow>
+          </TableBody>
+        </Table>,
+      )
+      expect(getByRole('region', { name: 'Custom formats' }).tabIndex).toBe(0)
+    } finally {
+      // restore happy-dom's own getters (they live on Element)
+      Reflect.deleteProperty(HTMLElement.prototype, 'scrollWidth')
+      Reflect.deleteProperty(HTMLElement.prototype, 'clientWidth')
+    }
+  })
+
+  test('a table that fits adds no tab stop', () => {
+    const { container } = render(
+      <Table aria-label="Fits">
+        <TableBody>
+          <TableRow>
+            <td>x265</td>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    )
+    expect(container.querySelector('[tabindex]')).toBeNull()
+  })
+})
+
 describe('TitleCell', () => {
   test('a media row shows its poster beside the title, unannounced', () => {
     const { container, getByText } = render(

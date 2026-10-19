@@ -13,37 +13,48 @@ import { gutter, webHref } from './shell.tsx'
 export function WebSettings() {
   const { section } = useParams<{ section?: string }>()
   const current = settingsSections.find((s) => s.id === section)
+  // Side by side once the page has room in rem, so 200% text gets the list-then-section pattern
+  // a phone gets, rather than a sliver of a column (a container query: rem there follows the text
+  // size, where a media query's wouldn't).
   return (
-    <main className={cn('mx-auto grid max-w-[1100px] gap-6 py-8', gutter)}>
+    <main
+      className={cn(
+        '@container mx-auto grid max-w-[1100px] grid-cols-[minmax(0,1fr)] gap-6 py-8',
+        gutter,
+      )}
+    >
       <h1 className="text-display">Settings</h1>
-      <div className="grid gap-8 medium:grid-cols-[14rem_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @min-[42rem]:grid-cols-[14rem_minmax(0,1fr)]">
         <nav
           aria-label="Settings"
-          className={cn('grid content-start gap-1', current && 'hidden medium:grid')}
+          className={cn('grid content-start gap-1', current && 'hidden @min-[42rem]:grid')}
         >
           {settingsSections.map((s) => (
             <a
               key={s.id}
               href={webHref(`/settings/${s.id}`)}
               aria-current={(current?.id ?? 'appearance') === s.id ? 'page' : undefined}
-              className="flex items-center gap-3 rounded-md px-3 py-2.5 text-text-2 text-ui outline-none hover:bg-text/6 hover:text-text focus-visible:ring-focus medium:aria-[current=page]:bg-text/8 medium:aria-[current=page]:text-text"
+              className="flex items-center gap-3 rounded-md px-3 py-2.5 text-text-2 text-ui outline-none hover:bg-text/6 hover:text-text focus-visible:ring-focus @min-[42rem]:aria-[current=page]:bg-text/8 @min-[42rem]:aria-[current=page]:text-text"
             >
               <Icon name={s.icon} size={18} />
               <span className="grid">
                 {s.label}
-                <span className="text-caption text-text-3 medium:hidden">{s.hint}</span>
+                <span className="text-caption text-text-3 @min-[42rem]:hidden">{s.hint}</span>
               </span>
             </a>
           ))}
         </nav>
         <section
           aria-labelledby="settings-section"
-          className={cn('grid content-start gap-4', !current && 'hidden medium:grid')}
+          className={cn(
+            'grid grid-cols-[minmax(0,1fr)] content-start gap-4',
+            !current && 'hidden @min-[42rem]:grid',
+          )}
         >
           {current && (
             <a
               href={webHref('/settings')}
-              className="flex items-center gap-1 justify-self-start text-text-2 text-ui medium:hidden"
+              className="flex items-center gap-1 justify-self-start text-text-2 text-ui @min-[42rem]:hidden"
             >
               <Icon name="chevron-left" size={16} />
               Settings
@@ -67,7 +78,7 @@ export function WebProfile() {
   const server = useServer()
   const name = server.data?.name ?? 'Harbor'
   return (
-    <main className={cn('mx-auto grid max-w-[720px] gap-6 py-8', gutter)}>
+    <main className={cn('mx-auto grid max-w-[720px] grid-cols-[minmax(0,1fr)] gap-6 py-8', gutter)}>
       <div className="flex items-center gap-4">
         <span
           aria-hidden
@@ -82,7 +93,7 @@ export function WebProfile() {
       </div>
       <section aria-label="Account" className="grid gap-3 rounded-lg border border-line bg-s1 p-5">
         <h2 className="text-title">Account</h2>
-        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2 text-ui">
+        <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-6 gap-y-2 text-ui [overflow-wrap:anywhere]">
           <dt className="text-text-3">Server</dt>
           <dd className="text-text">{name}</dd>
           <dt className="text-text-3">Two-step verification</dt>
@@ -138,11 +149,21 @@ export function WebProfile() {
 /** Downloads (C8): a browser can't keep films; the desktop app can. */
 export function WebDownloads() {
   return (
-    <main className={cn('mx-auto grid min-h-[60vh] max-w-[1680px] place-items-center', gutter)}>
+    <main
+      className={cn(
+        'mx-auto grid min-h-[60vh] max-w-[1680px] grid-cols-[minmax(0,1fr)] place-items-center',
+        gutter,
+      )}
+    >
       <EmptyState
         icon="download"
         title="Downloads live in the desktop app"
-        action={<Soon variant="primary">Get the desktop app</Soon>}
+        // it wraps rather than widening a phone at 200% text
+        action={
+          <Soon variant="primary" className="h-auto min-h-9 whitespace-normal py-1.5">
+            Get the desktop app
+          </Soon>
+        }
       >
         A browser can’t keep films for offline. The highsea app for macOS, Windows and Linux can,
         and they play on a plane, a train, or anywhere the server can’t be reached.

@@ -123,7 +123,7 @@ export function SortableList<T>({
         if (item) setMessage(`${label(item)} dropped at ${position(next, id(item))}.`)
       }}
     >
-      <ol ref={list} className={cn('grid', className)} {...aria}>
+      <ol ref={list} className={cn('grid grid-cols-[minmax(0,1fr)]', className)} {...aria}>
         {items.map((item, index) => (
           <Row
             key={id(item)}

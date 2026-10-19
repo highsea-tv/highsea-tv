@@ -102,10 +102,11 @@ export function TabsTrigger({ className, children, count, value, ...props }: Tab
   )
 }
 
+/** The panel is a tab stop (Tab from the list lands in it), so it shows the focus ring too. */
 export function TabsContent({ className, ...props }: ComponentProps<typeof TabsPrimitive.Content>) {
   return (
     <TabsPrimitive.Content
-      className={cn('outline-none focus-visible:outline-none', className)}
+      className={cn('rounded-sm outline-none focus-visible:ring-focus', className)}
       {...props}
     />
   )

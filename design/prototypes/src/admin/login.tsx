@@ -10,7 +10,7 @@ import type { ApiError } from '../mock/server.ts'
 
 function Card({ children }: { children: ReactNode }) {
   return (
-    <main className="grid min-h-screen place-items-center bg-bg p-4 text-text">
+    <main className="grid min-h-screen grid-cols-[minmax(0,1fr)] place-items-center bg-bg p-4 text-text">
       <div className="grid w-full max-w-[24rem] gap-6">
         <Lockup size={20} className="justify-self-center" />
         <section className="grid gap-5 rounded-lg border border-line bg-s1 p-6 shadow-2">
@@ -235,7 +235,12 @@ export function Login() {
             or
             <span className="h-px flex-1 bg-line" />
           </div>
-          <Button icon="shield" onClick={() => setSso(true)}>
+          {/* it wraps rather than widening a phone at 200% text */}
+          <Button
+            icon="shield"
+            className="h-auto min-h-9 whitespace-normal py-1.5"
+            onClick={() => setSso(true)}
+          >
             Sign in with {server.auth.oidc.name}
           </Button>
         </>

@@ -610,7 +610,7 @@ export function Profiles() {
         description="Matches on a release name that add or take away score."
       >
         <TableFrame>
-          <Table>
+          <Table aria-label="Custom formats">
             <TableHeader>
               <TableRow>
                 <TableHead>Format</TableHead>
@@ -670,7 +670,7 @@ export function QualitySizes() {
           description="A release outside the range is rejected; the preferred size wins a tie."
         >
           <TableFrame>
-            <Table>
+            <Table aria-label="Sizes per minute of runtime">
               <TableHeader>
                 <TableRow>
                   <TableHead>Quality</TableHead>

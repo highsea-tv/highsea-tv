@@ -21,7 +21,7 @@
 
 These are drawn to Lucide's rules (24 grid, 2px padding, the same stroke, round caps) only where Lucide has no fitting icon:
 
-- **Domain:** indexer, seeding (an upload with a leaf), subtitle sync (captions with a waveform), catalog.
+- **Domain:** indexer (a list with a magnifier), seeding (an upward arrow growing as a sprout), subtitle sync (captions with a waveform over the text), catalog (tiles with a plus).
 - **Devices and owner tools use Lucide** too: `tv`, `smartphone` (phone), `laptop`, `key-round` (API keys), `palette` (themes), `scroll-text` (logs), `archive` (backups) and `file-input` (manual import).
 - **Media types use Lucide**, which covers them: `film` (movie), `tv` (series), `music`, `book`, `headphones` (audiobook), `podcast` and `monitor-play` (online video).
 

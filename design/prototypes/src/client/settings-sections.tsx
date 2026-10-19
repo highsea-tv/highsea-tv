@@ -169,7 +169,7 @@ function HomeSection() {
   if (home.status !== 'success')
     return <p className="text-caption text-text-3">Loading your rows…</p>
   return (
-    <div className="grid gap-3">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-3">
       <p className="text-caption text-text-3">
         The featured hero stays on top. Your order follows you to every device.
       </p>
@@ -316,7 +316,7 @@ function AboutSection() {
   const server = useServer()
   return (
     <div className="grid gap-4">
-      <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2 text-ui">
+      <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-6 gap-y-2 text-ui [overflow-wrap:anywhere]">
         <dt className="text-text-3">This app</dt>
         <dd className="font-mono text-figure text-text">highsea {APP_VERSION}</dd>
         <dt className="text-text-3">Server</dt>

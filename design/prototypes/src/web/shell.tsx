@@ -158,7 +158,10 @@ export function TopBar({ overHero }: { overHero: boolean }) {
     >
       <div className={cn('mx-auto flex h-16 max-w-[1680px] items-center gap-3', gutter)}>
         <ServerSwitcher />
-        <nav aria-label="Main" className="mx-auto hidden items-center gap-1 medium:flex">
+        <nav
+          aria-label="Main"
+          className="relative mx-auto hidden min-w-0 items-center gap-1 overflow-x-auto [scrollbar-width:none] medium:flex"
+        >
           {destinations.map((d) => {
             const active = isCurrent(d.path, location)
             return (
@@ -167,7 +170,7 @@ export function TopBar({ overHero }: { overHero: boolean }) {
                 href={webHref(d.path)}
                 aria-current={active ? 'page' : undefined}
                 className={cn(
-                  'rounded-sm px-3 py-1.5 text-ui outline-none transition-tint hover:text-text focus-visible:ring-focus',
+                  'shrink-0 rounded-sm px-3 py-1.5 text-ui outline-none transition-tint hover:text-text focus-visible:ring-focus',
                   active ? 'font-semibold text-text' : 'text-text-2',
                 )}
               >
@@ -189,7 +192,7 @@ export function TopBar({ overHero }: { overHero: boolean }) {
       </div>
       <nav
         aria-label="Main"
-        className={cn('flex gap-1 overflow-x-auto pb-2 medium:hidden', gutter)}
+        className={cn('relative flex gap-1 overflow-x-auto pb-2 medium:hidden', gutter)}
       >
         {destinations.map((d) => (
           <a

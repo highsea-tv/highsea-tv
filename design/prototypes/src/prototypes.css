@@ -26,6 +26,12 @@
   font-size: 200%;
 }
 
+/* A heading wider than its column (a long word at display size, at 200% on a phone) breaks
+   rather than widening the page. */
+:where(h1, h2, h3) {
+  overflow-wrap: anywhere;
+}
+
 /* A screen fills its frame; the frame, not the page, scrolls the document. */
 html[data-screen],
 html[data-screen] body,

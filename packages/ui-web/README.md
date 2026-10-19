@@ -31,7 +31,7 @@ import { UIProvider } from '@highsea/ui-web'
 | Actions | `Button` (primary, secondary, ghost, danger; `icon`, `loading`, `asChild`), `Kbd` |
 | Forms | `Field` (label, hint and error wired to the control; `inline` puts a Switch or Checkbox before its label), `Input`, `Textarea`, `Select`, `Switch`, `Checkbox`, `SegmentedControl`, `RatingInput` |
 | Overlays | `Dialog`, `ConfirmDialog`, `Sheet` (bottom, left, right), `Popover`, `Menu`, `Tooltip`, `toast()` with `Toaster` |
-| Data | `Table` with `TableFrame`, `TableToolbar`, `TitleCell`, `RowActions`; `Badge`, `QualityTag`, `Progress`, `Skeleton`, `Tabs` |
+| Data | `Table` (scrolls sideways when it must, and is then a tab stop named by its `aria-label`) with `TableFrame`, `TableToolbar`, `TitleCell`, `RowActions`; `Badge`, `QualityTag`, `Progress`, `Skeleton`, `Tabs` |
 | Media | `Poster`, `BackdropHero`, `CarouselRow`, `Rating` |
 | Shell | `Sidebar` with `NavGroup`, `NavItem`, `ServerCard`; `CommandPalette`; `WidgetGrid`, `WidgetFrame` (an editor passes its own `handle` and `resize` in edit mode), `Stat`; `Banner`; `StatusBar` with `StatusItem` |
 | Page | `PageHeader` (title, search, actions), `SearchTrigger` (opens the palette, with the ⌘K hint), `EmptyState` (nothing yet, nothing matches, or an `error` with a retry) |
