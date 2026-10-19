@@ -217,3 +217,60 @@ describe('dashboard layouts', () => {
     expect((await member.dashboard.layout()).widgets).toEqual(calendar)
   })
 })
+
+describe('movie pipeline', () => {
+  const owner = (mock = createMock()) =>
+    createClient(mock, { data: 'populated', role: 'owner', latency: 0 })
+
+  test('discover lists each movie once, and adding keeps its metadata', async () => {
+    const c = owner()
+    const all = await c.movies.discover()
+    const titles = all.map((m) => m.title)
+    expect(new Set(titles).size).toBe(titles.length)
+    const nanook = all.find((m) => m.title === 'Nanook of the North')
+    expect(nanook?.inLibrary).toBe(false)
+    if (!nanook) return
+    const item = await c.movies.add({
+      tmdbId: nanook.tmdbId,
+      title: nanook.title,
+      year: nanook.year,
+      rootFolder: '/data/media/movies',
+      qualityProfileId: 'qp-hd',
+      languageProfileId: 'lp-en',
+      monitored: true,
+      minimumAvailability: 'released',
+    })
+    expect(item).toMatchObject({ runtimeMinutes: 79, genres: ['Documentary'], status: 'missing' })
+    expect((await c.movies.discover('nanook')).map((m) => m.inLibrary)).toEqual([true])
+  })
+
+  test('the wanted list follows each movie’s language profile', async () => {
+    const c = owner()
+    const wanted = await c.subtitles.wanted()
+    // everything starts on the English profile, so only English can be missing
+    expect(wanted.every((w) => w.missingLanguages.join() === 'en')).toBe(true)
+    const [first] = (await c.movies.list()).filter((m) => m.status === 'available')
+    if (!first) throw new Error('no available movie')
+    await c.movies.update(first.id, { languageProfileId: 'lp-en-es' })
+    const after = (await c.subtitles.wanted()).find((w) => w.movie.id === first.id)
+    expect(after?.missingLanguages).toContain('es')
+    await c.subtitles.searchAllMissing()
+    expect(await c.subtitles.wanted()).toEqual([])
+  })
+
+  test('bulk quality profile moves the first version only', async () => {
+    const c = owner()
+    await c.movies.bulkSetQualityProfile(['sintel', 'charge'], 'qp-any')
+    const sintel = await c.movies.get('sintel')
+    expect(sintel.versions.map((v) => v.qualityProfileId)).toEqual(['qp-any', 'qp-uhd'])
+    expect(await c.movies.bulkSetQualityProfile(['sintel'], 'qp-nope').catch((e) => e.status)).toBe(
+      404,
+    )
+  })
+
+  test('a private indexer’s test fails on a rejected key', async () => {
+    const c = owner()
+    expect((await c.indexers.test('bosun', { apiKey: 'wrong' })).ok).toBe(false)
+    expect((await c.indexers.test('bosun', { apiKey: 'k-1' })).ok).toBe(true)
+  })
+})

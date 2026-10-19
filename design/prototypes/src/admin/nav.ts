@@ -25,7 +25,6 @@ export const pageGroups: Page[][] = [
       icon: 'discover',
       path: '/discover',
       keywords: ['add', 'search', 'tmdb', 'trending'],
-      checkpoint: 2,
     },
     {
       id: 'movies',
@@ -33,7 +32,6 @@ export const pageGroups: Page[][] = [
       icon: 'movie',
       path: '/movies',
       keywords: ['library'],
-      checkpoint: 2,
     },
     {
       id: 'activity',
@@ -41,7 +39,6 @@ export const pageGroups: Page[][] = [
       icon: 'activity',
       path: '/activity',
       keywords: ['queue', 'history', 'blocklist'],
-      checkpoint: 2,
     },
     {
       id: 'downloads',
@@ -50,7 +47,6 @@ export const pageGroups: Page[][] = [
       path: '/downloads',
       staff: true,
       keywords: ['torrents', 'client', 'seeding'],
-      checkpoint: 2,
     },
   ],
   [
@@ -61,7 +57,6 @@ export const pageGroups: Page[][] = [
       path: '/indexers',
       staff: true,
       keywords: ['trackers', 'catalog'],
-      checkpoint: 2,
     },
     {
       id: 'subtitles',
@@ -70,7 +65,6 @@ export const pageGroups: Page[][] = [
       path: '/subtitles',
       staff: true,
       keywords: ['captions', 'sync'],
-      checkpoint: 2,
     },
     {
       id: 'curation',

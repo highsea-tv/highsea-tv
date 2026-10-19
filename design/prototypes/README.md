@@ -65,6 +65,7 @@ bun test design/prototypes
 
 - **`routes.test.tsx`** renders the key routes of each platform in all four data states (admin also as a member) and runs axe on each.
 - **`flows.test.tsx`** walks each checkpoint's flows as a user would (by keyboard where it matters) and runs axe at each step.
+- **`pipeline.test.tsx`** walks the movie pipeline screens (A4–A10): adding a movie through to available, bulk edits, interactive search, subtitle sync, the queue's fixes, torrents, indexers and subtitle settings.
 - **`mock.test.ts`** covers the mock server: the download pipeline on the clock, the data states, permissions, sign-in and dashboard layouts.
 - Every class the tests render is checked against the compiled stylesheet, so a typo'd or non-token utility fails the run.
 

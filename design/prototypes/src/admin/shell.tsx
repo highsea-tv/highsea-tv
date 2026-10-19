@@ -433,10 +433,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
         <Navigation role={role} />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="relative min-h-0 flex-1 overflow-y-auto">
+            {/* grid-cols-1: a wide table scrolls inside its frame, not the page */}
             <main
               ref={main}
               tabIndex={-1}
-              className="grid content-start gap-5 p-4 outline-none medium:px-6.5 medium:py-5.5"
+              className="grid grid-cols-1 content-start gap-5 p-4 outline-none medium:px-6.5 medium:py-5.5"
             >
               <Announcements />
               {children}

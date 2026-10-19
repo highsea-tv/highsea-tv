@@ -19,6 +19,7 @@ import type {
   SetupInput,
   SignInResult,
   SubtitleSearchResult,
+  SubtitleSettings,
   SubtitleStats,
   SubtitleTrack,
   Torrent,
@@ -594,6 +595,27 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     return (saved ?? roleDefault(role)).filter((w) => allowed(w.kind, role)).map(normalize)
   }
 
+  /** Available movies still missing a language their profile asks for. */
+  const wantedSubtitles = () => {
+    const results: { movie: MediaItem; missingLanguages: string[] }[] = []
+    for (const m of state.items) {
+      if (m.status !== 'available') continue
+      const tracks = state.subtitles.filter((s) => s.itemId === m.id)
+      const embedded = state.files
+        .filter((f) => f.itemId === m.id)
+        .flatMap((f) => f.streams.filter((s) => s.type === 'subtitle').map((s) => s.language))
+      const profile = state.languageProfiles.find((lp) => lp.id === m.languageProfileId)
+      // a language is wanted until an external track or an embedded stream covers it
+      const missing = (profile?.languages ?? [])
+        .map((l) => l.code)
+        .filter((code) => !tracks.some((t) => t.language === code) && !embedded.includes(code))
+      if (missing.length > 0) {
+        results.push({ movie: m, missingLanguages: missing })
+      }
+    }
+    return results
+  }
+
   return {
     system: {
       publicInfo: () => ({
@@ -738,10 +760,17 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         srv.events.emit({ type: 'indexers.updated' })
         srv.events.emit({ type: 'health.updated' })
       },
-      test: (idOrDefId: string, _settings?: Record<string, string>) => {
+      test: (idOrDefId: string, settings?: Record<string, string>) => {
         requireStaff()
         const ix = state.indexers.find((x) => x.id === idOrDefId || x.definitionId === idOrDefId)
         const def = state.catalog.find((x) => x.id === idOrDefId)
+        // the prototype's way to see a rejected key: type "wrong"
+        if (settings?.apiKey === 'wrong')
+          return {
+            ok: false,
+            message: `${def?.name ?? 'The indexer'} rejected the API key (401). Copy it again from your profile.`,
+            latencyMs: 210,
+          }
         if (ix?.health === 'failing') {
           return {
             ok: false,
@@ -811,14 +840,15 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           art: m.art,
           inLibrary: true,
         }))
-        const unaddedItems = (state.discoverCatalog ?? []).map((d) => ({
-          ...d,
-          inLibrary: state.items.some(
-            (m) =>
-              (m.tmdbId && m.tmdbId === d.tmdbId) ||
-              m.title.toLowerCase() === d.title.toLowerCase(),
-          ),
-        }))
+        // the library's own entries stand for anything already added
+        const unaddedItems = (state.discoverCatalog ?? []).filter(
+          (d) =>
+            !state.items.some(
+              (m) =>
+                (m.tmdbId && m.tmdbId === d.tmdbId) ||
+                m.title.toLowerCase() === d.title.toLowerCase(),
+            ),
+        )
         const all = [...unaddedItems, ...libraryItems]
         if (!q) return all
         return all.filter(
@@ -844,6 +874,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
 
         const id = slug
         const isUhd = input.qualityProfileId === 'qp-uhd'
+        const meta = state.discoverCatalog.find((d) => d.tmdbId === input.tmdbId)
         const newItem: MediaItem = {
           id,
           type: 'movie',
@@ -853,16 +884,16 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           originalTitle: null,
           sortTitle: input.title.toLowerCase().replace(/^(the|a|an)\s+/i, ''),
           year: input.year,
-          runtimeMinutes: 14,
-          genres: ['Animation', 'Short'],
-          synopsis: 'A newly added film to the harbor catalog.',
-          rating: 7.8,
+          runtimeMinutes: meta?.runtimeMinutes ?? 0,
+          genres: meta?.genres ?? [],
+          synopsis: meta?.synopsis ?? '',
+          rating: meta?.rating ?? 0,
           status: 'missing',
           monitored: input.monitored,
           minimumAvailability: input.minimumAvailability,
           languageProfileId: input.languageProfileId || 'lp-default',
           rootFolder: input.rootFolder || '/data/media/movies',
-          releaseDate: iso(now() - 30 * 86_400_000),
+          releaseDate: meta?.releaseDate ?? iso(now() - 30 * 86_400_000),
           addedAt: iso(now()),
           path: `${input.rootFolder}/${input.title} (${input.year})`,
           versions: [
@@ -874,7 +905,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
             },
           ],
           quality: isUhd ? ['4K', 'HDR'] : ['1080p'],
-          art: {
+          art: meta?.art ?? {
             poster: posterArt(input.title),
             backdrop: backdropArt(input.title),
             still: stillArt(input.title),
@@ -992,6 +1023,17 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         for (const id of ids) {
           const m = state.items.find((x) => x.id === id)
           if (m) Object.assign(m, patch)
+        }
+        srv.events.emit({ type: 'movies.updated' })
+      },
+      /** Moves each item's first version to the profile; extra versions keep their own. */
+      bulkSetQualityProfile: (ids: string[], profileId: string) => {
+        requireStaff()
+        if (!state.qualityProfiles.some((p) => p.id === profileId))
+          throw new ApiError(404, 'not-found', 'That quality profile doesn’t exist.')
+        for (const id of ids) {
+          const v = state.items.find((x) => x.id === id)?.versions[0]
+          if (v) v.qualityProfileId = profileId
         }
         srv.events.emit({ type: 'movies.updated' })
       },
@@ -1452,18 +1494,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       languages: () => state.languages,
       wanted: () => {
         requireStaff()
-        const results: { movie: MediaItem; missingLanguages: string[] }[] = []
-        for (const m of state.items) {
-          if (m.status !== 'available') continue
-          const tracks = state.subtitles.filter((s) => s.itemId === m.id)
-          const missing: string[] = []
-          if (!tracks.some((t) => t.language === 'en')) missing.push('en')
-          if (!tracks.some((t) => t.language === 'es')) missing.push('es')
-          if (missing.length > 0) {
-            results.push({ movie: m, missingLanguages: missing })
-          }
-        }
-        return results
+        return wantedSubtitles()
       },
       forItem: (id: string) => {
         return state.subtitles.filter((s) => s.itemId === id)
@@ -1553,6 +1584,16 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         requireStaff()
         return state.providers ?? []
       },
+      settings: (): SubtitleSettings => {
+        requireStaff()
+        return state.subtitleSettings
+      },
+      saveSettings: (patch: Partial<SubtitleSettings>) => {
+        requireStaff()
+        Object.assign(state.subtitleSettings, patch)
+        srv.events.emit({ type: 'subtitles.updated' })
+        return state.subtitleSettings
+      },
       toggleProvider: (id: string, enabled: boolean) => {
         requireStaff()
         const p = state.providers.find((x) => x.id === id)
@@ -1580,16 +1621,14 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
       searchAllMissing: () => {
         requireStaff()
-        for (const m of state.items) {
-          if (m.status !== 'available') continue
-          const hasEn = state.subtitles.some((s) => s.itemId === m.id && s.language === 'en')
-          if (!hasEn) {
-            const f = fileFor(state, m)
+        for (const { movie: m, missingLanguages } of wantedSubtitles()) {
+          const f = fileFor(state, m)
+          for (const language of missingLanguages)
             state.subtitles.push({
-              id: `st-${m.id}-en-auto`,
+              id: `st-${m.id}-${language}-auto`,
               itemId: m.id,
               fileId: f?.id ?? `f-${m.id}-v1`,
-              language: 'en',
+              language,
               kind: 'external',
               format: 'srt',
               forced: false,
@@ -1597,9 +1636,8 @@ export function createApi(srv: MockServer, ctx: Ctx) {
               provider: 'OpenSubtitles.com',
               score: 95,
               sync: { status: 'synced', confidence: 0.94, offsetMs: -80 },
-              path: `${m.path}/${m.title} (${m.year}).en.srt`,
+              path: `${m.path}/${m.title} (${m.year}).${language}.srt`,
             })
-          }
         }
         srv.events.emit({ type: 'subtitles.updated' })
       },
