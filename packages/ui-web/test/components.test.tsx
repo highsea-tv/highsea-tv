@@ -93,6 +93,17 @@ describe('Button', () => {
     const link = getByRole('link', { name: 'Go' })
     expect(link.className).toContain('bg-accent-fill')
   })
+
+  test('asChild keeps the icon, inside the link', () => {
+    const { getByRole } = render(
+      <Button asChild icon="play">
+        <a href="/x">Play</a>
+      </Button>,
+    )
+    const link = getByRole('link', { name: 'Play' })
+    expect(link.querySelector('svg')).not.toBeNull()
+    expect(link.textContent).toBe('Play')
+  })
 })
 
 describe('Field', () => {

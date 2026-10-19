@@ -24,7 +24,8 @@ The build opens straight from disk: open `dist/index.html` in a browser, with no
 | `src/chrome/` | Launcher, toolbar, frame |
 | `src/screen/` | The screen app: applies the toolbar state, holds the router |
 | `src/admin/`, `src/web/`, `src/mobile/`, `src/tv/` | One route tree per platform; paths mirror the products (`#/admin/movies/1` is the server's `/movies/[id]`, by media id) |
-| `src/kit/` | Pieces the flows share that aren't in ui-web yet (the widget editor, the stepper, `useWidth`) |
+| `src/client/` | What the three client apps share: their data calls, the connect flow, the player's state, formatting |
+| `src/kit/` | Pieces the flows share that aren't in ui-web yet (the widget editor, the stepper, `useWidth`, the phone and TV frames) |
 | `src/mock/` | The mock server, its seeds, clock and event stream, the metadata source (credits, trailers, collections, people) and the typed client the screens call |
 | `src/flows.ts` | The flow registry the launcher lists: ids, routes, specs, test hints |
 
@@ -35,6 +36,7 @@ The build opens straight from disk: open `dist/index.html` in a browser, with no
 - **A clock.** Downloads progress, finish, import and get subtitles on the mock clock. **Time** plays it at 1×, pauses it, or runs it at 10×.
 - **Events.** Changes are pushed over an in-memory event stream that stands in for the server's SSE, so screens update live.
 - **Roles.** **Server** switches between the owner and a member; the mock enforces the same permissions the server will.
+- **Connection.** On the client platforms, **Connection** puts the app on the LAN, failed over to the server's remote address, or unable to reach it, so the connectivity states can be reviewed on any screen.
 - **Persistence.** Saved layouts and setup progress live in `localStorage` under `highsea-proto:`. Clear site data to start fresh.
 
 ## URL parameters
@@ -54,6 +56,7 @@ index.html?screen&data=empty&theme=oled&role=member&motion=reduced&text=200&time
 | `text` | `200` |
 | `time` | `play`, `pause`, `fast` |
 | `sound` | `on`, `off` |
+| `connection` | `local`, `remote`, `offline` (clients: how the app reaches its server) |
 
 **Text 200%** sets the root font size to 200%, which checks reflow inside components. It doesn't move media-query breakpoints, because browsers resolve `rem` in media queries against the default font size, not the root's. To check a real 200% text setting, raise the browser's own font size (Chrome: Settings › Appearance › Font size; Playwright: CDP `Page.setFontSizes`).
 
@@ -66,6 +69,7 @@ bun test design/prototypes
 - **`routes.test.tsx`** renders the key routes of each platform in all four data states (admin also as a member) and runs axe on each.
 - **`flows.test.tsx`** walks each checkpoint's flows as a user would (by keyboard where it matters) and runs axe at each step.
 - **`pipeline.test.tsx`** walks the movie pipeline screens (A4–A10): adding a movie through to available, the media pages (a title before and after adding, trailers, collections, people), bulk edits, interactive search, subtitle sync, the queue's fixes, torrents, indexers and subtitle settings.
+- **`clients.test.tsx`** walks the client flows (C1–C5) on web, mobile and TV: connecting and signing in, the connection states, acknowledging an announcement, the two web homes, the library, the item page and the player's tracks and subtitle nudge. The TV's D-pad moves need real layout, so they're walked in a browser before each checkpoint.
 - **`mock.test.ts`** covers the mock server: the download pipeline on the clock, the data states, permissions, sign-in and dashboard layouts.
 - Every class the tests render is checked against the compiled stylesheet, so a typo'd or non-token utility fails the run.
 

@@ -9,11 +9,21 @@ import type {
   AddMovieInput,
   AddTorrentInput,
   Announcement,
+  ClientDetail,
+  ClientItem,
+  ClientTrack,
+  ClientType,
+  ClientVersion,
+  FeaturedSection,
   HardlinkCheck,
+  HomeSection,
   Indexer,
   LanguageProfile,
   MediaFile,
   MediaItem,
+  Pairing,
+  PlaybackPrefs,
+  ProbeResult,
   QueueItem,
   Release,
   SetupInput,
@@ -583,12 +593,125 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     }
   }
 
-  const visible = (a: Announcement) => {
+  const visible = (a: Announcement, client: ClientType) => {
     const u = me()
     if (a.audience.kind === 'roles') return a.audience.roles.includes(u.role)
     if (a.audience.kind === 'users') return a.audience.userIds.includes(u.id)
+    if (a.audience.kind === 'clients') return a.audience.clients.includes(client)
     return true
   }
+
+  // ---- the clients' view of the library (C2–C5)
+
+  /** A title the household can watch: some version has a file. */
+  const playable = (m: MediaItem) => m.type === 'movie' && m.versions.some((v) => v.fileId)
+  const languageName = (code: string) =>
+    code === 'zxx' ? 'No dialogue' : (state.languages.find((l) => l.code === code)?.name ?? code)
+  const clientItem = (m: MediaItem, tagline: string | null = null): ClientItem => {
+    const w = state.watch.find((x) => x.userId === me().id && x.itemId === m.id)
+    const length = m.runtimeMinutes * 60
+    const progress = w && length ? w.position / length : null
+    return {
+      ...m,
+      position: w?.position ?? 0,
+      // nearly at the end counts as watched, not as something to resume
+      progress: progress !== null && progress < 0.95 ? progress : null,
+      tagline,
+    }
+  }
+  const watchable = () => state.items.filter(playable)
+
+  const sectionItems = (f: FeaturedSection): ClientItem[] => {
+    const tagline = (id: string) => f.overrides.find((o) => o.itemId === id)?.tagline ?? null
+    if (f.source.kind === 'manual') {
+      const ids = f.source.itemIds
+      return ids.flatMap((id) => {
+        const m = state.items.find((x) => x.id === id)
+        return m && playable(m) ? [clientItem(m, tagline(m.id))] : []
+      })
+    }
+    const { rule, value } = f.source
+    const all = watchable()
+    const picked =
+      rule === 'recently-added'
+        ? [...all].sort((a, b) => Date.parse(b.addedAt) - Date.parse(a.addedAt)).slice(0, 12)
+        : rule === 'filter'
+          ? all.filter((m) => {
+              const year = /year\s*<\s*(\d+)/.exec(value)
+              return year ? m.year < Number(year[1]) : true
+            })
+          : rule === 'genre'
+            ? all.filter((m) => m.genres.some((g) => g.toLowerCase() === value.toLowerCase()))
+            : all
+    return picked.map((m) => clientItem(m, tagline(m.id)))
+  }
+
+  const track = (
+    kind: ClientTrack['kind'],
+    id: string,
+    language: string,
+    detail: string | null,
+    isDefault: boolean,
+  ): ClientTrack => ({
+    id,
+    kind,
+    label: detail ? `${languageName(language)} · ${detail}` : languageName(language),
+    language,
+    detail,
+    default: isDefault,
+  })
+
+  const versionsOf = (m: MediaItem): ClientVersion[] =>
+    m.versions.flatMap((v) => {
+      const f = state.files.find((x) => x.id === v.fileId)
+      if (!f) return []
+      const video = f.streams.find((x) => x.type === 'video')
+      const audio = f.streams.flatMap((x) =>
+        x.type === 'audio'
+          ? [track('audio', `a${x.index}`, x.language, x.title ?? x.channels, x.default)]
+          : [],
+      )
+      const embedded = f.streams.flatMap((x) =>
+        x.type === 'subtitle'
+          ? [
+              track(
+                'subtitle',
+                `s${x.index}`,
+                x.language,
+                [x.forced && 'Forced', x.hi && 'SDH'].filter(Boolean).join(', ') || null,
+                x.default,
+              ),
+            ]
+          : [],
+      )
+      const external = state.subtitles
+        .filter((t) => t.fileId === f.id && t.kind === 'external')
+        .map((t) =>
+          track(
+            'subtitle',
+            t.id,
+            t.language,
+            [t.forced && 'Forced', t.hi && 'SDH'].filter(Boolean).join(', ') || null,
+            false,
+          ),
+        )
+      const hdr = video && video.type === 'video' && video.hdr !== 'none' ? ' · HDR10' : ''
+      const res =
+        video && video.type === 'video' ? (video.height >= 2160 ? '4K' : `${video.height}p`) : ''
+      return [
+        {
+          id: v.id,
+          label: v.label,
+          detail: `${res}${hdr} · ${(video?.type === 'video' ? video.codec : '').toUpperCase()} · ${(f.size / 1e9).toFixed(1)} GB`,
+          audio,
+          // embedded first, then each language once
+          subtitles: [...embedded, ...external].filter(
+            (t, i, all) =>
+              all.findIndex((x) => x.language === t.language && x.detail === t.detail) === i,
+          ),
+        },
+      ]
+    })
 
   const layoutFor = (role: UserRole): WidgetPlacement[] => {
     const saved = storage.load(layoutKey(`role:${role}`)) as WidgetPlacement[] | undefined
@@ -1642,16 +1765,175 @@ export function createApi(srv: MockServer, ctx: Ctx) {
 
     announcements: {
       /** The live announcements this user should see, not yet dismissed or acknowledged. */
-      active: () => {
+      /** For one client app; the admin by default. */
+      active: (client: ClientType = 'admin') => {
         const seen = state.seen[me().id] ?? []
         return state.announcements
-          .filter((a) => a.status === 'live' && visible(a))
+          .filter((a) => a.status === 'live' && visible(a, client))
           .map((a) => ({ ...a, seen: seen.includes(a.id) }))
       },
       dismiss: (id: string) => {
         const u = me().id
         state.seen[u] = [...(state.seen[u] ?? []), id]
         srv.events.emit({ type: 'announcements.updated' })
+      },
+    },
+
+    connect: {
+      /** Servers this device has signed in to, for the switcher. */
+      known: () => state.known,
+      /** LAN discovery (UDP broadcast and mDNS); answers arrive over a second or two. */
+      discover: () => state.discovered,
+      /** What an address answers before signing in. */
+      probe: (address: string): ProbeResult => {
+        const a = address
+          .trim()
+          .toLowerCase()
+          .replace(/^https?:\/\//, '')
+          .replace(/\/$/, '')
+        if (!a || !/^[\w.-]+(:\d+)?$/.test(a))
+          throw new ApiError(
+            400,
+            'invalid-address',
+            'That doesn’t look like an address. Try harbor.example.net or 192.168.1.20.',
+          )
+        const harbor = state.known.find((k) => k.id === 'srv-harbor')
+        const local = state.discovered.find((d) => d.address === a || d.address.split(':')[0] === a)
+        if (local)
+          return {
+            id: local.id,
+            name: local.name,
+            version: local.version,
+            setupComplete: true,
+            auth: { local: true, oidc: null },
+            address: local.address,
+            reachability: 'local',
+          }
+        if (a.includes('harbor') && harbor)
+          return {
+            id: harbor.id,
+            name: harbor.name,
+            version: state.server.version,
+            setupComplete: true,
+            auth: { local: true, oidc: { name: 'Authentik' } },
+            address: a,
+            reachability: 'remote',
+          }
+        throw new ApiError(
+          504,
+          'unreachable',
+          `Nothing answered at ${a}. Check the address, and that the server is running and reachable from here.`,
+        )
+      },
+      /** Sign-in by code: the TV shows it, a signed-in phone or computer approves it. */
+      startPairing: (): Pairing => ({
+        code: 'KQ7-4PM',
+        url: 'harbor.example.net/link',
+        expiresAt: iso(now() + 10 * 60_000),
+      }),
+      forget: (id: string) => {
+        state.known = state.known.filter((k) => k.id !== id)
+      },
+    },
+
+    home: {
+      /** The home screen: featured sections in order, with Continue watching after the hero. */
+      sections: (): HomeSection[] => {
+        const live = state.featured
+          .filter((f) => Date.parse(f.schedule.start) <= now())
+          .filter((f) => !f.schedule.end || Date.parse(f.schedule.end) > now())
+          .sort((a, b) => a.order - b.order)
+          .map(
+            (f): HomeSection => ({
+              id: f.id,
+              title: f.title,
+              suffix: f.tagline,
+              layout: f.layout,
+              items: sectionItems(f),
+            }),
+          )
+          .filter((x) => x.items.length > 0)
+        const continuing = state.watch
+          .filter((w) => w.userId === me().id)
+          .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
+          .flatMap((w) => {
+            const m = state.items.find((x) => x.id === w.itemId)
+            return m && playable(m) ? [clientItem(m)] : []
+          })
+          .filter((m) => m.progress !== null)
+        const resume: HomeSection[] = continuing.length
+          ? [
+              {
+                id: 'continue',
+                title: 'Continue watching',
+                suffix: null,
+                layout: 'continue',
+                items: continuing,
+              },
+            ]
+          : []
+        const [first, ...rest] = live
+        return first?.layout === 'hero' ? [first, ...resume, ...rest] : [...resume, ...live]
+      },
+    },
+
+    library: {
+      /** Everything the household can watch. */
+      list: () => watchable().map((m) => clientItem(m)),
+      item: (id: string): ClientDetail => {
+        const m = state.items.find((x) => x.id === id)
+        if (!m || !playable(m))
+          throw new ApiError(404, 'not-found', 'That title isn’t on this server.')
+        const meta = movieMetadata(state, id, now())
+        const versions = versionsOf(m)
+        const prefs = state.prefs[`${me().id}:${id}`] ?? {}
+        const version = versions.find((v) => v.id === prefs.versionId) ?? versions[0]
+        const related = recommendations(state, id, 24)
+          .flatMap((t) => {
+            const x = state.items.find((i) => i.id === t.id)
+            return x && playable(x) ? [clientItem(x)] : []
+          })
+          .slice(0, 12)
+        return {
+          item: clientItem(m),
+          versions,
+          cast: meta?.cast ?? [],
+          directors: meta?.crew.filter((c) => c.job === 'Director') ?? [],
+          related,
+          defaults: {
+            versionId: version?.id ?? '',
+            audioId:
+              prefs.audioId ??
+              version?.audio.find((a) => a.default)?.id ??
+              version?.audio[0]?.id ??
+              null,
+            subtitleId:
+              prefs.subtitleId !== undefined
+                ? prefs.subtitleId
+                : (version?.subtitles.find((t) => t.default)?.id ?? null),
+          },
+        }
+      },
+    },
+
+    playback: {
+      prefs: (id: string): PlaybackPrefs => state.prefs[`${me().id}:${id}`] ?? {},
+      /** Remembers the picks for this title, for this user. */
+      setPrefs: (id: string, patch: PlaybackPrefs) => {
+        const key = `${me().id}:${id}`
+        state.prefs[key] = { ...state.prefs[key], ...patch }
+        srv.events.emit({ type: 'watch.updated' })
+        return state.prefs[key]
+      },
+      /** Reports the position (every few seconds while playing, and on pause or exit). */
+      progress: (id: string, position: number) => {
+        const u = me().id
+        const w = state.watch.find((x) => x.userId === u && x.itemId === id)
+        if (w) {
+          w.position = position
+          w.updatedAt = iso(now())
+        } else state.watch.push({ userId: u, itemId: id, position, updatedAt: iso(now()) })
+        srv.events.emit({ type: 'watch.updated' })
       },
     },
 

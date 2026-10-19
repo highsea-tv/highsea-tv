@@ -34,6 +34,7 @@ import {
   useState,
 } from 'react'
 import { useLocation } from 'wouter'
+import { Inline } from '../kit/inline.tsx'
 import { useClient, useNow, useQuery } from '../mock/hooks.tsx'
 import type { Announcement, UserRole } from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'
@@ -266,23 +267,6 @@ function usePaletteGroups(role: UserRole, shell: Pick<Shell, 'setCustomizing'>):
 // ---------------------------------------------------------------- announcements
 
 /** Bold is the only markdown a banner needs; the composer (A11) has the full preview. */
-function Inline({ text }: { text: string }) {
-  return (
-    <>
-      {text.split(/(\*\*[^*]+\*\*)/).map((part, i) =>
-        part.startsWith('**') ? (
-          // biome-ignore lint/suspicious/noArrayIndexKey: the split is stable for a given text
-          <strong key={i} className="font-semibold text-text">
-            {part.slice(2, -2)}
-          </strong>
-        ) : (
-          part
-        ),
-      )}
-    </>
-  )
-}
-
 const tone = (a: Announcement) =>
   a.severity === 'critical' ? 'danger' : a.severity === 'warning' ? 'warning' : 'announcement'
 

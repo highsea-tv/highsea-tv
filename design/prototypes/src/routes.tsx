@@ -26,9 +26,18 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/admin/subtitles',
     '/admin/nowhere',
   ],
-  web: ['/web'],
-  mobile: ['/mobile'],
-  tv: ['/tv'],
+  web: [
+    '/web',
+    '/web/home/b',
+    '/web/connect',
+    '/web/library',
+    '/web/movies/4',
+    '/web/movies/107',
+    '/web/play/4',
+    '/web/search',
+  ],
+  mobile: ['/mobile', '/mobile/connect', '/mobile/library', '/mobile/movies/4', '/mobile/play/4'],
+  tv: ['/tv', '/tv/connect', '/tv/library', '/tv/movies/4', '/tv/play/4'],
 }
 
 export function Routes() {

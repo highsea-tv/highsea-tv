@@ -296,7 +296,14 @@ export const flows: Flow[] = [
     3,
     'LAN discovery, add by URL, sign in (by code on TV), the server switcher and failover.',
     {
-      ready: false,
+      ready: true,
+      spec: 'docs/product/connectivity.md',
+      hints: [
+        'Servers answer discovery over two seconds; type harbor.example.net to connect remotely.',
+        'Sign in as ines with any password for the two-step code (any six digits but 000000).',
+        'TV: wait eight seconds and the phone “approves” the code; or press OK on Use a password.',
+        'Toolbar › Connection: Remote shows the failover; Unreachable shows what to do.',
+      ],
     },
   ),
   client(
@@ -306,6 +313,15 @@ export const flows: Flow[] = [
     ['web', 'mobile', 'tv'],
     3,
     'Featured sections and announcements. Two web options to choose between.',
+    {
+      ready: true,
+      spec: 'docs/product/client-home.md',
+      hints: [
+        'Web: pick between A (full-bleed hero) and B (contained hero) with the Prototype switch.',
+        'An announcement asks to be acknowledged first; Movie night is a dismissible banner or card.',
+        'TV: Up from Play opens the global navigation.',
+      ],
+    },
   ),
   client(
     'C3',
@@ -314,22 +330,42 @@ export const flows: Flow[] = [
     ['web', 'mobile', 'tv'],
     3,
     'The movies grid with sort and filter; alphabet jump on TV.',
+    {
+      ready: true,
+      spec: 'docs/product/client-library.md',
+      hints: ['TV: Left from the first column enters the alphabet rail.'],
+    },
   ),
   client(
     'C4',
     'Item detail',
-    '/movies/1',
+    '/movies/4',
     ['web', 'mobile', 'tv'],
     3,
     'Hero, play or resume, versions, cast, related, subtitle and audio defaults.',
+    {
+      ready: true,
+      spec: 'docs/product/client-detail.md',
+      hints: [
+        'Tears of Steel is a third watched: Resume, or Play from the start. Picks are remembered.',
+      ],
+    },
   ),
   client(
     'C5',
     'Player chrome',
-    '/play/1',
+    '/play/4',
     ['web', 'mobile', 'tv'],
     3,
     'Scrubber, track and subtitle pickers, the subtitle offset nudge, the remote mapping.',
+    {
+      ready: true,
+      spec: 'docs/product/player.md',
+      hints: [
+        'Turn English subtitles on, then nudge the timing in 50 ms steps and watch the preview.',
+        'Web: Space, ← →, M and F. TV: OK, ← → on the scrubber, ↓ for tracks, Back.',
+      ],
+    },
   ),
   client(
     'C6',

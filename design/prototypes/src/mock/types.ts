@@ -776,5 +776,83 @@ export type ServerEvent =
   | { type: 'announcements.updated' }
   | { type: 'layout.updated' }
   | { type: 'server.updated' }
+  | { type: 'watch.updated' }
 
 export type EventTopic = ServerEvent['type']
+
+// ---------------------------------------------------------------- clients (C1–C5)
+
+/** A server this device has signed in to before (the multi-server switcher). */
+export type KnownServer = {
+  id: string
+  name: string
+  owner: string
+  /** The LAN address, then the remote one the client fails over to. */
+  addresses: { local: string; remote: string | null }
+  signedIn: boolean
+  lastSeen: ISODate
+}
+
+/** `POST /api/v1/connect/probe`: what an address answered, before signing in. */
+export type ProbeResult = PublicServerInfo & { address: string; reachability: Reachability }
+
+/** Sign-in by code (TV): the code a phone or computer approves at `url`. */
+export type Pairing = { code: string; url: string; expiresAt: ISODate }
+
+/** A title as the clients see it: the library item plus this user's watch state. */
+export type ClientItem = MediaItem & {
+  /** 0–1 through the movie, or null if not started (or finished). */
+  progress: number | null
+  /** Seconds in, for Resume. */
+  position: number
+  /** A featured section's override, if any. */
+  tagline: string | null
+}
+
+export type HomeSection = {
+  id: string
+  title: string
+  /** A curated-by suffix ("by Ines") or a tagline. */
+  suffix: string | null
+  layout: 'hero' | 'row' | 'spotlight' | 'continue'
+  items: ClientItem[]
+}
+
+export type ClientTrack = {
+  id: string
+  kind: 'audio' | 'subtitle'
+  label: string
+  language: string
+  /** Subtitles: forced, SDH; audio: channels. */
+  detail: string | null
+  default: boolean
+}
+
+export type ClientVersion = {
+  id: string
+  label: string
+  /** "4K · HDR10 · HEVC · 18.2 GB". */
+  detail: string
+  audio: ClientTrack[]
+  subtitles: ClientTrack[]
+}
+
+/** `GET /api/v1/items/{id}` for clients: the page and the player read the same shape. */
+export type ClientDetail = {
+  item: ClientItem
+  versions: ClientVersion[]
+  cast: Credit[]
+  directors: Credit[]
+  related: ClientItem[]
+  /** This user's remembered picks for the title, or the server's defaults. */
+  defaults: { versionId: string; audioId: string | null; subtitleId: string | null }
+}
+
+/** This user's per-title player settings, saved as they change. */
+export type PlaybackPrefs = {
+  versionId?: string
+  audioId?: string | null
+  subtitleId?: string | null
+  /** Subtitle timing nudge for this title, in ms (±50 steps). */
+  subtitleOffsetMs?: number
+}

@@ -6,6 +6,9 @@ import { Icon } from '@highsea/ui-web'
 import type { ReactNode } from 'react'
 import { useNow } from '../../mock/hooks.tsx'
 
+/** The phone's screen, in pt. */
+export const PHONE = { w: 390, h: 844 }
+
 /** Safe-area insets of a current notched phone, in pt. */
 export const safeArea = { top: 54, bottom: 34 }
 

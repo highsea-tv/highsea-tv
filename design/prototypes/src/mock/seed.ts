@@ -17,12 +17,15 @@ import type {
   HealthCheck,
   HistoryEvent,
   Indexer,
+  ISODate,
   Job,
+  KnownServer,
   Language,
   LanguageProfile,
   MediaFile,
   MediaItem,
   MediaStatus,
+  PlaybackPrefs,
   QualityProfile,
   Server,
   SpeedSample,
@@ -82,6 +85,12 @@ export type ServerState = {
   fs: Record<string, FsNode>
   discovered: DiscoveredServer[]
   discoverCatalog: DiscoverMovie[]
+  /** Servers this device has signed in to (the clients' switcher). */
+  known: KnownServer[]
+  /** Where each user is in each title (Continue watching, Resume). */
+  watch: { userId: string; itemId: string; position: number; updatedAt: ISODate }[]
+  /** Per user and title: the player's remembered picks, keyed `${userId}:${itemId}`. */
+  prefs: Record<string, PlaybackPrefs>
   pipeline: PipelineStep[]
   /** Announcement ids the signed-in user dismissed or acknowledged. */
   seen: Record<string, string[]>
@@ -425,6 +434,26 @@ function server(): Server {
   }
 }
 
+/** The clients' remembered servers: Harbor, and Attic, a friend's server signed out of. */
+const known = (now: number): KnownServer[] => [
+  {
+    id: 'srv-harbor',
+    name: 'Harbor',
+    owner: 'Ines',
+    addresses: { local: '192.168.1.20:3000', remote: 'harbor.example.net' },
+    signedIn: true,
+    lastSeen: iso(now),
+  },
+  {
+    id: 'srv-attic',
+    name: 'Attic',
+    owner: 'Theo',
+    addresses: { local: '192.168.1.31:3000', remote: null },
+    signedIn: false,
+    lastSeen: iso(now - 9 * DAY),
+  },
+]
+
 const discovered = (now: number): DiscoveredServer[] => [
   {
     id: 'srv-harbor',
@@ -442,6 +471,15 @@ const discovered = (now: number): DiscoveredServer[] => [
     address: '192.168.1.31:3000',
     latencyMs: 6,
     owner: 'Theo',
+    discoveredAt: iso(now),
+  },
+  {
+    id: 'srv-den',
+    name: 'Den',
+    version: '1.0.0',
+    address: '192.168.1.44:3000',
+    latencyMs: 9,
+    owner: 'Sam',
     discoveredAt: iso(now),
   },
 ]
@@ -1017,6 +1055,9 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
     status: status(now, kind === 'empty'),
     fs: structuredClone(fs),
     discovered: discovered(now),
+    known: known(now),
+    watch: [],
+    prefs: {},
     pipeline: [],
     seen: {},
   }
@@ -1262,6 +1303,24 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
       status: 'scheduled',
       seen: false,
     },
+    {
+      id: 'an-new-address',
+      title: 'Harbor has a new remote address',
+      body: 'Away from home, the apps now connect through **harbor.example.net**. Nothing to change: they switch on their own.',
+      image: null,
+      cta: null,
+      severity: 'notice',
+      placements: ['modal', 'banner', 'card'],
+      // the household's apps only: the admin doesn't need it
+      audience: {
+        kind: 'clients',
+        clients: ['web', 'desktop', 'ios', 'android', 'tvos', 'androidtv', 'webos', 'tizen'],
+      },
+      schedule: { start: iso(now - 1 * DAY), end: iso(now + 13 * DAY) },
+      acknowledgement: 'require',
+      status: 'live',
+      seen: false,
+    },
   ]
 
   const featured: FeaturedSection[] = [
@@ -1381,6 +1440,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
     subtitles,
     announcements,
     featured,
+    watch: watch(items, now),
     health,
     speeds: samples(now, (k) => ({
       down: Math.max(0, (16 + Math.sin(k / 9) * 4 + (rng() - 0.5) * 5) * MB),
@@ -1434,4 +1494,28 @@ function device(
 /** Ten minutes of speed history, one sample every 10 simulated seconds. */
 function samples(now: number, f: (k: number) => { down: number; up: number }): SpeedSample[] {
   return Array.from({ length: 60 }, (_, k) => ({ t: now - (59 - k) * 10_000, ...f(k) }))
+}
+
+/** Continue watching: Ines is partway through four films, Ruth through two. */
+function watch(items: MediaItem[], now: number): ServerState['watch'] {
+  const at = (userId: string, slug: string, fraction: number, hoursAgo: number) => {
+    const m = items.find((x) => x.id === slug)
+    if (!m) return []
+    return [
+      {
+        userId,
+        itemId: m.id,
+        position: Math.round(m.runtimeMinutes * 60 * fraction),
+        updatedAt: iso(now - hoursAgo * HOUR),
+      },
+    ]
+  }
+  return [
+    ...at('u-ines', 'tears-of-steel', 0.35, 2),
+    ...at('u-ines', 'charade', 0.74, 20),
+    ...at('u-ines', 'elephants-dream', 0.62, 30),
+    ...at('u-ines', 'the-general', 0.18, 50),
+    ...at('u-ruth', 'metropolis', 0.4, 5),
+    ...at('u-ruth', 'his-girl-friday', 0.12, 26),
+  ]
 }

@@ -8,6 +8,8 @@ export type Width = 'fluid' | 1440 | 1024 | 768 | 390
 export type ThemeId = 'default' | 'oled' | 'high-contrast' | 'harbor'
 export type Role = 'owner' | 'member'
 export type TimeMode = 'play' | 'pause' | 'fast'
+/** How a client reaches its server (connectivity.md): on the LAN, failed over to remote, or not. */
+export type Connection = 'local' | 'remote' | 'offline'
 
 export type ProtoState = {
   width: Width
@@ -20,6 +22,7 @@ export type ProtoState = {
   /** Sound per platform: on for TV, off elsewhere (sound.md#defaults). */
   sound: Record<Platform, boolean>
   time: TimeMode
+  connection: Connection
 }
 
 export const defaultState: ProtoState = {
@@ -31,6 +34,7 @@ export const defaultState: ProtoState = {
   largeText: false,
   sound: { admin: false, web: false, mobile: false, tv: true },
   time: 'play',
+  connection: 'local',
 }
 
 export const platforms: { id: Platform; label: string }[] = [
@@ -59,6 +63,12 @@ export const dataStates: { id: DataState; label: string }[] = [
 export const roles: { id: Role; label: string }[] = [
   { id: 'owner', label: 'Owner' },
   { id: 'member', label: 'Member' },
+]
+
+export const connections: { id: Connection; label: string }[] = [
+  { id: 'local', label: 'On the LAN' },
+  { id: 'remote', label: 'Remote' },
+  { id: 'offline', label: 'Unreachable' },
 ]
 
 export const timeModes: { id: TimeMode; label: string }[] = [
@@ -97,7 +107,7 @@ export function saveState(state: ProtoState): void {
 
 /**
  * URL parameters override the state, so a screen can be opened on its own at a known state:
- * `?screen&data=empty&theme=oled&role=member&motion=reduced&text=200&time=pause`.
+ * `?screen&data=empty&theme=oled&role=member&motion=reduced&text=200&time=pause&connection=remote`.
  */
 export function stateFromParams(params: URLSearchParams, base: ProtoState): ProtoState {
   const pick = <T extends string>(key: string, allowed: readonly T[]): T | undefined => {
@@ -111,6 +121,7 @@ export function stateFromParams(params: URLSearchParams, base: ProtoState): Prot
     theme: pick('theme', ['default', 'oled', 'high-contrast', 'harbor']) ?? base.theme,
     role: pick('role', ['owner', 'member']) ?? base.role,
     time: pick('time', ['play', 'pause', 'fast']) ?? base.time,
+    connection: pick('connection', ['local', 'remote', 'offline']) ?? base.connection,
     reducedMotion: params.has('motion') ? params.get('motion') === 'reduced' : base.reducedMotion,
     largeText: params.has('text') ? params.get('text') === '200' : base.largeText,
     sound:

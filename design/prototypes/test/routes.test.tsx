@@ -42,7 +42,10 @@ for (const [platform, routes] of Object.entries(screenRoutes) as [Platform, stri
             await settle()
             expect(container?.childElementCount).toBeGreaterThan(0)
             collect()
-            expect(await violations()).toEqual([])
+            // an acknowledge-required announcement opens over the clients' home: behind a modal
+            // dialog the page is hidden, so the dialog is what's checked
+            const modal = document.querySelector('[role="dialog"]') ?? undefined
+            expect(await violations(modal)).toEqual([])
           })
   })
 }
