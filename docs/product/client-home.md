@@ -1,7 +1,7 @@
 # Client home
 
 - **Platforms:** Web and desktop, mobile, TV.
-- **Prototype:** `#/web` (the chosen option), `#/web/home/a` and `#/web/home/b` (the two options), `#/mobile`, `#/tv` (C2).
+- **Prototype:** `#/web`, `#/mobile`, `#/tv` (C2).
 - **Roadmap:** [Phase 2 › C2](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Curation](../roadmap.md#curation-highseacuration) (featured sections and announcements). Layouts: [desktop-web.md](../design-language/platforms/desktop-web.md), [mobile.md](../design-language/platforms/mobile.md#home-tabs--carousel) (locked), [tv.md](../design-language/platforms/tv.md#layout) (locked).
 
 ## Purpose
@@ -19,20 +19,15 @@ Where the household starts: what the server's owner is featuring, where you left
 
 The sections come from the server in the owner's order: featured sections (hero, row, spotlight) with **Continue watching** right after the hero. Each person can reorder or hide the rows under the hero in Settings › Home screen ([client-settings.md](client-settings.md)); the order follows them to every device. The owner composes the sections and announcements in Curation ([curation.md](curation.md)).
 
-### Web and desktop: two options
+### Web and desktop
 
-The web home is new design work. The prototype builds two options; the owner picks one at checkpoint 3, and the choice is recorded in an ADR. A **Prototype** switch (bottom right, mono) moves between them.
+A **full-bleed hero** (the TV's Hero + rows, adapted; chosen in [ADR 0017](../adr/0017-web-home-full-bleed-hero.md)):
 
-- **A · Full-bleed hero** (the TV's Hero + rows, adapted):
-  - the hero spans the window, 58% of the viewport tall from medium, under the translucent top bar: eyebrow (the section's title), title, meta (year, runtime, genre, quality tags), tagline or synopsis, **Play** or **Resume**, **Details**;
-  - the hero's titles are chosen with a pager (bottom right); on desktop the hero changes only on selection, never on hover;
-  - then the owner's banners, then the rows.
-  - On a phone-width window, the hero sits under the top bar rather than behind it.
-- **B · Contained hero:**
-  - the top bar is solid; banners come first;
-  - a framed card (21:9 from expanded, rounded `xl`) with the same copy and actions, and beside it **Also featured**: the other hero titles as small still cards that switch the card;
-  - then the rows.
-- **Rows, both options** (max 1680px, rows bleed to the right edge):
+- the hero spans the window, 58% of the viewport tall from medium, under the translucent top bar: eyebrow (the section's title), title, meta (year, runtime, genre, quality tags), tagline or synopsis, **Play** or **Resume**, **Details**;
+- the hero's titles are chosen with a pager (bottom right); on desktop the hero changes only on selection, never on hover;
+- then the owner's banners, then the rows.
+- On a phone-width window, the hero sits under the top bar rather than behind it.
+- **Rows** (max 1680px, rows bleed to the right edge):
   - **Continue watching:** 16:9 stills with the progress bar, the title and "8 min left"; they open the player directly.
   - **Rows:** posters with the quality tag; hover or focus shows a Play button over the art.
   - **Spotlight:** wider cards (still, title, meta, two lines of synopsis), for a curated theme.
@@ -56,7 +51,7 @@ Server identity (top left) · the announcement pill (top right) · the hero (top
 | Placement | Web | Mobile | TV |
 | --- | --- | --- | --- |
 | Acknowledge-required (modal) | A dialog, **Got it** only; Escape and outside clicks don't close it | A dialog, **Got it** across the width | Its own screen before Home, **Got it** focused |
-| Banner | Under the hero (A) or above it (B), dismissible | n/a (card instead) | n/a (pill instead) |
+| Banner | Under the hero, dismissible | n/a (card instead) | n/a (pill instead) |
 | Card | n/a | Under the header, dismissible | n/a |
 | Pill | n/a | n/a | Top right: the newest one's title |
 | Toast | Once, when the app opens; then counted as seen | n/a | n/a |
@@ -101,7 +96,7 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 
 ## Decisions
 
-- **Two web options, one pick.** A carries the TV's hero to the desktop, the most "highsea" look; B keeps the page calmer and shows more featured titles at once. Recorded in an ADR once picked.
+- **A full-bleed hero on the web** ([ADR 0017](../adr/0017-web-home-full-bleed-hero.md)): two options were built at checkpoint 3, this one and a contained card with the other featured titles beside it. The owner chose the full-bleed hero, which carries the TV's hero to the desktop.
 - **Continue watching goes after the hero,** whatever the owner's order: it's the most personal row and the most used.
 - **The hero's titles are also the first TV row,** so every featured title can be reached and bound by focus, and **only that row binds the hero** (the owner's call at the checkpoint 3 review): the hero is the featured section's, and other rows shouldn't repaint it while it's scrolled away.
 - **Nothing is pinned on TV.** The server identity and the pill scroll with the page, so they never sit over a poster.
@@ -110,6 +105,5 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 
 ## Open questions
 
-- **Which web option?** A or B (see the Prototype switch). The ADR follows the choice.
 - **Hero rotation on web:** never on its own (current), or slowly while the window is idle?
 - **Pull to refresh on mobile Home** (mobile.md): the live events make it mostly unnecessary. Keep it for habit?

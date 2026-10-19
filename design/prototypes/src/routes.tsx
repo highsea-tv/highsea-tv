@@ -59,7 +59,6 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
   ],
   web: [
     '/web',
-    '/web/home/b',
     '/web/connect',
     '/web/library',
     '/web/movies/4',

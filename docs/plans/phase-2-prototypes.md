@@ -1,6 +1,6 @@
 # Phase 2 plan: design prototypes
 
-- **Status:** Ready to start. Phase 1 (design system v1.0) was signed off on 2026-10-16 (commit 943c1f5).
+- **Status:** Done. Signed off by the owner on 2026-10-19; the web home is option A ([ADR 0017](../adr/0017-web-home-full-bleed-hero.md)). Phase 1 (design system v1.0) was signed off on 2026-10-16 (commit 943c1f5).
 - **Gate:** the owner signs off on the prototypes. They then become the build reference for Phase 3 (server) and Phase 4 (clients).
 - **Source:** the Phase 2 section of the [roadmap](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off). This plan turns that section into steps.
 

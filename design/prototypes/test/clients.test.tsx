@@ -105,15 +105,15 @@ describe('C1 connect', () => {
   })
 
   test('remote: the server switcher says how it’s connected', async () => {
-    const { user } = await open('/web/home/a', 'remote')
+    const { user } = await open('/web', 'remote')
     await acknowledge(user)
     expect(page().getByText('Connected remotely')).toBeTruthy()
   })
 })
 
 describe('C2 home', () => {
-  test('web: acknowledge, dismiss the banner, and switch between the two options', async () => {
-    const { mock, user } = await open('/web/home/a')
+  test('web: acknowledge, pick a featured title, dismiss the banner', async () => {
+    const { mock, user } = await open('/web')
     await acknowledge(user)
     expect(mock.servers.populated.state.seen['u-ines']).toContain('an-new-address')
     expect(page().getByRole('heading', { name: 'Sintel' })).toBeTruthy()
@@ -125,17 +125,6 @@ describe('C2 home', () => {
     await user.click(within(banners).getByRole('button', { name: 'Dismiss' }))
     await settle()
     expect(page().queryByText('Movie night is Friday')).toBeNull()
-    expect(page().getByRole('link', { name: 'B · Contained' }).getAttribute('href')).toBe(
-      '#/web/home/b',
-    )
-  })
-
-  test('web option B: the other featured titles beside the card', async () => {
-    const { user } = await open('/web/home/b')
-    await acknowledge(user)
-    await user.click(page().getByRole('button', { name: /^Sprite Fright/ }))
-    expect(page().getByRole('heading', { name: 'Sprite Fright' })).toBeTruthy()
-    await clean()
   })
 
   test('mobile: the card, the featured carousel and the tabs', async () => {

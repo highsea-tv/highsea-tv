@@ -166,7 +166,7 @@ Exit: user sign-off on the prototypes, which then serve as the build reference.
 
 The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`](plans/phase-2-prototypes.md).
 
-**Status (2026-10-19): all five checkpoints built; awaiting the owner's sign-off.** Every flow above is in [`design/prototypes`](../design/prototypes/README.md) with a spec in [`docs/product/`](product/), and the checkpoint 5 sweeps are clean on every route (axe in three themes, overflow, keyboard, D-pad, reduced motion, 200% text). Still the owner's to decide: the web home, option A or B, recorded in an ADR on sign-off.
+**✅ Phase 2 signed off (2026-10-19): the design prototypes.** Every flow above is in [`design/prototypes`](../design/prototypes/README.md) with a spec in [`docs/product/`](product/), and the checkpoint 5 sweeps are clean on every route (axe in three themes, overflow, keyboard, D-pad, reduced motion, 200% text). The web home is the full-bleed hero ([ADR 0017](adr/0017-web-home-full-bleed-hero.md)). The prototypes are now the build reference for Phase 3 and Phase 4.
 
 ## Phase 3: Server milestone 1 (implementation)
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The web/desktop client (C1–C8): connect, home (two options), library, item detail, the player,
+// The web/desktop client (C1–C8): connect, home, library, item detail, the player,
 // search, settings, the profile and downloads. The device's own theme and sound apply over all.
 import { Button, EmptyState } from '@highsea/ui-web'
 import { Route, Switch, useLocation } from 'wouter'
@@ -7,7 +7,7 @@ import { ConnectFlow } from '../client/connect-flow.tsx'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { WebCollection } from './collection.tsx'
 import { WebDetail } from './detail.tsx'
-import { savedOption, WebHome } from './home.tsx'
+import { WebHome } from './home.tsx'
 import { WebLibrary } from './library.tsx'
 import { WebPlayer } from './player.tsx'
 import { WebSearch } from './search.tsx'
@@ -41,18 +41,8 @@ function Routes() {
         <WebPlayer />
       </Route>
       <Route path="/">
-        <WebShell overHero={savedOption() === 'a'}>
-          <WebHome option={savedOption()} />
-        </WebShell>
-      </Route>
-      <Route path="/home/a">
         <WebShell overHero>
-          <WebHome option="a" />
-        </WebShell>
-      </Route>
-      <Route path="/home/b">
-        <WebShell>
-          <WebHome option="b" />
+          <WebHome />
         </WebShell>
       </Route>
       <Route path="/library">

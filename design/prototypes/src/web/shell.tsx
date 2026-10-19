@@ -45,9 +45,8 @@ const destinations = [
   { path: '/downloads', label: 'Downloads' },
 ]
 
-/** Home covers the two prototype options (`/home/a`, `/home/b`). */
 const isCurrent = (path: string, location: string) =>
-  path === '/' ? location === '/' || location.startsWith('/home') : location.startsWith(path)
+  path === '/' ? location === '/' : location.startsWith(path)
 
 function ServerSwitcher() {
   const server = useServer()

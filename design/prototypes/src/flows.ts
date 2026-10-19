@@ -357,12 +357,12 @@ export const flows: Flow[] = [
     '',
     ['web', 'mobile', 'tv'],
     3,
-    'Featured sections and announcements. Two web options to choose between.',
+    'Featured sections and announcements. The web home is a full-bleed hero (ADR 0017).',
     {
       ready: true,
       spec: 'docs/product/client-home.md',
       hints: [
-        'Web: pick between A (full-bleed hero) and B (contained hero) with the Prototype switch.',
+        'Web: the hero’s pager picks a featured title; the hero never changes on hover.',
         'An announcement asks to be acknowledged first; Movie night is a dismissible banner or card.',
         'TV: Up from Play opens the global navigation.',
       ],

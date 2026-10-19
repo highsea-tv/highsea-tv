@@ -20,5 +20,6 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0014](0014-universal-media-pages.md) | One media page per title, whatever its library state | Accepted |
 | [0015](0015-tv-hero-binds-featured-row.md) | The TV hero binds only the featured row | Accepted |
 | [0016](0016-gentler-poster-lift.md) | A gentler poster lift | Accepted |
+| [0017](0017-web-home-full-bleed-hero.md) | The web home uses a full-bleed hero | Accepted |
 
 Template: copy [`template.md`](template.md).

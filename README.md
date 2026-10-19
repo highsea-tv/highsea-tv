@@ -13,7 +13,7 @@ highsea.tv is a self-hosted, all-in-one media platform. One server replaces the 
 
 Dedicated clients for web, desktop, mobile and TV connect to your server at home or remotely.
 
-> Status: **pre-alpha, Phase 2 (design prototypes), awaiting sign-off.** The design system is v1.0, and every admin and client flow is a clickable prototype; nothing here is usable as a product yet. See [docs/roadmap.md](docs/roadmap.md).
+> Status: **pre-alpha. Phase 2 (design prototypes) is signed off; Phase 3 (the server) is next.** The design system is v1.0, and every admin and client flow is a clickable prototype; nothing here is usable as a product yet. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Repository layout
 
