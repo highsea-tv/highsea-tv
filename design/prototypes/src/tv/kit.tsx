@@ -172,7 +172,7 @@ export function TvRow({
         <ul
           data-scroll="x"
           data-keep="0.3"
-          className="flex gap-(--tv-poster-gap) px-(--tv-safe-x) py-[1cqw] transition-lift"
+          className="flex w-max gap-(--tv-poster-gap) px-(--tv-safe-x) py-[1cqw] transition-lift"
         >
           {children}
         </ul>
