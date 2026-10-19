@@ -1,12 +1,12 @@
 # Movies: discover, library and detail
 
 - **Platforms:** Admin (`apps/server`), every breakpoint.
-- **Prototype:** `#/admin/discover` (A4), `#/admin/movies` (A5), `#/admin/movies/sintel` (A6).
+- **Prototype:** `#/admin/discover` (A4), `#/admin/movies` (A5), `#/admin/movies/sintel` (A6). The movie page is a media page: its shared anatomy, the not-added state, people and other media types are in [media-pages.md](media-pages.md).
 - **Roadmap:** [Phase 2 › A4–A6](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Movie pipeline](../roadmap.md#movie-pipeline), [Admin UI routes](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes) (`/discover`, `/movies`, `/movies/[id]`). Media model: [ADR 0012](../adr/0012-unified-media-item-model.md).
 
 ## Purpose
 
-The front of the pipeline. **Discover** finds a movie and adds it with everything the pipeline needs, so one dialog is the only setup. The **library** shows what's here and what's still wanted, and edits many movies at once. The **movie page** is where one movie is understood and fixed: its versions and streams, what happened to it, every release the indexers offer with the reason each one was taken or refused, and its subtitles.
+The front of the pipeline. **Discover** finds a movie and adds it with everything the pipeline needs, so one dialog is the only setup. The **library** shows what's here and what's still wanted, and edits many movies at once. The **movie page** is the same page whether the movie is here or not ([ADR 0014](../adr/0014-universal-media-pages.md)). Before adding, it shows what the movie is: cast, crew, trailers, its collection and what's like it. Once added, it's also where the movie is fixed: its versions and streams, what happened to it, every release the indexers offer with the reason each one was taken or refused, and its subtitles.
 
 ## Entry points
 
@@ -15,6 +15,7 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 - The dashboard's Upcoming, Recently added and Queue widgets, and Activity, link titles to their pages.
 - The library's **Add movie** and its empty state's **Discover movies**.
 - The add toast's **Open**.
+- A person's filmography, a collection and More like this, on any media page.
 
 ## Layout
 
@@ -22,9 +23,8 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 
 - `PageHeader`: "Discover", a one-line description.
 - A search field (max 36rem). Empty, the page shows **Trending this week**; typing shows **Results for "…"**. Results are instant (deferred input, no submit button).
-- A poster grid (`auto-fill, minmax(8.5rem, 1fr)`): poster, title (two lines), year and rating, then **Add** or an **In library** badge that links to the movie. The poster and title are one button that opens the details.
-- **Details dialog** (`lg`): the backdrop at 15% behind the poster; year, runtime, genres and rating; an **In library** badge if it's there; the full synopsis; the release date ("Released" or "Releases") and the TMDB id. Footer: **Close**, then **Add movie** (to the add dialog) or **Open in the library**.
-- **Add dialog** (`md`): the synopsis, then Folder (full width), Quality profile and Subtitle languages (two columns from medium), Minimum availability, **Monitored** (switch) and **Search now** (checkbox, on). The primary button reads **Add and search** or **Add movie** to match.
+- A poster grid (`auto-fill, minmax(8.5rem, 1fr)`): poster, title (two lines), year and rating, then **Add** or an **In library** badge that links to the movie. The poster and title are one link to the movie's page: its library page if it's here, its metadata page (`/movies/tmdb-…`) if not.
+- **Add dialog** (`md`), shared by Discover, the movie page, person pages and collections: the synopsis (or, for several movies, their titles), then Folder (full width), Quality profile and Subtitle languages (two columns from medium), Minimum availability, **Monitored** (switch) and **Search now** (checkbox, on). The primary button reads **Add and search** or **Add movie** to match.
 
 ### Library (A5)
 
@@ -36,10 +36,12 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 
 ### Movie detail (A6)
 
+The anatomy, the Overview's rows (cast, trailers, collection, More like this, About), the Cast and crew tab and the not-added state are in [media-pages.md](media-pages.md#layout). What the library layer adds:
+
 - `PageHeader`: the title; **Search**, **Interactive search**, and a More menu (Refresh metadata, Remove from library).
-- **Summary card:** the backdrop at 15% behind it; the poster (9rem column from medium, stacked on compact); year, runtime, genre and rating; status and a quality tag per version; the synopsis (65ch); the path and the **Monitored** switch.
-- **Tabs** (line variant):
-  - **Overview:** Details (versions with their profiles, subtitle profile, minimum availability, root folder, TMDB id) and, while it's downloading, **In the queue** with live progress. Two columns from expanded.
+- **Summary card:** the media page's, plus status and a quality tag per version, the path and the **Monitored** switch.
+- **Tabs** (line variant): Overview and Cast and crew, then:
+  - **Overview** gains **In the queue** while it's downloading (live progress), and **In the library** in the aside: versions with their profiles, subtitle profile, minimum availability, root folder.
   - **Files:** one card per version: its size, path, each stream on one line (video: codec, resolution, HDR, bitrate; audio: codec, channels, language, default; subtitles: codec, language, forced, SDH), and the release name. A version without a file says "No file yet" or "Downloading".
   - **History:** this movie's events, newest first.
   - **Search** (staff): interactive search. See Interactions.
@@ -62,7 +64,7 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 
 ## Interactions
 
-- **Details:** a poster opens the details dialog; its **Add movie** closes it and opens the add dialog, so Escape from adding returns to the results.
+- **Open:** a poster opens the movie's page. Its **Add movie** opens the same add dialog; once added, the page turns into the library page in place.
 - **Add:** Add opens the dialog; **Add and search** adds the movie, closes, and toasts "{Title} added · Searching your indexers now. Follow it in Activity." with **Open**. The result's card switches to **In library** at once.
 - **Select:** row checkboxes, and a header checkbox for every row shown. Selection survives filtering; the bar counts selected movies that still exist.
 - **Bulk:** Search searches each selected movie that's missing or wanted; Edit applies to all; Remove asks first ("Their files stay on disk.").
@@ -110,7 +112,7 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 ## Decisions
 
 - **Discover shows the library too,** marked In library and linked, instead of hiding it. Searching for a movie you already have should say so, not come back empty.
-- **Details in a dialog, not a page.** It keeps the search and its results in place behind it; Discover is for browsing many titles quickly. A page per TMDB title can come later if the details grow (cast, trailers).
+- **Details on the movie's page, not in a dialog** (replaces checkpoint 2's details dialog). Cast, crew, trailers, collections and recommendations need the room, and one page for every state means one place to learn a title ([ADR 0014](../adr/0014-universal-media-pages.md)). Discover keeps its search in the history entry (`/discover?q=nanook` in the product), so Back returns to the same results.
 - **Status on the art, not under it.** A status chip in the caption wrapped or overflowed depending on the title and label lengths, and appeared and disappeared live, so cards jumped. On the art it takes no layout space; the quality tags already set that pattern.
 - **Every media table leads with a thumbnail.** `TitleCell` takes `art`, so series, music and books tables get the same row shape. The thumbnail is decorative (empty alt): the title beside it names the row.
 - **One dialog, defaults filled.** The prototype starts from the first folder, HD 1080p and English; the product should remember the last-used values. Search now is on, because the usual intent of adding is "get it".
@@ -124,7 +126,6 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 
 ## Open questions
 
-- **Details content.** TMDB also has cast, crew, certification, trailers and collections. Which belong in the details dialog?
 - **Discover sources.** TMDB trending only, or also lists (popular, upcoming, by genre) and the owner's import lists?
 - **Library columns.** Should the table's columns be choosable (size, quality profile, path, rating), as in Radarr?
 - **Per-version actions.** Searching or upgrading one version (just the 4K) needs a version picker on Search; the prototype searches the movie.

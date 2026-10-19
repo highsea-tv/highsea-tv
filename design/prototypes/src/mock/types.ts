@@ -234,6 +234,75 @@ export type DiscoverMovie = {
   releaseDate: ISODate
   art: { poster: string; backdrop: string; still: string }
   inLibrary: boolean
+  /** The library id once added, for links to its page; null otherwise. */
+  libraryId: string | null
+}
+
+// ---------------------------------------------------------------- metadata (media pages, ADR 0014)
+
+export type Department = 'Acting' | 'Directing' | 'Writing' | 'Production' | 'Sound' | 'Camera'
+
+/** A person's part in a title: a character (cast) or a job (crew). */
+export type Credit = {
+  personId: string
+  name: string
+  photo: string
+  department: Department
+  /** Cast: who they play. */
+  character: string | null
+  /** Crew: what they did ("Director", "Screenplay"). */
+  job: string | null
+}
+
+/** A trailer or extra, hosted on YouTube and embedded from youtube-nocookie.com on click. */
+export type Video = {
+  id: string
+  name: string
+  kind: 'Trailer' | 'Teaser' | 'Clip' | 'Featurette'
+  site: 'YouTube'
+  key: string
+  lengthSeconds: number
+  publishedAt: ISODate
+  still: string
+}
+
+export type CollectionRef = { id: string; name: string }
+
+export type Collection = CollectionRef & { overview: string; parts: DiscoverMovie[] }
+
+/** `GET /api/v1/metadata/movies/{tmdbId}`: everything the metadata source knows, in any state. */
+export type MovieMetadata = DiscoverMovie & {
+  originalTitle: string
+  /** ISO 639-1. */
+  originalLanguage: string
+  tagline: string | null
+  /** US certification ("PG-13"), or null when unrated. */
+  certification: string | null
+  /** USD; null when unknown. */
+  budget: number | null
+  revenue: number | null
+  studios: string[]
+  imdbId: string
+  wikidataId: string
+  cast: Credit[]
+  crew: Credit[]
+  videos: Video[]
+  collection: CollectionRef | null
+}
+
+/** A title in a person's filmography, with their part in it. */
+export type PersonCredit = DiscoverMovie & { role: string; department: Department }
+
+/** `GET /api/v1/metadata/people/{id}`. */
+export type Person = {
+  id: string
+  name: string
+  photo: string
+  knownFor: Department
+  bio: string | null
+  born: { date: string; place: string } | null
+  died: { date: string; place: string } | null
+  credits: PersonCredit[]
 }
 
 export type AddMovieInput = {

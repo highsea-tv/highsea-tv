@@ -138,6 +138,7 @@ export const flows: Flow[] = [
       spec: 'docs/product/movies.md',
       hints: [
         'Search “nanook” for one to add; library movies show as In library.',
+        'A poster opens the movie’s page, the same page in or out of the library.',
         'Leave Search now on: the movie downloads, imports and gets subtitles on the clock.',
       ],
     },
@@ -162,11 +163,13 @@ export const flows: Flow[] = [
     'Movie detail',
     '/movies/sintel',
     2,
-    'Overview, files and streams, history, interactive search with decision reasons, and the Subtitles tab.',
+    'One page in or out of the library: cast and crew, trailers, collection, people. Once added: files and streams, history, interactive search, subtitles.',
     {
       ready: true,
-      spec: 'docs/product/movies.md',
+      spec: 'docs/product/media-pages.md',
       hints: [
+        'Not added yet: #/admin/movies/tmdb-1003000 (Nanook of the North). Add it and the page becomes the library page.',
+        'Night of the Living Dead has a collection with two parts missing; Fritz Lang’s page marks his films by library state.',
         'Interactive search: open a Rejected badge for the reasons; Grab anyway overrides the profile.',
         'Subtitles tab: nudge the offset in 50 ms steps, or re-sync to the audio.',
       ],

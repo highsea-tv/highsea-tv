@@ -765,6 +765,7 @@ const discoverPool: DiscoverMovie[] = [
       still: stillArt('Charge'),
     },
     inLibrary: false,
+    libraryId: null,
   },
   {
     id: 'disc-sprite-fright',
@@ -783,6 +784,7 @@ const discoverPool: DiscoverMovie[] = [
       still: stillArt('Sprite Fright'),
     },
     inLibrary: false,
+    libraryId: null,
   },
   {
     id: 'disc-cosmos-laundromat',
@@ -801,6 +803,7 @@ const discoverPool: DiscoverMovie[] = [
       still: stillArt('Cosmos Laundromat'),
     },
     inLibrary: false,
+    libraryId: null,
   },
   {
     id: 'disc-coffee-run',
@@ -819,6 +822,7 @@ const discoverPool: DiscoverMovie[] = [
       still: stillArt('Coffee Run'),
     },
     inLibrary: false,
+    libraryId: null,
   },
   {
     id: 'disc-agent-327',
@@ -837,6 +841,7 @@ const discoverPool: DiscoverMovie[] = [
       still: stillArt('Agent 327'),
     },
     inLibrary: false,
+    libraryId: null,
   },
   {
     id: 'disc-hero',
@@ -851,8 +856,10 @@ const discoverPool: DiscoverMovie[] = [
     releaseDate: '2018-04-16T00:00:00.000Z',
     art: { poster: posterArt('Hero'), backdrop: backdropArt('Hero'), still: stillArt('Hero') },
     inLibrary: false,
+    libraryId: null,
   },
-  // public-domain films not in the library yet: what Discover can actually add
+  // public-domain films not in the library yet: what Discover can actually add, and two sequels so
+  // a collection has parts missing
   ...(
     [
       [
@@ -919,6 +926,24 @@ const discoverPool: DiscoverMovie[] = [
         'A war crimes investigator follows a lead to a quiet Connecticut town and its new schoolteacher.',
       ],
       [
+        'dawn-of-the-dead',
+        'Dawn of the Dead',
+        1978,
+        127,
+        'Horror',
+        7.9,
+        'Four survivors of a spreading plague of the living dead barricade themselves inside a shopping mall.',
+      ],
+      [
+        'day-of-the-dead',
+        'Day of the Dead',
+        1985,
+        101,
+        'Horror',
+        7.1,
+        'Scientists and soldiers sheltering in an underground bunker turn on each other as the dead overrun the world above.',
+      ],
+      [
         'the-last-time-i-saw-paris',
         'The Last Time I Saw Paris',
         1954,
@@ -941,6 +966,7 @@ const discoverPool: DiscoverMovie[] = [
       releaseDate: iso(new Date(year, 0, 1).getTime()),
       art: { poster: posterArt(title), backdrop: backdropArt(title), still: stillArt(title) },
       inLibrary: false,
+      libraryId: null,
     }),
   ),
 ]

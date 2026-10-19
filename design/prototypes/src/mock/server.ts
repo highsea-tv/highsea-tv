@@ -3,12 +3,12 @@
 // the clock. Screens never touch this directly; they go through the client (client.ts).
 import { backdropArt, posterArt, stillArt } from '@highsea/fixtures'
 import { type Clock, createEmitter, createRandom, type Emitter, iso } from './clock.ts'
+import { collection, knownTitles, movieMetadata, person, recommendations } from './metadata.ts'
 import { GB, MB, type ServerState, seed } from './seed.ts'
 import type {
   AddMovieInput,
   AddTorrentInput,
   Announcement,
-  DiscoverMovie,
   HardlinkCheck,
   Indexer,
   LanguageProfile,
@@ -806,6 +806,25 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
     },
 
+    metadata: {
+      movie: (tmdbId: number) => {
+        const m = movieMetadata(state, tmdbId, now())
+        if (!m) throw new ApiError(404, 'not-found', 'TMDB doesn’t know that title')
+        return m
+      },
+      recommendations: (tmdbId: number) => recommendations(state, tmdbId),
+      collection: (id: string) => {
+        const c = collection(state, id)
+        if (!c) throw new ApiError(404, 'not-found', 'TMDB doesn’t know that collection')
+        return c
+      },
+      person: (id: string) => {
+        const p = person(state, id)
+        if (!p) throw new ApiError(404, 'not-found', 'TMDB doesn’t know that person')
+        return p
+      },
+    },
+
     movies: {
       list: () => state.items.filter((m) => m.type === 'movie'),
       get: (id: string) => {
@@ -827,29 +846,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           .slice(0, limit),
       discover: (query = '') => {
         const q = query.trim().toLowerCase()
-        const libraryItems: DiscoverMovie[] = state.items.map((m) => ({
-          id: `disc-lib-${m.id}`,
-          tmdbId: m.tmdbId ?? 1000000,
-          title: m.title,
-          year: m.year,
-          runtimeMinutes: m.runtimeMinutes,
-          genres: m.genres,
-          synopsis: m.synopsis,
-          rating: m.rating,
-          releaseDate: m.releaseDate,
-          art: m.art,
-          inLibrary: true,
-        }))
-        // the library's own entries stand for anything already added
-        const unaddedItems = (state.discoverCatalog ?? []).filter(
-          (d) =>
-            !state.items.some(
-              (m) =>
-                (m.tmdbId && m.tmdbId === d.tmdbId) ||
-                m.title.toLowerCase() === d.title.toLowerCase(),
-            ),
-        )
-        const all = [...unaddedItems, ...libraryItems]
+        const all = knownTitles(state)
         if (!q) return all
         return all.filter(
           (m) =>

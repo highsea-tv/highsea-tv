@@ -41,3 +41,21 @@ function scene(seed: string, w: number, h: number): string {
 export const posterArt = (title: string) => scene(title, 400, 600)
 export const stillArt = (title: string) => scene(`${title} still`, 640, 360)
 export const backdropArt = (title: string) => scene(`${title} backdrop`, 1920, 1080)
+
+/** A person's photo: a head-and-shoulders silhouette on the name's palette. */
+export function portraitArt(name: string): string {
+  const n = hash(name)
+  const hue = n % 360
+  const w = 400
+  const h = 600
+  return svg(
+    w,
+    h,
+    `<defs><linearGradient id="p" x1="0" y1="0" x2="0" y2="1">` +
+      `<stop offset="0" stop-color="oklch(42% 0.05 ${hue})"/>` +
+      `<stop offset="1" stop-color="oklch(24% 0.04 ${hue})"/></linearGradient></defs>` +
+      `<rect width="${w}" height="${h}" fill="url(#p)"/>` +
+      `<circle cx="${w / 2}" cy="${h * 0.4}" r="${w * 0.2}" fill="oklch(70% 0.03 ${hue})" opacity="0.55"/>` +
+      `<path d="M${w * 0.12} ${h} C${w * 0.12} ${h * 0.72} ${w * 0.3} ${h * 0.64} ${w / 2} ${h * 0.64} S${w * 0.88} ${h * 0.72} ${w * 0.88} ${h} Z" fill="oklch(70% 0.03 ${hue})" opacity="0.55"/>`,
+  )
+}

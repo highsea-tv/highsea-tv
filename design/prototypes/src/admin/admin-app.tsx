@@ -11,6 +11,7 @@ import { Discover } from './discover/discover.tsx'
 import { Downloads } from './downloads/downloads.tsx'
 import { Indexers } from './indexers/indexers.tsx'
 import { Login } from './login.tsx'
+import { PersonPage } from './media/person.tsx'
 import { MovieDetail } from './movies/detail.tsx'
 import { MoviesLibrary } from './movies/library.tsx'
 import { isStaff, type Page, pageGroups } from './nav.ts'
@@ -92,6 +93,9 @@ export function AdminApp() {
             </Route>
             <Route path="/movies/:id">
               <MovieDetail />
+            </Route>
+            <Route path="/people/:id">
+              <PersonPage />
             </Route>
             {pages.map((p) => {
               const Page = built[p.id]

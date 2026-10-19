@@ -313,7 +313,8 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`]
 - Setup and access: `/setup`, `/login`.
 - Dashboard: `/` widget dashboard.
 - Library and activity:
-  - `/discover`, `/movies`, `/movies/[id]`;
+  - `/discover`, `/movies`, `/movies/[id]` (a library id, or `tmdb-{id}` for a title not yet added: one page in every state, [ADR 0014](adr/0014-universal-media-pages.md));
+  - `/people/[id]` (cast, crew and authors, with their filmography);
   - `/activity` (queue / history / blocklist);
   - `/wanted` (movies, subtitles);
   - `/downloads`.

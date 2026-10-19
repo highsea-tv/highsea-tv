@@ -13,7 +13,11 @@ import { defaultState, type Role } from '../src/proto/state.ts'
 import { ScreenApp } from '../src/screen/screen.tsx'
 import { classes, collect, unknownClasses, violations } from './check.ts'
 
-beforeEach(() => localStorage.clear())
+beforeEach(() => {
+  localStorage.clear()
+  // Discover remembers its search in the history entry; each test starts on a fresh one
+  history.replaceState(null, '')
+})
 afterEach(() => cleanup())
 
 const page = () => within(document.body)
@@ -66,38 +70,28 @@ describe('A4 discover → add', () => {
     const srv = mock.servers.populated
     const item = () => srv.state.items.find((m) => m.title === 'Nanook of the North')
     expect(item()?.status).toBe('downloading')
-    expect(page().getByRole('link', { name: 'Nanook of the North: in the library' })).toBeTruthy()
+    expect(page().getByRole('link', { name: 'In library: Nanook of the North' })).toBeTruthy()
     await run(mock, () => item()?.status === 'available')
     expect(srv.state.history.some((h) => h.itemId === item()?.id && h.type === 'imported')).toBe(
       true,
     )
   })
 
-  test('a poster opens the details, and Add goes on to the add dialog', async () => {
+  test('posters open the movie’s page, in the library or not', async () => {
     const { user } = await open('/admin/discover')
     await user.type(page().getByLabelText('Search for a movie'), 'nanook')
     await settle()
-    await user.click(page().getByRole('button', { name: /^Nanook of the North/ }))
-    await settle()
-    const detail = page().getByRole('dialog', { name: 'Nanook of the North (1922)' })
-    expect(within(detail).getByText(/Documentary/)).toBeTruthy()
-    await clean(detail)
-    await user.click(within(detail).getByRole('button', { name: 'Add movie' }))
-    await settle()
-    expect(page().queryByRole('dialog', { name: 'Nanook of the North (1922)' })).toBeNull()
-    expect(page().getByRole('dialog', { name: /Add Nanook of the North/ })).toBeTruthy()
-  })
-
-  test('a library movie’s details link to its page', async () => {
-    const { user } = await open('/admin/discover')
+    expect(
+      page()
+        .getByRole('link', { name: /^Nanook of the North/ })
+        .getAttribute('href'),
+    ).toBe('#/admin/movies/tmdb-1003000')
+    await user.clear(page().getByLabelText('Search for a movie'))
     await user.type(page().getByLabelText('Search for a movie'), 'sintel')
     await settle()
-    await user.click(page().getByRole('button', { name: /^Sintel/ }))
-    await settle()
-    const detail = page().getByRole('dialog', { name: /^Sintel/ })
-    expect(
-      within(detail).getByRole('link', { name: 'Open in the library' }).getAttribute('href'),
-    ).toBe('#/admin/movies/sintel')
+    // the poster and the In library badge both open the library page
+    for (const name of [/^Sintel/, 'In library: Sintel'])
+      expect(page().getByRole('link', { name }).getAttribute('href')).toBe('#/admin/movies/sintel')
   })
 
   test('members can look but not add', async () => {
@@ -105,6 +99,90 @@ describe('A4 discover → add', () => {
     const add = page().getAllByRole('button', { name: /^Add / })[0] as HTMLButtonElement
     expect(add.disabled).toBe(true)
     expect(page().getByText(/Only owners and admins can add movies/)).toBeTruthy()
+  })
+})
+
+describe('A6 media pages', () => {
+  test('a movie not yet added: metadata, then Add turns it into the library page', async () => {
+    const { mock, location, user } = await open('/admin/movies/tmdb-1003000')
+    await clean()
+    expect(page().getByRole('heading', { level: 1, name: 'Nanook of the North' })).toBeTruthy()
+    expect(page().getByText('Not in the library')).toBeTruthy()
+    expect(page().queryByRole('tab', { name: 'Files' })).toBeNull()
+    expect(page().getByRole('link', { name: 'Robert J. Flaherty' }).getAttribute('href')).toBe(
+      '#/admin/people/robert-j-flaherty',
+    )
+    await user.click(page().getByRole('tab', { name: 'Cast and crew' }))
+    expect(page().getByRole('link', { name: /^Allakariallak/ })).toBeTruthy()
+    await clean()
+
+    await user.click(page().getByRole('button', { name: 'Add movie' }))
+    await settle()
+    const dialog = page().getByRole('dialog', { name: /Add Nanook of the North/ })
+    await user.click(within(dialog).getByRole('button', { name: 'Add and search' }))
+    await settle()
+    expect(mock.servers.populated.state.items.some((m) => m.id === 'nanook-of-the-north')).toBe(
+      true,
+    )
+    expect(location.history?.at(-1)).toBe('/admin/movies/nanook-of-the-north')
+    await settle()
+    expect(page().getByRole('tab', { name: 'Files' })).toBeTruthy()
+    expect(page().queryByText('Not in the library')).toBeNull()
+  })
+
+  test('a metadata address for a library movie redirects to it', async () => {
+    const { location } = await open('/admin/movies/tmdb-10000')
+    await settle()
+    expect(location.history?.at(-1)).toBe('/admin/movies/sintel')
+    expect(page().getByRole('heading', { level: 1, name: 'Sintel' })).toBeTruthy()
+  })
+
+  test('trailers open in a dialog, and nothing loads from YouTube', async () => {
+    const { user } = await open('/admin/movies/sintel')
+    await user.click(page().getByRole('button', { name: /^Official trailer/ }))
+    const dialog = page().getByRole('dialog', { name: 'Official trailer' })
+    expect(within(dialog).getByText(/youtube-nocookie\.com/)).toBeTruthy()
+    expect(dialog.querySelector('iframe')).toBeNull()
+    await clean(dialog)
+  })
+
+  test('a collection adds its missing parts in one dialog', async () => {
+    const { mock, user } = await open('/admin/movies/night-of-the-living-dead')
+    await settle()
+    expect(
+      page().getByRole('heading', { name: /Night of the Living Dead Collection/ }),
+    ).toBeTruthy()
+    expect(page().getByText('1 of 3 in the library')).toBeTruthy()
+    await user.click(page().getByRole('button', { name: 'Add 2 missing' }))
+    await settle()
+    const dialog = page().getByRole('dialog', { name: 'Add 2 movies' })
+    expect(within(dialog).getByText(/Dawn of the Dead/)).toBeTruthy()
+    await clean(dialog)
+    await user.click(within(dialog).getByRole('button', { name: 'Add and search' }))
+    await settle()
+    const titles = mock.servers.populated.state.items.map((m) => m.title)
+    expect(titles).toContain('Dawn of the Dead')
+    expect(titles).toContain('Day of the Dead')
+    expect(page().getByText('3 of 3 in the library')).toBeTruthy()
+  })
+
+  test('a person’s filmography marks the library and adds the rest', async () => {
+    const { user } = await open('/admin/people/fritz-lang')
+    await clean()
+    expect(page().getByRole('heading', { level: 1, name: 'Fritz Lang' })).toBeTruthy()
+    expect(page().getByText(/Austrian-German director/)).toBeTruthy()
+    expect(page().getByRole('link', { name: 'In library: Metropolis' })).toBeTruthy()
+    await user.click(page().getByRole('tab', { name: /^Not in the library/ }))
+    await user.click(page().getByRole('button', { name: 'Add Scarlet Street' }))
+    await settle()
+    expect(page().getByRole('dialog', { name: /Add Scarlet Street/ })).toBeTruthy()
+  })
+
+  test('members can read a page but not add', async () => {
+    await open('/admin/movies/tmdb-1003000', 'member')
+    expect(page().queryByRole('button', { name: 'Add movie' })).toBeNull()
+    expect(page().getByText(/Only owners and admins can add movies/)).toBeTruthy()
+    await clean()
   })
 })
 
