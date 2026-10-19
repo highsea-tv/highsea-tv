@@ -21,6 +21,12 @@ export function StatusBadge({ status }: { status: CurationStatus }) {
 
 // ---------------------------------------------------------------- dates
 
+/**
+ * A preview shows its draft as live, whatever its schedule. The preview frame runs its own server
+ * on its own clock, so "a minute ago" here could still be the future there: date it well back.
+ */
+export const LIVE_IN_PREVIEW = { start: '2000-01-01T00:00:00.000Z', end: null }
+
 const pad = (n: number) => String(n).padStart(2, '0')
 
 /** ISO → the value a `datetime-local` input takes, in local time. */

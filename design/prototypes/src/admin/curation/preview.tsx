@@ -51,7 +51,11 @@ export function ClientPreview({
   const [viewer, setViewer] = useState('owner')
   const frame = useRef<HTMLIFrameElement>(null)
   const { ref, width } = useWidth<HTMLDivElement>(560)
-  const screen = screens[platform]
+  // the web and TV fill the container: wider than their base size, the window itself grows
+  // (TV keeps 16:9, the web 16:10); the phone stays a phone and only scales down
+  const base = screens[platform]
+  const grow = platform !== 'mobile' && width > base.w
+  const screen = grow ? { ...base, w: width, h: Math.round((width * base.h) / base.w) } : base
   const scale = Math.min(1, width / (screen.w + (platform === 'mobile' ? 24 : 0)))
   const send = useRef(() => {})
   send.current = () =>

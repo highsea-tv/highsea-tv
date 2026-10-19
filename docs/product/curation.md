@@ -51,7 +51,7 @@ Two columns from expanded (the form at 22–28rem, the preview beside it and sti
 ### The live preview
 
 - **TV · Web · Mobile** (segmented) and **Preview as** (Ines, the owner; Ruth, a member).
-- The client's real home screen in a frame: 16:9 for TV, a 1280-wide window for the web, the phone in its bezel, scaled to fit. It's a picture: it can't be tabbed into or clicked.
+- The client's real home screen in a frame: 16:9 for TV and a 16:10 window for the web (at least 1600 and 1280 wide, growing to fill the space), the phone in its bezel, scaled to fit. It's a picture: it can't be tabbed into or clicked.
 - The announcement composer shows only the draft (other announcements would stack with it or cover it); the section composer leaves announcements out and scrolls to the section being edited.
 - Under it: "What Ines sees on a TV, with this announcement as it stands. Other announcements are left out. Nothing changes for anyone until you save." When the viewer isn't in the audience on that app: "Ruth isn't in the audience on a TV, so this announcement doesn't show there."
 
@@ -69,7 +69,7 @@ Two columns from expanded (the form at 22–28rem, the preview beside it and sti
 
 - **Publishing** an announcement puts it on screens at once (or at its start). **End now** takes it off every screen and keeps it, with its reach, as Ended. **Delete** removes it and its reach, after a confirmation that suggests ending instead.
 - **Move up / Move down** reorder sections immediately; the order is the home screen's (the person's own order, [client-settings.md](client-settings.md#home-screen), comes on top of it).
-- **The preview** follows every keystroke (about 120 ms after typing stops). Switching platform or viewer reloads the frame.
+- **The preview** follows every keystroke (about 120 ms after typing stops). It shows the draft as live, whatever its schedule. Switching platform or viewer reloads the frame.
 - **Keyboard:** the forms are native controls in reading order; the preview frame is skipped.
 - **Leaving with unsaved changes:** the browser asks before the tab closes.
 - **Sound:** none.

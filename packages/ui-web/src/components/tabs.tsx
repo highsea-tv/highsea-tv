@@ -1,24 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Tabs in two styles: `segmented` (a pill track with a raised thumb, for filters and views) and
-// `line` (an underline, for page sections). The indicator slides with spring.quick.
-import { motion } from 'motion/react'
+// `line` (an underline, for page sections). The indicator slides with spring.quick, measured
+// within the list so page scrolls and layout shifts never move it.
 import { Tabs as TabsPrimitive } from 'radix-ui'
 import {
   type ComponentProps,
   createContext,
   type ReactNode,
   useContext,
-  useId,
+  useRef,
   useState,
 } from 'react'
 import { cn } from '../lib/cn.ts'
-import { springQuick } from '../lib/motion.ts'
+import { Indicator, useIndicator } from '../lib/indicator.tsx'
 
 type Variant = 'segmented' | 'line'
-const TabsContext = createContext<{ value: string; variant: Variant; id: string }>({
+const TabsContext = createContext<{ value: string; variant: Variant }>({
   value: '',
   variant: 'segmented',
-  id: '',
 })
 
 export type TabsProps = ComponentProps<typeof TabsPrimitive.Root> & { variant?: Variant }
@@ -32,9 +31,8 @@ export function Tabs({
 }: TabsProps) {
   const [uncontrolled, setUncontrolled] = useState(defaultValue)
   const value = controlled ?? uncontrolled
-  const id = useId()
   return (
-    <TabsContext.Provider value={{ value, variant, id }}>
+    <TabsContext.Provider value={{ value, variant }}>
       <TabsPrimitive.Root
         value={value}
         onValueChange={(next) => {
@@ -48,15 +46,31 @@ export function Tabs({
 }
 
 const lists: Record<Variant, string> = {
-  segmented: 'inline-flex gap-0.5 rounded-sm bg-s2 p-[3px]',
+  segmented: 'relative inline-flex gap-0.5 rounded-sm bg-s2 p-[3px]',
   // The baseline is an inset shadow, not a border, so the indicator sits on it without
   // overhanging the list. That lets a long list scroll sideways with no vertical scroll.
-  line: 'flex max-w-full gap-5 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_var(--color-line)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
+  line: 'relative flex max-w-full gap-5 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_var(--color-line)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
 }
 
-export function TabsList({ className, ...props }: ComponentProps<typeof TabsPrimitive.List>) {
-  const { variant } = useContext(TabsContext)
-  return <TabsPrimitive.List className={cn(lists[variant], className)} {...props} />
+const indicators: Record<Variant, string> = {
+  segmented: 'inset-y-[3px] rounded-[5px] bg-s4 shadow-2',
+  line: 'bottom-0 h-0.5 rounded-full bg-accent',
+}
+
+export function TabsList({
+  className,
+  children,
+  ...props
+}: ComponentProps<typeof TabsPrimitive.List>) {
+  const { variant, value } = useContext(TabsContext)
+  const ref = useRef<HTMLDivElement>(null)
+  const box = useIndicator(ref, value)
+  return (
+    <TabsPrimitive.List ref={ref} className={cn(lists[variant], className)} {...props}>
+      <Indicator box={box} className={indicators[variant]} />
+      {children}
+    </TabsPrimitive.List>
+  )
 }
 
 const triggers: Record<Variant, string> = {
@@ -72,7 +86,6 @@ export type TabsTriggerProps = ComponentProps<typeof TabsPrimitive.Trigger> & {
 
 export function TabsTrigger({ className, children, count, value, ...props }: TabsTriggerProps) {
   const ctx = useContext(TabsContext)
-  const active = ctx.value === value
   return (
     <TabsPrimitive.Trigger
       value={value}
@@ -83,18 +96,6 @@ export function TabsTrigger({ className, children, count, value, ...props }: Tab
       )}
       {...props}
     >
-      {active && (
-        <motion.span
-          layoutId={`${ctx.id}-indicator`}
-          transition={springQuick}
-          aria-hidden
-          className={
-            ctx.variant === 'segmented'
-              ? 'absolute inset-0 rounded-[5px] bg-s4 shadow-2'
-              : 'absolute inset-x-0 bottom-0 h-0.5 rounded-full bg-accent'
-          }
-        />
-      )}
       <span className="relative">{children}</span>
       {count != null && <span className="relative font-mono text-[11px] text-text-3">{count}</span>}
     </TabsPrimitive.Trigger>

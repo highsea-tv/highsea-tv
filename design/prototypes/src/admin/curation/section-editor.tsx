@@ -11,7 +11,7 @@ import {
   Select,
   toast,
 } from '@highsea/ui-web'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { ClientItem, CurationPreview, FeaturedSection, MediaItem } from '../../mock/types.ts'
@@ -19,7 +19,7 @@ import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 import { layoutLabels } from './curation.tsx'
 import { ClientPreview } from './preview.tsx'
-import { AudienceField, audienceError, ScheduleField } from './shared.tsx'
+import { AudienceField, audienceError, LIVE_IN_PREVIEW, ScheduleField } from './shared.tsx'
 
 type Rule = Extract<FeaturedSection['source'], { kind: 'rule' }>['rule']
 
@@ -79,9 +79,16 @@ function useResolved(draft: FeaturedSection) {
     const t = setTimeout(() => setSettled(draft), 150)
     return () => clearTimeout(t)
   }, [draft])
-  return useQuery(`curation:resolve:${JSON.stringify(settled.source)}`, (c) =>
+  const query = useQuery(`curation:resolve:${JSON.stringify(settled.source)}`, (c) =>
     c.curation.resolve(settled),
   )
+  // while a changed source loads, keep showing what the last one picked, so the form doesn't
+  // collapse and jump on every reorder
+  const last = useRef(query.data)
+  if (query.status === 'success') last.current = query.data
+  return query.status === 'loading' && last.current
+    ? { ...query, status: 'success' as const, data: last.current, error: undefined }
+    : query
 }
 
 function Composer({ initial }: { initial: FeaturedSection | null }) {
@@ -117,14 +124,14 @@ function Composer({ initial }: { initial: FeaturedSection | null }) {
     const live = {
       ...draft,
       order,
-      schedule: { start: new Date(now - 60_000).toISOString(), end: null },
+      schedule: LIVE_IN_PREVIEW,
     }
     return {
       // the home screen alone: announcements would sit over the sections being previewed
       announcements: [],
       featured: [...saved.featured.filter((f) => f.id !== draft.id), live],
     }
-  }, [draft, snapshot.data, now])
+  }, [draft, snapshot.data])
 
   const submit = () => {
     setTried(true)

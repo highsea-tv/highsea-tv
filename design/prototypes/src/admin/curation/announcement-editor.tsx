@@ -20,7 +20,7 @@ import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 import { placementLabels } from './curation.tsx'
 import { ClientPreview } from './preview.tsx'
-import { AudienceField, audienceError, ScheduleField } from './shared.tsx'
+import { AudienceField, audienceError, LIVE_IN_PREVIEW, ScheduleField } from './shared.tsx'
 
 const placementHints: Record<Exclude<Placement, 'modal'>, string> = {
   banner: 'Above the page on the web, desktop and the admin.',
@@ -110,11 +110,11 @@ function Composer({ initial }: { initial: Announcement | null }) {
     const live = {
       ...draft,
       status: 'live' as const,
-      schedule: { start: new Date(now - 60_000).toISOString(), end: null },
+      schedule: LIVE_IN_PREVIEW,
     }
     // only the draft: the others would stack with it, or cover it with their own dialog
     return { featured: saved.featured, announcements: [live] }
-  }, [draft, snapshot.data, now])
+  }, [draft, snapshot.data])
 
   const later = Date.parse(draft.schedule.start) > now + 60_000
   const submit = (asDraft: boolean) => {
