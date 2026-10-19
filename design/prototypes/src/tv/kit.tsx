@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Pieces every TV screen shares (tv.md): addresses, focus on arrival, buttons in screen units,
-// the server identity, the announcement pill, and the global navigation, a top tab row that
-// appears when focus moves Up from the hero actions (new design work, client-home.md#tv).
-import { cn, Icon, type IconName, Mark } from '@highsea/ui-web'
+// posters with their titles, rows that scroll by focus, the server identity, the announcement
+// pill, and the global navigation, a top tab row that appears when focus moves Up from the hero
+// actions (new design work, client-home.md#tv).
+import { cn, Icon, type IconName, Mark, Poster } from '@highsea/ui-web'
 import { type ComponentProps, type ReactNode, useEffect } from 'react'
 import { useLocation } from 'wouter'
-import { clientHref, useAnnouncements, useConnection, useServer } from '../client/data.ts'
+import { clientHref, left, useAnnouncements, useConnection, useServer } from '../client/data.ts'
+import type { ClientItem } from '../mock/types.ts'
 
 export const tvHref = (path: string) => clientHref('tv', path)
 
@@ -63,12 +65,15 @@ export function TvButton({
   )
 }
 
-/** Top left: the server's mark and name; "Connected remotely" under it when that's how. */
+/**
+ * Top left: the server's mark and name; "Connected remotely" under it when that's how. It sits at
+ * the top of the page and scrolls away with it, so it never covers the rows.
+ */
 export function ServerIdentity() {
   const server = useServer()
   const connection = useConnection()
   return (
-    <div className="absolute top-(--tv-safe-y) left-(--tv-safe-x) z-10 flex items-center gap-[0.8cqw]">
+    <div className="absolute top-(--tv-safe-y) left-(--tv-safe-x) flex items-center gap-[0.8cqw]">
       <Mark size={32} className="size-[2cqw]" />
       <span className="grid">
         <span className="font-semibold text-(length:--tv-text-server-name) leading-[1.15]">
@@ -84,15 +89,95 @@ export function ServerIdentity() {
   )
 }
 
-/** Top right: the owner's newest announcement, as a pill. */
+/** Top right: the owner's newest announcement, as a pill. It scrolls with the page too. */
 export function AnnouncementPill() {
   const a = useAnnouncements('tv')
   if (!a.latest || a.latest.acknowledgement === 'require') return null
   return (
-    <div className="absolute top-(--tv-safe-y) right-(--tv-safe-x) z-10 flex max-w-[30cqw] items-center gap-[0.6cqw] rounded-full bg-s2/75 px-[1.2cqw] py-[0.5cqw] text-(length:--tv-text-pill) text-text-2 backdrop-blur-pill">
+    <div className="absolute top-(--tv-safe-y) right-(--tv-safe-x) flex max-w-[30cqw] items-center gap-[0.6cqw] rounded-full bg-s2/75 px-[1.2cqw] py-[0.5cqw] text-(length:--tv-text-pill) text-text-2 backdrop-blur-pill">
       <Icon name="announcement" size={24} className="size-[1.1cqw] shrink-0" />
       <span className="truncate">{a.latest.title}</span>
     </div>
+  )
+}
+
+/**
+ * A poster or a wide tile with its title and a caption under the art (the year, or the time left
+ * on a wide tile). The art lifts on focus; the text stays put, clear of it.
+ */
+export function TvPoster({
+  item,
+  href,
+  wide = false,
+}: {
+  item: ClientItem
+  href: string
+  wide?: boolean
+}) {
+  const caption = wide && item.progress !== null ? left(item) : String(item.year)
+  return (
+    <a
+      href={href}
+      data-focusable=""
+      aria-label={`${item.title}, ${caption}`}
+      className="group/link block rounded-(--tv-radius-poster) outline-none"
+    >
+      <Poster
+        title={item.title}
+        src={wide ? item.art.still : item.art.poster}
+        aspect={wide ? 'still' : 'poster'}
+        progress={item.progress !== null ? item.progress * 100 : undefined}
+      />
+      <span className="mt-[1cqw] block truncate font-semibold text-(length:--tv-text-meta) text-text-2 leading-[1.3] transition-lift group-focus-visible/link:text-text">
+        {item.title}
+      </span>
+      <span className="block truncate text-(length:--tv-text-pill) text-text-3 leading-[1.3]">
+        {caption}
+      </span>
+    </a>
+  )
+}
+
+/**
+ * A titled row that scrolls sideways by transform to keep focus 30% in (tv.md#scrolling). The
+ * track's column is `minmax(0, 1fr)`, so it stays the screen's width and its content overflows.
+ */
+export function TvRow({
+  group,
+  title,
+  suffix,
+  goUp,
+  className,
+  children,
+}: {
+  group: string
+  title: string
+  suffix?: string | null
+  goUp?: string
+  className?: string
+  children: ReactNode
+}) {
+  return (
+    <section
+      data-group={group}
+      data-go-up={goUp}
+      aria-label={title}
+      className={cn('grid grid-cols-1 gap-[0.8cqw]', className)}
+    >
+      <h2 className="px-(--tv-safe-x) font-semibold text-(length:--tv-text-row-title)">
+        {title}
+        {suffix && <span className="font-normal text-text-2"> {suffix}</span>}
+      </h2>
+      <div className="grid grid-cols-1">
+        <ul
+          data-scroll="x"
+          data-keep="0.3"
+          className="flex gap-(--tv-poster-gap) px-(--tv-safe-x) py-[1cqw] transition-lift"
+        >
+          {children}
+        </ul>
+      </div>
+    </section>
   )
 }
 

@@ -161,6 +161,20 @@ describe('C2 home', () => {
     expect(page().getByRole('navigation', { name: 'Main' }).dataset.isolate).toBe('')
     await clean()
   })
+
+  test('TV: only the featured row binds the hero', async () => {
+    const { user } = await open('/tv')
+    await user.click(page().getByRole('button', { name: 'Got it' }))
+    await settle()
+    const row = (name: string) => within(page().getByRole('region', { name }))
+    act(() => row('Recently added').getByRole('link', { name: 'Agent 327, 2017' }).focus())
+    await act(() => new Promise((r) => setTimeout(r, 300)))
+    expect(page().getByRole('heading', { level: 1, name: 'Sintel' })).toBeTruthy()
+    act(() => row('Featured on Harbor').getByRole('link', { name: 'Spring, 2019' }).focus())
+    await act(() => new Promise((r) => setTimeout(r, 300)))
+    expect(page().getByRole('heading', { level: 1, name: 'Spring' })).toBeTruthy()
+    await clean()
+  })
 })
 
 describe('C3 library', () => {
@@ -185,6 +199,8 @@ describe('C3 library', () => {
     expect((within(rail).getByRole('button', { name: 'Q' }) as HTMLButtonElement).disabled).toBe(
       true,
     )
+    // every poster carries its title and year
+    expect(page().getByRole('link', { name: 'Charade, 1963' })).toBeTruthy()
     await clean()
   })
 })

@@ -111,7 +111,7 @@ export function TvApp() {
           // at the home root, Back returns focus to the top row's first item (tv.md#remote-keys)
           else
             document
-              .querySelector<HTMLElement>('[data-platform="tv"] [data-scroll="y"] [data-focusable]')
+              .querySelector<HTMLElement>('[data-platform="tv"] [data-rows] [data-focusable]')
               ?.focus()
         }}
       >

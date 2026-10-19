@@ -24,8 +24,8 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 | Announcement pill | Top 3.2u, right 4.5u |
 | Hero artwork | Full width, top 62% of the screen; two layers that cross-fade |
 | Hero copy (eyebrow, title, meta, synopsis, actions) | Left 4.5u, top 7.5u, max width 38u |
-| Rows | Bottom 47% of the screen, left inset 4.5u, bleeding off the right edge |
-| Poster | 10.5u wide (2:3), with a 1.2u gap |
+| Rows | Bottom 47% of the screen, left inset 4.5u, bleeding off the right edge; below the featured row they continue down the page |
+| Poster | 10.5u wide (2:3), with a 1.2u gap; the title (1.05u, 600) and the year (0.95u, `text-3`) under the art |
 | Wide tile (continue watching) | 16:9 with a progress bar 7% in from the edges |
 | Radii | Posters and buttons 0.5u (≈ 10px at 1080p); quality pills 0.3u |
 
@@ -102,13 +102,14 @@ When nothing qualifies and no guide applies, focus stays where it is. Sound and 
 - **Nested tracks:** each scrolls on its own axis.
 - **Positioning:** the focused item is kept at a fixed fraction of the viewport (`keep`):
   - horizontal rows keep focus at 30% from the left;
-  - the vertical row stack keeps the focused row at 32% from the top.
+  - the vertical row stack keeps the focused row at 32% from the top;
+  - on Home, the page moves as one: it rests at the top while focus is on the hero or the featured row, and on any row below it lifts so that row's title sits at the safe area's top. The hero, the server identity and the announcement pill scroll away with it; nothing stays pinned over the rows.
 - **Clamping:** a track is clamped at its start and end, so it never scrolls past its content. Centered carousels are the exception, and the Hero + rows layout doesn't use them.
 - **Measurement:** positions are measured from item and track centers, so in-flight transforms and focus scaling don't cause drift.
 
 ## Hero behavior
 
-- **Focus binds the hero:** when focus lands on a title, the hero shows that title (artwork, eyebrow, title, meta and synopsis).
+- **Focus binds the hero** ([ADR 0015](../../adr/0015-tv-hero-binds-featured-row.md)): when focus lands on a title in the **featured row** (the hero's own titles), the hero shows that title (artwork, eyebrow, title, meta and synopsis). The rows below don't bind it: their titles carry their own names and years, and the hero is out of view while they have focus.
 - **Dwell:** the change waits for 220ms of focus dwell, so fast scrolling through a row doesn't thrash.
 - **Transition:** artwork cross-fades between two layers. Copy leaves over 140ms and returns with `spring.base`. See [motion › content swap](../motion.md#choreography).
 - **Focus leaves the rows:** when focus moves to the hero actions, the hero keeps the last bound title, so Play acts on what's shown.

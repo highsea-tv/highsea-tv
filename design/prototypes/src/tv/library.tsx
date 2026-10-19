@@ -1,13 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// C3 Library browse, TV (docs/product/client-library.md#tv): the poster grid with an alphabet
+// C3 Library browse, TV (docs/product/client-library.md#tv): the poster grid, each with its title
+// and year, with an alphabet
 // rail on the left. The rail is isolated: Left from the grid's first column enters it, Up and Down
 // run through the letters (only the ones with titles), and OK jumps the grid to that letter.
 // Sort is a row of choices above the grid.
-import { Poster } from '@highsea/ui-web'
 import { useState } from 'react'
 import { useLibrary } from '../client/data.ts'
 import { arrange, type Sort } from '../web/library.tsx'
-import { GlobalNav, ServerIdentity, TvButton, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
+import {
+  GlobalNav,
+  ServerIdentity,
+  TvButton,
+  TvMessage,
+  TvPoster,
+  tvHref,
+  useInitialFocus,
+} from './kit.tsx'
 
 const LETTERS = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ']
 const letterOf = (sortTitle: string) => {
@@ -48,7 +56,6 @@ export function TvLibrary() {
   }
   return (
     <>
-      <ServerIdentity />
       <GlobalNav down="sort" />
       {sort === 'title' && (
         <nav
@@ -72,12 +79,14 @@ export function TvLibrary() {
           ))}
         </nav>
       )}
-      <main className="absolute inset-0 overflow-hidden">
+      <main className="absolute inset-0 overflow-hidden [mask-image:linear-gradient(transparent,black_3.2cqw)]">
         <div
           data-scroll="y"
           data-keep="0.35"
-          className="grid gap-[1.6cqw] px-(--tv-safe-x) pt-[7cqw] pb-[4cqw] transition-lift"
+          className="relative grid grid-cols-1 gap-[1.6cqw] px-(--tv-safe-x) pt-[7cqw] pb-[4cqw] transition-lift"
         >
+          {/* in the track, so it scrolls away rather than covering the grid */}
+          <ServerIdentity />
           <div className="flex items-end gap-[2cqw]">
             <h1 className="font-semibold text-[2.6cqw] leading-none tracking-display">Movies</h1>
             <div
@@ -104,20 +113,14 @@ export function TvLibrary() {
             data-group="grid"
             data-go-left={sort === 'title' ? 'alpha' : undefined}
             data-go-up="sort"
-            className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[2cqw]"
+            className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]"
           >
             {items.map((m, i) => {
               const l = letterOf(m.sortTitle)
               const firstOfLetter = i === 0 || letterOf(items[i - 1]?.sortTitle ?? '') !== l
               return (
                 <li key={m.id} {...(firstOfLetter && sort === 'title' ? { 'data-letter': l } : {})}>
-                  <Poster
-                    title={m.title}
-                    src={m.art.poster}
-                    href={tvHref(`/movies/${m.id}`)}
-                    progress={m.progress !== null ? m.progress * 100 : undefined}
-                    focusable
-                  />
+                  <TvPoster item={m} href={tvHref(`/movies/${m.id}`)} />
                 </li>
               )
             })}

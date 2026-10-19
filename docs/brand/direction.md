@@ -98,7 +98,7 @@ The TV uses the same styles scaled for 10-foot viewing. The design-language docs
 
 | Surface | Layout | Description |
 | --- | --- | --- |
-| TV home | **Hero + rows** | A full-bleed hero for the focused title that crossfades as focus moves, then horizontal rows. Spatial D-pad focus with per-row memory. |
+| TV home | **Hero + rows** | A full-bleed hero for the focused featured title that crossfades as focus moves through the featured row, then horizontal rows; below the featured row the page lifts past the hero ([ADR 0015](../adr/0015-tv-hero-binds-featured-row.md)). Spatial D-pad focus with per-row memory. |
 | Phone home | **Tabs + carousel** | A bottom tab bar, the owner's announcement card, a featured carousel and poster rows. The accent marks only the active tab. |
 | Admin dashboard | **Sidebar + widgets** | Sidebar navigation and a free-form widget grid above the queue. Every card is a widget the owner can rearrange, resize or remove. |
 

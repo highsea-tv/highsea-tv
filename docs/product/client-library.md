@@ -18,7 +18,7 @@ Everything the household can watch on this server, to browse rather than search:
 - **Media types:** other types (shows, music, books) appear as tabs above the grid only once the server has them. M1 is movies only, so there are no tabs; the page is "Movies".
 - **Web:** the title "Movies" and the count; **Genre** and **Sort** selects on the right; a grid of posters (`auto-fill, minmax(9rem, 1fr)`) with the title and year under each, or "8 min left" and the progress bar when started.
 - **Mobile:** the large title "Library"; the count ("34 of 34 movies") and **Sort and filter**, which opens a sheet: Sort by (chips), Genre (chips), **Reset**, **Show {n} movies**; three posters a row.
-- **TV:** "Movies" and the sort choices (A–Z, Recently added, Newest) at the top right; seven posters a row; the **alphabet rail** at the left edge (A–Z and #), letters without titles dimmed and skipped.
+- **TV:** the server identity, then "Movies" and the sort choices (A–Z, Recently added, Newest) at the top right; seven posters a row, each with its title and year under it (and the progress bar when started); the **alphabet rail** at the left edge (A–Z and #), letters without titles dimmed and skipped. The page scrolls by focus; the server identity scrolls away with it, and rows fade out under the top edge. Only the rail stays put, in the left margin.
 
 ## States
 

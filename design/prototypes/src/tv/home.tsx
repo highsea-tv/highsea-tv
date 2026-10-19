@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C2 Home, TV (docs/product/client-home.md#tv): the locked Hero + rows layout (tv.md#layout).
-// The hero follows focus after a 220 ms dwell and cross-fades; Up from any row goes to the hero
-// actions, and Up from those opens the global navigation. Rows remember where you left them.
+// The hero follows focus through the featured row after a 220 ms dwell and cross-fades; the rows
+// below it don't bind it: focus there lifts the page past the hero. Up from the featured row goes
+// to the hero actions, and Up from those opens the global navigation. Rows remember their spot.
 // An announcement that must be acknowledged comes first, on its own.
 import { durations } from '@highsea/tokens'
-import { Icon, Poster, QualityTag, springBase, useDwell } from '@highsea/ui-web'
-import { AnimatePresence, motion } from 'motion/react'
-import { useEffect, useState } from 'react'
+import { Icon, QualityTag, springBase, useDwell } from '@highsea/ui-web'
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { useEffect, useRef, useState } from 'react'
 import { left, meta, qualityTags, useAnnouncements, useHome } from '../client/data.ts'
 import { Inline } from '../kit/inline.tsx'
 import type { ClientItem, HomeSection } from '../mock/types.ts'
@@ -16,6 +17,8 @@ import {
   ServerIdentity,
   TvButton,
   TvMessage,
+  TvPoster,
+  TvRow,
   tvHref,
   useInitialFocus,
 } from './kit.tsx'
@@ -48,7 +51,7 @@ function HeroCopy({ item, eyebrow }: { item: ClientItem; eyebrow: string }) {
           </QualityTag>
         ))}
       </p>
-      <p className="line-clamp-3 max-w-[34cqw] text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
+      <p className="line-clamp-2 max-w-[34cqw] text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
         {item.tagline ?? item.synopsis}
       </p>
     </motion.div>
@@ -65,6 +68,7 @@ function Backdrop({ src }: { src: string }) {
         : { ...l, [l.front === 'a' ? 'b' : 'a']: src, front: l.front === 'a' ? 'b' : 'a' },
     )
   }, [src])
+  // 62% of the 16:9 screen (56.25u tall)
   return (
     <>
       {(['a', 'b'] as const).map((k) =>
@@ -73,59 +77,130 @@ function Backdrop({ src }: { src: string }) {
             key={k}
             src={layers[k]}
             alt=""
-            className={`absolute inset-x-0 top-0 h-[62%] w-full object-cover transition-opacity duration-700 ${layers.front === k ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute inset-x-0 top-0 h-[34.9cqw] w-full object-cover transition-opacity duration-700 ${layers.front === k ? 'opacity-100' : 'opacity-0'}`}
           />
         ) : null,
       )}
-      <div className="absolute inset-x-0 top-0 h-[62%] bg-[linear-gradient(90deg,var(--color-bg)_8%,transparent_60%),linear-gradient(0deg,var(--color-bg),transparent_45%)]" />
+      <div className="absolute inset-x-0 top-0 h-[34.9cqw] bg-[linear-gradient(90deg,var(--color-bg)_8%,transparent_60%),linear-gradient(0deg,var(--color-bg),transparent_45%)]" />
     </>
   )
 }
 
 function Row({
   section,
+  featured,
   onFocusItem,
 }: {
   section: HomeSection
+  featured: boolean
   onFocusItem: (m: ClientItem) => void
 }) {
   const wide = section.layout === 'continue'
   return (
-    <section
-      data-group={section.id}
-      data-go-up="hero"
-      aria-label={section.title}
-      className="grid gap-[0.8cqw]"
+    <TvRow
+      group={section.id}
+      title={section.title}
+      suffix={section.suffix}
+      goUp={featured ? 'hero' : undefined}
     >
-      <h2 className="pl-(--tv-safe-x) font-semibold text-(length:--tv-text-row-title)">
-        {section.title}
-        {section.suffix && <span className="font-normal text-text-2"> {section.suffix}</span>}
-      </h2>
-      <div className="overflow-visible">
-        <ul
-          data-scroll="x"
-          data-keep="0.3"
-          className="flex gap-(--tv-poster-gap) px-(--tv-safe-x) py-[1cqw] transition-lift"
+      {section.items.map((m) => (
+        <li
+          key={m.id}
+          className={wide ? 'w-[17cqw] shrink-0' : 'w-(--tv-poster-width) shrink-0'}
+          // only the featured titles bind the hero
+          onFocus={featured ? () => onFocusItem(m) : undefined}
         >
-          {section.items.map((m) => (
-            <li
-              key={m.id}
-              className={wide ? 'w-[17cqw] shrink-0' : 'w-(--tv-poster-width) shrink-0'}
-              onFocus={() => onFocusItem(m)}
-            >
-              <Poster
-                title={m.title}
-                src={wide ? m.art.still : m.art.poster}
-                aspect={wide ? 'still' : 'poster'}
-                progress={m.progress !== null ? m.progress * 100 : undefined}
-                href={tvHref(wide ? `/play/${m.id}` : `/movies/${m.id}`)}
-                focusable
-              />
-            </li>
-          ))}
-        </ul>
+          <TvPoster
+            item={m}
+            wide={wide}
+            href={tvHref(wide ? `/play/${m.id}` : `/movies/${m.id}`)}
+          />
+        </li>
+      ))}
+    </TvRow>
+  )
+}
+
+/**
+ * The page moves as one: while focus is on the hero or the featured row it rests at the top; on
+ * any row below, it lifts so that row's title sits at the safe area's top, with the next row under
+ * it, and the hero goes out of view.
+ */
+function usePageOffset() {
+  const page = useRef<HTMLDivElement>(null)
+  const reduced = useReducedMotion()
+  const [offset, setOffset] = useState(0)
+  useEffect(() => {
+    const el = page.current
+    const onFocus = (e: FocusEvent) => {
+      const row = (e.target as HTMLElement).closest<HTMLElement>('[data-row]')
+      if (!el?.parentElement) return
+      if (!row || row.dataset.row === '0') return setOffset(0)
+      // layout positions: both boxes carry the same transform
+      const top = row.getBoundingClientRect().top - el.getBoundingClientRect().top
+      const safe = (el.clientWidth / 100) * 3.2
+      const max = el.scrollHeight - el.parentElement.clientHeight
+      setOffset(Math.max(0, Math.min(top - safe, max)))
+    }
+    el?.addEventListener('focusin', onFocus)
+    return () => el?.removeEventListener('focusin', onFocus)
+  }, [])
+  const style = { transform: `translateY(${-offset}px)`, transition: reduced ? 'none' : undefined }
+  return { page, style, lifted: offset > 0 }
+}
+
+function Home({ sections }: { sections: HomeSection[] }) {
+  const hero = sections.find((s) => s.layout === 'hero')
+  const first = hero?.items[0] ?? sections[0]?.items[0]
+  const [focused, setFocused] = useState<ClientItem | undefined>(first)
+  const shown = useDwell(focused) ?? first
+  const { page, style, lifted } = usePageOffset()
+  useInitialFocus(true)
+  // the hero's own titles lead the rows, so focus can reach every featured title
+  const rows: HomeSection[] = sections.map((s) =>
+    s.layout === 'hero' ? { ...s, layout: 'row' } : s,
+  )
+  if (!shown) return null
+  return (
+    <>
+      <GlobalNav />
+      {/* lifted, the row above fades out under the top edge rather than being cut */}
+      <div
+        className={`absolute inset-0 overflow-hidden ${lifted ? '[mask-image:linear-gradient(transparent,black_3.2cqw)]' : ''}`}
+      >
+        <div ref={page} style={style} className="relative transition-lift">
+          <Backdrop src={shown.art.backdrop} />
+          <ServerIdentity />
+          <AnnouncementPill />
+          <div className="absolute top-[7.5cqw] left-(--tv-safe-x) grid max-w-[38cqw] gap-[1.6cqw]">
+            <AnimatePresence mode="wait">
+              <HeroCopy item={shown} eyebrow={hero?.title ?? 'On Harbor'} />
+            </AnimatePresence>
+            {/* Play acts on what the hero shows (tv.md#hero-behavior) */}
+            <div data-group="hero" data-go-up="nav" className="flex gap-[1cqw]">
+              <TvButton primary initial icon="play" href={tvHref(`/play/${shown.id}`)}>
+                {shown.progress !== null ? 'Resume' : 'Play'}
+              </TvButton>
+              <TvButton icon="info" href={tvHref(`/movies/${shown.id}`)}>
+                Details
+              </TvButton>
+            </div>
+          </div>
+          {/* the rows start about half way down, so the next row's title shows under the featured
+          one; positioned, so they paint over the backdrop */}
+          <div
+            data-rows=""
+            className="relative grid grid-cols-1 gap-[1.6cqw] pt-[28.5cqw] pb-(--tv-safe-y)"
+          >
+            {rows.map((s, i) => (
+              <div key={s.id} data-row={i} className="grid grid-cols-1">
+                <Row section={s} featured={s.id === hero?.id} onFocusItem={setFocused} />
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
-    </section>
+    </>
   )
 }
 
@@ -152,48 +227,6 @@ function AcknowledgeScreen() {
         </div>
       </div>
     </main>
-  )
-}
-
-function Home({ sections }: { sections: HomeSection[] }) {
-  const hero = sections.find((s) => s.layout === 'hero')
-  const first = hero?.items[0] ?? sections[0]?.items[0]
-  const [focused, setFocused] = useState<ClientItem | undefined>(first)
-  const shown = useDwell(focused) ?? first
-  useInitialFocus(true)
-  // the hero's own titles lead the rows, so focus can reach every featured title
-  const rows: HomeSection[] = sections.map((s) =>
-    s.layout === 'hero' ? { ...s, layout: 'row' } : s,
-  )
-  if (!shown) return null
-  return (
-    <>
-      <Backdrop src={shown.art.backdrop} />
-      <ServerIdentity />
-      <AnnouncementPill />
-      <GlobalNav />
-      <div className="absolute top-[7.5cqw] left-(--tv-safe-x) grid max-w-[38cqw] gap-[1.6cqw]">
-        <AnimatePresence mode="wait">
-          <HeroCopy item={shown} eyebrow={hero?.title ?? 'On Harbor'} />
-        </AnimatePresence>
-        {/* Play acts on what the hero shows (tv.md#hero-behavior) */}
-        <div data-group="hero" data-go-up="nav" className="flex gap-[1cqw]">
-          <TvButton primary initial icon="play" href={tvHref(`/play/${shown.id}`)}>
-            {shown.progress !== null ? 'Resume' : 'Play'}
-          </TvButton>
-          <TvButton icon="info" href={tvHref(`/movies/${shown.id}`)}>
-            Details
-          </TvButton>
-        </div>
-      </div>
-      <div className="absolute inset-x-0 bottom-0 h-[47%] overflow-hidden">
-        <div data-scroll="y" data-keep="0.32" className="grid gap-[2cqw] transition-lift">
-          {rows.map((s) => (
-            <Row key={s.id} section={s} onFocusItem={setFocused} />
-          ))}
-        </div>
-      </div>
-    </>
   )
 }
 

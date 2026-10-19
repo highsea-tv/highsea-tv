@@ -8,7 +8,15 @@ import { useParams } from 'wouter'
 import { left, runtime, useItem } from '../client/data.ts'
 import { useAction } from '../mock/hooks.tsx'
 import type { PlaybackPrefs } from '../mock/types.ts'
-import { ServerIdentity, TvButton, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
+import {
+  ServerIdentity,
+  TvButton,
+  TvMessage,
+  TvPoster,
+  TvRow,
+  tvHref,
+  useInitialFocus,
+} from './kit.tsx'
 import { TvTracksPanel } from './tracks.tsx'
 
 export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: boolean) => void }) {
@@ -54,13 +62,16 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
         className="absolute inset-0 size-full scale-110 object-cover blur-[2.6cqw] brightness-[0.45]"
       />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,var(--color-bg)_10%,transparent_70%)]" />
-      <ServerIdentity />
-      <div {...(panel ? { 'data-isolate': '' } : {})} className="absolute inset-0 overflow-hidden">
+      <div
+        {...(panel ? { 'data-isolate': '' } : {})}
+        className="absolute inset-0 overflow-hidden [mask-image:linear-gradient(transparent,black_3.2cqw)]"
+      >
         <div
           data-scroll="y"
           data-keep="0.4"
-          className="grid gap-[2.4cqw] pt-[8cqw] transition-lift"
+          className="relative grid grid-cols-1 gap-[2.4cqw] pt-[8cqw] pb-[4cqw] transition-lift"
         >
+          <ServerIdentity />
           <section
             aria-labelledby="title"
             className="grid max-w-[60cqw] grid-cols-[13cqw_1fr] gap-[2.4cqw] px-(--tv-safe-x)"
@@ -118,70 +129,35 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
             </div>
           </section>
           {d.cast.length > 0 && (
-            <section
-              data-group="cast"
-              data-go-up="actions"
-              aria-label="Cast"
-              className="grid gap-[0.8cqw]"
-            >
-              <h2 className="pl-(--tv-safe-x) font-semibold text-(length:--tv-text-row-title)">
-                Cast
-              </h2>
-              <div className="overflow-visible">
-                <ul
-                  data-scroll="x"
-                  data-keep="0.3"
-                  className="flex gap-(--tv-poster-gap) px-(--tv-safe-x) py-[1cqw] transition-lift"
-                >
-                  {d.cast.map((c) => (
-                    <li key={c.personId} className="w-[8cqw] shrink-0">
-                      {/* cast cards are focus stops, so the row can be read by D-pad */}
-                      <div
-                        data-focusable=""
-                        tabIndex={-1}
-                        className="rounded-(--tv-radius-poster) outline-none transition-lift focus-visible:scale-(--scale-poster) focus-visible:shadow-(--tv-focus-shadow)"
-                      >
-                        <Poster title={c.name} src={c.photo} />
-                      </div>
-                      <p className="mt-[0.5cqw] truncate text-(length:--tv-text-pill)">{c.name}</p>
-                      <p className="truncate text-(length:--tv-text-pill) text-text-3">
-                        {c.character}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </section>
+            <TvRow group="cast" title="Cast" goUp="actions">
+              {d.cast.map((c) => (
+                <li key={c.personId} className="w-[8cqw] shrink-0">
+                  {/* cast cards are focus stops, so the row can be read by D-pad */}
+                  <div
+                    data-focusable=""
+                    tabIndex={-1}
+                    className="group/link rounded-(--tv-radius-poster) outline-none"
+                  >
+                    <Poster title={c.name} src={c.photo} />
+                    <p className="mt-[1cqw] truncate font-semibold text-(length:--tv-text-pill) text-text-2 leading-[1.3] group-focus-visible/link:text-text">
+                      {c.name}
+                    </p>
+                    <p className="truncate text-(length:--tv-text-pill) text-text-3 leading-[1.3]">
+                      {c.character}
+                    </p>
+                  </div>
+                </li>
+              ))}
+            </TvRow>
           )}
           {d.related.length > 0 && (
-            <section
-              data-group="related"
-              data-go-up="actions"
-              aria-label="More like this"
-              className="grid gap-[0.8cqw] pb-[4cqw]"
-            >
-              <h2 className="pl-(--tv-safe-x) font-semibold text-(length:--tv-text-row-title)">
-                More like this
-              </h2>
-              <div className="overflow-visible">
-                <ul
-                  data-scroll="x"
-                  data-keep="0.3"
-                  className="flex gap-(--tv-poster-gap) px-(--tv-safe-x) py-[1cqw] transition-lift"
-                >
-                  {d.related.map((r) => (
-                    <li key={r.id} className="w-(--tv-poster-width) shrink-0">
-                      <Poster
-                        title={r.title}
-                        src={r.art.poster}
-                        href={tvHref(`/movies/${r.id}`)}
-                        focusable
-                      />
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </section>
+            <TvRow group="related" title="More like this" goUp="actions">
+              {d.related.map((r) => (
+                <li key={r.id} className="w-(--tv-poster-width) shrink-0">
+                  <TvPoster item={r} href={tvHref(`/movies/${r.id}`)} />
+                </li>
+              ))}
+            </TvRow>
           )}
         </div>
       </div>
