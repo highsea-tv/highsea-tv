@@ -170,6 +170,8 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`]
 
 ## Phase 3: Server milestone 1 (implementation)
 
+The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](plans/phase-3-server.md) (a draft for the owner's review).
+
 ### Runtime and platform
 - **Process model**: Bun handles packages, scripts and tests. **Node 24 LTS** runs the Next server.
   - A **custom entry `apps/server/server.ts`** (a Node `http` server) calls `@highsea/runtime.boot()`, which starts migrations, jobs, the torrent engine, the download monitor, catalog sync, the discovery responder and the event bus.
