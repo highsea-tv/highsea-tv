@@ -13,7 +13,10 @@ import { defaultState, type Role } from '../src/proto/state.ts'
 import { ScreenApp } from '../src/screen/screen.tsx'
 import { classes, collect, unknownClasses, violations } from './check.ts'
 
-beforeEach(() => localStorage.clear())
+beforeEach(() => {
+  localStorage.clear()
+  history.replaceState(null, '')
+})
 afterEach(() => cleanup())
 
 const page = () => within(document.body)
@@ -336,12 +339,66 @@ describe('A14, A16, A17 reference pages', () => {
 })
 
 describe('C6–C8 clients', () => {
-  test('search finds titles by name and people by name', async () => {
+  test('search groups results by kind, the best-matching kind first', async () => {
     const mock = createMock()
-    const r = await client(mock).library.search('lang')
-    expect(r.people.some((p) => p.name === 'Fritz Lang')).toBe(true)
-    expect(r.titles.some((m) => m.title === 'Metropolis')).toBe(true)
-    expect((await client(mock).library.search('zzzz')).titles).toEqual([])
+    const kinds = async (q: string) =>
+      (await client(mock).library.search(q)).sections.map((s) => s.kind)
+    const lang = await client(mock).library.search('lang')
+    // a person's name starts with it; Metropolis is only theirs
+    expect(lang.sections[0]?.kind).toBe('people')
+    const people = lang.sections.find((s) => s.kind === 'people')
+    expect(people?.items.some((p) => 'name' in p && p.name === 'Fritz Lang')).toBe(true)
+    const movies = lang.sections.find((s) => s.kind === 'movies')
+    expect(movies?.items.some((m) => 'title' in m && m.title === 'Metropolis')).toBe(true)
+    expect(await kinds('caminandes')).toEqual(['movies', 'collections'])
+    expect(await kinds('zzzz')).toEqual([])
+    const { collection, items } = await client(mock).library.collection('caminandes')
+    expect(collection.count).toBe(items.length)
+    expect(items.map((m) => m.year)).toEqual([...items.map((m) => m.year)].sort())
+  })
+
+  test('web search: a collection opens, and Search keeps the query', async () => {
+    const { user, location } = await open('/web/search')
+    await user.click(page().getByRole('button', { name: 'Got it' }))
+    await settle()
+    await user.type(page().getByRole('searchbox'), 'caminandes')
+    await act(() => new Promise((r) => setTimeout(r, 200)))
+    await settle()
+    const collections = within(page().getByRole('region', { name: 'Collections' }))
+    expect(collections.getByRole('link', { name: /Caminandes Collection/ })).toBeTruthy()
+    await clean()
+    act(() => location.navigate('/web/collections/caminandes'))
+    await settle()
+    expect(page().getByRole('heading', { level: 1, name: 'Caminandes Collection' })).toBeTruthy()
+    await clean()
+    // Back to Search: the same history entry, so the query and its results are still there
+    act(() => location.navigate('/web/search'))
+    await settle()
+    expect((page().getByRole('searchbox') as HTMLInputElement).value).toBe('caminandes')
+    expect(page().getByRole('region', { name: 'Collections' })).toBeTruthy()
+  })
+
+  test('TV search: typing never takes focus off the keys', async () => {
+    const { user } = await open('/tv/search')
+    // a suggestion's button goes away with its results, so focus goes into them once
+    await user.click(page().getByRole('button', { name: 'Animation' }))
+    await act(() => new Promise((r) => setTimeout(r, 250)))
+    await settle()
+    const key = page().getByRole('button', { name: 's' })
+    act(() => key.focus())
+    await user.keyboard('{Enter}')
+    await act(() => new Promise((r) => setTimeout(r, 250)))
+    await settle()
+    expect(document.activeElement).toBe(key)
+    await clean()
+  })
+
+  test('TV collection: its titles as a row', async () => {
+    await open('/tv/collections/caminandes')
+    expect(page().getByRole('heading', { level: 1, name: 'Caminandes Collection' })).toBeTruthy()
+    expect(within(page().getByRole('region', { name: 'Movies' })).getAllByRole('link').length).toBe(
+      3,
+    )
   })
 
   test('web search: suggestions, then results', async () => {

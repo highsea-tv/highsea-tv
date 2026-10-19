@@ -6,6 +6,7 @@ import { Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { MobileScreen } from '../kit/mobile/device.tsx'
+import { MobileCollection } from './collection.tsx'
 import { MobileDetail } from './detail.tsx'
 import { MobileHome } from './home.tsx'
 import { MobileLibrary } from './library.tsx'
@@ -56,6 +57,11 @@ function Routes() {
       <Route path="/movies/:id">
         <MobileShell>
           <MobileDetail />
+        </MobileShell>
+      </Route>
+      <Route path="/collections/:id">
+        <MobileShell>
+          <MobileCollection />
         </MobileShell>
       </Route>
       <Route path="/search">

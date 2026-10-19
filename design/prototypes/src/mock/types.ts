@@ -904,11 +904,35 @@ export type HomeSection = {
   items: ClientItem[]
 }
 
-/** Search (C6): titles, then the people in them. */
-export type SearchResults = {
-  titles: ClientItem[]
-  people: { id: string; name: string; photo: string; titles: number }[]
+/** A person in search results, with how many titles here they're in. */
+export type SearchPerson = { id: string; name: string; photo: string; titles: number }
+
+/** A collection as clients see it: only its parts on this server count. */
+export type ClientCollection = {
+  id: string
+  name: string
+  overview: string
+  /** The first part's art. */
+  art: { poster: string; backdrop: string }
+  /** How many of its titles are here. */
+  count: number
+  /** "2010–2016", or one year. */
+  years: string
 }
+
+/**
+ * One kind of result. New media types (shows, episodes, music) join as new kinds; clients show
+ * the sections in the order the server ranks them, and skip kinds they don't know yet.
+ */
+export type SearchSection =
+  | { kind: 'movies'; items: ClientItem[] }
+  | { kind: 'collections'; items: ClientCollection[] }
+  | { kind: 'people'; items: SearchPerson[] }
+
+export type SearchKind = SearchSection['kind']
+
+/** Search (C6): results grouped by kind, the best-matching kind first. Empty kinds are left out. */
+export type SearchResults = { sections: SearchSection[] }
 
 /** A person's own home screen order (C7): ids of featured sections and `continue`. */
 export type HomeLayout = { order: string[]; hidden: string[] }

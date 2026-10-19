@@ -8,6 +8,7 @@ import { useConnection, useServer } from '../client/data.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { TvRoot } from '../kit/tv/tv-root.tsx'
 import { BackContext, type BackRegistry, useBack } from './back.ts'
+import { TvCollection } from './collection.tsx'
 import { TvConnect } from './connect.tsx'
 import { TvDetail } from './detail.tsx'
 import { TvHome } from './home.tsx'
@@ -21,6 +22,11 @@ function Detail() {
   const [panel, setPanel] = useState(false)
   useBack(() => (panel ? setPanel(false) : history.back()))
   return <TvDetail panel={panel} onPanel={setPanel} />
+}
+
+function Collection() {
+  useBack(() => history.back())
+  return <TvCollection />
 }
 
 function Unreachable() {
@@ -94,6 +100,9 @@ function Screens() {
       </Route>
       <Route path="/movies/:id">
         <Detail />
+      </Route>
+      <Route path="/collections/:id">
+        <Collection />
       </Route>
       <Route path="/search">
         <TvSearch />

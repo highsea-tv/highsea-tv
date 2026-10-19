@@ -16,9 +16,17 @@ import {
 import { useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { bytes } from '../admin/format.ts'
-import { searchSuggestions, useLibrary, useSearch, useServer } from '../client/data.ts'
+import {
+  searchKinds,
+  searchSuggestions,
+  useLibrary,
+  useSearch,
+  useSearchQuery,
+  useServer,
+} from '../client/data.ts'
 import { type SettingsSectionId, settingsSections } from '../client/settings.ts'
 import { SettingsSectionBody } from '../client/settings-sections.tsx'
+import type { SearchSection } from '../mock/types.ts'
 import { gutter, Header, mobileHref } from './shell.tsx'
 
 const chip =
@@ -27,7 +35,7 @@ const chip =
 // ---------------------------------------------------------------- search
 
 export function MobileSearch() {
-  const [q, setQ] = useState('')
+  const { q, setQ } = useSearchQuery()
   const { results, settled } = useSearch(q)
   const r = results.data
   return (
@@ -56,52 +64,89 @@ export function MobileSearch() {
         <p aria-busy className={cn('text-[13px] text-text-3', gutter)}>
           Searching…
         </p>
-      ) : r.titles.length === 0 && r.people.length === 0 ? (
+      ) : r.sections.length === 0 ? (
         <p className={cn('text-[15px] text-text-2', gutter)}>
           Nothing on Harbor matches “{settled}”.
         </p>
       ) : (
-        <div aria-live="polite" className="grid gap-5">
-          {r.people.length > 0 && (
-            <ul
-              aria-label="People"
-              className="flex gap-3 overflow-x-auto px-4 [scrollbar-width:none]"
+        <div aria-live="polite" className="grid gap-6">
+          {r.sections.map((section) => (
+            <section
+              key={section.kind}
+              aria-label={searchKinds[section.kind].title}
+              className="grid gap-2.5"
             >
-              {r.people.map((p) => (
-                <li key={p.id} className="w-18 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setQ(p.name)}
-                    className="grid w-full justify-items-center gap-1 text-center outline-none focus-visible:ring-focus"
-                  >
-                    <img src={p.photo} alt="" className="size-16 rounded-full object-cover" />
-                    <span className="line-clamp-2 text-[12px] text-text-2 leading-[1.2]">
-                      {p.name}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {r.titles.length > 0 && (
-            <ul aria-label="Movies" className={cn('grid grid-cols-3 gap-x-2 gap-y-4', gutter)}>
-              {r.titles.map((m) => (
-                <li key={m.id}>
-                  <Poster
-                    title={m.title}
-                    src={m.art.poster}
-                    href={mobileHref(`/movies/${m.id}`)}
-                    showTitle
-                    caption={String(m.year)}
-                  />
-                </li>
-              ))}
-            </ul>
-          )}
+              <h2 className={cn('font-semibold text-[17px]', gutter)}>
+                {searchKinds[section.kind].title}{' '}
+                <span className="font-normal text-text-3">{section.items.length}</span>
+              </h2>
+              <MobileResults section={section} onPerson={setQ} />
+            </section>
+          ))}
         </div>
       )}
     </div>
   )
+}
+
+function MobileResults({
+  section,
+  onPerson,
+}: {
+  section: SearchSection
+  onPerson: (name: string) => void
+}) {
+  switch (section.kind) {
+    case 'movies':
+      return (
+        <ul className={cn('grid grid-cols-3 gap-x-2 gap-y-4', gutter)}>
+          {section.items.map((m) => (
+            <li key={m.id}>
+              <Poster
+                title={m.title}
+                src={m.art.poster}
+                href={mobileHref(`/movies/${m.id}`)}
+                showTitle
+                caption={String(m.year)}
+              />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'collections':
+      return (
+        <ul className="flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]">
+          {section.items.map((c) => (
+            <li key={c.id} className="w-[calc((100%-1rem)/3)] shrink-0">
+              <Poster
+                title={c.name}
+                src={c.art.poster}
+                href={mobileHref(`/collections/${c.id}`)}
+                showTitle
+                caption={`${c.count} ${c.count === 1 ? 'movie' : 'movies'}`}
+              />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'people':
+      return (
+        <ul className="flex gap-3 overflow-x-auto px-4 [scrollbar-width:none]">
+          {section.items.map((p) => (
+            <li key={p.id} className="w-18 shrink-0">
+              <button
+                type="button"
+                onClick={() => onPerson(p.name)}
+                className="grid w-full justify-items-center gap-1 text-center outline-none focus-visible:ring-focus"
+              >
+                <img src={p.photo} alt="" className="size-16 rounded-full object-cover" />
+                <span className="line-clamp-2 text-[12px] text-text-2 leading-[1.2]">{p.name}</span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )
+  }
 }
 
 // ---------------------------------------------------------------- offline

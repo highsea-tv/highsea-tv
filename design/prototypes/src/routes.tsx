@@ -66,6 +66,7 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/web/movies/107',
     '/web/play/4',
     '/web/search',
+    '/web/collections/caminandes',
     '/web/settings',
     '/web/settings/home',
     '/web/settings/devices',
@@ -80,6 +81,7 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/mobile/movies/4',
     '/mobile/play/4',
     '/mobile/search',
+    '/mobile/collections/caminandes',
     '/mobile/offline',
     '/mobile/you',
     '/mobile/you/appearance',
@@ -93,6 +95,7 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/tv/movies/4',
     '/tv/play/4',
     '/tv/search',
+    '/tv/collections/caminandes',
     '/tv/settings',
   ],
 }

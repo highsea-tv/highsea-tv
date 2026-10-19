@@ -3,7 +3,7 @@
 // draws its own screens (web, mobile and TV differ in layout, input and units), on the same data.
 import { useEffect, useState } from 'react'
 import { useAction, useQuery } from '../mock/hooks.tsx'
-import type { ClientItem, ClientType } from '../mock/types.ts'
+import type { ClientItem, ClientType, SearchKind } from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'
 
 export type ClientPlatform = 'web' | 'mobile' | 'tv'
@@ -45,6 +45,52 @@ export function useSearch(query: string) {
   ])
   return { results, settled, typing: settled !== query }
 }
+
+/**
+ * The search field's text, kept in this history entry: coming Back to Search from a result finds
+ * the query and its results as they were, while opening Search afresh starts empty. `focus` is
+ * what the TV had chosen (a result's address), to put the remote back on it.
+ */
+const remember = (patch: Record<string, string>) => {
+  try {
+    history.replaceState({ ...(history.state as object | null), ...patch }, '')
+  } catch {}
+}
+
+export function useSearchQuery() {
+  const saved = (key: string) => {
+    try {
+      const v = (history.state as Record<string, unknown> | null)?.[key]
+      return typeof v === 'string' ? v : ''
+    } catch {
+      return ''
+    }
+  }
+  const [q, setQ] = useState(() => saved('hsSearch'))
+  const [returnTo] = useState(() => saved('hsSearchFocus'))
+  useEffect(() => remember({ hsSearch: q }), [q])
+  return {
+    q,
+    setQ,
+    /** The result the person had opened, when they came Back to it. */
+    returnTo,
+    /** Note the result about to open, before leaving. */
+    leaving: (href: string) => remember({ hsSearchFocus: href }),
+  }
+}
+
+/** Each kind's heading, singular and plural. */
+export const searchKinds: Record<SearchKind, { title: string; one: string; many: string }> = {
+  movies: { title: 'Movies', one: 'movie', many: 'movies' },
+  collections: { title: 'Collections', one: 'collection', many: 'collections' },
+  people: { title: 'People', one: 'person', many: 'people' },
+}
+
+export const useCollection = (id: string) =>
+  useQuery(`client:collection:${id}`, (c) => c.library.collection(id), [
+    'movies.updated',
+    'watch.updated',
+  ])
 
 /** Quick picks for an empty search. */
 export const searchSuggestions = ['Comedy', 'Horror', 'Animation', 'Science fiction', 'Fritz Lang']

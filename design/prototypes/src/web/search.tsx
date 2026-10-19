@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C6 Search on the web and desktop (reference, docs/product/client-search.md): instant results
-// as you type, people first when a name matches, then titles as posters.
+// as you type, in a section per kind (movies, collections, people), the best-matching kind first.
 import { cn, Icon, Input, Poster } from '@highsea/ui-web'
-import { useState } from 'react'
-import { searchSuggestions, useSearch } from '../client/data.ts'
+import { searchKinds, searchSuggestions, useSearch, useSearchQuery } from '../client/data.ts'
+import type { SearchSection } from '../mock/types.ts'
 import { gutter, webHref } from './shell.tsx'
 
 export function WebSearch() {
-  const [q, setQ] = useState('')
+  const { q, setQ } = useSearchQuery()
   const { results, settled } = useSearch(q)
   const r = results.data
   return (
@@ -45,56 +45,25 @@ export function WebSearch() {
         <p aria-busy className="text-caption text-text-3">
           Searching…
         </p>
-      ) : r.titles.length === 0 && r.people.length === 0 ? (
+      ) : r.sections.length === 0 ? (
         <p className="text-text-2 text-ui">
           Nothing on Harbor matches “{settled}”. Try part of a title, a genre or a name.
         </p>
       ) : (
         <div aria-live="polite" className="grid gap-8">
-          {r.people.length > 0 && (
-            <section aria-label="People" className="grid gap-3">
-              <h2 className="text-title">People</h2>
-              <ul className="flex flex-wrap gap-2">
-                {r.people.map((p) => (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      onClick={() => setQ(p.name)}
-                      className="flex items-center gap-2.5 rounded-full border border-line bg-s1 py-1 ps-1 pe-3.5 text-start outline-none hover:bg-s2 focus-visible:ring-focus"
-                    >
-                      <img src={p.photo} alt="" className="size-8 rounded-full object-cover" />
-                      <span className="grid">
-                        <span className="text-text text-ui">{p.name}</span>
-                        <span className="text-caption text-text-3">
-                          {p.titles} {p.titles === 1 ? 'movie' : 'movies'} here
-                        </span>
-                      </span>
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
-          {r.titles.length > 0 && (
-            <section aria-label="Movies" className="grid gap-3">
+          {r.sections.map((section) => (
+            <section
+              key={section.kind}
+              aria-label={searchKinds[section.kind].title}
+              className="grid gap-3"
+            >
               <h2 className="text-title">
-                Movies <span className="font-normal text-text-3">{r.titles.length}</span>
+                {searchKinds[section.kind].title}{' '}
+                <span className="font-normal text-text-3">{section.items.length}</span>
               </h2>
-              <ul className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-x-4 gap-y-6">
-                {r.titles.map((m) => (
-                  <li key={m.id}>
-                    <Poster
-                      title={m.title}
-                      src={m.art.poster}
-                      href={webHref(`/movies/${m.id}`)}
-                      showTitle
-                      caption={String(m.year)}
-                    />
-                  </li>
-                ))}
-              </ul>
+              <Results section={section} onPerson={setQ} />
             </section>
-          )}
+          ))}
         </div>
       )}
       <p className="flex items-center gap-1.5 text-caption text-text-3">
@@ -103,4 +72,71 @@ export function WebSearch() {
       </p>
     </main>
   )
+}
+
+const grid = 'grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-x-4 gap-y-6'
+
+function Results({
+  section,
+  onPerson,
+}: {
+  section: SearchSection
+  onPerson: (name: string) => void
+}) {
+  switch (section.kind) {
+    case 'movies':
+      return (
+        <ul className={grid}>
+          {section.items.map((m) => (
+            <li key={m.id}>
+              <Poster
+                title={m.title}
+                src={m.art.poster}
+                href={webHref(`/movies/${m.id}`)}
+                showTitle
+                caption={String(m.year)}
+              />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'collections':
+      return (
+        <ul className={grid}>
+          {section.items.map((c) => (
+            <li key={c.id}>
+              <Poster
+                title={c.name}
+                src={c.art.poster}
+                href={webHref(`/collections/${c.id}`)}
+                showTitle
+                caption={`${c.count} ${c.count === 1 ? 'movie' : 'movies'} · ${c.years}`}
+              />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'people':
+      return (
+        <ul className="flex flex-wrap gap-2">
+          {section.items.map((p) => (
+            <li key={p.id}>
+              <button
+                type="button"
+                onClick={() => onPerson(p.name)}
+                className="flex items-center gap-2.5 rounded-full border border-line bg-s1 py-1 ps-1 pe-3.5 text-start outline-none hover:bg-s2 focus-visible:ring-focus"
+              >
+                <img src={p.photo} alt="" className="size-8 rounded-full object-cover" />
+                <span className="grid">
+                  <span className="text-text text-ui">{p.name}</span>
+                  <span className="text-caption text-text-3">
+                    {p.titles} {p.titles === 1 ? 'movie' : 'movies'} here
+                  </span>
+                </span>
+              </button>
+            </li>
+          ))}
+        </ul>
+      )
+  }
 }

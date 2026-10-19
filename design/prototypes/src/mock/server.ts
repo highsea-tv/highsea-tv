@@ -22,11 +22,13 @@ import type {
   Appearance,
   Audience,
   Backup,
+  ClientCollection,
   ClientDetail,
   ClientItem,
   ClientTrack,
   ClientType,
   ClientVersion,
+  CollectionRef,
   CreatedApiKey,
   CurationPreview,
   CurationStatus,
@@ -48,7 +50,9 @@ import type {
   ProbeResult,
   QueueItem,
   Release,
+  SearchPerson,
   SearchResults,
+  SearchSection,
   SectionSummary,
   Server,
   SetupInput,
@@ -686,6 +690,31 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     }
   }
   const watchable = () => state.items.filter(playable)
+  /** Collections with at least one title here, each with those titles, oldest first. */
+  const clientCollections = () => {
+    const groups = new Map<string, { ref: CollectionRef; items: MediaItem[] }>()
+    for (const m of watchable()) {
+      const ref = movieMetadata(state, m.id, now())?.collection
+      if (!ref) continue
+      const g = groups.get(ref.id) ?? { ref, items: [] }
+      g.items.push(m)
+      groups.set(ref.id, g)
+    }
+    return [...groups.values()].map(({ ref, items }) => {
+      const sorted = [...items].sort((a, b) => a.year - b.year)
+      const first = sorted[0] as MediaItem
+      const last = sorted[sorted.length - 1] as MediaItem
+      const c: ClientCollection = {
+        id: ref.id,
+        name: ref.name,
+        overview: collection(state, ref.id)?.overview ?? '',
+        art: { poster: first.art.poster, backdrop: first.art.backdrop },
+        count: sorted.length,
+        years: first.year === last.year ? String(first.year) : `${first.year}–${last.year}`,
+      }
+      return { collection: c, items: sorted.map((m) => clientItem(m)) }
+    })
+  }
 
   const sectionItems = (f: FeaturedSection): ClientItem[] => {
     const tagline = (id: string) => f.overrides.find((o) => o.itemId === id)?.tagline ?? null
@@ -2201,14 +2230,15 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     library: {
       /** Everything the household can watch. */
       list: () => watchable().map((m) => clientItem(m)),
-      /** Titles by name, genre or person, and the people whose names match. */
+      /**
+       * Movies by name, genre or person; collections by name or a part's name; the people whose
+       * names match. A kind whose names start with the query (at a word) ranks first, then one
+       * whose names contain it, then the rest, in the order below.
+       */
       search: (query: string): SearchResults => {
         const q = query.trim().toLowerCase()
-        if (!q) return { titles: [], people: [] }
-        const people = new Map<
-          string,
-          { id: string; name: string; photo: string; titles: number }
-        >()
+        if (!q) return { sections: [] }
+        const people = new Map<string, SearchPerson>()
         const titles = watchable().filter((m) => {
           const meta = movieMetadata(state, m.id, now())
           const credits = [...(meta?.cast ?? []), ...(meta?.crew ?? [])]
@@ -2230,10 +2260,43 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         })
         // titles whose name matches come first
         const named = (m: MediaItem) => (m.title.toLowerCase().includes(q) ? 0 : 1)
-        return {
-          titles: titles.sort((a, b) => named(a) - named(b)).map((m) => clientItem(m)),
-          people: [...people.values()].sort((a, b) => b.titles - a.titles).slice(0, 8),
+        const collections = clientCollections().filter(
+          ({ collection: c, items }) =>
+            c.name.toLowerCase().includes(q) ||
+            items.some((m) => m.title.toLowerCase().includes(q)),
+        )
+        const sections: SearchSection[] = [
+          {
+            kind: 'movies',
+            items: titles.sort((a, b) => named(a) - named(b)).map((m) => clientItem(m)),
+          },
+          { kind: 'collections', items: collections.map((c) => c.collection) },
+          {
+            kind: 'people',
+            items: [...people.values()].sort((a, b) => b.titles - a.titles).slice(0, 8),
+          },
+        ]
+        const nameOf = (x: { title: string } | { name: string }) =>
+          ('title' in x ? x.title : x.name).toLowerCase()
+        const rank = (section: SearchSection) => {
+          const names = (section.items as ({ title: string } | { name: string })[]).map(nameOf)
+          if (names.some((n) => n.split(/[\s:–-]+/).some((w) => w.startsWith(q)))) return 0
+          if (names.some((n) => n.includes(q))) return 1
+          return 2
         }
+        return {
+          sections: sections
+            .filter((x) => x.items.length > 0)
+            .map((x, i) => ({ x, i, r: rank(x) }))
+            .sort((a, b) => a.r - b.r || a.i - b.i)
+            .map(({ x }) => x),
+        }
+      },
+      /** A collection's titles on this server, oldest first. */
+      collection: (id: string) => {
+        const found = clientCollections().find((c) => c.collection.id === id)
+        if (!found) throw new ApiError(404, 'not-found', 'That collection isn’t on this server.')
+        return found
       },
       item: (id: string): ClientDetail => {
         const m = state.items.find((x) => x.id === id)

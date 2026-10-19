@@ -118,22 +118,49 @@ export function TvPoster({
   href: string
   wide?: boolean
 }) {
-  const caption = wide && item.progress !== null ? left(item) : String(item.year)
+  return (
+    <TvTile
+      title={item.title}
+      caption={wide && item.progress !== null ? left(item) : String(item.year)}
+      src={wide ? item.art.still : item.art.poster}
+      href={href}
+      wide={wide}
+      progress={item.progress}
+    />
+  )
+}
+
+/** Any titled art as a focus stop: a movie (TvPoster), a collection. */
+export function TvTile({
+  title,
+  caption,
+  src,
+  href,
+  wide = false,
+  progress = null,
+}: {
+  title: string
+  caption: string
+  src: string
+  href: string
+  wide?: boolean
+  progress?: number | null
+}) {
   return (
     <a
       href={href}
       data-focusable=""
-      aria-label={`${item.title}, ${caption}`}
+      aria-label={`${title}, ${caption}`}
       className="group/link block rounded-(--tv-radius-poster) outline-none"
     >
       <Poster
-        title={item.title}
-        src={wide ? item.art.still : item.art.poster}
+        title={title}
+        src={src}
         aspect={wide ? 'still' : 'poster'}
-        progress={item.progress !== null ? item.progress * 100 : undefined}
+        progress={progress !== null ? progress * 100 : undefined}
       />
       <span className="mt-[1cqw] block truncate font-semibold text-(length:--tv-text-meta) text-text-2 leading-[1.3] transition-lift group-focus-visible/link:text-text">
-        {item.title}
+        {title}
       </span>
       <span className="block truncate text-(length:--tv-text-pill) text-text-3 leading-[1.3]">
         {caption}

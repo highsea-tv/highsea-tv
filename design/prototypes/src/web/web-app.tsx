@@ -5,6 +5,7 @@ import { Button, EmptyState } from '@highsea/ui-web'
 import { Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
+import { WebCollection } from './collection.tsx'
 import { WebDetail } from './detail.tsx'
 import { savedOption, WebHome } from './home.tsx'
 import { WebLibrary } from './library.tsx'
@@ -62,6 +63,11 @@ function Routes() {
       <Route path="/movies/:id">
         <WebShell overHero>
           <WebDetail />
+        </WebShell>
+      </Route>
+      <Route path="/collections/:id">
+        <WebShell>
+          <WebCollection />
         </WebShell>
       </Route>
       <Route path="/search">
