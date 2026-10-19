@@ -197,7 +197,7 @@ export const Springs: StoryObj = {
         </Section>
         <Section
           title="Press and focus"
-          note="Buttons press to 0.97 on spring.quick. Posters lift to 1.04 on hover and keyboard focus (1.09 on TV)."
+          note="Buttons press to 0.97 on spring.quick. Posters lift to 1.02 on hover and keyboard focus (1.05 on TV)."
         >
           <div className="flex flex-wrap items-center gap-6">
             <Button variant="primary">Press me</Button>

@@ -74,7 +74,7 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 
 - **Play** on the hero plays what the hero shows (TV: the dwelled title). **Resume** when there's progress.
 - **Continue watching** items open the player directly; everything else opens the item's page (C4).
-- **Pointer:** hover lifts posters to 1.04 and shows Play over the art; rows scroll by wheel and trackpad, with paging arrows on hover.
+- **Pointer:** hover lifts posters to 1.02 and shows Play over the art; rows scroll by wheel and trackpad, with paging arrows on hover.
 - **Keyboard (web):** Tab moves between regions; arrows move inside a row.
 - **D-pad (TV):** the spatial model ([tv.md](../design-language/platforms/tv.md#spatial-focus-model)); rows remember their last item; Up from any row goes to the hero actions; at the home root, Back returns to the top row's first item.
 - **Touch (mobile):** rows and the carousel scroll natively with snapping; press feedback is a 0.97 scale.

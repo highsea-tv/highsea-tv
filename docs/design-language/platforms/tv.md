@@ -55,7 +55,7 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 ## Focus appearance
 
 - **Ring:** 0.2u (≈ 4px at 1080p) in `text` (`#ededee`), with a soft dark drop shadow. There is no colored halo.
-- **Scale:** focused posters scale to 1.09 and buttons to 1.07, both with `spring.base`. The focused item rises above its neighbors.
+- **Scale:** focused posters scale to 1.05 and buttons to 1.07, both with `spring.base`. The focused item rises above its neighbors.
 - **Hero buttons:** the primary action (Play) is a solid `text` fill with a `bg` label. Secondary actions (Details) are a translucent `text` fill at 12% with a `text` label. Focus adds the ring and scale; it doesn't change the fill.
 - **Select feedback:** a brightness pulse (1 → 1.35 → 1, 280ms) plus the `select` sound.
 - **Focus leaving the app:** the visible focus state is removed when the app loses focus, and restored to the same item when it returns.

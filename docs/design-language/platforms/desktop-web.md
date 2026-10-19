@@ -14,7 +14,7 @@
 
 ## Pointer
 
-- **Hover** previews what TV focus does: the poster scales to 1.04 with `spring.base` and shows a quick-actions overlay (Play, Add to list, More). Hover never triggers sound.
+- **Hover** previews what TV focus does: the poster scales to 1.02 with `spring.base` and shows a quick-actions overlay (Play, Add to list, More). Hover never triggers sound.
 - **Hero binding:** hovering a poster for 220ms or more doesn't change the hero. On desktop the hero changes only on selection. Pointer users move fast, and an unexpectedly changing hero is distracting.
 - **Rows:** scroll by trackpad and wheel, and paging arrow buttons appear at the row edges on hover.
 

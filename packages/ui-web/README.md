@@ -46,7 +46,7 @@ Every component is keyboard-complete and has one focus ring (`focus`, 2px, 2px o
 
 ## TV and spatial focus
 
-Set `data-platform="tv"` on the root for the TV focus appearance ([tv.md](../../docs/design-language/platforms/tv.md#focus-appearance)): posters lift to 1.09 and buttons to their TV scale, and the ring becomes a 0.2u outline in `text`, flush with the item. D-pad navigation uses `useSpatialNavigation(ref)` on a root element with this markup:
+Set `data-platform="tv"` on the root for the TV focus appearance ([tv.md](../../docs/design-language/platforms/tv.md#focus-appearance)): posters lift to 1.05 and buttons to their TV scale, and the ring becomes a 0.2u outline in `text`, flush with the item. D-pad navigation uses `useSpatialNavigation(ref)` on a root element with this markup:
 
 | Attribute | Meaning |
 | --- | --- |

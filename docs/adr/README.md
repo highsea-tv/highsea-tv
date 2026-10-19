@@ -19,5 +19,6 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0013](0013-brand-direction-abyss-neutral.md) | Brand direction: Abyss Neutral (Bone) | Accepted |
 | [0014](0014-universal-media-pages.md) | One media page per title, whatever its library state | Accepted |
 | [0015](0015-tv-hero-binds-featured-row.md) | The TV hero binds only the featured row | Accepted |
+| [0016](0016-gentler-poster-lift.md) | A gentler poster lift | Accepted |
 
 Template: copy [`template.md`](template.md).

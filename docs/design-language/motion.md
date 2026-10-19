@@ -40,7 +40,7 @@ Springs are defined physically by stiffness, damping and mass (1). `@highsea/tok
 The artwork behind it cross-fades between two layers, so there is never a blank frame. The swap starts only after `duration.dwell`, so fast scrolling doesn't thrash.
 
 **Focus**
-- **Scale:** the focused item scales up (posters 1.09, buttons 1.07) with `spring.base`.
+- **Scale:** the focused item scales up (posters 1.05, buttons 1.07) with `spring.base`.
 - **Ring:** appears with the focus state, with no ring "travel" between items.
 - **Tracks:** rows and columns move by transform with `spring.base` to keep focus in view (see [TV › Scrolling](platforms/tv.md#scrolling)).
 

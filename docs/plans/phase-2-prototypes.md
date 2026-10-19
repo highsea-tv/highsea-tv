@@ -179,7 +179,7 @@ Likely new pieces, roughly in the order the flows need them:
    - web top bar (translucent over the hero);
    - server switcher;
    - TV top tab row ([tv.md › global navigation](../design-language/platforms/tv.md#layout));
-   - poster hover quick-actions (web: scale 1.04 plus an overlay);
+   - poster hover quick-actions (web: scale 1.02 plus an overlay);
    - row paging arrows;
    - mobile tab bar and featured carousel;
    - an announcement modal and card;

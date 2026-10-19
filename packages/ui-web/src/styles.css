@@ -161,7 +161,7 @@
 
 :root {
   /* hover and keyboard focus scale for posters and tiles; TV builds use the TV scale */
-  --scale-poster: 1.04;
+  --scale-poster: 1.02;
   --scale-button: 1;
 }
 

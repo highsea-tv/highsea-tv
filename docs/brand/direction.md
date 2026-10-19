@@ -90,7 +90,7 @@ The TV uses the same styles scaled for 10-foot viewing. The design-language docs
 
 ## Focus
 
-- **TV focus** is a `--text` ring (`#ededee`), 0.2u wide on TV (≈ 4px at 1080p; 3px on the board's web samples), with a soft dark drop shadow, and buttons scale to 1.07 and posters to 1.09. There is no colored halo.
+- **TV focus** is a `--text` ring (`#ededee`), 0.2u wide on TV (≈ 4px at 1080p; 3px on the board's web samples), with a soft dark drop shadow, and buttons scale to 1.07 and posters to 1.05 ([ADR 0016](../adr/0016-gentler-poster-lift.md); 1.09 before). There is no colored halo.
 - **Keyboard focus** on web and desktop uses the same ring language.
 - Focus is carried by ring, scale and motion, never by color alone.
 
