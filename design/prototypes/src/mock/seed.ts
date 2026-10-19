@@ -28,6 +28,7 @@ import type {
   SpeedSample,
   Stream,
   SubtitleProvider,
+  SubtitleSettings,
   SubtitleTrack,
   SystemStatus,
   Torrent,
@@ -70,6 +71,7 @@ export type ServerState = {
   languages: Language[]
   subtitles: SubtitleTrack[]
   providers: SubtitleProvider[]
+  subtitleSettings: SubtitleSettings
   torrentLimits: TorrentLimits
   announcements: Announcement[]
   featured: FeaturedSection[]
@@ -850,6 +852,97 @@ const discoverPool: DiscoverMovie[] = [
     art: { poster: posterArt('Hero'), backdrop: backdropArt('Hero'), still: stillArt('Hero') },
     inLibrary: false,
   },
+  // public-domain films not in the library yet: what Discover can actually add
+  ...(
+    [
+      [
+        'nanook-of-the-north',
+        'Nanook of the North',
+        1922,
+        79,
+        'Documentary',
+        6.9,
+        'A year with an Inuit family on the shore of Hudson Bay, filmed over sixteen months.',
+      ],
+      [
+        'the-lost-world',
+        'The Lost World',
+        1925,
+        93,
+        'Adventure',
+        6.6,
+        'An expedition up the Amazon finds a plateau where dinosaurs still live, and brings one home to London.',
+      ],
+      [
+        'the-great-train-robbery',
+        'The Great Train Robbery',
+        1903,
+        12,
+        'Western',
+        7.1,
+        'Bandits hold up a steam train and are chased down by a posse, in twelve minutes that set the template.',
+      ],
+      [
+        'dementia-13',
+        'Dementia 13',
+        1963,
+        75,
+        'Horror',
+        5.7,
+        'A widow hides her husband’s death from his wealthy family while someone with an axe stalks their Irish castle.',
+      ],
+      [
+        'meet-john-doe',
+        'Meet John Doe',
+        1941,
+        122,
+        'Drama',
+        7.5,
+        'A newspaper invents a man who will jump from city hall in protest, then hires a drifter to play him.',
+      ],
+      [
+        'scarlet-street',
+        'Scarlet Street',
+        1945,
+        102,
+        'Crime',
+        7.7,
+        'A meek cashier and Sunday painter is drawn into a con by a woman who passes off his paintings as hers.',
+      ],
+      [
+        'the-stranger',
+        'The Stranger',
+        1946,
+        95,
+        'Thriller',
+        7.3,
+        'A war crimes investigator follows a lead to a quiet Connecticut town and its new schoolteacher.',
+      ],
+      [
+        'the-last-time-i-saw-paris',
+        'The Last Time I Saw Paris',
+        1954,
+        116,
+        'Romance',
+        6.4,
+        'A writer looks back on his marriage in postwar Paris, and the night it came apart.',
+      ],
+    ] as const
+  ).map(
+    ([slug, title, year, runtimeMinutes, genre, rating, synopsis], n): DiscoverMovie => ({
+      id: `disc-${slug}`,
+      tmdbId: 1_003_000 + n,
+      title,
+      year,
+      runtimeMinutes,
+      genres: [genre],
+      synopsis,
+      rating: rating / 2,
+      releaseDate: iso(new Date(year, 0, 1).getTime()),
+      art: { poster: posterArt(title), backdrop: backdropArt(title), still: stillArt(title) },
+      inLibrary: false,
+    }),
+  ),
 ]
 
 // ---------------------------------------------------------------- the two servers
@@ -867,7 +960,14 @@ export function seed(kind: 'populated' | 'empty', now: number): ServerState {
     catalog,
     languageProfiles,
     languages,
-    providers: defaultProviders,
+    providers: structuredClone(defaultProviders),
+    subtitleSettings: {
+      minScore: 80,
+      autoSync: true,
+      minConfidence: 0.7,
+      upgradeDays: 14,
+      preferReleaseMatch: true,
+    },
     torrentLimits: defaultTorrentLimits,
     discoverCatalog: discoverPool,
     jobs: jobs(now, kind === 'empty'),

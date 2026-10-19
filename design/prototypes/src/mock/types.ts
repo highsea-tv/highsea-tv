@@ -522,6 +522,20 @@ export type SubtitleStats = {
 
 export type Language = { code: string; name: string }
 
+/** Settings › Subtitles: scoring and the automatic sync (roadmap › subtitles). */
+export type SubtitleSettings = {
+  /** Never download below this score, 0–100. Language profiles can raise it. */
+  minScore: number
+  /** Sync every downloaded subtitle to the audio. */
+  autoSync: boolean
+  /** Below this confidence, keep the original timing and mark it for review, 0–1. */
+  minConfidence: number
+  /** Look for a better match for this many days after import. */
+  upgradeDays: number
+  /** Prefer subtitles that match the release (hash or name) over title and year. */
+  preferReleaseMatch: boolean
+}
+
 // ---------------------------------------------------------------- curation
 
 export type Audience =

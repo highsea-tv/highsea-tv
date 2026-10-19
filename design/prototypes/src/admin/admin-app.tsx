@@ -3,16 +3,23 @@
 // shell. Pages a later checkpoint builds show a placeholder in the real page frame, so the shell
 // can be walked end to end.
 import { Button, EmptyState } from '@highsea/ui-web'
-import { Route, Switch, useLocation, useParams } from 'wouter'
-import { useQuery } from '../mock/hooks.tsx'
+import type { ReactNode } from 'react'
+import { Route, Switch, useLocation } from 'wouter'
+import { Activity } from './activity/activity.tsx'
 import { Dashboard } from './dashboard/dashboard.tsx'
+import { Discover } from './discover/discover.tsx'
+import { Downloads } from './downloads/downloads.tsx'
+import { Indexers } from './indexers/indexers.tsx'
 import { Login } from './login.tsx'
+import { MovieDetail } from './movies/detail.tsx'
+import { MoviesLibrary } from './movies/library.tsx'
 import { isStaff, type Page, pageGroups } from './nav.ts'
 import { Setup } from './setup/setup.tsx'
 import { AdminPage, AdminShell, useShell } from './shell.tsx'
+import { Subtitles } from './subtitles/subtitles.tsx'
 
-/** A page that isn't built yet, or one the signed-in role can't open. */
-function Placeholder({ page }: { page: Page }) {
+/** Owners and admins only: anyone else sees why, and the way back. */
+function Staff({ page, children }: { page: Page; children: ReactNode }) {
   const { role } = useShell()
   const [, navigate] = useLocation()
   if (page.staff && !isStaff(role))
@@ -27,22 +34,15 @@ function Placeholder({ page }: { page: Page }) {
         </EmptyState>
       </AdminPage>
     )
+  return <>{children}</>
+}
+
+/** A page a later checkpoint builds. */
+function Placeholder({ page }: { page: Page }) {
   return (
     <AdminPage title={page.label}>
       <EmptyState icon={page.icon} title="Not in the prototype yet">
         Checkpoint {page.checkpoint} builds {page.label}.
-      </EmptyState>
-    </AdminPage>
-  )
-}
-
-function MovieDetail() {
-  const { id } = useParams<{ id: string }>()
-  const movie = useQuery(`movie:${id}`, (c) => c.movies.get(id))
-  return (
-    <AdminPage title={movie.data?.title ?? 'Movie'}>
-      <EmptyState icon="movie" title="Not in the prototype yet">
-        Checkpoint 2 builds the movie page.
       </EmptyState>
     </AdminPage>
   )
@@ -63,7 +63,17 @@ function NotFound() {
   )
 }
 
-const placeholders = pageGroups.flat().filter((p) => p.path !== '/')
+/** The pages built so far, by id; the rest show a placeholder. */
+const built: Record<string, () => ReactNode> = {
+  discover: Discover,
+  movies: MoviesLibrary,
+  activity: Activity,
+  downloads: Downloads,
+  indexers: Indexers,
+  subtitles: Subtitles,
+}
+
+const pages = pageGroups.flat().filter((p) => p.path !== '/')
 
 export function AdminApp() {
   return (
@@ -83,11 +93,14 @@ export function AdminApp() {
             <Route path="/movies/:id">
               <MovieDetail />
             </Route>
-            {placeholders.map((p) => (
-              <Route key={p.id} path={p.path}>
-                <Placeholder page={p} />
-              </Route>
-            ))}
+            {pages.map((p) => {
+              const Page = built[p.id]
+              return (
+                <Route key={p.id} path={p.path}>
+                  <Staff page={p}>{Page ? <Page /> : <Placeholder page={p} />}</Staff>
+                </Route>
+              )
+            })}
             <Route>
               <NotFound />
             </Route>

@@ -133,6 +133,14 @@ export const flows: Flow[] = [
     '/discover',
     2,
     'Search and trending, then the add dialog: folder, profiles, monitoring, search now.',
+    {
+      ready: true,
+      spec: 'docs/product/movies.md',
+      hints: [
+        'Search “nanook” for one to add; library movies show as In library.',
+        'Leave Search now on: the movie downloads, imports and gets subtitles on the clock.',
+      ],
+    },
   ),
   admin(
     'A5',
@@ -140,6 +148,14 @@ export const flows: Flow[] = [
     '/movies',
     2,
     'Grid and table views, filters, bulk edit, multiple versions per item.',
+    {
+      ready: true,
+      spec: 'docs/product/movies.md',
+      hints: [
+        'Switch to Table, tick a few rows, then use the bulk bar.',
+        'Sintel and Spring each have two versions, 1080p and 4K HDR.',
+      ],
+    },
   ),
   admin(
     'A6',
@@ -147,6 +163,14 @@ export const flows: Flow[] = [
     '/movies/sintel',
     2,
     'Overview, files and streams, history, interactive search with decision reasons, and the Subtitles tab.',
+    {
+      ready: true,
+      spec: 'docs/product/movies.md',
+      hints: [
+        'Interactive search: open a Rejected badge for the reasons; Grab anyway overrides the profile.',
+        'Subtitles tab: nudge the offset in 50 ms steps, or re-sync to the audio.',
+      ],
+    },
   ),
   admin(
     'A7',
@@ -154,6 +178,14 @@ export const flows: Flow[] = [
     '/activity',
     2,
     'The live queue (stalled, blocked, rejected), history and blocklist.',
+    {
+      ready: true,
+      spec: 'docs/product/activity-downloads.md',
+      hints: [
+        'Needs attention holds the stalled Cosmos Laundromat and the blocked Nosferatu.',
+        'Nosferatu: Find another blocklists it and grabs the next release.',
+      ],
+    },
   ),
   admin(
     'A8',
@@ -161,6 +193,14 @@ export const flows: Flow[] = [
     '/downloads',
     2,
     'The torrent client: files, peers, trackers, seeding rules, limits and the VPN binding.',
+    {
+      ready: true,
+      spec: 'docs/product/activity-downloads.md',
+      hints: [
+        'Open a torrent for its files, trackers and seeding rule.',
+        'Add torrent takes a magnet:?xt=urn:btih: link.',
+      ],
+    },
   ),
   admin(
     'A9',
@@ -168,6 +208,14 @@ export const flows: Flow[] = [
     '/indexers',
     2,
     'The catalog browser, one-click public add, private forms with inline help, health and backoff.',
+    {
+      ready: true,
+      spec: 'docs/product/indexers.md',
+      hints: [
+        'Retry now clears the backoff on the indexer that’s backing off.',
+        'Catalog: Add a public one in one click; Set up a private one, and use the API key “wrong” to see the test fail.',
+      ],
+    },
   ),
   admin(
     'A10',
@@ -175,6 +223,14 @@ export const flows: Flow[] = [
     '/subtitles',
     2,
     'The wanted list; providers, language profiles, scoring and sync settings.',
+    {
+      ready: true,
+      spec: 'docs/product/subtitles.md',
+      hints: [
+        'Search all fills the wanted list.',
+        'Languages: edit a profile to reorder languages and set the cutoff.',
+      ],
+    },
   ),
   admin(
     'A11',
