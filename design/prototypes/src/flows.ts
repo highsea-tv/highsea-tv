@@ -138,6 +138,7 @@ export const flows: Flow[] = [
       spec: 'docs/product/movies.md',
       hints: [
         'Search “nanook” for one to add; library movies show as In library.',
+        'A poster opens the movie’s page, the same page in or out of the library.',
         'Leave Search now on: the movie downloads, imports and gets subtitles on the clock.',
       ],
     },
@@ -160,13 +161,15 @@ export const flows: Flow[] = [
   admin(
     'A6',
     'Movie detail',
-    '/movies/sintel',
+    '/movies/1',
     2,
-    'Overview, files and streams, history, interactive search with decision reasons, and the Subtitles tab.',
+    'One page in or out of the library: cast and crew, trailers, collection, people. Once added: files and streams, history, interactive search, subtitles.',
     {
       ready: true,
-      spec: 'docs/product/movies.md',
+      spec: 'docs/product/media-pages.md',
       hints: [
+        'Not added yet: #/admin/movies/107 (Nanook of the North). Add it and the same page, at the same address, gains the library tabs.',
+        'Night of the Living Dead (#/admin/movies/30) has a collection with two parts missing; Fritz Lang’s page marks his films by library state.',
         'Interactive search: open a Rejected badge for the reasons; Grab anyway overrides the profile.',
         'Subtitles tab: nudge the offset in 50 ms steps, or re-sync to the audio.',
       ],
@@ -315,7 +318,7 @@ export const flows: Flow[] = [
   client(
     'C4',
     'Item detail',
-    '/movies/sintel',
+    '/movies/1',
     ['web', 'mobile', 'tv'],
     3,
     'Hero, play or resume, versions, cast, related, subtitle and audio defaults.',
@@ -323,7 +326,7 @@ export const flows: Flow[] = [
   client(
     'C5',
     'Player chrome',
-    '/play/sintel',
+    '/play/1',
     ['web', 'mobile', 'tv'],
     3,
     'Scrubber, track and subtitle pickers, the subtitle offset nudge, the remote mapping.',

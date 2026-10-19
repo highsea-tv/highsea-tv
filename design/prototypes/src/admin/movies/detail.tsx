@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A6 Movie detail (docs/product/movies.md#movie-detail). A header with the art, status and the
-// main actions, then tabs: Overview, Files (each version with its streams), History, Search
-// (interactive: every release with the decision engine's verdict and reasons) and Subtitles
-// (tracks with sync status, confidence and offset; manual search and pick; re-sync).
+// A6 Movie detail (docs/product/movies.md#movie-detail, media-pages.md). One page whether the
+// movie is in the library or not. Not added: the summary, Overview (cast, trailers, collection,
+// More like this, About) and Cast and crew, with Add movie. Added, it also gains the library's
+// actions and tabs: Files (each version with its streams), History, Search (interactive: every
+// release with the decision engine's verdict and reasons) and Subtitles (tracks with sync status,
+// confidence and offset; manual search and pick; re-sync).
 import {
   Badge,
   Button,
@@ -15,13 +17,10 @@ import {
   MenuContent,
   MenuItem,
   MenuTrigger,
-  Poster,
   Progress,
   QualityTag,
-  Rating,
   Select,
   Skeleton,
-  SkeletonText,
   Switch,
   Table,
   TableBody,
@@ -39,10 +38,11 @@ import {
   Tooltip,
   toast,
 } from '@highsea/ui-web'
-import { Fragment, type ReactNode, useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type {
+  DiscoverMovie,
   HistoryEventType,
   MediaFile,
   MediaItem,
@@ -54,15 +54,119 @@ import type {
 } from '../../mock/types.ts'
 import { bytes, duration, percent, rate, relative } from '../format.ts'
 import { Loadable } from '../loadable.tsx'
+import {
+  CastAndCrew,
+  Definition,
+  MediaOverview,
+  MediaSummary,
+  ReleaseLine,
+  SummarySkeleton,
+  useMovieMetadata,
+} from '../media/sections.tsx'
 import { isStaff } from '../nav.ts'
 import { AdminPage, useShell } from '../shell.tsx'
 import { torrentStatus } from '../status.ts'
+import { AddMovieDialog } from './add-dialog.tsx'
 import { movieStatus } from './library.tsx'
 
-type Tab = 'overview' | 'files' | 'history' | 'search' | 'subtitles'
+type Tab = 'overview' | 'cast' | 'files' | 'history' | 'search' | 'subtitles'
 
+type Metadata = ReturnType<typeof useMovieMetadata>
+
+/**
+ * `/movies/:id`: one page and one address in every library state (ADR 0014). The id is the media
+ * id, the same before and after adding. Not in the library, the page shows the metadata layer
+ * with Add movie; once added it gains the library layer in place, at the same address.
+ */
 export function MovieDetail() {
   const { id } = useParams<{ id: string }>()
+  const [, navigate] = useLocation()
+  const meta = useMovieMetadata(id)
+  if (meta.status === 'error')
+    return (
+      <AdminPage title="Movie">
+        <EmptyState
+          tone="error"
+          icon="movie"
+          title={meta.error.message}
+          action={<Button onClick={() => navigate('/movies')}>Go to Movies</Button>}
+        >
+          It may have been removed. Discover finds every movie, in the library or not.
+        </EmptyState>
+      </AdminPage>
+    )
+  if (meta.status === 'loading')
+    return (
+      <AdminPage title="Movie">
+        <SummarySkeleton />
+      </AdminPage>
+    )
+  return meta.data.inLibrary ? <LibraryMovie id={id} meta={meta} /> : <MetadataMovie meta={meta} />
+}
+
+// ---------------------------------------------------------------- not in the library
+
+function MetadataMovie({ meta }: { meta: Metadata }) {
+  const { role } = useShell()
+  const staff = isStaff(role)
+  const [tab, setTab] = useState<Tab>('overview')
+  const [adding, setAdding] = useState<DiscoverMovie[]>([])
+  const m = meta.data
+
+  return (
+    <AdminPage
+      title={m?.title ?? 'Movie'}
+      actions={
+        m &&
+        staff && (
+          <Button variant="primary" icon="add" onClick={() => setAdding([m])}>
+            Add movie
+          </Button>
+        )
+      }
+    >
+      {m && (
+        <>
+          <MediaSummary item={m} meta={m} badges={<Badge tone="neutral">Not in the library</Badge>}>
+            <ReleaseLine date={m.releaseDate} />
+            {!staff && (
+              <p className="text-caption text-text-3">
+                Only owners and admins can add movies. Ask the server’s owner for this one.
+              </p>
+            )}
+          </MediaSummary>
+          <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} variant="line">
+            <TabsList aria-label="Movie sections">
+              <TabsTrigger value="overview">Overview</TabsTrigger>
+              <TabsTrigger value="cast">Cast and crew</TabsTrigger>
+            </TabsList>
+            <TabsContent value="overview" className="pt-5">
+              <MediaOverview
+                meta={meta}
+                staff={staff}
+                onAllCast={() => setTab('cast')}
+                onAdd={setAdding}
+              />
+            </TabsContent>
+            <TabsContent value="cast" className="pt-5">
+              <CastAndCrew meta={meta} />
+            </TabsContent>
+          </Tabs>
+        </>
+      )}
+      <AddMovieDialog
+        movies={adding}
+        onOpenChange={(o) => !o && setAdding([])}
+        // the page itself turns into the library page, at the same address
+        onAdded={() => {}}
+      />
+    </AdminPage>
+  )
+}
+
+// ---------------------------------------------------------------- in the library
+
+function LibraryMovie({ id, meta }: { id: string; meta: Metadata }) {
   const { role } = useShell()
   const staff = isStaff(role)
   const [, navigate] = useLocation()
@@ -70,6 +174,7 @@ export function MovieDetail() {
   const [tab, setTab] = useState<Tab>('overview')
   const [removing, setRemoving] = useState(false)
   const [deleteFiles, setDeleteFiles] = useState(false)
+  const [adding, setAdding] = useState<DiscoverMovie[]>([])
   const update = useAction((c, patch: Partial<MediaItem>) => c.movies.update(id, patch))
   const search = useAction((c) => c.movies.bulkSearch([id]))
   const remove = useAction((c) => c.movies.delete(id, { deleteFiles }))
@@ -123,40 +228,17 @@ export function MovieDetail() {
           It may have been removed. The library lists everything that’s here.
         </EmptyState>
       ) : !m ? (
-        <div aria-busy className="grid gap-5 medium:grid-cols-[10rem_minmax(0,1fr)]">
-          <Skeleton className="aspect-poster rounded-poster" />
-          <SkeletonText lines={4} />
-        </div>
+        <SummarySkeleton />
       ) : (
-        <>
-          <Header movie={m} staff={staff} onMonitor={(monitored) => update.run({ monitored })} />
-          <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} variant="line">
-            <TabsList aria-label="Movie sections" className="max-w-full overflow-x-auto">
-              <TabsTrigger value="overview">Overview</TabsTrigger>
-              <TabsTrigger value="files">Files</TabsTrigger>
-              <TabsTrigger value="history">History</TabsTrigger>
-              {staff && <TabsTrigger value="search">Search</TabsTrigger>}
-              <TabsTrigger value="subtitles">Subtitles</TabsTrigger>
-            </TabsList>
-            <TabsContent value="overview" className="pt-5">
-              <Overview movie={m} />
-            </TabsContent>
-            <TabsContent value="files" className="pt-5">
-              <Files movie={m} />
-            </TabsContent>
-            <TabsContent value="history" className="pt-5">
-              <History id={m.id} />
-            </TabsContent>
-            {staff && (
-              <TabsContent value="search" className="pt-5">
-                <InteractiveSearch movie={m} />
-              </TabsContent>
-            )}
-            <TabsContent value="subtitles" className="pt-5">
-              <Subtitles movie={m} staff={staff} />
-            </TabsContent>
-          </Tabs>
-        </>
+        <LibraryBody
+          movie={m}
+          meta={meta}
+          staff={staff}
+          tab={tab}
+          onTab={setTab}
+          onMonitor={(monitored) => update.run({ monitored })}
+          onAdd={setAdding}
+        />
       )}
       <ConfirmDialog
         open={removing}
@@ -187,49 +269,43 @@ export function MovieDetail() {
           )
         }
       />
+      <AddMovieDialog movies={adding} onOpenChange={(o) => !o && setAdding([])} />
     </AdminPage>
   )
 }
 
-// ---------------------------------------------------------------- header
-
-function Header({
+function LibraryBody({
   movie: m,
+  meta,
   staff,
+  tab,
+  onTab,
   onMonitor,
+  onAdd,
 }: {
   movie: MediaItem
+  meta: Metadata
   staff: boolean
+  tab: Tab
+  onTab: (tab: Tab) => void
   onMonitor: (on: boolean) => void
+  onAdd: (movies: DiscoverMovie[]) => void
 }) {
   const s = movieStatus[m.status]
   return (
-    <section
-      aria-label="Summary"
-      className="relative isolate grid gap-5 overflow-hidden rounded-lg border border-line bg-s1 p-4 medium:grid-cols-[9rem_minmax(0,1fr)] medium:p-5"
-    >
-      <img
-        src={m.art.backdrop}
-        alt=""
-        className="-z-10 absolute inset-0 size-full object-cover opacity-15"
-      />
-      <Poster title={m.title} src={m.art.poster} className="w-32 medium:w-full" />
-      <div className="grid grid-cols-1 content-start gap-3">
-        <div className="flex flex-wrap items-center gap-2 text-caption text-text-2">
-          <span className="font-mono">{m.year}</span>
-          <span aria-hidden>·</span>
-          <span>{m.runtimeMinutes ? duration(m.runtimeMinutes * 60) : 'Runtime unknown'}</span>
-          <span aria-hidden>·</span>
-          <span>{m.genres.join(', ')}</span>
-          {m.rating > 0 && <Rating value={m.rating} size={12} showValue />}
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <Badge tone={s.tone}>{s.label}</Badge>
-          {m.versions.map((v) => (
-            <QualityTag key={v.id}>{v.label}</QualityTag>
-          ))}
-        </div>
-        <p className="max-w-[65ch] text-body text-text-2">{m.synopsis}</p>
+    <>
+      <MediaSummary
+        item={m}
+        meta={meta.data}
+        badges={
+          <>
+            <Badge tone={s.tone}>{s.label}</Badge>
+            {m.versions.map((v) => (
+              <QualityTag key={v.id}>{v.label}</QualityTag>
+            ))}
+          </>
+        }
+      >
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-caption text-text-3">
           <span className="font-mono">{m.path}</span>
           {staff ? (
@@ -251,27 +327,51 @@ function Header({
             <span>{m.monitored ? 'Monitored' : 'Not monitored'}</span>
           )}
         </div>
-      </div>
-    </section>
+      </MediaSummary>
+      <Tabs value={tab} onValueChange={(v) => onTab(v as Tab)} variant="line">
+        <TabsList aria-label="Movie sections">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="cast">Cast and crew</TabsTrigger>
+          <TabsTrigger value="files">Files</TabsTrigger>
+          <TabsTrigger value="history">History</TabsTrigger>
+          {staff && <TabsTrigger value="search">Search</TabsTrigger>}
+          <TabsTrigger value="subtitles">Subtitles</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview" className="pt-5">
+          <MediaOverview
+            meta={meta}
+            staff={staff}
+            onAllCast={() => onTab('cast')}
+            onAdd={onAdd}
+            main={<InTheQueue movie={m} />}
+            aside={<InTheLibrary movie={m} />}
+          />
+        </TabsContent>
+        <TabsContent value="cast" className="pt-5">
+          <CastAndCrew meta={meta} />
+        </TabsContent>
+        <TabsContent value="files" className="pt-5">
+          <Files movie={m} />
+        </TabsContent>
+        <TabsContent value="history" className="pt-5">
+          <History id={m.id} />
+        </TabsContent>
+        {staff && (
+          <TabsContent value="search" className="pt-5">
+            <InteractiveSearch movie={m} />
+          </TabsContent>
+        )}
+        <TabsContent value="subtitles" className="pt-5">
+          <Subtitles movie={m} staff={staff} />
+        </TabsContent>
+      </Tabs>
+    </>
   )
 }
 
 // ---------------------------------------------------------------- overview
 
-function Definition({ items }: { items: [string, ReactNode][] }) {
-  return (
-    <dl className="grid grid-cols-[auto_1fr] gap-x-6 gap-y-2 text-ui">
-      {items.map(([k, v]) => (
-        <div key={k} className="contents">
-          <dt className="text-text-3">{k}</dt>
-          <dd className="min-w-0 text-text">{v}</dd>
-        </div>
-      ))}
-    </dl>
-  )
-}
-
-function Overview({ movie: m }: { movie: MediaItem }) {
+function InTheLibrary({ movie: m }: { movie: MediaItem }) {
   const profiles = useQuery('profiles', async (c) => {
     const [quality, language] = await Promise.all([
       c.movies.qualityProfiles(),
@@ -279,70 +379,70 @@ function Overview({ movie: m }: { movie: MediaItem }) {
     ])
     return { quality, language }
   })
-  const queue = useQuery('queue', (c) => c.queue.list(), ['queue.changed', 'torrents.updated'])
-  const live = queue.data?.find((q) => q.itemId === m.id)
   const name = (id: string) => profiles.data?.quality.find((p) => p.id === id)?.name ?? id
   return (
-    <div className="grid grid-cols-1 gap-6 expanded:grid-cols-2">
-      <div className="grid grid-cols-1 content-start gap-3">
-        <h2 className="text-title text-text">Details</h2>
-        <Definition
-          items={[
-            [
-              'Versions',
-              m.versions.map((v) => `${v.label} (${name(v.qualityProfileId)})`).join(', '),
+    <section aria-labelledby="in-the-library" className="grid grid-cols-1 content-start gap-3">
+      <h2 id="in-the-library" className="text-title text-text">
+        In the library
+      </h2>
+      <Definition
+        items={[
+          [
+            'Versions',
+            m.versions.map((v) => `${v.label} (${name(v.qualityProfileId)})`).join(', '),
+          ],
+          [
+            'Subtitles',
+            profiles.data?.language.find((p) => p.id === m.languageProfileId)?.name ??
+              m.languageProfileId,
+          ],
+          [
+            'Minimum availability',
+            { announced: 'Announced', 'in-cinemas': 'In cinemas', released: 'Released' }[
+              m.minimumAvailability
             ],
-            [
-              'Subtitles',
-              profiles.data?.language.find((p) => p.id === m.languageProfileId)?.name ??
-                m.languageProfileId,
-            ],
-            [
-              'Minimum availability',
-              { announced: 'Announced', 'in-cinemas': 'In cinemas', released: 'Released' }[
-                m.minimumAvailability
-              ],
-            ],
-            [
-              'Root folder',
-              <span key="root" className="font-mono">
-                {m.rootFolder}
-              </span>,
-            ],
-            [
-              'TMDB',
-              <span key="tmdb" className="font-mono">
-                {m.tmdbId}
-              </span>,
-            ],
-          ]}
-        />
-      </div>
-      {live && (
-        <div className="grid grid-cols-1 content-start gap-3">
-          <h2 className="text-title text-text">In the queue</h2>
-          <div className="grid grid-cols-1 gap-2 rounded-md border border-line bg-s1 p-3.5">
-            <div className="flex items-center gap-2">
-              <span className="min-w-0 flex-1 truncate font-mono text-release text-text-2">
-                {live.release}
-              </span>
-              <Badge tone={torrentStatus[live.state].tone}>{torrentStatus[live.state].label}</Badge>
-            </div>
-            <Progress
-              value={live.progress * 100}
-              tone={torrentStatus[live.state].bar}
-              aria-label={`${m.title} progress`}
-            />
-            <p className="font-mono text-figure text-text-3">
-              {percent(live.progress)}
-              {live.downRate ? ` · ${rate(live.downRate)}` : ''}
-              {live.eta ? ` · ${duration(live.eta)} left` : ''}
-              {live.stateReason ? ` · ${live.stateReason}` : ''}
-            </p>
-          </div>
+          ],
+          [
+            'Root folder',
+            <span key="root" className="font-mono">
+              {m.rootFolder}
+            </span>,
+          ],
+        ]}
+      />
+    </section>
+  )
+}
+
+function InTheQueue({ movie: m }: { movie: MediaItem }) {
+  const queue = useQuery('queue', (c) => c.queue.list(), ['queue.changed', 'torrents.updated'])
+  const live = queue.data?.find((q) => q.itemId === m.id)
+  if (!live) return null
+  return (
+    <section aria-labelledby="in-the-queue" className="grid grid-cols-1 content-start gap-3">
+      <h2 id="in-the-queue" className="text-title text-text">
+        In the queue
+      </h2>
+      <div className="grid grid-cols-1 gap-2 rounded-md border border-line bg-s1 p-3.5">
+        <div className="flex items-center gap-2">
+          <span className="min-w-0 flex-1 truncate font-mono text-release text-text-2">
+            {live.release}
+          </span>
+          <Badge tone={torrentStatus[live.state].tone}>{torrentStatus[live.state].label}</Badge>
         </div>
-      )}
-    </div>
+        <Progress
+          value={live.progress * 100}
+          tone={torrentStatus[live.state].bar}
+          aria-label={`${m.title} progress`}
+        />
+        <p className="font-mono text-figure text-text-3">
+          {percent(live.progress)}
+          {live.downRate ? ` · ${rate(live.downRate)}` : ''}
+          {live.eta ? ` · ${duration(live.eta)} left` : ''}
+          {live.stateReason ? ` · ${live.stateReason}` : ''}
+        </p>
+      </div>
+    </section>
   )
 }
 

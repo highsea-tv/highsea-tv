@@ -33,6 +33,11 @@ export type CarouselRowProps = {
    * items then keep their own tab stops.
    */
   roving?: boolean
+  /**
+   * Lines the row up with its container's content edge (an admin column) instead of the page-edge
+   * gutter. A sliver of inset stays, so lifted posters aren't clipped.
+   */
+  flush?: boolean
   className?: string
 }
 
@@ -43,6 +48,7 @@ export function CarouselRow({
   children,
   itemClassName = 'w-[clamp(7.5rem,13vw,10.5rem)]',
   roving = true,
+  flush = false,
   className,
 }: CarouselRowProps) {
   const headingId = useId()
@@ -157,7 +163,10 @@ export function CarouselRow({
     <section
       aria-labelledby={headingId}
       className={cn(
-        'group/row relative grid min-w-0 grid-cols-1 gap-3 [--row-gutter:1rem] medium:[--row-gutter:2rem] wide:[--row-gutter:4rem]',
+        'group/row relative grid min-w-0 grid-cols-1 gap-3',
+        flush
+          ? '-mx-1.5 [--row-gutter:0.375rem]'
+          : '[--row-gutter:1rem] medium:[--row-gutter:2rem] wide:[--row-gutter:4rem]',
         className,
       )}
     >

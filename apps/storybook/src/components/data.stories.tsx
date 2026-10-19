@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+import { posterArt } from '@highsea/fixtures'
 import {
   Badge,
   Button,
@@ -120,7 +121,7 @@ export const QueueTable: Story = {
           <TableBody>
             {queue.map((r) => (
               <TableRow key={r.title}>
-                <TitleCell title={r.title} detail={r.release} />
+                <TitleCell title={r.title} detail={r.release} art={posterArt(r.title)} />
                 <TableCell>
                   <Badge tone={r.status[0]}>{r.status[1]}</Badge>
                 </TableCell>

@@ -852,7 +852,8 @@ const discoverPool: DiscoverMovie[] = [
     art: { poster: posterArt('Hero'), backdrop: backdropArt('Hero'), still: stillArt('Hero') },
     inLibrary: false,
   },
-  // public-domain films not in the library yet: what Discover can actually add
+  // public-domain films not in the library yet: what Discover can actually add, and two sequels so
+  // a collection has parts missing
   ...(
     [
       [
@@ -919,6 +920,24 @@ const discoverPool: DiscoverMovie[] = [
         'A war crimes investigator follows a lead to a quiet Connecticut town and its new schoolteacher.',
       ],
       [
+        'dawn-of-the-dead',
+        'Dawn of the Dead',
+        1978,
+        127,
+        'Horror',
+        7.9,
+        'Four survivors of a spreading plague of the living dead barricade themselves inside a shopping mall.',
+      ],
+      [
+        'day-of-the-dead',
+        'Day of the Dead',
+        1985,
+        101,
+        'Horror',
+        7.1,
+        'Scientists and soldiers sheltering in an underground bunker turn on each other as the dead overrun the world above.',
+      ],
+      [
         'the-last-time-i-saw-paris',
         'The Last Time I Saw Paris',
         1954,
@@ -947,7 +966,31 @@ const discoverPool: DiscoverMovie[] = [
 
 // ---------------------------------------------------------------- the two servers
 
+/**
+ * Media ids are database ids: one sequence for every title the server knows, in the library or
+ * only in its metadata cache, so a title keeps its id (and its page's address) when it's added.
+ * The seed is written with readable slugs; this numbers them, and every reference to them.
+ */
 export function seed(kind: 'populated' | 'empty', now: number): ServerState {
+  const state = seedBySlug(kind, now)
+  const ids = new Map(state.items.map((m, i) => [m.id, String(i + 1)]))
+  const renumber = (value: unknown): void => {
+    if (Array.isArray(value)) value.forEach(renumber)
+    else if (value && typeof value === 'object') {
+      const o = value as Record<string, unknown>
+      if (typeof o.itemId === 'string') o.itemId = ids.get(o.itemId) ?? o.itemId
+      if (Array.isArray(o.itemIds)) o.itemIds = o.itemIds.map((x) => ids.get(x as string) ?? x)
+      for (const v of Object.values(o)) if (v && typeof v === 'object') renumber(v)
+    }
+  }
+  renumber(state)
+  for (const m of state.items) m.id = ids.get(m.id) ?? m.id
+  // the metadata cache's titles continue the sequence, in both servers alike
+  state.discoverCatalog = state.discoverCatalog.map((d, n) => ({ ...d, id: String(101 + n) }))
+  return state
+}
+
+function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
   const base = {
     server: server(),
     // a fresh server: the owner, and one member so the toolbar's Member role still applies
@@ -969,7 +1012,7 @@ export function seed(kind: 'populated' | 'empty', now: number): ServerState {
       preferReleaseMatch: true,
     },
     torrentLimits: defaultTorrentLimits,
-    discoverCatalog: discoverPool,
+    discoverCatalog: structuredClone(discoverPool),
     jobs: jobs(now, kind === 'empty'),
     status: status(now, kind === 'empty'),
     fs: structuredClone(fs),

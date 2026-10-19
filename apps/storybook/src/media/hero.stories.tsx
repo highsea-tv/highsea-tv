@@ -111,3 +111,27 @@ export const Rows: Story = {
     </div>
   ),
 }
+
+/** `flush`: in a padded admin column, the row lines up with the content edge (media pages). */
+export const FlushRow: Story = {
+  name: 'Carousel row, flush',
+  render: () => (
+    <div className="grid max-w-3xl gap-3 rounded-lg border border-line p-5">
+      <p className="text-caption text-text-3">
+        The row's title and first poster line up with this text.
+      </p>
+      <CarouselRow flush title="More like this" itemClassName="w-28">
+        {titles.map((t) => (
+          <Poster
+            key={t.id}
+            title={t.title}
+            src={art(t).poster}
+            href={`#${t.id}`}
+            showTitle
+            caption={t.year}
+          />
+        ))}
+      </CarouselRow>
+    </div>
+  ),
+}

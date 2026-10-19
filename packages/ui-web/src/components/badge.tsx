@@ -14,23 +14,47 @@ const tones: Record<BadgeTone, string> = {
   info: 'bg-badge-info-bg text-badge-info',
 }
 
+// On artwork the pill is glass, so only the dot carries the tone.
+const dots: Record<BadgeTone, string> = {
+  neutral: 'bg-text-2',
+  accent: 'bg-accent-text',
+  success: 'bg-badge-success',
+  warning: 'bg-badge-warning',
+  danger: 'bg-badge-danger',
+  info: 'bg-badge-info',
+}
+
 export type BadgeProps = ComponentProps<'span'> & {
   tone?: BadgeTone
   /** The status dot. Default true; plain badges (counts, tags) turn it off. */
   dot?: boolean
+  /** Sits on artwork: a glass pill with a tinted dot (elevation.md, small badges over artwork). */
+  overlay?: boolean
 }
 
-export function Badge({ tone = 'neutral', dot = true, className, children, ...props }: BadgeProps) {
+export function Badge({
+  tone = 'neutral',
+  dot = true,
+  overlay = false,
+  className,
+  children,
+  ...props
+}: BadgeProps) {
   return (
     <span
       className={cn(
         'inline-flex h-(--size-badge) shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 font-semibold text-[12px]',
-        tones[tone],
+        overlay ? 'glass-badge text-text' : tones[tone],
         className,
       )}
       {...props}
     >
-      {dot && <span aria-hidden className="size-1.5 rounded-full bg-current" />}
+      {dot && (
+        <span
+          aria-hidden
+          className={cn('size-1.5 rounded-full', overlay ? dots[tone] : 'bg-current')}
+        />
+      )}
       {children}
     </span>
   )

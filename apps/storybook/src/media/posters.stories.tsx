@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
 import { art, byId, titles } from '@highsea/fixtures'
-import { Button, Poster, Rating } from '@highsea/ui-web'
+import { Badge, Button, Poster, Rating } from '@highsea/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 const meta = {
@@ -33,6 +33,18 @@ export const Posters: Story = {
         src={art(byId('cosmos-laundromat')).poster}
         href="#cosmos"
         actions={<Button size="sm" iconOnly icon="play" aria-label="Play Cosmos Laundromat" />}
+      />
+      <Poster
+        title="Tears of Steel"
+        src={art(byId('tears-of-steel')).poster}
+        href="#tears"
+        showTitle
+        caption="2012"
+        status={
+          <Badge overlay tone="warning">
+            Upgrade wanted
+          </Badge>
+        }
       />
       <Poster title="Missing artwork" href="#missing" showTitle caption="Falls back to the title" />
       {/* art that fails to decode falls back to the title, as a 404 would */}

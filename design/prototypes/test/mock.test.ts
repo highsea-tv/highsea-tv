@@ -6,6 +6,8 @@ import type { MockServer } from '../src/mock/server.ts'
 import type { WidgetPlacement } from '../src/mock/types.ts'
 import { memberDefault, ownerDefault } from '../src/mock/widgets.ts'
 
+// Media ids in the populated seed (database ids, ADR 0014): 1 Sintel, 8 Charge, 19 Nosferatu.
+
 /** Advances in 10-second steps until `done` holds, up to `limit` simulated seconds. */
 function until(mock: Mock, done: () => boolean, limit = 6 * 3600): number {
   let elapsed = 0
@@ -37,14 +39,14 @@ describe('simulation', () => {
     expect(events).toContain('queue.changed')
 
     until(mock, () => t.state === 'seeding')
-    const sintel = srv.state.items.find((m) => m.id === 'sintel')
+    const sintel = srv.state.items.find((m) => m.id === '1')
     expect(sintel?.status).toBe('available')
     expect(sintel?.versions.every((v) => v.fileId)).toBe(true)
-    expect(srv.state.history[0]).toMatchObject({ type: 'imported', itemId: 'sintel' })
+    expect(srv.state.history[0]).toMatchObject({ type: 'imported', itemId: '1' })
 
     const track = () =>
       srv.state.subtitles.find(
-        (s) => s.itemId === 'sintel' && s.provider === 'OpenSubtitles' && s.kind === 'external',
+        (s) => s.itemId === '1' && s.provider === 'OpenSubtitles' && s.kind === 'external',
       )
     until(mock, () => track()?.sync.status === 'syncing')
     until(mock, () => track()?.sync.status === 'synced')
@@ -72,7 +74,7 @@ describe('simulation', () => {
     expect(t.state).toBe('import-blocked')
     mock.clock.advance(600)
     expect(t.state).toBe('import-blocked')
-    expect(srv.state.items.find((m) => m.id === 'nosferatu')?.status).not.toBe('available')
+    expect(srv.state.items.find((m) => m.id === '19')?.status).not.toBe('available')
   })
 
   test('indexer backoff ends on time, and Driftnet backs off later', () => {
@@ -260,12 +262,10 @@ describe('movie pipeline', () => {
 
   test('bulk quality profile moves the first version only', async () => {
     const c = owner()
-    await c.movies.bulkSetQualityProfile(['sintel', 'charge'], 'qp-any')
-    const sintel = await c.movies.get('sintel')
+    await c.movies.bulkSetQualityProfile(['1', '8'], 'qp-any')
+    const sintel = await c.movies.get('1')
     expect(sintel.versions.map((v) => v.qualityProfileId)).toEqual(['qp-any', 'qp-uhd'])
-    expect(await c.movies.bulkSetQualityProfile(['sintel'], 'qp-nope').catch((e) => e.status)).toBe(
-      404,
-    )
+    expect(await c.movies.bulkSetQualityProfile(['1'], 'qp-nope').catch((e) => e.status)).toBe(404)
   })
 
   test('a private indexer’s test fails on a rejected key', async () => {

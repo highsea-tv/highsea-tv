@@ -9,6 +9,7 @@ Sample titles and generated placeholder art, shared by [Storybook](../../apps/st
 | `byId(id)` | One title from `library` |
 | `art(title)` | Its poster (2:3), still (16:9) and backdrop (16:9) as SVG data URIs |
 | `posterArt`, `stillArt`, `backdropArt` | The art for any string, for things that aren't titles |
+| `portraitArt(name)` | A person's photo (2:3): a head-and-shoulders silhouette on the name's palette |
 
 Each title gets a stable, muted scene (a sky gradient, a low sun and layered hills) from a hash of its name, so placeholders never out-shout real posters ([principles › artwork is the color](../../docs/design-language/principles.md#1-artwork-is-the-color)).
 

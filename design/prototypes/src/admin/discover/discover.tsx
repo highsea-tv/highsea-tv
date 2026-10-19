@@ -1,47 +1,38 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A4 Discover → add movie (docs/product/movies.md#discover). Trending from the metadata source
-// until you type, then instant results. Adding opens one dialog with the folder, both profiles,
-// monitoring, minimum availability and "Search now", which hands the movie to the pipeline.
-import {
-  Badge,
-  Button,
-  Checkbox,
-  Dialog,
-  DialogContent,
-  EmptyState,
-  Field,
-  Input,
-  Poster,
-  Rating,
-  Select,
-  Switch,
-  toast,
-} from '@highsea/ui-web'
+// until you type, then instant results. A poster opens the movie's page, the same page whether
+// it's in the library or not (ADR 0014). Add opens the add dialog.
+import { Badge, Button, EmptyState, Input, Poster, Rating } from '@highsea/ui-web'
 import { useDeferredValue, useState } from 'react'
-import { useLocation } from 'wouter'
-import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { DiscoverMovie, MinimumAvailability } from '../../mock/types.ts'
+import { useQuery } from '../../mock/hooks.tsx'
+import type { DiscoverMovie } from '../../mock/types.ts'
 import { Loadable, PosterSkeletons } from '../loadable.tsx'
+import { movieHref } from '../media/links.ts'
+import { AddMovieDialog } from '../movies/add-dialog.tsx'
 import { isStaff } from '../nav.ts'
-import { AdminPage, adminHref, useShell } from '../shell.tsx'
+import { AdminPage, useShell } from '../shell.tsx'
 
-const availability: { value: MinimumAvailability; label: string }[] = [
-  { value: 'announced', label: 'Announced' },
-  { value: 'in-cinemas', label: 'In cinemas' },
-  { value: 'released', label: 'Released' },
-]
-
-/** The library id a discover result maps to, for the "In library" link. */
-const libraryId = (m: DiscoverMovie) => m.id.replace(/^disc-lib-/, '')
+/** The search lives in the history entry, so Back from a movie returns to the same results. */
+function useRememberedQuery() {
+  const [query, setQuery] = useState<string>(() => {
+    const q = (history.state as { discoverQuery?: unknown } | null)?.discoverQuery
+    return typeof q === 'string' ? q : ''
+  })
+  const set = (q: string) => {
+    setQuery(q)
+    history.replaceState({ ...(history.state as object | null), discoverQuery: q }, '')
+  }
+  return [query, set] as const
+}
 
 export function Discover() {
   const { role } = useShell()
-  const [query, setQuery] = useState('')
+  const [query, setQuery] = useRememberedQuery()
   const deferred = useDeferredValue(query.trim())
   const results = useQuery(`discover:${deferred}`, (c) => c.movies.discover(deferred), [
     'movies.updated',
   ])
-  const [adding, setAdding] = useState<DiscoverMovie | null>(null)
+  const [adding, setAdding] = useState<DiscoverMovie[]>([])
 
   return (
     <AdminPage
@@ -78,19 +69,23 @@ export function Discover() {
             <ul className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-5">
               {movies.map((m) => (
                 <li key={m.id} className="grid content-start gap-2">
-                  <Poster title={`${m.title} (${m.year})`} src={m.art.poster} />
-                  <div className="grid gap-0.5">
-                    <span className="line-clamp-2 text-text text-ui">{m.title}</span>
-                    <span className="flex items-center gap-2 text-caption text-text-3">
-                      {m.year}
-                      {m.rating > 0 && <Rating value={m.rating} size={11} />}
-                    </span>
-                  </div>
+                  <Poster
+                    title={m.title}
+                    src={m.art.poster}
+                    href={movieHref(m)}
+                    showTitle
+                    caption={
+                      <span className="flex items-center gap-2">
+                        {m.year}
+                        {m.rating > 0 && <Rating value={m.rating} size={11} />}
+                      </span>
+                    }
+                  />
                   {m.inLibrary ? (
                     <a
-                      href={adminHref(`/movies/${libraryId(m)}`)}
+                      href={movieHref(m)}
                       className="justify-self-start"
-                      aria-label={`${m.title}: in the library`}
+                      aria-label={`In library: ${m.title}`}
                     >
                       <Badge tone="success">In library</Badge>
                     </a>
@@ -98,7 +93,7 @@ export function Discover() {
                     <Button
                       size="sm"
                       icon="add"
-                      onClick={() => setAdding(m)}
+                      onClick={() => setAdding([m])}
                       disabled={!isStaff(role)}
                       aria-label={`Add ${m.title}`}
                       className="justify-self-start"
@@ -117,152 +112,7 @@ export function Discover() {
           Only owners and admins can add movies. Ask the server’s owner for one you want.
         </p>
       )}
-      <AddMovieDialog movie={adding} onOpenChange={(o) => !o && setAdding(null)} />
+      <AddMovieDialog movies={adding} onOpenChange={(o) => !o && setAdding([])} />
     </AdminPage>
-  )
-}
-
-export function AddMovieDialog({
-  movie,
-  onOpenChange,
-}: {
-  movie: DiscoverMovie | null
-  onOpenChange: (open: boolean) => void
-}) {
-  const [, navigate] = useLocation()
-  const options = useQuery('add-options', async (c) => {
-    const [folders, quality, language] = await Promise.all([
-      c.movies.rootFolders(),
-      c.movies.qualityProfiles(),
-      c.movies.languageProfiles(),
-    ])
-    return { folders, quality, language }
-  })
-  const [form, setForm] = useState({
-    rootFolder: '/data/media/movies',
-    qualityProfileId: 'qp-hd',
-    languageProfileId: 'lp-en',
-    monitored: true,
-    minimumAvailability: 'released' as MinimumAvailability,
-    searchNow: true,
-  })
-  const add = useAction((c, m: DiscoverMovie) =>
-    c.movies.add({ tmdbId: m.tmdbId, title: m.title, year: m.year, ...form }),
-  )
-
-  const submit = async () => {
-    if (!movie) return
-    try {
-      const item = await add.run(movie)
-      onOpenChange(false)
-      toast.success(`${movie.title} added`, {
-        description: form.searchNow
-          ? 'Searching your indexers now. Follow it in Activity.'
-          : 'It’s monitored. highsea grabs it when a release turns up.',
-        action: { label: 'Open', onClick: () => navigate(`/movies/${item.id}`) },
-      })
-    } catch {
-      // the error shows in the dialog
-    }
-  }
-
-  return (
-    <Dialog open={!!movie} onOpenChange={onOpenChange}>
-      <DialogContent
-        size="md"
-        title={movie ? `Add ${movie.title} (${movie.year})` : 'Add a movie'}
-        description="You can change all of this later on the movie’s page."
-        footer={
-          <>
-            <Button variant="ghost" onClick={() => onOpenChange(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              icon="add"
-              onClick={submit}
-              loading={add.pending}
-              disabled={options.status !== 'success'}
-            >
-              {form.searchNow ? 'Add and search' : 'Add movie'}
-            </Button>
-          </>
-        }
-      >
-        {movie && (
-          <div className="grid gap-4">
-            <p className="line-clamp-3 text-body text-text-2">{movie.synopsis}</p>
-            <Loadable query={options} what="the profiles">
-              {(o) => (
-                <div className="grid gap-4 medium:grid-cols-2">
-                  <Field label="Folder" className="medium:col-span-2">
-                    <Select
-                      value={form.rootFolder}
-                      onValueChange={(rootFolder) => setForm({ ...form, rootFolder })}
-                      options={o.folders.map((f) => ({ value: f, label: f }))}
-                      className="font-mono"
-                    />
-                  </Field>
-                  <Field label="Quality profile">
-                    <Select
-                      value={form.qualityProfileId}
-                      onValueChange={(qualityProfileId) => setForm({ ...form, qualityProfileId })}
-                      options={o.quality.map((p) => ({ value: p.id, label: p.name }))}
-                    />
-                  </Field>
-                  <Field label="Subtitle languages">
-                    <Select
-                      value={form.languageProfileId}
-                      onValueChange={(languageProfileId) => setForm({ ...form, languageProfileId })}
-                      options={o.language.map((p) => ({ value: p.id, label: p.name }))}
-                    />
-                  </Field>
-                  <Field
-                    label="Minimum availability"
-                    hint="Don’t grab before this. Released avoids cam copies."
-                    className="medium:col-span-2"
-                  >
-                    <Select
-                      value={form.minimumAvailability}
-                      onValueChange={(v) =>
-                        setForm({ ...form, minimumAvailability: v as MinimumAvailability })
-                      }
-                      options={availability}
-                    />
-                  </Field>
-                  <Field
-                    inline
-                    label="Monitored"
-                    hint="Grab it when a release turns up, and upgrade it until the profile’s cutoff."
-                    className="medium:col-span-2"
-                  >
-                    <Switch
-                      checked={form.monitored}
-                      onCheckedChange={(monitored) => setForm({ ...form, monitored })}
-                    />
-                  </Field>
-                  <Field
-                    inline
-                    label="Search now"
-                    hint="Otherwise the next RSS sync picks it up."
-                    className="medium:col-span-2"
-                  >
-                    <Checkbox
-                      checked={form.searchNow}
-                      onCheckedChange={(v) => setForm({ ...form, searchNow: v === true })}
-                    />
-                  </Field>
-                </div>
-              )}
-            </Loadable>
-            {add.error && (
-              <p role="alert" className="text-caption text-danger">
-                {add.error.message}
-              </p>
-            )}
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
   )
 }

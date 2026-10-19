@@ -3,12 +3,12 @@
 // the clock. Screens never touch this directly; they go through the client (client.ts).
 import { backdropArt, posterArt, stillArt } from '@highsea/fixtures'
 import { type Clock, createEmitter, createRandom, type Emitter, iso } from './clock.ts'
+import { collection, knownTitles, movieMetadata, person, recommendations } from './metadata.ts'
 import { GB, MB, type ServerState, seed } from './seed.ts'
 import type {
   AddMovieInput,
   AddTorrentInput,
   Announcement,
-  DiscoverMovie,
   HardlinkCheck,
   Indexer,
   LanguageProfile,
@@ -806,6 +806,25 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
     },
 
+    metadata: {
+      movie: (id: string) => {
+        const m = movieMetadata(state, id, now())
+        if (!m) throw new ApiError(404, 'not-found', 'There’s no movie with that id')
+        return m
+      },
+      recommendations: (id: string) => recommendations(state, id),
+      collection: (id: string) => {
+        const c = collection(state, id)
+        if (!c) throw new ApiError(404, 'not-found', 'TMDB doesn’t know that collection')
+        return c
+      },
+      person: (id: string) => {
+        const p = person(state, id)
+        if (!p) throw new ApiError(404, 'not-found', 'TMDB doesn’t know that person')
+        return p
+      },
+    },
+
     movies: {
       list: () => state.items.filter((m) => m.type === 'movie'),
       get: (id: string) => {
@@ -827,29 +846,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           .slice(0, limit),
       discover: (query = '') => {
         const q = query.trim().toLowerCase()
-        const libraryItems: DiscoverMovie[] = state.items.map((m) => ({
-          id: `disc-lib-${m.id}`,
-          tmdbId: m.tmdbId ?? 1000000,
-          title: m.title,
-          year: m.year,
-          runtimeMinutes: m.runtimeMinutes,
-          genres: m.genres,
-          synopsis: m.synopsis,
-          rating: m.rating,
-          releaseDate: m.releaseDate,
-          art: m.art,
-          inLibrary: true,
-        }))
-        // the library's own entries stand for anything already added
-        const unaddedItems = (state.discoverCatalog ?? []).filter(
-          (d) =>
-            !state.items.some(
-              (m) =>
-                (m.tmdbId && m.tmdbId === d.tmdbId) ||
-                m.title.toLowerCase() === d.title.toLowerCase(),
-            ),
-        )
-        const all = [...unaddedItems, ...libraryItems]
+        const all = knownTitles(state)
         if (!q) return all
         return all.filter(
           (m) =>
@@ -860,21 +857,21 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
       add: (input: AddMovieInput) => {
         requireStaff()
-        const slug = input.title
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/\s+/g, '-')
         const existing = state.items.find(
           (x) =>
-            x.id === slug ||
             (input.tmdbId && x.tmdbId === input.tmdbId) ||
             x.title.toLowerCase() === input.title.toLowerCase(),
         )
         if (existing) return existing
 
-        const id = slug
-        const isUhd = input.qualityProfileId === 'qp-uhd'
+        // a title from the metadata cache keeps its media id; anything else takes the next one
         const meta = state.discoverCatalog.find((d) => d.tmdbId === input.tmdbId)
+        const id =
+          meta?.id ??
+          String(
+            Math.max(0, ...[...state.items, ...state.discoverCatalog].map((x) => Number(x.id))) + 1,
+          )
+        const isUhd = input.qualityProfileId === 'qp-uhd'
         const newItem: MediaItem = {
           id,
           type: 'movie',

@@ -23,9 +23,9 @@ The build opens straight from disk: open `dist/index.html` in a browser, with no
 | --- | --- |
 | `src/chrome/` | Launcher, toolbar, frame |
 | `src/screen/` | The screen app: applies the toolbar state, holds the router |
-| `src/admin/`, `src/web/`, `src/mobile/`, `src/tv/` | One route tree per platform; paths mirror the products (`#/admin/movies/sintel` is the server's `/movies/[id]`) |
+| `src/admin/`, `src/web/`, `src/mobile/`, `src/tv/` | One route tree per platform; paths mirror the products (`#/admin/movies/1` is the server's `/movies/[id]`, by media id) |
 | `src/kit/` | Pieces the flows share that aren't in ui-web yet (the widget editor, the stepper, `useWidth`) |
-| `src/mock/` | The mock server, its seeds, clock and event stream, and the typed client the screens call |
+| `src/mock/` | The mock server, its seeds, clock and event stream, the metadata source (credits, trailers, collections, people) and the typed client the screens call |
 | `src/flows.ts` | The flow registry the launcher lists: ids, routes, specs, test hints |
 
 ## The mock server
@@ -65,7 +65,7 @@ bun test design/prototypes
 
 - **`routes.test.tsx`** renders the key routes of each platform in all four data states (admin also as a member) and runs axe on each.
 - **`flows.test.tsx`** walks each checkpoint's flows as a user would (by keyboard where it matters) and runs axe at each step.
-- **`pipeline.test.tsx`** walks the movie pipeline screens (A4–A10): adding a movie through to available, bulk edits, interactive search, subtitle sync, the queue's fixes, torrents, indexers and subtitle settings.
+- **`pipeline.test.tsx`** walks the movie pipeline screens (A4–A10): adding a movie through to available, the media pages (a title before and after adding, trailers, collections, people), bulk edits, interactive search, subtitle sync, the queue's fixes, torrents, indexers and subtitle settings.
 - **`mock.test.ts`** covers the mock server: the download pipeline on the clock, the data states, permissions, sign-in and dashboard layouts.
 - Every class the tests render is checked against the compiled stylesheet, so a typo'd or non-token utility fails the run.
 

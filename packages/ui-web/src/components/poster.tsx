@@ -26,6 +26,8 @@ export type PosterProps = {
   onClick?: () => void
   /** Quality markers on the art (4K, HDR). */
   quality?: string[]
+  /** A status on the art, bottom left (an overlay `Badge`), so captions keep one height. */
+  status?: ReactNode
   /** 0–100: a continue-watching bar, 7% in from the edges. */
   progress?: number
   /** Shows the title (two lines, then an ellipsis) and `caption` under the art. */
@@ -47,6 +49,7 @@ export function Poster({
   href,
   onClick,
   quality,
+  status,
   progress,
   showTitle = false,
   caption,
@@ -97,6 +100,16 @@ export function Poster({
               {q}
             </QualityTag>
           ))}
+        </div>
+      )}
+      {status && (
+        <div
+          className={cn(
+            'absolute right-[7%] left-[7%] flex',
+            progress === undefined ? 'bottom-[7%]' : 'bottom-[calc(7%+0.75rem)]',
+          )}
+        >
+          {status}
         </div>
       )}
       {progress !== undefined && (

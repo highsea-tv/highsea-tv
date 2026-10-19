@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The top-level routes, one tree per platform. Paths mirror the products: `#/admin/movies/sintel`
+// The top-level routes, one tree per platform. Paths mirror the products: `#/admin/movies/1`
 // is the server's `/movies/[id]`; clients live under `#/web`, `#/mobile` and `#/tv`.
 import { Redirect, Route, Switch } from 'wouter'
 import { AdminApp } from './admin/admin-app.tsx'
@@ -15,8 +15,11 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/admin/setup',
     '/admin/discover',
     '/admin/movies',
-    '/admin/movies/sintel',
+    '/admin/movies/1',
     '/admin/movies/nowhere',
+    '/admin/movies/107',
+    '/admin/people/fritz-lang',
+    '/admin/people/nobody',
     '/admin/activity',
     '/admin/downloads',
     '/admin/indexers',
