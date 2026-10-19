@@ -38,7 +38,7 @@ import {
   Tooltip,
   toast,
 } from '@highsea/ui-web'
-import { Fragment, useEffect, useState } from 'react'
+import { Fragment, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type {
@@ -71,33 +71,47 @@ import { movieStatus } from './library.tsx'
 
 type Tab = 'overview' | 'cast' | 'files' | 'history' | 'search' | 'subtitles'
 
+type Metadata = ReturnType<typeof useMovieMetadata>
+
 /**
- * `/movies/:id`: one page in every library state (ADR 0014). A library id opens the library
- * page; `tmdb-{id}` opens the metadata page of a title not yet added, which turns into the library
- * page once it is.
+ * `/movies/:id`: one page and one address in every library state (ADR 0014). The id is the media
+ * id, the same before and after adding. Not in the library, the page shows the metadata layer
+ * with Add movie; once added it gains the library layer in place, at the same address.
  */
 export function MovieDetail() {
   const { id } = useParams<{ id: string }>()
-  const tmdb = /^tmdb-(\d+)$/.exec(id)
-  return tmdb ? <MetadataMovie tmdbId={Number(tmdb[1])} /> : <LibraryMovie id={id} />
+  const [, navigate] = useLocation()
+  const meta = useMovieMetadata(id)
+  if (meta.status === 'error')
+    return (
+      <AdminPage title="Movie">
+        <EmptyState
+          tone="error"
+          icon="movie"
+          title={meta.error.message}
+          action={<Button onClick={() => navigate('/movies')}>Go to Movies</Button>}
+        >
+          It may have been removed. Discover finds every movie, in the library or not.
+        </EmptyState>
+      </AdminPage>
+    )
+  if (meta.status === 'loading')
+    return (
+      <AdminPage title="Movie">
+        <SummarySkeleton />
+      </AdminPage>
+    )
+  return meta.data.inLibrary ? <LibraryMovie id={id} meta={meta} /> : <MetadataMovie meta={meta} />
 }
 
 // ---------------------------------------------------------------- not in the library
 
-function MetadataMovie({ tmdbId }: { tmdbId: number }) {
+function MetadataMovie({ meta }: { meta: Metadata }) {
   const { role } = useShell()
   const staff = isStaff(role)
-  const [, navigate] = useLocation()
-  const meta = useMovieMetadata(tmdbId)
   const [tab, setTab] = useState<Tab>('overview')
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
   const m = meta.data
-  const libraryId = m?.libraryId
-
-  // in the library already, or just added: the library address is the canonical one
-  useEffect(() => {
-    if (libraryId) navigate(`/movies/${libraryId}`, { replace: true })
-  }, [libraryId, navigate])
 
   return (
     <AdminPage
@@ -111,18 +125,7 @@ function MetadataMovie({ tmdbId }: { tmdbId: number }) {
         )
       }
     >
-      {meta.status === 'error' ? (
-        <EmptyState
-          tone="error"
-          icon="movie"
-          title={meta.error.message}
-          action={<Button onClick={() => navigate('/discover')}>Go to Discover</Button>}
-        >
-          It may have been merged or removed.
-        </EmptyState>
-      ) : !m ? (
-        <SummarySkeleton />
-      ) : (
+      {m && (
         <>
           <MediaSummary item={m} meta={m} badges={<Badge tone="neutral">Not in the library</Badge>}>
             <ReleaseLine date={m.releaseDate} />
@@ -133,7 +136,7 @@ function MetadataMovie({ tmdbId }: { tmdbId: number }) {
             )}
           </MediaSummary>
           <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} variant="line">
-            <TabsList aria-label="Movie sections" className="max-w-full overflow-x-auto">
+            <TabsList aria-label="Movie sections">
               <TabsTrigger value="overview">Overview</TabsTrigger>
               <TabsTrigger value="cast">Cast and crew</TabsTrigger>
             </TabsList>
@@ -154,7 +157,7 @@ function MetadataMovie({ tmdbId }: { tmdbId: number }) {
       <AddMovieDialog
         movies={adding}
         onOpenChange={(o) => !o && setAdding([])}
-        // the page follows the movie into the library on its own (the redirect above)
+        // the page itself turns into the library page, at the same address
         onAdded={() => {}}
       />
     </AdminPage>
@@ -163,7 +166,7 @@ function MetadataMovie({ tmdbId }: { tmdbId: number }) {
 
 // ---------------------------------------------------------------- in the library
 
-function LibraryMovie({ id }: { id: string }) {
+function LibraryMovie({ id, meta }: { id: string; meta: Metadata }) {
   const { role } = useShell()
   const staff = isStaff(role)
   const [, navigate] = useLocation()
@@ -229,6 +232,7 @@ function LibraryMovie({ id }: { id: string }) {
       ) : (
         <LibraryBody
           movie={m}
+          meta={meta}
           staff={staff}
           tab={tab}
           onTab={setTab}
@@ -272,6 +276,7 @@ function LibraryMovie({ id }: { id: string }) {
 
 function LibraryBody({
   movie: m,
+  meta,
   staff,
   tab,
   onTab,
@@ -279,13 +284,13 @@ function LibraryBody({
   onAdd,
 }: {
   movie: MediaItem
+  meta: Metadata
   staff: boolean
   tab: Tab
   onTab: (tab: Tab) => void
   onMonitor: (on: boolean) => void
   onAdd: (movies: DiscoverMovie[]) => void
 }) {
-  const meta = useMovieMetadata(m.tmdbId)
   const s = movieStatus[m.status]
   return (
     <>
@@ -324,7 +329,7 @@ function LibraryBody({
         </div>
       </MediaSummary>
       <Tabs value={tab} onValueChange={(v) => onTab(v as Tab)} variant="line">
-        <TabsList aria-label="Movie sections" className="max-w-full overflow-x-auto">
+        <TabsList aria-label="Movie sections">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="cast">Cast and crew</TabsTrigger>
           <TabsTrigger value="files">Files</TabsTrigger>

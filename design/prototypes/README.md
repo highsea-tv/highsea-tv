@@ -23,7 +23,7 @@ The build opens straight from disk: open `dist/index.html` in a browser, with no
 | --- | --- |
 | `src/chrome/` | Launcher, toolbar, frame |
 | `src/screen/` | The screen app: applies the toolbar state, holds the router |
-| `src/admin/`, `src/web/`, `src/mobile/`, `src/tv/` | One route tree per platform; paths mirror the products (`#/admin/movies/sintel` is the server's `/movies/[id]`) |
+| `src/admin/`, `src/web/`, `src/mobile/`, `src/tv/` | One route tree per platform; paths mirror the products (`#/admin/movies/1` is the server's `/movies/[id]`, by media id) |
 | `src/kit/` | Pieces the flows share that aren't in ui-web yet (the widget editor, the stepper, `useWidth`) |
 | `src/mock/` | The mock server, its seeds, clock and event stream, the metadata source (credits, trailers, collections, people) and the typed client the screens call |
 | `src/flows.ts` | The flow registry the launcher lists: ids, routes, specs, test hints |

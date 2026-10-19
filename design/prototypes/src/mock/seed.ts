@@ -765,7 +765,6 @@ const discoverPool: DiscoverMovie[] = [
       still: stillArt('Charge'),
     },
     inLibrary: false,
-    libraryId: null,
   },
   {
     id: 'disc-sprite-fright',
@@ -784,7 +783,6 @@ const discoverPool: DiscoverMovie[] = [
       still: stillArt('Sprite Fright'),
     },
     inLibrary: false,
-    libraryId: null,
   },
   {
     id: 'disc-cosmos-laundromat',
@@ -803,7 +801,6 @@ const discoverPool: DiscoverMovie[] = [
       still: stillArt('Cosmos Laundromat'),
     },
     inLibrary: false,
-    libraryId: null,
   },
   {
     id: 'disc-coffee-run',
@@ -822,7 +819,6 @@ const discoverPool: DiscoverMovie[] = [
       still: stillArt('Coffee Run'),
     },
     inLibrary: false,
-    libraryId: null,
   },
   {
     id: 'disc-agent-327',
@@ -841,7 +837,6 @@ const discoverPool: DiscoverMovie[] = [
       still: stillArt('Agent 327'),
     },
     inLibrary: false,
-    libraryId: null,
   },
   {
     id: 'disc-hero',
@@ -856,7 +851,6 @@ const discoverPool: DiscoverMovie[] = [
     releaseDate: '2018-04-16T00:00:00.000Z',
     art: { poster: posterArt('Hero'), backdrop: backdropArt('Hero'), still: stillArt('Hero') },
     inLibrary: false,
-    libraryId: null,
   },
   // public-domain films not in the library yet: what Discover can actually add, and two sequels so
   // a collection has parts missing
@@ -966,14 +960,37 @@ const discoverPool: DiscoverMovie[] = [
       releaseDate: iso(new Date(year, 0, 1).getTime()),
       art: { poster: posterArt(title), backdrop: backdropArt(title), still: stillArt(title) },
       inLibrary: false,
-      libraryId: null,
     }),
   ),
 ]
 
 // ---------------------------------------------------------------- the two servers
 
+/**
+ * Media ids are database ids: one sequence for every title the server knows, in the library or
+ * only in its metadata cache, so a title keeps its id (and its page's address) when it's added.
+ * The seed is written with readable slugs; this numbers them, and every reference to them.
+ */
 export function seed(kind: 'populated' | 'empty', now: number): ServerState {
+  const state = seedBySlug(kind, now)
+  const ids = new Map(state.items.map((m, i) => [m.id, String(i + 1)]))
+  const renumber = (value: unknown): void => {
+    if (Array.isArray(value)) value.forEach(renumber)
+    else if (value && typeof value === 'object') {
+      const o = value as Record<string, unknown>
+      if (typeof o.itemId === 'string') o.itemId = ids.get(o.itemId) ?? o.itemId
+      if (Array.isArray(o.itemIds)) o.itemIds = o.itemIds.map((x) => ids.get(x as string) ?? x)
+      for (const v of Object.values(o)) if (v && typeof v === 'object') renumber(v)
+    }
+  }
+  renumber(state)
+  for (const m of state.items) m.id = ids.get(m.id) ?? m.id
+  // the metadata cache's titles continue the sequence, in both servers alike
+  state.discoverCatalog = state.discoverCatalog.map((d, n) => ({ ...d, id: String(101 + n) }))
+  return state
+}
+
+function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
   const base = {
     server: server(),
     // a fresh server: the owner, and one member so the toolbar's Member role still applies
@@ -995,7 +1012,7 @@ export function seed(kind: 'populated' | 'empty', now: number): ServerState {
       preferReleaseMatch: true,
     },
     torrentLimits: defaultTorrentLimits,
-    discoverCatalog: discoverPool,
+    discoverCatalog: structuredClone(discoverPool),
     jobs: jobs(now, kind === 'empty'),
     status: status(now, kind === 'empty'),
     fs: structuredClone(fs),

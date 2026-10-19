@@ -807,12 +807,12 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     },
 
     metadata: {
-      movie: (tmdbId: number) => {
-        const m = movieMetadata(state, tmdbId, now())
-        if (!m) throw new ApiError(404, 'not-found', 'TMDB doesn’t know that title')
+      movie: (id: string) => {
+        const m = movieMetadata(state, id, now())
+        if (!m) throw new ApiError(404, 'not-found', 'There’s no movie with that id')
         return m
       },
-      recommendations: (tmdbId: number) => recommendations(state, tmdbId),
+      recommendations: (id: string) => recommendations(state, id),
       collection: (id: string) => {
         const c = collection(state, id)
         if (!c) throw new ApiError(404, 'not-found', 'TMDB doesn’t know that collection')
@@ -857,21 +857,21 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
       add: (input: AddMovieInput) => {
         requireStaff()
-        const slug = input.title
-          .toLowerCase()
-          .replace(/[^\w\s-]/g, '')
-          .replace(/\s+/g, '-')
         const existing = state.items.find(
           (x) =>
-            x.id === slug ||
             (input.tmdbId && x.tmdbId === input.tmdbId) ||
             x.title.toLowerCase() === input.title.toLowerCase(),
         )
         if (existing) return existing
 
-        const id = slug
-        const isUhd = input.qualityProfileId === 'qp-uhd'
+        // a title from the metadata cache keeps its media id; anything else takes the next one
         const meta = state.discoverCatalog.find((d) => d.tmdbId === input.tmdbId)
+        const id =
+          meta?.id ??
+          String(
+            Math.max(0, ...[...state.items, ...state.discoverCatalog].map((x) => Number(x.id))) + 1,
+          )
+        const isUhd = input.qualityProfileId === 'qp-uhd'
         const newItem: MediaItem = {
           id,
           type: 'movie',

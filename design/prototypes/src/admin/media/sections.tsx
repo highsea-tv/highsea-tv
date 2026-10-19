@@ -29,8 +29,9 @@ export type TitleBase = Pick<
   'title' | 'year' | 'runtimeMinutes' | 'genres' | 'rating' | 'synopsis' | 'art'
 >
 
-export const useMovieMetadata = (tmdbId: number) =>
-  useQuery(`metadata:${tmdbId}`, (c) => c.metadata.movie(tmdbId), ['movies.updated'])
+/** A title's metadata by media id; refetched when the library changes, so `inLibrary` follows. */
+export const useMovieMetadata = (id: string) =>
+  useQuery(`metadata:${id}`, (c) => c.metadata.movie(id), ['movies.updated'])
 
 export const longDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -164,14 +165,9 @@ export function MediaOverview({
               {md.cast.length > 0 && <CastRow cast={md.cast} onAll={onAllCast} />}
               {md.videos.length > 0 && <TrailersRow videos={md.videos} />}
               {md.collection && (
-                <CollectionRow
-                  id={md.collection.id}
-                  current={md.tmdbId}
-                  staff={staff}
-                  onAdd={onAdd}
-                />
+                <CollectionRow id={md.collection.id} current={md.id} staff={staff} onAdd={onAdd} />
               )}
-              <MoreLikeThis tmdbId={md.tmdbId} />
+              <MoreLikeThis id={md.id} />
             </>
           )}
         </Loadable>
@@ -313,7 +309,7 @@ function CollectionRow({
   onAdd,
 }: {
   id: string
-  current: number
+  current: string
   staff: boolean
   onAdd: (movies: DiscoverMovie[]) => void
 }) {
@@ -340,7 +336,7 @@ function CollectionRow({
       }
     >
       {c.parts.map((p) =>
-        p.tmdbId === current ? (
+        p.id === current ? (
           <Poster
             key={p.id}
             title={p.title}
@@ -356,8 +352,8 @@ function CollectionRow({
   )
 }
 
-function MoreLikeThis({ tmdbId }: { tmdbId: number }) {
-  const recs = useQuery(`recommendations:${tmdbId}`, (c) => c.metadata.recommendations(tmdbId), [
+function MoreLikeThis({ id }: { id: string }) {
+  const recs = useQuery(`recommendations:${id}`, (c) => c.metadata.recommendations(id), [
     'movies.updated',
   ])
   if (recs.status !== 'success' || recs.data.length === 0) return null

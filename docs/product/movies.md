@@ -1,7 +1,7 @@
 # Movies: discover, library and detail
 
 - **Platforms:** Admin (`apps/server`), every breakpoint.
-- **Prototype:** `#/admin/discover` (A4), `#/admin/movies` (A5), `#/admin/movies/sintel` (A6). The movie page is a media page: its shared anatomy, the not-added state, people and other media types are in [media-pages.md](media-pages.md).
+- **Prototype:** `#/admin/discover` (A4), `#/admin/movies` (A5), `#/admin/movies/1` (A6). The movie page is a media page: its shared anatomy, the not-added state, people and other media types are in [media-pages.md](media-pages.md).
 - **Roadmap:** [Phase 2 › A4–A6](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Movie pipeline](../roadmap.md#movie-pipeline), [Admin UI routes](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes) (`/discover`, `/movies`, `/movies/[id]`). Media model: [ADR 0012](../adr/0012-unified-media-item-model.md).
 
 ## Purpose
@@ -23,7 +23,7 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 
 - `PageHeader`: "Discover", a one-line description.
 - A search field (max 36rem). Empty, the page shows **Trending this week**; typing shows **Results for "…"**. Results are instant (deferred input, no submit button).
-- A poster grid (`auto-fill, minmax(8.5rem, 1fr)`): poster, title (two lines), year and rating, then **Add** or an **In library** badge that links to the movie. The poster and title are one link to the movie's page: its library page if it's here, its metadata page (`/movies/tmdb-…`) if not.
+- A poster grid (`auto-fill, minmax(8.5rem, 1fr)`): poster, title (two lines), year and rating, then **Add** or an **In library** badge that links to the movie. The poster and title are one link to the movie's page, `/movies/{id}` by media id: the same address the library and everything else use, in the library or not.
 - **Add dialog** (`md`), shared by Discover, the movie page, person pages and collections: the synopsis (or, for several movies, their titles), then Folder (full width), Quality profile and Subtitle languages (two columns from medium), Minimum availability, **Monitored** (switch) and **Search now** (checkbox, on). The primary button reads **Add and search** or **Add movie** to match.
 
 ### Library (A5)

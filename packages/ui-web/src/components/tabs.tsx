@@ -49,7 +49,9 @@ export function Tabs({
 
 const lists: Record<Variant, string> = {
   segmented: 'inline-flex gap-0.5 rounded-sm bg-s2 p-[3px]',
-  line: 'flex gap-5 border-b border-line',
+  // The baseline is an inset shadow, not a border, so the indicator sits on it without
+  // overhanging the list. That lets a long list scroll sideways with no vertical scroll.
+  line: 'flex max-w-full gap-5 overflow-x-auto overflow-y-hidden shadow-[inset_0_-1px_0_var(--color-line)] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden',
 }
 
 export function TabsList({ className, ...props }: ComponentProps<typeof TabsPrimitive.List>) {
@@ -60,7 +62,7 @@ export function TabsList({ className, ...props }: ComponentProps<typeof TabsPrim
 const triggers: Record<Variant, string> = {
   segmented:
     'relative h-7 rounded-[5px] px-2.5 text-[12px] text-text-3 hover:text-text-2 data-[state=active]:text-text',
-  line: 'relative -mb-px h-10 px-0.5 text-ui font-medium text-text-2 hover:text-text data-[state=active]:text-text',
+  line: 'relative h-10 shrink-0 px-0.5 text-ui font-medium text-text-2 hover:text-text data-[state=active]:text-text',
 }
 
 export type TabsTriggerProps = ComponentProps<typeof TabsPrimitive.Trigger> & {

@@ -104,7 +104,7 @@ export const isStaff = (role: UserRole | undefined) => role === 'owner' || role 
 export const pagesFor = (role: UserRole | undefined): Page[][] =>
   pageGroups.map((g) => g.filter((p) => !p.staff || isStaff(role))).filter((g) => g.length)
 
-/** The page a location belongs to: `/movies/sintel` is under Movies. */
+/** The page a location belongs to: `/movies/1` is under Movies. */
 export function pageAt(location: string): Page | undefined {
   const all = pageGroups.flat()
   if (location === '/' || location === '') return all[0]

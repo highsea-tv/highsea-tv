@@ -1,7 +1,7 @@
 # Media pages and people
 
 - **Platforms:** Admin (`apps/server`), every breakpoint. The clients' item detail (C4) reuses the metadata layer.
-- **Prototype:** `#/admin/movies/sintel` (in the library), `#/admin/movies/tmdb-1003000` (not added), `#/admin/people/fritz-lang` (a person).
+- **Prototype:** `#/admin/movies/1` (Sintel, in the library), `#/admin/movies/107` (Nanook of the North, not added), `#/admin/movies/30` (a collection with parts missing), `#/admin/people/fritz-lang` (a person).
 - **Roadmap:** [Phase 2 › A4, A6](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Admin UI routes](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes). Decision: [ADR 0014](../adr/0014-universal-media-pages.md). Media model: [ADR 0012](../adr/0012-unified-media-item-model.md).
 
 ## Purpose
@@ -21,14 +21,14 @@ Movies are built in the prototype. Shows, music, books, podcasts and online vide
 
 | Page | Address | Notes |
 | --- | --- | --- |
-| Movie | `/movies/{id}` | `{id}` is the library id, or `tmdb-{tmdbId}` for a title not in the library. |
-| Show | `/shows/{id}` | `tvdb-{id}` or `tmdb-{id}` before adding. Seasons are a section of the show's page; an episode opens in a sheet over it. |
-| Artist, album | `/music/artists/{id}`, `/music/albums/{id}` | `mbid-{id}` before adding (MusicBrainz). A track opens in a sheet over its album. |
-| Book | `/books/{id}` | `ol-{id}` before adding (Open Library). |
+| Movie | `/movies/{id}` | |
+| Show | `/shows/{id}` | Seasons are a section of the show's page; an episode opens in a sheet over it. |
+| Artist, album | `/music/artists/{id}`, `/music/albums/{id}` | A track opens in a sheet over its album. |
+| Book | `/books/{id}` | |
 | Podcast, channel | `/podcasts/{id}`, `/channels/{id}` | |
 | Person | `/people/{id}` | Cast, crew, authors and artists' members. One person, one page, across types. |
 
-A metadata address for a title that's in the library redirects (replacing history) to the library address, and so does the page itself the moment the title is added. Links never break.
+`{id}` is always the title's **media id**: its database id, never a slug or a provider id. The server creates a title's row the first time it sees it (in search results, trending, a filmography, a collection, a recommendation), so every title shown anywhere already has an id and its page resolves, in the library or not. Adding a title marks its row as in the library; the id and the address stay the same, and the page gains its library layer in place. Every way to a title (Discover, the library, the dashboard, people, collections, ⌘K) links to that one address, and two titles with the same name never compete for it.
 
 ## Layout
 
@@ -78,8 +78,8 @@ Each type keeps the anatomy above and adds its own sections. Only movies are bui
 
 ## States
 
-- **Not in the library** (`/movies/tmdb-…`):
-  - Header: **Add movie** (staff), which opens the add dialog; once added, the page becomes the library page in place.
+- **Not in the library:**
+  - Header: **Add movie** (staff), which opens the add dialog; once added, the same page at the same address gains the library layer.
   - Summary: a "Not in the library" badge; the release date ("Released 1 June 1922" or "Releases 6 November 2026") in place of the library line.
   - Tabs: Overview and Cast and crew only.
   - Members: no header action; the summary says "Only owners and admins can add movies. Ask the server's owner for this one."
@@ -117,8 +117,9 @@ Each type keeps the anatomy above and adds its own sections. Only movies are bui
 
 ## Data
 
-- `metadata.movie(tmdbId)` → `GET /api/v1/metadata/movies/{tmdbId}`: `MovieMetadata` (title, original title and language, tagline, certification, runtime, genres, rating, release date, budget, revenue, studios, external ids, art) with `cast`, `crew`, `videos`, `collection` and `libraryId` (null when not added).
-- `metadata.recommendations(tmdbId)` → `GET /api/v1/metadata/movies/{tmdbId}/recommendations`: `DiscoverMovie[]`, each with `inLibrary` and `libraryId`.
+- `metadata.movie(id)` → `GET /api/v1/movies/{id}/metadata`, by media id in any state: `MovieMetadata` (title, original title and language, tagline, certification, runtime, genres, rating, release date, budget, revenue, studios, external ids, art) with `cast`, `crew`, `videos`, `collection` and `inLibrary`.
+- `metadata.recommendations(id)` → `GET /api/v1/movies/{id}/recommendations`: `DiscoverMovie[]`, each with its media `id` and `inLibrary`.
+- Every `DiscoverMovie` (Discover, filmographies, collections) carries its media `id`, so links need nothing else.
 - `metadata.collection(id)` → `GET /api/v1/metadata/collections/{id}`: `Collection` with its parts as `DiscoverMovie[]`.
 - `metadata.person(id)` → `GET /api/v1/metadata/people/{id}`: `Person` with `credits` (each a `DiscoverMovie` with the role).
 - `movies.get(id)` and the rest of the library layer: [movies.md › Data](movies.md#data).
@@ -128,7 +129,7 @@ Each type keeps the anatomy above and adds its own sections. Only movies are bui
 ## Decisions
 
 - **One page, two layers** ([ADR 0014](../adr/0014-universal-media-pages.md)). Discover and the library open the same page; adding a title adds a layer instead of moving you somewhere else.
-- **Metadata addresses redirect.** `/movies/tmdb-…` becomes `/movies/{id}` once added, so a link shared before adding still works.
+- **Addresses are media ids, not slugs or provider ids.** A title has its id before it's added and keeps it after, so a link shared before adding still works with no redirect, and two films called *The Stranger* never fight over `/movies/the-stranger`.
 - **Trailers embed on click,** from `youtube-nocookie.com`. Nothing loads from Google until someone asks for a video.
 - **Not added means no Files, History, Search or Subtitles tabs,** rather than empty ones. Interactive search before adding was considered and left out: adding is one dialog, and searching a title highsea isn't tracking would grab outside any profile.
 - **Collections add their missing parts in one dialog,** with one set of options, since parts of a collection are usually wanted the same way.

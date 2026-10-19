@@ -22,6 +22,10 @@ afterEach(() => cleanup())
 
 const page = () => within(document.body)
 
+// Media ids in the populated seed (database ids, ADR 0014): 1 Sintel, 4 Tears of Steel,
+// 19 Nosferatu, 30 Night of the Living Dead, 39 Royal Wedding; 107 Nanook of the North is in the
+// metadata cache, not the library.
+
 const settle = () =>
   act(async () => {
     for (let i = 0; i < 4; i++) await new Promise((r) => setTimeout(r, 0))
@@ -35,7 +39,7 @@ async function open(path: string, role: Role = 'owner') {
     render(<ScreenApp mock={mock} state={state} hook={location.hook} latency={0} />)
   })
   await settle()
-  return { mock, location, user: userEvent.setup() }
+  return { mock, location, user: userEvent.setup(), unmount: cleanup }
 }
 
 const client = (mock: Mock, role: Role = 'owner') =>
@@ -85,13 +89,13 @@ describe('A4 discover → add', () => {
       page()
         .getByRole('link', { name: /^Nanook of the North/ })
         .getAttribute('href'),
-    ).toBe('#/admin/movies/tmdb-1003000')
+    ).toBe('#/admin/movies/107')
     await user.clear(page().getByLabelText('Search for a movie'))
     await user.type(page().getByLabelText('Search for a movie'), 'sintel')
     await settle()
     // the poster and the In library badge both open the library page
     for (const name of [/^Sintel/, 'In library: Sintel'])
-      expect(page().getByRole('link', { name }).getAttribute('href')).toBe('#/admin/movies/sintel')
+      expect(page().getByRole('link', { name }).getAttribute('href')).toBe('#/admin/movies/1')
   })
 
   test('members can look but not add', async () => {
@@ -104,7 +108,7 @@ describe('A4 discover → add', () => {
 
 describe('A6 media pages', () => {
   test('a movie not yet added: metadata, then Add turns it into the library page', async () => {
-    const { mock, location, user } = await open('/admin/movies/tmdb-1003000')
+    const { mock, location, user } = await open('/admin/movies/107')
     await clean()
     expect(page().getByRole('heading', { level: 1, name: 'Nanook of the North' })).toBeTruthy()
     expect(page().getByText('Not in the library')).toBeTruthy()
@@ -121,24 +125,43 @@ describe('A6 media pages', () => {
     const dialog = page().getByRole('dialog', { name: /Add Nanook of the North/ })
     await user.click(within(dialog).getByRole('button', { name: 'Add and search' }))
     await settle()
-    expect(mock.servers.populated.state.items.some((m) => m.id === 'nanook-of-the-north')).toBe(
-      true,
-    )
-    expect(location.history?.at(-1)).toBe('/admin/movies/nanook-of-the-north')
+    expect(mock.servers.populated.state.items.some((m) => m.id === '107')).toBe(true)
+    // same page, same address: only its library layer is new
+    expect(location.history).toEqual(['/admin/movies/107'])
     await settle()
     expect(page().getByRole('tab', { name: 'Files' })).toBeTruthy()
     expect(page().queryByText('Not in the library')).toBeNull()
   })
 
-  test('a metadata address for a library movie redirects to it', async () => {
-    const { location } = await open('/admin/movies/tmdb-10000')
+  test('every way to a movie uses its one address', async () => {
+    // Metropolis (28) from the library, Discover and Fritz Lang's filmography
+    const library = await open('/admin/movies')
+    await library.user.type(page().getByLabelText('Filter by title'), 'metropolis')
     await settle()
-    expect(location.history?.at(-1)).toBe('/admin/movies/sintel')
-    expect(page().getByRole('heading', { level: 1, name: 'Sintel' })).toBeTruthy()
+    // the poster's name leads with its quality tag
+    expect(
+      page()
+        .getByRole('link', { name: /Metropolis/ })
+        .getAttribute('href'),
+    ).toBe('#/admin/movies/28')
+    library.unmount()
+    const discover = await open('/admin/discover')
+    await discover.user.type(page().getByLabelText('Search for a movie'), 'metropolis')
+    await settle()
+    expect(
+      page()
+        .getByRole('link', { name: /^Metropolis/ })
+        .getAttribute('href'),
+    ).toBe('#/admin/movies/28')
+    discover.unmount()
+    await open('/admin/people/fritz-lang')
+    expect(page().getByRole('link', { name: 'Metropolis' }).getAttribute('href')).toBe(
+      '#/admin/movies/28',
+    )
   })
 
   test('trailers open in a dialog, and nothing loads from YouTube', async () => {
-    const { user } = await open('/admin/movies/sintel')
+    const { user } = await open('/admin/movies/1')
     await user.click(page().getByRole('button', { name: /^Official trailer/ }))
     const dialog = page().getByRole('dialog', { name: 'Official trailer' })
     expect(within(dialog).getByText(/youtube-nocookie\.com/)).toBeTruthy()
@@ -147,7 +170,7 @@ describe('A6 media pages', () => {
   })
 
   test('a collection adds its missing parts in one dialog', async () => {
-    const { mock, user } = await open('/admin/movies/night-of-the-living-dead')
+    const { mock, user } = await open('/admin/movies/30')
     await settle()
     expect(
       page().getByRole('heading', { name: /Night of the Living Dead Collection/ }),
@@ -179,7 +202,7 @@ describe('A6 media pages', () => {
   })
 
   test('members can read a page but not add', async () => {
-    await open('/admin/movies/tmdb-1003000', 'member')
+    await open('/admin/movies/107', 'member')
     expect(page().queryByRole('button', { name: 'Add movie' })).toBeNull()
     expect(page().getByText(/Only owners and admins can add movies/)).toBeTruthy()
     await clean()
@@ -211,7 +234,7 @@ describe('A5 library', () => {
 
 describe('A6 movie detail', () => {
   test('interactive search shows the reasons, and a grab lands in the queue', async () => {
-    const { mock, user } = await open('/admin/movies/royal-wedding')
+    const { mock, user } = await open('/admin/movies/39')
     await clean()
     await user.click(page().getByRole('tab', { name: 'Search' }))
     await settle()
@@ -225,23 +248,23 @@ describe('A6 movie detail', () => {
     await settle()
     expect(page().getAllByText('Grabbed').length).toBeGreaterThan(0)
     const queue = await client(mock).queue.list()
-    expect(queue.some((q) => q.itemId === 'royal-wedding')).toBe(true)
+    expect(queue.some((q) => q.itemId === '39')).toBe(true)
   })
 
   test('subtitles: nudge the offset, re-sync, pick one from a search', async () => {
-    const { mock, user } = await open('/admin/movies/tears-of-steel')
+    const { mock, user } = await open('/admin/movies/4')
     await user.click(page().getByRole('tab', { name: 'Subtitles' }))
     await settle()
     await clean()
-    const before = (await client(mock).subtitles.forItem('tears-of-steel'))[0]
+    const before = (await client(mock).subtitles.forItem('4'))[0]
     await user.click(page().getByRole('button', { name: 'Show English subtitles 50 ms later' }))
     await settle()
-    const after = (await client(mock).subtitles.forItem('tears-of-steel'))[0]
+    const after = (await client(mock).subtitles.forItem('4'))[0]
     expect(after?.sync.offsetMs).toBe((before?.sync.offsetMs ?? 0) + 50)
 
     await user.click(page().getByRole('button', { name: 'Re-sync English' }))
     await settle()
-    expect((await client(mock).subtitles.forItem('tears-of-steel'))[0]?.sync.status).toBe('synced')
+    expect((await client(mock).subtitles.forItem('4'))[0]?.sync.status).toBe('synced')
 
     await user.click(page().getByRole('button', { name: 'Search providers' }))
     await settle()
@@ -250,12 +273,12 @@ describe('A6 movie detail', () => {
       page().getAllByRole('button', { name: /^Download .* from / })[0] as HTMLElement,
     )
     await settle()
-    expect((await client(mock).subtitles.forItem('tears-of-steel')).length).toBe(2)
+    expect((await client(mock).subtitles.forItem('4')).length).toBe(2)
   })
 
   test('a movie that isn’t there says so', async () => {
     await open('/admin/movies/nowhere')
-    expect(page().getByText('That movie isn’t in the library.')).toBeTruthy()
+    expect(page().getByText('There’s no movie with that id')).toBeTruthy()
     await clean()
   })
 })
@@ -270,7 +293,7 @@ describe('A7 activity', () => {
     await settle()
     const srv = mock.servers.populated
     expect(srv.state.torrents.some((t) => t.id === 't-nosferatu')).toBe(false)
-    expect(srv.state.torrents.some((t) => t.itemId === 'nosferatu')).toBe(true)
+    expect(srv.state.torrents.some((t) => t.itemId === '19')).toBe(true)
 
     await user.click(page().getByRole('tab', { name: /^Blocklist/ }))
     await settle()

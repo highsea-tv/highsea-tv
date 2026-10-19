@@ -221,7 +221,10 @@ export type CustomFormat = {
 
 export type DecisionReason = { kind: 'accepted' | 'rejected' | 'warning'; message: string }
 
-/** A discoverable movie (TMDB catalog simulation). */
+/**
+ * A title the metadata source knows (TMDB simulation). `id` is its media id: the same before and
+ * after it's added to the library (ADR 0014).
+ */
 export type DiscoverMovie = {
   id: string
   tmdbId: number
@@ -234,8 +237,6 @@ export type DiscoverMovie = {
   releaseDate: ISODate
   art: { poster: string; backdrop: string; still: string }
   inLibrary: boolean
-  /** The library id once added, for links to its page; null otherwise. */
-  libraryId: string | null
 }
 
 // ---------------------------------------------------------------- metadata (media pages, ADR 0014)

@@ -79,7 +79,7 @@ A prototype is a **reference**, not product code. Hold it to the design bar (rea
 
 **Route paths mirror the products.** Phase 3 builds from these, so the paths should match what will ship:
 
-- admin routes: `#/admin/movies/sintel`, mirroring `/movies/[id]` in the roadmap's admin routes;
+- admin routes: `#/admin/movies/1`, mirroring `/movies/[id]` in the roadmap's admin routes;
 - client routes: `#/web/...`, `#/mobile/...` and `#/tv/...`.
 
 ### The frame and the toolbar

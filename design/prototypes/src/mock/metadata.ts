@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The metadata source (TMDB simulation) behind the media pages (docs/product/media-pages.md):
 // credits, studios, trailers and collections for every title the mock knows, people built from
-// those credits, and recommendations from shared people and genres. Credits are the films' real
-// ones; the ids (TMDB, IMDb, Wikidata) and the trailer keys are invented.
+// those credits, and recommendations from shared people and genres. Titles are looked up by media
+// id. Credits are the films' real ones; the ids (TMDB, IMDb, Wikidata) and trailer keys are made up.
 import { portraitArt, stillArt } from '@highsea/fixtures'
 import { iso } from './clock.ts'
 import type { ServerState } from './seed.ts'
@@ -590,7 +590,7 @@ export function knownTitles(state: ServerState): DiscoverMovie[] {
   const library: DiscoverMovie[] = state.items
     .filter((m) => m.type === 'movie')
     .map((m) => ({
-      id: `disc-lib-${m.id}`,
+      id: m.id,
       tmdbId: m.tmdbId,
       title: m.title,
       year: m.year,
@@ -601,7 +601,6 @@ export function knownTitles(state: ServerState): DiscoverMovie[] {
       releaseDate: m.releaseDate,
       art: m.art,
       inLibrary: true,
-      libraryId: m.id,
     }))
   // the library's own entries stand for anything already added
   const unadded = state.discoverCatalog.filter(
@@ -613,8 +612,7 @@ export function knownTitles(state: ServerState): DiscoverMovie[] {
   return [...unadded, ...library]
 }
 
-const byTmdb = (state: ServerState, tmdbId: number) =>
-  knownTitles(state).find((t) => t.tmdbId === tmdbId) ?? null
+const byId = (state: ServerState, id: string) => knownTitles(state).find((t) => t.id === id) ?? null
 
 function videos(t: DiscoverMovie, upcoming: boolean): Video[] {
   const h = hash(t.title)
@@ -643,8 +641,8 @@ function videos(t: DiscoverMovie, upcoming: boolean): Video[] {
 
 // ---------------------------------------------------------------- the API
 
-export function movieMetadata(state: ServerState, tmdbId: number, now: number) {
-  const t = byTmdb(state, tmdbId)
+export function movieMetadata(state: ServerState, id: string, now: number) {
+  const t = byId(state, id)
   if (!t) return null
   const e = entryFor(t.title)
   const h = hash(t.title)
@@ -688,13 +686,13 @@ const peopleOf = (title: string) => {
 }
 
 /** Titles sharing people, a genre or a collection, closest first. */
-export function recommendations(state: ServerState, tmdbId: number, limit = 12) {
-  const self = byTmdb(state, tmdbId)
+export function recommendations(state: ServerState, id: string, limit = 12) {
+  const self = byId(state, id)
   if (!self) return []
   const people = peopleOf(self.title)
   const coll = entryFor(self.title)?.collection
   return knownTitles(state)
-    .filter((t) => t.tmdbId !== tmdbId && t.title !== self.title)
+    .filter((t) => t.id !== id && t.title !== self.title)
     .map((t) => {
       const shared = [...peopleOf(t.title)].filter((p) => people.has(p)).length
       const genre = t.genres.some((g) => self.genres.includes(g)) ? 2 : 0
