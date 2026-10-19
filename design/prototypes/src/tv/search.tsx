@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C6 Search, TV (reference, docs/product/client-search.md#tv): an on-screen keyboard grid on the
 // left and results on the right, updating as each letter lands. Right from the keyboard's last
-// column enters the results; Left from their first column comes back.
+// column enters the results; Left from their first column comes back. The keyboard is letters in
+// alphabetical rows of seven, with numbers and symbols on a second layout behind &123, so every
+// row starts in the same column and nothing moves between them.
 import { useState } from 'react'
 import { searchSuggestions, useSearch } from '../client/data.ts'
 import {
@@ -14,10 +16,15 @@ import {
   useInitialFocus,
 } from './kit.tsx'
 
-const KEYS = 'abcdefghijklmnopqrstuvwxyz1234567890'.split('')
+const LAYOUTS = {
+  letters: "abcdefghijklmnopqrstuvwxyz-'".split(''),
+  // digits as a keypad on the left (1 2 3 / 4 5 6 / 7 8 9 / * 0 #), symbols beside them
+  symbols: "123&.,:456!?'-789()/+*0#$%@=".split(''),
+} as const
 
 export function TvSearch() {
   const [q, setQ] = useState('')
+  const [layout, setLayout] = useState<keyof typeof LAYOUTS>('letters')
   const { results, settled } = useSearch(q)
   useInitialFocus(true, null, '[data-group="keys"] [data-focusable]')
   const r = results.data
@@ -51,9 +58,9 @@ export function TvSearch() {
             data-group="keys"
             data-go-up="nav"
             data-go-right="results"
-            className="grid grid-cols-6 gap-[0.5cqw]"
+            className="grid grid-cols-7 gap-[0.5cqw]"
           >
-            {KEYS.map((k) => (
+            {LAYOUTS[layout].map((k) => (
               <button
                 key={k}
                 type="button"
@@ -68,8 +75,17 @@ export function TvSearch() {
           <div
             data-group="key-actions"
             data-go-right="results"
-            className="grid grid-cols-3 gap-[0.5cqw]"
+            className="grid grid-cols-4 gap-[0.5cqw]"
           >
+            <button
+              type="button"
+              data-focusable=""
+              aria-label={layout === 'letters' ? 'Numbers and symbols' : 'Letters'}
+              className={tvKey}
+              onClick={() => setLayout((l) => (l === 'letters' ? 'symbols' : 'letters'))}
+            >
+              {layout === 'letters' ? '&123' : 'abc'}
+            </button>
             <button
               type="button"
               data-focusable=""
@@ -91,7 +107,12 @@ export function TvSearch() {
             </button>
           </div>
         </div>
-        <div data-group="results" data-go-left="keys" className="min-h-0 overflow-hidden">
+        {/* the clip reaches past the column by the focus lift, so a lifted poster isn't cut */}
+        <div
+          data-group="results"
+          data-go-left="keys"
+          className="-m-[2cqw] min-h-0 overflow-hidden p-[2cqw]"
+        >
           {!settled.trim() ? (
             <div className="grid content-start gap-[1cqw]">
               <h2 className="font-semibold text-(length:--tv-text-row-title)">Try</h2>

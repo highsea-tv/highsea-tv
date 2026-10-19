@@ -16,7 +16,7 @@ Find something on the server by what you remember: part of a title, a genre, or 
 
 - **Web:** one wide field ("Titles, genres and people"), focused on arrival; with nothing typed, **Try** and a few quick picks (Comedy, Horror, Animation, Science fiction, Fritz Lang); then **People** (a chip each: photo, name, "3 movies here") and **Movies** with the count, as posters with the title and year.
 - **Mobile:** the large title "Search", the field (16pt, so iOS doesn't zoom), the quick picks as chips; People as a row of portraits; Movies three a row with title and year.
-- **TV:** the field and an on-screen keyboard (six columns: a–z, 0–9, then Space, Delete, Clear) on the left; on the right the quick picks, then "With Fritz Lang, …" and the results five a row (title and year under each).
+- **TV:** the field and an on-screen keyboard (seven columns: a–z, - and ' in alphabetical rows; **&123** swaps in a second layout with the digits as a keypad on the left and common symbols beside them; under it &123, Space, Delete, Clear) on the left; on the right the quick picks, then "With Fritz Lang, …" and the results five a row (title and year under each).
 
 ## States
 
