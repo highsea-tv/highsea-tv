@@ -115,7 +115,9 @@ describe('A11 curation', () => {
       'Recently added',
     ])
     await clean()
-    await user.click(page().getByRole('button', { name: 'Move Recently added up' }))
+    // the drag handle's keyboard model: Space picks it up, Up moves it, Space drops it
+    act(() => page().getByRole('button', { name: 'Move Recently added' }).focus())
+    await user.keyboard(' {ArrowUp} ')
     await settle()
     expect(sections()).toEqual([
       'Featured on Harbor',
@@ -364,7 +366,9 @@ describe('C6–C8 clients', () => {
     const sections = await client(mock).home.sections('tvos')
     expect(sections.some((s) => s.title === 'Recently added')).toBe(false)
     expect(sections[0]?.layout).toBe('hero')
-    await user.click(page().getByRole('button', { name: 'Move The silent era up' }))
+    // the drag handle's keyboard model: Space picks it up, Up moves it, Space drops it
+    act(() => page().getByRole('button', { name: 'Move The silent era' }).focus())
+    await user.keyboard(' {ArrowUp} ')
     await settle()
     const titles = (await client(mock).home.sections('web')).map((s) => s.title)
     expect(titles.indexOf('The silent era')).toBeLessThan(titles.indexOf('Staff picks'))

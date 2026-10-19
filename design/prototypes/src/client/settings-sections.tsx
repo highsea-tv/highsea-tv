@@ -19,6 +19,7 @@ import type { ReactNode } from 'react'
 import { useLocation } from 'wouter'
 import { relative } from '../admin/format.ts'
 import { Soon } from '../kit/soon.tsx'
+import { SortableList } from '../kit/sortable-list.tsx'
 import { useNow } from '../mock/hooks.tsx'
 import type { ClientType } from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'
@@ -172,39 +173,37 @@ function HomeSection() {
       <p className="text-caption text-text-3">
         The featured hero stays on top. Your order follows you to every device.
       </p>
-      <ol aria-label="Home rows" className="grid gap-2">
-        {home.rows.map((r, i) => {
+      <SortableList
+        aria-label="Home rows"
+        items={home.rows}
+        id={(r) => r.id}
+        label={(r) => r.title}
+        onChange={(next) => home.reorder(next.map((r) => r.id))}
+        className="gap-2"
+        itemClassName="flex min-h-14 items-center gap-3 rounded-md border border-line bg-s1 px-3 py-2.5"
+      >
+        {(r, handle) => {
           const shown = !home.hidden.includes(r.id)
           return (
-            <Row key={r.id} className={shown ? undefined : 'opacity-70'}>
+            <>
+              {handle}
+              <span
+                className={cn(
+                  'min-w-0 flex-1 truncate text-ui',
+                  shown ? 'text-text' : 'text-text-3',
+                )}
+              >
+                {r.title}
+              </span>
               <Switch
                 aria-label={`Show ${r.title}`}
                 checked={shown}
                 onCheckedChange={(on) => home.toggle(r.id, on)}
               />
-              <span className="min-w-0 flex-1 truncate text-text text-ui">{r.title}</span>
-              <Button
-                size="sm"
-                variant="ghost"
-                iconOnly
-                icon="chevron-up"
-                aria-label={`Move ${r.title} up`}
-                disabled={i === 0 || home.pending}
-                onClick={() => home.move(r.id, -1)}
-              />
-              <Button
-                size="sm"
-                variant="ghost"
-                iconOnly
-                icon="chevron-down"
-                aria-label={`Move ${r.title} down`}
-                disabled={i === home.rows.length - 1 || home.pending}
-                onClick={() => home.move(r.id, 1)}
-              />
-            </Row>
+            </>
           )
-        })}
-      </ol>
+        }}
+      </SortableList>
       <Button variant="ghost" className="justify-self-start" onClick={() => home.reset()}>
         Use the server’s order
       </Button>

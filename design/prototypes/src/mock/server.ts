@@ -2048,16 +2048,16 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           .map((f, order) => ({ ...f, order }))
         srv.events.emit({ type: 'curation.updated' })
       },
-      /** Moves a section up (-1) or down (1) the home screen. */
-      moveSection: (id: string, by: -1 | 1) => {
+      /** Puts the sections in this order (ids); any left out keep their place after them. */
+      reorderSections: (ids: string[]) => {
         requireStaff()
-        const list = [...state.featured].sort((a, b) => a.order - b.order)
-        const i = list.findIndex((x) => x.id === id)
-        const j = i + by
-        if (i < 0 || j < 0 || j >= list.length) return
-        const [f] = list.splice(i, 1)
-        if (f) list.splice(j, 0, f)
-        state.featured = list.map((x, order) => ({ ...x, order }))
+        const rank = (id: string) => {
+          const i = ids.indexOf(id)
+          return i < 0 ? ids.length + 1 : i
+        }
+        state.featured = [...state.featured]
+          .sort((a, b) => rank(a.id) - rank(b.id) || a.order - b.order)
+          .map((x, order) => ({ ...x, order }))
         srv.events.emit({ type: 'curation.updated' })
       },
       /** The saved curation, for a preview to merge a draft into. */

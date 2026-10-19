@@ -24,7 +24,7 @@ The same six sections everywhere: **Theme**, **Sounds**, **Home screen**, **Serv
 | --- | --- |
 | **Theme** | "Only this device changes. Everyone else keeps their own." · Harbor's default (and which theme that is), the built-ins, and the server's own themes, each with its swatches |
 | **Sounds** | Interface sounds (on or off; "Following Harbor: off on phones" until changed), Volume, Listen (Select, Back, Move, Done), **Follow Harbor again** |
-| **Home screen** | "The featured hero stays on top. Your order follows you to every device." · each row with a switch (shown or hidden) and **Move up** / **Move down**; **Use the server's order** (TV: OK toggles a row; Up and Down buttons move it) |
+| **Home screen** | "The featured hero stays on top. Your order follows you to every device." · each row with a drag handle (drag it, or Space, Up and Down, Space) and a switch (shown or hidden); **Use the server's order** (TV: OK toggles a row; Up and Down buttons move it) |
 | **Servers** | Each known server (in use, or signed in or out, with how it's reached), **Switch** or **Sign in**, **Add a server**, **Sign out of Harbor** |
 | **Your devices** | This person's devices ("This device", or last used), with **Sign out** |
 | **About** | This app's version, the server and its version, the licence (AGPL-3.0); open-source licences and send diagnostics (not in the prototype) |

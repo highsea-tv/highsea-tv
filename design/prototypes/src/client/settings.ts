@@ -3,6 +3,7 @@
 // sections, the themes a device can pick, the person's home layout, and their own devices.
 import { builtInThemes } from '@highsea/tokens'
 import type { IconName } from '@highsea/ui-web'
+import { useState } from 'react'
 import { useAction, useQuery } from '../mock/hooks.tsx'
 import type { HomeLayout } from '../mock/types.ts'
 import { useServer } from './data.ts'
@@ -56,13 +57,24 @@ export function useThemeChoices() {
 export function useHomeLayout() {
   const layout = useQuery('client:home-layout', (c) => c.home.layout(), ['curation.updated'])
   const save = useAction((c, l: HomeLayout) => c.home.saveLayout(l))
-  const rows = layout.data?.rows ?? []
+  // a dropped row stays where it landed while the server saves the order
+  const [pending, setPending] = useState<string[] | null>(null)
+  const saved = layout.data?.rows ?? []
+  const rows = pending
+    ? [...saved].sort((a, b) => pending.indexOf(a.id) - pending.indexOf(b.id))
+    : saved
   const hidden = layout.data?.hidden ?? []
   const write = (order: string[], hide: string[]) => save.run({ order, hidden: hide })
   return {
     status: layout.status,
     rows,
     hidden,
+    /** The whole order at once (a drag on web and mobile). */
+    reorder: (ids: string[]) => {
+      setPending(ids)
+      return write(ids, hidden).finally(() => setPending(null))
+    },
+    /** One step up or down (the TV's buttons). */
     move: (id: string, by: -1 | 1) => {
       const order = rows.map((r) => r.id)
       const i = order.indexOf(id)

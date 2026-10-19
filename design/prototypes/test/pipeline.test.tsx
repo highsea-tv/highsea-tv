@@ -380,7 +380,9 @@ describe('A10 subtitles', () => {
     await user.click(page().getByRole('tab', { name: 'Languages' }))
     await user.click(page().getByRole('button', { name: 'Edit English and Spanish' }))
     await clean()
-    await user.click(page().getByRole('button', { name: 'Move Spanish up' }))
+    // the drag handle's keyboard model: Space picks it up, Up moves it, Space drops it
+    act(() => page().getByRole('button', { name: 'Move Spanish' }).focus())
+    await user.keyboard(' {ArrowUp} ')
     await user.click(page().getByRole('button', { name: 'Save profile' }))
     await settle()
     const profile = (await client(mock).subtitles.languageProfiles()).find(

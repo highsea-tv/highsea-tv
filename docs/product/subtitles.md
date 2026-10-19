@@ -21,7 +21,7 @@ Subtitles are first class: highsea finds them for every movie it imports, scores
 - Tabs (line): **Wanted** (count), **Providers**, **Languages**, **Scoring and sync**.
 - **Wanted:** a `TableFrame`. Toolbar: "12 movies missing a language" and **Search all**. Columns: movie (path under it), the missing languages as badges, **Search**.
 - **Providers:** provider, account (the username, "Needs an account", or "Not needed"), requests left today (a bar and "184/200"; warning tone under 10%), an Enabled switch.
-- **Languages:** one card per profile: its languages in order (with forced and SDH rules), the cutoff, the minimum score, **Edit**. Editing turns the card into a form in place: name; the ordered languages, each with a Forced select (Regular only, Regular and forced, Forced only), an SDH select (Without SDH, With or without SDH, SDH only), Move up, Move down and Remove; **Add a language**; Cutoff; Minimum score; **Save profile**, **Cancel**, **Delete**. **New profile** adds an empty one.
+- **Languages:** one card per profile: its languages in order (with forced and SDH rules), the cutoff, the minimum score, **Edit**. Editing turns the card into a form in place: name; the ordered languages, each with a Forced select (Regular only, Regular and forced, Forced only), an SDH select (Without SDH, With or without SDH, SDH only), a drag handle and Remove; **Add a language**; Cutoff; Minimum score; **Save profile**, **Cancel**, **Delete**. **New profile** adds an empty one.
 - **Scoring and sync:** a form (max 42rem): Minimum score; Prefer release matches; Sync to the audio; Minimum confidence (disabled while sync is off); Keep upgrading for N days; **Save** and **Discard changes** (enabled once something changed).
 
 ## States
@@ -37,7 +37,7 @@ Subtitles are first class: highsea finds them for every movie it imports, scores
 
 - **Search all** searches every provider for every missing language and downloads the best match above the minimum score; the toast says what was found is downloading and syncing.
 - **Search** (row) does the same for one movie.
-- **Profiles:** order is preference. Move up/down are buttons, so reordering works by keyboard; Remove also clears the cutoff if it pointed at that language. Save validates a name and at least one language.
+- **Profiles:** order is preference. Each language has a drag handle, as the dashboard's widgets do: drag it, or press Space on it, move it with Up and Down, and Space again to drop it (Escape cancels); Remove also clears the cutoff if it pointed at that language. Save validates a name and at least one language.
 - **Settings** save together, so a half-edited form never applies.
 - **Keyboard:** every control is native or Radix; no drag.
 - **Sound:** none.
@@ -71,7 +71,7 @@ Subtitles are first class: highsea finds them for every movie it imports, scores
 ## Decisions
 
 - **Wanted is computed from profiles,** not from a fixed language list, and counts embedded streams, so a movie with built-in English isn't "missing" English.
-- **Reorder by buttons, not drag.** Profiles have a handful of languages; buttons are keyboard-complete with nothing new to build.
+- **Reorder by a drag handle,** like every reorderable list in the admin (the owner's call at the checkpoint 4 review); the handle's keyboard model keeps it keyboard-complete.
 - **Edit in place.** A profile is short enough to edit inside its card; a dialog would hide the other profiles you're comparing against.
 - **Low-confidence syncs keep the original timing** and are marked for review, rather than applying a correction the engine isn't sure of.
 - **One minimum score in settings, raised per profile.** The global floor stops junk everywhere; a profile can ask for more.

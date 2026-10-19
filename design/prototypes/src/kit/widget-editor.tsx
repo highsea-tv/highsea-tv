@@ -61,7 +61,7 @@ const sizeLabel = (span: number, rows: number) =>
 const clamp = (n: number, [min, max]: [number, number]) => Math.min(max, Math.max(min, n))
 
 /** The quick spring, from the motion tokens (1ms under reduced motion). */
-function timing() {
+export function timing() {
   const root = getComputedStyle(document.documentElement)
   const duration = Number.parseFloat(root.getPropertyValue('--duration-spring-quick'))
   const easing = root.getPropertyValue('--ease-spring-quick').trim()

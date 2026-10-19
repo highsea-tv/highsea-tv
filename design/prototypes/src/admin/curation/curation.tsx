@@ -20,8 +20,9 @@ import {
   TabsTrigger,
   toast,
 } from '@highsea/ui-web'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
+import { SortableList } from '../../kit/sortable-list.tsx'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { AnnouncementSummary, Placement, SectionSummary } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
@@ -234,6 +235,9 @@ function Sections() {
     'movies.updated',
   ])
   const [, navigate] = useLocation()
+  const reorder = useAction((c, ids: string[]) => c.curation.reorderSections(ids))
+  // a dropped row stays where it landed while the server saves the order
+  const [order, setOrder] = useState<string[] | null>(null)
   return (
     <Loadable query={list} what="the featured sections">
       {(xs) =>
@@ -255,11 +259,21 @@ function Sections() {
             <p className="text-caption text-text-3">
               In home-screen order. Continue watching always comes right after the hero.
             </p>
-            <ol aria-label="Featured sections" className="grid gap-3">
-              {xs.map((f, i) => (
-                <SectionRow key={f.id} f={f} first={i === 0} last={i === xs.length - 1} />
-              ))}
-            </ol>
+            <SortableList
+              aria-label="Featured sections"
+              items={order ? [...xs].sort((a, b) => order.indexOf(a.id) - order.indexOf(b.id)) : xs}
+              id={(f) => f.id}
+              label={(f) => f.title}
+              onChange={(next) => {
+                const ids = next.map((f) => f.id)
+                setOrder(ids)
+                reorder.run(ids).finally(() => setOrder(null))
+              }}
+              className="gap-3"
+              itemClassName="grid grid-cols-[auto_minmax(0,1fr)] gap-3 rounded-lg border border-line bg-s1 p-4 expanded:grid-cols-[auto_minmax(0,1fr)_auto_auto] expanded:items-center"
+            >
+              {(f, handle) => <SectionRow f={f} handle={handle} />}
+            </SortableList>
           </div>
         )
       }
@@ -267,13 +281,13 @@ function Sections() {
   )
 }
 
-function SectionRow({ f, first, last }: { f: SectionSummary; first: boolean; last: boolean }) {
+function SectionRow({ f, handle }: { f: SectionSummary; handle: ReactNode }) {
   const users = useUsers()
-  const move = useAction((c, by: -1 | 1) => c.curation.moveSection(f.id, by))
   const remove = useAction((c) => c.curation.deleteSection(f.id))
   const [confirm, setConfirm] = useState(false)
   return (
-    <li className="grid gap-3 rounded-lg border border-line bg-s1 p-4 expanded:grid-cols-[minmax(0,1fr)_auto_auto] expanded:items-center">
+    <>
+      {handle}
       <div className="grid min-w-0 gap-1">
         <p className="flex flex-wrap items-center gap-2">
           <a
@@ -291,7 +305,10 @@ function SectionRow({ f, first, last }: { f: SectionSummary; first: boolean; las
           {f.itemCount === 1 ? 'title' : 'titles'} · {audienceSummary(f.audience, users.data)}
         </p>
       </div>
-      <ul aria-label={`${f.title}: titles`} className="flex gap-1.5 overflow-hidden">
+      <ul
+        aria-label={`${f.title}: titles`}
+        className="col-start-2 flex gap-1.5 overflow-hidden expanded:col-start-auto"
+      >
         {f.sample.map((m) => (
           <li key={m.id} className="w-9 shrink-0">
             <img
@@ -302,25 +319,7 @@ function SectionRow({ f, first, last }: { f: SectionSummary; first: boolean; las
           </li>
         ))}
       </ul>
-      <div className="flex gap-1 justify-self-end">
-        <Button
-          size="sm"
-          variant="ghost"
-          iconOnly
-          icon="chevron-up"
-          aria-label={`Move ${f.title} up`}
-          disabled={first || move.pending}
-          onClick={() => move.run(-1)}
-        />
-        <Button
-          size="sm"
-          variant="ghost"
-          iconOnly
-          icon="chevron-down"
-          aria-label={`Move ${f.title} down`}
-          disabled={last || move.pending}
-          onClick={() => move.run(1)}
-        />
+      <div className="col-start-2 flex gap-1 justify-self-end expanded:col-start-auto">
         <Button size="sm" icon="edit" asChild>
           <a href={adminHref(`/curation/featured/${f.id}`)} aria-label={`Edit ${f.title}`}>
             Edit
@@ -344,6 +343,6 @@ function SectionRow({ f, first, last }: { f: SectionSummary; first: boolean; las
         destructive
         onConfirm={() => remove.run().then(() => toast({ title: `“${f.title}” deleted` }))}
       />
-    </li>
+    </>
   )
 }

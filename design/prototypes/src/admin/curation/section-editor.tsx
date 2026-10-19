@@ -13,6 +13,7 @@ import {
 } from '@highsea/ui-web'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
+import { SortableList } from '../../kit/sortable-list.tsx'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { ClientItem, CurationPreview, FeaturedSection, MediaItem } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
@@ -402,64 +403,44 @@ function Picker({ ids, onChange }: { ids: string[]; onChange: (ids: string[]) =>
   const matches: MediaItem[] = q
     ? all.filter((m) => !ids.includes(m.id) && m.title.toLowerCase().includes(q)).slice(0, 6)
     : []
-  const move = (i: number, by: -1 | 1) => {
-    const next = [...ids]
-    const [x] = next.splice(i, 1)
-    if (x) next.splice(i + by, 0, x)
-    onChange(next)
-  }
+  const picked = ids.flatMap((id) => {
+    const m = byId(id)
+    return m ? [m] : []
+  })
   return (
     <div className="grid gap-3">
-      {ids.length > 0 && (
-        <ol aria-label="Picked titles" className="grid gap-1.5">
-          {ids.map((id, i) => {
-            const m = byId(id)
-            if (!m) return null
-            return (
-              <li
-                key={id}
-                className="grid grid-cols-[2rem_minmax(0,1fr)_auto] items-center gap-2.5 rounded-md border border-line bg-s2 p-1.5"
-              >
-                <img
-                  src={m.art.poster}
-                  alt=""
-                  className="aspect-poster w-8 rounded-[4px] object-cover"
-                />
-                <span className="truncate text-text text-ui">
-                  {m.title} <span className="text-text-3">{m.year}</span>
-                </span>
-                <span className="flex">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    iconOnly
-                    icon="chevron-up"
-                    aria-label={`Move ${m.title} up`}
-                    disabled={i === 0}
-                    onClick={() => move(i, -1)}
-                  />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    iconOnly
-                    icon="chevron-down"
-                    aria-label={`Move ${m.title} down`}
-                    disabled={i === ids.length - 1}
-                    onClick={() => move(i, 1)}
-                  />
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    iconOnly
-                    icon="close"
-                    aria-label={`Remove ${m.title}`}
-                    onClick={() => onChange(ids.filter((x) => x !== id))}
-                  />
-                </span>
-              </li>
-            )
-          })}
-        </ol>
+      {picked.length > 0 && (
+        <SortableList
+          aria-label="Picked titles"
+          items={picked}
+          id={(m) => m.id}
+          label={(m) => m.title}
+          onChange={(next) => onChange(next.map((m) => m.id))}
+          className="gap-1.5"
+          itemClassName="grid grid-cols-[auto_2rem_minmax(0,1fr)_auto] items-center gap-2.5 rounded-md border border-line bg-s2 p-1.5"
+        >
+          {(m, handle) => (
+            <>
+              {handle}
+              <img
+                src={m.art.poster}
+                alt=""
+                className="aspect-poster w-8 rounded-[4px] object-cover"
+              />
+              <span className="truncate text-text text-ui">
+                {m.title} <span className="text-text-3">{m.year}</span>
+              </span>
+              <Button
+                size="sm"
+                variant="ghost"
+                iconOnly
+                icon="close"
+                aria-label={`Remove ${m.title}`}
+                onClick={() => onChange(ids.filter((x) => x !== m.id))}
+              />
+            </>
+          )}
+        </SortableList>
       )}
       <Field label="Add titles" hint="Only titles people can play show up.">
         <Input
