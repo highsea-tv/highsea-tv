@@ -93,19 +93,44 @@ export type TitleCellProps = Omit<ComponentProps<'td'>, 'title'> & {
   title: ReactNode
   /** The release name or path: mono 11px `text-3`, one line, truncated, full value on hover. */
   detail?: string
+  /** A poster thumbnail (2:3) before the title, for rows that are media items. */
+  art?: string
 }
 
 /** A two-line title cell. Release names never wrap (typography.md#line-length-and-truncation). */
-export function TitleCell({ title, detail, className, ...props }: TitleCellProps) {
+export function TitleCell({ title, detail, art, className, ...props }: TitleCellProps) {
+  const text = (
+    <>
+      <div className="truncate text-text">{title}</div>
+      {detail && (
+        <div className="truncate font-mono text-release text-text-3" title={detail}>
+          {detail}
+        </div>
+      )}
+    </>
+  )
   return (
     <td
       className={cn('h-(--size-row) max-w-80 border-line border-b px-3 py-2', className)}
       {...props}
     >
-      <div className="truncate text-text">{title}</div>
-      {detail && (
-        <div className="truncate font-mono text-release text-text-3" title={detail}>
-          {detail}
+      {art === undefined ? (
+        text
+      ) : (
+        <div className="flex items-center gap-3">
+          {/* decorative: the title beside it names the row */}
+          <div className="aspect-poster w-7 shrink-0 overflow-hidden rounded-[4px] bg-s3">
+            {art && (
+              <img
+                src={art}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                className="size-full object-cover"
+              />
+            )}
+          </div>
+          <div className="min-w-0">{text}</div>
         </div>
       )}
     </td>

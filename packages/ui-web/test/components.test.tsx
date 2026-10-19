@@ -32,10 +32,14 @@ import {
   SoundProvider,
   StatusBar,
   StatusItem,
+  Table,
+  TableBody,
+  TableRow,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
+  TitleCell,
   Toaster,
   toast,
   UIProvider,
@@ -137,6 +141,17 @@ describe('status never relies on color alone', () => {
     const badge = container.firstElementChild as HTMLElement
     expect(badge.textContent).toBe('Seeding')
     expect(badge.querySelector('[aria-hidden]')).not.toBeNull()
+  })
+
+  test('on artwork the dot carries the tone', () => {
+    const { container } = render(
+      <Badge overlay tone="warning">
+        Upgrade wanted
+      </Badge>,
+    )
+    const badge = container.firstElementChild as HTMLElement
+    expect(badge.className).toContain('glass-badge')
+    expect(badge.querySelector('[aria-hidden]')?.className).toContain('bg-badge-warning')
   })
 
   test('progress shows its percentage and exposes its value', () => {
@@ -320,9 +335,32 @@ describe('Poster', () => {
     expect(getByRole('link', { name: 'Sintel' })).toBeTruthy()
   })
 
+  test('a status sits on the art, inside the link', () => {
+    const { getByRole } = render(
+      <Poster title="Sintel" href="/m/1" showTitle caption="2010" status={<span>Missing</span>} />,
+    )
+    expect(getByRole('link').textContent).toBe('MissingSintel2010')
+  })
+
   test('continue-watching progress is exposed', () => {
     const { getByRole } = render(<Poster title="Sintel" aspect="still" progress={40} />)
     expect(getByRole('progressbar', { name: 'Watched' }).getAttribute('aria-valuenow')).toBe('40')
+  })
+})
+
+describe('TitleCell', () => {
+  test('a media row shows its poster beside the title, unannounced', () => {
+    const { container, getByText } = render(
+      <Table>
+        <TableBody>
+          <TableRow>
+            <TitleCell title="Sintel" detail="/data/media/movies/Sintel (2010)" art="/s.jpg" />
+          </TableRow>
+        </TableBody>
+      </Table>,
+    )
+    expect(container.querySelector('img')?.getAttribute('alt')).toBe('')
+    expect(getByText('Sintel')).toBeTruthy()
   })
 })
 

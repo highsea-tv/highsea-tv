@@ -73,6 +73,33 @@ describe('A4 discover → add', () => {
     )
   })
 
+  test('a poster opens the details, and Add goes on to the add dialog', async () => {
+    const { user } = await open('/admin/discover')
+    await user.type(page().getByLabelText('Search for a movie'), 'nanook')
+    await settle()
+    await user.click(page().getByRole('button', { name: /^Nanook of the North/ }))
+    await settle()
+    const detail = page().getByRole('dialog', { name: 'Nanook of the North (1922)' })
+    expect(within(detail).getByText(/Documentary/)).toBeTruthy()
+    await clean(detail)
+    await user.click(within(detail).getByRole('button', { name: 'Add movie' }))
+    await settle()
+    expect(page().queryByRole('dialog', { name: 'Nanook of the North (1922)' })).toBeNull()
+    expect(page().getByRole('dialog', { name: /Add Nanook of the North/ })).toBeTruthy()
+  })
+
+  test('a library movie’s details link to its page', async () => {
+    const { user } = await open('/admin/discover')
+    await user.type(page().getByLabelText('Search for a movie'), 'sintel')
+    await settle()
+    await user.click(page().getByRole('button', { name: /^Sintel/ }))
+    await settle()
+    const detail = page().getByRole('dialog', { name: /^Sintel/ })
+    expect(
+      within(detail).getByRole('link', { name: 'Open in the library' }).getAttribute('href'),
+    ).toBe('#/admin/movies/sintel')
+  })
+
   test('members can look but not add', async () => {
     await open('/admin/discover', 'member')
     const add = page().getAllByRole('button', { name: /^Add / })[0] as HTMLButtonElement
@@ -86,6 +113,7 @@ describe('A5 library', () => {
     const { mock, user } = await open('/admin/movies')
     await user.click(page().getByRole('radio', { name: 'Table' }))
     await clean()
+    expect(page().getAllByRole('row')[1]?.querySelector('img')).not.toBeNull()
     await user.click(page().getByRole('tab', { name: /^Wanted/ }))
     const rows = page().getAllByRole('checkbox', { name: /^Select (?!every)/ })
     expect(rows.length).toBe(3)

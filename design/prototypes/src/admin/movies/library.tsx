@@ -321,17 +321,19 @@ export function MoviesLibrary() {
                             src={m.art.poster}
                             href={adminHref(`/movies/${m.id}`)}
                             quality={m.quality}
-                            showTitle
-                            caption={
-                              <span className="flex flex-wrap items-center gap-1.5">
-                                {m.year}
-                                {m.status !== 'available' && (
-                                  <Badge tone={movieStatus[m.status].tone}>
-                                    {movieStatus[m.status].label}
-                                  </Badge>
-                                )}
-                              </span>
+                            status={
+                              m.status !== 'available' && (
+                                <Badge
+                                  overlay
+                                  tone={movieStatus[m.status].tone}
+                                  className="max-w-full"
+                                >
+                                  <span className="truncate">{movieStatus[m.status].label}</span>
+                                </Badge>
+                              )
                             }
+                            showTitle
+                            caption={m.year}
                           />
                         </li>
                       ))}
@@ -383,6 +385,7 @@ export function MoviesLibrary() {
                                 </a>
                               }
                               detail={m.path}
+                              art={m.art.poster}
                             />
                             <TableCell numeric>{m.year}</TableCell>
                             <TableCell>

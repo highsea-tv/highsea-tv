@@ -22,15 +22,16 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 
 - `PageHeader`: "Discover", a one-line description.
 - A search field (max 36rem). Empty, the page shows **Trending this week**; typing shows **Results for "…"**. Results are instant (deferred input, no submit button).
-- A poster grid (`auto-fill, minmax(8.5rem, 1fr)`): poster, title (two lines), year and rating, then **Add** or an **In library** badge that links to the movie.
+- A poster grid (`auto-fill, minmax(8.5rem, 1fr)`): poster, title (two lines), year and rating, then **Add** or an **In library** badge that links to the movie. The poster and title are one button that opens the details.
+- **Details dialog** (`lg`): the backdrop at 15% behind the poster; year, runtime, genres and rating; an **In library** badge if it's there; the full synopsis; the release date ("Released" or "Releases") and the TMDB id. Footer: **Close**, then **Add movie** (to the add dialog) or **Open in the library**.
 - **Add dialog** (`md`): the synopsis, then Folder (full width), Quality profile and Subtitle languages (two columns from medium), Minimum availability, **Monitored** (switch) and **Search now** (checkbox, on). The primary button reads **Add and search** or **Add movie** to match.
 
 ### Library (A5)
 
 - `PageHeader`: "Movies", a **Grid / Table** segmented control (remembered per browser), **Add movie**.
 - One `TableFrame` holds both views. Its toolbar: status tabs with counts (All, Available, Wanted, Downloading, Not released), a title filter, and Sort (Title, Date added, Year, Rating).
-- **Grid:** posters with quality tags on the art, title, year, and a status badge unless the movie is simply available.
-- **Table:** a select column (staff), title with its path under it, year, versions (a quality tag per version: "1080p", "4K HDR"), status, monitored, date added.
+- **Grid:** posters with quality tags on the art (top left), the status on the art (bottom left, an overlay badge: glass with a tinted dot) unless the movie is simply available, then the title and year. The caption is always one line, so cards don't change height with the status or its length.
+- **Table:** a select column (staff), title with a poster thumbnail (28px wide, 2:3) before it and its path under it, year, versions (a quality tag per version: "1080p", "4K HDR"), status, monitored, date added.
 - **Bulk bar:** appears under the toolbar once a row is selected, tinted `accent-soft`: "3 movies selected", **Search**, **Edit** (Monitor, Stop monitoring, then each quality profile), **Remove**, **Clear**.
 
 ### Movie detail (A6)
@@ -61,6 +62,7 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 
 ## Interactions
 
+- **Details:** a poster opens the details dialog; its **Add movie** closes it and opens the add dialog, so Escape from adding returns to the results.
 - **Add:** Add opens the dialog; **Add and search** adds the movie, closes, and toasts "{Title} added · Searching your indexers now. Follow it in Activity." with **Open**. The result's card switches to **In library** at once.
 - **Select:** row checkboxes, and a header checkbox for every row shown. Selection survives filtering; the bar counts selected movies that still exist.
 - **Bulk:** Search searches each selected movie that's missing or wanted; Edit applies to all; Remove asks first ("Their files stay on disk.").
@@ -108,6 +110,9 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 ## Decisions
 
 - **Discover shows the library too,** marked In library and linked, instead of hiding it. Searching for a movie you already have should say so, not come back empty.
+- **Details in a dialog, not a page.** It keeps the search and its results in place behind it; Discover is for browsing many titles quickly. A page per TMDB title can come later if the details grow (cast, trailers).
+- **Status on the art, not under it.** A status chip in the caption wrapped or overflowed depending on the title and label lengths, and appeared and disappeared live, so cards jumped. On the art it takes no layout space; the quality tags already set that pattern.
+- **Every media table leads with a thumbnail.** `TitleCell` takes `art`, so series, music and books tables get the same row shape. The thumbnail is decorative (empty alt): the title beside it names the row.
 - **One dialog, defaults filled.** The prototype starts from the first folder, HD 1080p and English; the product should remember the last-used values. Search now is on, because the usual intent of adding is "get it".
 - **Grid and table share one frame,** filters and sort, so switching views keeps your place. Selection and bulk edit live in the table only: posters are for browsing.
 - **Bulk quality profile changes the first version.** A 4K version added beside a 1080p one is a deliberate second profile; a bulk edit shouldn't flatten it.
@@ -119,6 +124,7 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 
 ## Open questions
 
+- **Details content.** TMDB also has cast, crew, certification, trailers and collections. Which belong in the details dialog?
 - **Discover sources.** TMDB trending only, or also lists (popular, upcoming, by genre) and the owner's import lists?
 - **Library columns.** Should the table's columns be choosable (size, quality profile, path, rating), as in Radarr?
 - **Per-version actions.** Searching or upgrading one version (just the 4K) needs a version picker on Search; the prototype searches the movie.

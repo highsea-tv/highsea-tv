@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A4 Discover → add movie (docs/product/movies.md#discover). Trending from the metadata source
-// until you type, then instant results. Adding opens one dialog with the folder, both profiles,
-// monitoring, minimum availability and "Search now", which hands the movie to the pipeline.
+// until you type, then instant results. A poster opens the movie's details. Adding opens one
+// dialog with the folder, both profiles, monitoring, minimum availability and "Search now",
+// which hands the movie to the pipeline.
 import {
   Badge,
   Button,
@@ -19,8 +20,9 @@ import {
 } from '@highsea/ui-web'
 import { useDeferredValue, useState } from 'react'
 import { useLocation } from 'wouter'
-import { useAction, useQuery } from '../../mock/hooks.tsx'
+import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { DiscoverMovie, MinimumAvailability } from '../../mock/types.ts'
+import { duration } from '../format.ts'
 import { Loadable, PosterSkeletons } from '../loadable.tsx'
 import { isStaff } from '../nav.ts'
 import { AdminPage, adminHref, useShell } from '../shell.tsx'
@@ -42,6 +44,7 @@ export function Discover() {
     'movies.updated',
   ])
   const [adding, setAdding] = useState<DiscoverMovie | null>(null)
+  const [viewing, setViewing] = useState<DiscoverMovie | null>(null)
 
   return (
     <AdminPage
@@ -78,14 +81,18 @@ export function Discover() {
             <ul className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-5">
               {movies.map((m) => (
                 <li key={m.id} className="grid content-start gap-2">
-                  <Poster title={`${m.title} (${m.year})`} src={m.art.poster} />
-                  <div className="grid gap-0.5">
-                    <span className="line-clamp-2 text-text text-ui">{m.title}</span>
-                    <span className="flex items-center gap-2 text-caption text-text-3">
-                      {m.year}
-                      {m.rating > 0 && <Rating value={m.rating} size={11} />}
-                    </span>
-                  </div>
+                  <Poster
+                    title={m.title}
+                    src={m.art.poster}
+                    onClick={() => setViewing(m)}
+                    showTitle
+                    caption={
+                      <span className="flex items-center gap-2">
+                        {m.year}
+                        {m.rating > 0 && <Rating value={m.rating} size={11} />}
+                      </span>
+                    }
+                  />
                   {m.inLibrary ? (
                     <a
                       href={adminHref(`/movies/${libraryId(m)}`)}
@@ -117,10 +124,107 @@ export function Discover() {
           Only owners and admins can add movies. Ask the server’s owner for one you want.
         </p>
       )}
+      <DiscoverDetail
+        movie={viewing}
+        onOpenChange={(o) => !o && setViewing(null)}
+        onAdd={(m) => {
+          setViewing(null)
+          setAdding(m)
+        }}
+      />
       <AddMovieDialog movie={adding} onOpenChange={(o) => !o && setAdding(null)} />
     </AdminPage>
   )
 }
+
+/** Everything the metadata source knows, so a movie can be judged before it's added. */
+function DiscoverDetail({
+  movie: m,
+  onOpenChange,
+  onAdd,
+}: {
+  movie: DiscoverMovie | null
+  onOpenChange: (open: boolean) => void
+  onAdd: (movie: DiscoverMovie) => void
+}) {
+  const { role } = useShell()
+  const staff = isStaff(role)
+  const now = useNow()
+  const released = m && Date.parse(m.releaseDate) <= now
+  return (
+    <Dialog open={!!m} onOpenChange={onOpenChange}>
+      <DialogContent
+        size="lg"
+        title={m ? `${m.title} (${m.year})` : 'Movie'}
+        footer={
+          m && (
+            <>
+              <Button variant="ghost" onClick={() => onOpenChange(false)}>
+                Close
+              </Button>
+              {m.inLibrary ? (
+                <Button variant="primary" icon="movie" asChild>
+                  <a href={adminHref(`/movies/${libraryId(m)}`)}>Open in the library</a>
+                </Button>
+              ) : (
+                <Button variant="primary" icon="add" disabled={!staff} onClick={() => onAdd(m)}>
+                  Add movie
+                </Button>
+              )}
+            </>
+          )
+        }
+      >
+        {m && (
+          <div className="relative isolate grid grid-cols-1 gap-5 overflow-hidden rounded-md border border-line bg-s1 p-4 medium:grid-cols-[9rem_minmax(0,1fr)]">
+            <img
+              src={m.art.backdrop}
+              alt=""
+              className="-z-10 absolute inset-0 size-full object-cover opacity-15"
+            />
+            <Poster title={m.title} src={m.art.poster} className="w-32 medium:w-full" />
+            <div className="grid grid-cols-1 content-start gap-3">
+              <div className="flex flex-wrap items-center gap-2 text-caption text-text-2">
+                <span className="font-mono">{m.year}</span>
+                <span aria-hidden>·</span>
+                <span>
+                  {m.runtimeMinutes ? duration(m.runtimeMinutes * 60) : 'Runtime unknown'}
+                </span>
+                {m.genres.length > 0 && (
+                  <>
+                    <span aria-hidden>·</span>
+                    <span>{m.genres.join(', ')}</span>
+                  </>
+                )}
+                {m.rating > 0 && <Rating value={m.rating} size={12} showValue />}
+              </div>
+              {m.inLibrary && (
+                <Badge tone="success" className="justify-self-start">
+                  In library
+                </Badge>
+              )}
+              <p className="max-w-[65ch] text-body text-text-2">{m.synopsis}</p>
+              <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-caption">
+                <dt className="text-text-3">{released ? 'Released' : 'Releases'}</dt>
+                <dd className="text-text-2">{longDate(m.releaseDate)}</dd>
+                <dt className="text-text-3">TMDB</dt>
+                <dd className="font-mono text-text-2">{m.tmdbId}</dd>
+              </dl>
+              {!staff && !m.inLibrary && (
+                <p className="text-caption text-text-3">
+                  Only owners and admins can add movies. Ask the server’s owner for this one.
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+const longDate = (iso: string) =>
+  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 
 export function AddMovieDialog({
   movie,
