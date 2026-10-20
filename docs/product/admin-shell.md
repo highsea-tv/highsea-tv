@@ -98,6 +98,7 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 - **The rail shows the mark alone.** The lockup needs 96px and the rail is 64px.
 - **The status bar is a labelled region, not a footer,** so screen readers can jump to it by name ("Server status"). This was a fix in ui-web's `StatusBar`.
 - **Members get a shorter sidebar** rather than locked items: they manage the library, not the server, and locked items would only be noise. A direct link still explains why it's closed.
+  - **Replaced (owner's decision, 2026-10-20):** the admin is for the owner and admins only. Members and restricted accounts use the clients and don't open the admin at all, so the shorter sidebar and the Permission-limited state go. Built after checkpoint 4 is signed off ([Phase 3 plan, decision 6](../plans/phase-3-server.md#decisions)); until then the shorter sidebar stays as built.
 - **The server card is degraded only at error-level health,** not warnings. Warnings belong to the System page, so the dot doesn't nag.
 - **Health stays in two places**, the server card and the System page, as admin.md says. The status bar shows resources and jobs, not health.
 - **Background toasts** are for things you'd otherwise miss: an import finishing. Routine progress stays in the queue.

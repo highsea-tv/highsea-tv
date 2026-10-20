@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The server's settings pages (A15, `/settings/*`): what each holds, with Harbor's values. The
 // reference pages edit these as plain values; Phase 3 gives each section its own schema.
+import { defaultQualitySizes, type QualitySize } from '@highsea/quality'
 import type { ImportList } from './types.ts'
 
 export type GeneralSettings = {
@@ -73,8 +74,8 @@ export type Connection = {
   enabled: boolean
 }
 
-/** MB per minute of runtime: below `min` or above `max` a release is rejected. */
-export type QualitySize = { quality: string; min: number; preferred: number; max: number }
+/** MiB per minute of runtime: below `min` or above `max` a release is rejected (@highsea/quality). */
+export type { QualitySize }
 
 export type Settings = {
   general: GeneralSettings
@@ -174,14 +175,5 @@ export const defaultSettings = (): Settings => ({
       profileId: 'qp-hd',
     },
   ],
-  qualitySizes: [
-    { quality: 'SDTV', min: 2, preferred: 10, max: 20 },
-    { quality: 'DVD', min: 4, preferred: 15, max: 30 },
-    { quality: 'WEB 720p', min: 6, preferred: 20, max: 40 },
-    { quality: 'Bluray 720p', min: 8, preferred: 25, max: 50 },
-    { quality: 'WEB 1080p', min: 10, preferred: 40, max: 80 },
-    { quality: 'Bluray 1080p', min: 15, preferred: 60, max: 120 },
-    { quality: 'WEB 2160p', min: 25, preferred: 120, max: 250 },
-    { quality: 'Bluray 2160p', min: 35, preferred: 200, max: 400 },
-  ],
+  qualitySizes: defaultQualitySizes(),
 })

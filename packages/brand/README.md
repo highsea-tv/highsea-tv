@@ -9,6 +9,7 @@ The highsea logo, app icons, fonts and default sounds. Usage rules, the icon spe
 | `@highsea/brand` | SVG builders (`markSvg`, `wordmarkSvg`, `lockupSvg`, `iconSvg`), the icon list, font names and sound file names |
 | `@highsea/brand/logo/*` | `mark`, `mark-small`, `wordmark` and `lockup` SVGs, each with `-mono` and `-ink` variants |
 | `@highsea/brand/icons/*` | App icons for iOS, Android, macOS, desktop, web, tvOS, Android TV, webOS and Tizen, plus the link preview and splash images. Apple platforms get their source formats: an Icon Composer document (`apple/AppIcon.icon`) and the tvOS brand assets with layered image stacks. |
+| `@highsea/brand/attribution/*` | Other organizations' logos their terms ask highsea to show: `tmdb.svg`, TMDB's "alt short" logo, unmodified, from [TMDB's logos and attribution page](https://www.themoviedb.org/about/logos-attribution). [TMDB's terms](https://www.themoviedb.org/api-terms-of-use) § 3 require it in an About or credits section, less prominent than highsea's own marks, with the notice `TMDB_ATTRIBUTION` in `@highsea/api-contract`. Not generated, not highsea's brand, and not to be recoloured. |
 | `@highsea/brand/fonts.css` | `@font-face` for Geist and Geist Mono (variable `woff2`) |
 | `@highsea/brand/fonts/*` | The font files and their license (`OFL.txt`) |
 | `@highsea/brand/sounds/*` | The default sound pack as 48 kHz, 16-bit mono WAV, one file per event |

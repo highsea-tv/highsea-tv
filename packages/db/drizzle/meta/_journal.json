@@ -22,6 +22,13 @@
       "when": 1792481894694,
       "tag": "0002_personalization",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1792494076368,
+      "tag": "0003_movies",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,20 @@
+{
+  "name": "@highsea/parser",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@highsea/config": "workspace:*",
+    "@types/node": "25.9.9"
+  }
+}

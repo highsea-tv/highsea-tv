@@ -577,6 +577,10 @@ The owner decided these on 2026-10-19:
 4. **The TMDB key** is entered by the owner in setup until the cloud metadata proxy exists, with a link to TMDB's key page and a note on why.
 5. **Publishing:** GitHub Pages for the catalog's `stable` and `beta` channels and GHCR for the images, both on this repository. Nothing is published until the owner says so.
 
+The owner decided this on 2026-10-20, reviewing checkpoint 4:
+
+6. **The admin is for the owner and admins only.** Members and restricted accounts use the clients; they never open the admin, and **Manage the library** becomes an admin's permission alone. This replaces the members' shorter sidebar in admin-shell.md. It's recorded now and built as its own small change once checkpoint 4 is signed off.
+
 ## Out of scope for Phase 3
 
 - The client apps (web, desktop, mobile, TV): Phase 4.

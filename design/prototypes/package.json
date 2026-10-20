@@ -15,6 +15,7 @@
     "@highsea/core": "workspace:*",
     "@highsea/fixtures": "workspace:*",
     "@highsea/personalization": "workspace:*",
+    "@highsea/quality": "workspace:*",
     "@highsea/tokens": "workspace:*",
     "@highsea/ui-web": "workspace:*",
     "motion": "14.3.0",

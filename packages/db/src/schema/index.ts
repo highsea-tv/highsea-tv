@@ -3,5 +3,6 @@
 // migration generated with `bun run generate` (docs/plans/phase-3-server.md#data).
 export * from './auth.ts'
 export * from './jobs.ts'
+export * from './media.ts'
 export * from './personalization.ts'
 export * from './system.ts'

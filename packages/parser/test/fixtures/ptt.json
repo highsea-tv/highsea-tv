@@ -1,0 +1,4991 @@
+[
+  {
+    "name": "Nocturnal Animals 2016 VFF 1080p BluRay DTS HEVC-HD2",
+    "expect": {
+      "title": "Nocturnal Animals",
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_codec.py; title by review"
+  },
+  {
+    "name": "doctor_who_2005.8x12.death_in_heaven.720p_hdtv_x264-fov",
+    "expect": {
+      "title": "doctor who",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_codec.py; title by review"
+  },
+  {
+    "name": "The Vet Life S02E01 Dunk-A-Doctor 1080p ANPL WEB-DL AAC2 0 H 264-RTN",
+    "expect": {
+      "title": "The Vet Life",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_codec.py; title by review"
+  },
+  {
+    "name": "Gotham S03E17 XviD-AFG",
+    "expect": {
+      "title": "Gotham",
+      "codec": "xvid"
+    },
+    "episode": true,
+    "from": "PTT tests/test_codec.py; title by review"
+  },
+  {
+    "name": "[Anime Time] Re Zero kara Hajimeru Isekai Seikatsu (Season 2 Part 1) [1080p][HEVC10bit x265][Multi Sub]",
+    "expect": {
+      "title": "Re Zero kara Hajimeru Isekai Seikatsu",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_codec.py; title by review"
+  },
+  {
+    "name": "[naiyas] Fate Stay Night - Unlimited Blade Works Movie [BD 1080P HEVC10 QAACx2 Dual Audio]",
+    "expect": {
+      "title": "Fate Stay Night - Unlimited Blade Works Movie",
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_codec.py; title by review"
+  },
+  {
+    "name": "Mad.Max.Fury.Road.2015.1080p.BluRay.DDP5.1.x265.10bit-GalaxyRG265[TGx]",
+    "expect": {
+      "title": "Mad Max Fury Road",
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_codec.py; title by review"
+  },
+  {
+    "name": "Have I Got News For You S53E02 EXTENDED 720p HDTV x264-QPEL",
+    "expect": {
+      "title": "Have I Got News For You",
+      "edition": "EXTENDED"
+    },
+    "note": "EXTENDED is an edition tag (scene rules 17.2) wherever it appears",
+    "episode": true,
+    "from": "PTT tests/test_convert.py; title by review"
+  },
+  {
+    "name": "Stephen Colbert 2019 10 25 Eddie Murphy 480p x264-mSD [eztv]",
+    "expect": {
+      "title": "Stephen Colbert",
+      "releaseGroup": "mSD"
+    },
+    "note": "the group is the -GROUP suffix (scene rules 18.4.1)",
+    "episode": true,
+    "from": "PTT tests/test_date.py; title by review"
+  },
+  {
+    "name": "Have I Got News For You S53E02 EXTENDED 720p HDTV x264-QPEL",
+    "expect": {
+      "title": "Have I Got News For You",
+      "edition": "EXTENDED"
+    },
+    "note": "EXTENDED is an edition tag (scene rules 17.2) wherever it appears",
+    "episode": true,
+    "from": "PTT tests/test_edition.py; title by review"
+  },
+  {
+    "name": "Mary.Poppins.1964.50th.ANNIVERSARY.EDITION.REMUX.1080p.Bluray.AVC.DTS-HD.MA.5.1-LEGi0N",
+    "expect": {
+      "title": "Mary Poppins",
+      "edition": "50th ANNIVERSARY EDITION"
+    },
+    "from": "PTT tests/test_edition.py; title by review"
+  },
+  {
+    "name": "The.Lord.of.the.Rings.The.Fellowship.of.the.Ring.2001.EXTENDED.2160p.UHD.BluRay.x265.10bit.HDR.TrueHD.7.1.Atmos-BOREDOR",
+    "expect": {
+      "title": "The Lord of the Rings The Fellowship of the Ring",
+      "edition": "EXTENDED"
+    },
+    "from": "PTT tests/test_edition.py; title by review"
+  },
+  {
+    "name": "Better.Call.Saul.S03E04.CONVERT.720p.WEB.h264-TBS",
+    "expect": {
+      "title": "Better Call Saul",
+      "edition": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_edition.py; title by review"
+  },
+  {
+    "name": "The Fifth Element 1997 REMASTERED MULTi 1080p BluRay HDLight AC3 x264 Zone80",
+    "expect": {
+      "title": "The Fifth Element",
+      "edition": "REMASTERED"
+    },
+    "from": "PTT tests/test_edition.py; title by review"
+  },
+  {
+    "name": "Predator 1987 REMASTER MULTi 1080p BluRay x264 FiDELiO",
+    "expect": {
+      "title": "Predator",
+      "edition": "REMASTER"
+    },
+    "from": "PTT tests/test_edition.py; title by review"
+  },
+  {
+    "name": "Uncut.Gems.2019.1080p.NF.WEB-DL.DDP5.1.x264-NTG",
+    "expect": {
+      "title": "Uncut Gems",
+      "edition": null
+    },
+    "from": "PTT tests/test_edition.py; title by review"
+  },
+  {
+    "name": "Nocturnal Animals 2016 VFF 1080p BluRay DTS HEVC-HD2",
+    "expect": {
+      "title": "Nocturnal Animals",
+      "releaseGroup": "HD2"
+    },
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "Gold 2016 1080p BluRay DTS-HD MA 5 1 x264-HDH",
+    "expect": {
+      "title": "Gold",
+      "releaseGroup": "HDH"
+    },
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "Hercules (2014) 1080p BrRip H264 - YIFY",
+    "expect": {
+      "title": "Hercules",
+      "releaseGroup": "YIFY"
+    },
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "The.Expanse.S05E02.720p.WEB.x264-Worldmkv.mkv",
+    "expect": {
+      "title": "The Expanse",
+      "releaseGroup": "Worldmkv"
+    },
+    "episode": true,
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "The.Expanse.S05E02.PROPER.720p.WEB.h264-KOGi[rartv]",
+    "expect": {
+      "title": "The Expanse",
+      "releaseGroup": "KOGi"
+    },
+    "episode": true,
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "The.Expanse.S05E02.1080p.AMZN.WEB.DDP5.1.x264-NTb[eztv.re].mp4",
+    "expect": {
+      "title": "The Expanse",
+      "releaseGroup": "NTb"
+    },
+    "episode": true,
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "Western - L'homme qui n'a pas d'étoile-1955.Multi.DVD9",
+    "expect": {
+      "title": "Western - L'homme qui n'a pas d'étoile",
+      "releaseGroup": null
+    },
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "Power (2014) - S02E03.mp4",
+    "expect": {
+      "title": "Power",
+      "releaseGroup": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "Power (2014) - S02E03",
+    "expect": {
+      "title": "Power",
+      "releaseGroup": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "3-Nen D-Gumi Glass no Kamen - 13",
+    "expect": {
+      "title": "3-Nen D-Gumi Glass no Kamen",
+      "releaseGroup": null
+    },
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "3-Nen D-Gumi Glass no Kamen - Ep13",
+    "expect": {
+      "title": "3-Nen D-Gumi Glass no Kamen",
+      "releaseGroup": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "[AnimeRG] One Punch Man - 09 [720p].mkv",
+    "expect": {
+      "title": "One Punch Man",
+      "releaseGroup": "AnimeRG"
+    },
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "[Mazui]_Hyouka_-_03_[DF5E813A].mkv",
+    "expect": {
+      "title": "Hyouka",
+      "releaseGroup": "Mazui"
+    },
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "[H3] Hunter x Hunter - 38 [1280x720] [x264]",
+    "expect": {
+      "title": "Hunter x Hunter",
+      "releaseGroup": "H3"
+    },
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "[KNK E MMS Fansubs] Nisekoi - 20 Final [PT-BR].mkv",
+    "expect": {
+      "title": "Nisekoi",
+      "releaseGroup": "KNK E MMS Fansubs"
+    },
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "[ToonsHub] JUJUTSU KAISEN - S02E01 (Japanese 2160p x264 AAC) [Multi-Subs].mkv",
+    "expect": {
+      "title": "JUJUTSU KAISEN",
+      "releaseGroup": "ToonsHub"
+    },
+    "episode": true,
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "[HD-ELITE.NET] -  The.Art.Of.The.Steal.2014.DVDRip.XviD.Dual.Aud",
+    "expect": {
+      "title": "The Art Of The Steal",
+      "releaseGroup": null
+    },
+    "note": "a leading site isn’t a release group",
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "[Russ]Lords.Of.London.2014.XviD.H264.AC3-BladeBDP",
+    "expect": {
+      "title": "Lords Of London",
+      "releaseGroup": "BladeBDP"
+    },
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "Jujutsu Kaisen S02E01 2160p WEB H.265 AAC -Tsundere-Raws (B-Global).mkv",
+    "expect": {
+      "title": "Jujutsu Kaisen",
+      "releaseGroup": "B-Global"
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "[DVD-RIP] Kaavalan (2011) Sruthi XVID [700Mb] [TCHellRaiser]",
+    "expect": {
+      "title": "Kaavalan",
+      "releaseGroup": null
+    },
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "the-x-files-502.mkv",
+    "expect": {
+      "title": "the x files",
+      "releaseGroup": null
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (track and episode numbers glued to the title)",
+    "from": "PTT tests/test_group.py"
+  },
+  {
+    "name": "[ Torrent9.cz ] The.InBetween.S01E10.FiNAL.HDTV.XviD-EXTREME.avi",
+    "expect": {
+      "title": "The InBetween",
+      "releaseGroup": "EXTREME"
+    },
+    "episode": true,
+    "from": "PTT tests/test_group.py; title by review"
+  },
+  {
+    "name": "Ghost In The Shell 2017 1080p HC HDRip X264 AC3-EVO",
+    "expect": {
+      "title": "Ghost In The Shell",
+      "hardcodedSubs": "HC"
+    },
+    "from": "PTT tests/test_hardcoded.py; title by review"
+  },
+  {
+    "name": "Have I Got News For You S53E02 EXTENDED 720p HDTV x264-QPEL",
+    "expect": {
+      "title": "Have I Got News For You",
+      "edition": "EXTENDED",
+      "hardcodedSubs": null
+    },
+    "note": "EXTENDED is an edition tag (scene rules 17.2) wherever it appears",
+    "episode": true,
+    "from": "PTT tests/test_hardcoded.py; title by review"
+  },
+  {
+    "name": "The.Mandalorian.S01E06.4K.HDR.2160p 4.42GB",
+    "expect": {
+      "title": "The Mandalorian",
+      "hdr": ["hdr"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_hdr.py; title by review"
+  },
+  {
+    "name": "Bullet.Train.2022.2160p.AMZN.WEB-DL.x265.10bit.HDR10Plus.DDP5.1-SMURF",
+    "expect": {
+      "title": "Bullet Train",
+      "hdr": ["hdr10plus"]
+    },
+    "from": "PTT tests/test_hdr.py; title by review"
+  },
+  {
+    "name": "Belle (2021) 2160p 10bit 4KLight DOLBY VISION BluRay DDP 7.1 x265-QTZ",
+    "expect": {
+      "title": "Belle",
+      "hdr": ["dv"]
+    },
+    "from": "PTT tests/test_hdr.py; title by review"
+  },
+  {
+    "name": "Андор / Andor [01x01-03 из 12] (2022) WEB-DL-HEVC 2160p | 4K | Dolby Vision TV | NewComers, HDRezka Studio",
+    "expect": {
+      "title": "Andor",
+      "hdr": ["dv"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_hdr.py; title by review"
+  },
+  {
+    "name": "АBullet.Train.2022.2160p.WEB-DL.DDP5.1.DV.MKV.x265-NOGRP",
+    "expect": {
+      "title": "Bullet Train",
+      "hdr": ["dv"]
+    },
+    "from": "PTT tests/test_hdr.py; title by review"
+  },
+  {
+    "name": "Bullet.Train.2022.2160p.WEB-DL.DoVi.DD5.1.HEVC-EVO[TGx]",
+    "expect": {
+      "title": "Bullet Train",
+      "hdr": ["dv"]
+    },
+    "from": "PTT tests/test_hdr.py; title by review"
+  },
+  {
+    "name": "Спайдерхед / Spiderhead (2022) WEB-DL-HEVC 2160p | 4K | HDR | Dolby Vision Profile 8 | P | NewComers, Jaskier",
+    "expect": {
+      "title": "Spiderhead",
+      "hdr": ["hdr", "dv"]
+    },
+    "from": "PTT tests/test_hdr.py; title by review"
+  },
+  {
+    "name": "House.of.the.Dragon.S01E07.2160p.10bit.HDR.DV.WEBRip.6CH.x265.HEVC-PSA",
+    "expect": {
+      "title": "House of the Dragon",
+      "hdr": ["hdr", "dv"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_hdr.py; title by review"
+  },
+  {
+    "name": "Флешбэк / Memory (2022) WEB-DL-HEVC 2160p | 4K | HDR | HDR10+ | Dolby Vision Profile 8 | Pazl Voice",
+    "expect": {
+      "title": "Memory",
+      "hdr": ["hdr", "hdr10plus", "dv"]
+    },
+    "from": "PTT tests/test_hdr.py; title by review"
+  },
+  {
+    "name": "Deadpool 2016 1080p BluRay DTS Rus Ukr 3xEng HDCL",
+    "expect": {
+      "title": "Deadpool",
+      "languages": ["ru", "uk"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "VAIANA: MOANA (2017) NL-Retail [2D] EAGLE",
+    "expect": {
+      "title": "VAIANA: MOANA",
+      "languages": ["nl"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "De Noodcentrale S02E05 FLEMISH 540p WEBRip AAC H 264",
+    "expect": {
+      "title": "De Noodcentrale",
+      "languages": ["nl"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The Intern 2015 TRUEFRENCH 720p BluRay x264-PiNKPANTERS",
+    "expect": {
+      "title": "The Intern",
+      "languages": ["fr"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "After Earth 2013 VFF BDrip x264 YJ",
+    "expect": {
+      "title": "After Earth",
+      "languages": ["fr"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "127.Heures.FRENCH.DVDRip.AC3.XViD-DVDFR",
+    "expect": {
+      "title": "127 Heures",
+      "languages": ["fr"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Color.Of.Night.Unrated.DC.VostFR.BRrip.x264",
+    "expect": {
+      "title": "Color Of Night",
+      "languages": [],
+      "subtitles": ["fr"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Le Labyrinthe 2014 Multi-VF2 1080p BluRay x264-PopHD",
+    "expect": {
+      "title": "Le Labyrinthe",
+      "languages": ["fr"]
+    },
+    "note": "VF2 is French audio in TRaSH’s French formats",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Maman, j'ai raté l'avion 1990 VFI 1080p BluRay DTS x265-HTG",
+    "expect": {
+      "title": "Maman, j'ai raté l'avion",
+      "languages": ["fr"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "South.Park.S21E10.iTALiAN.FiNAL.AHDTV.x264-NTROPiC",
+    "expect": {
+      "title": "South Park",
+      "languages": ["it"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "House S 1 CD 1-6 svensk, danska, norsk, finsk sub",
+    "expect": {
+      "title": "House",
+      "languages": ["sv", "da", "no"],
+      "subtitles": ["fi"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (track and episode numbers glued to the title)",
+    "from": "PTT tests/test_language.py"
+  },
+  {
+    "name": "Svein.Og.Rotta.NORSK.Nordic.Subs.2006",
+    "expect": {
+      "title": "Svein Og Rotta",
+      "languages": ["no"],
+      "subtitles": ["da", "fi", "no", "sv"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Borat med Norsk Undertekst",
+    "expect": {
+      "title": "Borat med Norsk Undertekst",
+      "languages": ["no"]
+    },
+    "pending": "language tags that are words, truncations or lone codes (Undertekst, Dk-Subs, lati, Englis, LT, TİVİBU, d.ru)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Curious.George.2.Follow.That.Monkey.2009.DK.SWE.UK.PAL.DVDR-CATC",
+    "expect": {
+      "title": "Curious George 2 Follow That Monkey",
+      "languages": ["da", "sv"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Yes.Man.Dk-Subs.2009.dingel",
+    "expect": {
+      "title": "Yes Man Dk-Subs",
+      "languages": ["da"]
+    },
+    "pending": "language tags that are words, truncations or lone codes (Undertekst, Dk-Subs, lati, Englis, LT, TİVİBU, d.ru)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Red Riding 1974 [2009 PAL DVD][En Subs[Sv.No.Fi]",
+    "expect": {
+      "title": "Red Riding 1974",
+      "languages": [],
+      "subtitles": ["en", "sv", "no", "fi"]
+    },
+    "note": "“En Subs” and the list after it are subtitle languages, Norwegian included",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Comme une Image (Look at Me) [2004 PAL DVD][Fr Subs[Sv.Da.No]",
+    "expect": {
+      "title": "Comme une Image (Look at Me)",
+      "languages": [],
+      "subtitles": ["fr", "sv", "da", "no"]
+    },
+    "note": "“Fr Subs” and the list after it are subtitle languages",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "A.Good.Day.To.Die.Hard.2013.SWESUB.DANSUB.FiNSUB.720p.WEB-DL.-Ro",
+    "expect": {
+      "title": "A Good Day To Die Hard",
+      "languages": [],
+      "subtitles": ["sv", "da", "fi"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The.Prisoner.1967-1968.Complete.Series.Subs.English+Nordic",
+    "expect": {
+      "title": "The Prisoner",
+      "languages": ["en"],
+      "subtitles": ["da", "fi", "no", "sv"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Royal.Pains.S05E02.HDTV.subtitulado.esp.sc.avi",
+    "expect": {
+      "title": "Royal Pains",
+      "languages": ["es"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Desmembrados (2006) [HDrip-XviD-AC3][Castellano]",
+    "expect": {
+      "title": "Desmembrados",
+      "languages": ["es"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Patriot Games [1992] Eng, Ger, Cze, Hun, Pol + multisub  DVDrip",
+    "expect": {
+      "title": "Patriot Games",
+      "languages": ["en", "de", "cs", "hu", "pl"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Elvis Presley - La via del Male (King creole) - IT EN FR DE ES",
+    "expect": {
+      "title": "Elvis Presley - La via del Male (King creole)",
+      "languages": ["it", "en", "fr", "de", "es"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "FernGully [H264 - Ita Dut Fre Ger Eng Spa Aac - MultiSub]",
+    "expect": {
+      "title": "FernGully",
+      "languages": ["it", "nl", "fr", "de", "en", "es"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Jesus de Montreal / Jesus of Montreal - subtitulos espanol",
+    "expect": {
+      "title": "Jesus de Montreal / Jesus of Montreal",
+      "languages": ["es"]
+    },
+    "pending": "Portuguese and Spanish free-text language words (subtitulos espanol)",
+    "from": "PTT tests/test_language.py"
+  },
+  {
+    "name": "Los.Vengadores.DVDR español ingles clon",
+    "expect": {
+      "title": "Los Vengadores",
+      "languages": ["es", "en"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "EMPIRE STATE 2013 DVDRip TRNC English and Española Latin",
+    "expect": {
+      "title": "EMPIRE STATE",
+      "languages": ["en", "es"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Mary Poppins Returns 2019 DVDRip LATINO-1XBET",
+    "expect": {
+      "title": "Mary Poppins Returns",
+      "languages": ["es"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Los Simpsons S18 E01 Latino",
+    "expect": {
+      "title": "Los Simpsons",
+      "languages": ["es"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Spider-Man (2002) Blu-Ray [720p] Dual Ingles-Español",
+    "expect": {
+      "title": "Spider-Man",
+      "languages": ["en", "es"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Abuela (2015) 1080p BluRay x264 AC3 Dual Latino-Inglés",
+    "expect": {
+      "title": "Abuela",
+      "languages": ["es", "en"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Dumbo.2019.1080p.Dual.Lat",
+    "expect": {
+      "title": "Dumbo",
+      "languages": ["es"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "A.Score.to.Settle.2019.lati.mp4",
+    "expect": {
+      "title": "A Score to Settle",
+      "languages": ["es"]
+    },
+    "pending": "language tags that are words, truncations or lone codes (Undertekst, Dk-Subs, lati, Englis, LT, TİVİBU, d.ru)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Men in Black International 2019 (inglês português)",
+    "expect": {
+      "title": "Men in Black International",
+      "languages": ["en", "pt"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Assassins (1995) Sylvester Stallone.DVDrip.XviD - Italian Englis",
+    "expect": {
+      "title": "Assassins",
+      "languages": ["en", "it"]
+    },
+    "pending": "language tags that are words, truncations or lone codes (Undertekst, Dk-Subs, lati, Englis, LT, TİVİBU, d.ru)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "El Club de la Lucha[dvdrip][spanish]",
+    "expect": {
+      "title": "El Club de la Lucha",
+      "languages": ["es"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The Curse Of The Weeping Woman 2019 BluRay 1080p Tel+Tam+hin+eng",
+    "expect": {
+      "title": "The Curse Of The Weeping Woman",
+      "languages": ["te", "ta", "hi", "en"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Inception 2010 1080p BRRIP[dual-audio][eng-hindi]",
+    "expect": {
+      "title": "Inception",
+      "languages": ["en", "hi"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Inception (2010) 720p BDRip Tamil+Telugu+Hindi+Eng",
+    "expect": {
+      "title": "Inception",
+      "languages": ["ta", "te", "hi", "en"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Dabangg 3 2019 AMZN WebRip Hindi 720p x264",
+    "expect": {
+      "title": "Dabangg 3",
+      "languages": ["hi"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Quarantine [2008] [DVDRiP.XviD-M14CH0] [Lektor PL] [Arx]",
+    "expect": {
+      "title": "Quarantine",
+      "languages": ["pl"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The Mandalorian S01E06 POLISH WEBRip x264-FLAME",
+    "expect": {
+      "title": "The Mandalorian",
+      "languages": ["pl"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Carros 2 Dublado - Portugues BR (2011)",
+    "expect": {
+      "title": "Carros 2 Dublado - Portugues BR",
+      "languages": ["pt"]
+    },
+    "pending": "Portuguese and Spanish free-text language words (legendado, Leg BR, PT(BR), Ing, lowercase pt)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "A.Simple.Plan.1998.720p.BDRIP.X264.dublado.portugues.BR.gmenezes",
+    "expect": {
+      "title": "A Simple Plan",
+      "languages": ["pt"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "American.Horror.Story.S01E01.720p. PORTUGUÊS BR",
+    "expect": {
+      "title": "American Horror Story",
+      "languages": ["pt"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Angel.S05E19.legendado.br.rmvb",
+    "expect": {
+      "title": "Angel",
+      "languages": ["pt"]
+    },
+    "pending": "Portuguese and Spanish free-text language words (legendado, Leg BR, PT(BR), Ing, lowercase pt)",
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Grimm S01E11 Dublado BR [ kickUploader ]",
+    "expect": {
+      "title": "Grimm",
+      "languages": ["pt"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "InuYasha.EP161.ptBR.subtitles.[inuplace.com.br].avi",
+    "expect": {
+      "title": "InuYasha",
+      "languages": [],
+      "subtitles": ["pt"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Ghost.Rider.DivX_Gamonet(Ingles-Port.BR)-AC3.avi",
+    "expect": {
+      "title": "Ghost Rider",
+      "languages": ["en", "pt"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "I Am David  legendado pt/br",
+    "expect": {
+      "title": "I Am David legendado pt/br",
+      "languages": ["pt"]
+    },
+    "pending": "Portuguese and Spanish free-text language words (legendado, Leg BR, PT(BR), Ing, lowercase pt)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Wonder Woman Season 3 (H.264 1080p; English/Portuguese-BR)",
+    "expect": {
+      "title": "Wonder Woman",
+      "languages": ["en", "pt"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "MIB 3 - Homens de Preto 2012 ( Audio EN-BR - Leg BR  Mkv 1280x69",
+    "expect": {
+      "title": "MIB 3 - Homens de Preto",
+      "languages": ["en", "pt"]
+    },
+    "pending": "Portuguese and Spanish free-text language words (legendado, Leg BR, PT(BR), Ing, lowercase pt)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "my wife is a gangster 3 legendado em PT(BR)",
+    "expect": {
+      "title": "my wife is a gangster 3 legendado em PT(BR)",
+      "languages": ["pt"]
+    },
+    "pending": "Portuguese and Spanish free-text language words (legendado, Leg BR, PT(BR), Ing, lowercase pt)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "A.Clockwork.Orange.1971.BRDRIP.1080p.DUAL.PORT-BR.ENG.gmenezes.m",
+    "expect": {
+      "title": "A Clockwork Orange",
+      "languages": ["pt", "en"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Superman I - O Filme 1978 Leg. BR - Mkv 1280x528",
+    "expect": {
+      "title": "Superman I - O Filme",
+      "languages": ["pt"]
+    },
+    "pending": "Portuguese and Spanish free-text language words (legendado, Leg BR, PT(BR), Ing, lowercase pt)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The Hit List (2011) DVD NTSC WS (eng-fre-pt-spa) [Sk]",
+    "expect": {
+      "title": "The Hit List",
+      "languages": ["en", "fr", "pt", "es"]
+    },
+    "note": "the hyphen-joined list names four languages, pt included",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "[POPAS] Neon Genesis Evangelion: The End of Evangelion [jp_PT-pt",
+    "expect": {
+      "title": "Neon Genesis Evangelion: The End of Evangelion",
+      "languages": ["ja", "pt"]
+    },
+    "pending": "Portuguese and Spanish free-text language words (legendado, Leg BR, PT(BR), Ing, lowercase pt)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Zola Maseko - Drum (2004) PT subs",
+    "expect": {
+      "title": "Zola Maseko - Drum",
+      "languages": [],
+      "subtitles": ["pt"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Idrissa Ouedraogo - Yaaba (1989) EN ES FR PT",
+    "expect": {
+      "title": "Idrissa Ouedraogo - Yaaba",
+      "languages": ["en", "es", "fr", "pt"]
+    },
+    "note": "the source drops PT, which the name lists",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Metallica.Through.The.Never.2013 O Filme(leg.pt-pt)",
+    "expect": {
+      "title": "Metallica Through The Never",
+      "languages": ["pt"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Dinossauro (2000) --[ Ing / Pt / Esp ]",
+    "expect": {
+      "title": "Dinossauro",
+      "languages": ["en", "es", "pt"]
+    },
+    "pending": "Portuguese and Spanish free-text language words (legendado, Leg BR, PT(BR), Ing, lowercase pt)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The Guard 2011.DK.EN.ES.HR.NL.PT.RO.Subtitles",
+    "expect": {
+      "title": "The Guard",
+      "languages": [],
+      "subtitles": ["da", "en", "es", "hr", "nl", "pt", "ro"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart; the list is followed by “Subtitles”, so these are subtitle languages, all seven of them",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Titan.A.E.2000 720p  HDTV DTS Eng Fra Hun Rom Rus multisub",
+    "expect": {
+      "title": "Titan A.E.",
+      "languages": ["en", "fr", "hu", "ro", "ru"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Miami.Bici.2020.1080p.NETFLIX.WEB-DL.DDP5.1.H.264.EN-ROSub-ExtremlymTorrents",
+    "expect": {
+      "title": "Miami Bici",
+      "languages": ["en"],
+      "subtitles": ["ro"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Aranyelet.S01.HUNGARIAN.1080p.WEBRip.DDP5.1.x264-SbR[rartv]",
+    "expect": {
+      "title": "Aranyelet",
+      "languages": ["hu"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Ponyo[2008]DvDrip-H264 Quad Audio[Eng Jap Fre Spa]AC3 5.1[DXO]",
+    "expect": {
+      "title": "Ponyo",
+      "languages": ["en", "ja", "fr", "es"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The Mechanic [1972] Eng,Deu,Fra,Esp,Rus + multisub DVDrip",
+    "expect": {
+      "title": "The Mechanic",
+      "languages": ["en", "de", "fr", "es", "ru"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Mommie Dearest [1981 PAL DVD][En.De.Fr.It.Es Multisubs[18]",
+    "expect": {
+      "title": "Mommie Dearest",
+      "languages": [],
+      "subtitles": ["en", "de", "fr", "it", "es"]
+    },
+    "note": "the list is followed by “Multisubs”, so these are subtitle languages, all five",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Pasienio sargyba S01E03 (2016 WEBRip LT)",
+    "expect": {
+      "title": "Pasienio sargyba",
+      "languages": ["lt"]
+    },
+    "pending": "language tags that are words, truncations or lone codes (Undertekst, Dk-Subs, lati, Englis, LT, TİVİBU, d.ru)",
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Ip.Man.4.The.Finale.2019.CHINESE.1080p.BluRay.x264.TrueHD.7.1.Atmos-HDC",
+    "expect": {
+      "title": "Ip Man 4 The Finale",
+      "languages": ["zh"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Inuyasha_TV+Finale+OVA+Film+CD+Manga+Other; dub jpn,chn,eng sub chs (2019-09-21)",
+    "expect": {
+      "title": "Inuyasha",
+      "languages": ["ja", "zh", "en"]
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (track and episode numbers glued to the title)",
+    "from": "PTT tests/test_language.py"
+  },
+  {
+    "name": "Initial D Live Action 2005 ENG/CHI",
+    "expect": {
+      "title": "Initial D Live Action",
+      "languages": ["en", "zh"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Wolf.Warrior.2015.720p.BluRay.x264.Mandarin.AAC-ETRG",
+    "expect": {
+      "title": "Wolf Warrior",
+      "languages": ["zh"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Berserk 01-25 [dual audio JP,EN] MKV",
+    "expect": {
+      "title": "Berserk",
+      "languages": ["ja", "en"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "FLCL S05.1080p HMAX WEB-DL DD2.0 H 264-VARYG (FLCL: Shoegaze Dual-Audio Multi-Subs)",
+    "expect": {
+      "title": "FLCL",
+      "languages": []
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Shinjuku Swan 2015 JAP 1080p BluRay x264 DTS-JYK",
+    "expect": {
+      "title": "Shinjuku Swan",
+      "languages": ["ja"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Wet.Woman.in.the.Wind.2016.JAPANESE.1080p.BluRay.x264-iKiW",
+    "expect": {
+      "title": "Wet Woman in the Wind",
+      "languages": ["ja"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "All.Love.E146.KOR.HDTV.XViD-DeBTV",
+    "expect": {
+      "title": "All Love",
+      "languages": ["ko"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The.Nun.2018.KORSUB.HDRip.XviD.MP3-STUTTERSHIT",
+    "expect": {
+      "title": "The Nun",
+      "languages": [],
+      "subtitles": ["ko"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Burning.2018.KOREAN.720p.BluRay.H264.AAC-VXT",
+    "expect": {
+      "title": "Burning",
+      "languages": ["ko"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Atonement.2017.KOREAN.ENSUBBED.1080p.WEBRip.x264-VXTT",
+    "expect": {
+      "title": "Atonement",
+      "languages": ["ko"],
+      "subtitles": ["en"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "A Freira (2018) Dublado HD-TS 720p",
+    "expect": {
+      "title": "A Freira",
+      "languages": ["pt"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Escobar El Patron Del Mal Capitulo 91 SD (2012-10-10) [SiRaDuDe]",
+    "expect": {
+      "title": "Escobar El Patron Del Mal Capitulo 91 SD",
+      "languages": ["pt"]
+    },
+    "pending": "Portuguese and Spanish free-text language words (legendado, Leg BR, PT(BR), Ing, lowercase pt)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Bleach - 215 ao 220 - [DB-BR]",
+    "expect": {
+      "title": "Bleach",
+      "languages": ["pt"]
+    },
+    "pending": "Portuguese and Spanish free-text language words (legendado, Leg BR, PT(BR), Ing, lowercase pt)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Joker.2019.MULTi.Bluray.1080p.Atmos.7.1.En.Fr.Sp.Pt-DDR[EtHD]",
+    "expect": {
+      "title": "Joker",
+      "languages": ["en", "fr", "es", "pt"],
+      "multi": true
+    },
+    "note": "the name lists four languages; the sources disagree, highsea keeps all four",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Dilbert complete series + en subs",
+    "expect": {
+      "title": "Dilbert",
+      "languages": [],
+      "subtitles": ["en"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The Next Karate Kid (1994) NTSC WS -Eng/Fre/Spa/Por- [ctang]",
+    "expect": {
+      "title": "The Next Karate Kid",
+      "languages": ["en", "fr", "es", "pt"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "arsenico por compasion 1944 Capra spanish castellano",
+    "expect": {
+      "title": "arsenico por compasion",
+      "languages": ["es", "pt"]
+    },
+    "pending": "Portuguese and Spanish free-text language words (legendado, Leg BR, PT(BR), Ing, lowercase pt)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Un.Homme.Et.Une.Femme.1966.DVDRip.XviD.AR [PT ENG ESP]",
+    "expect": {
+      "title": "Un Homme Et Une Femme",
+      "languages": ["pt", "en", "es"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Geminis.2005.Argentina.ESP.ENG.PT.SUBS",
+    "expect": {
+      "title": "Geminis",
+      "languages": ["es", "en"],
+      "subtitles": ["pt"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "1917 2019 1080p Bluray x264-Sexmeup [Greek Subs] [Braveheart]",
+    "expect": {
+      "title": "1917",
+      "languages": [],
+      "subtitles": ["el"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The Lion King 1,2,3 Greek Language",
+    "expect": {
+      "title": "The Lion King 1,2,3",
+      "languages": ["el"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The Adams Family (1991) (Greek Subs integratet)",
+    "expect": {
+      "title": "The Adams Family",
+      "languages": [],
+      "subtitles": ["el"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The Insult (2017) [BluRay] [720p] Arabic",
+    "expect": {
+      "title": "The Insult",
+      "languages": ["ar"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The.Mexican.2001 - Arabic Subs Hardcoded",
+    "expect": {
+      "title": "The Mexican",
+      "languages": [],
+      "subtitles": ["ar"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Much Loved (2015) - DVDRip x265 HEVC - ARAB-ITA-FRE AUDIO (ENG S",
+    "expect": {
+      "title": "Much Loved",
+      "languages": ["ar", "it", "fr", "en"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "42.2013.720p.BluRay.x264.HD4Ar Arab subtitle",
+    "expect": {
+      "title": "42",
+      "languages": [],
+      "subtitles": ["ar"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Fauda.S01.HEBREW.1080p.NF.WEBRip.DD5.1.x264-TrollHD[rartv]",
+    "expect": {
+      "title": "Fauda",
+      "languages": ["he"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "madagascar 720p hebrew dubbed.mkv",
+    "expect": {
+      "title": "madagascar",
+      "languages": ["he"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The.Protector.2018.S03.TURKISH.WEBRip.x264-ION10",
+    "expect": {
+      "title": "The Protector",
+      "languages": ["tr"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Recep Ivedik 6 (2020) NETFLIX 720p WEBDL (Turkish) - ExtremlymTorrents",
+    "expect": {
+      "title": "Recep Ivedik 6",
+      "languages": ["tr"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The Insider*1999*[DVD5][PAL][ENG, POL, sub. ROM, TUR]",
+    "expect": {
+      "title": "The Insider",
+      "languages": ["en", "pl", "ro", "tr"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Divorzio allitaliana [XviD - Ita Mp3 - Sub Eng Esp Tur]",
+    "expect": {
+      "title": "Divorzio allitaliana",
+      "languages": ["it"],
+      "subtitles": ["en", "es", "tr"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "2007 Saturno Contro [Saturn In Opposition] (ITA-FRA-TUR) [EngSub",
+    "expect": {
+      "title": "2007 Saturno Contro",
+      "languages": ["it", "fr", "tr"],
+      "subtitles": ["en"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart; a second title in square brackets is an alternative title, so the title ends before it",
+    "from": "PTT tests/test_language.py"
+  },
+  {
+    "name": "Cowboy Bebop - 1080p BDrip Audio+sub MULTI (VF / VOSTFR)",
+    "expect": {
+      "title": "Cowboy Bebop",
+      "languages": ["fr"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Casablanca 1942 BDRip 1080p [multi language,multi subs].mkv",
+    "expect": {
+      "title": "Casablanca",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Avengers.Endgame.2019.4K.UHD.ITUNES.DL.H265.Dolby.ATMOS.MSUBS-Deflate.Telly",
+    "expect": {
+      "title": "Avengers Endgame",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Dawn of the Planet of the Apes (2014) 720p BluRay x264 - MULTI S",
+    "expect": {
+      "title": "Dawn of the Planet of the Apes",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Pirates of the Caribbean On Stranger Tides (2011) DVD5 (Multi Su",
+    "expect": {
+      "title": "Pirates of the Caribbean On Stranger Tides",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Jumanji The Next Level (2019) 720p HDCAM Ads Blurred x264 Dual A",
+    "expect": {
+      "title": "Jumanji The Next Level",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Men in Black International (2019) 720p Korsub HDRip x264 ESub [Dual Line Audio] [Hindi English]",
+    "expect": {
+      "title": "Men in Black International",
+      "languages": ["hi", "en"],
+      "subtitles": ["ko", "en"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Fame (1980) [DVDRip][Dual][Ac3][Eng-Spa]",
+    "expect": {
+      "title": "Fame",
+      "languages": ["en", "es"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "O Rei do Show 2018 Dual Áudio 4K UtraHD By.Luan.Harper.",
+    "expect": {
+      "title": "O Rei do Show",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Cowboy Bebop The Movie (2001) BD 1080p.x265.Tri-Audio.Ita.Eng.Jap [Rady]",
+    "expect": {
+      "title": "Cowboy Bebop The Movie",
+      "languages": ["it", "en", "ja"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "[IceBlue] Naruto (Season 01) - [Multi-Dub][Multi-Sub][HEVC 10Bits] 800p BD",
+    "expect": {
+      "title": "Naruto",
+      "languages": []
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Blue Seed - 01 (BDRip 720x480p x265 HEVC FLAC, AC3x2 2.0x3)(Triple Audio)[sxales].mkv",
+    "expect": {
+      "title": "Blue Seed",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Ministri S01E02 SLOVAK 480p x264-mSD",
+    "expect": {
+      "title": "Ministri",
+      "languages": ["sk"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Seinfeld.COMPLETE.SLOSUBS.DVDRip.XviD",
+    "expect": {
+      "title": "Seinfeld",
+      "languages": [],
+      "subtitles": ["sk"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The House Bunny (2008) BDRemux 1080p MediaClub [RUS, UKR, ENG]",
+    "expect": {
+      "title": "The House Bunny",
+      "languages": ["ru", "uk", "en"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "L'immortel (2010) DVDRip AVC (Russian,Ukrainian)",
+    "expect": {
+      "title": "L'immortel",
+      "languages": ["ru", "uk"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Ekk Deewana Tha (2012) DVDRip 720p x264 AAC TaRa.mkv",
+    "expect": {
+      "title": "Ekk Deewana Tha",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "My Big Fat Greek Wedding (2002) 720p BrRip x264 - YIFY",
+    "expect": {
+      "title": "My Big Fat Greek Wedding",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Get Him to the Greek 2010 720p BluRay",
+    "expect": {
+      "title": "Get Him to the Greek",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "[Hakata Ramen] Hoshiai No Sora (Stars Align) 01 [1080p][HEVC][x265][10bit][Dual-Subs] HR-DR",
+    "expect": {
+      "title": "Hoshiai No Sora (Stars Align)",
+      "languages": []
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (track and episode numbers glued to the title)",
+    "from": "PTT tests/test_language.py"
+  },
+  {
+    "name": "The English Patient (1996) 720p BrRip x264 - YIFY",
+    "expect": {
+      "title": "The English Patient",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Do.Or.Die.1991.1080p.BluRay.x264-[YTS.LT].mp4",
+    "expect": {
+      "title": "Do Or Die",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Castlevania 2017 1º temporada completa 1080p",
+    "expect": {
+      "title": "Castlevania",
+      "languages": []
+    },
+    "note": "the source infers Spanish from the word “Temporada”; that’s not a language tag",
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "City on a Hill - Temporada 1 [HDTV][Cap.110].avi",
+    "expect": {
+      "title": "City on a Hill",
+      "languages": []
+    },
+    "note": "the source infers Spanish from the word “Temporada”; that’s not a language tag",
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "La inocencia [720p][wWw.EliteTorrent.NL].mkv",
+    "expect": {
+      "title": "La inocencia",
+      "languages": []
+    },
+    "note": "nothing in the name tags a language; the site’s domain isn’t one",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Reasonable Doubt - Temporada 1 [HDTV][Cap.101][www.AtomoHD.FI]",
+    "expect": {
+      "title": "Reasonable Doubt",
+      "languages": []
+    },
+    "note": "the source infers Spanish from the word “Temporada”; that’s not a language tag",
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "1883 - Temporada 1 [HDTV 720p][Cap.103][AC3 5.1][www.AtomoHD.fi]",
+    "expect": {
+      "title": "1883",
+      "languages": []
+    },
+    "note": "the source infers Spanish from the word “Temporada”; that’s not a language tag",
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Los Winchester - Temporada 1 [HDTV][Cap.103][www.atomoHD.tw]",
+    "expect": {
+      "title": "Los Winchester",
+      "languages": []
+    },
+    "note": "the source infers Spanish from the word “Temporada”; that’s not a language tag",
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "El Inmortal- Temporada 1 [HDTV 720p][Cap.104][AC3 5.1][www.AtomoHD.ch]]",
+    "expect": {
+      "title": "El Inmortal",
+      "languages": []
+    },
+    "note": "the source infers Spanish from the word “Temporada”; that’s not a language tag",
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Black Friday (2021) [BluRay Rip][AC3 5.1][www.atomixHQ.TEL]",
+    "expect": {
+      "title": "Black Friday",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Deep Blue Sea 3 [HDR][wWw.EliteTorrent.SE]",
+    "expect": {
+      "title": "Deep Blue Sea 3",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The.Italian.Job.1969.1080p.BluRay.x265-RARBG.mp4",
+    "expect": {
+      "title": "The Italian Job",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Chinese Zodiac (2012) 1080p BrRip x264 - YIFY",
+    "expect": {
+      "title": "Chinese Zodiac",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The German Doctor 2013 1080p WEBRip",
+    "expect": {
+      "title": "The German Doctor",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Johnny English 2003 1080p BluRay",
+    "expect": {
+      "title": "Johnny English",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Polish Wedding (1998) 1080p (moviesbyrizzo upl).mp4",
+    "expect": {
+      "title": "Polish Wedding",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Russian.Doll.S02E02.2160p.NF.WEB-DL.DDP5.1.HDR.DV.HEVC-PEXA.mkv",
+    "expect": {
+      "title": "Russian Doll",
+      "languages": []
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The.Spanish.Prisoner.1997.1080p.BluRay.x265-RARBG",
+    "expect": {
+      "title": "The Spanish Prisoner",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Japanese.Story.2003.1080p.WEBRip.x264-RARBG",
+    "expect": {
+      "title": "Japanese Story",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "[ Torrent9.cz ] The.InBetween.S01E10.FiNAL.HDTV.XviD-EXTREME.avi",
+    "expect": {
+      "title": "The InBetween",
+      "languages": []
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Thai Massage (2022) 720p PDVDRip x264 AAC.mkv",
+    "expect": {
+      "title": "Thai Massage",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Carson Daly 2017 09 13 Dan Harmon 720p HDTV x264-CROOKS",
+    "expect": {
+      "title": "Carson Daly",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Dan Browns The Lost Symbol S01E03 1080p WEB H264-GLHF",
+    "expect": {
+      "title": "Dan Browns The Lost Symbol",
+      "languages": []
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Ben.Ara.2015.1080p.WEBRip.x265-RARBG.mp4",
+    "expect": {
+      "title": "Ben Ara",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Ara.(A.Break).2008.DVDRip",
+    "expect": {
+      "title": "Ara (A Break)",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "www.1TamilMV.cz - Mirzapur (2020) S02 EP (01-10) - HQ HDRip - [Tam+ Tel] - x264 - AAC - 1GB - ESub",
+    "expect": {
+      "title": "Mirzapur",
+      "languages": ["ta", "te"],
+      "subtitles": ["en"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "www.1TamilMV.cz - The Game of Chathurangam (2023) WEB-DL - 1080p - AVC - (AAC 2.0) [Tamil + Malayalam] - 1.2GB.mkv",
+    "expect": {
+      "title": "The Game of Chathurangam",
+      "languages": ["ta", "ml"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "www.1TamilMV.yt - Anchakkallakokkan (2024) Malayalam HQ HDRip - 720p - HEVC - (DD+5.1 - 192Kbps & AAC) - 750MB - ESub.mkv",
+    "expect": {
+      "title": "Anchakkallakokkan",
+      "languages": ["ml"],
+      "subtitles": ["en"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Anatomia De Grey - Temporada 19 [HDTV][Cap.1905][Castellano][www.AtomoHD.nu].avi",
+    "expect": {
+      "title": "Anatomia De Grey",
+      "languages": ["es"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Godzilla.x.Kong.The.New.Empire.2024.2160p.BluRay.REMUX.DV.P7.HDR.ENG.LATINO.GER.ITA.FRE.HINDI.CHINESE.TrueHD.Atmos.7.1.H265-BEN.THE.MEN",
+    "expect": {
+      "title": "Godzilla x Kong The New Empire",
+      "languages": ["en", "es", "de", "it", "fr", "hi", "zh"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Sampurna.2023.Bengali.S02.1080p.AMZN.WEB-DL.DD+2.0.H.265-TheBiscuitMan",
+    "expect": {
+      "title": "Sampurna",
+      "languages": ["bn"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "Kingdom.of.the.Planet.of.the.Apes.2024.HDRIP.1080P.[xDark [SaveHD] Latin + English + Hindi.mp4",
+    "expect": {
+      "title": "Kingdom of the Planet of the Apes",
+      "languages": ["es", "en", "hi"]
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The Karate Kid Part III 1989 1080p DUAL TİVİBU WEB-DL x264 AAC - HdT",
+    "expect": {
+      "title": "The Karate Kid Part III",
+      "languages": ["tr"]
+    },
+    "pending": "language tags that are words, truncations or lone codes (Undertekst, Dk-Subs, lati, Englis, LT, TİVİBU, d.ru)",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The French Connection 1971 Remastered BluRay 1080p REMUX AVC DTS-HD MA 5 1-LEGi0N",
+    "expect": {
+      "title": "The French Connection",
+      "languages": []
+    },
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "The.Gorge.2025.PLSUB.1080p.ATVP.WEB-DL.DDP5.1.Atmos.H.264-APEX.mkv",
+    "expect": {
+      "title": "The Gorge",
+      "languages": [],
+      "subtitles": ["pl"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_language.py; title by review"
+  },
+  {
+    "name": "sons.of.anarchy.s05e10.480p.BluRay.x264-GAnGSteR",
+    "expect": {
+      "title": "sons of anarchy",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 480,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "GAnGSteR",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Color.Of.Night.Unrated.DC.VostFR.BRrip.x264",
+    "expect": {
+      "title": "Color Of Night",
+      "year": null,
+      "edition": "Unrated DC",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "subtitles": ["fr"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Da Vinci Code DVDRip",
+    "expect": {
+      "title": "Da Vinci Code",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Some.girls.1998.DVDRip",
+    "expect": {
+      "title": "Some girls",
+      "year": 1998,
+      "edition": null,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Ecrit.Dans.Le.Ciel.1954.MULTI.DVDRIP.x264.AC3-gismo65",
+    "expect": {
+      "title": "Ecrit Dans Le Ciel",
+      "year": 1954,
+      "edition": null,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "gismo65",
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "2019 After The Fall Of New York 1983 REMASTERED BDRip x264-GHOULS",
+    "expect": {
+      "title": "2019 After The Fall Of New York",
+      "year": 1983,
+      "edition": "REMASTERED",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "GHOULS",
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Ghost In The Shell 2017 720p HC HDRip X264 AC3-EVO",
+    "expect": {
+      "title": "Ghost In The Shell",
+      "year": 2017,
+      "edition": null,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": [],
+      "releaseGroup": "EVO",
+      "hardcodedSubs": "HC",
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Rogue One 2016 1080p BluRay x264-SPARKS",
+    "expect": {
+      "title": "Rogue One",
+      "year": 2016,
+      "edition": null,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "SPARKS",
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Desperation 2006 Multi Pal DvdR9-TBW1973",
+    "expect": {
+      "title": "Desperation",
+      "year": 2006,
+      "edition": null,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "TBW1973"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Maman, j'ai raté l'avion 1990 VFI 1080p BluRay DTS x265-HTG",
+    "expect": {
+      "title": "Maman, j'ai raté l'avion",
+      "year": 1990,
+      "edition": null,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["fr"],
+      "releaseGroup": "HTG",
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Game of Thrones - The Complete Season 3 [HDTV]",
+    "expect": {
+      "title": "Game of Thrones",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The Sopranos: The Complete Series (Season 1,2,3,4,5&6) + Extras",
+    "expect": {
+      "title": "The Sopranos",
+      "year": null,
+      "edition": null,
+      "languages": [],
+      "releaseGroup": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Skins Season S01-S07 COMPLETE UK Soundtrack 720p WEB-DL",
+    "expect": {
+      "title": "Skins",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 720,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Futurama.COMPLETE.S01-S07.720p.BluRay.x265-HETeam",
+    "expect": {
+      "title": "Futurama",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 720,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "HETeam",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "You.[Uncut].S01.SweSub.1080p.x264-Justiso",
+    "expect": {
+      "title": "You",
+      "year": null,
+      "edition": "Uncut",
+      "quality": {
+        "resolution": 1080
+      },
+      "languages": [],
+      "subtitles": ["sv"],
+      "releaseGroup": "Justiso",
+      "codec": "avc"
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Stephen Colbert 2019 10 25 Eddie Murphy 480p x264-mSD [eztv]",
+    "expect": {
+      "title": "Stephen Colbert",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 480
+      },
+      "languages": [],
+      "releaseGroup": "mSD",
+      "codec": "avc"
+    },
+    "note": "the group is the -GROUP suffix (scene rules 18.4.1)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "House MD Season 7 Complete MKV",
+    "expect": {
+      "title": "House MD",
+      "year": null,
+      "edition": null,
+      "languages": [],
+      "releaseGroup": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "2008 The Incredible Hulk Feature Film.mp4",
+    "expect": {
+      "title": "2008 The Incredible Hulk Feature Film",
+      "year": null,
+      "edition": null,
+      "languages": [],
+      "releaseGroup": null
+    },
+    "note": "scene names put the year after the title (2020 x265 rules 18.4.1), so a leading number is part of the title (as in “1917”, “2012”)",
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Черное зеркало / Black Mirror / Сезон 4 / Серии 1-6 (6) [2017, США, WEBRip 1080p] MVO + Eng Sub",
+    "expect": {
+      "title": "Black Mirror",
+      "year": 2017,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "languages": ["en", "ru"],
+      "releaseGroup": null
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[neoHEVC] Student Council's Discretion / Seitokai no Ichizon [Season 1] [BD 1080p x265 HEVC AAC]",
+    "expect": {
+      "title": "Student Council's Discretion / Seitokai no Ichizon",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "neoHEVC",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[Commie] Chihayafuru 3 - 21 [BD 720p AAC] [5F1911ED].mkv",
+    "expect": {
+      "title": "Chihayafuru 3",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 720,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "Commie"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[DVDRip-ITA]The Fast and the Furious: Tokyo Drift [CR-Bt]",
+    "expect": {
+      "title": "The Fast and the Furious: Tokyo Drift",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "languages": ["it"],
+      "releaseGroup": null
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[BluRay Rip 720p ITA AC3 - ENG AC3 SUB] Hostel[2005]-LIFE[ultimafrontiera]",
+    "expect": {
+      "title": "Hostel",
+      "year": 2005,
+      "edition": null,
+      "quality": {
+        "resolution": 720,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": ["it", "en"],
+      "releaseGroup": "LIFE"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[OFFICIAL ENG SUB] Soul Land Episode 121-125 [1080p][Soft Sub][Web-DL][Douluo Dalu][斗罗大陆]",
+    "expect": {
+      "title": "Soul Land",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": ["en", "zh"],
+      "releaseGroup": null
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[720p] The God of Highschool Season 1",
+    "expect": {
+      "title": "The God of Highschool",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 720
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Heidi Audio Latino DVDRip [cap. 3 Al 18]",
+    "expect": {
+      "title": "Heidi",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "languages": ["es"],
+      "releaseGroup": null
+    },
+    "pending": "language tags that are words, truncations or lone codes (Undertekst, Dk-Subs, lati, Englis, LT, TİVİBU, d.ru)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Anatomia De Grey - Temporada 19 [HDTV][Castellano][www.AtomoHD.nu].avi",
+    "expect": {
+      "title": "Anatomia De Grey",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "languages": ["es"],
+      "releaseGroup": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Sprint.2024.S01.COMPLETE.1080p.WEB.h264-EDITH[TGx]",
+    "expect": {
+      "title": "Sprint",
+      "year": 2024,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "EDITH",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Madame Web 2024 UHD BluRay 2160p TrueHD Atmos 7 1 DV HEVC REMUX-FraMeSToR",
+    "expect": {
+      "title": "Madame Web",
+      "year": 2024,
+      "edition": null,
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux",
+        "resolution": 2160
+      },
+      "languages": [],
+      "releaseGroup": "FraMeSToR",
+      "codec": "hevc",
+      "hdr": ["dv"]
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The.Witcher.US.S01.INTERNAL.1080p.WEB.x264-STRiFE",
+    "expect": {
+      "title": "The Witcher",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "STRiFE",
+      "codec": "avc"
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Madame Web (2024) 1080p HINDI ENGLISH 10bit AMZN WEBRip DDP5 1 x265 HEVC - PSA Shadow",
+    "expect": {
+      "title": "Madame Web",
+      "year": 2024,
+      "edition": null,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["hi", "en"],
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The Simpsons S01E01 1080p BluRay x265 HEVC 10bit AAC 5.1 Tigole",
+    "expect": {
+      "title": "The Simpsons",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[DB]_Bleach_264_[012073FE].avi",
+    "expect": {
+      "title": "Bleach",
+      "year": null,
+      "edition": null,
+      "languages": [],
+      "releaseGroup": "DB"
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[SubsPlease] One Piece - 1111 (480p) [2E05E658].mkv",
+    "expect": {
+      "title": "One Piece",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 480
+      },
+      "languages": [],
+      "releaseGroup": "SubsPlease"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "One Piece S01E1056 VOSTFR 1080p WEB x264 AAC -Tsundere-Raws (CR) mkv",
+    "expect": {
+      "title": "One Piece",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "subtitles": ["fr"],
+      "releaseGroup": "Tsundere-Raws",
+      "codec": "avc"
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart; anime raw groups carry “-Raws” in their name",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Mary.Poppins.1964.50th.ANNIVERSARY.EDITION.REMUX.1080p.Bluray.AVC.DTS-HD.MA.5.1-LEGi0N",
+    "expect": {
+      "title": "Mary Poppins",
+      "year": 1964,
+      "edition": "50th ANNIVERSARY EDITION",
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux",
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "LEGi0N",
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The.Lord.of.the.Rings.The.Fellowship.of.the.Ring.2001.EXTENDED.2160p.UHD.BluRay.x265.10bit.HDR.TrueHD.7.1.Atmos-BOREDOR",
+    "expect": {
+      "title": "The Lord of the Rings The Fellowship of the Ring",
+      "year": 2001,
+      "edition": "EXTENDED",
+      "quality": {
+        "resolution": 2160,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "BOREDOR",
+      "codec": "hevc",
+      "hdr": ["hdr"]
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Escaflowne (2000) (BDRip 1896x1048p x265 HEVC TrueHD, FLACx3, AC3 5.1x2+2.0x3)(Triple Audio)[sxales].mkv",
+    "expect": {
+      "title": "Escaflowne",
+      "year": 2000,
+      "edition": null,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[www.1TamilMV.pics]_The.Great.Indian.Suicide.2023.Tamil.TRUE.WEB-DL.4K.SDR.HEVC.(DD+5.1.384Kbps.&.AAC).3.2GB.ESub.mkv",
+    "expect": {
+      "title": "The Great Indian Suicide",
+      "year": 2023,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 2160
+      },
+      "languages": ["ta"],
+      "subtitles": ["en"],
+      "releaseGroup": null,
+      "codec": "hevc",
+      "hdr": ["sdr"]
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "www.5MovieRulz.show - Khel Khel Mein (2024) 1080p Hindi DVDScr - x264 - AAC - 2.3GB.mkv",
+    "expect": {
+      "title": "Khel Khel Mein",
+      "year": 2024,
+      "edition": null,
+      "quality": {
+        "source": "dvd",
+        "modifier": "screener",
+        "resolution": 1080
+      },
+      "languages": ["hi"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "超能警探.Memorist.S01E01.2160p.WEB-DL.H265.AAC-FLTTH.mkv",
+    "expect": {
+      "title": "Memorist",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 2160
+      },
+      "languages": ["zh"],
+      "releaseGroup": "FLTTH",
+      "codec": "hevc"
+    },
+    "pending": "Chinese-script language words (国语, 中字, 中文字幕)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Futurama.S08E03.How.the.West.Was.1010001.1080p.HULU.WEB-DL.DDP5.1.H.264-FLUX.mkv",
+    "expect": {
+      "title": "Futurama",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "FLUX",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "V.H.S.2 [2013] 1080p BDRip x265 DTS-HD MA 5.1 Kira [SEV].mkv",
+    "expect": {
+      "title": "V.H.S. 2",
+      "year": 2013,
+      "edition": null,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "note": "initialisms keep their dots, as metadata writes them",
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "{WWW.BLUDV.TV} Love, Death & Robots - 1ª Temporada Completa 2019 (1080p) Acesse o ORIGINAL WWW.BLUDV.TV",
+    "expect": {
+      "title": "Love, Death & Robots",
+      "year": 2019,
+      "edition": null,
+      "quality": {
+        "resolution": 1080
+      },
+      "languages": ["es"],
+      "releaseGroup": null
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "www.MovCr.to - Bikram Yogi, Guru, Predator (2019) 720p WEB_DL x264 ESubs [Dual Audio]-[Hindi + Eng] - 950MB - MovCr.mkv",
+    "expect": {
+      "title": "Bikram Yogi, Guru, Predator",
+      "year": 2019,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi", "en"],
+      "releaseGroup": "MovCr",
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "28.days.2000.1080p.bluray.x264-mimic.mkv",
+    "expect": {
+      "title": "28 days",
+      "year": 2000,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "mimic",
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "4.20.Massacre.2018.1080p.BluRay.x264.AAC-[YTS.MX].mp4",
+    "expect": {
+      "title": "4 20 Massacre",
+      "year": 2018,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "inside.out.2.2024.d.ru.ua.ts.1o8op.mkv",
+    "expect": {
+      "title": "inside out 2",
+      "year": 2024,
+      "edition": null,
+      "quality": {
+        "source": "telesync",
+        "modifier": "none"
+      },
+      "languages": ["ru"],
+      "releaseGroup": null
+    },
+    "pending": "language tags that are words, truncations or lone codes (Undertekst, Dk-Subs, lati, Englis, LT, TİVİBU, d.ru)",
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "I.S.S.2023.P.WEB-DL.1O8Op.mkv",
+    "expect": {
+      "title": "I.S.S.",
+      "year": 2023,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "note": "initialisms keep their dots, as TMDB writes the title",
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Skazka.2022.Pa.WEB-DL.1O8Op.mkv",
+    "expect": {
+      "title": "Skazka",
+      "year": 2022,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Spider-Man.Across.the.Spider-Verse.2023.Dt.WEBRip.1O8Op.mkv",
+    "expect": {
+      "title": "Spider-Man Across the Spider-Verse",
+      "year": 2023,
+      "edition": null,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Civil.War.2024.D.WEB-DL.1O8Op.mkv",
+    "expect": {
+      "title": "Civil War",
+      "year": 2024,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Dune.Part.Two.2024.2160p.WEB-DL.DDP5.1.Atmos.DV.HDR.H.265-FLUX[TGx]",
+    "expect": {
+      "title": "Dune Part Two",
+      "year": 2024,
+      "edition": null,
+      "quality": {
+        "resolution": 2160,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "FLUX",
+      "codec": "hevc",
+      "hdr": ["dv", "hdr"]
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Saw.3D.2010.1080p.ITA-ENG.BluRay.x265.AAC-V3SP4EV3R.mkv",
+    "expect": {
+      "title": "Saw 3D",
+      "year": 2010,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": ["it", "en"],
+      "releaseGroup": "V3SP4EV3R",
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Dead Before Dawn 3D (2012) [3D.BLU-RAY] [1080p 3D] [BluRay] [HSBS] [YTS.MX]",
+    "expect": {
+      "title": "Dead Before Dawn 3D",
+      "year": 2012,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null,
+      "threeD": true
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Wonder.Woman.1984.2020.3D.1080p.BluRay.x264-SURCODE[rarbg]",
+    "expect": {
+      "title": "Wonder Woman 1984",
+      "year": 2020,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "SURCODE",
+      "codec": "avc",
+      "threeD": true
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The.Last.of.Us.S01E08.1080p.WEB.H264-CAKES[TGx]",
+    "expect": {
+      "title": "The Last of Us",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "CAKES",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The.Office.UK.S01.1080P.BLURAY.REMUX.AVC.DD5.1-NOGRP",
+    "expect": {
+      "title": "The Office",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux",
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "NOGRP",
+      "codec": "avc"
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The.Office.US.S01-09.COMPLETE.SERIES.1080P.BLURAY.X265-HIQVE",
+    "expect": {
+      "title": "The Office",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "HIQVE",
+      "codec": "hevc"
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Hard Knocks 2001 S23E01 1080p MAX WEB-DL DDP2 0 x264-NTb[EZTVx.to].mkv",
+    "expect": {
+      "title": "Hard Knocks",
+      "year": 2001,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "NTb",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Fallout.S01E03.The.Head.2160p.DV.HDR10Plus.Ai-Enhanced.H265.DDP.5.1.MULTI.RIFE.4.15v2-60fps-DirtyHippie.mkv",
+    "expect": {
+      "title": "Fallout",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 2160
+      },
+      "languages": [],
+      "releaseGroup": "DirtyHippie",
+      "codec": "hevc",
+      "hdr": ["dv", "hdr10plus"]
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "BoJack Horseman [06x01-08 of 16] (2019-2020) WEB-DLRip 720p",
+    "expect": {
+      "title": "BoJack Horseman",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 720,
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Трон: Наследие / TRON: Legacy (2010) WEB-DL 1080p | D | Open Matte",
+    "expect": {
+      "title": "TRON: Legacy",
+      "year": 2010,
+      "edition": "Open Matte",
+      "quality": {
+        "resolution": 1080,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "note": "Open Matte is an edition in TRaSH’s formats; the Cyrillic script names no language tag",
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Wentworth.S08E06.PDTV.AAC2.0.x264-BTN",
+    "expect": {
+      "title": "Wentworth",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "BTN",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "www.1Tamilblasters.co - Guardians of the Galaxy Vol. 3 (2023) [4K IMAX UHD HEVC - BDRip - [Tam + Mal + Tel + Hin + Eng] - x264 - DDP5.1 (192Kbps) - 8.3GB - ESub].mkv",
+    "expect": {
+      "title": "Guardians of the Galaxy Vol. 3",
+      "year": 2023,
+      "edition": "IMAX",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 2160
+      },
+      "languages": ["ta", "ml", "te", "hi", "en"],
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "【高清影视之家发布 www.hdbthd.com】奥本海默 杜比视界版本 高码版 国英多音轨 中文字幕 .oppenheimer.2023.2160p.hq.web-dl.h265.dv.ddp5.1.2audio-dreamhd",
+    "expect": {
+      "title": "高清影视之家发布",
+      "year": 2023,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 2160
+      },
+      "languages": ["zh"],
+      "releaseGroup": "dreamhd",
+      "codec": "hevc",
+      "hdr": ["dv"]
+    },
+    "pending": "Chinese-script language words (国语, 中字, 中文字幕)",
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Venom (2018) HD-TS 720p Hindi Dubbed (Clean Audio) x264",
+    "expect": {
+      "title": "Venom",
+      "year": 2018,
+      "edition": null,
+      "quality": {
+        "source": "telesync",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "www.Tamilblasters.party - The Wheel of Time (2021) Season 01 EP(01-08) [720p HQ HDRip - [Tam + Tel + Hin] - DDP5.1 - x264 - 2.7GB - ESubs]",
+    "expect": {
+      "title": "The Wheel of Time",
+      "year": 2021,
+      "edition": null,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["ta", "te", "hi"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The.Walking.Dead.S06E07.SUBFRENCH.HDTV.x264-AMB3R.mkv",
+    "expect": {
+      "title": "The Walking Dead",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "languages": [],
+      "subtitles": ["fr"],
+      "releaseGroup": "AMB3R",
+      "codec": "avc"
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The Walking Dead S05E03 720p Remux x264-ASAP[ettv]",
+    "expect": {
+      "title": "The Walking Dead",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux",
+        "resolution": 720
+      },
+      "languages": [],
+      "releaseGroup": "ASAP",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "www.TamilBlasters.vip - Shang-Chi (2021) [720p BDRip - [Tamil + Telugu + Hindi + Eng] - x264 - DDP5.1 (192 Kbps) - 1.4GB - ESubs].mkv",
+    "expect": {
+      "title": "Shang-Chi",
+      "year": 2021,
+      "edition": null,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["ta", "te", "hi", "en"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Game of Thrones 1ª a 8ª Temporada Completa [720p-1080p] [BluRay] [DUAL]",
+    "expect": {
+      "title": "Game of Thrones",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 720
+      },
+      "languages": ["es"],
+      "releaseGroup": null
+    },
+    "note": "the name gives two resolutions; highsea takes the first",
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Kill.2024.REPACK.1080p.AMZN.WEB-DL.DDP5.1.Atmos.H.264-XEBEC.mkv",
+    "expect": {
+      "title": "Kill",
+      "year": 2024,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "webdl",
+        "modifier": "none",
+        "revision": {
+          "repack": true
+        }
+      },
+      "languages": [],
+      "releaseGroup": "XEBEC",
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Mad.Max.Fury.Road.2015.1080p.BluRay.DDP5.1.x265.10bit-GalaxyRG265[TGx]",
+    "expect": {
+      "title": "Mad Max Fury Road",
+      "year": 2015,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "GalaxyRG265",
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Властелин колец: Кольца власти (S1E1-8 of 8) / The Lord of the Rings: The Rings of Power (2022) WEB-DL",
+    "expect": {
+      "title": "Властелин колец: Кольца власти",
+      "year": 2022,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "note": "the Cyrillic script names no language tag",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "抓娃娃 Successor.2024.TC1080P.国语中字",
+    "expect": {
+      "title": "Successor",
+      "year": 2024,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "telecine",
+        "modifier": "none"
+      },
+      "languages": ["zh"],
+      "releaseGroup": null
+    },
+    "pending": "Chinese-script language words (国语, 中字, 中文字幕)",
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "True.Detective.S03E02.720p.WEB.x265-MiNX[eztv].mkv",
+    "expect": {
+      "title": "True Detective",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 720,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "MiNX",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "True.Grit.1969.720p.WEB.x265-MiNX[eztv].mkv",
+    "expect": {
+      "title": "True Grit",
+      "year": 1969,
+      "edition": null,
+      "quality": {
+        "resolution": 720,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "MiNX",
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Free Samples (2012) [BluRay] [1080p] [YTS.AM]",
+    "expect": {
+      "title": "Free Samples",
+      "year": 2012,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Adbhut (2024) Hindi 1080p HDTVRip x264 AAC 5.1 [2.2GB] - QRips",
+    "expect": {
+      "title": "Adbhut",
+      "year": 2024,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "tv",
+        "modifier": "none"
+      },
+      "languages": ["hi"],
+      "releaseGroup": "QRips",
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Blood Diamond (2006) 1080p BluRay H264 DolbyD 5 1 + nickarad mp4",
+    "expect": {
+      "title": "Blood Diamond",
+      "year": 2006,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The Lockerbie Bombing (2013) Documentary HDTVRIP",
+    "expect": {
+      "title": "The Lockerbie Bombing",
+      "year": 2013,
+      "edition": null,
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "STEVE.martin.a.documentary.in.2.pieces.S01.COMPLETE.1080p.WEB.H264-SuccessfulCrab[TGx]",
+    "expect": {
+      "title": "STEVE martin a documentary in 2 pieces",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "SuccessfulCrab",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The New Frontier S01E10 720p WEB H264-INFLATE[eztv] mkv",
+    "expect": {
+      "title": "The New Frontier",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": [],
+      "releaseGroup": "INFLATE",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[BEST-TORRENTS.COM] The.Penguin.S01E07.MULTi.1080p.AMZN.WEB-DL.H264.DDP5.1.Atmos-K83",
+    "expect": {
+      "title": "The Penguin",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "K83",
+      "codec": "avc"
+    },
+    "note": "the group is the -GROUP suffix (scene rules 18.4.1)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[ Torrent911.my ] The.Penguin.S01E07.FRENCH.WEBRip.x264.mp4",
+    "expect": {
+      "title": "The Penguin",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "languages": ["fr"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The.O.C.Seasons.01-04.AMZN.1080p.10bit.x265.hevc-Bearfish",
+    "expect": {
+      "title": "The O C",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "Bearfish",
+      "codec": "hevc"
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The Adam Project 2022 2160p NF WEB-DL DDP 5 1 Atmos DoVi HDR HEVC-SiC mkv",
+    "expect": {
+      "title": "The Adam Project",
+      "year": 2022,
+      "edition": null,
+      "quality": {
+        "resolution": 2160,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "SiC",
+      "codec": "hevc",
+      "hdr": ["dv", "hdr"]
+    },
+    "note": "the group is the -GROUP suffix (scene rules 18.4.1)",
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "1923 S02E01 The Killing Season 1080p AMZN WEB-DL DDP5 1 H 264-FLUX[TGx]",
+    "expect": {
+      "title": "1923",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "FLUX",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "1883.S01E01.1883.2160p.WEB-DL.DDP5.1.H.265-NTb.mkv",
+    "expect": {
+      "title": "1883",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 2160,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "NTb",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "1923 S02E01 1080p WEB H264-SuccessfulCrab",
+    "expect": {
+      "title": "1923",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "SuccessfulCrab",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[Anime Time] Naruto - 116 - 360 Degrees of Vision The Byakugan's Blind Spot.mkv",
+    "expect": {
+      "title": "Naruto",
+      "year": null,
+      "edition": null,
+      "languages": [],
+      "releaseGroup": "Anime Time"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[DKB] Blue Lock - (Season 01) [1080p][HEVC x265 10bit][Multi-Subs]",
+    "expect": {
+      "title": "Blue Lock",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "DKB",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[JySzE] Naruto [v2] [R2J] [VFR] [Dual Audio] [Complete] [Extras] [x264]",
+    "expect": {
+      "title": "Naruto",
+      "year": null,
+      "edition": null,
+      "languages": [],
+      "releaseGroup": "JySzE",
+      "codec": "avc"
+    },
+    "note": "VFR is variable frame rate, not VF (French audio)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[JySzE] Naruto [v3] [R2J] [VFR] [Dual Audio] [Complete] [Extras] [x264]",
+    "expect": {
+      "title": "Naruto",
+      "year": null,
+      "edition": null,
+      "languages": [],
+      "releaseGroup": "JySzE",
+      "codec": "avc"
+    },
+    "note": "VFR is variable frame rate, not VF (French audio)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Inherent.Vice.2014.1080p.BluRay.AVC.DTS-HD.MA.5.1-RARBG",
+    "expect": {
+      "title": "Inherent Vice",
+      "year": 2014,
+      "edition": null,
+      "quality": {
+        "source": "bluray",
+        "modifier": "brdisk"
+      },
+      "languages": [],
+      "releaseGroup": "RARBG",
+      "codec": "avc"
+    },
+    "note": "TRaSH's BR-DISK format matches a Blu-ray naming the disc codec (AVC) with no encoder, or an ISO; BR-DISK in Radarr's Qualities Defined",
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "A Complete Unknown 2024 1080p MA WEB-DL DDP5 1 Atmos H 264-BYNDR mkv",
+    "expect": {
+      "title": "A Complete Unknown",
+      "year": 2024,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "BYNDR",
+      "codec": "avc"
+    },
+    "note": "the group is the -GROUP suffix (scene rules 18.4.1)",
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[Ex-torrenty.org]iCarly.S04.PLDUB.1080p.AMZN.WEB-DL.DDP2.0.H264-Ralf",
+    "expect": {
+      "title": "iCarly",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["pl"],
+      "releaseGroup": "Ralf",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Deadpool (2016) [2160p] [7.1 AAC ENG] [5.1 AAC ENG FRE GER ITA SPA] [COMMENTARY] [Multi-Sub] [10bit] [UHD] [HEVC] [x265] [pseudo].mkv",
+    "expect": {
+      "title": "Deadpool",
+      "year": 2016,
+      "edition": null,
+      "quality": {
+        "resolution": 2160
+      },
+      "languages": ["en", "fr", "de", "it", "es"],
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Deadpool [BDremux 1080p][AC3 5.1-DTS 5.1 Castellano-DTSEX 5.1 Ingles+Subs][ES-EN]",
+    "expect": {
+      "title": "Deadpool",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "remux"
+      },
+      "languages": ["es", "en"],
+      "releaseGroup": null
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "BLACK PANTHER - Wakanda Forever (2022) 10bit.m1080p.BRRip.H265.MKV.AC3-5.1 DUBPL-ENG-NapisyPL [StarLord]",
+    "expect": {
+      "title": "BLACK PANTHER - Wakanda Forever",
+      "year": 2022,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": ["pl", "en"],
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The.White.Lotus.2.Sezon.7.Bölüm.2021.1080p.BLUTV.WEB-DL.AAC2.0.H.264-TURG.mkv",
+    "expect": {
+      "title": "The White Lotus",
+      "year": 2021,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "TURG",
+      "codec": "avc"
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Apollo 13 (1995) [1080p] [WEB-DL] [x264] [E-AC3-S78] [Lektor PL]",
+    "expect": {
+      "title": "Apollo 13",
+      "year": 1995,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": ["pl"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The Killer's Game 2024 PL 1080p WEB-DL H264 DD5.1-S56",
+    "expect": {
+      "title": "The Killer's Game",
+      "year": 2024,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": ["pl"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[a-s]_fairy_tail_-_003_-_infiltrate_the_everlue_mansion__rs2_[1080p_bd-rip][4CB16872].mkv",
+    "expect": {
+      "title": "fairy tail",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "a-s"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[Taxi 1998] [BDRemux Rutracker.org].mkv",
+    "expect": {
+      "title": "Taxi",
+      "year": 1998,
+      "edition": null,
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux"
+      },
+      "languages": [],
+      "releaseGroup": null
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "www 1TamilBlasters tel - Migration (2023) [English - 720p HQ HDRip - x264 - [DD5 1  (192Kbps) + AAC] - 850MB - ESub] mkv",
+    "expect": {
+      "title": "Migration",
+      "year": 2023,
+      "edition": null,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["en"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "www TamilBlasters tel - Sonic the Hedgehog 2 (2022) English 720p HDRip x264 AAC 800MB ESubs mkv",
+    "expect": {
+      "title": "Sonic the Hedgehog 2",
+      "year": 2022,
+      "edition": null,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["en"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "That 70s Show S02 1080p BluRay REMUX AVC DTS-HD MA 5 1-EPSiLON",
+    "expect": {
+      "title": "That 70s Show",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "remux"
+      },
+      "languages": [],
+      "releaseGroup": "EPSiLON",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[bonkai77].RahXephon.Episode.08.Bitterly.Cold.Holy.Night.[BD.1080p.Dual.Audio.x265.HEVC.10bit].mkv",
+    "expect": {
+      "title": "RahXephon",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "bonkai77",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "One.Piece.S004E111.Dash.For.a.Miracle!.Alabasta.Animal.Land!.1080p.NF.WEB-DL.DDP2.0.x264-KQRM.mkv",
+    "expect": {
+      "title": "One Piece",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "KQRM",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[Kaerizaki-Fansub] One Piece 1098 VOSTFR FHD (1920x1080).mp4",
+    "expect": {
+      "title": "One Piece",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080
+      },
+      "languages": [],
+      "subtitles": ["fr"],
+      "releaseGroup": "Kaerizaki-Fansub"
+    },
+    "note": "the source lists subtitle languages with the audio ones; highsea keeps them apart",
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The Shawshank Redemption 1994 1080p BluRay DDP 5 1 x265-EDGE2020 mkv",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "year": 1994,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "EDGE2020",
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Mission Impossible Dead Reckoning Part One 2023 1080p BluRay DDP 7 1 x265-EDGE2020 mkv",
+    "expect": {
+      "title": "Mission Impossible Dead Reckoning Part One",
+      "year": 2023,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "EDGE2020",
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The Dark Knight 2008 IMAX 1080p BluRay DDP 5 1 H 265-EDGE2020 mkv",
+    "expect": {
+      "title": "The Dark Knight",
+      "year": 2008,
+      "edition": "IMAX",
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "EDGE2020",
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Interstellar 2014 1080p BluRay DDP 5 1 x265-EDGE2020 mkv",
+    "expect": {
+      "title": "Interstellar",
+      "year": 2014,
+      "edition": null,
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": "EDGE2020",
+      "codec": "hevc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "The Fairly OddParents Fairly Odder S01 720p PMTP WEBRip DDP5 1 x264 TEPES rartv ORARBG",
+    "expect": {
+      "title": "The Fairly OddParents Fairly Odder",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 720,
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Georgie and Mandys First Marriage S01E18 TV Money 720p AMZN WEB DL DDP5 1 H 264 FLUX EZTV",
+    "expect": {
+      "title": "Georgie and Mandys First Marriage",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 720,
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": [],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "xXx.2002.15th.Anniversary.Edition.1080p.BluRay.Remux.AVC.DTS-HD.MA.5.1-FraMeSToR",
+    "expect": {
+      "title": "xXx",
+      "year": 2002,
+      "edition": "15th Anniversary Edition",
+      "quality": {
+        "resolution": 1080,
+        "source": "bluray",
+        "modifier": "remux"
+      },
+      "languages": [],
+      "releaseGroup": "FraMeSToR",
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Dragon Ball Z (Complete Series) [1080p] [MP4] [English Audio]",
+    "expect": {
+      "title": "Dragon Ball Z",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "resolution": 1080
+      },
+      "languages": ["en"],
+      "releaseGroup": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Jack-of-All-Trades Party Of None S01E01 DUBBED 1080p WEB H264-SKYANiME",
+    "expect": {
+      "title": "Jack-of-All-Trades Party Of None",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "SKYANiME",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "[LostYears] takt op.Destiny (WEB 1080p x264 AAC) [Dual-Audio]",
+    "expect": {
+      "title": "takt op.Destiny",
+      "year": null,
+      "edition": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": [],
+      "releaseGroup": "LostYears",
+      "codec": "avc"
+    },
+    "from": "PTT tests/test_main.py"
+  },
+  {
+    "name": "Into the Badlands S02E07 PROPER 720p HDTV x264-W4F",
+    "expect": {
+      "title": "Into the Badlands",
+      "quality": {
+        "revision": {
+          "proper": true
+        }
+      }
+    },
+    "episode": true,
+    "from": "PTT tests/test_proper.py; title by review"
+  },
+  {
+    "name": "Have I Got News For You S53E02 EXTENDED 720p HDTV x264-QPEL",
+    "expect": {
+      "title": "Have I Got News For You",
+      "edition": "EXTENDED",
+      "quality": {
+        "revision": {
+          "proper": false
+        }
+      }
+    },
+    "note": "EXTENDED is an edition tag (scene rules 17.2) wherever it appears",
+    "episode": true,
+    "from": "PTT tests/test_proper.py; title by review"
+  },
+  {
+    "name": "Nocturnal Animals 2016 VFF 1080p BluRay DTS HEVC-HD2",
+    "expect": {
+      "title": "Nocturnal Animals",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "doctor_who_2005.8x12.death_in_heaven.720p_hdtv_x264-fov",
+    "expect": {
+      "title": "doctor who",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      }
+    },
+    "episode": true,
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Rebecca.1940.720p.HDTVRip.HDCLUB",
+    "expect": {
+      "title": "Rebecca",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Gossip Girl - 1ª Temporada. (SAT-Rip)",
+    "expect": {
+      "title": "Gossip Girl",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      }
+    },
+    "episode": true,
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "A Stable Life S01E01 DVDRip x264-Ltu",
+    "expect": {
+      "title": "A Stable Life",
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      }
+    },
+    "episode": true,
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "The Vet Life S02E01 Dunk-A-Doctor 1080p ANPL WEB-DL AAC2 0 H 264-RTN",
+    "expect": {
+      "title": "The Vet Life",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      }
+    },
+    "episode": true,
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Brown Nation S01E05 1080p WEBRip x264-JAWN",
+    "expect": {
+      "title": "Brown Nation",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      }
+    },
+    "episode": true,
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Star Wars The Last Jedi 2017 TeleSync AAC x264-MiniMe",
+    "expect": {
+      "title": "Star Wars The Last Jedi",
+      "quality": {
+        "source": "telesync",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "The.Shape.of.Water.2017.DVDScr.XVID.AC3.HQ.Hive-CM8",
+    "expect": {
+      "title": "The Shape of Water",
+      "quality": {
+        "source": "dvd",
+        "modifier": "screener"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Cloudy With A Chance Of Meatballs 2 2013 720p PPVRip x264 AAC-FooKaS",
+    "expect": {
+      "title": "Cloudy With A Chance Of Meatballs 2",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "The.OA.1x08.L.Io.Invisibile.ITA.WEBMux.x264-UBi.mkv",
+    "expect": {
+      "title": "The OA",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      }
+    },
+    "episode": true,
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "[UsifRenegade] Cardcaptor Sakura [BD][Remastered][1080p][HEVC_10Bit][Dual] + Movies",
+    "expect": {
+      "title": "Cardcaptor Sakura",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "[UsifRenegade] Cardcaptor Sakura - 54 [BD-RM][1080p][x265_10Bit][Dual_AAC].mkv",
+    "expect": {
+      "title": "Cardcaptor Sakura",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Elvis & Nixon (MicroHD-1080p)",
+    "expect": {
+      "title": "Elvis & Nixon",
+      "quality": {
+        "source": "unknown"
+      }
+    },
+    "note": "MicroHD is a Spanish re-encode label that names no source; Qualities Defined has no match",
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Bohemian Rhapsody 2018.2160p.UHDrip.x265.HDR.DD+.5.1-DTOne",
+    "expect": {
+      "title": "Bohemian Rhapsody",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Blade.Runner.2049.2017.4K.UltraHD.BluRay.2160p.x264.TrueHD.Atmos",
+    "expect": {
+      "title": "Blade Runner 2049",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Terminator.Dark.Fate.2019.2160p.UHD.BluRay.X265.10bit.HDR.TrueHD",
+    "expect": {
+      "title": "Terminator Dark Fate",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "When We Were Boys 2013 BD Rip x264 titohmr",
+    "expect": {
+      "title": "When We Were Boys",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Key.and.Peele.s03e09.720p.web.dl.mrlss.sujaidr (pimprg)",
+    "expect": {
+      "title": "Key and Peele",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      }
+    },
+    "episode": true,
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Godzilla 2014 HDTS HC XVID AC3 ACAB",
+    "expect": {
+      "title": "Godzilla",
+      "quality": {
+        "source": "telesync",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Harry Potter And The Half Blood Prince 2009 telesync aac -- king",
+    "expect": {
+      "title": "Harry Potter And The Half Blood Prince",
+      "quality": {
+        "source": "telesync",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Capitao.America.2.TS.BrunoG",
+    "expect": {
+      "title": "Capitao America 2",
+      "quality": {
+        "source": "telesync",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Star Trek TS-Screener Spanish Alta-Calidad 2da Version 2009 - Me",
+    "expect": {
+      "title": "Star Trek",
+      "quality": {
+        "source": "telesync",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Solo: A Star Wars Story (2018) English 720p TC x264 900MBTEAM TR",
+    "expect": {
+      "title": "Solo: A Star Wars Story",
+      "quality": {
+        "source": "telecine",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Alita Battle Angel 2019 720p HDTC-1XBET",
+    "expect": {
+      "title": "Alita Battle Angel",
+      "quality": {
+        "source": "telecine",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "My.Super.Ex.Girlfriend.FRENCH.TELECINE.XViD-VCDFRV",
+    "expect": {
+      "title": "My Super Ex Girlfriend",
+      "quality": {
+        "source": "telecine",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "You're Next (2013) cam XVID",
+    "expect": {
+      "title": "You're Next",
+      "quality": {
+        "source": "cam",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Shes the one_2013(camrip)__TOPSIDER [email protected]",
+    "expect": {
+      "title": "Shes the one",
+      "quality": {
+        "source": "cam",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Blair Witch 2016 HDCAM UnKnOwN",
+    "expect": {
+      "title": "Blair Witch",
+      "quality": {
+        "source": "cam",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Thor : Love and Thunder (2022) Hindi HQCAM x264 AAC - QRips.mkv",
+    "expect": {
+      "title": "Thor : Love and Thunder",
+      "quality": {
+        "source": "cam",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Avatar The Way of Water (2022) 1080p HQ S-Print Dual Audio [Hindi   English] x264 AAC HC-Esub - CineVood.mkv",
+    "expect": {
+      "title": "Avatar The Way of Water",
+      "quality": {
+        "source": "unknown"
+      }
+    },
+    "note": "S-Print names no source in Radarr’s Qualities Defined, so it stays unknown",
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Avatar The Way of Water (2022) 1080p S Print Dual Audio [Hindi   English] x264 AAC HC-Esub - CineVood.mkv",
+    "expect": {
+      "title": "Avatar The Way of Water",
+      "quality": {
+        "source": "unknown"
+      }
+    },
+    "note": "S-Print names no source in Radarr’s Qualities Defined, so it stays unknown",
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Good Deeds 2012 SCR XViD-KiNGDOM",
+    "expect": {
+      "title": "Good Deeds",
+      "quality": {
+        "source": "dvd",
+        "modifier": "screener"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Genova DVD-Screener Spanish 2008",
+    "expect": {
+      "title": "Genova",
+      "quality": {
+        "source": "dvd",
+        "modifier": "screener"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "El Albergue Rojo BR-Screener Spanish 2007",
+    "expect": {
+      "title": "El Albergue Rojo",
+      "quality": {
+        "source": "dvd",
+        "modifier": "screener"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "The.Mysteries.of.Pittsburgh.LIMITED.SCREENER.XviD-COALiTiON [NOR",
+    "expect": {
+      "title": "The Mysteries of Pittsburgh",
+      "quality": {
+        "source": "dvd",
+        "modifier": "screener"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "El.curioso.caso.de.benjamin.button-BRScreener-[EspaDivx.com].rar",
+    "expect": {
+      "title": "El curioso caso de benjamin button",
+      "quality": {
+        "source": "dvd",
+        "modifier": "screener"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Thor- Love and Thunder (2022) Original Hindi Dubbed 1080p HQ PreDVD Rip x264 AAC [1.7 GB]- CineVood.mkv",
+    "expect": {
+      "title": "Thor- Love and Thunder",
+      "quality": {
+        "source": "dvd",
+        "modifier": "screener"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Black Panther Wakanda Forever 2022 Hindi 1080p PDVDRip x264 AAC CineVood.mkv",
+    "expect": {
+      "title": "Black Panther Wakanda Forever",
+      "quality": {
+        "source": "dvd",
+        "modifier": "screener"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Vampire in Vegas (2009) NL Subs DVDR DivXNL-Team",
+    "expect": {
+      "title": "Vampire in Vegas",
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Звонок из прошлого / Kol / The Call (2020) WEB-DLRip | ViruseProject",
+    "expect": {
+      "title": "Kol / The Call",
+      "quality": {
+        "source": "webrip"
+      }
+    },
+    "note": "WEB-DLRip is a re-encode of a WEB-DL, which Radarr's Qualities Defined calls a WEBRip",
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "La nube (2020) [BluRay Rip][AC3 5.1 Castellano][www.maxitorrent.com]",
+    "expect": {
+      "title": "La nube",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Joker.2019.2160p.BluRay.REMUX.HEVC.DTS-HD.MA.TrueHD.7.1.Atmos-FGT",
+    "expect": {
+      "title": "Joker",
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Warcraft 2016 1080p Blu-ray Remux AVC TrueHD Atmos-KRaLiMaRKo",
+    "expect": {
+      "title": "Warcraft",
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Joker.2019.UHD.BluRay.2160p.TrueHD.Atmos.7.1.HEVC.REMUX-JAT",
+    "expect": {
+      "title": "Joker",
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Spider-Man No Way Home.2022.REMUX.1080p.Bluray.DTS-HD.MA.5.1.AVC-EVO[TGx]",
+    "expect": {
+      "title": "Spider-Man No Way Home",
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Son of God 2014 HDR BDRemux 1080p.mkv",
+    "expect": {
+      "title": "Son of God",
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Peter Rabbit 2 [4K UHDremux][2160p][HDR10][DTS-HD 5.1 Castellano-TrueHD 7.1-Ingles+Subs][ES-EN]",
+    "expect": {
+      "title": "Peter Rabbit 2",
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Snatch cerdos y diamantes [4KUHDremux 2160p][Castellano AC3 5.1-Ingles TrueHD 7.1+Subs]",
+    "expect": {
+      "title": "Snatch cerdos y diamantes",
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Троя / Troy [2004 HDDVDRip-AVC] Dub + Original + Sub]",
+    "expect": {
+      "title": "Troy",
+      "quality": {
+        "source": "bluray"
+      }
+    },
+    "note": "HD DVD sits with Blu-ray in Radarr’s Qualities Defined (Remux: “from a Blu-ray or HD DVD”)",
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Структура момента (Расим Исмайлов) [1980, Драма, VHSRip]",
+    "expect": {
+      "title": "Структура момента",
+      "quality": {
+        "source": "unknown"
+      }
+    },
+    "note": "Radarr's Qualities Defined has no VHS source, so it stays unknown rather than DVD",
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Мужчины без женщин (Альгимантас Видугирис) [1981, Драма, VHS]",
+    "expect": {
+      "title": "Мужчины без женщин",
+      "quality": {
+        "source": "unknown"
+      }
+    },
+    "note": "Radarr's Qualities Defined has no VHS source, so it stays unknown rather than DVD",
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Преферанс по пятницам (Игорь Шешуков) [1984, Детектив, DVB]",
+    "expect": {
+      "title": "Преферанс по пятницам",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Соперницы (Алексей Дмитриев) [1929, драма, WEB-DLRip]",
+    "expect": {
+      "title": "Соперницы",
+      "quality": {
+        "source": "webrip"
+      }
+    },
+    "note": "WEB-DLRip is a re-encode of a WEB-DL, which Radarr's Qualities Defined calls a WEBRip",
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Dragon Blade (2015) HDTSRip Exclusive",
+    "expect": {
+      "title": "Dragon Blade",
+      "quality": {
+        "source": "telesync",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Criminal (2016) Hindi Dubbed HDTCRip",
+    "expect": {
+      "title": "Criminal",
+      "quality": {
+        "source": "telecine",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Avatar La Voie de l'eau.FRENCH.CAMHD.H264.AAC",
+    "expect": {
+      "title": "Avatar La Voie de l'eau",
+      "quality": {
+        "source": "cam",
+        "modifier": "none"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "www.1TamilBlasters.link - Indian 2 (2024) [Tamil - 1080p Proper HQ PRE-HDRip - x264 - AAC - 6.3GB - HQ Real Audio].mkv",
+    "expect": {
+      "title": "Indian 2",
+      "quality": {
+        "source": "dvd",
+        "modifier": "screener"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "Companion.2025.1080p.HDSCR.x264-Nuxl.mkv",
+    "expect": {
+      "title": "Companion",
+      "quality": {
+        "source": "dvd",
+        "modifier": "screener"
+      }
+    },
+    "from": "PTT tests/test_quality.py; title by review"
+  },
+  {
+    "name": "[JySzE] Naruto [v2] [R2J] [VFR] [Dual Audio] [Complete] [Extras] [x264]",
+    "expect": {
+      "title": "Naruto",
+      "languages": []
+    },
+    "note": "VFR is variable frame rate, not VF (French audio)",
+    "from": "PTT tests/test_region.py; title by review"
+  },
+  {
+    "name": "Silicon Valley S04E03 REPACK HDTV x264-SVA",
+    "expect": {
+      "title": "Silicon Valley",
+      "quality": {
+        "revision": {
+          "repack": true
+        }
+      }
+    },
+    "episode": true,
+    "from": "PTT tests/test_repack.py; title by review"
+  },
+  {
+    "name": "Expedition Unknown S03E14 Corsicas Nazi Treasure RERIP 720p HDTV x264-W4F",
+    "expect": {
+      "title": "Expedition Unknown",
+      "quality": {
+        "revision": {
+          "repack": true
+        }
+      }
+    },
+    "episode": true,
+    "from": "PTT tests/test_repack.py; title by review"
+  },
+  {
+    "name": "Have I Got News For You S53E02 EXTENDED 720p HDTV x264-QPEL",
+    "expect": {
+      "title": "Have I Got News For You",
+      "edition": "EXTENDED",
+      "quality": {
+        "revision": {
+          "repack": false
+        }
+      }
+    },
+    "note": "EXTENDED is an edition tag (scene rules 17.2) wherever it appears",
+    "episode": true,
+    "from": "PTT tests/test_repack.py; title by review"
+  },
+  {
+    "name": "Annabelle.2014.1080p.PROPER.HC.WEBRip.x264.AAC.2.0-RARBG",
+    "expect": {
+      "title": "Annabelle",
+      "quality": {
+        "resolution": 1080
+      }
+    },
+    "from": "PTT tests/test_resolution.py; title by review"
+  },
+  {
+    "name": "doctor_who_2005.8x12.death_in_heaven.720p_hdtv_x264-fov",
+    "expect": {
+      "title": "doctor who",
+      "quality": {
+        "resolution": 720
+      }
+    },
+    "episode": true,
+    "from": "PTT tests/test_resolution.py; title by review"
+  },
+  {
+    "name": "The Smurfs 2 2013 COMPLETE FULL BLURAY UHD (4K) - IPT EXCLUSIVE",
+    "expect": {
+      "title": "The Smurfs 2",
+      "quality": {
+        "resolution": 2160
+      }
+    },
+    "from": "PTT tests/test_resolution.py; title by review"
+  },
+  {
+    "name": "Joker.2019.2160p.4K.BluRay.x265.10bit.HDR.AAC5.1",
+    "expect": {
+      "title": "Joker",
+      "quality": {
+        "resolution": 2160
+      }
+    },
+    "from": "PTT tests/test_resolution.py; title by review"
+  },
+  {
+    "name": "[Beatrice-Raws] Evangelion 3.333 You Can (Not) Redo [BDRip 3840x1632 HEVC TrueHD]",
+    "expect": {
+      "title": "Evangelion 3.333 You Can (Not) Redo",
+      "quality": {
+        "resolution": 2160
+      }
+    },
+    "from": "PTT tests/test_resolution.py; title by review"
+  },
+  {
+    "name": "[Erai-raws] Evangelion 3.0 You Can (Not) Redo - Movie [1920x960][Multiple Subtitle].mkv",
+    "expect": {
+      "title": "Evangelion 3.0 You Can (Not) Redo - Movie",
+      "quality": {
+        "resolution": 1080
+      }
+    },
+    "from": "PTT tests/test_resolution.py; title by review"
+  },
+  {
+    "name": "[JacobSwaggedUp] Kizumonogatari I: Tekketsu-hen (BD 1280x544) [MP4 Movie]",
+    "expect": {
+      "title": "Kizumonogatari I: Tekketsu-hen",
+      "quality": {
+        "resolution": 720
+      }
+    },
+    "from": "PTT tests/test_resolution.py; title by review"
+  },
+  {
+    "name": "IT Chapter Two.2019.7200p.AMZN WEB-DL.H264.[Eng Hin Tam Tel]DDP 5.1.MSubs.D0T.Telly",
+    "expect": {
+      "title": "IT Chapter Two",
+      "quality": {
+        "resolution": null
+      }
+    },
+    "note": "7200p and 10800p are typos, not resolutions; highsea doesn’t guess",
+    "from": "PTT tests/test_resolution.py; title by review"
+  },
+  {
+    "name": "Dumbo (1941) BRRip XvidHD 10800p-NPW",
+    "expect": {
+      "title": "Dumbo",
+      "quality": {
+        "resolution": null
+      }
+    },
+    "note": "7200p and 10800p are typos, not resolutions; highsea doesn’t guess",
+    "from": "PTT tests/test_resolution.py; title by review"
+  },
+  {
+    "name": "The Boys S04E01 E02 E03 4k to 1080p AMZN WEBrip x265 DDP5 1 D0c",
+    "expect": {
+      "title": "The Boys",
+      "quality": {
+        "resolution": 1080
+      }
+    },
+    "episode": true,
+    "from": "PTT tests/test_resolution.py; title by review"
+  },
+  {
+    "name": "Batman Returns 1992 4K Remastered BluRay 1080p DTS AC3 x264-MgB",
+    "expect": {
+      "title": "Batman Returns",
+      "quality": {
+        "resolution": 1080
+      }
+    },
+    "from": "PTT tests/test_resolution.py; title by review"
+  },
+  {
+    "name": "Life After People (2008) [1080P.BLURAY] [720p] [BluRay] [YTS.MX]",
+    "expect": {
+      "title": "Life After People",
+      "quality": {
+        "resolution": 1080
+      }
+    },
+    "note": "the name gives two resolutions; highsea takes the first",
+    "from": "PTT tests/test_resolution.py; title by review"
+  },
+  {
+    "name": "Have I Got News For You S53E02 EXTENDED 720p HDTV x264-QPEL",
+    "expect": {
+      "title": "Have I Got News For You",
+      "edition": "EXTENDED"
+    },
+    "note": "EXTENDED is an edition tag (scene rules 17.2) wherever it appears",
+    "episode": true,
+    "from": "PTT tests/test_retail.py; title by review"
+  },
+  {
+    "name": "www.1TamilMV.world - Raja Vikramarka (2024) Tamil HQ HDRip - 400MB - x264 - AAC - ESub.mkv",
+    "expect": {
+      "title": "Raja Vikramarka",
+      "releaseGroup": null
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "PTT tests/test_site.py; title by review"
+  },
+  {
+    "name": "[HD-ELITE.NET] -  The.Art.Of.The.Steal.2014.DVDRip.XviD.Dual.Aud",
+    "expect": {
+      "title": "The Art Of The Steal",
+      "releaseGroup": null
+    },
+    "note": "a leading site isn’t a release group",
+    "from": "PTT tests/test_site.py; title by review"
+  },
+  {
+    "name": "www.1TamilMV.world - Raja Vikramarka (2024) Tamil HQ HDRip - 400MB - x264 - AAC - ESub.mkv",
+    "expect": {
+      "title": "Raja Vikramarka",
+      "releaseGroup": null
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "PTT tests/test_size.py; title by review"
+  },
+  {
+    "name": "Brave.2012.R5.DVDRip.XViD.LiNE-UNiQUE",
+    "expect": {
+      "title": "Brave",
+      "quality": {
+        "source": "dvd",
+        "modifier": "regional"
+      }
+    },
+    "note": "R5 is a regional retail disc: Radarr's REGIONAL quality (Qualities Defined)",
+    "from": "PTT tests/test_trash.py; title by review"
+  },
+  {
+    "name": "Identity.Thief.2013.Vostfr.UNRATED.BluRay.720p.DTS.x264-Nenuko",
+    "expect": {
+      "title": "Identity Thief",
+      "edition": "UNRATED"
+    },
+    "from": "PTT tests/test_unrated.py; title by review"
+  },
+  {
+    "name": "Charlie.les.filles.lui.disent.merci.2007.UNCENSORED.TRUEFRENCH.DVDRiP.AC3.Libe",
+    "expect": {
+      "title": "Charlie les filles lui disent merci",
+      "edition": "UNCENSORED"
+    },
+    "note": "UNCENSORED is its own scene tag (2020 x265 rules 17.2), kept as written",
+    "from": "PTT tests/test_unrated.py; title by review"
+  },
+  {
+    "name": "Have I Got News For You S53E02 EXTENDED 720p HDTV x264-QPEL",
+    "expect": {
+      "title": "Have I Got News For You",
+      "edition": "EXTENDED"
+    },
+    "note": "EXTENDED is an edition tag (scene rules 17.2) wherever it appears",
+    "episode": true,
+    "from": "PTT tests/test_unrated.py; title by review"
+  },
+  {
+    "name": "[MTBB] Sword Art Onlineː Alicization - Volume 2 (BD 1080p)",
+    "expect": {
+      "title": "Sword Art Onlineː Alicization",
+      "year": null,
+      "edition": null,
+      "releaseGroup": "MTBB"
+    },
+    "note": "a leading bracket is the fansub group, by the anime naming convention",
+    "episode": true,
+    "from": "PTT tests/test_volume.py; title by review"
+  },
+  {
+    "name": "[Neutrinome] Sword Art Online Alicization Vol.2 - VOSTFR [1080p BDRemux] + DDL",
+    "expect": {
+      "title": "Sword Art Online Alicization Vol.2",
+      "year": null,
+      "edition": null,
+      "releaseGroup": "Neutrinome"
+    },
+    "note": "a leading bracket is the fansub group, by the anime naming convention",
+    "episode": true,
+    "from": "PTT tests/test_volume.py; title by review"
+  },
+  {
+    "name": "[MTBB] Cross Game - Volume 1-3 (WEB 720p)",
+    "expect": {
+      "title": "Cross Game",
+      "year": null,
+      "edition": null,
+      "releaseGroup": "MTBB"
+    },
+    "note": "a leading bracket is the fansub group, by the anime naming convention",
+    "episode": true,
+    "from": "PTT tests/test_volume.py; title by review"
+  },
+  {
+    "name": "Guardians of the Galaxy Vol. 2 (2017) 720p HDTC x264 MKVTV",
+    "expect": {
+      "title": "Guardians of the Galaxy Vol. 2",
+      "year": 2017,
+      "edition": null,
+      "releaseGroup": null
+    },
+    "note": "the year in brackets after the title is the film’s",
+    "from": "PTT tests/test_volume.py"
+  },
+  {
+    "name": "Kill Bill: Vol. 1 (2003) BluRay 1080p 5.1CH x264 Ganool",
+    "expect": {
+      "title": "Kill Bill: Vol. 1",
+      "year": 2003,
+      "edition": null,
+      "releaseGroup": null
+    },
+    "note": "the year in brackets after the title is the film’s",
+    "from": "PTT tests/test_volume.py"
+  },
+  {
+    "name": "[Valenciano] Aquarion EVOL - 22 [1080p][AV1 10bit][FLAC][Eng sub].mkv",
+    "expect": {
+      "title": "Aquarion EVOL",
+      "year": null,
+      "edition": null,
+      "releaseGroup": "Valenciano"
+    },
+    "note": "a leading bracket is the fansub group, by the anime naming convention",
+    "from": "PTT tests/test_volume.py"
+  },
+  {
+    "name": "Dawn.of.the.Planet.of.the.Apes.2014.HDRip.XViD-EVO",
+    "expect": {
+      "title": "Dawn of the Planet of the Apes",
+      "year": 2014
+    },
+    "from": "PTT tests/test_year.py; title by review"
+  },
+  {
+    "name": "Hercules (2014) 1080p BrRip H264 - YIFY",
+    "expect": {
+      "title": "Hercules",
+      "year": 2014
+    },
+    "from": "PTT tests/test_year.py; title by review"
+  },
+  {
+    "name": "One Shot [2014] DVDRip XViD-ViCKY",
+    "expect": {
+      "title": "One Shot",
+      "year": 2014
+    },
+    "from": "PTT tests/test_year.py; title by review"
+  },
+  {
+    "name": "2012 2009 1080p BluRay x264 REPACK-METiS",
+    "expect": {
+      "title": "2012",
+      "year": 2009
+    },
+    "from": "PTT tests/test_year.py; title by review"
+  },
+  {
+    "name": "2008 The Incredible Hulk Feature Film.mp4",
+    "expect": {
+      "title": "2008 The Incredible Hulk Feature Film",
+      "year": null
+    },
+    "note": "scene names put the year after the title (2020 x265 rules 18.4.1), so a leading number is part of the title (as in “1917”, “2012”)",
+    "from": "PTT tests/test_year.py"
+  },
+  {
+    "name": "Empty Nest Season 1 (1988 - 89) fiveofseven",
+    "expect": {
+      "title": "Empty Nest",
+      "year": null
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (track and episode numbers glued to the title)",
+    "episode": true,
+    "from": "PTT tests/test_year.py"
+  },
+  {
+    "name": "04. Practice Two (1324mb 1916x1080 50fps 1970kbps x265 deef).mkv",
+    "expect": {
+      "title": "Practice Two",
+      "year": null
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (track and episode numbers glued to the title)",
+    "from": "PTT tests/test_year.py"
+  },
+  {
+    "name": "Anatomia De Grey - Temporada 19 [HDTV][Cap.1905][Castellano][www.AtomoHD.nu].avi",
+    "expect": {
+      "title": "Anatomia De Grey",
+      "year": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_year.py; title by review"
+  },
+  {
+    "name": "Wonder Woman 1984 (2020) [UHDRemux 2160p DoVi P8 Es-DTSHD AC3 En-AC3].mkv",
+    "expect": {
+      "title": "Wonder Woman 1984",
+      "year": 2020
+    },
+    "from": "PTT tests/test_year.py; title by review"
+  },
+  {
+    "name": "1923 S02E01 The Killing Season 1080p AMZN WEB-DL DDP5 1 H 264-FLUX[TGx]",
+    "expect": {
+      "title": "1923",
+      "year": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_year.py; title by review"
+  },
+  {
+    "name": "1883 - Season 1 (S01) (A Yellowstone Origin Story) [2160p NVEnc 10Bit HVEC][DDP 5.1Ch][WEBRip][English Subs]",
+    "expect": {
+      "title": "1883",
+      "year": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_year.py; title by review"
+  },
+  {
+    "name": "1883.S01E01.1883.2160p.WEB-DL.DDP5.1.H.265-NTb.mkv",
+    "expect": {
+      "title": "1883",
+      "year": null
+    },
+    "episode": true,
+    "from": "PTT tests/test_year.py; title by review"
+  }
+]

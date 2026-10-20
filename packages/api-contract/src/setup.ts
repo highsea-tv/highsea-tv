@@ -3,7 +3,8 @@
 // 404. The indexer and subtitle steps arrive with their packages.
 import { createRoute, z } from '@hono/zod-openapi'
 import { Session } from './accounts.ts'
-import { API_PREFIX, access, body, errors, json } from './common.ts'
+import { API_PREFIX, access, body, errors, json, noContent } from './common.ts'
+import { MetadataInput, MetadataKey } from './settings.ts'
 import { Server } from './system.ts'
 
 export const FsEntry = z
@@ -38,6 +39,11 @@ export const SetupInput = z
     folders: z.object({ movies: z.string().max(4096), downloads: z.string().max(4096) }),
     remoteAccess: RemoteAccessInput,
     cloudLink: z.boolean(),
+    /**
+     * The TMDB key step (checkpoint 4): the key, checked already with `checkMetadataKey`, and the
+     * owner's locale for the metadata language and region. Omitted or without a key when skipped.
+     */
+    metadata: MetadataInput.optional(),
   })
   .openapi('SetupInput')
 
@@ -78,6 +84,20 @@ export const setup = {
     ...access('public'),
     request: { query: z.object({ a: z.string().max(4096), b: z.string().max(4096) }) },
     responses: { 200: json(HardlinkCheck, 'The check'), ...errors('invalid', 'not-found') },
+  }),
+  checkMetadataKey: createRoute({
+    method: 'post',
+    path: `${SETUP}/metadata-key`,
+    tags: ['Setup'],
+    summary: 'Check a TMDB key with TMDB, without saving it',
+    description:
+      'The key step’s Continue. 400 with `details.reason` `tmdb-key-rejected` when TMDB doesn’t accept it; 503 (`tmdb-unreachable`) when TMDB can’t be reached.',
+    ...access('public'),
+    request: { ...body(z.object({ key: MetadataKey })) },
+    responses: {
+      ...noContent,
+      ...errors('invalid', 'not-found', 'rate-limited', 'unavailable'),
+    },
   }),
   complete: createRoute({
     method: 'post',

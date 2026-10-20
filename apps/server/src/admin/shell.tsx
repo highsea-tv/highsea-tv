@@ -3,8 +3,8 @@
 // A1, the admin shell (admin.md), ported from the prototype: the sidebar (full at expanded and up,
 // a rail at medium, a menu sheet at compact), the ⌘K palette, toasts and the status bar. Pages
 // render inside through `AdminPage`. What later checkpoints bring is left out until then:
-// announcement banners (curation), sidebar counts (movies, the queue), the palette's download
-// actions and import toasts.
+// announcement banners (curation), the queue's sidebar count, the palette's download actions and
+// import toasts.
 
 import { bytes } from '@highsea/core/format'
 import { useT } from '@highsea/i18n/react'
@@ -37,12 +37,14 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from 'react'
 import { AccountSheet } from './account.tsx'
+import { moviePath } from './media-links.ts'
 import { shell as messages } from './messages.ts'
 import { isStaff, type Page, pageAt, pagesFor, type Role } from './nav.ts'
 import { useRelative } from './time.ts'
@@ -158,6 +160,13 @@ function Navigation({
     (c) => (isStaff(role) ? c.system.healthChecks() : Promise.resolve([])),
     ['server.updated'],
   )
+  // the library's size, not its movies: one row is enough for the total
+  const movies = useQuery('movies-count', (c) => c.movies.list({ query: { limit: 1 } }), [
+    'movies.updated',
+  ])
+  const counts: Partial<Record<Page['id'], number>> = {
+    movies: movies.data?.total || undefined,
+  }
 
   const card =
     server.status === 'error' ? (
@@ -191,6 +200,7 @@ function Navigation({
               icon={p.icon}
               label={t(p.label)}
               href={p.path}
+              count={counts[p.id]}
               active={current?.id === p.id}
               onClick={onNavigate}
             />
@@ -214,10 +224,26 @@ function Navigation({
 
 // ---------------------------------------------------------------- palette
 
-function usePaletteGroups(role: Role, shell: Shell): CommandGroup[] {
+/** Movie titles are looked up as you type: a library can be far too big to list up front. */
+const PALETTE_MOVIES = 8
+
+/** Accents dropped, so "amelie" finds Amélie as the server's title filter does. */
+const plain = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '')
+
+function usePaletteGroups(role: Role, shell: Shell, search: string): CommandGroup[] {
   const t = useT(messages)
   const router = useRouter()
   const signOut = useSignOut()
+  const query = useDeferredValue(search.trim())
+  const found = useQuery(
+    `palette-movies:${query}`,
+    (c) =>
+      query
+        ? c.movies.list({ query: { title: query, limit: PALETTE_MOVIES } })
+        : Promise.resolve(null),
+    ['movies.updated'],
+  )
+  const titles = found.data?.items
   return useMemo(() => {
     const go: CommandGroup = {
       heading: t('palette.goTo'),
@@ -236,6 +262,15 @@ function usePaletteGroups(role: Role, shell: Shell): CommandGroup[] {
     const actions: CommandGroup = {
       heading: t('palette.actions'),
       items: [
+        {
+          id: 'add-movie',
+          label: t('palette.addMovie'),
+          icon: 'add',
+          keywords: t('keywords.addMovie')
+            .split(',')
+            .map((k) => k.trim()),
+          onSelect: () => router.push('/discover'),
+        },
         {
           id: 'customize',
           label: t('palette.customize'),
@@ -260,8 +295,18 @@ function usePaletteGroups(role: Role, shell: Shell): CommandGroup[] {
         { id: 'sign-out', label: t('palette.signOut'), icon: 'sign-out', onSelect: signOut },
       ],
     }
-    return [go, actions]
-  }, [role, router, shell, signOut, t])
+    const movies: CommandGroup = {
+      heading: t('nav.movies'),
+      items: (titles ?? []).map((m) => ({
+        id: `movie-${m.id}`,
+        label: m.year ? t('palette.movie', { title: m.title, year: m.year }) : m.title,
+        icon: 'movie',
+        keywords: [plain(m.title), m.originalTitle, plain(m.originalTitle), ...m.genres],
+        onSelect: () => router.push(moviePath(m.id)),
+      })),
+    }
+    return movies.items.length ? [go, actions, movies] : [go, actions]
+  }, [role, router, shell, signOut, t, titles])
 }
 
 // ---------------------------------------------------------------- status bar
@@ -371,6 +416,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
   const session = useQuery('session', (c) => c.auth.session(), ['users.updated'])
   const role = session.data?.user.role ?? initialRole
   const [palette, setPalette] = useState(false)
+  const [search, setSearch] = useState('')
   const [menu, setMenu] = useState(false)
   const [account, setAccount] = useState(false)
   const [customizing, setCustomizing] = useState(false)
@@ -404,7 +450,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
     }),
     [role, customizing],
   )
-  const groups = usePaletteGroups(role, shell)
+  const groups = usePaletteGroups(role, shell, palette ? search : '')
 
   return (
     <ShellContext.Provider value={shell}>
@@ -437,7 +483,15 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
             <Navigation role={role} mode="full" onNavigate={() => setMenu(false)} />
           </SheetContent>
         </Sheet>
-        <CommandPalette open={palette} onOpenChange={setPalette} groups={groups} />
+        <CommandPalette
+          open={palette}
+          onOpenChange={(o) => {
+            setPalette(o)
+            if (!o) setSearch('')
+          }}
+          groups={groups}
+          onSearchChange={setSearch}
+        />
         <AccountSheet open={account} onOpenChange={setAccount} />
       </div>
     </ShellContext.Provider>

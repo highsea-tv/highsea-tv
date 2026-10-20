@@ -40,3 +40,15 @@ export function Loadable<T>({
     )
   return <>{children(query.data)}</>
 }
+
+/** A poster grid's placeholders (the prototype's loadable.tsx), for Discover and the library. */
+export function PosterSkeletons({ count = 12 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-4">
+      {Array.from({ length: count }, (_, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
+        <Skeleton key={i} className="aspect-poster rounded-poster" />
+      ))}
+    </div>
+  )
+}

@@ -17,3 +17,21 @@ export type ServerEvent = z.infer<typeof ServerEvent>
 
 /** Sent instead of a replay when the client's Last-Event-ID is too old: refetch everything. */
 export const RESET_TOPIC = 'reset'
+
+/**
+ * The library's topics (checkpoint 4). Ids are strings, never objects:
+ * - `movies.updated`: the library changed (added, edited, removed); ids are the movies' TMDB ids,
+ *   absent when many changed at once;
+ * - `item.updated`: one title's library layer changed; ids are `movie:{tmdbId}`, as the type keeps
+ *   ids apart;
+ * - `metadata.updated`: a refresh wrote new metadata; ids are `movie:{id}`, `person:{id}` or
+ *   `collection:{id}`, TMDB ids.
+ */
+export const MEDIA_TOPICS = {
+  movies: 'movies.updated',
+  item: 'item.updated',
+  metadata: 'metadata.updated',
+} as const
+
+/** `movie:603`: a title's id in `item.updated` and `metadata.updated` events. */
+export const topicId = (type: 'movie' | 'person' | 'collection', id: number) => `${type}:${id}`

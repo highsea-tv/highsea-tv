@@ -1,0 +1,296 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/253777?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "adult": false,
+      "backdrop_path": "/mjkoC8Vo7fSHuqrbVQdI6cNwKA2.jpg",
+      "belongs_to_collection": {
+        "id": 339473,
+        "name": "Caminandes Collection",
+        "poster_path": "/pDDVNTzwH3Y4sC6dDKpaMe2sj79.jpg",
+        "backdrop_path": "/VGqDyS1rp0IQcuFGInQzmfDFAj.jpg"
+      },
+      "budget": 0,
+      "genres": [
+        {
+          "id": 16,
+          "name": "Animation"
+        },
+        {
+          "id": 10751,
+          "name": "Family"
+        },
+        {
+          "id": 35,
+          "name": "Comedy"
+        }
+      ],
+      "homepage": "",
+      "id": 253777,
+      "imdb_id": "tt6059374",
+      "original_language": "en",
+      "original_title": "Caminandes: Llama Drama",
+      "overview": "Koro wants to get to the other side of the road.",
+      "popularity": 26.55,
+      "poster_path": "/66VPke0YSiyfe97aobbcZ55ts56.jpg",
+      "production_companies": [],
+      "release_date": "2013-02-10",
+      "revenue": 0,
+      "runtime": 2,
+      "status": "Released",
+      "tagline": "",
+      "title": "Caminandes: Llama Drama",
+      "video": false,
+      "vote_average": 6.667,
+      "vote_count": 9,
+      "credits": {
+        "cast": [],
+        "crew": [
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1289549,
+            "known_for_department": "Directing",
+            "name": "Pablo Vazquez",
+            "original_name": "Pablo Vazquez",
+            "popularity": 33.31,
+            "profile_path": null,
+            "credit_id": "471a05138d1ba9cfd685dbea",
+            "department": "Directing",
+            "job": "Director"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1289551,
+            "known_for_department": "Production",
+            "name": "Francesco Siddi",
+            "original_name": "Francesco Siddi",
+            "popularity": 9.87,
+            "profile_path": "/pIDS0x5yIlLJEj0RImf6sgOCzMr.jpg",
+            "credit_id": "fa70027197c480e0572e02b5",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 133634,
+            "known_for_department": "Sound",
+            "name": "Jan Morgenstern",
+            "original_name": "Jan Morgenstern",
+            "popularity": 2.44,
+            "profile_path": null,
+            "credit_id": "f120e620d9e95554b5a1598b",
+            "department": "Sound",
+            "job": "Sound Designer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1289550,
+            "known_for_department": "Visual Effects",
+            "name": "Beorn Leonard",
+            "original_name": "Beorn Leonard",
+            "popularity": 5.84,
+            "profile_path": null,
+            "credit_id": "ed7d7c074a5d35c68a254d9d",
+            "department": "Visual Effects",
+            "job": "Animation"
+          }
+        ]
+      },
+      "videos": {
+        "results": [
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Caminandes 1: Llama Drama - Blender Animated Short",
+            "key": "JOhiWY7XmoY",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Clip",
+            "official": false,
+            "published_at": "2013-02-09T00:00:00.000Z",
+            "id": "588800aa9251411ac6000385"
+          }
+        ]
+      },
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "NL",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2013-02-10T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          }
+        ]
+      },
+      "external_ids": {
+        "imdb_id": "tt6059374",
+        "wikidata_id": "Q120197693",
+        "facebook_id": null,
+        "instagram_id": null,
+        "twitter_id": null
+      },
+      "recommendations": {
+        "page": 1,
+        "results": [
+          {
+            "adult": false,
+            "backdrop_path": "/pQm2IVb7WcAqwn10rWFeUQGmSxK.jpg",
+            "genre_ids": [16, 10751, 35],
+            "id": 296137,
+            "original_language": "en",
+            "original_title": "Spinning",
+            "overview": "Guido discovers he has a hidden talent as a street corner sign spinner.",
+            "popularity": 35.32,
+            "poster_path": "/rrnf2Q6doMoFr68Ai6Y2IgF8Fel.jpg",
+            "release_date": "2013-03-22",
+            "title": "Spinning",
+            "video": false,
+            "vote_average": 6.09,
+            "vote_count": 72,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/o5GX0iM5vwYVR4WPuY3hh8Kl5cU.jpg",
+            "genre_ids": [16, 10751, 35],
+            "id": 286189,
+            "original_language": "en",
+            "original_title": "The Radiator Springs 500½",
+            "overview": "A 'leisurely drive' planned in honor of Radiator Springs’ town founder, Stanley, turns precarious as Baja pros descend on the town and challenge Lightning McQueen to an off-road race. Meanwhile, the townsfolk, led by a Stanley-costumed Mater, enjoy the planned 'leisurely drive' to retrace Stanley’s original frontier route. Thinking they’re on the same course, a wrong turn sends McQueen and the Baja pros on a treacherously wild bid for survival. The misunderstanding leaves the racing professionals in awe of the 'legend' of Stanley: the Original Off-Road Racer.",
+            "popularity": 1.01,
+            "poster_path": "/oKuGXTnggOmut8A0ZvU1Hh2yOa8.jpg",
+            "release_date": "2014-05-20",
+            "title": "The Radiator Springs 500½",
+            "video": false,
+            "vote_average": 6.227,
+            "vote_count": 97,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/azRYhZhGAExu3IraRALKQPQ122e.jpg",
+            "genre_ids": [16, 10751, 35],
+            "id": 140967,
+            "original_language": "en",
+            "original_title": "Mater the Greater",
+            "overview": "Mater tells Lightning McQueen about his former job as a daredevil.",
+            "popularity": 15.95,
+            "poster_path": "/tVrU8hUW2xTjAlIiyAvYVOFFQwd.jpg",
+            "release_date": "2008-10-28",
+            "title": "Mater the Greater",
+            "video": false,
+            "vote_average": 6.131,
+            "vote_count": 126,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/Tvn4W6qdbqhW5qcL7FZgb6570b.jpg",
+            "genre_ids": [16, 10751, 35],
+            "id": 77887,
+            "original_language": "en",
+            "original_title": "Hawaiian Vacation",
+            "overview": "The toys throw Ken and Barbie a Hawaiian vacation in Bonnie's room.",
+            "popularity": 16.89,
+            "poster_path": "/iLFYR0HRLmPfXzQdvGvlJhfwtH1.jpg",
+            "release_date": "2011-06-16",
+            "title": "Hawaiian Vacation",
+            "video": false,
+            "vote_average": 6.989,
+            "vote_count": 746,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/1gwPQcnfkMCnAlWauI934i7E3Pr.jpg",
+            "genre_ids": [16, 35, 10751],
+            "id": 13931,
+            "original_language": "en",
+            "original_title": "Mike's New Car",
+            "overview": "Mike discovers that being the top-ranking laugh collector at Monsters, Inc. has its benefits – in particular, earning enough money to buy a six-wheel-drive car that's loaded with gadgets. That new-car smell doesn't last long enough, however, as Sulley jump-starts an ill-fated road test that teaches Mike the true meaning of buyer's remorse.",
+            "popularity": 2.71,
+            "poster_path": "/mOnNx05XOPFeQhOqpbPI0lwEf4N.jpg",
+            "release_date": "2002-05-24",
+            "title": "Mike's New Car",
+            "video": false,
+            "vote_average": 6.906,
+            "vote_count": 788,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/fvaQkIcyGTTuBHimVvgk01Da2m6.jpg",
+            "genre_ids": [16, 10751, 35],
+            "id": 1128606,
+            "original_language": "en",
+            "original_title": "Snoopy Presents: Welcome Home, Franklin",
+            "overview": "Franklin is new to town and hoping to make friends, but his usual tactics don't work on the Peanuts gang. When the Soap Box Derby arrives, he's sure it's a chance to impress new pals and teams up with the only other unpartnered kid: Charlie Brown.",
+            "popularity": 13.38,
+            "poster_path": "/iPyuXrj4lmmQ40TBg5eDhvd7ShV.jpg",
+            "release_date": "2024-02-15",
+            "title": "Snoopy Presents: Welcome Home, Franklin",
+            "video": false,
+            "vote_average": 7.7,
+            "vote_count": 69,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/mGaMW6VP43jHT6D7E5flk1DJq4Y.jpg",
+            "genre_ids": [16, 10751, 35],
+            "id": 56553,
+            "original_language": "en",
+            "original_title": "Rescue Squad Mater",
+            "overview": "Lightning McQueen and Mater are driving in Radiator Springs and drive past Red, who is hosing some plants near Stanley. Mater tells Lightning that he used to be a firetruck, but Lightning doesn't believe Mater.",
+            "popularity": 38.69,
+            "poster_path": "/2mLBoPMSXshWjknql6dxc2DAfZ1.jpg",
+            "release_date": "2008-10-27",
+            "title": "Rescue Squad Mater",
+            "video": false,
+            "vote_average": 5.817,
+            "vote_count": 112,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/jjgUFVMFGljMrNBGU30SEYP2Mku.jpg",
+            "genre_ids": [35, 10751, 16],
+            "id": 85693,
+            "original_language": "en",
+            "original_title": "Hammy's Boomerang Adventure",
+            "overview": "RJ the raccoon produces a nature video, which turns out to be an excuse for him and the porcupine children to play pranks on Hammy the squirrel.",
+            "popularity": 34.92,
+            "poster_path": "/r2sdbeH3Jp087Au7Ls3UrF3DAnH.jpg",
+            "release_date": "2006-10-17",
+            "title": "Hammy's Boomerang Adventure",
+            "video": false,
+            "vote_average": 6.1,
+            "vote_count": 56,
+            "media_type": "movie"
+          }
+        ],
+        "total_pages": 1,
+        "total_results": 8
+      }
+    }
+  }
+}

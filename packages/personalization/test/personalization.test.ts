@@ -267,6 +267,7 @@ describe('preferences', () => {
       theme: 'default',
       sound: true,
       volume: 0.8,
+      'admin.addMovie.defaults': null,
     })
     expect(p.preferences.resolve('m', phone).values.sound).toBe(false)
     expect(p.preferences.resolve('m', null)).toMatchObject({ client: null, deviceId: null })
@@ -279,8 +280,18 @@ describe('preferences', () => {
     p.preferences.save('m', tv, 'user', { theme: 'oled', volume: 0.5 })
     p.preferences.save('m', tv, 'client', { theme: 'high-contrast' }, 'tvos')
     const view = p.preferences.save('m', tv, 'device', { volume: 0.2 })
-    expect(view.values).toEqual({ theme: 'high-contrast', sound: true, volume: 0.2 })
-    expect(view.from).toEqual({ theme: 'client', sound: 'server', volume: 'device' })
+    expect(view.values).toEqual({
+      theme: 'high-contrast',
+      sound: true,
+      volume: 0.2,
+      'admin.addMovie.defaults': null,
+    })
+    expect(view.from).toEqual({
+      theme: 'client',
+      sound: 'server',
+      volume: 'device',
+      'admin.addMovie.defaults': 'server',
+    })
     expect(seen.at(-1)).toEqual(
       expect.objectContaining({ topic: 'preferences.updated', ids: ['m'] }),
     )

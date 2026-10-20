@@ -29,6 +29,11 @@ export type CommandPaletteProps = {
   groups: CommandGroup[]
   placeholder?: string
   empty?: ReactNode
+  /**
+   * What's typed, as it changes: for results the caller looks up itself (a library too big to
+   * list up front). Its items are filtered like any other, so give them the words they match by.
+   */
+  onSearchChange?: (search: string) => void
 }
 
 /** Opens the palette on ⌘K / Ctrl K. */
@@ -51,6 +56,7 @@ export function CommandPalette({
   groups,
   placeholder = 'Search or jump to…',
   empty = 'Nothing matches that.',
+  onSearchChange,
 }: CommandPaletteProps) {
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -66,6 +72,7 @@ export function CommandPalette({
               <Icon name="search" size={16} className="shrink-0 text-text-3" />
               <Command.Input
                 placeholder={placeholder}
+                onValueChange={onSearchChange}
                 className="h-12 min-w-0 flex-1 bg-transparent text-form text-text outline-none placeholder:text-text-3"
               />
               <Kbd>esc</Kbd>

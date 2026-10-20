@@ -74,6 +74,7 @@ export function createPreferences(ctx: Ctx, appearance: AppearanceService) {
       theme: s.defaultTheme,
       sound: s.sound[appKind(client)],
       volume: s.sound.volume,
+      'admin.addMovie.defaults': null,
     }
     const values = { ...server }
     const from = Object.fromEntries(PREFERENCE_KEYS.map((k) => [k, 'server'])) as Record<

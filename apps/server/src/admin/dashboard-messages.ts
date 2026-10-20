@@ -71,6 +71,7 @@ export const widgets = defineMessages({
   'storage.used': 'Used',
   'storage.none': 'No disks reported',
   'storage.bar': '{percent} used',
+  'storage.movies': '{count, plural, =0 {no movies} one {# movie} other {# movies}}',
 
   'indexers.none': 'No indexers yet',
   'indexers.noneBody': 'Searches need at least one. The catalog adds public ones in a click.',
@@ -92,6 +93,7 @@ export const widgets = defineMessages({
 
   'recent.none': 'Nothing added yet',
   'recent.noneBody': 'New movies show here once they’re imported.',
+  'recent.addedBody': 'Movies you add show here.',
 
   'calendar.caption': 'Releases in {month}',
   'calendar.none': 'No releases this month.',
@@ -113,4 +115,5 @@ export const widgets = defineMessages({
 
   'page.indexers': 'Indexers',
   'page.system': 'System',
+  'page.movies': 'Movies',
 })

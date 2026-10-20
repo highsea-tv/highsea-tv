@@ -49,9 +49,15 @@ Decide to watch, and how: Play or Resume, with the version, audio and subtitles 
 
 ## Data
 
-- `library.item(id)` → `GET /api/v1/items/{id}`: `ClientDetail`: the item with this user's progress, the playable versions with their audio and subtitle tracks (embedded streams and external files, one per language and kind), cast and directors from the metadata, related titles that are playable here, and the defaults (this user's picks for the title, or the file's defaults).
-- `playback.setPrefs(id, patch)` → `PUT /api/v1/items/{id}/prefs`.
-- Events: `watch.updated`, `movies.updated`.
+Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `library` group), as built in Phase 3, checkpoint 4. Everyone signed in.
+
+- `library.item({ params: { type, id } })` → `GET /api/v1/items/{type}/{id}`, by type and TMDB id (`/api/v1/items/movie/603`), so a movie and a show with the same number stay apart. 404 when the title isn't in the library here. A `ClientDetail`:
+  - `item`: the `ClientItem` ([client-library.md › Data](client-library.md#data)), with this person's `progress` and `position`;
+  - from the metadata: `originalTitle`, `tagline`, `certification` (for the server's region), `studios`, `cast` and `directors` (`Credit`s with their photos), `videos` and `collection`;
+  - `versions`: each version's `id`, `label`, `detail` ("4K · HDR10 · HEVC · 18.2 GB" once it has a file, null until then) and `playable`;
+  - `related`: TMDB's recommendations for the title that are in the library here, as `ClientItem`s.
+- Later: the versions' audio and subtitle tracks (embedded streams and external files, one per language and kind) and the defaults (this person's picks for the title, or the file's), with files (checkpoint 6); `playback.setPrefs(id, patch)` → `PUT /api/v1/items/{id}/prefs`, with playback (Phase 4).
+- Events: `movies.updated`, `item.updated`. Later: `watch.updated`.
 
 ## Decisions
 

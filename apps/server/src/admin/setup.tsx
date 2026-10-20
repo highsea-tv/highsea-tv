@@ -1,11 +1,11 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // A2 Setup wizard (docs/product/setup.md), ported from the prototype. First run, before anyone has
-// signed in: name the server, create the owner, pick folders, choose remote access and the
-// optional highsea cloud link, then review and finish on the dashboard. The indexer and subtitle
-// steps arrive with their packages. Progress is kept in the browser so a reload picks up where you
-// left off, except the password, which never goes into storage (OWASP HTML5 Security Cheat Sheet:
-// no sensitive data in localStorage).
+// signed in: name the server, create the owner, add a TMDB key (checkpoint 4; skippable), pick
+// folders, choose remote access and the optional highsea cloud link, then review and finish on the
+// dashboard. The indexer and subtitle steps arrive with their packages. Progress is kept in the
+// browser so a reload picks up where you left off, except the password and the TMDB key, which
+// never go into storage (OWASP HTML5 Security Cheat Sheet: no sensitive data in localStorage).
 import type { SetupInput } from '@highsea/api-contract'
 import { useT } from '@highsea/i18n/react'
 import type { ApiError } from '@highsea/sdk'
@@ -28,15 +28,26 @@ import {
   toast,
 } from '@highsea/ui-web'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
+import { TmdbNotice } from './attribution.tsx'
+import {
+  errorReason,
+  keyRejected,
+  metadataLocale,
+  TMDB_KEY_PAGE,
+  tmdbBusy,
+} from './metadata-locale.ts'
 import { setup as messages } from './setup-messages.ts'
 
-type StepId = 'name' | 'owner' | 'folders' | 'remote' | 'cloud' | 'review'
-const STEP_IDS: StepId[] = ['name', 'owner', 'folders', 'remote', 'cloud', 'review']
+type StepId = 'name' | 'owner' | 'metadata' | 'folders' | 'remote' | 'cloud' | 'review'
+const STEP_IDS: StepId[] = ['name', 'owner', 'metadata', 'folders', 'remote', 'cloud', 'review']
 type Remote = SetupInput['remoteAccess']['kind']
 
 type Draft = {
   serverName: string
   owner: { displayName: string; username: string; password: string; confirm: string }
+  /** The TMDB key as typed. Never stored; `keyChecked` remembers that TMDB accepted one. */
+  metadataKey: string
+  keyChecked: boolean
   folders: { movies: string; downloads: string }
   remote: Remote
   proxyUrl: string
@@ -47,6 +58,8 @@ type Draft = {
 const blank: Draft = {
   serverName: '',
   owner: { displayName: '', username: '', password: '', confirm: '' },
+  metadataKey: '',
+  keyChecked: false,
   folders: { movies: '', downloads: '' },
   remote: 'local-only',
   proxyUrl: '',
@@ -70,7 +83,8 @@ function persist(saved: Saved | null) {
   try {
     if (!saved) return localStorage.removeItem(storageKey)
     const { password: _, confirm: __, ...owner } = saved.draft.owner
-    localStorage.setItem(storageKey, JSON.stringify({ ...saved, draft: { ...saved.draft, owner } }))
+    const { metadataKey: ___, ...draft } = saved.draft
+    localStorage.setItem(storageKey, JSON.stringify({ ...saved, draft: { ...draft, owner } }))
   } catch {
     // private mode: progress just isn't remembered
   }
@@ -88,6 +102,7 @@ function validate(step: StepId, d: Draft, t: T): Errors {
     if (d.owner.password.length < 10) e.password = t('owner.short')
     else if (d.owner.confirm !== d.owner.password) e.confirm = t('owner.mismatch')
   }
+  if (step === 'metadata' && !d.metadataKey.trim()) e.metadataKey = t('metadata.missing')
   if (step === 'folders') {
     if (!d.folders.movies) e.movies = t('folders.moviesMissing')
     if (!d.folders.downloads) e.downloads = t('folders.downloadsMissing')
@@ -110,6 +125,7 @@ const FIELDS: Record<string, [StepId, string]> = {
   displayName: ['owner', 'displayName'],
   username: ['owner', 'username'],
   password: ['owner', 'password'],
+  'metadata.key': ['metadata', 'metadataKey'],
   'folders.movies': ['folders', 'movies'],
   'folders.downloads': ['folders', 'downloads'],
   'remoteAccess.url': ['remote', 'proxyUrl'],
@@ -131,6 +147,11 @@ const toInput = (d: Draft): SetupInput => ({
         ? { kind: 'port-forward', port: Number(d.port) }
         : { kind: 'local-only' },
   cloudLink: d.cloudLink,
+  // the owner's locale for the metadata language and region (decision 5), with the key if added
+  metadata: {
+    ...metadataLocale(typeof navigator === 'undefined' ? undefined : navigator.language),
+    ...(d.metadataKey.trim() ? { key: d.metadataKey.trim() } : {}),
+  },
 })
 
 // ---------------------------------------------------------------- the wizard
@@ -144,6 +165,7 @@ export function Setup() {
   const heading = useRef<HTMLHeadingElement>(null)
   const first = useRef(true)
   const complete = useAction((c, input: SetupInput) => c.setup.complete({ body: input }))
+  const checkKey = useAction((c, key: string) => c.setup.checkMetadataKey({ body: { key } }))
   const { step, reached, draft } = saved
   const id = STEP_IDS[step] ?? 'name'
   const steps: Step[] = STEP_IDS.map((s) => ({ id: s, label: t(`step.${s}`) }))
@@ -186,12 +208,36 @@ export function Setup() {
     const found = validate(id, draft, t)
     setErrors(found)
     if (Object.keys(found).length) return
+    if (id === 'metadata') {
+      // checked with TMDB now, so a mistyped key is caught here and not after Finish
+      const key = draft.metadataKey.trim()
+      try {
+        await checkKey.run(key)
+      } catch (err) {
+        const reason = errorReason(err)
+        return setErrors({
+          metadataKey: keyRejected(reason)
+            ? t('metadata.rejected')
+            : tmdbBusy(reason)
+              ? t('metadata.unavailable')
+              : (err as Error).message,
+        })
+      }
+      update({ metadataKey: key, keyChecked: true })
+      return goTo(step + 1)
+    }
     if (id !== 'review') return goTo(step + 1)
     // after a reload the password is gone: ask for it again
     const owner = validate('owner', draft, t)
     if (Object.keys(owner).length) {
       goTo(STEP_IDS.indexOf('owner'))
       setErrors({ ...owner, password: owner.password && t('owner.forgotten') })
+      return
+    }
+    // a key TMDB accepted before a reload is gone too: ask for it, or let it be skipped
+    if (draft.keyChecked && !draft.metadataKey.trim()) {
+      goTo(STEP_IDS.indexOf('metadata'))
+      setErrors({ metadataKey: t('metadata.forgotten') })
       return
     }
     try {
@@ -208,6 +254,12 @@ export function Setup() {
         setErrors({ [at[1]]: (err as Error).message })
       } else toast.error(t('failed'), { description: (err as Error).message })
     }
+  }
+
+  /** "Add it later in Settings": no key, and on to the next step. */
+  const skipKey = () => {
+    update({ metadataKey: '', keyChecked: false })
+    goTo(step + 1)
   }
 
   const startOver = () => {
@@ -282,6 +334,17 @@ export function Setup() {
           </div>
           <p className="text-caption text-text-3">{t('owner.later')}</p>
         </>
+      ),
+    },
+    metadata: {
+      title: t('metadata.title'),
+      detail: t('metadata.detail'),
+      content: (
+        <MetadataKey
+          value={draft.metadataKey}
+          error={errors.metadataKey}
+          onChange={(metadataKey) => update({ metadataKey, keyChecked: false })}
+        />
       ),
     },
     folders: {
@@ -365,12 +428,17 @@ export function Setup() {
                   </Button>
                 )}
                 <div className="flex-1" />
+                {id === 'metadata' && (
+                  <Button variant="ghost" onClick={skipKey} disabled={checkKey.pending}>
+                    {t('metadata.skip')}
+                  </Button>
+                )}
                 <Button
                   type="submit"
                   variant="primary"
                   iconEnd={id === 'review' ? undefined : 'arrow-right'}
                   icon={id === 'review' ? 'check' : undefined}
-                  loading={complete.pending}
+                  loading={complete.pending || checkKey.pending}
                 >
                   {id === 'review' ? t('finish') : t('continue')}
                 </Button>
@@ -395,6 +463,49 @@ function CloudPoint({
       <Icon name={icon} size={16} className="mt-px shrink-0 text-text-3" />
       {children}
     </li>
+  )
+}
+
+// ---------------------------------------------------------------- the TMDB key
+
+/** The key step: the field, where TMDB shows the key, why highsea asks, and TMDB's notice. */
+function MetadataKey({
+  value,
+  error,
+  onChange,
+}: {
+  value: string
+  error?: string
+  onChange: (key: string) => void
+}) {
+  const t = useT(messages)
+  return (
+    <>
+      <Field label={t('metadata.label')} hint={t('metadata.hint')} error={error}>
+        <Input
+          value={value}
+          type="password"
+          autoComplete="off"
+          autoCapitalize="none"
+          spellCheck={false}
+          className="font-mono"
+          onChange={(e) => onChange(e.target.value)}
+        />
+      </Field>
+      <a
+        href={TMDB_KEY_PAGE}
+        target="_blank"
+        rel="noreferrer"
+        className="flex items-center gap-1.5 justify-self-start rounded-sm text-accent-text text-ui outline-none hover:underline focus-visible:ring-focus"
+      >
+        {t('metadata.open')}
+        <Icon name="external" size={14} />
+      </a>
+      <div className="grid gap-3 rounded-md border border-line bg-s2 p-4 text-caption text-text-2">
+        <p>{t('metadata.why')}</p>
+        <TmdbNotice />
+      </div>
+    </>
   )
 }
 
@@ -683,6 +794,13 @@ function Review({ draft, onEdit }: { draft: Draft; onEdit: (step: number) => voi
           <span className="font-mono text-text-3">@{draft.owner.username}</span>
         </>
       ),
+    },
+    {
+      step: 'metadata',
+      label: t('review.metadata'),
+      value: draft.metadataKey.trim()
+        ? t('review.keyAdded', { last4: draft.metadataKey.trim().slice(-4) })
+        : t('review.keyLater'),
     },
     {
       step: 'folders',

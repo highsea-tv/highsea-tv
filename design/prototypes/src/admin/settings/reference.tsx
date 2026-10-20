@@ -2,6 +2,8 @@
 // A15 Settings, the reference areas (docs/product/settings.md): each area's layout, its values and
 // its states, with the main controls working (edit, save, discard) and the rest marked as not in
 // the prototype.
+
+import { describeFormat } from '@highsea/quality/browser'
 import {
   Badge,
   Button,
@@ -585,7 +587,7 @@ export function Profiles() {
               <div className="grid gap-1">
                 <p className="font-semibold text-text text-ui">{p.name}</p>
                 <p className="flex flex-wrap gap-1">
-                  {p.qualities
+                  {p.items
                     .filter((q) => q.allowed)
                     .map((q) => (
                       <Badge key={q.name} tone={q.name === p.cutoff ? 'accent' : 'neutral'}>
@@ -623,7 +625,7 @@ export function Profiles() {
                 <TableRow key={f.id}>
                   <TableCell className="text-text">{f.name}</TableCell>
                   <TableCell className="whitespace-normal break-words font-mono text-figure text-text-2">
-                    {f.conditions.join(' · ')}
+                    {describeFormat(f).join(' · ')}
                   </TableCell>
                   <TableCell>
                     <Badge tone={f.source === 'preset' ? 'info' : 'neutral'}>
@@ -682,17 +684,27 @@ export function QualitySizes() {
               </TableHeader>
               <TableBody>
                 {rows.map((q, i) => {
+                  // An empty preferred or maximum is no limit (`null`), as TRaSH's defaults are.
                   const cell = (key: 'min' | 'preferred' | 'max') => (
                     <TableCell numeric>
                       <Input
                         type="number"
                         min={0}
                         aria-label={`${q.quality}: ${key === 'preferred' ? 'preferred' : key} MB per minute`}
-                        value={q[key]}
+                        value={q[key] ?? ''}
+                        placeholder={key === 'min' ? undefined : '∞'}
                         onChange={(e) =>
                           replace(
                             rows.map((r, j) =>
-                              j === i ? { ...r, [key]: Number(e.target.value) } : r,
+                              j === i
+                                ? {
+                                    ...r,
+                                    [key]:
+                                      key !== 'min' && e.target.value === ''
+                                        ? null
+                                        : Number(e.target.value),
+                                  }
+                                : r,
                             ),
                           )
                         }
@@ -707,7 +719,9 @@ export function QualitySizes() {
                       {cell('preferred')}
                       {cell('max')}
                       <TableCell numeric className="text-text-2">
-                        {((q.min * 120) / 1000).toFixed(1)}–{((q.max * 120) / 1000).toFixed(1)} GB
+                        {q.max === null
+                          ? `${((q.min * 120) / 1000).toFixed(1)} GB or more`
+                          : `${((q.min * 120) / 1000).toFixed(1)}–${((q.max * 120) / 1000).toFixed(1)} GB`}
                       </TableCell>
                     </TableRow>
                   )

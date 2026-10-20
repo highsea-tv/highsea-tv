@@ -135,6 +135,8 @@ export function allowed(p: Principal, access: Access): boolean {
       return true
     case 'people':
       return canManageUsers(p.user.role, p.user.permissions)
+    case 'library':
+      return isStaff(p.user.role) || p.user.permissions.includes('manageLibrary')
     case 'staff':
       return isStaff(p.user.role)
     case 'owner':

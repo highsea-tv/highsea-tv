@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The platform under Node, the server's runtime (ADR 0019): `bun test` covers bun:sqlite; this
 // covers better-sqlite3, workers and the API on a real file database. Run with `node`; exits 1 on
-// the first failure. CI runs it after the tests.
+// the first failure. CI runs it after the tests. TMDB answers from the recordings (ADR 0029), so the
+// metadata package and the image cache run as production runs them, without the network.
 import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { issueDevice } from '@highsea/auth'
 import { defineJob } from '@highsea/jobs'
+import { createReplayFetch } from '@highsea/metadata/replay'
 import { boot, loadConfig } from '@highsea/runtime'
 import { z } from 'zod'
 import { createApi } from '../src/api/app.ts'
@@ -17,7 +20,14 @@ const config = loadConfig({
   HIGHSEA_DATA_DIR: join(dir, 'data'),
 })
 try {
-  const runtime = await boot({ config, version: '0.0.0-smoke', quiet: true, manualTicks: true })
+  const replay = createReplayFetch()
+  const runtime = await boot({
+    config,
+    version: '0.0.0-smoke',
+    quiet: true,
+    manualTicks: true,
+    fetch: replay,
+  })
   assert.equal(runtime.database.driver, 'node', 'production runs on better-sqlite3')
 
   const api = createApi(runtime)
@@ -25,6 +35,38 @@ try {
   assert.equal(health.status, 200)
   const info = (await (await api.request('/api/v1/system/info/public')).json()) as { id: string }
   assert.equal(info.id, runtime.identity().id)
+
+  // a recorded Discover, through the API as an app calls it, and a poster from the image cache
+  const meta = { address: '127.0.0.1', userAgent: 'smoke' }
+  const owner = await runtime.auth.createOwner(
+    { username: 'smoke', displayName: 'Smoke', password: 'a long enough password' },
+    meta,
+  )
+  const token = issueDevice(runtime.auth.ctx, owner.id, 'password', meta, {
+    name: 'smoke',
+    client: 'tvos',
+    appVersion: '0.0.0',
+  }).secret
+  await runtime.metadata.settings.setKey('smoke-key')
+  // the recordings' region
+  runtime.metadata.settings.update({ region: 'US' })
+  const authorization = { authorization: `Bearer ${token}` }
+  const discover = await api.request('/api/v1/discover/movies?list=popular', {
+    headers: authorization,
+  })
+  assert.equal(discover.status, 200)
+  const page = (await discover.json()) as { items: { art: { poster: string | null } }[] }
+  assert.ok(page.items.length > 0, 'Discover lists the recorded movies')
+  const poster = page.items.find((m) => m.art.poster)?.art.poster
+  assert.ok(poster, 'a recorded movie has a poster')
+  const image = await api.request(poster, { headers: authorization })
+  assert.equal(image.status, 200)
+  assert.match(image.headers.get('content-type') ?? '', /^image\//)
+  // whole, decodable bytes: a JPEG starts FF D8 FF, a PNG 89 50 4E 47
+  const bytes = new Uint8Array(await image.arrayBuffer())
+  const head = Buffer.from(bytes.subarray(0, 4)).toString('hex')
+  assert.ok(head.startsWith('ffd8ff') || head === '89504e47', `image bytes start ${head}`)
+  assert.equal(Number(image.headers.get('content-length') ?? bytes.byteLength), bytes.byteLength)
 
   let ran = 0
   runtime.jobs.define(

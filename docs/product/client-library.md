@@ -46,8 +46,16 @@ Everything the household can watch on this server, to browse rather than search:
 
 ## Data
 
-- `library.list()` → `GET /api/v1/items?type=movie&playable=true`: `ClientItem[]` with this user's progress. Sorting and filtering happen on the client in the prototype; the product pages them from the server once libraries are large.
-- Events: `movies.updated`, `watch.updated`.
+Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `library` group), as built in Phase 3, checkpoint 4. Everyone signed in.
+
+- `library.list({ query })` → `GET /api/v1/items?type=&genre=&playable=&sort=&dir=&cursor=&limit=`: a `ClientItemPage` (`items`, `next`, `total`), sorted, filtered and paged on the server. The prototype sorts and filters on the client.
+  - `type` is `movie`, the only type yet (every type when absent); `genre` is one genre by name, ignoring case; `playable=true` keeps titles with a file to play.
+  - `sort` is `title` (the sort title, the default), `added`, `year` or `rating`, with `dir`: Recently added, Newest first and Highest rated are `added`, `year` and `rating`, newest or highest first.
+  - Paged by cursor: up to `limit` (60 by default, 200 at most), and `next` to pass back as `cursor`, null on the last page.
+- `ClientItem` is the title's `id` (its TMDB id) and `type`, title, year, runtime, genres, synopsis, `rating` out of 5, `voteCount`, release date, `addedAt`, `status`, `playable`, `art` (poster and backdrop URLs on this server) and this person's place in it: `progress` (0–1, null when not started or finished) and `position` in seconds.
+- Until files arrive (checkpoint 6) no title is `playable`; until playback writes positions (Phase 4) none is started.
+- **No route lists the genres yet** for the Genre select. `GET /api/v1/genres` comes with the first client (Phase 4), with a genres column that also takes the genre filter off the cached TMDB data (owner's decision, 2026-10-20).
+- Events: `movies.updated`, `item.updated`. Later: `watch.updated`.
 
 ## Decisions
 

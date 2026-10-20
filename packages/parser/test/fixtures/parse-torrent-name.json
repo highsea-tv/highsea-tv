@@ -1,0 +1,5473 @@
+[
+  {
+    "name": "The Walking Dead S05E03 720p HDTV x264-ASAP[ettv]",
+    "expect": {
+      "title": "The Walking Dead",
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "ASAP",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Hercules (2014) 1080p BrRip H264 - YIFY",
+    "expect": {
+      "title": "Hercules",
+      "year": 2014,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Dawn.of.the.Planet.of.the.Apes.2014.HDRip.XViD-EVO",
+    "expect": {
+      "title": "Dawn of the Planet of the Apes",
+      "year": 2014,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Big Bang Theory S08E06 HDTV XviD-LOL [eztv]",
+    "expect": {
+      "title": "The Big Bang Theory",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "22 Jump Street (2014) 720p BrRip x264 - YIFY",
+    "expect": {
+      "title": "22 Jump Street",
+      "year": 2014,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "YIFY",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Hercules.2014.EXTENDED.1080p.WEB-DL.DD5.1.H264-RARBG",
+    "expect": {
+      "title": "Hercules",
+      "year": 2014,
+      "edition": "EXTENDED",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "RARBG",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Hercules.2014.Extended.Cut.HDRip.XViD-juggs[ETRG]",
+    "expect": {
+      "title": "Hercules",
+      "year": 2014,
+      "edition": "Extended Cut",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "releaseGroup": "juggs",
+      "codec": "xvid"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Hercules (2014) WEBDL DVDRip XviD-MAX",
+    "expect": {
+      "title": "Hercules",
+      "year": 2014,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Marvels Agents of S H I E L D S02E05 HDTV x264-KILLERS [eztv]",
+    "expect": {
+      "title": "Marvels Agents of S H I E L D",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "note": "the title as written; highsea doesn’t add punctuation the name lacks",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "X-Men.Days.of.Future.Past.2014.1080p.WEB-DL.DD5.1.H264-RARBG",
+    "expect": {
+      "title": "X-Men Days of Future Past",
+      "year": 2014,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Guardians Of The Galaxy 2014 R6 720p HDCAM x264-JYK",
+    "expect": {
+      "title": "Guardians Of The Galaxy",
+      "year": 2014,
+      "quality": {
+        "source": "cam",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Marvel's.Agents.of.S.H.I.E.L.D.S02E01.Shadows.1080p.WEB-DL.DD5.1",
+    "expect": {
+      "title": "Marvel's Agents of S.H.I.E.L.D.",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      }
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Marvels Agents of S.H.I.E.L.D. S02E06 HDTV x264-KILLERS[ettv]",
+    "expect": {
+      "title": "Marvels Agents of S.H.I.E.L.D.",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "releaseGroup": "KILLERS",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Guardians of the Galaxy (CamRip / 2014)",
+    "expect": {
+      "title": "Guardians of the Galaxy",
+      "year": 2014,
+      "quality": {
+        "source": "cam",
+        "modifier": "none"
+      }
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Walking.Dead.S05E03.1080p.WEB-DL.DD5.1.H.264-Cyphanix[rartv]",
+    "expect": {
+      "title": "The Walking Dead",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "Cyphanix",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Brave.2012.R5.DVDRip.XViD.LiNE-UNiQUE",
+    "expect": {
+      "title": "Brave",
+      "year": 2012,
+      "quality": {
+        "source": "dvd",
+        "modifier": "regional"
+      },
+      "codec": "xvid"
+    },
+    "note": "R5 is a regional retail disc: Radarr's REGIONAL quality (Qualities Defined)",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Lets.Be.Cops.2014.BRRip.XViD-juggs[ETRG]",
+    "expect": {
+      "title": "Lets Be Cops",
+      "year": 2014,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "These.Final.Hours.2013.WBBRip XViD",
+    "expect": {
+      "title": "These Final Hours",
+      "year": 2013,
+      "codec": "xvid"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Downton Abbey 5x06 HDTV x264-FoV [eztv]",
+    "expect": {
+      "title": "Downton Abbey",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Annabelle.2014.HC.HDRip.XViD.AC3-juggs[ETRG]",
+    "expect": {
+      "title": "Annabelle",
+      "year": 2014,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "hardcodedSubs": "HC",
+      "codec": "xvid"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Lucy.2014.HC.HDRip.XViD-juggs[ETRG]",
+    "expect": {
+      "title": "Lucy",
+      "year": 2014,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "hardcodedSubs": "HC",
+      "codec": "xvid"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Flash 2014 S01E04 HDTV x264-FUM[ettv]",
+    "expect": {
+      "title": "The Flash",
+      "year": 2014,
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "South Park S18E05 HDTV x264-KILLERS [eztv]",
+    "expect": {
+      "title": "South Park",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Flash 2014 S01E03 HDTV x264-LOL[ettv]",
+    "expect": {
+      "title": "The Flash",
+      "year": 2014,
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Flash 2014 S01E01 HDTV x264-LOL[ettv]",
+    "expect": {
+      "title": "The Flash",
+      "year": 2014,
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Lucy 2014 Dual-Audio WEBRip 1400Mb",
+    "expect": {
+      "title": "Lucy",
+      "year": 2014,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      }
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Teenage Mutant Ninja Turtles (HdRip / 2014)",
+    "expect": {
+      "title": "Teenage Mutant Ninja Turtles",
+      "year": 2014,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      }
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Teenage Mutant Ninja Turtles (unknown_release_type / 2014)",
+    "expect": {
+      "title": "Teenage Mutant Ninja Turtles",
+      "year": 2014
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Simpsons S26E05 HDTV x264 PROPER-LOL [eztv]",
+    "expect": {
+      "title": "The Simpsons",
+      "quality": {
+        "revision": {
+          "proper": true
+        },
+        "source": "tv",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "2047 - Sights of Death (2014) 720p BrRip x264 - YIFY",
+    "expect": {
+      "title": "2047 - Sights of Death",
+      "year": 2014,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Two and a Half Men S12E01 HDTV x264 REPACK-LOL [eztv]",
+    "expect": {
+      "title": "Two and a Half Men",
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "revision": {
+          "repack": true
+        }
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Dinosaur 13 2014 WEBrip XviD AC3 MiLLENiUM",
+    "expect": {
+      "title": "Dinosaur 13",
+      "year": 2014,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Teenage.Mutant.Ninja.Turtles.2014.HDRip.XviD.MP3-RARBG",
+    "expect": {
+      "title": "Teenage Mutant Ninja Turtles",
+      "year": 2014,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Dawn.Of.The.Planet.of.The.Apes.2014.1080p.WEB-DL.DD51.H264-RARBG",
+    "expect": {
+      "title": "Dawn Of The Planet of The Apes",
+      "year": 2014,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Teenage.Mutant.Ninja.Turtles.2014.720p.HDRip.x264.AC3.5.1-RARBG",
+    "expect": {
+      "title": "Teenage Mutant Ninja Turtles",
+      "year": 2014,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Gotham.S01E05.Viper.WEB-DL.x264.AAC",
+    "expect": {
+      "title": "Gotham",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Into.The.Storm.2014.1080p.WEB-DL.AAC2.0.H264-RARBG",
+    "expect": {
+      "title": "Into The Storm",
+      "year": 2014,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Lucy 2014 Dual-Audio 720p WEBRip",
+    "expect": {
+      "title": "Lucy",
+      "year": 2014,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      }
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Into The Storm 2014 1080p BRRip x264 DTS-JYK",
+    "expect": {
+      "title": "Into The Storm",
+      "year": 2014,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Sin.City.A.Dame.to.Kill.For.2014.1080p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "Sin City A Dame to Kill For",
+      "year": 2014,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Jack.And.The.Cuckoo-Clock.Heart.2013.BRRip XViD",
+    "expect": {
+      "title": "Jack And The Cuckoo-Clock Heart",
+      "year": 2013,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Dracula.Untold.2014.TS.XViD.AC3.MrSeeN-SiMPLE",
+    "expect": {
+      "title": "Dracula Untold",
+      "year": 2014,
+      "quality": {
+        "source": "telesync",
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Missing 1x01 Pilot HDTV x264-FoV [eztv]",
+    "expect": {
+      "title": "The Missing",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Doctor.Who.2005.8x11.Dark.Water.720p.HDTV.x264-FoV[rartv]",
+    "expect": {
+      "title": "Doctor Who",
+      "year": 2005,
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "FoV",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Gotham.S01E07.Penguins.Umbrella.WEB-DL.x264.AAC",
+    "expect": {
+      "title": "Gotham",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "One Shot [2014] DVDRip XViD-ViCKY",
+    "expect": {
+      "title": "One Shot",
+      "year": 2014,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Shaukeens 2014 Hindi (1CD) DvDScr x264 AAC...Hon3y",
+    "expect": {
+      "title": "The Shaukeens",
+      "year": 2014,
+      "quality": {
+        "source": "dvd",
+        "modifier": "screener"
+      },
+      "languages": ["hi"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Shaukeens (2014) 1CD DvDScr Rip x264 [DDR]",
+    "expect": {
+      "title": "The Shaukeens",
+      "year": 2014,
+      "quality": {
+        "source": "dvd",
+        "modifier": "screener"
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Annabelle.2014.1080p.PROPER.HC.WEBRip.x264.AAC.2.0-RARBG",
+    "expect": {
+      "title": "Annabelle",
+      "year": 2014,
+      "quality": {
+        "revision": {
+          "proper": true
+        },
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "hardcodedSubs": "HC",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Interstellar (2014) CAM ENG x264 AAC-CPG",
+    "expect": {
+      "title": "Interstellar",
+      "year": 2014,
+      "quality": {
+        "source": "cam",
+        "modifier": "none"
+      },
+      "languages": ["en"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Guardians of the Galaxy (2014) Dual Audio DVDRip AVI",
+    "expect": {
+      "title": "Guardians of the Galaxy",
+      "year": 2014,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      }
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Eliza Graves (2014) Dual Audio WEB-DL 720p MKV x264",
+    "expect": {
+      "title": "Eliza Graves",
+      "year": 2014,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "doctor_who_2005.8x12.death_in_heaven.720p_hdtv_x264-fov",
+    "expect": {
+      "title": "doctor who",
+      "year": 2005,
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "fov",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "breaking.bad.s01e01.720p.bluray.x264-reward",
+    "expect": {
+      "title": "breaking bad",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "[720pMkv.Com]_sons.of.anarchy.s05e10.480p.BluRay.x264-GAnGSteR",
+    "expect": {
+      "title": "sons of anarchy",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 480
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "[ www.Speed.cd ] -Sons.of.Anarchy.S07E07.720p.HDTV.X264-DIMENSION",
+    "expect": {
+      "title": "Sons of Anarchy",
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "DIMENSION",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Community.s02e20.rus.eng.720p.Kybik.v.Kybe",
+    "expect": {
+      "title": "Community",
+      "quality": {
+        "resolution": 720
+      },
+      "languages": ["ru", "en"]
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Jungle.Book.2016.3D.1080p.BRRip.SBS.x264.AAC-ETRG",
+    "expect": {
+      "title": "The Jungle Book",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc",
+      "threeD": true
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Ant-Man.2015.3D.1080p.BRRip.Half-SBS.x264.AAC-m2g",
+    "expect": {
+      "title": "Ant-Man",
+      "year": 2015,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc",
+      "threeD": true
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Ice.Age.Collision.Course.2016.READNFO.720p.HDRIP.X264.AC3.TiTAN",
+    "expect": {
+      "title": "Ice Age Collision Course",
+      "year": 2016,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Red.Sonja.Queen.Of.Plagues.2016.BDRip.x264-W4F[PRiME]",
+    "expect": {
+      "title": "Red Sonja Queen Of Plagues",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Purge: Election Year (2016) HC - 720p HDRiP - 900MB - ShAaNi",
+    "expect": {
+      "title": "The Purge: Election Year",
+      "year": 2016,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "hardcodedSubs": "HC"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "War Dogs (2016) HDTS 600MB - NBY",
+    "expect": {
+      "title": "War Dogs",
+      "year": 2016,
+      "quality": {
+        "source": "telesync",
+        "modifier": "none"
+      }
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Hateful Eight (2015) 720p BluRay - x265 HEVC - 999MB - ShAaN",
+    "expect": {
+      "title": "The Hateful Eight",
+      "year": 2015,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Boss.2016.UNRATED.720p.BRRip.x264.AAC-ETRG",
+    "expect": {
+      "title": "The Boss",
+      "year": 2016,
+      "edition": "UNRATED",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Return.To.Snowy.River.1988.iNTERNAL.DVDRip.x264-W4F[PRiME]",
+    "expect": {
+      "title": "Return To Snowy River",
+      "year": 1988,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "releaseGroup": "W4F",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Akira (2016) - UpScaled - 720p - DesiSCR-Rip - Hindi - x264 - AC3 - 5.1 - Mafiaking - M2Tv",
+    "expect": {
+      "title": "Akira",
+      "year": 2016,
+      "quality": {
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Ben Hur 2016 TELESYNC x264 AC3 MAXPRO",
+    "expect": {
+      "title": "Ben Hur",
+      "year": 2016,
+      "quality": {
+        "source": "telesync",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Secret.Life.of.Pets.2016.HDRiP.AAC-LC.x264-LEGi0N",
+    "expect": {
+      "title": "The Secret Life of Pets",
+      "year": 2016,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.X-Files.S01.Retail.DKsubs.720p.BluRay.x264-RAPiDCOWS",
+    "expect": {
+      "title": "The X-Files",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "RAPiDCOWS",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.X-Files.S01-S03.DKsubs.1080p.BluRay.HEVC.x265",
+    "expect": {
+      "title": "The X-Files",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.X-Files.Complete.S01-S09.1080p.BluRay.x264-GECKOS",
+    "expect": {
+      "title": "The X-Files",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "GECKOS",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Flash.2014.S03.720p.HDTV.x264-Scene",
+    "expect": {
+      "title": "The Flash",
+      "year": 2014,
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "Scene",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Boku.Unmei.no.Hito.desu.Ep07.Chi_Jap.HDTVrip.1280X720-ZhuixinFan.mp4",
+    "expect": {
+      "title": "Boku Unmei no Hito desu",
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["zh", "ja"],
+      "releaseGroup": "ZhuixinFan"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Blind.2017.NORDiC.720p.BluRay.x264.DTS5.1-TWA",
+    "expect": {
+      "title": "Blind",
+      "year": 2017,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": [],
+      "releaseGroup": "TWA",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Family.Guy.S17.Complete.Season.17.x264.720p",
+    "expect": {
+      "title": "Family Guy",
+      "quality": {
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "South Park Season 23 Complete 720p AMZN WEB-DL x264 [i_c]",
+    "expect": {
+      "title": "South Park",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Borgen-Season 1-[2010].x264.DVDrip",
+    "expect": {
+      "title": "Borgen",
+      "year": 2010,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Bumbibjornarna.COMPLETE.S02.SWEDiSH.DVDRip.XviD-Rezar1337",
+    "expect": {
+      "title": "Bumbibjornarna",
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "languages": ["sv"],
+      "releaseGroup": "Rezar1337",
+      "codec": "xvid"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Martian 2015 540p HDRip KORSUB x264 AAC2 0-FGT",
+    "expect": {
+      "title": "The Martian",
+      "year": 2015,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 540
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Legend.of.1900.1998.1080p.BluRay.H264.AAC-RARBG",
+    "expect": {
+      "title": "The Legend of 1900",
+      "year": 1998,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "2001.A.Space.Odyssey.1968.iNTERNAL.1080p.BluRay.x264-MANNEKEPiS",
+    "expect": {
+      "title": "2001 A Space Odyssey",
+      "year": 1968,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Impractical.Jokers.The.Movie.2020.1080p.WEBRip.x264.AAC5.1",
+    "expect": {
+      "title": "Impractical Jokers The Movie",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "1983 - Season 1 - Polish - 1080p AAC5.1 - NF WEB-DL - X264-Rapta",
+    "expect": {
+      "title": "1983",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["pl"],
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Bridge (Bron Broen) S01 Season 1 BRRip x264 AAC E-Subs [GWC]",
+    "expect": {
+      "title": "The Bridge (Bron Broen)",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "note": "the bracketed original title is part of the title as written",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Meg.2018.1080p.HDRip.x264.[ExYu-Subs]",
+    "expect": {
+      "title": "The Meg",
+      "year": 2018,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Dragon Ball Super: Broly (2018) CAM-Rip English Subs x264 - KatmovieHD.Pw",
+    "expect": {
+      "title": "Dragon Ball Super: Broly",
+      "year": 2018,
+      "quality": {
+        "source": "cam",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Joker(2019) English HC 720p HDRip x264 [ Hindi - Eng Multi Subs] Shadow (HDWebmovies)",
+    "expect": {
+      "title": "Joker",
+      "year": 2019,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["en", "hi"],
+      "hardcodedSubs": "HC",
+      "codec": "avc"
+    },
+    "note": "Hindi is listed as a language; the source keeps only English",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "IP Man And Four Kings 2019 HDRip 1080p x264 AAC Mandarin HC CHS-ENG SUBS Mp4Ba",
+    "expect": {
+      "title": "IP Man And Four Kings",
+      "year": 2019,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["zh"],
+      "hardcodedSubs": "HC",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Simpsons - Season 1 Complete [DVDrip ITA ENG] TNT Village",
+    "expect": {
+      "title": "The Simpsons",
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "languages": ["it", "en"]
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Simpsons - Complete Seasons S01 to S28 (1080p, 720p, DVDRip)",
+    "expect": {
+      "title": "The Simpsons",
+      "quality": {
+        "source": "dvd",
+        "modifier": "none",
+        "resolution": 1080
+      }
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Stephen.Colbert.2020.04.02.Alicia.Keys.HDTV.x264-SORNY[TGx]",
+    "expect": {
+      "title": "Stephen Colbert",
+      "year": null,
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "note": "a full date is an episode’s air date, not a film’s year",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Jimmy.Not.Funny.2017.08.01.Jerry.Benner.720p.HDTV.x264-SORNY[eztv].mkv",
+    "expect": {
+      "title": "Jimmy Not Funny",
+      "year": null,
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "note": "a full date is an episode’s air date, not a film’s year",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": " Tom.Clancys.Jack.Ryan.S02.COMPLETE.720p.AMZN.WEBRip.x264-GalaxyTV[TGx] ",
+    "expect": {
+      "title": "Tom Clancys Jack Ryan",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Sacred Games 2018 S01 Complete Season 1 Hindi 720p NetFlix x264 DDP 5.1 ESub - xRG",
+    "expect": {
+      "title": "Sacred Games",
+      "year": 2018,
+      "quality": {
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Homeland.Season.1-4.Complete.720p.HDTV.X264-MRSK",
+    "expect": {
+      "title": "Homeland",
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Home Before Dark (2020) S01 (1080p ATVP Webrip x265 10bit EAC3 5.1 - ArcX)[TAoE]",
+    "expect": {
+      "title": "Home Before Dark",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Our.Girl.S05E03.HDTV.x264-RiVER[TGx]",
+    "expect": {
+      "title": "Our Girl",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Roswell.New.Mexico.S02E04.480p.x264-ZMNT",
+    "expect": {
+      "title": "Roswell New Mexico",
+      "quality": {
+        "resolution": 480
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Coyote.Peterson-Brave.the.Wild.S01E00.Coyotes.Journal.Coyote.And.His.Faithful.Crew.iNTERNAL.WEB.x264-ROBOTS[TGx]",
+    "expect": {
+      "title": "Coyote Peterson-Brave the Wild",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "releaseGroup": "ROBOTS",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Blacklist.S07e05-06.ITA.ENG.1080p.AMZN.WEB-DLMux.DD5.1.H264-MeM",
+    "expect": {
+      "title": "The Blacklist",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["it", "en"],
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Are You Being Served (1972) Season 1-10 S01-S10 + Extras (576p AMZN WEB-DL x265 HEVC 10bit EAC3 2.0 MONOLITH) [QxR]",
+    "expect": {
+      "title": "Are You Being Served",
+      "year": 1972,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 576
+      },
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Empire.2015.S06E16.WEB.H264-iNSiDiOUS[TGx]",
+    "expect": {
+      "title": "Empire",
+      "year": 2015,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Mixed-ish.S01E20.XviD-AFG[TGx]",
+    "expect": {
+      "title": "Mixed-ish",
+      "codec": "xvid"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Marvels Iron Fist S02 Complete 720p WEB-DL x264 [4.3GB] [MP4] [Season 2]",
+    "expect": {
+      "title": "Marvels Iron Fist",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Dag.Vreemde.Man.2016.1080p.BluRay.x264-BARGAiN[EtHD]",
+    "expect": {
+      "title": "Dag Vreemde Man",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "BARGAiN",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Boi.2016.1080p.BluRay.x264-BARGAiN[EtHD]",
+    "expect": {
+      "title": "Boi",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "BARGAiN",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Label.Me.2019.720p.AMZN.WEBRip.800MB.x264-GalaxyRG",
+    "expect": {
+      "title": "Label Me",
+      "year": 2019,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "GalaxyRG",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "A.Touch.Of.Cloth.S03E01-E02.720p.WEB.h264-FaiLED[TGx]",
+    "expect": {
+      "title": "A Touch Of Cloth",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "FaiLED",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Hand Bag (2020) HDRip x264 - SHADOW[TGx]",
+    "expect": {
+      "title": "The Hand Bag",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "releaseGroup": "SHADOW",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Z Nation (2014)S01-01-13 (2014) Full Season.XviD - Italian English.Ac3.Sub.ita.eng.MIRCrew",
+    "expect": {
+      "title": "Z Nation",
+      "year": 2014,
+      "languages": ["it", "en"],
+      "codec": "xvid"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "1917 (2019) [BluRay Rip 1080p ITA-ENG AC3 SUBS] [[email protected]]",
+    "expect": {
+      "title": "1917",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["it", "en"]
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Johnny.English.2003.1080p.BluRay.x264-[YTS.AG]",
+    "expect": {
+      "title": "Johnny English",
+      "year": 2003,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Johnny.English.Reborn.2011.1080p.BRRip.x264  [MovieOW]",
+    "expect": {
+      "title": "Johnny English Reborn",
+      "year": 2011,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Johnny.English.Strikes.Again.2018.1080p.BluRay.x264-[YTS.AM]",
+    "expect": {
+      "title": "Johnny English Strikes Again",
+      "year": 2018,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The French Connection (1971) Remastered 1080p BluRay x265 HEVC EAC3-SARTRE",
+    "expect": {
+      "title": "The French Connection",
+      "year": 1971,
+      "edition": "Remastered",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "SARTRE",
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Thin Blue Line 1995 S01-S02 Complete DVDRip H264 BONE",
+    "expect": {
+      "title": "The Thin Blue Line",
+      "year": 1995,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Heavy.Rescue.401.S02E10.480p.x264-mSD[TGx]",
+    "expect": {
+      "title": "Heavy Rescue 401",
+      "quality": {
+        "resolution": 480
+      },
+      "releaseGroup": "mSD",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Coronation Street 2020 1080p (Deep61)[TGx]",
+    "expect": {
+      "title": "Coronation Street",
+      "year": 2020,
+      "quality": {
+        "resolution": 1080
+      }
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Deadliest.Catch.S00E66.No.Safe.Passage.720p.AMZN.WEB-DL.DDP2.0.H.264-NTb[TGx]",
+    "expect": {
+      "title": "Deadliest Catch",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "NTb",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "New.Girl.S07.Season.7.Complete.1080p.NF.WEB.x264-maximersk [mrsktv]",
+    "expect": {
+      "title": "New Girl",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Accused.Guilty.or.Innocent.S01E07.Murdered.His.Mother.or.Falsely.Accused.Pt2.HDTV.x264-CRiMSON[TGx]",
+    "expect": {
+      "title": "Accused Guilty or Innocent",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "releaseGroup": "CRiMSON",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Peacemaker (1997)Mp-4-X264-Dvd-Rip-480p-AAC-DSD",
+    "expect": {
+      "title": "The Peacemaker",
+      "year": 1997,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none",
+        "resolution": 480
+      },
+      "releaseGroup": "DSD",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Big Bus - Il fantabus (1976).720p.H264.ita.eng.Ac3.sub.ita.eng-MIRCrew",
+    "expect": {
+      "title": "The Big Bus - Il fantabus",
+      "year": 1976,
+      "quality": {
+        "resolution": 720
+      },
+      "languages": ["it", "en"],
+      "releaseGroup": "MIRCrew",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Hunt (2020) BluRay 1080p.H264 Ita Eng AC3 5.1 Sub Ita Eng MIRCrew",
+    "expect": {
+      "title": "The Hunt",
+      "year": 2020,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["it", "en"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Near.Death.2004.1080p.BluRay.H264.AAC-RARBG",
+    "expect": {
+      "title": "Near Death",
+      "year": 2004,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "RARBG",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Red.Pony.1949.1080p.BluRay.H264.AAC-RARBG",
+    "expect": {
+      "title": "The Red Pony",
+      "year": 1949,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "RARBG",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "We Were Soldiers 2002 720p BluRay HEVC H265 BONE",
+    "expect": {
+      "title": "We Were Soldiers",
+      "year": 2002,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Diabolique (1996).720p.H264.ita.eng.Ac3-5.1.sub.ita.eng-MIRCrew",
+    "expect": {
+      "title": "Diabolique",
+      "year": 1996,
+      "quality": {
+        "resolution": 720
+      },
+      "languages": ["it", "en"],
+      "releaseGroup": "MIRCrew",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Road.House.2.Last.Call.2006.Unrated.1080p.HDTV.H264.AC3.DD2.0.Will1869",
+    "expect": {
+      "title": "Road House 2 Last Call",
+      "year": 2006,
+      "edition": "Unrated",
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "We.Summon.The.Darkness.2020.1080p.Bluray.Atmos.TrueHD.7.1.x264-EVO[TGx]",
+    "expect": {
+      "title": "We Summon The Darkness",
+      "year": 2020,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "EVO",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "37°2 le matin - Betty Blue (1986) Director's Cut.720p.H264.ita.fre.sub.Eng-MIRCrew",
+    "expect": {
+      "title": "37°2 le matin - Betty Blue",
+      "year": 1986,
+      "edition": "Director's Cut",
+      "quality": {
+        "resolution": 720
+      },
+      "languages": ["it", "fr"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Non-Fiction.2018.1080p.BluRay.x264-USURY",
+    "expect": {
+      "title": "Non-Fiction",
+      "year": 2018,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "USURY",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Spring.Night.Summer.Night.1967.BDRip.x264-GHOULS[TGx]",
+    "expect": {
+      "title": "Spring Night Summer Night",
+      "year": 1967,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "releaseGroup": "GHOULS",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Insecure.S04.COMPLETE.720p.AMZN.WEBRip.x264-GalaxyTV",
+    "expect": {
+      "title": "Insecure",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "GalaxyTV",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Let.It.Fall.Los.Angeles.1982-1992.2017.DOCU.iNTERNAL.HDTV.x264-W4F[rartv]",
+    "expect": {
+      "title": "Let It Fall Los Angeles 1982-1992",
+      "year": 2017,
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "releaseGroup": "W4F",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Dr.Phil.2019.04.19.720p.HDTV.x264-W4F[rartv]",
+    "expect": {
+      "title": "Dr Phil",
+      "year": null,
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "W4F",
+      "codec": "avc"
+    },
+    "note": "a full date is an episode’s air date, not a film’s year",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Starhunter.ReduX.S02.1080p.AMZN.WEBRip.DDP5.1.x264-GLUE[rartv]",
+    "expect": {
+      "title": "Starhunter",
+      "edition": "ReduX",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "GLUE",
+      "codec": "avc"
+    },
+    "note": "Redux is an edition tag (scene rules 17.2 list it among cut names)",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Jimmy.Fallon.2020.06.16.Gwyneth.Paltrow.720p.WEB.h264-TRUMP[TGx]",
+    "expect": {
+      "title": "Jimmy Fallon",
+      "year": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "TRUMP",
+      "codec": "avc"
+    },
+    "note": "a full date is an episode’s air date, not a film’s year",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Kami no Tou - S01E12-Judas[TGx]",
+    "expect": {
+      "title": "Kami no Tou",
+      "releaseGroup": "Judas"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "EastEnders.2020.06.16.WEB.h264-WEBTUBE[TGx]",
+    "expect": {
+      "title": "EastEnders",
+      "year": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "releaseGroup": "WEBTUBE",
+      "codec": "avc"
+    },
+    "note": "a full date is an episode’s air date, not a film’s year",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Lost.Gold.of.World.War.II.S02E07.WEB.h264-TRUMP[TGx]",
+    "expect": {
+      "title": "Lost Gold of World War II",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "releaseGroup": "TRUMP",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Plunderer - 23 (360p)-HorribleSubs[TGx]",
+    "expect": {
+      "title": "Plunderer",
+      "quality": {
+        "resolution": 360
+      },
+      "releaseGroup": "HorribleSubs"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "[Golumpa] Blood Blockade Battlefront & Beyond - 08 (Kekkai Sensen & Beyond) [FuniDub 1080p x264 AAC] [78481C9C].mkv (1.4 GB)",
+    "expect": {
+      "title": "Blood Blockade Battlefront & Beyond",
+      "quality": {
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Tower of God - 12 (480p)-HorribleSubs[TGx]",
+    "expect": {
+      "title": "Tower of God",
+      "quality": {
+        "resolution": 480
+      },
+      "releaseGroup": "HorribleSubs"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Kami no Tou - 12 (720p)(Multiple Subtitle)-Erai-raws[TGx]",
+    "expect": {
+      "title": "Kami no Tou",
+      "quality": {
+        "resolution": 720
+      },
+      "releaseGroup": "Erai-raws"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Plunderer - 23 (1080p)(HEVC x265 10bit)(Eng-Subs)-Judas[TGx]",
+    "expect": {
+      "title": "Plunderer",
+      "quality": {
+        "resolution": 1080
+      },
+      "releaseGroup": "Judas",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Tamayomi - 12 (360p)-HorribleSubs[TGx]",
+    "expect": {
+      "title": "Tamayomi",
+      "quality": {
+        "resolution": 360
+      },
+      "releaseGroup": "HorribleSubs"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Ahiru no Sora - 36 (480p)-HorribleSubs[TGx]",
+    "expect": {
+      "title": "Ahiru no Sora",
+      "quality": {
+        "resolution": 480
+      },
+      "releaseGroup": "HorribleSubs"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Shadowverse - 11 (720p)(Multiple Subtitle)-Erai-raws[TGx]",
+    "expect": {
+      "title": "Shadowverse",
+      "quality": {
+        "resolution": 720
+      },
+      "releaseGroup": "Erai-raws"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "A3! Season Spring & Summer - 11 (360p)-HorribleSubs[TGx]",
+    "expect": {
+      "title": "A3! Season Spring & Summer",
+      "quality": {
+        "resolution": 360
+      },
+      "releaseGroup": "HorribleSubs"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Kitsutsuki Tanteidokoro - 10 (720p)(Multiple Subtitle)-Erai-raws[TGx]",
+    "expect": {
+      "title": "Kitsutsuki Tanteidokoro",
+      "quality": {
+        "resolution": 720
+      },
+      "releaseGroup": "Erai-raws"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Princess Connect! Re-Dive - 11 (720p)(Multiple Subtitle)-Erai-raws[TGx]",
+    "expect": {
+      "title": "Princess Connect! Re-Dive",
+      "quality": {
+        "resolution": 720
+      },
+      "releaseGroup": "Erai-raws"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Fruits Basket S2 (2019) - 11 (720p)-HorribleSubs[TGx]",
+    "expect": {
+      "title": "Fruits Basket",
+      "year": 2019,
+      "quality": {
+        "resolution": 720
+      },
+      "releaseGroup": "HorribleSubs"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Kadakh (2020) Hindi 720p SonyLiv WEB-DL ⭐1.1 GB⭐ AAC DD- 2.0 ESub x264 - Shadow (BonsaiHD)",
+    "expect": {
+      "title": "Kadakh",
+      "year": 2020,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Satyagraha (2013) (1080p BluRay x265 10bit HEVC AAC 5.1 RONIN)",
+    "expect": {
+      "title": "Satyagraha",
+      "year": 2013,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Shuddh Desi Romance 2013 Hindi 720p BluRay x264 AAC 5.1 MSubs - LOKiHD - Telly",
+    "expect": {
+      "title": "Shuddh Desi Romance",
+      "year": 2013,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "releaseGroup": "Telly",
+      "codec": "avc"
+    },
+    "note": "the group is the part after the last hyphen (scene rules 18.4.1)",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Face 2 Face (2019) Kannada HDRip - 720p - x264 - DD5.1 - 1.1GB - ESub - TamilMV",
+    "expect": {
+      "title": "Face 2 Face",
+      "year": 2019,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["kn"],
+      "releaseGroup": "TamilMV",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Chaman Bahar (2020) Hindi 720p NF WEBRip ⭐800 MB⭐ DD- 5.1 ESub x264 - Shadow (BonsaiHD)",
+    "expect": {
+      "title": "Chaman Bahar",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Piprabidya (2013) Bengali 720p Hoichoi WEB-DL ⭐650 MB⭐ AAC DD- 2.0 ESub x264 - Shadow (BonsaiHD)",
+    "expect": {
+      "title": "Piprabidya",
+      "year": 2013,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["bn"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Penguin (2020) Tamil 720p AMZN WEBRip ⭐1.1 GB⭐ AAC DD- 5.1 ESub x264 - Shadow (BonsaiHD)",
+    "expect": {
+      "title": "Penguin",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["ta"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Kadakh 2020 Hindi 1080p WEBRip x264 AC3 ESubs - LOKiHD - Telly",
+    "expect": {
+      "title": "Kadakh",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["hi"],
+      "releaseGroup": "Telly",
+      "codec": "avc"
+    },
+    "note": "the group is the part after the last hyphen (scene rules 18.4.1)",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Kavacham (2018) Proper HDRip - x264 - [Tamil + Telugu + Hindi] - 750MB - ESub - TamilMV",
+    "expect": {
+      "title": "Kavacham",
+      "year": 2018,
+      "quality": {
+        "revision": {
+          "proper": true
+        },
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "languages": ["ta", "te", "hi"],
+      "releaseGroup": "TamilMV",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "M.S. Dhoni: The Untold Story (2016) BR-Rip - x264 - [Telugu + Tamil] - 450MB - ESub - TamilMV",
+    "expect": {
+      "title": "M.S. Dhoni: The Untold Story",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "languages": ["te", "ta"],
+      "releaseGroup": "TamilMV",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "M.S. Dhoni: The Untold Story (2016) BluRay - 720p - (DD5.1) [Telugu + Tamil + Hindi] - 1.6GB - ESub - TamilMV",
+    "expect": {
+      "title": "M.S. Dhoni: The Untold Story",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["te", "ta", "hi"],
+      "releaseGroup": "TamilMV"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Detective Byomkesh Bakshy 2015 Hindi 720p BluRay x264 DTS 5.1 MSubs - LOKiHD - Telly",
+    "expect": {
+      "title": "Detective Byomkesh Bakshy",
+      "year": 2015,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "releaseGroup": "Telly",
+      "codec": "avc"
+    },
+    "note": "the group is the part after the last hyphen (scene rules 18.4.1)",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Kasganj 2019 WebRip 720p Hindi x264 AAC ESub - mkvCinemas [Telly].mkv",
+    "expect": {
+      "title": "Kasganj",
+      "year": 2019,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Kasganj 2019 Hindi 1080p Zee5 WebDL AVC AAC 2.0 ESub - Telly.mkv",
+    "expect": {
+      "title": "Kasganj",
+      "year": 2019,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["hi"],
+      "releaseGroup": "Telly",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Penguin (2020) [Tam+Tel+Mal - 720p - WEB HDRip - x264 - DD 5.1 - MSub - 2GB] - MAZE",
+    "expect": {
+      "title": "Penguin",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["ta", "te", "ml"],
+      "releaseGroup": "MAZE",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Kakushigoto - 12 END (720p)-Erai-raws[TGx]",
+    "expect": {
+      "title": "Kakushigoto",
+      "quality": {
+        "resolution": 720
+      },
+      "releaseGroup": "Erai-raws"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Shaman King (Season 1) (1080p)(HEVC x265 10bit)(Eng-Subs)-Judas[TGx]",
+    "expect": {
+      "title": "Shaman King",
+      "quality": {
+        "resolution": 1080
+      },
+      "releaseGroup": "Judas",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "A.Whisker.Away.2020.JAPANESE.1080p.NF.WEBRip.DDP5.1.x264-NTG[TGx]",
+    "expect": {
+      "title": "A Whisker Away",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["ja"],
+      "releaseGroup": "NTG",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "liz.and.the.blue.bird.2018.japanese.1080p.bluray.dd5.1.hevc.x265.rmteam.mkv",
+    "expect": {
+      "title": "liz and the blue bird",
+      "year": 2018,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["ja"],
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Flash.2014.S06E13.Il.mio.amico.Grodd.Repack.ITA.ENG.1080p.AMZN.WEB-DLMux.H.264-MeM.mkv",
+    "expect": {
+      "title": "The Flash",
+      "year": 2014,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "revision": {
+          "repack": true
+        },
+        "resolution": 1080
+      },
+      "languages": ["it", "en"],
+      "releaseGroup": "MeM",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Harley.Quinn.S02E12.Lovers.Quarrel.1080p.DCU.WEB-DL.DDP5.1.H264-NTb[TGx]",
+    "expect": {
+      "title": "Harley Quinn",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "NTb",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Killer.Truth.S01E05.Homicide.at.Home.HDTV.x264-CRiMSON[TGx]",
+    "expect": {
+      "title": "The Killer Truth",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "releaseGroup": "CRiMSON",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Flintstones (1960) S06 (1080p HMAX Webrip x265 10bit AC3 2.0 - Goki)[TAoE]",
+    "expect": {
+      "title": "The Flintstones",
+      "year": 1960,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "Goki",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Jamies.Super.Food.S02E04.WEB.H264-DENTiST[TGx]",
+    "expect": {
+      "title": "Jamies Super Food",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "releaseGroup": "DENTiST",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Blindspot.S05E06.Fire.and.Brimstone.1080p.AMZN.WEB-DL.DDP5.1.H.264-NTb[TGx]",
+    "expect": {
+      "title": "Blindspot",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "NTb",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "In.the.Dark.2019.S02E10.The.Last.Dance.720p.AMZN.WEB-DL.DDP5.1.H.264-NTb[TGx]",
+    "expect": {
+      "title": "In the Dark",
+      "year": 2019,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "NTb",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Babies.S02.COMPLETE.720p.NF.WEBRip.x264-GalaxyTV",
+    "expect": {
+      "title": "Babies",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "GalaxyTV",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Rachel.Maddow.Show.2020.06.18.540p.WEBDL-Anon",
+    "expect": {
+      "title": "The Rachel Maddow Show",
+      "year": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 540
+      },
+      "releaseGroup": "Anon"
+    },
+    "note": "a full date is an episode’s air date, not a film’s year",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Last.Word.with.Lawrence.O'Donnell.2020.06.18.540p.WEBDL-Anon",
+    "expect": {
+      "title": "The Last Word with Lawrence O'Donnell",
+      "year": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 540
+      },
+      "releaseGroup": "Anon"
+    },
+    "note": "a full date is an episode’s air date, not a film’s year",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Design.at.Your.Door.S01E03.Major.Bonus.Room.WEB.h264-ROBOTS[TGx]",
+    "expect": {
+      "title": "Design at Your Door",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "releaseGroup": "ROBOTS",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Rachel.Maddow.Show.2020.06.18.720p.MNBC.WEB-DL.AAC2.0.H.264-BTW[TGx]",
+    "expect": {
+      "title": "The Rachel Maddow Show",
+      "year": null,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "BTW",
+      "codec": "avc"
+    },
+    "note": "a full date is an episode’s air date, not a film’s year",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Lalbazaar S01 E01-10 WebRip 720p Hindi x264 AAC - mkvCinemas [Telly]",
+    "expect": {
+      "title": "Lalbazaar",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Scandalous.The.Untold.Story.of.the.National.Enquirer.2020.720p.HMAX.WEBRip.800MB.x264-GalaxyRG",
+    "expect": {
+      "title": "Scandalous The Untold Story of the National Enquirer",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "GalaxyRG",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Turtle Odyssey (2019) 1080p 5.1 - 2.0 x264 Phun Psyz",
+    "expect": {
+      "title": "Turtle Odyssey",
+      "year": 2019,
+      "quality": {
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Still A Mystery S01 WEBRip x264-CAFFEiNE",
+    "expect": {
+      "title": "Still A Mystery",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "releaseGroup": "CAFFEiNE",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "When Bjork Met Attenborough (2013) (1080p BluRay x265 HEVC 10bit AC3 2.0 Silence) [QxR]",
+    "expect": {
+      "title": "When Bjork Met Attenborough",
+      "year": 2013,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "And.We.Go.Green.2019.720p.HULU.WEBRip.800MB.x264-GalaxyRG",
+    "expect": {
+      "title": "And We Go Green",
+      "year": 2019,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "GalaxyRG",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Ella Fitzgerald - Just One of Those Things MP4 + subs BigJ0554",
+    "expect": {
+      "title": "Ella Fitzgerald - Just One of Those Things",
+      "releaseGroup": null
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Inventing.Tomorrow.2018.DOCU.HDTV.x264-W4F[TGx]",
+    "expect": {
+      "title": "Inventing Tomorrow",
+      "year": 2018,
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "releaseGroup": "W4F",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Eating.Up.Easter.2018.DOCU.HDTV.x264-W4F[TGx]",
+    "expect": {
+      "title": "Eating Up Easter",
+      "year": 2018,
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "releaseGroup": "W4F",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Trackers.S01E03.PROPER.720p.WEB.H264-GHOSTS[TGx]",
+    "expect": {
+      "title": "Trackers",
+      "quality": {
+        "revision": {
+          "proper": true
+        },
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "GHOSTS",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "BBC.When.Pop.Went.Epic.1080p.HDTV.x265.AAC.MVGroup.org.mkv",
+    "expect": {
+      "title": "BBC When Pop Went Epic",
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "note": "a channel prefix is kept; a trailing site with no hyphen isn’t a group (scene rules 18.4.1)",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Big.Brother.AU.S12E06.720p.WEBRip.x264-Nemo",
+    "expect": {
+      "title": "Big Brother AU",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "Nemo",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Frontline.S38E20.Opioids.Inc.WEB.h264-LiGATE[TGx]",
+    "expect": {
+      "title": "Frontline",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "releaseGroup": "LiGATE",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Marvels.Agents.of.S.H.I.E.L.D.S07E03.Comunisti.alieni.dal.futuro.ITA.ENG.1080p.AMZN.WEB-DLMux.DD5.1.H.264-MeM.mkv",
+    "expect": {
+      "title": "Marvels Agents of S.H.I.E.L.D.",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["it", "en"],
+      "releaseGroup": "MeM",
+      "codec": "avc"
+    },
+    "note": "the title as written; highsea doesn’t add an apostrophe the name lacks",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Your Honor 2020 S01 Hindi 720p WEBRip x264 AAC ESubs - LOKiHD - Telly",
+    "expect": {
+      "title": "Your Honor",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "releaseGroup": "Telly",
+      "codec": "avc"
+    },
+    "note": "the group is the part after the last hyphen (scene rules 18.4.1)",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Beat with Ari Melber 2020 06 19 720p WEBRip x264-PC.mp4",
+    "expect": {
+      "title": "The Beat with Ari Melber",
+      "year": null,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "PC",
+      "codec": "avc"
+    },
+    "note": "a full date is an episode’s air date, not a film’s year",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Thirteen S01 MultiSub 720p x264-StB",
+    "expect": {
+      "title": "Thirteen",
+      "quality": {
+        "resolution": 720
+      },
+      "releaseGroup": "StB",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Paan Singh Tomar 2012 Hindi 720p NF WEBRip x264 AAC 5.1 ESubs - LOKiHD - Telly",
+    "expect": {
+      "title": "Paan Singh Tomar",
+      "year": 2012,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "releaseGroup": "Telly",
+      "codec": "avc"
+    },
+    "note": "the group is the part after the last hyphen (scene rules 18.4.1)",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "MASH.S01E20.The.Army-Navy.Game.1080p.HULU.WEB-DL.AAC2.0.H.264-AJP69[eztv]",
+    "expect": {
+      "title": "MASH",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "AJP69",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Trishas.Southern.Kitchen.S16E12.Family.Favorites.with.Allie.iNTERNAL.WEB.h264-ROBOTS[eztv]",
+    "expect": {
+      "title": "Trishas Southern Kitchen",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "releaseGroup": "ROBOTS",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Split.Image.1982.Xvid.Eng.ETRG",
+    "expect": {
+      "title": "Split Image",
+      "year": 1982,
+      "languages": ["en"],
+      "releaseGroup": null,
+      "codec": "xvid"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Kaguya-sama wa Kokurasetai S2 - 11 (720p)-HorribleSubs[TGx]",
+    "expect": {
+      "title": "Kaguya-sama wa Kokurasetai",
+      "quality": {
+        "resolution": 720
+      },
+      "releaseGroup": "HorribleSubs"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Five.1951.DVDRip.XViD.B&W.Eng.1Ch.Audio.ETRG",
+    "expect": {
+      "title": "Five",
+      "year": 1951,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "languages": ["en"],
+      "releaseGroup": null,
+      "codec": "xvid"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "NOS4A2.S02E01.720p.WEB.H264-OATH[TGx]",
+    "expect": {
+      "title": "NOS4A2",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "OATH",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Diners.Drive-Ins.and.Dives.S31E12.Sicilian.and.Seafood.WEBRip.x264-LiGATE[TGx]",
+    "expect": {
+      "title": "Diners Drive-Ins and Dives",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "releaseGroup": "LiGATE",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "[Erai-raws] Arte - 12 END [720p].mkv",
+    "expect": {
+      "title": "Arte",
+      "quality": {
+        "resolution": 720
+      }
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Kaguya-sama wa Kokurasetai! Tensai-tachi no Renai Zunousen 2 - 11 (720p)-Erai-raws[TGx]",
+    "expect": {
+      "title": "Kaguya-sama wa Kokurasetai! Tensai-tachi no Renai Zunousen",
+      "quality": {
+        "resolution": 720
+      },
+      "releaseGroup": "Erai-raws"
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Prawaas 2020.1080p.AMZN.WEB-DL.DD+5.1.H264.Dus.IcTv",
+    "expect": {
+      "title": "Prawaas",
+      "year": 2020,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "[Erai-raws] Yesterday o Utatte - 12 END [720p][Multiple Subtitle].mkv",
+    "expect": {
+      "title": "Yesterday o Utatte",
+      "quality": {
+        "resolution": 720
+      }
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "[Erai-raws] Honzuki no Gekokujou - Shisho ni Naru Tame ni wa Shudan wo Erandeiraremasen 2nd Season - 12 END [1080p][Multiple Subtitle].mkv",
+    "expect": {
+      "title": "Honzuki no Gekokujou - Shisho ni Naru Tame ni wa Shudan wo Erandeiraremasen",
+      "quality": {
+        "resolution": 1080
+      }
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Babyteeth (2019) [1080p]  [WebRip] [YTS]",
+    "expect": {
+      "title": "Babyteeth",
+      "year": 2019,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      }
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Weekend at Bernie's II (1993) [1080p]  [BluRay] [YTS]",
+    "expect": {
+      "title": "Weekend at Bernie's II",
+      "year": 1993,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      }
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Naked.and.Afraid.XL.S06E00.Clothed.and.Opinionated.Part.2.720p.WEB.h264-ROBOTS[eztv]",
+    "expect": {
+      "title": "Naked and Afraid XL",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "ROBOTS",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Fresh Prince of Bel-Air (1990) S01 REPACK (1080p NF Webrip x265 10bit AC3 2.0 - DNU) [TAoE]",
+    "expect": {
+      "title": "The Fresh Prince of Bel-Air",
+      "year": 1990,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "revision": {
+          "repack": true
+        },
+        "resolution": 1080
+      },
+      "releaseGroup": "DNU",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Tsugumomo S2 - 12 (720p)-HorribleSubs[TGx]",
+    "expect": {
+      "title": "Tsugumomo",
+      "quality": {
+        "resolution": 720
+      },
+      "releaseGroup": "HorribleSubs"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Black Hollywood: 'They've Gotta Have Us' S01 complete (BBC, 2018) (1280x720p HD, 50fps, soft Eng subs)",
+    "expect": {
+      "title": "Black Hollywood: 'They've Gotta Have Us'",
+      "year": 2018,
+      "quality": {
+        "resolution": 720
+      }
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Police.Ten.7.S27E13.HDTV.x264-FiHTV[TGx]",
+    "expect": {
+      "title": "Police Ten 7",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "releaseGroup": "FiHTV",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "2nd.Chance.Charlie.S01E02.HDTV.x264-FiHTV[TGx]",
+    "expect": {
+      "title": "2nd Chance Charlie",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "releaseGroup": "FiHTV",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "BBC.Billy.and.Us.1080p.HDTV.x265.AAC.MVGroup.org.mkv",
+    "expect": {
+      "title": "BBC Billy and Us",
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "note": "a channel prefix is kept; a trailing site with no hyphen isn’t a group (scene rules 18.4.1)",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Mystery Diners S08 Season 8 Complete x265 720P",
+    "expect": {
+      "title": "Mystery Diners",
+      "quality": {
+        "resolution": 720
+      },
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Amar (2017) HDRip 720p Hindi + Spanish 800MB[MB].",
+    "expect": {
+      "title": "Amar",
+      "year": 2017,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi", "es"]
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Oolu (2019)[Malayalam 720p HDTV  UNTOUCHED - x264 1.4GB[MB]",
+    "expect": {
+      "title": "Oolu",
+      "year": 2019,
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["ml"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Vacancy (2007) 720p Bluray Dual Audio [Hindi + English] ⭐800 MB⭐ DD - 2.0 MSub x264 - Shadow (BonsaiHD)",
+    "expect": {
+      "title": "Vacancy",
+      "year": 2007,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi", "en"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Darkness Falls (2020) HDRip 720p [Hindi-Dub] Dual-Audio x264 - 1XCinema",
+    "expect": {
+      "title": "Darkness Falls",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "releaseGroup": "1XCinema",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Wasp Network (2020) ITA-ENG Ac3 5.1 WEBRip 1080p H264 [ArMor]",
+    "expect": {
+      "title": "Wasp Network",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["it", "en"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Darlin (2019) ITA-ENG Bluray 1080p  - L@Z59 - iDN CreW.mkv",
+    "expect": {
+      "title": "Darlin",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["it", "en"],
+      "releaseGroup": null
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Wild Target (2010)Mp-4-X264-Dvd-Rip-480p-AAC-DSD",
+    "expect": {
+      "title": "Wild Target",
+      "year": 2010,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none",
+        "resolution": 480
+      },
+      "releaseGroup": "DSD",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Infection-What We Become (2015) ITA-DAN Ac3 5.1 BDRip 1080p H264 [ArMor]",
+    "expect": {
+      "title": "Infection-What We Become",
+      "year": 2015,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["it", "da"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Perversion (2020) full HIndi 720p Flizmovies WEB-DL x264",
+    "expect": {
+      "title": "Perversion",
+      "year": 2020,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Casino (1995) (1080p BluRay x265 HEVC 10bit HDR AAC 7.1 afm72) [QxR]",
+    "expect": {
+      "title": "Casino",
+      "year": 1995,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "[zooqle.com] Parks and Recreation S02 Season 2 720p 5.1Ch Web-DL ReEnc-DeeJayAhmed",
+    "expect": {
+      "title": "Parks and Recreation",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      }
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Amazing Spider-Man 2 2014 720p BluRay Hindi English x264 AAC 5.1 MSubs - LOKiHD - Telly",
+    "expect": {
+      "title": "The Amazing Spider-Man 2",
+      "year": 2014,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi", "en"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Jay And Silent Bob Strike Back (2001) (1080p BDRip x265 10bit EAC3 5.1 - xtrem3x)[TAoE].mkv",
+    "expect": {
+      "title": "Jay And Silent Bob Strike Back",
+      "year": 2001,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "xtrem3x",
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Mother [Madre] (2016) BluRay - 720p - [Tamil + Hindi + Spanish] - 950MB - ESub - TamilMV",
+    "expect": {
+      "title": "Mother",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["ta", "hi", "es"],
+      "releaseGroup": "TamilMV"
+    },
+    "note": "a second title in square brackets is an alternative title, so the title ends before it",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Ridoy Jure 2020 Bangla Movie HDRip 800MB ORG",
+    "expect": {
+      "title": "Ridoy Jure",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "languages": ["bn"],
+      "releaseGroup": null
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Deep Blue Sea - Drama 2011 Eng Rus Multi-Subs 720p [H264-mp4]",
+    "expect": {
+      "title": "The Deep Blue Sea",
+      "year": 2011,
+      "quality": {
+        "resolution": 720
+      },
+      "languages": ["en", "ru"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Clerks II (2006) (1080p BDRip x265 10bit TrueHD 5.1 - xtrem3x)[TAoE].mkv",
+    "expect": {
+      "title": "Clerks II",
+      "year": 2006,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "xtrem3x",
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Rustlers on Horseback  (Western 1950)  Allan Lane",
+    "expect": {
+      "title": "Rustlers on Horseback",
+      "year": 1950
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Athlete.A.2020.1080p.WEB.H264-HUZZAH[TGx]",
+    "expect": {
+      "title": "Athlete A",
+      "year": 2020,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "HUZZAH",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "SHAHENSHA 2020 BANGLA MOVIE SHAKIB KHAN HDRIP",
+    "expect": {
+      "title": "SHAHENSHA",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "languages": ["bn"]
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Rasbhari (2020) Hindi AMZN WEB-DL DD2.0 x264 AAC Esub - CineVood",
+    "expect": {
+      "title": "Rasbhari",
+      "year": 2020,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "languages": ["hi"],
+      "releaseGroup": "CineVood",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "A Walk in the Woods (2015)Mp-4-X264-Dvd-Rip-480p-AAC-DSD",
+    "expect": {
+      "title": "A Walk in the Woods",
+      "year": 2015,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none",
+        "resolution": 480
+      },
+      "releaseGroup": "DSD",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Treasure Planet 2002 1080p FLAC MKV (oan)",
+    "expect": {
+      "title": "Treasure Planet",
+      "year": 2002,
+      "quality": {
+        "resolution": 1080
+      },
+      "releaseGroup": null
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "L.A. Story (1991) [4K AI upscale H265 AAC 5.1 stereo EN JP] - CalicoSkies",
+    "expect": {
+      "title": "L.A. Story",
+      "year": 1991,
+      "quality": {
+        "resolution": 2160
+      },
+      "languages": ["en", "ja"],
+      "releaseGroup": "CalicoSkies",
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Monk.S08E14.1080p.HEVC.x265-MeGusta[eztv]",
+    "expect": {
+      "title": "Monk",
+      "quality": {
+        "resolution": 1080
+      },
+      "releaseGroup": "MeGusta",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "24.Hours.In.A.And.E.S21E02.1080p.HEVC.x265-MeGusta[eztv]",
+    "expect": {
+      "title": "24 Hours In A And E",
+      "quality": {
+        "resolution": 1080
+      },
+      "releaseGroup": "MeGusta",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Stephen.Colbert.2020.06.23.John.Bolton.720p.HDTV.x264-SORNY[eztv]",
+    "expect": {
+      "title": "Stephen Colbert",
+      "year": null,
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "SORNY",
+      "codec": "avc"
+    },
+    "note": "a full date is an episode’s air date, not a film’s year",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "American.Masters.S33E15.Toni.Morrison.The.Pieces.I.Am.720p.WEB.h264-LiGATE[eztv]",
+    "expect": {
+      "title": "American Masters",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "LiGATE",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The 11th Hour with Brian Williams 2020 06 23 1080p WEBRip x265 HEVC-LM",
+    "expect": {
+      "title": "The 11th Hour with Brian Williams",
+      "year": null,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "LM",
+      "codec": "hevc"
+    },
+    "note": "a full date is an episode’s air date, not a film’s year",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Black Lagoon (Seasons 1-2 + OVAs) (BD 1080p)(HEVC x265 10bit)(Dual-Audio)(Eng-Subs)-Judas[TGx]",
+    "expect": {
+      "title": "Black Lagoon",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "Judas",
+      "codec": "hevc"
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "One Piece - 927 (1080p)(HEVC x265 10bit)(Multi-Subs)-Judas[TGx]",
+    "expect": {
+      "title": "One Piece",
+      "quality": {
+        "resolution": 1080
+      },
+      "releaseGroup": "Judas",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Shokugeki No Soma - S05E01-Judas[TGx]",
+    "expect": {
+      "title": "Shokugeki No Soma",
+      "releaseGroup": "Judas"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Dil Chahta Hai 2001 Hindi 1080p BluRay x264 DTS-HDMA 5.1 - Hon3yHD",
+    "expect": {
+      "title": "Dil Chahta Hai",
+      "year": 2001,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["hi"],
+      "releaseGroup": "Hon3yHD",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "NOS4A2 (2019) Multi Audio [Hindi - Tamil - Bengali] 720p Untouched AMZN WEB-DL x264 AAC Esub - CineVood",
+    "expect": {
+      "title": "NOS4A2",
+      "year": 2019,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi", "ta", "bn"],
+      "releaseGroup": "CineVood",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Haikyuu!! (Season 4 Part 1) (1080p)(HEVC x265 10bit)(Multi-Subs)-Judas[TGx]",
+    "expect": {
+      "title": "Haikyuu!!",
+      "quality": {
+        "resolution": 1080
+      },
+      "releaseGroup": "Judas",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Moothon: The Elder One (2019) Malayalam UNTOUCHED 720p WEB-DL - 2.5 GB - (DD- 2.0) ESub x264 - Shadow (BonsaiHD)",
+    "expect": {
+      "title": "Moothon: The Elder One",
+      "year": 2019,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["ml"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Doppia Pelle - Le Daim (2019) BluRay 1080p.H264 Ita Fre AC3 5.1 Sub Ita Eng MIRCrew",
+    "expect": {
+      "title": "Doppia Pelle - Le Daim",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["it", "fr"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Twilight Saga: Breaking Down - Parte 2 (2012) - 720p H264 Ita Eng DTS HD Masters 5.1 Sub Ita Eng by SnakeSPL MIRCrew",
+    "expect": {
+      "title": "The Twilight Saga: Breaking Down - Parte 2",
+      "year": 2012,
+      "quality": {
+        "resolution": 720
+      },
+      "languages": ["it", "en"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Painted Bird (2019) Interslavic 720p Bluray ⭐1.3 GB⭐ DD- 2.0 ESub x264 - Shadow (BonsaiHD)",
+    "expect": {
+      "title": "The Painted Bird",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": [],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Proximity.2020.1080p.Bluray.DTS-HD.MA.5.1.X264-EVO[TGx]",
+    "expect": {
+      "title": "Proximity",
+      "year": 2020,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "EVO",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Soviet Cinema - Provintsialki 1990 SATRip XviD x263-NOGROUP",
+    "expect": {
+      "title": "Soviet Cinema - Provintsialki",
+      "year": 1990,
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Just Mercy - Il diritto di opporsi (2019) AC3 5.1 ITA.ENG 1080p H265 sub NUita.eng Sp33dy94 MIRCrew",
+    "expect": {
+      "title": "Just Mercy - Il diritto di opporsi",
+      "year": 2019,
+      "quality": {
+        "resolution": 1080
+      },
+      "languages": ["it", "en"],
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Mae.West.Dirty.Blonde.2019.DOCU.720p.HDTV.800MB.x264-GalaxyRG",
+    "expect": {
+      "title": "Mae West Dirty Blonde",
+      "year": 2019,
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "GalaxyRG",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "War.2019.LIMITED.720p.BluRay.x264-Chakra[TGx]",
+    "expect": {
+      "title": "War",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "Chakra",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "X-Men.2000.REMASTERED.BRRip.XviD.B4ND1T69",
+    "expect": {
+      "title": "X-Men",
+      "year": 2000,
+      "edition": "REMASTERED",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "releaseGroup": null,
+      "codec": "xvid"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "X2.X-Men.United.2003.REMASTERED.BRRip.XviD.B4ND1T69",
+    "expect": {
+      "title": "X2 X-Men United",
+      "year": 2003,
+      "edition": "REMASTERED",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none"
+      },
+      "releaseGroup": null,
+      "codec": "xvid"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "#Yaaram (2019) Hindi 720p DC WEBRip ⭐1.5 GB⭐ (DD- 2.0) HC ESub x264 - Shadow (BonsaiHD)",
+    "expect": {
+      "title": "#Yaaram",
+      "year": 2019,
+      "edition": "DC",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "hardcodedSubs": "HC",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Nessuno sa chi io sono qui-Nadie sabe que estoy aqui (2020) ITA-SPA Ac3 5.1 WEBRip 1080p H264 [ArMor]",
+    "expect": {
+      "title": "Nessuno sa chi io sono qui-Nadie sabe que estoy aqui",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["it", "es"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "L.ultima corve (1973) ITA-ENG Ac3 2.0 BDRip 1080p H264 [ArMor]",
+    "expect": {
+      "title": "L.ultima corve",
+      "year": 1973,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["it", "en"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "La signora di Shanghai-The lady from Shanghai (1947) ITA-ENG Ac3 2.0 BDRip 1080p H264 [ArMor]",
+    "expect": {
+      "title": "La signora di Shanghai-The lady from Shanghai",
+      "year": 1947,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["it", "en"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Four (2012) BluRay - 720p - [Telugu + Tamil + Hindi + Chi] - 1.1GB - ESub - TamilMV",
+    "expect": {
+      "title": "The Four",
+      "year": 2012,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["te", "ta", "hi", "zh"],
+      "releaseGroup": "TamilMV"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Samrat & Co. (2014) Hindi 720p AMZN WEBRip ⭐1.2 GB⭐ 2CH ESub x264 - Shadow (BonsaiHD)",
+    "expect": {
+      "title": "Samrat & Co.",
+      "year": 2014,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Tulips in Spring 2016 Hallmark 720p HDRip X264 Solar",
+    "expect": {
+      "title": "Tulips in Spring",
+      "year": 2016,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Adu (2020) 720p NF WEB-DL Dual Audio [English + spanish] ⭐950 MB⭐  DD- 5.1 x265 - Shadow (BonsaiHD)",
+    "expect": {
+      "title": "Adu",
+      "year": 2020,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["en", "es"],
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "When Sparks Fly 2014 Hallmark 720P HDTV X264 Solar",
+    "expect": {
+      "title": "When Sparks Fly",
+      "year": 2014,
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Fxxk-It List (2020) [English+Hindi - 720p - WEB HDRip - x264 - DD 5.1 - MSub - 2GB] - MAZE",
+    "expect": {
+      "title": "The Fxxk-It List",
+      "year": 2020,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["en", "hi"],
+      "releaseGroup": "MAZE",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Twilight Saga Breaking Dawn - Part 2 (2012) (1080p BDRip x265 10bit DTS-HD MA 7.1 - r0b0t) [TAoE].mkv",
+    "expect": {
+      "title": "The Twilight Saga Breaking Dawn - Part 2",
+      "year": 2012,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "r0b0t",
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Scooby-Doo Goes Hollywood (1980) (1080p Dvdrip AI upscale x265 10bit AAC 1.0 - Frys) [TAoE].mkv",
+    "expect": {
+      "title": "Scooby-Doo Goes Hollywood",
+      "year": 1980,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "Frys",
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Sarkar 3 2017 Hindi 1080p WEBRip x264 AC3 ESubs - LOKiHD - Telly",
+    "expect": {
+      "title": "Sarkar 3",
+      "year": 2017,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["hi"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Jagga Jagravan Joga 2020.1080p.AMZN.WEB.DL.DD.2.0.AVC.Dus.IcTv",
+    "expect": {
+      "title": "Jagga Jagravan Joga",
+      "year": 2020,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Sea.Monsters..Series.2.Part.11.Oceans.Most.Powerful.1080p.HDTV.x264.AAC.MVGroup.org.mp4",
+    "expect": {
+      "title": "Sea Monsters",
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (“Series 2 Part 11”)",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Dukhtar 2014 Urdu 1080p BluRay x264 DD 5.1 ESubs - LOKiHD - Telly",
+    "expect": {
+      "title": "Dukhtar",
+      "year": 2014,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["ur"],
+      "releaseGroup": "Telly",
+      "codec": "avc"
+    },
+    "note": "the group is the part after the last hyphen (scene rules 18.4.1)",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Main Teri Tu Mera 2016 Punjabi 720p WEBRip ESubs - LMH123",
+    "expect": {
+      "title": "Main Teri Tu Mera",
+      "year": 2016,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["pa"],
+      "releaseGroup": "LMH123"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "RangiTaranga (2015) 720p Kannada movie HDRip",
+    "expect": {
+      "title": "RangiTaranga",
+      "year": 2015,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["kn"]
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "McFarland.USA.2015.1080p.BluRay.x265-RARBG",
+    "expect": {
+      "title": "McFarland USA",
+      "year": 2015,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "RARBG",
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Jasper.Mall.2020.1080p.BluRay.REMUX.AVC.DTS-HD.MA.5.1-FGT",
+    "expect": {
+      "title": "Jasper Mall",
+      "year": 2020,
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux",
+        "resolution": 1080
+      },
+      "releaseGroup": "FGT",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Lupin.III.The.First.2019.JAPANESE.1080p.BluRay.x265-VXT",
+    "expect": {
+      "title": "Lupin III The First",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["ja"],
+      "releaseGroup": "VXT",
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Rule.for.a.Vagabond.1965.JAPANESE.ENSUBBED.1080p.WEBRip.x265-VXT",
+    "expect": {
+      "title": "The Rule for a Vagabond",
+      "year": 1965,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["ja"],
+      "releaseGroup": "VXT",
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Cousins.2019.PORTUGUESE.1080p.BluRay.H264.AAC-VXT",
+    "expect": {
+      "title": "Cousins",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["pt"],
+      "releaseGroup": "VXT",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Easy Rider  (Drama 1969)  Peter Fonda  720p  BrRip",
+    "expect": {
+      "title": "Easy Rider",
+      "year": 1969,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      }
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "PENALTY (2019) Hindi HDRip - 720p - x264 - DD+5.1 - 1.3GB - ESub - TamilMV",
+    "expect": {
+      "title": "PENALTY",
+      "year": 2019,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "releaseGroup": "TamilMV",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Wasp Network (2019) HDRip 720p [Hindi-Dub] Dual-Audio x264",
+    "expect": {
+      "title": "Wasp Network",
+      "year": 2019,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Gentlemen.2019.576p.DQLDR.BRRIP",
+    "expect": {
+      "title": "The Gentlemen",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 576
+      },
+      "releaseGroup": null
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Nicos.Menu.Mission.S01E01.WEB.h264-WEBTUBE[TGx]",
+    "expect": {
+      "title": "Nicos Menu Mission",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "releaseGroup": "WEBTUBE",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "If.Loving.You.Is.Wrong.S05E11.I.Need.A.Hero.480p.x264-mSD[eztv]",
+    "expect": {
+      "title": "If Loving You Is Wrong",
+      "quality": {
+        "resolution": 480
+      },
+      "releaseGroup": "mSD",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Digimon Adventure (2020) - S01E05-Judas[TGx]",
+    "expect": {
+      "title": "Digimon Adventure",
+      "year": 2020,
+      "releaseGroup": "Judas"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Kavali (2020) 720p Hindi Dubbed WEBHD 450MB - MovCr",
+    "expect": {
+      "title": "Kavali",
+      "year": 2020,
+      "quality": {
+        "resolution": 720
+      },
+      "languages": ["hi"],
+      "releaseGroup": "MovCr"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Gangs.Of.London.S01E01.Episodio.01.ITA.ENG.1080p.AHDTVMux.x264-Morpheus.mkv",
+    "expect": {
+      "title": "Gangs Of London",
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["it", "en"],
+      "releaseGroup": "Morpheus",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Fear.the.Walking.Dead.S05E09.Canale.4.ITA.ENG.1080p.Bluray.x264-MeM.mkv",
+    "expect": {
+      "title": "Fear the Walking Dead",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["it", "en"],
+      "releaseGroup": "MeM",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "2nd.Chance.Charlie.S01E05.720p.HDTV.x264-FiHTV[eztv]",
+    "expect": {
+      "title": "2nd Chance Charlie",
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "FiHTV",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Police.Ten.7.S27E15.HDTV.x264-FiHTV[eztv]",
+    "expect": {
+      "title": "Police Ten 7",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "releaseGroup": "FiHTV",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Nude - International Cut (2018) 720p WEB Rip Dual Audios [ HIN, MARATHI ]",
+    "expect": {
+      "title": "Nude",
+      "year": 2018,
+      "edition": "International Cut",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["hi", "mr"]
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "X-men The Last Stand (2006) (1080p BluRay x265 HEVC 10bit AAC 6.1 Vyndros)",
+    "expect": {
+      "title": "X-men The Last Stand",
+      "year": 2006,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": null,
+      "codec": "hevc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Kissing Bandit (Comedy West. 1948) Frank Sinatra 720p HD",
+    "expect": {
+      "title": "The Kissing Bandit",
+      "year": 1948,
+      "quality": {
+        "resolution": 720
+      }
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The King of Comedy 1982 DVD9 PAL-iCMAL",
+    "expect": {
+      "title": "The King of Comedy",
+      "year": 1982
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Mouse on the Moon [1963 - UK] comedy",
+    "expect": {
+      "title": "The Mouse on the Moon",
+      "year": 1963
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Romantic.Comedy.2019.1080p.AMZN.WEBRip.DDP2.0.x264-TEPES[TGx]",
+    "expect": {
+      "title": "Romantic Comedy",
+      "year": 2019,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "TEPES",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Sugarfoot (Action Western 1951) Randolph Scott",
+    "expect": {
+      "title": "Sugarfoot",
+      "year": 1951
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Valeries.Home.Cooking.S11E10.Lights.Camera.Eat.iNTERNAL.720p.WEB.h264-ROBOTS[eztv]",
+    "expect": {
+      "title": "Valeries Home Cooking",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "ROBOTS",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "American.Monster.S05E06.My.Body.720p.ID.WEB-DL.AAC2.0.x264-BOOP[eztv]",
+    "expect": {
+      "title": "American Monster",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "BOOP",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Professor Marston and the Wonder Women (2017) - H264 Ita Eng Deu Esp Ac3 5.1 Multisub - DVDRip - by SnakeSPL MIRCrew",
+    "expect": {
+      "title": "Professor Marston and the Wonder Women",
+      "year": 2017,
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "languages": ["it", "en", "de", "es"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Extraterrestrial.2011.BluRay.1080i.DTS-HD.MA.5.1.AVC.REMUX-FraMeSToR.mkv",
+    "expect": {
+      "title": "Extraterrestrial",
+      "year": 2011,
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux",
+        "resolution": 1080
+      },
+      "releaseGroup": "FraMeSToR",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Magnum.P.I.2018.S03E04.720p.HDTV.x264-SYNCOPY",
+    "expect": {
+      "title": "Magnum P.I.",
+      "year": 2018,
+      "quality": {
+        "source": "tv",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "SYNCOPY",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Friends.S09E23E24.720p.BluRay.DD5.1.x264-NTb.mkv",
+    "expect": {
+      "title": "Friends",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "NTb",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Accepted.2006.720p.HDDVD.DD5.1.x264-EbP",
+    "expect": {
+      "title": "Accepted",
+      "year": 2006,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "EbP",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Its.Always.Sunny.In.Philadelphia.S12.1080p.Amazon.WEB-DL.DD+2.0.H.264-CtrlHD",
+    "expect": {
+      "title": "Its Always Sunny In Philadelphia",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "CtrlHD",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Animals.S01.1080p.HBO.WEBRip.DD5.1.H.264-monkee",
+    "expect": {
+      "title": "Animals",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "monkee",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "SpongeBob.SquarePants.S02.iT.WEB-DL.AAC2.0.H.264-NOGRP",
+    "expect": {
+      "title": "SpongeBob SquarePants",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "releaseGroup": "NOGRP",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Shivering.Truth.S01.1080p.AS.WEB-DL.AAC2.0.H.264-BTN",
+    "expect": {
+      "title": "The Shivering Truth",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "BTN",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Letterkenny.S05.720p.CRAV.WEB-DL.AAC2.0.H.264-BTW",
+    "expect": {
+      "title": "Letterkenny",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "BTW",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Workaholics.S07.1080p.CC.WEBRip.AAC2.0.x264-BTW",
+    "expect": {
+      "title": "Workaholics",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "BTW",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "HarmonQuest.S01.1080p.SESO.WEBRip.AAC2.0.x264-BTW",
+    "expect": {
+      "title": "HarmonQuest",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "BTW",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Bee.and.Puppycat.S01.1080p.VRV.WEB-DL.x264-Bernd_Lauert",
+    "expect": {
+      "title": "Bee and Puppycat",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "Bernd_Lauert",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "A.P.Bio.S03.1080p.PCOK.WEB-DL.DDP5.0.x264-NTb",
+    "expect": {
+      "title": "A.P. Bio",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "NTb",
+      "codec": "avc"
+    },
+    "note": "initialisms keep their dots, as metadata writes them",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Star.Trek.Discovery.S01E01.The.Vulcan.Hello.540p.CBS.WEB-DL.AAC2.0.x264-AJP69.mkv",
+    "expect": {
+      "title": "Star Trek Discovery",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 540
+      },
+      "releaseGroup": "AJP69",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "IMAX.Blue.Planet.1990.1080p.BluRay.REMUX.VC-1.TrueHD.5.1-EPSiLON.mkv",
+    "expect": {
+      "title": "IMAX Blue Planet",
+      "year": 1990,
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux",
+        "resolution": 1080
+      },
+      "releaseGroup": "EPSiLON",
+      "codec": "vc1"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "John.Wick.Chapter.2.2017.720p.BluRay.DD-EX.x264-TayTO",
+    "expect": {
+      "title": "John Wick Chapter 2",
+      "year": 2017,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "TayTO",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Archer.S02.1080p.BluRay.DTSMA.AVC.Remux",
+    "expect": {
+      "title": "Archer",
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Peaky.Blinders.S01.720p.BluRay.FLAC2.0.x264-DON",
+    "expect": {
+      "title": "Peaky Blinders",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "DON",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Ghost.Stories.S01.DVDRip.OGG.x264-Exiled-Destiny",
+    "expect": {
+      "title": "Ghost Stories",
+      "quality": {
+        "source": "dvd",
+        "modifier": "none"
+      },
+      "releaseGroup": "Destiny",
+      "codec": "avc"
+    },
+    "note": "the group is the part after the last hyphen (scene rules 18.4.1)",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Rick.Steins.Road.To.Mexico.S01E01.720p.iP.WEB-DL.AAC2.0.H.264-RTN.mkv",
+    "expect": {
+      "title": "Rick Steins Road To Mexico",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "RTN",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Robert.Kirkmans.Secret.History.of.Comics.S01E01.The.Mighty.Misfits.Who.Made.Marvel.1080p.AMC.WEB-DL.AAC2.0.H.264-BOOP.mkv",
+    "expect": {
+      "title": "Robert Kirkmans Secret History of Comics",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "BOOP",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Ready.Jet.Go.S01E12.Chore.Day.720p.PBS.WEBRip.AAC2.0.x264-SynHD.mkv",
+    "expect": {
+      "title": "Ready Jet Go",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "SynHD",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Philip.K.Dicks.Electric.Dreams.S01E01.The.Hood.Maker.STAN.WEB-DL.AAC2.0.H.264-BTW.mkv",
+    "expect": {
+      "title": "Philip K Dicks Electric Dreams",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "releaseGroup": "BTW",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Octonauts.S04E15.The.Great.Swamp.Search.720p.DSNY.WEBRip.AAC2.0.x264-RTN.mkv",
+    "expect": {
+      "title": "Octonauts",
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "releaseGroup": "RTN",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Nowhere.Fast.S01E01.RTE.WEB-DL.AAC2.0.H.264-RTN.mkv",
+    "expect": {
+      "title": "Nowhere Fast",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "releaseGroup": "RTN",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "New.Game.S02.CR.WEB-DL.AAC2.0.x264-HorribleSubs",
+    "expect": {
+      "title": "New Game",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "releaseGroup": "HorribleSubs",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Mystery.of.the.Lost.Islands.S01E01.Shark.Island.1080p.ANPL.WEB-DL.AAC2.0.x264-BOOP.mkv",
+    "expect": {
+      "title": "Mystery of the Lost Islands",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "BOOP",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Mr.Mercedes.S01E01.Pilot.DTV.WEB-DL.DD2.0.x264-BTW.mkv",
+    "expect": {
+      "title": "Mr Mercedes",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none"
+      },
+      "releaseGroup": "BTW",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Most.Expensivest.S01E01.Treat.Yo.Self.1080p.VICE.WEB-DL.AAC2.0.x264-BOOP.mkv",
+    "expect": {
+      "title": "Most Expensivest",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "BOOP",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "[Anonymous] Non Non Biyori [BD 1080p 10bit H.264 FLAC]",
+    "expect": {
+      "title": "Non Non Biyori",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "[Arjix] Darling in the Franxx [BD-Remux]",
+    "expect": {
+      "title": "Darling in the Franxx",
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux"
+      }
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "[JySzE] Naruto [v2] [R2J] [VFR] [Dual Audio] [Complete] [Extras] [x264]",
+    "expect": {
+      "title": "Naruto",
+      "languages": [],
+      "codec": "avc"
+    },
+    "note": "VFR is variable frame rate, not VF (French audio)",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Attack.on.Titan.S01.S02.S03.1080p.Blu-Ray.Remux.Dual-Audio.TrueHD",
+    "expect": {
+      "title": "Attack on Titan",
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux",
+        "resolution": 1080
+      }
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Black Clover S01 USBD REMUX",
+    "expect": {
+      "title": "Black Clover",
+      "quality": {
+        "modifier": "remux"
+      }
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Hero Mask S1 + S2 + Extras [npz][US BD REMUX, 1080p]",
+    "expect": {
+      "title": "Hero Mask",
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux",
+        "resolution": 1080
+      }
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "[CBT] Nisekoi S1+S2 [BDrip 1920x1080 x264 FLAC]",
+    "expect": {
+      "title": "Nisekoi",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "[YURI] Kimi no Suizou o Tabetai [BD1080p HEVC FLAC][Dual Audio]  v4",
+    "expect": {
+      "title": "Kimi no Suizou o Tabetai",
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "[FFF-Remux][Batch] Accel World 1-24 Dual-Audio 1080p FLAC",
+    "expect": {
+      "title": "Accel World",
+      "quality": {
+        "resolution": 1080
+      }
+    },
+    "pending": "TV and anime numbering highsea’s movie parser doesn’t read yet (bare episode numbers, season words, country codes before the season)",
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Djinn 2021 1080p BRRip DD5 1 X 264-EVO",
+    "expect": {
+      "title": "The Djinn",
+      "year": 2021,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      }
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Hive [2021 - Albania] drama",
+    "expect": {
+      "title": "Hive",
+      "year": 2021,
+      "languages": []
+    },
+    "note": "a country of origin isn’t a language tag",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Souad [2021 - Egypt] drama",
+    "expect": {
+      "title": "Souad",
+      "year": 2021,
+      "languages": []
+    },
+    "note": "a country of origin isn’t a language tag",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Swinki [2009 - Poland] drama",
+    "expect": {
+      "title": "Swinki",
+      "year": 2009,
+      "languages": []
+    },
+    "note": "a country of origin isn’t a language tag",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Dead Heat on a Merry Go Round [1966 - USA] thriller",
+    "expect": {
+      "title": "Dead Heat on a Merry Go Round",
+      "year": 1966
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Justified - Season 1 to 6 - Mp4 x264 AC3 1080p",
+    "expect": {
+      "title": "Justified",
+      "quality": {
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Movie 43 (2013) 720p BluRay x264 -[MoviesFD]",
+    "expect": {
+      "title": "Movie 43",
+      "year": 2013,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Mommy (2014) French 720p BluRay x264 -[MoviesFD]",
+    "expect": {
+      "title": "Mommy",
+      "year": 2014,
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["fr"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Rendez Vous.2015.DUBBED.1080p.WEBRip.x265-R4RBG[TGx]",
+    "expect": {
+      "title": "Rendez Vous",
+      "year": 2015,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "R4RBG",
+      "codec": "hevc"
+    },
+    "note": "the dot before the year is a separator",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "What.If...2010.1080p.WEB-DL.DDP2.0.H264.mkv",
+    "expect": {
+      "title": "What If...",
+      "year": 2010,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Eu.gosto.do.Homem-Aranha.....y.dai.1080p.AAC2.0.H264.mkv",
+    "expect": {
+      "title": "Eu gosto do Homem-Aranha... y dai",
+      "quality": {
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Sons of Anarchy Season 3 Complete 1280 x 720 x264 Phun Psyz",
+    "expect": {
+      "title": "Sons of Anarchy",
+      "quality": {
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Lollapalooza.2022.Cat.Dealers.1080p.WEB-DL.AAC2.0.x264.mkv",
+    "expect": {
+      "title": "Lollapalooza",
+      "year": 2022,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Crazy4TV.com - Dark Matter Season 1 S01 720p BluRay x265 HEVC Crazy4ad",
+    "expect": {
+      "title": "Dark Matter",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "www.Torrenting.com - Presque.2021.FRENCH.1080p.WEB.H264-SEiGHT",
+    "expect": {
+      "title": "Presque",
+      "year": 2021,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["fr"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "www.1TamilBlasters.sbs - Lucky Man (2023) [Tamil - 720p HQ HDRip - HEVC - x265 - [DDP5.1 (192Kbps) + AAC] - 900MB - ESub].mkv",
+    "expect": {
+      "title": "Lucky Man",
+      "year": 2023,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "languages": ["ta"],
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "www.1TamilBlasters.art - Sultan of Delhi (2023) S01EP(01-09) [HQ HDRip - x264 - [Tam + Mal + Tel + Kan] - AAC - 1.2GB - ESub]",
+    "expect": {
+      "title": "Sultan of Delhi",
+      "year": 2023,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "languages": ["ta", "ml", "te", "kn"],
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Mission.Impossible.1996.Custom.Audio.1080p.PL-Spedboy.mkv",
+    "expect": {
+      "title": "Mission Impossible",
+      "year": 1996,
+      "quality": {
+        "resolution": 1080
+      },
+      "languages": ["pl"],
+      "releaseGroup": "Spedboy"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Black.Rain.1989.MULTi.1080p.BluRay.REMUX.MPEG-2.DTS-ES.6.1-LTS.mkv",
+    "expect": {
+      "title": "Black Rain",
+      "year": 1989,
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux",
+        "resolution": 1080
+      },
+      "codec": "mpeg2"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Bolt.2008.MULTI.BluRay.3D.1080p.AVC.DTS-HD.MA.DD.EX.5.1-SnOoP-UPR.iso",
+    "expect": {
+      "title": "Bolt",
+      "year": 2008,
+      "quality": {
+        "source": "bluray",
+        "modifier": "brdisk"
+      },
+      "releaseGroup": "UPR",
+      "codec": "avc",
+      "threeD": true
+    },
+    "note": "TRaSH's BR-DISK format matches a Blu-ray naming the disc codec (AVC) with no encoder, or an ISO; BR-DISK in Radarr's Qualities Defined; the group is the part after the last hyphen (scene rules 18.4.1)",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Casino.1995.MULTi.REMUX.2160p.UHD.Blu-ray.HDR.HEVC.DTS-X7.1-DENDA.mkv",
+    "expect": {
+      "title": "Casino",
+      "year": 1995,
+      "quality": {
+        "source": "bluray",
+        "modifier": "remux",
+        "resolution": 2160
+      },
+      "releaseGroup": "DENDA",
+      "codec": "hevc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Seinfeld.S04E23E24.The.Pilot.FiNAL.MULTi.1080p.NF.WEB-DL.HE-AAC2.0.H264-Ralf.mkv",
+    "expect": {
+      "title": "Seinfeld",
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "Ralf",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Escape.Room.Tournament.of.Champions.2021.PL.EXTENDED.1080p.BRRip.HE-AACv2.AV1.mkv",
+    "expect": {
+      "title": "Escape Room Tournament of Champions",
+      "year": 2021,
+      "edition": "EXTENDED",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "languages": ["pl"],
+      "codec": "av1"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Avatar The Last Airbender - The Complete Series 1080p [HEVC AAC] - SEPH1",
+    "expect": {
+      "title": "Avatar The Last Airbender",
+      "quality": {
+        "resolution": 1080
+      },
+      "releaseGroup": "SEPH1",
+      "codec": "hevc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Walking.Dead.S06E07.SUBFRENCH.HDTV.x264-AMB3R.mkv",
+    "expect": {
+      "title": "The Walking Dead",
+      "quality": {
+        "source": "tv",
+        "modifier": "none"
+      },
+      "releaseGroup": "AMB3R",
+      "codec": "avc"
+    },
+    "episode": true,
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The Good German (2006).VOSTFR.720p.WEBDL.h264.aac.mkv",
+    "expect": {
+      "title": "The Good German",
+      "year": 2006,
+      "quality": {
+        "source": "webdl",
+        "modifier": "none",
+        "resolution": 720
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "www.Torrenting.com   -    Anatomy Of A Fall (2023)",
+    "expect": {
+      "title": "Anatomy Of A Fall",
+      "year": 2023
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "Eu.gosto.do.Homem-Aranha.e.dai.1080p.AAC2.0.H264.mkv",
+    "expect": {
+      "title": "Eu gosto do Homem-Aranha e dai",
+      "quality": {
+        "resolution": 1080
+      },
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "www.1TamilBlasters.lat - Thuritham (2023) [Tamil - 2K QHD AVC UNTOUCHED - x264 - AAC - 3.4GB - ESub].mkv",
+    "expect": {
+      "title": "Thuritham",
+      "year": 2023,
+      "languages": ["ta"],
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "www.1TamilMV.world - Raja Vikramarka (2024) Tamil HQ HDRip - 400MB - x264 - AAC - ESub.mkv",
+    "expect": {
+      "title": "Raja Vikramarka",
+      "year": 2024,
+      "quality": {
+        "source": "webrip",
+        "modifier": "none"
+      },
+      "languages": ["ta"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "www.1TamilMV.world - Kotha Rangula Prapancham (2024) Telugu HQ PreDVD - 700MB - x264 - HQ Clean Aud.mkv",
+    "expect": {
+      "title": "Kotha Rangula Prapancham",
+      "year": 2024,
+      "languages": ["te"],
+      "releaseGroup": null,
+      "codec": "avc"
+    },
+    "note": "no -GROUP suffix: scene rules 18.4.1 put the group after the last hyphen, and highsea doesn’t guess a group from a trailing word",
+    "from": "parse-torrent-name tests/files/input.json"
+  },
+  {
+    "name": "The.Lord.of.the.Rings.Extended.Edition.2001.1080p.BluRay.x264.DTS-WiKi",
+    "expect": {
+      "title": "The Lord of the Rings",
+      "year": 2001,
+      "edition": "Extended Edition",
+      "quality": {
+        "source": "bluray",
+        "modifier": "none",
+        "resolution": 1080
+      },
+      "releaseGroup": "WiKi",
+      "codec": "avc"
+    },
+    "from": "parse-torrent-name tests/files/input.json"
+  }
+]

@@ -1,0 +1,92 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// A6 movie detail's library layer (movies.md § Movie detail, § Copy; ADR 0021): the prototype's
+// copy, with search disabled until indexers exist (checkpoint 4 plan, decision 2), and the
+// smallest additions for what the prototype doesn't draw: Edit and the version list.
+import { defineMessages } from '@highsea/i18n'
+
+export const movieDetail = defineMessages({
+  movie: 'Movie',
+  addMovie: 'Add movie',
+  search: 'Search',
+  interactiveSearch: 'Interactive search',
+  more: 'More actions',
+  edit: 'Edit',
+  refresh: 'Refresh metadata',
+  'refresh.toast': 'Refreshing {title}',
+  'refresh.toastBody': 'The page updates when TMDB answers.',
+  'refresh.failed': 'Couldn’t refresh it',
+  remove: 'Remove from library',
+  monitored: 'Monitored',
+  notMonitored: 'Not monitored',
+  'monitored.hint': 'Grab and upgrade releases automatically',
+  'monitored.failed': 'Couldn’t save that',
+  // decision 2
+  noIndexers: 'Add an indexer to search for releases.',
+  goToIndexers: 'Indexers',
+  // tabs
+  'tab.files': 'Files',
+  'tab.history': 'History',
+  'tab.search': 'Search',
+  'files.version': '{label} version',
+  'files.none': 'No file yet',
+  'files.downloading': 'Downloading',
+  'history.none': 'Nothing has happened yet',
+  'history.noneBody': 'Grabs, imports and subtitle downloads show here.',
+  // in the library
+  inTheLibrary: 'In the library',
+  versions: 'Versions',
+  version: '{label} ({profile})',
+  subtitles: 'Subtitles',
+  'subtitles.none': 'None',
+  availability: 'Minimum availability',
+  'availability.announced': 'Announced',
+  'availability.in-cinemas': 'In cinemas',
+  'availability.released': 'Released',
+  'availability.hint': 'Don’t grab before this. Released avoids cam copies.',
+  rootFolder: 'Root folder',
+  'rootFolder.hint': 'Nothing moves on disk until there are files.',
+  addVersion: 'Add version',
+  editVersion: 'Edit {label}',
+  removeVersion: 'Remove {label}',
+  lastVersion: 'A movie keeps at least one version.',
+  // the version dialog
+  'versionDialog.add': 'Add a version',
+  'versionDialog.addBody': 'A version has its own quality profile, such as 4K HDR beside 1080p.',
+  'versionDialog.edit': 'Edit the {label} version',
+  'versionDialog.editBody': 'Rename it, or give it another quality profile.',
+  'versionDialog.label': 'Name',
+  'versionDialog.labelHint': 'What the library’s tags show, such as 4K HDR.',
+  'versionDialog.labelEmpty': 'Give the version a name.',
+  qualityProfile: 'Quality profile',
+  versionAdded: '{label} added',
+  versionSaved: '{label} saved',
+  versionRemoved: '{label} removed',
+  'removeVersion.title': 'Remove the {label} version?',
+  'removeVersion.body': 'highsea stops looking for a release for it.',
+  'version.failed': 'Couldn’t save the version',
+  // the edit dialog
+  'editDialog.title': 'Edit {title}',
+  'editDialog.body': 'The quality profiles are set per version, in the library’s list.',
+  languageProfile: 'Subtitle languages',
+  'monitored.longHint':
+    'Grab it when a release turns up, and upgrade it until the profile’s cutoff.',
+  'editDialog.what': 'the options',
+  saved: '{title} saved',
+  'save.failed': 'Couldn’t save it',
+  cancel: 'Cancel',
+  save: 'Save',
+  add: 'Add',
+  // remove
+  'remove.title': 'Remove {title}?',
+  'remove.body': 'It leaves the library and stops being monitored.',
+  'remove.files': 'Also delete its files from disk',
+  'remove.confirm': 'Remove',
+  'remove.done': '{title} removed',
+  'remove.failed': 'Couldn’t remove it',
+  // states
+  'library.what': 'the library’s side of this movie',
+  'gone.title': 'TMDB no longer has this movie',
+  'gone.body':
+    'It may have been merged with another entry. The library keeps it as it is. Find its new match on Discover, add it, then remove this one.',
+  'gone.action': 'Find it on Discover',
+})

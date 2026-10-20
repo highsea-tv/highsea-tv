@@ -23,6 +23,7 @@ Page header "System", "What the server is doing, and how it's holding up." Line 
 - **Events:** "What the server tells every connected app, live." Each event as it arrives (type, item), newest first.
 - **Backups:** what's in a backup (and isn't), a link to the schedule, **Back up now**; a table of backups (when, kind: Scheduled, Made by hand, Before an update; size) with **Download** and **Restore**.
 - **Updates:** the channel, "highsea 1.0.1 is out. You have 1.0.0.", the notes, **Update and restart**, **Update settings**, and the Docker note.
+- **About** (checkpoint 4; the prototype has none): "This server, and the services whose data it shows." The server's name and version, then **Data from**: TMDB's logo, linked to themoviedb.org, and its notice in its terms' wording, "This product uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB." TMDB's terms ask for both in an About or Credits section. Until the rest of System arrives (checkpoint 8), the page is About and a line saying the rest comes later.
 
 ## States
 
@@ -40,6 +41,7 @@ Page header "System", "What the server is doing, and how it's holding up." Line 
 
 ## Data
 
+- `system.publicInfo()` → `GET /api/v1/system/info/public`, for About: the server's `name` and `version`, and `attributions`, each provider's `{ name, notice, url }` (TMDB's, `TMDB_ATTRIBUTION`). The clients read the same list for their own About.
 - `system.status()`, `system.server()`, `system.health()`, `system.jobs()`, `system.runJob(id)` → `POST /api/v1/system/tasks/{id}/run`.
 - `system.logs()` → `GET /api/v1/system/logs` (`LogEntry[]`); the product streams new lines.
 - The Events tab is the client's own event subscription (SSE, `/api/v1/events`).

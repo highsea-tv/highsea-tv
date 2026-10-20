@@ -225,25 +225,10 @@ export type MediaFile = {
 
 // ---------------------------------------------------------------- acquisition
 
-export type QualityProfile = {
-  id: string
-  name: string
-  cutoff: string
-  qualities: { name: string; allowed: boolean }[]
-  upgradeAllowed: boolean
-  minFormatScore: number
-  cutoffFormatScore: number
-  formats: { formatId: string; score: number }[]
-}
+// Profiles, custom formats and the decision engine's reasons are @highsea/quality's (ADR 0031).
+import type { CustomFormat, DecisionReason, QualityProfile } from '@highsea/quality'
 
-export type CustomFormat = {
-  id: string
-  name: string
-  conditions: string[]
-  source: 'preset' | 'custom'
-}
-
-export type DecisionReason = { kind: 'accepted' | 'rejected' | 'warning'; message: string }
+export type { CustomFormat, DecisionReason, QualityProfile }
 
 /**
  * A title the metadata source knows (TMDB simulation). `id` is its media id: the same before and

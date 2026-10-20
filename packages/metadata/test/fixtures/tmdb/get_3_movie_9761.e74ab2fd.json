@@ -1,0 +1,388 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/9761?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "adult": false,
+      "backdrop_path": "/9bJDwuhza19HQcYA99FeslLYmUm.jpg",
+      "belongs_to_collection": null,
+      "budget": 150000,
+      "genres": [
+        {
+          "id": 16,
+          "name": "Animation"
+        },
+        {
+          "id": 878,
+          "name": "Science Fiction"
+        }
+      ],
+      "homepage": "",
+      "id": 9761,
+      "imdb_id": "tt0807840",
+      "original_language": "en",
+      "original_title": "Elephants Dream",
+      "overview": "Elephants Dream is the story of two strange characters exploring a capricious and seemingly infinite machine. The elder, Proog, acts as a tour-guide and protector, happily showing off the sights and dangers of the machine to his initially curious but increasingly skeptical protege Emo. As their journey unfolds we discover signs that the machine is not all Proog thinks it is, and his guiding takes on a more desperate aspect.  Elephants Dream is a story about communication and fiction, made purposefully open-ended as the world’s first 3D animated “Open movie”. The film itself is released under the Creative Commons license, along with the entirety of the production files used to make it (roughly 7 Gigabytes of data). The software used to make the movie is the free/open source animation suite Blender along with other open source software, thus allowing the movie to be remade, remixed and re-purposed with only a computer and the data on the DVD or download.",
+      "popularity": 18.73,
+      "poster_path": "/9zROtU9TkpZQrOuEaMAp68FOWLK.jpg",
+      "production_companies": [
+        {
+          "id": 6908,
+          "logo_path": null,
+          "name": "Blender Foundation",
+          "origin_country": ""
+        }
+      ],
+      "release_date": "2006-03-24",
+      "revenue": 0,
+      "runtime": 11,
+      "status": "Released",
+      "tagline": "",
+      "title": "Elephants Dream",
+      "video": false,
+      "vote_average": 5.8,
+      "vote_count": 71,
+      "credits": {
+        "cast": [
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 43646,
+            "known_for_department": "Acting",
+            "name": "Tygo Gernandt",
+            "original_name": "Tygo Gernandt",
+            "popularity": 29.07,
+            "profile_path": "/8hz3XHqKo97jqZndXzQC0GbnWuY.jpg",
+            "cast_id": 1,
+            "character": "Proog (voice)",
+            "credit_id": "52fe4528c3a36847f80bf89b",
+            "order": 0
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 43648,
+            "known_for_department": "Acting",
+            "name": "Cas Jansen",
+            "original_name": "Cas Jansen",
+            "popularity": 4.15,
+            "profile_path": "/xW0uz8Z5LdIXGArsqSSIZ4T78PP.jpg",
+            "cast_id": 2,
+            "character": "Emo (voice)",
+            "credit_id": "52fe4528c3a36847f80bf89f",
+            "order": 1
+          }
+        ],
+        "crew": [
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 58958,
+            "known_for_department": "Art",
+            "name": "Andreas Goralczyk",
+            "original_name": "Andreas Goralczyk",
+            "popularity": 25.62,
+            "profile_path": null,
+            "credit_id": "cbd58d06cfbca6b2552215d4",
+            "department": "Art",
+            "job": "Art Direction"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 23499,
+            "known_for_department": "Directing",
+            "name": "Bassam Kurdali",
+            "original_name": "Bassam Kurdali",
+            "popularity": 36.15,
+            "profile_path": null,
+            "credit_id": "5c668066ea8b1a02dbfb7d9d",
+            "department": "Directing",
+            "job": "Director"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1311764,
+            "known_for_department": "Production",
+            "name": "Marina Wijn",
+            "original_name": "Marina Wijn",
+            "popularity": 30.34,
+            "profile_path": "/jTvSzpX4r41S2XbVS2XLw6niobR.jpg",
+            "credit_id": "9944e2a0ff3678307d8f8098",
+            "department": "Production",
+            "job": "Casting"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 133632,
+            "known_for_department": "Production",
+            "name": "Ton Roosendaal",
+            "original_name": "Ton Roosendaal",
+            "popularity": 27.16,
+            "profile_path": "/2iRRkA2oCsPLSSLz1HKDhwJZlgy.jpg",
+            "credit_id": "90a647e06253efa41a45d800",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 133634,
+            "known_for_department": "Sound",
+            "name": "Jan Morgenstern",
+            "original_name": "Jan Morgenstern",
+            "popularity": 2.44,
+            "profile_path": null,
+            "credit_id": "95dd43d78ae6cb8ae140a88e",
+            "department": "Sound",
+            "job": "Music"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 58958,
+            "known_for_department": "Writing",
+            "name": "Andreas Goralczyk",
+            "original_name": "Andreas Goralczyk",
+            "popularity": 25.62,
+            "profile_path": null,
+            "credit_id": "75424d0d7a4dead3062067ea",
+            "department": "Writing",
+            "job": "Author"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 23499,
+            "known_for_department": "Writing",
+            "name": "Bassam Kurdali",
+            "original_name": "Bassam Kurdali",
+            "popularity": 36.15,
+            "profile_path": null,
+            "credit_id": "4c2064cb8166c387de3203ef",
+            "department": "Writing",
+            "job": "Author"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 84078,
+            "known_for_department": "Writing",
+            "name": "Pepijn Zwanenberg",
+            "original_name": "Pepijn Zwanenberg",
+            "popularity": 29.97,
+            "profile_path": null,
+            "credit_id": "f9ee4896b664776cf5b966b4",
+            "department": "Writing",
+            "job": "Screenplay"
+          }
+        ]
+      },
+      "videos": {
+        "results": [
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Elephants Dream Trailer",
+            "key": "_0wxP7EWsOc",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": false,
+            "published_at": "2012-10-05T00:00:00.000Z",
+            "id": "5c8e0cae9251410fe7a0aedb"
+          }
+        ]
+      },
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "US",
+            "release_dates": [
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2006-03-24T00:00:00.000Z",
+                "type": 4
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FR",
+            "release_dates": [
+              {
+                "certification": "TP",
+                "descriptors": [],
+                "iso_639_1": "fr",
+                "note": "",
+                "release_date": "2006-03-24T00:00:00.000Z",
+                "type": 4
+              }
+            ]
+          }
+        ]
+      },
+      "external_ids": {
+        "imdb_id": "tt0807840",
+        "wikidata_id": "Q825197",
+        "facebook_id": null,
+        "instagram_id": null,
+        "twitter_id": null
+      },
+      "recommendations": {
+        "page": 1,
+        "results": [
+          {
+            "adult": false,
+            "backdrop_path": "/cTuFz80FozP54Aob9TYl4mF1wKk.jpg",
+            "genre_ids": [12, 16, 35, 10751, 14],
+            "id": 1117857,
+            "original_language": "en",
+            "original_title": "In Your Dreams",
+            "overview": "Stevie and her little brother Elliot journey into the wildly absurd landscape of their own dreams to ask the Sandman to grant them the perfect family.",
+            "popularity": 3.9,
+            "poster_path": "/ug0TqgmByPCEYzR9lQWQmyAa7sw.jpg",
+            "release_date": "2025-11-07",
+            "title": "In Your Dreams",
+            "video": false,
+            "vote_average": 6.902,
+            "vote_count": 266,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/fFiCFGN2pZqOypQPXDHRi4G1ME0.jpg",
+            "genre_ids": [16, 878],
+            "id": 532952,
+            "original_language": "en",
+            "original_title": "Smash and Grab",
+            "overview": "After years of toiling away inside the engine room of a towering locomotive, two antiquated robots will risk everything for freedom and for each other.",
+            "popularity": 38.72,
+            "poster_path": "/bsDQdjuGAhj6JrmCKVBFTUBeIrb.jpg",
+            "release_date": "2019-01-18",
+            "title": "Smash and Grab",
+            "video": false,
+            "vote_average": 6.57,
+            "vote_count": 187,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/7neeXze9HB3MTxDYyh3wwysydMN.jpg",
+            "genre_ids": [16, 12, 35, 10751, 14],
+            "id": 778855,
+            "original_language": "en",
+            "original_title": "Chickenhare and the Hamster of Darkness",
+            "overview": "A brave young animal explorer teams up with two trusty friends to find a powerful artifact before his greedy uncle can get his paws on it.",
+            "popularity": 32.47,
+            "poster_path": "/2v6f1EqTo4FUxVT9MDXpF6158AX.jpg",
+            "release_date": "2022-02-16",
+            "title": "Chickenhare and the Hamster of Darkness",
+            "video": false,
+            "vote_average": 7.215,
+            "vote_count": 297,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/7a4WHNllmX5ZGR0MfYJDPhV69eM.jpg",
+            "genre_ids": [16, 878],
+            "id": 55931,
+            "original_language": "en",
+            "original_title": "The Animatrix",
+            "overview": "Straight from the creators of the groundbreaking Matrix trilogy, this collection of short animated films from the world's leading anime directors fuses computer graphics and Japanese anime to provide the background of the Matrix universe and the conflict between man and machines. The shorts include Final Flight of the Osiris, The Second Renaissance, Kid's Story, Program, World Record, Beyond, A Detective Story and Matriculated.",
+            "popularity": 38.84,
+            "poster_path": "/eDjIG2hAeMU5cxLrd6oiQqdqoZt.jpg",
+            "release_date": "2003-05-09",
+            "title": "The Animatrix",
+            "video": false,
+            "vote_average": 7.221,
+            "vote_count": 1867,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/201mKrWi37SE1YkdqRP7rE3QamK.jpg",
+            "genre_ids": [16, 12, 35],
+            "id": 416153,
+            "original_language": "en",
+            "original_title": "Arctic Dogs",
+            "overview": "Animals band together to save the day when the evil Otto Von Walrus hatches a sinister scheme to accelerate global warming and melt the Arctic Circle.",
+            "popularity": 20.25,
+            "poster_path": "/5YHjyjd2N0ZXcnGuB8G1nIa6h9t.jpg",
+            "release_date": "2019-11-01",
+            "title": "Arctic Dogs",
+            "video": false,
+            "vote_average": 5.955,
+            "vote_count": 146,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/msqeiEyIRpPAtrCeRGFNZQ9tkJL.jpg",
+            "genre_ids": [16, 14],
+            "id": 45745,
+            "original_language": "en",
+            "original_title": "Sintel",
+            "overview": "A wandering warrior finds an unlikely friend in the form of a young dragon. The two develop a close bond, until one day the dragon is snatched away. She then sets out on a relentless quest to reclaim her friend, finding in the end that her quest exacts a far greater price than she had ever imagined.",
+            "popularity": 16.37,
+            "poster_path": "/l98Zns4oQe1BSvbF4hJ8oL6VSf0.jpg",
+            "release_date": "2010-09-30",
+            "title": "Sintel",
+            "video": false,
+            "vote_average": 7.333,
+            "vote_count": 180,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/qJqj6VAxpbbdJB6CtzYoTSR4SNu.jpg",
+            "genre_ids": [16, 35, 10751, 878],
+            "id": 546728,
+            "original_language": "en",
+            "original_title": "Auntie Edna",
+            "overview": "Taking place during the events of Incredibles 2, Edna Mode babysits Jack-Jack.",
+            "popularity": 30.82,
+            "poster_path": "/ypgqNZGKPh5vLDhDAUUArv1ZSRu.jpg",
+            "release_date": "2018-10-23",
+            "title": "Auntie Edna",
+            "video": false,
+            "vote_average": 7.186,
+            "vote_count": 287,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/tBY8hN4inRzOwUwfvhBUHo00pIQ.jpg",
+            "genre_ids": [16, 28, 12, 36],
+            "id": 332718,
+            "original_language": "en",
+            "original_title": "Bilal: A New Breed of Hero",
+            "overview": "A thousand years ago, one boy with a dream of becoming a great warrior is abducted with his sister and taken to a land far away from home. Thrown into a world where greed and injustice rule all, Bilal finds the courage to raise his voice and make a change. Inspired by true events, this is a story of a real hero who earned his remembrance in time and history.",
+            "popularity": 36.04,
+            "poster_path": "/ncWuEzxnXqssxRfHghZuUAIezCo.jpg",
+            "release_date": "2016-09-08",
+            "title": "Bilal: A New Breed of Hero",
+            "video": false,
+            "vote_average": 6.822,
+            "vote_count": 174,
+            "media_type": "movie"
+          }
+        ],
+        "total_pages": 1,
+        "total_results": 8
+      }
+    }
+  }
+}

@@ -74,6 +74,7 @@ As built in Phase 3 (ADR 0023); each route's access is in the OpenAPI document.
 - **Invites are links first,** email second: most households pass the link in a chat. The link is single-use and lasts a week.
 - **Roles set the defaults; permissions fine-tune them.** Changing the role resets the permissions, so a role always means what it says until someone deliberately changes it.
 - **One owner,** changed only by handing the server over (Security), never by editing a role.
+- **Only the owner and admins open the admin** (owner's decision, 2026-10-20). **Manage the library** is an admin's permission alone, so it leaves the list a member or restricted account can be given. Built after checkpoint 4 is signed off ([Phase 3 plan, decision 6](../plans/phase-3-server.md#decisions)).
 - **Library access is "all, now and later" by default,** so a new library (TV shows) doesn't need everyone re-granted; restricted accounts choose.
 - **Keys show once** and are listed by prefix; a lost key is revoked and replaced, never recovered.
 - **Reset links and invite links need the same standing as editing the person.** Either one hands over the account, so only the owner can make one for an admin.

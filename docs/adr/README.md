@@ -32,5 +32,8 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0026](0026-network-tls.md) | Plain HTTP always, built-in TLS beside it | Accepted |
 | [0027](0027-preferences-in-layers.md) | Preferences in layers, on the server | Accepted |
 | [0028](0028-files-the-owner-uploads.md) | Files the owner uploads: in the database, checked by their bytes | Accepted |
+| [0029](0029-external-services.md) | External services: one injected fetch, recorded responses | Accepted |
+| [0030](0030-metadata-cache.md) | The metadata cache: TMDB’s responses beside the library, under six months | Accepted |
+| [0031](0031-quality-and-the-decision-engine.md) | Quality and the decision engine: Radarr's documented behaviour, written fresh | Accepted |
 
 Template: copy [`template.md`](template.md).

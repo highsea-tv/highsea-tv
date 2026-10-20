@@ -1,0 +1,5034 @@
+[
+  {
+    "name": "The.Shawshank.Redemption.1994.1080p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "year": 1994,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "SPARKS"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Shawshank Redemption (1994) [2160p BluRay REMUX HEVC DV HDR10 TrueHD 7.1 Atmos]-FraMeSToR",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "year": 1994,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "remux"
+      },
+      "codec": "hevc",
+      "hdr": ["dv", "hdr10"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Shawshank.Redemption.1994.720p.BluRay.x264-AMIABLE",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "year": 1994,
+      "quality": {
+        "source": "bluray",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "AMIABLE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Shawshank Redemption (1994) [1080p WEBRip x264 AAC]-YTS",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "year": 1994,
+      "quality": {
+        "source": "webrip",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Shawshank.Redemption.1994.720p.HDTV.x264-DIMENSION",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "year": 1994,
+      "quality": {
+        "source": "tv",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "DIMENSION"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Shawshank Redemption (1994) [NTSC DVD9]-SDDVD",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "year": 1994,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Shawshank.Redemption.1994.TELESYNC.XviD-AXXO",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "year": 1994,
+      "quality": {
+        "source": "telesync",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "AXXO"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Shawshank Redemption (1994) [WORKPRINT XviD]-WP",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "year": 1994,
+      "quality": {
+        "source": "workprint",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Shawshank.Redemption.1994.1080p.BluRay.3D.Half-SBS.x264-CHD",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "year": 1994,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "threeD": true,
+      "releaseGroup": "CHD"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Shawshank Redemption (1994) [1080i BluRay REMUX VC-1 DTS-HD MA 5.1]-KRaLiMaRKo",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "year": 1994,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "vc1"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Blade.Runner.2049.2017.1080p.WEB-DL.DDP5.1.H.264-NTb",
+    "expect": {
+      "title": "Blade Runner 2049",
+      "year": 2017,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "NTb"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Blade Runner 2049 (2017) [720p WEB H264]-STRiFE",
+    "expect": {
+      "title": "Blade Runner 2049",
+      "year": 2017,
+      "quality": {
+        "source": "webdl",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Blade.Runner.2049.2017.DVDRip.XviD-DiAMOND",
+    "expect": {
+      "title": "Blade Runner 2049",
+      "year": 2017,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "DiAMOND"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Blade Runner 2049 (2017) [CAM x264]-COLLECTiVE",
+    "expect": {
+      "title": "Blade Runner 2049",
+      "year": 2017,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Blade.Runner.2049.2017.HDTS.720p-PLAYNOW",
+    "expect": {
+      "title": "Blade Runner 2049",
+      "year": 2017,
+      "quality": {
+        "source": "telesync",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "releaseGroup": "PLAYNOW"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Blade Runner 2049 (2017) [DVDSCR XviD]-MAXSPEED",
+    "expect": {
+      "title": "Blade Runner 2049",
+      "year": 2017,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "screener"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Blade.Runner.2049.2017.2160p.WEB-DL.DV.HEVC-NOGROUP",
+    "expect": {
+      "title": "Blade Runner 2049",
+      "year": 2017,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["dv"],
+      "releaseGroup": "NOGROUP"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Blade Runner 2049 (2017) [576p BluRay x264]-HANDJOB",
+    "expect": {
+      "title": "Blade Runner 2049",
+      "year": 2017,
+      "quality": {
+        "source": "bluray",
+        "resolution": 576,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Blade.Runner.2049.2017.2160p.UHD.BluRay.x265.HDR.DTS-HD.MA.5.1-TERMiNAL",
+    "expect": {
+      "title": "Blade Runner 2049",
+      "year": 2017,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr"],
+      "releaseGroup": "TERMiNAL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Blade Runner 2049 (2017) [COMPLETE UHD BLURAY]-GUHZER",
+    "expect": {
+      "title": "Blade Runner 2049",
+      "year": 2017,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "brdisk"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "1917.2019.PAL.DVDR-NORDiC",
+    "expect": {
+      "title": "1917",
+      "year": 2019,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      },
+      "releaseGroup": "NORDiC"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "1917 (2019) [HDCAM]-NoGrp",
+    "expect": {
+      "title": "1917",
+      "year": 2019,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "1917.2019.TELECINE.XviD-TCX",
+    "expect": {
+      "title": "1917",
+      "year": 2019,
+      "quality": {
+        "source": "telecine",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "TCX"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "1917 (2019) [R5 LINE XviD]-REGIONAL",
+    "expect": {
+      "title": "1917",
+      "year": 2019,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "regional"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "1917.2019.1080p.WEB-DL.AV1.Opus-Vyndros",
+    "expect": {
+      "title": "1917",
+      "year": 2019,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "av1",
+      "releaseGroup": "Vyndros"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "1917 (2019) [BDRip x264]-CiNEFiLE",
+    "expect": {
+      "title": "1917",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "1917.2019.1080p.BluRay.REMUX.AVC.DTS-HD.MA.5.1-FGT",
+    "expect": {
+      "title": "1917",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "avc",
+      "releaseGroup": "FGT"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "1917 (2019) [1080p COMPLETE BLURAY AVC DTS-HD MA 5.1]-HDCLUB",
+    "expect": {
+      "title": "1917",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "brdisk"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "1917.2019.2160p.AMZN.WEB-DL.DDP5.1.HDR10+.HEVC-FLUX",
+    "expect": {
+      "title": "1917",
+      "year": 2019,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr10plus"],
+      "releaseGroup": "FLUX"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "1917 (2019) [HDTV x264]-LOL",
+    "expect": {
+      "title": "1917",
+      "year": 2019,
+      "quality": {
+        "source": "tv",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2012.2009.WORKPRINT.XviD-WP",
+    "expect": {
+      "title": "2012",
+      "year": 2009,
+      "quality": {
+        "source": "workprint",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "WP"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2012 (2009) [1080p BluRay 3D Half-SBS x264]-CHD",
+    "expect": {
+      "title": "2012",
+      "year": 2009,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "threeD": true
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2012.2009.1080i.BluRay.REMUX.VC-1.DTS-HD.MA.5.1-KRaLiMaRKo",
+    "expect": {
+      "title": "2012",
+      "year": 2009,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "vc1",
+      "releaseGroup": "KRaLiMaRKo"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2012 (2009) [1080p BluRay x264]-SPARKS",
+    "expect": {
+      "title": "2012",
+      "year": 2009,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2012.2009.2160p.BluRay.REMUX.HEVC.DV.HDR10.TrueHD.7.1.Atmos-FraMeSToR",
+    "expect": {
+      "title": "2012",
+      "year": 2009,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "remux"
+      },
+      "codec": "hevc",
+      "hdr": ["dv", "hdr10"],
+      "releaseGroup": "FraMeSToR"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2012 (2009) [720p BluRay x264]-AMIABLE",
+    "expect": {
+      "title": "2012",
+      "year": 2009,
+      "quality": {
+        "source": "bluray",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2012.2009.1080p.WEBRip.x264.AAC-YTS",
+    "expect": {
+      "title": "2012",
+      "year": 2009,
+      "quality": {
+        "source": "webrip",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "YTS"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2012 (2009) [720p HDTV x264]-DIMENSION",
+    "expect": {
+      "title": "2012",
+      "year": 2009,
+      "quality": {
+        "source": "tv",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2012.2009.NTSC.DVD9-SDDVD",
+    "expect": {
+      "title": "2012",
+      "year": 2009,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      },
+      "releaseGroup": "SDDVD"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2012 (2009) [TELESYNC XviD]-AXXO",
+    "expect": {
+      "title": "2012",
+      "year": 2009,
+      "quality": {
+        "source": "telesync",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2001.A.Space.Odyssey.1968.576p.BluRay.x264-HANDJOB",
+    "expect": {
+      "title": "2001 A Space Odyssey",
+      "year": 1968,
+      "quality": {
+        "source": "bluray",
+        "resolution": 576,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "HANDJOB"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2001 A Space Odyssey (1968) [2160p UHD BluRay x265 HDR DTS-HD MA 5.1]-TERMiNAL",
+    "expect": {
+      "title": "2001 A Space Odyssey",
+      "year": 1968,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2001.A.Space.Odyssey.1968.COMPLETE.UHD.BLURAY-GUHZER",
+    "expect": {
+      "title": "2001 A Space Odyssey",
+      "year": 1968,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "brdisk"
+      },
+      "releaseGroup": "GUHZER"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2001 A Space Odyssey (1968) [1080p WEB-DL DDP5.1 H.264]-NTb",
+    "expect": {
+      "title": "2001 A Space Odyssey",
+      "year": 1968,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2001.A.Space.Odyssey.1968.720p.WEB.H264-STRiFE",
+    "expect": {
+      "title": "2001 A Space Odyssey",
+      "year": 1968,
+      "quality": {
+        "source": "webdl",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "STRiFE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2001 A Space Odyssey (1968) [DVDRip XviD]-DiAMOND",
+    "expect": {
+      "title": "2001 A Space Odyssey",
+      "year": 1968,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2001.A.Space.Odyssey.1968.CAM.x264-COLLECTiVE",
+    "expect": {
+      "title": "2001 A Space Odyssey",
+      "year": 1968,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "COLLECTiVE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2001 A Space Odyssey (1968) [HDTS 720p]-PLAYNOW",
+    "expect": {
+      "title": "2001 A Space Odyssey",
+      "year": 1968,
+      "quality": {
+        "source": "telesync",
+        "resolution": 720,
+        "modifier": "none"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2001.A.Space.Odyssey.1968.DVDSCR.XviD-MAXSPEED",
+    "expect": {
+      "title": "2001 A Space Odyssey",
+      "year": 1968,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "screener"
+      },
+      "codec": "xvid",
+      "releaseGroup": "MAXSPEED"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "2001 A Space Odyssey (1968) [2160p WEB-DL DV HEVC]-NOGROUP",
+    "expect": {
+      "title": "2001 A Space Odyssey",
+      "year": 1968,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["dv"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Wonder.Woman.1984.2020.1080p.COMPLETE.BLURAY.AVC.DTS-HD.MA.5.1-HDCLUB",
+    "expect": {
+      "title": "Wonder Woman 1984",
+      "year": 2020,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "brdisk"
+      },
+      "releaseGroup": "HDCLUB"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Wonder Woman 1984 (2020) [2160p AMZN WEB-DL DDP5.1 HDR10+ HEVC]-FLUX",
+    "expect": {
+      "title": "Wonder Woman 1984",
+      "year": 2020,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr10plus"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Wonder.Woman.1984.2020.HDTV.x264-LOL",
+    "expect": {
+      "title": "Wonder Woman 1984",
+      "year": 2020,
+      "quality": {
+        "source": "tv",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "LOL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Wonder Woman 1984 (2020) [PAL DVDR]-NORDiC",
+    "expect": {
+      "title": "Wonder Woman 1984",
+      "year": 2020,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Wonder.Woman.1984.2020.HDCAM-NoGrp",
+    "expect": {
+      "title": "Wonder Woman 1984",
+      "year": 2020,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "releaseGroup": "NoGrp"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Wonder Woman 1984 (2020) [TELECINE XviD]-TCX",
+    "expect": {
+      "title": "Wonder Woman 1984",
+      "year": 2020,
+      "quality": {
+        "source": "telecine",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Wonder.Woman.1984.2020.R5.LINE.XviD-REGIONAL",
+    "expect": {
+      "title": "Wonder Woman 1984",
+      "year": 2020,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "regional"
+      },
+      "codec": "xvid",
+      "releaseGroup": "REGIONAL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Wonder Woman 1984 (2020) [1080p WEB-DL AV1 Opus]-Vyndros",
+    "expect": {
+      "title": "Wonder Woman 1984",
+      "year": 2020,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "av1"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Wonder.Woman.1984.2020.BDRip.x264-CiNEFiLE",
+    "expect": {
+      "title": "Wonder Woman 1984",
+      "year": 2020,
+      "quality": {
+        "source": "bluray",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "CiNEFiLE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Wonder Woman 1984 (2020) [1080p BluRay REMUX AVC DTS-HD MA 5.1]-FGT",
+    "expect": {
+      "title": "Wonder Woman 1984",
+      "year": 2020,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Nineteen.Eighty-Four.1984.720p.HDTV.x264-DIMENSION",
+    "expect": {
+      "title": "Nineteen Eighty-Four",
+      "year": 1984,
+      "quality": {
+        "source": "tv",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "DIMENSION"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Nineteen Eighty-Four (1984) [NTSC DVD9]-SDDVD",
+    "expect": {
+      "title": "Nineteen Eighty-Four",
+      "year": 1984,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Nineteen.Eighty-Four.1984.TELESYNC.XviD-AXXO",
+    "expect": {
+      "title": "Nineteen Eighty-Four",
+      "year": 1984,
+      "quality": {
+        "source": "telesync",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "AXXO"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Nineteen Eighty-Four (1984) [WORKPRINT XviD]-WP",
+    "expect": {
+      "title": "Nineteen Eighty-Four",
+      "year": 1984,
+      "quality": {
+        "source": "workprint",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Nineteen.Eighty-Four.1984.1080p.BluRay.3D.Half-SBS.x264-CHD",
+    "expect": {
+      "title": "Nineteen Eighty-Four",
+      "year": 1984,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "threeD": true,
+      "releaseGroup": "CHD"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Nineteen Eighty-Four (1984) [1080i BluRay REMUX VC-1 DTS-HD MA 5.1]-KRaLiMaRKo",
+    "expect": {
+      "title": "Nineteen Eighty-Four",
+      "year": 1984,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "vc1"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Nineteen.Eighty-Four.1984.1080p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "Nineteen Eighty-Four",
+      "year": 1984,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "SPARKS"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Nineteen Eighty-Four (1984) [2160p BluRay REMUX HEVC DV HDR10 TrueHD 7.1 Atmos]-FraMeSToR",
+    "expect": {
+      "title": "Nineteen Eighty-Four",
+      "year": 1984,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "remux"
+      },
+      "codec": "hevc",
+      "hdr": ["dv", "hdr10"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Nineteen.Eighty-Four.1984.720p.BluRay.x264-AMIABLE",
+    "expect": {
+      "title": "Nineteen Eighty-Four",
+      "year": 1984,
+      "quality": {
+        "source": "bluray",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "AMIABLE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Nineteen Eighty-Four (1984) [1080p WEBRip x264 AAC]-YTS",
+    "expect": {
+      "title": "Nineteen Eighty-Four",
+      "year": 1984,
+      "quality": {
+        "source": "webrip",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Se7en.1995.HDTS.720p-PLAYNOW",
+    "expect": {
+      "title": "Se7en",
+      "year": 1995,
+      "quality": {
+        "source": "telesync",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "releaseGroup": "PLAYNOW"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Se7en (1995) [DVDSCR XviD]-MAXSPEED",
+    "expect": {
+      "title": "Se7en",
+      "year": 1995,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "screener"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Se7en.1995.2160p.WEB-DL.DV.HEVC-NOGROUP",
+    "expect": {
+      "title": "Se7en",
+      "year": 1995,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["dv"],
+      "releaseGroup": "NOGROUP"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Se7en (1995) [576p BluRay x264]-HANDJOB",
+    "expect": {
+      "title": "Se7en",
+      "year": 1995,
+      "quality": {
+        "source": "bluray",
+        "resolution": 576,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Se7en.1995.2160p.UHD.BluRay.x265.HDR.DTS-HD.MA.5.1-TERMiNAL",
+    "expect": {
+      "title": "Se7en",
+      "year": 1995,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr"],
+      "releaseGroup": "TERMiNAL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Se7en (1995) [COMPLETE UHD BLURAY]-GUHZER",
+    "expect": {
+      "title": "Se7en",
+      "year": 1995,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "brdisk"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Se7en.1995.1080p.WEB-DL.DDP5.1.H.264-NTb",
+    "expect": {
+      "title": "Se7en",
+      "year": 1995,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "NTb"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Se7en (1995) [720p WEB H264]-STRiFE",
+    "expect": {
+      "title": "Se7en",
+      "year": 1995,
+      "quality": {
+        "source": "webdl",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Se7en.1995.DVDRip.XviD-DiAMOND",
+    "expect": {
+      "title": "Se7en",
+      "year": 1995,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "DiAMOND"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Se7en (1995) [CAM x264]-COLLECTiVE",
+    "expect": {
+      "title": "Se7en",
+      "year": 1995,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Arrival.2016.1080p.WEB-DL.AV1.Opus-Vyndros",
+    "expect": {
+      "title": "Arrival",
+      "year": 2016,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "av1",
+      "releaseGroup": "Vyndros"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Arrival (2016) [BDRip x264]-CiNEFiLE",
+    "expect": {
+      "title": "Arrival",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Arrival.2016.1080p.BluRay.REMUX.AVC.DTS-HD.MA.5.1-FGT",
+    "expect": {
+      "title": "Arrival",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "avc",
+      "releaseGroup": "FGT"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Arrival (2016) [1080p COMPLETE BLURAY AVC DTS-HD MA 5.1]-HDCLUB",
+    "expect": {
+      "title": "Arrival",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "brdisk"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Arrival.2016.2160p.AMZN.WEB-DL.DDP5.1.HDR10+.HEVC-FLUX",
+    "expect": {
+      "title": "Arrival",
+      "year": 2016,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr10plus"],
+      "releaseGroup": "FLUX"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Arrival (2016) [HDTV x264]-LOL",
+    "expect": {
+      "title": "Arrival",
+      "year": 2016,
+      "quality": {
+        "source": "tv",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Arrival.2016.PAL.DVDR-NORDiC",
+    "expect": {
+      "title": "Arrival",
+      "year": 2016,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      },
+      "releaseGroup": "NORDiC"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Arrival (2016) [HDCAM]-NoGrp",
+    "expect": {
+      "title": "Arrival",
+      "year": 2016,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Arrival.2016.TELECINE.XviD-TCX",
+    "expect": {
+      "title": "Arrival",
+      "year": 2016,
+      "quality": {
+        "source": "telecine",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "TCX"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Arrival (2016) [R5 LINE XviD]-REGIONAL",
+    "expect": {
+      "title": "Arrival",
+      "year": 2016,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "regional"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Amélie.2001.2160p.BluRay.REMUX.HEVC.DV.HDR10.TrueHD.7.1.Atmos-FraMeSToR",
+    "expect": {
+      "title": "Amélie",
+      "year": 2001,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "remux"
+      },
+      "codec": "hevc",
+      "hdr": ["dv", "hdr10"],
+      "releaseGroup": "FraMeSToR"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Amélie (2001) [720p BluRay x264]-AMIABLE",
+    "expect": {
+      "title": "Amélie",
+      "year": 2001,
+      "quality": {
+        "source": "bluray",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Amélie.2001.1080p.WEBRip.x264.AAC-YTS",
+    "expect": {
+      "title": "Amélie",
+      "year": 2001,
+      "quality": {
+        "source": "webrip",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "YTS"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Amélie (2001) [720p HDTV x264]-DIMENSION",
+    "expect": {
+      "title": "Amélie",
+      "year": 2001,
+      "quality": {
+        "source": "tv",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Amélie.2001.NTSC.DVD9-SDDVD",
+    "expect": {
+      "title": "Amélie",
+      "year": 2001,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      },
+      "releaseGroup": "SDDVD"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Amélie (2001) [TELESYNC XviD]-AXXO",
+    "expect": {
+      "title": "Amélie",
+      "year": 2001,
+      "quality": {
+        "source": "telesync",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Amélie.2001.WORKPRINT.XviD-WP",
+    "expect": {
+      "title": "Amélie",
+      "year": 2001,
+      "quality": {
+        "source": "workprint",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "WP"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Amélie (2001) [1080p BluRay 3D Half-SBS x264]-CHD",
+    "expect": {
+      "title": "Amélie",
+      "year": 2001,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "threeD": true
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Amélie.2001.1080i.BluRay.REMUX.VC-1.DTS-HD.MA.5.1-KRaLiMaRKo",
+    "expect": {
+      "title": "Amélie",
+      "year": 2001,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "vc1",
+      "releaseGroup": "KRaLiMaRKo"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Amélie (2001) [1080p BluRay x264]-SPARKS",
+    "expect": {
+      "title": "Amélie",
+      "year": 2001,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Spider-Man.Into.the.Spider-Verse.2018.720p.WEB.H264-STRiFE",
+    "expect": {
+      "title": "Spider-Man Into the Spider-Verse",
+      "year": 2018,
+      "quality": {
+        "source": "webdl",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "STRiFE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Spider-Man Into the Spider-Verse (2018) [DVDRip XviD]-DiAMOND",
+    "expect": {
+      "title": "Spider-Man Into the Spider-Verse",
+      "year": 2018,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Spider-Man.Into.the.Spider-Verse.2018.CAM.x264-COLLECTiVE",
+    "expect": {
+      "title": "Spider-Man Into the Spider-Verse",
+      "year": 2018,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "COLLECTiVE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Spider-Man Into the Spider-Verse (2018) [HDTS 720p]-PLAYNOW",
+    "expect": {
+      "title": "Spider-Man Into the Spider-Verse",
+      "year": 2018,
+      "quality": {
+        "source": "telesync",
+        "resolution": 720,
+        "modifier": "none"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Spider-Man.Into.the.Spider-Verse.2018.DVDSCR.XviD-MAXSPEED",
+    "expect": {
+      "title": "Spider-Man Into the Spider-Verse",
+      "year": 2018,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "screener"
+      },
+      "codec": "xvid",
+      "releaseGroup": "MAXSPEED"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Spider-Man Into the Spider-Verse (2018) [2160p WEB-DL DV HEVC]-NOGROUP",
+    "expect": {
+      "title": "Spider-Man Into the Spider-Verse",
+      "year": 2018,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["dv"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Spider-Man.Into.the.Spider-Verse.2018.576p.BluRay.x264-HANDJOB",
+    "expect": {
+      "title": "Spider-Man Into the Spider-Verse",
+      "year": 2018,
+      "quality": {
+        "source": "bluray",
+        "resolution": 576,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "HANDJOB"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Spider-Man Into the Spider-Verse (2018) [2160p UHD BluRay x265 HDR DTS-HD MA 5.1]-TERMiNAL",
+    "expect": {
+      "title": "Spider-Man Into the Spider-Verse",
+      "year": 2018,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Spider-Man.Into.the.Spider-Verse.2018.COMPLETE.UHD.BLURAY-GUHZER",
+    "expect": {
+      "title": "Spider-Man Into the Spider-Verse",
+      "year": 2018,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "brdisk"
+      },
+      "releaseGroup": "GUHZER"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Spider-Man Into the Spider-Verse (2018) [1080p WEB-DL DDP5.1 H.264]-NTb",
+    "expect": {
+      "title": "Spider-Man Into the Spider-Verse",
+      "year": 2018,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Mad.Max.Fury.Road.2015.HDCAM-NoGrp",
+    "expect": {
+      "title": "Mad Max Fury Road",
+      "year": 2015,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "releaseGroup": "NoGrp"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Mad Max Fury Road (2015) [TELECINE XviD]-TCX",
+    "expect": {
+      "title": "Mad Max Fury Road",
+      "year": 2015,
+      "quality": {
+        "source": "telecine",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Mad.Max.Fury.Road.2015.R5.LINE.XviD-REGIONAL",
+    "expect": {
+      "title": "Mad Max Fury Road",
+      "year": 2015,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "regional"
+      },
+      "codec": "xvid",
+      "releaseGroup": "REGIONAL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Mad Max Fury Road (2015) [1080p WEB-DL AV1 Opus]-Vyndros",
+    "expect": {
+      "title": "Mad Max Fury Road",
+      "year": 2015,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "av1"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Mad.Max.Fury.Road.2015.BDRip.x264-CiNEFiLE",
+    "expect": {
+      "title": "Mad Max Fury Road",
+      "year": 2015,
+      "quality": {
+        "source": "bluray",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "CiNEFiLE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Mad Max Fury Road (2015) [1080p BluRay REMUX AVC DTS-HD MA 5.1]-FGT",
+    "expect": {
+      "title": "Mad Max Fury Road",
+      "year": 2015,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Mad.Max.Fury.Road.2015.1080p.COMPLETE.BLURAY.AVC.DTS-HD.MA.5.1-HDCLUB",
+    "expect": {
+      "title": "Mad Max Fury Road",
+      "year": 2015,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "brdisk"
+      },
+      "releaseGroup": "HDCLUB"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Mad Max Fury Road (2015) [2160p AMZN WEB-DL DDP5.1 HDR10+ HEVC]-FLUX",
+    "expect": {
+      "title": "Mad Max Fury Road",
+      "year": 2015,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr10plus"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Mad.Max.Fury.Road.2015.HDTV.x264-LOL",
+    "expect": {
+      "title": "Mad Max Fury Road",
+      "year": 2015,
+      "quality": {
+        "source": "tv",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "LOL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Mad Max Fury Road (2015) [PAL DVDR]-NORDiC",
+    "expect": {
+      "title": "Mad Max Fury Road",
+      "year": 2015,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Oceans.Eleven.2001.1080p.BluRay.3D.Half-SBS.x264-CHD",
+    "expect": {
+      "title": "Oceans Eleven",
+      "year": 2001,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "threeD": true,
+      "releaseGroup": "CHD"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Ocean’s Eleven (2001) [1080i BluRay REMUX VC-1 DTS-HD MA 5.1]-KRaLiMaRKo",
+    "expect": {
+      "title": "Ocean’s Eleven",
+      "year": 2001,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "vc1"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Oceans.Eleven.2001.1080p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "Oceans Eleven",
+      "year": 2001,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "SPARKS"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Ocean’s Eleven (2001) [2160p BluRay REMUX HEVC DV HDR10 TrueHD 7.1 Atmos]-FraMeSToR",
+    "expect": {
+      "title": "Ocean’s Eleven",
+      "year": 2001,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "remux"
+      },
+      "codec": "hevc",
+      "hdr": ["dv", "hdr10"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Oceans.Eleven.2001.720p.BluRay.x264-AMIABLE",
+    "expect": {
+      "title": "Oceans Eleven",
+      "year": 2001,
+      "quality": {
+        "source": "bluray",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "AMIABLE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Ocean’s Eleven (2001) [1080p WEBRip x264 AAC]-YTS",
+    "expect": {
+      "title": "Ocean’s Eleven",
+      "year": 2001,
+      "quality": {
+        "source": "webrip",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Oceans.Eleven.2001.720p.HDTV.x264-DIMENSION",
+    "expect": {
+      "title": "Oceans Eleven",
+      "year": 2001,
+      "quality": {
+        "source": "tv",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "DIMENSION"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Ocean’s Eleven (2001) [NTSC DVD9]-SDDVD",
+    "expect": {
+      "title": "Ocean’s Eleven",
+      "year": 2001,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Oceans.Eleven.2001.TELESYNC.XviD-AXXO",
+    "expect": {
+      "title": "Oceans Eleven",
+      "year": 2001,
+      "quality": {
+        "source": "telesync",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "AXXO"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Ocean’s Eleven (2001) [WORKPRINT XviD]-WP",
+    "expect": {
+      "title": "Ocean’s Eleven",
+      "year": 2001,
+      "quality": {
+        "source": "workprint",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Matrix.1999.2160p.UHD.BluRay.x265.HDR.DTS-HD.MA.5.1-TERMiNAL",
+    "expect": {
+      "title": "The Matrix",
+      "year": 1999,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr"],
+      "releaseGroup": "TERMiNAL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Matrix (1999) [COMPLETE UHD BLURAY]-GUHZER",
+    "expect": {
+      "title": "The Matrix",
+      "year": 1999,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "brdisk"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Matrix.1999.1080p.WEB-DL.DDP5.1.H.264-NTb",
+    "expect": {
+      "title": "The Matrix",
+      "year": 1999,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "NTb"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Matrix (1999) [720p WEB H264]-STRiFE",
+    "expect": {
+      "title": "The Matrix",
+      "year": 1999,
+      "quality": {
+        "source": "webdl",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Matrix.1999.DVDRip.XviD-DiAMOND",
+    "expect": {
+      "title": "The Matrix",
+      "year": 1999,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "DiAMOND"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Matrix (1999) [CAM x264]-COLLECTiVE",
+    "expect": {
+      "title": "The Matrix",
+      "year": 1999,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Matrix.1999.HDTS.720p-PLAYNOW",
+    "expect": {
+      "title": "The Matrix",
+      "year": 1999,
+      "quality": {
+        "source": "telesync",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "releaseGroup": "PLAYNOW"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Matrix (1999) [DVDSCR XviD]-MAXSPEED",
+    "expect": {
+      "title": "The Matrix",
+      "year": 1999,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "screener"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Matrix.1999.2160p.WEB-DL.DV.HEVC-NOGROUP",
+    "expect": {
+      "title": "The Matrix",
+      "year": 1999,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["dv"],
+      "releaseGroup": "NOGROUP"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Matrix (1999) [576p BluRay x264]-HANDJOB",
+    "expect": {
+      "title": "The Matrix",
+      "year": 1999,
+      "quality": {
+        "source": "bluray",
+        "resolution": 576,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Alien.1979.2160p.AMZN.WEB-DL.DDP5.1.HDR10+.HEVC-FLUX",
+    "expect": {
+      "title": "Alien",
+      "year": 1979,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr10plus"],
+      "releaseGroup": "FLUX"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Alien (1979) [HDTV x264]-LOL",
+    "expect": {
+      "title": "Alien",
+      "year": 1979,
+      "quality": {
+        "source": "tv",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Alien.1979.PAL.DVDR-NORDiC",
+    "expect": {
+      "title": "Alien",
+      "year": 1979,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      },
+      "releaseGroup": "NORDiC"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Alien (1979) [HDCAM]-NoGrp",
+    "expect": {
+      "title": "Alien",
+      "year": 1979,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Alien.1979.TELECINE.XviD-TCX",
+    "expect": {
+      "title": "Alien",
+      "year": 1979,
+      "quality": {
+        "source": "telecine",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "TCX"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Alien (1979) [R5 LINE XviD]-REGIONAL",
+    "expect": {
+      "title": "Alien",
+      "year": 1979,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "regional"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Alien.1979.1080p.WEB-DL.AV1.Opus-Vyndros",
+    "expect": {
+      "title": "Alien",
+      "year": 1979,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "av1",
+      "releaseGroup": "Vyndros"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Alien (1979) [BDRip x264]-CiNEFiLE",
+    "expect": {
+      "title": "Alien",
+      "year": 1979,
+      "quality": {
+        "source": "bluray",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Alien.1979.1080p.BluRay.REMUX.AVC.DTS-HD.MA.5.1-FGT",
+    "expect": {
+      "title": "Alien",
+      "year": 1979,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "avc",
+      "releaseGroup": "FGT"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Alien (1979) [1080p COMPLETE BLURAY AVC DTS-HD MA 5.1]-HDCLUB",
+    "expect": {
+      "title": "Alien",
+      "year": 1979,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "brdisk"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "10.Cloverfield.Lane.2016.NTSC.DVD9-SDDVD",
+    "expect": {
+      "title": "10 Cloverfield Lane",
+      "year": 2016,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      },
+      "releaseGroup": "SDDVD"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "10 Cloverfield Lane (2016) [TELESYNC XviD]-AXXO",
+    "expect": {
+      "title": "10 Cloverfield Lane",
+      "year": 2016,
+      "quality": {
+        "source": "telesync",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "10.Cloverfield.Lane.2016.WORKPRINT.XviD-WP",
+    "expect": {
+      "title": "10 Cloverfield Lane",
+      "year": 2016,
+      "quality": {
+        "source": "workprint",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "WP"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "10 Cloverfield Lane (2016) [1080p BluRay 3D Half-SBS x264]-CHD",
+    "expect": {
+      "title": "10 Cloverfield Lane",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "threeD": true
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "10.Cloverfield.Lane.2016.1080i.BluRay.REMUX.VC-1.DTS-HD.MA.5.1-KRaLiMaRKo",
+    "expect": {
+      "title": "10 Cloverfield Lane",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "vc1",
+      "releaseGroup": "KRaLiMaRKo"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "10 Cloverfield Lane (2016) [1080p BluRay x264]-SPARKS",
+    "expect": {
+      "title": "10 Cloverfield Lane",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "10.Cloverfield.Lane.2016.2160p.BluRay.REMUX.HEVC.DV.HDR10.TrueHD.7.1.Atmos-FraMeSToR",
+    "expect": {
+      "title": "10 Cloverfield Lane",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "remux"
+      },
+      "codec": "hevc",
+      "hdr": ["dv", "hdr10"],
+      "releaseGroup": "FraMeSToR"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "10 Cloverfield Lane (2016) [720p BluRay x264]-AMIABLE",
+    "expect": {
+      "title": "10 Cloverfield Lane",
+      "year": 2016,
+      "quality": {
+        "source": "bluray",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "10.Cloverfield.Lane.2016.1080p.WEBRip.x264.AAC-YTS",
+    "expect": {
+      "title": "10 Cloverfield Lane",
+      "year": 2016,
+      "quality": {
+        "source": "webrip",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "YTS"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "10 Cloverfield Lane (2016) [720p HDTV x264]-DIMENSION",
+    "expect": {
+      "title": "10 Cloverfield Lane",
+      "year": 2016,
+      "quality": {
+        "source": "tv",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Apollo.13.1995.DVDSCR.XviD-MAXSPEED",
+    "expect": {
+      "title": "Apollo 13",
+      "year": 1995,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "screener"
+      },
+      "codec": "xvid",
+      "releaseGroup": "MAXSPEED"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Apollo 13 (1995) [2160p WEB-DL DV HEVC]-NOGROUP",
+    "expect": {
+      "title": "Apollo 13",
+      "year": 1995,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["dv"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Apollo.13.1995.576p.BluRay.x264-HANDJOB",
+    "expect": {
+      "title": "Apollo 13",
+      "year": 1995,
+      "quality": {
+        "source": "bluray",
+        "resolution": 576,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "HANDJOB"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Apollo 13 (1995) [2160p UHD BluRay x265 HDR DTS-HD MA 5.1]-TERMiNAL",
+    "expect": {
+      "title": "Apollo 13",
+      "year": 1995,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Apollo.13.1995.COMPLETE.UHD.BLURAY-GUHZER",
+    "expect": {
+      "title": "Apollo 13",
+      "year": 1995,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "brdisk"
+      },
+      "releaseGroup": "GUHZER"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Apollo 13 (1995) [1080p WEB-DL DDP5.1 H.264]-NTb",
+    "expect": {
+      "title": "Apollo 13",
+      "year": 1995,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Apollo.13.1995.720p.WEB.H264-STRiFE",
+    "expect": {
+      "title": "Apollo 13",
+      "year": 1995,
+      "quality": {
+        "source": "webdl",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "STRiFE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Apollo 13 (1995) [DVDRip XviD]-DiAMOND",
+    "expect": {
+      "title": "Apollo 13",
+      "year": 1995,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Apollo.13.1995.CAM.x264-COLLECTiVE",
+    "expect": {
+      "title": "Apollo 13",
+      "year": 1995,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "COLLECTiVE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Apollo 13 (1995) [HDTS 720p]-PLAYNOW",
+    "expect": {
+      "title": "Apollo 13",
+      "year": 1995,
+      "quality": {
+        "source": "telesync",
+        "resolution": 720,
+        "modifier": "none"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Fantastic.Four.2015.BDRip.x264-CiNEFiLE",
+    "expect": {
+      "title": "Fantastic Four",
+      "year": 2015,
+      "quality": {
+        "source": "bluray",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "CiNEFiLE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Fantastic Four (2015) [1080p BluRay REMUX AVC DTS-HD MA 5.1]-FGT",
+    "expect": {
+      "title": "Fantastic Four",
+      "year": 2015,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Fantastic.Four.2015.1080p.COMPLETE.BLURAY.AVC.DTS-HD.MA.5.1-HDCLUB",
+    "expect": {
+      "title": "Fantastic Four",
+      "year": 2015,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "brdisk"
+      },
+      "releaseGroup": "HDCLUB"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Fantastic Four (2015) [2160p AMZN WEB-DL DDP5.1 HDR10+ HEVC]-FLUX",
+    "expect": {
+      "title": "Fantastic Four",
+      "year": 2015,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr10plus"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Fantastic.Four.2015.HDTV.x264-LOL",
+    "expect": {
+      "title": "Fantastic Four",
+      "year": 2015,
+      "quality": {
+        "source": "tv",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "LOL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Fantastic Four (2015) [PAL DVDR]-NORDiC",
+    "expect": {
+      "title": "Fantastic Four",
+      "year": 2015,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Fantastic.Four.2015.HDCAM-NoGrp",
+    "expect": {
+      "title": "Fantastic Four",
+      "year": 2015,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "releaseGroup": "NoGrp"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Fantastic Four (2015) [TELECINE XviD]-TCX",
+    "expect": {
+      "title": "Fantastic Four",
+      "year": 2015,
+      "quality": {
+        "source": "telecine",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Fantastic.Four.2015.R5.LINE.XviD-REGIONAL",
+    "expect": {
+      "title": "Fantastic Four",
+      "year": 2015,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "regional"
+      },
+      "codec": "xvid",
+      "releaseGroup": "REGIONAL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Fantastic Four (2015) [1080p WEB-DL AV1 Opus]-Vyndros",
+    "expect": {
+      "title": "Fantastic Four",
+      "year": 2015,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "av1"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Pacific.Rim.2013.720p.BluRay.x264-AMIABLE",
+    "expect": {
+      "title": "Pacific Rim",
+      "year": 2013,
+      "quality": {
+        "source": "bluray",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "AMIABLE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Pacific Rim (2013) [1080p WEBRip x264 AAC]-YTS",
+    "expect": {
+      "title": "Pacific Rim",
+      "year": 2013,
+      "quality": {
+        "source": "webrip",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Pacific.Rim.2013.720p.HDTV.x264-DIMENSION",
+    "expect": {
+      "title": "Pacific Rim",
+      "year": 2013,
+      "quality": {
+        "source": "tv",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "DIMENSION"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Pacific Rim (2013) [NTSC DVD9]-SDDVD",
+    "expect": {
+      "title": "Pacific Rim",
+      "year": 2013,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Pacific.Rim.2013.TELESYNC.XviD-AXXO",
+    "expect": {
+      "title": "Pacific Rim",
+      "year": 2013,
+      "quality": {
+        "source": "telesync",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "AXXO"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Pacific Rim (2013) [WORKPRINT XviD]-WP",
+    "expect": {
+      "title": "Pacific Rim",
+      "year": 2013,
+      "quality": {
+        "source": "workprint",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Pacific.Rim.2013.1080p.BluRay.3D.Half-SBS.x264-CHD",
+    "expect": {
+      "title": "Pacific Rim",
+      "year": 2013,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "threeD": true,
+      "releaseGroup": "CHD"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Pacific Rim (2013) [1080i BluRay REMUX VC-1 DTS-HD MA 5.1]-KRaLiMaRKo",
+    "expect": {
+      "title": "Pacific Rim",
+      "year": 2013,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "vc1"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Pacific.Rim.2013.1080p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "Pacific Rim",
+      "year": 2013,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "SPARKS"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Pacific Rim (2013) [2160p BluRay REMUX HEVC DV HDR10 TrueHD 7.1 Atmos]-FraMeSToR",
+    "expect": {
+      "title": "Pacific Rim",
+      "year": 2013,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "remux"
+      },
+      "codec": "hevc",
+      "hdr": ["dv", "hdr10"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Dune.Part.Two.2024.DVDRip.XviD-DiAMOND",
+    "expect": {
+      "title": "Dune Part Two",
+      "year": 2024,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "DiAMOND"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Dune Part Two (2024) [CAM x264]-COLLECTiVE",
+    "expect": {
+      "title": "Dune Part Two",
+      "year": 2024,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Dune.Part.Two.2024.HDTS.720p-PLAYNOW",
+    "expect": {
+      "title": "Dune Part Two",
+      "year": 2024,
+      "quality": {
+        "source": "telesync",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "releaseGroup": "PLAYNOW"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Dune Part Two (2024) [DVDSCR XviD]-MAXSPEED",
+    "expect": {
+      "title": "Dune Part Two",
+      "year": 2024,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "screener"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Dune.Part.Two.2024.2160p.WEB-DL.DV.HEVC-NOGROUP",
+    "expect": {
+      "title": "Dune Part Two",
+      "year": 2024,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["dv"],
+      "releaseGroup": "NOGROUP"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Dune Part Two (2024) [576p BluRay x264]-HANDJOB",
+    "expect": {
+      "title": "Dune Part Two",
+      "year": 2024,
+      "quality": {
+        "source": "bluray",
+        "resolution": 576,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Dune.Part.Two.2024.2160p.UHD.BluRay.x265.HDR.DTS-HD.MA.5.1-TERMiNAL",
+    "expect": {
+      "title": "Dune Part Two",
+      "year": 2024,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr"],
+      "releaseGroup": "TERMiNAL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Dune Part Two (2024) [COMPLETE UHD BLURAY]-GUHZER",
+    "expect": {
+      "title": "Dune Part Two",
+      "year": 2024,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "brdisk"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Dune.Part.Two.2024.1080p.WEB-DL.DDP5.1.H.264-NTb",
+    "expect": {
+      "title": "Dune Part Two",
+      "year": 2024,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "NTb"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Dune Part Two (2024) [720p WEB H264]-STRiFE",
+    "expect": {
+      "title": "Dune Part Two",
+      "year": 2024,
+      "quality": {
+        "source": "webdl",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Parasite.2019.TELECINE.XviD-TCX",
+    "expect": {
+      "title": "Parasite",
+      "year": 2019,
+      "quality": {
+        "source": "telecine",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "TCX"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Parasite (2019) [R5 LINE XviD]-REGIONAL",
+    "expect": {
+      "title": "Parasite",
+      "year": 2019,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "regional"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Parasite.2019.1080p.WEB-DL.AV1.Opus-Vyndros",
+    "expect": {
+      "title": "Parasite",
+      "year": 2019,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "av1",
+      "releaseGroup": "Vyndros"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Parasite (2019) [BDRip x264]-CiNEFiLE",
+    "expect": {
+      "title": "Parasite",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Parasite.2019.1080p.BluRay.REMUX.AVC.DTS-HD.MA.5.1-FGT",
+    "expect": {
+      "title": "Parasite",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "avc",
+      "releaseGroup": "FGT"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Parasite (2019) [1080p COMPLETE BLURAY AVC DTS-HD MA 5.1]-HDCLUB",
+    "expect": {
+      "title": "Parasite",
+      "year": 2019,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "brdisk"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Parasite.2019.2160p.AMZN.WEB-DL.DDP5.1.HDR10+.HEVC-FLUX",
+    "expect": {
+      "title": "Parasite",
+      "year": 2019,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr10plus"],
+      "releaseGroup": "FLUX"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Parasite (2019) [HDTV x264]-LOL",
+    "expect": {
+      "title": "Parasite",
+      "year": 2019,
+      "quality": {
+        "source": "tv",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Parasite.2019.PAL.DVDR-NORDiC",
+    "expect": {
+      "title": "Parasite",
+      "year": 2019,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      },
+      "releaseGroup": "NORDiC"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Parasite (2019) [HDCAM]-NoGrp",
+    "expect": {
+      "title": "Parasite",
+      "year": 2019,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Gladiator.2000.1080i.BluRay.REMUX.VC-1.DTS-HD.MA.5.1-KRaLiMaRKo",
+    "expect": {
+      "title": "Gladiator",
+      "year": 2000,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "vc1",
+      "releaseGroup": "KRaLiMaRKo"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Gladiator (2000) [1080p BluRay x264]-SPARKS",
+    "expect": {
+      "title": "Gladiator",
+      "year": 2000,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Gladiator.2000.2160p.BluRay.REMUX.HEVC.DV.HDR10.TrueHD.7.1.Atmos-FraMeSToR",
+    "expect": {
+      "title": "Gladiator",
+      "year": 2000,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "remux"
+      },
+      "codec": "hevc",
+      "hdr": ["dv", "hdr10"],
+      "releaseGroup": "FraMeSToR"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Gladiator (2000) [720p BluRay x264]-AMIABLE",
+    "expect": {
+      "title": "Gladiator",
+      "year": 2000,
+      "quality": {
+        "source": "bluray",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Gladiator.2000.1080p.WEBRip.x264.AAC-YTS",
+    "expect": {
+      "title": "Gladiator",
+      "year": 2000,
+      "quality": {
+        "source": "webrip",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "YTS"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Gladiator (2000) [720p HDTV x264]-DIMENSION",
+    "expect": {
+      "title": "Gladiator",
+      "year": 2000,
+      "quality": {
+        "source": "tv",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Gladiator.2000.NTSC.DVD9-SDDVD",
+    "expect": {
+      "title": "Gladiator",
+      "year": 2000,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      },
+      "releaseGroup": "SDDVD"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Gladiator (2000) [TELESYNC XviD]-AXXO",
+    "expect": {
+      "title": "Gladiator",
+      "year": 2000,
+      "quality": {
+        "source": "telesync",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Gladiator.2000.WORKPRINT.XviD-WP",
+    "expect": {
+      "title": "Gladiator",
+      "year": 2000,
+      "quality": {
+        "source": "workprint",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "WP"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Gladiator (2000) [1080p BluRay 3D Half-SBS x264]-CHD",
+    "expect": {
+      "title": "Gladiator",
+      "year": 2000,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "threeD": true
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Heat.1995.COMPLETE.UHD.BLURAY-GUHZER",
+    "expect": {
+      "title": "Heat",
+      "year": 1995,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "brdisk"
+      },
+      "releaseGroup": "GUHZER"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Heat (1995) [1080p WEB-DL DDP5.1 H.264]-NTb",
+    "expect": {
+      "title": "Heat",
+      "year": 1995,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Heat.1995.720p.WEB.H264-STRiFE",
+    "expect": {
+      "title": "Heat",
+      "year": 1995,
+      "quality": {
+        "source": "webdl",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "STRiFE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Heat (1995) [DVDRip XviD]-DiAMOND",
+    "expect": {
+      "title": "Heat",
+      "year": 1995,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Heat.1995.CAM.x264-COLLECTiVE",
+    "expect": {
+      "title": "Heat",
+      "year": 1995,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "COLLECTiVE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Heat (1995) [HDTS 720p]-PLAYNOW",
+    "expect": {
+      "title": "Heat",
+      "year": 1995,
+      "quality": {
+        "source": "telesync",
+        "resolution": 720,
+        "modifier": "none"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Heat.1995.DVDSCR.XviD-MAXSPEED",
+    "expect": {
+      "title": "Heat",
+      "year": 1995,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "screener"
+      },
+      "codec": "xvid",
+      "releaseGroup": "MAXSPEED"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Heat (1995) [2160p WEB-DL DV HEVC]-NOGROUP",
+    "expect": {
+      "title": "Heat",
+      "year": 1995,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["dv"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Heat.1995.576p.BluRay.x264-HANDJOB",
+    "expect": {
+      "title": "Heat",
+      "year": 1995,
+      "quality": {
+        "source": "bluray",
+        "resolution": 576,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "HANDJOB"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Heat (1995) [2160p UHD BluRay x265 HDR DTS-HD MA 5.1]-TERMiNAL",
+    "expect": {
+      "title": "Heat",
+      "year": 1995,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Brazil.1985.HDTV.x264-LOL",
+    "expect": {
+      "title": "Brazil",
+      "year": 1985,
+      "quality": {
+        "source": "tv",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "LOL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Brazil (1985) [PAL DVDR]-NORDiC",
+    "expect": {
+      "title": "Brazil",
+      "year": 1985,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Brazil.1985.HDCAM-NoGrp",
+    "expect": {
+      "title": "Brazil",
+      "year": 1985,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "releaseGroup": "NoGrp"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Brazil (1985) [TELECINE XviD]-TCX",
+    "expect": {
+      "title": "Brazil",
+      "year": 1985,
+      "quality": {
+        "source": "telecine",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Brazil.1985.R5.LINE.XviD-REGIONAL",
+    "expect": {
+      "title": "Brazil",
+      "year": 1985,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "regional"
+      },
+      "codec": "xvid",
+      "releaseGroup": "REGIONAL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Brazil (1985) [1080p WEB-DL AV1 Opus]-Vyndros",
+    "expect": {
+      "title": "Brazil",
+      "year": 1985,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "av1"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Brazil.1985.BDRip.x264-CiNEFiLE",
+    "expect": {
+      "title": "Brazil",
+      "year": 1985,
+      "quality": {
+        "source": "bluray",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "CiNEFiLE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Brazil (1985) [1080p BluRay REMUX AVC DTS-HD MA 5.1]-FGT",
+    "expect": {
+      "title": "Brazil",
+      "year": 1985,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Brazil.1985.1080p.COMPLETE.BLURAY.AVC.DTS-HD.MA.5.1-HDCLUB",
+    "expect": {
+      "title": "Brazil",
+      "year": 1985,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "brdisk"
+      },
+      "releaseGroup": "HDCLUB"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Brazil (1985) [2160p AMZN WEB-DL DDP5.1 HDR10+ HEVC]-FLUX",
+    "expect": {
+      "title": "Brazil",
+      "year": 1985,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr10plus"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Leon.The.Professional.1994.TELESYNC.XviD-AXXO",
+    "expect": {
+      "title": "Leon The Professional",
+      "year": 1994,
+      "quality": {
+        "source": "telesync",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "AXXO"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Leon The Professional (1994) [WORKPRINT XviD]-WP",
+    "expect": {
+      "title": "Leon The Professional",
+      "year": 1994,
+      "quality": {
+        "source": "workprint",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Leon.The.Professional.1994.1080p.BluRay.3D.Half-SBS.x264-CHD",
+    "expect": {
+      "title": "Leon The Professional",
+      "year": 1994,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "threeD": true,
+      "releaseGroup": "CHD"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Leon The Professional (1994) [1080i BluRay REMUX VC-1 DTS-HD MA 5.1]-KRaLiMaRKo",
+    "expect": {
+      "title": "Leon The Professional",
+      "year": 1994,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "vc1"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Leon.The.Professional.1994.1080p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "Leon The Professional",
+      "year": 1994,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "SPARKS"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Leon The Professional (1994) [2160p BluRay REMUX HEVC DV HDR10 TrueHD 7.1 Atmos]-FraMeSToR",
+    "expect": {
+      "title": "Leon The Professional",
+      "year": 1994,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "remux"
+      },
+      "codec": "hevc",
+      "hdr": ["dv", "hdr10"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Leon.The.Professional.1994.720p.BluRay.x264-AMIABLE",
+    "expect": {
+      "title": "Leon The Professional",
+      "year": 1994,
+      "quality": {
+        "source": "bluray",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "AMIABLE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Leon The Professional (1994) [1080p WEBRip x264 AAC]-YTS",
+    "expect": {
+      "title": "Leon The Professional",
+      "year": 1994,
+      "quality": {
+        "source": "webrip",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Leon.The.Professional.1994.720p.HDTV.x264-DIMENSION",
+    "expect": {
+      "title": "Leon The Professional",
+      "year": 1994,
+      "quality": {
+        "source": "tv",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "DIMENSION"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Leon The Professional (1994) [NTSC DVD9]-SDDVD",
+    "expect": {
+      "title": "Leon The Professional",
+      "year": 1994,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Crouching.Tiger.Hidden.Dragon.2000.2160p.WEB-DL.DV.HEVC-NOGROUP",
+    "expect": {
+      "title": "Crouching Tiger Hidden Dragon",
+      "year": 2000,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["dv"],
+      "releaseGroup": "NOGROUP"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Crouching Tiger Hidden Dragon (2000) [576p BluRay x264]-HANDJOB",
+    "expect": {
+      "title": "Crouching Tiger Hidden Dragon",
+      "year": 2000,
+      "quality": {
+        "source": "bluray",
+        "resolution": 576,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Crouching.Tiger.Hidden.Dragon.2000.2160p.UHD.BluRay.x265.HDR.DTS-HD.MA.5.1-TERMiNAL",
+    "expect": {
+      "title": "Crouching Tiger Hidden Dragon",
+      "year": 2000,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr"],
+      "releaseGroup": "TERMiNAL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Crouching Tiger Hidden Dragon (2000) [COMPLETE UHD BLURAY]-GUHZER",
+    "expect": {
+      "title": "Crouching Tiger Hidden Dragon",
+      "year": 2000,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "brdisk"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Crouching.Tiger.Hidden.Dragon.2000.1080p.WEB-DL.DDP5.1.H.264-NTb",
+    "expect": {
+      "title": "Crouching Tiger Hidden Dragon",
+      "year": 2000,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "NTb"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Crouching Tiger Hidden Dragon (2000) [720p WEB H264]-STRiFE",
+    "expect": {
+      "title": "Crouching Tiger Hidden Dragon",
+      "year": 2000,
+      "quality": {
+        "source": "webdl",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Crouching.Tiger.Hidden.Dragon.2000.DVDRip.XviD-DiAMOND",
+    "expect": {
+      "title": "Crouching Tiger Hidden Dragon",
+      "year": 2000,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "DiAMOND"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Crouching Tiger Hidden Dragon (2000) [CAM x264]-COLLECTiVE",
+    "expect": {
+      "title": "Crouching Tiger Hidden Dragon",
+      "year": 2000,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Crouching.Tiger.Hidden.Dragon.2000.HDTS.720p-PLAYNOW",
+    "expect": {
+      "title": "Crouching Tiger Hidden Dragon",
+      "year": 2000,
+      "quality": {
+        "source": "telesync",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "releaseGroup": "PLAYNOW"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Crouching Tiger Hidden Dragon (2000) [DVDSCR XviD]-MAXSPEED",
+    "expect": {
+      "title": "Crouching Tiger Hidden Dragon",
+      "year": 2000,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "screener"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Thing.1982.1080p.BluRay.REMUX.AVC.DTS-HD.MA.5.1-FGT",
+    "expect": {
+      "title": "The Thing",
+      "year": 1982,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "avc",
+      "releaseGroup": "FGT"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Thing (1982) [1080p COMPLETE BLURAY AVC DTS-HD MA 5.1]-HDCLUB",
+    "expect": {
+      "title": "The Thing",
+      "year": 1982,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "brdisk"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Thing.1982.2160p.AMZN.WEB-DL.DDP5.1.HDR10+.HEVC-FLUX",
+    "expect": {
+      "title": "The Thing",
+      "year": 1982,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr10plus"],
+      "releaseGroup": "FLUX"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Thing (1982) [HDTV x264]-LOL",
+    "expect": {
+      "title": "The Thing",
+      "year": 1982,
+      "quality": {
+        "source": "tv",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Thing.1982.PAL.DVDR-NORDiC",
+    "expect": {
+      "title": "The Thing",
+      "year": 1982,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      },
+      "releaseGroup": "NORDiC"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Thing (1982) [HDCAM]-NoGrp",
+    "expect": {
+      "title": "The Thing",
+      "year": 1982,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Thing.1982.TELECINE.XviD-TCX",
+    "expect": {
+      "title": "The Thing",
+      "year": 1982,
+      "quality": {
+        "source": "telecine",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "TCX"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Thing (1982) [R5 LINE XviD]-REGIONAL",
+    "expect": {
+      "title": "The Thing",
+      "year": 1982,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "regional"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The.Thing.1982.1080p.WEB-DL.AV1.Opus-Vyndros",
+    "expect": {
+      "title": "The Thing",
+      "year": 1982,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "av1",
+      "releaseGroup": "Vyndros"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "The Thing (1982) [BDRip x264]-CiNEFiLE",
+    "expect": {
+      "title": "The Thing",
+      "year": 1982,
+      "quality": {
+        "source": "bluray",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Rocky.IV.1985.1080p.WEBRip.x264.AAC-YTS",
+    "expect": {
+      "title": "Rocky IV",
+      "year": 1985,
+      "quality": {
+        "source": "webrip",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "YTS"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Rocky IV (1985) [720p HDTV x264]-DIMENSION",
+    "expect": {
+      "title": "Rocky IV",
+      "year": 1985,
+      "quality": {
+        "source": "tv",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Rocky.IV.1985.NTSC.DVD9-SDDVD",
+    "expect": {
+      "title": "Rocky IV",
+      "year": 1985,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      },
+      "releaseGroup": "SDDVD"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Rocky IV (1985) [TELESYNC XviD]-AXXO",
+    "expect": {
+      "title": "Rocky IV",
+      "year": 1985,
+      "quality": {
+        "source": "telesync",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Rocky.IV.1985.WORKPRINT.XviD-WP",
+    "expect": {
+      "title": "Rocky IV",
+      "year": 1985,
+      "quality": {
+        "source": "workprint",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid",
+      "releaseGroup": "WP"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Rocky IV (1985) [1080p BluRay 3D Half-SBS x264]-CHD",
+    "expect": {
+      "title": "Rocky IV",
+      "year": 1985,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "threeD": true
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Rocky.IV.1985.1080i.BluRay.REMUX.VC-1.DTS-HD.MA.5.1-KRaLiMaRKo",
+    "expect": {
+      "title": "Rocky IV",
+      "year": 1985,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "vc1",
+      "releaseGroup": "KRaLiMaRKo"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Rocky IV (1985) [1080p BluRay x264]-SPARKS",
+    "expect": {
+      "title": "Rocky IV",
+      "year": 1985,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Rocky.IV.1985.2160p.BluRay.REMUX.HEVC.DV.HDR10.TrueHD.7.1.Atmos-FraMeSToR",
+    "expect": {
+      "title": "Rocky IV",
+      "year": 1985,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "remux"
+      },
+      "codec": "hevc",
+      "hdr": ["dv", "hdr10"],
+      "releaseGroup": "FraMeSToR"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Rocky IV (1985) [720p BluRay x264]-AMIABLE",
+    "expect": {
+      "title": "Rocky IV",
+      "year": 1985,
+      "quality": {
+        "source": "bluray",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Terminator.2.Judgment.Day.1991.CAM.x264-COLLECTiVE",
+    "expect": {
+      "title": "Terminator 2 Judgment Day",
+      "year": 1991,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "COLLECTiVE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Terminator 2 Judgment Day (1991) [HDTS 720p]-PLAYNOW",
+    "expect": {
+      "title": "Terminator 2 Judgment Day",
+      "year": 1991,
+      "quality": {
+        "source": "telesync",
+        "resolution": 720,
+        "modifier": "none"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Terminator.2.Judgment.Day.1991.DVDSCR.XviD-MAXSPEED",
+    "expect": {
+      "title": "Terminator 2 Judgment Day",
+      "year": 1991,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "screener"
+      },
+      "codec": "xvid",
+      "releaseGroup": "MAXSPEED"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Terminator 2 Judgment Day (1991) [2160p WEB-DL DV HEVC]-NOGROUP",
+    "expect": {
+      "title": "Terminator 2 Judgment Day",
+      "year": 1991,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["dv"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Terminator.2.Judgment.Day.1991.576p.BluRay.x264-HANDJOB",
+    "expect": {
+      "title": "Terminator 2 Judgment Day",
+      "year": 1991,
+      "quality": {
+        "source": "bluray",
+        "resolution": 576,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "HANDJOB"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Terminator 2 Judgment Day (1991) [2160p UHD BluRay x265 HDR DTS-HD MA 5.1]-TERMiNAL",
+    "expect": {
+      "title": "Terminator 2 Judgment Day",
+      "year": 1991,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Terminator.2.Judgment.Day.1991.COMPLETE.UHD.BLURAY-GUHZER",
+    "expect": {
+      "title": "Terminator 2 Judgment Day",
+      "year": 1991,
+      "quality": {
+        "source": "bluray",
+        "resolution": 2160,
+        "modifier": "brdisk"
+      },
+      "releaseGroup": "GUHZER"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Terminator 2 Judgment Day (1991) [1080p WEB-DL DDP5.1 H.264]-NTb",
+    "expect": {
+      "title": "Terminator 2 Judgment Day",
+      "year": 1991,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Terminator.2.Judgment.Day.1991.720p.WEB.H264-STRiFE",
+    "expect": {
+      "title": "Terminator 2 Judgment Day",
+      "year": 1991,
+      "quality": {
+        "source": "webdl",
+        "resolution": 720,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "STRiFE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Terminator 2 Judgment Day (1991) [DVDRip XviD]-DiAMOND",
+    "expect": {
+      "title": "Terminator 2 Judgment Day",
+      "year": 1991,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Godzilla.Minus.One.2023.R5.LINE.XviD-REGIONAL",
+    "expect": {
+      "title": "Godzilla Minus One",
+      "year": 2023,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "regional"
+      },
+      "codec": "xvid",
+      "releaseGroup": "REGIONAL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Godzilla Minus One (2023) [1080p WEB-DL AV1 Opus]-Vyndros",
+    "expect": {
+      "title": "Godzilla Minus One",
+      "year": 2023,
+      "quality": {
+        "source": "webdl",
+        "resolution": 1080,
+        "modifier": "none"
+      },
+      "codec": "av1"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Godzilla.Minus.One.2023.BDRip.x264-CiNEFiLE",
+    "expect": {
+      "title": "Godzilla Minus One",
+      "year": 2023,
+      "quality": {
+        "source": "bluray",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "CiNEFiLE"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Godzilla Minus One (2023) [1080p BluRay REMUX AVC DTS-HD MA 5.1]-FGT",
+    "expect": {
+      "title": "Godzilla Minus One",
+      "year": 2023,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "remux"
+      },
+      "codec": "avc"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Godzilla.Minus.One.2023.1080p.COMPLETE.BLURAY.AVC.DTS-HD.MA.5.1-HDCLUB",
+    "expect": {
+      "title": "Godzilla Minus One",
+      "year": 2023,
+      "quality": {
+        "source": "bluray",
+        "resolution": 1080,
+        "modifier": "brdisk"
+      },
+      "releaseGroup": "HDCLUB"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Godzilla Minus One (2023) [2160p AMZN WEB-DL DDP5.1 HDR10+ HEVC]-FLUX",
+    "expect": {
+      "title": "Godzilla Minus One",
+      "year": 2023,
+      "quality": {
+        "source": "webdl",
+        "resolution": 2160,
+        "modifier": "none"
+      },
+      "codec": "hevc",
+      "hdr": ["hdr10plus"]
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Godzilla.Minus.One.2023.HDTV.x264-LOL",
+    "expect": {
+      "title": "Godzilla Minus One",
+      "year": 2023,
+      "quality": {
+        "source": "tv",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "avc",
+      "releaseGroup": "LOL"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Godzilla Minus One (2023) [PAL DVDR]-NORDiC",
+    "expect": {
+      "title": "Godzilla Minus One",
+      "year": 2023,
+      "quality": {
+        "source": "dvd",
+        "resolution": null,
+        "modifier": "remux"
+      }
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Godzilla.Minus.One.2023.HDCAM-NoGrp",
+    "expect": {
+      "title": "Godzilla Minus One",
+      "year": 2023,
+      "quality": {
+        "source": "cam",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "releaseGroup": "NoGrp"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Godzilla Minus One (2023) [TELECINE XviD]-TCX",
+    "expect": {
+      "title": "Godzilla Minus One",
+      "year": 2023,
+      "quality": {
+        "source": "telecine",
+        "resolution": null,
+        "modifier": "none"
+      },
+      "codec": "xvid"
+    },
+    "from": "highsea, written for the parser: scene layout (2020 x265 rules 18.4.1) and P2P layout"
+  },
+  {
+    "name": "Blade.Runner.1982.The.Final.Cut.1080p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "Blade Runner",
+      "edition": "Final Cut"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Apocalypse.Now.1979.Redux.1080p.BluRay.x264-AMIABLE",
+    "expect": {
+      "title": "Apocalypse Now",
+      "edition": "Redux"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Aliens.1986.Special.Edition.1080p.BluRay.x264-SADPANDA",
+    "expect": {
+      "title": "Aliens",
+      "edition": "Special Edition"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "The.Lord.of.the.Rings.The.Fellowship.of.the.Ring.2001.EXTENDED.1080p.BluRay.x264-FSiHD",
+    "expect": {
+      "title": "The Lord of the Rings The Fellowship of the Ring",
+      "edition": "EXTENDED"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Kingdom.of.Heaven.2005.Directors.Cut.720p.BluRay.x264-HiDt",
+    "expect": {
+      "title": "Kingdom of Heaven",
+      "edition": "Directors Cut"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Watchmen.2009.Director's.Cut.1080p.BluRay.x264-EbP",
+    "expect": {
+      "title": "Watchmen",
+      "edition": "Director's Cut"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Watchmen.2009.Ultimate.Cut.1080p.BluRay.x264-OldsMan",
+    "expect": {
+      "title": "Watchmen",
+      "edition": "Ultimate Cut"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Amadeus.1984.DC.1080p.BluRay.x264-CiNEFiLE",
+    "expect": {
+      "title": "Amadeus",
+      "edition": "DC"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Dune.2021.IMAX.2160p.WEB-DL.DDP5.1.Atmos.DV.HEVC-CMRG",
+    "expect": {
+      "title": "Dune",
+      "edition": "IMAX"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Avatar.2009.Extended.Collectors.Edition.1080p.BluRay.x264-DON",
+    "expect": {
+      "title": "Avatar",
+      "edition": "Extended Collectors Edition"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "The.Exorcist.1973.Theatrical.1080p.BluRay.x264-PHOBOS",
+    "expect": {
+      "title": "The Exorcist",
+      "edition": "Theatrical"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Caligula.1979.UNRATED.1080p.BluRay.x264-CREEPSHOW",
+    "expect": {
+      "title": "Caligula",
+      "edition": "UNRATED"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Dawn.of.the.Dead.2004.UNCUT.720p.BluRay.x264-HDEX",
+    "expect": {
+      "title": "Dawn of the Dead",
+      "edition": "UNCUT"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Jaws.1975.REMASTERED.1080p.BluRay.x264-SADPANDA",
+    "expect": {
+      "title": "Jaws",
+      "edition": "REMASTERED"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Metropolis.1927.Restored.1080p.BluRay.x264-CiNEFiLE",
+    "expect": {
+      "title": "Metropolis",
+      "edition": "Restored"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "The.Seventh.Seal.1957.Criterion.Collection.1080p.BluRay.x264-CRiSC",
+    "expect": {
+      "title": "The Seventh Seal",
+      "edition": "Criterion Collection"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Zack.Snyders.Justice.League.2021.Open.Matte.2160p.HMAX.WEB-DL.DDP5.1.HDR.HEVC-FLUX",
+    "expect": {
+      "title": "Zack Snyders Justice League",
+      "edition": "Open Matte"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Terminator.2.Judgment.Day.1991.Extended.Remastered.1080p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "Terminator 2 Judgment Day",
+      "edition": "Extended Remastered"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Brazil.1985.Final.Cut.720p.BluRay.x264-HDEX",
+    "expect": {
+      "title": "Brazil",
+      "edition": "Final Cut"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Star.Wars.1977.Despecialized.Edition.720p.x264-HARMY",
+    "expect": {
+      "title": "Star Wars",
+      "edition": "Despecialized Edition"
+    },
+    "from": "highsea, written for the parser: edition tags (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Heat.1995.PROPER.1080p.BluRay.x264-SADPANDA",
+    "expect": {
+      "title": "Heat",
+      "quality": {
+        "revision": {
+          "version": 2,
+          "real": 0,
+          "proper": true,
+          "repack": false
+        }
+      }
+    },
+    "from": "highsea, written for the parser: revisions (Servarr wiki, Quality)"
+  },
+  {
+    "name": "Heat.1995.REPACK.1080p.BluRay.x264-SADPANDA",
+    "expect": {
+      "title": "Heat",
+      "quality": {
+        "revision": {
+          "version": 2,
+          "real": 0,
+          "proper": false,
+          "repack": true
+        }
+      }
+    },
+    "from": "highsea, written for the parser: revisions (Servarr wiki, Quality)"
+  },
+  {
+    "name": "Heat.1995.REPACK2.1080p.BluRay.x264-SADPANDA",
+    "expect": {
+      "title": "Heat",
+      "quality": {
+        "revision": {
+          "version": 3,
+          "real": 0,
+          "proper": false,
+          "repack": true
+        }
+      }
+    },
+    "from": "highsea, written for the parser: revisions (Servarr wiki, Quality)"
+  },
+  {
+    "name": "Heat.1995.REAL.PROPER.1080p.BluRay.x264-SADPANDA",
+    "expect": {
+      "title": "Heat",
+      "quality": {
+        "revision": {
+          "version": 2,
+          "real": 1,
+          "proper": true,
+          "repack": false
+        }
+      }
+    },
+    "from": "highsea, written for the parser: revisions (Servarr wiki, Quality)"
+  },
+  {
+    "name": "Heat.1995.REAL.REAL.1080p.BluRay.x264-SADPANDA",
+    "expect": {
+      "title": "Heat",
+      "quality": {
+        "revision": {
+          "version": 1,
+          "real": 2,
+          "proper": false,
+          "repack": false
+        }
+      }
+    },
+    "from": "highsea, written for the parser: revisions (Servarr wiki, Quality)"
+  },
+  {
+    "name": "Heat.1995.1080p.BluRay.x264.v2-SADPANDA",
+    "expect": {
+      "title": "Heat",
+      "quality": {
+        "revision": {
+          "version": 2,
+          "real": 0,
+          "proper": false,
+          "repack": false
+        }
+      }
+    },
+    "from": "highsea, written for the parser: revisions (Servarr wiki, Quality)"
+  },
+  {
+    "name": "Heat.1995.1080p.BluRay.x264-SADPANDA",
+    "expect": {
+      "title": "Heat",
+      "quality": {
+        "revision": {
+          "version": 1,
+          "real": 0,
+          "proper": false,
+          "repack": false
+        }
+      }
+    },
+    "from": "highsea, written for the parser: revisions (Servarr wiki, Quality)"
+  },
+  {
+    "name": "Arrival.2016.RERiP.1080p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "Arrival",
+      "quality": {
+        "revision": {
+          "version": 2,
+          "real": 0,
+          "proper": false,
+          "repack": true
+        }
+      }
+    },
+    "from": "highsea, written for the parser: revisions (Servarr wiki, Quality)"
+  },
+  {
+    "name": "Amélie.2001.FRENCH.1080p.BluRay.x264-LOST",
+    "expect": {
+      "title": "Amélie",
+      "languages": ["fr"],
+      "multi": false
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Amélie.2001.MULTi.1080p.BluRay.x264-LOST",
+    "expect": {
+      "title": "Amélie",
+      "languages": [],
+      "multi": true
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Amélie.2001.MULTi.VFF.1080p.BluRay.x264-LOST",
+    "expect": {
+      "title": "Amélie",
+      "multi": true
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Parasite.2019.KOREAN.1080p.BluRay.x264-REGRET",
+    "expect": {
+      "title": "Parasite",
+      "languages": ["ko"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Parasite.2019.1080p.BluRay.x264.DUAL-REGRET",
+    "expect": {
+      "title": "Parasite",
+      "multi": true
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Leon.1994.GERMAN.DL.1080p.BluRay.x264-DETAiLS",
+    "expect": {
+      "title": "Leon",
+      "languages": ["de"],
+      "multi": true
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Der.Untergang.2004.GERMAN.720p.BluRay.x264-DETAiLS",
+    "expect": {
+      "title": "Der Untergang",
+      "languages": ["de"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "La.Haine.1995.FRENCH.VOSTFR.1080p.BluRay.x264-FiDELiO",
+    "expect": {
+      "title": "La Haine",
+      "languages": ["fr"],
+      "subtitles": ["fr"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Insomnia.1997.SWESUB.720p.BluRay.x264-NORDiC",
+    "expect": {
+      "title": "Insomnia",
+      "subtitles": ["sv"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Insomnia.1997.NORWEGIAN.1080p.BluRay.x264-NORDiC",
+    "expect": {
+      "title": "Insomnia",
+      "languages": ["no"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Festen.1998.DANISH.1080p.BluRay.x264-NORDiC",
+    "expect": {
+      "title": "Festen",
+      "languages": ["da"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Roma.2018.SPANISH.1080p.NF.WEB-DL.DDP5.1.x264-NTG",
+    "expect": {
+      "title": "Roma",
+      "languages": ["es"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Il.Postino.1994.iTALiAN.720p.BluRay.x264-Ozzy",
+    "expect": {
+      "title": "Il Postino",
+      "languages": ["it"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Leviathan.2014.RUSSIAN.1080p.BluRay.x264-USURY",
+    "expect": {
+      "title": "Leviathan",
+      "languages": ["ru"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Ida.2013.POLISH.1080p.BluRay.x264-USURY",
+    "expect": {
+      "title": "Ida",
+      "languages": ["pl"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Shoplifters.2018.JAPANESE.1080p.BluRay.x264-WiKi",
+    "expect": {
+      "title": "Shoplifters",
+      "languages": ["ja"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Hero.2002.CHINESE.1080p.BluRay.x264-WiKi",
+    "expect": {
+      "title": "Hero",
+      "languages": ["zh"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "City.of.God.2002.PORTUGUESE.1080p.BluRay.x264-USURY",
+    "expect": {
+      "title": "City of God",
+      "languages": ["pt"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Arrival.2016.1080p.BluRay.x264.ENG.ITA-SPARKS",
+    "expect": {
+      "title": "Arrival",
+      "languages": ["en", "it"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Arrival 2016 1080p BluRay x264 [Eng Fre Ger]",
+    "expect": {
+      "title": "Arrival",
+      "languages": ["en", "fr", "de"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Arrival.2016.1080p.BluRay.x264.HUN-SPARKS",
+    "expect": {
+      "title": "Arrival",
+      "languages": ["hu"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Arrival.2016.1080p.BluRay.x264.CZECH-SPARKS",
+    "expect": {
+      "title": "Arrival",
+      "languages": ["cs"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Arrival.2016.1080p.BluRay.x264.TURKISH-SPARKS",
+    "expect": {
+      "title": "Arrival",
+      "languages": ["tr"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Arrival.2016.1080p.BluRay.x264.HINDI-SPARKS",
+    "expect": {
+      "title": "Arrival",
+      "languages": ["hi"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Arrival.2016.1080p.BluRay.x264.DUTCH-SPARKS",
+    "expect": {
+      "title": "Arrival",
+      "languages": ["nl"]
+    },
+    "from": "highsea, written for the parser: language tags as ISO 639-1; MULTi and DUAL set multi"
+  },
+  {
+    "name": "Parasite.2019.HC.1080p.WEBRip.x264-RARBG",
+    "expect": {
+      "title": "Parasite",
+      "hardcodedSubs": "HC"
+    },
+    "from": "highsea, written for the parser: hardcoded subtitles (Servarr wiki, Quality)"
+  },
+  {
+    "name": "Parasite.2019.KORSUB.1080p.WEBRip.x264-RARBG",
+    "expect": {
+      "title": "Parasite",
+      "hardcodedSubs": "KORSUB"
+    },
+    "from": "highsea, written for the parser: hardcoded subtitles (Servarr wiki, Quality)"
+  },
+  {
+    "name": "Arrival.2016.HC.HDRip.XviD-EVO",
+    "expect": {
+      "title": "Arrival",
+      "hardcodedSubs": "HC"
+    },
+    "from": "highsea, written for the parser: hardcoded subtitles (Servarr wiki, Quality)"
+  },
+  {
+    "name": "Parasite.2019.1080p.BluRay.x264-REGRET",
+    "expect": {
+      "title": "Parasite",
+      "hardcodedSubs": null
+    },
+    "from": "highsea, written for the parser"
+  },
+  {
+    "name": "The Shawshank Redemption (1994) {imdb-tt0111161} [Bluray-1080p]",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "ids": {
+        "imdb": "tt0111161",
+        "tmdb": null
+      }
+    },
+    "from": "highsea, written for the parser: ids in Radarr’s naming tokens (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "The Shawshank Redemption (1994) {tmdb-278} [Bluray-1080p]",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "ids": {
+        "imdb": null,
+        "tmdb": 278
+      }
+    },
+    "from": "highsea, written for the parser: ids in Radarr’s naming tokens (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "The Shawshank Redemption (1994) [imdbid-tt0111161] [tmdbid-278]",
+    "expect": {
+      "title": "The Shawshank Redemption",
+      "ids": {
+        "imdb": "tt0111161",
+        "tmdb": 278
+      }
+    },
+    "from": "highsea, written for the parser: ids in Radarr’s naming tokens (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "The.Matrix.1999.tt0133093.1080p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "The Matrix",
+      "ids": {
+        "imdb": "tt0133093",
+        "tmdb": null
+      }
+    },
+    "from": "highsea, written for the parser: ids in Radarr’s naming tokens (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Arrival (2016) {tmdb-329865}",
+    "expect": {
+      "title": "Arrival",
+      "ids": {
+        "imdb": null,
+        "tmdb": 329865
+      }
+    },
+    "from": "highsea, written for the parser: ids in Radarr’s naming tokens (Servarr wiki, Radarr movie naming)"
+  },
+  {
+    "name": "Heat.1995.1080p.BluRay.DTS.x264-D-Z0N3",
+    "expect": {
+      "title": "Heat",
+      "releaseGroup": "D-Z0N3"
+    },
+    "from": "highsea, written for the parser: the -GROUP suffix (scene rules); retags and posters’ suffixes after TRaSH"
+  },
+  {
+    "name": "Heat.1995.1080p.BluRay.x264-Fight-BB",
+    "expect": {
+      "title": "Heat",
+      "releaseGroup": "Fight-BB"
+    },
+    "from": "highsea, written for the parser: the -GROUP suffix (scene rules); retags and posters’ suffixes after TRaSH"
+  },
+  {
+    "name": "Heat 1995 1080p BluRay x264",
+    "expect": {
+      "title": "Heat",
+      "releaseGroup": null
+    },
+    "from": "highsea, written for the parser: the -GROUP suffix (scene rules); retags and posters’ suffixes after TRaSH"
+  },
+  {
+    "name": "Heat.1995.1080p.BluRay.x264-SADPANDA.mkv",
+    "expect": {
+      "title": "Heat",
+      "releaseGroup": "SADPANDA"
+    },
+    "from": "highsea, written for the parser: the -GROUP suffix (scene rules); retags and posters’ suffixes after TRaSH"
+  },
+  {
+    "name": "Heat.1995.1080p.BluRay.x264-SADPANDA[rarbg]",
+    "expect": {
+      "title": "Heat",
+      "releaseGroup": "SADPANDA"
+    },
+    "from": "highsea, written for the parser: the -GROUP suffix (scene rules); retags and posters’ suffixes after TRaSH"
+  },
+  {
+    "name": "Heat.1995.1080p.BluRay.x264-SADPANDA-Obfuscated",
+    "expect": {
+      "title": "Heat",
+      "releaseGroup": "SADPANDA"
+    },
+    "from": "highsea, written for the parser: the -GROUP suffix (scene rules); retags and posters’ suffixes after TRaSH"
+  },
+  {
+    "name": "[YTS.MX] Heat (1995) [1080p] [BluRay]",
+    "expect": {
+      "title": "Heat",
+      "releaseGroup": null
+    },
+    "from": "highsea, written for the parser: the -GROUP suffix (scene rules); retags and posters’ suffixes after TRaSH"
+  },
+  {
+    "name": "1917.2019.1080p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "1917",
+      "year": 2019
+    },
+    "from": "highsea, written for the parser: the title ends at the last year before the tags"
+  },
+  {
+    "name": "2012.2009.720p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "2012",
+      "year": 2009
+    },
+    "from": "highsea, written for the parser: the title ends at the last year before the tags"
+  },
+  {
+    "name": "1408.2007.DC.720p.BluRay.x264-HDEX",
+    "expect": {
+      "title": "1408",
+      "year": 2007
+    },
+    "from": "highsea, written for the parser: the title ends at the last year before the tags"
+  },
+  {
+    "name": "Arrival.1080p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "Arrival",
+      "year": null
+    },
+    "from": "highsea, written for the parser: the title ends at the last year before the tags"
+  },
+  {
+    "name": "Blade.Runner.2049.1080p.BluRay.x264-SPARKS",
+    "expect": {
+      "title": "Blade Runner",
+      "year": 2049
+    },
+    "from": "highsea, written for the parser: the title ends at the last year before the tags",
+    "note": "without the film’s own year the last year before the tags is the year, so 2049 reads as one"
+  },
+  {
+    "name": "Wonder.Woman.1984.2020.1080p.WEB-DL.H264-NOGRP",
+    "expect": {
+      "title": "Wonder Woman 1984",
+      "year": 2020
+    },
+    "from": "highsea, written for the parser: the title ends at the last year before the tags"
+  },
+  {
+    "name": "Space.1999.1975.DVDRip.XviD-NoGrp",
+    "expect": {
+      "title": "Space 1999",
+      "year": 1975
+    },
+    "from": "highsea, written for the parser: the title ends at the last year before the tags"
+  },
+  {
+    "name": "Fahrenheit.451.1966.720p.BluRay.x264-AMIABLE",
+    "expect": {
+      "title": "Fahrenheit 451",
+      "year": 1966
+    },
+    "from": "highsea, written for the parser: the title ends at the last year before the tags"
+  }
+]

@@ -1,14 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What every part of the auth service shares: the platform it was given, the views it returns,
 // the audit log and the events it announces.
-import { AppError, type Clock, type EventBus, type Logger, newId, type Sealer } from '@highsea/core'
+import {
+  AppError,
+  type Clock,
+  type EventBus,
+  type Fetch,
+  type Logger,
+  newId,
+  type Sealer,
+} from '@highsea/core'
 import { type Db, readSetting, schema } from '@highsea/db'
 import type { ClientType, Permission, Role, SignInMethod } from '@highsea/db/schema'
 import { desc, eq, inArray, lt, sql } from 'drizzle-orm'
 import { ALL_LIBRARIES } from './roles.ts'
 import { defaultSecuritySettings, SECURITY_KEY, type SecuritySettings } from './settings.ts'
 
-export type Fetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>
+export type { Fetch }
 
 export type AuthDeps = {
   db: Db

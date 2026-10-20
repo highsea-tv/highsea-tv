@@ -10,6 +10,7 @@ const config: NextConfig = {
     '@highsea/fixtures',
     '@highsea/i18n',
     '@highsea/personalization',
+    '@highsea/quality',
     '@highsea/sdk',
     '@highsea/tokens',
     '@highsea/ui-web',

@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@highsea/api-contract": "workspace:*",
+    "@highsea/core": "workspace:*",
     "zod": "4.6.7"
   },
   "peerDependencies": {

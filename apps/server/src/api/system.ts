@@ -10,7 +10,7 @@ import { type Env, me } from './guard.ts'
 import { sessionView } from './views.ts'
 
 /** Setup's routes answer only until setup is complete (setup.md). */
-function setupOpen(c: Context<Env>) {
+export function setupOpen(c: Context<Env>) {
   if (c.get('runtime').setupComplete())
     throw new AppError('not-found', 'Setup is already complete.')
 }

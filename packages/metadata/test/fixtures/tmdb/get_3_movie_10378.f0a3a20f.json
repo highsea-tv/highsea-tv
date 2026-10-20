@@ -1,0 +1,564 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/10378?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "adult": false,
+      "backdrop_path": "/xtdybjRRZ15mCrPOvEld305myys.jpg",
+      "belongs_to_collection": null,
+      "budget": 175433,
+      "genres": [
+        {
+          "id": 16,
+          "name": "Animation"
+        },
+        {
+          "id": 35,
+          "name": "Comedy"
+        },
+        {
+          "id": 10751,
+          "name": "Family"
+        }
+      ],
+      "homepage": "",
+      "id": 10378,
+      "imdb_id": "tt1254207",
+      "original_language": "en",
+      "original_title": "Big Buck Bunny",
+      "overview": "Follow a day of the life of Big Buck Bunny when he meets three bullying rodents: Frank, Rinky, and Gamera. The rodents amuse themselves by harassing helpless creatures by throwing fruits, nuts and rocks at them. After the deaths of two of Bunny's favorite butterflies, and an offensive attack on Bunny himself, Bunny sets aside his gentle nature and orchestrates a complex plan for revenge.",
+      "popularity": 29.73,
+      "poster_path": "/i9jJzvoXET4D9pOkoEwncSdNNER.jpg",
+      "production_companies": [
+        {
+          "id": 62606,
+          "logo_path": null,
+          "name": "Blender Institute",
+          "origin_country": ""
+        }
+      ],
+      "release_date": "2008-04-10",
+      "revenue": 0,
+      "runtime": 8,
+      "status": "Released",
+      "tagline": "",
+      "title": "Big Buck Bunny",
+      "video": false,
+      "vote_average": 6.473,
+      "vote_count": 201,
+      "credits": {
+        "cast": [],
+        "crew": [
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 58958,
+            "known_for_department": "Art",
+            "name": "Andreas Goralczyk",
+            "original_name": "Andreas Goralczyk",
+            "popularity": 25.62,
+            "profile_path": null,
+            "credit_id": "aad3ecf4cd9b1eb9c8e9a2a2",
+            "department": "Art",
+            "job": "Art Direction"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 64937,
+            "known_for_department": "Art",
+            "name": "Enrico Valenza",
+            "original_name": "Enrico Valenza",
+            "popularity": 23.36,
+            "profile_path": null,
+            "credit_id": "e84f765e08ea6207c4671ed9",
+            "department": "Art",
+            "job": "Art Direction"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 64941,
+            "known_for_department": "Crew",
+            "name": "Brecht van Lommel",
+            "original_name": "Brecht van Lommel",
+            "popularity": 39.36,
+            "profile_path": null,
+            "credit_id": "4f57f913257cd8275ff0a20c",
+            "department": "Crew",
+            "job": "Technical Supervisor"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 64940,
+            "known_for_department": "Crew",
+            "name": "Campbell Barton",
+            "original_name": "Campbell Barton",
+            "popularity": 17.27,
+            "profile_path": null,
+            "credit_id": "dc110a4cab68140c2e7139ae",
+            "department": "Crew",
+            "job": "Technical Supervisor"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3887610,
+            "known_for_department": "Crew",
+            "name": "Evert Meulie",
+            "original_name": "Evert Meulie",
+            "popularity": 26.54,
+            "profile_path": null,
+            "credit_id": "095f85d25509e920d364fa12",
+            "department": "Crew",
+            "job": "Thanks"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 64936,
+            "known_for_department": "Directing",
+            "name": "Sacha Goedegebure",
+            "original_name": "Sacha Goedegebure",
+            "popularity": 11.24,
+            "profile_path": null,
+            "credit_id": "35e4a520a2a03586d300c4ef",
+            "department": "Directing",
+            "job": "Director"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 133632,
+            "known_for_department": "Production",
+            "name": "Ton Roosendaal",
+            "original_name": "Ton Roosendaal",
+            "popularity": 27.16,
+            "profile_path": "/2iRRkA2oCsPLSSLz1HKDhwJZlgy.jpg",
+            "credit_id": "196eda625c31a76cec20cae0",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 133634,
+            "known_for_department": "Sound",
+            "name": "Jan Morgenstern",
+            "original_name": "Jan Morgenstern",
+            "popularity": 2.44,
+            "profile_path": null,
+            "credit_id": "a981e53fed97e528c4cb7dee",
+            "department": "Sound",
+            "job": "Original Music Composer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 133634,
+            "known_for_department": "Sound",
+            "name": "Jan Morgenstern",
+            "original_name": "Jan Morgenstern",
+            "popularity": 2.44,
+            "profile_path": null,
+            "credit_id": "735d880200bc34aab64332cd",
+            "department": "Sound",
+            "job": "Sound"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 64941,
+            "known_for_department": "Visual Effects",
+            "name": "Brecht van Lommel",
+            "original_name": "Brecht van Lommel",
+            "popularity": 39.36,
+            "profile_path": null,
+            "credit_id": "4a022d75da4526fd36f4af84",
+            "department": "Visual Effects",
+            "job": "Animation"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 64940,
+            "known_for_department": "Visual Effects",
+            "name": "Campbell Barton",
+            "original_name": "Campbell Barton",
+            "popularity": 17.27,
+            "profile_path": null,
+            "credit_id": "6356128ade8acb7bf5a32a4a",
+            "department": "Visual Effects",
+            "job": "Animation"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 64937,
+            "known_for_department": "Visual Effects",
+            "name": "Enrico Valenza",
+            "original_name": "Enrico Valenza",
+            "popularity": 23.36,
+            "profile_path": null,
+            "credit_id": "809b5ab0d730723196f0a867",
+            "department": "Visual Effects",
+            "job": "Animation"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 64938,
+            "known_for_department": "Visual Effects",
+            "name": "Nathan Vegdahl",
+            "original_name": "Nathan Vegdahl",
+            "popularity": 28.85,
+            "profile_path": "/7OnUDwz5Btig11IUXl6acTHoAYV.jpg",
+            "credit_id": "7419e78e79310da60c498acf",
+            "department": "Visual Effects",
+            "job": "Animation"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 64939,
+            "known_for_department": "Visual Effects",
+            "name": "William Reynish",
+            "original_name": "William Reynish",
+            "popularity": 4.66,
+            "profile_path": null,
+            "credit_id": "533fe38a154ed141f350b826",
+            "department": "Visual Effects",
+            "job": "Animation"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 64936,
+            "known_for_department": "Writing",
+            "name": "Sacha Goedegebure",
+            "original_name": "Sacha Goedegebure",
+            "popularity": 11.24,
+            "profile_path": null,
+            "credit_id": "5ac9dc04dc98bb91b58c79f6",
+            "department": "Writing",
+            "job": "Screenplay"
+          }
+        ]
+      },
+      "videos": {
+        "results": [
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Big Buck Bunny 60fps 4K - Official Blender Foundation Short Film",
+            "key": "aqz-KE-bpKQ",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Clip",
+            "official": false,
+            "published_at": "2014-11-10T00:00:00.000Z",
+            "id": "6a88a7af43734a8c20ec07a2"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Big Buck Bunny - Official Trailer",
+            "key": "798022",
+            "site": "Vimeo",
+            "size": 1080,
+            "type": "Trailer",
+            "official": false,
+            "published_at": "2008-03-18T00:00:00.000Z",
+            "id": "6a86ef09662fcfd016d15661"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Big Buck Bunny trailer",
+            "key": "yUQM7H4Swgw",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": false,
+            "published_at": "2009-12-04T00:00:00.000Z",
+            "id": "533ec66ac3a3685448001ab8"
+          }
+        ]
+      },
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "US",
+            "release_dates": [
+              {
+                "certification": "G",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2008-04-10T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "G",
+                "descriptors": [],
+                "iso_639_1": "en",
+                "note": "Sunflower re-release (HDR, 4k, HFR, stereoscopic)",
+                "release_date": "2013-12-18T00:00:00.000Z",
+                "type": 4
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "AU",
+            "release_dates": [
+              {
+                "certification": "G",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2008-04-10T00:00:00.000Z",
+                "type": 4
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FI",
+            "release_dates": [
+              {
+                "certification": "S",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2008-05-30T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FR",
+            "release_dates": [
+              {
+                "certification": "TP",
+                "descriptors": [],
+                "iso_639_1": "fr",
+                "note": "",
+                "release_date": "2008-05-30T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "DE",
+            "release_dates": [
+              {
+                "certification": "6",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2008-05-30T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "NL",
+            "release_dates": [
+              {
+                "certification": "AL",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2008-04-10T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "RO",
+            "release_dates": [
+              {
+                "certification": "AP",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2008-04-10T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "SE",
+            "release_dates": [
+              {
+                "certification": "7",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2008-04-10T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          }
+        ]
+      },
+      "external_ids": {
+        "imdb_id": "tt1254207",
+        "wikidata_id": "Q282456",
+        "facebook_id": null,
+        "instagram_id": null,
+        "twitter_id": null
+      },
+      "recommendations": {
+        "page": 1,
+        "results": [
+          {
+            "adult": false,
+            "backdrop_path": "/snobCf0u4ex9OKNNFuNQKmGe3gJ.jpg",
+            "genre_ids": [16, 10751, 12, 35],
+            "id": 335777,
+            "original_language": "en",
+            "original_title": "The Nut Job 2: Nutty by Nature",
+            "overview": "When the evil mayor of Oakton decides to bulldoze Liberty Park and build a dangerous amusement park in its place, Surly Squirrel and his ragtag group of animal friends need to band together to save their home, defeat the mayor, and take back the park.",
+            "popularity": 2.93,
+            "poster_path": "/xOfdQHNF9TlrdujyAjiKfUhxSXy.jpg",
+            "release_date": "2017-08-11",
+            "title": "The Nut Job 2: Nutty by Nature",
+            "video": false,
+            "vote_average": 6.165,
+            "vote_count": 488,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/bsesTngzYDZiHiYpsq12av3bkk2.jpg",
+            "genre_ids": [16, 35, 10751],
+            "id": 1139979,
+            "original_language": "en",
+            "original_title": "The Wonderful World of Mickey Mouse: Steamboat Silly",
+            "overview": "Mickey and gang must stop hundreds of old film reel versions of Mickey from wreaking havoc all over town.",
+            "popularity": 35.37,
+            "poster_path": "/A9VIIks5Mw3mjWStOj7FvIOGtmW.jpg",
+            "release_date": "2023-07-28",
+            "title": "The Wonderful World of Mickey Mouse: Steamboat Silly",
+            "video": false,
+            "vote_average": 6.872,
+            "vote_count": 43,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/dAWoR2TMUJHzpEEuxSmElsRO1av.jpg",
+            "genre_ids": [16, 12, 10751, 35],
+            "id": 570480,
+            "original_language": "en",
+            "original_title": "Trouble",
+            "overview": "A pampered dog named Trouble must learn to live in the real world while trying to escape from his former owner's greedy children and must learn how to survive on the big-city streets.",
+            "popularity": 3.76,
+            "poster_path": "/yfTXk9T3iNxuOcnA72AirzueLxL.jpg",
+            "release_date": "2019-08-08",
+            "title": "Trouble",
+            "video": false,
+            "vote_average": 6.6,
+            "vote_count": 251,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/h217Zex0muVgQDfXoeQ7cQXwHzS.jpg",
+            "genre_ids": [16, 35, 10751],
+            "id": 50359,
+            "original_language": "en",
+            "original_title": "Hop",
+            "overview": "E.B., the Easter Bunny's teenage son, heads to Hollywood, determined to become a drummer in a rock 'n' roll band. In L.A., he's taken in by Fred after the out-of-work slacker hits E.B. with his car.",
+            "popularity": 17.72,
+            "poster_path": "/2FrDmwXWjRE1zpNP288YncRt5RF.jpg",
+            "release_date": "2011-03-30",
+            "title": "Hop",
+            "video": false,
+            "vote_average": 5.82,
+            "vote_count": 1436,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/hDyGD9UQn6CDky3jcGXGVnPOGUS.jpg",
+            "genre_ids": [16, 35, 10751, 12],
+            "id": 227783,
+            "original_language": "en",
+            "original_title": "The Nut Job",
+            "overview": "Surly, a curmudgeon, independent squirrel is banished from his park and forced to survive in the city. Lucky for him, he stumbles on the one thing that may be able to save his life, and the rest of park community, as they gear up for winter - Maury's Nut Store.",
+            "popularity": 21.29,
+            "poster_path": "/4iHnGlmOjAj2k5zUftYDIzSITCf.jpg",
+            "release_date": "2014-01-17",
+            "title": "The Nut Job",
+            "video": false,
+            "vote_average": 5.92,
+            "vote_count": 1077,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/4BmZXt8Yty7F2He4KE05jqGidEz.jpg",
+            "genre_ids": [12, 16, 35, 10751],
+            "id": 7518,
+            "original_language": "en",
+            "original_title": "Over the Hedge",
+            "overview": "A scheming raccoon fools a mismatched family of forest creatures into helping him repay a debt of food, by invading the new suburban sprawl that popped up while they were hibernating – and learns a lesson about family himself.",
+            "popularity": 11.42,
+            "poster_path": "/lAtBFoSusJLlcViY57M2J2rpKpl.jpg",
+            "release_date": "2006-05-17",
+            "title": "Over the Hedge",
+            "video": false,
+            "vote_average": 6.613,
+            "vote_count": 5024,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/znaH5tNazEMv4DTc07vC5rFi7m7.jpg",
+            "genre_ids": [16, 35, 10751],
+            "id": 47166,
+            "original_language": "en",
+            "original_title": "Ferdinand the Bull",
+            "overview": "This Oscar-winning short tells of a bull who preferred to sit under trees and smell flowers to clashing horns with his fellow animals. As luck would have it, an untimely bee reveals Ferdinand's ferocious side via pained howls and wild stomping. This lands him in the bull-fighting arena amidst characters based on Walt's animators with a matador reportedly modeled after Walt himself.",
+            "popularity": 34.45,
+            "poster_path": "/u9VJv0kT6X0m2oVJQ6RWftM5sSy.jpg",
+            "release_date": "1938-11-23",
+            "title": "Ferdinand the Bull",
+            "video": false,
+            "vote_average": 6.708,
+            "vote_count": 226,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/nGYx6cCKsx8ZR31DUIncHxKemj4.jpg",
+            "genre_ids": [16, 35, 10751],
+            "id": 41394,
+            "original_language": "en",
+            "original_title": "The Looney, Looney, Looney Bugs Bunny Movie",
+            "overview": "Bugs Bunny hosts an award show featuring several classic Looney Tunes shorts and characters.",
+            "popularity": 25.57,
+            "poster_path": "/2hsUFCUVvURJCvxofQaqMN9noDU.jpg",
+            "release_date": "1981-11-20",
+            "title": "The Looney, Looney, Looney Bugs Bunny Movie",
+            "video": false,
+            "vote_average": 7.337,
+            "vote_count": 166,
+            "media_type": "movie"
+          }
+        ],
+        "total_pages": 1,
+        "total_results": 8
+      }
+    }
+  }
+}

@@ -116,8 +116,18 @@ describe('preferences', () => {
     const after = await memberApi.preferences.save({
       body: { layer: 'device', values: { sound: false } },
     })
-    expect(after.values).toEqual({ theme: 'oled', sound: false, volume: 0.8 })
-    expect(after.from).toEqual({ theme: 'user', sound: 'device', volume: 'server' })
+    expect(after.values).toEqual({
+      theme: 'oled',
+      sound: false,
+      volume: 0.8,
+      'admin.addMovie.defaults': null,
+    })
+    expect(after.from).toEqual({
+      theme: 'user',
+      sound: 'device',
+      volume: 'server',
+      'admin.addMovie.defaults': 'server',
+    })
 
     expect(
       await failure(memberApi.preferences.save({ body: { layer: 'client', values: {} } })),
@@ -138,6 +148,44 @@ describe('preferences', () => {
       'not-found',
     )
   })
+  test('the add dialog remembers its values per person, and refuses ones it can’t use', async () => {
+    const { ownerApi, memberApi } = await started()
+    const defaults = {
+      rootFolder: '/data/media/movies',
+      qualityProfileId: 'qp-hd',
+      languageProfileId: null,
+      minimumAvailability: 'released' as const,
+      searchNow: false,
+    }
+    const saved = await ownerApi.preferences.save({
+      body: { layer: 'user', values: { 'admin.addMovie.defaults': defaults } },
+    })
+    expect(saved.values['admin.addMovie.defaults']).toEqual(defaults)
+    expect(saved.from['admin.addMovie.defaults']).toBe('user')
+    // another person's are their own
+    expect((await memberApi.preferences.get()).values['admin.addMovie.defaults']).toBeNull()
+    expect(
+      (
+        await failure(
+          ownerApi.preferences.save({
+            body: {
+              layer: 'user',
+              values: {
+                'admin.addMovie.defaults': {
+                  ...defaults,
+                  minimumAvailability: 'soon' as 'released',
+                },
+              },
+            },
+          }),
+        )
+      ).code,
+    ).toBe('invalid')
+    const cleared = await ownerApi.preferences.save({
+      body: { layer: 'user', values: { 'admin.addMovie.defaults': null } },
+    })
+    expect(cleared.values['admin.addMovie.defaults']).toBeNull()
+  })
 })
 
 describe('home', () => {
@@ -146,7 +194,11 @@ describe('home', () => {
     expect(await memberApi.home.layout()).toEqual({
       order: [],
       hidden: [],
-      rows: [{ id: 'continue', title: null }],
+      // an empty library: no genre rows yet
+      rows: [
+        { id: 'continue', title: null },
+        { id: 'recent', title: null },
+      ],
     })
     const saved = await memberApi.home.saveLayout({
       body: { order: ['continue', 'continue'], hidden: ['continue'] },
@@ -288,6 +340,6 @@ describe('appearance', () => {
 
   test('public info lists the sources this server has', async () => {
     const { anon } = await started()
-    expect((await anon.system.publicInfo()).sources).toEqual(['system'])
+    expect((await anon.system.publicInfo()).sources).toEqual(['system', 'movies'])
   })
 })

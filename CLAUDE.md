@@ -8,10 +8,10 @@ highsea is a self-hosted replacement for the *ARR suite (Radarr, Sonarr, Prowlar
 - **Phase 2** (clickable prototypes of every screen, in `design/prototypes`): signed off 2026-10-19. The prototypes and their specs in `docs/product/` are the **build reference**.
 - **Phase 3** (server milestone 1): the plan is [docs/plans/phase-3-server.md](docs/plans/phase-3-server.md), approved with the owner's decisions recorded in it.
   - Checkpoint 1 (the platform), checkpoint 2 (accounts, network and the admin shell) and checkpoint 3 (personalization and the dashboard) are signed off, checkpoints 2 and 3 on 2026-10-20.
-  - **Next is checkpoint 4: movies, without downloading.** Its scope is [docs/plans/phase-3-checkpoint-4.md](docs/plans/phase-3-checkpoint-4.md). The owner's decisions are recorded in it (2026-10-20); building waits for the go-ahead.
+  - **Checkpoint 4: movies, without downloading** is built and awaits the owner's review (2026-10-20). Its scope and the owner's decisions are in [docs/plans/phase-3-checkpoint-4.md](docs/plans/phase-3-checkpoint-4.md). Checkpoint 5 (indexers) starts only after sign-off.
 - **Follow-up after Phase 3:** dashboard customization on Homarr's level, with a visible grid ([docs/plans/dashboard-customization.md](docs/plans/dashboard-customization.md)). Not scheduled; a prototype is approved first.
 
-Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2, 0027–0028 with checkpoint 3.
+Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2, 0027–0028 with checkpoint 3, 0029–0031 with checkpoint 4.
 
 ## Rules from the owner
 
@@ -45,11 +45,13 @@ bun run test            # everything (Bun's runner, each file isolated)
 node apps/server/scripts/smoke.ts   # the platform under Node, as production runs it
 
 bun run server          # the server in development, http://localhost:3000 (data in .dev/)
+HIGHSEA_TMDB_REPLAY=1 bun run server   # the same, answering TMDB from the recordings: no key, no network
 bun run prototypes      # the Phase 2 prototypes, http://localhost:4500
 bun run storybook       # the design system
 
 bun run pin hono zod    # versions old enough to pin
 bun run licenses        # the license audit
+bun run record:tmdb     # in packages/metadata: refresh the TMDB recordings with your own key (never in CI)
 docker compose up --build
 ```
 
@@ -70,6 +72,10 @@ Before reporting a checkpoint, run all of these:
 | `packages/core`, `db`, `jobs`, `runtime`, `i18n` | The platform |
 | `packages/auth`, `network` | People and access (ADR 0023–0025); discovery, proxies and TLS (ADR 0020, 0026) |
 | `packages/personalization` | Preferences in layers (ADR 0027), the widget registry and dashboard layouts, the home layout, themes, branding and sound packs (ADR 0028) |
+| `packages/parser` | Release names into their parts: title, year, edition, quality, languages, group. Pure |
+| `packages/quality` | The quality vocabulary, profiles, custom formats, sizes and the decision engine (ADR 0031). Pure; browsers import `@highsea/quality/browser`, which leaves out the TRaSH presets |
+| `packages/metadata` | TMDB behind the fetch seam (ADR 0029), the metadata cache, images and refresh (ADR 0030); the replaying `fetch` in `@highsea/metadata/replay` |
+| `packages/media-movies` | The movie library: items and versions (ADR 0012), root folders, the seeded profiles and formats, and the client API's reads |
 | `packages/api-contract`, `sdk` | The public API's zod/OpenAPI contract, and the typed client every app uses |
 | `packages/tokens`, `ui-web`, `brand`, `fixtures` | The design system |
 | `docs/` | Roadmap, plans, ADRs, product specs, brand and design language |

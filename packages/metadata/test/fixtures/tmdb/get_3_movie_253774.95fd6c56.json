@@ -1,0 +1,348 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/253774?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "adult": false,
+      "backdrop_path": "/206A3X9EH42kmdQMECq90SbjHCn.jpg",
+      "belongs_to_collection": {
+        "id": 339473,
+        "name": "Caminandes Collection",
+        "poster_path": "/pDDVNTzwH3Y4sC6dDKpaMe2sj79.jpg",
+        "backdrop_path": "/VGqDyS1rp0IQcuFGInQzmfDFAj.jpg"
+      },
+      "budget": 0,
+      "genres": [
+        {
+          "id": 16,
+          "name": "Animation"
+        },
+        {
+          "id": 35,
+          "name": "Comedy"
+        },
+        {
+          "id": 10751,
+          "name": "Family"
+        }
+      ],
+      "homepage": "",
+      "id": 253774,
+      "imdb_id": "tt3434172",
+      "original_language": "en",
+      "original_title": "Caminandes: Gran Dillama",
+      "overview": "A young llama named Koro discovers that the grass is always greener on the other side (of the fence).",
+      "popularity": 12.47,
+      "poster_path": "/7YtEiEzRBVCr8Sbgo1kVsr3OCMk.jpg",
+      "production_companies": [],
+      "release_date": "2013-11-22",
+      "revenue": 0,
+      "runtime": 3,
+      "status": "Released",
+      "tagline": "",
+      "title": "Caminandes: Gran Dillama",
+      "video": false,
+      "vote_average": 7.139,
+      "vote_count": 18,
+      "credits": {
+        "cast": [],
+        "crew": [
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 58958,
+            "known_for_department": "Crew",
+            "name": "Andreas Goralczyk",
+            "original_name": "Andreas Goralczyk",
+            "popularity": 25.62,
+            "profile_path": null,
+            "credit_id": "c580ca345b84a7e698dee96f",
+            "department": "Crew",
+            "job": "Compositors"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1289555,
+            "known_for_department": "Crew",
+            "name": "Sergey Sharybin",
+            "original_name": "Sergey Sharybin",
+            "popularity": 31.0,
+            "profile_path": null,
+            "credit_id": "310635c8626f2afc588dee45",
+            "department": "Crew",
+            "job": "Technical Supervisor"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1289549,
+            "known_for_department": "Directing",
+            "name": "Pablo Vazquez",
+            "original_name": "Pablo Vazquez",
+            "popularity": 33.31,
+            "profile_path": null,
+            "credit_id": "8886307646f8a91830f89509",
+            "department": "Directing",
+            "job": "Director"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1289554,
+            "known_for_department": "Production",
+            "name": "Juan Pablo Bouza",
+            "original_name": "Juan Pablo Bouza",
+            "popularity": 1.73,
+            "profile_path": null,
+            "credit_id": "b1da9c38b8cd8e914cb5aa6f",
+            "department": "Production",
+            "job": "Character Technical Supervisor"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1289551,
+            "known_for_department": "Production",
+            "name": "Francesco Siddi",
+            "original_name": "Francesco Siddi",
+            "popularity": 9.87,
+            "profile_path": "/pIDS0x5yIlLJEj0RImf6sgOCzMr.jpg",
+            "credit_id": "2ce282943d36c2ad40b6744c",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 133634,
+            "known_for_department": "Sound",
+            "name": "Jan Morgenstern",
+            "original_name": "Jan Morgenstern",
+            "popularity": 2.44,
+            "profile_path": null,
+            "credit_id": "e85669b42a2e4f99ef131774",
+            "department": "Sound",
+            "job": "Sound Designer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1289550,
+            "known_for_department": "Visual Effects",
+            "name": "Beorn Leonard",
+            "original_name": "Beorn Leonard",
+            "popularity": 5.84,
+            "profile_path": null,
+            "credit_id": "637f19f0e457f59a09ca8fd8",
+            "department": "Visual Effects",
+            "job": "Animation"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1289553,
+            "known_for_department": "Visual Effects",
+            "name": "Hjalti Hjálmarsson",
+            "original_name": "Hjalti Hjálmarsson",
+            "popularity": 21.89,
+            "profile_path": null,
+            "credit_id": "1fdc20016ba3718c8a7536ec",
+            "department": "Visual Effects",
+            "job": "Animation"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1289550,
+            "known_for_department": "Writing",
+            "name": "Beorn Leonard",
+            "original_name": "Beorn Leonard",
+            "popularity": 5.84,
+            "profile_path": null,
+            "credit_id": "bd0f9a0bab833cf60fe59151",
+            "department": "Writing",
+            "job": "Writer"
+          }
+        ]
+      },
+      "videos": {
+        "results": []
+      },
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "NL",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2013-11-22T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          }
+        ]
+      },
+      "external_ids": {
+        "imdb_id": "tt3434172",
+        "wikidata_id": "Q120197695",
+        "facebook_id": null,
+        "instagram_id": null,
+        "twitter_id": null
+      },
+      "recommendations": {
+        "page": 1,
+        "results": [
+          {
+            "adult": false,
+            "backdrop_path": "/kkvvpyImNjRgcfZpPPCawEY948v.jpg",
+            "genre_ids": [16, 35, 10751],
+            "id": 66986,
+            "original_language": "en",
+            "original_title": "How to Swim",
+            "overview": "Goofy's plans to give a swimming lesson and enjoy a day at the beach go awry.",
+            "popularity": 29.32,
+            "poster_path": "/7kPrqirhoy2zIKwhti7xFwUBrIE.jpg",
+            "release_date": "1942-10-23",
+            "title": "How to Swim",
+            "video": false,
+            "vote_average": 6.855,
+            "vote_count": 76,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/p97puLYrzKuTsICl5h0LEyPy7sJ.jpg",
+            "genre_ids": [16, 10751, 35],
+            "id": 660851,
+            "original_language": "en",
+            "original_title": "Forky Asks a Question: What Is Money?",
+            "overview": "Forky Asks a Question: What is Money? Hamm attempts to give Forky a lesson on how the US monetary system works.",
+            "popularity": 37.3,
+            "poster_path": "/5HqBpRpwsMBTXVk950CVBH8h51W.jpg",
+            "release_date": "2019-11-12",
+            "title": "Forky Asks a Question: What Is Money?",
+            "video": false,
+            "vote_average": 5.968,
+            "vote_count": 111,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/tMe2pwwruAS6F7fL4m4wf1o1TIL.jpg",
+            "genre_ids": [16, 10751, 35],
+            "id": 660861,
+            "original_language": "en",
+            "original_title": "Forky Asks a Question: What Is a Computer?",
+            "overview": "Trixie explains to Forky what a computer does as they experience the common stresses of technology.",
+            "popularity": 19.95,
+            "poster_path": "/qcOHwNLu0ugj32a3llVLTm9ZA8X.jpg",
+            "release_date": "2019-12-13",
+            "title": "Forky Asks a Question: What Is a Computer?",
+            "video": false,
+            "vote_average": 5.884,
+            "vote_count": 73,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/jjgUFVMFGljMrNBGU30SEYP2Mku.jpg",
+            "genre_ids": [35, 10751, 16],
+            "id": 85693,
+            "original_language": "en",
+            "original_title": "Hammy's Boomerang Adventure",
+            "overview": "RJ the raccoon produces a nature video, which turns out to be an excuse for him and the porcupine children to play pranks on Hammy the squirrel.",
+            "popularity": 34.92,
+            "poster_path": "/r2sdbeH3Jp087Au7Ls3UrF3DAnH.jpg",
+            "release_date": "2006-10-17",
+            "title": "Hammy's Boomerang Adventure",
+            "video": false,
+            "vote_average": 6.1,
+            "vote_count": 56,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/sUghi7TZhcK04kKHR7H2AxdAynk.jpg",
+            "genre_ids": [16, 35, 10751, 12, 28],
+            "id": 148605,
+            "original_language": "en",
+            "original_title": "Monster Truck Mater",
+            "overview": "As a professional monster truck wrestler, Mater must work his way up through the ranks from an amateur tow truck to World Champion Monster Truck Wrestler. But rival wrestlers I-Screamer, Captain Collision, and The Rasta Carian aren't about to give up without a fight.",
+            "popularity": 8.47,
+            "poster_path": "/ikdzBp4KIDazYgbJJLakZJmfnhn.jpg",
+            "release_date": "2010-07-30",
+            "title": "Monster Truck Mater",
+            "video": false,
+            "vote_average": 6.23,
+            "vote_count": 122,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/zUkj11S2rJkR5avBoqZzpCFAuFx.jpg",
+            "genre_ids": [16, 35],
+            "id": 67043,
+            "original_language": "en",
+            "original_title": "Mickey's Delayed Date",
+            "overview": "Even though Mickey's evening started slow and lazy, things get moving in a hurry when Minnie calls from outside the big dance, wondering why he's late. Luckily his best pal Pluto is happy to help wrangle the uncooperative evening wear and help get him out the door...without the tickets",
+            "popularity": 13.46,
+            "poster_path": "/esH8T5lpF1VtaoY4OuYkux0p2Wo.jpg",
+            "release_date": "1947-10-03",
+            "title": "Mickey's Delayed Date",
+            "video": false,
+            "vote_average": 6.6,
+            "vote_count": 70,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/znaH5tNazEMv4DTc07vC5rFi7m7.jpg",
+            "genre_ids": [16, 35, 10751],
+            "id": 47166,
+            "original_language": "en",
+            "original_title": "Ferdinand the Bull",
+            "overview": "This Oscar-winning short tells of a bull who preferred to sit under trees and smell flowers to clashing horns with his fellow animals. As luck would have it, an untimely bee reveals Ferdinand's ferocious side via pained howls and wild stomping. This lands him in the bull-fighting arena amidst characters based on Walt's animators with a matador reportedly modeled after Walt himself.",
+            "popularity": 34.45,
+            "poster_path": "/u9VJv0kT6X0m2oVJQ6RWftM5sSy.jpg",
+            "release_date": "1938-11-23",
+            "title": "Ferdinand the Bull",
+            "video": false,
+            "vote_average": 6.708,
+            "vote_count": 226,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/pQm2IVb7WcAqwn10rWFeUQGmSxK.jpg",
+            "genre_ids": [16, 10751, 35],
+            "id": 296137,
+            "original_language": "en",
+            "original_title": "Spinning",
+            "overview": "Guido discovers he has a hidden talent as a street corner sign spinner.",
+            "popularity": 35.32,
+            "poster_path": "/rrnf2Q6doMoFr68Ai6Y2IgF8Fel.jpg",
+            "release_date": "2013-03-22",
+            "title": "Spinning",
+            "video": false,
+            "vote_average": 6.09,
+            "vote_count": 72,
+            "media_type": "movie"
+          }
+        ],
+        "total_pages": 1,
+        "total_results": 8
+      }
+    }
+  }
+}

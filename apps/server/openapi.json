@@ -172,8 +172,16 @@
               ]
             },
             "example": [
-              "system"
+              "system",
+              "movies"
             ]
+          },
+          "attributions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Attribution"
+            },
+            "default": []
           }
         },
         "required": [
@@ -185,6 +193,27 @@
           "setupComplete",
           "auth",
           "sources"
+        ]
+      },
+      "Attribution": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "TMDB"
+          },
+          "notice": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string",
+            "example": "https://www.themoviedb.org"
+          }
+        },
+        "required": [
+          "name",
+          "notice",
+          "url"
         ]
       },
       "Server": {
@@ -698,6 +727,9 @@
           },
           "cloudLink": {
             "type": "boolean"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/MetadataInput"
           }
         },
         "required": [
@@ -762,6 +794,26 @@
             ]
           }
         ]
+      },
+      "MetadataInput": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1000
+          },
+          "language": {
+            "type": "string",
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+            "example": "en-US"
+          },
+          "region": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$",
+            "example": "GB"
+          }
+        }
       },
       "NetworkStatus": {
         "allOf": [
@@ -1835,12 +1887,16 @@
               },
               "volume": {
                 "type": "number"
+              },
+              "admin.addMovie.defaults": {
+                "$ref": "#/components/schemas/AddMovieDefaults"
               }
             },
             "required": [
               "theme",
               "sound",
-              "volume"
+              "volume",
+              "admin.addMovie.defaults"
             ]
           },
           "from": {
@@ -1872,12 +1928,22 @@
                   "user",
                   "server"
                 ]
+              },
+              "admin.addMovie.defaults": {
+                "type": "string",
+                "enum": [
+                  "device",
+                  "client",
+                  "user",
+                  "server"
+                ]
               }
             },
             "required": [
               "theme",
               "sound",
-              "volume"
+              "volume",
+              "admin.addMovie.defaults"
             ]
           },
           "layers": {
@@ -1927,6 +1993,52 @@
           "deviceId"
         ]
       },
+      "AddMovieDefaults": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "rootFolder": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "qualityProfileId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "languageProfileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "minimumAvailability": {
+            "$ref": "#/components/schemas/MinimumAvailability"
+          },
+          "searchNow": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "rootFolder",
+          "qualityProfileId",
+          "minimumAvailability",
+          "searchNow"
+        ],
+        "additionalProperties": false
+      },
+      "MinimumAvailability": {
+        "type": "string",
+        "enum": [
+          "announced",
+          "in-cinemas",
+          "released"
+        ]
+      },
       "PreferenceLayer": {
         "type": "object",
         "properties": {
@@ -1941,6 +2053,9 @@
             "type": "number",
             "minimum": 0,
             "maximum": 1
+          },
+          "admin.addMovie.defaults": {
+            "$ref": "#/components/schemas/AddMovieDefaults"
           }
         }
       },
@@ -1981,6 +2096,9 @@
                 ],
                 "minimum": 0,
                 "maximum": 1
+              },
+              "admin.addMovie.defaults": {
+                "$ref": "#/components/schemas/AddMovieDefaults"
               }
             },
             "additionalProperties": false
@@ -2277,6 +2395,2424 @@
           "id",
           "name",
           "builtIn"
+        ]
+      },
+      "DiscoverPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/DiscoverMovie"
+            }
+          },
+          "page": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          },
+          "totalResults": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "page",
+          "totalPages",
+          "totalResults"
+        ]
+      },
+      "DiscoverMovie": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 603
+          },
+          "title": {
+            "type": "string",
+            "example": "The Matrix"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "example": 1999
+          },
+          "runtimeMinutes": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "synopsis": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5,
+            "description": "Out of 5: TMDB’s vote_average (0–10) halved, to one decimal",
+            "example": 4.3
+          },
+          "voteCount": {
+            "type": "integer"
+          },
+          "releaseDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "art": {
+            "$ref": "#/components/schemas/Art"
+          },
+          "inLibrary": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "year",
+          "runtimeMinutes",
+          "genres",
+          "synopsis",
+          "rating",
+          "voteCount",
+          "releaseDate",
+          "art",
+          "inLibrary"
+        ]
+      },
+      "Art": {
+        "type": "object",
+        "properties": {
+          "poster": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+          },
+          "backdrop": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+          }
+        },
+        "required": [
+          "poster",
+          "backdrop"
+        ]
+      },
+      "MovieMetadata": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/DiscoverMovie"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "originalTitle": {
+                "type": "string"
+              },
+              "originalLanguage": {
+                "type": "string",
+                "example": "en"
+              },
+              "tagline": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "certification": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "budget": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "revenue": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "studios": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "imdbId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "example": "tt0133093"
+              },
+              "wikidataId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "example": "Q83495"
+              },
+              "cast": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Credit"
+                }
+              },
+              "crew": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Credit"
+                }
+              },
+              "videos": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/Video"
+                }
+              },
+              "collection": {
+                "$ref": "#/components/schemas/CollectionRef"
+              },
+              "gone": {
+                "type": "boolean"
+              },
+              "fetchedAt": {
+                "type": "string",
+                "format": "date-time",
+                "example": "2026-10-17T20:15:00.000Z"
+              }
+            },
+            "required": [
+              "originalTitle",
+              "originalLanguage",
+              "tagline",
+              "certification",
+              "budget",
+              "revenue",
+              "studios",
+              "imdbId",
+              "wikidataId",
+              "cast",
+              "crew",
+              "videos",
+              "collection",
+              "gone",
+              "fetchedAt"
+            ]
+          }
+        ]
+      },
+      "Credit": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "personId": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "photo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+          },
+          "department": {
+            "$ref": "#/components/schemas/Department"
+          },
+          "character": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "job": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "personId",
+          "name",
+          "photo",
+          "department",
+          "character",
+          "job"
+        ]
+      },
+      "Department": {
+        "type": "string",
+        "enum": [
+          "Acting",
+          "Directing",
+          "Writing",
+          "Production",
+          "Sound",
+          "Camera",
+          "Editing",
+          "Art",
+          "Costume & Make-Up",
+          "Visual Effects",
+          "Crew",
+          "Lighting"
+        ]
+      },
+      "Video": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "Trailer",
+              "Teaser",
+              "Clip",
+              "Featurette",
+              "Behind the Scenes",
+              "Bloopers",
+              "Opening Credits"
+            ]
+          },
+          "site": {
+            "type": "string",
+            "enum": [
+              "YouTube",
+              "Vimeo"
+            ]
+          },
+          "key": {
+            "type": "string"
+          },
+          "official": {
+            "type": "boolean"
+          },
+          "publishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "still": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "site",
+          "key",
+          "official",
+          "publishedAt",
+          "still"
+        ]
+      },
+      "CollectionRef": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ]
+      },
+      "Collection": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/CollectionRef"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "overview": {
+                "type": "string"
+              },
+              "art": {
+                "$ref": "#/components/schemas/Art"
+              },
+              "parts": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DiscoverMovie"
+                }
+              }
+            },
+            "required": [
+              "overview",
+              "art",
+              "parts"
+            ]
+          }
+        ]
+      },
+      "Person": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 6384
+          },
+          "name": {
+            "type": "string"
+          },
+          "photo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+          },
+          "knownFor": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/Department"
+              },
+              {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            ]
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "born": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "date": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date",
+                "example": "1999-03-30"
+              },
+              "place": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "date",
+              "place"
+            ]
+          },
+          "died": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "date": {
+                "type": "string",
+                "format": "date",
+                "example": "1999-03-30"
+              }
+            },
+            "required": [
+              "date"
+            ]
+          },
+          "imdbId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "wikidataId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "credits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PersonCredit"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "photo",
+          "knownFor",
+          "bio",
+          "born",
+          "died",
+          "imdbId",
+          "wikidataId",
+          "credits"
+        ]
+      },
+      "PersonCredit": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/DiscoverMovie"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "creditId": {
+                "type": "string"
+              },
+              "role": {
+                "type": "string"
+              },
+              "department": {
+                "$ref": "#/components/schemas/Department"
+              }
+            },
+            "required": [
+              "creditId",
+              "role",
+              "department"
+            ]
+          }
+        ]
+      },
+      "MetadataSettings": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "object",
+            "properties": {
+              "set": {
+                "type": "boolean"
+              },
+              "last4": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "set",
+              "last4"
+            ]
+          },
+          "language": {
+            "type": "string",
+            "pattern": "^[a-z]{2}(-[A-Z]{2})?$",
+            "example": "en-US"
+          },
+          "region": {
+            "type": "string",
+            "pattern": "^[A-Z]{2}$",
+            "example": "GB"
+          }
+        },
+        "required": [
+          "key",
+          "language",
+          "region"
+        ]
+      },
+      "MoviePage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Movie"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total": {
+            "type": "integer"
+          },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "all": {
+                "type": "integer"
+              },
+              "available": {
+                "type": "integer"
+              },
+              "wanted": {
+                "type": "integer"
+              },
+              "downloading": {
+                "type": "integer"
+              },
+              "not-released": {
+                "type": "integer"
+              },
+              "unmonitored": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "all",
+              "available",
+              "wanted",
+              "downloading",
+              "not-released",
+              "unmonitored"
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "next",
+          "total",
+          "counts"
+        ]
+      },
+      "Movie": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 603
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "movie"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "originalTitle": {
+            "type": "string"
+          },
+          "sortTitle": {
+            "type": "string"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "runtimeMinutes": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "synopsis": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5,
+            "description": "Out of 5: TMDB’s vote_average (0–10) halved, to one decimal"
+          },
+          "voteCount": {
+            "type": "integer"
+          },
+          "releaseDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "art": {
+            "$ref": "#/components/schemas/Art"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MovieStatus"
+          },
+          "monitored": {
+            "type": "boolean"
+          },
+          "minimumAvailability": {
+            "$ref": "#/components/schemas/MinimumAvailability"
+          },
+          "languageProfileId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "qualityProfileId": {
+            "type": "string"
+          },
+          "rootFolder": {
+            "type": "string",
+            "example": "/data/media/movies"
+          },
+          "path": {
+            "type": "string",
+            "example": "/data/media/movies/The Matrix (1999)"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/MovieVersion"
+            },
+            "minItems": 1
+          },
+          "gone": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "title",
+          "originalTitle",
+          "sortTitle",
+          "year",
+          "runtimeMinutes",
+          "genres",
+          "synopsis",
+          "rating",
+          "voteCount",
+          "releaseDate",
+          "art",
+          "status",
+          "monitored",
+          "minimumAvailability",
+          "languageProfileId",
+          "qualityProfileId",
+          "rootFolder",
+          "path",
+          "addedAt",
+          "versions",
+          "gone"
+        ]
+      },
+      "MovieStatus": {
+        "type": "string",
+        "enum": [
+          "available",
+          "wanted",
+          "downloading",
+          "not-released",
+          "unmonitored"
+        ]
+      },
+      "MovieVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "example": "4K HDR"
+          },
+          "qualityProfileId": {
+            "type": "string"
+          },
+          "fileId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "qualityProfileId",
+          "fileId"
+        ]
+      },
+      "AddMovieInput": {
+        "type": "object",
+        "properties": {
+          "tmdbId": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "example": 603
+          },
+          "rootFolder": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "monitored": {
+            "type": "boolean"
+          },
+          "minimumAvailability": {
+            "$ref": "#/components/schemas/MinimumAvailability"
+          },
+          "languageProfileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/VersionInput"
+            },
+            "minItems": 1,
+            "maxItems": 10
+          },
+          "searchNow": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "tmdbId",
+          "rootFolder",
+          "monitored",
+          "minimumAvailability",
+          "versions"
+        ]
+      },
+      "VersionInput": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "qualityProfileId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "label",
+          "qualityProfileId"
+        ]
+      },
+      "BulkResult": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          },
+          "missing": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            }
+          }
+        },
+        "required": [
+          "ids",
+          "missing"
+        ]
+      },
+      "BulkInput": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "monitor"
+                ]
+              },
+              "ids": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "minItems": 1,
+                "maxItems": 10000
+              }
+            },
+            "required": [
+              "action",
+              "ids"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "unmonitor"
+                ]
+              },
+              "ids": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "minItems": 1,
+                "maxItems": 10000
+              }
+            },
+            "required": [
+              "action",
+              "ids"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "setQualityProfile"
+                ]
+              },
+              "ids": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "minItems": 1,
+                "maxItems": 10000
+              },
+              "qualityProfileId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 64
+              }
+            },
+            "required": [
+              "action",
+              "ids",
+              "qualityProfileId"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "search"
+                ]
+              },
+              "ids": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "minItems": 1,
+                "maxItems": 10000
+              }
+            },
+            "required": [
+              "action",
+              "ids"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "refresh"
+                ]
+              },
+              "ids": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "minItems": 1,
+                "maxItems": 10000
+              }
+            },
+            "required": [
+              "action",
+              "ids"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
+                  "delete"
+                ]
+              },
+              "ids": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "minItems": 1,
+                "maxItems": 10000
+              },
+              "deleteFiles": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "action",
+              "ids"
+            ]
+          }
+        ]
+      },
+      "MovieUpdate": {
+        "type": "object",
+        "properties": {
+          "monitored": {
+            "type": "boolean"
+          },
+          "minimumAvailability": {
+            "$ref": "#/components/schemas/MinimumAvailability"
+          },
+          "languageProfileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "rootFolder": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "additionalProperties": false
+      },
+      "VersionUpdate": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "qualityProfileId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "additionalProperties": false
+      },
+      "RootFolder": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string",
+            "example": "/data/media/movies"
+          },
+          "free": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "total": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "device": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "accessible": {
+            "type": "boolean"
+          },
+          "movies": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "path",
+          "free",
+          "total",
+          "device",
+          "accessible",
+          "movies"
+        ]
+      },
+      "QualityProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "HD 1080p"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/QualityProfileItem"
+            }
+          },
+          "cutoff": {
+            "type": "string"
+          },
+          "upgradeAllowed": {
+            "type": "boolean"
+          },
+          "minFormatScore": {
+            "type": "integer"
+          },
+          "cutoffFormatScore": {
+            "type": "integer"
+          },
+          "minUpgradeFormatScore": {
+            "type": "integer"
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "formatId": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "formatId",
+                "score"
+              ]
+            }
+          },
+          "language": {
+            "type": "string",
+            "pattern": "^([a-z]{2}|original|any)$",
+            "example": "original"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "items",
+          "cutoff",
+          "upgradeAllowed",
+          "minFormatScore",
+          "cutoffFormatScore",
+          "minUpgradeFormatScore",
+          "formats",
+          "language"
+        ]
+      },
+      "QualityProfileItem": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "WEB 1080p"
+          },
+          "qualities": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "example": "Bluray-1080p"
+            },
+            "minItems": 1
+          },
+          "allowed": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "qualities",
+          "allowed"
+        ]
+      },
+      "CustomFormat": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "Dolby Vision"
+          },
+          "conditions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FormatCondition"
+            }
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "preset",
+              "custom"
+            ]
+          },
+          "trashId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "conditions",
+          "source",
+          "trashId"
+        ]
+      },
+      "FormatCondition": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "title"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string",
+                "example": "\\b(DV|DoVi)\\b"
+              },
+              "negate": {
+                "type": "boolean"
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "name",
+              "value",
+              "negate",
+              "required"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "edition"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              },
+              "negate": {
+                "type": "boolean"
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "name",
+              "value",
+              "negate",
+              "required"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "releaseGroup"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string"
+              },
+              "negate": {
+                "type": "boolean"
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "name",
+              "value",
+              "negate",
+              "required"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "language"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "object",
+                "properties": {
+                  "language": {
+                    "type": "string",
+                    "pattern": "^([a-z]{2}|original)$",
+                    "example": "original"
+                  },
+                  "except": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "language",
+                  "except"
+                ]
+              },
+              "negate": {
+                "type": "boolean"
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "name",
+              "value",
+              "negate",
+              "required"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "indexerFlag"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "string",
+                "enum": [
+                  "freeleech",
+                  "halfleech",
+                  "doubleUpload",
+                  "golden",
+                  "approved",
+                  "internal",
+                  "scene",
+                  "freeleech75",
+                  "freeleech25"
+                ]
+              },
+              "negate": {
+                "type": "boolean"
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "name",
+              "value",
+              "negate",
+              "required"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "source"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "$ref": "#/components/schemas/QualitySource"
+              },
+              "negate": {
+                "type": "boolean"
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "name",
+              "value",
+              "negate",
+              "required"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "resolution"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "$ref": "#/components/schemas/Resolution"
+              },
+              "negate": {
+                "type": "boolean"
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "name",
+              "value",
+              "negate",
+              "required"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "modifier"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "$ref": "#/components/schemas/QualityModifier"
+              },
+              "negate": {
+                "type": "boolean"
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "name",
+              "value",
+              "negate",
+              "required"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "size"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "max": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "description": "GiB"
+              },
+              "negate": {
+                "type": "boolean"
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "name",
+              "value",
+              "negate",
+              "required"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "year"
+                ]
+              },
+              "name": {
+                "type": "string"
+              },
+              "value": {
+                "type": "object",
+                "properties": {
+                  "min": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "max": {
+                    "type": "number",
+                    "minimum": 0
+                  }
+                },
+                "required": [
+                  "min",
+                  "max"
+                ],
+                "description": "Years"
+              },
+              "negate": {
+                "type": "boolean"
+              },
+              "required": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "kind",
+              "name",
+              "value",
+              "negate",
+              "required"
+            ]
+          }
+        ]
+      },
+      "QualitySource": {
+        "type": "string",
+        "enum": [
+          "unknown",
+          "cam",
+          "telesync",
+          "telecine",
+          "workprint",
+          "dvd",
+          "tv",
+          "webdl",
+          "webrip",
+          "bluray"
+        ]
+      },
+      "Resolution": {
+        "anyOf": [
+          {
+            "type": "number",
+            "enum": [
+              360
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              480
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              540
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              576
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              720
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              1080
+            ]
+          },
+          {
+            "type": "number",
+            "enum": [
+              2160
+            ]
+          }
+        ],
+        "description": "Vertical lines"
+      },
+      "QualityModifier": {
+        "type": "string",
+        "enum": [
+          "none",
+          "regional",
+          "screener",
+          "rawhd",
+          "brdisk",
+          "remux"
+        ]
+      },
+      "LanguageProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "English and Portuguese"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "forced": {
+                  "type": "string",
+                  "enum": [
+                    "no",
+                    "also",
+                    "only"
+                  ]
+                },
+                "hi": {
+                  "type": "string",
+                  "enum": [
+                    "no",
+                    "also",
+                    "only"
+                  ]
+                }
+              },
+              "required": [
+                "code",
+                "forced",
+                "hi"
+              ]
+            }
+          },
+          "cutoff": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "minScore": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "languages",
+          "cutoff",
+          "minScore"
+        ]
+      },
+      "ParseResult": {
+        "type": "object",
+        "properties": {
+          "release": {
+            "$ref": "#/components/schemas/ParsedRelease"
+          },
+          "quality": {
+            "type": "string",
+            "example": "Bluray-1080p"
+          },
+          "formats": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
+          },
+          "scores": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "profileId": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "score": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "profileId",
+                "name",
+                "score"
+              ]
+            }
+          },
+          "movie": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "year"
+            ]
+          }
+        },
+        "required": [
+          "release",
+          "quality",
+          "formats",
+          "scores",
+          "movie"
+        ]
+      },
+      "ParsedRelease": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "edition": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "quality": {
+            "type": "object",
+            "properties": {
+              "source": {
+                "$ref": "#/components/schemas/QualitySource"
+              },
+              "resolution": {
+                "$ref": "#/components/schemas/Resolution"
+              },
+              "modifier": {
+                "$ref": "#/components/schemas/QualityModifier"
+              },
+              "revision": {
+                "type": "object",
+                "properties": {
+                  "version": {
+                    "type": "integer"
+                  },
+                  "real": {
+                    "type": "integer"
+                  },
+                  "proper": {
+                    "type": "boolean"
+                  },
+                  "repack": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "version",
+                  "real",
+                  "proper",
+                  "repack"
+                ]
+              }
+            },
+            "required": [
+              "source",
+              "resolution",
+              "modifier",
+              "revision"
+            ]
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "multi": {
+            "type": "boolean"
+          },
+          "subtitles": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "releaseGroup": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "hardcodedSubs": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "ids": {
+            "type": "object",
+            "properties": {
+              "imdb": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "tmdb": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "imdb",
+              "tmdb"
+            ]
+          },
+          "codec": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "avc",
+              "hevc",
+              "av1",
+              "vc1",
+              "mpeg2",
+              "xvid",
+              "divx",
+              "vp9",
+              null
+            ]
+          },
+          "hdr": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "dv",
+                "hdr10plus",
+                "hdr10",
+                "hdr",
+                "hlg",
+                "sdr"
+              ]
+            }
+          },
+          "threeD": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "title",
+          "year",
+          "edition",
+          "quality",
+          "languages",
+          "multi",
+          "subtitles",
+          "releaseGroup",
+          "hardcodedSubs",
+          "ids",
+          "codec",
+          "hdr",
+          "threeD"
+        ]
+      },
+      "QualitySize": {
+        "type": "object",
+        "properties": {
+          "quality": {
+            "type": "string",
+            "example": "Bluray-1080p"
+          },
+          "min": {
+            "type": "number",
+            "minimum": 0
+          },
+          "preferred": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "max": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0
+          }
+        },
+        "required": [
+          "quality",
+          "min",
+          "preferred",
+          "max"
+        ]
+      },
+      "ClientItemPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientItem"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "next",
+          "total"
+        ]
+      },
+      "ClientItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 603
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "movie"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "runtimeMinutes": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "synopsis": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5,
+            "description": "Out of 5: TMDB’s vote_average (0–10) halved, to one decimal"
+          },
+          "voteCount": {
+            "type": "integer"
+          },
+          "releaseDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MovieStatus"
+          },
+          "playable": {
+            "type": "boolean"
+          },
+          "art": {
+            "$ref": "#/components/schemas/Art"
+          },
+          "progress": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "title",
+          "year",
+          "runtimeMinutes",
+          "genres",
+          "synopsis",
+          "rating",
+          "voteCount",
+          "releaseDate",
+          "addedAt",
+          "status",
+          "playable",
+          "art",
+          "progress",
+          "position"
+        ]
+      },
+      "ClientDetail": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "$ref": "#/components/schemas/ClientItem"
+          },
+          "originalTitle": {
+            "type": "string"
+          },
+          "tagline": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "certification": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "studios": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "cast": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Credit"
+            }
+          },
+          "directors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Credit"
+            }
+          },
+          "videos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Video"
+            }
+          },
+          "collection": {
+            "$ref": "#/components/schemas/CollectionRef"
+          },
+          "versions": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientVersion"
+            }
+          },
+          "related": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientItem"
+            }
+          }
+        },
+        "required": [
+          "item",
+          "originalTitle",
+          "tagline",
+          "certification",
+          "studios",
+          "cast",
+          "directors",
+          "videos",
+          "collection",
+          "versions",
+          "related"
+        ]
+      },
+      "ClientVersion": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string",
+            "example": "4K HDR"
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "playable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "detail",
+          "playable"
+        ]
+      },
+      "SearchResults": {
+        "type": "object",
+        "properties": {
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchSection"
+            }
+          }
+        },
+        "required": [
+          "sections"
+        ]
+      },
+      "SearchSection": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "movies"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ClientItem"
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "items"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "collections"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ClientCollection"
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "items"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "people"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SearchPerson"
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "items"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "discover"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/DiscoverMovie"
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "items"
+            ]
+          }
+        ]
+      },
+      "ClientCollection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "overview": {
+            "type": "string"
+          },
+          "art": {
+            "$ref": "#/components/schemas/Art"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "years": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "overview",
+          "art",
+          "count",
+          "years"
+        ]
+      },
+      "SearchPerson": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "photo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "titles": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "photo",
+          "titles"
         ]
       }
     },
@@ -6660,6 +9196,2711 @@
           },
           "409": {
             "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/discover/movies": {
+      "get": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Find movies on TMDB",
+        "description": "With a query, TMDB’s search; without one, a list for the server’s region: `trending` (this week, the default), `popular`, `now-playing` or `upcoming`. Library movies are marked `inLibrary`. Answers 503 with `details.reason` `no-tmdb-key` or `tmdb-unreachable`, or 429 with `tmdb-rate-limited`.",
+        "x-highsea-access": "library",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "query",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "trending",
+                "popular",
+                "now-playing",
+                "upcoming"
+              ]
+            },
+            "required": false,
+            "name": "list",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            },
+            "required": false,
+            "name": "page",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DiscoverPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate-limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/movies/{id}/metadata": {
+      "get": {
+        "tags": [
+          "Metadata"
+        ],
+        "summary": "Everything TMDB knows about a movie, in the library or not",
+        "description": "By TMDB id, for any movie on TMDB: from the cache, or from TMDB when the server hasn’t seen it. Nothing is added to the library. Answers 503 with `details.reason` `no-tmdb-key` or `tmdb-unreachable`, or 429 with `tmdb-rate-limited`, when the cache can’t answer and TMDB is needed.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MovieMetadata"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate-limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/movies/{id}/recommendations": {
+      "get": {
+        "tags": [
+          "Metadata"
+        ],
+        "summary": "More like this",
+        "description": "TMDB’s recommendations, or its “similar” list when those are empty (checkpoint 4, decision 6). At most 20. Answers 503 with `details.reason` `no-tmdb-key` or `tmdb-unreachable`, or 429 with `tmdb-rate-limited`, when the cache can’t answer and TMDB is needed.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Movies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DiscoverMovie"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate-limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/collections/{id}": {
+      "get": {
+        "tags": [
+          "Metadata"
+        ],
+        "summary": "A collection and its parts",
+        "description": "By TMDB id. Each part says whether it’s in the library. Answers 503 with `details.reason` `no-tmdb-key` or `tmdb-unreachable`, or 429 with `tmdb-rate-limited`, when the cache can’t answer and TMDB is needed.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The collection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Collection"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate-limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/people/{id}": {
+      "get": {
+        "tags": [
+          "Metadata"
+        ],
+        "summary": "A person and their filmography",
+        "description": "By TMDB id. Each credit says whether its movie is in the library. Answers 503 with `details.reason` `no-tmdb-key` or `tmdb-unreachable`, or 429 with `tmdb-rate-limited`, when the cache can’t answer and TMDB is needed.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The person",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Person"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate-limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/images/{owner}/{ownerId}/{kind}/{size}/{file}": {
+      "get": {
+        "tags": [
+          "Metadata"
+        ],
+        "summary": "A poster, backdrop, photo or logo from the image cache",
+        "description": "Art URLs in every response point here. Served with `Cache-Control: private, max-age=31536000, immutable` and an ETag: TMDB gives a changed image a new file name. Fetched from TMDB the first time; apps send their token with image requests as with any other. 404 for an owner, kind, size or file the server doesn’t serve.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie",
+                "person",
+                "collection"
+              ],
+              "example": "movie"
+            },
+            "required": true,
+            "name": "owner",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "ownerId",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "poster",
+                "backdrop",
+                "profile",
+                "still",
+                "logo"
+              ],
+              "example": "poster"
+            },
+            "required": true,
+            "name": "kind",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[wh]\\d{2,4}$",
+              "example": "w342"
+            },
+            "required": true,
+            "name": "size",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{1,100}\\.(jpg|jpeg|png|webp)$",
+              "example": "f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+            },
+            "required": true,
+            "name": "file",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The image",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/png": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              },
+              "image/webp": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not modified"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate-limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/metadata": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Metadata: whether a TMDB key is set, the language and the region",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Save the TMDB key, the metadata language or the region",
+        "description": "A new key is checked with TMDB first: 400 with `details.reason` `tmdb-key-rejected` when TMDB doesn’t accept it, 503 (`tmdb-unreachable`) when TMDB can’t be reached. Nothing is saved unless every field is. The key is stored encrypted and never returned.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetadataInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate-limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Remove the TMDB key",
+        "description": "The library and its pages keep working from the cache.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Removed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetadataSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/setup/metadata-key": {
+      "post": {
+        "tags": [
+          "Setup"
+        ],
+        "summary": "Check a TMDB key with TMDB, without saving it",
+        "description": "The key step’s Continue. 400 with `details.reason` `tmdb-key-rejected` when TMDB doesn’t accept it; 503 (`tmdb-unreachable`) when TMDB can’t be reached.",
+        "x-highsea-access": "public",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "key": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "key"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate-limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/movies": {
+      "get": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "The library, a page at a time, filtered and sorted",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "$ref": "#/components/schemas/MovieStatus"
+            },
+            "required": false,
+            "name": "status",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "title",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "required": false,
+            "name": "qualityProfileId",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "required": false,
+            "name": "monitored",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "title",
+                "added",
+                "year",
+                "rating"
+              ],
+              "description": "Title when absent"
+            },
+            "required": false,
+            "description": "Title when absent",
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ],
+              "description": "A to Z for title; newest or highest first for the others, when absent"
+            },
+            "required": false,
+            "description": "A to Z for title; newest or highest first for the others, when absent",
+            "name": "dir",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200,
+              "description": "60 when absent"
+            },
+            "required": false,
+            "description": "60 when absent",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of movies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoviePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Add a movie to the library, by TMDB id",
+        "description": "Fetches its metadata when the server doesn’t have it. Adding a movie that’s already in the library returns it unchanged, with 200. 409 `no-indexers` for `searchNow` until an indexer is set up; 503 when the metadata can’t be fetched.",
+        "x-highsea-access": "library",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AddMovieInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Already in the library, unchanged",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Movie"
+                }
+              }
+            }
+          },
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Movie"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate-limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/movies/bulk": {
+      "post": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Monitor, stop monitoring, change the profile, search, refresh or remove many",
+        "x-highsea-access": "library",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BulkInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Done",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BulkResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/movies/upcoming": {
+      "get": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Monitored movies released in the next days, soonest first",
+        "description": "The dashboard’s Upcoming and Calendar. Release dates are the server region’s.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 366,
+              "description": "14 when absent"
+            },
+            "required": false,
+            "description": "14 when absent",
+            "name": "days",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Movies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Movie"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/movies/recent": {
+      "get": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "The movies added last, newest first",
+        "description": "The dashboard’s and home’s Recently added.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 50,
+              "description": "8 when absent"
+            },
+            "required": false,
+            "description": "8 when absent",
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Movies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Movie"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/movies/{id}": {
+      "get": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "A library movie",
+        "description": "404 when the movie isn’t in the library: its page then shows the metadata alone.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The movie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Movie"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Change a movie: monitored, minimum availability, subtitle languages, root folder",
+        "x-highsea-access": "library",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MovieUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Movie"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Remove a movie from the library",
+        "description": "Its metadata stays cached, so its page keeps working without the library layer. Files stay on disk unless `deleteFiles` is true.",
+        "x-highsea-access": "library",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "required": false,
+            "name": "deleteFiles",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/movies/{id}/refresh": {
+      "post": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Refresh a library movie’s metadata from TMDB",
+        "description": "Queues the refresh job; `metadata.updated` follows when it’s done.",
+        "x-highsea-access": "library",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "Queued"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/movies/{id}/versions": {
+      "post": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Add a version, with its own quality profile",
+        "x-highsea-access": "library",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The movie, with the version last",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Movie"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/movies/{id}/versions/{versionId}": {
+      "patch": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Rename a version or change its quality profile",
+        "x-highsea-access": "library",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "versionId",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VersionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The movie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Movie"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Movies"
+        ],
+        "summary": "Remove a version",
+        "description": "A movie keeps at least one: removing the last answers 409 (`last-version`).",
+        "x-highsea-access": "library",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "versionId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The movie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Movie"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rootfolders": {
+      "get": {
+        "tags": [
+          "Root folders"
+        ],
+        "summary": "The folders movies are filed under, with free space and device",
+        "x-highsea-access": "library",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Folders",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RootFolder"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Root folders"
+        ],
+        "summary": "Add a root folder",
+        "description": "The path must be absolute, exist and be writable by the server (400, with `details.reason` `not-absolute`, `not-found` or `not-writable`). 409 when it’s already a root folder, or inside or around one.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "path": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  }
+                },
+                "required": [
+                  "path"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RootFolder"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/rootfolders/{id}": {
+      "delete": {
+        "tags": [
+          "Root folders"
+        ],
+        "summary": "Remove a root folder",
+        "description": "Nothing on disk changes. 409 (`in-use`) while library movies are filed under it.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/qualityprofiles": {
+      "get": {
+        "tags": [
+          "Quality"
+        ],
+        "summary": "Quality profiles",
+        "description": "Read-only until checkpoint 8. Everyone signed in reads them: a movie’s versions name theirs.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QualityProfile"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/qualityprofiles/{id}": {
+      "get": {
+        "tags": [
+          "Quality"
+        ],
+        "summary": "A quality profile",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QualityProfile"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/customformats": {
+      "get": {
+        "tags": [
+          "Quality"
+        ],
+        "summary": "Custom formats",
+        "description": "Read-only until checkpoint 8.",
+        "x-highsea-access": "library",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Formats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CustomFormat"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/languageprofiles": {
+      "get": {
+        "tags": [
+          "Quality"
+        ],
+        "summary": "Subtitle language profiles",
+        "description": "What the add dialog’s Subtitle languages offers. Seeded and edited with subtitles (checkpoint 7); until then the server lists its built-in default.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LanguageProfile"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/parse": {
+      "get": {
+        "tags": [
+          "Quality"
+        ],
+        "summary": "Read a release name: its parts, quality and the custom formats it matches",
+        "x-highsea-access": "library",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 500
+            },
+            "required": true,
+            "name": "title",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "What the name says",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ParseResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/qualitySizes": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Quality sizes: MB per minute for each quality",
+        "description": "Read-only until checkpoint 8. The megabytes are MiB.",
+        "x-highsea-access": "library",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The sizes, lowest quality first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QualitySize"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/items": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "summary": "The library for the apps, a page at a time, with your watch state",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie"
+              ],
+              "description": "Every type when absent"
+            },
+            "required": false,
+            "description": "Every type when absent",
+            "name": "type",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "required": false,
+            "name": "genre",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "required": false,
+            "name": "playable",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "title",
+                "added",
+                "year",
+                "rating"
+              ],
+              "description": "Title when absent"
+            },
+            "required": false,
+            "description": "Title when absent",
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            },
+            "required": false,
+            "name": "dir",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of titles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientItemPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/items/{type}/{id}": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "summary": "A title for its page and the player",
+        "description": "404 when the title isn’t in the library here.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The title",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/search": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "summary": "Search the library: titles, collections and people",
+        "description": "Titles by name, genre or person; collections by name or a part’s title; people by name. A kind with a name starting with the query (at a word) ranks first, then one containing it. For people who may add titles, a `discover` section adds TMDB’s matches that aren’t here; it’s left out when TMDB can’t be reached.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "required": true,
+            "name": "query",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Results",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResults"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
             "content": {
               "application/json": {
                 "schema": {

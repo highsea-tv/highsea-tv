@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A2 Setup (ADR 0021): the prototype's copy, without the indexer and subtitle steps.
+// A2 Setup (ADR 0021): the prototype's copy, without the indexer and subtitle steps, and the TMDB
+// key step (checkpoint 4 plan › TMDB › The key), which the prototype doesn't have.
 import { defineMessages } from '@highsea/i18n'
 
 export const setup = defineMessages({
@@ -14,6 +15,7 @@ export const setup = defineMessages({
   failed: 'Setup didn’t finish',
   'step.name': 'Server name',
   'step.owner': 'Owner account',
+  'step.metadata': 'TMDB key',
   'step.folders': 'Media folders',
   'step.remote': 'Remote access',
   'step.cloud': 'highsea cloud',
@@ -38,6 +40,21 @@ export const setup = defineMessages({
   'owner.mismatch': 'The passwords don’t match.',
   'owner.forgotten':
     'For your safety the password isn’t kept when the page reloads. Enter it again.',
+  'metadata.title': 'Add your TMDB key',
+  'metadata.detail':
+    'highsea gets movie details, posters and cast from TMDB. Each server uses its owner’s own free key.',
+  'metadata.label': 'TMDB API key or Read Access Token',
+  'metadata.hint': 'Either one works. TMDB shows both on your account’s API page.',
+  'metadata.open': 'Open TMDB’s API page',
+  'metadata.why':
+    'TMDB’s terms ask each app to use its own key, so highsea doesn’t share one between servers. Once highsea cloud can fetch movie details for you, this step goes away.',
+  'metadata.skip': 'Add it later in Settings',
+  'metadata.missing': 'Paste your TMDB key, or add it later in Settings.',
+  'metadata.rejected': 'TMDB didn’t accept that key. Copy it again from your TMDB account.',
+  'metadata.unavailable':
+    'Can’t reach TMDB right now. Check the server’s internet connection, or add the key later in Settings.',
+  'metadata.forgotten':
+    'For your safety the key isn’t kept when the page reloads. Paste it again, or add it later in Settings.',
   'folders.title': 'Choose your folders',
   'folders.detail':
     'Movies is where your library lives. Downloads is where torrents land before they’re imported.',
@@ -91,6 +108,9 @@ export const setup = defineMessages({
   'review.folders': 'Folders',
   'review.remoteProxy': 'Reverse proxy at {url}',
   'review.remotePort': 'Port {port}, forwarded',
+  'review.metadata': 'TMDB key',
+  'review.keyAdded': 'Added, ending in {last4}',
+  'review.keyLater': 'Not yet: add it later in Settings',
   'review.linked': 'Linked',
   'review.notLinked': 'Not linked',
   'review.change': 'Change',

@@ -51,8 +51,14 @@ Everything about how the server runs, in one place, one area per page: the regio
 
 ## Data
 
-- `settings.get(section)` / `settings.save(section, value)` → `GET|PUT /api/v1/settings/{section}` for `general`, `media`, `downloadClient`, `network`, `security`, `backups`, `connections`, `importLists`, `qualitySizes` (draft shapes in `design/prototypes/src/mock/settings.ts`).
-- `movies.qualityProfiles()`, `movies.customFormats()`.
+- `settings.get(section)` / `settings.save(section, value)` → `GET|PUT /api/v1/settings/{section}` for `general`, `media`, `downloadClient`, `network`, `security`, `backups`, `connections`, `importLists` (draft shapes in `design/prototypes/src/mock/settings.ts`). Network and Security are built (checkpoint 2); the rest come with their checkpoints.
+- **General › Metadata** (checkpoint 4): the TMDB key, the metadata language and the region live together in one settings row, `GET`, `PUT` and `DELETE /api/v1/settings/metadata`:
+  - `settings.metadata()` (staff) → `MetadataSettings`: `key` (`set`, and `last4`, its last four characters; never the key itself), `language` (`en-US`, TMDB's language parameter) and `region` (`GB`, ISO 3166-1; the owner's locale by default, set in setup);
+  - `settings.saveMetadata({ body })` (the owner) → `PUT`, any of `key`, `language` and `region`. A new key is checked with TMDB first (400 `tmdb-key-rejected`; 503 `tmdb-unreachable` or 429 `tmdb-rate-limited` when TMDB can't say), and nothing is saved unless every field is. The key is stored encrypted;
+  - `settings.removeMetadataKey()` (the owner) → `DELETE`. The library and its pages keep working from the cache.
+- **Quality sizes:** `settings.qualitySizes()` → `GET /api/v1/settings/qualitySizes` (library access): `{ quality, min, preferred, max }` per quality, lowest first, in MiB per minute. Read-only until checkpoint 8.
+- **Profiles and formats:** `quality.profiles()` → `GET /api/v1/qualityprofiles[/{id}]` (everyone signed in) and `quality.customFormats()` → `GET /api/v1/customformats` (library access). Seeded and read-only until checkpoint 8 ([ADR 0031](../adr/0031-quality-and-the-decision-engine.md)).
+- **Root folders** (Media management › Importing): [movies.md › Data](movies.md#data).
 - Events: `settings.updated`.
 
 ## Decisions

@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { ErrorBody, routes } from '@highsea/api-contract'
+import type { Fetch } from '@highsea/core/fetch'
 import type { z } from 'zod'
 import { ApiError } from './errors.ts'
 import { createEventStream, type EventStream } from './events.ts'
 
 type Schema = z.ZodType
 
-/** Just the call: platforms' `fetch` types add extras (Bun's `preconnect`) a test double lacks. */
-export type Fetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>
+export type { Fetch }
 
 /** The parts of a contract route the client reads. */
 type Route = {

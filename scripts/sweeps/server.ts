@@ -3,7 +3,8 @@
 // Boots a throwaway server on its own folders, sweeps setup, finishes it through the API, seeds
 // people, keys, a custom theme and a waiting TV, then visits every admin page signed out and signed in: axe,
 // overflow and page errors in three themes, at 200% text and with reduced motion, then the
-// keyboard walk. Usage: bun scripts/sweeps/server.ts [pages|keyboard]
+// keyboard walk. TMDB answers from the recordings in packages/metadata (HIGHSEA_TMDB_REPLAY), and
+// the library is seeded from them through the API. Usage: bun scripts/sweeps/server.ts [pages|keyboard]
 import { type ChildProcess, spawn } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -41,6 +42,7 @@ const server: ChildProcess = spawn('node', ['server.ts'], {
     HIGHSEA_DATA_DIR: dataDir,
     HIGHSEA_DISCOVERY_PORT: String(PORT + 1),
     HIGHSEA_LOG_LEVEL: 'warn',
+    HIGHSEA_TMDB_REPLAY: '1',
   },
   stdio: ['ignore', 'ignore', 'inherit'],
 })
@@ -182,12 +184,12 @@ async function sweep(visits: Visit[], context: () => Promise<BrowserContext>) {
 const draft = (step: number) =>
   JSON.stringify({
     step,
-    reached: 5,
+    reached: 6,
     draft: {
       serverName: 'Harbor',
       owner: { displayName: 'Ines', username: 'ines' },
       folders: { movies: join(dataDir, 'movies'), downloads: join(dataDir, 'downloads') },
-      remote: step === 3 ? 'reverse-proxy' : 'local-only',
+      remote: step === 4 ? 'reverse-proxy' : 'local-only',
       proxyUrl: 'https://movies.example.com',
       port: '8484',
       cloudLink: false,
@@ -196,7 +198,7 @@ const draft = (step: number) =>
 
 try {
   // setup, each step, while there's no owner yet
-  const steps = ['name', 'owner', 'folders', 'remote', 'cloud', 'review']
+  const steps = ['name', 'owner', 'metadata', 'folders', 'remote', 'cloud', 'review']
   await sweep(
     steps.map((s, i) => ({ name: `setup:${s}`, path: '/setup', init: i ? draft(i) : undefined })),
     () => browser.newContext(),
@@ -206,7 +208,7 @@ try {
       {
         name: 'setup:picker',
         path: '/setup',
-        init: draft(2),
+        init: draft(3),
         act: (p) => p.getByRole('button', { name: 'Browse' }).first().click(),
       },
     ],
@@ -260,6 +262,27 @@ try {
     token,
   )
   const path = (link: string) => new URL(link).pathname
+
+  // the library, from the recorded TMDB fixtures: a key (any works under replay), the recordings'
+  // region, a second root folder, and movies, one with two versions. Metropolis (19) and the
+  // collection's Spider-Man (969681) stay out, for the pages' not-added state.
+  await api('PUT', '/settings/metadata', { key: 'sweep-tmdb-key', region: 'US' }, token)
+  mkdirSync(join(dataDir, 'films'), { recursive: true })
+  await api('POST', '/rootfolders', { path: join(dataDir, 'films') }, token)
+  const movies = join(dataDir, 'movies')
+  const add = (tmdbId: number, versions = [{ label: '1080p', qualityProfileId: 'qp-hd' }]) =>
+    api(
+      'POST',
+      '/movies',
+      { tmdbId, rootFolder: movies, monitored: true, minimumAvailability: 'released', versions },
+      token,
+    )
+  await add(45745, [
+    { label: '4K HDR', qualityProfileId: 'qp-uhd' },
+    { label: '1080p', qualityProfileId: 'qp-hd' },
+  ])
+  for (const id of [10378, 133701, 9761, 653, 832, 1117898]) await add(id)
+  await api('PATCH', '/movies/832', { monitored: false }, token)
 
   // signed out
   await sweep(
@@ -321,7 +344,12 @@ try {
         },
       },
       { name: 'settings', path: '/settings' },
-      { name: 'settings:later', path: '/settings/general' },
+      { name: 'settings:later', path: '/settings/backups' },
+      { name: 'settings:general', path: '/settings/general' },
+      { name: 'settings:media', path: '/settings/media' },
+      { name: 'settings:profiles', path: '/settings/profiles' },
+      { name: 'settings:quality', path: '/settings/quality' },
+      { name: 'system', path: '/system' },
       { name: 'users', path: '/settings/users' },
       { name: 'users:devices', path: '/settings/users', act: tab('Devices') },
       { name: 'users:keys', path: '/settings/users', act: tab('API keys') },
@@ -346,7 +374,44 @@ try {
         path: '/settings/appearance',
         act: (p) => p.getByLabel('Name', { exact: true }).fill('Lighthouse'),
       },
-      { name: 'not-found', path: '/movies' },
+      { name: 'discover', path: '/discover' },
+      { name: 'discover:popular', path: '/discover?list=popular' },
+      { name: 'discover:search', path: '/discover?q=sintel' },
+      { name: 'discover:nothing', path: '/discover?q=no-recording-here' },
+      {
+        name: 'discover:add',
+        path: '/discover',
+        act: (p) => p.getByRole('button', { name: /^Add / }).first().click(),
+      },
+      { name: 'movies', path: '/movies' },
+      { name: 'movies:wanted', path: '/movies?status=wanted&sort=added' },
+      { name: 'movies:none', path: '/movies?title=zzz' },
+      {
+        name: 'movies:table',
+        path: '/movies',
+        act: (p) => p.getByRole('radio', { name: 'Table' }).click(),
+      },
+      {
+        name: 'movies:select',
+        path: '/movies',
+        act: async (p) => {
+          await p.getByRole('radio', { name: 'Table' }).click()
+          await p.getByRole('checkbox').nth(1).check()
+        },
+      },
+      // A6 in the library (two versions, then one not released yet), people and collections
+      { name: 'movie:library', path: '/movies/45745' },
+      { name: 'movie:files', path: '/movies/45745', act: tab('Files') },
+      { name: 'movie:search', path: '/movies/45745', act: tab('Search') },
+      { name: 'movie:upcoming', path: '/movies/1117898' },
+      // and from the recorded TMDB fixtures, not in the library
+      { name: 'movie:not-added', path: '/movies/19' },
+      { name: 'movie:cast', path: '/movies/19', act: tab('Cast and crew') },
+      { name: 'movie:collection', path: '/movies/969681' },
+      { name: 'movie:unknown', path: '/movies/999999999' },
+      { name: 'person', path: '/people/68' },
+      { name: 'collection', path: '/collections/531241' },
+      { name: 'not-found', path: '/wanted' },
       { name: 'pair', path: '/link' },
       { name: 'pair:confirm', path: `/link?code=${pairing.code}` },
     ],

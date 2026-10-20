@@ -4,6 +4,7 @@
 // SIGTERM shuts down in order: stop listening, then the runtime.
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import type { Fetch } from '@highsea/core'
 import { loadCertificate } from '@highsea/network'
 import { boot, loadConfig } from '@highsea/runtime'
 import next from 'next'
@@ -12,8 +13,15 @@ import { createApi } from './src/api/app.ts'
 import { createHttpServer, createTlsServer } from './src/http.ts'
 
 const config = loadConfig()
-const runtime = await boot({ config, version: pkg.version, discovery: true })
+const runtime = await boot({
+  config,
+  version: pkg.version,
+  discovery: true,
+  fetch: await outsideFetch(),
+})
 const log = runtime.logger.child('http')
+if (process.env.HIGHSEA_TMDB_REPLAY === '1')
+  log.warn('TMDB answers come from recordings', { env: 'HIGHSEA_TMDB_REPLAY' })
 
 const app = next({ dev: config.dev, dir: dirname(fileURLToPath(import.meta.url)) })
 await app.prepare()
@@ -54,3 +62,20 @@ async function stop(signal: string) {
 }
 process.on('SIGTERM', () => void stop('SIGTERM'))
 process.on('SIGINT', () => void stop('SIGINT'))
+
+/**
+ * `HIGHSEA_TMDB_REPLAY=1` answers TMDB from the recordings in packages/metadata (ADR 0029), for
+ * development and the browser sweeps without a key or the network. Any key is accepted except one
+ * starting `invalid`; a request with no recording answers 503 `tmdb-unreachable`. Other hosts
+ * (single sign-on's provider) still go out.
+ */
+async function outsideFetch(): Promise<Fetch | undefined> {
+  if (process.env.HIGHSEA_TMDB_REPLAY !== '1') return undefined
+  const { createReplayFetch } = await import('@highsea/metadata/replay')
+  const replay = createReplayFetch()
+  const tmdb = new Set(['api.themoviedb.org', 'image.tmdb.org'])
+  return (input, init) => {
+    const url = new URL(input instanceof Request ? input.url : input.toString())
+    return tmdb.has(url.hostname) ? replay(input, init) : fetch(input, init)
+  }
+}

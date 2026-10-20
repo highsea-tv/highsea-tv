@@ -525,6 +525,21 @@ describe('CommandPalette', () => {
     expect(onMovies).toHaveBeenCalledTimes(1)
     expect(queryByRole('dialog')).toBeNull()
   })
+
+  test('tells the caller what’s typed, for results it looks up itself', async () => {
+    const user = userEvent.setup()
+    const typed: string[] = []
+    render(
+      <CommandPalette
+        open
+        onOpenChange={() => {}}
+        groups={[]}
+        onSearchChange={(s) => typed.push(s)}
+      />,
+    )
+    await user.keyboard('mat')
+    expect(typed.at(-1)).toBe('mat')
+  })
 })
 
 describe('Banner', () => {

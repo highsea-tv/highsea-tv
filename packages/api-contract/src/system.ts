@@ -14,6 +14,15 @@ export const Health = z
   })
   .openapi('Health')
 
+/** A provider's credit, in the wording its terms ask for (`TMDB_ATTRIBUTION`). */
+export const Attribution = z
+  .object({
+    name: z.string().openapi({ example: 'TMDB' }),
+    notice: z.string(),
+    url: z.string().openapi({ example: 'https://www.themoviedb.org' }),
+  })
+  .openapi('Attribution')
+
 export const PublicInfo = z
   .object({
     id: z.string().openapi({ example: 'srv_5k2m9x0q4r7t1v3w' }),
@@ -29,7 +38,12 @@ export const PublicInfo = z
       passkeys: z.boolean(),
     }),
     /** What this server can do so far: clients show a widget only when its source is here. */
-    sources: z.array(z.enum(WIDGET_SOURCES)).openapi({ example: ['system'] }),
+    sources: z.array(z.enum(WIDGET_SOURCES)).openapi({ example: ['system', 'movies'] }),
+    /**
+     * The data providers whose terms ask to be credited, for each app's About (TMDB's terms).
+     * Empty when absent: discovery answers leave it out to stay small.
+     */
+    attributions: z.array(Attribution).default([]),
   })
   .openapi('PublicInfo')
 
@@ -82,6 +96,7 @@ export const HealthCheck = z
   .openapi('HealthCheck')
 
 export type PublicInfo = z.infer<typeof PublicInfo>
+export type Attribution = z.infer<typeof Attribution>
 
 export const system = {
   health: createRoute({

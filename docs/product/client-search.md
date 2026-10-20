@@ -41,12 +41,15 @@ A collection opens a page of its own: "Collection", its name, "3 movies here · 
 
 ## Data
 
-- `library.search(query)` → `GET /api/v1/search?q=`: `SearchResults`, `sections` in ranked order, each `{ kind, items }`:
-  - `movies`: playable `ClientItem`s by title, genre or person, title matches first;
-  - `collections`: `ClientCollection`s (name, overview, art, count here, years) by name or a part's title;
-  - `people`: names that match, with how many of their films are here.
+Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `library` group), as built in Phase 3, checkpoint 4. Everyone signed in.
+
+- `library.search({ query: { query } })` → `GET /api/v1/search?query=`: `SearchResults`, `sections` in ranked order, each `{ kind, items }`, up to 20 items a section:
+  - `movies`: library `ClientItem`s by title, genre or person (cast or crew), title matches first. Each says whether it's `playable`; none is until files arrive (checkpoint 6);
+  - `collections`: `ClientCollection`s (`id`, `name`, `overview`, `art`, `count` here, `years`) by name or a part's title, counting only the parts here;
+  - `people`: `SearchPerson`s (`id`, `name`, `photo`, `titles` here) whose names match;
+  - `discover`: for people who may add titles (Manage the library), TMDB's matches that aren't here, as `DiscoverMovie`s, after the rest; left out when TMDB can't be reached or no key is set. Apps that don't add titles skip it, as they skip any kind they don't know.
 - **Ranking:** a kind with a name that starts with the query (at a word) comes first, then one with a name containing it, then the rest; ties keep the order above. Empty kinds are left out.
-- `library.collection(id)` → `GET /api/v1/collections/{id}`: the collection and its titles here, oldest first; 404 when none are.
+- **A collection's page** reads `metadata.collection({ params: { id } })` → `GET /api/v1/collections/{id}`, the media pages' route ([media-pages.md › Data](media-pages.md#data)): the collection and all its parts, oldest first, each with `inLibrary`. The page shows the parts here.
 - The query lives in the page's history entry (the prototype keeps it in `history.state`), not in storage.
 - Events: `movies.updated`.
 

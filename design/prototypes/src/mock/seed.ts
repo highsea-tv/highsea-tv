@@ -4,6 +4,7 @@
 // live announcement. "empty" is the same server just after setup: profiles and the catalog exist,
 // nothing else does.
 import { art, backdropArt, library, posterArt, stillArt, type Title } from '@highsea/fixtures'
+import { seedFormats, seedProfiles } from '@highsea/quality'
 import { iso } from './clock.ts'
 import { defaultSettings, type Settings } from './settings.ts'
 import type {
@@ -178,77 +179,9 @@ const users = (now: number): User[] => [
   },
 ]
 
-const qualityProfiles: QualityProfile[] = [
-  {
-    id: 'qp-uhd',
-    name: 'Ultra HD',
-    cutoff: 'WEB 2160p',
-    qualities: [
-      { name: 'Remux 2160p', allowed: true },
-      { name: 'Bluray 2160p', allowed: true },
-      { name: 'WEB 2160p', allowed: true },
-      { name: 'Bluray 1080p', allowed: false },
-    ],
-    upgradeAllowed: true,
-    minFormatScore: 0,
-    cutoffFormatScore: 1500,
-    formats: [
-      { formatId: 'cf-dv', score: 1500 },
-      { formatId: 'cf-hdr10', score: 1000 },
-      { formatId: 'cf-x265', score: 100 },
-      { formatId: 'cf-lq', score: -10000 },
-    ],
-  },
-  {
-    id: 'qp-hd',
-    name: 'HD 1080p',
-    cutoff: 'Bluray 1080p',
-    qualities: [
-      { name: 'Bluray 1080p', allowed: true },
-      { name: 'WEB 1080p', allowed: true },
-      { name: 'HDTV 1080p', allowed: true },
-      { name: 'WEB 720p', allowed: false },
-    ],
-    upgradeAllowed: true,
-    minFormatScore: 0,
-    cutoffFormatScore: 100,
-    formats: [
-      { formatId: 'cf-x265', score: 100 },
-      { formatId: 'cf-lq', score: -10000 },
-    ],
-  },
-  {
-    id: 'qp-any',
-    name: 'Any',
-    cutoff: 'WEB 1080p',
-    qualities: [
-      { name: 'WEB 1080p', allowed: true },
-      { name: 'WEB 720p', allowed: true },
-      { name: 'DVD', allowed: true },
-    ],
-    upgradeAllowed: false,
-    minFormatScore: -100,
-    cutoffFormatScore: 0,
-    formats: [{ formatId: 'cf-lq', score: -10000 }],
-  },
-]
-
-const customFormats: CustomFormat[] = [
-  {
-    id: 'cf-dv',
-    name: 'Dolby Vision',
-    conditions: ['Title contains DV or DoVi'],
-    source: 'preset',
-  },
-  { id: 'cf-hdr10', name: 'HDR10', conditions: ['Title contains HDR10 or HDR'], source: 'preset' },
-  { id: 'cf-x265', name: 'x265', conditions: ['Codec is HEVC'], source: 'preset' },
-  {
-    id: 'cf-lq',
-    name: 'Low-quality groups',
-    conditions: ['Release group is on the low-quality list'],
-    source: 'preset',
-  },
-]
+// The profiles and formats a new server starts with, from @highsea/quality.
+const qualityProfiles: QualityProfile[] = seedProfiles()
+const customFormats: CustomFormat[] = seedFormats()
 
 const catalog: CatalogDefinition[] = [
   def(

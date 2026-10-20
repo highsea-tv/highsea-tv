@@ -6,7 +6,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./format": "./src/format.ts"
+    "./format": "./src/format.ts",
+    "./fetch": "./src/fetch.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

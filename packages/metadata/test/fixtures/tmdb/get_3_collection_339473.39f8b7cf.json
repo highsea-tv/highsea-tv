@@ -1,0 +1,73 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/collection/339473?language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "id": 339473,
+      "name": "Caminandes Collection",
+      "overview": "Caminandes is an independently produced short animated series, inspired by the good old Chuck Jones cartoons.",
+      "poster_path": "/pDDVNTzwH3Y4sC6dDKpaMe2sj79.jpg",
+      "backdrop_path": "/VGqDyS1rp0IQcuFGInQzmfDFAj.jpg",
+      "parts": [
+        {
+          "adult": false,
+          "backdrop_path": "/mjkoC8Vo7fSHuqrbVQdI6cNwKA2.jpg",
+          "genre_ids": [16, 10751, 35],
+          "id": 253777,
+          "original_language": "en",
+          "original_title": "Caminandes: Llama Drama",
+          "overview": "Koro wants to get to the other side of the road.",
+          "popularity": 26.55,
+          "poster_path": "/66VPke0YSiyfe97aobbcZ55ts56.jpg",
+          "release_date": "2013-02-10",
+          "title": "Caminandes: Llama Drama",
+          "video": false,
+          "vote_average": 6.667,
+          "vote_count": 9,
+          "media_type": "movie"
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/206A3X9EH42kmdQMECq90SbjHCn.jpg",
+          "genre_ids": [16, 35, 10751],
+          "id": 253774,
+          "original_language": "en",
+          "original_title": "Caminandes: Gran Dillama",
+          "overview": "A young llama named Koro discovers that the grass is always greener on the other side (of the fence).",
+          "popularity": 12.47,
+          "poster_path": "/7YtEiEzRBVCr8Sbgo1kVsr3OCMk.jpg",
+          "release_date": "2013-11-22",
+          "title": "Caminandes: Gran Dillama",
+          "video": false,
+          "vote_average": 7.139,
+          "vote_count": 18,
+          "media_type": "movie"
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/tIX2BIhkhoFq1iwtHYzTSbHbe82.jpg",
+          "genre_ids": [16, 35, 10751],
+          "id": 406956,
+          "original_language": "en",
+          "original_title": "Caminandes: Llamigos",
+          "overview": "In this episode of the Caminandes cartoon series we learn to know our hero Koro even better! It's winter in Patagonia, food is getting scarce. Koro the Llama engages with Oti the pesky penguin in an epic fight over that last tasty berry.  This short animation film was made with Blender and funded by the subscribers of the Blender Cloud platform. Already since 2007, Blender Institute successfully combines film and media production with improving a free and open source 3D creation pipeline.",
+          "popularity": 3.8,
+          "poster_path": "/753kJbZ5iS7DUomTKX9qF5Cs5NY.jpg",
+          "release_date": "2016-01-30",
+          "title": "Caminandes: Llamigos",
+          "video": false,
+          "vote_average": 6.6,
+          "vote_count": 10,
+          "media_type": "movie"
+        }
+      ]
+    }
+  }
+}

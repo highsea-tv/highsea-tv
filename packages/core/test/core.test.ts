@@ -15,6 +15,7 @@ import {
   percent,
   rate,
   relative,
+  retryAfterMs,
   shortDate,
 } from '../src/index.ts'
 
@@ -110,5 +111,16 @@ describe('format', () => {
     expect(relative('2026-10-20T11:56:00Z', now)).toBe('4m ago')
     expect(percent(0.426)).toBe('42%')
     expect(shortDate('2026-10-23T12:00:00Z')).toBe('Fri 23')
+  })
+})
+
+describe('fetch', () => {
+  test('Retry-After as seconds or a date (RFC 9110 § 10.2.3)', () => {
+    const now = Date.UTC(2026, 9, 17, 20, 15)
+    expect(retryAfterMs('120', now)).toBe(120_000)
+    expect(retryAfterMs('Sat, 17 Oct 2026 20:15:30 GMT', now)).toBe(30_000)
+    expect(retryAfterMs('Sat, 17 Oct 2026 20:00:00 GMT', now)).toBe(0)
+    expect(retryAfterMs('soon', now)).toBeNull()
+    expect(retryAfterMs(null, now)).toBeNull()
   })
 })

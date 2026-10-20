@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { networkInterfaces } from 'node:os'
-import { join } from 'node:path'
-import { type Auth, createAuth, type Fetch, type Issued, type RequestMeta } from '@highsea/auth'
+import { join, resolve } from 'node:path'
+import { type Auth, createAuth, type Issued, type RequestMeta } from '@highsea/auth'
 import {
   AppError,
   type Clock,
@@ -10,6 +10,7 @@ import {
   createLogger,
   createSealer,
   type EventBus,
+  type Fetch,
   generateSecretKey,
   jsonSink,
   type Logger,
@@ -23,6 +24,8 @@ import {
 } from '@highsea/core'
 import { type Database, type Db, migrate, openDatabase, schema } from '@highsea/db'
 import { createJobQueue, type JobQueue } from '@highsea/jobs'
+import { createMovies, type Movies } from '@highsea/media-movies'
+import { createMetadata, type Metadata, TMDB_ATTRIBUTION } from '@highsea/metadata'
 import type { MdnsResponder } from '@highsea/network'
 import {
   type Branding,
@@ -32,6 +35,7 @@ import {
 } from '@highsea/personalization'
 import { eq } from 'drizzle-orm'
 import type { Config } from './config.ts'
+import { homeRows } from './home-rows.ts'
 import { createNetworkService, type NetworkService } from './network.ts'
 import {
   checkSetup,
@@ -43,8 +47,19 @@ import {
 import { createCpuMeter, type Disk, disks, type HealthIssue, memory } from './system.ts'
 import { createWorkerPool, type WorkerPool } from './workers.ts'
 
-/** Milestone 1 has the server itself; each later milestone adds its own. */
-const SOURCES: WidgetSource[] = ['system']
+/** Milestone 1 has the server itself and the movie library; each later checkpoint adds its own. */
+const SOURCES: WidgetSource[] = ['system', 'movies']
+
+/** A provider's credit, in the wording its terms ask for. */
+export type Attribution = { name: string; notice: string; url: string }
+
+/**
+ * TMDB's terms ask for its notice in an About or Credits section
+ * (https://www.themoviedb.org/api-terms-of-use): public info carries it to every app.
+ */
+const ATTRIBUTIONS: Attribution[] = [
+  { name: 'TMDB', notice: TMDB_ATTRIBUTION, url: 'https://www.themoviedb.org' },
+]
 
 export type ServerIdentity = { id: string; name: string; createdAt: number }
 
@@ -62,6 +77,8 @@ export type PublicInfo = {
    * server keeps working while later milestones add the rest.
    */
   sources: WidgetSource[]
+  /** The data providers to credit in each app's About. */
+  attributions: Attribution[]
 }
 
 /** The server card and status bar's server. */
@@ -89,6 +106,8 @@ export type SetupInput = {
   folders: MediaFolders
   remoteAccess: RemoteAccessInput
   cloudLink: boolean
+  /** The TMDB key step: the key (skipped when absent), the metadata language and the region. */
+  metadata?: { key?: string; language?: string; region?: string }
 }
 
 export type HealthReport = {
@@ -113,6 +132,10 @@ export type Runtime = {
   auth: Auth
   network: NetworkService
   personalization: Personalization
+  /** TMDB, the metadata cache and images (ADR 0029, 0030). */
+  metadata: Metadata
+  /** The movie library. */
+  movies: Movies
   identity(): ServerIdentity
   rename(name: string): void
   /** `origin` is the browser's, when known: passkeys depend on it. */
@@ -144,7 +167,10 @@ export type BootOptions = {
   /** Answer LAN discovery and advertise over mDNS. Off unless asked: the server entry turns it on. */
   discovery?: boolean
   mdns?: () => Promise<MdnsResponder>
-  /** For single sign-on's requests to the provider (tests pass a fake). */
+  /**
+   * Every outside request: single sign-on's provider and TMDB (ADR 0029). Tests, the sweeps and
+   * the replay mode pass `createReplayFetch()` from `@highsea/metadata/replay`.
+   */
   fetch?: Fetch
 }
 
@@ -224,6 +250,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       setupComplete: isSetupComplete(db),
       auth: auth.methods(origin),
       sources: SOURCES,
+      attributions: ATTRIBUTIONS,
     }
   }
 
@@ -254,13 +281,32 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     fetch: options.fetch,
   })
 
-  const personalization = createPersonalization({
+  const metadata = createMetadata({
     db,
+    jobs,
     clock,
+    logger,
     events,
-    serverName: () => identity().name,
-    rename,
+    sealer,
+    fetch: options.fetch ?? globalThis.fetch,
+    imagesDir: join(config.dataDir, 'images'),
   })
+  metadata.jobs.schedule(clock.now())
+
+  const movies = createMovies({ db, jobs, clock, events, logger, metadata })
+  movies.seed()
+  movies.jobs.schedule(clock.now())
+
+  const personalization = createPersonalization(
+    {
+      db,
+      clock,
+      events,
+      serverName: () => identity().name,
+      rename,
+    },
+    { homeRows: () => homeRows(db) },
+  )
 
   const cpu = createCpuMeter()
 
@@ -280,6 +326,8 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     auth,
     network,
     personalization,
+    metadata,
+    movies,
     identity,
     rename,
     publicInfo,
@@ -288,8 +336,30 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       if (isSetupComplete(db)) throw new AppError('not-found', 'Setup is already complete.')
       // everything that can be checked before the owner exists, so a mistake leaves nothing behind
       checkSetup(config, input)
+      const md = input.metadata ?? {}
+      const key = md.key?.trim()
+      // the key step checked the key already; checking again keeps a bad one from being stored
+      if (key) await metadata.settings.checkKey(key)
       const owner = await auth.createOwner(input.owner, meta)
       saveSetup({ db, config, clock, events }, input, rename, input.serverName)
+      // the contract checked their shape; the owner's locale when the step sent them
+      if (md.language !== undefined || md.region !== undefined)
+        metadata.settings.update({ language: md.language, region: md.region })
+      // setup's movies folder is the first root folder (setup.ts › MediaFolders); saveSetup made it
+      const folder = resolve(input.folders.movies)
+      try {
+        if (!movies.rootFolders.list().some((f) => f.path === folder))
+          movies.rootFolders.add(folder)
+      } catch (e) {
+        log.warn('couldn’t add the movies folder as a root folder', { error: (e as Error).message })
+      }
+      if (key)
+        try {
+          await metadata.settings.setKey(key)
+        } catch (e) {
+          // the owner exists now: setup finishes, and the key is added in Settings › General
+          log.warn('couldn’t save the TMDB key at setup', { error: (e as Error).message })
+        }
       log.info('setup complete', { owner: owner.username })
       return auth.signInAfterSetup(owner.id, meta)
     },
@@ -375,6 +445,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
           log.error('a shutdown step failed', { error: (e as Error).message })
         }
       }
+      movies.close()
       await network.stopDiscovery()
       await jobs.drain()
       await workers.close()

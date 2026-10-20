@@ -33,7 +33,7 @@ import { UIProvider } from '@highsea/ui-web'
 | Overlays | `Dialog`, `ConfirmDialog`, `Sheet` (bottom, left, right), `Popover`, `Menu`, `Tooltip`, `toast()` with `Toaster` |
 | Data | `Table` (scrolls sideways when it must, and is then a tab stop named by its `aria-label`) with `TableFrame`, `TableToolbar`, `TitleCell`, `RowActions`; `Badge`, `QualityTag`, `Progress`, `Skeleton`, `Tabs` |
 | Media | `Poster`, `BackdropHero`, `CarouselRow`, `Rating` |
-| Shell | `Sidebar` with `NavGroup`, `NavItem`, `ServerCard`; `CommandPalette`; `WidgetGrid`, `WidgetFrame` (an editor passes its own `handle` and `resize` in edit mode), `Stat`; `Banner`; `StatusBar` with `StatusItem` |
+| Shell | `Sidebar` with `NavGroup`, `NavItem`, `ServerCard`; `CommandPalette` (`onSearchChange` for results the caller looks up); `WidgetGrid`, `WidgetFrame` (an editor passes its own `handle` and `resize` in edit mode), `Stat`; `Banner`; `StatusBar` with `StatusItem` |
 | Setup | `Stepper` (a wizard's steps beside the form; collapses to "Step 3 of 8" and a bar below `expanded`), `QrCode` (a real QR code as SVG, dark on light, with the quiet zone; renders on the server too) |
 | Customize | `WidgetEditor` (Customize mode for a `WidgetGrid`: drag a handle to move, a corner to resize, or Space, the arrows and Shift from the keyboard; built on dnd-kit), `SortableList` (a list reordered the same way), `Sparkline` (a decorative live-rate graph); `useClip` and `useWidth` fit a widget's content to its size. Their announcements are English unless the app passes `messages` |
 | Page | `PageHeader` (title, search, actions), `SearchTrigger` (opens the palette, with the ⌘K hint), `EmptyState` (nothing yet, nothing matches, or an `error` with a retry) |

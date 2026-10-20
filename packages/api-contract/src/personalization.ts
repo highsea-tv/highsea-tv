@@ -5,6 +5,7 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import { ClientType } from './accounts.ts'
 import { API_PREFIX, access, body, errors, IdParam, json, noContent } from './common.ts'
+import { MinimumAvailability } from './movies.ts'
 
 export const WIDGET_KINDS = [
   'network',
@@ -134,11 +135,23 @@ export const dashboard = {
 
 // ---------------------------------------------------------------- preferences
 
+/** The admin's add dialog remembers its last-used values here (movies.md › Decisions). */
+export const AddMovieDefaults = z
+  .strictObject({
+    rootFolder: z.string().min(1).max(4096),
+    qualityProfileId: z.string().min(1).max(64),
+    languageProfileId: z.string().max(64).nullable().optional(),
+    minimumAvailability: MinimumAvailability,
+    searchNow: z.boolean(),
+  })
+  .openapi('AddMovieDefaults')
+
 const PreferenceLayer = z
   .object({
     theme: z.string().regex(THEME_ID).optional(),
     sound: z.boolean().optional(),
     volume: z.number().min(0).max(1).optional(),
+    'admin.addMovie.defaults': AddMovieDefaults.optional(),
   })
   .openapi('PreferenceLayer')
 
@@ -151,9 +164,16 @@ export const Preferences = z
       theme: z.string(),
       sound: z.boolean(),
       volume: z.number(),
+      /** Null until the person has added a movie. */
+      'admin.addMovie.defaults': AddMovieDefaults.nullable(),
     }),
     /** Which layer each value came from. */
-    from: z.object({ theme: LayerName, sound: LayerName, volume: LayerName }),
+    from: z.object({
+      theme: LayerName,
+      sound: LayerName,
+      volume: LayerName,
+      'admin.addMovie.defaults': LayerName,
+    }),
     layers: z.object({ device: PreferenceLayer, client: PreferenceLayer, user: PreferenceLayer }),
     client: ClientType.nullable(),
     deviceId: z.string().nullable(),
@@ -170,6 +190,7 @@ export const PreferencePatch = z
       theme: z.string().regex(THEME_ID).nullable().optional(),
       sound: z.boolean().nullable().optional(),
       volume: z.number().min(0).max(1).nullable().optional(),
+      'admin.addMovie.defaults': AddMovieDefaults.nullable().optional(),
     }),
   })
   .openapi('PreferencePatch')
@@ -453,6 +474,7 @@ export const appearance = {
 export type WidgetPlacement = z.infer<typeof WidgetPlacement>
 export type WidgetLayout = z.infer<typeof WidgetLayout>
 export type Preferences = z.infer<typeof Preferences>
+export type AddMovieDefaults = z.infer<typeof AddMovieDefaults>
 export type HomeArrangement = z.infer<typeof HomeArrangement>
 export type Appearance = z.infer<typeof Appearance>
 export type AppearancePatch = z.infer<typeof AppearancePatch>

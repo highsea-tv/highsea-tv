@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { issueDevice } from '@highsea/auth'
+import { createReplayFetch, type ReplayFetch } from '@highsea/metadata/replay'
 import { boot, getRuntime, hasRuntime, loadConfig, type Runtime } from '@highsea/runtime'
 import { ApiError, createClient } from '@highsea/sdk'
 import type { createApi } from '../src/api/app.ts'
@@ -19,10 +20,15 @@ export async function cleanup() {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true })
 }
 
-export async function bootRuntime(): Promise<Runtime> {
+/**
+ * A booted runtime whose outside requests go to TMDB's recordings (ADR 0029): no test reaches the
+ * network, and one with no recording fails. Pass `fetch` to count or fail requests.
+ */
+export async function bootRuntime(options: { fetch?: ReplayFetch } = {}): Promise<Runtime> {
   const dir = mkdtempSync(join(tmpdir(), 'highsea-api-'))
   dirs.push(dir)
   return boot({
+    fetch: options.fetch ?? createReplayFetch(),
     config: loadConfig({
       HIGHSEA_CONFIG_DIR: join(dir, 'config'),
       HIGHSEA_DATA_DIR: join(dir, 'data'),

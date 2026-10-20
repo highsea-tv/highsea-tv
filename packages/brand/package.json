@@ -10,6 +10,7 @@
     "./fonts/*": "./fonts/*",
     "./logo/*": "./assets/logo/*",
     "./icons/*": "./assets/icons/*",
+    "./attribution/*": "./assets/attribution/*",
     "./sounds/*": "./sounds/*"
   },
   "scripts": {

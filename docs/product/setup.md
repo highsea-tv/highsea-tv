@@ -18,8 +18,8 @@ Takes a freshly started server to a working one in a few minutes: a name, the ow
 
 - **Header** (56px, `line` border below): the lockup, "Setup" in `text-3`, and **Start over** on the right once you've passed the first step.
 - **Body** (max 960px, centered):
-  - **Stepper** on the left at expanded and wide: an ordered list of the 8 steps. The current step is highlighted; finished steps show a check and are buttons, so you can go back.
-  - Below expanded the stepper collapses to "Step 3 of 8 · Media folders" and a progress bar above the form.
+  - **Stepper** on the left at expanded and wide: an ordered list of the 9 steps. The current step is highlighted; finished steps show a check and are buttons, so you can go back.
+  - Below expanded the stepper collapses to "Step 4 of 9 · Media folders" and a progress bar above the form.
   - **Form** (max 600px): the step's heading and one-line explanation, its fields, then a footer with **Back** (from step 2) and **Continue** (or **Finish setup** on the last step).
 - **Steps:**
 
@@ -27,12 +27,15 @@ Takes a freshly started server to a working one in a few minutes: a name, the ow
   | --- | --- | --- | --- |
   | 1 | Server name | Server name | Empty |
   | 2 | Owner account | Your name, Username, Password, Confirm password | Empty |
-  | 3 | Media folders | Movies folder, Downloads folder, each with **Browse**; the hardlink check below | `/data/media/movies` and `/data/downloads`, the container layout the server detects |
-  | 4 | Indexers | The catalog's starter pack, one checkbox each; private ones carry a "Needs an account" badge | Public indexers checked |
-  | 5 | Subtitles | Language chips; the order you pick them in is the preference order | English |
-  | 6 | Remote access | Three radio cards; the chosen one reveals its field | Only at home |
-  | 7 | highsea cloud | One switch, and what linking does and doesn't share | Off |
-  | 8 | Review | Every choice in a list, each with **Change** | |
+  | 3 | TMDB key | The key (masked), **Open TMDB's API page**, why highsea asks, and TMDB's logo and notice; **Add it later in Settings** beside Continue | Empty |
+  | 4 | Media folders | Movies folder, Downloads folder, each with **Browse**; the hardlink check below | `/data/media/movies` and `/data/downloads`, the container layout the server detects |
+  | 5 | Indexers | The catalog's starter pack, one checkbox each; private ones carry a "Needs an account" badge | Public indexers checked |
+  | 6 | Subtitles | Language chips; the order you pick them in is the preference order | English |
+  | 7 | Remote access | Three radio cards; the chosen one reveals its field | Only at home |
+  | 8 | highsea cloud | One switch, and what linking does and doesn't share | Off |
+  | 9 | Review | Every choice in a list, each with **Change** | |
+
+  The TMDB key step is new in Phase 3 (decision 4), between the owner and the folders as the [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#the-key) places it; the prototype has the other 8. Until the indexer and subtitle steps arrive, the server's wizard has 7.
 
 - **Path picker** (a dialog from **Browse**): the server's folders, not this device's. Breadcrumbs at the top (each segment is a button), "Up one level", the folders in the current one, then **Cancel** and **Use this folder**.
 - **Hardlink check** (step 3): a banner under the folders. Success when both are on the same disk; a warning when they're not, explaining the cost and how to avoid it.
@@ -79,12 +82,20 @@ Takes a freshly started server to a working one in a few minutes: a name, the ow
 | --- | --- | --- |
 | 1 | Name your server | Everyone who connects sees this name. You can change it later in Settings. |
 | 2 | Create the owner account | The owner can do everything, including inviting people and giving them roles. Keep this password somewhere safe. |
-| 3 | Choose your folders | Movies is where your library lives. Downloads is where torrents land before they're imported. |
-| 4 | Add indexers | Indexers are the sites highsea searches for releases. These public ones need no account. Add private ones from the catalog later. |
-| 5 | Subtitle languages | highsea finds subtitles in these languages and syncs them to each movie. The first one is preferred. |
-| 6 | Watching away from home | Choose how apps reach this server from outside your network. You can change it later. |
-| 7 | Link to highsea cloud | Optional. Everything works without it: the cloud only adds conveniences, and your library never leaves this server. |
-| 8 | Check and finish | Everything here can be changed later in Settings. |
+| 3 | Add your TMDB key | highsea gets movie details, posters and cast from TMDB. Each server uses its owner's own free key. |
+| 4 | Choose your folders | Movies is where your library lives. Downloads is where torrents land before they're imported. |
+| 5 | Add indexers | Indexers are the sites highsea searches for releases. These public ones need no account. Add private ones from the catalog later. |
+| 6 | Subtitle languages | highsea finds subtitles in these languages and syncs them to each movie. The first one is preferred. |
+| 7 | Watching away from home | Choose how apps reach this server from outside your network. You can change it later. |
+| 8 | Link to highsea cloud | Optional. Everything works without it: the cloud only adds conveniences, and your library never leaves this server. |
+| 9 | Check and finish | Everything here can be changed later in Settings. |
+
+**TMDB key** (checkpoint 4, as built):
+- the field is "TMDB API key or Read Access Token", with the hint "Either one works. TMDB shows both on your account's API page.";
+- the link: **Open TMDB's API page**;
+- why: "TMDB's terms ask each app to use its own key, so highsea doesn't share one between servers. Once highsea cloud can fetch movie details for you, this step goes away.", then TMDB's logo and notice: "This product uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB.";
+- **Add it later in Settings** skips the step; Continue checks the key with TMDB first;
+- Review: "TMDB key" reads "Added, ending in {last4}" or "Not yet: add it later in Settings".
 
 **Remote access options:**
 - **Only at home:** Apps connect on this network. Nothing is opened to the internet.
@@ -112,6 +123,7 @@ Takes a freshly started server to a working one in a few minutes: a name, the ow
 | Username | Use 2 to 32 lowercase letters, numbers, dots, dashes or underscores. |
 | Password | Use at least 10 characters. |
 | Confirm password | The passwords don't match. |
+| TMDB key | Paste your TMDB key, or add it later in Settings. / TMDB didn't accept that key. Copy it again from your TMDB account. / Can't reach TMDB right now. Check the server's internet connection, or add the key later in Settings. |
 | Movies folder | Pick a folder for movies. |
 | Downloads folder | Pick a folder for downloads. / Use a different folder from the movies folder. |
 | Languages | Pick at least one language, or turn subtitles off later in Settings. |
@@ -122,12 +134,13 @@ Takes a freshly started server to a working one in a few minutes: a name, the ow
 
 ## Data
 
-As built in Phase 3, checkpoint 2. The indexer and subtitle steps arrive with their packages.
+As built in Phase 3, checkpoints 2 and 4. The indexer and subtitle steps arrive with their packages.
 
-- `system.publicInfo()` → `GET /api/v1/system/info/public`: `{ id, name, version, setupComplete, auth }`. Unauthenticated.
+- `system.publicInfo()` → `GET /api/v1/system/info/public`: `{ id, name, version, setupComplete, auth, sources, attributions }`. Unauthenticated.
 - `setup.defaults()` → `GET /api/v1/setup/defaults`: the media root and the suggested folders.
 - `setup.listFolders(path)` → `GET /api/v1/setup/fs?path=…`: `{ name, path, kind: 'folder' }[]` inside the media root only, or a 404 "{path} doesn't exist on the server."
 - `setup.checkHardlinks(a, b)` → `GET /api/v1/setup/fs/hardlinks?a=…&b=…`: `{ ok, sameDevice, message }`.
+- `setup.checkMetadataKey({ body: { key } })` → `POST /api/v1/setup/metadata-key`: the key step's Continue. It asks TMDB (`GET /3/authentication`) without saving the key: 204 when TMDB accepts it, 400 with `details.reason` `tmdb-key-rejected` when it doesn't, 503 `tmdb-unreachable` or 429 `tmdb-rate-limited` when TMDB can't say. Either credential works, the v3 API key or the Read Access Token, told apart by shape.
 - Later: `catalog.starterPack()` → `GET /api/v1/catalog/indexers?starter=true` and `subtitles.languages()` → `GET /api/v1/subtitles/languages`.
 - `setup.complete(input)` → `POST /api/v1/setup`, allowed only while `setupComplete` is false. It returns the server and starts a session for the owner.
 
@@ -141,12 +154,14 @@ As built in Phase 3, checkpoint 2. The indexer and subtitle steps arrive with th
       | { kind: 'reverse-proxy'; url: string }
       | { kind: 'port-forward'; port: number }
     cloudLink: boolean
+    // the key step: the key when added (checked already), and the owner's locale for both
+    metadata?: { key?: string; language?: string; region?: string } // 'en-US', 'GB'
     // later: indexers: string[]; subtitleLanguages: string[]
   }
   ```
 
 - The setup endpoints (`/api/v1/setup/*`) are open only until setup is complete, then return 404.
-- The wizard keeps its place and its answers in the browser (`highsea:setup` in localStorage), except the password.
+- The wizard keeps its place and its answers in the browser (`highsea:setup` in localStorage), except the password and the TMDB key. After a reload, a key TMDB accepted is asked for again on Finish ("For your safety the key isn't kept when the page reloads. Paste it again, or add it later in Settings."); the server stores it encrypted.
 
 ## Decisions
 

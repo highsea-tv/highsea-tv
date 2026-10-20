@@ -1,0 +1,562 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/133701?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "adult": false,
+      "backdrop_path": "/fOy6SL5Zs2PFcNXwqEPIDPrLB1q.jpg",
+      "belongs_to_collection": null,
+      "budget": 0,
+      "genres": [
+        {
+          "id": 878,
+          "name": "Science Fiction"
+        },
+        {
+          "id": 16,
+          "name": "Animation"
+        }
+      ],
+      "homepage": "",
+      "id": 133701,
+      "imdb_id": "tt2285752",
+      "original_language": "en",
+      "original_title": "Tears of Steel",
+      "overview": "The film’s premise is about a group of warriors and scientists, who gathered at the “Oude Kerk” in Amsterdam to stage a crucial event from the past, in a desperate attempt to rescue the world from destructive robots.",
+      "popularity": 7.07,
+      "poster_path": "/8qy3jRmaHR7f8VZh3iXCqCWfFsH.jpg",
+      "production_companies": [
+        {
+          "id": 6908,
+          "logo_path": null,
+          "name": "Blender Foundation",
+          "origin_country": ""
+        }
+      ],
+      "release_date": "2012-09-25",
+      "revenue": 0,
+      "runtime": 12,
+      "status": "Released",
+      "tagline": "",
+      "title": "Tears of Steel",
+      "video": false,
+      "vote_average": 5.659,
+      "vote_count": 63,
+      "credits": {
+        "cast": [
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9128,
+            "known_for_department": "Acting",
+            "name": "Derek de Lint",
+            "original_name": "Derek de Lint",
+            "popularity": 2.21,
+            "profile_path": "/8fRRmh8EYZBlUtu1Wlop0j22QcP.jpg",
+            "cast_id": 1,
+            "character": "Old Thom",
+            "credit_id": "52fe4bb9c3a368484e196ab1",
+            "order": 0
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 237150,
+            "known_for_department": "Acting",
+            "name": "Sergio Hasselbaink",
+            "original_name": "Sergio Hasselbaink",
+            "popularity": 10.35,
+            "profile_path": "/6xjL2LqOEURISAzzFLtYsIVmGT1.jpg",
+            "cast_id": 2,
+            "character": "Barly",
+            "credit_id": "52fe4bb9c3a368484e196ab5",
+            "order": 1
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097815,
+            "known_for_department": "Acting",
+            "name": "Vanja Rukavina",
+            "original_name": "Vanja Rukavina",
+            "popularity": 34.75,
+            "profile_path": "/4zzhALIIwYvBFmem3dm6nOZg8py.jpg",
+            "cast_id": 3,
+            "character": "Thom",
+            "credit_id": "52fe4bb9c3a368484e196ab9",
+            "order": 2
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097816,
+            "known_for_department": "Acting",
+            "name": "Denise Rebergen",
+            "original_name": "Denise Rebergen",
+            "popularity": 1.3,
+            "profile_path": "/hBJjiMZsz5WaEgCpkUsw7Z0lekD.jpg",
+            "cast_id": 4,
+            "character": "Celia",
+            "credit_id": "52fe4bb9c3a368484e196abd",
+            "order": 3
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 217240,
+            "known_for_department": "Acting",
+            "name": "Rogier Schippers",
+            "original_name": "Rogier Schippers",
+            "popularity": 4.46,
+            "profile_path": "/fUeXGTjkNZPwHK1JZwtiK6SUYmT.jpg",
+            "cast_id": 5,
+            "character": "Kapitän",
+            "credit_id": "52fe4bb9c3a368484e196ac1",
+            "order": 4
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097817,
+            "known_for_department": "Acting",
+            "name": "Chris Haley",
+            "original_name": "Chris Haley",
+            "popularity": 21.66,
+            "profile_path": null,
+            "cast_id": 6,
+            "character": "Tech head",
+            "credit_id": "52fe4bb9c3a368484e196ac5",
+            "order": 5
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097818,
+            "known_for_department": "Acting",
+            "name": "Jody Bhe",
+            "original_name": "Jody Bhe",
+            "popularity": 38.08,
+            "profile_path": null,
+            "cast_id": 7,
+            "character": "Djenghis",
+            "credit_id": "52fe4bb9c3a368484e196ac9",
+            "order": 6
+          }
+        ],
+        "crew": [
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097835,
+            "known_for_department": "Art",
+            "name": "Nicolò Zubbini",
+            "original_name": "Nicolò Zubbini",
+            "popularity": 34.13,
+            "profile_path": null,
+            "credit_id": "ad4072fa6e8971a7000eb8a7",
+            "department": "Art",
+            "job": "Background Designer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097826,
+            "known_for_department": "Art",
+            "name": "David Revoy",
+            "original_name": "David Revoy",
+            "popularity": 36.36,
+            "profile_path": null,
+            "credit_id": "a5276b925c6f87b816c73868",
+            "department": "Art",
+            "job": "Conceptual Design"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097824,
+            "known_for_department": "Camera",
+            "name": "Joris Kerbosch",
+            "original_name": "Joris Kerbosch",
+            "popularity": 16.68,
+            "profile_path": null,
+            "credit_id": "7cbe4c12ad875206e7a2d4eb",
+            "department": "Camera",
+            "job": "Director of Photography"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097838,
+            "known_for_department": "Crew",
+            "name": "Rob Tuytel",
+            "original_name": "Rob Tuytel",
+            "popularity": 29.65,
+            "profile_path": "/aEgdR3o66E1DHuisajE2m8j9ECK.jpg",
+            "credit_id": "233620a64db954a50e2bf517",
+            "department": "Crew",
+            "job": "Production Intern"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 137897,
+            "known_for_department": "Directing",
+            "name": "Ian Hubert",
+            "original_name": "Ian Hubert",
+            "popularity": 9.49,
+            "profile_path": "/jQZyjm3zMd2QG5O75QVlZCFXVj6.jpg",
+            "credit_id": "68c4d46d5ddc635d1356a3de",
+            "department": "Directing",
+            "job": "Director"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 58958,
+            "known_for_department": "Lighting",
+            "name": "Andreas Goralczyk",
+            "original_name": "Andreas Goralczyk",
+            "popularity": 25.62,
+            "profile_path": null,
+            "credit_id": "f49819804579477177983488",
+            "department": "Lighting",
+            "job": "Lighting Artist"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 133632,
+            "known_for_department": "Production",
+            "name": "Ton Roosendaal",
+            "original_name": "Ton Roosendaal",
+            "popularity": 27.16,
+            "profile_path": "/2iRRkA2oCsPLSSLz1HKDhwJZlgy.jpg",
+            "credit_id": "6a2d06427ddf8db684aba0ba",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097840,
+            "known_for_department": "Sound",
+            "name": "Joram Letwory",
+            "original_name": "Joram Letwory",
+            "popularity": 30.89,
+            "profile_path": null,
+            "credit_id": "da7c73e592ddc1906b960dc9",
+            "department": "Sound",
+            "job": "Music"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097839,
+            "known_for_department": "Sound",
+            "name": "Joram Letwory",
+            "original_name": "Joram Letwory",
+            "popularity": 8.14,
+            "profile_path": null,
+            "credit_id": "540fafb0a1ee9432dc3d4bb6",
+            "department": "Sound",
+            "job": "Sound Designer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097830,
+            "known_for_department": "Visual Effects",
+            "name": "Jeremy Davidson",
+            "original_name": "Jeremy Davidson",
+            "popularity": 21.09,
+            "profile_path": null,
+            "credit_id": "615ff071b53349b8800d29a3",
+            "department": "Visual Effects",
+            "job": "Animation"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097833,
+            "known_for_department": "Visual Effects",
+            "name": "Kjartan Tysdal",
+            "original_name": "Kjartan Tysdal",
+            "popularity": 9.95,
+            "profile_path": null,
+            "credit_id": "56e6b9ba94e4811067c8d674",
+            "department": "Visual Effects",
+            "job": "Animation"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097836,
+            "known_for_department": "Visual Effects",
+            "name": "Roman Volodin",
+            "original_name": "Roman Volodin",
+            "popularity": 36.91,
+            "profile_path": null,
+            "credit_id": "7909958e07a5b7211712553f",
+            "department": "Visual Effects",
+            "job": "Animation"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097832,
+            "known_for_department": "Visual Effects",
+            "name": "Sebastian Koenig",
+            "original_name": "Sebastian Koenig",
+            "popularity": 28.47,
+            "profile_path": null,
+            "credit_id": "92fd11492d4747b41212512b",
+            "department": "Visual Effects",
+            "job": "Animation"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 137897,
+            "known_for_department": "Writing",
+            "name": "Ian Hubert",
+            "original_name": "Ian Hubert",
+            "popularity": 9.49,
+            "profile_path": "/jQZyjm3zMd2QG5O75QVlZCFXVj6.jpg",
+            "credit_id": "268c7db6ae210f76f2b6d138",
+            "department": "Writing",
+            "job": "Writer"
+          }
+        ]
+      },
+      "videos": {
+        "results": [
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Tears of Steel - Teaser",
+            "key": "WwHux5QZfC8",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Teaser",
+            "official": false,
+            "published_at": "2012-07-13T00:00:00.000Z",
+            "id": "533ec6f0c3a36854480093a2"
+          }
+        ]
+      },
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "US",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2012-09-28T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FR",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2012-09-28T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "DE",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2012-09-26T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "NL",
+            "release_dates": [
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2012-09-25T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          }
+        ]
+      },
+      "external_ids": {
+        "imdb_id": "tt2285752",
+        "wikidata_id": "Q1173161",
+        "facebook_id": null,
+        "instagram_id": null,
+        "twitter_id": null
+      },
+      "recommendations": {
+        "page": 1,
+        "results": [
+          {
+            "adult": false,
+            "backdrop_path": "/uifaXfJxjTMeNttw5u04nHx1G5w.jpg",
+            "genre_ids": [28, 878, 53],
+            "id": 534,
+            "original_language": "en",
+            "original_title": "Terminator Salvation",
+            "overview": "All grown up in post-apocalyptic 2018, John Connor must lead the resistance of humans against the increasingly dominating militaristic robots. But when Marcus Wright appears, his existence confuses the mission as Connor tries to determine whether Wright has come from the future or the past -- and whether he's friend or foe.",
+            "popularity": 8.45,
+            "poster_path": "/gw6JhlekZgtKUFlDTezq3j5JEPK.jpg",
+            "release_date": "2009-05-20",
+            "title": "Terminator Salvation",
+            "video": false,
+            "vote_average": 6.106,
+            "vote_count": 7310,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/wvlIoof1FnKPLv9jAYanuP31V0C.jpg",
+            "genre_ids": [878, 28, 53],
+            "id": 87101,
+            "original_language": "en",
+            "original_title": "Terminator Genisys",
+            "overview": "The year is 2029. John Connor, leader of the resistance continues the war against the machines. At the Los Angeles offensive, John's fears of the unknown future begin to emerge when TECOM spies reveal a new plot by SkyNet that will attack him from both fronts; past and future, and will ultimately change warfare forever.",
+            "popularity": 25.46,
+            "poster_path": "/oZRVDpNtmHk8M1VYy1aeOWUXgbC.jpg",
+            "release_date": "2015-06-23",
+            "title": "Terminator Genisys",
+            "video": false,
+            "vote_average": 5.963,
+            "vote_count": 9245,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/533xAMhhVyjTy8hwMUFEt5TuDfR.jpg",
+            "genre_ids": [28, 53, 878],
+            "id": 605,
+            "original_language": "en",
+            "original_title": "The Matrix Revolutions",
+            "overview": "The human city of Zion defends itself against the massive invasion of the machines as Neo fights to end the war at another front while also opposing the rogue Agent Smith.",
+            "popularity": 8.15,
+            "poster_path": "/qEWiBXJGXK28jGBAm8oFKKTB0WD.jpg",
+            "release_date": "2003-11-05",
+            "title": "The Matrix Revolutions",
+            "video": false,
+            "vote_average": 6.76,
+            "vote_count": 11239,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/voVkSwgFYv9GOpRNfUAwj6qYRTL.jpg",
+            "genre_ids": [28, 53, 878],
+            "id": 296,
+            "original_language": "en",
+            "original_title": "Terminator 3: Rise of the Machines",
+            "overview": "It's been 10 years since John Connor saved Earth from Judgment Day, and he's now living under the radar, steering clear of using anything Skynet can trace. That is, until he encounters T-X, a robotic assassin ordered to finish what T-1000 started. Good thing Connor's former nemesis, the Terminator, is back to aid the now-adult Connor … just like he promised.",
+            "popularity": 14.93,
+            "poster_path": "/vvevzdYIrk2636maNW4qeWmlPFG.jpg",
+            "release_date": "2003-07-02",
+            "title": "Terminator 3: Rise of the Machines",
+            "video": false,
+            "vote_average": 6.213,
+            "vote_count": 7569,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/ffdqHMWkh1h9MABwIfbfRJhgFW6.jpg",
+            "genre_ids": [28, 53, 878],
+            "id": 218,
+            "original_language": "en",
+            "original_title": "The Terminator",
+            "overview": "In the post-apocalyptic future, reigning tyrannical supercomputers teleport a cyborg assassin known as the \"Terminator\" back to 1984 to kill Sarah Connor, whose unborn son is destined to lead insurgents against 21st century mechanical hegemony. Meanwhile, the human-resistance movement dispatches a lone warrior to safeguard Sarah. Can he stop the virtually indestructible killing machine?",
+            "popularity": 13.15,
+            "poster_path": "/qvktm0BHcnmDpul4Hz01GIazWPr.jpg",
+            "release_date": "1984-10-26",
+            "title": "The Terminator",
+            "video": false,
+            "vote_average": 7.698,
+            "vote_count": 15301,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/tlm8UkiQsitc8rSuIAscQDCnP8d.jpg",
+            "genre_ids": [28, 878],
+            "id": 603,
+            "original_language": "en",
+            "original_title": "The Matrix",
+            "overview": "Set in the 22nd century, The Matrix tells the story of a computer hacker who joins a group of underground insurgents fighting the vast and powerful computers who now rule the earth.",
+            "popularity": 22.42,
+            "poster_path": "/dXNAPwY7VrqMAo51EKhhCJfaGb5.jpg",
+            "release_date": "1999-03-31",
+            "title": "The Matrix",
+            "video": false,
+            "vote_average": 8.26,
+            "vote_count": 29003,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/ihOJcrorpDQtHTzIOrobbOhpJsj.jpg",
+            "genre_ids": [28, 53, 878],
+            "id": 604,
+            "original_language": "en",
+            "original_title": "The Matrix Reloaded",
+            "overview": "The Resistance builds in numbers as humans are freed from the Matrix and brought to the city of Zion. Neo discovers his superpowers, including the ability to see the code inside the Matrix. With machine sentinels digging to Zion in 72 hours, Neo, Morpheus and Trinity must find the Keymaker to ultimately reach the Source.",
+            "popularity": 25.24,
+            "poster_path": "/8xEVAe84zlL9rkfYT6dZXero4KK.jpg",
+            "release_date": "2003-05-15",
+            "title": "The Matrix Reloaded",
+            "video": false,
+            "vote_average": 7.085,
+            "vote_count": 12438,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/cxwImFWajltfkBhsTEy8ZXiQ9NP.jpg",
+            "genre_ids": [878, 28],
+            "id": 733317,
+            "original_language": "en",
+            "original_title": "Monsters of Man",
+            "overview": "A robotics company vying to win a lucrative military contract team up with a corrupt CIA agent to conduct an illegal live field test. They deploy four weaponized prototype robots into a suspected drug manufacturing camp in the Golden Triangle, assuming they'd be killing drug runners that no one would miss. Six doctors on a humanitarian mission witness the brutal slaughter and become prime targets.",
+            "popularity": 23.99,
+            "poster_path": "/sENLgxCVtZqCMQIeuLep8FmdInr.jpg",
+            "release_date": "2020-11-19",
+            "title": "Monsters of Man",
+            "video": false,
+            "vote_average": 6.39,
+            "vote_count": 460,
+            "media_type": "movie"
+          }
+        ],
+        "total_pages": 1,
+        "total_results": 8
+      }
+    }
+  }
+}
