@@ -1,7 +1,7 @@
 # Client item detail
 
 - **Platforms:** Web and desktop, mobile, TV.
-- **Prototype:** `#/web/movies/4`, `#/mobile/movies/4`, `#/tv/movies/4` (C4). The address is the media id, the same as the admin's ([ADR 0014](../adr/0014-universal-media-pages.md)).
+- **Prototype:** `#/web/movies/4`, `#/mobile/movies/4`, `#/tv/movies/4` (C4). The address is the title's TMDB id, the same as the admin's ([ADR 0014](../adr/0014-universal-media-pages.md)).
 - **Roadmap:** [Phase 2 › C4](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off). The admin's media page is [media-pages.md](media-pages.md); this is the household's view of the same title.
 
 ## Purpose

@@ -161,10 +161,11 @@ As built in Phase 3, checkpoint 2. The indexer and subtitle steps arrive with th
 - **Validation runs on Continue,** not while typing, so the form doesn't scold half-typed values.
 - **Review uses Change links** back to each step, rather than inline editing, so each field has one home.
 
+- **Setup asks for the owner's TMDB key** until the highsea cloud metadata proxy exists, with a link to TMDB's key page and a note on why (Phase 3 decision 4). It's checked with TMDB on Continue, can be skipped ("Add it later in Settings"), and is changed later in Settings › General › Metadata ([checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#the-key)).
+
 ## Open questions
 
 - **Port reachability check.** The copy promises "It checks the port is reachable". Should that check run in the wizard (it needs the cloud or a public echo service) or only later in Settings? If it can't run without the cloud, the copy should change.
 - **Restoring an existing server.** Should step 1 offer "Restore from a backup" for people moving an install?
 - **More than one movies folder.** The roadmap's root folders allow several. Setup asks for one. Is that enough, with the rest in Settings?
-- **TMDB key.** Without highsea cloud, does setup need a step for the owner's own TMDB API key, or is that left to Settings with a dashboard prompt?
 - **Two-factor for the owner.** Should setup offer to turn on two-factor right after the owner account, or leave it to Settings?

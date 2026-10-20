@@ -148,7 +148,7 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `dashboard` gr
 
 ## Decisions
 
-- **The queue is a widget** (Queue, 4 wide by default), not a fixed card below the grid as [admin.md](../design-language/platforms/admin.md#main-area) describes. That lets members and owners move or remove it like anything else. *Locked layout: needs the owner's approval.*
+- **The queue is a widget** (Queue, 4 wide by default), not a fixed card below the grid as [admin.md](../design-language/platforms/admin.md#main-area) describes. That lets members and owners move or remove it like anything else. *Approved by the owner on 2026-10-20.*
 - **Widgets can be up to 4 wide.** admin.md says widgets span 1 or 2 columns. The queue, calendar, upcoming and recently added need the width. Network stays at 1 or 2, as the signed-off prototype has it. *Approved by the owner on 2026-10-20.*
 - **Order is the layout.** Widgets flow through the grid; resize changes the span only, snapped to allowed sizes. No free x/y placement and no dense packing, so the visual, DOM and keyboard orders always agree, and the same layout works at 4, 2 and 1 columns.
 - **Widgets resize in height too,** in 84px rows, as the signed-off prototype does. A widget's content is cut at a whole row with a link to the rest, so the grid stays even.
@@ -159,11 +159,22 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `dashboard` gr
 - **Members' staff widgets are filtered on the server,** not just hidden in the UI, so a role default or a saved layout can't leak them.
 - **The editor is ui-web's `WidgetEditor`,** shared by the admin and the prototype; the registry is `@highsea/personalization`'s.
 - **Per-widget settings are stored, not yet edited** (owner's decision, 2026-10-20). Each widget shows its defaults.
+- **Columns come from the main area's width, not the viewport's.** At 1024 with the 216px sidebar, a 1-column widget is about 175px: tight for Indexers and Storage. The grid chooses 4, 3 or 2 columns from the main area's width (a container query). *Approved by the owner on 2026-10-20; built with the [dashboard follow-up](#follow-up-customization-on-homarrs-level).*
 
 ## Open questions
 
-- **Columns from the main area's width.** At 1024 with the 216px sidebar, a 1-column widget is about 175px: tight for Indexers and Storage. Proposal: choose 4, 3 or 2 columns from the main area's width (a container query) instead of the viewport's breakpoint. *Locked layout: needs approval.*
 - **Sounds for Customize.** Should picking up and dropping a widget play `select` and `back` when admin sound is on?
-- **Per-widget settings.** Each widget has a settings schema now (Upcoming's day range, the queue's default filter), stored with its placement. Where should they be edited: a menu on the widget in Customize mode, or a settings sheet?
-- **Multiple instances.** Should a widget be addable twice with different settings (two calendars, say)? The prototype allows one of each.
+- **Per-widget settings** and **multiple instances:** answered by the follow-up below (a settings dialog per widget; any widget more than once).
 - **Admins and defaults.** Only owners set role defaults. Should admins be able to set the member default?
+
+## Follow-up: customization on Homarr's level
+
+The owner asked on 2026-10-20 for the dashboard to become as customizable as [Homarr](https://github.com/homarr-labs/homarr)'s boards, with a visible grid while customizing. It comes after Phase 3, and its plan is [plans/dashboard-customization.md](../plans/dashboard-customization.md):
+- free placement on a grid, with resizing on both axes;
+- layouts per breakpoint, with columns from the main area's width;
+- containers;
+- a settings dialog per widget;
+- any widget more than once;
+- the grid's cells drawn while customizing.
+
+Until then, the decisions above stand.

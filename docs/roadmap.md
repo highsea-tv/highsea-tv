@@ -317,7 +317,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
 - Setup and access: `/setup`, `/login`.
 - Dashboard: `/` widget dashboard.
 - Library and activity:
-  - `/discover`, `/movies`, `/movies/[id]` (`[id]` is the media id, the same before and after adding: one page and one address in every state, [ADR 0014](adr/0014-universal-media-pages.md));
+  - `/discover`, `/movies`, `/movies/[id]` (`[id]` is the provider's id, TMDB's for movies, the same before and after adding: one page and one address in every state, [ADR 0014](adr/0014-universal-media-pages.md));
   - `/people/[id]` (cast, crew and authors, with their filmography);
   - `/activity` (queue / history / blocklist);
   - `/wanted` (movies, subtitles);
@@ -347,6 +347,16 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
 10. Automation + `notifications`.
 11. `curation`.
 12. Docker hardening + end-to-end tests.
+
+## Follow-up: dashboard customization (after Phase 3)
+The owner asked on 2026-10-20 for the admin dashboard to be as customizable as [Homarr](https://github.com/homarr-labs/homarr)'s boards, with a visible grid while customizing:
+- free placement and resizing on both axes;
+- layouts per breakpoint;
+- containers;
+- a settings dialog per widget;
+- many instances of a widget.
+
+It follows Phase 3's sign-off, with its new customize mode prototyped and approved first. The plan is [plans/dashboard-customization.md](plans/dashboard-customization.md).
 
 ## Phase 4 (later): clients
 `ui-native`, then `apps/web` → `apps/desktop` (Tauri) → `apps/mobile` + `apps/tv` (Expo / react-native-tvos), built from the Phase 2 prototypes. Alongside them: `stream` (playback/transcode, WebSockets), TV/music/books domains, Usenet, requests, and the optional Connect relay.

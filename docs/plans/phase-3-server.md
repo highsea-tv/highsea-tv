@@ -1,6 +1,6 @@
 # Phase 3 plan: server milestone 1
 
-- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoints 1 to 3 are signed off, checkpoints 2 and 3 on 2026-10-20. Checkpoint 3's scope and the owner's decisions are in [Checkpoint 3 in detail](#checkpoint-3-in-detail); with its sign-off the owner approved widgets up to 4 columns wide (dashboard.md › Decisions). Checkpoint 4 is next, and is scoped before it's built. Phase 2 (the design prototypes) was signed off on 2026-10-19.
+- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoints 1 to 3 are signed off, checkpoints 2 and 3 on 2026-10-20. Checkpoint 3's scope and the owner's decisions are in [Checkpoint 3 in detail](#checkpoint-3-in-detail); with its sign-off the owner approved widgets up to 4 columns wide (dashboard.md › Decisions). Checkpoint 4 is next. Its scope, judgement calls and the owner's decisions (all 2026-10-20, including addresses by TMDB id, amending ADR 0014) are in [phase-3-checkpoint-4.md](phase-3-checkpoint-4.md); building waits for the owner's go-ahead. A follow-up after Phase 3 brings the dashboard's customization to Homarr's level ([dashboard-customization.md](dashboard-customization.md)). Phase 2 (the design prototypes) was signed off on 2026-10-19.
 - **Gate:** the owner signs off on milestone 1. Phase 4 (the client apps) then builds on its API and SDK.
 - **Source:** the Phase 3 section of the [roadmap](../roadmap.md#phase-3-server-milestone-1-implementation) and the gap analysis items tagged **[M1]**. This plan turns them into steps.
 - **Build reference:** the signed-off prototypes in [`design/prototypes`](../../design/prototypes/README.md) and their specs in [`docs/product/`](../product/).
@@ -393,7 +393,7 @@ The roadmap's [build order](../roadmap.md#phase-3-build-order), grouped into che
      - A3 dashboard with customize mode, its widgets fed by whatever exists so far;
      - A12 appearance.
    - **Client API:** device preferences, the home layout.
-4. **Checkpoint 4: movies, without downloading.**
+4. **Checkpoint 4: movies, without downloading.** Scoped in detail in [phase-3-checkpoint-4.md](phase-3-checkpoint-4.md).
    - **`parser`,** with a large fixture suite of real release names.
    - **`quality`:** profiles, custom formats, sizes, and the decision engine with the prototype's reasons.
    - **`metadata`** (TMDB) and **`media-movies`:** add, refresh, collections, people, trailers, multiple versions.

@@ -22,8 +22,8 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 ### Discover (A4)
 
 - `PageHeader`: "Discover", a one-line description.
-- A search field (max 36rem). Empty, the page shows **Trending this week**; typing shows **Results for "…"**. Results are instant (deferred input, no submit button).
-- A poster grid (`auto-fill, minmax(8.5rem, 1fr)`): poster, title (two lines), year and rating, then **Add** or an **In library** badge that links to the movie. The poster and title are one link to the movie's page, `/movies/{id}` by media id: the same address the library and everything else use, in the library or not.
+- A search field (max 36rem). Empty, the page shows four tabs above the grid: **Trending** (this week), **Popular**, **Now playing** and **Upcoming**, each from TMDB for the server's region; typing replaces them with **Results for "…"**. Results are instant (deferred input, no submit button). The tabs are approved by the owner on 2026-10-20; the prototype shows Trending only.
+- A poster grid (`auto-fill, minmax(8.5rem, 1fr)`): poster, title (two lines), year and rating, then **Add** or an **In library** badge that links to the movie. The poster and title are one link to the movie's page, `/movies/{id}` by TMDB id: the same address the library and everything else use, in the library or not.
 - **Add dialog** (`md`), shared by Discover, the movie page, person pages and collections: the synopsis (or, for several movies, their titles), then Folder (full width), Quality profile and Subtitle languages (two columns from medium), Minimum availability, **Monitored** (switch) and **Search now** (checkbox, on). The primary button reads **Add and search** or **Add movie** to match.
 
 ### Library (A5)
@@ -58,7 +58,9 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
   - History: "Nothing has happened yet".
   - Subtitles, no file: "No file to find subtitles for yet".
   - Interactive search, nothing back: "No indexer returned a release. Check Indexers, or try again later."
-- **Error:** each section shows "Couldn't load {section}" with the server's message and **Try again**. An unknown movie id shows "That movie isn't in the library." with **Go to Movies**.
+- **Error:** each section shows "Couldn't load {section}" with the server's message and **Try again**. An id TMDB doesn't know shows "TMDB has no movie with that id." with **Go to Discover**.
+- **No indexers yet:** the add dialog's Search now is disabled and off, with the hint "Add an indexer to search for releases.", and the button reads **Add movie**. The Search tab shows the same sentence with a link to **Indexers**.
+- **No TMDB key:** Discover and Add say "Add a TMDB key to find movies." with a link to Settings › General › Metadata. The library and its pages still work from the cache.
 - **Live:** the In the queue card, the status badge and the library update in place as the clock runs: a movie added with Search now goes Downloading → Available, and its Subtitles tab fills in.
 - **Permission-limited (members):** Discover shows **Add** disabled with "Only owners and admins can add movies. Ask the server's owner for one you want." The library has no select column, bulk bar or Add movie. The movie page has no actions, no Search tab, a read-only Monitored line, and subtitles without the offset buttons, re-sync, delete or search.
 
@@ -97,8 +99,8 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
 
 ## Data
 
-- `movies.discover(query)` → `GET /api/v1/discover/movies?query=` (TMDB-backed). `DiscoverMovie` carries `inLibrary`; library movies come back as themselves, once.
-- `movies.add(AddMovieInput)` → `POST /api/v1/movies`. With `searchNow`, the server searches and grabs the best accepted release in the same request.
+- `movies.discover(query)` → `GET /api/v1/discover/movies?query=&list=&page=` (TMDB-backed; `list` is `trending`, `popular`, `now-playing` or `upcoming` when there's no query). `DiscoverMovie` carries `inLibrary`; library movies come back as themselves, once.
+- `movies.add(AddMovieInput)` → `POST /api/v1/movies`, by TMDB id. With `searchNow`, the server searches and grabs the best accepted release in the same request; it's refused while no indexer is set up.
 - `movies.rootFolders()`, `movies.qualityProfiles()`, `movies.languageProfiles()` → `GET /api/v1/rootfolders`, `/qualityprofiles`, `/languageprofiles`.
 - `movies.list()`, `movies.get(id)`, `movies.update(id, patch)`, `movies.delete(id, { deleteFiles })` → `/api/v1/movies[/{id}]`.
 - `movies.bulkUpdate(ids, patch)`, `movies.bulkSetQualityProfile(ids, profileId)`, `movies.bulkSearch(ids)`, `movies.bulkDelete(ids)` → `POST /api/v1/movies/bulk` with an `action`. The profile change moves each movie's **first** version; extra versions keep their own.
@@ -124,9 +126,12 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
 - **The offset nudge is 50 ms,** matching the player's nudge (C5), and saves on each step rather than through a form.
 - **Embedded subtitle streams appear in the tracks table** as read-only rows, so the tab answers "what can people watch with" in one place.
 
+- **Discover's lists are tabs:** Trending, Popular, Now playing and Upcoming, for the server's region (owner's decisions, 2026-10-20: [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#owners-decisions)).
+- **Before indexers exist, search is shown but disabled,** with the reason and a link, rather than hidden: the owner learns where it will be (owner's decisions, 2026-10-20: [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#owners-decisions)).
+
 ## Open questions
 
-- **Discover sources.** TMDB trending only, or also lists (popular, upcoming, by genre) and the owner's import lists?
+- **Discover by genre and import lists.** Genre browsing, and the owner's import lists as Discover sources, are still open.
 - **Library columns.** Should the table's columns be choosable (size, quality profile, path, rating), as in Radarr?
 - **Per-version actions.** Searching or upgrading one version (just the 4K) needs a version picker on Search; the prototype searches the movie.
 - **Release details.** Should a release row open the indexer's page, and show its file list before grabbing?

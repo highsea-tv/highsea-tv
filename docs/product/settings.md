@@ -21,7 +21,7 @@ Everything about how the server runs, in one place, one area per page: the regio
 
 | Area | Groups and main controls |
 | --- | --- |
-| **General** | Region: Language, Time zone · Updates: Stable or Beta, Install updates on their own · Diagnostics: Send anonymous usage counts (off), Log level |
+| **General** | Region: Language, Time zone · Metadata: TMDB key (set or not, its last four characters, **Replace**, **Remove**; checked with TMDB on save), Metadata language, Region (for certifications, release dates and Discover; the owner's locale by default) · Updates: Stable or Beta, Install updates on their own · Diagnostics: Send anonymous usage counts (off), Log level |
 | **Appearance** | [appearance.md](appearance.md) |
 | **Network and remote access** | Remote access: External URL, **Check from outside** · Reverse proxy and TLS: My proxy handles it, Built in, Off (LAN only); Trusted proxies; X-Forwarded headers · Discovery: Let apps on this network find Harbor (with the Docker note) |
 | **Security** | Signing in: Two-step verification (everyone, owners and admins, optional), passkeys, session length · Single sign-on (OIDC): on, button label, client ID, issuer URL, client secret, the redirect URL to copy · Ownership: Hand the server over |
@@ -61,6 +61,9 @@ Everything about how the server runs, in one place, one area per page: the regio
 - **Drafts with a save bar** for settings pages; immediate saves for lists (curation, people), where each change is its own action.
 - **Subtitles stays on its own page** and is listed here as a link, so its settings and its wanted list sit together.
 - **Backups split:** the schedule is a setting; making and restoring a backup is an action on System.
+
+- **The TMDB key lives in General › Metadata,** with the metadata language and region; setup sets it first, and every missing-key message links here. Approved by the owner on 2026-10-20 ([checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#owners-decisions)); the prototype doesn't show the group.
+- **Profiles and formats stay read-only until checkpoint 8.** Their editors are prototyped and approved first.
 
 ## Open questions
 

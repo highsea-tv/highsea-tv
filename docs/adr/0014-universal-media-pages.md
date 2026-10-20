@@ -1,6 +1,6 @@
 # 0014. One media page per title, whatever its library state
 
-- **Status:** Accepted
+- **Status:** Accepted; amended 2026-10-20 (addresses use the provider's id)
 - **Date:** 2026-10-19
 
 ## Context
@@ -22,3 +22,19 @@ Checkpoint 2 had two ways to look at a movie: a details dialog in Discover for t
 - Slugs never appear in addresses. A human-readable slug can be added later as decoration (`/movies/28-metropolis`), resolved by the id alone.
 - New media types add their own sections to the shared page instead of a new page design.
 - Trailers play from `youtube-nocookie.com`, and only after a click, so opening a page sends nothing to Google.
+
+## Amendment (2026-10-20): addresses use the provider's id
+
+The owner decided this while scoping Phase 3 checkpoint 4. It replaces the "one address per title, by media id" bullet above and the consequence about media rows. Everything else stands.
+
+- **A title's id is its id at the metadata provider,** within its type, as [Seerr](https://github.com/seerr-team/seerr) does. TMDB's *Spider-Man: Brand New Day* is `themoviedb.org/movie/969681`, so its page is `/movies/969681` in the admin, the clients and the API, before and after it's added.
+- **Why:** Discover and search show titles the server has never stored, and each must open its page with the right information straight away. With the provider's id, any title the provider knows has an address with nothing created first. The id is also the one people and other tools already use.
+- **The type is part of the id.** Providers number types separately (TMDB movie 1399 isn't TMDB show 1399), so addresses are `/{type}/{providerId}` and every key includes the type.
+- **Each type uses its provider's id:** TMDB for movies, shows, collections and people now. Music and books take their providers' ids (for example MusicBrainz ids) when those types are planned, under the same rule.
+- **The library is a layer keyed by that id.** The metadata cache holds whatever the server has fetched; adding a title creates its library rows. Internal row ids (versions, files, history) never appear in an address or as a title's id.
+- **If the provider removes or merges an id,** a title in the library keeps its rows and address and offers a way to pick its new match.
+
+Consequences that change:
+- `media_items` no longer holds titles outside the library. Those live only in the metadata cache.
+- The API serves metadata by provider id for any title the provider knows (`GET /api/v1/movies/{tmdbId}/metadata`), and `/people/{id}` and `/collections/{id}` use TMDB ids.
+- Slugs still never appear in addresses. A readable slug can still be added later as decoration (`/movies/969681-spider-man-brand-new-day`, as TMDB does), resolved by the id alone.

@@ -28,7 +28,7 @@ Movies are built in the prototype. Shows, music, books, podcasts and online vide
 | Podcast, channel | `/podcasts/{id}`, `/channels/{id}` | |
 | Person | `/people/{id}` | Cast, crew, authors and artists' members. One person, one page, across types. |
 
-`{id}` is always the title's **media id**: its database id, never a slug or a provider id. The server creates a title's row the first time it sees it (in search results, trending, a filmography, a collection, a recommendation), so every title shown anywhere already has an id and its page resolves, in the library or not. Adding a title marks its row as in the library; the id and the address stay the same, and the page gains its library layer in place. Every way to a title (Discover, the library, the dashboard, people, collections, ⌘K) links to that one address, and two titles with the same name never compete for it.
+`{id}` is the title's **id at its metadata provider**, within its type: the TMDB id for movies, shows, collections and people (`/movies/969681` is TMDB's `movie/969681`), never a slug ([ADR 0014, amended 2026-10-20](../adr/0014-universal-media-pages.md#amendment-2026-10-20-addresses-use-the-providers-id)). Any title the provider knows opens at its address, whether the server has seen it before or not, in the library or not. Adding a title creates its library layer; the address stays the same, and the page gains that layer in place. Every way to a title (Discover, the library, the dashboard, people, collections, ⌘K) links to that one address, and two titles with the same name never compete for it.
 
 ## Layout
 
@@ -117,9 +117,9 @@ Each type keeps the anatomy above and adds its own sections. Only movies are bui
 
 ## Data
 
-- `metadata.movie(id)` → `GET /api/v1/movies/{id}/metadata`, by media id in any state: `MovieMetadata` (title, original title and language, tagline, certification, runtime, genres, rating, release date, budget, revenue, studios, external ids, art) with `cast`, `crew`, `videos`, `collection` and `inLibrary`.
-- `metadata.recommendations(id)` → `GET /api/v1/movies/{id}/recommendations`: `DiscoverMovie[]`, each with its media `id` and `inLibrary`.
-- Every `DiscoverMovie` (Discover, filmographies, collections) carries its media `id`, so links need nothing else.
+- `metadata.movie(id)` → `GET /api/v1/movies/{id}/metadata`, by TMDB id, for any movie on TMDB: `MovieMetadata` (title, original title and language, tagline, certification, runtime, genres, rating, release date, budget, revenue, studios, external ids, art) with `cast`, `crew`, `videos`, `collection` and `inLibrary`.
+- `metadata.recommendations(id)` → `GET /api/v1/movies/{id}/recommendations`: `DiscoverMovie[]`, each with its TMDB `id` and `inLibrary`.
+- Every `DiscoverMovie` (Discover, filmographies, collections) carries its TMDB `id`, so links need nothing else.
 - `metadata.collection(id)` → `GET /api/v1/metadata/collections/{id}`: `Collection` with its parts as `DiscoverMovie[]`.
 - `metadata.person(id)` → `GET /api/v1/metadata/people/{id}`: `Person` with `credits` (each a `DiscoverMovie` with the role).
 - `movies.get(id)` and the rest of the library layer: [movies.md › Data](movies.md#data).
@@ -129,17 +129,19 @@ Each type keeps the anatomy above and adds its own sections. Only movies are bui
 ## Decisions
 
 - **One page, two layers** ([ADR 0014](../adr/0014-universal-media-pages.md)). Discover and the library open the same page; adding a title adds a layer instead of moving you somewhere else.
-- **Addresses are media ids, not slugs or provider ids.** A title has its id before it's added and keeps it after, so a link shared before adding still works with no redirect, and two films called *The Stranger* never fight over `/movies/the-stranger`.
+- **Addresses are the provider's ids, not slugs** (owner's decision, 2026-10-20, as Seerr does). A title has its address before it's added and keeps it after, so a link shared before adding still works with no redirect, any title on Discover opens with its information straight away, and two films called *The Stranger* never fight over `/movies/the-stranger`.
 - **Trailers embed on click,** from `youtube-nocookie.com`. Nothing loads from Google until someone asks for a video.
 - **Not added means no Files, History, Search or Subtitles tabs,** rather than empty ones. Interactive search before adding was considered and left out: adding is one dialog, and searching a title highsea isn't tracking would grab outside any profile.
 - **Collections add their missing parts in one dialog,** with one set of options, since parts of a collection are usually wanted the same way.
 - **Person pages are shared across types,** so an actor in movies and shows, or an author who also narrates, is one page.
 - **Sections that would be empty are left out,** except Cast and crew, which says so: an empty tab is more confusing than a missing row.
 
+- **Recommendations come from TMDB,** its recommendations first and its "similar" list when those are empty. highsea's own, from what people watch, can come once there's watch history (owner's decisions, 2026-10-20: [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#owners-decisions)).
+- **Certification follows the server's region** (Settings › General), from the theatrical release first, then digital, then any. The prototype shows the US rating (owner's decisions, 2026-10-20: [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#owners-decisions)).
+- **Images are cached by the server,** at the sizes the screens use, so clients never contact TMDB (owner's decisions, 2026-10-20: [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#owners-decisions)).
+
 ## Open questions
 
-- **Recommendations source.** TMDB's recommendations, its "similar" list, or highsea's own from what the library and its people watch?
 - **Person pages beyond credits.** Should a person be followable ("add new films by Fritz Lang"), as Radarr does with lists?
-- **Certification country.** The prototype shows the US rating. Follow the server's region setting?
 - **Shows: episode page or sheet?** The spec opens an episode in a sheet over the season; a full page would make episodes linkable on their own.
 - **Images.** TMDB has many posters, backdrops and logos per title. Should the owner be able to pick, per title?

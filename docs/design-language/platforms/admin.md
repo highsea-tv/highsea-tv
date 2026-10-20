@@ -28,9 +28,9 @@ This layout is locked in [direction.md](../../brand/direction.md#layouts).
 - **Top row:** the page title (Heading), a search field with a `⌘K` hint that opens the command palette, and secondary actions such as Customize.
 - **Widget grid:**
   - 4 columns with a 12px gap; widgets span 1 to 4 columns, each within its own range ([dashboard.md](../../product/dashboard.md); approved by the owner on 2026-10-20);
-  - the default arrangement is Network (2), Storage, Indexers, Subtitles, Upcoming (2), Announcement;
+  - the default arrangement is Network (2), Storage, Indexers, Subtitles, Upcoming (2), Announcement, then the Queue (4);
   - widgets use `s1`, a `line` border, `radius-md`, and 14px padding.
-- **Queue:** full width below the widgets, in a card with a header (title, live summary, filter tabs) and the queue table.
+- **Queue:** a widget like the others, 4 wide by default, with a header (title, live summary, filter tabs) and the queue table. It can be moved, resized or removed ([dashboard.md](../../product/dashboard.md); approved by the owner on 2026-10-20).
 
 ### Customizing
 
