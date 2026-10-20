@@ -5,8 +5,11 @@
 // default "Prefer and Upgrade", ranks a newer revision above an older one of the same quality
 // (https://wiki.servarr.com/radarr/settings#file-management).
 //
-// Checkpoint 5 adds the keys that need an indexer's facts (protocol, indexer priority, seeders,
-// size nearest the preferred size) as `tiebreakers`, after these three.
+// `indexerTiebreakers` adds the keys that need an indexer's facts, after these three, in the order
+// TRaSH's guides give for the *arr's logic: protocol, indexer priority, seeds, then size
+// (https://trash-guides.info/Sonarr/sonarr-setup-quality-profiles/#sonarr-current-logic). Priority
+// is 1 to 50, 1 first, a tiebreaker (https://wiki.servarr.com/radarr/settings#indexers); size is
+// nearest the quality's preferred size, which Radarr prefers (https://wiki.servarr.com/radarr/settings#quality).
 import type { Revision } from '@highsea/parser'
 import { preference, type QualityProfile } from './profiles.ts'
 import type { QualityName } from './qualities.ts'
@@ -41,4 +44,37 @@ export function compareReleases<T extends Rankable>(
     }
     return 0
   }
+}
+
+/** What the indexer tiebreakers read. */
+export type IndexerRankable = Rankable & {
+  protocol: 'torrent' | 'usenet'
+  /** 1 to 50, lower first. */
+  indexerPriority: number
+  seeders: number | null
+  size: number | null
+  /** The quality's preferred size for this movie, in bytes; null when there's none. */
+  preferredSize: number | null
+}
+
+/**
+ * Protocol (the preferred one first), indexer priority (lower first), seeders (more first, torrents
+ * only), then size nearest the preferred size (when there is one).
+ */
+export function indexerTiebreakers<T extends IndexerRankable>(
+  preferredProtocol: 'torrent' | 'usenet' = 'torrent',
+): Comparator<T>[] {
+  return [
+    (a, b) => Number(b.protocol === preferredProtocol) - Number(a.protocol === preferredProtocol),
+    (a, b) => a.indexerPriority - b.indexerPriority,
+    (a, b) =>
+      a.protocol === 'torrent' && b.protocol === 'torrent'
+        ? (b.seeders ?? -1) - (a.seeders ?? -1)
+        : 0,
+    (a, b) => {
+      const target = a.preferredSize ?? b.preferredSize
+      if (target === null || a.size === null || b.size === null) return 0
+      return Math.abs(a.size - target) - Math.abs(b.size - target)
+    },
+  ]
 }

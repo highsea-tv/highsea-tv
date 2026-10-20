@@ -11,7 +11,8 @@
 // - the status tab, title filter and sort live in the address, so Back keeps them;
 // - the statuses are the server's (available, wanted, downloading, not released, not monitored);
 // - the grid has no quality tags on the art until files exist (checkpoint 6);
-// - bulk Search is shown but disabled until indexers exist (checkpoint 4 plan, decision 2).
+// - bulk Search is shown but disabled while no indexer is enabled (checkpoint 4 plan, decision 2);
+//   with one, it queues a search for each movie (checkpoint 5).
 import {
   type BulkInput,
   MOVIE_SORTS,
@@ -57,6 +58,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { useDeferredValue, useRef, useState, useSyncExternalStore } from 'react'
 import { useAddressParam } from './address.ts'
+import { useSearchable } from './indexer-state.ts'
 import { library as messages } from './library-messages.ts'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
 import { moviePath, movieStatus } from './media-links.ts'
@@ -146,6 +148,7 @@ export function MoviesLibrary() {
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [confirm, setConfirm] = useState(false)
   const bulkAction = useAction((c, body: BulkInput) => c.movies.bulk({ body }))
+  const searchable = useSearchable()
 
   // selection survives filtering; the bar counts every movie still selected
   const ids = [...selected]
@@ -246,20 +249,33 @@ export function MoviesLibrary() {
                       <span className="me-auto font-medium text-text">
                         {t('selected', { count: ids.length })}
                       </span>
-                      {/* decision 2: shown but inert until checkpoint 5 brings indexers. aria-disabled
-                        rather than disabled keeps it focusable, so the tooltip saying why is
-                        reachable (the prototype's kit/soon.tsx pattern; WAI-ARIA APG, "Focusability
-                        of disabled controls") */}
-                      <Tooltip content={t('search.noIndexers')}>
+                      {searchable.canSearch ? (
                         <Button
                           size="sm"
                           icon="search"
-                          aria-disabled
-                          className="cursor-not-allowed opacity-45"
+                          loading={bulkAction.pending}
+                          onClick={() =>
+                            bulk((count) => t('done.search', { count }), { action: 'search', ids })
+                          }
                         >
                           {t('search')}
                         </Button>
-                      </Tooltip>
+                      ) : (
+                        // decision 2: shown but inert while no indexer is enabled. aria-disabled
+                        // rather than disabled keeps it focusable, so the tooltip saying why is
+                        // reachable (the prototype's kit/soon.tsx pattern; WAI-ARIA APG,
+                        // "Focusability of disabled controls")
+                        <Tooltip content={t('search.noIndexers')}>
+                          <Button
+                            size="sm"
+                            icon="search"
+                            aria-disabled
+                            className="cursor-not-allowed opacity-45"
+                          >
+                            {t('search')}
+                          </Button>
+                        </Tooltip>
+                      )}
                       <Menu>
                         <MenuTrigger asChild>
                           <Button size="sm" iconEnd="chevron-down" loading={bulkAction.pending}>

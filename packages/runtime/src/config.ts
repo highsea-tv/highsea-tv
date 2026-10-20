@@ -20,6 +20,13 @@ export const configSchema = z.object({
   logLevel: z.enum(LEVELS),
   /** Development: the Next dev server and readable logs. */
   dev: z.boolean(),
+  /** The main catalog's base URL; unset until publishing begins (checkpoint 5's answer 3). */
+  catalogUrl: z.url().optional(),
+  /**
+   * Trust the development key that signs the seed until the release key exists. On unless
+   * `NODE_ENV` is `production`; `HIGHSEA_CATALOG_DEV_KEY=0` or `1` overrides it.
+   */
+  catalogDevKey: z.boolean().optional(),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -34,6 +41,11 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     publicUrl: env.HIGHSEA_PUBLIC_URL || undefined,
     logLevel: env.HIGHSEA_LOG_LEVEL ?? 'info',
     dev: env.NODE_ENV === 'development',
+    catalogUrl: env.HIGHSEA_CATALOG_URL || undefined,
+    catalogDevKey:
+      env.HIGHSEA_CATALOG_DEV_KEY !== undefined && env.HIGHSEA_CATALOG_DEV_KEY !== ''
+        ? env.HIGHSEA_CATALOG_DEV_KEY === '1' || env.HIGHSEA_CATALOG_DEV_KEY === 'true'
+        : env.NODE_ENV !== 'production',
   })
   if (!parsed.success) {
     const problems = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)

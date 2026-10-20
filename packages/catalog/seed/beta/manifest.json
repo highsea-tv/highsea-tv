@@ -1,0 +1,5 @@
+{
+  "keyId": "development",
+  "manifest": "{\n  \"format\": 1,\n  \"kind\": \"indexers\",\n  \"channel\": \"beta\",\n  \"version\": \"2026.10.21\",\n  \"minEngineVersion\": \"1.0.0\",\n  \"bundle\": {\n    \"path\": \"indexers-2026.10.21.json\",\n    \"sha256\": \"6cb17f18e9f3958c603fe1418afad0d886c0a5c858db8746117c69e58d0b91ae\",\n    \"size\": 4020\n  },\n  \"changes\": [\n    {\n      \"version\": \"2026.10.21\",\n      \"date\": \"2026-10-21\",\n      \"notes\": [\n        \"The first catalog: a Torznab definition for any Torznab feed, including Prowlarr's and Jackett's.\",\n        \"A torrent feed definition for RSS feeds you have the address of.\",\n        \"The Internet Archive's feature films, in setup's starter pack.\"\n      ]\n    }\n  ]\n}",
+  "signature": "8BJBr408J4J7RcafreEzVpQ0PCwXIcjTMQJlMCVJUdh7rEW7OKs8djcltyhvWD7Z9VoQtbODENYw3/REAro6Dg=="
+}

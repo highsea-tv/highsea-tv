@@ -58,6 +58,8 @@ export const Server = z
     setupComplete: z.boolean(),
     /** Apps with the event stream open now. */
     clientsConnected: z.number().int(),
+    /** The indexer catalog's installed version, for System › About; null before one is. */
+    catalogVersion: z.string().nullable(),
   })
   .openapi('Server')
 

@@ -3,12 +3,32 @@
 // Settings › General (settings.md). Checkpoint 4 builds its Metadata group, after Region, where
 // the owner's decision 1 puts it: the TMDB key (set or not, its last four characters, Replace and
 // Remove), the metadata language and the region. A new key is checked with TMDB on Save, as setup
-// checks it. Region, Updates and Diagnostics have no API yet, so they're left out with a line
-// saying so rather than shown as controls that do nothing.
-import type { MetadataInput, MetadataSettings } from '@highsea/api-contract'
+// checks it. Checkpoint 5 adds the Catalog group after it (its answer 7): the channel, automatic
+// updates and extra catalogs with their keys. Its settings are the owner's to read as well as to
+// change (ADR 0032), so an admin sees a line saying so; each change saves at once, as Monitored
+// does, so the page keeps one Save bar, Metadata's. Region, Updates and Diagnostics have no API
+// yet, so they're left out with a line saying so rather than shown as controls that do nothing.
+import {
+  CATALOG_CHANNELS,
+  type CatalogSettings,
+  type CatalogSettingsPatch,
+  INDEXER_TOPICS,
+  type MetadataInput,
+  type MetadataSettings,
+} from '@highsea/api-contract'
 import { useLocale, useT } from '@highsea/i18n/react'
 import { useAction, useQuery } from '@highsea/sdk/react'
-import { Badge, Button, ConfirmDialog, Field, Icon, Input, Select, toast } from '@highsea/ui-web'
+import {
+  Badge,
+  Button,
+  ConfirmDialog,
+  Field,
+  Icon,
+  Input,
+  Select,
+  Switch,
+  toast,
+} from '@highsea/ui-web'
 import { useState } from 'react'
 import { general as messages } from './general-messages.ts'
 import { Loadable } from './loadable.tsx'
@@ -32,6 +52,7 @@ export function General() {
         {/* a fresh draft whenever the saved settings change */}
         {(m) => <Metadata key={JSON.stringify(m)} loaded={m} reload={data.refetch} />}
       </Loadable>
+      <Catalog />
       <p className="text-caption text-text-3">{t('later')}</p>
     </AreaPage>
   )
@@ -194,5 +215,180 @@ function Metadata({ loaded, reload }: { loaded: MetadataSettings; reload: () => 
         onSave={submit}
       />
     </>
+  )
+}
+
+// ---------------------------------------------------------------- catalog
+
+function Catalog() {
+  const t = useT(messages)
+  const { role } = useShell()
+  if (role !== 'owner')
+    return (
+      <Group title={t('catalog.title')} description={t('catalog.description')}>
+        <p className="text-caption text-text-3">{t('catalog.ownerOnly')}</p>
+      </Group>
+    )
+  return <CatalogSettingsGroup />
+}
+
+const blankExtra = { url: '', keyId: '', publicKey: '' }
+
+function CatalogSettingsGroup() {
+  const t = useT(messages)
+  const data = useQuery('settings:catalog', (c) => c.catalog.settings(), [INDEXER_TOPICS.catalog])
+  const save = useAction((c, body: CatalogSettingsPatch) => c.catalog.updateSettings({ body }))
+  const [extra, setExtra] = useState(blankExtra)
+  const [extraError, setExtraError] = useState<string | null>(null)
+  const [removing, setRemoving] = useState<string | null>(null)
+
+  const change = (patch: CatalogSettingsPatch) =>
+    save.run(patch).then(
+      () => {
+        toast.success(t('saved'))
+        data.refetch()
+      },
+      (e: Error) => {
+        toast.error(t('saveError'), { description: e.message })
+        throw e
+      },
+    )
+
+  return (
+    <Group title={t('catalog.title')} description={t('catalog.description')}>
+      <Loadable query={data} what={t('catalog.what')}>
+        {(s: CatalogSettings) => (
+          <>
+            <div className="grid gap-4 medium:grid-cols-2">
+              <Field label={t('catalog.channel')} hint={t('catalog.channelHint')}>
+                <Select
+                  value={s.channel}
+                  disabled={save.pending}
+                  onValueChange={(channel) =>
+                    change({ channel: channel as CatalogSettings['channel'] }).catch(() => {})
+                  }
+                  options={CATALOG_CHANNELS.map((c) => ({
+                    value: c,
+                    label: t(`catalog.${c}`),
+                  }))}
+                />
+              </Field>
+            </div>
+            <Field inline label={t('catalog.auto')} hint={t('catalog.autoHint')}>
+              <Switch
+                checked={s.autoUpdate}
+                disabled={save.pending}
+                onCheckedChange={(autoUpdate) => change({ autoUpdate }).catch(() => {})}
+              />
+            </Field>
+            <div className="grid gap-2">
+              <span className="font-medium text-text text-ui">{t('catalog.extras')}</span>
+              {s.extras.length === 0 ? (
+                <p className="text-caption text-text-3">{t('catalog.noExtras')}</p>
+              ) : (
+                <ul className="grid gap-2">
+                  {s.extras.map((x) => (
+                    <li
+                      key={x.url}
+                      className="flex min-w-0 items-center gap-3 rounded-md border border-line bg-s1 px-3 py-2"
+                    >
+                      <span className="grid min-w-0 flex-1">
+                        <span className="truncate font-mono text-figure text-text" title={x.url}>
+                          {x.url}
+                        </span>
+                        <span className="text-caption text-text-3">
+                          {t('catalog.keyId', { keyId: x.keyId })}
+                        </span>
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setRemoving(x.url)}
+                        aria-label={t('catalog.removeLabel', { url: x.url })}
+                      >
+                        {t('catalog.remove')}
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            <form
+              className="grid gap-3 rounded-md border border-line p-3"
+              onSubmit={(e) => {
+                e.preventDefault()
+                const next = {
+                  url: extra.url.trim(),
+                  keyId: extra.keyId.trim(),
+                  publicKey: extra.publicKey.trim(),
+                }
+                if (!next.url || !next.keyId || !next.publicKey)
+                  return setExtraError(t('catalog.extraMissing'))
+                setExtraError(null)
+                save.run({ extras: [...s.extras, next] }).then(
+                  () => {
+                    toast.success(t('catalog.added'))
+                    setExtra(blankExtra)
+                    data.refetch()
+                  },
+                  (err: Error) => setExtraError(err.message),
+                )
+              }}
+            >
+              <span className="font-medium text-text text-ui">{t('catalog.add')}</span>
+              <Field label={t('catalog.url')} hint={t('catalog.urlHint')}>
+                <Input
+                  value={extra.url}
+                  type="url"
+                  autoComplete="off"
+                  spellCheck={false}
+                  className="font-mono"
+                  onChange={(e) => setExtra({ ...extra, url: e.target.value })}
+                />
+              </Field>
+              <div className="grid gap-3 medium:grid-cols-[12rem_minmax(0,1fr)]">
+                <Field label={t('catalog.keyIdLabel')}>
+                  <Input
+                    value={extra.keyId}
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="font-mono"
+                    onChange={(e) => setExtra({ ...extra, keyId: e.target.value })}
+                  />
+                </Field>
+                <Field
+                  label={t('catalog.publicKey')}
+                  hint={t('catalog.publicKeyHint')}
+                  error={extraError ?? undefined}
+                >
+                  <Input
+                    value={extra.publicKey}
+                    autoComplete="off"
+                    spellCheck={false}
+                    className="font-mono"
+                    onChange={(e) => setExtra({ ...extra, publicKey: e.target.value })}
+                  />
+                </Field>
+              </div>
+              <Button type="submit" size="sm" className="justify-self-start" loading={save.pending}>
+                {t('catalog.addButton')}
+              </Button>
+            </form>
+            <ConfirmDialog
+              open={removing !== null}
+              onOpenChange={(o) => !o && setRemoving(null)}
+              title={t('catalog.removeTitle')}
+              description={t('catalog.removeBody')}
+              confirmLabel={t('catalog.removeConfirm')}
+              cancelLabel={t('catalog.keep')}
+              destructive
+              onConfirm={() =>
+                change({ extras: s.extras.filter((x) => x.url !== removing) }).catch(() => {})
+              }
+            />
+          </>
+        )}
+      </Loadable>
+    </Group>
   )
 }

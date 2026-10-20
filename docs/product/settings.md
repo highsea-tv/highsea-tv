@@ -22,7 +22,7 @@ Everything about how the server runs, in one place, one area per page: the regio
 
 | Area | Groups and main controls |
 | --- | --- |
-| **General** | Region: Language, Time zone · Metadata: TMDB key (set or not, its last four characters, **Replace**, **Remove**; checked with TMDB on save), Metadata language, Region (for certifications, release dates and Discover; the owner's locale by default) · Updates: Stable or Beta, Install updates on their own · Diagnostics: Send anonymous usage counts (off), Log level |
+| **General** | Region: Language, Time zone · Metadata: TMDB key (set or not, its last four characters, **Replace**, **Remove**; checked with TMDB on save), Metadata language, Region (for certifications, release dates and Discover; the owner's locale by default) · Indexer catalog (the owner's; checkpoint 5): Channel (Stable or Beta), Install new versions automatically (or ask first), Extra catalogs (address, key ID, public key; **Remove**) · Updates: Stable or Beta, Install updates on their own · Diagnostics: Send anonymous usage counts (off), Log level |
 | **Appearance** | [appearance.md](appearance.md) |
 | **Network and remote access** | Remote access: External URL, **Check from outside** · Reverse proxy and TLS: My proxy handles it, Built in, Off (LAN only); Trusted proxies; X-Forwarded headers · Discovery: Let apps on this network find Harbor (with the Docker note) |
 | **Security** | Signing in: **Require two-step for the owner and admins** (on for new servers; [ADR 0032](../adr/0032-administrative-and-normal-access.md)), passkeys, session length · Single sign-on (OIDC): on, button label, client ID, issuer URL, client secret, the redirect URL to copy · Ownership: Hand the server over |
@@ -57,6 +57,7 @@ Everything about how the server runs, in one place, one area per page: the regio
   - `settings.metadata()` (staff) → `MetadataSettings`: `key` (`set`, and `last4`, its last four characters; never the key itself), `language` (`en-US`, TMDB's language parameter) and `region` (`GB`, ISO 3166-1; the owner's locale by default, set in setup);
   - `settings.saveMetadata({ body })` (the owner) → `PUT`, any of `key`, `language` and `region`. A new key is checked with TMDB first (400 `tmdb-key-rejected`; 503 `tmdb-unreachable` or 429 `tmdb-rate-limited` when TMDB can't say), and nothing is saved unless every field is. The key is stored encrypted;
   - `settings.removeMetadataKey()` (the owner) → `DELETE`. The library and its pages keep working from the cache.
+- **General › Indexer catalog** (checkpoint 5): `catalog.settings()` and `catalog.updateSettings(patch)` → `GET`, `PATCH /api/v1/catalog/settings`, both the owner's. Each change saves at once; an admin sees a line saying only the owner can change them. See [indexers.md › Data](indexers.md#data).
 - **Quality sizes:** `settings.qualitySizes()` → `GET /api/v1/settings/qualitySizes` (staff): `{ quality, min, preferred, max }` per quality, lowest first, in MiB per minute. Read-only until checkpoint 8.
 - **Profiles and formats:** `quality.profiles()` → `GET /api/v1/qualityprofiles[/{id}]` and `quality.customFormats()` → `GET /api/v1/customformats`, both staff. Seeded and read-only until checkpoint 8 ([ADR 0031](../adr/0031-quality-and-the-decision-engine.md)).
 - **Root folders** (Media management › Importing): [movies.md › Data](movies.md#data).
@@ -70,6 +71,7 @@ Everything about how the server runs, in one place, one area per page: the regio
 - **Backups split:** the schedule is a setting; making and restoring a backup is an action on System.
 
 - **The TMDB key lives in General › Metadata,** with the metadata language and region; setup sets it first, and every missing-key message links here. Approved by the owner on 2026-10-20 ([checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#owners-decisions)); the prototype doesn't show the group.
+- **The catalog's settings sit in General after Metadata,** owner only, and the search timeout stays a fixed 30 seconds (checkpoint 5, answer 7). The prototype doesn't show the group.
 - **Profiles and formats stay read-only until checkpoint 8.** Their editors are prototyped and approved first.
 
 ## Open questions

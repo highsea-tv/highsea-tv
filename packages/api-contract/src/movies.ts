@@ -446,7 +446,8 @@ export const rootFolders = {
     path: `${ROOT_FOLDERS}/{id}`,
     tags: ['Root folders'],
     summary: 'Remove a root folder',
-    description: 'Nothing on disk changes. 409 (`in-use`) while library movies are filed under it.',
+    description:
+      'Nothing on disk changes. 409 (`in-use`) while titles of any type are filed under it, with `details.counts` by type.',
     ...access('staff'),
     request: { params: IdParam },
     responses: { ...noContent, ...errors('unauthorized', 'forbidden', 'not-found', 'conflict') },

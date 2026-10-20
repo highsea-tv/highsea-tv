@@ -15,7 +15,8 @@
       "!packages/db/src/migrations.ts",
       "!packages/db/drizzle",
       "!apps/server/public",
-      "!apps/server/openapi.json"
+      "!apps/server/openapi.json",
+      "!packages/catalog/seed"
     ]
   },
   "formatter": {

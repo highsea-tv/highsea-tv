@@ -45,6 +45,14 @@ export type IndexerFacts = {
   seeders?: number | null
   /** Since the indexer published it. */
   ageMinutes?: number | null
+  /** The indexer's name, for the reasons. */
+  indexerName?: string
+  /** A torrent with fewer seeders is rejected; unset or null checks nothing. */
+  minimumSeeders?: number | null
+  /** A Usenet release younger than this is rejected (Radarr's Minimum Age); unset checks nothing. */
+  minimumAgeMinutes?: number | null
+  /** Set while the indexer can't be used (it's failing): its releases are rejected. */
+  blocked?: boolean
 }
 
 export type DecisionInput = {
@@ -247,6 +255,54 @@ const upgradeSpec: Specification = {
 /** A slot a later checkpoint fills: it says nothing until then. */
 const slot = (id: string): Specification => ({ id, evaluate: () => [] })
 
+/**
+ * Radarr's Minimum Seeders, per torrent indexer (wiki.servarr.com/radarr/settings#indexers). Only
+ * when both the count and the minimum are known: an indexer that doesn't report seeders isn't
+ * penalized for it.
+ */
+const seedersSpec: Specification = {
+  id: 'seeders',
+  evaluate: ({ indexer, t }) => {
+    const seeders = indexer?.seeders
+    const minimum = indexer?.minimumSeeders
+    if (indexer?.protocol === 'usenet' || seeders == null || minimum == null) return []
+    return seeders < minimum ? [rejected(t('seeders.tooFew', { seeders, minimum }))] : []
+  },
+}
+
+/** Minimum Age, Usenet only, as the Servarr wiki defines it (wiki.servarr.com/sonarr/settings#options). */
+const minimumAgeSpec: Specification = {
+  id: 'minimumAge',
+  evaluate: ({ indexer, locale, t }) => {
+    const age = indexer?.ageMinutes
+    const minimum = indexer?.minimumAgeMinutes
+    if (indexer?.protocol !== 'usenet' || age == null || !minimum) return []
+    return age < minimum
+      ? [
+          rejected(
+            t('age.tooNew', {
+              age: duration(Math.max(0, age) * 60, locale),
+              minimum: duration(minimum * 60, locale),
+            }),
+          ),
+        ]
+      : []
+  },
+}
+
+/** An indexer that's failing can't be grabbed from until it recovers. */
+const blockedIndexerSpec: Specification = {
+  id: 'blockedIndexer',
+  evaluate: ({ indexer, t }) =>
+    indexer?.blocked
+      ? [
+          rejected(
+            t('indexer.blocked', { indexer: indexer.indexerName ?? indexer.indexerId ?? '' }),
+          ),
+        ]
+      : [],
+}
+
 /** The specifications, in the order their reasons are listed. */
 export const defaultSpecifications: readonly Specification[] = [
   qualitySpec,
@@ -257,9 +313,9 @@ export const defaultSpecifications: readonly Specification[] = [
   cutoffSpec,
   upgradeSpec,
   // Checkpoint 5: the indexer's facts.
-  slot('seeders'),
-  slot('minimumAge'),
-  slot('blockedIndexer'),
+  seedersSpec,
+  minimumAgeSpec,
+  blockedIndexerSpec,
   // Checkpoint 6: the queue and history.
   slot('alreadyQueued'),
   slot('alreadyImported'),

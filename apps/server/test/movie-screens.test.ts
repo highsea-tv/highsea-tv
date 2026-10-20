@@ -64,9 +64,11 @@ describe('the add dialog', () => {
       qualityProfileId: 'qp-uhd',
       languageProfileId: 'lp-pt',
       minimumAvailability: 'in-cinemas',
-      // decision 2: off until there are indexers, whatever was remembered
+      // decision 2: off while no indexer is enabled, whatever was remembered
       searchNow: false,
     })
+    // with an enabled indexer, the remembered choice
+    expect(initialForm({ ...options(remembered), canSearch: true }).searchNow).toBe(true)
     const gone = { ...remembered, rootFolder: '/mnt/old', qualityProfileId: 'qp-deleted' }
     expect(initialForm(options(gone))).toMatchObject({
       rootFolder: '/data/movies',

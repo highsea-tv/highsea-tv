@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The catalog pipeline (ADR 0007, ADR 0034) on every change to catalog/**: validate each definition,
+# check every definition's licence, build and sign both channels, and check that the server's seed
+# snapshot is up to date. Publishing is written but switched off until the owner creates the
+# release key and says to publish (checkpoint 5, answer 3).
+name: Catalog
+
+on:
+  push:
+    branches: [main]
+    paths: ['catalog/**', 'packages/schemas/**', 'packages/catalog/**', 'scripts/catalog.ts']
+  pull_request:
+    paths: ['catalog/**', 'packages/schemas/**', 'packages/catalog/**', 'scripts/catalog.ts']
+
+concurrency:
+  group: catalog-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - name: Every definition validates, and runs against the fake indexer
+        run: bun test --isolate packages/schemas packages/catalog packages/indexers
+      - name: Every definition is CC0-1.0 or MIT
+        run: bun run licenses
+      # signed with the development key until the release key exists; then with the secret
+      - name: Build and sign both channels
+        run: bun run catalog:build
+        env:
+          HIGHSEA_CATALOG_KEY: ${{ secrets.HIGHSEA_CATALOG_KEY }}
+          HIGHSEA_CATALOG_KEY_ID: ${{ secrets.HIGHSEA_CATALOG_KEY_ID }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: catalog
+          path: dist/catalog/
+
+  publish:
+    needs: build
+    # off until the owner says to publish (checkpoint 5, answer 3)
+    if: false
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: catalog
+          path: dist/catalog/
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist/catalog/
+      - uses: actions/deploy-pages@v4

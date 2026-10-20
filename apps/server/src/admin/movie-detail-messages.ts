@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A6 movie detail's library layer (movies.md § Movie detail, § Copy; ADR 0021): the prototype's
-// copy, with search disabled until indexers exist (checkpoint 4 plan, decision 2), and the
+// copy, with search disabled while no indexer is enabled (checkpoint 4 plan, decision 2), the
+// Search tab's results with Grab disabled until downloads (checkpoint 5, the owner's answer 6), and the
 // smallest additions for what the prototype doesn't draw: Edit and the version list.
 import { defineMessages } from '@highsea/i18n'
 
@@ -22,6 +23,33 @@ export const movieDetail = defineMessages({
   // decision 2
   noIndexers: 'Add an indexer to search for releases.',
   goToIndexers: 'Indexers',
+  'search.toast': 'Searching for {title}',
+  'search.toastBody': 'The Search tab shows what your indexers find.',
+  'search.failed': 'Search failed',
+  // the Search tab
+  'search.what': 'the releases',
+  'search.searching': 'Searching {count, plural, one {# indexer} other {# indexers}}…',
+  'search.count': '{count, plural, one {# release} other {# releases}}',
+  'search.accepted': '{count} accepted by your profile',
+  'search.showRejected': 'Show rejected',
+  'search.again': 'Search again',
+  'search.none': 'No indexer returned a release. Check Indexers, or try again later.',
+  'search.release': 'Release',
+  'search.quality': 'Quality',
+  'search.score': 'Score',
+  'search.size': 'Size',
+  'search.peers': 'Peers',
+  'search.age': 'Age',
+  'search.decision': 'Decision',
+  'search.actions': 'Actions',
+  'search.unknown': '—',
+  'search.approved': 'Accepted',
+  'search.rejected': 'Rejected ({count})',
+  'search.reasons': ': show the reasons',
+  'search.grab': 'Grab {title}',
+  'search.grabAnyway': 'Grab anyway {title}',
+  'search.grabLater': 'Grabbing comes with downloads.',
+  'search.failedIndexer': '{indexer} didn’t answer: {message}',
   // tabs
   'tab.files': 'Files',
   'tab.history': 'History',

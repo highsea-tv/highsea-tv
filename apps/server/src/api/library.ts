@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The client API (client-library.md, client-detail.md, client-search.md): what the household's apps
-// read, with each person's watch state. Thin handlers over @highsea/media-movies. Search adds TMDB's
+// read, with each person's watch state. Thin handlers over @highsea/media/movies. Search adds TMDB's
 // titles only for people who may add them (Manage the library), as the contract says.
 import { routes } from '@highsea/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'

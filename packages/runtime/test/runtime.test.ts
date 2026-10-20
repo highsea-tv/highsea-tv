@@ -32,6 +32,16 @@ describe('config', () => {
     })
   })
 
+  test('trusts the catalog’s development key unless it’s production, or told', () => {
+    expect(loadConfig({}).catalogDevKey).toBe(true)
+    expect(loadConfig({ NODE_ENV: 'production' }).catalogDevKey).toBe(false)
+    expect(loadConfig({ NODE_ENV: 'production', HIGHSEA_CATALOG_DEV_KEY: '1' }).catalogDevKey).toBe(
+      true,
+    )
+    expect(loadConfig({ HIGHSEA_CATALOG_DEV_KEY: '0' }).catalogDevKey).toBe(false)
+    expect(loadConfig({}).catalogUrl).toBeUndefined()
+  })
+
   test('says which setting is wrong', () => {
     expect(() => loadConfig({ PORT: 'eighty' })).toThrow('port')
     expect(() => loadConfig({ HIGHSEA_PUBLIC_URL: 'not a url' })).toThrow('publicUrl')
@@ -114,6 +124,16 @@ describe('worker pool', () => {
     await expect(pool.run({ module, fn: 'double', input: 1 })).rejects.toThrow('closed')
   })
 
+  // the Node tests run on is the one in .nvmrc, so their results match CI's and production's
+  test('`node` is the version in .nvmrc', () => {
+    const run = Bun.spawnSync([
+      'node',
+      new URL('../../../scripts/check-node.ts', import.meta.url).pathname,
+    ])
+    expect(run.stderr.toString()).toBe('')
+    expect(run.exitCode).toBe(0)
+  })
+
   // the server runs the pool on Node; Bun's worker_threads are documented as not battle-tested
   test('under Node, reports a task’s error and keeps the worker', () => {
     const run = Bun.spawnSync([
@@ -126,5 +146,34 @@ describe('worker pool', () => {
       errors: ['nope', 'nope', expect.stringContaining('no function missing')],
       after: 10,
     })
+  })
+})
+
+describe('the catalog and indexers', () => {
+  test('a development boot installs the signed seed; no indexer is a health warning', async () => {
+    const rt = await boot({
+      config: configFor(temp()),
+      version: '0.1.0',
+      quiet: true,
+      manualTicks: true,
+    })
+    expect(rt.catalog.version()).not.toBeNull()
+    expect(rt.server().catalogVersion).toBe(rt.catalog.version())
+    expect(rt.indexers.catalog().length).toBeGreaterThan(0)
+    expect(rt.issues()).toContainEqual(
+      expect.objectContaining({ id: 'indexers-none', source: 'Indexers', level: 'warning' }),
+    )
+    expect(rt.publicInfo().sources).toContain('indexers')
+  })
+
+  test('a production boot trusts no development key, so the seed isn’t installed', async () => {
+    const config = loadConfig({
+      HIGHSEA_CONFIG_DIR: join(temp(), 'config'),
+      HIGHSEA_DATA_DIR: join(temp(), 'data'),
+      NODE_ENV: 'production',
+    })
+    const rt = await boot({ config, version: '0.1.0', quiet: true, manualTicks: true })
+    expect(rt.catalog.version()).toBeNull()
+    expect(rt.indexers.catalog()).toEqual([])
   })
 })

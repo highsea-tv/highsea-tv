@@ -4,6 +4,13 @@ import { networkInterfaces } from 'node:os'
 import { join, resolve } from 'node:path'
 import { type Auth, createAuth, type Issued, type RequestMeta } from '@highsea/auth'
 import {
+  type Catalog,
+  createCatalog,
+  SEED_DIR,
+  type TrustedKey,
+  trustedKeys,
+} from '@highsea/catalog'
+import {
   AppError,
   type Clock,
   createEventBus,
@@ -23,8 +30,10 @@ import {
   systemClock,
 } from '@highsea/core'
 import { type Database, type Db, migrate, openDatabase, schema } from '@highsea/db'
+import { createIndexers, type Indexers } from '@highsea/indexers'
 import { createJobQueue, type JobQueue } from '@highsea/jobs'
-import { createMovies, type Movies } from '@highsea/media-movies'
+import { createMovies, type Movies } from '@highsea/media/movies'
+import { createMedia, type Media } from '@highsea/media/shared'
 import { createMetadata, type Metadata, TMDB_ATTRIBUTION } from '@highsea/metadata'
 import type { MdnsResponder } from '@highsea/network'
 import {
@@ -34,6 +43,7 @@ import {
   type WidgetSource,
 } from '@highsea/personalization'
 import { eq } from 'drizzle-orm'
+import { z } from 'zod'
 import type { Config } from './config.ts'
 import { homeRows } from './home-rows.ts'
 import { createNetworkService, type NetworkService } from './network.ts'
@@ -47,8 +57,11 @@ import {
 import { createCpuMeter, type Disk, disks, type HealthIssue, memory } from './system.ts'
 import { createWorkerPool, type WorkerPool } from './workers.ts'
 
-/** Milestone 1 has the server itself and the movie library; each later checkpoint adds its own. */
-const SOURCES: WidgetSource[] = ['system', 'movies']
+/** Milestone 1 has the server, the movie library and indexers; each later checkpoint adds its own. */
+const SOURCES: WidgetSource[] = ['system', 'movies', 'indexers']
+
+/** Searches an indexer search for a movie in the background: Search now and bulk search queue it. */
+export const MOVIE_SEARCH_JOB = 'movies.search'
 
 /** A provider's credit, in the wording its terms ask for. */
 export type Attribution = { name: string; notice: string; url: string }
@@ -90,6 +103,8 @@ export type ServerView = {
   addresses: { local: string[]; public: string | null }
   setupComplete: boolean
   clientsConnected: number
+  /** The main catalog's installed version; null before one is installed. */
+  catalogVersion: string | null
 }
 
 export type SystemStatus = {
@@ -108,6 +123,8 @@ export type SetupInput = {
   cloudLink: boolean
   /** The TMDB key step: the key (skipped when absent), the metadata language and the region. */
   metadata?: { key?: string; language?: string; region?: string }
+  /** The indexer step: definition ids from the starter pack. */
+  indexers?: string[]
 }
 
 export type HealthReport = {
@@ -134,13 +151,21 @@ export type Runtime = {
   personalization: Personalization
   /** TMDB, the metadata cache and images (ADR 0029, 0030). */
   metadata: Metadata
+  /** What every media type shares: profiles, formats, quality sizes and root folders (ADR 0036). */
+  media: Media
   /** The movie library. */
   movies: Movies
+  /** Signed definitions: the seed, the main catalog, extra catalogs and local ones (ADR 0034). */
+  catalog: Catalog
+  /** Indexers, their health and release search (ADR 0035). */
+  indexers: Indexers
   identity(): ServerIdentity
   rename(name: string): void
   /** `origin` is the browser's, when known: passkeys depend on it. */
   publicInfo(origin?: string): PublicInfo
   setupComplete(): boolean
+  /** Setup's indexer step: public starters that need no setting, so each adds in a click. */
+  starterPack(): ReturnType<Indexers['catalog']>
   /** Setup's last step: the owner, the server's name and choices, and the owner signed in. */
   completeSetup(input: SetupInput, meta: RequestMeta): Promise<Issued>
   server(): ServerView
@@ -172,6 +197,17 @@ export type BootOptions = {
    * the replay mode pass `createReplayFetch()` from `@highsea/metadata/replay`.
    */
   fetch?: Fetch
+  /**
+   * Where the catalog comes from. By default the seed shipped in `@highsea/catalog`, the keys the
+   * config trusts, and `config.catalogUrl`. Tests and the sweeps pass a locally signed one.
+   */
+  catalog?: {
+    seedDir?: string | null
+    trustedKeys?: readonly TrustedKey[]
+    mainUrl?: string | null
+  }
+  /** Each indexer's time to answer; tests shorten it. */
+  indexerTimeoutMs?: number
 }
 
 const g = globalThis as typeof globalThis & { __highsea?: Runtime }
@@ -293,8 +329,84 @@ export async function boot(options: BootOptions): Promise<Runtime> {
   })
   metadata.jobs.schedule(clock.now())
 
-  const movies = createMovies({ db, jobs, clock, events, logger, metadata })
-  movies.seed()
+  const outside = options.fetch ?? globalThis.fetch
+  const catalog = createCatalog({
+    db,
+    jobs,
+    clock,
+    logger,
+    events,
+    fetch: outside,
+    configDir: config.configDir,
+    trustedKeys: options.catalog?.trustedKeys ?? trustedKeys(config.catalogDevKey ?? false),
+    seedDir: options.catalog?.seedDir === undefined ? SEED_DIR : options.catalog.seedDir,
+    mainUrl:
+      options.catalog?.mainUrl === undefined
+        ? (config.catalogUrl ?? null)
+        : options.catalog.mainUrl,
+  })
+  catalog.defineJobs()
+  catalog.start()
+  catalog.schedule(clock.now())
+
+  const indexers = createIndexers({
+    db,
+    jobs,
+    clock,
+    logger,
+    events,
+    sealer,
+    fetch: outside,
+    definitions: catalog,
+    timeoutMs: options.indexerTimeoutMs,
+  })
+  indexers.defineJobs()
+  indexers.schedule()
+  const stopIndexers = indexers.start()
+
+  // what every media type shares: profiles, formats, sizes and root folders
+  const media = createMedia({ db, clock, logger })
+  media.seed()
+  const movies = createMovies(
+    {
+      db,
+      jobs,
+      clock,
+      events,
+      logger,
+      metadata,
+      search: {
+        canSearch: () => indexers.hasEnabled(),
+        queue(tmdbIds) {
+          for (const tmdbId of tmdbIds)
+            jobs.enqueue(MOVIE_SEARCH_JOB, { tmdbId }, { dedupeKey: `movie:${tmdbId}` })
+        },
+      },
+    },
+    media,
+  )
+  // safe to repeat: a search replaces the movie's cached results; a removed movie is skipped
+  jobs.define({
+    type: MOVIE_SEARCH_JOB,
+    payload: z.object({ tmdbId: z.number().int() }),
+    attempts: 2,
+    async run({ tmdbId }) {
+      let input: ReturnType<Movies['searchInput']>
+      try {
+        input = movies.searchInput(tmdbId)
+      } catch (e) {
+        if (e instanceof AppError && e.code === 'not-found') return
+        throw e
+      }
+      const result = await indexers.search(input)
+      log.info('searched for a movie', {
+        tmdbId,
+        releases: result.releases.length,
+        approved: result.releases.filter((r) => r.approved).length,
+        searched: result.searched,
+      })
+    },
+  })
   movies.jobs.schedule(clock.now())
 
   const personalization = createPersonalization(
@@ -327,11 +439,18 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     network,
     personalization,
     metadata,
+    media,
     movies,
+    catalog,
+    indexers,
     identity,
     rename,
     publicInfo,
     setupComplete: () => isSetupComplete(db),
+    starterPack: () =>
+      indexers
+        .catalog({ starter: true })
+        .filter((d) => d.settings.every((f) => !f.required || f.default !== undefined)),
     async completeSetup(input, meta) {
       if (isSetupComplete(db)) throw new AppError('not-found', 'Setup is already complete.')
       // everything that can be checked before the owner exists, so a mistake leaves nothing behind
@@ -348,8 +467,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       // setup's movies folder is the first root folder (setup.ts › MediaFolders); saveSetup made it
       const folder = resolve(input.folders.movies)
       try {
-        if (!movies.rootFolders.list().some((f) => f.path === folder))
-          movies.rootFolders.add(folder)
+        if (!media.rootFolders.list().some((f) => f.path === folder)) media.rootFolders.add(folder)
       } catch (e) {
         log.warn('couldn’t add the movies folder as a root folder', { error: (e as Error).message })
       }
@@ -360,6 +478,22 @@ export async function boot(options: BootOptions): Promise<Runtime> {
           // the owner exists now: setup finishes, and the key is added in Settings › General
           log.warn('couldn’t save the TMDB key at setup', { error: (e as Error).message })
         }
+      // the indexer step: added once the owner exists, each tested first. Not awaited, so a slow
+      // or unreachable site doesn't hold up Finish for its 30 seconds; they appear on the
+      // dashboard as they pass, and one that fails is logged and can be added from Indexers
+      const pack = new Set(runtime.starterPack().map((d) => d.id))
+      const chosen = [...new Set(input.indexers ?? [])].filter((id) => pack.has(id))
+      if (chosen.length)
+        void Promise.allSettled(
+          chosen.map((id) =>
+            indexers.add(id).catch((e) => {
+              log.warn('couldn’t add an indexer at setup', {
+                definition: id,
+                error: (e as Error).message,
+              })
+            }),
+          ),
+        )
       log.info('setup complete', { owner: owner.username })
       return auth.signInAfterSetup(owner.id, meta)
     },
@@ -373,6 +507,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
         addresses: { local: localAddresses(config.port), public: network.externalUrl() },
         setupComplete: isSetupComplete(db),
         clientsConnected: network.clientsConnected(),
+        catalogVersion: catalog.version(),
       }
     },
     status() {
@@ -421,6 +556,8 @@ export async function boot(options: BootOptions): Promise<Runtime> {
             'The external URL isn’t HTTPS: passwords cross the internet unencrypted, and passkeys can’t work there.',
           since: startedAt,
         })
+      for (const i of catalog.issues()) out.push({ ...i, source: 'Catalog', since: startedAt })
+      for (const i of indexers.issues()) out.push({ ...i, source: 'Indexers' })
       return out
     },
     health() {
@@ -446,6 +583,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
         }
       }
       movies.close()
+      stopIndexers()
       await network.stopDiscovery()
       await jobs.drain()
       await workers.close()

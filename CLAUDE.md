@@ -9,10 +9,10 @@ highsea is a self-hosted replacement for the *ARR suite (Radarr, Sonarr, Prowlar
 - **Phase 3** (server milestone 1): the plan is [docs/plans/phase-3-server.md](docs/plans/phase-3-server.md), approved with the owner's decisions recorded in it.
   - Checkpoints 1 to 4 are signed off: the platform; accounts, network and the admin shell; personalization and the dashboard; and movies, without downloading ([its scope](docs/plans/phase-3-checkpoint-4.md)). Checkpoints 2 to 4 were signed off on 2026-10-20.
   - The admin is the owner's and admins' only (the plan's decision 6): three roles, Owner, Admin and User, built and reviewed on 2026-10-20 ([docs/plans/phase-3-admin-access.md](docs/plans/phase-3-admin-access.md), ADR 0032).
-  - **Next:** checkpoint 5, indexers and the catalog, scoped in [docs/plans/phase-3-checkpoint-5.md](docs/plans/phase-3-checkpoint-5.md). Building waits for the owner's answers to its open questions and the go-ahead.
+  - **Next:** checkpoint 5, indexers and the catalog, scoped in [docs/plans/phase-3-checkpoint-5.md](docs/plans/phase-3-checkpoint-5.md). The owner answered its open questions on 2026-10-20 (every recommendation taken); it's built and waits for the owner's review.
 - **Follow-up after Phase 3:** dashboard customization on Homarr's level, with a visible grid ([docs/plans/dashboard-customization.md](docs/plans/dashboard-customization.md)). Not scheduled; a prototype is approved first.
 
-Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2, 0027–0028 with checkpoint 3, 0029–0031 with checkpoint 4, 0032 with the admin-access work.
+Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2, 0027–0028 with checkpoint 3, 0029–0031 with checkpoint 4, 0032 with the admin-access work, 0033–0035 with checkpoint 5, 0036 (domain packages with subpath exports) at its review.
 
 ## Rules from the owner
 
@@ -43,7 +43,8 @@ bun install
 bun run lint            # Biome
 bun run typecheck       # every workspace, plus scripts/
 bun run test            # everything (Bun's runner, each file isolated)
-node apps/server/scripts/smoke.ts   # the platform under Node, as production runs it
+bun run smoke           # the platform under Node, as production runs it
+bun run check:node      # is `node` the version in .nvmrc (24.21.0)?
 
 bun run server          # the server in development, http://localhost:3000 (data in .dev/)
 HIGHSEA_TMDB_REPLAY=1 bun run server   # the same, answering TMDB from the recordings: no key, no network
@@ -52,6 +53,7 @@ bun run storybook       # the design system
 
 bun run pin hono zod    # versions old enough to pin
 bun run licenses        # the license audit
+bun run catalog:build   # validate, bundle and sign the catalog (dev key unless HIGHSEA_CATALOG_KEY)
 bun run record:tmdb     # in packages/metadata: refresh the TMDB recordings with your own key (never in CI)
 docker compose up --build
 ```
@@ -60,7 +62,7 @@ Browser sweeps are in [scripts/sweeps](scripts/sweeps/README.md): axe in three t
 
 Before reporting a checkpoint, run all of these:
 - `bun run lint && bun run typecheck && bun run test`;
-- the Node smoke test;
+- the Node smoke test (`bun run smoke`);
 - the sweeps.
 
 ## How the code is put together
@@ -76,7 +78,8 @@ Before reporting a checkpoint, run all of these:
 | `packages/parser` | Release names into their parts: title, year, edition, quality, languages, group. Pure |
 | `packages/quality` | The quality vocabulary, profiles, custom formats, sizes and the decision engine (ADR 0031). Pure; browsers import `@highsea/quality/browser`, which leaves out the TRaSH presets |
 | `packages/metadata` | TMDB behind the fetch seam (ADR 0029), the metadata cache, images and refresh (ADR 0030); the replaying `fetch` in `@highsea/metadata/replay` |
-| `packages/media-movies` | The movie library: items and versions (ADR 0012), root folders, the seeded profiles and formats, and the client API's reads |
+| `packages/schemas`, `catalog`, `indexers` | Shared data formats, one subpath each: `@highsea/schemas/indexers`, the indexer definition format (ADR 0033, 0036); the signed catalog, its pipeline and seed (ADR 0034); the indexer engine, health and release search, with a fake indexer in `@highsea/indexers/fake` (ADR 0035) |
+| `packages/media` | The media libraries, one subpath per type (ADR 0036). `@highsea/media/shared`, what every type shares: root folders, the seeded profiles, formats and sizes (`createMedia`, created once by the runtime), names, paging and the API's common shapes. `@highsea/media/movies`, the movie library: items and versions (ADR 0012), availability, the parser's page and the client API's reads |
 | `packages/api-contract`, `sdk` | The public API's zod/OpenAPI contract, and the typed client every app uses |
 | `packages/tokens`, `ui-web`, `brand`, `fixtures` | The design system |
 | `docs/` | Roadmap, plans, ADRs, product specs, brand and design language |
@@ -84,7 +87,7 @@ Before reporting a checkpoint, run all of these:
 
 Conventions:
 
-- **Packages export raw TypeScript** (`"exports": { ".": "./src/index.ts" }`) and import with `.ts` extensions. Node runs it with type stripping, so only erasable syntax compiles (`erasableSyntaxOnly`): no enums, no namespaces with values, no parameter properties.
+- **Packages export raw TypeScript** (`"exports": { ".": "./src/index.ts" }`) and import with `.ts` extensions. Domain packages with several kinds export one subpath each and no root (`@highsea/schemas/indexers`, `@highsea/media/movies`; ADR 0036): a new kind is a folder under `src/` and `test/` and a line in `exports`. Node runs it with type stripping, so only erasable syntax compiles (`erasableSyntaxOnly`): no enums, no namespaces with values, no parameter properties.
 - **The admin reads and writes through the public API,** never Server Actions (ADR 0018).
   - It uses `@highsea/sdk/react`: `useQuery(key, call, topics)` and `useAction(call)`.
   - Screens are ported from `design/prototypes/src/admin/` by swapping the mock client for the SDK.
@@ -99,7 +102,9 @@ Conventions:
 
 ## Things that are easy to trip on
 
-- **Node 24** (`.nvmrc`) is the server's runtime. `better-sqlite3` is a native addon built for one Node version, so reinstall after switching Node (`rm -rf node_modules && bun install`).
+- **Node 24.21.0** (`.nvmrc`) is the one Node highsea runs and is tested on: locally, in CI (`node-version-file: .nvmrc`), in the Docker image and in `engines`. CI reads `.nvmrc`; change it, the Dockerfile's two `FROM` lines and `engines` together.
+  - `scripts/check-node.ts` enforces it: `bun run server`, `bun run smoke`, the server sweep and a runtime test all fail on another `node` (a Mac's Homebrew `node` may be newer; use `nvm use`).
+  - `better-sqlite3` is a native addon built for one Node version, so reinstall after switching Node (`rm -rf node_modules && bun install`).
 - **Bun's `worker_threads`** are documented as not battle-tested, so the worker pool is tested under Node (`packages/runtime/test/fixtures/pool-under-node.ts`).
 - **`bun test` on its own** runs every file in one process, so a DOM test's global `fetch` leaks into the server tests. Use `bun run test`, which passes `--isolate`.
 - **Next's dev server** serves its dev scripts to `localhost` only (`allowedDevOrigins`): browse it at `localhost`, not `127.0.0.1`, or pages never hydrate.

@@ -3,7 +3,9 @@
 // API: setup's TMDB key step (checked on Continue, skippable, sent with Finish), Settings › General
 // › Metadata, Media management's root folders, Profiles and formats and Quality sizes (read-only),
 // System › About with TMDB's notice, and the Upcoming, Calendar, Recently added and Storage widgets
-// with and without the `movies` source. The shell and Next's router are stood in for.
+// with and without the `movies` source. Checkpoint 5 adds setup's indexer step, Settings › General
+// › Catalog, the catalog's version in About, and the Indexers widget. The shell and Next's router
+// are stood in for.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ReactNode } from 'react'
@@ -118,6 +120,20 @@ let state: {
   upcoming: ReturnType<typeof movie>[]
   recent: ReturnType<typeof movie>[]
   requests: Request[]
+  checkedAt: string | null
+  catalog: {
+    channel: 'stable' | 'beta'
+    autoUpdate: boolean
+    extras: { url: string; keyId: string; publicKey: string }[]
+  }
+  indexers: {
+    id: string
+    name: string
+    enabled: boolean
+    health: string
+    backoffUntil: null
+    stats: { grabs24h: number; avgResponseMs: number | null }
+  }[]
 }
 
 const GOOD_KEY = 'eyJhbGciOiJIUzI1NiJ9.good-token-3f9a'
@@ -147,6 +163,17 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
         serverName: '',
       })
+    case 'GET /api/v1/setup/indexers':
+      return json([
+        {
+          id: 'internet-archive',
+          name: 'Internet Archive',
+          description: 'Public-domain feature films, shared over BitTorrent.',
+          privacy: 'public',
+          starter: true,
+          settings: [],
+        },
+      ])
     case 'GET /api/v1/setup/fs/hardlinks':
       return json({ ok: true, sameDevice: true, message: 'Both folders are on the same disk.' })
     case 'POST /api/v1/setup/metadata-key':
@@ -224,6 +251,29 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         { quality: 'Bluray-1080p', min: 50.4, preferred: 95, max: 400 },
         { quality: 'Remux-2160p', min: 204.4, preferred: null, max: null },
       ])
+    case 'GET /api/v1/catalog':
+    case 'POST /api/v1/catalog/check':
+      if (method === 'POST') state.checkedAt = new Date().toISOString()
+      return json({
+        version: '2026.10.20',
+        channel: state.catalog.channel,
+        autoUpdate: state.catalog.autoUpdate,
+        engineVersion: '1',
+        lastCheck: state.checkedAt ? { at: state.checkedAt, ok: true, message: null } : null,
+        available: null,
+        changes: [],
+        extras: [],
+        brokenLocal: [],
+      })
+    case 'GET /api/v1/catalog/settings':
+      return json(state.catalog)
+    case 'PATCH /api/v1/catalog/settings':
+      if (body.extras?.some((x: { url: string }) => !x.url.startsWith('https://')))
+        return failure('invalid', 'Use an https address for an extra catalog.', 400)
+      state.catalog = { ...state.catalog, ...body }
+      return json(state.catalog)
+    case 'GET /api/v1/indexers':
+      return json(state.indexers)
     case 'GET /api/v1/movies/upcoming':
       return json(state.upcoming)
     case 'GET /api/v1/movies/recent':
@@ -255,6 +305,9 @@ beforeEach(() => {
     upcoming: [movie(1, 'Dune: Part Three', today(), ['HD 1080p', '4K HDR'])],
     recent: [movie(2, 'Sintel', '2010-09-30'), movie(3, 'Tears of Steel', '2012-09-26')],
     requests: [],
+    checkedAt: null,
+    catalog: { channel: 'stable', autoUpdate: true, extras: [] },
+    indexers: [],
   }
 })
 afterEach(() => cleanup())
@@ -304,6 +357,7 @@ describe('setup’s TMDB key step', () => {
   ) {
     for (const heading of [
       'Choose your folders',
+      'Add indexers',
       'Watching away from home',
       'Link to highsea cloud',
     ]) {
@@ -372,6 +426,72 @@ describe('setup’s TMDB key step', () => {
     await settle()
     const sent = requested('POST', '/api/v1/setup')[0]?.body as { metadata: { key?: string } }
     expect(sent.metadata.key).toBeUndefined()
+  })
+})
+
+describe('setup’s indexer step', () => {
+  async function toIndexers() {
+    localStorage.setItem(
+      'highsea:setup',
+      JSON.stringify({
+        step: 4,
+        reached: 4,
+        draft: {
+          serverName: 'Harbor',
+          owner: { displayName: 'Ana Lima', username: 'ana' },
+          folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
+        },
+      }),
+    )
+    const opened = await open(<Setup />)
+    await settle()
+    expect(opened.page.getByRole('heading', { level: 1, name: 'Add indexers' })).toBeTruthy()
+    return opened
+  }
+
+  async function finish(user: ReturnType<typeof userEvent.setup>, page: ReturnType<typeof within>) {
+    for (let i = 0; i < 3; i++) {
+      await user.click(page.getByRole('button', { name: 'Continue' }))
+      await settle()
+    }
+    expect(page.getByRole('heading', { level: 1, name: 'Check and finish' })).toBeTruthy()
+  }
+
+  const password = async (
+    user: ReturnType<typeof userEvent.setup>,
+    page: ReturnType<typeof within>,
+  ) => {
+    // the password isn't kept across the reload this test starts from
+    await user.click(page.getByRole('button', { name: 'Finish setup' }))
+    await settle()
+    await user.type(page.getByLabelText('Password'), 'correct horse battery')
+    await user.type(page.getByLabelText('Confirm password'), 'correct horse battery')
+    await user.click(page.getByRole('button', { name: /Review/ }))
+    await settle()
+  }
+
+  test('the public starters come checked, show in Review and are sent with Finish', async () => {
+    const { user, page } = await toIndexers()
+    const box = page.getByRole('checkbox', { name: /Internet Archive/ })
+    expect(box.getAttribute('aria-checked')).toBe('true')
+    await finish(user, page)
+    expect(page.getByText('Internet Archive')).toBeTruthy()
+    await password(user, page)
+    await user.click(page.getByRole('button', { name: 'Finish setup' }))
+    await settle()
+    const sent = requested('POST', '/api/v1/setup')[0]?.body as { indexers: string[] }
+    expect(sent.indexers).toEqual(['internet-archive'])
+  })
+
+  test('unchecked, it’s skipped: Review says none yet and the choice survives a reload', async () => {
+    const { user, page } = await toIndexers()
+    await user.click(page.getByRole('checkbox', { name: /Internet Archive/ }))
+    await finish(user, page)
+    expect(page.getByText('None yet')).toBeTruthy()
+    cleanup()
+    const again = await open(<Setup />)
+    await settle()
+    expect(again.page.getByText('None yet')).toBeTruthy()
   })
 })
 
@@ -539,6 +659,76 @@ describe('System › About', () => {
   })
 })
 
+describe('System › About › Indexer catalog', () => {
+  test('the installed version, and Check now asks the catalog service', async () => {
+    const { user, page } = await open(<System />)
+    const about = page.getByRole('region', { name: 'About' })
+    expect(within(about).getByText('2026.10.20')).toBeTruthy()
+    await user.click(within(about).getByRole('button', { name: 'Check now' }))
+    await settle()
+    expect(requested('POST', '/api/v1/catalog/check')).toHaveLength(1)
+    expect(within(about).getByText(/^Checked .* ago$/)).toBeTruthy()
+  })
+})
+
+describe('Settings › General › Indexer catalog', () => {
+  test('the channel and automatic updates save at once', async () => {
+    const { user, page } = await open(<General />)
+    const group = page.getByRole('region', { name: 'Indexer catalog' })
+    await user.click(within(group).getByRole('switch', { name: /Install new versions/ }))
+    await settle()
+    expect(requested('PATCH', '/api/v1/catalog/settings')[0]?.body).toEqual({ autoUpdate: false })
+    expect(state.catalog.autoUpdate).toBe(false)
+    // one Save bar on the page, Metadata's, and it stays hidden
+    expect(page.queryByRole('button', { name: 'Save' })).toBeNull()
+  })
+
+  test('an extra catalog is added with its key, refused in place, and removed after asking', async () => {
+    const { user, page } = await open(<General />)
+    const group = page.getByRole('region', { name: 'Indexer catalog' })
+    await user.click(within(group).getByRole('button', { name: 'Add catalog' }))
+    expect(
+      within(group).getByText(/Fill in the address, the key ID and the public key/),
+    ).toBeTruthy()
+    expect(requested('PATCH', '/api/v1/catalog/settings')).toHaveLength(0)
+
+    await user.type(within(group).getByLabelText('Manifest address'), 'http://plain.example')
+    await user.type(within(group).getByLabelText('Key ID'), 'friend')
+    await user.type(within(group).getByLabelText('Public key'), 'AAAA')
+    await user.click(within(group).getByRole('button', { name: 'Add catalog' }))
+    await settle()
+    expect(within(group).getByText('Use an https address for an extra catalog.')).toBeTruthy()
+
+    await user.clear(within(group).getByLabelText('Manifest address'))
+    await user.type(
+      within(group).getByLabelText('Manifest address'),
+      'https://friend.example/manifest.json',
+    )
+    await user.click(within(group).getByRole('button', { name: 'Add catalog' }))
+    await settle()
+    expect(state.catalog.extras).toEqual([
+      { url: 'https://friend.example/manifest.json', keyId: 'friend', publicKey: 'AAAA' },
+    ])
+    expect(within(group).getByText('Key friend')).toBeTruthy()
+
+    await user.click(
+      within(group).getByRole('button', { name: 'Remove https://friend.example/manifest.json' }),
+    )
+    const dialog = page.getByRole('alertdialog')
+    expect(within(dialog).getByText(/Its definitions go with it/)).toBeTruthy()
+    await user.click(within(dialog).getByRole('button', { name: 'Remove catalog' }))
+    await settle()
+    expect(state.catalog.extras).toEqual([])
+  })
+
+  test('an admin gets a line saying it’s the owner’s, and nothing is read', async () => {
+    role = 'admin'
+    const { page } = await open(<General />)
+    expect(page.getByText(/Only the owner can see and change the catalog/)).toBeTruthy()
+    expect(requested('GET', '/api/v1/catalog/settings')).toHaveLength(0)
+  })
+})
+
 // ---------------------------------------------------------------- widgets
 
 const W = {
@@ -549,6 +739,44 @@ const W = {
 }
 
 const frame = (id: string, span = 2, rows = 3) => ({ span, rows, 'data-widget-id': id }) as never
+
+describe('the Indexers widget', () => {
+  const Indexers = widgetRenderers.indexers
+  const ix = (id: string, name: string, health: string, ms: number | null) => ({
+    id,
+    name,
+    enabled: health !== 'disabled',
+    health,
+    backoffUntil: null,
+    stats: { grabs24h: 3, avgResponseMs: ms },
+  })
+
+  test('lists each indexer with its health and response time', async () => {
+    state.sources = ['system', 'movies', 'indexers']
+    state.indexers = [
+      ix('ix1', 'Internet Archive', 'healthy', 412),
+      ix('ix2', 'Torznab', 'failing', null),
+    ]
+    const { page } = await open(<Indexers frame={frame('i', 2)} settings={{}} />)
+    expect(page.getByText('1 of 2 healthy')).toBeTruthy()
+    expect(page.getByText(': Failing')).toBeTruthy()
+    expect(page.getByText('412 ms')).toBeTruthy()
+    expect(page.getByText('no queries yet')).toBeTruthy()
+    expect(page.getAllByText('3 grabs')).toHaveLength(2)
+  })
+
+  test('with none installed it offers the catalog; without the source it calls nothing', async () => {
+    state.sources = ['system', 'movies', 'indexers']
+    const { page } = await open(<Indexers frame={frame('i', 1)} settings={{}} />)
+    expect(page.getByText('No indexers yet')).toBeTruthy()
+    cleanup()
+    state.sources = ['system', 'movies']
+    state.requests = []
+    const again = await open(<Indexers frame={frame('i', 1)} settings={{}} />)
+    expect(again.page.getByText('No indexers yet')).toBeTruthy()
+    expect(requested('GET', '/api/v1/indexers')).toHaveLength(0)
+  })
+})
 
 describe('the widgets the library switches on', () => {
   test('Upcoming lists monitored releases with their versions, linked by TMDB id', async () => {

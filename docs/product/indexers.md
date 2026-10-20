@@ -3,6 +3,7 @@
 - **Platforms:** Admin (`apps/server`), every breakpoint.
 - **Prototype:** `#/admin/indexers` (A9).
 - **Roadmap:** [Phase 2 › A9](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Indexers and the independent catalog](../roadmap.md#indexers-and-the-independent-catalog), [ADR 0007](../adr/0007-signed-independent-catalogs.md).
+- **Built:** Phase 3 checkpoint 5 ([plan](../plans/phase-3-checkpoint-5.md)), with [ADR 0033](../adr/0033-indexer-definitions.md), [0034](../adr/0034-catalog-service-and-signing.md) and [0035](../adr/0035-indexer-health-and-search.md).
 
 ## Purpose
 
@@ -19,10 +20,11 @@ Where highsea looks for releases. The page shows whether each indexer is working
 
 - `PageHeader`: "Indexers"; the description "Catalog 2026.10.14, updated on its own schedule. **What changed**"; **Add indexer** (jumps to the Catalog tab).
 - Tabs (line): **Installed** (count), **Catalog**.
-- **Installed:** a `TableFrame`. Columns: indexer (privacy and priority under it), health (badge, with the error and "Trying again in 4m" under it when not healthy), queries 24h, grabs 24h, response time, success rate, an Enabled switch, actions (**Retry now** while backing off; More: Test, Remove).
-- **Catalog:** a search field, a privacy segmented control (All, Public, Semi-private, Private), a language select; then cards in 1, 2 or 3 columns. Each card: name, privacy badge, description, then language · version · license in mono, and **Add** (public), **Set up** (others) or an **Installed** badge.
+- **Installed:** a `TableFrame`. Columns: indexer (privacy and priority under it), health (badge, with the error and "Trying again in 4m" under it when not healthy), queries 24h, grabs 24h, response time, success rate, an Enabled switch, actions (**Retry now** while backing off; More: **Edit**, Test, Remove). An indexer from `/config/definitions` carries a **Local** badge. One whose new definition version asks for a setting, or whose definition is gone, says so under its health and skips searches until it's fixed.
+- **Catalog:** a search field, a privacy segmented control (All, Public, Semi-private, Private), a language select; then cards in 1, 2 or 3 columns. Each card: name, privacy badge (and **Local** for a definition from `/config/definitions`), description, then language · version · license in mono, and **Add** (public, with nothing to fill in), **Set up** (others, and public ones that need a setting such as an address) or an **Installed** badge.
 - **Private setup** dialog (`md`): one field per setting in the definition, each with its "where to find this" help as the hint; **Test and save**.
-- **What changed** dialog: the catalog's recent versions with their notes.
+- **Edit** dialog (`md`, from More): the same generated form, prefilled, plus the name and **Priority** (1 to 50, 25 by default, lower first). A secret field shows empty; leaving it empty keeps the saved one. New settings are tested before saving, as in setup.
+- **What changed** dialog: the catalog's recent versions with their notes. When updates ask first (Settings › General › Catalog), a waiting version is shown at the top with **Install**.
 
 ## States
 
@@ -35,7 +37,7 @@ Where highsea looks for releases. The page shows whether each indexer is working
 
 ## Interactions
 
-- **Add (public):** adds, then tests automatically. Toast: "{Name} added and tested · {result}", or a warning toast if the test fails (it stays added, so it can be fixed).
+- **Add (public):** tests, then adds only if the test passed. Toast: "{Name} added and tested · {result}". A failed test adds nothing and says why in an error toast. (Changed at checkpoint 5 from "stays added": the server never stores an indexer that didn't answer, so public and private work the same way.)
 - **Set up (private):** fields are validated on submit ("Enter your username."). The test runs before saving; a failed test keeps the dialog open with the indexer's message in an alert, e.g. "Bosun rejected the API key (401). Copy it again from your profile." Nothing is saved until it passes.
 - **Retry now** clears a backoff and puts the indexer back in rotation.
 - **Test** (menu) shows the result as a toast with the latency.
@@ -56,13 +58,24 @@ Where highsea looks for releases. The page shows whether each indexer is working
 
 ## Data
 
-- `indexers.list()` → `GET /api/v1/indexers`: `Indexer` with `health`, `backoffUntil`, `lastError` and 24-hour `stats`.
-- `indexers.catalog()` → `GET /api/v1/catalog/indexers`: `CatalogDefinition` with `settings: SettingField[]` (each with `help`), `privacy`, `language`, `version`, `source.license`.
-- `indexers.add(definitionId, settings)` → `POST /api/v1/indexers`.
-- `indexers.test(idOrDefinitionId, settings?)` → `POST /api/v1/indexers/test`: `{ ok, message, latencyMs }`. Testing a definition with settings tests before anything is saved.
-- `indexers.toggle(id, enabled)`, `indexers.clearBackoff(id)`, `indexers.remove(id)`.
-- `system.server().catalogVersion` for the header.
-- Events: `indexers.updated`, `health.updated`.
+As built at checkpoint 5 (`@highsea/api-contract`'s `indexers.ts`). All routes are staff; the catalog's settings are the owner's.
+
+| SDK | Route | Notes |
+| --- | --- | --- |
+| `indexers.list()` | `GET /api/v1/indexers` | `Indexer`: `health`, `backoffUntil`, `failingSince`, `lastError`, `needsAttention`, `missing`, `local`, 24-hour `stats` (response time and success rate are null before the first query), and `settings` as plain values plus whether each secret is set |
+| `catalog.indexers({ starter? })` | `GET /api/v1/catalog/indexers` | `CatalogIndexer`: `settings: SettingField[]`, `privacy`, `kind`, `protocol`, `language`, `version`, `source` (`author`, `documentation`), `license`, `local`, `origin`, `installed`. `?starter=true` for setup |
+| `indexers.add({ definitionId, settings, name?, priority? })` | `POST /api/v1/indexers` | Tests first and adds only on a pass; returns `{ indexer, test }`. A failed test answers 400 with the result in `details.test` |
+| `indexers.test({ id, settings? })` | `POST /api/v1/indexers/test` | `{ ok, message, latencyMs }`. `id` is an installed indexer or a definition |
+| `indexers.update(id, { name?, enabled?, priority?, settings? })` | `PATCH /api/v1/indexers/{id}` | Replaces the draft's `toggle`; new settings start over (no backoff, no saved sign-in) |
+| `indexers.retry(id)` | `POST /api/v1/indexers/{id}/retry` | The draft's `clearBackoff` |
+| `indexers.remove(id)` | `DELETE /api/v1/indexers/{id}` | |
+| `catalog.status()` | `GET /api/v1/catalog` | The version, channel, last check, `changes` for What changed, and `available` when updates ask first |
+| `catalog.check()` | `POST /api/v1/catalog/check` | Checks now |
+| `catalog.install()` | `POST /api/v1/catalog/install` | Installs the waiting version |
+| `catalog.settings()`, `catalog.updateSettings(patch)` | `GET`, `PATCH /api/v1/catalog/settings` | Owner only: channel, automatic updates, extra catalogs |
+
+- `system.server().catalogVersion` for System › About.
+- Events: `indexers.updated`, `catalog.updated`, `health.updated`.
 
 ## Decisions
 
@@ -72,9 +85,11 @@ Where highsea looks for releases. The page shows whether each indexer is working
 - **License on every card,** because every definition records its source and license (roadmap › indexers).
 - **Retry now is in the row** only while backing off; it's the one action that state needs.
 
+- **Priority is a number** (1 to 50, 25 by default, lower first, the scale Radarr and Prowlarr document) in an Edit dialog from the row's More menu (checkpoint 5, answer 5; the Edit item is an approved change to the locked layout).
+- **Catalog updates install on their own,** with the version and What changed here; Settings › General › Catalog switches to "Ask first" (answer 4).
+- **Definitions are highsea's own,** written from each site's documentation under CC0-1.0 (ADR 0033): Prowlarr's have no licence and Jackett's are GPL-2.0.
+
 ## Open questions
 
-- **Priority.** The prototype shows priority but doesn't edit it. Drag to reorder, or a number field?
-- **Per-indexer seeding rules** (ratio, time) for private trackers: here, or in a settings page per indexer?
-- **Catalog updates.** Install new catalog versions automatically, or show "Catalog 2026.10.21 is available" and wait for the owner?
+- **Per-indexer seeding rules** (ratio, time) for private trackers: in the Edit dialog with checkpoint 6's torrent engine (answer 5).
 - **Proxies** (FlareSolverr-style) for indexers behind a challenge: in M1?

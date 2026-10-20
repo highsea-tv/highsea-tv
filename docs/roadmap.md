@@ -41,9 +41,9 @@ It is a **Bun monorepo with several apps**:
   - a metadata proxy, so users need no TMDB/TVDB keys;
   - the catalog CDN.
 - **Media scope**: movies, TV (+ anime), music, **online video** (YouTube and other channels via yt-dlp) and **books, audiobooks and podcasts**. Out of scope: Live TV/DVR, comics/manga, photos.
-- **License: AGPL-3.0.** Every source file gets an SPDX header. GPL-3.0 content (e.g. Prowlarr indexer definitions) is compatible. GPL-2.0-only sources (e.g. Jackett definitions, parts of Jellyfin) are **not** compatible, so check each source before reusing it. GPL ffmpeg builds (x264/x265) are fine.
+- **License: AGPL-3.0.** Every source file gets an SPDX header. GPL-3.0 content is compatible. GPL-2.0-only sources (e.g. Jackett definitions, parts of Jellyfin) are **not** compatible, and content with no licence (e.g. Prowlarr's indexer definitions, checked 2026-10-20) can't be reused at all, so check each source before reusing it. GPL ffmpeg builds (x264/x265) are fine.
 
-The repo directory is currently empty and not a git repo. Toolchain: Bun 1.4.3, Node 26 locally, Docker 29.
+The repo directory is currently empty and not a git repo. Toolchain: Bun 1.4.3, Node 24.21.0 (`.nvmrc`; the one version used locally, in CI and in the image), Docker 29.
 
 ## Monorepo layout
 
@@ -65,10 +65,10 @@ highsea.tv/
 │  └─ web/ desktop/ mobile/ tv/                                       [later]
 ├─ packages/
 │  ├─ tokens/  ui-web/  brand/          (ui-native/ later)            design system
-│  ├─ core/  api-contract/  sdk/  indexer-schema/                     contracts & shared
+│  ├─ core/  api-contract/  sdk/  schemas/ (indexers, …)             contracts & shared
 │  ├─ db/ runtime/ jobs/ auth/ network/                               server platform
 │  ├─ parser/ quality/ metadata/ indexers/ torrent/ downloads/
-│  │  library/ media-movies/ subtitles/ notifications/                server domain
+│  │  library/ media/ (movies, …) subtitles/ notifications/           server domain
 │  ├─ personalization/ curation/                                      differentiators
 │  └─ config/                                                         tsconfig + Biome
 ├─ catalog/                  signed catalogs, released independently of apps
@@ -76,7 +76,7 @@ highsea.tv/
 │  └─ presets/  themes/  sounds/  device-profiles/   (TRaSH-style quality/CF presets, naming, theme & sound packs, client profiles)
 └─ cloud/                    optional highsea cloud services [later]: accounts/server registry, relay (self-hostable), push relay, metadata proxy
 ```
-Reserved for later: `media-tv`, `media-music`, `media-video` (yt-dlp channels), `media-books` (ebooks/audiobooks/podcasts), `usenet`, `requests`, `stream`, `stats`, `ui-native`.
+Reserved for later: `@highsea/media`'s `shows`, `music`, `video` (yt-dlp channels), and perhaps `books` (ebooks/audiobooks/podcasts) and `games` exports beside `movies` and `shared` ([ADR 0036](adr/0036-domain-packages-with-subpath-exports.md)), `usenet`, `requests`, `stream`, `stats`, `ui-native`.
 
 Internal packages export raw TS (`"exports": {".": "./src/index.ts"}`) and only apps build. Domain packages are framework-free.
 
@@ -173,7 +173,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`]
 The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](plans/phase-3-server.md) (a draft for the owner's review).
 
 ### Runtime and platform
-- **Process model**: Bun handles packages, scripts and tests. **Node 24 LTS** runs the Next server.
+- **Process model**: Bun handles packages, scripts and tests. **Node 24 LTS**, pinned to 24.21.0 in `.nvmrc`, runs the Next server, locally, in CI and in the image alike.
   - A **custom entry `apps/server/server.ts`** (a Node `http` server) calls `@highsea/runtime.boot()`, which starts migrations, jobs, the torrent engine, the download monitor, catalog sync, the discovery responder and the event bus.
   - The entry then routes `/api/*`, `/stream/*` (reserved) and `/ws` (reserved) to Hono, and everything else to Next's request handler.
   - The singleton lives on `globalThis.__highsea`, so Next-rendered code shares it; routes and actions use `getRuntime()`.
@@ -216,7 +216,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
 **Docker**: discovery needs `network_mode: host` or the discovery UDP port published. The port is decided in an ADR.
 
 ### Indexers and the independent catalog
-- **`@highsea/indexer-schema`**: definitions are **declarative only, with no code**, so remote updates are safe.
+- **`@highsea/schemas/indexers`**: definitions are **declarative only, with no code**, so remote updates are safe.
   - Kinds: torznab, newznab, json-api, html (selectors), rss.
   - Each definition carries: id, version, `minEngineVersion`, logo, privacy, language, categories, settings fields (with "where to find this" help), login flow, request templates, field mappings, rate-limit hints, test query.
 - **`catalog/indexers` pipeline** (its own CI on `catalog/**`):
@@ -236,7 +236,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
   - private indexers: a form generated from the definition, with inline help and test-on-save;
   - a setup-wizard starter pack;
   - health, backoff and stats per indexer.
-- **Licensing**: highsea is AGPL-3.0, so GPL-3.0 definitions (e.g. Prowlarr's) can be adapted with attribution. GPL-2.0-only sources (e.g. Jackett's) cannot. Every definition records its source and license.
+- **Licensing**: checked at Phase 3 checkpoint 5 (2026-10-20): Prowlarr's definitions repository has no licence, so they can't be copied, and Jackett's are GPL-2.0, which AGPL-3.0 can't take. highsea writes its own definitions in its own format, from each site's documentation, under CC0-1.0 (contributions may be MIT), and every definition records its source and licence ([ADR 0033](adr/0033-indexer-definitions.md)). The generic Torznab definition lets an owner use an existing Prowlarr or Jackett as one indexer.
 
 ### Built-in torrent engine (`@highsea/torrent`)
 - **Our code**:
@@ -328,7 +328,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
   - `/system`: status, tasks, logs, events, catalog version.
 
 ### Docker
-- Multi-stage build: `oven/bun` build → `node:24-bookworm-slim` + ffmpeg/ffprobe + tini, using PUID/PGID.
+- Multi-stage build: `oven/bun` build → `node:24.21.0-bookworm-slim` + ffmpeg/ffprobe + tini, using PUID/PGID.
 - Volumes: `/config`, and a single `/data` root so hardlinks work.
 - Ports: 3000, 6881 TCP/UDP, and the discovery UDP port.
 - Healthcheck: `/api/health`.
@@ -339,8 +339,8 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
 2. `auth`, `network` (public info, discovery), setup wizard, app shell, command palette.
 3. `personalization`: theme switching and editor, widget dashboard, sound.
 4. `parser` (large fixture suite) + `quality` (decision engine).
-5. `metadata` + `media-movies` + Discover/Movies UI.
-6. `indexer-schema` + `indexers` + `catalog/indexers` pipeline + `CatalogService` + one-click UI.
+5. `metadata` + `media/movies` + Discover/Movies UI.
+6. `schemas/indexers` + `indexers` + `catalog/indexers` pipeline + `CatalogService` + one-click UI.
 7. `torrent` + `/downloads`.
 8. `downloads` + `library` (import, rename, existing-library import).
 9. `subtitles`: providers, profiles, scoring, sync engine, UI.

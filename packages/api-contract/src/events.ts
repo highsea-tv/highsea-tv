@@ -35,3 +35,15 @@ export const MEDIA_TOPICS = {
 
 /** `movie:603`: a title's id in `item.updated` and `metadata.updated` events. */
 export const topicId = (type: 'movie' | 'person' | 'collection', id: number) => `${type}:${id}`
+
+/**
+ * Indexers' and the catalog's topics (checkpoint 5):
+ * - `indexers.updated`: an indexer was added, changed, removed, or searched; ids are indexer ids;
+ * - `catalog.updated`: the catalog's definitions, version or settings changed;
+ * - `health.updated`: an indexer's health crossed a line, for the dashboard and System.
+ */
+export const INDEXER_TOPICS = {
+  indexers: 'indexers.updated',
+  catalog: 'catalog.updated',
+  health: 'health.updated',
+} as const

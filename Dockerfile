@@ -3,7 +3,7 @@
 # Checkpoint 1 keeps it simple: the whole workspace and its dependencies. Checkpoint 9 slims it
 # and builds it for amd64 and arm64.
 
-# ---- build: Bun installs and builds; Node 24 is here too, so native modules (better-sqlite3)
+# ---- build: Bun installs and builds; Node 24.21.0 (.nvmrc) is here too, so native modules (better-sqlite3)
 # are built for the Node that runs them
 FROM node:24.21.0-bookworm-slim AS build
 COPY --from=oven/bun:1.4.2 /usr/local/bin/bun /usr/local/bin/bun

@@ -1,0 +1,21 @@
+{
+  "name": "@highsea/schemas",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    "./indexers": "./src/indexers/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea/core": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@highsea/config": "workspace:*",
+    "@types/node": "25.9.9"
+  }
+}

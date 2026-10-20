@@ -123,7 +123,7 @@ describe('metadata settings and the setup key step', () => {
       language: 'pt-BR',
       region: 'BR',
     })
-    expect(runtime.movies.rootFolders.list().map((f) => f.path)).toEqual([defaults.folders.movies])
+    expect(runtime.media.rootFolders.list().map((f) => f.path)).toEqual([defaults.folders.movies])
     expect((await failure(anon.setup.checkMetadataKey({ body: { key: 'a-good-key' } }))).code).toBe(
       'not-found',
     )

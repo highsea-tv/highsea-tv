@@ -4,6 +4,7 @@
 // run, unless reviewed and listed in license-exceptions.json with the reason.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
+import { loadDefinitionFiles } from '@highsea/catalog'
 
 const ALLOWED = new Set([
   '0BSD',
@@ -74,6 +75,27 @@ function installed(root: string) {
   return found
 }
 
+/** Licences a catalog definition may carry: ours are CC0-1.0, contributions may be MIT. */
+export const CATALOG_LICENSES = new Set(['CC0-1.0', 'MIT'])
+
+/**
+ * Every catalog definition records its source and licence (ADR 0007). The schema requires both;
+ * this also refuses a licence the catalog doesn't accept and a definition that doesn't validate.
+ */
+export function auditCatalog(root: string): string[] {
+  const bad: string[] = []
+  for (const dir of ['definitions', 'beta']) {
+    const { loaded, broken } = loadDefinitionFiles(join(root, 'catalog/indexers', dir))
+    for (const b of broken) bad.push(`catalog/indexers/${dir}/${b.file}: ${b.message}`)
+    for (const l of loaded)
+      if (!CATALOG_LICENSES.has(l.definition.license))
+        bad.push(
+          `catalog/indexers/${dir}/${l.file}: licence ${l.definition.license} isn't CC0-1.0 or MIT`,
+        )
+  }
+  return bad
+}
+
 if (import.meta.main) {
   const root = join(import.meta.dir, '..')
   const exceptions = JSON.parse(
@@ -96,5 +118,12 @@ if (import.meta.main) {
     )
     process.exit(1)
   }
-  console.log(`license audit: ${all.size} packages, all compatible`)
+  const catalog = auditCatalog(root)
+  if (catalog.length) {
+    console.error(`These catalog definitions can't ship:\n  ${catalog.join('\n  ')}`)
+    process.exit(1)
+  }
+  console.log(
+    `license audit: ${all.size} packages, all compatible; catalog definitions all CC0-1.0 or MIT`,
+  )
 }

@@ -4,12 +4,12 @@
 // Each fills the size it's given, fetches its own data and shows its own loading, empty and error
 // states. A widget's data comes from a source public info lists (`sources`): the system feeds
 // Storage and System health; `movies` (checkpoint 4) feeds Upcoming, Calendar and Recently added,
-// and Storage's root folders. The rest show their empty states from dashboard.md, which are true on
+// and Storage's root folders; `indexers` (checkpoint 5) feeds Indexers. The rest show their empty states from dashboard.md, which are true on
 // a server without those things yet, and call no route until their checkpoint adds it (Phase 3
 // plan › Widgets); so do the movie widgets on a server without the `movies` source.
 
-import { MEDIA_TOPICS, type Movie, type RootFolder } from '@highsea/api-contract'
-import { bytes, bytesParts, percent, rateParts, shortDate } from '@highsea/core/format'
+import { INDEXER_TOPICS, MEDIA_TOPICS, type Movie, type RootFolder } from '@highsea/api-contract'
+import { bytes, bytesParts, duration, percent, rateParts, shortDate } from '@highsea/core/format'
 import { useLocale, useT } from '@highsea/i18n/react'
 import { type WidgetKind, widgetDefinition, widgetMessages } from '@highsea/personalization/widgets'
 import { type Query, useQuery } from '@highsea/sdk/react'
@@ -50,13 +50,15 @@ const STORAGE_INTERVAL = 30_000
 const MOVIE_TOPICS = [MEDIA_TOPICS.movies, MEDIA_TOPICS.item]
 
 /**
- * Whether this server has the `movies` source yet: `undefined` until public info answers. Every
- * widget asks under one key; the SDK keeps each answer per widget, and it's a small public call.
+ * Whether this server has a source yet: `undefined` until public info answers. Every widget asks
+ * under one key; the SDK keeps each answer per widget, and it's a small public call.
  */
-function useMovieSource(): boolean | undefined {
+function useSource(source: 'movies' | 'indexers'): boolean | undefined {
   const info = useQuery('public-info', (c) => c.system.publicInfo())
-  return info.status === 'success' ? info.data.sources.includes('movies') : undefined
+  return info.status === 'success' ? info.data.sources.includes(source) : undefined
 }
+
+const useMovieSource = () => useSource('movies')
 
 /** The day a release is out, as the Upcoming badges show it ("Fri 24"), on the local calendar. */
 const releaseDay = (day: string, locale: string) => shortDate(`${day}T12:00:00`, locale)
@@ -278,24 +280,111 @@ function StorageOf({ folders, ...props }: WidgetProps & { folders: RootFolder[] 
 
 // ---------------------------------------------------------------- indexers
 
-function Indexers(props: WidgetProps) {
+function NoIndexers() {
   const t = useT(messages)
   const router = useRouter()
   return (
+    <EmptyState
+      size="sm"
+      icon="indexer"
+      title={t('indexers.none')}
+      action={
+        <Button size="sm" variant="primary" onClick={() => router.push('/indexers')}>
+          {t('indexers.add')}
+        </Button>
+      }
+    >
+      {t('indexers.noneBody')}
+    </EmptyState>
+  )
+}
+
+function Indexers(props: WidgetProps) {
+  const source = useSource('indexers')
+  if (source) return <IndexerList {...props} />
+  return (
     <Static {...props} kind="indexers">
-      <EmptyState
-        size="sm"
-        icon="indexer"
-        title={t('indexers.none')}
-        action={
-          <Button size="sm" variant="primary" onClick={() => router.push('/indexers')}>
-            {t('indexers.add')}
-          </Button>
-        }
-      >
-        {t('indexers.noneBody')}
-      </EmptyState>
+      {source === undefined ? <SkeletonText lines={3} /> : <NoIndexers />}
     </Static>
+  )
+}
+
+const healthDot = {
+  healthy: 'bg-success',
+  backoff: 'bg-warning',
+  failing: 'bg-danger',
+  disabled: 'bg-text-3',
+} as const
+
+/** Installed indexers with their health; a health change or a search updates it (ADR 0035). */
+function IndexerList(props: WidgetProps) {
+  const t = useT(messages)
+  const locale = useLocale()
+  const now = useNow()
+  const query = useQuery('widget:indexers', (c) => c.indexers.list(), [
+    INDEXER_TOPICS.indexers,
+    INDEXER_TOPICS.health,
+  ])
+  const wide = props.frame.span !== 1
+  const clip = useClip<HTMLUListElement>(':scope > li')
+  return (
+    <Widget
+      {...props}
+      kind="indexers"
+      query={query}
+      meta={(xs) =>
+        xs.length
+          ? t('indexers.meta', {
+              healthy: xs.filter((x) => x.health === 'healthy').length,
+              count: xs.length,
+            })
+          : null
+      }
+    >
+      {(xs) =>
+        xs.length === 0 ? (
+          <NoIndexers />
+        ) : (
+          <>
+            <ul ref={clip.ref} className={cn('grid content-start gap-1.5 text-ui', fill)}>
+              {xs.map((x) => {
+                const left = x.backoffUntil ? (Date.parse(x.backoffUntil) - now) / 1000 : 0
+                return (
+                  <li key={x.id} className="flex min-w-0 items-center gap-2">
+                    <span
+                      aria-hidden
+                      className={cn('size-1.5 shrink-0 rounded-full', healthDot[x.health])}
+                    />
+                    <span className="min-w-0 flex-1 truncate text-text">
+                      {x.name}
+                      <span className="sr-only">: {t(`indexers.${x.health}`)}</span>
+                    </span>
+                    {wide && (
+                      <span className="font-mono text-figure text-text-3">
+                        {t('indexers.grabs', { count: x.stats.grabs24h })}
+                      </span>
+                    )}
+                    <span
+                      className={cn(
+                        'shrink-0 font-mono text-figure',
+                        x.health === 'backoff' ? 'text-warning' : 'text-text-3',
+                      )}
+                    >
+                      {x.health === 'backoff'
+                        ? t('indexers.retry', { in: duration(left, locale) })
+                        : x.stats.avgResponseMs === null
+                          ? t('indexers.noQueries')
+                          : t('indexers.ms', { ms: Math.round(x.stats.avgResponseMs) })}
+                    </span>
+                  </li>
+                )
+              })}
+            </ul>
+            <More count={clip.hidden} page={t('page.indexers')} path="/indexers" />
+          </>
+        )
+      }
+    </Widget>
   )
 }
 

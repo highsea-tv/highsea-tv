@@ -4,6 +4,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { defaultSecuritySettings, issueDevice, SECURITY_KEY } from '@highsea/auth'
+import type { Fetch } from '@highsea/core'
 import { writeSetting } from '@highsea/db'
 import { createReplayFetch, type ReplayFetch } from '@highsea/metadata/replay'
 import { boot, getRuntime, hasRuntime, loadConfig, type Runtime } from '@highsea/runtime'
@@ -25,7 +26,7 @@ export async function cleanup() {
  * A booted runtime whose outside requests go to TMDB's recordings (ADR 0029): no test reaches the
  * network, and one with no recording fails. Pass `fetch` to count or fail requests.
  */
-export async function bootRuntime(options: { fetch?: ReplayFetch } = {}): Promise<Runtime> {
+export async function bootRuntime(options: { fetch?: ReplayFetch | Fetch } = {}): Promise<Runtime> {
   const dir = mkdtempSync(join(tmpdir(), 'highsea-api-'))
   dirs.push(dir)
   return boot({
@@ -38,6 +39,7 @@ export async function bootRuntime(options: { fetch?: ReplayFetch } = {}): Promis
     quiet: true,
     memory: true,
     manualTicks: true,
+    indexerTimeoutMs: 2000,
   })
 }
 

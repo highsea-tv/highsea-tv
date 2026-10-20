@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // First-run setup (setup.md). Open only until setup is complete, then every route here answers
-// 404. The indexer and subtitle steps arrive with their packages.
+// 404. The indexer step arrived with checkpoint 5; the subtitle step arrives with its package.
 import { createRoute, z } from '@hono/zod-openapi'
 import { Session } from './accounts.ts'
 import { API_PREFIX, access, body, errors, json, noContent } from './common.ts'
+import { CatalogIndexer } from './indexers.ts'
 import { MetadataInput, MetadataKey } from './settings.ts'
 import { Server } from './system.ts'
 
@@ -44,6 +45,11 @@ export const SetupInput = z
      * owner's locale for the metadata language and region. Omitted or without a key when skipped.
      */
     metadata: MetadataInput.optional(),
+    /**
+     * The indexer step (checkpoint 5): definition ids from the starter pack. Each is added and
+     * tested once the owner exists; one that fails is skipped and can be added later.
+     */
+    indexers: z.array(z.string().max(100)).max(50).optional(),
   })
   .openapi('SetupInput')
 
@@ -98,6 +104,16 @@ export const setup = {
       ...noContent,
       ...errors('invalid', 'not-found', 'rate-limited', 'unavailable'),
     },
+  }),
+  starterPack: createRoute({
+    method: 'get',
+    path: `${SETUP}/indexers`,
+    tags: ['Setup'],
+    summary: 'The indexer step’s starter pack',
+    description:
+      'The catalog’s public starters that need no setting to add: `GET /api/v1/catalog/indexers?starter=true` without the ones asking for an account or an address.',
+    ...access('public'),
+    responses: { 200: json(z.array(CatalogIndexer), 'Definitions'), ...errors('not-found') },
   }),
   complete: createRoute({
     method: 'post',

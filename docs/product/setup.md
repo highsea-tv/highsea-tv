@@ -35,7 +35,7 @@ Takes a freshly started server to a working one in a few minutes: a name, the ow
   | 8 | highsea cloud | One switch, and what linking does and doesn't share | Off |
   | 9 | Review | Every choice in a list, each with **Change** | |
 
-  The TMDB key step is new in Phase 3 (decision 4), between the owner and the folders as the [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#the-key) places it; the prototype has the other 8. Until the indexer and subtitle steps arrive, the server's wizard has 7.
+  The TMDB key step is new in Phase 3 (decision 4), between the owner and the folders as the [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#the-key) places it; the prototype has the other 8. The indexer step arrived with checkpoint 5; until the subtitle step arrives, the server's wizard has 8. The server's starter pack lists only public starters that need no setting, so each adds without a form and the "Needs an account" badge has nothing to mark.
 
 - **Path picker** (a dialog from **Browse**): the server's folders, not this device's. Breadcrumbs at the top (each segment is a button), "Up one level", the folders in the current one, then **Cancel** and **Use this folder**.
 - **Hardlink check** (step 3): a banner under the folders. Success when both are on the same disk; a warning when they're not, explaining the cost and how to avoid it.
@@ -134,14 +134,15 @@ Takes a freshly started server to a working one in a few minutes: a name, the ow
 
 ## Data
 
-As built in Phase 3, checkpoints 2 and 4. The indexer and subtitle steps arrive with their packages.
+As built in Phase 3, checkpoints 2, 4 and 5. The subtitle step arrives with its package.
 
 - `system.publicInfo()` → `GET /api/v1/system/info/public`: `{ id, name, version, setupComplete, auth, sources, attributions }`. Unauthenticated.
 - `setup.defaults()` → `GET /api/v1/setup/defaults`: the media root and the suggested folders.
 - `setup.listFolders(path)` → `GET /api/v1/setup/fs?path=…`: `{ name, path, kind: 'folder' }[]` inside the media root only, or a 404 "{path} doesn't exist on the server."
 - `setup.checkHardlinks(a, b)` → `GET /api/v1/setup/fs/hardlinks?a=…&b=…`: `{ ok, sameDevice, message }`.
 - `setup.checkMetadataKey({ body: { key } })` → `POST /api/v1/setup/metadata-key`: the key step's Continue. It asks TMDB (`GET /3/authentication`) without saving the key: 204 when TMDB accepts it, 400 with `details.reason` `tmdb-key-rejected` when it doesn't, 503 `tmdb-unreachable` or 429 `tmdb-rate-limited` when TMDB can't say. Either credential works, the v3 API key or the Read Access Token, told apart by shape.
-- Later: `catalog.starterPack()` → `GET /api/v1/catalog/indexers?starter=true` and `subtitles.languages()` → `GET /api/v1/subtitles/languages`.
+- `setup.starterPack()` → `GET /api/v1/setup/indexers` (checkpoint 5): the catalog's public starters that need no setting, as `CatalogIndexer[]`. Unauthenticated, like the rest of setup, and a 404 once setup is complete; staff use `catalog.indexers({ starter: true })` afterwards.
+- Later: `subtitles.languages()` → `GET /api/v1/subtitles/languages`.
 - `setup.complete(input)` → `POST /api/v1/setup`, allowed only while `setupComplete` is false. It returns the server and starts a session for the owner.
 
   ```ts
@@ -156,7 +157,10 @@ As built in Phase 3, checkpoints 2 and 4. The indexer and subtitle steps arrive 
     cloudLink: boolean
     // the key step: the key when added (checked already), and the owner's locale for both
     metadata?: { key?: string; language?: string; region?: string } // 'en-US', 'GB'
-    // later: indexers: string[]; subtitleLanguages: string[]
+    // the indexer step: starter definition ids, added after the owner exists, each tested first;
+    // a failure is logged and doesn't hold up setup (checkpoint 5)
+    indexers?: string[]
+    // later: subtitleLanguages: string[]
   }
   ```
 

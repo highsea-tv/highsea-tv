@@ -3,6 +3,9 @@
 // and who may not.
 import { afterEach, describe, expect, test } from 'bun:test'
 import { base32Decode, hotp, totpStep } from '@highsea/auth'
+import type { Fetch } from '@highsea/core'
+import { createFakeIndexer } from '@highsea/indexers/fake'
+import { createReplayFetch } from '@highsea/metadata/replay'
 import type { Runtime } from '@highsea/runtime'
 import { createApi } from '../src/api/app.ts'
 import {
@@ -71,6 +74,75 @@ describe('setup', () => {
     expect(await failure(anon.setup.defaults())).toEqual({ code: 'not-found', reason: undefined })
     const me = clientFor(app, { cookie: `highsea_session=${sessionCookie(res)}` })
     expect((await me.auth.session()).user.username).toBe(OWNER.username)
+  })
+})
+
+describe('setup’s indexer step', () => {
+  test('lists the starter pack until setup ends, and Finish adds what was chosen', async () => {
+    // the Internet Archive goes to the fake indexer, TMDB to its recordings: no network
+    const fake = createFakeIndexer()
+    const replay = createReplayFetch()
+    const fetch: Fetch = (input, init) =>
+      new URL(String(input instanceof Request ? input.url : input)).hostname === 'archive.org'
+        ? fake.fetch(input, init)
+        : replay(input, init)
+    const runtime = await bootRuntime({ fetch })
+    const app = createApi(runtime)
+    const anon = clientFor(app)
+    const pack = await anon.setup.starterPack()
+    expect(pack.map((d) => d.id)).toEqual(['internet-archive'])
+    expect(pack.every((d) => d.privacy === 'public' && d.starter)).toBe(true)
+
+    const res = await app.request(`${ORIGIN}/api/v1/setup`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: ORIGIN },
+      body: JSON.stringify({
+        serverName: 'Harbor',
+        owner: OWNER,
+        folders: (await anon.setup.defaults()).folders,
+        remoteAccess: { kind: 'local-only' },
+        cloudLink: false,
+        // one not in the pack is ignored, not an error
+        indexers: ['internet-archive', 'generic-torznab'],
+      }),
+    })
+    expect(res.status).toBe(200)
+    expect(await failure(anon.setup.starterPack())).toEqual({
+      code: 'not-found',
+      reason: undefined,
+    })
+    // each is tested and added after Finish answers
+    for (let i = 0; i < 100 && runtime.indexers.list().length === 0; i++) await Bun.sleep(10)
+    expect(runtime.indexers.list().map((i) => i.definitionId)).toEqual(['internet-archive'])
+  })
+
+  test('an indexer that fails its test is skipped, and setup still finishes', async () => {
+    const replay = createReplayFetch()
+    const fetch: Fetch = (input, init) =>
+      new URL(String(input instanceof Request ? input.url : input)).hostname === 'archive.org'
+        ? Promise.resolve(new Response('down', { status: 503 }))
+        : replay(input, init)
+    const runtime = await bootRuntime({ fetch })
+    const app = createApi(runtime)
+    const res = await app.request(`${ORIGIN}/api/v1/setup`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: ORIGIN },
+      body: JSON.stringify({
+        serverName: 'Harbor',
+        owner: OWNER,
+        folders: (await clientFor(app).setup.defaults()).folders,
+        remoteAccess: { kind: 'local-only' },
+        cloudLink: false,
+        indexers: ['internet-archive'],
+      }),
+    })
+    expect(res.status).toBe(200)
+    expect(runtime.setupComplete()).toBe(true)
+    const warned = () =>
+      runtime.logs.entries().find((l) => l.message === 'couldn’t add an indexer at setup')
+    for (let i = 0; i < 100 && !warned(); i++) await Bun.sleep(10)
+    expect(warned()?.fields).toMatchObject({ definition: 'internet-archive' })
+    expect(runtime.indexers.list()).toEqual([])
   })
 })
 

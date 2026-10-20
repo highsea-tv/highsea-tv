@@ -2,8 +2,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A2 Setup wizard (docs/product/setup.md), ported from the prototype. First run, before anyone has
 // signed in: name the server, create the owner, add a TMDB key (checkpoint 4; skippable), pick
-// folders, choose remote access and the optional highsea cloud link, then review and finish on the
-// dashboard. The indexer and subtitle steps arrive with their packages. Progress is kept in the
+// folders, add indexers from the starter pack (checkpoint 5; skippable), choose remote access and
+// the optional highsea cloud link, then review and finish on the dashboard. The subtitle step
+// arrives with its package. The starter pack lists only public starters that need no setting, so
+// each adds without a form; the prototype's "Needs an account" badge has nothing to mark. Progress is kept in the
 // browser so a reload picks up where you left off, except the password and the TMDB key, which
 // never go into storage (OWASP HTML5 Security Cheat Sheet: no sensitive data in localStorage).
 import type { SetupInput } from '@highsea/api-contract'
@@ -13,6 +15,7 @@ import { useAction, useQuery } from '@highsea/sdk/react'
 import {
   Banner,
   Button,
+  Checkbox,
   cn,
   Dialog,
   DialogContent,
@@ -38,8 +41,17 @@ import {
 } from './metadata-locale.ts'
 import { setup as messages } from './setup-messages.ts'
 
-type StepId = 'name' | 'owner' | 'metadata' | 'folders' | 'remote' | 'cloud' | 'review'
-const STEP_IDS: StepId[] = ['name', 'owner', 'metadata', 'folders', 'remote', 'cloud', 'review']
+type StepId = 'name' | 'owner' | 'metadata' | 'folders' | 'indexers' | 'remote' | 'cloud' | 'review'
+const STEP_IDS: StepId[] = [
+  'name',
+  'owner',
+  'metadata',
+  'folders',
+  'indexers',
+  'remote',
+  'cloud',
+  'review',
+]
 type Remote = SetupInput['remoteAccess']['kind']
 
 type Draft = {
@@ -49,6 +61,8 @@ type Draft = {
   metadataKey: string
   keyChecked: boolean
   folders: { movies: string; downloads: string }
+  /** Starter-pack definition ids to add at Finish. */
+  indexers: string[]
   remote: Remote
   proxyUrl: string
   port: string
@@ -61,13 +75,15 @@ const blank: Draft = {
   metadataKey: '',
   keyChecked: false,
   folders: { movies: '', downloads: '' },
+  indexers: [],
   remote: 'local-only',
   proxyUrl: '',
   port: '8484',
   cloudLink: false,
 }
 
-type Saved = { step: number; reached: number; draft: Draft }
+/** `indexersSeeded`: the public starters were checked once, so unchecking them sticks. */
+type Saved = { step: number; reached: number; draft: Draft; indexersSeeded?: boolean }
 const storageKey = 'highsea:setup'
 
 function load(): Saved | null {
@@ -140,6 +156,7 @@ const toInput = (d: Draft): SetupInput => ({
     password: d.owner.password,
   },
   folders: d.folders,
+  indexers: d.indexers,
   remoteAccess:
     d.remote === 'reverse-proxy'
       ? { kind: 'reverse-proxy', url: d.proxyUrl }
@@ -359,6 +376,19 @@ export function Setup() {
         />
       ),
     },
+    indexers: {
+      title: t('indexers.title'),
+      detail: t('indexers.detail'),
+      content: (
+        <Indexers
+          selected={draft.indexers}
+          seeded={saved.indexersSeeded === true}
+          onChange={(indexers, seeded) =>
+            setSaved((s) => ({ ...s, indexersSeeded: seeded, draft: { ...s.draft, indexers } }))
+          }
+        />
+      ),
+    },
     remote: {
       title: t('remote.title'),
       detail: t('remote.detail'),
@@ -448,6 +478,77 @@ export function Setup() {
         </main>
       </div>
     </div>
+  )
+}
+
+// ---------------------------------------------------------------- indexers
+
+function Indexers({
+  selected,
+  seeded,
+  onChange,
+}: {
+  selected: string[]
+  seeded: boolean
+  onChange: (ids: string[], seeded: boolean) => void
+}) {
+  const t = useT(messages)
+  const pack = useQuery('starter-pack', (c) => c.setup.starterPack())
+  // the starters start checked, once
+  // biome-ignore lint/correctness/useExhaustiveDependencies: seeds once, when the pack arrives
+  useEffect(() => {
+    if (!seeded && pack.status === 'success')
+      onChange(
+        pack.data.map((d) => d.id),
+        true,
+      )
+  }, [pack.status, seeded])
+
+  if (pack.status === 'loading')
+    return (
+      <div aria-busy className="grid gap-2">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-16" />
+        ))}
+      </div>
+    )
+  if (pack.status === 'error')
+    return (
+      <EmptyState
+        size="sm"
+        tone="error"
+        title={t('indexers.failed')}
+        action={<Button onClick={pack.refetch}>{t('indexers.retry')}</Button>}
+      >
+        {t('indexers.failedBody', { message: pack.error.message })}
+      </EmptyState>
+    )
+  if (!pack.data.length)
+    return (
+      <EmptyState size="sm" title={t('indexers.none')}>
+        {t('indexers.noneBody')}
+      </EmptyState>
+    )
+  return (
+    <ul className="grid gap-2">
+      {pack.data.map((d) => (
+        <li key={d.id}>
+          <Field
+            inline
+            label={<span className="text-text">{d.name}</span>}
+            hint={d.description}
+            className="rounded-md border border-line bg-s1 p-3"
+          >
+            <Checkbox
+              checked={selected.includes(d.id)}
+              onCheckedChange={(v) =>
+                onChange(v ? [...selected, d.id] : selected.filter((x) => x !== d.id), true)
+              }
+            />
+          </Field>
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -783,6 +884,8 @@ function RemoteAccess({
 
 function Review({ draft, onEdit }: { draft: Draft; onEdit: (step: number) => void }) {
   const t = useT(messages)
+  const pack = useQuery('starter-pack', (c) => c.setup.starterPack())
+  const indexerNames = draft.indexers.map((i) => pack.data?.find((d) => d.id === i)?.name ?? i)
   const rows: { step: StepId; label: string; value: ReactNode }[] = [
     { step: 'name', label: t('step.name'), value: draft.serverName },
     {
@@ -811,6 +914,11 @@ function Review({ draft, onEdit }: { draft: Draft; onEdit: (step: number) => voi
           <span>{draft.folders.downloads}</span>
         </span>
       ),
+    },
+    {
+      step: 'indexers',
+      label: t('step.indexers'),
+      value: indexerNames.length ? indexerNames.join(', ') : t('review.noIndexers'),
     },
     {
       step: 'remote',

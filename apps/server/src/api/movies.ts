@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The movie library over HTTP (movies.md: A5 Movies, A6 movie detail) and the root folders: thin
-// handlers over @highsea/media-movies. Static paths (`/movies/bulk`, `/movies/upcoming`) are
-// registered before `/movies/{id}`, in the contract's order. Every change goes in the audit log, as
-// other write routes do.
+// handlers over @highsea/media/movies and, for the folders every media type shares,
+// @highsea/media/shared. Static paths (`/movies/bulk`, `/movies/upcoming`) are registered before
+// `/movies/{id}`, in the contract's order. Every change goes in the audit log, as other write
+// routes do.
 import { routes } from '@highsea/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
@@ -93,10 +94,12 @@ export function registerMovies(app: OpenAPIHono<Env>) {
 
   // ---------------------------------------------------------------- root folders
 
-  app.openapi(routes.rootFolders.list, (c) => c.json(movies(c).rootFolders.list(), 200))
+  app.openapi(routes.rootFolders.list, (c) =>
+    c.json(c.get('runtime').media.rootFolders.list(), 200),
+  )
 
   app.openapi(routes.rootFolders.add, (c) => {
-    const folder = movies(c).rootFolders.add(c.req.valid('json').path)
+    const folder = c.get('runtime').media.rootFolders.add(c.req.valid('json').path)
     audit(c, 'rootfolder.added', { type: 'rootfolder', id: folder.id })
     // Settings › Media management and Storage's folders refetch on it
     c.get('runtime').events.emit({ topic: 'settings.updated' })
@@ -105,7 +108,7 @@ export function registerMovies(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.rootFolders.remove, (c) => {
     const { id } = c.req.valid('param')
-    movies(c).rootFolders.remove(id)
+    c.get('runtime').media.rootFolders.remove(id)
     audit(c, 'rootfolder.removed', { type: 'rootfolder', id })
     c.get('runtime').events.emit({ topic: 'settings.updated' })
     return c.body(null, 204)

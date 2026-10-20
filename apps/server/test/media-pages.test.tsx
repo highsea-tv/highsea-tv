@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A6 movie detail, person pages and collection pages (media-pages.md, movies.md § Movie detail),
 // rendered against a fake of the checkpoint 4 API: the page in each state, adding and removing in
-// place, the library layer's edits, trailers that load nothing before the click, and live
-// refetches. The shell and Next's router are stood in for; everything else is the real screen.
+// place, the library layer's edits, trailers that load nothing before the click, live refetches,
+// and the Search tab once an indexer is enabled (checkpoint 5). The shell and Next's router are stood in for; everything else is the real screen.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import type { ReactNode } from 'react'
@@ -91,8 +91,37 @@ type State = {
   owned: Set<number>
   requests: { method: string; path: string; body?: unknown }[]
   push: ((topic: string) => void) | null
+  /** Installed indexers: only whether each is enabled matters here. */
+  indexers: { id: string; name: string; enabled: boolean }[]
+  /** The last 30 minutes' results, as GET …/releases answers them. */
+  cached: ReturnType<typeof release>[]
 }
 let state: State
+
+const release = (n: number, approved: boolean, extra: Record<string, unknown> = {}) => ({
+  guid: `g${n}`,
+  title: `The.Matrix.1999.1080p.BluRay.x264-GRP${n}`,
+  indexerId: 'ix1',
+  indexer: 'Internet Archive',
+  protocol: 'torrent',
+  size: 8_000_000_000,
+  seeders: 40,
+  leechers: 2,
+  grabs: null,
+  publishedAt: null,
+  ageHours: 48,
+  details: null,
+  quality: 'Bluray-1080p',
+  customFormats: [],
+  formatScore: 0,
+  flags: [],
+  languages: ['English'],
+  approved,
+  reasons: approved
+    ? [{ kind: 'accepted', message: 'Bluray-1080p is in the profile.' }]
+    : [{ kind: 'rejected', message: 'Smaller than the minimum size for Bluray-1080p.' }],
+  ...extra,
+})
 
 const metadata = () => ({
   ...discover(603, 'The Matrix', 1999, state.inLibrary),
@@ -286,6 +315,21 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         { id: `v${state.versions.length + 1}`, ...body, fileId: null },
       ]
       return json(libraryMovie(), 201)
+    case 'GET /api/v1/indexers':
+      return json(state.indexers)
+    case 'GET /api/v1/movies/603/releases':
+      return json(state.cached)
+    case 'POST /api/v1/movies/603/search':
+      return json({
+        releases: [
+          release(1, true),
+          release(2, false, { size: null, seeders: null, leechers: null, ageHours: null }),
+        ],
+        searched: 2,
+        failed: [{ indexerId: 'ix2', indexer: 'Slow tracker', message: 'it timed out' }],
+      })
+    case 'POST /api/v1/movies/bulk':
+      return new Response(null, { status: 202 })
     case 'POST /api/v1/movies': {
       if (body.tmdbId === 603) state.inLibrary = true
       else state.owned.add(body.tmdbId)
@@ -316,6 +360,8 @@ beforeEach(() => {
     owned: new Set([604]),
     requests: [],
     push: null,
+    indexers: [],
+    cached: [],
   }
 })
 afterEach(() => cleanup())
@@ -504,6 +550,59 @@ describe('a movie in the library', () => {
     expect(page.getByText('Add an indexer to search for releases.')).toBeTruthy()
     await user.click(page.getByRole('button', { name: 'Indexers' }))
     expect(pushed).toEqual(['/indexers'])
+  })
+
+  describe('with an indexer enabled', () => {
+    beforeEach(() => {
+      state.indexers = [{ id: 'ix1', name: 'Internet Archive', enabled: true }]
+    })
+
+    test('Search queues a search for this movie', async () => {
+      const { page, user } = await open(<MovieDetail id="603" />)
+      const search = page.getByRole('button', { name: 'Search' }) as HTMLButtonElement
+      expect(search.disabled).toBe(false)
+      await user.click(search)
+      await settle()
+      expect(requested('POST', '/api/v1/movies/bulk')[0]?.body).toEqual({
+        action: 'search',
+        ids: [603],
+      })
+    })
+
+    test('the tab searches when nothing is cached: dashes for what an indexer left out, Grab waits, a quiet note for one that failed', async () => {
+      const { page, user } = await open(<MovieDetail id="603" />)
+      await user.click(page.getByRole('button', { name: 'Interactive search' }))
+      await settle()
+      expect(requested('GET', '/api/v1/movies/603/releases')).toHaveLength(1)
+      expect(requested('POST', '/api/v1/movies/603/search')).toHaveLength(1)
+      expect(page.getByText('2 releases')).toBeTruthy()
+      expect(page.getByText('1 accepted by your profile')).toBeTruthy()
+      // size and age, then seeders and leechers
+      expect(page.getAllByText('—')).toHaveLength(2)
+      expect(page.getByText('—/—')).toBeTruthy()
+      const grab = page.getByRole('button', { name: /^Grab The\.Matrix/ })
+      expect(grab.getAttribute('aria-disabled')).toBe('true')
+      expect(page.getByRole('button', { name: /^Grab anyway/ })).toBeTruthy()
+      expect(page.getByText('Slow tracker didn’t answer: it timed out')).toBeTruthy()
+
+      await user.click(page.getByRole('button', { name: /Rejected \(1\)/ }))
+      expect(page.getByText('Smaller than the minimum size for Bluray-1080p.')).toBeTruthy()
+      await user.click(page.getByRole('switch', { name: 'Show rejected' }))
+      expect(page.queryByRole('button', { name: /^Grab anyway/ })).toBeNull()
+    })
+
+    test('recent results are shown without asking the indexers again; Search again asks', async () => {
+      state.cached = [release(3, true)]
+      const { page, user } = await open(<MovieDetail id="603" />)
+      await user.click(page.getByRole('button', { name: 'Interactive search' }))
+      await settle()
+      expect(page.getByText('1 release')).toBeTruthy()
+      expect(requested('POST', '/api/v1/movies/603/search')).toHaveLength(0)
+      await user.click(page.getByRole('button', { name: 'Search again' }))
+      await settle()
+      expect(requested('POST', '/api/v1/movies/603/search')).toHaveLength(1)
+      expect(page.getByText('2 releases')).toBeTruthy()
+    })
   })
 
   test('Files and History show their empty states', async () => {

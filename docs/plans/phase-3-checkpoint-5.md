@@ -1,6 +1,6 @@
 # Phase 3, checkpoint 5: indexers and the catalog
 
-- **Status:** Scoped on 2026-10-20, before building. Waiting for the owner's answers to the [open questions](#open-questions-for-the-owner) and the go-ahead.
+- **Status:** Scoped on 2026-10-20. The owner answered the [open questions](#open-questions-for-the-owner) on 2026-10-20, taking every recommendation, and gave the go-ahead. Built on 2026-10-20; waiting for the owner's review.
 - **Gate:** stop when the checkpoint is built. Report what was built, the judgement calls, the API added, screenshots and the check results, then ask for review. Checkpoint 6 (downloading and importing) starts only after sign-off.
 - **Parent plan:** [phase-3-server.md](phase-3-server.md). Its standing rules, architecture and decisions all apply, including decision 5 (nothing is published until the owner says so) and decision 6 (the admin is for the owner and admins only). This document settles what that plan's checkpoint 5 item and the specs leave open.
 
@@ -32,12 +32,12 @@ The owner can add indexers from a signed catalog: a public one in one click, a p
 
 | Package | Holds | Depends on |
 | --- | --- | --- |
-| `indexer-schema` | The definition format as zod schemas, its JSON Schema export, `ENGINE_VERSION`, and `validateDefinition()`. Pure; no I/O | `core` |
-| `indexers` | The engine: the five kinds, the request templates and field mappings, caps and category mapping, login flows, rate limits; health, backoff and stats; the indexer service (add, test, toggle, remove, search) | `core`, `db`, `jobs`, `indexer-schema`, `parser`, `quality` |
-| `catalog` | `CatalogService`: fetch, verify, filter, cache, update, the seed snapshot, extra URLs, `/config/definitions`; the bundle and manifest format; the signing tool the pipeline uses | `core`, `db`, `jobs`, `indexer-schema` |
-| `catalog/indexers` (not a package) | The definitions as YAML, logos, `SOURCES.md`, the pipeline script | `indexer-schema` |
+| `schemas` (`@highsea/schemas/indexers`) | The definition format as zod schemas, its JSON Schema export, `ENGINE_VERSION`, and `validateDefinition()`. Pure; no I/O | `core` |
+| `indexers` | The engine: the five kinds, the request templates and field mappings, caps and category mapping, login flows, rate limits; health, backoff and stats; the indexer service (add, test, toggle, remove, search) | `core`, `db`, `jobs`, `schemas/indexers`, `parser`, `quality` |
+| `catalog` | `CatalogService`: fetch, verify, filter, cache, update, the seed snapshot, extra URLs, `/config/definitions`; the bundle and manifest format; the signing tool the pipeline uses | `core`, `db`, `jobs`, `schemas/indexers` |
+| `catalog/indexers` (not a package) | The definitions as YAML, logos, `SOURCES.md`, the pipeline script | `schemas/indexers` |
 
-`indexer-schema` is pure so the pipeline, the server and the prototype share it. The catalog's signing and verifying sit in one package so they can't drift apart.
+`schemas/indexers` is pure so the pipeline, the server and the prototype share it. The catalog's signing and verifying sit in one package so they can't drift apart.
 
 ## Definitions
 
@@ -56,7 +56,7 @@ The owner can add indexers from a signed catalog: a public one in one click, a p
   - a test query;
   - `source` and `license` (below).
 - **Templates** are a small, fixed expression language: `{{ .Config.apikey }}`, `{{ .Query.IMDBID }}`, conditionals and a few named filters. Fixed so nothing in a definition can reach the network, the disk or the process beyond what the engine itself does with the result.
-- **The engine version** is a semver number in `indexer-schema` (`ENGINE_VERSION`). A definition with a higher `minEngineVersion` major is skipped; within one major the engine stays backward compatible (ADR 0007).
+- **The engine version** is a semver number in `schemas/indexers` (`ENGINE_VERSION`). A definition with a higher `minEngineVersion` major is skipped; within one major the engine stays backward compatible (ADR 0007).
 - **Validation** runs in the pipeline, at load on the server, and in a test over every definition in the repo (the parent plan's "every catalog definition validates").
 
 ### Where definitions come from
@@ -74,7 +74,7 @@ Checked on 2026-10-20, and different from the roadmap's assumption:
 
 A script, `bun run catalog:build`, and the CI job on `catalog/**` that runs it:
 
-1. **Validate** every definition against `indexer-schema`, and smoke-test it against the fake indexer when it has a recording.
+1. **Validate** every definition against `schemas/indexers`, and smoke-test it against the fake indexer when it has a recording.
 2. **Bundle:** one JSON file per channel holding every definition, plus the logos, versioned by date (`2026.10.21`, with a suffix for a second release that day), as the prototype's header shows.
 3. **Sign:** an ed25519 signature over the manifest, which lists the bundle's SHA-256, its version, the channel and the oldest engine it needs. Node's `crypto.sign(null, data, key)` with an ed25519 key ([Node: crypto.sign](https://nodejs.org/api/crypto.html#cryptosignalgorithm-data-key-callback)); no dependency.
 4. **Publish** to `stable` and `beta`: written to `dist/catalog/` locally. The GitHub Pages step is written but switched off until the owner says to publish (decision 5).
@@ -187,7 +187,7 @@ The parent plan's rule: indexers are tested against a local fake indexer serving
 
 ## Tests
 
-- **`indexer-schema`:** good and bad definitions; every definition in `catalog/indexers` validates; templates can't reach anything outside their inputs.
+- **`schemas/indexers`:** good and bad definitions; every definition in `catalog/indexers` validates; templates can't reach anything outside their inputs.
 - **`indexers`:**
   - each kind against the fake indexer, through caps, search and the field mappings;
   - category mapping; query building by id, then title and year;
@@ -209,6 +209,7 @@ The parent plan's rule: indexers are tested against a local fake indexer serving
 - **0033, indexer definitions:** the declarative format, the five kinds, the template language and why it's closed, the engine version, and writing definitions ourselves (the licence findings above).
 - **0034, the catalog service and signing:** the manifest, ed25519, key ids and rotation, refusing older versions, the seed snapshot, extra URLs and local definitions. It implements ADR 0007, which stays the decision; 0034 is how.
 - **0035, indexer health:** backoff, failing, rate limits, stats roll-ups, and search fan-out.
+- **0036, domain packages** (added at the owner's review): `@highsea/schemas` and `@highsea/media` with a subpath per kind, and `@highsea/media/shared` for what every media type shares (root folders, profiles, formats, sizes, names, paging), so shows and music start from it.
 
 ## Specs owed
 
@@ -224,6 +225,17 @@ Updated as part of the checkpoint, each change listed in the report:
 ## Open questions for the owner
 
 Each has a recommendation; the first option is it.
+
+**Answered on 2026-10-20: the owner took the recommendation on all eight.** In short:
+
+1. highsea writes its own definitions under CC0-1.0, starting with a generic Torznab definition and a few documented public sites.
+2. The Newznab kind is built; the catalog lists no Newznab definitions and search leaves Usenet results out until Usenet arrives.
+3. The owner creates the release key when publishing begins; until then a labelled development key signs the seed snapshot, trusted only by development builds. Room for one rotation.
+4. New catalog versions install on their own, with What changed on A9 and an event in System; a setting switches to "Ask first".
+5. Priority is a number (1 to 50, 25 by default, lower first) in an Edit dialog from the row's More menu; seeding rules join it in checkpoint 6. The Edit item is approved as a change to the locked layout.
+6. Grab is shown disabled with "Grabbing comes with downloads."
+7. A Catalog group in Settings › General after Metadata, owner only; the search timeout stays a fixed 30 seconds.
+8. Other catalog content comes later; the manifest's `kind` keeps the door open.
 
 1. **Where definitions come from.**
    - **Recommended:** highsea writes its own, from each site's published documentation, under CC0-1.0, starting small: a generic **Torznab** definition (which also lets an owner point at an existing Prowlarr or Jackett), plus a handful of public sites with documented APIs. The catalog grows with contributions.

@@ -6,6 +6,7 @@
 export * from './accounts.ts'
 export * from './common.ts'
 export * from './events.ts'
+export * from './indexers.ts'
 export * from './library.ts'
 export * from './metadata.ts'
 export * from './movies.ts'
@@ -16,6 +17,7 @@ export * from './setup.ts'
 export * from './system.ts'
 
 import { apiKeys, audit, auth, devices, links, me, users } from './accounts.ts'
+import { catalog, indexers, releaseRoutes } from './indexers.ts'
 import { library } from './library.ts'
 import { metadata } from './metadata.ts'
 import { movies, rootFolders } from './movies.ts'
@@ -41,9 +43,11 @@ export const routes = {
   preferences,
   home,
   appearance,
-  movies,
+  movies: { ...movies, ...releaseRoutes },
   metadata,
   quality,
   rootFolders,
   library,
+  indexers,
+  catalog,
 } as const

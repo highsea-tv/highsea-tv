@@ -2,7 +2,8 @@
 // The platform under Node, the server's runtime (ADR 0019): `bun test` covers bun:sqlite; this
 // covers better-sqlite3, workers and the API on a real file database. Run with `node`; exits 1 on
 // the first failure. CI runs it after the tests. TMDB answers from the recordings (ADR 0029), so the
-// metadata package and the image cache run as production runs them, without the network.
+// metadata package and the image cache run as production runs them, without the network. It runs
+// on the Node in `.nvmrc` only (`bun run smoke` checks before anything loads).
 import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -12,7 +13,10 @@ import { defineJob } from '@highsea/jobs'
 import { createReplayFetch } from '@highsea/metadata/replay'
 import { boot, loadConfig } from '@highsea/runtime'
 import { z } from 'zod'
+import { assertNodeVersion } from '../../../scripts/check-node.ts'
 import { createApi } from '../src/api/app.ts'
+
+assertNodeVersion()
 
 const dir = mkdtempSync(join(tmpdir(), 'highsea-smoke-'))
 const config = loadConfig({
@@ -67,6 +71,14 @@ try {
   const head = Buffer.from(bytes.subarray(0, 4)).toString('hex')
   assert.ok(head.startsWith('ffd8ff') || head === '89504e47', `image bytes start ${head}`)
   assert.equal(Number(image.headers.get('content-length') ?? bytes.byteLength), bytes.byteLength)
+
+  // the seed catalog, verified with the development key and installed at boot (checkpoint 5)
+  const catalog = await api.request('/api/v1/catalog', { headers: authorization })
+  assert.equal(catalog.status, 200)
+  const status = (await catalog.json()) as { version: string | null }
+  assert.ok(status.version, 'the seed catalog is installed')
+  const definitions = await api.request('/api/v1/catalog/indexers', { headers: authorization })
+  assert.ok(((await definitions.json()) as unknown[]).length > 0, 'the seed has definitions')
 
   let ran = 0
   runtime.jobs.define(

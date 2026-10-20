@@ -1,6 +1,6 @@
 # Phase 3 plan: server milestone 1
 
-- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoints 1 to 4 are signed off, checkpoints 2 to 4 on 2026-10-20. Checkpoint 3's scope and the owner's decisions are in [Checkpoint 3 in detail](#checkpoint-3-in-detail); with its sign-off the owner approved widgets up to 4 columns wide (dashboard.md › Decisions). Checkpoint 4's scope, judgement calls and the owner's decisions (all 2026-10-20, including addresses by TMDB id, amending ADR 0014) are in [phase-3-checkpoint-4.md](phase-3-checkpoint-4.md); its review added decision 6 (the admin is for the owner and admins only), built on 2026-10-20 ([phase-3-admin-access.md](phase-3-admin-access.md)). Checkpoint 5 is scoped in [phase-3-checkpoint-5.md](phase-3-checkpoint-5.md) and waits for the owner's answers and go-ahead. A follow-up after Phase 3 brings the dashboard's customization to Homarr's level ([dashboard-customization.md](dashboard-customization.md)). Phase 2 (the design prototypes) was signed off on 2026-10-19.
+- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoints 1 to 4 are signed off, checkpoints 2 to 4 on 2026-10-20. Checkpoint 3's scope and the owner's decisions are in [Checkpoint 3 in detail](#checkpoint-3-in-detail); with its sign-off the owner approved widgets up to 4 columns wide (dashboard.md › Decisions). Checkpoint 4's scope, judgement calls and the owner's decisions (all 2026-10-20, including addresses by TMDB id, amending ADR 0014) are in [phase-3-checkpoint-4.md](phase-3-checkpoint-4.md); its review added decision 6 (the admin is for the owner and admins only), built on 2026-10-20 ([phase-3-admin-access.md](phase-3-admin-access.md)). Checkpoint 5 is scoped in [phase-3-checkpoint-5.md](phase-3-checkpoint-5.md), with the owner's answers of 2026-10-20; it's built and waits for review. A follow-up after Phase 3 brings the dashboard's customization to Homarr's level ([dashboard-customization.md](dashboard-customization.md)). Phase 2 (the design prototypes) was signed off on 2026-10-19.
 - **Gate:** the owner signs off on milestone 1. Phase 4 (the client apps) then builds on its API and SDK.
 - **Source:** the Phase 3 section of the [roadmap](../roadmap.md#phase-3-server-milestone-1-implementation) and the gap analysis items tagged **[M1]**. This plan turns them into steps.
 - **Build reference:** the signed-off prototypes in [`design/prototypes`](../../design/prototypes/README.md) and their specs in [`docs/product/`](../product/).
@@ -156,9 +156,9 @@ The roadmap's [monorepo layout](../roadmap.md#monorepo-layout) holds. Dependenci
 
 | Layer | Packages | Notes |
 | --- | --- | --- |
-| Contracts | `core`, `api-contract`, `sdk`, `indexer-schema` | `core`: ids, errors, result types, the clock, the logger interface, the event types |
+| Contracts | `core`, `api-contract`, `sdk`, `schemas` (`/indexers`) | `core`: ids, errors, result types, the clock, the logger interface, the event types |
 | Platform | `db`, `runtime`, `jobs`, `auth`, `network`, `i18n` | `i18n` is new: see [ADRs to write](#adrs-to-write) |
-| Domain | `parser`, `quality`, `metadata`, `indexers`, `torrent`, `downloads`, `library`, `media-movies`, `subtitles`, `notifications`, `personalization`, `curation`, `importers` | `importers` is new: the Radarr and qBittorrent migration |
+| Domain | `parser`, `quality`, `metadata`, `indexers`, `torrent`, `downloads`, `library`, `media` (`/movies`), `subtitles`, `notifications`, `personalization`, `curation`, `importers` | `importers` is new: the Radarr and qBittorrent migration |
 | Design | `tokens`, `ui-web`, `brand`, `fixtures` | As in Phase 2 |
 | Apps | `apps/server`, `apps/storybook` | |
 | Catalog | `catalog/indexers` | Its own CI |
@@ -396,12 +396,12 @@ The roadmap's [build order](../roadmap.md#phase-3-build-order), grouped into che
 4. **Checkpoint 4: movies, without downloading.** Scoped in detail in [phase-3-checkpoint-4.md](phase-3-checkpoint-4.md).
    - **`parser`,** with a large fixture suite of real release names.
    - **`quality`:** profiles, custom formats, sizes, and the decision engine with the prototype's reasons.
-   - **`metadata`** (TMDB) and **`media-movies`:** add, refresh, collections, people, trailers, multiple versions.
+   - **`metadata`** (TMDB) and **`media/movies`:** add, refresh, collections, people, trailers, multiple versions.
    - **Admin:** A4 Discover, A5 Movies, A6 movie detail (all but the Subtitles tab and the live states), people pages.
    - **Client API:** library, item, search.
 5. **Checkpoint 5: indexers and the catalog.** Scoped in detail in [phase-3-checkpoint-5.md](phase-3-checkpoint-5.md).
    - **Indexers:**
-     - `indexer-schema` (declarative definitions);
+     - `schemas/indexers` (declarative definitions);
      - `indexers` (Torznab, Newznab, JSON, HTML, RSS; health, backoff, stats).
    - **The catalog:**
      - the `catalog/indexers` pipeline: validate, bundle, sign with ed25519, publish to `stable` and `beta`;
@@ -463,7 +463,7 @@ The roadmap's [build order](../roadmap.md#phase-3-build-order), grouped into che
    - **Observability:** structured logs, Prometheus `/metrics`, opt-in crash reporting.
 9. **Checkpoint 9: release and sign-off.**
    - **Docker hardening:**
-     - multi-stage build, `node:24-bookworm-slim` with ffmpeg and tini, PUID and PGID;
+     - multi-stage build, `node:24.21.0-bookworm-slim` (the `.nvmrc` version) with ffmpeg and tini, PUID and PGID;
      - healthcheck;
      - multi-arch images to GHCR;
      - compose examples for host networking and gluetun.

@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from the Internet Archive's own documentation; no definition was copied.
+id: internet-archive
+version: 1.0.0
+minEngineVersion: 1.0.0
+name: Internet Archive
+description: Public domain and openly licensed feature films from the Internet Archive, shared over BitTorrent.
+kind: json
+privacy: public
+language: en
+starter: true
+logo: internet-archive.svg
+links: [https://archive.org/]
+categories:
+  - { id: feature_films, standard: 2000, name: Feature films }
+search:
+  request:
+    path: /services/search/v1/scrape
+    query:
+      q: >-
+        collection:feature_films AND format:"Archive BitTorrent"{{ if .Query.Title }} AND
+        title:({{ .Query.Title }}){{ else }}{{ if .Query.Keywords }} AND
+        ({{ .Query.Keywords }}){{ end }}{{ end }}{{ if .Query.Year }} AND year:{{ .Query.Year }}{{ end }}
+      fields: identifier,title,year,item_size,publicdate,downloads
+      count: '100'
+      sorts: publicdate desc
+  rows: { path: items }
+  fields:
+    _id: { path: identifier }
+    _title: { path: title }
+    _year: { path: year, optional: true }
+    title: { text: '{{ .Result._title }}{{ if .Result._year }} {{ .Result._year }}{{ end }}' }
+    guid: { text: 'archive.org:{{ .Result._id }}' }
+    download: { text: 'https://archive.org/download/{{ .Result._id }}/{{ .Result._id }}_archive.torrent' }
+    details: { text: 'https://archive.org/details/{{ .Result._id }}' }
+    size: { path: item_size, optional: true, filters: [{ filter: number }] }
+    published: { path: publicdate, optional: true, filters: [{ filter: date }] }
+    grabs: { path: downloads, optional: true, filters: [{ filter: number }] }
+  supports: [q, year]
+errors:
+  - { path: error }
+rateLimit: { requests: 30, seconds: 60, minGapMs: 1000 }
+test: { keywords: '' }
+source:
+  author: highsea
+  documentation: https://archive.org/help/aboutsearch.htm
+license: CC0-1.0

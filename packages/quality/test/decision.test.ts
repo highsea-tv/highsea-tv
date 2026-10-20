@@ -10,7 +10,12 @@ import {
 } from '../src/decision.ts'
 import { seedFormats } from '../src/presets.ts'
 import { type QualityProfile, seedProfiles } from '../src/profiles.ts'
-import { compareReleases, type Rankable } from '../src/ranking.ts'
+import {
+  compareReleases,
+  type IndexerRankable,
+  indexerTiebreakers,
+  type Rankable,
+} from '../src/ranking.ts'
 import { defaultQualitySizes, type QualitySize } from '../src/sizes.ts'
 import { GB, release, revision } from './helpers.ts'
 
@@ -248,7 +253,7 @@ describe('decide', () => {
   })
 
   describe('the registry', () => {
-    test('has the slots later checkpoints fill, silent until then', () => {
+    test('has the slots later checkpoints fill; the indexer facts say nothing when absent', () => {
       expect(SPECIFICATION_IDS).toEqual([
         'quality',
         'size',
@@ -326,5 +331,76 @@ describe('ranking', () => {
     const b = { ...r('Bluray-1080p'), seeders: 40 }
     expect([a, b].sort(cmp)).toEqual([b, a])
     expect(cmp({ ...r('Remux-1080p'), seeders: 0 }, b)).toBeGreaterThan(0)
+  })
+})
+
+describe('the indexer’s facts', () => {
+  const profiles = seedProfiles()
+  const hd = profiles.find((p) => p.id === 'qp-hd') as QualityProfile
+  const base = (indexer: DecisionInput['indexer']): DecisionInput => ({
+    release: release('Sintel.2010.1080p.BluRay.x264-GRP', { releaseGroup: 'GRP' }),
+    size: 8 * GB,
+    movie: { title: 'Sintel', year: 2010, runtimeMinutes: 15, originalLanguage: 'en' },
+    profile: hd,
+    formats: seedFormats(),
+    sizes: [],
+    indexer,
+  })
+  const rejections = (d: ReturnType<typeof decide>) =>
+    d.reasons.filter((r) => r.kind === 'rejected').map((r) => r.message)
+
+  test('too few seeders for the indexer’s minimum', () => {
+    expect(
+      rejections(decide(base({ protocol: 'torrent', seeders: 0, minimumSeeders: 1 }))),
+    ).toEqual(['0 seeders; the minimum is 1'])
+    expect(
+      rejections(decide(base({ protocol: 'torrent', seeders: 1, minimumSeeders: 1 }))),
+    ).toEqual([])
+    // an indexer that doesn't report seeders isn't penalized
+    expect(
+      rejections(decide(base({ protocol: 'torrent', seeders: null, minimumSeeders: 1 }))),
+    ).toEqual([])
+  })
+
+  test('minimum age applies to Usenet only', () => {
+    expect(
+      rejections(decide(base({ protocol: 'usenet', ageMinutes: 5, minimumAgeMinutes: 60 }))),
+    ).toEqual(['Posted 5m ago; the minimum age is 1h'])
+    expect(
+      rejections(decide(base({ protocol: 'torrent', ageMinutes: 5, minimumAgeMinutes: 60 }))),
+    ).toEqual([])
+  })
+
+  test('a failing indexer’s releases are rejected', () => {
+    expect(rejections(decide(base({ indexerName: 'Bosun', blocked: true })))).toEqual([
+      'Bosun is failing, so its releases can’t be taken',
+    ])
+  })
+
+  test('tiebreakers: protocol, priority, seeders, size nearest the preferred', () => {
+    const r = (p: Partial<IndexerRankable>): IndexerRankable => ({
+      quality: 'Bluray-1080p',
+      revision: revision({}),
+      formatScore: 0,
+      protocol: 'torrent',
+      indexerPriority: 25,
+      seeders: 10,
+      size: 8 * GB,
+      preferredSize: null,
+      ...p,
+    })
+    const sorted = (list: IndexerRankable[]) =>
+      [...list].sort(compareReleases(hd, indexerTiebreakers())).map((x) => x.size)
+    expect(sorted([r({ size: 1, protocol: 'usenet' }), r({ size: 2 })])).toEqual([2, 1])
+    expect(
+      sorted([r({ size: 1, indexerPriority: 30 }), r({ size: 2, indexerPriority: 5 })]),
+    ).toEqual([2, 1])
+    expect(sorted([r({ size: 1, seeders: 3 }), r({ size: 2, seeders: 300 })])).toEqual([2, 1])
+    expect(
+      sorted([
+        r({ size: 10 * GB, preferredSize: 6 * GB }),
+        r({ size: 5 * GB, preferredSize: 6 * GB }),
+      ]),
+    ).toEqual([5 * GB, 10 * GB])
   })
 })

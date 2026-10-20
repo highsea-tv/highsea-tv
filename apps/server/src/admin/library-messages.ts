@@ -53,6 +53,7 @@ export const library = defineMessages({
   qualityProfile: 'Quality profile',
   remove: 'Remove',
   clear: 'Clear',
+  'done.search': 'Searching for {count, plural, one {# movie} other {# movies}}',
   'done.monitor': '{count, plural, one {# movie} other {# movies}} monitored',
   'done.unmonitor': '{count, plural, one {# movie} other {# movies}} no longer monitored',
   'done.profile': '{count, plural, one {# movie} other {# movies}} moved to {profile}',

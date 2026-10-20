@@ -9,6 +9,7 @@ import { Scalar } from '@scalar/hono-api-reference'
 import { registerAccounts } from './accounts.ts'
 import { events } from './events.ts'
 import { type Env, guard } from './guard.ts'
+import { registerIndexers } from './indexers.ts'
 import { registerLibrary } from './library.ts'
 import { registerMetadata } from './metadata.ts'
 import { registerMovies } from './movies.ts'
@@ -69,6 +70,7 @@ export function createApi(runtime: Runtime) {
   registerMovies(app)
   registerQuality(app)
   registerLibrary(app)
+  registerIndexers(app)
 
   app.doc31(`${API_PREFIX}/openapi.json`, {
     openapi: '3.1.0',

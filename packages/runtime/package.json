@@ -12,10 +12,12 @@
   },
   "dependencies": {
     "@highsea/auth": "workspace:*",
+    "@highsea/catalog": "workspace:*",
     "@highsea/core": "workspace:*",
     "@highsea/db": "workspace:*",
+    "@highsea/indexers": "workspace:*",
     "@highsea/jobs": "workspace:*",
-    "@highsea/media-movies": "workspace:*",
+    "@highsea/media": "workspace:*",
     "@highsea/metadata": "workspace:*",
     "@highsea/network": "workspace:*",
     "@highsea/personalization": "workspace:*",

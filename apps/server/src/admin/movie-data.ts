@@ -35,10 +35,18 @@ export type AddOptions = {
   quality: QualityProfile[]
   language: LanguageProfile[]
   defaults: AddMovieDefaults | null
+  /** Whether an enabled indexer exists: Search now is off and disabled while none does. */
+  canSearch?: boolean
 }
 
 /** The remembered values while they still name a folder and profiles that exist, else the first. */
-export function initialForm({ folders, quality, language, defaults: d }: AddOptions): AddForm {
+export function initialForm({
+  folders,
+  quality,
+  language,
+  defaults: d,
+  canSearch = false,
+}: AddOptions): AddForm {
   const has = <T extends { id: string }>(list: T[], id: string | null | undefined) =>
     id != null && list.some((x) => x.id === id)
   return {
@@ -51,8 +59,9 @@ export function initialForm({ folders, quality, language, defaults: d }: AddOpti
         ? (d.languageProfileId ?? null)
         : (language[0]?.id ?? null),
     minimumAvailability: d?.minimumAvailability ?? 'released',
-    // decision 2: off while there are no indexers to search; checkpoint 5 reads the remembered one
-    searchNow: false,
+    // decision 2: off while no indexer is enabled; with one, the remembered choice, else on
+    // (movies.md: adding usually means "get it")
+    searchNow: canSearch && (d?.searchNow ?? true),
     monitored: true,
   }
 }

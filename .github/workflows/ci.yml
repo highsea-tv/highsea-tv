@@ -22,7 +22,7 @@ jobs:
           bun-version: 1.4.2
       - uses: actions/setup-node@v4
         with:
-          node-version: 24.21.0
+          node-version-file: .nvmrc
       - run: bun install --frozen-lockfile
       - name: Lint
         run: bun run lint
@@ -31,7 +31,7 @@ jobs:
       - name: Tests (Bun)
         run: bun run test
       - name: The platform under Node (better-sqlite3, workers, API)
-        run: node apps/server/scripts/smoke.ts
+        run: bun run smoke
       - name: License audit
         run: bun run licenses
       - name: Build the admin

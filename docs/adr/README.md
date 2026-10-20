@@ -36,5 +36,9 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0030](0030-metadata-cache.md) | The metadata cache: TMDB’s responses beside the library, under six months | Accepted |
 | [0031](0031-quality-and-the-decision-engine.md) | Quality and the decision engine: Radarr's documented behaviour, written fresh | Accepted |
 | [0032](0032-administrative-and-normal-access.md) | Administrative and normal access: Owner, Admin, User | Accepted |
+| [0033](0033-indexer-definitions.md) | Indexer definitions: highsea's own declarative format, written by us | Accepted; amended 2026-10-20 |
+| [0034](0034-catalog-service-and-signing.md) | The catalog service and signing | Accepted |
+| [0035](0035-indexer-health-and-search.md) | Indexer health, rate limits and search fan-out | Accepted |
+| [0036](0036-domain-packages-with-subpath-exports.md) | Domain packages with a subpath export per kind | Accepted |
 
 Template: copy [`template.md`](template.md).

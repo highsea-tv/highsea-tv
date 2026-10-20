@@ -5,11 +5,15 @@
 // owner and as an admin, and as a user, who gets the refusal page at every address (ADR 0032): axe,
 // overflow and page errors in three themes, at 200% text and with reduced motion, then the
 // keyboard walk. TMDB answers from the recordings in packages/metadata (HIGHSEA_TMDB_REPLAY), and
-// the library is seeded from them through the API. Usage: bun scripts/sweeps/server.ts [pages|keyboard]
-import { type ChildProcess, spawn } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
+// the library is seeded from them through the API. Indexers search the fake indexer
+// (packages/indexers/test/fake) on a local port: the catalog is the seed the development key signs,
+// plus a local copy of the Internet Archive's definition pointed at the fake, so a public indexer
+// and a private one are added without the network. Usage: bun scripts/sweeps/server.ts [pages|keyboard]
+import { type ChildProcess, execFileSync, spawn } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { FAKE_CREDENTIALS, serveFakeIndexer } from '@highsea/indexers/fake'
 import type { BrowserContext, Page } from 'playwright-core'
 import { axe, heightFor, launch, overflow, pool, ROOT, settleAnimations, walk } from './lib.ts'
 
@@ -26,12 +30,27 @@ const VARIANTS = [
   'motion=reduced',
 ] as const
 const WIDTHS = [1440, 390]
+// SWEEP_SHOTS=<folder>: also save each page, default theme, at each width (for checkpoint reports)
+const SHOTS = process.env.SWEEP_SHOTS
 
 // ---------------------------------------------------------------- the server
 
+// the server runs on the Node in .nvmrc, as production does; stop here if `node` is another
+execFileSync('node', [join(ROOT, 'scripts/check-node.ts')], { stdio: 'inherit' })
 const dir = mkdtempSync(join(tmpdir(), 'highsea-sweep-'))
 const dataDir = join(dir, 'data')
 for (const d of ['movies', 'downloads']) mkdirSync(join(dataDir, d), { recursive: true })
+const indexer = serveFakeIndexer(PORT + 2)
+// a local definition overrides the catalog's (ADR 0034): the Internet Archive, at the fake
+const definitions = join(dir, 'config', 'definitions')
+mkdirSync(definitions, { recursive: true })
+writeFileSync(
+  join(definitions, 'internet-archive.yml'),
+  readFileSync(join(ROOT, 'catalog/indexers/definitions/internet-archive.yml'), 'utf8').replace(
+    'links: [https://archive.org/]',
+    `links: ['${indexer.origin}/archive/']`,
+  ),
+)
 const server: ChildProcess = spawn('node', ['server.ts'], {
   cwd: join(ROOT, 'apps/server'),
   env: {
@@ -49,6 +68,7 @@ const server: ChildProcess = spawn('node', ['server.ts'], {
 })
 const stop = () => {
   server.kill('SIGTERM')
+  indexer.stop()
   rmSync(dir, { recursive: true, force: true })
 }
 
@@ -146,6 +166,10 @@ async function sweep(visits: Visit[], context: () => Promise<BrowserContext>) {
         const ctx = await context()
         try {
           const { page, errors } = await open(ctx, v, w, q)
+          if (SHOTS && q === 'theme=default')
+            await page.screenshot({
+              path: join(SHOTS, `${v.name.replaceAll(/[^\w-]+/g, '_')}-${w}.png`),
+            })
           const o = await overflow(page)
           const found = await axe(page)
           if (o > 0 || found.length || errors.length)
@@ -185,12 +209,12 @@ async function sweep(visits: Visit[], context: () => Promise<BrowserContext>) {
 const draft = (step: number) =>
   JSON.stringify({
     step,
-    reached: 6,
+    reached: 7,
     draft: {
       serverName: 'Harbor',
       owner: { displayName: 'Ines', username: 'ines' },
       folders: { movies: join(dataDir, 'movies'), downloads: join(dataDir, 'downloads') },
-      remote: step === 4 ? 'reverse-proxy' : 'local-only',
+      remote: step === 5 ? 'reverse-proxy' : 'local-only',
       proxyUrl: 'https://movies.example.com',
       port: '8484',
       cloudLink: false,
@@ -199,7 +223,7 @@ const draft = (step: number) =>
 
 try {
   // setup, each step, while there's no owner yet
-  const steps = ['name', 'owner', 'metadata', 'folders', 'remote', 'cloud', 'review']
+  const steps = ['name', 'owner', 'metadata', 'folders', 'indexers', 'remote', 'cloud', 'review']
   await sweep(
     steps.map((s, i) => ({ name: `setup:${s}`, path: '/setup', init: i ? draft(i) : undefined })),
     () => browser.newContext(),
@@ -295,6 +319,20 @@ try {
   for (const id of [10378, 133701, 9761, 653, 832, 1117898]) await add(id)
   await api('PATCH', '/movies/832', { monitored: false }, token)
 
+  // indexers: the public one in a click, the private one with its settings; both are tested first
+  await api('POST', '/indexers', { definitionId: 'internet-archive' }, token)
+  await api(
+    'POST',
+    '/indexers',
+    {
+      definitionId: 'generic-torznab',
+      settings: { baseUrl: `${indexer.origin}/torznab`, apiKey: FAKE_CREDENTIALS.torznabKey },
+      priority: 10,
+    },
+    token,
+  )
+  await api('POST', '/movies/45745/search', undefined, token)
+
   // signed out
   await sweep(
     [
@@ -364,6 +402,30 @@ try {
       { name: 'settings:profiles', path: '/settings/profiles' },
       { name: 'settings:quality', path: '/settings/quality' },
       { name: 'system', path: '/system' },
+      // A9, with a Local public indexer and a private one against the fake indexer
+      { name: 'indexers', path: '/indexers' },
+      { name: 'indexers:catalog', path: '/indexers', act: tab('Catalog') },
+      {
+        name: 'indexers:changes',
+        path: '/indexers',
+        act: (p) => p.getByRole('button', { name: 'What changed' }).click(),
+      },
+      {
+        name: 'indexers:setup',
+        path: '/indexers',
+        act: async (p) => {
+          await tab('Catalog')(p)
+          await p.getByRole('button', { name: 'Set up Torrent feed' }).click()
+        },
+      },
+      {
+        name: 'indexers:edit',
+        path: '/indexers',
+        act: async (p) => {
+          await p.getByRole('button', { name: 'More for Torznab' }).click()
+          await p.getByRole('menuitem', { name: 'Edit' }).click()
+        },
+      },
       { name: 'users', path: '/settings/users' },
       { name: 'users:devices', path: '/settings/users', act: tab('Devices') },
       { name: 'users:keys', path: '/settings/users', act: tab('API keys') },

@@ -8,8 +8,11 @@
 // with the versions; the Files, History and Search tabs.
 //
 // What this checkpoint changes from the prototype (each listed in the checkpoint report):
-// - search waits for indexers (decision 2): Search is disabled with the reason, and the Search tab
-//   says the same with a link to Indexers;
+// - search waits for an enabled indexer (decision 2): until there is one, Search is disabled with
+//   the reason, and the Search tab says the same with a link to Indexers;
+// - Search queues a search; the Search tab shows the last 30 minutes' results before searching
+//   again, says which indexers didn't answer, and its Grab is shown but disabled until downloads
+//   (checkpoint 5, the owner's answer 6); size, peers and age show a dash when an indexer omits them;
 // - Files and History show their empty states: files and history arrive with checkpoint 6;
 // - no Subtitles tab (checkpoint 7) and no In the queue card (checkpoint 6);
 // - Edit (in More) and the version list's add, edit and remove, which the prototype doesn't draw;
@@ -24,9 +27,11 @@ import type {
   MovieUpdate,
   MovieVersion,
   QualityProfile,
+  Release,
   RootFolder,
 } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
+import { bytes, duration } from '@highsea/core/format'
+import { useLocale, useT } from '@highsea/i18n/react'
 import type { ApiError } from '@highsea/sdk'
 import { useAction, useQuery } from '@highsea/sdk/react'
 import {
@@ -39,6 +44,7 @@ import {
   DialogContent,
   EmptyState,
   Field,
+  Icon,
   Input,
   Menu,
   MenuContent,
@@ -46,17 +52,28 @@ import {
   MenuTrigger,
   QualityTag,
   Select,
+  Skeleton,
   Switch,
+  Table,
+  TableBody,
+  TableCell,
+  TableFrame,
+  TableHead,
+  TableHeader,
+  TableRow,
+  TableToolbar,
   Tabs,
   TabsContent,
   TabsList,
   TabsTrigger,
+  TitleCell,
   Tooltip,
   toast,
 } from '@highsea/ui-web'
 import { useRouter } from 'next/navigation'
-import { type ReactNode, useCallback, useEffect, useState } from 'react'
+import { Fragment, useCallback, useEffect, useState } from 'react'
 import { AddMovieDialog } from './add-dialog.tsx'
+import { useSearchable } from './indexer-state.ts'
 import { library } from './library-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { movieStatus } from './media-links.ts'
@@ -78,12 +95,6 @@ import { movieDetail as messages } from './movie-detail-messages.ts'
 import { AdminPage } from './shell.tsx'
 
 type Tab = 'overview' | 'cast' | 'files' | 'history' | 'search'
-
-/**
- * Whether highsea can search for releases yet. Indexers arrive with checkpoint 5; until then
- * search is shown but disabled, with the reason (checkpoint 4 plan, decision 2).
- */
-const CAN_SEARCH = false
 
 /** Where Discover finds a title by name: its search is kept in the address (movies.md). */
 const discoverSearch = (title: string) => `/discover?q=${encodeURIComponent(title)}`
@@ -244,6 +255,8 @@ function LibraryMovie({
 
   const update = useAction((c, body: MovieUpdate) => c.movies.update({ params: { id }, body }))
   const refresh = useAction((c) => c.movies.refresh({ params: { id } }))
+  const searchable = useSearchable()
+  const search = useAction((c) => c.movies.bulk({ body: { action: 'search', ids: [id] } }))
   const remove = useAction((c, files: boolean) =>
     c.movies.delete({ params: { id }, query: { deleteFiles: files ? 'true' : 'false' } }),
   )
@@ -265,14 +278,34 @@ function LibraryMovie({
   const title = m?.title ?? meta.data?.title ?? t('movie')
   const actions = m ? (
     <>
-      <Tooltip content={t('noIndexers')}>
-        {/* a disabled button takes no focus, so its wrapper carries the reason (Radix Tooltip) */}
-        <span tabIndex={CAN_SEARCH ? undefined : 0} className="inline-flex rounded-sm">
-          <Button icon="search" disabled={!CAN_SEARCH}>
-            {t('search')}
-          </Button>
-        </span>
-      </Tooltip>
+      {searchable.canSearch ? (
+        <Button
+          icon="search"
+          loading={search.pending}
+          onClick={() =>
+            search.run().then(
+              () =>
+                toast({
+                  title: t('search.toast', { title: m.title }),
+                  description: t('search.toastBody'),
+                }),
+              (e: Error) => toast.error(t('search.failed'), { description: e.message }),
+            )
+          }
+        >
+          {t('search')}
+        </Button>
+      ) : (
+        <Tooltip content={t('noIndexers')}>
+          {/* a disabled button takes no focus, so its wrapper carries the reason (Radix Tooltip) */}
+          {/* biome-ignore lint/a11y/noNoninteractiveTabindex: the focusable wrapper Radix documents for a disabled trigger */}
+          <span tabIndex={0} className="inline-flex rounded-sm">
+            <Button icon="search" disabled>
+              {t('search')}
+            </Button>
+          </span>
+        </Tooltip>
+      )}
       <Button variant="primary" icon="list" onClick={() => setTab('search')}>
         {t('interactiveSearch')}
       </Button>
@@ -481,7 +514,7 @@ function LibraryBody({
           </EmptyState>
         </TabsContent>
         <TabsContent value="search" className="pt-5">
-          <SearchTab />
+          <SearchTab id={m.id} />
         </TabsContent>
       </Tabs>
     </>
@@ -889,16 +922,220 @@ function Files({ movie: m }: { movie: Movie }) {
   )
 }
 
-/** Interactive search waits for indexers (decision 2): the reason, and where to fix it. */
-function SearchTab(): ReactNode {
+/**
+ * Interactive search (movies.md › Search tab). While no indexer is enabled, decision 2's reason and
+ * where to fix it; then the releases, judged by the movie's first version's profile.
+ */
+function SearchTab({ id }: { id: number }) {
   const t = useT(messages)
   const router = useRouter()
+  const searchable = useSearchable()
+  if (!searchable.ready)
+    return (
+      <div aria-busy className="grid gap-3">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-12" />
+        ))}
+      </div>
+    )
+  if (!searchable.canSearch)
+    return (
+      <EmptyState
+        size="sm"
+        icon="indexers"
+        title={t('noIndexers')}
+        action={<Button onClick={() => router.push('/indexers')}>{t('goToIndexers')}</Button>}
+      />
+    )
+  return <InteractiveSearch id={id} indexers={searchable.enabled} />
+}
+
+type Found = { releases: Release[]; failed: { indexer: string; message: string }[] }
+
+/**
+ * The prototype's InteractiveSearch on real results. Opening the tab shows the last 30 minutes'
+ * results when there are some, so coming back doesn't cost every indexer a query; Search again
+ * always searches.
+ */
+function InteractiveSearch({ id, indexers }: { id: number; indexers: number }) {
+  const t = useT(messages)
+  const locale = useLocale()
+  const [run, setRun] = useState(0)
+  const releases = useQuery(`releases:${id}:${run}`, async (c): Promise<Found> => {
+    if (run === 0) {
+      const cached = await c.movies.releases({ params: { id } })
+      if (cached.length) return { releases: cached, failed: [] }
+    }
+    return c.movies.interactiveSearch({ params: { id } })
+  })
+  const [open, setOpen] = useState<string | null>(null)
+  const [showRejected, setShowRejected] = useState(true)
+  const dash = t('search.unknown')
+
   return (
-    <EmptyState
-      size="sm"
-      icon="indexers"
-      title={t('noIndexers')}
-      action={<Button onClick={() => router.push('/indexers')}>{t('goToIndexers')}</Button>}
-    />
+    <Loadable
+      query={releases}
+      what={t('search.what')}
+      skeleton={
+        <>
+          <p className="text-caption text-text-3">{t('search.searching', { count: indexers })}</p>
+          {[0, 1, 2, 3].map((i) => (
+            <Skeleton key={i} className="h-12" />
+          ))}
+        </>
+      }
+    >
+      {({ releases: rs, failed }) => {
+        const shown = showRejected ? rs : rs.filter((r) => r.approved)
+        return (
+          <div className="grid gap-3">
+            <TableFrame>
+              <TableToolbar>
+                <span className="text-text">{t('search.count', { count: rs.length })}</span>
+                <span className="text-text-3">
+                  {t('search.accepted', { count: rs.filter((r) => r.approved).length })}
+                </span>
+                <span className="ms-auto flex items-center gap-2 text-text-2">
+                  <Switch
+                    id="show-rejected"
+                    checked={showRejected}
+                    onCheckedChange={setShowRejected}
+                  />
+                  <label htmlFor="show-rejected">{t('search.showRejected')}</label>
+                </span>
+                <Button size="sm" icon="refresh" onClick={() => setRun(run + 1)}>
+                  {t('search.again')}
+                </Button>
+              </TableToolbar>
+              {rs.length === 0 ? (
+                <p className="px-3.5 py-8 text-center text-caption text-text-3">
+                  {t('search.none')}
+                </p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('search.release')}</TableHead>
+                      <TableHead>{t('search.quality')}</TableHead>
+                      <TableHead numeric>{t('search.score')}</TableHead>
+                      <TableHead numeric>{t('search.size')}</TableHead>
+                      <TableHead numeric>{t('search.peers')}</TableHead>
+                      <TableHead numeric>{t('search.age')}</TableHead>
+                      <TableHead>{t('search.decision')}</TableHead>
+                      <TableHead>
+                        <span className="sr-only">{t('search.actions')}</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {shown.map((r) => {
+                      const expanded = open === r.guid
+                      const rejected = r.reasons.filter((x) => x.kind === 'rejected').length
+                      return (
+                        <Fragment key={r.guid}>
+                          <TableRow>
+                            <TitleCell title={r.indexer} detail={r.title} />
+                            <TableCell>
+                              <span className="flex gap-1">
+                                <QualityTag>{r.quality}</QualityTag>
+                                {r.customFormats.slice(0, 2).map((f) => (
+                                  <QualityTag key={f}>{f}</QualityTag>
+                                ))}
+                              </span>
+                            </TableCell>
+                            <TableCell numeric>{r.formatScore}</TableCell>
+                            <TableCell numeric>{r.size === null ? dash : bytes(r.size)}</TableCell>
+                            <TableCell numeric>
+                              {r.seeders ?? dash}/{r.leechers ?? dash}
+                            </TableCell>
+                            <TableCell numeric>
+                              {r.ageHours === null ? dash : duration(r.ageHours * 3600, locale)}
+                            </TableCell>
+                            <TableCell>
+                              <button
+                                type="button"
+                                aria-expanded={expanded}
+                                onClick={() => setOpen(expanded ? null : r.guid)}
+                                className="rounded-sm"
+                              >
+                                <Badge tone={r.approved ? 'success' : 'danger'}>
+                                  {r.approved
+                                    ? t('search.approved')
+                                    : t('search.rejected', { count: rejected })}
+                                </Badge>
+                                <span className="sr-only">{t('search.reasons')}</span>
+                              </button>
+                            </TableCell>
+                            <TableCell className="text-end">
+                              {/* the owner's answer 6: shown, disabled until downloads. aria-disabled
+                                keeps it focusable, so the tooltip saying why is reachable */}
+                              <Tooltip content={t('search.grabLater')}>
+                                <Button
+                                  size="sm"
+                                  variant={r.approved ? 'primary' : 'ghost'}
+                                  iconOnly
+                                  icon="download"
+                                  aria-disabled
+                                  aria-label={t(r.approved ? 'search.grab' : 'search.grabAnyway', {
+                                    title: r.title,
+                                  })}
+                                  className="cursor-not-allowed opacity-45"
+                                />
+                              </Tooltip>
+                            </TableCell>
+                          </TableRow>
+                          {expanded && (
+                            <TableRow>
+                              <TableCell colSpan={8} className="whitespace-normal bg-s2">
+                                <Reasons release={r} />
+                              </TableCell>
+                            </TableRow>
+                          )}
+                        </Fragment>
+                      )
+                    })}
+                  </TableBody>
+                </Table>
+              )}
+            </TableFrame>
+            {failed.length > 0 && (
+              <ul className="grid gap-1 text-caption text-text-3">
+                {failed.map((f) => (
+                  <li key={f.indexer}>
+                    {t('search.failedIndexer', { indexer: f.indexer, message: f.message })}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        )
+      }}
+    </Loadable>
+  )
+}
+
+/** Why a release was accepted or rejected, as the decision engine said it. */
+function Reasons({ release: r }: { release: Release }) {
+  return (
+    <ul className="grid gap-1 text-caption">
+      {r.reasons.map((reason) => (
+        <li key={reason.message} className="flex items-start gap-1.5">
+          <Icon
+            name={
+              reason.kind === 'accepted' ? 'check' : reason.kind === 'warning' ? 'warning' : 'close'
+            }
+            size={14}
+            className={
+              reason.kind === 'accepted'
+                ? 'mt-px shrink-0 text-success'
+                : reason.kind === 'warning'
+                  ? 'mt-px shrink-0 text-warning'
+                  : 'mt-px shrink-0 text-danger'
+            }
+          />
+          <span className="text-text-2">{reason.message}</span>
+        </li>
+      ))}
+    </ul>
   )
 }

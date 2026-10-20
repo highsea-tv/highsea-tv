@@ -7,7 +7,7 @@
 // - credits get keys, unique within their list, since TMDB's credit ids aren't kept.
 import type * as Api from '@highsea/api-contract'
 import { iso } from '@highsea/core'
-import { stars } from '@highsea/media-movies'
+import { stars } from '@highsea/media/shared'
 import type * as Md from '@highsea/metadata'
 
 /** A `YYYY-MM-DD` day as the contract's date-time, at midnight UTC. */

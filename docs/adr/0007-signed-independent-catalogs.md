@@ -7,7 +7,7 @@
 Indexer definitions change often (site layout changes, new trackers). Rebuilding and republishing the server for each change is unacceptable. The same need applies to quality/custom-format presets, themes, sound packs and client device profiles.
 
 ## Decision
-- `catalog/*` holds **declarative-only** content (no executable code), validated by schema packages such as `@highsea/indexer-schema`.
+- `catalog/*` holds **declarative-only** content (no executable code), validated by schema packages such as `@highsea/schemas/indexers`.
 - A dedicated CI pipeline (triggered on `catalog/**`):
   1. validates and smoke-tests the content;
   2. builds versioned bundles;

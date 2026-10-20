@@ -27,6 +27,10 @@ export const qualityMessages = defineMessages({
   'upgrade.revision': 'A newer revision of {quality}',
   'upgrade.score': 'Raises the format score from {from} to {to}',
   'upgrade.notWanted': 'Not an upgrade: the file is {quality} with format score {score}',
+  // The indexer's facts
+  'seeders.tooFew': '{seeders, plural, one {# seeder} other {# seeders}}; the minimum is {minimum}',
+  'age.tooNew': 'Posted {age} ago; the minimum age is {minimum}',
+  'indexer.blocked': '{indexer} is failing, so its releases can’t be taken',
   // Condition summaries, for Settings › Profiles and formats
   'condition.title': 'Title matches {value}',
   'condition.edition': 'Edition matches {value}',

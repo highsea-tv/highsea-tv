@@ -71,6 +71,11 @@ export function registerSystem(app: OpenAPIHono<Env>) {
     return c.json(checkHardlinks(rt(c).config, a, b), 200)
   })
 
+  app.openapi(routes.setup.starterPack, (c) => {
+    setupOpen(c)
+    return c.json(rt(c).starterPack(), 200)
+  })
+
   app.openapi(routes.setup.complete, async (c) => {
     setupOpen(c)
     const issued = await rt(c).completeSetup(c.req.valid('json'), c.get('meta'))

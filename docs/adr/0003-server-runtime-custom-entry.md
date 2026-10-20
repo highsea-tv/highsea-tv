@@ -13,7 +13,7 @@ The server is one Next.js application, but it also runs long-lived services: the
   3. Everything else goes to Next's request handler.
 - The runtime singleton lives on `globalThis.__highsea`, so code rendered by Next shares it.
 - CPU-heavy work (subtitle alignment, piece hashing, image processing) runs in `worker_threads`. ffmpeg runs in child processes.
-- Production runs on Node 24 LTS for the best compatibility with native and UDP modules.
+- Production runs on Node 24 LTS for the best compatibility with native and UDP modules. The exact version is 24.21.0, pinned in `.nvmrc` and used alike locally, in CI and in the image, with `scripts/check-node.ts` refusing another (amended 2026-10-20 at the owner's request).
 
 ## Consequences
 - Still one process and one container.

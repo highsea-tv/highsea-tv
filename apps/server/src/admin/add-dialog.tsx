@@ -7,7 +7,8 @@
 //
 // What real data changes:
 // - the movie's one version is labelled with its quality profile's name (AddMovieInput.versions);
-// - Search now is shown but disabled and off until indexers exist (checkpoint 4 plan, decision 2);
+// - Search now is shown but disabled and off while no indexer is enabled (checkpoint 4 plan,
+//   decision 2); with one, adding queues a search (checkpoint 5);
 // - the last-used folder, profiles, availability and Search now are remembered per person, as the
 //   preference `admin.addMovie.defaults` (movies.md › Decisions; ADR 0027);
 // - no folder yet, or no TMDB key, says so and links to where it's fixed.
@@ -68,15 +69,22 @@ export function AddMovieDialog({
     `add-options:${open}`,
     async (c): Promise<AddOptions | null> => {
       if (!open) return null
-      const [folders, quality, language, prefs] = await Promise.all([
+      const [folders, quality, language, prefs, indexers] = await Promise.all([
         c.rootFolders.list(),
         c.quality.profiles(),
         c.quality.languageProfiles(),
         c.preferences.get(),
+        c.indexers.list(),
       ])
-      return { folders, quality, language, defaults: prefs.values['admin.addMovie.defaults'] }
+      return {
+        folders,
+        quality,
+        language,
+        defaults: prefs.values['admin.addMovie.defaults'],
+        canSearch: indexers.some((i) => i.enabled),
+      }
     },
-    ['preferences.updated'],
+    ['preferences.updated', 'indexers.updated'],
   )
   // what the person changed; the rest comes from the remembered values
   const [edits, setEdits] = useState<Partial<AddForm>>({})
@@ -252,11 +260,15 @@ export function AddMovieDialog({
                     <Field
                       inline
                       label={t('searchNow')}
-                      hint={t('searchNow.noIndexers')}
+                      hint={o.canSearch ? t('searchNow.hint') : t('searchNow.noIndexers')}
                       className="medium:col-span-2"
                     >
-                      {/* decision 2: shown, disabled and off until indexers exist (checkpoint 5) */}
-                      <Checkbox checked={false} disabled />
+                      {/* decision 2: shown, disabled and off while no indexer is enabled */}
+                      <Checkbox
+                        checked={form.searchNow}
+                        disabled={!o.canSearch}
+                        onCheckedChange={(v) => set({ searchNow: v === true })}
+                      />
                     </Field>
                   </div>
                 )

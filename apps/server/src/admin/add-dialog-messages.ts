@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The add dialog (ADR 0021): the prototype's copy (docs/product/movies.md › Copy), with Search now
-// disabled until indexers exist (checkpoint 4 plan, decision 2).
+// disabled while no indexer is enabled (checkpoint 4 plan, decision 2). Until downloads
+// (checkpoint 6) a search finds releases without grabbing, so its toast points at the Search tab.
 import { defineMessages } from '@highsea/i18n'
 
 export const addDialog = defineMessages({
@@ -26,13 +27,14 @@ export const addDialog = defineMessages({
   'monitored.hint': 'Grab it when a release turns up, and upgrade it until the profile’s cutoff.',
   searchNow: 'Search now',
   'searchNow.noIndexers': 'Add an indexer to search for releases.',
+  'searchNow.hint': 'Otherwise the next RSS sync picks it up.',
   cancel: 'Cancel',
   'add.one': 'Add movie',
   'add.many': 'Add movies',
   'add.search': 'Add and search',
   'toast.one': '{title} added',
   'toast.many': '{count} movies added',
-  'toast.searching': 'Searching your indexers now. Follow it in Activity.',
+  'toast.searching': 'Searching your indexers now. Its Search tab shows what they find.',
   'toast.monitored.one': 'It’s monitored. highsea grabs it when a release turns up.',
   'toast.monitored.many': 'They’re monitored. highsea grabs each one when a release turns up.',
   'toast.unmonitored.one': 'It isn’t monitored, so nothing is grabbed until you turn that on.',
