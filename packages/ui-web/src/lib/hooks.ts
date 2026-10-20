@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 import { durations } from '@highsea/tokens'
 import { useEffect, useState, useSyncExternalStore } from 'react'

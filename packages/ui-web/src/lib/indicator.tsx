@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // The sliding indicator behind tabs and segmented controls. It's measured against its own list
 // (offsetLeft/offsetWidth), not the page, so the page scrolling or shifting above it never moves

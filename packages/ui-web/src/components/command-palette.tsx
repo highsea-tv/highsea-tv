@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // The command palette: ⌘K / Ctrl K anywhere (accessibility.md#operable). A searchable list of
 // commands in a level-4 dialog over the scrim.

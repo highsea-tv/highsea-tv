@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // A segmented control: one choice from a few, as a radio group with a sliding thumb (measured in
 // the control, so page scrolls and layout shifts never move it).

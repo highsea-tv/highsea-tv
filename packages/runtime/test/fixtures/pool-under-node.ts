@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Exercises the worker pool under Node, the server's runtime, and prints what happened as JSON.
-// (Under `bun test`, a reused worker's reply to a task that threw never arrives; under Node and
-// plain Bun it does.)
+// The pool runs in production on Node; Bun documents its worker_threads as implemented but "not
+// battle-tested", with known gaps (bun.com/docs/runtime/nodejs-compat), so the pool's behavior
+// is asserted on Node.
 import { createWorkerPool } from '../../src/workers.ts'
 
 const pool = createWorkerPool(2)

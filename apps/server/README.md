@@ -19,7 +19,7 @@ Development keeps its database and files in `.dev/` at the repo root. The API's 
 | `server.ts` | The entry: boots `@highsea/runtime`, then serves `/api` (Hono) and everything else (Next) on one port; SIGTERM shuts down in order |
 | `src/http.ts` | The router between Hono and Next; `/stream` and `/ws` are reserved for playback |
 | `src/api/` | The API: thin handlers implementing `@highsea/api-contract` over the runtime's services, and the SSE event stream |
-| `app/`, `src/admin/` | The admin UI. It reads and writes through the API with `@highsea/sdk/react`, never Server Actions ([ADR 0018](../../docs/adr/0018-admin-data-through-the-api.md)). ui-web is a client library, so server components don't import it |
+| `app/`, `src/admin/` | The admin UI. It reads and writes through the API with `@highsea/sdk/react`, never Server Actions ([ADR 0018](../../docs/adr/0018-admin-data-through-the-api.md)). ui-web marks its client modules with `"use client"`, so server components can import it |
 | `scripts/smoke.ts` | The platform under Node (`node scripts/smoke.ts`); CI runs it after the Bun tests |
 
 ## Environment

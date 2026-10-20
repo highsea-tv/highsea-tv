@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Dialogs and sheets. Both rise with spring.base and leave with a 140ms fade (motion.md); they
 // sit at elevation level 4 over a blurred `bg` scrim (elevation.md).

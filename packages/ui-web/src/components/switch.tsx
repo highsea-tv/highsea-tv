@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 import { Checkbox as CheckboxPrimitive, Switch as SwitchPrimitive } from 'radix-ui'
 import type { ComponentProps } from 'react'

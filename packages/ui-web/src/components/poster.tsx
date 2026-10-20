@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Posters, stills and covers. Hover (pointer) and keyboard focus lift the art with spring.base
 // to `--scale-poster` (1.02 on web, 1.05 on TV). docs/design-language/platforms/desktop-web.md

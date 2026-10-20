@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Level 3 (elevation.md): `s4` with `text` only, the level-3 shadow.
 import { Tooltip as TooltipPrimitive } from 'radix-ui'

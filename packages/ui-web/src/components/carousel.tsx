@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // A row of titles. Pointer: trackpad and wheel scroll it, and paging arrows appear at the edges on
 // hover. Keyboard: the row is one Tab stop; arrows move between items (plays `navigate`), and at

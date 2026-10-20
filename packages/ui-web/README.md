@@ -38,6 +38,8 @@ import { UIProvider } from '@highsea/ui-web'
 | Brand | `Mark` (switches to the small cut below 24px, follows the theme accent), `Lockup` (live text) |
 | Icons | `Icon` by semantic name (`<Icon name="downloads" />`): the Lucide subset plus highsea's [custom glyphs](../../design/assets/icons/README.md) |
 
+**React Server Components:** modules that use client-only APIs (state, effects, context, Radix and Motion hooks) start with `"use client"`, as [Next.js advises library authors](https://nextjs.org/docs/app/getting-started/server-and-client-components#third-party-components); the rest (`cn`, `Badge`, `Kbd`, `Skeleton`, `Icon`, the brand mark) render on the server too. Vite ignores the directive.
+
 Every component is keyboard-complete and has one focus ring (`focus`, 2px, 2px offset). Status is never shown by color alone: badges carry a dot and a label, progress shows its value. Under reduced motion, scale and slide go away and short fades stay ([motion.md](../../docs/design-language/motion.md)).
 
 ## Sound

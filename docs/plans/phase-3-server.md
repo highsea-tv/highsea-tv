@@ -36,6 +36,7 @@ These carry over from Phase 2 and apply to every step:
   - match the style of earlier commits: an imperative subject, then a bulleted body.
 - **SPDX header on every source file:** `// SPDX-License-Identifier: AGPL-3.0-only`, or `/* … */` in CSS, `#` in shell and YAML.
 - **Unknowns:** use your best judgement, and list each judgement call in the checkpoint report so the owner can overturn it.
+- **Decisions rest on documentation, not experiments.** Choose libraries, settings and patterns from the official documentation and established practice, and cite it (in the ADR, the code comment or the checkpoint report). Experiments only confirm what the docs say; when something misbehaves, find the documented cause before working around it.
 - **Design system v1.0 and the prototypes are locked.**
   - The admin UI matches the signed-off prototype: layout, copy, states and interactions. Where real data forces a change (a field the mock didn't have, an error the mock couldn't produce), make the smallest change and list it in the checkpoint report.
   - Additive `ui-web` changes are fine. Token values, design-language rules and locked layouts need the owner's approval.
@@ -270,7 +271,7 @@ In development, both are folders under `.dev/` (gitignored).
 
 ### The admin UI
 
-- **Framework:** Next.js 16, App Router, in `apps/server`, with `output: 'standalone'`.
+- **Framework:** Next.js 16, App Router, in `apps/server`, built with `next build` and served by our entry. Not `output: 'standalone'`, which Next documents as incompatible with a custom server ([ADR 0003, amended](../adr/0003-server-runtime-custom-entry.md#amendment-2026-10-20-no-standalone-output)).
 - **Routes:** the paths match the prototype's admin routes without the `#/admin` prefix (`/movies/[id]`, `/settings/[area]`, …).
 - **Data access goes through the API, not Server Actions.**
   - Admin screens are client components that call `@highsea/sdk/react`, as the prototype's screens call the mock.
@@ -344,7 +345,7 @@ After each move, the prototype imports the package too, so the two can't drift. 
 - **Next and native modules:**
   - list them in `serverExternalPackages`;
   - `transpilePackages` covers the raw-TS workspace packages;
-  - check the standalone output contains the native binaries for both architectures.
+  - check the image contains the native binaries for both architectures.
 - **Hardlinks** fail across filesystems and on SMB and NFS. Detect, fall back to copy, and say so in the import's history.
 - **Long-running work and the request cycle:** never do pipeline work in a request handler. Enqueue a job and return.
 - **Time:**

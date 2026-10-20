@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 import type { SoundEvent, SoundPack } from '@highsea/tokens'
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react'

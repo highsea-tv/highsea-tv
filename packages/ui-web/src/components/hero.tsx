@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // The backdrop hero: artwork cross-fading between two layers (never a blank frame) and the copy
 // swap choreography: old copy fades out 140ms moving down 4px, new copy enters from −6px with

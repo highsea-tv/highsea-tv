@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Toasts: level 3 (elevation.md), announced politely, paused on hover and focus. Toasts with an
 // action stay at least 10s (accessibility.md#operable). Toasts never play sounds themselves.

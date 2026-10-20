@@ -179,7 +179,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
   - The singleton lives on `globalThis.__highsea`, so Next-rendered code shares it; routes and actions use `getRuntime()`.
   - CPU-heavy work runs in `worker_threads`, and ffmpeg runs as child processes.
   - SIGTERM: save resume data, drain jobs, close the DB.
-  - `next.config.ts`: `output: 'standalone'`, `transpilePackages`, and `serverExternalPackages` (better-sqlite3, sharp, BitTorrent libs).
+  - `next.config.ts`: `transpilePackages` and `serverExternalPackages` (better-sqlite3, sharp, BitTorrent libs). No `output: 'standalone'`: Next documents it as incompatible with a custom server ([ADR 0003](adr/0003-server-runtime-custom-entry.md#amendment-2026-10-20-no-standalone-output)).
 - **API**:
   - Hono + `@hono/zod-openapi`, mounted by the custom server entry and defined in `@highsea/api-contract`;
   - `/api/v1/openapi.json` and `/api/docs`;

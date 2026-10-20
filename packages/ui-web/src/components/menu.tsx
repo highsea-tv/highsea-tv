@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Action menus (row menus, "more" buttons). Every row action is reachable from one (admin.md#tables).
 import { DropdownMenu } from 'radix-ui'

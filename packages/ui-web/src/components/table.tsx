@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Dense data tables for admin: docs/design-language/platforms/admin.md#tables
 import { type ComponentProps, type ReactNode, useLayoutEffect, useRef, useState } from 'react'

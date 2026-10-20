@@ -17,5 +17,9 @@ The server is one Next.js application, but it also runs long-lived services: the
 
 ## Consequences
 - Still one process and one container.
-- Next's built-in `next start` is not used. The build uses `output: 'standalone'` and our entry.
+- Next's built-in `next start` is not used. The build is a plain `next build`; our entry serves it (see the amendment below).
 - WebSockets and streaming need no extra infrastructure later.
+
+## Amendment (2026-10-20): no standalone output
+
+Next.js documents that standalone output and a custom server "cannot be used together": standalone doesn't trace custom server files, and emits its own minimal `server.js` instead ([custom server guide](https://nextjs.org/docs/app/guides/custom-server)). So the build is a plain `next build`, and production runs our entry, `node apps/server/server.ts`. Node runs it with built-in type stripping, which is stable from Node 24.12 ([Node.js › TypeScript](https://nodejs.org/api/typescript.html)). The config enforces `erasableSyntaxOnly` and `verbatimModuleSyntax`, as those docs recommend, so only syntax Node can strip compiles. The image therefore carries the workspace and its dependencies rather than a traced bundle; slimming it is Phase 3 checkpoint 9.

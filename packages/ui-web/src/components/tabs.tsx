@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Tabs in two styles: `segmented` (a pill track with a raised thumb, for filters and views) and
 // `line` (an underline, for page sections). The indicator slides with spring.quick, measured

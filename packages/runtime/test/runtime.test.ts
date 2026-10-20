@@ -114,6 +114,7 @@ describe('worker pool', () => {
     await expect(pool.run({ module, fn: 'double', input: 1 })).rejects.toThrow('closed')
   })
 
+  // the server runs the pool on Node; Bun's worker_threads are documented as not battle-tested
   test('under Node, reports a task’s error and keeps the worker', () => {
     const run = Bun.spawnSync([
       'node',

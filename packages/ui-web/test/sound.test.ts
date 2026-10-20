@@ -22,10 +22,11 @@ class FakeParam {
 
 class FakeNode {
   outputs: FakeNode[] = []
-  constructor(
-    readonly kind: string,
-    readonly ctx: FakeContext,
-  ) {
+  readonly kind: string
+  readonly ctx: FakeContext
+  constructor(kind: string, ctx: FakeContext) {
+    this.kind = kind
+    this.ctx = ctx
     ctx.nodes.push(this)
   }
   connect(to: FakeNode) {
