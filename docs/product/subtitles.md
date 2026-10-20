@@ -31,7 +31,7 @@ Subtitles are first class: highsea finds them for every movie it imports, scores
 - **Error:** "Couldn't load {the wanted list | the providers | the language profiles | the subtitle settings}" with **Try again**.
 - **Live:** imports add tracks as the clock runs; their sync goes Waiting → Syncing → Synced, and the stats and wanted count follow.
 - **Rate limited:** a provider out of requests shows an empty bar in warning tone; searches skip it until its limit resets.
-- **Permission-limited:** staff only.
+- **No reduced states.** Only the owner and admins open the admin ([ADR 0032](../adr/0032-administrative-and-normal-access.md)); users get the refusal page.
 
 ## Interactions
 

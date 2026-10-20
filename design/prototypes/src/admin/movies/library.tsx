@@ -42,8 +42,7 @@ import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { MediaItem, MediaStatus } from '../../mock/types.ts'
 import { Loadable, PosterSkeletons } from '../loadable.tsx'
-import { isStaff } from '../nav.ts'
-import { AdminPage, adminHref, useShell } from '../shell.tsx'
+import { AdminPage, adminHref } from '../shell.tsx'
 
 export const movieStatus: Record<MediaStatus, { label: string; tone: BadgeTone }> = {
   available: { label: 'Available', tone: 'success' },
@@ -103,8 +102,6 @@ function useStored<T extends string>(key: string, initial: T): [T, (v: T) => voi
 }
 
 export function MoviesLibrary() {
-  const { role } = useShell()
-  const staff = isStaff(role)
   const [, navigate] = useLocation()
   const movies = useQuery('movies', (c) => c.movies.list(), ['item.updated', 'movies.updated'])
   const profiles = useQuery('quality-profiles', (c) => c.movies.qualityProfiles())
@@ -168,11 +165,9 @@ export function MoviesLibrary() {
           { value: 'table', label: 'Table', icon: 'list' },
         ]}
       />
-      {staff && (
-        <Button variant="primary" icon="add" onClick={() => navigate('/discover')}>
-          Add movie
-        </Button>
-      )}
+      <Button variant="primary" icon="add" onClick={() => navigate('/discover')}>
+        Add movie
+      </Button>
     </>
   )
 
@@ -189,16 +184,12 @@ export function MoviesLibrary() {
               icon="movie"
               title="No movies yet"
               action={
-                staff ? (
-                  <Button variant="primary" icon="discover" onClick={() => navigate('/discover')}>
-                    Discover movies
-                  </Button>
-                ) : undefined
+                <Button variant="primary" icon="discover" onClick={() => navigate('/discover')}>
+                  Discover movies
+                </Button>
               }
             >
-              {staff
-                ? 'Add a movie and highsea finds a release, downloads it and files it here.'
-                : 'The server’s owner hasn’t added any movies yet.'}
+              Add a movie and highsea finds a release, downloads it and files it here.
             </EmptyState>
           ) : (
             <TableFrame>
@@ -233,7 +224,7 @@ export function MoviesLibrary() {
                     />
                   </div>
                 </TableToolbar>
-                {staff && ids.length > 0 && (
+                {ids.length > 0 && (
                   <div
                     role="toolbar"
                     aria-label="Bulk edit"
@@ -343,19 +334,17 @@ export function MoviesLibrary() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          {staff && (
-                            <TableHead className="w-10">
-                              <Checkbox
-                                aria-label="Select every movie shown"
-                                checked={everyShown}
-                                onCheckedChange={(v) =>
-                                  setSelected(
-                                    v === true ? new Set(shown.map((m) => m.id)) : new Set(),
-                                  )
-                                }
-                              />
-                            </TableHead>
-                          )}
+                          <TableHead className="w-10">
+                            <Checkbox
+                              aria-label="Select every movie shown"
+                              checked={everyShown}
+                              onCheckedChange={(v) =>
+                                setSelected(
+                                  v === true ? new Set(shown.map((m) => m.id)) : new Set(),
+                                )
+                              }
+                            />
+                          </TableHead>
                           <TableHead>Title</TableHead>
                           <TableHead numeric>Year</TableHead>
                           <TableHead>Versions</TableHead>
@@ -370,15 +359,13 @@ export function MoviesLibrary() {
                             key={m.id}
                             data-state={selected.has(m.id) ? 'selected' : undefined}
                           >
-                            {staff && (
-                              <TableCell>
-                                <Checkbox
-                                  aria-label={`Select ${m.title}`}
-                                  checked={selected.has(m.id)}
-                                  onCheckedChange={(v) => toggle(m.id, v === true)}
-                                />
-                              </TableCell>
-                            )}
+                            <TableCell>
+                              <Checkbox
+                                aria-label={`Select ${m.title}`}
+                                checked={selected.has(m.id)}
+                                onCheckedChange={(v) => toggle(m.id, v === true)}
+                              />
+                            </TableCell>
                             <TitleCell
                               title={
                                 <a href={adminHref(`/movies/${m.id}`)} className="hover:underline">

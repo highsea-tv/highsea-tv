@@ -37,8 +37,9 @@ export type ClientOptions = {
   latency?: number
 }
 
-/** The signed-in user per toolbar role: Ines owns Harbor; Ruth is a member. */
-export const userFor = (role: Role) => (role === 'owner' ? 'u-ines' : 'u-ruth')
+/** The signed-in user per toolbar role: Ines owns Harbor, Theo is an admin, Ruth a user. */
+export const userFor = (role: Role) =>
+  role === 'owner' ? 'u-ines' : role === 'admin' ? 'u-theo' : 'u-ruth'
 
 const pending = <T>() => new Promise<T>(() => {})
 const wait = (ms: number) => (ms > 0 ? new Promise((r) => setTimeout(r, ms)) : Promise.resolve())

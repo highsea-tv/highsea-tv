@@ -163,7 +163,7 @@ export const system = {
     path: `${API_PREFIX}/system/jobs`,
     tags: ['System'],
     summary: 'Running and upcoming jobs',
-    ...access('user'),
+    ...access('staff'),
     responses: { 200: json(z.array(JobInfo), 'Jobs'), ...errors('unauthorized') },
   }),
   healthChecks: createRoute({

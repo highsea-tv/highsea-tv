@@ -7,7 +7,7 @@ import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import type { ReactNode } from 'react'
 
-let role: 'owner' | 'admin' | 'member' = 'owner'
+let role: 'owner' | 'admin' = 'owner'
 const pushed: string[] = []
 
 mock.module('next/navigation', () => ({
@@ -444,14 +444,10 @@ describe('a movie that isn’t in the library', () => {
     expect(within(dialog).getByText('The Matrix Reloaded', { exact: false })).toBeTruthy()
   })
 
-  test('members read why they can’t add, and get no action', async () => {
-    role = 'member'
+  test('an admin gets the owner’s page: one shape for staff (ADR 0032)', async () => {
+    role = 'admin'
     const { page } = await open(<MovieDetail id="603" />)
-    expect(page.queryByRole('button', { name: 'Add movie' })).toBeNull()
-    expect(page.queryByRole('button', { name: /missing/ })).toBeNull()
-    expect(
-      page.getByText('Only owners and admins can add movies. Ask the server’s owner for this one.'),
-    ).toBeTruthy()
+    expect(page.getByRole('button', { name: 'Add movie' })).toBeTruthy()
   })
 
   test('without a TMDB key, a title the server hasn’t seen says where to add one', async () => {
@@ -611,21 +607,6 @@ describe('a movie in the library', () => {
     expect(pushed).toEqual(['/discover?q=The%20Matrix'])
   })
 
-  test('members see the layer without its actions', async () => {
-    role = 'member'
-    const { page } = await open(<MovieDetail id="603" />)
-    expect(page.queryByRole('button', { name: 'More actions' })).toBeNull()
-    expect(page.queryByRole('switch', { name: 'Monitored' })).toBeNull()
-    expect(page.getByText('Monitored')).toBeTruthy()
-    expect(page.getAllByRole('tab').map((t) => t.textContent)).toEqual([
-      'Overview',
-      'Cast and crew',
-      'Files',
-      'History',
-    ])
-    expect(requested('GET', '/api/v1/rootfolders')).toHaveLength(0)
-  })
-
   test('live: an update elsewhere refetches the movie in place', async () => {
     const { page } = await open(<MovieDetail id="603" />)
     state.movie = { status: 'available' }
@@ -673,18 +654,6 @@ describe('a person', () => {
     await user.click(page.getByRole('button', { name: 'Add The Matrix Revolutions' }))
     await settle()
     expect(page.getByRole('dialog', { name: 'Add The Matrix Revolutions (2003)' })).toBeTruthy()
-  })
-
-  test('members can’t add from the filmography', async () => {
-    role = 'member'
-    const { page } = await open(<PersonPage id="9339" />)
-    const add = page.getByRole('button', { name: 'Add The Matrix Revolutions' })
-    expect((add as HTMLButtonElement).disabled).toBe(true)
-    expect(
-      page.getByText(
-        'Only owners and admins can add movies. Ask the server’s owner for one you want.',
-      ),
-    ).toBeTruthy()
   })
 
   test('an unknown person says so', async () => {

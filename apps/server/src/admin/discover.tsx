@@ -12,7 +12,7 @@
 // - no TMDB key says so, and links to Settings › General (decision 1).
 import { DISCOVER_LISTS, type DiscoverMovie } from '@highsea/api-contract'
 import { useT } from '@highsea/i18n/react'
-import type { ApiError, HighseaClient } from '@highsea/sdk'
+import type { HighseaClient } from '@highsea/sdk'
 import { useQuery } from '@highsea/sdk/react'
 import {
   Badge,
@@ -32,9 +32,8 @@ import { AddMovieDialog, isNoMetadataKey, METADATA_SETTINGS } from './add-dialog
 import { useAddressParam } from './address.ts'
 import { discover as messages } from './discover-messages.ts'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
-import { moviePath, useCanManageLibrary } from './media-links.ts'
-import { isStaff } from './nav.ts'
-import { AdminPage, useShell } from './shell.tsx'
+import { moviePath } from './media-links.ts'
+import { AdminPage } from './shell.tsx'
 
 type List = (typeof DISCOVER_LISTS)[number]
 
@@ -47,15 +46,7 @@ const pageKey = (list: List, query: string, page: number) =>
 const fetchPage = (list: List, query: string, page: number) => (c: HighseaClient) =>
   c.movies.discover({ query: query ? { query, page } : { list, page } })
 
-function Result({
-  movie: m,
-  canAdd,
-  onAdd,
-}: {
-  movie: DiscoverMovie
-  canAdd: boolean
-  onAdd: (m: DiscoverMovie) => void
-}) {
+function Result({ movie: m, onAdd }: { movie: DiscoverMovie; onAdd: (m: DiscoverMovie) => void }) {
   const t = useT(messages)
   return (
     <li className="grid content-start gap-2">
@@ -84,7 +75,6 @@ function Result({
           size="sm"
           icon="add"
           onClick={() => onAdd(m)}
-          disabled={!canAdd}
           aria-label={t('add.label', { title: m.title })}
           className="justify-self-start"
         >
@@ -100,13 +90,11 @@ function MoreResults({
   list,
   query,
   page,
-  canAdd,
   onAdd,
 }: {
   list: List
   query: string
   page: number
-  canAdd: boolean
   onAdd: (m: DiscoverMovie) => void
 }) {
   const t = useT(messages)
@@ -127,15 +115,11 @@ function MoreResults({
         </Button>
       </li>
     )
-  return results.data.items.map((m) => (
-    <Result key={m.id} movie={m} canAdd={canAdd} onAdd={onAdd} />
-  ))
+  return results.data.items.map((m) => <Result key={m.id} movie={m} onAdd={onAdd} />)
 }
 
 export function Discover() {
   const t = useT(messages)
-  const { role } = useShell()
-  const canAdd = useCanManageLibrary()
   const [query, setQuery] = useAddressParam<string>('q', '')
   const [list, setList] = useAddressParam<List>('list', 'trending', DISCOVER_LISTS)
   const deferred = useDeferredValue(query.trim())
@@ -147,7 +131,6 @@ export function Discover() {
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
   const onAdd = (m: DiscoverMovie) => setAdding([m])
 
-  const forbidden = first.status === 'error' && (first.error as ApiError).status === 403
   const noKey = first.status === 'error' && isNoMetadataKey(first.error)
 
   const results = (
@@ -157,17 +140,11 @@ export function Discover() {
           icon="key"
           title={t('noKey')}
           action={
-            isStaff(role) ? (
-              <Button asChild>
-                <a href={METADATA_SETTINGS}>{t('noKey.link')}</a>
-              </Button>
-            ) : undefined
+            <Button asChild>
+              <a href={METADATA_SETTINGS}>{t('noKey.link')}</a>
+            </Button>
           }
-        >
-          {isStaff(role) ? undefined : t('noKey.member')}
-        </EmptyState>
-      ) : forbidden ? (
-        <EmptyState icon="lock" title={t('member')} />
+        />
       ) : (
         <Loadable query={first} what={t('what')} skeleton={<PosterSkeletons />}>
           {(page) =>
@@ -185,7 +162,7 @@ export function Discover() {
               <>
                 <ul className="grid grid-cols-[repeat(auto-fill,minmax(8.5rem,1fr))] gap-x-4 gap-y-5">
                   {page.items.map((m) => (
-                    <Result key={m.id} movie={m} canAdd={canAdd} onAdd={onAdd} />
+                    <Result key={m.id} movie={m} onAdd={onAdd} />
                   ))}
                   {Array.from({ length: pages - 1 }, (_, i) => (
                     <MoreResults
@@ -193,7 +170,6 @@ export function Discover() {
                       list={list}
                       query={deferred}
                       page={i + 2}
-                      canAdd={canAdd}
                       onAdd={onAdd}
                     />
                   ))}
@@ -246,9 +222,6 @@ export function Discover() {
             {results}
           </TabsContent>
         </Tabs>
-      )}
-      {!canAdd && first.status === 'success' && (
-        <p className="text-caption text-text-3">{t('member')}</p>
       )}
       <AddMovieDialog movies={adding} onOpenChange={(o) => !o && setAdding([])} />
     </AdminPage>

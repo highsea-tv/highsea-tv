@@ -23,9 +23,7 @@ export const discover = defineMessages({
   'inLibrary.label': 'In library: {title}',
   add: 'Add',
   'add.label': 'Add {title}',
-  member: 'Only owners and admins can add movies. Ask the server’s owner for one you want.',
   noKey: 'Add a TMDB key to find movies.',
   'noKey.link': 'Go to Settings › General',
-  'noKey.member': 'The server’s owner needs to add a TMDB key before movies can be found.',
   more: 'Show more',
 })

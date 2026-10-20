@@ -66,18 +66,18 @@ describe('A11 curation', () => {
     await user.type(page().getByLabelText('Title'), 'Pizza night')
     await user.type(page().getByLabelText('Message'), 'In the **kitchen** at 7.')
     await user.click(page().getByRole('radio', { name: 'Roles' }))
-    // owners and admins by default; Ruth is a member, so the preview says she won't see it
+    // owners and admins by default; Ruth is a user, so the preview says she won't see it
     await user.click(page().getByRole('combobox', { name: 'Preview as' }))
-    await user.click(page().getByRole('option', { name: 'Ruth (member)' }))
+    await user.click(page().getByRole('option', { name: 'Ruth (user)' }))
     expect(page().getByText(/Ruth isn’t in the audience on a TV/)).toBeTruthy()
     await user.click(page().getByRole('button', { name: 'Publish' }))
     await settle()
     expect(location.history?.at(-1)).toBe('/admin/curation')
 
     const owner = await client(mock).announcements.active('web')
-    const member = await client(mock, 'member').announcements.active('web')
+    const ruth = await client(mock, 'user').announcements.active('web')
     expect(owner.some((a) => a.title === 'Pizza night')).toBe(true)
-    expect(member.some((a) => a.title === 'Pizza night')).toBe(false)
+    expect(ruth.some((a) => a.title === 'Pizza night')).toBe(false)
     await clean()
   })
 
@@ -181,9 +181,12 @@ describe('A11 curation', () => {
     expect(await c.announcements.active('tvos')).toEqual([])
   })
 
-  test('members can’t open curation', async () => {
-    await open('/admin/curation', 'member')
-    expect(page().getByText('Only owners and admins can open Curation')).toBeTruthy()
+  test('a user gets the refusal page, not curation', async () => {
+    await open('/admin/curation', 'user')
+    expect(page().getByText('This is where the server’s owner and admins run it')).toBeTruthy()
+    expect(page().getByRole('button', { name: 'Sign out' })).toBeTruthy()
+    expect(page().queryByRole('navigation')).toBeNull()
+    await clean()
   })
 })
 
@@ -197,7 +200,7 @@ describe('A12 appearance', () => {
     expect(page().getByRole('region', { name: 'Unsaved changes' })).toBeTruthy()
     await user.click(page().getByRole('button', { name: 'Save' }))
     await settle()
-    expect((await client(mock, 'member').system.server()).name).toBe('Lighthouse')
+    expect((await client(mock, 'user').system.server()).name).toBe('Lighthouse')
     expect(page().queryByRole('region', { name: 'Unsaved changes' })).toBeNull()
 
     await user.click(page().getByRole('button', { name: 'New theme' }))
@@ -213,7 +216,7 @@ describe('A12 appearance', () => {
 })
 
 describe('A13 users and devices', () => {
-  test('invite by link, change a role, sign a device out, make a key that shows once', async () => {
+  test('invite by link, change what someone can do, sign a device out, make a key that shows once', async () => {
     const { mock, user } = await open('/admin/settings/users')
     await clean()
     await user.click(page().getByRole('button', { name: 'Invite someone' }))
@@ -230,17 +233,21 @@ describe('A13 users and devices', () => {
     expect(within(row).getByText('Invited')).toBeTruthy()
 
     await user.click(page().getByRole('button', { name: 'Edit Sam' }))
-    const sheet = page().getByRole('dialog', { name: 'Sam' })
-    await clean(sheet)
-    await user.click(within(sheet).getByRole('combobox', { name: 'Role' }))
-    await user.click(page().getByRole('option', { name: 'Restricted' }))
-    await user.click(
-      within(page().getByRole('dialog', { name: 'Sam' })).getByRole('button', { name: 'Save' }),
-    )
+    const sheet = () => page().getByRole('dialog', { name: 'Sam' })
+    await clean(sheet())
+    // what a user can do, and their libraries, are set per person; an admin holds every power
+    await user.click(within(sheet()).getByRole('combobox', { name: 'Role' }))
+    await user.click(page().getByRole('option', { name: 'Admin' }))
+    expect(within(sheet()).queryByText('What they can do')).toBeNull()
+    expect(within(sheet()).queryByRole('radiogroup', { name: 'Libraries' })).toBeNull()
+    await user.click(within(sheet()).getByRole('combobox', { name: 'Role' }))
+    await user.click(page().getByRole('option', { name: 'User' }))
+    await user.click(within(sheet()).getByRole('checkbox', { name: 'Download for offline' }))
+    await user.click(within(sheet()).getByRole('button', { name: 'Save' }))
     await settle()
     const sam = mock.servers.populated.state.users.find((u) => u.username === 'sam')
-    expect(sam?.role).toBe('restricted')
-    expect(sam?.permissions).toEqual([])
+    expect(sam?.role).toBe('user')
+    expect(sam?.permissions).toEqual(['request', 'download'])
 
     await user.click(page().getByRole('tab', { name: 'Devices' }))
     expect(page().getByText('This browser')).toBeTruthy()
@@ -271,19 +278,56 @@ describe('A13 users and devices', () => {
   test('the owner can’t be demoted or removed; this browser can’t sign itself out', async () => {
     const mock = createMock()
     const c = client(mock)
-    expect(c.users.update('u-ines', { role: 'member' })).rejects.toThrow(/owner stays the owner/)
+    expect(c.users.update('u-ines', { role: 'user' })).rejects.toThrow(/owner stays the owner/)
     expect(c.users.remove('u-ines')).rejects.toThrow(/can’t be removed/)
     expect(c.devices.revoke('d-admin')).rejects.toThrow(/Sign out instead/)
-    expect(client(mock, 'member').users.list()).rejects.toThrow(/access/)
+    expect(client(mock, 'user').users.list()).rejects.toThrow(/access/)
   })
 
-  test('settings: the index lists every area, and members can’t open it', async () => {
+  test('admins see people and devices read-only, and only their own API keys', async () => {
+    const { user } = await open('/admin/settings/users', 'admin')
+    expect(page().getByRole('row', { name: /Ruth/ })).toBeTruthy()
+    expect(
+      page().getByText('Only the server’s owner invites, changes and removes people.'),
+    ).toBeTruthy()
+    expect(page().queryByRole('button', { name: 'Invite someone' })).toBeNull()
+    expect(page().queryByRole('button', { name: /^Edit / })).toBeNull()
+    expect(page().queryByRole('button', { name: /^More for / })).toBeNull()
+    await clean()
+    await user.click(page().getByRole('tab', { name: 'Devices' }))
+    expect(page().queryByRole('button', { name: /^Sign out / })).toBeNull()
+    await user.click(page().getByRole('tab', { name: 'API keys' }))
+    await settle()
+    expect(page().getByText('Nightly backup script')).toBeTruthy()
+    expect(page().queryByText('Home Assistant')).toBeNull()
+    await clean()
+  })
+
+  test('security and backups are left out for admins', async () => {
+    await open('/admin/settings', 'admin')
+    expect(page().getByRole('link', { name: /Users and devices/ })).toBeTruthy()
+    expect(page().queryByRole('link', { name: /Security/ })).toBeNull()
+    expect(page().queryByRole('link', { name: /Backups/ })).toBeNull()
+    await clean()
+    for (const area of ['security', 'backups']) {
+      cleanup()
+      await open(`/admin/settings/${area}`, 'admin')
+      expect(page().getByText('There’s no setting here')).toBeTruthy()
+    }
+    cleanup()
+    await open('/admin/system/backups', 'admin')
+    expect(page().queryByRole('tab', { name: 'Backups' })).toBeNull()
+    expect(page().getByRole('tab', { name: 'Status', selected: true })).toBeTruthy()
+    await clean()
+  })
+
+  test('settings: the index lists every area, and a user gets the refusal page', async () => {
     await open('/admin/settings')
     expect(page().getByRole('link', { name: /Users and devices/ })).toBeTruthy()
     await clean()
     cleanup()
-    await open('/admin/settings/users', 'member')
-    expect(page().getByText('Only owners and admins can open Settings')).toBeTruthy()
+    await open('/admin/settings/users', 'user')
+    expect(page().getByText('This is where the server’s owner and admins run it')).toBeTruthy()
   })
 })
 

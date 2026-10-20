@@ -38,11 +38,8 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 - **Populated:** live counts, server card and status bar, updated from the event stream and the mock clock.
 - **Loading:** the server card reads "Connecting… · Looking for the server"; the status bar reads "Connecting…".
 - **Error (server unreachable):** the server card reads "Not connected · Retrying every few seconds" with the offline dot; so does the status bar.
-- **Degraded:** the server card's dot turns to degraded when any health check is at error level (owners and admins only).
-- **Permission-limited (members):**
-  - the sidebar shows only Dashboard, Discover, Movies and Activity; the palette offers the same pages and no download actions;
-  - the status bar leaves out CPU, RAM and disk;
-  - opening a staff page directly shows "Only owners and admins can open {page}" · "Ask the server's owner if you need access." · **Go to the dashboard**.
+- **Degraded:** the server card's dot turns to degraded when any health check is at error level.
+- **Refusal (users):** a user who signs in to the admin gets this page at every admin address, instead of the shell: "This is where the server's owner and admins run it. To watch, use a highsea app." with **Sign out**. It's a server component and loads no admin data. Once the web client exists (Phase 4), it links there. An open admin whose person is made a User reloads into it.
 - **Not found:** "There's nothing at this address" with **Go to the dashboard**.
 - **Empty:** not applicable; the shell has no content of its own.
 
@@ -51,8 +48,8 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 - **Navigation:** sidebar items are links (middle-click and ⌘-click open new tabs). In the compact sheet, choosing one closes the sheet. Each page change scrolls the main area to the top.
 - **Skip to content:** the first Tab stop is a "Skip to content" link that moves focus to the main area.
 - **Command palette** (⌘K, or the search trigger):
-  - **Go to:** every page this role can open, matched on label and keywords (for example "queue" finds Activity);
-  - **Actions:** Add a movie; Customize the dashboard; Pause all downloads or Resume all downloads (owners and admins); Sign out;
+  - **Go to:** every page, matched on label and keywords (for example "queue" finds Activity);
+  - **Actions:** Add a movie; Customize the dashboard; Pause all downloads or Resume all downloads; Sign out;
   - **Movies:** every title as "Title (Year)", matched on genres too;
   - arrows move, Enter runs, Escape closes. Running an action toasts its result, for example "Downloads paused".
 - **Toasts** for background events, wherever you are in the admin: "{Movie} is in the library · Imported and seeding. Subtitles are next."
@@ -97,8 +94,8 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 
 - **The rail shows the mark alone.** The lockup needs 96px and the rail is 64px.
 - **The status bar is a labelled region, not a footer,** so screen readers can jump to it by name ("Server status"). This was a fix in ui-web's `StatusBar`.
-- **Members get a shorter sidebar** rather than locked items: they manage the library, not the server, and locked items would only be noise. A direct link still explains why it's closed.
-  - **Replaced (owner's decision, 2026-10-20):** the admin is for the owner and admins only. Members and restricted accounts use the clients and don't open the admin at all, so the shorter sidebar and the Permission-limited state go. Built after checkpoint 4 is signed off ([Phase 3 plan, decision 6](../plans/phase-3-server.md#decisions)); until then the shorter sidebar stays as built.
+- **The admin has one shape** (owner's decision, 2026-10-20; [ADR 0032](../adr/0032-administrative-and-normal-access.md)). Only the owner and admins open it, so the members' shorter sidebar, palette and status bar are gone. Users use the clients and see the refusal page here.
+- **The refusal page tells an outsider nothing** beyond what the sign-in page already does: that this is a highsea server.
 - **The server card is degraded only at error-level health,** not warnings. Warnings belong to the System page, so the dot doesn't nag.
 - **Health stays in two places**, the server card and the System page, as admin.md says. The status bar shows resources and jobs, not health.
 - **Background toasts** are for things you'd otherwise miss: an import finishing. Routine progress stays in the queue.

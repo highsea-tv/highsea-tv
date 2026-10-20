@@ -31,7 +31,7 @@ Where highsea looks for releases. The page shows whether each indexer is working
 - **Error:** "Couldn't load {your indexers | the catalog}" with **Try again**.
 - **Live:** health changes as the clock runs (Driftnet backs off after a while; backoffs end on time).
 - **Unhealthy:** Backing off (warning) with the reason and when it retries; Failing (danger); Disabled (neutral) when switched off.
-- **Permission-limited:** staff only. Members get "Only owners and admins can open Indexers".
+- **No reduced states.** Only the owner and admins open the admin ([ADR 0032](../adr/0032-administrative-and-normal-access.md)); users get the refusal page.
 
 ## Interactions
 

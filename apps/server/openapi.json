@@ -632,20 +632,17 @@
         "enum": [
           "owner",
           "admin",
-          "member",
-          "restricted"
-        ]
+          "user"
+        ],
+        "description": "The owner and admins run the server; users watch"
       },
       "Permission": {
         "type": "string",
         "enum": [
           "request",
-          "autoApprove",
-          "download",
-          "manageLibrary",
-          "manageUsers",
-          "admin"
-        ]
+          "download"
+        ],
+        "description": "A user’s: ask for titles, download for offline. Staff hold every power by role"
       },
       "Libraries": {
         "anyOf": [
@@ -1347,8 +1344,7 @@
             "type": "string",
             "enum": [
               "admin",
-              "member",
-              "restricted"
+              "user"
             ]
           },
           "libraries": {
@@ -1369,8 +1365,7 @@
             "type": "string",
             "enum": [
               "admin",
-              "member",
-              "restricted"
+              "user"
             ]
           },
           "permissions": {
@@ -1557,12 +1552,8 @@
         "type": "object",
         "properties": {
           "twoFactor": {
-            "type": "string",
-            "enum": [
-              "everyone",
-              "staff",
-              "optional"
-            ]
+            "type": "boolean",
+            "description": "Require two-step verification for the owner and admins in the admin"
           },
           "passkeys": {
             "type": "boolean"
@@ -1628,12 +1619,8 @@
         "type": "object",
         "properties": {
           "twoFactor": {
-            "type": "string",
-            "enum": [
-              "everyone",
-              "staff",
-              "optional"
-            ]
+            "type": "boolean",
+            "description": "Require two-step verification for the owner and admins in the admin"
           },
           "passkeys": {
             "type": "boolean"
@@ -1735,9 +1722,7 @@
                     "type": "string",
                     "enum": [
                       "owner",
-                      "admin",
-                      "member",
-                      "restricted"
+                      "admin"
                     ]
                   }
                 },
@@ -5015,7 +5000,7 @@
           "System"
         ],
         "summary": "Running and upcoming jobs",
-        "x-highsea-access": "user",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -6978,7 +6963,8 @@
           "Users"
         ],
         "summary": "Everyone on the server",
-        "x-highsea-access": "people",
+        "description": "Admins see people read-only; inviting and managing them is the owner’s.",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -7030,7 +7016,7 @@
           "Users"
         ],
         "summary": "Invite someone: a pending account and a single-use link",
-        "x-highsea-access": "people",
+        "x-highsea-access": "owner",
         "security": [
           {
             "session": []
@@ -7109,8 +7095,8 @@
           "Users"
         ],
         "summary": "Change someone’s role, permissions or libraries",
-        "description": "Changing the role resets the permissions to its defaults.",
-        "x-highsea-access": "people",
+        "description": "Changing the role resets the permissions to its defaults. Permissions and libraries are a user’s; staff hold every power and see every library. Making an admin a user ends their admin sessions and API keys at once.",
+        "x-highsea-access": "owner",
         "security": [
           {
             "session": []
@@ -7197,7 +7183,7 @@
           "Users"
         ],
         "summary": "Remove someone, or cancel an invite",
-        "x-highsea-access": "people",
+        "x-highsea-access": "owner",
         "security": [
           {
             "session": []
@@ -7260,7 +7246,7 @@
         ],
         "summary": "A password-reset link to pass on",
         "description": "Until email is set up, the owner copies the link and sends it themselves.",
-        "x-highsea-access": "people",
+        "x-highsea-access": "owner",
         "security": [
           {
             "session": []
@@ -7339,8 +7325,8 @@
           "Users"
         ],
         "summary": "Turn someone’s two-step verification off, when they’ve lost the app and their codes",
-        "description": "Confirm who’s asking before you do this. Their passkeys and signed-in devices stay. Only the owner can do it for an admin, nobody can for the owner, and your own goes through `/me/two-factor`. Errors: 403 `self`; 409 when it’s already off.",
-        "x-highsea-access": "people",
+        "description": "Confirm who’s asking before you do this. Their passkeys and signed-in devices stay. Your own goes through `/me/two-factor`. Errors: 403 `self`; 409 when it’s already off.",
+        "x-highsea-access": "owner",
         "security": [
           {
             "session": []
@@ -7412,7 +7398,7 @@
           "Users"
         ],
         "summary": "A pending invite’s link, to copy again",
-        "x-highsea-access": "people",
+        "x-highsea-access": "owner",
         "security": [
           {
             "session": []
@@ -7553,7 +7539,7 @@
           "Devices"
         ],
         "summary": "Sign a device out; its token stops working at once",
-        "description": "Your own devices, or anyone’s for staff. Not the browser you’re using: sign out instead.",
+        "description": "Your own devices, or anyone’s for the owner. Not the browser you’re using: sign out instead.",
         "x-highsea-access": "user",
         "security": [
           {
@@ -7616,6 +7602,7 @@
           "API keys"
         ],
         "summary": "API keys, by prefix",
+        "description": "The owner sees everyone’s; an admin their own.",
         "x-highsea-access": "staff",
         "security": [
           {
@@ -7748,6 +7735,7 @@
           "API keys"
         ],
         "summary": "Revoke a key",
+        "description": "Your own, or anyone’s for the owner.",
         "x-highsea-access": "staff",
         "security": [
           {
@@ -7996,7 +7984,7 @@
         ],
         "summary": "Your dashboard",
         "description": "Your own layout, or your role’s default until you save one. Widgets your role can’t see are never returned.",
-        "x-highsea-access": "user",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -8034,7 +8022,7 @@
         ],
         "summary": "Save your dashboard",
         "description": "Order is the layout. A widget your role can’t see is refused (403).",
-        "x-highsea-access": "user",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -8114,7 +8102,7 @@
         ],
         "summary": "Go back to your role’s default",
         "description": "Forgets your layout, so later changes to the default reach you.",
-        "x-highsea-access": "user",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -8168,9 +8156,7 @@
               "type": "string",
               "enum": [
                 "owner",
-                "admin",
-                "member",
-                "restricted"
+                "admin"
               ]
             },
             "required": true,
@@ -8232,9 +8218,7 @@
               "type": "string",
               "enum": [
                 "owner",
-                "admin",
-                "member",
-                "restricted"
+                "admin"
               ]
             },
             "required": true,
@@ -9214,7 +9198,7 @@
         ],
         "summary": "Find movies on TMDB",
         "description": "With a query, TMDB’s search; without one, a list for the server’s region: `trending` (this week, the default), `popular`, `now-playing` or `upcoming`. Library movies are marked `inLibrary`. Answers 503 with `details.reason` `no-tmdb-key` or `tmdb-unreachable`, or 429 with `tmdb-rate-limited`.",
-        "x-highsea-access": "library",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -10067,7 +10051,7 @@
           "Movies"
         ],
         "summary": "The library, a page at a time, filtered and sorted",
-        "x-highsea-access": "user",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -10206,7 +10190,7 @@
         ],
         "summary": "Add a movie to the library, by TMDB id",
         "description": "Fetches its metadata when the server doesn’t have it. Adding a movie that’s already in the library returns it unchanged, with 200. 409 `no-indexers` for `searchNow` until an indexer is set up; 503 when the metadata can’t be fetched.",
-        "x-highsea-access": "library",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -10325,7 +10309,7 @@
           "Movies"
         ],
         "summary": "Monitor, stop monitoring, change the profile, search, refresh or remove many",
-        "x-highsea-access": "library",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -10549,7 +10533,7 @@
         ],
         "summary": "A library movie",
         "description": "404 when the movie isn’t in the library: its page then shows the metadata alone.",
-        "x-highsea-access": "user",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -10608,7 +10592,7 @@
           "Movies"
         ],
         "summary": "Change a movie: monitored, minimum availability, subtitle languages, root folder",
-        "x-highsea-access": "library",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -10698,7 +10682,7 @@
         ],
         "summary": "Remove a movie from the library",
         "description": "Its metadata stays cached, so its page keeps working without the library layer. Files stay on disk unless `deleteFiles` is true.",
-        "x-highsea-access": "library",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -10775,7 +10759,7 @@
         ],
         "summary": "Refresh a library movie’s metadata from TMDB",
         "description": "Queues the refresh job; `metadata.updated` follows when it’s done.",
-        "x-highsea-access": "library",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -10839,7 +10823,7 @@
           "Movies"
         ],
         "summary": "Add a version, with its own quality profile",
-        "x-highsea-access": "library",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -10930,7 +10914,7 @@
           "Movies"
         ],
         "summary": "Rename a version or change its quality profile",
-        "x-highsea-access": "library",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -11028,7 +11012,7 @@
         ],
         "summary": "Remove a version",
         "description": "A movie keeps at least one: removing the last answers 409 (`last-version`).",
-        "x-highsea-access": "library",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -11117,7 +11101,7 @@
           "Root folders"
         ],
         "summary": "The folders movies are filed under, with free space and device",
-        "x-highsea-access": "library",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -11331,7 +11315,7 @@
         ],
         "summary": "Quality profiles",
         "description": "Read-only until checkpoint 8. Everyone signed in reads them: a movie’s versions name theirs.",
-        "x-highsea-access": "user",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -11373,7 +11357,7 @@
           "Quality"
         ],
         "summary": "A quality profile",
-        "x-highsea-access": "user",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -11433,7 +11417,7 @@
         ],
         "summary": "Custom formats",
         "description": "Read-only until checkpoint 8.",
-        "x-highsea-access": "library",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -11486,7 +11470,7 @@
         ],
         "summary": "Subtitle language profiles",
         "description": "What the add dialog’s Subtitle languages offers. Seeded and edited with subtitles (checkpoint 7); until then the server lists its built-in default.",
-        "x-highsea-access": "user",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -11528,7 +11512,7 @@
           "Quality"
         ],
         "summary": "Read a release name: its parts, quality and the custom formats it matches",
-        "x-highsea-access": "library",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -11600,7 +11584,7 @@
         ],
         "summary": "Quality sizes: MB per minute for each quality",
         "description": "Read-only until checkpoint 8. The megabytes are MiB.",
-        "x-highsea-access": "library",
+        "x-highsea-access": "staff",
         "security": [
           {
             "session": []
@@ -11857,7 +11841,7 @@
           "Library"
         ],
         "summary": "Search the library: titles, collections and people",
-        "description": "Titles by name, genre or person; collections by name or a part’s title; people by name. A kind with a name starting with the query (at a word) ranks first, then one containing it. For people who may add titles, a `discover` section adds TMDB’s matches that aren’t here; it’s left out when TMDB can’t be reached.",
+        "description": "Titles by name, genre or person; collections by name or a part’s title; people by name. A kind with a name starting with the query (at a word) ranks first, then one containing it. For people who may ask for titles, a `discover` section adds TMDB’s matches that aren’t here, to request; it’s left out when TMDB can’t be reached, and for everyone until requests arrive.",
         "x-highsea-access": "user",
         "security": [
           {

@@ -12,7 +12,6 @@ What the household sees first, decided by the owner: announcements (movie night,
 
 - Sidebar › **Curation** (owners and admins).
 - The dashboard's Announcement widget (**Write one** when none is live), and the palette ("announcements", "featured", "hero").
-- Members see "Only owners and admins can open Curation".
 
 ## Layout
 
@@ -37,7 +36,7 @@ Two columns from expanded (the form at 22–28rem, the preview beside it and sti
   - **Add a button**: a label and a link (https), shown on banners, cards and dialogs (not on TV, which can't follow a link);
   - **How important**: Info, Notice, Warning, Critical (segmented). Warnings and critical ones take their tone in banners;
   - **Where it shows**: **Everyone has to acknowledge it** (a switch: it becomes a dialog with only **Got it**, and on TV a screen of its own before Home), then **Banner** (web, desktop, the admin), **Home card** (phones), **Toast** (web and desktop, once). The TV always shows the newest as a pill;
-  - **Who sees it**: Everyone, **Roles** (Owners, Admins, Members, Restricted), **People** (each person), or **Apps** (TVs; Phones and tablets; Web and desktop; The admin);
+  - **Who sees it**: Everyone, **Roles** (Owners, Admins, Users), **People** (each person), or **Apps** (TVs; Phones and tablets; Web and desktop; The admin);
   - **When**: **Start now** or **Start later** (a date and time); **No end** or **End at**;
   - **Publish** (or **Schedule** when it starts later, **Save changes** when it's live), **Save as draft**, **Cancel**.
 - **Featured section:**
@@ -50,7 +49,7 @@ Two columns from expanded (the form at 22–28rem, the preview beside it and sti
 
 ### The live preview
 
-- **TV · Web · Mobile** (segmented) and **Preview as** (Ines, the owner; Ruth, a member).
+- **TV · Web · Mobile** (segmented) and **Preview as** (Ines, the owner; Ruth, a user).
 - The client's real home screen in a frame: 16:9 for TV and a 16:10 window for the web (at least 1600 and 1280 wide, growing to fill the space), the phone in its bezel, scaled to fit. It's a picture: it can't be tabbed into or clicked.
 - The announcement composer shows only the draft (other announcements would stack with it or cover it); the section composer leaves announcements out and scrolls to the section being edited.
 - Under it: "What Ines sees on a TV, with this announcement as it stands. Other announcements are left out. Nothing changes for anyone until you save." When the viewer isn't in the audience on that app: "Ruth isn't in the audience on a TV, so this announcement doesn't show there."
@@ -63,7 +62,7 @@ Two columns from expanded (the form at 22–28rem, the preview beside it and sti
 - **Invalid:** errors show on Publish, beside the field: "Give it a title. It's the first thing people read." · "Choose at least one place to show it." · "Choose at least one role." · "The button needs a label and a full link, starting with https://." · "The end has to come after the start." · "Add at least one title." A draft needs only a title.
 - **A rule that picks nothing:** "Nothing matches right now. The section stays hidden until something does."
 - **Live:** the reach updates as people dismiss or acknowledge; the lists update when another admin saves.
-- **Permission-limited:** members can't open Curation.
+- **No reduced states.** Only the owner and admins open the admin ([ADR 0032](../adr/0032-administrative-and-normal-access.md)); users get the refusal page.
 
 ## Interactions
 

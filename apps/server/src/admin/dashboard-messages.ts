@@ -10,7 +10,6 @@ export const dashboard = defineMessages({
   resetToDefault: 'Reset to default',
   defaultLayout: 'Default layout',
   makeDefaultAdmins: 'Make this the default for admins',
-  makeDefaultMembers: 'Make this the default for members',
   cancel: 'Cancel',
   done: 'Done',
   editing:
@@ -29,11 +28,8 @@ export const dashboard = defineMessages({
   saved: 'Dashboard saved',
   defaultError: 'Couldn’t set the default',
   'defaultSaved.admin': 'New admins start from this layout',
-  'defaultSaved.member': 'New members start from this layout',
   'defaultDropped.admin':
     '{count, plural, one {{widgets} is left out: admins can’t see it.} other {{widgets} are left out: admins can’t see them.}}',
-  'defaultDropped.member':
-    '{count, plural, one {{widgets} is left out: members can’t see it.} other {{widgets} are left out: members can’t see them.}}',
   defaultReaches: 'People who haven’t customized their dashboard see it now.',
 
   // the editor's announcements (ui-web WidgetEditor)

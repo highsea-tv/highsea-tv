@@ -116,7 +116,7 @@ const users = (now: number): User[] => [
     username: 'ines',
     displayName: 'Ines',
     role: 'owner',
-    permissions: ['request', 'autoApprove', 'download', 'manageLibrary', 'manageUsers', 'admin'],
+    permissions: [],
     libraries: 'all',
     twoFactor: true,
     lastSeen: iso(now),
@@ -127,7 +127,7 @@ const users = (now: number): User[] => [
     username: 'theo',
     displayName: 'Theo',
     role: 'admin',
-    permissions: ['request', 'autoApprove', 'download', 'manageLibrary'],
+    permissions: [],
     libraries: 'all',
     twoFactor: false,
     lastSeen: iso(now - 3 * HOUR),
@@ -137,8 +137,8 @@ const users = (now: number): User[] => [
     id: 'u-ruth',
     username: 'ruth',
     displayName: 'Ruth',
-    role: 'member',
-    permissions: ['request', 'manageLibrary'],
+    role: 'user',
+    permissions: ['request', 'download'],
     libraries: 'all',
     twoFactor: false,
     lastSeen: iso(now - 26 * HOUR),
@@ -148,7 +148,7 @@ const users = (now: number): User[] => [
     id: 'u-sam',
     username: 'sam',
     displayName: 'Sam',
-    role: 'member',
+    role: 'user',
     permissions: ['request'],
     libraries: 'all',
     twoFactor: false,
@@ -159,7 +159,7 @@ const users = (now: number): User[] => [
     id: 'u-kids',
     username: 'kids',
     displayName: 'Kids',
-    role: 'restricted',
+    role: 'user',
     permissions: [],
     libraries: ['movies'],
     twoFactor: false,
@@ -170,7 +170,7 @@ const users = (now: number): User[] => [
     id: 'u-noor',
     username: 'noor',
     displayName: 'Noor',
-    role: 'member',
+    role: 'user',
     permissions: ['request'],
     libraries: 'all',
     twoFactor: false,
@@ -975,10 +975,10 @@ export function seed(kind: 'populated' | 'empty', now: number): ServerState {
 function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
   const base = {
     server: server(),
-    // a fresh server: the owner, and one member so the toolbar's Member role still applies
+    // a fresh server: the owner, plus an admin and a user so every toolbar role still applies
     users:
       kind === 'empty'
-        ? users(now).filter((u) => u.id === 'u-ines' || u.id === 'u-ruth')
+        ? users(now).filter((u) => ['u-ines', 'u-theo', 'u-ruth'].includes(u.id))
         : users(now),
     qualityProfiles,
     customFormats,
@@ -1018,6 +1018,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
             name: 'Home Assistant',
             prefix: 'hs_7Kq2',
             scope: 'read',
+            userId: 'u-ines',
             createdAt: iso(now - 40 * DAY),
             lastUsed: iso(now - 5 * MIN),
           },
@@ -1026,6 +1027,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
             name: 'Nightly backup script',
             prefix: 'hs_Rm9x',
             scope: 'full',
+            userId: 'u-theo',
             createdAt: iso(now - 120 * DAY),
             lastUsed: iso(now - 20 * HOUR),
           },

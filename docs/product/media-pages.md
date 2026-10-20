@@ -41,7 +41,7 @@ The anatomy every media page shares.
   - **Overview:** always.
   - **Cast and crew:** always.
   - The type's own sections (Seasons for shows; Albums for artists; Tracks for albums; Editions for books).
-  - **Files**, **History**, **Search** (staff), **Subtitles:** once added.
+  - **Files**, **History**, **Search**, **Subtitles:** once added.
 - **Overview:** two columns from expanded, a main column and a 20rem aside.
   - Main:
     - **In the queue** while it downloads;
@@ -61,7 +61,7 @@ The anatomy every media page shares.
 - **Page header:** the name.
 - **Summary card:** the portrait; known for (Acting, Directing, Writing…); born (date and place) and died (the date: TMDB has no place of death), when known; the biography (65ch), or "TMDB has no biography for {name} yet."
 - **Known for:** their best-known titles, by TMDB vote count, as a poster row, once they have three or more (owner's decision, 2026-10-20). By vote count, not rating: a film with three 10/10 votes would otherwise lead.
-- **Filmography:** a `TableFrame` with tabs (All, In the library, Not in the library) and a count, and a department filter over the departments they have credits in, of TMDB's 12 (checkpoint 4). One row per title, with every role they had in it. Columns: title (thumbnail and year), role (the character, or the jobs), and library state: **In library** (links to the page) or **Add** (staff). Newest first.
+- **Filmography:** a `TableFrame` with tabs (All, In the library, Not in the library) and a count, and a department filter over the departments they have credits in, of TMDB's 12 (checkpoint 4). One row per title, with every role they had in it. Columns: title (thumbnail and year), role (the character, or the jobs), and library state: **In library** (links to the page) or **Add**. Newest first.
 
 ## By media type
 
@@ -80,10 +80,9 @@ Each type keeps the anatomy above and adds its own sections. Only movies are bui
 ## States
 
 - **Not in the library:**
-  - Header: **Add movie** (staff), which opens the add dialog; once added, the same page at the same address gains the library layer.
+  - Header: **Add movie**, which opens the add dialog; once added, the same page at the same address gains the library layer.
   - Summary: a "Not in the library" badge; the release date ("Released 1 June 1922" or "Releases 6 November 2026") in place of the library line.
   - Tabs: Overview and Cast and crew only.
-  - Members: no header action; the summary says "Only owners and admins can add movies. Ask the server's owner for this one."
 - **In the library:** as [movies.md › Movie detail](movies.md#movie-detail-a6), plus the metadata layer: Search, Interactive search and More in the header; the status badge and quality tags; every tab.
 - **Not released:** the release line says "Releases {date}"; Trailers usually has a teaser only.
 - **Loading:** a poster and text skeleton for the summary; each row shows poster skeletons; the filmography shows row skeletons.
@@ -106,7 +105,6 @@ Each type keeps the anatomy above and adds its own sections. Only movies are bui
 | Where | Text |
 | --- | --- |
 | Not in the library badge | Not in the library |
-| Member note | Only owners and admins can add movies. Ask the server's owner for this one. |
 | Collection | {Name} · {n} of {total} in the library |
 | Collection action | Add {n} missing |
 | Add missing dialog | Add {n} movies · They're added with the same options. You can change each one later. |
@@ -137,6 +135,7 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `metadata` gro
 
 ## Decisions
 
+- **No member states** (owner's decision, 2026-10-20). Only the owner and admins open the admin ([ADR 0032](../adr/0032-administrative-and-normal-access.md)), and every one of them can add titles, so **Add** shows wherever a title isn't in the library.
 - **One page, two layers** ([ADR 0014](../adr/0014-universal-media-pages.md)). Discover and the library open the same page; adding a title adds a layer instead of moving you somewhere else.
 - **Addresses are the provider's ids, not slugs** (owner's decision, 2026-10-20, as Seerr does). A title has its address before it's added and keeps it after, so a link shared before adding still works with no redirect, any title on Discover opens with its information straight away, and two films called *The Stranger* never fight over `/movies/the-stranger`.
 - **Trailers embed on click,** from `youtube-nocookie.com`. Nothing loads from Google until someone asks for a video.

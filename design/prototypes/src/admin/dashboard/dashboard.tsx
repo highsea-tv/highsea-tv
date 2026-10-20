@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A3 Dashboard (admin.md#main-area; docs/product/dashboard.md). The grid shows the user's own
 // layout, or their role's default until they save one. Customize mode edits a draft: move,
-// resize, add and remove widgets, then Done saves it. Owners can also make the draft the default
-// for admins or members.
+// resize, add and remove widgets, then Done saves it. The owner can also make the draft the
+// default for admins.
 
 import {
   allowed,
@@ -27,7 +27,7 @@ import {
 } from '@highsea/ui-web'
 import { useEffect, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { UserRole, WidgetKind, WidgetPlacement } from '../../mock/types.ts'
+import type { StaffRole, WidgetKind, WidgetPlacement } from '../../mock/types.ts'
 import { AdminPage, useShell } from '../shell.tsx'
 import { widgetRenderers } from './widgets.tsx'
 
@@ -35,11 +35,9 @@ const same = (a: WidgetPlacement[], b: WidgetPlacement[]) =>
   a.length === b.length &&
   a.every((w, i) => w.kind === b[i]?.kind && w.span === b[i]?.span && w.rows === b[i]?.rows)
 
-const roleName: Record<UserRole, string> = {
+const roleName: Record<StaffRole, string> = {
   owner: 'owners',
   admin: 'admins',
-  member: 'members',
-  restricted: 'restricted users',
 }
 
 export function Dashboard() {
@@ -52,8 +50,8 @@ export function Dashboard() {
 
   const save = useAction((c, widgets: WidgetPlacement[]) => c.dashboard.saveLayout(widgets))
   const reset = useAction((c) => c.dashboard.resetLayout())
-  const loadDefault = useAction((c, r: UserRole) => c.dashboard.roleDefault(r))
-  const saveDefault = useAction((c, r: UserRole, widgets: WidgetPlacement[]) =>
+  const loadDefault = useAction((c, r: StaffRole) => c.dashboard.roleDefault(r))
+  const saveDefault = useAction((c, r: StaffRole, widgets: WidgetPlacement[]) =>
     c.dashboard.saveRoleDefault(r, widgets),
   )
 
@@ -102,7 +100,7 @@ export function Dashboard() {
     if (draft || fromDefault) toast.success('Dashboard saved')
   }
 
-  const makeDefault = async (target: UserRole) => {
+  const makeDefault = async (target: StaffRole) => {
     const dropped = items.filter((w) => !allowed(w.kind, target))
     try {
       await saveDefault.run(target, items)
@@ -135,9 +133,6 @@ export function Dashboard() {
               <MenuLabel>Default layout</MenuLabel>
               <MenuItem icon="shield" onSelect={() => makeDefault('admin')}>
                 Make this the default for admins
-              </MenuItem>
-              <MenuItem icon="users" onSelect={() => makeDefault('member')}>
-                Make this the default for members
               </MenuItem>
             </>
           )}

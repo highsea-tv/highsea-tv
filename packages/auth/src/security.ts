@@ -4,19 +4,14 @@
 import { AppError } from '@highsea/core'
 import { writeSetting } from '@highsea/db'
 import type { Ctx, RequestMeta } from './context.ts'
-import {
-  SECURITY_KEY,
-  SESSION_DAYS,
-  type SecuritySettings,
-  type TwoFactorPolicy,
-} from './settings.ts'
+import { SECURITY_KEY, SESSION_DAYS, type SecuritySettings } from './settings.ts'
 
 export type SecurityView = Omit<SecuritySettings, 'oidc'> & {
   oidc: Omit<SecuritySettings['oidc'], 'clientSecretSealed'> & { clientSecretSet: boolean }
 }
 
 export type SecurityInput = {
-  twoFactor: TwoFactorPolicy
+  twoFactor: boolean
   passkeys: boolean
   sessionDays: number
   oidc: {

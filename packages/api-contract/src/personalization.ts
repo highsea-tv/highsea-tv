@@ -48,7 +48,7 @@ export const WidgetPlacement = z
 
 const Widgets = z.array(WidgetPlacement).max(WIDGET_KINDS.length)
 
-export const WidgetRole = z.enum(['owner', 'admin', 'member', 'restricted'])
+export const WidgetRole = z.enum(['owner', 'admin'])
 
 export const WidgetLayout = z
   .object({
@@ -81,7 +81,7 @@ export const dashboard = {
     summary: 'Your dashboard',
     description:
       'Your own layout, or your role’s default until you save one. Widgets your role can’t see are never returned.',
-    ...access('user'),
+    ...access('staff'),
     responses: { 200: json(WidgetLayout, 'The layout'), ...errors('unauthorized') },
   }),
   saveLayout: createRoute({
@@ -90,7 +90,7 @@ export const dashboard = {
     tags: ['Dashboard'],
     summary: 'Save your dashboard',
     description: 'Order is the layout. A widget your role can’t see is refused (403).',
-    ...access('user'),
+    ...access('staff'),
     request: { ...body(z.object({ widgets: Widgets })) },
     responses: {
       200: json(WidgetLayout, 'Saved'),
@@ -103,7 +103,7 @@ export const dashboard = {
     tags: ['Dashboard'],
     summary: 'Go back to your role’s default',
     description: 'Forgets your layout, so later changes to the default reach you.',
-    ...access('user'),
+    ...access('staff'),
     responses: { 200: json(WidgetLayout, 'The role default'), ...errors('unauthorized') },
   }),
   roleDefault: createRoute({

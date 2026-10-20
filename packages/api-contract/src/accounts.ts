@@ -7,10 +7,12 @@ import { API_PREFIX, access, body, errors, IdParam, IsoDate, json, noContent } f
 
 // ---------------------------------------------------------------- shapes
 
-export const Role = z.enum(['owner', 'admin', 'member', 'restricted']).openapi('Role')
-export const Permission = z
-  .enum(['request', 'autoApprove', 'download', 'manageLibrary', 'manageUsers', 'admin'])
-  .openapi('Permission')
+export const Role = z.enum(['owner', 'admin', 'user']).openapi('Role', {
+  description: 'The owner and admins run the server; users watch',
+})
+export const Permission = z.enum(['request', 'download']).openapi('Permission', {
+  description: 'A user’s: ask for titles, download for offline. Staff hold every power by role',
+})
 export const ClientType = z
   .enum(['admin', 'web', 'desktop', 'ios', 'android', 'tvos', 'androidtv', 'webos', 'tizen'])
   .openapi('ClientType')
@@ -546,7 +548,8 @@ export const users = {
     path: `${API_PREFIX}/users`,
     tags: ['Users'],
     summary: 'Everyone on the server',
-    ...access('people'),
+    description: 'Admins see people read-only; inviting and managing them is the owner’s.',
+    ...access('staff'),
     responses: { 200: json(z.array(User), 'People'), ...errors('unauthorized', 'forbidden') },
   }),
   invite: createRoute({
@@ -554,7 +557,7 @@ export const users = {
     path: `${API_PREFIX}/users/invites`,
     tags: ['Users'],
     summary: 'Invite someone: a pending account and a single-use link',
-    ...access('people'),
+    ...access('owner'),
     request: { ...body(InviteInput) },
     responses: {
       200: json(Invite, 'The invite'),
@@ -566,8 +569,9 @@ export const users = {
     path: `${API_PREFIX}/users/{id}`,
     tags: ['Users'],
     summary: 'Change someone’s role, permissions or libraries',
-    description: 'Changing the role resets the permissions to its defaults.',
-    ...access('people'),
+    description:
+      'Changing the role resets the permissions to its defaults. Permissions and libraries are a user’s; staff hold every power and see every library. Making an admin a user ends their admin sessions and API keys at once.',
+    ...access('owner'),
     request: { params: IdParam, ...body(UserPatch) },
     responses: {
       200: json(User, 'Updated'),
@@ -579,7 +583,7 @@ export const users = {
     path: `${API_PREFIX}/users/{id}`,
     tags: ['Users'],
     summary: 'Remove someone, or cancel an invite',
-    ...access('people'),
+    ...access('owner'),
     request: { params: IdParam },
     responses: { ...noContent, ...errors('unauthorized', 'forbidden', 'not-found') },
   }),
@@ -589,7 +593,7 @@ export const users = {
     tags: ['Users'],
     summary: 'A password-reset link to pass on',
     description: 'Until email is set up, the owner copies the link and sends it themselves.',
-    ...access('people'),
+    ...access('owner'),
     request: { params: IdParam },
     responses: {
       200: json(AccountLink, 'The link'),
@@ -602,8 +606,8 @@ export const users = {
     tags: ['Users'],
     summary: 'Turn someone’s two-step verification off, when they’ve lost the app and their codes',
     description:
-      'Confirm who’s asking before you do this. Their passkeys and signed-in devices stay. Only the owner can do it for an admin, nobody can for the owner, and your own goes through `/me/two-factor`. Errors: 403 `self`; 409 when it’s already off.',
-    ...access('people'),
+      'Confirm who’s asking before you do this. Their passkeys and signed-in devices stay. Your own goes through `/me/two-factor`. Errors: 403 `self`; 409 when it’s already off.',
+    ...access('owner'),
     request: { params: IdParam },
     responses: { ...noContent, ...errors('unauthorized', 'forbidden', 'not-found', 'conflict') },
   }),
@@ -612,7 +616,7 @@ export const users = {
     path: `${API_PREFIX}/users/{id}/invite-link`,
     tags: ['Users'],
     summary: 'A pending invite’s link, to copy again',
-    ...access('people'),
+    ...access('owner'),
     request: { params: IdParam },
     responses: {
       200: json(AccountLink, 'The link'),
@@ -637,7 +641,7 @@ export const devices = {
     tags: ['Devices'],
     summary: 'Sign a device out; its token stops working at once',
     description:
-      'Your own devices, or anyone’s for staff. Not the browser you’re using: sign out instead.',
+      'Your own devices, or anyone’s for the owner. Not the browser you’re using: sign out instead.',
     ...access('user'),
     request: { params: IdParam },
     responses: { ...noContent, ...errors('unauthorized', 'forbidden', 'not-found') },
@@ -650,6 +654,7 @@ export const apiKeys = {
     path: `${API_PREFIX}/api-keys`,
     tags: ['API keys'],
     summary: 'API keys, by prefix',
+    description: 'The owner sees everyone’s; an admin their own.',
     ...access('staff'),
     responses: { 200: json(z.array(ApiKey), 'Keys'), ...errors('unauthorized', 'forbidden') },
   }),
@@ -670,6 +675,7 @@ export const apiKeys = {
     path: `${API_PREFIX}/api-keys/{id}`,
     tags: ['API keys'],
     summary: 'Revoke a key',
+    description: 'Your own, or anyone’s for the owner.',
     ...access('staff'),
     request: { params: IdParam },
     responses: { ...noContent, ...errors('unauthorized', 'forbidden', 'not-found') },

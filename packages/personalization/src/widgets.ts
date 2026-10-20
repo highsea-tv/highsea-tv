@@ -23,7 +23,8 @@ export type WidgetKind = (typeof WIDGET_KINDS)[number]
 
 export type WidgetSpan = 1 | 2 | 3 | 4
 
-export type WidgetRole = 'owner' | 'admin' | 'member' | 'restricted'
+/** The dashboard is the admin's, so only staff have one (ADR 0032). */
+export type WidgetRole = 'owner' | 'admin'
 
 /**
  * Where a widget's data comes from. The server's public info lists the sources it has; a widget
@@ -90,7 +91,6 @@ export const widgetMessages = defineMessages({
   'system-health.description': 'Health checks that need attention.',
 })
 
-const all: WidgetRole[] = ['owner', 'admin', 'member']
 const staff: WidgetRole[] = ['owner', 'admin']
 
 const none = z.strictObject({})
@@ -147,7 +147,7 @@ export const widgetDefinitions: WidgetDefinition[] = [
     height: [2, 6],
     defaultSpan: 2,
     defaultRows: 2,
-    roles: all,
+    roles: staff,
     source: 'movies',
     settings: z.strictObject({ days: z.int().min(1).max(90).default(14) }),
   }),
@@ -156,7 +156,7 @@ export const widgetDefinitions: WidgetDefinition[] = [
     height: [2, 4],
     defaultSpan: 1,
     defaultRows: 2,
-    roles: all,
+    roles: staff,
     source: 'curation',
   }),
   define('activity', {
@@ -164,7 +164,7 @@ export const widgetDefinitions: WidgetDefinition[] = [
     height: [3, 8],
     defaultSpan: 4,
     defaultRows: 5,
-    roles: all,
+    roles: staff,
     source: 'downloads',
     settings: z.strictObject({
       filter: z.enum(['all', 'downloading', 'seeding', 'issues']).default('all'),
@@ -175,7 +175,7 @@ export const widgetDefinitions: WidgetDefinition[] = [
     height: [3, 6],
     defaultSpan: 2,
     defaultRows: 3,
-    roles: all,
+    roles: staff,
     source: 'movies',
   }),
   define('calendar', {
@@ -183,7 +183,7 @@ export const widgetDefinitions: WidgetDefinition[] = [
     height: [3, 5],
     defaultSpan: 2,
     defaultRows: 3,
-    roles: all,
+    roles: staff,
     source: 'movies',
   }),
   define('system-health', {
@@ -242,15 +242,8 @@ export const ownerDefault: WidgetPlacement[] = [
   place('activity'),
 ]
 
-/** Members manage the library but not the server: no network, storage or indexers. */
-export const memberDefault: WidgetPlacement[] = [
-  place('recently-added'),
-  place('upcoming', 2, 3),
-  place('activity'),
-]
-
-export const roleDefault = (role: WidgetRole): WidgetPlacement[] =>
-  role === 'owner' || role === 'admin' ? ownerDefault : memberDefault
+/** The owner and admins start from the same arrangement; each role's can be saved apart. */
+export const roleDefault = (_role: WidgetRole): WidgetPlacement[] => ownerDefault
 
 export const allowed = (kind: WidgetKind, role: WidgetRole) =>
   widgetDefinition(kind).roles.includes(role)

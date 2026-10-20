@@ -42,7 +42,8 @@ export type NetworkSettings = {
 }
 
 export type SecuritySettings = {
-  twoFactor: 'everyone' | 'staff' | 'optional'
+  /** Require two-step for the owner and admins, the only people who open the admin. */
+  twoFactor: boolean
   passkeys: boolean
   oidc: { enabled: boolean; name: string; issuer: string; clientId: string }
   sessionDays: number
@@ -126,7 +127,7 @@ export const defaultSettings = (): Settings => ({
     discovery: true,
   },
   security: {
-    twoFactor: 'staff',
+    twoFactor: true,
     passkeys: true,
     oidc: {
       enabled: true,

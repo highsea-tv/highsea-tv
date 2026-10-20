@@ -11,6 +11,7 @@ Everything about how the server runs, in one place, one area per page: the regio
 ## Entry points
 
 - Sidebar › **Settings** (owners and admins); the palette (every area by name).
+- **Security** and **Backups** are the owner's alone ([ADR 0032](../adr/0032-administrative-and-normal-access.md)): admins don't see them in the index or beside an area, and their addresses say there's no setting there.
 - Links from elsewhere: Backups from System › Backups, Download client from Downloads.
 
 ## Layout
@@ -24,7 +25,7 @@ Everything about how the server runs, in one place, one area per page: the regio
 | **General** | Region: Language, Time zone · Metadata: TMDB key (set or not, its last four characters, **Replace**, **Remove**; checked with TMDB on save), Metadata language, Region (for certifications, release dates and Discover; the owner's locale by default) · Updates: Stable or Beta, Install updates on their own · Diagnostics: Send anonymous usage counts (off), Log level |
 | **Appearance** | [appearance.md](appearance.md) |
 | **Network and remote access** | Remote access: External URL, **Check from outside** · Reverse proxy and TLS: My proxy handles it, Built in, Off (LAN only); Trusted proxies; X-Forwarded headers · Discovery: Let apps on this network find Harbor (with the Docker note) |
-| **Security** | Signing in: Two-step verification (everyone, owners and admins, optional), passkeys, session length · Single sign-on (OIDC): on, button label, client ID, issuer URL, client secret, the redirect URL to copy · Ownership: Hand the server over |
+| **Security** | Signing in: **Require two-step for the owner and admins** (on for new servers; [ADR 0032](../adr/0032-administrative-and-normal-access.md)), passkeys, session length · Single sign-on (OIDC): on, button label, client ID, issuer URL, client secret, the redirect URL to copy · Ownership: Hand the server over |
 | **Backups** | Schedule: every day, week or never; the time; how many to keep; the folder. Making and restoring backups is in [System › Backups](system.md) |
 | **Users and devices** | [users-devices.md](users-devices.md) |
 | **Media management** | Naming: Rename movies, Folder and File formats with a live preview ("Becomes Sintel (2010) Bluray-1080p.mkv") and the tokens · Importing: hardlinks, NFO files, stop monitoring deleted files, folder permissions, recycle bin |
@@ -56,8 +57,8 @@ Everything about how the server runs, in one place, one area per page: the regio
   - `settings.metadata()` (staff) → `MetadataSettings`: `key` (`set`, and `last4`, its last four characters; never the key itself), `language` (`en-US`, TMDB's language parameter) and `region` (`GB`, ISO 3166-1; the owner's locale by default, set in setup);
   - `settings.saveMetadata({ body })` (the owner) → `PUT`, any of `key`, `language` and `region`. A new key is checked with TMDB first (400 `tmdb-key-rejected`; 503 `tmdb-unreachable` or 429 `tmdb-rate-limited` when TMDB can't say), and nothing is saved unless every field is. The key is stored encrypted;
   - `settings.removeMetadataKey()` (the owner) → `DELETE`. The library and its pages keep working from the cache.
-- **Quality sizes:** `settings.qualitySizes()` → `GET /api/v1/settings/qualitySizes` (library access): `{ quality, min, preferred, max }` per quality, lowest first, in MiB per minute. Read-only until checkpoint 8.
-- **Profiles and formats:** `quality.profiles()` → `GET /api/v1/qualityprofiles[/{id}]` (everyone signed in) and `quality.customFormats()` → `GET /api/v1/customformats` (library access). Seeded and read-only until checkpoint 8 ([ADR 0031](../adr/0031-quality-and-the-decision-engine.md)).
+- **Quality sizes:** `settings.qualitySizes()` → `GET /api/v1/settings/qualitySizes` (staff): `{ quality, min, preferred, max }` per quality, lowest first, in MiB per minute. Read-only until checkpoint 8.
+- **Profiles and formats:** `quality.profiles()` → `GET /api/v1/qualityprofiles[/{id}]` and `quality.customFormats()` → `GET /api/v1/customformats`, both staff. Seeded and read-only until checkpoint 8 ([ADR 0031](../adr/0031-quality-and-the-decision-engine.md)).
 - **Root folders** (Media management › Importing): [movies.md › Data](movies.md#data).
 - Events: `settings.updated`.
 

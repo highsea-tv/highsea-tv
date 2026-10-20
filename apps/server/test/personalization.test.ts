@@ -26,6 +26,7 @@ async function started() {
   const app = createApi(runtime)
   const { owner, token } = await withOwner(runtime)
   const member = await addMember(runtime, owner.id, 'Theo')
+  const admin = await addMember(runtime, owner.id, 'Ruth', 'admin')
   return {
     runtime,
     app,
@@ -33,6 +34,7 @@ async function started() {
     anon: clientFor(app),
     ownerApi: clientFor(app, { token }),
     memberApi: clientFor(app, { token: member.token }),
+    adminApi: clientFor(app, { token: admin.token }),
     member,
   }
 }
@@ -57,48 +59,52 @@ test('the contract’s widget kinds and sources match the registry', () => {
 })
 
 describe('dashboard', () => {
-  test('a role default until saved; staff widgets refused for members; reset', async () => {
-    const { ownerApi, memberApi } = await started()
-    const mine = await memberApi.dashboard.layout()
+  test('a role default until saved, then reset; the dashboard is staff’s alone', async () => {
+    const { adminApi, memberApi } = await started()
+    const mine = await adminApi.dashboard.layout()
     expect(mine.inherited).toBe(true)
-    expect(mine.widgets.map((w) => w.kind)).not.toContain('network')
+    expect(mine.widgets.map((w) => w.kind)).toContain('network')
 
-    expect(
-      await failure(
-        memberApi.dashboard.saveLayout({
-          body: { widgets: [{ id: 'n', kind: 'network', span: 2, rows: 2 }] },
-        }),
-      ),
-    ).toEqual({ code: 'forbidden', reason: 'widget-not-allowed' })
-
-    const saved = await memberApi.dashboard.saveLayout({
+    const saved = await adminApi.dashboard.saveLayout({
       body: { widgets: [{ id: 'c', kind: 'calendar', span: 2, rows: 3 }] },
     })
     expect(saved).toMatchObject({ inherited: false, widgets: [{ id: 'c', kind: 'calendar' }] })
-    expect((await memberApi.dashboard.resetLayout()).inherited).toBe(true)
+    expect((await adminApi.dashboard.resetLayout()).inherited).toBe(true)
 
-    expect((await ownerApi.dashboard.layout()).widgets.map((w) => w.kind)).toContain('network')
+    // a user has no dashboard (ADR 0032)
+    expect((await failure(memberApi.dashboard.layout())).code).toBe('forbidden')
+    expect(
+      (
+        await failure(
+          memberApi.dashboard.saveLayout({
+            body: { widgets: [{ id: 'c', kind: 'calendar', span: 2, rows: 3 }] },
+          }),
+        )
+      ).code,
+    ).toBe('forbidden')
   })
 
-  test('only the owner sets role defaults; staff widgets are dropped for members', async () => {
-    const { ownerApi, memberApi } = await started()
-    expect(await failure(memberApi.dashboard.roleDefault({ params: { role: 'member' } }))).toEqual({
-      code: 'forbidden',
-      reason: undefined,
-    })
-    const saved = await ownerApi.dashboard.saveRoleDefault({
-      params: { role: 'member' },
-      body: {
-        widgets: [
-          { id: 'n', kind: 'network', span: 2, rows: 2 },
-          { id: 'c', kind: 'calendar', span: 2, rows: 3 },
-        ],
-      },
-    })
-    expect(saved.dropped).toEqual(['network'])
-    expect((await memberApi.dashboard.layout()).widgets.map((w) => w.kind)).toEqual(['calendar'])
+  test('only the owner sets the admins’ default', async () => {
+    const { ownerApi, adminApi } = await started()
+    // admins read it, to reset to it; saving it is the owner's
     expect(
-      (await ownerApi.dashboard.roleDefault({ params: { role: 'member' } })).updatedAt,
+      (await adminApi.dashboard.roleDefault({ params: { role: 'admin' } })).updatedAt,
+    ).toBeNull()
+    expect(
+      (
+        await failure(
+          adminApi.dashboard.saveRoleDefault({ params: { role: 'admin' }, body: { widgets: [] } }),
+        )
+      ).code,
+    ).toBe('forbidden')
+    const saved = await ownerApi.dashboard.saveRoleDefault({
+      params: { role: 'admin' },
+      body: { widgets: [{ id: 'c', kind: 'calendar', span: 2, rows: 3 }] },
+    })
+    expect(saved.dropped).toEqual([])
+    expect((await adminApi.dashboard.layout()).widgets.map((w) => w.kind)).toEqual(['calendar'])
+    expect(
+      (await ownerApi.dashboard.roleDefault({ params: { role: 'admin' } })).updatedAt,
     ).not.toBeNull()
   })
 })

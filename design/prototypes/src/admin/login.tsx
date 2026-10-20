@@ -8,7 +8,7 @@ import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../mock/hooks.tsx'
 import type { ApiError } from '../mock/server.ts'
 
-function Card({ children }: { children: ReactNode }) {
+export function Card({ children }: { children: ReactNode }) {
   return (
     <main className="grid min-h-screen grid-cols-[minmax(0,1fr)] place-items-center bg-bg p-4 text-text">
       <div className="grid w-full max-w-[24rem] gap-6">
@@ -21,7 +21,7 @@ function Card({ children }: { children: ReactNode }) {
   )
 }
 
-function Heading({ title, detail }: { title: string; detail?: ReactNode }) {
+export function Heading({ title, detail }: { title: string; detail?: ReactNode }) {
   return (
     <div className="grid gap-1">
       <h1 className="text-title">{title}</h1>

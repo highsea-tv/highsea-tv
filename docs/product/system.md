@@ -11,6 +11,7 @@ What the server is doing and how it's holding up: its version and resources, its
 ## Entry points
 
 - Sidebar › **System** (owners and admins); the sidebar's server card; the palette ("logs", "health", "backups", "restore").
+- The **Backups** tab is the owner's alone ([ADR 0032](../adr/0032-administrative-and-normal-access.md)): an admin doesn't see it, and `/system/backups` opens Status for them.
 
 ## Layout
 

@@ -3,7 +3,7 @@
 // the phone is lost (OWASP Multifactor Authentication Cheat Sheet). The seed is sealed with the
 // server's key; recovery codes are stored as verifiers and each works once. Turning it on or off,
 // or making new recovery codes, asks for the password again. Someone who loses both the app and
-// the codes asks whoever manages people to turn it off for them (OWASP, "Resetting MFA").
+// the codes asks the owner to turn it off for them (OWASP, "Resetting MFA").
 import { AppError, newId } from '@highsea/core'
 import { schema } from '@highsea/db'
 import { and, eq, isNull } from 'drizzle-orm'
@@ -17,10 +17,12 @@ export const RECOVERY_CODES = 10
 
 export type TotpSetup = { secret: string; uri: string }
 
-/** Whether the security policy asks `role` to use two-step verification in the admin. */
+/**
+ * Whether the security policy asks `role` to use two-step verification in the admin. Only staff
+ * open the admin, so a user is never asked (ADR 0032).
+ */
 export function twoFactorRequired(ctx: Ctx, role: Parameters<typeof isStaff>[0]): boolean {
-  const policy = ctx.security().twoFactor
-  return policy === 'everyone' || (policy === 'staff' && isStaff(role))
+  return ctx.security().twoFactor && isStaff(role)
 }
 
 export function totpEnabled(ctx: Ctx, userId: string): boolean {
@@ -109,8 +111,8 @@ export async function disableTotp(ctx: Ctx, userId: string, password: string, me
 /**
  * Turns someone's two-step off for them, after they lost both the app and the recovery codes.
  * Whoever does it confirms who's asking outside highsea first. It's for someone else: your own
- * goes through Account, with your password. Only the owner can do it for an admin, and nobody
- * for the owner. Passkeys and signed-in devices stay; if the policy asks for two-step, their
+ * goes through Account, with your password. Only the owner can do it, so nobody can for the
+ * owner. Passkeys and signed-in devices stay; if the policy asks for two-step, their
  * next admin sign-in sets it up again.
  */
 export function resetTotp(ctx: Ctx, userId: string, actor: Actor, meta: RequestMeta) {
@@ -118,7 +120,7 @@ export function resetTotp(ctx: Ctx, userId: string, actor: Actor, meta: RequestM
   if (!user) throw new AppError('not-found', 'There’s no one with that id.')
   if (userId === actor.id)
     throw new AppError('forbidden', 'Turn your own off in Account.', { reason: 'self' })
-  assertCanManage(ctx, actor, user)
+  assertCanManage(ctx, actor)
   if (!totpEnabled(ctx, userId)) throw new AppError('conflict', 'Two-step verification is off.')
   ctx.db.delete(schema.totp).where(eq(schema.totp.userId, userId)).run()
   ctx.db.delete(schema.recoveryCodes).where(eq(schema.recoveryCodes.userId, userId)).run()

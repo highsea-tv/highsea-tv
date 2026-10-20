@@ -47,7 +47,8 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `library` grou
   - `movies`: library `ClientItem`s by title, genre or person (cast or crew), title matches first. Each says whether it's `playable`; none is until files arrive (checkpoint 6);
   - `collections`: `ClientCollection`s (`id`, `name`, `overview`, `art`, `count` here, `years`) by name or a part's title, counting only the parts here;
   - `people`: `SearchPerson`s (`id`, `name`, `photo`, `titles` here) whose names match;
-  - `discover`: for people who may add titles (Manage the library), TMDB's matches that aren't here, as `DiscoverMovie`s, after the rest; left out when TMDB can't be reached or no key is set. Apps that don't add titles skip it, as they skip any kind they don't know.
+  - `discover`: for people who may ask for titles (the owner and admins always, a user with **Ask for titles**), TMDB's matches that aren't here, as `DiscoverMovie`s marked for a request, after the rest; left out when TMDB can't be reached or no key is set. The request flow comes with its own checkpoint, so until then the server leaves this section out for everyone ([ADR 0032](../adr/0032-administrative-and-normal-access.md)). Apps skip kinds they don't know.
+- **Clients are for watching.** Search behaves the same for everyone, staff included, and never offers an administrative action such as adding a title.
 - **Ranking:** a kind with a name that starts with the query (at a word) comes first, then one with a name containing it, then the rest; ties keep the order above. Empty kinds are left out.
 - **A collection's page** reads `metadata.collection({ params: { id } })` → `GET /api/v1/collections/{id}`, the media pages' route ([media-pages.md › Data](media-pages.md#data)): the collection and all its parts, oldest first, each with `inLibrary`. The page shows the parts here.
 - The query lives in the page's history entry (the prototype keeps it in `history.state`), not in storage.

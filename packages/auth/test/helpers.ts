@@ -23,7 +23,7 @@ export const meta = {
 }
 export const tv = { name: 'Living room TV', client: 'tvos' as const, appVersion: '1.0.0' }
 
-export function setup(overrides: Partial<AuthDeps> = {}) {
+export function setup(overrides: Partial<AuthDeps> = {}, { fresh = false } = {}) {
   const { db, raw } = openDatabase(':memory:')
   migrate(raw)
   const clock = createFakeClock()
@@ -42,6 +42,10 @@ export function setup(overrides: Partial<AuthDeps> = {}) {
     addresses: () => ({ externalUrl, localOrigins: ['http://192.168.1.10:3000'] }),
     ...overrides,
   })
+  // two-step is on for a new server (ADR 0032); the flows here sign in without it unless a test
+  // turns it on
+  if (!fresh)
+    writeSetting(db, SECURITY_KEY, { ...defaultSecuritySettings, twoFactor: false }, clock.now())
   return {
     db,
     raw,
@@ -73,7 +77,7 @@ export const codeFor = (secret: string, now: number, offset = 0) =>
 export async function addMember(
   env: Awaited<ReturnType<typeof withOwner>>,
   displayName: string,
-  role: 'admin' | 'member' | 'restricted' = 'member',
+  role: 'admin' | 'user' = 'user',
   password = 'a long enough password',
 ) {
   const invite = env.auth.users.invite(

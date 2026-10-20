@@ -99,7 +99,7 @@ async function configured() {
   const env = await withOwner({ fetch: provider.fetch })
   env.auth.security.save(
     {
-      twoFactor: 'optional',
+      twoFactor: false,
       passkeys: true,
       sessionDays: 30,
       oidc: {
@@ -138,7 +138,7 @@ describe('single sign-on', () => {
   test('following an invite links the identity; later sign-ins match issuer and subject', async () => {
     const env = await configured()
     const invite = env.auth.users.invite(
-      { displayName: 'Mara', email: null, role: 'member', libraries: 'all' },
+      { displayName: 'Mara', email: null, role: 'user', libraries: 'all' },
       env.actor,
       meta,
     )

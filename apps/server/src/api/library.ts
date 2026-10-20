@@ -5,7 +5,7 @@
 import { routes } from '@highsea/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
-import { allowed, type Env, me } from './guard.ts'
+import { type Env, me } from './guard.ts'
 
 export function registerLibrary(app: OpenAPIHono<Env>) {
   const client = (c: Context<Env>) => c.get('runtime').movies.client
@@ -23,7 +23,9 @@ export function registerLibrary(app: OpenAPIHono<Env>) {
     const p = me(c)
     const results = await client(c).search(c.req.valid('query').query, {
       userId: p.user.id,
-      mayAdd: allowed(p, 'library'),
+      // the discover section offers requests (ADR 0032); until the request flow exists, nobody
+      // can make one, so it's left out for everyone
+      mayRequest: false,
     })
     return c.json(results, 200)
   })

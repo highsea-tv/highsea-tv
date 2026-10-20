@@ -12,7 +12,6 @@ import { Poster } from '@highsea/ui-web'
 import { useState } from 'react'
 import { AddMovieDialog } from './add-dialog.tsx'
 import { collection as messages } from './collection-messages.ts'
-import { useCanManageLibrary } from './media-links.ts'
 import { CollectionRow, MetadataError, SummarySkeleton, useCollection } from './media-sections.tsx'
 import { media } from './media-sections-messages.ts'
 import { parseTmdbId } from './movie-detail.tsx'
@@ -36,7 +35,6 @@ export function CollectionPage({ id: raw }: { id: string }) {
 function CollectionById({ id }: { id: number }) {
   const t = useT(messages)
   const tm = useT(media)
-  const canAdd = useCanManageLibrary()
   // refetched as parts are added, so their badges and the count follow
   const collection = useCollection(id)
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
@@ -72,13 +70,10 @@ function CollectionById({ id }: { id: number }) {
                 {tm('collection.suffix', { here, total: c.parts.length })}
               </p>
               <p className="max-w-[65ch] text-body text-text-2">{c.overview || t('noOverview')}</p>
-              {!canAdd && here < c.parts.length && (
-                <p className="text-caption text-text-3">{t('memberNote')}</p>
-              )}
             </div>
           </section>
           {c.parts.length > 0 && (
-            <CollectionRow collection={c} title={t('parts')} canAdd={canAdd} onAdd={setAdding} />
+            <CollectionRow collection={c} title={t('parts')} onAdd={setAdding} />
           )}
         </>
       )}

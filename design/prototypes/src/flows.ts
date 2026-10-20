@@ -77,7 +77,7 @@ export const flows: Flow[] = [
       hints: [
         'Press ⌘K (Ctrl K) for the palette: pages, actions and every title.',
         'Set Width to 768 for the icon rail, 390 for the menu sheet.',
-        'Switch Server to Member to see what members don’t.',
+        'Switch Server to User to see the page a user gets instead of the admin.',
       ],
     },
   ),

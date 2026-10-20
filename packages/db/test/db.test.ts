@@ -82,3 +82,99 @@ describe('database', () => {
     expect(run.stdout.toString() + run.stderr.toString()).toContain('migrations up to date')
   })
 })
+
+describe('0004_roles', () => {
+  const before = migrations.filter((m) => m.tag < '0004')
+  const roles = migrations.find((m) => m.tag === '0004_roles') as (typeof migrations)[number]
+
+  /** A server from before the change, with someone in every old role and every old permission. */
+  function older() {
+    const { raw } = openDatabase(':memory:')
+    migrate(raw, { all: before })
+    const person = (id: string, role: string, permissions: string[], libraries: string[]) => {
+      raw.run(
+        'INSERT INTO users (id, username, display_name, role, webauthn_id, created_at, updated_at) VALUES (?, ?, ?, ?, ?, 0, 0)',
+        id,
+        id,
+        id,
+        role,
+        `w-${id}`,
+      )
+      for (const p of permissions) raw.run('INSERT INTO user_permissions VALUES (?, ?)', id, p)
+      for (const l of libraries) raw.run('INSERT INTO library_access VALUES (?, ?)', id, l)
+    }
+    const old = ['admin', 'manageUsers', 'manageLibrary', 'autoApprove', 'request', 'download']
+    person('ines', 'owner', old, ['*'])
+    person('ruth', 'admin', ['manageLibrary', 'request'], ['movies'])
+    person('mara', 'member', ['request', 'download', 'autoApprove'], ['*'])
+    person('theo', 'restricted', ['manageLibrary'], ['movies'])
+    const layout = (scope: string) =>
+      raw.run("INSERT INTO widget_layouts (scope, widgets, updated_at) VALUES (?, '[]', 0)", scope)
+    for (const scope of ['role:owner', 'role:admin', 'role:member', 'role:restricted'])
+      layout(scope)
+    return raw
+  }
+
+  const state = (raw: ReturnType<typeof older>) => ({
+    roles: Object.fromEntries(raw.all('SELECT id, role FROM users').map((r) => [r.id, r.role])),
+    permissions: raw
+      .all('SELECT user_id, permission FROM user_permissions ORDER BY user_id, permission')
+      .map((r) => `${r.user_id}:${r.permission}`),
+    libraries: raw
+      .all('SELECT user_id, library FROM library_access ORDER BY user_id, library')
+      .map((r) => `${r.user_id}:${r.library}`),
+    layouts: raw.all('SELECT scope FROM widget_layouts ORDER BY scope').map((r) => r.scope),
+    security: raw.all("SELECT value FROM settings WHERE key = 'security'").map((r) => r.value),
+  })
+
+  test('members and restricted people become users; staff hold no permissions and every library', () => {
+    const raw = older()
+    migrate(raw)
+    expect(state(raw)).toMatchObject({
+      roles: { ines: 'owner', ruth: 'admin', mara: 'user', theo: 'user' },
+      // a user keeps Ask for titles and Download for offline, and their libraries
+      permissions: ['mara:download', 'mara:request'],
+      libraries: ['ines:*', 'mara:*', 'ruth:*', 'theo:movies'],
+      layouts: ['role:admin', 'role:owner'],
+    })
+    raw.close()
+  })
+
+  test('the two-step policy becomes one switch; a server without one keeps it off', () => {
+    for (const [policy, on] of [
+      ['everyone', true],
+      ['staff', true],
+      ['optional', false],
+    ] as const) {
+      const raw = older()
+      raw.run(
+        "INSERT INTO settings VALUES ('security', ?, 0)",
+        JSON.stringify({ twoFactor: policy, sessionDays: 7 }),
+      )
+      migrate(raw)
+      expect(state(raw).security.map((v) => JSON.parse(String(v)))).toEqual([
+        { twoFactor: on, sessionDays: 7 },
+      ])
+      raw.close()
+    }
+    // set up before, never saved: off, as it was
+    const raw = older()
+    migrate(raw)
+    expect(state(raw).security.map((v) => JSON.parse(String(v)))).toEqual([{ twoFactor: false }])
+    raw.close()
+    // not set up yet: nothing written, so the new default (on) applies
+    const fresh = openDatabase(':memory:').raw
+    migrate(fresh)
+    expect(state(fresh).security).toEqual([])
+    fresh.close()
+  })
+
+  test('is safe to run again', () => {
+    const raw = older()
+    migrate(raw)
+    const once = state(raw)
+    for (const statement of roles.sql.split('--> statement-breakpoint')) raw.exec(statement)
+    expect(state(raw)).toEqual(once)
+    raw.close()
+  })
+})

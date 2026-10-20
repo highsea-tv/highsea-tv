@@ -63,14 +63,12 @@ export const json = <S extends z.ZodType>(schema: S, description: string) => ({
  * Who may call a route, declared on the route as the `x-highsea-access` OpenAPI extension and
  * enforced by the server from the contract (ADR 0023):
  * - `public`: anyone, signed in or not;
- * - `user`: anyone signed in;
- * - `people`: staff, or anyone given "Manage people";
- * - `library`: staff, or anyone given "Manage the library" (adding, editing and removing titles);
- * - `staff`: the owner and admins;
- * - `owner`: the owner alone.
+ * - `user`: anyone signed in: the client API and their own account, nothing administrative;
+ * - `staff`: the owner and admins, who run the server (ADR 0032);
+ * - `owner`: the owner alone: managing people, security, backups and ownership.
  * Read-only API keys may call GET routes only.
  */
-export const ACCESS = ['public', 'user', 'people', 'library', 'staff', 'owner'] as const
+export const ACCESS = ['public', 'user', 'staff', 'owner'] as const
 export type Access = (typeof ACCESS)[number]
 
 export const ACCESS_KEY = 'x-highsea-access'

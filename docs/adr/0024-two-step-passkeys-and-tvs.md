@@ -1,6 +1,6 @@
 # 0024. Two-step verification and passkeys never reach the TV
 
-- **Status:** Accepted
+- **Status:** Accepted; amended 2026-10-20 (one two-step switch; see ADR 0032)
 - **Date:** 2026-10-19
 
 ## Context
@@ -38,3 +38,11 @@ The owner asked for two-step verification and passkeys, on one condition: they m
 - The owner has no one to vouch for them, so they keep their recovery codes or a passkey. Recovery from the host's command line, for an owner with neither, is still to come.
 - Passkeys don't work at `http://192.168.x.x:3000`, as the WebAuthn spec requires. The login page hides the option there instead of failing.
 - Someone who loses their phone and their recovery codes, and has no passkey, can't sign in to the admin until someone turns two-step off for them. Their apps stay signed in meanwhile.
+
+## Amendment (2026-10-20): one switch for the owner and admins
+
+The owner decided this with [ADR 0032](0032-administrative-and-normal-access.md). It replaces the "policy" bullet above, and in "Losing both the app and the recovery codes", "whoever manages people" now means the owner. Everything else stands.
+
+- **The policy is one switch:** **Require two-step for the owner and admins**. Only they open the admin, and two-step only ever blocks the admin, so "everyone" and "staff" meant the same thing.
+- **New servers** start with it on. Migration `0004_roles` turns "everyone" and "staff" on and "optional" off. A server that never saved Security keeps what it had: off.
+- **Turning someone else's two-step off** is the owner's alone, for admins and users alike.

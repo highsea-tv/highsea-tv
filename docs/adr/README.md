@@ -26,8 +26,8 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0020](0020-discovery-port.md) | LAN discovery on UDP 7368, plus mDNS | Accepted |
 | [0021](0021-i18n-message-catalogs.md) | Strings live in typed message catalogs | Accepted |
 | [0022](0022-job-queue.md) | A SQLite job queue, at least once | Accepted |
-| [0023](0023-accounts-sessions-devices.md) | Every sign-in is a device | Accepted |
-| [0024](0024-two-step-passkeys-and-tvs.md) | Two-step verification and passkeys never reach the TV | Accepted |
+| [0023](0023-accounts-sessions-devices.md) | Every sign-in is a device | Accepted; amended 2026-10-20 |
+| [0024](0024-two-step-passkeys-and-tvs.md) | Two-step verification and passkeys never reach the TV | Accepted; amended 2026-10-20 |
 | [0025](0025-single-sign-on-and-proxy-auth.md) | Single sign-on by OIDC, and forward-auth proxy headers | Accepted |
 | [0026](0026-network-tls.md) | Plain HTTP always, built-in TLS beside it | Accepted |
 | [0027](0027-preferences-in-layers.md) | Preferences in layers, on the server | Accepted |
@@ -35,5 +35,6 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0029](0029-external-services.md) | External services: one injected fetch, recorded responses | Accepted |
 | [0030](0030-metadata-cache.md) | The metadata cache: TMDB’s responses beside the library, under six months | Accepted |
 | [0031](0031-quality-and-the-decision-engine.md) | Quality and the decision engine: Radarr's documented behaviour, written fresh | Accepted |
+| [0032](0032-administrative-and-normal-access.md) | Administrative and normal access: Owner, Admin, User | Accepted |
 
 Template: copy [`template.md`](template.md).

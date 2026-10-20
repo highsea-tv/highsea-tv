@@ -1,6 +1,6 @@
 # 0023. Every sign-in is a device
 
-- **Status:** Accepted
+- **Status:** Accepted; amended 2026-10-20 (three roles; see ADR 0032)
 - **Date:** 2026-10-19
 
 ## Context
@@ -42,3 +42,12 @@ People sign in to highsea from a browser (the admin) and from apps (web, desktop
 - The Devices list is a plain query, and signing out "everywhere" is a delete.
 - Reading the database file doesn't reveal any usable secret.
 - A browser on plain HTTP gets a weaker cookie (no `Secure`). The health check flags an external URL that isn't HTTPS.
+
+## Amendment (2026-10-20): administrative and normal access
+
+The owner decided this after checkpoint 4. It replaces the "Roles and permissions" bullet above and the access levels in "Access is declared per route". [ADR 0032](0032-administrative-and-normal-access.md) has the details. Everything else stands.
+
+- **Roles:** owner, admin and user. Member and restricted become user.
+- **Staff powers come from the role.** Permissions are a user's alone: Ask for titles and Download for offline.
+- **Access levels:** `public`, `user`, `staff` and `owner`. `people` is gone. Admins read people, and only the owner manages them.
+- **API keys:** only the owner and admins make them. An admin sees their own; the owner sees everyone's.

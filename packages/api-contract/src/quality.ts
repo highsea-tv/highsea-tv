@@ -283,7 +283,7 @@ export const quality = {
     summary: 'Quality profiles',
     description:
       'Read-only until checkpoint 8. Everyone signed in reads them: a movie’s versions name theirs.',
-    ...access('user'),
+    ...access('staff'),
     responses: { 200: json(z.array(QualityProfile), 'Profiles'), ...errors('unauthorized') },
   }),
   profile: createRoute({
@@ -291,7 +291,7 @@ export const quality = {
     path: `${API_PREFIX}/qualityprofiles/{id}`,
     tags: ['Quality'],
     summary: 'A quality profile',
-    ...access('user'),
+    ...access('staff'),
     request: { params: IdParam },
     responses: {
       200: json(QualityProfile, 'The profile'),
@@ -304,7 +304,7 @@ export const quality = {
     tags: ['Quality'],
     summary: 'Custom formats',
     description: 'Read-only until checkpoint 8.',
-    ...access('library'),
+    ...access('staff'),
     responses: {
       200: json(z.array(CustomFormat), 'Formats'),
       ...errors('unauthorized', 'forbidden'),
@@ -317,7 +317,7 @@ export const quality = {
     summary: 'Subtitle language profiles',
     description:
       'What the add dialog’s Subtitle languages offers. Seeded and edited with subtitles (checkpoint 7); until then the server lists its built-in default.',
-    ...access('user'),
+    ...access('staff'),
     responses: { 200: json(z.array(LanguageProfile), 'Profiles'), ...errors('unauthorized') },
   }),
   parse: createRoute({
@@ -325,7 +325,7 @@ export const quality = {
     path: `${API_PREFIX}/parse`,
     tags: ['Quality'],
     summary: 'Read a release name: its parts, quality and the custom formats it matches',
-    ...access('library'),
+    ...access('staff'),
     request: { query: z.object({ title: z.string().min(1).max(500) }) },
     responses: {
       200: json(ParseResult, 'What the name says'),

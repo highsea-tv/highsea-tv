@@ -33,9 +33,14 @@ const Oidc = z.object({
   clientId: z.string().max(400),
 })
 
+/** Require two-step for the owner and admins, the only people who open the admin (ADR 0032). */
+const RequireTwoFactor = z.boolean().openapi({
+  description: 'Require two-step verification for the owner and admins in the admin',
+})
+
 export const SecuritySettings = z
   .object({
-    twoFactor: z.enum(['everyone', 'staff', 'optional']),
+    twoFactor: RequireTwoFactor,
     passkeys: z.boolean(),
     sessionDays: z.number().int(),
     oidc: Oidc.extend({ clientSecretSet: z.boolean() }),
@@ -45,7 +50,7 @@ export const SecuritySettings = z
 
 export const SecurityInput = z
   .object({
-    twoFactor: z.enum(['everyone', 'staff', 'optional']),
+    twoFactor: RequireTwoFactor,
     passkeys: z.boolean(),
     sessionDays: z.number().int(),
     oidc: Oidc.extend({
@@ -152,7 +157,7 @@ export const settings = {
     tags: ['Settings'],
     summary: 'Quality sizes: MB per minute for each quality',
     description: 'Read-only until checkpoint 8. The megabytes are MiB.',
-    ...access('library'),
+    ...access('staff'),
     responses: {
       200: json(z.array(QualitySize), 'The sizes, lowest quality first'),
       ...errors('unauthorized', 'forbidden'),

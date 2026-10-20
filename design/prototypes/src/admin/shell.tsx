@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A1, the admin shell (admin.md): the sidebar (full at expanded and up, a rail at medium, a menu
 // sheet at compact), the ⌘K palette, announcement banners, toasts for background events, and the
-// status bar. Pages render inside through `AdminPage`.
+// status bar. Pages render inside through `AdminPage`. Only the owner and admins open the admin
+// (ADR 0032), so it has one shape; a user gets the refusal page instead.
 
 import { bytes, relative } from '@highsea/core/format'
 import {
@@ -38,12 +39,13 @@ import {
 import { useLocation } from 'wouter'
 import { Cta, Inline } from '../kit/inline.tsx'
 import { useClient, useNow, useQuery } from '../mock/hooks.tsx'
-import type { Announcement, UserRole } from '../mock/types.ts'
+import type { Announcement, StaffRole, UserRole } from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'
-import { isStaff, pageAt, pagesFor } from './nav.ts'
+import { pageAt, pageGroups } from './nav.ts'
+import { Refusal } from './refusal.tsx'
 
 type Shell = {
-  role: UserRole
+  role: StaffRole
   openPalette: () => void
   openMenu: () => void
   /** Customize mode on the dashboard; the palette can start it from anywhere. */
@@ -108,15 +110,7 @@ export function AdminPage({ title, description, actions, children }: AdminPagePr
 
 // ---------------------------------------------------------------- navigation
 
-function Navigation({
-  role,
-  mode,
-  onNavigate,
-}: {
-  role: UserRole
-  mode?: 'full'
-  onNavigate?: () => void
-}) {
+function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => void }) {
   const [location] = useLocation()
   const current = pageAt(location)
   const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
@@ -124,11 +118,7 @@ function Navigation({
   const queue = useQuery('queue', (c) => c.queue.list(), ['queue.changed'])
   // the rail is 64px: the mark alone (brand.tsx: the lockup needs 96px)
   const auto = useSidebarMode()
-  const health = useQuery(
-    `health:${isStaff(role)}`,
-    (c) => (isStaff(role) ? c.system.health() : Promise.resolve([])),
-    ['health.updated'],
-  )
+  const health = useQuery('health', (c) => c.system.health(), ['health.updated'])
   const counts: Record<string, number | undefined> = {
     movies: movies.data?.length || undefined,
     activity: queue.data?.length || undefined,
@@ -154,7 +144,7 @@ function Navigation({
       footer={card}
       className={mode ? 'w-full border-0 bg-transparent p-0' : undefined}
     >
-      {pagesFor(role).map((group) => (
+      {pageGroups.map((group) => (
         <NavGroup key={group[0]?.id}>
           {group.map((p) => (
             <NavItem
@@ -175,23 +165,20 @@ function Navigation({
 
 // ---------------------------------------------------------------- palette
 
-function usePaletteGroups(role: UserRole, shell: Pick<Shell, 'setCustomizing'>): CommandGroup[] {
+function usePaletteGroups(shell: Pick<Shell, 'setCustomizing'>): CommandGroup[] {
   const client = useClient()
   const [, navigate] = useLocation()
   const movies = useQuery('movies', (c) => c.movies.list(), ['item.updated'])
-  const staff = isStaff(role)
   return useMemo(() => {
     const go: CommandGroup = {
       heading: 'Go to',
-      items: pagesFor(role)
-        .flat()
-        .map((p) => ({
-          id: `go-${p.id}`,
-          label: p.label,
-          icon: p.icon,
-          keywords: p.keywords,
-          onSelect: () => navigate(p.path),
-        })),
+      items: pageGroups.flat().map((p) => ({
+        id: `go-${p.id}`,
+        label: p.label,
+        icon: p.icon,
+        keywords: p.keywords,
+        onSelect: () => navigate(p.path),
+      })),
     }
     const actions: CommandGroup = {
       heading: 'Actions',
@@ -213,36 +200,32 @@ function usePaletteGroups(role: UserRole, shell: Pick<Shell, 'setCustomizing'>):
             shell.setCustomizing(true)
           },
         },
-        ...(staff
-          ? [
-              {
-                id: 'pause-all',
-                label: 'Pause all downloads',
-                icon: 'pause' as const,
-                keywords: ['torrents', 'stop'],
-                onSelect: () =>
-                  client.downloads.pauseAll().then(
-                    () =>
-                      toast({
-                        title: 'Downloads paused',
-                        description: 'Seeding continues. Resume them from here or Downloads.',
-                      }),
-                    () => toast.error('Couldn’t pause downloads'),
-                  ),
-              },
-              {
-                id: 'resume-all',
-                label: 'Resume all downloads',
-                icon: 'play' as const,
-                keywords: ['torrents', 'start'],
-                onSelect: () =>
-                  client.downloads.resumeAll().then(
-                    () => toast({ title: 'Downloads resumed' }),
-                    () => toast.error('Couldn’t resume downloads'),
-                  ),
-              },
-            ]
-          : []),
+        {
+          id: 'pause-all',
+          label: 'Pause all downloads',
+          icon: 'pause',
+          keywords: ['torrents', 'stop'],
+          onSelect: () =>
+            client.downloads.pauseAll().then(
+              () =>
+                toast({
+                  title: 'Downloads paused',
+                  description: 'Seeding continues. Resume them from here or Downloads.',
+                }),
+              () => toast.error('Couldn’t pause downloads'),
+            ),
+        },
+        {
+          id: 'resume-all',
+          label: 'Resume all downloads',
+          icon: 'play',
+          keywords: ['torrents', 'start'],
+          onSelect: () =>
+            client.downloads.resumeAll().then(
+              () => toast({ title: 'Downloads resumed' }),
+              () => toast.error('Couldn’t resume downloads'),
+            ),
+        },
         {
           id: 'sign-out',
           label: 'Sign out',
@@ -262,7 +245,7 @@ function usePaletteGroups(role: UserRole, shell: Pick<Shell, 'setCustomizing'>):
       })),
     }
     return titles.items.length ? [go, actions, titles] : [go, actions]
-  }, [role, staff, movies.data, navigate, client, shell])
+  }, [movies.data, navigate, client, shell])
 }
 
 // ---------------------------------------------------------------- announcements
@@ -300,7 +283,7 @@ function Announcements() {
 
 // ---------------------------------------------------------------- status bar
 
-function AdminStatusBar({ role }: { role: UserRole }) {
+function AdminStatusBar() {
   const now = useNow()
   const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
   const status = useQuery('status', (c) => c.system.status(), ['tick'])
@@ -334,13 +317,9 @@ function AdminStatusBar({ role }: { role: UserRole }) {
       <StatusItem hideBelow="medium">
         {clients} {clients === 1 ? 'client' : 'clients'}
       </StatusItem>
-      {isStaff(role) && (
-        <>
-          <StatusItem hideBelow="expanded">CPU {s.cpu}%</StatusItem>
-          <StatusItem hideBelow="expanded">RAM {bytes(s.memory.used)}</StatusItem>
-          <StatusItem hideBelow="expanded">{bytes(free)} free</StatusItem>
-        </>
-      )}
+      <StatusItem hideBelow="expanded">CPU {s.cpu}%</StatusItem>
+      <StatusItem hideBelow="expanded">RAM {bytes(s.memory.used)}</StatusItem>
+      <StatusItem hideBelow="expanded">{bytes(free)} free</StatusItem>
       <StatusItem end>
         {running.length
           ? `${running.length} ${running.length === 1 ? 'job' : 'jobs'} running`
@@ -376,8 +355,13 @@ function useImportToasts() {
 
 // ---------------------------------------------------------------- the shell
 
+/** The admin, or the refusal page for a user: no admin data loads for them. */
 export function AdminShell({ children }: { children: ReactNode }) {
   const role = useRole()
+  return role === 'user' ? <Refusal /> : <StaffShell role={role}>{children}</StaffShell>
+}
+
+function StaffShell({ role, children }: { role: StaffRole; children: ReactNode }) {
   const [palette, setPalette] = useState(false)
   const [menu, setMenu] = useState(false)
   const [customizing, setCustomizing] = useState(false)
@@ -403,7 +387,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
     }),
     [role, customizing],
   )
-  const groups = usePaletteGroups(role, shell)
+  const groups = usePaletteGroups(shell)
 
   return (
     <ShellContext.Provider value={shell}>
@@ -415,7 +399,7 @@ export function AdminShell({ children }: { children: ReactNode }) {
         >
           Skip to content
         </button>
-        <Navigation role={role} />
+        <Navigation />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="relative min-h-0 flex-1 overflow-y-auto">
             {/* grid-cols-1: a wide table scrolls inside its frame, not the page */}
@@ -428,11 +412,11 @@ export function AdminShell({ children }: { children: ReactNode }) {
               {children}
             </main>
           </div>
-          <AdminStatusBar role={role} />
+          <AdminStatusBar />
         </div>
         <Sheet open={menu} onOpenChange={setMenu}>
           <SheetContent side="left" title="Menu" hideTitle className="p-4">
-            <Navigation role={role} mode="full" onNavigate={() => setMenu(false)} />
+            <Navigation mode="full" onNavigate={() => setMenu(false)} />
           </SheetContent>
         </Sheet>
         <CommandPalette open={palette} onOpenChange={setPalette} groups={groups} />

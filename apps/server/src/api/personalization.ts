@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Personalization over HTTP: thin handlers over @highsea/personalization (ADR 0027, 0028).
 import { MARK_UPLOAD_MAX, routes } from '@highsea/api-contract'
+import { isStaff } from '@highsea/auth'
 import { AppError } from '@highsea/core'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
@@ -24,9 +25,11 @@ const limit = (max: number) =>
 
 export function registerPersonalization(app: OpenAPIHono<Env>) {
   const p13n = (c: Context<Env>) => c.get('runtime').personalization
+  // the dashboard routes are staff's (ADR 0032), so the guard has already turned a user away
   const person = (c: Context<Env>) => {
     const { user } = me(c)
-    return { id: user.id, role: user.role }
+    if (!isStaff(user.role)) throw new AppError('forbidden', 'You don’t have access to that.')
+    return { id: user.id, role: user.role as 'owner' | 'admin' }
   }
   const audit = (c: Context<Env>, action: string, target?: { type: string; id: string }) =>
     c.get('runtime').auth.ctx.audit({

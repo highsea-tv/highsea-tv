@@ -3,7 +3,7 @@
 // A3 Dashboard (admin.md#main-area; docs/product/dashboard.md), ported from the prototype. The
 // grid shows the person's own layout, or their role's default until they save one. Customize mode
 // edits a draft: move, resize, add and remove widgets, then Done saves it. Owners can also make
-// the draft the default for admins or members.
+// the draft the default for admins.
 
 import { useLocale, useT } from '@highsea/i18n/react'
 import {
@@ -134,18 +134,17 @@ export function Dashboard() {
     if (draft || fromDefault) toast.success(t('saved'))
   }
 
-  const makeDefault = async (target: WidgetRole) => {
+  // the owner sets the admins' default from here (dashboard.md › Customize)
+  const makeAdminDefault = async () => {
     let dropped: WidgetKind[]
     try {
-      dropped = (await saveDefault.run(target, items)).dropped
+      dropped = (await saveDefault.run('admin', items)).dropped
     } catch (e) {
       return toast.error(t('defaultError'), { description: (e as Error).message })
     }
-    // only admins and members get a default from here (dashboard.md › Customize)
-    const to = target === 'admin' ? 'admin' : 'member'
-    toast.success(t(`defaultSaved.${to}`), {
+    toast.success(t('defaultSaved.admin'), {
       description: dropped.length
-        ? t(`defaultDropped.${to}`, {
+        ? t('defaultDropped.admin', {
             // "Network, Storage" (ECMA-402 Intl.ListFormat, a unit list)
             widgets: new Intl.ListFormat(locale, { type: 'unit', style: 'short' }).format(
               dropped.map(title),
@@ -173,11 +172,8 @@ export function Dashboard() {
             <>
               <MenuSeparator />
               <MenuLabel>{t('defaultLayout')}</MenuLabel>
-              <MenuItem icon="shield" onSelect={() => makeDefault('admin')}>
+              <MenuItem icon="shield" onSelect={makeAdminDefault}>
                 {t('makeDefaultAdmins')}
-              </MenuItem>
-              <MenuItem icon="users" onSelect={() => makeDefault('member')}>
-                {t('makeDefaultMembers')}
               </MenuItem>
             </>
           )}

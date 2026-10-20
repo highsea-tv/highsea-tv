@@ -29,7 +29,7 @@ What the library is still waiting for: monitored movies with no file yet, movies
 - **Empty:** "Nothing missing" · Every released, monitored movie has a file. "Everything meets its cutoff" · Every movie is at the quality its profile asks for. A month with nothing: "Nothing monitored comes out this month."
 - **Loading / error:** as every admin table.
 - **Live:** a search that grabs a release moves the movie out of the list (it's downloading).
-- **Members:** see the lists and calendar without the Search buttons.
+- **No reduced states.** Only the owner and admins open the admin ([ADR 0032](../adr/0032-administrative-and-normal-access.md)); users get the refusal page.
 
 ## Interactions
 

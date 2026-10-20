@@ -26,8 +26,7 @@ import { useLocation, useParams } from 'wouter'
 import { useQuery } from '../../mock/hooks.tsx'
 import type { DiscoverMovie, Person, PersonCredit } from '../../mock/types.ts'
 import { AddMovieDialog } from '../movies/add-dialog.tsx'
-import { isStaff } from '../nav.ts'
-import { AdminPage, useShell } from '../shell.tsx'
+import { AdminPage } from '../shell.tsx'
 import { movieHref } from './links.ts'
 import { longDate, SummarySkeleton, titleItem } from './sections.tsx'
 
@@ -43,8 +42,6 @@ const departmentLabel = {
 export function PersonPage() {
   const { id } = useParams<{ id: string }>()
   const [, navigate] = useLocation()
-  const { role } = useShell()
-  const staff = isStaff(role)
   const person = useQuery(`person:${id}`, (c) => c.metadata.person(id), ['movies.updated'])
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
   const p = person.data
@@ -66,7 +63,7 @@ export function PersonPage() {
         <>
           <Summary person={p} />
           <KnownFor credits={p.credits} />
-          <Filmography person={p} staff={staff} onAdd={(m) => setAdding([m])} />
+          <Filmography person={p} onAdd={(m) => setAdding([m])} />
         </>
       )}
       <AddMovieDialog movies={adding} onOpenChange={(o) => !o && setAdding([])} />
@@ -149,11 +146,9 @@ type Filter = 'all' | 'in' | 'out'
 
 function Filmography({
   person: p,
-  staff,
   onAdd,
 }: {
   person: Person
-  staff: boolean
   onAdd: (movie: DiscoverMovie) => void
 }) {
   const [filter, setFilter] = useState<Filter>('all')
@@ -219,7 +214,6 @@ function Filmography({
                           <Button
                             size="sm"
                             icon="add"
-                            disabled={!staff}
                             onClick={() => onAdd(c)}
                             aria-label={`Add ${c.title}`}
                           >
@@ -235,11 +229,6 @@ function Filmography({
           </TabsContent>
         </Tabs>
       </TableFrame>
-      {!staff && counts.out > 0 && (
-        <p className="text-caption text-text-3">
-          Only owners and admins can add movies. Ask the server’s owner for one you want.
-        </p>
-      )}
     </section>
   )
 }

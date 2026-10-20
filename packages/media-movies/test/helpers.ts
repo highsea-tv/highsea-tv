@@ -91,7 +91,7 @@ export async function setup({ key = true }: { key?: boolean } = {}) {
         id,
         username: id,
         displayName: id,
-        role: 'member',
+        role: 'user',
         webauthnId: `w-${id}`,
         createdAt: now,
         updatedAt: now,

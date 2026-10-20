@@ -6,7 +6,7 @@ import { defaultSoundPack } from '@highsea/tokens'
 import { eq } from 'drizzle-orm'
 import { appKind } from '../src/keys.ts'
 import { checkMark } from '../src/marks.ts'
-import { memberDefault, normalize, ownerDefault, type WidgetPlacement } from '../src/widgets.ts'
+import { normalize, ownerDefault, type WidgetPlacement, widgetDefinitions } from '../src/widgets.ts'
 import { png, setup, svg } from './helpers.ts'
 
 const reason = (fn: () => unknown) => {
@@ -35,14 +35,17 @@ describe('dashboard layouts', () => {
   test('a person sees their role default until they save', () => {
     const { p, person } = setup()
     const owner = person('o', 'owner')
-    const member = person('m')
+    const admin = person('a')
     expect(p.dashboard.layout(owner)).toMatchObject({ inherited: true, updatedAt: null })
-    expect(p.dashboard.layout(owner).widgets.map((w) => w.kind)).toEqual(
-      ownerDefault.map((w) => w.kind),
-    )
-    expect(p.dashboard.layout(member).widgets.map((w) => w.kind)).toEqual(
-      memberDefault.map((w) => w.kind),
-    )
+    for (const who of [owner, admin])
+      expect(p.dashboard.layout(who).widgets.map((w) => w.kind)).toEqual(
+        ownerDefault.map((w) => w.kind),
+      )
+  })
+
+  test('every widget is for the owner and admins, the dashboard’s only readers (ADR 0032)', () => {
+    for (const d of widgetDefinitions)
+      expect(d.roles.toSorted(), d.kind).toEqual(['admin', 'owner'])
   })
 
   test('saving keeps the order, and reset forgets it', () => {
@@ -57,27 +60,6 @@ describe('dashboard layouts', () => {
     expect(saved.widgets.map((w) => w.id)).toEqual(['b', 'a'])
     expect(seen.at(-1)).toEqual(expect.objectContaining({ topic: 'layout.updated', ids: ['m'] }))
     expect(p.dashboard.reset(me).inherited).toBe(true)
-  })
-
-  test('a member can’t add a staff widget', () => {
-    const { p, person } = setup()
-    const me = person('m')
-    expect(
-      reason(() => p.dashboard.save(me, [{ id: 'n', kind: 'network', span: 2, rows: 2 }])),
-    ).toBe('forbidden:widget-not-allowed')
-  })
-
-  test('a staff widget in a stored layout never reaches someone who became a member', () => {
-    const { p, person, db } = setup()
-    const me = person('a', 'admin')
-    p.dashboard.save(me, [
-      { id: 'n', kind: 'network', span: 2, rows: 2 },
-      { id: 'c', kind: 'calendar', span: 2, rows: 3 },
-    ])
-    db.update(schema.users).set({ role: 'member' }).where(eq(schema.users.id, 'a')).run()
-    expect(p.dashboard.layout({ id: 'a', role: 'member' }).widgets.map((w) => w.kind)).toEqual([
-      'calendar',
-    ])
   })
 
   test('duplicates and bad settings are refused', () => {
@@ -112,14 +94,16 @@ describe('dashboard layouts', () => {
     expect(stored.map((w) => w.id)).toEqual(['r', 'x'])
   })
 
-  test('a role default drops what the role can’t see and says so', () => {
+  test('the admins’ default reaches every admin who hasn’t saved their own', () => {
     const { p, person } = setup()
-    const saved = p.dashboard.saveRoleDefault('member', [
-      { id: 'n', kind: 'network', span: 2, rows: 2 },
+    const saved = p.dashboard.saveRoleDefault('admin', [
       { id: 'c', kind: 'calendar', span: 2, rows: 3 },
     ])
-    expect(saved.dropped).toEqual(['network'])
-    expect(p.dashboard.layout(person('m')).widgets.map((w) => w.kind)).toEqual(['calendar'])
+    expect(saved.dropped).toEqual([])
+    expect(p.dashboard.layout(person('a')).widgets.map((w) => w.kind)).toEqual(['calendar'])
+    expect(p.dashboard.layout(person('o', 'owner')).widgets.map((w) => w.kind)).toEqual(
+      ownerDefault.map((w) => w.kind),
+    )
   })
 })
 

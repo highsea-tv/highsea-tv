@@ -20,10 +20,10 @@ const screens: Record<
   mobile: { w: 390, h: 844, label: 'Mobile', place: 'a phone', client: 'ios' },
 }
 
-/** The toolbar's roles stand for these two people (mock/client.ts). */
+/** People to preview as: the owner, and a user (mock/client.ts). */
 const viewers = [
   { value: 'owner', label: 'Ines (owner)', userId: 'u-ines' },
-  { value: 'member', label: 'Ruth (member)', userId: 'u-ruth' },
+  { value: 'user', label: 'Ruth (user)', userId: 'u-ruth' },
 ]
 
 export function ClientPreview({

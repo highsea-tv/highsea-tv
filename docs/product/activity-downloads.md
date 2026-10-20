@@ -53,7 +53,7 @@ Two views of the same downloads, for two jobs. **Activity** is the library's vie
 - **Needs attention:**
   - **Stalled:** "No seeds for 2 hours. highsea will search for another release at 3 hours." · **Replace** now.
   - **Import blocked:** "The release contains an executable file (Nosferatu.exe). It wasn't imported, and it has been blocklisted." · **Find another**; the row menu also offers **Import without the blocked file**.
-- **Permission-limited:** members see the queue, history and blocklist, without actions or Unblock. Downloads is staff-only: members get "Only owners and admins can open Downloads" with **Go to the dashboard**.
+- **No reduced states.** Only the owner and admins open the admin ([ADR 0032](../adr/0032-administrative-and-normal-access.md)); users get the refusal page.
 
 ## Interactions
 
@@ -97,7 +97,7 @@ Two views of the same downloads, for two jobs. **Activity** is the library's vie
 
 ## Decisions
 
-- **Two pages, one engine.** Activity speaks in movies and fixes; Downloads speaks in torrents. Members need the first, not the second.
+- **Two pages, one engine.** Activity speaks in movies and fixes; Downloads speaks in torrents.
 - **The fix sits in the row.** A stalled or blocked row says why and offers the one action that resolves it; everything else stays in the menu.
 - **Find another is one step:** blocklist and search together. Blocklisting without searching would leave the movie stuck.
 - **The VPN line is always visible** on Downloads, not buried in settings, because a leak is the failure that matters most here. When the tunnel drops, the engine stops rather than falling back.

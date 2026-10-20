@@ -8,7 +8,7 @@ import { COOKIE, PEER_HEADER } from '../session-cookie.ts'
 export type AdminSession = {
   userId: string
   displayName: string
-  role: 'owner' | 'admin' | 'member' | 'restricted'
+  role: 'owner' | 'admin' | 'user'
 }
 
 export const setupComplete = () => getRuntime().setupComplete()

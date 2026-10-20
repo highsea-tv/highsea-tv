@@ -29,10 +29,10 @@ function signedIn(outcome: SignInOutcome) {
 }
 
 describe('owner and setup', () => {
-  test('makes one owner with every permission and all libraries', async () => {
+  test('makes one owner with all libraries, whose powers come from the role', async () => {
     const { owner, auth } = await withOwner()
     expect(owner.role).toBe('owner')
-    expect(owner.permissions).toContain('admin')
+    expect(owner.permissions).toEqual([])
     expect(owner.libraries).toBe('all')
     expect(auth.hasOwner()).toBe(true)
     expect((await failure(() => auth.createOwner({ ...OWNER, username: 'mara' }, meta))).code).toBe(
@@ -88,7 +88,7 @@ describe('password sign-in', () => {
   test('one generic error for an unknown user, a wrong password or a pending invite', async () => {
     const env = await withOwner()
     const invite = env.auth.users.invite(
-      { displayName: 'Mara', email: null, role: 'member', libraries: 'all' },
+      { displayName: 'Mara', email: null, role: 'user', libraries: 'all' },
       env.actor,
       meta,
     )
@@ -252,9 +252,16 @@ describe('two-step verification', () => {
     ).toBe(9)
   })
 
+  test('a new server requires two-step for the owner from the start', async () => {
+    const env = setup({}, { fresh: true })
+    await env.auth.createOwner(OWNER, meta)
+    expect(env.auth.security.get().twoFactor).toBe(true)
+    expect((await env.auth.signIn.password(OWNER, meta)).status).toBe('two-factor-setup')
+  })
+
   test('a TV signing in with a password sees the code step only if the person turned it on', async () => {
     const env = await withOwner()
-    env.security({ twoFactor: 'everyone' })
+    env.security({ twoFactor: true })
     // required by policy, not turned on: the TV signs straight in
     signedIn(await env.auth.signIn.password({ ...OWNER, device: tv }, meta))
     // the admin, though, is asked to enrol
@@ -264,9 +271,9 @@ describe('two-step verification', () => {
 
   test('the policy makes the admin enrol during sign-in, then signs in with recovery codes', async () => {
     const env = await withOwner()
-    env.security({ twoFactor: 'staff' })
+    env.security({ twoFactor: true })
     const member = await addMember(env, 'Mara')
-    // members aren't staff
+    // users aren't staff
     signedIn(
       await env.auth.signIn.password(
         { username: member.username, password: 'a long enough password' },
@@ -285,67 +292,59 @@ describe('two-step verification', () => {
     expect(env.auth.users.get(env.owner.id).twoFactor).toBe(true)
   })
 
-  test('someone who lost the app and the codes gets it turned off by whoever manages people', async () => {
+  test('someone who lost the app and the codes gets it turned off by the owner', async () => {
     const env = await withOwner()
     const password = 'a long enough password'
     const enrol = async (id: string, pw = password) => {
       const { secret } = await env.auth.twoFactor.start(id, pw)
       env.auth.twoFactor.enable(id, codeFor(secret, env.clock.now()), meta)
     }
-    const mara = await addMember(env, 'Mara')
     const ruth = await addMember(env, 'Ruth', 'admin')
     const tess = await addMember(env, 'Tess', 'admin')
     const asRuth = { id: ruth.id, name: ruth.username }
-    await enrol(mara.id)
     await enrol(ruth.id)
     await enrol(tess.id)
 
-    env.auth.users.resetTwoFactor(mara.id, asRuth, meta)
-    expect(env.auth.users.get(mara.id).twoFactor).toBe(false)
+    env.auth.users.resetTwoFactor(tess.id, env.actor, meta)
+    expect(env.auth.users.get(tess.id).twoFactor).toBe(false)
     expect(env.auth.audit({}).items[0]).toMatchObject({
       action: 'two-factor.reset',
-      targetId: mara.id,
+      targetId: tess.id,
     })
     const recovery = env.db
       .select()
       .from(schema.recoveryCodes)
-      .where(eq(schema.recoveryCodes.userId, mara.id))
+      .where(eq(schema.recoveryCodes.userId, tess.id))
       .all()
     expect(recovery).toEqual([])
-    signedIn(await env.auth.signIn.password({ username: mara.username, password }, meta))
-    // the policy has them set it up again at the next admin sign-in
-    await enrol(mara.id)
-    env.auth.users.resetTwoFactor(mara.id, env.actor, meta)
-    env.security({ twoFactor: 'everyone' })
+    signedIn(await env.auth.signIn.password({ username: tess.username, password }, meta))
+    // the policy has them set it up again at the next sign-in
+    env.security({ twoFactor: true })
     expect(
-      (await env.auth.signIn.password({ username: mara.username, password }, meta)).status,
+      (await env.auth.signIn.password({ username: tess.username, password }, meta)).status,
     ).toBe('two-factor-setup')
 
-    expect((await failure(() => env.auth.users.resetTwoFactor(mara.id, asRuth, meta))).code).toBe(
-      'conflict',
-    )
-    expect((await failure(() => env.auth.users.resetTwoFactor(ruth.id, asRuth, meta))).reason).toBe(
-      'self',
-    )
-    // only the owner manages admins, and nobody else touches the owner
-    expect((await failure(() => env.auth.users.resetTwoFactor(tess.id, asRuth, meta))).code).toBe(
-      'forbidden',
+    expect(
+      (await failure(() => env.auth.users.resetTwoFactor(tess.id, env.actor, meta))).code,
+    ).toBe('conflict')
+    // admins see people but don't manage them (ADR 0032)
+    await enrol(tess.id)
+    expect((await failure(() => env.auth.users.resetTwoFactor(tess.id, asRuth, meta))).reason).toBe(
+      'not-owner',
     )
     await enrol(env.owner.id, OWNER.password)
     expect(
       (await failure(() => env.auth.users.resetTwoFactor(env.owner.id, asRuth, meta))).code,
     ).toBe('forbidden')
-    env.auth.users.resetTwoFactor(tess.id, env.actor, meta)
-    expect(env.auth.users.get(tess.id).twoFactor).toBe(false)
   })
 
   test('can’t be turned off while the policy requires it', async () => {
     const env = await enrolled()
-    env.security({ twoFactor: 'everyone' })
+    env.security({ twoFactor: true })
     expect(
       (await failure(() => env.auth.twoFactor.disable(env.owner.id, OWNER.password, meta))).reason,
     ).toBe('two-factor-required')
-    env.security({ twoFactor: 'optional' })
+    env.security({ twoFactor: false })
     await env.auth.twoFactor.disable(env.owner.id, OWNER.password, meta)
     expect(env.auth.users.get(env.owner.id).twoFactor).toBe(false)
     signedIn(await env.auth.signIn.password(OWNER, meta))
@@ -356,7 +355,7 @@ describe('people', () => {
   test('an invite is a pending person with a week-long, single-use link', async () => {
     const env = await withOwner()
     const invite = env.auth.users.invite(
-      { displayName: 'Mara Jensen', email: null, role: 'member', libraries: 'all' },
+      { displayName: 'Mara Jensen', email: null, role: 'user', libraries: 'all' },
       env.actor,
       meta,
     )
@@ -378,7 +377,7 @@ describe('people', () => {
     expect(joined.session.user).toMatchObject({
       username: 'mara',
       invited: false,
-      role: 'member',
+      role: 'user',
       permissions: ['request'],
     })
     expect(
@@ -393,7 +392,7 @@ describe('people', () => {
   test('names must be unique, and invites expire', async () => {
     const env = await withOwner()
     const invite = env.auth.users.invite(
-      { displayName: 'Mara', email: null, role: 'member', libraries: 'all' },
+      { displayName: 'Mara', email: null, role: 'user', libraries: 'all' },
       env.actor,
       meta,
     )
@@ -401,7 +400,7 @@ describe('people', () => {
       (
         await failure(() =>
           env.auth.users.invite(
-            { displayName: 'Mara', email: null, role: 'member', libraries: 'all' },
+            { displayName: 'Mara', email: null, role: 'user', libraries: 'all' },
             env.actor,
             meta,
           ),
@@ -416,28 +415,36 @@ describe('people', () => {
     expect(env.auth.links.info(again.link.split('/').pop() as string).kind).toBe('invite')
   })
 
-  test('changing the role resets permissions; libraries can be narrowed', async () => {
+  test('a user’s permissions and libraries are theirs; staff hold neither', async () => {
     const env = await withOwner()
     const mara = await addMember(env, 'Mara')
     let updated = env.auth.users.update(
       mara.id,
-      { permissions: ['request', 'download'] },
+      { permissions: ['request', 'download'], libraries: ['movies'] },
       env.actor,
       meta,
     )
     expect(updated.permissions.sort()).toEqual(['download', 'request'])
-    updated = env.auth.users.update(
-      mara.id,
-      { role: 'restricted', libraries: ['movies'] },
-      env.actor,
-      meta,
-    )
-    expect(updated.permissions).toEqual([])
     expect(updated.libraries).toEqual(['movies'])
     expect(
       (await failure(() => env.auth.users.update(mara.id, { libraries: [] }, env.actor, meta)))
         .reason,
     ).toBe('no-libraries')
+    // an admin's powers come from the role: no permissions, every library
+    updated = env.auth.users.update(mara.id, { role: 'admin' }, env.actor, meta)
+    expect(updated.permissions).toEqual([])
+    expect(updated.libraries).toBe('all')
+    updated = env.auth.users.update(
+      mara.id,
+      { permissions: ['download'], libraries: ['movies'] },
+      env.actor,
+      meta,
+    )
+    expect(updated.permissions).toEqual([])
+    expect(updated.libraries).toBe('all')
+    // back to a user: the role's default, Ask for titles
+    updated = env.auth.users.update(mara.id, { role: 'user' }, env.actor, meta)
+    expect(updated.permissions).toEqual(['request'])
   })
 
   test('the refusals in the spec', async () => {
@@ -454,38 +461,77 @@ describe('people', () => {
     expect((await failure(() => env.auth.users.remove(admin.id, actor, meta))).message).toBe(
       'You can’t remove yourself.',
     )
-    // an admin can't make admins or touch other admins
+    // only the owner invites and manages people; an admin sees them read-only (ADR 0032)
     const mara = await addMember(env, 'Mara')
-    expect(
-      (await failure(() => env.auth.users.update(mara.id, { role: 'admin' }, actor, meta))).code,
-    ).toBe('forbidden')
-    // nor take one over with a reset link, or collect a pending admin's invite
-    const tess = await addMember(env, 'Tess', 'admin')
-    expect((await failure(() => env.auth.users.resetLink(tess.id, actor, meta))).code).toBe(
-      'forbidden',
-    )
     const pending = env.auth.users.invite(
-      { displayName: 'Uma', email: null, role: 'admin', libraries: 'all' },
+      { displayName: 'Uma', email: null, role: 'user', libraries: 'all' },
       env.actor,
       meta,
     )
-    expect((await failure(() => env.auth.users.inviteLink(pending.user.id, actor))).code).toBe(
-      'forbidden',
-    )
-    expect(env.auth.users.resetLink(mara.id, actor, meta).link).toContain('/reset/')
-    // a member can't manage people
+    const refusals = [
+      () =>
+        env.auth.users.invite(
+          { displayName: 'Vic', email: null, role: 'user', libraries: 'all' },
+          actor,
+          meta,
+        ),
+      () => env.auth.users.update(mara.id, { permissions: ['download'] }, actor, meta),
+      () => env.auth.users.remove(mara.id, actor, meta),
+      () => env.auth.users.resetLink(mara.id, actor, meta),
+      () => env.auth.users.inviteLink(pending.user.id, actor),
+      () => env.auth.users.resetTwoFactor(mara.id, actor, meta),
+    ]
+    for (const refused of refusals) {
+      const f = await failure(refused)
+      expect(f.code).toBe('forbidden')
+      expect(f.reason).toBe('not-owner')
+    }
+    expect(env.auth.users.list().map((u) => u.displayName)).toContain('Mara')
+    // nor can a user
     expect(
       (
         await failure(() =>
           env.auth.users.update(
             admin.id,
-            { role: 'member' },
+            { role: 'user' },
             { id: mara.id, name: mara.username },
             meta,
           ),
         )
       ).code,
     ).toBe('forbidden')
+  })
+
+  test('making an admin a user ends their admin sessions and keys, not their apps', async () => {
+    const env = await withOwner()
+    const password = 'a long enough password'
+    const ruth = await addMember(env, 'Ruth', 'admin')
+    const browser = signedIn(
+      await env.auth.signIn.password({ username: ruth.username, password }, meta),
+    )
+    const app = signedIn(
+      await env.auth.signIn.password({ username: ruth.username, password, device: tv }, meta),
+    )
+    const key = env.auth.apiKeys.create(
+      { name: 'Scripts', scope: 'full' },
+      { id: ruth.id, name: ruth.username },
+      meta,
+    )
+    const auth = (secret: string) =>
+      env.auth.authenticate({ secret, headers: new Headers(), fromTrustedProxy: false })
+    expect(auth(browser.secret)?.user.role).toBe('admin')
+
+    env.auth.users.update(ruth.id, { role: 'user' }, env.actor, meta)
+    expect(auth(browser.secret)).toBeNull()
+    expect(auth(key.secret)).toBeNull()
+    expect(env.auth.apiKeys.list(env.actor)).toEqual([])
+    // the TV keeps working, as a user's
+    expect(auth(app.secret)?.user).toMatchObject({ role: 'user', permissions: ['request'] })
+    expect(env.auth.audit({}).items[0]).toMatchObject({
+      action: 'user.update',
+      targetId: ruth.id,
+      detail: { role: 'user', endedStaffAccess: true },
+    })
   })
 
   test('removing someone signs them out everywhere', async () => {
@@ -582,7 +628,7 @@ describe('devices and API keys', () => {
     const key = env.auth.apiKeys.create({ name: 'Home Assistant', scope: 'read' }, env.actor, meta)
     expect(key.secret).toStartWith('hs_')
     expect(key.prefix).toBe(key.secret.slice(0, 7))
-    expect(JSON.stringify(env.auth.apiKeys.list())).not.toContain(key.secret)
+    expect(JSON.stringify(env.auth.apiKeys.list(env.actor))).not.toContain(key.secret)
     const p = env.auth.authenticate({
       secret: key.secret,
       headers: new Headers(),
@@ -590,7 +636,7 @@ describe('devices and API keys', () => {
     })
     expect(p).toMatchObject({ via: 'key', scope: 'read' })
     expect(p?.user.role).toBe('admin')
-    expect(p?.user.permissions).not.toContain('admin')
+    expect(p?.user.permissions).toEqual([])
     env.auth.apiKeys.revoke(key.id, env.actor, meta)
     expect(
       env.auth.authenticate({
@@ -599,6 +645,45 @@ describe('devices and API keys', () => {
         fromTrustedProxy: false,
       }),
     ).toBeNull()
+  })
+
+  test('keys are for staff: an admin sees their own, the owner sees everyone’s', async () => {
+    const env = await withOwner()
+    const ruth = await addMember(env, 'Ruth', 'admin')
+    const tess = await addMember(env, 'Tess', 'admin')
+    const mara = await addMember(env, 'Mara')
+    const asRuth = { id: ruth.id, name: ruth.username }
+    const asTess = { id: tess.id, name: tess.username }
+    const mine = env.auth.apiKeys.create({ name: 'Owner’s', scope: 'read' }, env.actor, meta)
+    const ruths = env.auth.apiKeys.create({ name: 'Ruth’s', scope: 'read' }, asRuth, meta)
+    expect(
+      (
+        await failure(() =>
+          env.auth.apiKeys.create(
+            { name: 'Mara’s', scope: 'read' },
+            { id: mara.id, name: mara.username },
+            meta,
+          ),
+        )
+      ).code,
+    ).toBe('forbidden')
+    expect(env.auth.apiKeys.list(asRuth).map((k) => k.id)).toEqual([ruths.id])
+    expect(env.auth.apiKeys.list(asTess)).toEqual([])
+    expect(
+      env.auth.apiKeys
+        .list(env.actor)
+        .map((k) => k.id)
+        .sort(),
+    ).toEqual([mine.id, ruths.id].sort())
+    // someone else's key is not there for an admin, and is for the owner
+    expect((await failure(() => env.auth.apiKeys.revoke(ruths.id, asTess, meta))).code).toBe(
+      'not-found',
+    )
+    expect((await failure(() => env.auth.apiKeys.revoke(mine.id, asRuth, meta))).code).toBe(
+      'not-found',
+    )
+    env.auth.apiKeys.revoke(ruths.id, env.actor, meta)
+    expect(env.auth.apiKeys.list(asRuth)).toEqual([])
   })
 
   test('random strings authenticate as nobody', async () => {
@@ -640,7 +725,7 @@ describe('TV pairing', () => {
 
   test('two-step verification never reaches the TV', async () => {
     const env = await withOwner()
-    env.security({ twoFactor: 'everyone' })
+    env.security({ twoFactor: true })
     const { secret } = await env.auth.twoFactor.start(env.owner.id, OWNER.password)
     env.auth.twoFactor.enable(env.owner.id, codeFor(secret, env.clock.now()), meta)
     const pairing = env.auth.pairing.start(tv, meta)
@@ -687,7 +772,7 @@ describe('security settings and the audit log', () => {
     const env = await withOwner()
     const saved = env.auth.security.save(
       {
-        twoFactor: 'staff',
+        twoFactor: true,
         passkeys: true,
         sessionDays: 7,
         oidc: {
@@ -712,7 +797,7 @@ describe('security settings and the audit log', () => {
   test('single sign-on needs an https issuer and the external URL', async () => {
     const env = await withOwner()
     const input = {
-      twoFactor: 'optional' as const,
+      twoFactor: false,
       passkeys: true,
       sessionDays: 30,
       oidc: { enabled: true, name: 'Authentik', issuer: 'http://auth.local', clientId: 'highsea' },

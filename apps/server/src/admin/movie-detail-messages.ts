@@ -17,7 +17,6 @@ export const movieDetail = defineMessages({
   'refresh.failed': 'Couldn’t refresh it',
   remove: 'Remove from library',
   monitored: 'Monitored',
-  notMonitored: 'Not monitored',
   'monitored.hint': 'Grab and upgrade releases automatically',
   'monitored.failed': 'Couldn’t save that',
   // decision 2

@@ -192,7 +192,7 @@ describe('people', () => {
   test('invite, accept the link, change the role, reset, remove', async () => {
     const { app, anon, ownerApi } = await started()
     const invite = await ownerApi.users.invite({
-      body: { displayName: 'Mara Jensen', email: null, role: 'member', libraries: 'all' },
+      body: { displayName: 'Mara Jensen', email: null, role: 'user', libraries: 'all' },
     })
     expect(invite.user.invited).toBe(true)
     expect(invite.link).toContain('/invite/')
@@ -243,15 +243,17 @@ describe('devices and keys', () => {
     expect(await failure(other.auth.session())).toMatchObject({ code: 'unauthorized' })
   })
 
-  test('a member can’t revoke someone else’s device', async () => {
+  test('only the owner revokes someone else’s device', async () => {
     const { runtime, owner, app, ownerApi } = await started()
-    const member = clientFor(app, {
-      token: (await addMember(runtime, owner.id, 'Mara Jensen')).token,
-    })
     const ownerDevice = (await ownerApi.auth.session()).deviceId as string
-    expect((await failure(member.devices.revoke({ params: { id: ownerDevice } }))).code).toBe(
-      'forbidden',
-    )
+    for (const role of ['user', 'admin'] as const) {
+      const someone = clientFor(app, {
+        token: (await addMember(runtime, owner.id, `Mara ${role}`, role)).token,
+      })
+      expect((await failure(someone.devices.revoke({ params: { id: ownerDevice } }))).code).toBe(
+        'forbidden',
+      )
+    }
   })
 
   test('API keys: listed without the secret, revoked, and can’t make keys', async () => {

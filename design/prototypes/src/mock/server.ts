@@ -58,6 +58,7 @@ import type {
   Server,
   SetupInput,
   SignInResult,
+  StaffRole,
   SubtitleSearchResult,
   SubtitleSettings,
   SubtitleStats,
@@ -65,7 +66,6 @@ import type {
   Torrent,
   TorrentLimits,
   User,
-  UserRole,
   WidgetLayout,
   WidgetPlacement,
 } from './types.ts'
@@ -626,6 +626,16 @@ export function createApi(srv: MockServer, ctx: Ctx) {
   const requireStaff = () => {
     if (!staff()) throw forbidden()
   }
+  /** Inviting and managing people, security and backups are the owner's alone (ADR 0032). */
+  const requireOwner = () => {
+    if (me().role !== 'owner') throw forbidden()
+  }
+  /** The signed-in person's role, when they open the admin: a user never does. */
+  const staffRole = (): StaffRole => {
+    const { role } = me()
+    if (role === 'user') throw forbidden()
+    return role
+  }
   const layoutKey = (scope: string) => `layout:${srv.kind}:${scope}`
 
   const queueItem = (t: Torrent): QueueItem => {
@@ -810,7 +820,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       ]
     })
 
-  const layoutFor = (role: UserRole): WidgetPlacement[] => {
+  const layoutFor = (role: StaffRole): WidgetPlacement[] => {
     const saved = storage.load(layoutKey(`role:${role}`)) as WidgetPlacement[] | undefined
     return (saved ?? roleDefault(role)).filter((w) => allowed(w.kind, role)).map(normalize)
   }
@@ -915,11 +925,11 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         )
       },
       backups: () => {
-        requireStaff()
+        requireOwner()
         return [...state.backups].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
       },
       backupNow: (): Backup => {
-        requireStaff()
+        requireOwner()
         const b: Backup = {
           id: `b-${now().toString(36)}`,
           createdAt: iso(now()),
@@ -932,7 +942,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
       /** Restores a backup: the server restarts on it. Media files aren't touched. */
       restore: (id: string) => {
-        requireStaff()
+        requireOwner()
         if (!state.backups.some((b) => b.id === id))
           throw new ApiError(404, 'not-found', 'That backup is gone.')
       },
@@ -2358,28 +2368,34 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     dashboard: {
       layout: (): WidgetLayout => {
         const u = me()
+        const role = staffRole()
         const own = storage.load(layoutKey(`user:${u.id}`)) as WidgetPlacement[] | undefined
         return {
           scope: { kind: 'user', userId: u.id },
-          widgets: (own ?? layoutFor(u.role)).filter((w) => allowed(w.kind, u.role)).map(normalize),
+          widgets: (own ?? layoutFor(role)).filter((w) => allowed(w.kind, role)).map(normalize),
           updatedAt: iso(now()),
           inherited: !own,
         }
       },
       saveLayout: (widgets: WidgetPlacement[]) => {
         const u = me()
-        for (const w of widgets) if (!allowed(w.kind, u.role)) throw forbidden()
+        const role = staffRole()
+        for (const w of widgets) if (!allowed(w.kind, role)) throw forbidden()
         storage.save(layoutKey(`user:${u.id}`), widgets)
         srv.events.emit({ type: 'layout.updated' })
       },
       /** Forgets the user's own layout, so they see their role's default again. */
       resetLayout: () => {
+        staffRole()
         storage.save(layoutKey(`user:${me().id}`), undefined)
         srv.events.emit({ type: 'layout.updated' })
       },
-      roleDefault: (role: UserRole) => layoutFor(role),
-      saveRoleDefault: (role: UserRole, widgets: WidgetPlacement[]) => {
-        if (me().role !== 'owner') throw forbidden()
+      roleDefault: (role: StaffRole) => {
+        requireStaff()
+        return layoutFor(role)
+      },
+      saveRoleDefault: (role: StaffRole, widgets: WidgetPlacement[]) => {
+        requireOwner()
         storage.save(
           layoutKey(`role:${role}`),
           widgets.filter((w) => allowed(w.kind, role)),
@@ -2395,7 +2411,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
       /** A pending account and the single-use link that finishes it (valid for a week). */
       invite: (input: InviteInput): Invite => {
-        requireStaff()
+        requireOwner()
         const name = input.displayName.trim()
         if (!name)
           throw new ApiError(400, 'invalid', 'Give them a name, as the household knows them.')
@@ -2410,13 +2426,9 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           username,
           displayName: name,
           role: input.role,
-          permissions:
-            input.role === 'admin'
-              ? ['request', 'autoApprove', 'download', 'manageLibrary']
-              : input.role === 'member'
-                ? ['request']
-                : [],
-          libraries: input.libraries,
+          // staff hold every power by their role and see every library
+          permissions: input.role === 'admin' ? [] : ['request'],
+          libraries: input.role === 'admin' ? 'all' : input.libraries,
           twoFactor: false,
           lastSeen: null,
           invited: true,
@@ -2429,8 +2441,12 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           expiresAt: iso(now() + 7 * 86_400_000),
         }
       },
+      /**
+       * Role, permissions, libraries. Staff hold no permissions and see every library; making an
+       * admin a user ends their admin sessions and API keys at once.
+       */
       update: (id: string, patch: Partial<Pick<User, 'role' | 'permissions' | 'libraries'>>) => {
-        requireStaff()
+        requireOwner()
         const u = state.users.find((x) => x.id === id)
         if (!u) throw new ApiError(404, 'not-found', 'There’s no one with that id.')
         if (u.role === 'owner' && patch.role && patch.role !== 'owner')
@@ -2441,23 +2457,31 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           )
         if (patch.role === 'owner')
           throw new ApiError(400, 'owner', 'There’s one owner. Hand ownership over in Security.')
+        const demoted = u.role === 'admin' && patch.role === 'user'
         Object.assign(u, patch)
+        if (u.role === 'admin') Object.assign(u, { permissions: [], libraries: 'all' })
+        else if (demoted && !patch.permissions) u.permissions = ['request']
+        if (demoted) {
+          state.devices = state.devices.filter((d) => d.userId !== id || d.client !== 'admin')
+          state.apiKeys = state.apiKeys.filter((k) => k.userId !== id)
+        }
         srv.events.emit({ type: 'users.updated' })
         return u
       },
       remove: (id: string) => {
-        requireStaff()
+        requireOwner()
         const u = state.users.find((x) => x.id === id)
         if (!u) return
         if (u.role === 'owner') throw new ApiError(400, 'owner', 'The owner can’t be removed.')
         if (u.id === me().id) throw new ApiError(400, 'self', 'You can’t remove yourself.')
         state.users = state.users.filter((x) => x.id !== id)
         state.devices = state.devices.filter((d) => d.userId !== id)
+        state.apiKeys = state.apiKeys.filter((k) => k.userId !== id)
         srv.events.emit({ type: 'users.updated' })
       },
       /** Emails a link to choose a new password; their devices stay signed in. */
       resetPassword: (id: string) => {
-        requireStaff()
+        requireOwner()
         return state.users.find((x) => x.id === id)?.displayName ?? ''
       },
     },
@@ -2473,7 +2497,8 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       revoke: (id: string) => {
         const d = state.devices.find((x) => x.id === id)
         if (!d) return
-        if (d.userId !== me().id) requireStaff()
+        // someone else's device: managing people, the owner's alone
+        if (d.userId !== me().id) requireOwner()
         if (id === 'd-admin')
           throw new ApiError(400, 'self', 'That’s the browser you’re using. Sign out instead.')
         state.devices = state.devices.filter((x) => x.id !== id)
@@ -2482,9 +2507,12 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     },
 
     apiKeys: {
+      /** The owner sees everyone's keys; an admin their own. */
       list: () => {
         requireStaff()
-        return state.apiKeys
+        return me().role === 'owner'
+          ? state.apiKeys
+          : state.apiKeys.filter((k) => k.userId === me().id)
       },
       create: (name: string, scope: ApiKey['scope']): CreatedApiKey => {
         requireStaff()
@@ -2498,6 +2526,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           name: name.trim(),
           prefix: secret.slice(0, 7),
           scope,
+          userId: me().id,
           createdAt: iso(now()),
           lastUsed: null,
         }
@@ -2507,7 +2536,9 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
       revoke: (id: string) => {
         requireStaff()
-        state.apiKeys = state.apiKeys.filter((k) => k.id !== id)
+        const k = state.apiKeys.find((x) => x.id === id)
+        if (k && k.userId !== me().id) requireOwner()
+        state.apiKeys = state.apiKeys.filter((x) => x.id !== id)
         srv.events.emit({ type: 'users.updated' })
       },
     },
@@ -2618,10 +2649,14 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     settings: {
       get: <K extends SettingsSection>(section: K): Settings[K] => {
         requireStaff()
+        // security and backups are the owner's alone, even to read (ADR 0032)
+        if (section === 'security' || section === 'backups') requireOwner()
         return state.settings[section]
       },
       save: <K extends SettingsSection>(section: K, value: Settings[K]): Settings[K] => {
         requireStaff()
+        // security and backups are the owner's alone (ADR 0032)
+        if (section === 'security' || section === 'backups') requireOwner()
         state.settings[section] = value
         srv.events.emit({ type: 'settings.updated' })
         return value

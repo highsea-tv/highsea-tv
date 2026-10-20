@@ -35,7 +35,7 @@ export {
 export type { PasskeyView, RelyingParty } from './passkeys.ts'
 export { ARGON2, hashPassword, PASSWORD_MAX, PASSWORD_MIN, verifyPassword } from './passwords.ts'
 export { createRateLimiter, LIMITS } from './rate-limit.ts'
-export { ALL_LIBRARIES, canManageUsers, isStaff, LIBRARIES, ROLE_DEFAULTS } from './roles.ts'
+export { ALL_LIBRARIES, canManageUsers, isStaff, LIBRARIES, may, ROLE_DEFAULTS } from './roles.ts'
 export { newCode, newSecret, normalizeCode, verifier } from './secrets.ts'
 export type { SecurityInput, SecurityView } from './security.ts'
 export {
@@ -51,7 +51,6 @@ export {
   SECURITY_KEY,
   SESSION_DAYS,
   type SecuritySettings,
-  type TwoFactorPolicy,
 } from './settings.ts'
 export { CODE_ATTEMPTS, type SignInOutcome } from './sign-in.ts'
 export { base32Decode, hotp, otpauthUri, totpStep, verifyTotp } from './totp.ts'
@@ -195,7 +194,7 @@ export function createAuth(deps: AuthDeps) {
     },
 
     apiKeys: {
-      list: () => keys.listApiKeys(ctx),
+      list: (actor: accounts.Actor) => keys.listApiKeys(ctx, actor),
       create: (
         input: { name: string; scope: keys.ApiKeyScope },
         actor: accounts.Actor,

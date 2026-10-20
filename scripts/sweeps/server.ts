@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The server's admin pages (Phase 3): the same checks as the prototype sweeps, on the real thing.
 // Boots a throwaway server on its own folders, sweeps setup, finishes it through the API, seeds
-// people, keys, a custom theme and a waiting TV, then visits every admin page signed out and signed in: axe,
+// people, keys, a custom theme and a waiting TV, then visits every admin page signed out, as the
+// owner and as an admin, and as a user, who gets the refusal page at every address (ADR 0032): axe,
 // overflow and page errors in three themes, at 200% text and with reduced motion, then the
 // keyboard walk. TMDB answers from the recordings in packages/metadata (HIGHSEA_TMDB_REPLAY), and
 // the library is seeded from them through the API. Usage: bun scripts/sweeps/server.ts [pages|keyboard]
@@ -233,18 +234,28 @@ try {
   const invite = await api<{ link: string }>(
     'POST',
     '/users/invites',
-    { displayName: 'Mara', email: null, role: 'member', libraries: 'all' },
+    { displayName: 'Mara', email: null, role: 'user', libraries: 'all' },
     token,
   )
   const joined = await api<{ link: string; user: { id: string } }>(
     'POST',
     '/users/invites',
-    { displayName: 'Theo', email: null, role: 'restricted', libraries: ['movies'] },
+    { displayName: 'Theo', email: null, role: 'user', libraries: ['movies'] },
     token,
   )
-  await api('POST', `/links/${new URL(joined.link).pathname.split('/').pop()}/accept`, {
-    password: 'theo theo theo',
-  })
+  const accept = (link: string, password: string) =>
+    api('POST', `/links/${new URL(link).pathname.split('/').pop()}/accept`, { password })
+  await accept(joined.link, 'theo theo theo')
+  const admin = await api<{ link: string }>(
+    'POST',
+    '/users/invites',
+    { displayName: 'Ruth', email: null, role: 'admin', libraries: 'all' },
+    token,
+  )
+  await accept(admin.link, 'ruth ruth ruth')
+  // a new server requires two-step for the owner and admins; the sweep signs in with passwords
+  const security = await api<Record<string, unknown>>('GET', '/settings/security', undefined, token)
+  await api('PUT', '/settings/security', { ...security, twoFactor: false }, token)
   const reset = await api<{ link: string }>(
     'POST',
     `/users/${joined.user.id}/password-reset`,
@@ -297,17 +308,20 @@ try {
     () => browser.newContext(),
   )
 
-  // signed in as the owner through the login page, once; each page's context reuses the cookie
-  const login = await browser.newContext()
-  const page = await login.newPage()
-  await page.goto(`${BASE}/login`)
-  await page.getByLabel('Username').fill(OWNER.username)
-  await page.getByLabel('Password').fill(OWNER.password)
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await page.waitForURL(`${BASE}/`)
-  const storageState = await login.storageState()
-  await login.close()
-  const ownerContext = () => browser.newContext({ storageState })
+  // signed in through the login page, once each; each page's context reuses the cookie
+  async function signIn(username: string, password: string) {
+    const login = await browser.newContext()
+    const page = await login.newPage()
+    await page.goto(`${BASE}/login`)
+    await page.getByLabel('Username').fill(username)
+    await page.getByLabel('Password').fill(password)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    await page.waitForURL(`${BASE}/`)
+    const storageState = await login.storageState()
+    await login.close()
+    return () => browser.newContext({ storageState })
+  }
+  const ownerContext = await signIn(OWNER.username, OWNER.password)
   const tab = (name: string) => (p: Page) => p.getByRole('tab', { name }).click()
   const customize = (p: Page) => p.getByRole('button', { name: 'Customize' }).click()
   await sweep(
@@ -416,6 +430,43 @@ try {
       { name: 'pair:confirm', path: `/link?code=${pairing.code}` },
     ],
     ownerContext,
+  )
+
+  // an admin: the same admin, People read-only (ADR 0032)
+  await sweep(
+    [
+      { name: 'admin:dashboard', path: '/' },
+      { name: 'admin:settings', path: '/settings' },
+      { name: 'admin:general', path: '/settings/general' },
+      // Security and Backups are the owner's: not there for an admin
+      { name: 'admin:security', path: '/settings/security' },
+      { name: 'admin:users', path: '/settings/users' },
+      { name: 'admin:users:devices', path: '/settings/users', act: tab('Devices') },
+      { name: 'admin:users:keys', path: '/settings/users', act: tab('API keys') },
+      { name: 'admin:movies', path: '/movies' },
+      { name: 'admin:movie', path: '/movies/45745' },
+      { name: 'admin:discover', path: '/discover' },
+    ],
+    await signIn('ruth', 'ruth ruth ruth'),
+  )
+
+  // a user: the refusal page at every admin address, and nothing else
+  const refused = (p: Page) =>
+    p.getByRole('heading', { name: 'This is where the server’s owner and admins run it' }).waitFor()
+  await sweep(
+    [
+      { name: 'user:refusal', path: '/' },
+      ...[
+        '/',
+        '/settings/users',
+        '/movies',
+        '/movies/45745',
+        '/discover',
+        '/system',
+        '/people/68',
+      ].map((path) => ({ name: `user:${path}`, path, act: refused })),
+    ],
+    await signIn('theo', 'theo theo theo'),
   )
 } finally {
   await browser.close()

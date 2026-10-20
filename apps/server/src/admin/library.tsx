@@ -59,7 +59,7 @@ import { useDeferredValue, useRef, useState, useSyncExternalStore } from 'react'
 import { useAddressParam } from './address.ts'
 import { library as messages } from './library-messages.ts'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
-import { moviePath, movieStatus, useCanManageLibrary } from './media-links.ts'
+import { moviePath, movieStatus } from './media-links.ts'
 import { type LibraryFilters, loadMovies, PAGE } from './movie-data.ts'
 import { AdminPage } from './shell.tsx'
 
@@ -115,7 +115,6 @@ export function MoviesLibrary() {
   const t = useT(messages)
   const locale = useLocale()
   const router = useRouter()
-  const staff = useCanManageLibrary()
   const [view, setView] = useStoredView()
   const [tab, setTab] = useAddressParam<Tab>('status', 'all', TABS)
   const [sort, setSort] = useAddressParam<Sort>('sort', 'title', MOVIE_SORTS)
@@ -143,9 +142,7 @@ export function MoviesLibrary() {
     ? { status: 'success' as const, data: kept, error: undefined, refetch: movies.refetch }
     : movies
 
-  const profiles = useQuery(`quality-profiles:${staff}`, (c) =>
-    staff ? c.quality.profiles() : Promise.resolve([]),
-  )
+  const profiles = useQuery('quality-profiles', (c) => c.quality.profiles())
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [confirm, setConfirm] = useState(false)
   const bulkAction = useAction((c, body: BulkInput) => c.movies.bulk({ body }))
@@ -181,11 +178,9 @@ export function MoviesLibrary() {
           { value: 'table', label: t('view.table'), icon: 'list' },
         ]}
       />
-      {staff && (
-        <Button variant="primary" icon="add" onClick={() => router.push('/discover')}>
-          {t('add')}
-        </Button>
-      )}
+      <Button variant="primary" icon="add" onClick={() => router.push('/discover')}>
+        {t('add')}
+      </Button>
     </>
   )
 
@@ -204,18 +199,12 @@ export function MoviesLibrary() {
               icon="movie"
               title={t('empty.title')}
               action={
-                staff ? (
-                  <Button
-                    variant="primary"
-                    icon="discover"
-                    onClick={() => router.push('/discover')}
-                  >
-                    {t('empty.discover')}
-                  </Button>
-                ) : undefined
+                <Button variant="primary" icon="discover" onClick={() => router.push('/discover')}>
+                  {t('empty.discover')}
+                </Button>
               }
             >
-              {staff ? t('empty.staff') : t('empty.member')}
+              {t('empty.body')}
             </EmptyState>
           ) : (
             <>
@@ -248,7 +237,7 @@ export function MoviesLibrary() {
                       />
                     </div>
                   </TableToolbar>
-                  {staff && ids.length > 0 && (
+                  {ids.length > 0 && (
                     <div
                       role="toolbar"
                       aria-label={t('bulk')}
@@ -367,21 +356,19 @@ export function MoviesLibrary() {
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            {staff && (
-                              <TableHead className="w-10">
-                                <Checkbox
-                                  aria-label={t('col.selectAll')}
-                                  checked={everyShown}
-                                  onCheckedChange={(v) => {
-                                    const next = new Set(selected)
-                                    for (const m of shown)
-                                      if (v === true) next.add(m.id)
-                                      else next.delete(m.id)
-                                    setSelected(next)
-                                  }}
-                                />
-                              </TableHead>
-                            )}
+                            <TableHead className="w-10">
+                              <Checkbox
+                                aria-label={t('col.selectAll')}
+                                checked={everyShown}
+                                onCheckedChange={(v) => {
+                                  const next = new Set(selected)
+                                  for (const m of shown)
+                                    if (v === true) next.add(m.id)
+                                    else next.delete(m.id)
+                                  setSelected(next)
+                                }}
+                              />
+                            </TableHead>
                             <TableHead>{t('col.title')}</TableHead>
                             <TableHead numeric>{t('col.year')}</TableHead>
                             <TableHead>{t('col.versions')}</TableHead>
@@ -396,15 +383,13 @@ export function MoviesLibrary() {
                               key={m.id}
                               data-state={selected.has(m.id) ? 'selected' : undefined}
                             >
-                              {staff && (
-                                <TableCell>
-                                  <Checkbox
-                                    aria-label={t('col.select', { title: m.title })}
-                                    checked={selected.has(m.id)}
-                                    onCheckedChange={(v) => toggle(m.id, v === true)}
-                                  />
-                                </TableCell>
-                              )}
+                              <TableCell>
+                                <Checkbox
+                                  aria-label={t('col.select', { title: m.title })}
+                                  checked={selected.has(m.id)}
+                                  onCheckedChange={(v) => toggle(m.id, v === true)}
+                                />
+                              </TableCell>
                               <TitleCell
                                 title={
                                   <a href={moviePath(m.id)} className="hover:underline">

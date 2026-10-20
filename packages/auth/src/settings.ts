@@ -2,11 +2,12 @@
 // Settings › Security (settings.md), stored in the `security` settings row. The OIDC client
 // secret is sealed with the server's key and never leaves the server.
 
-export type TwoFactorPolicy = 'everyone' | 'staff' | 'optional'
-
 export type SecuritySettings = {
-  /** Who must use two-step verification in the admin. Apps are never blocked by it (ADR 0024). */
-  twoFactor: TwoFactorPolicy
+  /**
+   * Whether the owner and admins must use two-step verification in the admin, the only people who
+   * open it (ADR 0032). Apps are never blocked by it (ADR 0024).
+   */
+  twoFactor: boolean
   passkeys: boolean
   /** How long an admin session lasts. Apps stay signed in until their device is signed out. */
   sessionDays: number
@@ -27,7 +28,8 @@ export const SECURITY_KEY = 'security'
 export const SESSION_DAYS = [1, 7, 30, 90] as const
 
 export const defaultSecuritySettings: SecuritySettings = {
-  twoFactor: 'optional',
+  // on for new servers; migration 0004 keeps an older server's choice
+  twoFactor: true,
   passkeys: true,
   sessionDays: 30,
   oidc: { enabled: false, name: '', issuer: '', clientId: '', clientSecretSealed: null },

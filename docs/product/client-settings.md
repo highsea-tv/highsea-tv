@@ -70,5 +70,5 @@ The same six sections everywhere: **Theme**, **Sounds**, **Home screen**, **Serv
 ## Open questions
 
 - **Per-person themes across devices:** offer "use this theme on all my devices" as an option?
-- **Kids' profiles:** should a restricted account's Home be arranged by the owner instead?
+- **Kids' profiles:** should a user's Home be arranged by the owner instead?
 - **Offline expiry:** 30 days without seeing the server, as now, or set by the owner?

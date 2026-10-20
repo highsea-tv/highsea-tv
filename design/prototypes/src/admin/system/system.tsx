@@ -36,7 +36,7 @@ import { Soon } from '../../kit/soon.tsx'
 import { useAction, useClient, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { Backup, HealthCheck, Job, LogEntry, ServerEvent } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
-import { AdminPage, adminHref } from '../shell.tsx'
+import { AdminPage, adminHref, useShell } from '../shell.tsx'
 
 const tabs = [
   { id: 'status', label: 'Status' },
@@ -50,8 +50,12 @@ const tabs = [
 
 export type SystemTab = (typeof tabs)[number]['id']
 
-export function System({ tab = 'status' }: { tab?: SystemTab }) {
+export function System({ tab: asked = 'status' }: { tab?: SystemTab }) {
   const [, navigate] = useLocation()
+  // backups are the owner's alone; an admin doesn't see the tab (ADR 0032)
+  const owner = useShell().role === 'owner'
+  const shown = tabs.filter((t) => owner || t.id !== 'backups')
+  const tab = shown.some((t) => t.id === asked) ? asked : 'status'
   const health = useQuery('system:health', (c) => c.system.health(), ['health.updated'])
   const problems = (health.data ?? []).filter((h) => h.level === 'warning' || h.level === 'error')
   return (
@@ -62,7 +66,7 @@ export function System({ tab = 'status' }: { tab?: SystemTab }) {
         variant="line"
       >
         <TabsList aria-label="System sections">
-          {tabs.map((t) => (
+          {shown.map((t) => (
             <TabsTrigger
               key={t.id}
               value={t.id}
@@ -87,9 +91,11 @@ export function System({ tab = 'status' }: { tab?: SystemTab }) {
         <TabsContent value="events" className="pt-5">
           <Events />
         </TabsContent>
-        <TabsContent value="backups" className="pt-5">
-          <Backups />
-        </TabsContent>
+        {owner && (
+          <TabsContent value="backups" className="pt-5">
+            <Backups />
+          </TabsContent>
+        )}
         <TabsContent value="updates" className="pt-5">
           <Updates />
         </TabsContent>

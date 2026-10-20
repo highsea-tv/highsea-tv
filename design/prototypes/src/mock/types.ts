@@ -46,16 +46,11 @@ export type DiscoveredServer = {
 
 // ---------------------------------------------------------------- users and devices
 
-export type UserRole = 'owner' | 'admin' | 'member' | 'restricted'
+/** The owner and admins run the server; users watch (ADR 0032). */
+export type UserRole = 'owner' | 'admin' | 'user'
 
-/** Fine-grained permissions beyond the role (roadmap › gap analysis › permissions model). */
-export type Permission =
-  | 'request'
-  | 'autoApprove'
-  | 'download'
-  | 'manageLibrary'
-  | 'manageUsers'
-  | 'admin'
+/** A user's, set per person: ask for titles, download for offline. Staff hold every power by role. */
+export type Permission = 'request' | 'download'
 
 export type User = {
   id: string
@@ -113,6 +108,8 @@ export type ApiKey = {
   /** The first characters, to tell keys apart: `hs_7Kq2…`. */
   prefix: string
   scope: 'read' | 'full'
+  /** Who made it: the key acts for them, never beyond an admin. */
+  userId: string
   createdAt: ISODate
   lastUsed: ISODate | null
 }
@@ -722,7 +719,10 @@ import type { WidgetPlacement } from '@highsea/personalization/widgets'
 
 export type { WidgetKind, WidgetPlacement, WidgetSpan } from '@highsea/personalization/widgets'
 
-export type LayoutScope = { kind: 'user'; userId: string } | { kind: 'role'; role: UserRole }
+/** Only staff have a dashboard: it's the admin's. */
+export type StaffRole = Exclude<UserRole, 'user'>
+
+export type LayoutScope = { kind: 'user'; userId: string } | { kind: 'role'; role: StaffRole }
 
 export type WidgetLayout = {
   scope: LayoutScope

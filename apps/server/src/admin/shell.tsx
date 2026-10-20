@@ -13,7 +13,6 @@ import {
   Button,
   type CommandGroup,
   CommandPalette,
-  EmptyState,
   Lockup,
   Mark,
   NavGroup,
@@ -46,7 +45,7 @@ import {
 import { AccountSheet } from './account.tsx'
 import { moviePath } from './media-links.ts'
 import { shell as messages } from './messages.ts'
-import { isStaff, type Page, pageAt, pagesFor, type Role } from './nav.ts'
+import { type Page, pageAt, pageGroups, type Role } from './nav.ts'
 import { useRelative } from './time.ts'
 
 type Shell = {
@@ -114,40 +113,9 @@ export function AdminPage({ title, description, actions, children }: AdminPagePr
   )
 }
 
-/** Owners and admins only: anyone else sees why, and the way back. */
-export function StaffOnly({ page, children }: { page: Page; children: ReactNode }) {
-  const { role } = useShell()
-  const t = useT(messages)
-  if (page.staff && !isStaff(role))
-    return (
-      <AdminPage title={t(page.label)}>
-        <EmptyState
-          icon="lock"
-          title={t('staff.title', { page: t(page.label) })}
-          action={
-            <Button asChild>
-              <a href="/">{t('staff.home')}</a>
-            </Button>
-          }
-        >
-          {t('staff.body')}
-        </EmptyState>
-      </AdminPage>
-    )
-  return <>{children}</>
-}
-
 // ---------------------------------------------------------------- navigation
 
-function Navigation({
-  role,
-  mode,
-  onNavigate,
-}: {
-  role: Role
-  mode?: 'full'
-  onNavigate?: () => void
-}) {
+function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => void }) {
   const t = useT(messages)
   const shell = useShell()
   const path = usePathname()
@@ -155,11 +123,7 @@ function Navigation({
   const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
   // the rail is 64px: the mark alone (brand.tsx: the lockup needs 96px)
   const auto = useSidebarMode()
-  const health = useQuery(
-    `health:${isStaff(role)}`,
-    (c) => (isStaff(role) ? c.system.healthChecks() : Promise.resolve([])),
-    ['server.updated'],
-  )
+  const health = useQuery('health', (c) => c.system.healthChecks(), ['server.updated'])
   // the library's size, not its movies: one row is enough for the total
   const movies = useQuery('movies-count', (c) => c.movies.list({ query: { limit: 1 } }), [
     'movies.updated',
@@ -184,7 +148,7 @@ function Navigation({
       />
     )
 
-  const groups = pagesFor(role)
+  const groups = pageGroups
   return (
     <Sidebar
       mode={mode}
@@ -205,7 +169,7 @@ function Navigation({
               onClick={onNavigate}
             />
           ))}
-          {/* your own account sits with the last group, for every role */}
+          {/* your own account sits with the last group */}
           {i === groups.length - 1 && (
             <NavItem
               icon="user"
@@ -230,7 +194,7 @@ const PALETTE_MOVIES = 8
 /** Accents dropped, so "amelie" finds Amélie as the server's title filter does. */
 const plain = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '')
 
-function usePaletteGroups(role: Role, shell: Shell, search: string): CommandGroup[] {
+function usePaletteGroups(shell: Shell, search: string): CommandGroup[] {
   const t = useT(messages)
   const router = useRouter()
   const signOut = useSignOut()
@@ -247,17 +211,15 @@ function usePaletteGroups(role: Role, shell: Shell, search: string): CommandGrou
   return useMemo(() => {
     const go: CommandGroup = {
       heading: t('palette.goTo'),
-      items: pagesFor(role)
-        .flat()
-        .map((p) => ({
-          id: `go-${p.id}`,
-          label: t(p.label),
-          icon: p.icon,
-          keywords: t(p.keywords)
-            .split(',')
-            .map((k) => k.trim()),
-          onSelect: () => router.push(p.path),
-        })),
+      items: pageGroups.flat().map((p) => ({
+        id: `go-${p.id}`,
+        label: t(p.label),
+        icon: p.icon,
+        keywords: t(p.keywords)
+          .split(',')
+          .map((k) => k.trim()),
+        onSelect: () => router.push(p.path),
+      })),
     }
     const actions: CommandGroup = {
       heading: t('palette.actions'),
@@ -306,7 +268,7 @@ function usePaletteGroups(role: Role, shell: Shell, search: string): CommandGrou
       })),
     }
     return movies.items.length ? [go, actions, movies] : [go, actions]
-  }, [role, router, shell, signOut, t, titles])
+  }, [router, shell, signOut, t, titles])
 }
 
 // ---------------------------------------------------------------- status bar
@@ -314,17 +276,11 @@ function usePaletteGroups(role: Role, shell: Shell, search: string): CommandGrou
 /** CPU and memory have no event: the status bar asks again every few seconds. */
 const STATUS_INTERVAL = 5000
 
-function AdminStatusBar({ role }: { role: Role }) {
+function AdminStatusBar() {
   const t = useT(messages)
   const { relative } = useRelative()
-  const staff = isStaff(role)
   const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
-  const status = useQuery(
-    `status:${staff}`,
-    (c) => (staff ? c.system.status() : Promise.resolve(null)),
-    [],
-    { interval: STATUS_INTERVAL },
-  )
+  const status = useQuery('status', (c) => c.system.status(), [], { interval: STATUS_INTERVAL })
   const jobs = useQuery('jobs', (c) => c.system.jobs(), ['jobs.updated'], {
     interval: STATUS_INTERVAL,
   })
@@ -414,7 +370,8 @@ function useClientLinks() {
 export function AdminShell({ role: initialRole, children }: { role: Role; children: ReactNode }) {
   // the server knew the role at first paint; the session query keeps it current
   const session = useQuery('session', (c) => c.auth.session(), ['users.updated'])
-  const role = session.data?.user.role ?? initialRole
+  const live = session.data?.user.role
+  const role = live === 'owner' || live === 'admin' ? live : initialRole
   const [palette, setPalette] = useState(false)
   const [search, setSearch] = useState('')
   const [menu, setMenu] = useState(false)
@@ -433,6 +390,11 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
       window.location.assign(`/login?next=${encodeURIComponent(path)}`)
   }, [session.status, session.error, path])
 
+  // no longer staff: a fresh load shows the refusal page (ADR 0032)
+  useEffect(() => {
+    if (live === 'user') window.location.reload()
+  }, [live])
+
   // leaving the dashboard ends customize mode, and each page starts at the top
   useEffect(() => {
     if (path !== '/') setCustomizing(false)
@@ -450,7 +412,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
     }),
     [role, customizing],
   )
-  const groups = usePaletteGroups(role, shell, palette ? search : '')
+  const groups = usePaletteGroups(shell, palette ? search : '')
 
   return (
     <ShellContext.Provider value={shell}>
@@ -464,7 +426,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
         >
           {t('skip')}
         </button>
-        <Navigation role={role} />
+        <Navigation />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="relative min-h-0 flex-1 overflow-y-auto">
             {/* grid-cols-1: a wide table scrolls inside its frame, not the page */}
@@ -476,11 +438,11 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
               {children}
             </main>
           </div>
-          <AdminStatusBar role={role} />
+          <AdminStatusBar />
         </div>
         <Sheet open={menu} onOpenChange={setMenu}>
           <SheetContent side="left" title={t('menu')} hideTitle className="p-4">
-            <Navigation role={role} mode="full" onNavigate={() => setMenu(false)} />
+            <Navigation mode="full" onNavigate={() => setMenu(false)} />
           </SheetContent>
         </Sheet>
         <CommandPalette

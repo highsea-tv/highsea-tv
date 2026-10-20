@@ -274,19 +274,11 @@ export function Security() {
         <>
           <Group title="Signing in">
             <Field
-              label="Two-step verification"
-              hint="A code from an authenticator app, after the password."
+              inline
+              label="Require two-step for the owner and admins"
+              hint="A code from an authenticator app, after the password, to open the admin. Apps never ask for it."
             >
-              <Select
-                value={v.twoFactor}
-                onValueChange={(t) => set({ twoFactor: t as typeof v.twoFactor })}
-                options={options([
-                  ['everyone', 'Required for everyone'],
-                  ['staff', 'Required for owners and admins'],
-                  ['optional', 'Optional'],
-                ])}
-                className="medium:max-w-80"
-              />
+              <Switch checked={v.twoFactor} onCheckedChange={(twoFactor) => set({ twoFactor })} />
             </Field>
             <Field
               inline

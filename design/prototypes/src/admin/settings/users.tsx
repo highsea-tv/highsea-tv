@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A13 Users and devices (docs/product/users-devices.md): who can sign in and what they can do
 // (role, permissions, libraries), invites by link, every signed-in device with sign-out, and API
-// keys for scripts, shown once.
+// keys for scripts, shown once. People are the owner's to manage; admins see them read-only, and
+// their own API keys (ADR 0032).
 
 import { relative } from '@highsea/core/format'
 import {
@@ -52,35 +53,40 @@ import type {
   UserRole,
 } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
+import { useShell } from '../shell.tsx'
 import { AreaPage } from './settings.tsx'
 
 export const roleInfo: Record<UserRole, { label: string; tone: BadgeTone; hint: string }> = {
-  owner: { label: 'Owner', tone: 'accent', hint: 'Everything, including handing the server over.' },
-  admin: { label: 'Admin', tone: 'info', hint: 'Runs the server: settings, indexers, users.' },
-  member: { label: 'Member', tone: 'neutral', hint: 'Watches, requests and manages the library.' },
-  restricted: {
-    label: 'Restricted',
-    tone: 'warning',
-    hint: 'Watches the libraries you choose. Good for children.',
+  owner: {
+    label: 'Owner',
+    tone: 'accent',
+    hint: 'Everything, including people, security, backups and handing the server over.',
+  },
+  admin: {
+    label: 'Admin',
+    tone: 'info',
+    hint: 'Runs the server in the admin: the library, downloads, indexers and settings.',
+  },
+  user: {
+    label: 'User',
+    tone: 'neutral',
+    hint: 'Watches in the highsea apps. Never opens the admin.',
   },
 }
 
 const permissionInfo: { id: Permission; label: string; hint: string }[] = [
-  { id: 'request', label: 'Ask for titles', hint: 'From Discover, for you to approve.' },
   {
-    id: 'autoApprove',
-    label: 'Approve their own requests',
-    hint: 'Their requests skip the queue.',
+    id: 'request',
+    label: 'Ask for titles',
+    hint: 'From search in the apps, for you or an admin to approve.',
   },
   { id: 'download', label: 'Download for offline', hint: 'Phones and laptops keep a copy.' },
-  { id: 'manageLibrary', label: 'Manage the library', hint: 'Add, edit and delete movies.' },
-  { id: 'manageUsers', label: 'Manage people', hint: 'Invite, edit and remove users.' },
 ]
 
+/** Staff hold every power by their role, so an admin's list is empty (ADR 0032). */
 const roleDefaults: Record<Exclude<UserRole, 'owner'>, Permission[]> = {
-  admin: ['request', 'autoApprove', 'download', 'manageLibrary'],
-  member: ['request'],
-  restricted: [],
+  admin: [],
+  user: ['request'],
 }
 
 const clientInfo: Record<ClientType, { label: string; icon: IconName }> = {
@@ -105,6 +111,7 @@ const THIS_DEVICE = 'd-admin'
 type Tab = 'users' | 'devices' | 'keys'
 
 export function UsersDevices() {
+  const owner = useShell().role === 'owner'
   const [tab, setTab] = useState<Tab>('users')
   const [inviting, setInviting] = useState(false)
   const [creating, setCreating] = useState(false)
@@ -113,9 +120,11 @@ export function UsersDevices() {
       id="users"
       actions={
         tab === 'users' ? (
-          <Button variant="primary" icon="add" onClick={() => setInviting(true)}>
-            Invite someone
-          </Button>
+          owner && (
+            <Button variant="primary" icon="add" onClick={() => setInviting(true)}>
+              Invite someone
+            </Button>
+          )
         ) : tab === 'keys' ? (
           <Button variant="primary" icon="add" onClick={() => setCreating(true)}>
             New API key
@@ -163,6 +172,7 @@ function Avatar({ user }: { user: Pick<User, 'displayName'> }) {
 const libraryLabel = (u: User) => (u.libraries === 'all' ? 'All libraries' : 'Movies')
 
 function People() {
+  const owner = useShell().role === 'owner'
   const people = usePeople()
   const now = useNow()
   const [editing, setEditing] = useState<User | null>(null)
@@ -179,6 +189,11 @@ function People() {
               {users.some((u) => u.invited) &&
                 ` · ${users.filter((u) => u.invited).length} invited`}
             </span>
+            {!owner && (
+              <span className="ms-auto text-caption text-text-3">
+                Only the server’s owner invites, changes and removes people.
+              </span>
+            )}
           </TableToolbar>
           <Table>
             <TableHeader>
@@ -188,9 +203,11 @@ function People() {
                 <TableHead>Libraries</TableHead>
                 <TableHead>Two-step</TableHead>
                 <TableHead>Last seen</TableHead>
-                <TableHead>
-                  <span className="sr-only">Actions</span>
-                </TableHead>
+                {owner && (
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -216,65 +233,67 @@ function People() {
                   <TableCell className="text-text-2">
                     {u.invited ? 'Hasn’t joined yet' : u.lastSeen ? seen(u.lastSeen, now) : 'Never'}
                   </TableCell>
-                  <TableCell className="text-end">
-                    <span className="flex justify-end gap-1">
-                      {u.role !== 'owner' && (
-                        <Button
-                          size="sm"
-                          icon="edit"
-                          aria-label={`Edit ${u.displayName}`}
-                          onClick={() => setEditing(u)}
-                        >
-                          Edit
-                        </Button>
-                      )}
-                      {u.role !== 'owner' && (
-                        <Menu>
-                          <MenuTrigger asChild>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              iconOnly
-                              icon="more"
-                              aria-label={`More for ${u.displayName}`}
-                            />
-                          </MenuTrigger>
-                          <MenuContent align="end">
-                            {u.invited ? (
-                              <MenuItem
-                                icon="copy"
-                                onSelect={() =>
-                                  toast({
-                                    title: 'Invite link copied',
-                                    description: `Send it to ${u.displayName}. It works for 7 days.`,
-                                  })
-                                }
-                              >
-                                Copy the invite link
-                              </MenuItem>
-                            ) : (
-                              <MenuItem
-                                icon="lock"
-                                onSelect={() =>
-                                  reset.run(u.id).then(() =>
+                  {owner && (
+                    <TableCell className="text-end">
+                      <span className="flex justify-end gap-1">
+                        {u.role !== 'owner' && (
+                          <Button
+                            size="sm"
+                            icon="edit"
+                            aria-label={`Edit ${u.displayName}`}
+                            onClick={() => setEditing(u)}
+                          >
+                            Edit
+                          </Button>
+                        )}
+                        {u.role !== 'owner' && (
+                          <Menu>
+                            <MenuTrigger asChild>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                iconOnly
+                                icon="more"
+                                aria-label={`More for ${u.displayName}`}
+                              />
+                            </MenuTrigger>
+                            <MenuContent align="end">
+                              {u.invited ? (
+                                <MenuItem
+                                  icon="copy"
+                                  onSelect={() =>
                                     toast({
-                                      title: `Reset link sent to ${u.displayName}`,
-                                      description: 'Their devices stay signed in.',
-                                    }),
-                                  )
-                                }
-                              >
-                                Send a password reset
+                                      title: 'Invite link copied',
+                                      description: `Send it to ${u.displayName}. It works for 7 days.`,
+                                    })
+                                  }
+                                >
+                                  Copy the invite link
+                                </MenuItem>
+                              ) : (
+                                <MenuItem
+                                  icon="lock"
+                                  onSelect={() =>
+                                    reset.run(u.id).then(() =>
+                                      toast({
+                                        title: `Reset link sent to ${u.displayName}`,
+                                        description: 'Their devices stay signed in.',
+                                      }),
+                                    )
+                                  }
+                                >
+                                  Send a password reset
+                                </MenuItem>
+                              )}
+                              <MenuItem icon="delete" danger onSelect={() => setRemoving(u)}>
+                                {u.invited ? 'Cancel the invite' : 'Remove'}
                               </MenuItem>
-                            )}
-                            <MenuItem icon="delete" danger onSelect={() => setRemoving(u)}>
-                              {u.invited ? 'Cancel the invite' : 'Remove'}
-                            </MenuItem>
-                          </MenuContent>
-                        </Menu>
-                      )}
-                    </span>
-                  </TableCell>
+                            </MenuContent>
+                          </Menu>
+                        )}
+                      </span>
+                    </TableCell>
+                  )}
                 </TableRow>
               ))}
             </TableBody>
@@ -329,7 +348,7 @@ function RoleField({
       <Select
         value={value}
         onValueChange={(v) => onChange(v as Exclude<UserRole, 'owner'>)}
-        options={(['admin', 'member', 'restricted'] as const).map((r) => ({
+        options={(['admin', 'user'] as const).map((r) => ({
           value: r,
           label: roleInfo[r].label,
         }))}
@@ -391,34 +410,45 @@ function EditSheet({ user, onClose }: { user: User; onClose: () => void }) {
         <div className="grid gap-5">
           <RoleField
             value={draft.role}
-            onChange={(role) => setDraft({ ...draft, role, permissions: roleDefaults[role] })}
+            onChange={(role) =>
+              setDraft({
+                ...draft,
+                role,
+                permissions: roleDefaults[role],
+                libraries: role === 'admin' ? 'all' : draft.libraries,
+              })
+            }
           />
-          <fieldset className="grid gap-2.5">
-            <legend className="mb-1 font-medium text-text text-ui">What they can do</legend>
-            {permissionInfo.map((p) => (
-              <Field key={p.id} inline label={p.label} hint={p.hint}>
-                <Checkbox
-                  checked={draft.permissions.includes(p.id)}
-                  onCheckedChange={(c) =>
-                    setDraft({
-                      ...draft,
-                      permissions:
-                        c === true
-                          ? [...draft.permissions, p.id]
-                          : draft.permissions.filter((x) => x !== p.id),
-                    })
-                  }
-                />
-              </Field>
-            ))}
-            <p className="text-caption text-text-3">
-              Changing the role resets these to the role’s defaults.
-            </p>
-          </fieldset>
-          <LibrariesField
-            value={draft.libraries}
-            onChange={(libraries) => setDraft({ ...draft, libraries })}
-          />
+          {draft.role === 'user' && (
+            <fieldset className="grid gap-2.5">
+              <legend className="mb-1 font-medium text-text text-ui">What they can do</legend>
+              {permissionInfo.map((p) => (
+                <Field key={p.id} inline label={p.label} hint={p.hint}>
+                  <Checkbox
+                    checked={draft.permissions.includes(p.id)}
+                    onCheckedChange={(c) =>
+                      setDraft({
+                        ...draft,
+                        permissions:
+                          c === true
+                            ? [...draft.permissions, p.id]
+                            : draft.permissions.filter((x) => x !== p.id),
+                      })
+                    }
+                  />
+                </Field>
+              ))}
+              <p className="text-caption text-text-3">
+                Changing the role resets these to the role’s defaults.
+              </p>
+            </fieldset>
+          )}
+          {draft.role === 'user' && (
+            <LibrariesField
+              value={draft.libraries}
+              onChange={(libraries) => setDraft({ ...draft, libraries })}
+            />
+          )}
           <div className="flex gap-2">
             <Button
               variant="primary"
@@ -455,7 +485,7 @@ function InviteDialog({
   open: boolean
   onOpenChange: (o: boolean) => void
 }) {
-  const blank: InviteInput = { displayName: '', email: null, role: 'member', libraries: 'all' }
+  const blank: InviteInput = { displayName: '', email: null, role: 'user', libraries: 'all' }
   const [draft, setDraft] = useState(blank)
   const [sent, setSent] = useState<Invite | null>(null)
   const [tried, setTried] = useState(false)
@@ -540,11 +570,18 @@ function InviteDialog({
                 onChange={(e) => setDraft({ ...draft, email: e.target.value || null })}
               />
             </Field>
-            <RoleField value={draft.role} onChange={(role) => setDraft({ ...draft, role })} />
-            <LibrariesField
-              value={draft.libraries}
-              onChange={(libraries) => setDraft({ ...draft, libraries })}
+            <RoleField
+              value={draft.role}
+              onChange={(role) =>
+                setDraft({ ...draft, role, libraries: role === 'admin' ? 'all' : draft.libraries })
+              }
             />
+            {draft.role === 'user' && (
+              <LibrariesField
+                value={draft.libraries}
+                onChange={(libraries) => setDraft({ ...draft, libraries })}
+              />
+            )}
           </div>
         )}
       </DialogContent>
@@ -555,6 +592,7 @@ function InviteDialog({
 // ---------------------------------------------------------------- devices
 
 function Devices() {
+  const owner = useShell().role === 'owner'
   const devices = useQuery('settings:devices', (c) => c.devices.list(), ['users.updated'])
   const people = usePeople()
   const now = useNow()
@@ -584,7 +622,9 @@ function Devices() {
                 className="w-56"
               />
               <span className="ms-auto text-caption text-text-3">
-                Signing a device out makes it ask for a new code or password.
+                {owner
+                  ? 'Signing a device out makes it ask for a new code or password.'
+                  : 'Only the server’s owner signs devices out.'}
               </span>
             </TableToolbar>
             <Table>
@@ -595,9 +635,11 @@ function Devices() {
                   <TableHead>App</TableHead>
                   <TableHead>Address</TableHead>
                   <TableHead>Last seen</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
+                  {owner && (
+                    <TableHead>
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -617,18 +659,20 @@ function Devices() {
                     </TableCell>
                     <TableCell className="font-mono text-figure text-text-2">{d.address}</TableCell>
                     <TableCell className="text-text-2">{seen(d.lastSeen, now)}</TableCell>
-                    <TableCell className="text-end">
-                      {d.id !== THIS_DEVICE && (
-                        <Button
-                          size="sm"
-                          icon="sign-out"
-                          aria-label={`Sign out ${d.name}`}
-                          onClick={() => setRevoking(d)}
-                        >
-                          Sign out
-                        </Button>
-                      )}
-                    </TableCell>
+                    {owner && (
+                      <TableCell className="text-end">
+                        {d.id !== THIS_DEVICE && (
+                          <Button
+                            size="sm"
+                            icon="sign-out"
+                            aria-label={`Sign out ${d.name}`}
+                            onClick={() => setRevoking(d)}
+                          >
+                            Sign out
+                          </Button>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -655,6 +699,9 @@ function Devices() {
 // ---------------------------------------------------------------- API keys
 
 function Keys() {
+  // the owner sees everyone's keys and whose each is; an admin sees their own
+  const owner = useShell().role === 'owner'
+  const people = usePeople()
   const keys = useQuery('settings:keys', (c) => c.apiKeys.list(), ['users.updated'])
   const now = useNow()
   const [revoking, setRevoking] = useState<ApiKey | null>(null)
@@ -685,6 +732,12 @@ function Keys() {
                     <span className="font-mono text-figure">{k.prefix}…</span> · made{' '}
                     {relative(k.createdAt, now)} ·{' '}
                     {k.lastUsed ? `last used ${seen(k.lastUsed, now)}` : 'never used'}
+                    {owner && people.data && (
+                      <>
+                        {' '}
+                        · {people.data.find((u) => u.id === k.userId)?.displayName ?? 'Someone'}’s
+                      </>
+                    )}
                   </p>
                 </div>
                 <Button

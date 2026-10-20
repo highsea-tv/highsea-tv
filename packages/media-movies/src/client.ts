@@ -280,12 +280,12 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
 
   /**
    * The library's titles, collections and people, the best-matching kind first (client-search.md,
-   * Ranking). For people who may add titles, TMDB's matches that aren't here follow, left out when
-   * TMDB can't be reached or no key is set.
+   * Ranking). For people who may ask for titles, TMDB's matches that aren't here follow, to request
+   * (ADR 0032), left out when TMDB can't be reached or no key is set.
    */
   async function search(
     query: string,
-    { userId, mayAdd }: { userId: string; mayAdd: boolean },
+    { userId, mayRequest }: { userId: string; mayRequest: boolean },
   ): Promise<SearchResults> {
     const q = query.trim()
     if (!q) return { sections: [] }
@@ -312,7 +312,7 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
       .map((s, i) => ({ ...s, i }))
       .sort((a, b) => b.score - a.score || a.i - b.i)
       .map((s) => s.section)
-    if (mayAdd) {
+    if (mayRequest) {
       try {
         const page = await metadata.discover.search(q)
         const here = library.inLibrary(page.results.map((m) => m.id))

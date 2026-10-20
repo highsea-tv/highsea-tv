@@ -8,7 +8,7 @@
 
 import type { TLSSocket } from 'node:tls'
 import { ACCESS_KEY, type Access, routes } from '@highsea/api-contract'
-import { canManageUsers, isStaff, type Principal, type RequestMeta } from '@highsea/auth'
+import { isStaff, type Principal, type RequestMeta } from '@highsea/auth'
 import { AppError } from '@highsea/core'
 import { type ClientInfo, plainAddress, resolveClient } from '@highsea/network'
 import type { Runtime } from '@highsea/runtime'
@@ -133,10 +133,6 @@ export function allowed(p: Principal, access: Access): boolean {
     case 'public':
     case 'user':
       return true
-    case 'people':
-      return canManageUsers(p.user.role, p.user.permissions)
-    case 'library':
-      return isStaff(p.user.role) || p.user.permissions.includes('manageLibrary')
     case 'staff':
       return isStaff(p.user.role)
     case 'owner':

@@ -98,11 +98,11 @@ describe('A4 discover → add', () => {
       expect(page().getByRole('link', { name }).getAttribute('href')).toBe('#/admin/movies/1')
   })
 
-  test('members can look but not add', async () => {
-    await open('/admin/discover', 'member')
+  test('admins add as the owner does', async () => {
+    await open('/admin/discover', 'admin')
+    await settle()
     const add = page().getAllByRole('button', { name: /^Add / })[0] as HTMLButtonElement
-    expect(add.disabled).toBe(true)
-    expect(page().getByText(/Only owners and admins can add movies/)).toBeTruthy()
+    expect(add.disabled).toBe(false)
   })
 })
 
@@ -201,10 +201,10 @@ describe('A6 media pages', () => {
     expect(page().getByRole('dialog', { name: /Add Scarlet Street/ })).toBeTruthy()
   })
 
-  test('members can read a page but not add', async () => {
-    await open('/admin/movies/107', 'member')
+  test('a user gets the refusal page, not the movie', async () => {
+    await open('/admin/movies/107', 'user')
     expect(page().queryByRole('button', { name: 'Add movie' })).toBeNull()
-    expect(page().getByText(/Only owners and admins can add movies/)).toBeTruthy()
+    expect(page().getByText('This is where the server’s owner and admins run it')).toBeTruthy()
     await clean()
   })
 })
@@ -361,9 +361,9 @@ describe('A9 indexers', () => {
     expect((await client(mock).indexers.list()).some((i) => i.definitionId === 'bosun')).toBe(true)
   })
 
-  test('members are turned away', async () => {
-    await open('/admin/indexers', 'member')
-    expect(page().getByText('Only owners and admins can open Indexers')).toBeTruthy()
+  test('users are turned away', async () => {
+    await open('/admin/indexers', 'user')
+    expect(page().getByText('This is where the server’s owner and admins run it')).toBeTruthy()
   })
 })
 

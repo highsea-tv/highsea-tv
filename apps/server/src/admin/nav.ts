@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The admin's pages, in the sidebar's groups (admin.md#sidebar), as the prototype has them.
+// The admin's pages, in the sidebar's groups (admin.md#sidebar), as the prototype has them. Only the
+// owner and admins open the admin (ADR 0032), so it has one shape.
 import type { IconName } from '@highsea/ui-web'
 import type { shell } from './messages.ts'
 
@@ -22,17 +23,14 @@ export type Page = {
   keywords: `keywords.${Id}` & keyof typeof shell
   icon: IconName
   path: string
-  /** Owners and admins only. Members manage the library, not the server. */
-  staff?: boolean
 }
 
-const page = (id: Id, icon: IconName, path: string, staff?: boolean): Page => ({
+const page = (id: Id, icon: IconName, path: string): Page => ({
   id,
   label: `nav.${id}`,
   keywords: `keywords.${id}`,
   icon,
   path,
-  staff,
 })
 
 export const pageGroups: Page[][] = [
@@ -42,23 +40,18 @@ export const pageGroups: Page[][] = [
     page('movies', 'movie', '/movies'),
     page('wanted', 'calendar', '/wanted'),
     page('activity', 'activity', '/activity'),
-    page('downloads', 'downloads', '/downloads', true),
+    page('downloads', 'downloads', '/downloads'),
   ],
   [
-    page('indexers', 'indexer', '/indexers', true),
-    page('subtitles', 'subtitles', '/subtitles', true),
-    page('curation', 'curation', '/curation', true),
+    page('indexers', 'indexer', '/indexers'),
+    page('subtitles', 'subtitles', '/subtitles'),
+    page('curation', 'curation', '/curation'),
   ],
-  [page('settings', 'settings', '/settings', true), page('system', 'system', '/system', true)],
+  [page('settings', 'settings', '/settings'), page('system', 'system', '/system')],
 ]
 
-export type Role = 'owner' | 'admin' | 'member' | 'restricted'
-
-export const isStaff = (role: Role | undefined) => role === 'owner' || role === 'admin'
-
-/** The groups this role sees; empty groups drop out. */
-export const pagesFor = (role: Role | undefined): Page[][] =>
-  pageGroups.map((g) => g.filter((p) => !p.staff || isStaff(role))).filter((g) => g.length)
+/** The people who open the admin. A user gets the refusal page instead (decision 9). */
+export type Role = 'owner' | 'admin'
 
 /** The page a path belongs to: `/movies/1` is under Movies. */
 export function pageAt(path: string): Page | undefined {

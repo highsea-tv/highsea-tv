@@ -88,9 +88,9 @@ describe('contract', () => {
     }
   })
 
-  test('movie routes: reading needs a sign-in, changing needs Manage the library', () => {
+  test('movie routes are staff’s, apart from the client rows anyone signed in reads', () => {
     for (const [name, r] of Object.entries(routes.movies))
-      expect(accessOf(r), name).toBe(r.method === 'get' && name !== 'discover' ? 'user' : 'library')
+      expect(accessOf(r), name).toBe(name === 'recent' || name === 'upcoming' ? 'user' : 'staff')
     expect(accessOf(routes.rootFolders.add)).toBe('staff')
     expect(accessOf(routes.settings.saveMetadata)).toBe('owner')
     for (const r of Object.values(routes.metadata)) expect(accessOf(r)).toBe('user')

@@ -8,10 +8,11 @@ highsea is a self-hosted replacement for the *ARR suite (Radarr, Sonarr, Prowlar
 - **Phase 2** (clickable prototypes of every screen, in `design/prototypes`): signed off 2026-10-19. The prototypes and their specs in `docs/product/` are the **build reference**.
 - **Phase 3** (server milestone 1): the plan is [docs/plans/phase-3-server.md](docs/plans/phase-3-server.md), approved with the owner's decisions recorded in it.
   - Checkpoints 1 to 4 are signed off: the platform; accounts, network and the admin shell; personalization and the dashboard; and movies, without downloading ([its scope](docs/plans/phase-3-checkpoint-4.md)). Checkpoints 2 to 4 were signed off on 2026-10-20.
-  - **Next:** the admin becomes the owner's and admins' only (the plan's decision 6, from checkpoint 4's review), then checkpoint 5 (indexers), scoped before it's built.
+  - The admin is the owner's and admins' only (the plan's decision 6): three roles, Owner, Admin and User, built and reviewed on 2026-10-20 ([docs/plans/phase-3-admin-access.md](docs/plans/phase-3-admin-access.md), ADR 0032).
+  - **Next:** checkpoint 5, indexers and the catalog, scoped in [docs/plans/phase-3-checkpoint-5.md](docs/plans/phase-3-checkpoint-5.md). Building waits for the owner's answers to its open questions and the go-ahead.
 - **Follow-up after Phase 3:** dashboard customization on Homarr's level, with a visible grid ([docs/plans/dashboard-customization.md](docs/plans/dashboard-customization.md)). Not scheduled; a prototype is approved first.
 
-Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2, 0027–0028 with checkpoint 3, 0029–0031 with checkpoint 4.
+Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2, 0027–0028 with checkpoint 3, 0029–0031 with checkpoint 4, 0032 with the admin-access work.
 
 ## Rules from the owner
 

@@ -23,6 +23,8 @@ export type Area = {
   icon: IconName
   /** Areas with a page of their own elsewhere (Subtitles). */
   href?: string
+  /** The owner's alone: left out for admins (ADR 0032). */
+  ownerOnly?: true
 }
 
 export const areaGroups: { id: 'server' | 'people' | 'library' | 'downloads'; areas: Area[] }[] = [
@@ -32,8 +34,8 @@ export const areaGroups: { id: 'server' | 'people' | 'library' | 'downloads'; ar
       { id: 'general', icon: 'settings' },
       { id: 'appearance', icon: 'curation' },
       { id: 'network', icon: 'network' },
-      { id: 'security', icon: 'shield' },
-      { id: 'backups', icon: 'storage' },
+      { id: 'security', icon: 'shield', ownerOnly: true },
+      { id: 'backups', icon: 'storage', ownerOnly: true },
     ],
   },
   { id: 'people', areas: [{ id: 'users', icon: 'users' }] },
@@ -58,3 +60,11 @@ export const areaGroups: { id: 'server' | 'people' | 'library' | 'downloads'; ar
 
 const areas = areaGroups.flatMap((g) => g.areas)
 export const isArea = (id: string): id is AreaId => areas.some((a) => a.id === id)
+
+/** Whether `role` sees the area: Security and Backups are the owner's alone. */
+export const seesArea = (id: AreaId, role: string) =>
+  role === 'owner' || !areas.find((a) => a.id === id)?.ownerOnly
+
+/** The groups `role` sees. */
+export const areaGroupsFor = (role: string) =>
+  areaGroups.map((g) => ({ ...g, areas: g.areas.filter((a) => seesArea(a.id, role)) }))

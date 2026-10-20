@@ -110,27 +110,29 @@ describe('A3 dashboard', () => {
     expect(order().at(-1)).toBe('w-calendar')
   })
 
-  test('owners make a layout the members’ default; staff-only widgets drop out', async () => {
+  test('the owner makes a layout the admins’ default', async () => {
     const { mock, user } = await open('/admin')
+    const mine = order()
     await user.click(page().getByRole('button', { name: 'Customize' }))
-    await user.click(page().getByRole('button', { name: 'More layout options' }))
-    await user.click(page().getByRole('menuitem', { name: 'Make this the default for members' }))
-    await settle()
-    const member = await client(mock, 'member').dashboard.layout()
-    expect(member.widgets.map((w) => w.kind)).toEqual(['upcoming', 'announcement', 'activity'])
-  })
-
-  test('members customize without staff widgets on offer', async () => {
-    const { user } = await open('/admin', 'member')
-    expect(order()).toEqual(['w-recently-added', 'w-upcoming', 'w-activity'])
-    await user.click(page().getByRole('button', { name: 'Customize' }))
-    await user.click(page().getByRole('button', { name: 'Add widget' }))
-    const sheet = page().getByRole('dialog', { name: 'Add a widget' })
-    expect(within(sheet).queryByRole('button', { name: /^Network/ })).toBeNull()
-    expect(within(sheet).getByRole('button', { name: /^Calendar/ })).toBeTruthy()
-    await user.keyboard('{Escape}')
     await user.click(page().getByRole('button', { name: 'More layout options' }))
     expect(page().queryByRole('menuitem', { name: /default for members/ })).toBeNull()
+    await user.click(page().getByRole('menuitem', { name: 'Make this the default for admins' }))
+    await settle()
+    const admin = await client(mock, 'admin').dashboard.layout()
+    expect(admin.widgets.map((w) => w.id)).toEqual(mine as string[])
+  })
+
+  test('admins customize with every widget on offer, but set no defaults', async () => {
+    const { user } = await open('/admin', 'admin')
+    await user.click(page().getByRole('button', { name: 'Customize' }))
+    await user.click(page().getByRole('button', { name: 'More layout options' }))
+    expect(page().queryByRole('menuitem', { name: /default for/ })).toBeNull()
+  })
+
+  test('a user gets the refusal page instead of the dashboard', async () => {
+    await open('/admin', 'user')
+    expect(page().getByText('This is where the server’s owner and admins run it')).toBeTruthy()
+    expect(page().queryByRole('button', { name: 'Customize' })).toBeNull()
   })
 })
 

@@ -9,8 +9,7 @@ import type { DiscoverMovie } from '../../mock/types.ts'
 import { Loadable, PosterSkeletons } from '../loadable.tsx'
 import { movieHref } from '../media/links.ts'
 import { AddMovieDialog } from '../movies/add-dialog.tsx'
-import { isStaff } from '../nav.ts'
-import { AdminPage, useShell } from '../shell.tsx'
+import { AdminPage } from '../shell.tsx'
 
 /** The search lives in the history entry, so Back from a movie returns to the same results. */
 function useRememberedQuery() {
@@ -26,7 +25,6 @@ function useRememberedQuery() {
 }
 
 export function Discover() {
-  const { role } = useShell()
   const [query, setQuery] = useRememberedQuery()
   const deferred = useDeferredValue(query.trim())
   const results = useQuery(`discover:${deferred}`, (c) => c.movies.discover(deferred), [
@@ -94,7 +92,6 @@ export function Discover() {
                       size="sm"
                       icon="add"
                       onClick={() => setAdding([m])}
-                      disabled={!isStaff(role)}
                       aria-label={`Add ${m.title}`}
                       className="justify-self-start"
                     >
@@ -107,11 +104,6 @@ export function Discover() {
           )
         }
       </Loadable>
-      {!isStaff(role) && results.status === 'success' && (
-        <p className="text-caption text-text-3">
-          Only owners and admins can add movies. Ask the server’s owner for one you want.
-        </p>
-      )}
       <AddMovieDialog movies={adding} onOpenChange={(o) => !o && setAdding([])} />
     </AdminPage>
   )

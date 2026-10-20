@@ -253,14 +253,12 @@ export function MediaOverview({
   meta,
   main,
   aside,
-  canAdd,
   onAllCast,
   onAdd,
 }: {
   meta: MetadataQuery
   main?: ReactNode
   aside?: ReactNode
-  canAdd: boolean
   onAllCast: () => void
   /** Add these movies (a collection's missing parts). */
   onAdd: (movies: DiscoverMovie[]) => void
@@ -276,12 +274,7 @@ export function MediaOverview({
               {md.cast.length > 0 && <CastRow cast={md.cast} onAll={onAllCast} />}
               {md.videos.length > 0 && <TrailersRow videos={md.videos} />}
               {md.collection && (
-                <MovieCollectionRow
-                  id={md.collection.id}
-                  current={md.id}
-                  canAdd={canAdd}
-                  onAdd={onAdd}
-                />
+                <MovieCollectionRow id={md.collection.id} current={md.id} onAdd={onAdd} />
               )}
               <MoreLikeThis id={md.id} />
             </>
@@ -451,14 +444,12 @@ export function CollectionRow({
   collection: c,
   title,
   current,
-  canAdd,
   onAdd,
 }: {
   collection: Collection
   title: ReactNode
   /** The movie whose page this is: shown as "This one", not linked. */
   current?: number
-  canAdd: boolean
   onAdd: (movies: DiscoverMovie[]) => void
 }) {
   const t = useT(messages)
@@ -471,7 +462,6 @@ export function CollectionRow({
       itemClassName={titleItem}
       suffix={t('collection.suffix', { here, total: c.parts.length })}
       action={
-        canAdd &&
         missing.length > 0 && (
           <Button size="sm" icon="add" onClick={() => onAdd(missing)}>
             {t('collection.addMissing', { count: missing.length })}
@@ -503,12 +493,10 @@ export function CollectionRow({
 function MovieCollectionRow({
   id,
   current,
-  canAdd,
   onAdd,
 }: {
   id: number
   current: number
-  canAdd: boolean
   onAdd: (movies: DiscoverMovie[]) => void
 }) {
   const collection = useCollection(id)
@@ -524,7 +512,6 @@ function MovieCollectionRow({
         </a>
       }
       current={current}
-      canAdd={canAdd}
       onAdd={onAdd}
     />
   )

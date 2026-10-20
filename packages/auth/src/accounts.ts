@@ -9,7 +9,7 @@ import { and, eq, ne } from 'drizzle-orm'
 import type { Ctx, RequestMeta, UserView } from './context.ts'
 import { notFound } from './context.ts'
 import { hashPassword, passwordProblem, verifyPassword } from './passwords.ts'
-import { ALL_LIBRARIES, canManageUsers, LIBRARIES, ROLE_DEFAULTS } from './roles.ts'
+import { ALL_LIBRARIES, canManageUsers, isStaff, LIBRARIES, ROLE_DEFAULTS } from './roles.ts'
 import { newSecret, verifier } from './secrets.ts'
 
 /** Invites and resets work once, for 7 days (users-devices.md). */
@@ -107,7 +107,8 @@ function insertUser(
     })
     .run()
   setPermissions(ctx, id, ROLE_DEFAULTS[input.role])
-  setLibraries(ctx, id, input.libraries)
+  // staff see every library (ADR 0032)
+  setLibraries(ctx, id, isStaff(input.role) ? 'all' : input.libraries)
   return id
 }
 
@@ -234,6 +235,7 @@ export type Invite = { user: UserView; link: string; expiresAt: number }
 
 /** A pending person and the single-use link that finishes their account. */
 export function invite(ctx: Ctx, input: InviteInput, actor: Actor, meta: RequestMeta): Invite {
+  assertCanManage(ctx, actor)
   const displayName = input.displayName.trim()
   if (!displayName) throw invalid('Give them a name.', { field: 'displayName' })
   const clash = ctx.db
@@ -278,8 +280,7 @@ export function inviteLink(
   const user = ctx.findUser(userId)
   if (!user) throw notFound('There’s no one with that id.')
   if (!user.invited) throw new AppError('conflict', 'They’ve already joined.')
-  // an invited admin's link would make whoever accepts it an admin
-  assertCanManage(ctx, actor, user)
+  assertCanManage(ctx, actor)
   const row = ctx.db
     .select()
     .from(schema.accountLinks)
@@ -310,7 +311,7 @@ export function resetLink(
   if (user.role === 'owner' && actor.id !== userId)
     throw new AppError('forbidden', 'The owner’s password can only be changed by the owner.')
   // a reset link takes the account over, so it needs the same standing as changing it
-  if (actor.id !== userId) assertCanManage(ctx, actor, user)
+  if (actor.id !== userId) assertCanManage(ctx, actor)
   const out = createLink(ctx, 'reset', userId, actor.id)
   ctx.audit({
     action: 'user.reset-link',
@@ -388,24 +389,37 @@ export async function acceptLink(
 
 export type UserPatch = {
   role?: Exclude<Role, 'owner'>
+  /** A user's only; staff hold every power by their role. */
   permissions?: Permission[]
   libraries?: 'all' | string[]
   displayName?: string
 }
 
-export function assertCanManage(ctx: Ctx, actor: Actor, target: typeof schema.users.$inferSelect) {
+/** Inviting and managing people is the owner's alone (ADR 0032). */
+export function assertCanManage(ctx: Ctx, actor: Actor) {
   const me = ctx.userView(actor.id)
-  if (!canManageUsers(me.role, me.permissions))
-    throw new AppError('forbidden', 'You can’t manage people.')
-  // only the owner manages admins; nobody but the owner touches the owner
-  if (target.role === 'owner' && me.role !== 'owner')
-    throw new AppError('forbidden', 'Only the owner can change the owner’s account.')
-  if (target.role === 'admin' && me.role !== 'owner')
-    throw new AppError('forbidden', 'Only the owner can change an admin.')
+  if (!canManageUsers(me.role))
+    throw new AppError('forbidden', 'Only the owner can manage people.', { reason: 'not-owner' })
   return me
 }
 
-/** Role, permissions, libraries. Changing the role resets the permissions to its defaults. */
+/**
+ * Ends what only staff hold: admin sessions and API keys. Device tokens stay, so their apps keep
+ * working, checked as a user's from the next request (ADR 0032).
+ */
+function endStaffAccess(ctx: Ctx, userId: string) {
+  ctx.db
+    .delete(schema.devices)
+    .where(and(eq(schema.devices.userId, userId), eq(schema.devices.kind, 'session')))
+    .run()
+  ctx.db.delete(schema.apiKeys).where(eq(schema.apiKeys.userId, userId)).run()
+}
+
+/**
+ * Role, permissions, libraries. Changing the role resets the permissions to its defaults; staff
+ * hold none and see every library. Making an admin a user ends their admin sessions and API keys
+ * in the same transaction.
+ */
 export function updateUser(
   ctx: Ctx,
   id: string,
@@ -415,7 +429,7 @@ export function updateUser(
 ): UserView {
   const user = ctx.findUser(id)
   if (!user) throw notFound('There’s no one with that id.')
-  const me = assertCanManage(ctx, actor, user)
+  assertCanManage(ctx, actor)
   if (user.role === 'owner' && patch.role)
     throw new AppError(
       'forbidden',
@@ -424,8 +438,6 @@ export function updateUser(
         reason: 'owner-role',
       },
     )
-  if (patch.role === 'admin' && me.role !== 'owner')
-    throw new AppError('forbidden', 'Only the owner can make someone an admin.')
   if (patch.libraries) checkLibraries(patch.libraries)
   const changes: Partial<typeof schema.users.$inferInsert> = { updatedAt: ctx.now() }
   if (patch.displayName !== undefined) {
@@ -433,26 +445,30 @@ export function updateUser(
     if (!name) throw invalid('Give them a name.', { field: 'displayName' })
     changes.displayName = name
   }
-  const roleChanged = patch.role && patch.role !== user.role
-  if (patch.role) changes.role = patch.role
-  ctx.db.update(schema.users).set(changes).where(eq(schema.users.id, id)).run()
-  if (user.role !== 'owner') {
-    const role = patch.role ?? user.role
-    // "Manage people" and "Administer" are for staff to grant only within what they hold
-    let permissions = patch.permissions ?? (roleChanged ? ROLE_DEFAULTS[role] : null)
-    if (permissions) {
-      if (me.role !== 'owner') permissions = permissions.filter((p) => p !== 'admin')
-      setPermissions(ctx, id, permissions)
+  const role = patch.role ?? user.role
+  const roleChanged = role !== user.role
+  if (roleChanged) changes.role = role
+  const demoted = isStaff(user.role) && !isStaff(role)
+  // one connection, one writer (ADR 0019): everything below commits together or not at all
+  ctx.db.transaction(() => {
+    ctx.db.update(schema.users).set(changes).where(eq(schema.users.id, id)).run()
+    if (isStaff(role)) {
+      setPermissions(ctx, id, [])
+      setLibraries(ctx, id, 'all')
+    } else {
+      const permissions = patch.permissions ?? (roleChanged ? ROLE_DEFAULTS[role] : null)
+      if (permissions) setPermissions(ctx, id, permissions)
+      if (patch.libraries) setLibraries(ctx, id, patch.libraries)
     }
-  }
-  if (patch.libraries) setLibraries(ctx, id, user.role === 'owner' ? 'all' : patch.libraries)
-  ctx.audit({
-    action: 'user.update',
-    actor,
-    targetType: 'user',
-    targetId: id,
-    address: meta.address,
-    detail: { ...patch },
+    if (demoted) endStaffAccess(ctx, id)
+    ctx.audit({
+      action: 'user.update',
+      actor,
+      targetType: 'user',
+      targetId: id,
+      address: meta.address,
+      detail: { ...patch, ...(demoted ? { endedStaffAccess: true } : {}) },
+    })
   })
   ctx.events.emit({ topic: 'users.updated', ids: [id] })
   return ctx.userView(id)
@@ -466,8 +482,9 @@ export function removeUser(ctx: Ctx, id: string, actor: Actor, meta: RequestMeta
     throw new AppError('forbidden', 'The owner can’t be removed.', { reason: 'owner' })
   if (id === actor.id)
     throw new AppError('forbidden', 'You can’t remove yourself.', { reason: 'self' })
-  assertCanManage(ctx, actor, user)
-  // foreign keys cascade: devices, keys, links, factors and identities go with the row
+  assertCanManage(ctx, actor)
+  // foreign keys cascade: sessions, device tokens, keys, links, factors and identities go with
+  // the row, at once
   ctx.db.delete(schema.users).where(eq(schema.users.id, id)).run()
   ctx.audit({
     action: user.invited ? 'user.cancel-invite' : 'user.remove',

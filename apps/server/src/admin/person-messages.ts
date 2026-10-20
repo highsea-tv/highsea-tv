@@ -28,7 +28,6 @@ export const person = defineMessages({
   'inLibrary.label': 'In library: {title}',
   add: 'Add',
   'add.label': 'Add {title}',
-  memberNote: 'Only owners and admins can add movies. Ask the server’s owner for one you want.',
   'unknown.title': 'TMDB doesn’t know that person',
   'unknown.body': 'They may have been merged with another entry.',
   // what they're known for, as the prototype words it: composers are Sound at TMDB

@@ -39,6 +39,7 @@ async function started(options: { tmdb?: boolean } = {}) {
   const app = createApi(runtime)
   const { owner, token } = await withOwner(runtime)
   const member = await addMember(runtime, owner.id, 'Mara')
+  const admin = await addMember(runtime, owner.id, 'Ruth', 'admin')
   if (options.tmdb !== false) await withTmdb(runtime)
   const folder = join(runtime.config.dataDir, 'movies')
   mkdirSync(folder, { recursive: true })
@@ -50,6 +51,7 @@ async function started(options: { tmdb?: boolean } = {}) {
     token,
     ownerApi: clientFor(app, { token }),
     memberApi: clientFor(app, { token: member.token }),
+    adminApi: clientFor(app, { token: admin.token }),
     anon: clientFor(app),
   }
 }
@@ -228,7 +230,7 @@ describe('discover and media pages', () => {
 
 describe('the library', () => {
   test('adds by TMDB id once, lists, filters and opens', async () => {
-    const { add, ownerApi, memberApi } = await library()
+    const { add, ownerApi, adminApi, memberApi } = await library()
     const sintel = await add(SINTEL, [version('4K HDR', 'qp-uhd'), version('1080p')])
     expect(sintel.id).toBe(SINTEL)
     expect(sintel.versions.map((v) => v.label)).toEqual(['4K HDR', '1080p'])
@@ -236,13 +238,16 @@ describe('the library', () => {
     // adding again is the same movie, unchanged
     expect((await add(SINTEL)).versions).toHaveLength(2)
     await add(BUNNY)
-    const page = await memberApi.movies.list({ query: { sort: 'title' } })
+    const page = await adminApi.movies.list({ query: { sort: 'title' } })
     expect(page.total).toBe(2)
     expect(page.items.map((m) => m.id)).toEqual([BUNNY, SINTEL])
     expect(page.counts.all).toBe(2)
     const filtered = await ownerApi.movies.list({ query: { qualityProfileId: 'qp-uhd' } })
     expect(filtered.items.map((m) => m.id)).toEqual([SINTEL])
-    expect((await memberApi.movies.get({ params: { id: SINTEL } })).title).toBe('Sintel')
+    expect((await adminApi.movies.get({ params: { id: SINTEL } })).title).toBe('Sintel')
+    // the admin's library is staff's; users read the client API (ADR 0032)
+    expect((await failure(memberApi.movies.list({ query: {} }))).code).toBe('forbidden')
+    expect((await failure(memberApi.movies.get({ params: { id: SINTEL } }))).code).toBe('forbidden')
     expect((await failure(ownerApi.movies.get({ params: { id: METROPOLIS } }))).code).toBe(
       'not-found',
     )
@@ -250,11 +255,11 @@ describe('the library', () => {
     expect((await ownerApi.metadata.movie({ params: { id: SINTEL } })).inLibrary).toBe(true)
     const found = await ownerApi.movies.discover({ query: { query: 'sintel' } })
     expect(found.items.find((m) => m.id === SINTEL)?.inLibrary).toBe(true)
-    expect((await ownerApi.movies.recent({ query: {} }))[0]?.id).toBe(BUNNY)
+    expect((await memberApi.movies.recent({ query: {} }))[0]?.id).toBe(BUNNY)
     expect(Array.isArray(await ownerApi.movies.upcoming({ query: { days: 30 } }))).toBe(true)
   })
 
-  test('only Manage the library adds, edits and removes', async () => {
+  test('only staff add, edit and remove', async () => {
     const { memberApi, folder } = await library()
     const body = {
       tmdbId: SINTEL,
@@ -350,18 +355,19 @@ describe('the library', () => {
 
 describe('quality', () => {
   test('profiles, formats, sizes and language profiles, read-only', async () => {
-    const { ownerApi, memberApi } = await started({ tmdb: false })
-    const profiles = await memberApi.quality.profiles()
+    const { ownerApi, adminApi, memberApi } = await started({ tmdb: false })
+    const profiles = await adminApi.quality.profiles()
     expect(profiles.map((p) => p.id)).toEqual(['qp-uhd', 'qp-hd', 'qp-any'])
-    expect((await memberApi.quality.profile({ params: { id: 'qp-hd' } })).name).toBe('HD 1080p')
-    expect((await failure(memberApi.quality.profile({ params: { id: 'nope' } }))).code).toBe(
+    expect((await adminApi.quality.profile({ params: { id: 'qp-hd' } })).name).toBe('HD 1080p')
+    expect((await failure(adminApi.quality.profile({ params: { id: 'nope' } }))).code).toBe(
       'not-found',
     )
+    expect((await failure(memberApi.quality.profiles())).code).toBe('forbidden')
     expect((await ownerApi.quality.customFormats()).length).toBeGreaterThan(0)
     expect((await failure(memberApi.quality.customFormats())).code).toBe('forbidden')
     const sizes = await ownerApi.settings.qualitySizes()
     expect(sizes[0]?.quality).toBe('Unknown')
-    expect((await memberApi.quality.languageProfiles()).length).toBeGreaterThan(0)
+    expect((await adminApi.quality.languageProfiles()).length).toBeGreaterThan(0)
   })
 
   test('the parser reads a name, its quality and the formats it matches', async () => {
@@ -381,7 +387,7 @@ describe('quality', () => {
 })
 
 describe('the client API', () => {
-  test('lists the library, opens a title and searches, with discover only for who may add', async () => {
+  test('lists the library, opens a title and searches, with no discover section yet', async () => {
     const { add, ownerApi, memberApi } = await library()
     await add(SINTEL)
     const page = await memberApi.library.list({ query: {} })
@@ -396,8 +402,10 @@ describe('the client API', () => {
     const mine = await memberApi.library.search({ query: { query: 'sintel' } })
     expect(mine.sections.map((s) => s.kind)).not.toContain('discover')
     expect(mine.sections.find((s) => s.kind === 'movies')?.items.length).toBe(1)
+    // the section becomes a request with the request flow; until then nobody gets it (ADR 0032)
     const owners = await ownerApi.library.search({ query: { query: 'sintel' } })
     expect(owners.sections.map((s) => s.kind)).toContain('movies')
+    expect(owners.sections.map((s) => s.kind)).not.toContain('discover')
   })
 
   test('home offers Continue watching, Recently added and the library’s genres', async () => {

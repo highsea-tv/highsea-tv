@@ -1,8 +1,9 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // A13 Users and devices (docs/product/users-devices.md), ported from the prototype: who can sign
-// in and what they can do (role, permissions, libraries), invites by link, every signed-in device
-// with sign-out, and API keys for scripts, shown once. Until the server can send email
+// in and what they can do (role, and a user's permissions and libraries), invites by link, every
+// signed-in device with sign-out, and API keys for scripts, shown once. Managing people is the
+// owner's; admins see people and devices read-only (ADR 0032). Until the server can send email
 // (checkpoint 8), invite and reset links are shown to copy rather than sent.
 import type { ApiKey, Device, User } from '@highsea/api-contract'
 import { useT } from '@highsea/i18n/react'
@@ -50,33 +51,22 @@ import { users as messages } from './users-messages.ts'
 type Role = User['role']
 type Permission = User['permissions'][number]
 type ClientType = Device['client']
-type Staffable = Exclude<Role, 'owner'>
-type InviteInput = Pick<User, 'displayName' | 'email' | 'libraries'> & { role: Staffable }
+type Invitable = Exclude<Role, 'owner'>
+type InviteInput = Pick<User, 'displayName' | 'email' | 'libraries'> & { role: Invitable }
 type CreatedKey = ApiKey & { secret: string }
 type Link = { link: string; expiresAt: string }
 
 const roleTone: Record<Role, BadgeTone> = {
   owner: 'accent',
   admin: 'info',
-  member: 'neutral',
-  restricted: 'warning',
+  user: 'neutral',
 }
 
-/** The permissions people can tick. "Administer" is the owner's alone and isn't offered. */
-const permissions = [
-  'request',
-  'autoApprove',
-  'download',
-  'manageLibrary',
-  'manageUsers',
-] as const satisfies Permission[]
+/** A user's permissions. Staff hold every power by their role, so they have none to tick. */
+const permissions = ['request', 'download'] as const satisfies Permission[]
 
 /** The server's defaults (packages/auth/src/roles.ts), shown as soon as the role changes. */
-const roleDefaults: Record<Staffable, Permission[]> = {
-  admin: ['request', 'autoApprove', 'download', 'manageLibrary'],
-  member: ['request'],
-  restricted: [],
-}
+const roleDefaults: Record<Invitable, Permission[]> = { admin: [], user: ['request'] }
 
 const clientIcon: Record<ClientType, IconName> = {
   admin: 'laptop',
@@ -93,6 +83,8 @@ const clientIcon: Record<ClientType, IconName> = {
 type Tab = 'users' | 'devices' | 'keys'
 
 const useSession = () => useQuery('session', (c) => c.auth.session(), ['users.updated'])
+/** Managing people is the owner's alone; admins see this area read-only. */
+const useOwner = () => useSession().data?.user.role === 'owner'
 const usePeople = () => useQuery('settings:users', (c) => c.users.list(), ['users.updated'])
 
 export function Users() {
@@ -100,14 +92,17 @@ export function Users() {
   const [tab, setTab] = useState<Tab>('users')
   const [inviting, setInviting] = useState(false)
   const [creating, setCreating] = useState(false)
+  const owner = useOwner()
   return (
     <AreaPage
       id="users"
       actions={
         tab === 'users' ? (
-          <Button variant="primary" icon="add" onClick={() => setInviting(true)}>
-            {t('invite')}
-          </Button>
+          owner && (
+            <Button variant="primary" icon="add" onClick={() => setInviting(true)}>
+              {t('invite')}
+            </Button>
+          )
         ) : tab === 'keys' ? (
           <Button variant="primary" icon="add" onClick={() => setCreating(true)}>
             {t('newKey')}
@@ -131,7 +126,7 @@ export function Users() {
           <Keys />
         </TabsContent>
       </Tabs>
-      <InviteDialog open={inviting} onOpenChange={setInviting} />
+      {owner && <InviteDialog open={inviting} onOpenChange={setInviting} />}
       <NewKeyDialog open={creating} onOpenChange={setCreating} />
     </AreaPage>
   )
@@ -228,9 +223,9 @@ function People() {
   const inviteLink = useAction((c, id: string) => c.users.inviteLink({ params: { id } }))
   const resetTwoStep = useAction((c, id: string) => c.users.resetTwoFactor({ params: { id } }))
   const me = session.data?.user.id
-  // only the owner manages admins (ADR 0023)
-  const manages = (u: User) =>
-    u.role !== 'owner' && u.id !== me && (u.role !== 'admin' || session.data?.user.role === 'owner')
+  const owner = useOwner()
+  // the owner manages everyone else (ADR 0032)
+  const manages = (u: User) => owner && u.role !== 'owner' && u.id !== me
 
   const showLink = (kind: 'invite' | 'reset', u: User) =>
     (kind === 'invite' ? inviteLink : reset).run(u.id).then(
@@ -249,6 +244,9 @@ function People() {
                 {t('people.count', { count: users.length - invited })}
                 {invited > 0 && ` · ${t('people.invited', { count: invited })}`}
               </span>
+              {!owner && (
+                <span className="ms-auto text-caption text-text-3">{t('people.readOnly')}</span>
+              )}
             </TableToolbar>
             <Table>
               <TableHeader>
@@ -258,9 +256,11 @@ function People() {
                   <TableHead>{t('people.libraries')}</TableHead>
                   <TableHead>{t('people.twoStep')}</TableHead>
                   <TableHead>{t('people.lastSeen')}</TableHead>
-                  <TableHead>
-                    <span className="sr-only">{t('people.actions')}</span>
-                  </TableHead>
+                  {owner && (
+                    <TableHead>
+                      <span className="sr-only">{t('people.actions')}</span>
+                    </TableHead>
+                  )}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -293,50 +293,52 @@ function People() {
                           ? seen(u.lastSeen)
                           : t('people.never')}
                     </TableCell>
-                    <TableCell className="text-end">
-                      {manages(u) && (
-                        <span className="flex justify-end gap-1">
-                          <Button
-                            size="sm"
-                            icon="edit"
-                            aria-label={t('people.editLabel', { name: u.displayName })}
-                            onClick={() => setEditing(u)}
-                          >
-                            {t('people.edit')}
-                          </Button>
-                          <Menu>
-                            <MenuTrigger asChild>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                iconOnly
-                                icon="more"
-                                aria-label={t('people.more', { name: u.displayName })}
-                              />
-                            </MenuTrigger>
-                            <MenuContent align="end">
-                              {u.invited ? (
-                                <MenuItem icon="copy" onSelect={() => showLink('invite', u)}>
-                                  {t('people.copyInvite')}
+                    {owner && (
+                      <TableCell className="text-end">
+                        {manages(u) && (
+                          <span className="flex justify-end gap-1">
+                            <Button
+                              size="sm"
+                              icon="edit"
+                              aria-label={t('people.editLabel', { name: u.displayName })}
+                              onClick={() => setEditing(u)}
+                            >
+                              {t('people.edit')}
+                            </Button>
+                            <Menu>
+                              <MenuTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  iconOnly
+                                  icon="more"
+                                  aria-label={t('people.more', { name: u.displayName })}
+                                />
+                              </MenuTrigger>
+                              <MenuContent align="end">
+                                {u.invited ? (
+                                  <MenuItem icon="copy" onSelect={() => showLink('invite', u)}>
+                                    {t('people.copyInvite')}
+                                  </MenuItem>
+                                ) : (
+                                  <MenuItem icon="lock" onSelect={() => showLink('reset', u)}>
+                                    {t('people.reset')}
+                                  </MenuItem>
+                                )}
+                                {u.twoFactor && (
+                                  <MenuItem icon="shield" onSelect={() => setUnsetting(u)}>
+                                    {t('people.resetTwoStep')}
+                                  </MenuItem>
+                                )}
+                                <MenuItem icon="delete" danger onSelect={() => setRemoving(u)}>
+                                  {u.invited ? t('people.cancelInvite') : t('people.remove')}
                                 </MenuItem>
-                              ) : (
-                                <MenuItem icon="lock" onSelect={() => showLink('reset', u)}>
-                                  {t('people.reset')}
-                                </MenuItem>
-                              )}
-                              {u.twoFactor && (
-                                <MenuItem icon="shield" onSelect={() => setUnsetting(u)}>
-                                  {t('people.resetTwoStep')}
-                                </MenuItem>
-                              )}
-                              <MenuItem icon="delete" danger onSelect={() => setRemoving(u)}>
-                                {u.invited ? t('people.cancelInvite') : t('people.remove')}
-                              </MenuItem>
-                            </MenuContent>
-                          </Menu>
-                        </span>
-                      )}
-                    </TableCell>
+                              </MenuContent>
+                            </Menu>
+                          </span>
+                        )}
+                      </TableCell>
+                    )}
                   </TableRow>
                 ))}
               </TableBody>
@@ -396,19 +398,14 @@ function People() {
   )
 }
 
-function RoleField({ value, onChange }: { value: Staffable; onChange: (r: Staffable) => void }) {
+function RoleField({ value, onChange }: { value: Invitable; onChange: (r: Invitable) => void }) {
   const t = useT(messages)
-  const session = useSession()
-  // only the owner makes admins (packages/auth/src/accounts.ts)
-  const roles: Staffable[] =
-    session.data?.user.role === 'owner' || value === 'admin'
-      ? ['admin', 'member', 'restricted']
-      : ['member', 'restricted']
+  const roles: Invitable[] = ['admin', 'user']
   return (
     <Field label={t('edit.role')} hint={t(`role.${value}.hint`)}>
       <Select
         value={value}
-        onValueChange={(v) => onChange(v as Staffable)}
+        onValueChange={(v) => onChange(v as Invitable)}
         options={roles.map((r) => ({ value: r, label: t(`role.${r}`) }))}
       />
     </Field>
@@ -457,10 +454,12 @@ function LibrariesField({
 function EditSheet({ user, onClose }: { user: User; onClose: () => void }) {
   const t = useT(messages)
   const [draft, setDraft] = useState({
-    role: user.role as Staffable,
+    role: user.role as Invitable,
     permissions: user.permissions,
     libraries: user.libraries,
   })
+  // staff hold every power and see every library: what they can do is a user's alone
+  const isUser = draft.role === 'user'
   const save = useAction((c, d: typeof draft) =>
     c.users.update({ params: { id: user.id }, body: d }),
   )
@@ -470,32 +469,46 @@ function EditSheet({ user, onClose }: { user: User; onClose: () => void }) {
         <div className="grid gap-5">
           <RoleField
             value={draft.role}
-            onChange={(role) => setDraft({ ...draft, role, permissions: roleDefaults[role] })}
+            onChange={(role) =>
+              setDraft({
+                ...draft,
+                role,
+                permissions: roleDefaults[role],
+                libraries: role === 'admin' ? 'all' : draft.libraries,
+              })
+            }
           />
-          <fieldset className="grid gap-2.5">
-            <legend className="mb-1 font-medium text-text text-ui">{t('edit.can')}</legend>
-            {permissions.map((p) => (
-              <Field key={p} inline label={t(`permission.${p}`)} hint={t(`permission.${p}.hint`)}>
-                <Checkbox
-                  checked={draft.permissions.includes(p)}
-                  onCheckedChange={(c) =>
-                    setDraft({
-                      ...draft,
-                      permissions:
-                        c === true
-                          ? [...draft.permissions, p]
-                          : draft.permissions.filter((x) => x !== p),
-                    })
-                  }
-                />
-              </Field>
-            ))}
-            <p className="text-caption text-text-3">{t('edit.resets')}</p>
-          </fieldset>
-          <LibrariesField
-            value={draft.libraries}
-            onChange={(libraries) => setDraft({ ...draft, libraries })}
-          />
+          {user.role === 'admin' && isUser && (
+            <p className="text-caption text-text-3">{t('edit.demote')}</p>
+          )}
+          {isUser && (
+            <fieldset className="grid gap-2.5">
+              <legend className="mb-1 font-medium text-text text-ui">{t('edit.can')}</legend>
+              {permissions.map((p) => (
+                <Field key={p} inline label={t(`permission.${p}`)} hint={t(`permission.${p}.hint`)}>
+                  <Checkbox
+                    checked={draft.permissions.includes(p)}
+                    onCheckedChange={(c) =>
+                      setDraft({
+                        ...draft,
+                        permissions:
+                          c === true
+                            ? [...draft.permissions, p]
+                            : draft.permissions.filter((x) => x !== p),
+                      })
+                    }
+                  />
+                </Field>
+              ))}
+              <p className="text-caption text-text-3">{t('edit.resets')}</p>
+            </fieldset>
+          )}
+          {isUser && (
+            <LibrariesField
+              value={draft.libraries}
+              onChange={(libraries) => setDraft({ ...draft, libraries })}
+            />
+          )}
           <div className="flex gap-2">
             <Button
               variant="primary"
@@ -533,7 +546,7 @@ function InviteDialog({
   onOpenChange: (o: boolean) => void
 }) {
   const t = useT(messages)
-  const blank: InviteInput = { displayName: '', email: null, role: 'member', libraries: 'all' }
+  const blank: InviteInput = { displayName: '', email: null, role: 'user', libraries: 'all' }
   const [draft, setDraft] = useState(blank)
   const [sent, setSent] = useState<{ name: string; link: string } | null>(null)
   const [tried, setTried] = useState(false)
@@ -598,11 +611,18 @@ function InviteDialog({
                 onChange={(e) => setDraft({ ...draft, email: e.target.value || null })}
               />
             </Field>
-            <RoleField value={draft.role} onChange={(role) => setDraft({ ...draft, role })} />
-            <LibrariesField
-              value={draft.libraries}
-              onChange={(libraries) => setDraft({ ...draft, libraries })}
+            <RoleField
+              value={draft.role}
+              onChange={(role) =>
+                setDraft({ ...draft, role, libraries: role === 'admin' ? 'all' : draft.libraries })
+              }
             />
+            {draft.role === 'user' && (
+              <LibrariesField
+                value={draft.libraries}
+                onChange={(libraries) => setDraft({ ...draft, libraries })}
+              />
+            )}
           </div>
         )}
       </DialogContent>
@@ -627,6 +647,9 @@ function Devices() {
     people.data?.find((u) => u.id === id)?.displayName ?? t('devices.unknown')
   // the browser this admin runs in: it signs out from Your account, not from here
   const self = session.data?.deviceId
+  // anyone's for the owner; an admin signs out their own (ADR 0032)
+  const owner = useOwner()
+  const mayRevoke = (d: Device) => d.id !== self && (owner || d.userId === session.data?.user.id)
   return (
     <Loadable query={devices} what={t('devices.what')}>
       {(ds) => {
@@ -691,7 +714,7 @@ function Devices() {
                     <TableCell className="font-mono text-figure text-text-2">{d.address}</TableCell>
                     <TableCell className="text-text-2">{seen(d.lastSeen)}</TableCell>
                     <TableCell className="text-end">
-                      {d.id !== self && (
+                      {mayRevoke(d) && (
                         <Button
                           size="sm"
                           icon="sign-out"
@@ -736,7 +759,15 @@ function Devices() {
 
 function Keys() {
   const t = useT(messages)
+  // the owner sees everyone's keys, so any key that acts on the server can be revoked; an admin
+  // sees their own
   const keys = useQuery('settings:keys', (c) => c.apiKeys.list(), ['users.updated'])
+  const people = usePeople()
+  const me = useSession().data?.user.id
+  const whose = (k: ApiKey) =>
+    k.userId === me
+      ? null
+      : (people.data?.find((u) => u.id === k.userId)?.displayName ?? t('devices.unknown'))
   const { relative, seen } = useRelative()
   const [revoking, setRevoking] = useState<ApiKey | null>(null)
   const revoke = useAction((c, id: string) => c.apiKeys.revoke({ params: { id } }))
@@ -761,6 +792,11 @@ function Keys() {
                     <Badge tone={k.scope === 'full' ? 'warning' : 'neutral'}>
                       {k.scope === 'full' ? t('keys.full') : t('keys.read')}
                     </Badge>
+                    {whose(k) && (
+                      <span className="text-caption text-text-3">
+                        {t('keys.whose', { name: whose(k) ?? '' })}
+                      </span>
+                    )}
                   </p>
                   <p className="text-caption text-text-3">
                     <span className="font-mono text-figure">{k.prefix}…</span> ·{' '}

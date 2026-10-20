@@ -59,7 +59,7 @@ import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import { AddMovieDialog } from './add-dialog.tsx'
 import { library } from './library-messages.ts'
 import { Loadable } from './loadable.tsx'
-import { movieStatus, useCanManageLibrary } from './media-links.ts'
+import { movieStatus } from './media-links.ts'
 import {
   CastAndCrew,
   Definition,
@@ -146,7 +146,6 @@ function MovieById({ id }: { id: number }) {
 function MetadataMovie({ meta, onAdded }: { meta: MetadataQuery; onAdded: () => void }) {
   const t = useT(messages)
   const tm = useT(media)
-  const canAdd = useCanManageLibrary()
   const [tab, setTab] = useState<Tab>('overview')
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
   const m = meta.data
@@ -156,16 +155,13 @@ function MetadataMovie({ meta, onAdded }: { meta: MetadataQuery; onAdded: () => 
     <AdminPage
       title={m.title}
       actions={
-        canAdd && (
-          <Button variant="primary" icon="add" onClick={() => setAdding([m])}>
-            {t('addMovie')}
-          </Button>
-        )
+        <Button variant="primary" icon="add" onClick={() => setAdding([m])}>
+          {t('addMovie')}
+        </Button>
       }
     >
       <MediaSummary item={m} meta={m} badges={<Badge tone="neutral">{tm('notInLibrary')}</Badge>}>
         <ReleaseLine date={m.releaseDate} />
-        {!canAdd && <p className="text-caption text-text-3">{tm('memberNote')}</p>}
       </MediaSummary>
       <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} variant="line">
         <TabsList aria-label={tm('sections')}>
@@ -173,12 +169,7 @@ function MetadataMovie({ meta, onAdded }: { meta: MetadataQuery; onAdded: () => 
           <TabsTrigger value="cast">{tm('tab.cast')}</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="pt-5">
-          <MediaOverview
-            meta={meta}
-            canAdd={canAdd}
-            onAllCast={() => setTab('cast')}
-            onAdd={setAdding}
-          />
+          <MediaOverview meta={meta} onAllCast={() => setTab('cast')} onAdd={setAdding} />
         </TabsContent>
         <TabsContent value="cast" className="pt-5">
           <CastAndCrew meta={meta} />
@@ -200,13 +191,12 @@ function MetadataMovie({ meta, onAdded }: { meta: MetadataQuery; onAdded: () => 
 // ---------------------------------------------------------------- in the library
 
 /** The library's options: quality and language profiles for names, root folders for Edit. */
-function useLibraryOptions(canManage: boolean) {
-  return useQuery(`movie-options:${canManage}`, async (c) => {
+function useLibraryOptions() {
+  return useQuery('movie-options', async (c) => {
     const [quality, language, folders] = await Promise.all([
       c.quality.profiles(),
       c.quality.languageProfiles(),
-      // root folders need the library's access; members only read names
-      canManage ? c.rootFolders.list() : Promise.resolve([] as RootFolder[]),
+      c.rootFolders.list(),
     ])
     return { quality, language, folders }
   })
@@ -230,12 +220,11 @@ function LibraryMovie({
   const t = useT(messages)
   const ts = useT(shell)
   const router = useRouter()
-  const canManage = useCanManageLibrary()
   const movie = useQuery(`movie:${id}`, (c) => c.movies.get({ params: { id } }), [
     'movies.updated',
     'item.updated',
   ])
-  const options = useLibraryOptions(canManage)
+  const options = useLibraryOptions()
   // removed elsewhere: back to the metadata alone, until the metadata's `inLibrary` says so too
   const missing = movie.status === 'error' && (movie.error as ApiError).status === 404
   useEffect(() => {
@@ -274,50 +263,49 @@ function LibraryMovie({
   }
 
   const title = m?.title ?? meta.data?.title ?? t('movie')
-  const actions =
-    m && canManage ? (
-      <>
-        <Tooltip content={t('noIndexers')}>
-          {/* a disabled button takes no focus, so its wrapper carries the reason (Radix Tooltip) */}
-          <span tabIndex={CAN_SEARCH ? undefined : 0} className="inline-flex rounded-sm">
-            <Button icon="search" disabled={!CAN_SEARCH}>
-              {t('search')}
-            </Button>
-          </span>
-        </Tooltip>
-        <Button variant="primary" icon="list" onClick={() => setTab('search')}>
-          {t('interactiveSearch')}
-        </Button>
-        <Menu>
-          <MenuTrigger asChild>
-            <Button variant="ghost" iconOnly icon="more" aria-label={t('more')} />
-          </MenuTrigger>
-          <MenuContent>
-            <MenuItem icon="edit" onSelect={() => setEditing(true)}>
-              {t('edit')}
-            </MenuItem>
-            <MenuItem
-              icon="refresh"
-              onSelect={() =>
-                refresh.run().then(
-                  () =>
-                    toast({
-                      title: t('refresh.toast', { title: m.title }),
-                      description: t('refresh.toastBody'),
-                    }),
-                  (e: Error) => toast.error(t('refresh.failed'), { description: e.message }),
-                )
-              }
-            >
-              {t('refresh')}
-            </MenuItem>
-            <MenuItem icon="delete" danger onSelect={() => setRemoving(true)}>
-              {t('remove')}
-            </MenuItem>
-          </MenuContent>
-        </Menu>
-      </>
-    ) : undefined
+  const actions = m ? (
+    <>
+      <Tooltip content={t('noIndexers')}>
+        {/* a disabled button takes no focus, so its wrapper carries the reason (Radix Tooltip) */}
+        <span tabIndex={CAN_SEARCH ? undefined : 0} className="inline-flex rounded-sm">
+          <Button icon="search" disabled={!CAN_SEARCH}>
+            {t('search')}
+          </Button>
+        </span>
+      </Tooltip>
+      <Button variant="primary" icon="list" onClick={() => setTab('search')}>
+        {t('interactiveSearch')}
+      </Button>
+      <Menu>
+        <MenuTrigger asChild>
+          <Button variant="ghost" iconOnly icon="more" aria-label={t('more')} />
+        </MenuTrigger>
+        <MenuContent>
+          <MenuItem icon="edit" onSelect={() => setEditing(true)}>
+            {t('edit')}
+          </MenuItem>
+          <MenuItem
+            icon="refresh"
+            onSelect={() =>
+              refresh.run().then(
+                () =>
+                  toast({
+                    title: t('refresh.toast', { title: m.title }),
+                    description: t('refresh.toastBody'),
+                  }),
+                (e: Error) => toast.error(t('refresh.failed'), { description: e.message }),
+              )
+            }
+          >
+            {t('refresh')}
+          </MenuItem>
+          <MenuItem icon="delete" danger onSelect={() => setRemoving(true)}>
+            {t('remove')}
+          </MenuItem>
+        </MenuContent>
+      </Menu>
+    </>
+  ) : undefined
 
   return (
     <AdminPage title={title} actions={actions}>
@@ -352,7 +340,6 @@ function LibraryMovie({
             movie={m}
             meta={meta}
             options={options.data}
-            canManage={canManage}
             tab={tab}
             onTab={setTab}
             monitored={monitoring ?? m.monitored}
@@ -413,7 +400,6 @@ function LibraryBody({
   movie: m,
   meta,
   options,
-  canManage,
   tab,
   onTab,
   monitored,
@@ -424,7 +410,6 @@ function LibraryBody({
   movie: Movie
   meta: MetadataQuery
   options: Options | undefined
-  canManage: boolean
   tab: Tab
   onTab: (tab: Tab) => void
   monitored: boolean
@@ -452,24 +437,20 @@ function LibraryBody({
       >
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-caption text-text-3">
           <span className="min-w-0 break-all font-mono">{m.path}</span>
-          {canManage ? (
-            <span className="flex items-center gap-2">
-              <Switch
-                id="monitored"
-                checked={monitored}
-                onCheckedChange={onMonitor}
-                aria-describedby="monitored-hint"
-              />
-              <label htmlFor="monitored" className="text-text-2">
-                {t('monitored')}
-              </label>
-              <span id="monitored-hint" className="sr-only">
-                {t('monitored.hint')}
-              </span>
+          <span className="flex items-center gap-2">
+            <Switch
+              id="monitored"
+              checked={monitored}
+              onCheckedChange={onMonitor}
+              aria-describedby="monitored-hint"
+            />
+            <label htmlFor="monitored" className="text-text-2">
+              {t('monitored')}
+            </label>
+            <span id="monitored-hint" className="sr-only">
+              {t('monitored.hint')}
             </span>
-          ) : (
-            <span>{m.monitored ? t('monitored') : t('notMonitored')}</span>
-          )}
+          </span>
         </div>
       </MediaSummary>
       <Tabs value={tab} onValueChange={(v) => onTab(v as Tab)} variant="line">
@@ -478,17 +459,14 @@ function LibraryBody({
           <TabsTrigger value="cast">{tm('tab.cast')}</TabsTrigger>
           <TabsTrigger value="files">{t('tab.files')}</TabsTrigger>
           <TabsTrigger value="history">{t('tab.history')}</TabsTrigger>
-          {canManage && <TabsTrigger value="search">{t('tab.search')}</TabsTrigger>}
+          <TabsTrigger value="search">{t('tab.search')}</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="pt-5">
           <MediaOverview
             meta={meta}
-            canAdd={canManage}
             onAllCast={() => onTab('cast')}
             onAdd={onAdd}
-            aside={
-              <InTheLibrary movie={m} options={options} canManage={canManage} onChange={onChange} />
-            }
+            aside={<InTheLibrary movie={m} options={options} onChange={onChange} />}
           />
         </TabsContent>
         <TabsContent value="cast" className="pt-5">
@@ -502,11 +480,9 @@ function LibraryBody({
             {t('history.noneBody')}
           </EmptyState>
         </TabsContent>
-        {canManage && (
-          <TabsContent value="search" className="pt-5">
-            <SearchTab />
-          </TabsContent>
-        )}
+        <TabsContent value="search" className="pt-5">
+          <SearchTab />
+        </TabsContent>
       </Tabs>
     </>
   )
@@ -517,12 +493,10 @@ function LibraryBody({
 function InTheLibrary({
   movie: m,
   options,
-  canManage,
   onChange,
 }: {
   movie: Movie
   options: Options | undefined
-  canManage: boolean
   onChange: (movie: Movie) => void
 }) {
   const t = useT(messages)
@@ -545,7 +519,6 @@ function InTheLibrary({
               movie={m}
               profile={profile}
               quality={options?.quality ?? []}
-              canManage={canManage}
               onChange={onChange}
             />,
           ],
@@ -564,8 +537,8 @@ function InTheLibrary({
 }
 
 /**
- * The version list (ADR 0012): each version with its profile, and for staff Edit and Remove on
- * each and Add version after them. A movie keeps at least one, so the last can't be removed (the
+ * The version list (ADR 0012): each version with its profile, Edit and Remove on each and Add
+ * version after them. A movie keeps at least one, so the last can't be removed (the
  * server answers 409 `last-version` too). The prototype lists the versions as one line; the
  * buttons are the smallest addition that gives them their actions.
  */
@@ -573,13 +546,11 @@ function Versions({
   movie: m,
   profile,
   quality,
-  canManage,
   onChange,
 }: {
   movie: Movie
   profile: (id: string) => string
   quality: QualityProfile[]
-  canManage: boolean
   onChange: (movie: Movie) => void
 }) {
   const t = useT(messages)
@@ -597,47 +568,43 @@ function Versions({
             <span className="min-w-0 flex-1">
               {t('version', { label: v.label, profile: profile(v.qualityProfileId) })}
             </span>
-            {canManage && (
-              <span className="flex shrink-0">
-                <Tooltip content={t('editVersion', { label: v.label })}>
+            <span className="flex shrink-0">
+              <Tooltip content={t('editVersion', { label: v.label })}>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  iconOnly
+                  icon="edit"
+                  aria-label={t('editVersion', { label: v.label })}
+                  onClick={() => setDialog({ version: v })}
+                />
+              </Tooltip>
+              <Tooltip content={last ? t('lastVersion') : t('removeVersion', { label: v.label })}>
+                <span tabIndex={last ? 0 : undefined} className="inline-flex rounded-sm">
                   <Button
                     size="sm"
                     variant="ghost"
                     iconOnly
-                    icon="edit"
-                    aria-label={t('editVersion', { label: v.label })}
-                    onClick={() => setDialog({ version: v })}
+                    icon="delete"
+                    aria-label={t('removeVersion', { label: v.label })}
+                    disabled={last}
+                    onClick={() => setRemoving(v)}
                   />
-                </Tooltip>
-                <Tooltip content={last ? t('lastVersion') : t('removeVersion', { label: v.label })}>
-                  <span tabIndex={last ? 0 : undefined} className="inline-flex rounded-sm">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      iconOnly
-                      icon="delete"
-                      aria-label={t('removeVersion', { label: v.label })}
-                      disabled={last}
-                      onClick={() => setRemoving(v)}
-                    />
-                  </span>
-                </Tooltip>
-              </span>
-            )}
+                </span>
+              </Tooltip>
+            </span>
           </li>
         ))}
       </ul>
-      {canManage && (
-        <Button
-          size="sm"
-          variant="ghost"
-          icon="add"
-          className="-ms-2 mt-1"
-          onClick={() => setDialog({ version: null })}
-        >
-          {t('addVersion')}
-        </Button>
-      )}
+      <Button
+        size="sm"
+        variant="ghost"
+        icon="add"
+        className="-ms-2 mt-1"
+        onClick={() => setDialog({ version: null })}
+      >
+        {t('addVersion')}
+      </Button>
       {dialog && (
         <VersionDialog
           movie={m}

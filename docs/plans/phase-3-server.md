@@ -1,6 +1,6 @@
 # Phase 3 plan: server milestone 1
 
-- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoints 1 to 4 are signed off, checkpoints 2 to 4 on 2026-10-20. Checkpoint 3's scope and the owner's decisions are in [Checkpoint 3 in detail](#checkpoint-3-in-detail); with its sign-off the owner approved widgets up to 4 columns wide (dashboard.md › Decisions). Checkpoint 4's scope, judgement calls and the owner's decisions (all 2026-10-20, including addresses by TMDB id, amending ADR 0014) are in [phase-3-checkpoint-4.md](phase-3-checkpoint-4.md); its review added decision 6 (the admin is for the owner and admins only), built before checkpoint 5. Checkpoint 5 is scoped before it's built. A follow-up after Phase 3 brings the dashboard's customization to Homarr's level ([dashboard-customization.md](dashboard-customization.md)). Phase 2 (the design prototypes) was signed off on 2026-10-19.
+- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoints 1 to 4 are signed off, checkpoints 2 to 4 on 2026-10-20. Checkpoint 3's scope and the owner's decisions are in [Checkpoint 3 in detail](#checkpoint-3-in-detail); with its sign-off the owner approved widgets up to 4 columns wide (dashboard.md › Decisions). Checkpoint 4's scope, judgement calls and the owner's decisions (all 2026-10-20, including addresses by TMDB id, amending ADR 0014) are in [phase-3-checkpoint-4.md](phase-3-checkpoint-4.md); its review added decision 6 (the admin is for the owner and admins only), built on 2026-10-20 ([phase-3-admin-access.md](phase-3-admin-access.md)). Checkpoint 5 is scoped in [phase-3-checkpoint-5.md](phase-3-checkpoint-5.md) and waits for the owner's answers and go-ahead. A follow-up after Phase 3 brings the dashboard's customization to Homarr's level ([dashboard-customization.md](dashboard-customization.md)). Phase 2 (the design prototypes) was signed off on 2026-10-19.
 - **Gate:** the owner signs off on milestone 1. Phase 4 (the client apps) then builds on its API and SDK.
 - **Source:** the Phase 3 section of the [roadmap](../roadmap.md#phase-3-server-milestone-1-implementation) and the gap analysis items tagged **[M1]**. This plan turns them into steps.
 - **Build reference:** the signed-off prototypes in [`design/prototypes`](../../design/prototypes/README.md) and their specs in [`docs/product/`](../product/).
@@ -399,7 +399,7 @@ The roadmap's [build order](../roadmap.md#phase-3-build-order), grouped into che
    - **`metadata`** (TMDB) and **`media-movies`:** add, refresh, collections, people, trailers, multiple versions.
    - **Admin:** A4 Discover, A5 Movies, A6 movie detail (all but the Subtitles tab and the live states), people pages.
    - **Client API:** library, item, search.
-5. **Checkpoint 5: indexers and the catalog.**
+5. **Checkpoint 5: indexers and the catalog.** Scoped in detail in [phase-3-checkpoint-5.md](phase-3-checkpoint-5.md).
    - **Indexers:**
      - `indexer-schema` (declarative definitions);
      - `indexers` (Torznab, Newznab, JSON, HTML, RSS; health, backoff, stats).
@@ -579,7 +579,7 @@ The owner decided these on 2026-10-19:
 
 The owner decided this on 2026-10-20, reviewing checkpoint 4:
 
-6. **The admin is for the owner and admins only.** Members and restricted accounts use the clients; they never open the admin, and **Manage the library** becomes an admin's permission alone. This replaces the members' shorter sidebar in admin-shell.md. It's recorded now and built as its own small change once checkpoint 4 is signed off.
+6. **The admin is for the owner and admins only.** Members and restricted accounts use the clients; they never open the admin, and **Manage the library** becomes an admin's permission alone. This replaces the members' shorter sidebar in admin-shell.md. Scoped, with the owner's decisions of 2026-10-20 (three roles: Owner, Admin, User), in [phase-3-admin-access.md](phase-3-admin-access.md); built before checkpoint 5.
 
 ## Out of scope for Phase 3
 

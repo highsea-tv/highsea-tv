@@ -6,7 +6,8 @@ export type Platform = 'admin' | 'web' | 'mobile' | 'tv'
 export type DataState = 'populated' | 'empty' | 'loading' | 'error'
 export type Width = 'fluid' | 1440 | 1024 | 768 | 390
 export type ThemeId = 'default' | 'oled' | 'high-contrast' | 'harbor'
-export type Role = 'owner' | 'member'
+/** Who's signed in: the owner, an admin, or a user (who gets the admin's refusal page). */
+export type Role = 'owner' | 'admin' | 'user'
 export type TimeMode = 'play' | 'pause' | 'fast'
 /** How a client reaches its server (connectivity.md): on the LAN, failed over to remote, or not. */
 export type Connection = 'local' | 'remote' | 'offline'
@@ -65,7 +66,8 @@ export const dataStates: { id: DataState; label: string }[] = [
 
 export const roles: { id: Role; label: string }[] = [
   { id: 'owner', label: 'Owner' },
-  { id: 'member', label: 'Member' },
+  { id: 'admin', label: 'Admin' },
+  { id: 'user', label: 'User' },
 ]
 
 export const connections: { id: Connection; label: string }[] = [
@@ -110,7 +112,7 @@ export function saveState(state: ProtoState): void {
 
 /**
  * URL parameters override the state, so a screen can be opened on its own at a known state:
- * `?screen&data=empty&theme=oled&role=member&motion=reduced&text=200&time=pause&connection=remote`;
+ * `?screen&data=empty&theme=oled&role=admin&motion=reduced&text=200&time=pause&connection=remote`;
  * `&preview` marks a client preview inside the admin.
  */
 export function stateFromParams(params: URLSearchParams, base: ProtoState): ProtoState {
@@ -123,7 +125,7 @@ export function stateFromParams(params: URLSearchParams, base: ProtoState): Prot
     ...base,
     data: pick('data', ['populated', 'empty', 'loading', 'error']) ?? base.data,
     theme: pick('theme', ['default', 'oled', 'high-contrast', 'harbor']) ?? base.theme,
-    role: pick('role', ['owner', 'member']) ?? base.role,
+    role: pick('role', ['owner', 'admin', 'user']) ?? base.role,
     time: pick('time', ['play', 'pause', 'fast']) ?? base.time,
     connection: pick('connection', ['local', 'remote', 'offline']) ?? base.connection,
     reducedMotion: params.has('motion') ? params.get('motion') === 'reduced' : base.reducedMotion,

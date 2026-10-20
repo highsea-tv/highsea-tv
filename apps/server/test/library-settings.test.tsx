@@ -8,7 +8,7 @@ import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ReactNode } from 'react'
 
-let role: 'owner' | 'admin' | 'member' = 'owner'
+let role: 'owner' | 'admin' = 'owner'
 
 mock.module('next/navigation', () => ({
   useRouter: () => ({ push: () => {} }),
@@ -17,7 +17,6 @@ mock.module('next/navigation', () => ({
 }))
 mock.module('../src/admin/shell.tsx', () => ({
   useShell: () => ({ role }),
-  StaffOnly: ({ children }: { children: ReactNode }) => <>{children}</>,
   AdminPage: ({
     title,
     actions,
@@ -46,6 +45,8 @@ const { General } = await import('../src/admin/general.tsx')
 const { MediaManagement } = await import('../src/admin/media-management.tsx')
 const { Profiles, QualitySizes } = await import('../src/admin/profiles.tsx')
 const { System } = await import('../src/admin/system.tsx')
+const { SettingsIndex } = await import('../src/admin/settings.tsx')
+const { seesArea } = await import('../src/admin/settings-areas.ts')
 const { widgetRenderers } = await import('../src/admin/widgets.tsx')
 const { filmBytes, foldersOnDisk, localDay, MIB, releasesByDay } = await import(
   '../src/admin/library-figures.ts'
@@ -375,6 +376,27 @@ describe('setup’s TMDB key step', () => {
 })
 
 // ---------------------------------------------------------------- settings
+
+describe('Settings', () => {
+  test('Security and Backups are the owner’s; an admin doesn’t see them (ADR 0032)', async () => {
+    const areas = (page: Awaited<ReturnType<typeof open>>['page']) =>
+      page.getAllByRole('link').map((l) => l.textContent)
+    const asOwner = await open(<SettingsIndex />)
+    expect(areas(asOwner.page)).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/^Security/),
+        expect.stringMatching(/^Backups/),
+      ]),
+    )
+    cleanup()
+    role = 'admin'
+    const asAdmin = await open(<SettingsIndex />)
+    expect(areas(asAdmin.page).some((a) => /^(Security|Backups)/.test(a ?? ''))).toBe(false)
+    expect(areas(asAdmin.page).some((a) => a?.startsWith('Users and devices'))).toBe(true)
+    expect(seesArea('security', 'admin')).toBe(false)
+    expect(seesArea('backups', 'owner')).toBe(true)
+  })
+})
 
 describe('Settings › General › Metadata', () => {
   test('shows the key by its last four; Replace checks the new one on Save', async () => {

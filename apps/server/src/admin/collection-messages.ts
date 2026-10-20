@@ -8,8 +8,6 @@ export const collection = defineMessages({
   summary: 'Summary',
   parts: 'Parts',
   noOverview: 'TMDB has no overview for this collection yet.',
-  memberNote:
-    'Only owners and admins can add movies. Ask the server’s owner for the ones you want.',
   'unknown.title': 'TMDB doesn’t know that collection',
   'unknown.body': 'It may have been merged or removed.',
 })

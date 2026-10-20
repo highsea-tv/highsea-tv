@@ -3,7 +3,8 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { issueDevice } from '@highsea/auth'
+import { defaultSecuritySettings, issueDevice, SECURITY_KEY } from '@highsea/auth'
+import { writeSetting } from '@highsea/db'
 import { createReplayFetch, type ReplayFetch } from '@highsea/metadata/replay'
 import { boot, getRuntime, hasRuntime, loadConfig, type Runtime } from '@highsea/runtime'
 import { ApiError, createClient } from '@highsea/sdk'
@@ -46,6 +47,14 @@ export const tokenFor = (runtime: Runtime, userId: string) =>
 
 export async function withOwner(runtime: Runtime) {
   const owner = await runtime.auth.createOwner(OWNER, meta)
+  // a new server requires two-step for staff (ADR 0032); these tests sign in without it unless one
+  // turns it on
+  writeSetting(
+    runtime.db,
+    SECURITY_KEY,
+    { ...defaultSecuritySettings, twoFactor: false },
+    Date.now(),
+  )
   return { owner, token: tokenFor(runtime, owner.id) }
 }
 
@@ -54,7 +63,7 @@ export async function addMember(
   runtime: Runtime,
   ownerId: string,
   displayName: string,
-  role: 'admin' | 'member' | 'restricted' = 'member',
+  role: 'admin' | 'user' = 'user',
 ) {
   const invite = runtime.auth.users.invite(
     { displayName, email: null, role, libraries: 'all' },

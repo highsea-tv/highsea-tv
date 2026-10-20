@@ -22,7 +22,7 @@ export function setup() {
     },
   })
   const now = clock.now()
-  const person = (id: string, role: 'owner' | 'admin' | 'member' | 'restricted' = 'member') => {
+  const person = (id: string, role: 'owner' | 'admin' = 'admin') => {
     db.insert(schema.users)
       .values({
         id,

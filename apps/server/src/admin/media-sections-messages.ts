@@ -21,7 +21,6 @@ export const media = defineMessages({
   'release.unknown': 'Release date unknown',
   notInLibrary: 'Not in the library',
   inLibrary: 'In library',
-  memberNote: 'Only owners and admins can add movies. Ask the server’s owner for this one.',
   // rows
   details: 'the details',
   cast: 'Cast',

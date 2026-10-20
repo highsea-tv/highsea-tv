@@ -64,8 +64,7 @@ export function scheduleSummary(
 const roleLabels: Record<UserRole, string> = {
   owner: 'Owners',
   admin: 'Admins',
-  member: 'Members',
-  restricted: 'Restricted',
+  user: 'Users',
 }
 
 /** The apps an owner can address, in groups a person thinks in. */

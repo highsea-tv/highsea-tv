@@ -103,7 +103,7 @@ export const SearchPerson = z
 /**
  * One kind of result. New media types join as new kinds; clients show the sections in the order
  * the server ranks them and skip kinds they don't know. `discover` is TMDB's titles that aren't
- * here, only for people who may add them.
+ * here, to request, only for people who may ask for titles.
  */
 export const SearchSection = z
   .discriminatedUnion('kind', [
@@ -168,7 +168,7 @@ export const library = {
     tags: ['Library'],
     summary: 'Search the library: titles, collections and people',
     description:
-      'Titles by name, genre or person; collections by name or a part’s title; people by name. A kind with a name starting with the query (at a word) ranks first, then one containing it. For people who may add titles, a `discover` section adds TMDB’s matches that aren’t here; it’s left out when TMDB can’t be reached.',
+      'Titles by name, genre or person; collections by name or a part’s title; people by name. A kind with a name starting with the query (at a word) ranks first, then one containing it. For people who may ask for titles, a `discover` section adds TMDB’s matches that aren’t here, to request; it’s left out when TMDB can’t be reached, and for everyone until requests arrive.',
     ...access('user'),
     request: { query: z.object({ query: z.string().max(200) }) },
     responses: { 200: json(SearchResults, 'Results'), ...errors('invalid', 'unauthorized') },

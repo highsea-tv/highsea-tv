@@ -18,7 +18,7 @@
 //   movies.rootFolders.list / add / remove
 //   movies.profiles.list / get, customFormats(), qualitySizes(), languageProfiles()
 //   movies.parse(title) → ParseResult
-//   await movies.client.list(query, userId) / item('movie', id, userId) / search(q, { userId, mayAdd })
+//   await movies.client.list(query, userId) / item('movie', id, userId) / search(q, { userId, mayRequest })
 //   movies.close()                         stops listening for metadata.updated
 //
 // Movies, pages and client shapes are @highsea/api-contract's (ratings out of 5, ISO times).

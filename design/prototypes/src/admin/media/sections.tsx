@@ -144,14 +144,12 @@ export function MediaOverview({
   meta,
   main,
   aside,
-  staff,
   onAllCast,
   onAdd,
 }: {
   meta: ReturnType<typeof useMovieMetadata>
   main?: ReactNode
   aside?: ReactNode
-  staff: boolean
   onAllCast: () => void
   /** Add these movies (a collection's missing parts). */
   onAdd: (movies: DiscoverMovie[]) => void
@@ -166,7 +164,7 @@ export function MediaOverview({
               {md.cast.length > 0 && <CastRow cast={md.cast} onAll={onAllCast} />}
               {md.videos.length > 0 && <TrailersRow videos={md.videos} />}
               {md.collection && (
-                <CollectionRow id={md.collection.id} current={md.id} staff={staff} onAdd={onAdd} />
+                <CollectionRow id={md.collection.id} current={md.id} onAdd={onAdd} />
               )}
               <MoreLikeThis id={md.id} />
             </>
@@ -306,12 +304,10 @@ function TitlePoster({ t }: { t: DiscoverMovie }) {
 function CollectionRow({
   id,
   current,
-  staff,
   onAdd,
 }: {
   id: string
   current: string
-  staff: boolean
   onAdd: (movies: DiscoverMovie[]) => void
 }) {
   const collection = useQuery(`collection:${id}`, (c) => c.metadata.collection(id), [
@@ -328,7 +324,6 @@ function CollectionRow({
       itemClassName={titleItem}
       suffix={`${here} of ${c.parts.length} in the library`}
       action={
-        staff &&
         missing.length > 0 && (
           <Button size="sm" icon="add" onClick={() => onAdd(missing)}>
             Add {missing.length} missing

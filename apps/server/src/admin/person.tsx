@@ -43,7 +43,7 @@ import {
 } from '@highsea/ui-web'
 import { useState } from 'react'
 import { AddMovieDialog } from './add-dialog.tsx'
-import { moviePath, useCanManageLibrary } from './media-links.ts'
+import { moviePath } from './media-links.ts'
 import {
   MetadataError,
   SummarySkeleton,
@@ -94,7 +94,6 @@ export function PersonPage({ id: raw }: { id: string }) {
 
 function PersonById({ id }: { id: number }) {
   const t = useT(messages)
-  const canAdd = useCanManageLibrary()
   // refetched as titles are added, so the filmography's badges follow
   const person = useQuery(`person:${id}`, (c) => c.metadata.person({ params: { id } }), [
     'movies.updated',
@@ -117,7 +116,7 @@ function PersonById({ id }: { id: number }) {
         <>
           <Summary person={p} />
           <KnownFor credits={p.credits} />
-          <Filmography person={p} canAdd={canAdd} onAdd={(m) => setAdding([m])} />
+          <Filmography person={p} onAdd={(m) => setAdding([m])} />
         </>
       )}
       <AddMovieDialog movies={adding} onOpenChange={(o) => !o && setAdding([])} />
@@ -194,11 +193,9 @@ const ALL = 'all'
 
 function Filmography({
   person: p,
-  canAdd,
   onAdd,
 }: {
   person: Person
-  canAdd: boolean
   onAdd: (movie: DiscoverMovie) => void
 }) {
   const t = useT(messages)
@@ -288,7 +285,6 @@ function Filmography({
                           <Button
                             size="sm"
                             icon="add"
-                            disabled={!canAdd}
                             onClick={() => onAdd(movie(r))}
                             aria-label={t('add.label', { title: r.title })}
                           >
@@ -304,7 +300,6 @@ function Filmography({
           </TabsContent>
         </Tabs>
       </TableFrame>
-      {!canAdd && counts.out > 0 && <p className="text-caption text-text-3">{t('memberNote')}</p>}
     </section>
   )
 }

@@ -27,7 +27,7 @@ import { useLocation } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { MediaItem } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
-import { AdminPage, adminHref, useShell } from '../shell.tsx'
+import { AdminPage, adminHref } from '../shell.tsx'
 
 export type WantedTab = 'missing' | 'cutoff' | 'calendar'
 
@@ -82,8 +82,6 @@ function List({ status }: { status: 'missing' | 'cutoff-unmet' }) {
   const movies = useMovies()
   const profiles = useQuery('wanted:profiles', (c) => c.movies.qualityProfiles())
   const search = useAction((c, ids: string[]) => c.movies.bulkSearch(ids))
-  const { role } = useShell()
-  const staff = role === 'owner' || role === 'admin'
   const cutoff = status === 'cutoff-unmet'
   return (
     <Loadable query={movies} what="the wanted list">
@@ -114,21 +112,19 @@ function List({ status }: { status: 'missing' | 'cutoff-unmet' }) {
                   ? 'highsea upgrades these when a better release turns up. Search now to look today.'
                   : 'highsea checks RSS every 15 minutes. Search now to look through every indexer.'}
               </span>
-              {staff && (
-                <Button
-                  size="sm"
-                  icon="search"
-                  loading={search.pending}
-                  onClick={() =>
-                    go(
-                      xs.map((m) => m.id),
-                      `${xs.length} movies`,
-                    )
-                  }
-                >
-                  Search all {xs.length}
-                </Button>
-              )}
+              <Button
+                size="sm"
+                icon="search"
+                loading={search.pending}
+                onClick={() =>
+                  go(
+                    xs.map((m) => m.id),
+                    `${xs.length} movies`,
+                  )
+                }
+              >
+                Search all {xs.length}
+              </Button>
             </TableToolbar>
             <Table>
               <TableHeader>
@@ -136,11 +132,9 @@ function List({ status }: { status: 'missing' | 'cutoff-unmet' }) {
                   <TableHead>Movie</TableHead>
                   <TableHead>Released</TableHead>
                   <TableHead>{cutoff ? 'Has · wants' : 'Profile'}</TableHead>
-                  {staff && (
-                    <TableHead>
-                      <span className="sr-only">Actions</span>
-                    </TableHead>
-                  )}
+                  <TableHead>
+                    <span className="sr-only">Actions</span>
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -164,18 +158,16 @@ function List({ status }: { status: 'missing' | 'cutoff-unmet' }) {
                           ? `${m.quality[0] ?? 'Unknown'} · ${p?.cutoff ?? '—'}`
                           : (p?.name ?? '—')}
                       </TableCell>
-                      {staff && (
-                        <TableCell className="text-end">
-                          <Button
-                            size="sm"
-                            icon="search"
-                            aria-label={`Search for ${m.title}`}
-                            onClick={() => go([m.id], m.title)}
-                          >
-                            Search
-                          </Button>
-                        </TableCell>
-                      )}
+                      <TableCell className="text-end">
+                        <Button
+                          size="sm"
+                          icon="search"
+                          aria-label={`Search for ${m.title}`}
+                          onClick={() => go([m.id], m.title)}
+                        >
+                          Search
+                        </Button>
+                      </TableCell>
                     </TableRow>
                   )
                 })}

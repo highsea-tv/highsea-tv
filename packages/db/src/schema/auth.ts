@@ -4,17 +4,12 @@
 // audit log. Secrets are stored as SHA-256 verifiers or sealed with the server's key, never plain.
 import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
-export const ROLES = ['owner', 'admin', 'member', 'restricted'] as const
+/** The owner and admins run the server; users watch (ADR 0032). */
+export const ROLES = ['owner', 'admin', 'user'] as const
 export type Role = (typeof ROLES)[number]
 
-export const PERMISSIONS = [
-  'request',
-  'autoApprove',
-  'download',
-  'manageLibrary',
-  'manageUsers',
-  'admin',
-] as const
+/** A user's, set per person: ask for titles, download for offline. Staff hold every power by role. */
+export const PERMISSIONS = ['request', 'download'] as const
 export type Permission = (typeof PERMISSIONS)[number]
 
 export const CLIENT_TYPES = [

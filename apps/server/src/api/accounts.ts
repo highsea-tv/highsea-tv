@@ -304,13 +304,21 @@ export function registerAccounts(app: OpenAPIHono<Env>) {
       throw new AppError('forbidden', 'That’s the browser you’re using. Sign out instead.', {
         reason: 'self',
       })
-    if (device.userId !== p.user.id && p.user.role !== 'owner' && p.user.role !== 'admin')
+    // signing out someone else's device is managing people: the owner's alone (ADR 0032)
+    if (device.userId !== p.user.id && p.user.role !== 'owner')
       throw new AppError('forbidden', 'You don’t have access to that.')
     auth(c).devices.revoke(id, actor(p), c.get('meta'))
     return c.body(null, 204)
   })
 
-  app.openapi(routes.apiKeys.list, (c) => c.json(auth(c).apiKeys.list().map(apiKeyView), 200))
+  app.openapi(routes.apiKeys.list, (c) =>
+    c.json(
+      auth(c)
+        .apiKeys.list(actor(me(c)))
+        .map(apiKeyView),
+      200,
+    ),
+  )
 
   app.openapi(routes.apiKeys.create, (c) => {
     const p = me(c)

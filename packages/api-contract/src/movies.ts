@@ -236,7 +236,7 @@ export const movies = {
     summary: 'Find movies on TMDB',
     description:
       'With a query, TMDB’s search; without one, a list for the server’s region: `trending` (this week, the default), `popular`, `now-playing` or `upcoming`. Library movies are marked `inLibrary`. Answers 503 with `details.reason` `no-tmdb-key` or `tmdb-unreachable`, or 429 with `tmdb-rate-limited`.',
-    ...access('library'),
+    ...access('staff'),
     request: {
       query: z.object({
         query: z.string().max(200).optional(),
@@ -254,7 +254,7 @@ export const movies = {
     path: MOVIES,
     tags: ['Movies'],
     summary: 'The library, a page at a time, filtered and sorted',
-    ...access('user'),
+    ...access('staff'),
     request: { query: MovieListQuery },
     responses: {
       200: json(MoviePage, 'A page of movies'),
@@ -268,7 +268,7 @@ export const movies = {
     summary: 'Add a movie to the library, by TMDB id',
     description:
       'Fetches its metadata when the server doesn’t have it. Adding a movie that’s already in the library returns it unchanged, with 200. 409 `no-indexers` for `searchNow` until an indexer is set up; 503 when the metadata can’t be fetched.',
-    ...access('library'),
+    ...access('staff'),
     request: { ...body(AddMovieInput) },
     responses: {
       200: json(Movie, 'Already in the library, unchanged'),
@@ -289,7 +289,7 @@ export const movies = {
     path: `${MOVIES}/bulk`,
     tags: ['Movies'],
     summary: 'Monitor, stop monitoring, change the profile, search, refresh or remove many',
-    ...access('library'),
+    ...access('staff'),
     request: { ...body(BulkInput) },
     responses: {
       200: json(BulkResult, 'Done'),
@@ -334,7 +334,7 @@ export const movies = {
     tags: ['Movies'],
     summary: 'A library movie',
     description: '404 when the movie isn’t in the library: its page then shows the metadata alone.',
-    ...access('user'),
+    ...access('staff'),
     request: { params: TmdbIdParam },
     responses: { 200: json(Movie, 'The movie'), ...errors('unauthorized', 'not-found') },
   }),
@@ -343,7 +343,7 @@ export const movies = {
     path: `${MOVIES}/{id}`,
     tags: ['Movies'],
     summary: 'Change a movie: monitored, minimum availability, subtitle languages, root folder',
-    ...access('library'),
+    ...access('staff'),
     request: { params: TmdbIdParam, ...body(MovieUpdate) },
     responses: {
       200: json(Movie, 'Saved'),
@@ -357,7 +357,7 @@ export const movies = {
     summary: 'Remove a movie from the library',
     description:
       'Its metadata stays cached, so its page keeps working without the library layer. Files stay on disk unless `deleteFiles` is true.',
-    ...access('library'),
+    ...access('staff'),
     request: { params: TmdbIdParam, query: z.object({ deleteFiles: Bool.optional() }) },
     responses: { ...noContent, ...errors('unauthorized', 'forbidden', 'not-found') },
   }),
@@ -367,7 +367,7 @@ export const movies = {
     tags: ['Movies'],
     summary: 'Refresh a library movie’s metadata from TMDB',
     description: 'Queues the refresh job; `metadata.updated` follows when it’s done.',
-    ...access('library'),
+    ...access('staff'),
     request: { params: TmdbIdParam },
     responses: {
       202: { description: 'Queued' },
@@ -379,7 +379,7 @@ export const movies = {
     path: `${MOVIES}/{id}/versions`,
     tags: ['Movies'],
     summary: 'Add a version, with its own quality profile',
-    ...access('library'),
+    ...access('staff'),
     request: { params: TmdbIdParam, ...body(VersionInput) },
     responses: {
       201: json(Movie, 'The movie, with the version last'),
@@ -391,7 +391,7 @@ export const movies = {
     path: `${MOVIES}/{id}/versions/{versionId}`,
     tags: ['Movies'],
     summary: 'Rename a version or change its quality profile',
-    ...access('library'),
+    ...access('staff'),
     request: { params: VersionParams, ...body(VersionUpdate) },
     responses: {
       200: json(Movie, 'The movie'),
@@ -404,7 +404,7 @@ export const movies = {
     tags: ['Movies'],
     summary: 'Remove a version',
     description: 'A movie keeps at least one: removing the last answers 409 (`last-version`).',
-    ...access('library'),
+    ...access('staff'),
     request: { params: VersionParams },
     responses: {
       200: json(Movie, 'The movie'),
@@ -421,7 +421,7 @@ export const rootFolders = {
     path: ROOT_FOLDERS,
     tags: ['Root folders'],
     summary: 'The folders movies are filed under, with free space and device',
-    ...access('library'),
+    ...access('staff'),
     responses: {
       200: json(z.array(RootFolder), 'Folders'),
       ...errors('unauthorized', 'forbidden'),

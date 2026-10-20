@@ -7,7 +7,7 @@ import { type ReactNode, useEffect, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { Settings as AllSettings, SettingsSection } from '../../mock/settings.ts'
-import { AdminPage, adminHref } from '../shell.tsx'
+import { AdminPage, adminHref, useShell } from '../shell.tsx'
 
 export type Area = {
   id: string
@@ -16,6 +16,8 @@ export type Area = {
   description: string
   /** Areas with a page of their own elsewhere (Subtitles). */
   href?: string
+  /** The owner's alone: left out for admins (ADR 0032). */
+  ownerOnly?: true
 }
 
 export const areaGroups: { title: string; areas: Area[] }[] = [
@@ -45,12 +47,14 @@ export const areaGroups: { title: string; areas: Area[] }[] = [
         label: 'Security',
         icon: 'shield',
         description: 'Two-step verification, passkeys and single sign-on.',
+        ownerOnly: true,
       },
       {
         id: 'backups',
         label: 'Backups',
         icon: 'storage',
         description: 'When highsea backs up its settings and database, and how many to keep.',
+        ownerOnly: true,
       },
     ],
   },
@@ -122,14 +126,21 @@ export const areaGroups: { title: string; areas: Area[] }[] = [
 
 export const areas = areaGroups.flatMap((g) => g.areas)
 
+/** The groups this person sees: Security and Backups are the owner's alone (ADR 0032). */
+function useAreaGroups() {
+  const owner = useShell().role === 'owner'
+  return areaGroups.map((g) => ({ ...g, areas: g.areas.filter((a) => owner || !a.ownerOnly) }))
+}
+
 const areaHref = (a: Area) => adminHref(a.href ?? `/settings/${a.id}`)
 
 /** `/settings`: every area, grouped, as cards that say what's inside. */
 export function SettingsIndex() {
+  const groups = useAreaGroups()
   return (
     <AdminPage title="Settings" description="How the server runs, who uses it, and how it looks.">
       <div className="grid gap-8">
-        {areaGroups.map((g) => (
+        {groups.map((g) => (
           <section key={g.title} aria-labelledby={`settings-${g.title}`} className="grid gap-3">
             <h2 id={`settings-${g.title}`} className="font-mono text-label text-text-3 uppercase">
               {g.title}
@@ -157,9 +168,10 @@ export function SettingsIndex() {
 
 /** The areas beside an area's page, from expanded widths. */
 function AreaNav({ current }: { current: string }) {
+  const groups = useAreaGroups()
   return (
     <nav aria-label="Settings" className="hidden content-start gap-5 expanded:grid">
-      {areaGroups.map((g) => (
+      {groups.map((g) => (
         <div key={g.title} className="grid gap-1">
           <p className="px-2.5 font-mono text-label text-text-3 uppercase">{g.title}</p>
           <ul className="grid gap-0.5">
@@ -301,7 +313,9 @@ export function SaveBar({
 export function SettingsArea({ pages }: { pages: Record<string, () => ReactNode> }) {
   const { area } = useParams<{ area: string }>()
   const [, navigate] = useLocation()
-  const Page = pages[area]
+  const owner = useShell().role === 'owner'
+  // an owner-only area isn't there for an admin, as if it didn't exist
+  const Page = owner || !areas.find((a) => a.id === area)?.ownerOnly ? pages[area] : undefined
   if (Page) return <Page />
   return (
     <AreaPage id={area}>
