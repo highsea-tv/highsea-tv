@@ -118,7 +118,7 @@ Playback itself (streaming, transcoding) stays out: it's reserved under `/stream
    Also:
    - widget layouts and themes persist across sessions;
    - a role-targeted announcement shows only to that role.
-3. The roadmap's unit and integration checks pass (`bun run typecheck && bun run lint && bun test`):
+3. The roadmap's unit and integration checks pass (`bun run typecheck && bun run lint && bun run test`):
    - parser fixtures and decision-engine cases;
    - the torrent engine against a local tracker (one engine seeds, another downloads; hash checks, pause and resume, fast resume);
    - naming, and hardlink or copy;
@@ -337,7 +337,7 @@ After each move, the prototype imports the package too, so the two can't drift. 
   - the license audit;
   - the image build (amd64 and arm64);
   - the end-to-end run on `main` and on pull requests that touch the server.
-- **Before each checkpoint:** `bun run typecheck && bun run lint && bun test` must pass, and the checkpoint's integration tests too.
+- **Before each checkpoint:** `bun run typecheck && bun run lint && bun run test` must pass, and the checkpoint's integration tests too.
 
 ### Known pitfalls
 

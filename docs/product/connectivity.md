@@ -77,10 +77,15 @@ One column (max 28rem), in a card on a desktop and full width on a phone, under 
 ## Data
 
 - `connect.known()` → the SDK's saved servers (`KnownServer`: addresses, signed in, last seen). Stored on the device, not the server.
-- `connect.discover()` → UDP broadcast and mDNS `_highsea._tcp` answers (`DiscoveredServer`).
+- `connect.discover()` → UDP broadcast of `highsea:discover:1` to port 7368, and mDNS `_highsea._tcp` answers (`DiscoveredServer`; ADR 0020).
 - `connect.probe(address)` → `GET {address}/api/v1/system/info/public`: `ProbeResult` (public info plus the address and `reachability`).
-- `auth.signIn`, `auth.verifyTwoFactor` → as the admin; clients receive a **per-server device token**.
-- `connect.startPairing()` → `POST /api/v1/auth/pairing` (`Pairing`: code, url, expiry); `GET /api/v1/auth/pairing/{code}` to poll; `POST /api/v1/auth/pairing/{code}/approve` from the approving device.
+- `auth.signIn`, `auth.twoFactor` → as the admin, with `device`: clients receive a **per-server device token**. They're never asked to enrol in two-step (ADR 0024).
+- **Pairing,** shaped like OAuth's device authorization grant (RFC 8628):
+  1. `auth.startPairing({ device })` → `POST /api/v1/auth/pairing`: `Pairing`, which is `{ code, pollToken, url, expiresAt, interval }`.
+  2. The TV polls with `auth.pollPairing` → `POST /api/v1/auth/pairing/poll` with its `pollToken` every `interval` seconds. It gets `pending`, or `signed-in` with its token once. A 404 `pairing-expired` means the code ran out.
+  3. The approving device reads `auth.pairingRequest` → `GET /api/v1/auth/pairing/{code}`, then calls `auth.approvePairing` → `POST /api/v1/auth/pairing/{code}/approve`.
+
+  The code shown on the TV can't collect the token.
 - Reachability comes from the SDK's `ServerConnection` (roadmap), not from the server.
 
 ## Decisions

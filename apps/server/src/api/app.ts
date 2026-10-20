@@ -6,9 +6,12 @@ import { isAppError } from '@highsea/core'
 import type { Runtime } from '@highsea/runtime'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
+import { registerAccounts } from './accounts.ts'
 import { events } from './events.ts'
+import { type Env, guard } from './guard.ts'
+import { registerSystem } from './system.ts'
 
-export type Env = { Variables: { runtime: Runtime } }
+export type { Env }
 
 const body = (code: ErrorBody['error']['code'], message: string, details?: unknown): ErrorBody => ({
   error: details === undefined ? { code, message } : { code, message, details },
@@ -23,9 +26,18 @@ export function createApi(runtime: Runtime) {
     },
   })
 
-  app.use(async (c, next) => {
-    c.set('runtime', runtime)
-    await next()
+  app.use(guard(runtime))
+
+  app.openAPIRegistry.registerComponent('securitySchemes', 'session', {
+    type: 'apiKey',
+    in: 'cookie',
+    name: '__Host-highsea_session',
+    description: 'The admin’s session. Over plain HTTP on a LAN the cookie is `highsea_session`.',
+  })
+  app.openAPIRegistry.registerComponent('securitySchemes', 'bearer', {
+    type: 'http',
+    scheme: 'bearer',
+    description: 'An app’s device token (`hst_…`) or a scoped API key (`hs_…`).',
   })
 
   app.openapi(routes.system.health, (c) => {
@@ -35,11 +47,16 @@ export function createApi(runtime: Runtime) {
       : c.json(body('unavailable', 'The server isn’t healthy.', health), 503)
   })
 
-  app.openapi(routes.system.publicInfo, (c) => c.json(runtime.publicInfo(), 200))
+  app.openapi(routes.system.publicInfo, (c) =>
+    c.json(runtime.publicInfo(c.get('meta').origin), 200),
+  )
 
   // a stream, not JSON: served directly, and listed in the document from the contract
   app.get(routes.system.events.path, events(runtime))
   app.openAPIRegistry.registerPath(routes.system.events)
+
+  registerSystem(app)
+  registerAccounts(app)
 
   app.doc31(`${API_PREFIX}/openapi.json`, {
     openapi: '3.1.0',

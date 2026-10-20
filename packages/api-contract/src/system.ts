@@ -2,7 +2,7 @@
 // System routes: health for Docker, the public info clients read before signing in (connectivity
 // .md), and the event stream.
 import { createRoute, z } from '@hono/zod-openapi'
-import { API_PREFIX, errors, json } from './common.ts'
+import { API_PREFIX, access, errors, IsoDate, json } from './common.ts'
 
 export const Health = z
   .object({
@@ -20,8 +20,67 @@ export const PublicInfo = z
     version: z.string().openapi({ example: '0.1.0' }),
     localAddresses: z.array(z.string()).openapi({ example: ['http://192.168.1.20:3000'] }),
     publicUrl: z.string().nullable().openapi({ example: 'https://harbor.example.net' }),
+    setupComplete: z.boolean(),
+    /** What the sign-in screen offers here. Passkeys depend on the address the client used. */
+    auth: z.object({
+      local: z.boolean(),
+      oidc: z.object({ name: z.string() }).nullable(),
+      passkeys: z.boolean(),
+    }),
   })
   .openapi('PublicInfo')
+
+export const Server = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    version: z.string(),
+    /** Inherited by every client; customizing it comes with Appearance. */
+    branding: z.object({
+      name: z.string(),
+      accent: z.string().nullable(),
+      customMark: z.boolean(),
+    }),
+    addresses: z.object({ local: z.array(z.string()), public: z.string().nullable() }),
+    setupComplete: z.boolean(),
+    /** Apps with the event stream open now. */
+    clientsConnected: z.number().int(),
+  })
+  .openapi('Server')
+
+export const Disk = z
+  .object({ path: z.string(), label: z.string(), free: z.number(), total: z.number() })
+  .openapi('Disk')
+
+export const SystemStatus = z
+  .object({
+    version: z.string(),
+    startedAt: IsoDate,
+    /** Percent, across all cores, since the last reading. */
+    cpu: z.number(),
+    memory: z.object({ used: z.number(), total: z.number() }),
+    disks: z.array(Disk),
+  })
+  .openapi('SystemStatus')
+
+export const JobInfo = z
+  .object({
+    id: z.string(),
+    name: z.string(),
+    state: z.enum(['running', 'queued', 'idle', 'failed']),
+    nextRun: IsoDate.nullable(),
+  })
+  .openapi('JobInfo')
+
+export const HealthCheck = z
+  .object({
+    id: z.string(),
+    source: z.string(),
+    level: z.enum(['ok', 'notice', 'warning', 'error']),
+    message: z.string(),
+    since: IsoDate,
+  })
+  .openapi('HealthCheck')
 
 export type PublicInfo = z.infer<typeof PublicInfo>
 
@@ -31,6 +90,7 @@ export const system = {
     path: '/api/health',
     tags: ['System'],
     summary: 'Health, for Docker and load balancers',
+    ...access('public'),
     responses: {
       200: json(Health, 'The server is up'),
       ...errors('unavailable'),
@@ -41,6 +101,7 @@ export const system = {
     path: `${API_PREFIX}/system/info/public`,
     tags: ['System'],
     summary: 'Who this server is, without signing in',
+    ...access('public'),
     responses: { 200: json(PublicInfo, 'The server’s public info') },
   }),
   events: createRoute({
@@ -48,6 +109,7 @@ export const system = {
     path: `${API_PREFIX}/events`,
     tags: ['System'],
     summary: 'Server events (SSE)',
+    ...access('user'),
     description:
       'A `text/event-stream` of ServerEvent objects. Send `Last-Event-ID` to catch up after a reconnect.',
     request: {
@@ -66,4 +128,44 @@ export const system = {
       },
     },
   }),
+  server: createRoute({
+    method: 'get',
+    path: `${API_PREFIX}/system/server`,
+    tags: ['System'],
+    summary: 'The server card: name, version, branding, clients connected',
+    ...access('user'),
+    responses: { 200: json(Server, 'The server'), ...errors('unauthorized') },
+  }),
+  status: createRoute({
+    method: 'get',
+    path: `${API_PREFIX}/system/status`,
+    tags: ['System'],
+    summary: 'CPU, memory and disks, for the status bar',
+    ...access('staff'),
+    responses: { 200: json(SystemStatus, 'Status'), ...errors('unauthorized', 'forbidden') },
+  }),
+  jobs: createRoute({
+    method: 'get',
+    path: `${API_PREFIX}/system/jobs`,
+    tags: ['System'],
+    summary: 'Running and upcoming jobs',
+    ...access('user'),
+    responses: { 200: json(z.array(JobInfo), 'Jobs'), ...errors('unauthorized') },
+  }),
+  healthChecks: createRoute({
+    method: 'get',
+    path: `${API_PREFIX}/system/health`,
+    tags: ['System'],
+    summary: 'What needs attention, for the server card’s dot and System › Health',
+    ...access('staff'),
+    responses: {
+      200: json(z.array(HealthCheck), 'Checks'),
+      ...errors('unauthorized', 'forbidden'),
+    },
+  }),
 } as const
+
+export type Server = z.infer<typeof Server>
+export type SystemStatus = z.infer<typeof SystemStatus>
+export type JobInfo = z.infer<typeof JobInfo>
+export type HealthCheck = z.infer<typeof HealthCheck>

@@ -58,3 +58,43 @@ export const json = <S extends z.ZodType>(schema: S, description: string) => ({
   description,
   content: { 'application/json': { schema } },
 })
+
+/**
+ * Who may call a route, declared on the route as the `x-highsea-access` OpenAPI extension and
+ * enforced by the server from the contract (ADR 0023):
+ * - `public`: anyone, signed in or not;
+ * - `user`: anyone signed in;
+ * - `people`: staff, or anyone given "Manage people";
+ * - `staff`: the owner and admins;
+ * - `owner`: the owner alone.
+ * Read-only API keys may call GET routes only.
+ */
+export const ACCESS = ['public', 'user', 'people', 'staff', 'owner'] as const
+export type Access = (typeof ACCESS)[number]
+
+export const ACCESS_KEY = 'x-highsea-access'
+
+/** A route's access, with the security requirements the document shows for it. */
+export const access = <const A extends Access>(level: A) =>
+  ({
+    [ACCESS_KEY]: level,
+    ...(level === 'public' ? {} : { security: [{ session: [] }, { bearer: [] }] }),
+  }) as { 'x-highsea-access': A; security?: { [k: string]: string[] }[] }
+
+/** The access a route declares. */
+export const accessOf = (route: object): Access | undefined =>
+  (route as Record<string, unknown>)[ACCESS_KEY] as Access | undefined
+
+/** ISO 8601 date-times, as the prototype's draft types have them. */
+export const IsoDate = z.iso.datetime().openapi({ example: '2026-10-17T20:15:00.000Z' })
+
+/** A `{ id }` path parameter. */
+export const IdParam = z.object({ id: z.string().openapi({ param: { name: 'id', in: 'path' } }) })
+
+/** A JSON request body, for a route's `request`. */
+export const body = <S extends z.ZodType>(schema: S) => ({
+  body: { content: { 'application/json': { schema } }, required: true },
+})
+
+/** No content. */
+export const noContent = { 204: { description: 'Done' } } as const

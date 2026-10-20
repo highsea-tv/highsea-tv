@@ -2,7 +2,9 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { networkInterfaces } from 'node:os'
 import { join } from 'node:path'
+import { type Auth, createAuth, type Fetch, type Issued, type RequestMeta } from '@highsea/auth'
 import {
+  AppError,
   type Clock,
   createEventBus,
   createLogger,
@@ -21,8 +23,18 @@ import {
 } from '@highsea/core'
 import { type Database, type Db, migrate, openDatabase, schema } from '@highsea/db'
 import { createJobQueue, type JobQueue } from '@highsea/jobs'
+import type { MdnsResponder } from '@highsea/network'
 import { eq } from 'drizzle-orm'
 import type { Config } from './config.ts'
+import { createNetworkService, type NetworkService } from './network.ts'
+import {
+  checkSetup,
+  isSetupComplete,
+  type MediaFolders,
+  type RemoteAccessInput,
+  saveSetup,
+} from './setup.ts'
+import { createCpuMeter, type Disk, disks, type HealthIssue, memory } from './system.ts'
 import { createWorkerPool, type WorkerPool } from './workers.ts'
 
 export type ServerIdentity = { id: string; name: string; createdAt: number }
@@ -34,6 +46,35 @@ export type PublicInfo = {
   /** Where this server answers on the local network (`http://192.168.1.20:3000`). */
   localAddresses: string[]
   publicUrl: string | null
+  setupComplete: boolean
+  auth: { local: boolean; oidc: { name: string } | null; passkeys: boolean }
+}
+
+/** The server card and status bar's server. */
+export type ServerView = {
+  id: string
+  name: string
+  version: string
+  branding: { name: string; accent: string | null; customMark: boolean }
+  addresses: { local: string[]; public: string | null }
+  setupComplete: boolean
+  clientsConnected: number
+}
+
+export type SystemStatus = {
+  version: string
+  startedAt: number
+  cpu: number
+  memory: { used: number; total: number }
+  disks: Disk[]
+}
+
+export type SetupInput = {
+  serverName: string
+  owner: { username: string; displayName: string; password: string }
+  folders: MediaFolders
+  remoteAccess: RemoteAccessInput
+  cloudLink: boolean
 }
 
 export type HealthReport = {
@@ -55,8 +96,19 @@ export type Runtime = {
   jobs: JobQueue
   sealer: Sealer
   workers: WorkerPool
+  auth: Auth
+  network: NetworkService
   identity(): ServerIdentity
-  publicInfo(): PublicInfo
+  rename(name: string): void
+  /** `origin` is the browser's, when known: passkeys depend on it. */
+  publicInfo(origin?: string): PublicInfo
+  setupComplete(): boolean
+  /** Setup's last step: the owner, the server's name and choices, and the owner signed in. */
+  completeSetup(input: SetupInput, meta: RequestMeta): Promise<Issued>
+  server(): ServerView
+  status(): SystemStatus
+  /** What needs attention, for the server card and System › Health. */
+  issues(): HealthIssue[]
   health(): HealthReport
   /** Runs `fn` on shutdown, before the database closes (last registered, first run). */
   onShutdown(fn: () => Promise<void> | void): void
@@ -74,6 +126,11 @@ export type BootOptions = {
   memory?: boolean
   /** Don't tick the job queue on a timer (tests tick it by hand). */
   manualTicks?: boolean
+  /** Answer LAN discovery and advertise over mDNS. Off unless asked: the server entry turns it on. */
+  discovery?: boolean
+  mdns?: () => Promise<MdnsResponder>
+  /** For single sign-on's requests to the provider (tests pass a fake). */
+  fetch?: Fetch
 }
 
 const g = globalThis as typeof globalThis & { __highsea?: Runtime }
@@ -132,6 +189,57 @@ export async function boot(options: BootOptions): Promise<Runtime> {
   }
   identity()
 
+  const rename = (name: string) => {
+    const current = identity()
+    db.update(schema.settings)
+      .set({ value: { ...current, name }, updatedAt: clock.now() })
+      .where(eq(schema.settings.key, 'server'))
+      .run()
+    events.emit({ topic: 'server.updated' })
+  }
+
+  const publicInfo = (origin?: string): PublicInfo => {
+    const { id, name } = identity()
+    return {
+      id,
+      name,
+      version,
+      localAddresses: localAddresses(config.port),
+      publicUrl: network.externalUrl(),
+      setupComplete: isSetupComplete(db),
+      auth: auth.methods(origin),
+    }
+  }
+
+  const network = createNetworkService({
+    db,
+    config,
+    clock,
+    events,
+    logger,
+    answer: () => publicInfo(),
+    mdnsInfo: () => ({ ...identity(), version }),
+    responder: options.mdns,
+    discovery: options.discovery ?? false,
+  })
+
+  const auth = createAuth({
+    db,
+    clock,
+    sealer,
+    events,
+    logger: logger.child('auth'),
+    version,
+    serverName: () => identity().name,
+    addresses: () => ({
+      externalUrl: network.externalUrl(),
+      localOrigins: [...localAddresses(config.port), `http://localhost:${config.port}`],
+    }),
+    fetch: options.fetch,
+  })
+
+  const cpu = createCpuMeter()
+
   const runtime: Runtime = {
     config,
     version,
@@ -145,16 +253,80 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     jobs,
     sealer,
     workers,
+    auth,
+    network,
     identity,
-    publicInfo() {
+    rename,
+    publicInfo,
+    setupComplete: () => isSetupComplete(db),
+    async completeSetup(input, meta) {
+      if (isSetupComplete(db)) throw new AppError('not-found', 'Setup is already complete.')
+      // everything that can be checked before the owner exists, so a mistake leaves nothing behind
+      checkSetup(config, input)
+      const owner = await auth.createOwner(input.owner, meta)
+      saveSetup({ db, config, clock, events }, input, rename, input.serverName)
+      log.info('setup complete', { owner: owner.username })
+      return auth.signInAfterSetup(owner.id, meta)
+    },
+    server() {
       const { id, name } = identity()
       return {
         id,
         name,
         version,
-        localAddresses: localAddresses(config.port),
-        publicUrl: config.publicUrl ?? null,
+        branding: { name, accent: null, customMark: false },
+        addresses: { local: localAddresses(config.port), public: network.externalUrl() },
+        setupComplete: isSetupComplete(db),
+        clientsConnected: network.clientsConnected(),
       }
+    },
+    status() {
+      return {
+        version,
+        startedAt,
+        cpu: cpu(),
+        memory: memory(),
+        disks: disks([
+          { label: 'Media', path: config.dataDir },
+          { label: 'Config', path: config.configDir },
+        ]),
+      }
+    },
+    issues() {
+      const out: HealthIssue[] = []
+      const report = runtime.health()
+      for (const c of report.checks)
+        if (!c.ok)
+          out.push({
+            id: c.name,
+            source: c.name,
+            level: 'error',
+            message: c.message ?? '',
+            since: startedAt,
+          })
+      const tls = network.tlsProblem()
+      if (tls)
+        out.push({ id: 'tls', source: 'Network', level: 'error', message: tls, since: startedAt })
+      const discovery = network.discoveryProblem()
+      if (discovery)
+        out.push({
+          id: 'discovery',
+          source: 'Network',
+          level: 'warning',
+          message: discovery,
+          since: startedAt,
+        })
+      const net = network.settings()
+      if (net.remoteAccess !== 'local-only' && net.externalUrl.startsWith('http:'))
+        out.push({
+          id: 'external-url',
+          source: 'Network',
+          level: 'warning',
+          message:
+            'The external URL isn’t HTTPS: passwords cross the internet unencrypted, and passkeys can’t work there.',
+          since: startedAt,
+        })
+      return out
     },
     health() {
       const checks: HealthReport['checks'] = []
@@ -178,6 +350,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
           log.error('a shutdown step failed', { error: (e as Error).message })
         }
       }
+      await network.stopDiscovery()
       await jobs.drain()
       await workers.close()
       database.raw.close()
@@ -185,6 +358,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     },
   }
   g.__highsea = runtime
+  await network.startDiscovery()
   log.info('booted', { version, database: database.driver, configDir: config.configDir })
   return runtime
 }

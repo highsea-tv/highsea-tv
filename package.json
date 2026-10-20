@@ -12,7 +12,7 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "typecheck": "bun run --filter '*' typecheck && tsc -p scripts/tsconfig.json",
-    "test": "bun test",
+    "test": "bun test --isolate",
     "explorations": "bunx serve design/explorations -l 4400",
     "storybook": "bun run --filter @highsea/storybook storybook",
     "prototypes": "bun run --filter @highsea/prototypes dev",

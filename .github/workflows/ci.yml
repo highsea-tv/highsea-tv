@@ -29,7 +29,7 @@ jobs:
       - name: Types
         run: bun run typecheck
       - name: Tests (Bun)
-        run: bun test
+        run: bun run test
       - name: The platform under Node (better-sqlite3, workers, API)
         run: node apps/server/scripts/smoke.ts
       - name: License audit

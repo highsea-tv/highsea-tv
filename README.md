@@ -37,7 +37,7 @@ bun run explorations   # serve the brand direction boards on http://localhost:44
 bun run storybook      # the design system's components
 bun run prototypes     # the Phase 2 prototypes on http://localhost:4500
 bun run server         # the server, in development, on http://localhost:3000
-bun run typecheck && bun test
+bun run typecheck && bun run test
 ```
 
 ## License

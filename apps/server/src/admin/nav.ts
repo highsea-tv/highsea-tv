@@ -3,30 +3,62 @@
 import type { IconName } from '@highsea/ui-web'
 import type { shell } from './messages.ts'
 
-/** A label from the catalog's `nav.` messages, which take no values. */
-type NavLabel = Extract<keyof typeof shell, `nav.${string}`>
+type Id =
+  | 'dashboard'
+  | 'discover'
+  | 'movies'
+  | 'wanted'
+  | 'activity'
+  | 'downloads'
+  | 'indexers'
+  | 'subtitles'
+  | 'curation'
+  | 'settings'
+  | 'system'
 
-export type Page = { id: string; label: NavLabel; icon: IconName; path: string }
+export type Page = {
+  id: Id
+  label: `nav.${Id}` & keyof typeof shell
+  keywords: `keywords.${Id}` & keyof typeof shell
+  icon: IconName
+  path: string
+  /** Owners and admins only. Members manage the library, not the server. */
+  staff?: boolean
+}
+
+const page = (id: Id, icon: IconName, path: string, staff?: boolean): Page => ({
+  id,
+  label: `nav.${id}`,
+  keywords: `keywords.${id}`,
+  icon,
+  path,
+  staff,
+})
 
 export const pageGroups: Page[][] = [
   [
-    { id: 'dashboard', label: 'nav.dashboard', icon: 'dashboard', path: '/' },
-    { id: 'discover', label: 'nav.discover', icon: 'discover', path: '/discover' },
-    { id: 'movies', label: 'nav.movies', icon: 'movie', path: '/movies' },
-    { id: 'wanted', label: 'nav.wanted', icon: 'calendar', path: '/wanted' },
-    { id: 'activity', label: 'nav.activity', icon: 'activity', path: '/activity' },
-    { id: 'downloads', label: 'nav.downloads', icon: 'downloads', path: '/downloads' },
+    page('dashboard', 'dashboard', '/'),
+    page('discover', 'discover', '/discover'),
+    page('movies', 'movie', '/movies'),
+    page('wanted', 'calendar', '/wanted'),
+    page('activity', 'activity', '/activity'),
+    page('downloads', 'downloads', '/downloads', true),
   ],
   [
-    { id: 'indexers', label: 'nav.indexers', icon: 'indexer', path: '/indexers' },
-    { id: 'subtitles', label: 'nav.subtitles', icon: 'subtitles', path: '/subtitles' },
-    { id: 'curation', label: 'nav.curation', icon: 'curation', path: '/curation' },
+    page('indexers', 'indexer', '/indexers', true),
+    page('subtitles', 'subtitles', '/subtitles', true),
+    page('curation', 'curation', '/curation', true),
   ],
-  [
-    { id: 'settings', label: 'nav.settings', icon: 'settings', path: '/settings' },
-    { id: 'system', label: 'nav.system', icon: 'system', path: '/system' },
-  ],
+  [page('settings', 'settings', '/settings', true), page('system', 'system', '/system', true)],
 ]
+
+export type Role = 'owner' | 'admin' | 'member' | 'restricted'
+
+export const isStaff = (role: Role | undefined) => role === 'owner' || role === 'admin'
+
+/** The groups this role sees; empty groups drop out. */
+export const pagesFor = (role: Role | undefined): Page[][] =>
+  pageGroups.map((g) => g.filter((p) => !p.staff || isStaff(role))).filter((g) => g.length)
 
 /** The page a path belongs to: `/movies/1` is under Movies. */
 export function pageAt(path: string): Page | undefined {

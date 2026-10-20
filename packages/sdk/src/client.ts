@@ -19,7 +19,7 @@ type Route = {
     headers?: Schema
     body?: { content: { 'application/json': { schema: Schema } } }
   }
-  responses: Record<number, { content?: Record<string, { schema: Schema }> }>
+  responses: Record<number, { description?: string; content?: Record<string, { schema: Schema }> }>
 }
 
 type JsonOf<R> = R extends { content: { 'application/json': { schema: infer S extends Schema } } }

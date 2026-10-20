@@ -58,19 +58,24 @@ Gets a person into the admin with the least friction the server's security allow
 
 ## Data
 
-- `system.publicInfo()` → `GET /api/v1/system/public`: `{ id, name, version, setupComplete, auth: { local: boolean; oidc: { name: string } | null } }`. Unauthenticated.
-- `auth.signIn({ username, password })` → `POST /api/v1/auth/sign-in`:
+As built in Phase 3 (ADR 0023–0025); the OpenAPI document has every shape.
+
+- `system.publicInfo()` → `GET /api/v1/system/info/public`: `{ id, name, version, setupComplete, auth: { local, oidc: { name } | null, passkeys } }`. Unauthenticated.
+- `auth.signIn({ username, password, device? })` → `POST /api/v1/auth/sign-in`. The admin gets an HTTP-only session cookie; an app sends `device` and gets a device token instead.
 
   ```ts
   type SignInResult =
-    | { status: 'signed-in'; session: Session }
+    | { status: 'signed-in'; session: Session; token?: string; recoveryCodes?: string[] }
     | { status: 'two-factor'; challenge: string }
+    // the security policy requires two-step and this person hasn't set it up (admin only)
+    | { status: 'two-factor-setup'; challenge: string; secret: string; uri: string }
   ```
 
   Errors: 401 `invalid-credentials`, 429 `rate-limited`.
-- `auth.verifyTwoFactor({ challenge, code })` → `POST /api/v1/auth/two-factor`. Returns `SignInResult`; error 401 `invalid-code`.
-- OIDC → `GET /api/v1/auth/oidc/start`, a redirect to the provider and back to `/api/v1/auth/oidc/callback`. Not modelled in the mock.
-- The session is an HTTP-only cookie; `Session` is `{ user, deviceId, expiresAt }`.
+- `auth.twoFactor({ challenge, code })` → `POST /api/v1/auth/two-factor`: a code from the app, a recovery code, or the first code while enrolling. Returns `SignInResult`.
+- `auth.passkeyOptions()` → `POST /api/v1/auth/passkeys/options`, then `auth.passkeySignIn({ challenge, response })` → `POST /api/v1/auth/passkeys/verify`. Passkeys are discoverable, so no username is needed.
+- OIDC → `GET /api/v1/auth/oidc/start`, a redirect to the provider and back to `/api/v1/auth/oidc/callback`, which sets the cookie and redirects to the admin, or to `/login?error=…`.
+- `Session` is `{ user, deviceId, expiresAt, method }`. The cookie is `__Host-highsea_session` over HTTPS and `highsea_session` over plain HTTP.
 
 ## Decisions
 

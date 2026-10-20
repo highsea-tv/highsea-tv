@@ -62,4 +62,40 @@ describe('useQuery', () => {
     expect(renders.slice(renders.indexOf('Harbor'))).not.toContain('loading')
     view.unmount()
   })
+
+  test('an interval refetches quietly, and stops when the screen goes', async () => {
+    let calls = 0
+    const client = createClient({
+      fetch: async () => {
+        calls++
+        return new Response(
+          JSON.stringify({
+            id: 'srv_1',
+            name: `n${calls}`,
+            version: '0',
+            localAddresses: [],
+            publicUrl: null,
+          }),
+        )
+      },
+    })
+    const renders: string[] = []
+    function Name() {
+      const q = useQuery('info', (c) => c.system.publicInfo(), [], { interval: 20 })
+      renders.push(q.status)
+      return <p>{q.status === 'success' ? q.data.name : '…'}</p>
+    }
+    const view = render(
+      <ClientProvider client={client}>
+        <Name />
+      </ClientProvider>,
+    )
+    await act(() => Bun.sleep(75))
+    expect(calls).toBeGreaterThanOrEqual(3)
+    expect(renders.slice(renders.indexOf('success'))).not.toContain('loading')
+    view.unmount()
+    const after = calls
+    await Bun.sleep(50)
+    expect(calls).toBe(after)
+  })
 })

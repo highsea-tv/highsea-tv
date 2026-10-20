@@ -2,7 +2,7 @@
 // The keyboard walk: Tab through every admin, web and mobile route. Every stop must be visible
 // and show a focus indicator (WCAG 2.4.7). A stop whose indicator is drawn by a descendant is
 // checked by comparing the element focused and blurred. Usage: bun scripts/sweeps/keyboard.ts
-import { acknowledge, heightFor, launch, pool, prototypeRoutes, screenUrl } from './lib.ts'
+import { acknowledge, heightFor, launch, pool, prototypeRoutes, screenUrl, walk } from './lib.ts'
 
 const routes = prototypeRoutes()
 const jobs = [
@@ -19,54 +19,8 @@ await pool(jobs, 5, async ({ r, w }) => {
   await page.goto(screenUrl(r))
   await page.waitForTimeout(1400)
   await acknowledge(page)
-  await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur())
-  const seen = new Set<string>()
-  const bad: string[] = []
-  for (let i = 0; i < 120; i++) {
-    await page.keyboard.press('Tab')
-    const info = await page.evaluate(() => {
-      const a = document.activeElement as HTMLElement | null
-      if (!a || a === document.body) return null
-      const cs = getComputedStyle(a)
-      const box = a.getBoundingClientRect()
-      a.setAttribute('data-kbk', '')
-      const desc = `${a.tagName.toLowerCase()} "${(a.getAttribute('aria-label') ?? a.textContent ?? '').trim().slice(0, 30)}"`
-      return {
-        key: `${desc}${Math.round(box.x)},${Math.round(box.y + scrollY)}`,
-        desc,
-        visible:
-          box.width > 0 && box.height > 0 && cs.visibility !== 'hidden' && cs.opacity !== '0',
-        ring:
-          (cs.outlineStyle !== 'none' && parseFloat(cs.outlineWidth) > 0) ||
-          cs.boxShadow !== 'none',
-      }
-    })
-    if (!info || seen.has(info.key)) break
-    seen.add(info.key)
-    if (!info.visible) bad.push(`hidden: ${info.desc}`)
-    else if (!info.ring) {
-      const el = page.locator('[data-kbk]')
-      const box = await el.boundingBox()
-      if (box) {
-        const clip = {
-          x: Math.max(0, box.x - 4),
-          y: Math.max(0, box.y - 4),
-          width: box.width + 8,
-          height: box.height + 8,
-        }
-        await page.waitForTimeout(250)
-        const on = await page.screenshot({ clip })
-        await el.evaluate((e) => (e as HTMLElement).blur())
-        await page.waitForTimeout(250)
-        const off = await page.screenshot({ clip })
-        await el.evaluate((e) => (e as HTMLElement).focus({ preventScroll: true }))
-        if (on.equals(off)) bad.push(`no focus indicator: ${info.desc}`)
-      }
-    }
-    await page.evaluate(() => document.querySelector('[data-kbk]')?.removeAttribute('data-kbk'))
-  }
-  if (bad.length)
-    problems.push(`${r} ${w} (${seen.size} stops): ${[...new Set(bad)].slice(0, 6).join(' ; ')}`)
+  const { stops, bad } = await walk(page)
+  if (bad.length) problems.push(`${r} ${w} (${stops} stops): ${bad.slice(0, 6).join(' ; ')}`)
   await page.close()
 })
 await browser.close()

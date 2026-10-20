@@ -37,10 +37,16 @@ export type Query<T> =
   | { status: 'error'; data: undefined; error: Error; refetch: () => void }
   | { status: 'success'; data: T; error: undefined; refetch: () => void }
 
+export type QueryOptions = {
+  /** Refetch quietly this often, in milliseconds, for numbers no event announces (CPU, memory). */
+  interval?: number
+}
+
 export function useQuery<T>(
   key: string,
   fetch: (client: HighseaClient) => Promise<T>,
   live: string[] = [],
+  options: QueryOptions = {},
 ): Query<T> {
   const client = useClient()
   const [state, setState] = useState<{ status: Query<T>['status']; data?: T; error?: Error }>({
@@ -90,6 +96,13 @@ export function useQuery<T>(
       })
     })
   }, [client, liveKey, load])
+
+  const { interval } = options
+  useEffect(() => {
+    if (!interval) return
+    const timer = setInterval(() => load(true), interval)
+    return () => clearInterval(timer)
+  }, [interval, load])
 
   return { ...state, refetch: () => load(false) } as Query<T>
 }

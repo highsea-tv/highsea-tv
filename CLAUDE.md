@@ -7,10 +7,11 @@ highsea is a self-hosted replacement for the *ARR suite (Radarr, Sonarr, Prowlar
 - **Phase 1** (brand and design system v1.0): signed off 2026-10-16.
 - **Phase 2** (clickable prototypes of every screen, in `design/prototypes`): signed off 2026-10-19. The prototypes and their specs in `docs/product/` are the **build reference**.
 - **Phase 3** (server milestone 1): the plan is [docs/plans/phase-3-server.md](docs/plans/phase-3-server.md), approved with the owner's decisions recorded in it.
-  - **Checkpoint 1 (the platform) is built and awaiting the owner's review.**
-  - Next is checkpoint 2: accounts, network and the admin shell.
+  - Checkpoint 1 (the platform) is built.
+  - **Checkpoint 2 (accounts, network and the admin shell) is built and awaiting the owner's review.**
+  - Next is checkpoint 3: personalization and the dashboard.
 
-Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1.
+Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2.
 
 ## Rules from the owner
 
@@ -40,7 +41,7 @@ These are the plan's standing rules in short; the plan has the full text.
 bun install
 bun run lint            # Biome
 bun run typecheck       # every workspace, plus scripts/
-bun test                # everything (Bun's runner)
+bun run test            # everything (Bun's runner, each file isolated)
 node apps/server/scripts/smoke.ts   # the platform under Node, as production runs it
 
 bun run server          # the server in development, http://localhost:3000 (data in .dev/)
@@ -52,10 +53,10 @@ bun run licenses        # the license audit
 docker compose up --build
 ```
 
-Browser sweeps are in [scripts/sweeps](scripts/sweeps/README.md): axe in three themes, overflow, 200% text, reduced motion, and the keyboard and D-pad walks. Run them before each checkpoint report.
+Browser sweeps are in [scripts/sweeps](scripts/sweeps/README.md): axe in three themes, overflow, 200% text, reduced motion, and the keyboard and D-pad walks. They cover the prototypes and, with `bun scripts/sweeps/server.ts`, the server's real admin pages. Run them before each checkpoint report.
 
 Before reporting a checkpoint, run all of these:
-- `bun run lint && bun run typecheck && bun test`;
+- `bun run lint && bun run typecheck && bun run test`;
 - the Node smoke test;
 - the sweeps.
 
@@ -67,6 +68,7 @@ Before reporting a checkpoint, run all of these:
 | `apps/storybook` | The design system's workbench |
 | `design/prototypes` | The signed-off prototypes, with an SDK-shaped mock server (`src/mock/`): the reference for every screen and the first draft of the API |
 | `packages/core`, `db`, `jobs`, `runtime`, `i18n` | The platform |
+| `packages/auth`, `network` | People and access (ADR 0023–0025); discovery, proxies and TLS (ADR 0020, 0026) |
 | `packages/api-contract`, `sdk` | The public API's zod/OpenAPI contract, and the typed client every app uses |
 | `packages/tokens`, `ui-web`, `brand`, `fixtures` | The design system |
 | `docs/` | Roadmap, plans, ADRs, product specs, brand and design language |
@@ -91,6 +93,8 @@ Conventions:
 
 - **Node 24** (`.nvmrc`) is the server's runtime. `better-sqlite3` is a native addon built for one Node version, so reinstall after switching Node (`rm -rf node_modules && bun install`).
 - **Bun's `worker_threads`** are documented as not battle-tested, so the worker pool is tested under Node (`packages/runtime/test/fixtures/pool-under-node.ts`).
+- **`bun test` on its own** runs every file in one process, so a DOM test's global `fetch` leaks into the server tests. Use `bun run test`, which passes `--isolate`.
+- **Next's dev server** serves its dev scripts to `localhost` only (`allowedDevOrigins`): browse it at `localhost`, not `127.0.0.1`, or pages never hydrate.
 - **Hono** can't add routes after the app has handled a request: register test routes first.
 - **Next.js:**
   - a custom server can't use `output: 'standalone'` (ADR 0003, amended);

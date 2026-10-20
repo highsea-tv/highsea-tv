@@ -32,6 +32,7 @@ import {
   PopoverTrigger,
   Poster,
   Progress,
+  QrCode,
   QualityTag,
   Rating,
   RatingInput,
@@ -51,6 +52,7 @@ import {
   Stat,
   StatusBar,
   StatusItem,
+  Stepper,
   Switch,
   Table,
   TableBody,
@@ -250,6 +252,25 @@ export function KitchenSink({ rail = false }: { rail?: boolean }) {
             <WidgetFrame title="Loading">
               <Skeleton className="h-6 w-24" />
               <SkeletonText />
+            </WidgetFrame>
+            <WidgetFrame title="Setup">
+              <Stepper
+                steps={[
+                  { id: 'name', label: 'Name' },
+                  { id: 'owner', label: 'Your account' },
+                  { id: 'folders', label: 'Folders' },
+                ]}
+                current={1}
+                reached={1}
+                onSelect={() => {}}
+              />
+            </WidgetFrame>
+            <WidgetFrame title="Two-step verification">
+              <QrCode
+                value="otpauth://totp/highsea:ines?secret=JBSWY3DPEHPK3PXP&issuer=highsea"
+                aria-label="QR code for your authenticator app"
+                className="w-40"
+              />
             </WidgetFrame>
             <WidgetFrame
               title="Indexers"

@@ -6,8 +6,18 @@ import { useT } from '@highsea/i18n/react'
 import { useQuery } from '@highsea/sdk/react'
 import { Button, EmptyState } from '@highsea/ui-web'
 import { shell } from './messages.ts'
+import { AdminPage } from './shell.tsx'
 
-export function DashboardPlaceholder() {
+export function Dashboard() {
+  const t = useT(shell)
+  return (
+    <AdminPage title={t('dashboard.title')}>
+      <Placeholder />
+    </AdminPage>
+  )
+}
+
+function Placeholder() {
   const t = useT(shell)
   const info = useQuery('server', (c) => c.system.publicInfo(), ['server.updated'])
   if (info.status === 'loading')
@@ -18,7 +28,7 @@ export function DashboardPlaceholder() {
         tone="error"
         icon="alert"
         title={t('dashboard.error')}
-        action={<Button onClick={info.refetch}>Try again</Button>}
+        action={<Button onClick={info.refetch}>{t('retry')}</Button>}
       >
         {info.error.message}
       </EmptyState>

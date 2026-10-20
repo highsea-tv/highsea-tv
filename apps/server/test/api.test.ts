@@ -1,32 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { ERROR_CODES, routes } from '@highsea/api-contract'
 import { AppError, ERROR_CODES as CORE_CODES } from '@highsea/core'
-import { boot, getRuntime, hasRuntime, loadConfig } from '@highsea/runtime'
 import { createApi } from '../src/api/app.ts'
+import { bootRuntime, cleanup } from './helpers.ts'
 
-const dirs: string[] = []
-afterEach(async () => {
-  if (hasRuntime()) await getRuntime().shutdown()
-  for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true })
-})
+afterEach(cleanup)
 
 async function api() {
-  const dir = mkdtempSync(join(tmpdir(), 'highsea-api-'))
-  dirs.push(dir)
-  const runtime = await boot({
-    config: loadConfig({
-      HIGHSEA_CONFIG_DIR: join(dir, 'config'),
-      HIGHSEA_DATA_DIR: join(dir, 'data'),
-    }),
-    version: '0.1.0',
-    quiet: true,
-    memory: true,
-    manualTicks: true,
-  })
+  const runtime = await bootRuntime()
   return { runtime, app: createApi(runtime) }
 }
 

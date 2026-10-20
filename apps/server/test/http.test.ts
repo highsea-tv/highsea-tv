@@ -1,35 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The real HTTP server (without Next), driven through the SDK as a client would.
 import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdtempSync, rmSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 import type { ServerEvent } from '@highsea/api-contract'
-import { boot, getRuntime, hasRuntime, loadConfig } from '@highsea/runtime'
 import { createClient } from '@highsea/sdk'
+import { selfSigned } from '../../../packages/network/test/self-signed.ts'
 import { createApi } from '../src/api/app.ts'
-import { createHttpServer } from '../src/http.ts'
+import { createHttpServer, createTlsServer } from '../src/http.ts'
+import { bootRuntime, cleanup, withOwner } from './helpers.ts'
 
 const cleanups: (() => Promise<void> | void)[] = []
 afterEach(async () => {
   for (const c of cleanups.splice(0).reverse()) await c()
-  if (hasRuntime()) await getRuntime().shutdown()
+  await cleanup()
 })
 
 async function serve() {
-  const dir = mkdtempSync(join(tmpdir(), 'highsea-http-'))
-  cleanups.push(() => rmSync(dir, { recursive: true, force: true }))
-  const runtime = await boot({
-    config: loadConfig({
-      HIGHSEA_CONFIG_DIR: join(dir, 'config'),
-      HIGHSEA_DATA_DIR: join(dir, 'data'),
-    }),
-    version: '0.1.0',
-    quiet: true,
-    memory: true,
-    manualTicks: true,
-  })
+  const runtime = await bootRuntime()
+  const { token } = await withOwner(runtime)
   const server = createHttpServer({ api: createApi(runtime) })
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r))
   cleanups.push(
@@ -40,7 +28,8 @@ async function serve() {
       }),
   )
   const url = `http://127.0.0.1:${(server.address() as AddressInfo).port}`
-  return { runtime, url, client: createClient({ baseUrl: url }) }
+  const auth = { authorization: `Bearer ${token}` }
+  return { runtime, url, auth, client: createClient({ baseUrl: url, token }) }
 }
 
 const until = async (check: () => boolean, ms = 2000) => {
@@ -57,6 +46,53 @@ describe('HTTP server', () => {
     expect((await client.system.publicInfo()).id).toBe(runtime.identity().id)
   })
 
+  test('the event stream needs someone signed in', async () => {
+    const { url, runtime } = await serve()
+    const res = await fetch(`${url}/api/v1/events`)
+    expect(res.status).toBe(401)
+    expect(runtime.network.clientsConnected()).toBe(0)
+  })
+
+  test('built-in TLS serves the same routes over HTTPS, with the secure cookie name', async () => {
+    const runtime = await bootRuntime()
+    const { cert, key } = selfSigned()
+    const server = createTlsServer(
+      { api: createApi(runtime) },
+      { cert: Buffer.from(cert), key: Buffer.from(key) },
+    )
+    await new Promise<void>((r) => server.listen(0, '127.0.0.1', r))
+    cleanups.push(
+      () =>
+        new Promise<void>((r) => {
+          server.closeAllConnections()
+          server.close(() => r())
+        }),
+    )
+    const url = `https://127.0.0.1:${(server.address() as AddressInfo).port}`
+    // a self-signed test certificate: Bun's fetch takes `tls` options (Bun docs, fetch § TLS)
+    const tls = { rejectUnauthorized: false }
+    expect((await fetch(`${url}/api/health`, { tls })).status).toBe(200)
+    const setup = await fetch(`${url}/api/v1/setup`, {
+      tls,
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'sec-fetch-site': 'same-origin' },
+      body: JSON.stringify({
+        serverName: 'Harbor',
+        owner: { username: 'ines', displayName: 'Ines', password: 'correct horse battery' },
+        folders: (await (await fetch(`${url}/api/v1/setup/defaults`, { tls })).json()).folders,
+        remoteAccess: { kind: 'local-only' },
+        cloudLink: false,
+      }),
+    })
+    expect(setup.status).toBe(200)
+    // the plain-HTTP name is cleared, so an old cookie can't shadow this one
+    const [cleared, cookie = ''] = setup.headers.getSetCookie()
+    expect(cleared).toStartWith('highsea_session=; Max-Age=0')
+    expect(cookie).toStartWith('__Host-highsea_session=hss_')
+    expect(cookie).toContain('Secure')
+    expect(cookie).toContain('Path=/')
+  })
+
   test('playback paths are reserved; other paths go to Next', async () => {
     const { url } = await serve()
     expect((await fetch(`${url}/stream/1`)).status).toBe(501)
@@ -65,7 +101,7 @@ describe('HTTP server', () => {
   })
 
   test('events reach SSE subscribers, filtered by topic', async () => {
-    const { client, runtime } = await serve()
+    const { client, runtime, auth } = await serve()
     const got: ServerEvent[] = []
     const off = client.events.subscribe((e) => got.push(e))
     await until(() => client.events.connected())
@@ -78,7 +114,9 @@ describe('HTTP server', () => {
     ])
     off()
 
-    const res = await fetch(`${client.baseUrl}/api/v1/events?topics=movies.updated`)
+    const res = await fetch(`${client.baseUrl}/api/v1/events?topics=movies.updated`, {
+      headers: auth,
+    })
     const reader = res.body?.getReader() as ReadableStreamDefaultReader<Uint8Array>
     runtime.events.emit({ topic: 'jobs.updated' })
     runtime.events.emit({ topic: 'movies.updated', ids: ['mov_1'] })
@@ -90,12 +128,14 @@ describe('HTTP server', () => {
   })
 
   test('Last-Event-ID replays what was missed, or resets when it’s too old', async () => {
-    const { url, runtime } = await serve()
+    const { url, runtime, auth } = await serve()
     const first = runtime.events.emit({ topic: 'a' })
     runtime.events.emit({ topic: 'b' })
     runtime.events.emit({ topic: 'c' })
     const read = async (lastId: string) => {
-      const res = await fetch(`${url}/api/v1/events`, { headers: { 'last-event-id': lastId } })
+      const res = await fetch(`${url}/api/v1/events`, {
+        headers: { ...auth, 'last-event-id': lastId },
+      })
       const reader = res.body?.getReader() as ReadableStreamDefaultReader<Uint8Array>
       let text = ''
       while (!text.includes('"topic":"c"') && !text.includes('"topic":"reset"'))

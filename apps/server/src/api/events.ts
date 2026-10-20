@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // GET /api/v1/events: server events as SSE. A reconnecting client sends Last-Event-ID and gets what
 // it missed, or a `reset` when that's no longer in the buffer. A comment every 25s keeps proxies
-// from closing an idle stream.
+// from closing an idle stream. The guard has already checked the caller is signed in.
 import { RESET_TOPIC, type ServerEvent } from '@highsea/api-contract'
 import type { Runtime } from '@highsea/runtime'
 import type { Context } from 'hono'
@@ -23,9 +23,13 @@ export const events = (runtime: Runtime) => (c: Context) => {
       queue.push(e)
       wake?.()
     }
+    // an open stream is a connected client, for the network card's count; counted before
+    // subscribing, so a client isn't told about its own arrival
+    const release = runtime.network.connect()
     const unsubscribe = runtime.events.subscribe(push)
     stream.onAbort(() => {
       unsubscribe()
+      release()
       wake?.()
     })
 

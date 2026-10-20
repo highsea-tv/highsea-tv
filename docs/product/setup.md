@@ -122,13 +122,13 @@ Takes a freshly started server to a working one in a few minutes: a name, the ow
 
 ## Data
 
-Mock client calls, with the draft API shapes behind them (see `design/prototypes/src/mock/types.ts`):
+As built in Phase 3, checkpoint 2. The indexer and subtitle steps arrive with their packages.
 
-- `system.publicInfo()` → `GET /api/v1/system/public`: `{ id, name, version, setupComplete, auth }`. Unauthenticated.
-- `fs.list(path)` → `GET /api/v1/setup/fs?path=…`: `{ name, path, kind: 'folder' }[]`, or a 404 "{path} doesn't exist on the server."
-- `fs.checkHardlinks(a, b)` → `GET /api/v1/setup/fs/hardlinks?a=…&b=…`: `{ ok, sameDevice, message }`.
-- `catalog.starterPack()` → `GET /api/v1/catalog/indexers?starter=true`: the catalog's definitions with `privacy` and `description`.
-- `subtitles.languages()` → `GET /api/v1/subtitles/languages`: `{ code, name }[]`.
+- `system.publicInfo()` → `GET /api/v1/system/info/public`: `{ id, name, version, setupComplete, auth }`. Unauthenticated.
+- `setup.defaults()` → `GET /api/v1/setup/defaults`: the media root and the suggested folders.
+- `setup.listFolders(path)` → `GET /api/v1/setup/fs?path=…`: `{ name, path, kind: 'folder' }[]` inside the media root only, or a 404 "{path} doesn't exist on the server."
+- `setup.checkHardlinks(a, b)` → `GET /api/v1/setup/fs/hardlinks?a=…&b=…`: `{ ok, sameDevice, message }`.
+- Later: `catalog.starterPack()` → `GET /api/v1/catalog/indexers?starter=true` and `subtitles.languages()` → `GET /api/v1/subtitles/languages`.
 - `setup.complete(input)` → `POST /api/v1/setup`, allowed only while `setupComplete` is false. It returns the server and starts a session for the owner.
 
   ```ts
@@ -136,17 +136,17 @@ Mock client calls, with the draft API shapes behind them (see `design/prototypes
     serverName: string
     owner: { username: string; displayName: string; password: string }
     folders: { movies: string; downloads: string }
-    indexers: string[] // catalog definition ids
-    subtitleLanguages: string[] // in preference order
     remoteAccess:
       | { kind: 'local-only' }
       | { kind: 'reverse-proxy'; url: string }
       | { kind: 'port-forward'; port: number }
     cloudLink: boolean
+    // later: indexers: string[]; subtitleLanguages: string[]
   }
   ```
 
 - The setup endpoints (`/api/v1/setup/*`) are open only until setup is complete, then return 404.
+- The wizard keeps its place and its answers in the browser (`highsea:setup` in localStorage), except the password.
 
 ## Decisions
 

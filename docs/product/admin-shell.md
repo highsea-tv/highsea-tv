@@ -82,13 +82,16 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 ## Data
 
 - `system.server()` → `GET /api/v1/system/server`: name, version, branding, `clientsConnected`. Refetched on `server.updated`.
-- `system.status()` → `GET /api/v1/system/status`: CPU, memory, disks. Refetched on the clock's tick.
-- `system.jobs()` → `GET /api/v1/system/jobs`: `{ name, state, nextRun }[]`.
-- `system.health()` → `GET /api/v1/system/health` (owners and admins), for the server card's dot.
-- `movies.list()` and `queue.list()` for the sidebar counts and the palette's titles.
-- `announcements.active()` → `GET /api/v1/me/announcements`: live announcements for this user, with `seen`. `announcements.dismiss(id)` → `POST /api/v1/me/announcements/{id}/seen`.
-- `downloads.pauseAll()` / `downloads.resumeAll()` for the palette actions.
-- Events on the SSE stream: `server.updated`, `item.updated`, `queue.changed`, `health.updated`, `announcements.updated`, `jobs.updated`, `tick`.
+- `system.status()` → `GET /api/v1/system/status` (owners and admins): CPU, memory, disks. Refetched every few seconds; the server has no `tick` event.
+- `system.jobs()` → `GET /api/v1/system/jobs`: `{ name, state, nextRun }[]`. Refetched on `jobs.updated`.
+- `system.healthChecks()` → `GET /api/v1/system/health` (owners and admins), for the server card's dot. Refetched on `server.updated`.
+- `auth.session()` → `GET /api/v1/auth/session`: who's signed in, for the account menu.
+- Later, with their packages:
+  - `movies.list()` and `queue.list()`, for the sidebar counts and the palette's titles;
+  - `announcements.active()` → `GET /api/v1/me/announcements`, for live announcements to this user with `seen`;
+  - `announcements.dismiss(id)` → `POST /api/v1/me/announcements/{id}/seen`;
+  - `downloads.pauseAll()` and `downloads.resumeAll()`, for the palette actions.
+- Events on the SSE stream (`GET /api/v1/events`): `server.updated`, `jobs.updated`, `users.updated`, `settings.updated`, `audit.updated`. Later ones: `item.updated`, `queue.changed`, `health.updated`, `announcements.updated`.
 
 ## Decisions
 

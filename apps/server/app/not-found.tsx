@@ -1,25 +1,27 @@
 // SPDX-License-Identifier: AGPL-3.0-only
+// A path outside the admin that doesn't exist, such as a mistyped link page.
 import { createT } from '@highsea/i18n'
 import { Button, EmptyState } from '@highsea/ui-web'
+import { Card } from '../src/admin/auth-card.tsx'
 import { shell } from '../src/admin/messages.ts'
-import { AdminShell } from '../src/admin/shell.tsx'
 
 const t = createT(shell)
 
 export default function NotFound() {
   return (
-    <AdminShell title={t('notFound.title')}>
+    <Card>
       <EmptyState
+        size="sm"
         icon="search"
-        title={t('notFound.title')}
+        title={t('notFound.nowhere')}
         action={
           <Button variant="primary" asChild>
             <a href="/">{t('notFound.home')}</a>
           </Button>
         }
       >
-        {t('notFound.body')}
+        {t('notFound.nowhereBody')}
       </EmptyState>
-    </AdminShell>
+    </Card>
   )
 }

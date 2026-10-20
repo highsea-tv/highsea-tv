@@ -20,7 +20,7 @@ A settings area ([settings.md](settings.md#layout)) with line tabs: **People**, 
 - **People** (a table, stacked rows on a phone):
   - "5 people · 1 invited";
   - each person: the initial in a disc, the name and `@username`, **Invited** until they join; the role (Owner, Admin, Member, Restricted); the libraries ("All libraries" or the ones chosen); two-step verification (On, Off); last seen ("Just now", "3h ago", "Hasn't joined yet");
-  - **Edit** and a More menu: **Send a password reset**, **Remove** (or, for an invite, **Copy the invite link** and **Cancel the invite**). The owner has no actions here.
+  - **Edit** and a More menu: **Send a password reset**, **Turn off two-step** (when it's on), **Remove** (or, for an invite, **Copy the invite link** and **Cancel the invite**). The owner has no actions here, and only the owner sees them for an admin.
 - **Edit** opens a sheet from the right: **Role** (Admin, Member, Restricted, each with what it means); **What they can do** (Ask for titles, Approve their own requests, Download for offline, Manage the library, Manage people), reset to the role's defaults when the role changes; **Libraries**: "All, now and later" or **Choose** (Movies; "TV shows, music and books join this list when the server has them"); **Save**.
 - **Invite someone** (a dialog): Name, Email (optional: "Leave it empty to share a link yourself"), Role, Libraries, **Create invite link** (or **Send invite** with an email). Then the link itself, with **Copy link**: "Send them this link. It works once, for 7 days, and lets them choose a password."
 - **Devices** (a table): a filter (Everyone's devices, or one person's); each device with its kind's icon (TV, phone, laptop), the name, **This browser** for the admin's own; the person; the app ("Apple TV · 1.0.0"); the address; last seen; **Sign out**.
@@ -38,6 +38,7 @@ A settings area ([settings.md](settings.md#layout)) with line tabs: **People**, 
 
 - **Removing someone** signs them out everywhere and removes their devices, after a confirmation: "They're signed out everywhere and can't sign back in. Their watch history goes with them."
 - **Signing out a device** stops its token at once: "It stops working at once. Ruth signs in again with a code or a password."
+- **Turning off someone's two-step** is for when they've lost their authenticator app and their recovery codes. A confirmation asks you to make sure it's really them: "For when they've lost their authenticator app and their recovery codes. Make sure it's really them asking. Their passkeys and devices stay signed in." If the security policy asks for two-step, they set it up again at their next admin sign-in.
 - **Revoking a key:** "Anything using it stops working at once. You can't undo this; make a new key instead."
 - **Role changes** apply the next time that person's apps check in.
 - **Sound:** none.
@@ -53,10 +54,20 @@ A settings area ([settings.md](settings.md#layout)) with line tabs: **People**, 
 
 ## Data
 
-- `users.list()` → `GET /api/v1/users`; `users.invite(input)` → `POST /api/v1/users/invites` (`InviteInput` → `Invite`: the pending user, the link and its expiry); `users.update(id, patch)` (role, permissions, libraries); `users.remove(id)`; `users.resetPassword(id)`.
-- `devices.list()` → `GET /api/v1/devices`; `devices.revoke(id)` → `DELETE /api/v1/devices/{id}`; `devices.mine()` for the clients.
-- `apiKeys.list()`, `apiKeys.create(name, scope)` → `CreatedApiKey` (the secret, once), `apiKeys.revoke(id)`.
-- Events: `users.updated`.
+As built in Phase 3 (ADR 0023); each route's access is in the OpenAPI document.
+
+- `users.list()` → `GET /api/v1/users`.
+- `users.invite(input)` → `POST /api/v1/users/invites`: `InviteInput` → `Invite`, which is the pending user, the link and its expiry.
+- `users.inviteLink(id)` → `POST /api/v1/users/{id}/invite-link`: a pending invite's link, to copy again.
+- `users.update(id, patch)` → `PATCH /api/v1/users/{id}`: role, permissions, libraries. Only the owner makes admins.
+- `users.remove(id)` → `DELETE /api/v1/users/{id}`, which also cancels an invite.
+- `users.resetPassword(id)` → `POST /api/v1/users/{id}/password-reset`: a link to pass on. Email arrives in checkpoint 8.
+- `users.resetTwoFactor(id)` → `DELETE /api/v1/users/{id}/two-factor`: turns someone else's two-step off (ADR 0024). Only the owner can for an admin; nobody can for the owner.
+- `links.get(token)` → `GET /api/v1/links/{token}` and `links.accept(token, { password, username? })` → `POST /api/v1/links/{token}/accept`, for the invite and reset pages. Links work once, for 7 days.
+- `devices.list({ userId? })` → `GET /api/v1/devices` (staff); `me.devices()` → `GET /api/v1/me/devices`; `devices.revoke(id)` → `DELETE /api/v1/devices/{id}`.
+- `apiKeys.list()`, `apiKeys.create({ name, scope: 'read' | 'full' })` → `CreatedApiKey` (the secret, once), `apiKeys.revoke(id)`.
+- `audit.list({ cursor? })` → `GET /api/v1/audit`, newest first.
+- Events: `users.updated`, `audit.updated`.
 
 ## Decisions
 
@@ -65,6 +76,8 @@ A settings area ([settings.md](settings.md#layout)) with line tabs: **People**, 
 - **One owner,** changed only by handing the server over (Security), never by editing a role.
 - **Library access is "all, now and later" by default,** so a new library (TV shows) doesn't need everyone re-granted; restricted accounts choose.
 - **Keys show once** and are listed by prefix; a lost key is revoked and replaced, never recovered.
+- **Reset links and invite links need the same standing as editing the person.** Either one hands over the account, so only the owner can make one for an admin.
+- **Two-step recovery goes through a person** (OWASP Multifactor Authentication Cheat Sheet, "Resetting MFA"). Whoever manages people confirms who's asking outside highsea, then turns it off. The owner keeps their recovery codes or a passkey: no one above them can vouch for them.
 - **This browser can't sign itself out here.** Signing out is in the profile menu, where it's expected.
 
 ## Open questions

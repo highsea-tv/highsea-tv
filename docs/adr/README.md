@@ -26,5 +26,9 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0020](0020-discovery-port.md) | LAN discovery on UDP 7368, plus mDNS | Accepted |
 | [0021](0021-i18n-message-catalogs.md) | Strings live in typed message catalogs | Accepted |
 | [0022](0022-job-queue.md) | A SQLite job queue, at least once | Accepted |
+| [0023](0023-accounts-sessions-devices.md) | Every sign-in is a device | Accepted |
+| [0024](0024-two-step-passkeys-and-tvs.md) | Two-step verification and passkeys never reach the TV | Accepted |
+| [0025](0025-single-sign-on-and-proxy-auth.md) | Single sign-on by OIDC, and forward-auth proxy headers | Accepted |
+| [0026](0026-network-tls.md) | Plain HTTP always, built-in TLS beside it | Accepted |
 
 Template: copy [`template.md`](template.md).
