@@ -2,6 +2,8 @@
 // The bodies of the client settings sections (C7) for web and mobile, which share ui-web's
 // controls. Theme and sound change this device at once; the home layout saves to the server, so
 // it follows the person; servers and devices act on the account.
+
+import { relative } from '@highsea/core/format'
 import { createTheme, SOUND_EVENTS, themeCss } from '@highsea/tokens'
 import {
   Badge,
@@ -11,15 +13,14 @@ import {
   Icon,
   type IconName,
   Mark,
+  SortableList,
   Switch,
   toast,
   useSoundPlayer,
 } from '@highsea/ui-web'
 import type { ReactNode } from 'react'
 import { useLocation } from 'wouter'
-import { relative } from '../admin/format.ts'
 import { Soon } from '../kit/soon.tsx'
-import { SortableList } from '../kit/sortable-list.tsx'
 import { useNow } from '../mock/hooks.tsx'
 import type { ClientType } from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'

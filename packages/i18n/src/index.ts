@@ -15,9 +15,12 @@ type Trim<S extends string> = S extends ` ${infer R}`
   : S extends `${infer R} `
     ? Trim<R>
     : S
-/** A plain argument name, not a plural branch's text (`# jobs`) or anything with spaces. */
+/**
+ * A plain argument name, not a branch's text (`# jobs`), anything with spaces, or a branch that
+ * starts with an argument (`{{name} is first}`: the argument is found on the next brace).
+ */
 type Name<S extends string> =
-  Trim<S> extends `${string} ${string}` | `#${string}` | '' ? never : Trim<S>
+  Trim<S> extends `${string} ${string}` | `#${string}` | `{${string}` | '' ? never : Trim<S>
 type NameOf<S extends string> = S extends `${infer N}}${string}`
   ? N extends `${infer M},${string}`
     ? Name<M>

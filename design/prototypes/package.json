@@ -11,11 +11,10 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@dnd-kit/dom": "0.5.0",
-    "@dnd-kit/helpers": "0.5.0",
-    "@dnd-kit/react": "0.5.0",
     "@highsea/brand": "workspace:*",
+    "@highsea/core": "workspace:*",
     "@highsea/fixtures": "workspace:*",
+    "@highsea/personalization": "workspace:*",
     "@highsea/tokens": "workspace:*",
     "@highsea/ui-web": "workspace:*",
     "motion": "14.3.0",

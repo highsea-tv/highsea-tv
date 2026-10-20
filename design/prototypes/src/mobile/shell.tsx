@@ -3,6 +3,8 @@
 // content above the home indicator; the header with the server switcher (a sheet) and the
 // avatar; the owner's announcements (a card, or a dialog when it must be acknowledged); and what
 // an unreachable server looks like. Sizes are in pt (≈ px here).
+
+import { relative } from '@highsea/core/format'
 import {
   Banner,
   Button,
@@ -18,7 +20,6 @@ import {
 } from '@highsea/ui-web'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
-import { relative } from '../admin/format.ts'
 import {
   clientHref,
   useAnnouncements,

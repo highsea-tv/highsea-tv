@@ -20,9 +20,11 @@
         "@highsea/auth": "workspace:*",
         "@highsea/core": "workspace:*",
         "@highsea/db": "workspace:*",
+        "@highsea/fixtures": "workspace:*",
         "@highsea/i18n": "workspace:*",
         "@highsea/jobs": "workspace:*",
         "@highsea/network": "workspace:*",
+        "@highsea/personalization": "workspace:*",
         "@highsea/runtime": "workspace:*",
         "@highsea/sdk": "workspace:*",
         "@highsea/tokens": "workspace:*",
@@ -85,11 +87,10 @@
       "name": "@highsea/prototypes",
       "version": "0.1.0",
       "dependencies": {
-        "@dnd-kit/dom": "0.5.0",
-        "@dnd-kit/helpers": "0.5.0",
-        "@dnd-kit/react": "0.5.0",
         "@highsea/brand": "workspace:*",
+        "@highsea/core": "workspace:*",
         "@highsea/fixtures": "workspace:*",
+        "@highsea/personalization": "workspace:*",
         "@highsea/tokens": "workspace:*",
         "@highsea/ui-web": "workspace:*",
         "motion": "14.3.0",
@@ -228,6 +229,22 @@
         "@types/node": "25.9.9",
       },
     },
+    "packages/personalization": {
+      "name": "@highsea/personalization",
+      "version": "0.0.0",
+      "dependencies": {
+        "@highsea/core": "workspace:*",
+        "@highsea/db": "workspace:*",
+        "@highsea/i18n": "workspace:*",
+        "@highsea/tokens": "workspace:*",
+        "drizzle-orm": "0.45.3",
+        "zod": "4.6.7",
+      },
+      "devDependencies": {
+        "@highsea/config": "workspace:*",
+        "@types/node": "25.9.9",
+      },
+    },
     "packages/runtime": {
       "name": "@highsea/runtime",
       "version": "0.0.0",
@@ -237,6 +254,7 @@
         "@highsea/db": "workspace:*",
         "@highsea/jobs": "workspace:*",
         "@highsea/network": "workspace:*",
+        "@highsea/personalization": "workspace:*",
         "drizzle-orm": "0.45.3",
         "zod": "4.6.7",
       },
@@ -281,6 +299,9 @@
       "name": "@highsea/ui-web",
       "version": "1.0.0",
       "dependencies": {
+        "@dnd-kit/dom": "0.5.0",
+        "@dnd-kit/helpers": "0.5.0",
+        "@dnd-kit/react": "0.5.0",
         "@highsea/brand": "workspace:*",
         "@highsea/tokens": "workspace:*",
         "clsx": "2.1.1",
@@ -493,6 +514,8 @@
     "@highsea/jobs": ["@highsea/jobs@workspace:packages/jobs"],
 
     "@highsea/network": ["@highsea/network@workspace:packages/network"],
+
+    "@highsea/personalization": ["@highsea/personalization@workspace:packages/personalization"],
 
     "@highsea/prototypes": ["@highsea/prototypes@workspace:design/prototypes"],
 

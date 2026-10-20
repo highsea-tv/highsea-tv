@@ -3,6 +3,8 @@
 // torrent, the library's and manual ones, with live rates; a detail sheet with files and their
 // priority, peers, trackers and the seeding rule; add by magnet or file; global limits; and the
 // VPN binding, always visible, because a leak is the one failure that matters most here.
+
+import { bytes, duration, percent, rate, relative } from '@highsea/core/format'
 import {
   Badge,
   Button,
@@ -37,7 +39,6 @@ import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { Torrent, TorrentFile, TorrentLimits } from '../../mock/types.ts'
-import { bytes, duration, percent, rate, relative } from '../format.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage } from '../shell.tsx'
 import { torrentStatus } from '../status.ts'

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The mock server's simulation and API semantics: what the screens rely on to show live states.
 import { describe, expect, test } from 'bun:test'
+import { memberDefault, ownerDefault } from '@highsea/personalization/widgets'
 import { ApiError, createClient, createMock, type Mock } from '../src/mock/client.ts'
 import type { MockServer } from '../src/mock/server.ts'
 import type { WidgetPlacement } from '../src/mock/types.ts'
-import { memberDefault, ownerDefault } from '../src/mock/widgets.ts'
 
 // Media ids in the populated seed (database ids, ADR 0014): 1 Sintel, 8 Charge, 19 Nosferatu.
 
@@ -183,11 +183,12 @@ describe('dashboard layouts', () => {
   test('a saved layout is the user’s own until reset', async () => {
     const mock = createMock()
     const owner = createClient(mock, { data: 'populated', role: 'owner', latency: 0 })
-    const mine = [{ id: 'w-activity', kind: 'activity' as const, span: 2 as const, rows: 3 }]
-    await owner.dashboard.saveLayout(mine)
+    const activity = { id: 'w-activity', kind: 'activity' as const, span: 2 as const, rows: 3 }
+    await owner.dashboard.saveLayout([activity])
     const saved = await owner.dashboard.layout()
     expect(saved.inherited).toBe(false)
-    expect(saved.widgets).toEqual(mine)
+    // the mock fills each widget's settings from the registry, as the server does
+    expect(saved.widgets).toEqual([{ ...activity, settings: { filter: 'all' } }])
     await owner.dashboard.resetLayout()
     expect((await owner.dashboard.layout()).inherited).toBe(true)
   })
@@ -200,8 +201,8 @@ describe('dashboard layouts', () => {
       { id: 'w-network', kind: 'network', span: 4, rows: 12 },
     ])
     expect((await owner.dashboard.layout()).widgets).toEqual([
-      { id: 'w-storage', kind: 'storage', span: 1, rows: 2 },
-      { id: 'w-network', kind: 'network', span: 2, rows: 4 },
+      { id: 'w-storage', kind: 'storage', span: 1, rows: 2, settings: {} },
+      { id: 'w-network', kind: 'network', span: 2, rows: 4, settings: { minutes: 10 } },
     ])
   })
 
@@ -213,10 +214,10 @@ describe('dashboard layouts', () => {
     expect(await member.dashboard.saveLayout(network).catch((e) => e.status)).toBe(403)
     expect(await member.dashboard.saveRoleDefault('member', []).catch((e) => e.status)).toBe(403)
 
-    const calendar = [{ id: 'w-calendar', kind: 'calendar' as const, span: 4 as const, rows: 3 }]
-    await owner.dashboard.saveRoleDefault('member', [...calendar, ...network])
+    const calendar = { id: 'w-calendar', kind: 'calendar' as const, span: 4 as const, rows: 3 }
+    await owner.dashboard.saveRoleDefault('member', [calendar, ...network])
     // staff-only widgets are dropped from a member default
-    expect((await member.dashboard.layout()).widgets).toEqual(calendar)
+    expect((await member.dashboard.layout()).widgets).toEqual([{ ...calendar, settings: {} }])
   })
 })
 

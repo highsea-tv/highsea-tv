@@ -29,7 +29,7 @@ A settings area ([settings.md](settings.md#layout)): the areas beside it from ex
   - **TVs** (on by default), **Phones and tablets** (off), **Web and desktop** (off): switches with why;
   - **Volume** (a slider, 0–100%) and **Sound pack** ("Felt and wood"; more come with the catalog);
   - **Listen**: a button per event (Move, Select, Back, Done, Error, Notice, Arrival) that plays it at the chosen volume, even where sound is off.
-- A **save bar** ("You have unsaved changes." · **Discard**, **Save**) sticks to the bottom while the identity, default theme or sounds have changed. Themes save on their own.
+- A **save bar** ("You have unsaved changes." · **Discard**, **Save**) sticks to the bottom while the identity (the mark included), default theme or sounds have changed. Themes save on their own.
 
 ## States
 
@@ -57,9 +57,15 @@ A settings area ([settings.md](settings.md#layout)): the areas beside it from ex
 
 ## Data
 
-- `appearance.get()` → `GET /api/v1/appearance` (everyone: clients read their defaults here): `Appearance` (`defaultTheme`, `themes: CustomTheme[]`, `sound: SoundDefaults`) and the server's `branding`.
-- `appearance.save(patch)` → `PATCH /api/v1/appearance`; `appearance.saveTheme(theme)`, `appearance.deleteTheme(id)` → `/api/v1/appearance/themes/{id}`.
-- Themes are `ThemeInput`s for `@highsea/tokens`' theme engine (`createTheme`, `auditTheme`, `nearestPassing`, `encodeTheme`/`decodeTheme`).
+Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `appearance` group):
+
+- `appearance.get()` → `GET /api/v1/appearance`. Everyone signed in: clients read their defaults here. `Appearance` is `defaultTheme`, `themes: CustomTheme[]`, `sound: SoundDefaults`, `packs` (the sound packs, built in or uploaded) and the server's `branding` (`name`, `accent`, `customMark`, and `mark`, the mark's URL or null for the highsea mark).
+- `appearance.save({ body })` → `PATCH /api/v1/appearance`. Staff. The name, accent, default theme and sound defaults, any of them.
+- `appearance.saveTheme({ params: { id }, body })` → `PUT /api/v1/appearance/themes/{id}`; `appearance.deleteTheme({ params: { id } })` → `DELETE`. Staff. A theme that fails the contrast audit is refused (`invalid`, `contrast`); deleting the default theme puts the default back to Abyss Neutral.
+- `appearance.uploadMark({ body: { data } })` → `PUT /api/v1/appearance/mark`, the file base64-encoded; `appearance.removeMark()` → `DELETE`. Staff. The mark itself is `GET /api/v1/appearance/mark`, public, with an `ETag` ([ADR 0028](../adr/0028-files-the-owner-uploads.md)).
+- `appearance.soundPack({ params: { id } })` → `GET /api/v1/appearance/sound-packs/{id}`, a pack's recipe; `uploadSoundPack` and `deleteSoundPack` for staff. There's no upload UI yet: packs come with the catalog.
+- Themes are `ThemeInput`s for `@highsea/tokens`' theme engine (`createTheme`, `auditTheme`, `nearestPassing`, `encodeTheme`/`decodeTheme`). The server checks them with the same engine.
+- Every change is written to the audit log.
 - Events: `server.updated`.
 
 ## Decisions

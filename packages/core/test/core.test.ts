@@ -2,13 +2,20 @@
 import { describe, expect, test } from 'bun:test'
 import {
   AppError,
+  bytes,
+  bytesParts,
   createEventBus,
   createFakeClock,
   createLogger,
   createSealer,
+  duration,
   generateSecretKey,
   memorySink,
   newId,
+  percent,
+  rate,
+  relative,
+  shortDate,
 } from '../src/index.ts'
 
 describe('ids', () => {
@@ -81,5 +88,27 @@ describe('secrets', () => {
     expect(sealed).not.toContain('tmdb')
     expect(sealer.open(sealed)).toBe('tmdb-key-123')
     expect(() => createSealer(generateSecretKey()).open(sealed)).toThrow(AppError)
+  })
+})
+
+describe('format', () => {
+  test('bytes and rates in decimal units, one decimal place', () => {
+    expect(bytes(0)).toBe('0 B')
+    expect(bytes(412_000_000)).toBe('412 MB')
+    expect(bytes(6_200_000_000_000)).toBe('6.2 TB')
+    expect(bytesParts(18_400_000)).toEqual(['18.4', 'MB'])
+    expect(rate(18_400_000)).toBe('18.4 MB/s')
+  })
+
+  test('durations, relative times and dates', () => {
+    expect(duration(45)).toBe('45s')
+    expect(duration(12 * 60)).toBe('12m')
+    expect(duration(4 * 3600 + 12 * 60)).toBe('4h 12m')
+    expect(duration(3 * 86400)).toBe('3d')
+    const now = Date.parse('2026-10-20T12:00:00Z')
+    expect(relative('2026-10-20T12:09:00Z', now)).toBe('in 9m')
+    expect(relative('2026-10-20T11:56:00Z', now)).toBe('4m ago')
+    expect(percent(0.426)).toBe('42%')
+    expect(shortDate('2026-10-23T12:00:00Z')).toBe('Fri 23')
   })
 })

@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Customize mode for the widget grid (admin.md#customizing; docs/product/dashboard.md). Order is
 // the layout: widgets flow through the 4/2/1-column grid of 84px rows, so moving one changes its
@@ -9,12 +10,11 @@
 // will snap to; the others make room as it crosses each column or row.
 // Keyboard: Space or Enter on the handle picks the widget up; arrows move it; Shift and an arrow
 // resize it (left and right for width, up and down for height); Space or Enter drops; Escape puts
-// it back. A live region announces each step.
+// it back. A live region announces each step, in English unless the app passes `messages`.
 import { Accessibility, PointerSensor } from '@dnd-kit/dom'
 import { move as reorder } from '@dnd-kit/helpers'
 import { DragDropProvider } from '@dnd-kit/react'
 import { useSortable } from '@dnd-kit/react/sortable'
-import { cn, Icon, type WidgetFrameProps, WidgetGrid } from '@highsea/ui-web'
 import {
   type CSSProperties,
   type KeyboardEvent,
@@ -27,7 +27,12 @@ import {
   useRef,
   useState,
 } from 'react'
-import type { WidgetSpan } from '../mock/types.ts'
+import { Icon } from '../icons/icon.tsx'
+import { cn } from '../lib/cn.ts'
+import { quickSpringTiming as timing } from '../lib/motion.ts'
+import { type WidgetFrameProps, WidgetGrid } from './widget.tsx'
+
+type WidgetSpan = 1 | 2 | 3 | 4
 
 export type EditableItem = { id: string; span: WidgetSpan; rows: number }
 
@@ -53,20 +58,59 @@ export type WidgetEditorProps<T extends EditableItem> = {
   label: (item: T) => string
   render: (item: T, frame: FrameProps) => ReactNode
   className?: string
+  messages?: Partial<WidgetEditorMessages>
+}
+
+/** Where a widget is: its 1-based `index` of `count`. */
+export type Place = { name: string; index: number; count: number }
+/** A widget's size in columns and rows. */
+export type Size = { name: string; span: number; rows: number }
+
+/** What the editor announces and labels. Apps pass their own catalog's strings. */
+export type WidgetEditorMessages = {
+  /** The handle's name: "Move Network". */
+  move: (name: string) => string
+  /** How to use the handle from the keyboard. */
+  help: string
+  /** Picked up from the keyboard, with how to move it. */
+  pickedUp: (at: Place & Size) => string
+  /** Picked up with the pointer. */
+  dragged: (at: Place) => string
+  dropped: (at: Place) => string
+  moved: (at: Place) => string
+  cancelled: (name: string) => string
+  /** Already at an end: first or last, or as wide, narrow, tall or short as it goes. */
+  limit: (name: string, edge: 'first' | 'last' | 'wide' | 'narrow' | 'tall' | 'short') => string
+  /** A resize step. */
+  resized: (size: Size) => string
+  /** A pointer resize let go. */
+  settled: (size: Size) => string
+  resizeCancelled: string
 }
 
 const plural = (n: number, one: string) => `${n} ${one}${n === 1 ? '' : 's'}`
-const sizeLabel = (span: number, rows: number) =>
-  `${plural(span, 'column')} wide and ${plural(rows, 'row')} tall`
-const clamp = (n: number, [min, max]: [number, number]) => Math.min(max, Math.max(min, n))
+const sizeLabel = (s: Size) => `${plural(s.span, 'column')} wide and ${plural(s.rows, 'row')} tall`
+const position = (p: Place) => `position ${p.index} of ${p.count}`
 
-/** The quick spring, from the motion tokens (1ms under reduced motion). */
-export function timing() {
-  const root = getComputedStyle(document.documentElement)
-  const duration = Number.parseFloat(root.getPropertyValue('--duration-spring-quick'))
-  const easing = root.getPropertyValue('--ease-spring-quick').trim()
-  return { duration: Number.isFinite(duration) ? duration : 300, easing: easing || 'ease-out' }
+export const widgetEditorMessages: WidgetEditorMessages = {
+  move: (name) => `Move ${name}`,
+  help: 'Press Space to pick up. Then the arrow keys move it, Shift and an arrow key resize it, Space drops it, and Escape cancels.',
+  pickedUp: (at) =>
+    `${at.name} picked up, ${position(at)}, ${sizeLabel(at)}. Arrow keys move it. Shift and an arrow key resize it. Space drops it, Escape cancels.`,
+  dragged: (at) => `${at.name} picked up, ${position(at)}.`,
+  dropped: (at) => `${at.name} dropped at ${position(at)}.`,
+  moved: (at) => `${at.name} moved to ${position(at)}.`,
+  cancelled: (name) => `Move cancelled. ${name} is back where it was.`,
+  limit: (name, edge) =>
+    edge === 'first' || edge === 'last'
+      ? `${name} is already ${edge}.`
+      : `${name} is already as ${edge} as it goes.`,
+  resized: (s) => `${s.name} is now ${sizeLabel(s)}.`,
+  settled: (s) => `${s.name} resized to ${sizeLabel(s)}.`,
+  resizeCancelled: 'Resize cancelled.',
 }
+
+const clamp = (n: number, [min, max]: [number, number]) => Math.min(max, Math.max(min, n))
 
 type Resize = {
   id: string
@@ -94,7 +138,9 @@ export function WidgetEditor<T extends EditableItem>({
   label,
   render,
   className,
+  messages,
 }: WidgetEditorProps<T>) {
+  const m = { ...widgetEditorMessages, ...messages }
   const grid = useRef<HTMLDivElement>(null)
   const [grab, setGrab] = useState<{ id: string; origin: T[] } | null>(null)
   const [resizing, setResizing] = useState<Resize | null>(null)
@@ -106,8 +152,12 @@ export function WidgetEditor<T extends EditableItem>({
   // moving a widget moves its DOM node, which drops focus: put it back on the handle
   const refocus = useRef<string | null>(null)
 
-  const position = (list: EditableItem[], id: string) =>
-    `position ${list.findIndex((x) => x.id === id) + 1} of ${list.length}`
+  const place = (list: EditableItem[], item: T): Place => ({
+    name: label(item),
+    index: list.findIndex((x) => x.id === item.id) + 1,
+    count: list.length,
+  })
+  const size = (item: T, span: number, rows: number): Size => ({ name: label(item), span, rows })
 
   // ---- layout animation. Keyboard moves and resizes reflow the grid in one commit; each widget
   // that moved glides from where it was (FLIP on `translate`). While dnd-kit is dragging, it
@@ -189,12 +239,10 @@ export function WidgetEditor<T extends EditableItem>({
       e.preventDefault()
       if (grabbed) {
         setGrab(null)
-        setMessage(`${label(item)} dropped at ${position(items, item.id)}.`)
+        setMessage(m.dropped(place(items, item)))
       } else {
         setGrab({ id: item.id, origin: items })
-        setMessage(
-          `${label(item)} picked up, ${position(items, item.id)}, ${sizeLabel(item.span, item.rows)}. Arrow keys move it. Shift and an arrow key resize it. Space drops it, Escape cancels.`,
-        )
+        setMessage(m.pickedUp({ ...place(items, item), span: item.span, rows: item.rows }))
       }
       return
     }
@@ -204,7 +252,7 @@ export function WidgetEditor<T extends EditableItem>({
       e.stopPropagation()
       onChange(grab.origin)
       setGrab(null)
-      setMessage(`Move cancelled. ${label(item)} is back where it was.`)
+      setMessage(m.cancelled(label(item)))
     } else if (e.shiftKey && e.key.startsWith('Arrow')) {
       e.preventDefault()
       const { width, height } = range(item)
@@ -214,12 +262,13 @@ export function WidgetEditor<T extends EditableItem>({
       const rows = clamp(item.rows + taller, height)
       if (resize(item.id, span, rows)) {
         refocus.current = item.id
-        setMessage(`${label(item)} is now ${sizeLabel(span, rows)}.`)
+        setMessage(m.resized(size(item, span, rows)))
       } else
         setMessage(
-          `${label(item)} is already as ${
-            wider > 0 ? 'wide' : wider < 0 ? 'narrow' : taller > 0 ? 'tall' : 'short'
-          } as it goes.`,
+          m.limit(
+            label(item),
+            wider > 0 ? 'wide' : wider < 0 ? 'narrow' : taller > 0 ? 'tall' : 'short',
+          ),
         )
     } else if (e.key.startsWith('Arrow')) {
       e.preventDefault()
@@ -227,9 +276,7 @@ export function WidgetEditor<T extends EditableItem>({
       const index = items.findIndex((x) => x.id === item.id)
       const next = move(item.id, index + step)
       setMessage(
-        next
-          ? `${label(item)} moved to ${position(next, item.id)}.`
-          : `${label(item)} is already ${step < 0 ? 'first' : 'last'}.`,
+        next ? m.moved(place(next, item)) : m.limit(label(item), step < 0 ? 'first' : 'last'),
       )
     }
   }
@@ -250,8 +297,7 @@ export function WidgetEditor<T extends EditableItem>({
       const h = r.start.h + (e.clientY - r.y)
       const span = clamp(Math.round((w + r.gap) / (r.col + r.gap)), cols)
       const rows = clamp(Math.round((h + r.gap) / (r.row + r.gap)), height)
-      if (resize(r.id, span, rows))
-        setMessage(`${label(item as T)} is now ${sizeLabel(span, rows)}.`)
+      if (resize(r.id, span, rows)) setMessage(m.resized(size(item as T, span, rows)))
       const frame = grid.current?.querySelector<HTMLElement>(`[data-widget-id="${r.id}"]`)
       setResizing({
         ...r,
@@ -266,7 +312,7 @@ export function WidgetEditor<T extends EditableItem>({
       setResizing(null)
       if (cancelled) {
         latest.current.onChange(r.origin as T[])
-        setMessage('Resize cancelled.')
+        setMessage(m.resizeCancelled)
         return
       }
       if (!frame || !item) return
@@ -279,7 +325,7 @@ export function WidgetEditor<T extends EditableItem>({
         },
         { duration, easing },
       )
-      setMessage(`${label(item as T)} resized to ${sizeLabel(item.span, item.rows)}.`)
+      setMessage(m.settled(size(item as T, item.span, item.rows)))
     }
     const onUp = finish(false)
     const onCancel = finish(true)
@@ -335,20 +381,19 @@ export function WidgetEditor<T extends EditableItem>({
       onDragStart={(event) => {
         dragging.current = true
         const item = latest.current.items.find((x) => x.id === event.operation.source?.id)
-        if (item)
-          setMessage(`${label(item as T)} picked up, ${position(latest.current.items, item.id)}.`)
+        if (item) setMessage(m.dragged(place(latest.current.items, item as T)))
       }}
       onDragEnd={(event) => {
         const id = event.operation.source?.id
         const item = latest.current.items.find((x) => x.id === id)
         if (event.canceled) {
           dragging.current = false
-          if (item) setMessage(`Move cancelled. ${label(item as T)} is back where it was.`)
+          if (item) setMessage(m.cancelled(label(item as T)))
           return
         }
         const next = reorder(latest.current.items, event)
         latest.current.onChange(next)
-        if (item) setMessage(`${label(item as T)} dropped at ${position(next, item.id)}.`)
+        if (item) setMessage(m.dropped(place(next, item as T)))
         // the commit that follows lands where dnd-kit already put things: don't animate it
         requestAnimationFrame(() => {
           dragging.current = false
@@ -367,7 +412,7 @@ export function WidgetEditor<T extends EditableItem>({
                 editing={editing}
                 grabbed={grab?.id === item.id}
                 resizing={live}
-                label={label(item)}
+                moveLabel={m.move(label(item))}
                 help={help}
                 resizable={(() => {
                   const { width, height } = range(item)
@@ -378,7 +423,7 @@ export function WidgetEditor<T extends EditableItem>({
                   // a move re-parents the node and blurs it; that isn't the user leaving
                   if (grab?.id === item.id && !refocus.current) {
                     setGrab(null)
-                    setMessage(`${label(item)} dropped at ${position(items, item.id)}.`)
+                    setMessage(m.dropped(place(items, item)))
                   }
                 }}
                 onCornerDown={onCornerDown(item)}
@@ -388,8 +433,7 @@ export function WidgetEditor<T extends EditableItem>({
           })}
         </WidgetGrid>
         <p id={help} hidden>
-          Press Space to pick up. Then the arrow keys move it, Shift and an arrow key resize it,
-          Space drops it, and Escape cancels.
+          {m.help}
         </p>
         <p aria-live="assertive" className="sr-only">
           {message}
@@ -405,7 +449,7 @@ function Sortable<T extends EditableItem>({
   editing,
   grabbed,
   resizing,
-  label,
+  moveLabel,
   help,
   resizable,
   onHandleKey,
@@ -418,7 +462,7 @@ function Sortable<T extends EditableItem>({
   editing: boolean
   grabbed: boolean
   resizing: Resize | null
-  label: string
+  moveLabel: string
   help: string
   resizable: boolean
   onHandleKey: (e: KeyboardEvent<HTMLButtonElement>) => void
@@ -477,7 +521,7 @@ function Sortable<T extends EditableItem>({
       <button
         ref={handleRef}
         type="button"
-        aria-label={`Move ${label}`}
+        aria-label={moveLabel}
         aria-describedby={help}
         onKeyDown={onHandleKey}
         data-handle=""

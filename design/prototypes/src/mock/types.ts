@@ -732,22 +732,10 @@ export type Appearance = {
 
 // ---------------------------------------------------------------- personalization
 
-export type WidgetKind =
-  | 'network'
-  | 'storage'
-  | 'indexers'
-  | 'subtitles'
-  | 'upcoming'
-  | 'announcement'
-  | 'activity'
-  | 'recently-added'
-  | 'calendar'
-  | 'system-health'
+// the registry's types, from the package the server uses
+import type { WidgetPlacement } from '@highsea/personalization/widgets'
 
-export type WidgetSpan = 1 | 2 | 3 | 4
-
-/** Where a widget sits: its place in the order, its width in columns and its height in rows. */
-export type WidgetPlacement = { id: string; kind: WidgetKind; span: WidgetSpan; rows: number }
+export type { WidgetKind, WidgetPlacement, WidgetSpan } from '@highsea/personalization/widgets'
 
 export type LayoutScope = { kind: 'user'; userId: string } | { kind: 'role'; role: UserRole }
 

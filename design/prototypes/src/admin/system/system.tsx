@@ -2,6 +2,8 @@
 // A16 System (reference, docs/product/system.md): what the server is doing and how it's holding up.
 // Status, health checks, scheduled tasks with Run now, the log, the live event stream, backups
 // with restore, and updates. The one place, with the sidebar's server card, that shows health.
+
+import { bytes, bytesParts, duration, percent, relative } from '@highsea/core/format'
 import {
   Badge,
   type BadgeTone,
@@ -33,7 +35,6 @@ import { useLocation } from 'wouter'
 import { Soon } from '../../kit/soon.tsx'
 import { useAction, useClient, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { Backup, HealthCheck, Job, LogEntry, ServerEvent } from '../../mock/types.ts'
-import { bytes, bytesParts, duration, percent, relative } from '../format.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 

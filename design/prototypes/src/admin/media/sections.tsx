@@ -2,6 +2,8 @@
 // The media page's shared anatomy (docs/product/media-pages.md#layout), used by every state of a
 // movie's page and, later, by the other media types: the summary card, the Overview's rows (cast,
 // trailers, collection, More like this) and its About aside, and the Cast and crew tab.
+
+import { duration } from '@highsea/core/format'
 import {
   Badge,
   Button,
@@ -19,7 +21,6 @@ import {
 import { Fragment, type ReactNode, useState } from 'react'
 import { useNow, useQuery } from '../../mock/hooks.tsx'
 import type { Credit, Department, DiscoverMovie, MovieMetadata, Video } from '../../mock/types.ts'
-import { duration } from '../format.ts'
 import { Loadable } from '../loadable.tsx'
 import { movieHref, personHref } from './links.ts'
 

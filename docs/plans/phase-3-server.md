@@ -1,6 +1,6 @@
 # Phase 3 plan: server milestone 1
 
-- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoints 1 and 2 are signed off, checkpoint 2 on 2026-10-20. Checkpoint 3 is scoped below, in [Checkpoint 3 in detail](#checkpoint-3-in-detail), with the owner's decisions of 2026-10-20; building it hasn't started. Phase 2 (the design prototypes) was signed off on 2026-10-19.
+- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoints 1 and 2 are signed off, checkpoint 2 on 2026-10-20. Checkpoint 3 is scoped below, in [Checkpoint 3 in detail](#checkpoint-3-in-detail), with the owner's decisions of 2026-10-20. It's built and waiting for the owner's review. Phase 2 (the design prototypes) was signed off on 2026-10-19.
 - **Gate:** the owner signs off on milestone 1. Phase 4 (the client apps) then builds on its API and SDK.
 - **Source:** the Phase 3 section of the [roadmap](../roadmap.md#phase-3-server-milestone-1-implementation) and the gap analysis items tagged **[M1]**. This plan turns them into steps.
 - **Build reference:** the signed-off prototypes in [`design/prototypes`](../../design/prototypes/README.md) and their specs in [`docs/product/`](../product/).

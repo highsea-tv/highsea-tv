@@ -3,6 +3,7 @@
 // .md), and the event stream.
 import { createRoute, z } from '@hono/zod-openapi'
 import { API_PREFIX, access, errors, IsoDate, json } from './common.ts'
+import { Branding, WIDGET_SOURCES } from './personalization.ts'
 
 export const Health = z
   .object({
@@ -27,6 +28,8 @@ export const PublicInfo = z
       oidc: z.object({ name: z.string() }).nullable(),
       passkeys: z.boolean(),
     }),
+    /** What this server can do so far: clients show a widget only when its source is here. */
+    sources: z.array(z.enum(WIDGET_SOURCES)).openapi({ example: ['system'] }),
   })
   .openapi('PublicInfo')
 
@@ -35,12 +38,8 @@ export const Server = z
     id: z.string(),
     name: z.string(),
     version: z.string(),
-    /** Inherited by every client; customizing it comes with Appearance. */
-    branding: z.object({
-      name: z.string(),
-      accent: z.string().nullable(),
-      customMark: z.boolean(),
-    }),
+    /** Inherited by every client; the owner sets it in Appearance. */
+    branding: Branding,
     addresses: z.object({ local: z.array(z.string()), public: z.string().nullable() }),
     setupComplete: z.boolean(),
     /** Apps with the event stream open now. */

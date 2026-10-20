@@ -2,6 +2,8 @@
 // A5 Movies library (docs/product/movies.md#library). Grid or table, a filter by status, a text
 // filter and a sort. The table selects rows for bulk edit: monitor, quality profile, search and
 // remove. An item with two versions (1080p beside 4K HDR) is one row with both.
+
+import { shortDate } from '@highsea/core/format'
 import {
   Badge,
   type BadgeTone,
@@ -39,7 +41,6 @@ import { useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { MediaItem, MediaStatus } from '../../mock/types.ts'
-import { shortDate } from '../format.ts'
 import { Loadable, PosterSkeletons } from '../loadable.tsx'
 import { isStaff } from '../nav.ts'
 import { AdminPage, adminHref, useShell } from '../shell.tsx'

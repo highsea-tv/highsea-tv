@@ -16,3 +16,14 @@ export const fadeOut: Transition = { duration: durations.fadeOut / 1000, ease: '
 export function staggerDelay(index: number): number {
   return (Math.min(index, choreography.staggerCap - 1) * choreography.stagger) / 1000
 }
+
+/**
+ * `spring.quick` as a CSS duration and easing, for the Web Animations API (dnd-kit's sortable and
+ * the widget editor's reflow). Read from the theme, so reduced motion's 1ms applies.
+ */
+export function quickSpringTiming() {
+  const root = getComputedStyle(document.documentElement)
+  const duration = Number.parseFloat(root.getPropertyValue('--duration-spring-quick'))
+  const easing = root.getPropertyValue('--ease-spring-quick').trim()
+  return { duration: Number.isFinite(duration) ? duration : 300, easing: easing || 'ease-out' }
+}

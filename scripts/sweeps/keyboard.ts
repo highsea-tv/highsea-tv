@@ -15,13 +15,19 @@ const browser = await launch()
 const problems: string[] = []
 await pool(jobs, 5, async ({ r, w }) => {
   const page = await browser.newPage({ viewport: { width: w, height: heightFor(w) } })
-  await page.addInitScript(() => localStorage.clear())
-  await page.goto(screenUrl(r))
-  await page.waitForTimeout(1400)
-  await acknowledge(page)
-  const { stops, bad } = await walk(page)
-  if (bad.length) problems.push(`${r} ${w} (${stops} stops): ${bad.slice(0, 6).join(' ; ')}`)
-  await page.close()
+  try {
+    await page.addInitScript(() => localStorage.clear())
+    await page.goto(screenUrl(r))
+    await page.waitForTimeout(1400)
+    await acknowledge(page)
+    const { stops, bad } = await walk(page)
+    if (bad.length) problems.push(`${r} ${w} (${stops} stops): ${bad.slice(0, 6).join(' ; ')}`)
+  } catch (e) {
+    // one page's failure is a problem to report, not a reason to stop the sweep (as server.ts)
+    problems.push(`${r} ${w}: crashed: ${(e as Error).message.split('\n')[0]?.slice(0, 160)}`)
+  } finally {
+    await page.close()
+  }
 })
 await browser.close()
 console.log(problems.length ? problems.sort().join('\n') : `clean: ${jobs.length} pages walked`)

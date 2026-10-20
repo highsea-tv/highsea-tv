@@ -14,6 +14,7 @@ import {
   MenuItem,
   MenuTrigger,
   Progress,
+  SortableList,
   Tabs,
   TabsContent,
   TabsList,
@@ -22,7 +23,6 @@ import {
 } from '@highsea/ui-web'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
-import { SortableList } from '../../kit/sortable-list.tsx'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { AnnouncementSummary, Placement, SectionSummary } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'

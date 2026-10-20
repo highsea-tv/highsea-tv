@@ -2,6 +2,8 @@
 // A1, the admin shell (admin.md): the sidebar (full at expanded and up, a rail at medium, a menu
 // sheet at compact), the ⌘K palette, announcement banners, toasts for background events, and the
 // status bar. Pages render inside through `AdminPage`.
+
+import { bytes, relative } from '@highsea/core/format'
 import {
   Banner,
   Button,
@@ -38,7 +40,6 @@ import { Cta, Inline } from '../kit/inline.tsx'
 import { useClient, useNow, useQuery } from '../mock/hooks.tsx'
 import type { Announcement, UserRole } from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'
-import { bytes, relative } from './format.ts'
 import { isStaff, pageAt, pagesFor } from './nav.ts'
 
 type Shell = {

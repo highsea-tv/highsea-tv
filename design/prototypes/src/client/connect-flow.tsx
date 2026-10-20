@@ -3,9 +3,10 @@
 // answering on this network as they appear, an address field, and highsea cloud as an option;
 // then sign-in, with two-factor when the account has it. One column, so it fits a phone and sits
 // in a centered card on a desktop.
+
+import { relative } from '@highsea/core/format'
 import { Button, cn, Field, Icon, Input, Lockup, Mark } from '@highsea/ui-web'
 import { type FormEvent, useState } from 'react'
-import { relative } from '../admin/format.ts'
 import { useNow } from '../mock/hooks.tsx'
 import type { ProbeResult } from '../mock/types.ts'
 import { useDiscovery, useSignIn } from './connect.ts'

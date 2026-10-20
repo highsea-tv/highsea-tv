@@ -50,15 +50,19 @@ The same six sections everywhere: **Theme**, **Sounds**, **Home screen**, **Serv
 
 ## Data
 
-- Device preferences (theme, sound, volume) are stored on the device (`highsea-proto:prefs:{platform}` in the prototype).
+- Device preferences (theme, sound, volume) are the device layer of the person's preferences, on the server ([ADR 0027](../adr/0027-preferences-in-layers.md)). The prototype keeps them on the device (`highsea-proto:prefs:{platform}`).
+  - `preferences.get()` → `GET /api/v1/me/preferences`: the resolved `values`, which layer each came from (`from`), and the layers themselves.
+  - `preferences.save({ body: { layer: 'device', values } })` → `PATCH /api/v1/me/preferences`. A value sets a key; `null` clears it so the next layer shows through. The `client` and `user` layers take the same call, for when a client offers them.
+  - Clients keep a copy to start instantly and offline, and refresh it on `preferences.updated`.
 - `appearance.get()` for the server's default theme, custom themes and sound defaults.
 - `home.layout()` → `GET /api/v1/me/home` (`HomeLayout`: `order`, `hidden`, and the rows to arrange); `home.saveLayout(layout)` → `PUT`. `home.sections()` applies it, keeping the hero on top.
+  - Ids the server doesn't offer yet are kept, so a row that appears later lands where the person put it. Until the library (checkpoint 4) and curation (checkpoint 8) arrive, the only row is Continue watching (`continue`, with a null title so each app names it).
 - `devices.mine()`, `devices.revoke(id)`; `connect.known()`.
-- Events: `curation.updated`, `users.updated`, `server.updated`.
+- Events: `curation.updated`, `users.updated`, `server.updated`, `preferences.updated`, `home.updated`.
 
 ## Decisions
 
-- **Device-level and person-level, kept apart:** how a device looks and sounds stays on it (a TV in the living room and a phone don't share a theme); what Home shows follows the person.
+- **Device-level and person-level, kept apart:** how a device looks and sounds applies to it alone (a TV in the living room and a phone don't share a theme); what Home shows follows the person. The server holds both, in layers (ADR 0027).
 - **The hero can't be moved or hidden.** It's the owner's featured section and the top of every home screen; everything under it is the person's to arrange, Continue watching included.
 - **In the prototype, the toolbar stands in for the server's defaults:** its theme and sound are what a device follows until a choice is made in that client's settings, which then wins on that platform.
 - **Downloads are a desktop and mobile feature;** the web shows where to get them rather than an empty list.

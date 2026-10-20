@@ -2,6 +2,7 @@
 // An in-memory highsea server: state, the handlers behind each API call, and a simulation driven by
 // the clock. Screens never touch this directly; they go through the client (client.ts).
 import { backdropArt, posterArt, stillArt } from '@highsea/fixtures'
+import { allowed, normalize, roleDefault } from '@highsea/personalization/widgets'
 import { type Clock, createEmitter, createRandom, type Emitter, iso } from './clock.ts'
 import {
   collection,
@@ -68,7 +69,6 @@ import type {
   WidgetLayout,
   WidgetPlacement,
 } from './types.ts'
-import { allowed, normalize, roleDefault } from './widgets.ts'
 
 export class ApiError extends Error {
   readonly status: number

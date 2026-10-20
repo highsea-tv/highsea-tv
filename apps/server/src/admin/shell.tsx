@@ -5,6 +5,8 @@
 // render inside through `AdminPage`. What later checkpoints bring is left out until then:
 // announcement banners (curation), sidebar counts (movies, the queue), the palette's download
 // actions and import toasts.
+
+import { bytes } from '@highsea/core/format'
 import { useT } from '@highsea/i18n/react'
 import { useAction, useQuery } from '@highsea/sdk/react'
 import {
@@ -41,7 +43,6 @@ import {
   useState,
 } from 'react'
 import { AccountSheet } from './account.tsx'
-import { bytes } from './format.ts'
 import { shell as messages } from './messages.ts'
 import { isStaff, type Page, pageAt, pagesFor, type Role } from './nav.ts'
 import { useRelative } from './time.ts'
@@ -51,6 +52,9 @@ type Shell = {
   openPalette: () => void
   openMenu: () => void
   openAccount: () => void
+  /** Customize mode on the dashboard; the palette can start it from anywhere. */
+  customizing: boolean
+  setCustomizing: (on: boolean) => void
 }
 
 const ShellContext = createContext<Shell | null>(null)
@@ -233,6 +237,18 @@ function usePaletteGroups(role: Role, shell: Shell): CommandGroup[] {
       heading: t('palette.actions'),
       items: [
         {
+          id: 'customize',
+          label: t('palette.customize'),
+          icon: 'edit',
+          keywords: t('keywords.customize')
+            .split(',')
+            .map((k) => k.trim()),
+          onSelect: () => {
+            router.push('/')
+            shell.setCustomizing(true)
+          },
+        },
+        {
           id: 'account',
           label: t('nav.account'),
           icon: 'user',
@@ -357,6 +373,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
   const [palette, setPalette] = useState(false)
   const [menu, setMenu] = useState(false)
   const [account, setAccount] = useState(false)
+  const [customizing, setCustomizing] = useState(false)
   const path = usePathname()
   const main = useRef<HTMLElement>(null)
   const togglePalette = useCallback(() => setPalette((o) => !o), [])
@@ -370,9 +387,9 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
       window.location.assign(`/login?next=${encodeURIComponent(path)}`)
   }, [session.status, session.error, path])
 
-  // each page starts at the top
-  // biome-ignore lint/correctness/useExhaustiveDependencies: runs on navigation
+  // leaving the dashboard ends customize mode, and each page starts at the top
   useEffect(() => {
+    if (path !== '/') setCustomizing(false)
     main.current?.parentElement?.scrollTo({ top: 0 })
   }, [path])
 
@@ -382,8 +399,10 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
       openPalette: () => setPalette(true),
       openMenu: () => setMenu(true),
       openAccount: () => setAccount(true),
+      customizing,
+      setCustomizing,
     }),
-    [role],
+    [role, customizing],
   )
   const groups = usePaletteGroups(role, shell)
 

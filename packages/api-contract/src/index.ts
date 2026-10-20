@@ -6,11 +6,13 @@
 export * from './accounts.ts'
 export * from './common.ts'
 export * from './events.ts'
+export * from './personalization.ts'
 export * from './settings.ts'
 export * from './setup.ts'
 export * from './system.ts'
 
 import { apiKeys, audit, auth, devices, links, me, users } from './accounts.ts'
+import { appearance, dashboard, home, preferences } from './personalization.ts'
 import { settings } from './settings.ts'
 import { setup } from './setup.ts'
 import { system } from './system.ts'
@@ -27,4 +29,8 @@ export const routes = {
   apiKeys,
   settings,
   audit,
+  dashboard,
+  preferences,
+  home,
+  appearance,
 } as const

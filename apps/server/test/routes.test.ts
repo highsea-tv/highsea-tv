@@ -4,31 +4,21 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { base32Decode, hotp, totpStep } from '@highsea/auth'
 import type { Runtime } from '@highsea/runtime'
-import { ApiError, createClient } from '@highsea/sdk'
 import { createApi } from '../src/api/app.ts'
-import { addMember, bootRuntime, cleanup, OWNER, tokenFor, tv, withOwner } from './helpers.ts'
+import {
+  addMember,
+  bootRuntime,
+  cleanup,
+  clientFor,
+  failure,
+  ORIGIN,
+  OWNER,
+  tokenFor,
+  tv,
+  withOwner,
+} from './helpers.ts'
 
 afterEach(cleanup)
-
-const ORIGIN = 'http://localhost'
-
-/** An SDK client over the app in memory, as a browser on this origin or as an app with a token. */
-function clientFor(
-  app: ReturnType<typeof createApi>,
-  auth: { token?: string; cookie?: string } = {},
-) {
-  return createClient({
-    token: auth.token,
-    fetch: async (input, init) => {
-      const headers = new Headers(init?.headers)
-      if (auth.cookie) {
-        headers.set('cookie', auth.cookie)
-        headers.set('sec-fetch-site', 'same-origin')
-      }
-      return app.request(`${ORIGIN}${input}`, { ...init, headers })
-    },
-  })
-}
 
 async function start() {
   const runtime = await bootRuntime()
@@ -40,18 +30,6 @@ async function started() {
   const env = await start()
   const { owner, token } = await withOwner(env.runtime)
   return { ...env, owner, ownerApi: clientFor(env.app, { token }) }
-}
-
-/** The error an SDK call fails with. */
-async function failure(call: Promise<unknown>) {
-  try {
-    await call
-  } catch (e) {
-    if (e instanceof ApiError)
-      return { code: e.code, reason: (e.details as { reason?: string })?.reason }
-    throw e
-  }
-  throw new Error('expected the call to fail')
 }
 
 const sessionCookie = (res: Response) =>

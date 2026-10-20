@@ -1,5 +1,7 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
-import { useLayoutEffect, useState } from 'react'
+// Layouts that follow their container rather than the viewport: widgets fit their rows and spans.
+import { useEffect, useLayoutEffect, useState } from 'react'
 
 /**
  * Fits a list to a widget's height: items that would be cut off at the bottom are hidden, never
@@ -35,4 +37,23 @@ export function useClip<T extends HTMLElement>(items: string) {
     }
   }, [el, items])
   return { ref, hidden }
+}
+
+/**
+ * An element's width, for layouts that depend on their container rather than the viewport (a
+ * widget's columns follow its span). Pass `ref` to the element; it can mount later, after a
+ * loading state. Starts at `fallback` until measured, and in tests.
+ */
+export function useWidth<T extends HTMLElement>(fallback = 1200) {
+  const [el, ref] = useState<T | null>(null)
+  const [width, setWidth] = useState(fallback)
+  useEffect(() => {
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const observer = new ResizeObserver(([entry]) => {
+      if (entry && entry.contentRect.width > 0) setWidth(entry.contentRect.width)
+    })
+    observer.observe(el)
+    return () => observer.disconnect()
+  }, [el])
+  return { ref, width }
 }

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The mobile tabs after Library: Search (C6, reference), Offline (C8, reference), and You (C8),
 // which leads to the settings (C7). docs/product/client-search.md, client-settings.md.
+
+import { bytes } from '@highsea/core/format'
 import {
   Button,
   cn,
@@ -15,7 +17,6 @@ import {
 } from '@highsea/ui-web'
 import { useState } from 'react'
 import { useLocation, useParams } from 'wouter'
-import { bytes } from '../admin/format.ts'
 import {
   searchKinds,
   searchSuggestions,

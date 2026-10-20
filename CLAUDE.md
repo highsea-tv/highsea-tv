@@ -8,9 +8,9 @@ highsea is a self-hosted replacement for the *ARR suite (Radarr, Sonarr, Prowlar
 - **Phase 2** (clickable prototypes of every screen, in `design/prototypes`): signed off 2026-10-19. The prototypes and their specs in `docs/product/` are the **build reference**.
 - **Phase 3** (server milestone 1): the plan is [docs/plans/phase-3-server.md](docs/plans/phase-3-server.md), approved with the owner's decisions recorded in it.
   - Checkpoint 1 (the platform) and checkpoint 2 (accounts, network and the admin shell) are signed off, checkpoint 2 on 2026-10-20.
-  - **Next is checkpoint 3: personalization and the dashboard.** Its scope and the owner's decisions are in the plan's "Checkpoint 3 in detail". Building waits for the owner's go-ahead.
+  - **Checkpoint 3 (personalization and the dashboard) is built and waiting for the owner's review.** Its scope and the owner's decisions are in the plan's "Checkpoint 3 in detail". Checkpoint 4 waits for sign-off.
 
-Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2.
+Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2, 0027–0028 with checkpoint 3.
 
 ## Rules from the owner
 
@@ -68,6 +68,7 @@ Before reporting a checkpoint, run all of these:
 | `design/prototypes` | The signed-off prototypes, with an SDK-shaped mock server (`src/mock/`): the reference for every screen and the first draft of the API |
 | `packages/core`, `db`, `jobs`, `runtime`, `i18n` | The platform |
 | `packages/auth`, `network` | People and access (ADR 0023–0025); discovery, proxies and TLS (ADR 0020, 0026) |
+| `packages/personalization` | Preferences in layers (ADR 0027), the widget registry and dashboard layouts, the home layout, themes, branding and sound packs (ADR 0028) |
 | `packages/api-contract`, `sdk` | The public API's zod/OpenAPI contract, and the typed client every app uses |
 | `packages/tokens`, `ui-web`, `brand`, `fixtures` | The design system |
 | `docs/` | Roadmap, plans, ADRs, product specs, brand and design language |

@@ -2,6 +2,8 @@
 // A7 Activity (docs/product/activity-downloads.md#activity): the queue, live, with the states that
 // need a person (stalled, import blocked) explained in the row and fixed from it; then history and
 // the blocklist. Members see the queue and history, but can't change them.
+
+import { bytes, duration, rate, relative } from '@highsea/core/format'
 import {
   Badge,
   Button,
@@ -31,7 +33,6 @@ import {
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { QueueItem } from '../../mock/types.ts'
-import { bytes, duration, rate, relative } from '../format.ts'
 import { Loadable } from '../loadable.tsx'
 import { HistoryTable } from '../movies/detail.tsx'
 import { isStaff } from '../nav.ts'

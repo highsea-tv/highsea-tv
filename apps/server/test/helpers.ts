@@ -5,6 +5,8 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { issueDevice } from '@highsea/auth'
 import { boot, getRuntime, hasRuntime, loadConfig, type Runtime } from '@highsea/runtime'
+import { ApiError, createClient } from '@highsea/sdk'
+import type { createApi } from '../src/api/app.ts'
 
 export const meta = { address: '127.0.0.1', userAgent: 'bun test' }
 export const OWNER = { username: 'ines', displayName: 'Ines', password: 'correct horse battery' }
@@ -60,4 +62,36 @@ export async function addMember(
     meta,
   )
   return { id: invite.user.id, token: tokenFor(runtime, accepted.session.user.id) }
+}
+
+export const ORIGIN = 'http://localhost'
+
+/** An SDK client over the app in memory, as a browser on this origin or as an app with a token. */
+export function clientFor(
+  app: ReturnType<typeof createApi>,
+  auth: { token?: string; cookie?: string } = {},
+) {
+  return createClient({
+    token: auth.token,
+    fetch: async (input, init) => {
+      const headers = new Headers(init?.headers)
+      if (auth.cookie) {
+        headers.set('cookie', auth.cookie)
+        headers.set('sec-fetch-site', 'same-origin')
+      }
+      return app.request(`${ORIGIN}${input}`, { ...init, headers })
+    },
+  })
+}
+
+/** The error an SDK call fails with. */
+export async function failure(call: Promise<unknown>) {
+  try {
+    await call
+  } catch (e) {
+    if (e instanceof ApiError)
+      return { code: e.code, reason: (e.details as { reason?: string })?.reason }
+    throw e
+  }
+  throw new Error('expected the call to fail')
 }

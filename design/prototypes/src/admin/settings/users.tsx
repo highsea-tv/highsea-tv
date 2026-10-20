@@ -2,6 +2,8 @@
 // A13 Users and devices (docs/product/users-devices.md): who can sign in and what they can do
 // (role, permissions, libraries), invites by link, every signed-in device with sign-out, and API
 // keys for scripts, shown once.
+
+import { relative } from '@highsea/core/format'
 import {
   Badge,
   type BadgeTone,
@@ -49,7 +51,6 @@ import type {
   User,
   UserRole,
 } from '../../mock/types.ts'
-import { relative } from '../format.ts'
 import { Loadable } from '../loadable.tsx'
 import { AreaPage } from './settings.tsx'
 

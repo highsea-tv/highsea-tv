@@ -1,15 +1,37 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // A vertical list reordered by a drag handle, the way the dashboard's widgets are (widget-editor):
 // Pointer: drag the handle; the row lifts and follows, and the others slide aside (dnd-kit's
 // sortable). Keyboard: Space or Enter on the handle picks the row up, Up and Down move it, Space
-// drops it, Escape puts it back. A live region announces each step.
+// drops it, Escape puts it back. A live region announces each step, in English unless the app
+// passes `messages`.
 import { Accessibility, PointerSensor } from '@dnd-kit/dom'
 import { move as reorder } from '@dnd-kit/helpers'
 import { DragDropProvider } from '@dnd-kit/react'
 import { useSortable } from '@dnd-kit/react/sortable'
-import { cn, Icon } from '@highsea/ui-web'
 import { type KeyboardEvent, type ReactNode, useId, useLayoutEffect, useRef, useState } from 'react'
-import { timing } from './widget-editor.tsx'
+import { Icon } from '../icons/icon.tsx'
+import { cn } from '../lib/cn.ts'
+import { quickSpringTiming as timing } from '../lib/motion.ts'
+import { type Place, type WidgetEditorMessages, widgetEditorMessages } from './widget-editor.tsx'
+
+/** What the list announces and labels. Apps pass their own catalog's strings. */
+export type SortableListMessages = Pick<
+  WidgetEditorMessages,
+  'move' | 'dragged' | 'dropped' | 'moved' | 'cancelled'
+> & {
+  help: string
+  pickedUp: (at: Place) => string
+  limit: (name: string, edge: 'first' | 'last') => string
+}
+
+export const sortableListMessages: SortableListMessages = {
+  ...widgetEditorMessages,
+  help: 'Press Space to pick up. Then Up and Down move it, Space drops it, and Escape cancels.',
+  pickedUp: (at) =>
+    `${at.name} picked up, position ${at.index} of ${at.count}. Up and Down move it. Space drops it, Escape cancels.`,
+  limit: (name, edge) => `${name} is already ${edge}.`,
+}
 
 export type SortableListProps<T> = {
   items: T[]
@@ -25,6 +47,7 @@ export type SortableListProps<T> = {
   disabled?: boolean
   /** The row's content; put `handle` first. */
   children: (item: T, handle: ReactNode) => ReactNode
+  messages?: Partial<SortableListMessages>
 }
 
 export function SortableList<T>({
@@ -36,8 +59,10 @@ export function SortableList<T>({
   itemClassName,
   disabled = false,
   children,
+  messages,
   ...aria
 }: SortableListProps<T>) {
+  const m = { ...sortableListMessages, ...messages }
   const [grab, setGrab] = useState<{ id: string; origin: T[] } | null>(null)
   const [message, setMessage] = useState('')
   const help = useId()
@@ -55,8 +80,11 @@ export function SortableList<T>({
       ?.focus({ preventScroll: true })
   })
 
-  const position = (xs: T[], key: string) =>
-    `position ${xs.findIndex((x) => id(x) === key) + 1} of ${xs.length}`
+  const place = (xs: T[], item: T): Place => ({
+    name: label(item),
+    index: xs.findIndex((x) => id(x) === id(item)) + 1,
+    count: xs.length,
+  })
 
   const onHandleKey = (item: T) => (e: KeyboardEvent<HTMLButtonElement>) => {
     const key = id(item)
@@ -65,12 +93,10 @@ export function SortableList<T>({
       e.preventDefault()
       if (grabbed) {
         setGrab(null)
-        setMessage(`${label(item)} dropped at ${position(items, key)}.`)
+        setMessage(m.dropped(place(items, item)))
       } else {
         setGrab({ id: key, origin: items })
-        setMessage(
-          `${label(item)} picked up, ${position(items, key)}. Up and Down move it. Space drops it, Escape cancels.`,
-        )
+        setMessage(m.pickedUp(place(items, item)))
       }
       return
     }
@@ -81,13 +107,13 @@ export function SortableList<T>({
       refocus.current = key
       onChange(grab.origin)
       setGrab(null)
-      setMessage(`Move cancelled. ${label(item)} is back where it was.`)
+      setMessage(m.cancelled(label(item)))
     } else if (e.key === 'ArrowUp' || e.key === 'ArrowDown') {
       e.preventDefault()
       const from = items.findIndex((x) => id(x) === key)
       const to = from + (e.key === 'ArrowUp' ? -1 : 1)
       if (to < 0 || to >= items.length) {
-        setMessage(`${label(item)} is already ${to < 0 ? 'first' : 'last'}.`)
+        setMessage(m.limit(label(item), to < 0 ? 'first' : 'last'))
         return
       }
       const next = [...items]
@@ -95,7 +121,7 @@ export function SortableList<T>({
       if (moved !== undefined) next.splice(to, 0, moved)
       refocus.current = key
       onChange(next)
-      setMessage(`${label(item)} moved to ${position(next, key)}.`)
+      setMessage(m.moved(place(next, item)))
     }
   }
 
@@ -106,21 +132,20 @@ export function SortableList<T>({
       plugins={(defaults) => defaults.filter((p) => p !== Accessibility)}
       onDragStart={(event) => {
         const item = latest.current.items.find((x) => id(x) === event.operation.source?.id)
-        if (item)
-          setMessage(`${label(item)} picked up, ${position(latest.current.items, id(item))}.`)
+        if (item) setMessage(m.dragged(place(latest.current.items, item)))
       }}
       onDragEnd={(event) => {
         const key = event.operation.source?.id
         const item = latest.current.items.find((x) => id(x) === key)
         if (event.canceled) {
-          if (item) setMessage(`Move cancelled. ${label(item)} is back where it was.`)
+          if (item) setMessage(m.cancelled(label(item)))
           return
         }
         const ids = latest.current.items.map(id)
         const order = reorder(ids, event)
         const next = order.flatMap((k) => latest.current.items.filter((x) => id(x) === k))
         latest.current.onChange(next)
-        if (item) setMessage(`${label(item)} dropped at ${position(next, id(item))}.`)
+        if (item) setMessage(m.dropped(place(next, item)))
       }}
     >
       <ol ref={list} className={cn('grid grid-cols-[minmax(0,1fr)]', className)} {...aria}>
@@ -131,7 +156,7 @@ export function SortableList<T>({
             index={index}
             disabled={disabled}
             grabbed={grab?.id === id(item)}
-            label={label(item)}
+            moveLabel={m.move(label(item))}
             help={help}
             className={itemClassName}
             onHandleKey={onHandleKey(item)}
@@ -139,7 +164,7 @@ export function SortableList<T>({
               // a move re-parents the node and blurs it; that isn't the user leaving
               if (grab?.id === id(item) && !refocus.current) {
                 setGrab(null)
-                setMessage(`${label(item)} dropped at ${position(items, id(item))}.`)
+                setMessage(m.dropped(place(items, item)))
               }
             }}
           >
@@ -148,7 +173,7 @@ export function SortableList<T>({
         ))}
       </ol>
       <p id={help} hidden>
-        Press Space to pick up. Then Up and Down move it, Space drops it, and Escape cancels.
+        {m.help}
       </p>
       <p aria-live="assertive" className="sr-only">
         {message}
@@ -162,7 +187,7 @@ function Row({
   index,
   disabled,
   grabbed,
-  label,
+  moveLabel,
   help,
   className,
   onHandleKey,
@@ -173,7 +198,7 @@ function Row({
   index: number
   disabled: boolean
   grabbed: boolean
-  label: string
+  moveLabel: string
   help: string
   className?: string
   onHandleKey: (e: KeyboardEvent<HTMLButtonElement>) => void
@@ -195,7 +220,7 @@ function Row({
         <button
           ref={handleRef}
           type="button"
-          aria-label={`Move ${label}`}
+          aria-label={moveLabel}
           aria-describedby={help}
           disabled={disabled}
           onKeyDown={onHandleKey}

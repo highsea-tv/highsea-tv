@@ -30,5 +30,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0024](0024-two-step-passkeys-and-tvs.md) | Two-step verification and passkeys never reach the TV | Accepted |
 | [0025](0025-single-sign-on-and-proxy-auth.md) | Single sign-on by OIDC, and forward-auth proxy headers | Accepted |
 | [0026](0026-network-tls.md) | Plain HTTP always, built-in TLS beside it | Accepted |
+| [0027](0027-preferences-in-layers.md) | Preferences in layers, on the server | Accepted |
+| [0028](0028-files-the-owner-uploads.md) | Files the owner uploads: in the database, checked by their bytes | Accepted |
 
 Template: copy [`template.md`](template.md).

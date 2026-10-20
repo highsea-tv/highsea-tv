@@ -3,6 +3,8 @@
 // hero, with the server switcher, the destinations (Home, Search, Library, Downloads) and the
 // profile; then the page. The owner's acknowledge-required announcement opens over everything,
 // and an unreachable server replaces the page with what to do about it.
+
+import { relative } from '@highsea/core/format'
 import {
   Banner,
   Button,
@@ -22,7 +24,6 @@ import {
 } from '@highsea/ui-web'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
-import { relative } from '../admin/format.ts'
 import {
   clientHref,
   useAnnouncements,

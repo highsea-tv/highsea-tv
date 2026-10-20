@@ -1,9 +1,10 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // "in 9m", "4m ago" and "Just now", kept current by a clock that ticks every 30 seconds.
+
+import { duration } from '@highsea/core/format'
 import { useLocale, useT } from '@highsea/i18n/react'
 import { useEffect, useState } from 'react'
-import { duration } from './format.ts'
 import { shell } from './messages.ts'
 
 export function useNow(every = 30_000): number {

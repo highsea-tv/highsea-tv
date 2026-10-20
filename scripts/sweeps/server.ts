@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The server's admin pages (Phase 3): the same checks as the prototype sweeps, on the real thing.
 // Boots a throwaway server on its own folders, sweeps setup, finishes it through the API, seeds
-// people, keys and a waiting TV, then visits every admin page signed out and signed in: axe,
+// people, keys, a custom theme and a waiting TV, then visits every admin page signed out and signed in: axe,
 // overflow and page errors in three themes, at 200% text and with reduced motion, then the
 // keyboard walk. Usage: bun scripts/sweeps/server.ts [pages|keyboard]
 import { type ChildProcess, spawn } from 'node:child_process'
@@ -253,6 +253,12 @@ try {
   const pairing = await api<{ code: string }>('POST', '/auth/pairing', {
     device: { name: 'Living room TV', client: 'tvos', appVersion: '1.0.0' },
   })
+  await api(
+    'PUT',
+    '/appearance/themes/lighthouse',
+    { name: 'Lighthouse', base: 'oled', accent: '#3d8bfd' },
+    token,
+  )
   const path = (link: string) => new URL(link).pathname
 
   // signed out
@@ -280,9 +286,20 @@ try {
   await login.close()
   const ownerContext = () => browser.newContext({ storageState })
   const tab = (name: string) => (p: Page) => p.getByRole('tab', { name }).click()
+  const customize = (p: Page) => p.getByRole('button', { name: 'Customize' }).click()
   await sweep(
     [
       { name: 'dashboard', path: '/' },
+      { name: 'dashboard:customize', path: '/', act: customize },
+      {
+        name: 'dashboard:add',
+        path: '/',
+        act: async (p) => {
+          await customize(p)
+          await p.getByRole('button', { name: 'Remove Network' }).click()
+          await p.getByRole('button', { name: 'Add widget' }).first().click()
+        },
+      },
       {
         name: 'palette',
         path: '/',
@@ -317,6 +334,17 @@ try {
         name: 'users:edit',
         path: '/settings/users',
         act: (p) => p.getByRole('button', { name: 'Edit Theo' }).click(),
+      },
+      { name: 'appearance', path: '/settings/appearance' },
+      {
+        name: 'appearance:theme',
+        path: '/settings/appearance',
+        act: (p) => p.getByRole('button', { name: 'New theme' }).click(),
+      },
+      {
+        name: 'appearance:unsaved',
+        path: '/settings/appearance',
+        act: (p) => p.getByLabel('Name', { exact: true }).fill('Lighthouse'),
       },
       { name: 'not-found', path: '/movies' },
       { name: 'pair', path: '/link' },

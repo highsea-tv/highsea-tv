@@ -5,6 +5,8 @@
 // actions and tabs: Files (each version with its streams), History, Search (interactive: every
 // release with the decision engine's verdict and reasons) and Subtitles (tracks with sync status,
 // confidence and offset; manual search and pick; re-sync).
+
+import { bytes, duration, percent, rate, relative } from '@highsea/core/format'
 import {
   Badge,
   Button,
@@ -52,7 +54,6 @@ import type {
   SubtitleTrack,
   SyncStatus,
 } from '../../mock/types.ts'
-import { bytes, duration, percent, rate, relative } from '../format.ts'
 import { Loadable } from '../loadable.tsx'
 import {
   CastAndCrew,

@@ -24,6 +24,12 @@ import {
 import { type Database, type Db, migrate, openDatabase, schema } from '@highsea/db'
 import { createJobQueue, type JobQueue } from '@highsea/jobs'
 import type { MdnsResponder } from '@highsea/network'
+import {
+  type Branding,
+  createPersonalization,
+  type Personalization,
+  type WidgetSource,
+} from '@highsea/personalization'
 import { eq } from 'drizzle-orm'
 import type { Config } from './config.ts'
 import { createNetworkService, type NetworkService } from './network.ts'
@@ -37,6 +43,9 @@ import {
 import { createCpuMeter, type Disk, disks, type HealthIssue, memory } from './system.ts'
 import { createWorkerPool, type WorkerPool } from './workers.ts'
 
+/** Milestone 1 has the server itself; each later milestone adds its own. */
+const SOURCES: WidgetSource[] = ['system']
+
 export type ServerIdentity = { id: string; name: string; createdAt: number }
 
 export type PublicInfo = {
@@ -48,6 +57,11 @@ export type PublicInfo = {
   publicUrl: string | null
   setupComplete: boolean
   auth: { local: boolean; oidc: { name: string } | null; passkeys: boolean }
+  /**
+   * What this server can do so far. Clients show a widget only when its source is here, so a
+   * server keeps working while later milestones add the rest.
+   */
+  sources: WidgetSource[]
 }
 
 /** The server card and status bar's server. */
@@ -55,7 +69,7 @@ export type ServerView = {
   id: string
   name: string
   version: string
-  branding: { name: string; accent: string | null; customMark: boolean }
+  branding: Branding
   addresses: { local: string[]; public: string | null }
   setupComplete: boolean
   clientsConnected: number
@@ -98,6 +112,7 @@ export type Runtime = {
   workers: WorkerPool
   auth: Auth
   network: NetworkService
+  personalization: Personalization
   identity(): ServerIdentity
   rename(name: string): void
   /** `origin` is the browser's, when known: passkeys depend on it. */
@@ -208,6 +223,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       publicUrl: network.externalUrl(),
       setupComplete: isSetupComplete(db),
       auth: auth.methods(origin),
+      sources: SOURCES,
     }
   }
 
@@ -238,6 +254,14 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     fetch: options.fetch,
   })
 
+  const personalization = createPersonalization({
+    db,
+    clock,
+    events,
+    serverName: () => identity().name,
+    rename,
+  })
+
   const cpu = createCpuMeter()
 
   const runtime: Runtime = {
@@ -255,6 +279,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     workers,
     auth,
     network,
+    personalization,
     identity,
     rename,
     publicInfo,
@@ -274,7 +299,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
         id,
         name,
         version,
-        branding: { name, accent: null, customMark: false },
+        branding: personalization.appearance.branding(),
         addresses: { local: localAddresses(config.port), public: network.externalUrl() },
         setupComplete: isSetupComplete(db),
         clientsConnected: network.clientsConnected(),

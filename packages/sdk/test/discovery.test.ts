@@ -16,6 +16,7 @@ const info = {
   publicUrl: null,
   setupComplete: true,
   auth: { local: true, oidc: null, passkeys: false },
+  sources: ['system'],
 }
 
 const stops: (() => Promise<void>)[] = []

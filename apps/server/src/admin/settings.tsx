@@ -4,7 +4,7 @@
 // four groups, and each area's page with the areas beside it from expanded widths. Users and
 // devices is the area this checkpoint builds; the others say they come later.
 import { useT } from '@highsea/i18n/react'
-import { EmptyState, Icon } from '@highsea/ui-web'
+import { Button, cn, EmptyState, Icon } from '@highsea/ui-web'
 import type { ReactNode } from 'react'
 import { pageAt } from './nav.ts'
 import { type Area, type AreaId, areaGroups } from './settings-areas.ts'
@@ -130,5 +130,61 @@ export function LaterArea({ id }: { id: AreaId }) {
         {t('later.body')}
       </EmptyState>
     </AreaPage>
+  )
+}
+
+/** A titled block of settings. */
+export function Group({
+  title,
+  description,
+  children,
+  className,
+}: {
+  title: string
+  description?: ReactNode
+  children: ReactNode
+  className?: string
+}) {
+  return (
+    <section
+      aria-label={title}
+      className={cn('grid gap-4 rounded-lg border border-line bg-s1 p-4 medium:p-5', className)}
+    >
+      <div className="grid gap-0.5">
+        <h2 className="font-semibold text-text text-title">{title}</h2>
+        {description && <p className="text-caption text-text-3">{description}</p>}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+/** The save bar: sticks to the bottom while there are unsaved changes. */
+export function SaveBar({
+  dirty,
+  saving,
+  onSave,
+  onDiscard,
+}: {
+  dirty: boolean
+  saving: boolean
+  onSave: () => void
+  onDiscard: () => void
+}) {
+  const t = useT(messages)
+  if (!dirty) return null
+  return (
+    <section
+      aria-label={t('unsaved.label')}
+      className="glass-bar sticky bottom-3 z-10 flex flex-wrap items-center gap-2 rounded-lg border border-line-strong px-4 py-3 shadow-3"
+    >
+      <span className="me-auto text-text-2 text-ui">{t('unsaved.body')}</span>
+      <Button variant="ghost" onClick={onDiscard} disabled={saving}>
+        {t('discard')}
+      </Button>
+      <Button variant="primary" onClick={onSave} loading={saving}>
+        {t('save')}
+      </Button>
+    </section>
   )
 }

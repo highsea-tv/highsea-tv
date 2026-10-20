@@ -6,6 +6,7 @@ const messages = defineMessages({
   title: 'highsea',
   greeting: 'Welcome back, {name}.',
   jobs: '{count, plural, =0 {Nothing running} one {# job running} other {# jobs running}}',
+  edge: '{edge, select, first {{name} is already first.} other {{name} is already last.}}',
 })
 
 describe('i18n', () => {
@@ -16,6 +17,12 @@ describe('i18n', () => {
     expect(t('jobs', { count: 0 })).toBe('Nothing running')
     expect(t('jobs', { count: 1 })).toBe('1 job running')
     expect(t('jobs', { count: 1200 })).toBe('1,200 jobs running')
+  })
+
+  test('a branch that starts with an argument names that argument once', () => {
+    const t = createT(messages)
+    // typed as { edge, name }: `{{name}` is not an argument called "{name"
+    expect(t('edge', { edge: 'first', name: 'Network' })).toBe('Network is already first.')
   })
 
   test('a translation wins where it has the id; English fills the rest', () => {

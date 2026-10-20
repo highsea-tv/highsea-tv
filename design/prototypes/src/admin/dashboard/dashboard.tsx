@@ -3,6 +3,13 @@
 // layout, or their role's default until they save one. Customize mode edits a draft: move,
 // resize, add and remove widgets, then Done saves it. Owners can also make the draft the default
 // for admins or members.
+
+import {
+  allowed,
+  roleDefault,
+  widgetDefinition,
+  widgetDefinitions,
+} from '@highsea/personalization/widgets'
 import {
   Button,
   EmptyState,
@@ -16,12 +23,11 @@ import {
   Sheet,
   SheetContent,
   toast,
+  WidgetEditor,
 } from '@highsea/ui-web'
 import { useEffect, useState } from 'react'
-import { WidgetEditor } from '../../kit/widget-editor.tsx'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { UserRole, WidgetKind, WidgetPlacement } from '../../mock/types.ts'
-import { allowed, roleDefault, widgetDefinition, widgetDefinitions } from '../../mock/widgets.ts'
 import { AdminPage, useShell } from '../shell.tsx'
 import { widgetRenderers } from './widgets.tsx'
 

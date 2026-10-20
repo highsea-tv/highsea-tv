@@ -2,6 +2,8 @@
 // A17 Manual import (reference, docs/product/manual-import.md): files highsea didn't download, or
 // couldn't import on its own. Pick a folder, check what each file matched, see the name it will
 // get, then hardlink or move them in.
+
+import { bytes } from '@highsea/core/format'
 import {
   Badge,
   Button,
@@ -24,7 +26,6 @@ import {
 import { useEffect, useState } from 'react'
 import { useAction, useClient, useQuery } from '../../mock/hooks.tsx'
 import type { ImportCandidate } from '../../mock/types.ts'
-import { bytes } from '../format.ts'
 import { AdminPage, adminHref } from '../shell.tsx'
 
 type Row = ImportCandidate & { selected: boolean; done: boolean }

@@ -217,3 +217,17 @@
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: var(--focus-ring-offset);
 }
+
+/*
+ * The widget editor (components/widget-editor.tsx). While a widget is dragged, dnd-kit leaves a
+ * copy in the grid to hold its place; it shows as an empty dashed slot where the widget will land.
+ */
+:root [data-widget-id][data-dnd-placeholder][data-dnd-placeholder] {
+  visibility: visible;
+  border: 1px dashed var(--color-accent);
+  background: var(--color-accent-soft);
+  box-shadow: none;
+}
+:root [data-widget-id][data-dnd-placeholder] > * {
+  visibility: hidden;
+}

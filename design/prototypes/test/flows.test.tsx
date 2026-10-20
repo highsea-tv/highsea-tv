@@ -78,8 +78,8 @@ describe('A3 dashboard', () => {
     const saved = await client(mock).dashboard.layout()
     expect(saved.inherited).toBe(false)
     expect(saved.widgets.slice(0, 2)).toEqual([
-      { id: 'w-storage', kind: 'storage', span: 1, rows: 2 },
-      { id: 'w-network', kind: 'network', span: 1, rows: 3 },
+      { id: 'w-storage', kind: 'storage', span: 1, rows: 2, settings: {} },
+      { id: 'w-network', kind: 'network', span: 1, rows: 3, settings: { minutes: 10 } },
     ])
     expect(saved.widgets.map((w) => w.kind)).not.toContain('subtitles')
     expect(page().queryByRole('button', { name: 'Move Network' })).toBeNull()

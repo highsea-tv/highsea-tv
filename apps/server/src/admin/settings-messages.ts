@@ -41,4 +41,8 @@ export const settings = defineMessages({
   'area.connections.description': 'Notifications to Discord, ntfy, email and more.',
   'later.title': 'This area comes later',
   'later.body': 'It’s built in a later checkpoint of the server plan.',
+  'unsaved.label': 'Unsaved changes',
+  'unsaved.body': 'You have unsaved changes.',
+  discard: 'Discard',
+  save: 'Save',
 })

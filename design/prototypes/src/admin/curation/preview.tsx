@@ -2,9 +2,8 @@
 // The live client preview (A11): the clients' real home screens (C2) in a frame, fed the draft over
 // postMessage. The frame runs its own copy of the server, so nothing reaches the real one until the
 // owner saves. It's inert: a picture of the client, not a second app to tab into.
-import { Icon, SegmentedControl, Select } from '@highsea/ui-web'
+import { Icon, SegmentedControl, Select, useWidth } from '@highsea/ui-web'
 import { useEffect, useRef, useState } from 'react'
-import { useWidth } from '../../kit/use-width.ts'
 import type { Audience, ClientType, CurationPreview, User } from '../../mock/types.ts'
 import { isMessage, post } from '../../proto/bridge.ts'
 import { useProto } from '../../screen/screen.tsx'

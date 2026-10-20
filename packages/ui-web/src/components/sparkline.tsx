@@ -2,7 +2,7 @@
 // A small line graph for live rates (the Network widget). Decorative: the figures beside it carry
 // the values, so the graph is hidden from assistive technology. New samples redraw in place, with
 // no tween (admin.md#status-and-live-data).
-import { cn } from '@highsea/ui-web'
+import { cn } from '../lib/cn.ts'
 
 export type SparkSeries = { values: number[]; className: string; fill?: boolean }
 

@@ -46,6 +46,7 @@ describe('contract', () => {
         publicUrl: null,
         setupComplete: true,
         auth: { local: true, oidc: null, passkeys: false },
+        sources: ['system'],
       }).success,
     ).toBe(true)
     expect(ErrorBody.safeParse({ error: { code: 'nope', message: 'x' } }).success).toBe(false)

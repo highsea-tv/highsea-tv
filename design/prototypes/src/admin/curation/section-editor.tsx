@@ -9,11 +9,11 @@ import {
   Input,
   SegmentedControl,
   Select,
+  SortableList,
   toast,
 } from '@highsea/ui-web'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
-import { SortableList } from '../../kit/sortable-list.tsx'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { ClientItem, CurationPreview, FeaturedSection, MediaItem } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'

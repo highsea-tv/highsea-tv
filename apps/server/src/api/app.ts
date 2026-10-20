@@ -9,6 +9,7 @@ import { Scalar } from '@scalar/hono-api-reference'
 import { registerAccounts } from './accounts.ts'
 import { events } from './events.ts'
 import { type Env, guard } from './guard.ts'
+import { registerPersonalization } from './personalization.ts'
 import { registerSystem } from './system.ts'
 
 export type { Env }
@@ -57,6 +58,7 @@ export function createApi(runtime: Runtime) {
 
   registerSystem(app)
   registerAccounts(app)
+  registerPersonalization(app)
 
   app.doc31(`${API_PREFIX}/openapi.json`, {
     openapi: '3.1.0',
