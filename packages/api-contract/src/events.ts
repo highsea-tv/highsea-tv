@@ -1,0 +1,19 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// Server events over SSE at /api/v1/events. Each says what changed (a topic and, when narrower,
+// ids); clients refetch what they show. A reconnecting client sends Last-Event-ID to catch up,
+// and gets a `reset` event when it fell too far behind to.
+import { z } from '@hono/zod-openapi'
+
+export const ServerEvent = z
+  .object({
+    id: z.number().int(),
+    topic: z.string().openapi({ example: 'jobs.updated' }),
+    ids: z.array(z.string()).optional(),
+    at: z.number().int().openapi({ description: 'Epoch milliseconds' }),
+  })
+  .openapi('ServerEvent')
+
+export type ServerEvent = z.infer<typeof ServerEvent>
+
+/** Sent instead of a replay when the client's Last-Event-ID is too old: refetch everything. */
+export const RESET_TOPIC = 'reset'

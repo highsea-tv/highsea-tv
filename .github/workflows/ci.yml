@@ -1,0 +1,67 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Every push and pull request: lint, types, tests (Bun), the platform under Node, the license
+# audit, the admin's build, and the Docker image booting healthy.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24.21.0
+      - run: bun install --frozen-lockfile
+      - name: Lint
+        run: bun run lint
+      - name: Types
+        run: bun run typecheck
+      - name: Tests (Bun)
+        run: bun test
+      - name: The platform under Node (better-sqlite3, workers, API)
+        run: node apps/server/scripts/smoke.ts
+      - name: License audit
+        run: bun run licenses
+      - name: Build the admin
+        run: bun run --filter @highsea/server build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+  docker:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          load: true
+          tags: highsea:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+      - name: It boots and reports healthy
+        run: |
+          docker run -d --name highsea -p 3000:3000 highsea:ci
+          for i in $(seq 1 30); do
+            status=$(docker inspect --format '{{.State.Health.Status}}' highsea)
+            [ "$status" = healthy ] && break
+            sleep 2
+          done
+          docker logs highsea
+          curl -fsS http://127.0.0.1:3000/api/health
+          curl -fsS -o /dev/null http://127.0.0.1:3000/
+          docker stop highsea
+          test "$(docker inspect --format '{{.State.ExitCode}}' highsea)" = 0

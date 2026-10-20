@@ -21,5 +21,10 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0015](0015-tv-hero-binds-featured-row.md) | The TV hero binds only the featured row | Accepted |
 | [0016](0016-gentler-poster-lift.md) | A gentler poster lift | Accepted |
 | [0017](0017-web-home-full-bleed-hero.md) | The web home uses a full-bleed hero | Accepted |
+| [0018](0018-admin-data-through-the-api.md) | The admin UI reads and writes through the public API | Accepted |
+| [0019](0019-database-driver-seam.md) | One schema, two SQLite drivers | Accepted |
+| [0020](0020-discovery-port.md) | LAN discovery on UDP 7368, plus mDNS | Accepted |
+| [0021](0021-i18n-message-catalogs.md) | Strings live in typed message catalogs | Accepted |
+| [0022](0022-job-queue.md) | A SQLite job queue, at least once | Accepted |
 
 Template: copy [`template.md`](template.md).

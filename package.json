@@ -15,7 +15,9 @@
     "test": "bun test",
     "explorations": "bunx serve design/explorations -l 4400",
     "storybook": "bun run --filter @highsea/storybook storybook",
-    "prototypes": "bun run --filter @highsea/prototypes dev"
+    "prototypes": "bun run --filter @highsea/prototypes dev",
+    "licenses": "bun scripts/license-audit.ts",
+    "server": "bun run --filter @highsea/server dev"
   },
   "engines": {
     "bun": ">=1.4",

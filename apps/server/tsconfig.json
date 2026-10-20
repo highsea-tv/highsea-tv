@@ -1,0 +1,17 @@
+{
+  "extends": "@highsea/config/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "types": ["bun", "node"],
+    "paths": {}
+  },
+  "include": [
+    "next-env.d.ts",
+    "server.ts",
+    "src",
+    "app",
+    "test",
+    "scripts",
+    "next.config.ts",
+    ".next/types/**/*.ts"
+  ]
+}

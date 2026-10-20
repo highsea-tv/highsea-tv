@@ -1,0 +1,6 @@
+[
+  {
+    "package": "geist",
+    "reason": "The brand's typeface (Phase 1). SIL Open Font License 1.1: fonts may be bundled with any software, AGPL included; the font stays under the OFL. Its package.json names the license in prose, not SPDX."
+  }
+]

@@ -13,7 +13,7 @@ highsea.tv is a self-hosted, all-in-one media platform. One server replaces the 
 
 Dedicated clients for web, desktop, mobile and TV connect to your server at home or remotely.
 
-> Status: **pre-alpha. Phase 2 (design prototypes) is signed off; Phase 3 (the server) is next.** The design system is v1.0, and every admin and client flow is a clickable prototype; nothing here is usable as a product yet. See [docs/roadmap.md](docs/roadmap.md).
+> Status: **pre-alpha. Phase 2 (design prototypes) is signed off; Phase 3 (the server) is under way.** The design system is v1.0, and every admin and client flow is a clickable prototype; nothing here is usable as a product yet. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Repository layout
 
@@ -36,6 +36,7 @@ bun run lint
 bun run explorations   # serve the brand direction boards on http://localhost:4400
 bun run storybook      # the design system's components
 bun run prototypes     # the Phase 2 prototypes on http://localhost:4500
+bun run server         # the server, in development, on http://localhost:3000
 bun run typecheck && bun test
 ```
 

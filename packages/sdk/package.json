@@ -1,0 +1,29 @@
+{
+  "name": "@highsea/sdk",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./react": "./src/react.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea/api-contract": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "peerDependencies": {
+    "react": "^19.3.0"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "21.0.3",
+    "@highsea/config": "workspace:*",
+    "@testing-library/react": "16.3.3",
+    "@types/react": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  }
+}

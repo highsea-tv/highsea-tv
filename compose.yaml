@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# highsea on one machine. Host networking lets clients find the server on the LAN (ADR 0020);
+# without it, publish the ports below instead and LAN discovery is limited to the UDP broadcast.
+services:
+  highsea:
+    build: .
+    image: highsea:dev
+    container_name: highsea
+    network_mode: host
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Etc/UTC
+      # HIGHSEA_PUBLIC_URL: https://highsea.example.net
+    volumes:
+      - ./.dev/docker/config:/config
+      # one root for downloads and the library, so imports can hardlink
+      - ./.dev/docker/data:/data
+    restart: unless-stopped
+    # without host networking:
+    # ports:
+    #   - "3000:3000"
+    #   - "6881:6881/tcp"
+    #   - "6881:6881/udp"
+    #   - "7368:7368/udp"

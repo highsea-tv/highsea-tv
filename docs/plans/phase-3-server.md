@@ -1,6 +1,6 @@
 # Phase 3 plan: server milestone 1
 
-- **Status:** Draft, for the owner's review. Phase 2 (the design prototypes) was signed off on 2026-10-19.
+- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoint 1 (the platform) is built and awaiting review. Phase 2 (the design prototypes) was signed off on 2026-10-19.
 - **Gate:** the owner signs off on milestone 1. Phase 4 (the client apps) then builds on its API and SDK.
 - **Source:** the Phase 3 section of the [roadmap](../roadmap.md#phase-3-server-milestone-1-implementation) and the gap analysis items tagged **[M1]**. This plan turns them into steps.
 - **Build reference:** the signed-off prototypes in [`design/prototypes`](../../design/prototypes/README.md) and their specs in [`docs/product/`](../product/).
@@ -276,7 +276,7 @@ In development, both are folders under `.dev/` (gitignored).
   - Admin screens are client components that call `@highsea/sdk/react`, as the prototype's screens call the mock.
   - This keeps one path for every capability (exit criterion 7), and keeps the screens close to the prototype's code.
   - Server components handle the shell, the auth redirect and the first paint.
-  - This is a judgement call against the roadmap's "Server Actions as thin adapters"; record it in an ADR.
+  - The owner chose this over Server Actions ([ADR 0018](../adr/0018-admin-data-through-the-api.md)).
 - **Sessions:** a cookie session. Middleware sends signed-out visitors to `/login`, and a fresh install to `/setup`.
 
 ### Porting the prototype
@@ -477,7 +477,7 @@ The roadmap's [build order](../roadmap.md#phase-3-build-order), grouped into che
 
 Write each when its checkpoint reaches it, and list it in the checkpoint report:
 
-1. **Admin data access:** the admin UI calls the public API through the SDK, not Server Actions (checkpoint 1).
+1. **Admin data access:** the admin UI calls the public API through the SDK, not Server Actions (checkpoint 1; [0018](../adr/0018-admin-data-through-the-api.md)).
 2. **The database driver seam:** `bun:sqlite` in tests, `better-sqlite3` in production (checkpoint 1).
 3. **The discovery port,** and how Docker exposes it (checkpoint 1, as the roadmap asks).
 4. **i18n:** the message format and library, and how strings are extracted (checkpoint 1).
@@ -486,22 +486,15 @@ Write each when its checkpoint reaches it, and list it in the checkpoint report:
 7. **Test media:** the clip, its license, and how CI fetches it (checkpoint 6).
 8. **Release and versioning:** version scheme, channels, image tags (checkpoint 9).
 
-## Decisions for the owner
+## Decisions
 
-These shape the plan. Each has a recommendation, but the call is yours:
+The owner decided these on 2026-10-19:
 
-1. **Milestone 1's size.** Every [M1] item from the gap analysis makes this a long milestone. If you'd like it shorter, these could move to a milestone 1.1 without changing the architecture:
-   - passkeys and OIDC (keep TOTP);
-   - the long tail of notification channels (keep Discord, ntfy, email and webhooks);
-   - UPnP, NAT-PMP, uTP and IPv6 in the torrent engine;
-   - the Radarr and qBittorrent importers;
-   - the unRAID, TrueNAS and Synology templates.
-
-   **Recommendation:** keep them all in M1, as the roadmap says, unless a release date matters more than completeness.
-2. **The client-facing API in M1.** This plan builds it now, so Phase 4 starts against a real server. The alternative is to build only what the admin needs and add the client API with Phase 4. **Recommendation:** now; most of it is already shaped by the prototype, and curation's preview needs the home API anyway.
-3. **Admin data through the API, not Server Actions** ([ADRs to write](#adrs-to-write) 1). **Recommendation:** through the API.
-4. **The TMDB key** is entered by the owner in setup until the cloud metadata proxy exists. **Recommendation:** yes, with a link to TMDB's key page and a clear note on why.
-5. **Publishing:** the catalog needs a static host for its `stable` and `beta` channels, and the images need GHCR. **Recommendation:** GitHub Pages for the catalog and GHCR for images, both on this repository. Neither is published until you say so.
+1. **Milestone 1's size:** keep every [M1] item. Nothing moves to a 1.1.
+2. **The client-facing API is built in M1,** so Phase 4 starts against a real server.
+3. **Admin data goes through the public API,** through the SDK, not Server Actions ([ADR 0018](../adr/0018-admin-data-through-the-api.md)).
+4. **The TMDB key** is entered by the owner in setup until the cloud metadata proxy exists, with a link to TMDB's key page and a note on why.
+5. **Publishing:** GitHub Pages for the catalog's `stable` and `beta` channels and GHCR for the images, both on this repository. Nothing is published until the owner says so.
 
 ## Out of scope for Phase 3
 

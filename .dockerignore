@@ -1,0 +1,12 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+**/node_modules
+**/.next
+**/dist
+**/storybook-static
+.dev
+.git
+.claude
+graft
+design/explorations
+**/*.log
+.playwright-mcp

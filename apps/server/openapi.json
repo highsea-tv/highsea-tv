@@ -1,0 +1,221 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "highsea",
+    "version": "0.1.0",
+    "description": "The highsea server API. Every admin capability is here, with admin scope.",
+    "license": {
+      "name": "AGPL-3.0-only"
+    }
+  },
+  "components": {
+    "schemas": {
+      "Health": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "degraded"
+            ]
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "ok": {
+                  "type": "boolean"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "ok"
+              ]
+            }
+          }
+        },
+        "required": [
+          "status",
+          "checks"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string",
+                "enum": [
+                  "invalid",
+                  "unauthorized",
+                  "forbidden",
+                  "not-found",
+                  "conflict",
+                  "rate-limited",
+                  "internal",
+                  "unavailable"
+                ]
+              },
+              "message": {
+                "type": "string"
+              },
+              "details": {}
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "PublicInfo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "srv_5k2m9x0q4r7t1v3w"
+          },
+          "name": {
+            "type": "string",
+            "example": "Harbor"
+          },
+          "version": {
+            "type": "string",
+            "example": "0.1.0"
+          },
+          "localAddresses": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "http://192.168.1.20:3000"
+            ]
+          },
+          "publicUrl": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "https://harbor.example.net"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "version",
+          "localAddresses",
+          "publicUrl"
+        ]
+      }
+    },
+    "parameters": {}
+  },
+  "paths": {
+    "/api/health": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Health, for Docker and load balancers",
+        "responses": {
+          "200": {
+            "description": "The server is up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Health"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/info/public": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Who this server is, without signing in",
+        "responses": {
+          "200": {
+            "description": "The server’s public info",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Server events (SSE)",
+        "description": "A `text/event-stream` of ServerEvent objects. Send `Last-Event-ID` to catch up after a reconnect.",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "description": "Comma-separated topics; all when absent"
+            },
+            "required": false,
+            "description": "Comma-separated topics; all when absent",
+            "name": "topics",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": false,
+            "name": "last-event-id",
+            "in": "header"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The event stream",
+            "content": {
+              "text/event-stream": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "webhooks": {}
+}

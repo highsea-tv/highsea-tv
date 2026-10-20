@@ -1,0 +1,27 @@
+{
+  "name": "@highsea/db",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts"
+  },
+  "scripts": {
+    "generate": "drizzle-kit generate && bun scripts/embed.ts",
+    "check": "bun scripts/embed.ts --check",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea/core": "workspace:*",
+    "better-sqlite3": "13.0.3",
+    "drizzle-orm": "0.45.3"
+  },
+  "devDependencies": {
+    "@highsea/config": "workspace:*",
+    "@types/better-sqlite3": "9.6.0",
+    "@types/node": "25.9.9",
+    "drizzle-kit": "0.31.11"
+  }
+}
