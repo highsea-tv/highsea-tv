@@ -1,6 +1,6 @@
 # Phase 3, checkpoint 4: movies, without downloading
 
-- **Status:** Scoped on 2026-10-20, before building. The owner reviewed the scope on 2026-10-20 and decided that titles, people and collections are addressed by their TMDB ids ([Addresses are TMDB ids](#addresses-are-tmdb-ids)). The owner approved the recommendation on every open question the same day ([Owner's decisions](#owners-decisions)). The owner gave the go-ahead the same day; the checkpoint is built and awaits review.
+- **Status:** Scoped on 2026-10-20, before building. The owner reviewed the scope on 2026-10-20 and decided that titles, people and collections are addressed by their TMDB ids ([Addresses are TMDB ids](#addresses-are-tmdb-ids)). The owner approved the recommendation on every open question the same day ([Owner's decisions](#owners-decisions)). The owner gave the go-ahead the same day, and signed the checkpoint off on 2026-10-20, recording decision 6 in the [Phase 3 plan](phase-3-server.md#decisions) with the review.
 - **Gate:** stop when the checkpoint is built. Report what was built, the judgement calls, the API added, screenshots and the check results, then ask for review. Checkpoint 5 (indexers) starts only after sign-off.
 - **Parent plan:** [phase-3-server.md](phase-3-server.md). Its standing rules, architecture and decisions all apply. This document settles what that plan's checkpoint 4 item and the specs leave open.
 
