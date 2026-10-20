@@ -1,6 +1,6 @@
 # Phase 3 plan: server milestone 1
 
-- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoint 1 (the platform) is built and awaiting review. Phase 2 (the design prototypes) was signed off on 2026-10-19.
+- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoints 1 and 2 are signed off, checkpoint 2 on 2026-10-20. Checkpoint 3 is scoped below, in [Checkpoint 3 in detail](#checkpoint-3-in-detail), with the owner's decisions of 2026-10-20; building it hasn't started. Phase 2 (the design prototypes) was signed off on 2026-10-19.
 - **Gate:** the owner signs off on milestone 1. Phase 4 (the client apps) then builds on its API and SDK.
 - **Source:** the Phase 3 section of the [roadmap](../roadmap.md#phase-3-server-milestone-1-implementation) and the gap analysis items tagged **[M1]**. This plan turns them into steps.
 - **Build reference:** the signed-off prototypes in [`design/prototypes`](../../design/prototypes/README.md) and their specs in [`docs/product/`](../product/).
@@ -473,6 +473,86 @@ The roadmap's [build order](../roadmap.md#phase-3-build-order), grouped into che
    - **Docs:** install guides (Docker, unRAID, Synology), the migration guide from Radarr and qBittorrent, a recommended setup.
    - **Full sweeps of every admin screen** against the prototype.
    - **Wrap-up:** update the roadmap and READMEs, then ask for the **Phase 3 sign-off**.
+
+## Checkpoint 3 in detail
+
+Scoped on 2026-10-20, before building. The checkpoint list above has the outline; this section settles what the specs left open. Items marked **owner's decision** were decided by the owner on 2026-10-20; the rest are judgement calls the checkpoint report will list again.
+
+### Preferences: layered on the server (owner's decision)
+
+The sources disagree.
+- The roadmap (Personalization) and [sound.md](../design-language/sound.md), which is locked, say preferences are stored on the server in layers (user, then client type, then device) and sync to every client.
+- [client-settings.md](../product/client-settings.md) says a device's theme and sound are stored on the device. That's how the prototype does it, with `localStorage`.
+
+**Decided:** build the layered store, and have the client settings write the device layer.
+- **What the person sees:** what the spec promises. "Only this device changes" stays true, because the device layer only applies to that device.
+- **What the store adds:** the server holds every layer. A client gets its effective preferences in one call, and an owner can see why a device behaves as it does.
+- **Resolution, most specific first:** device, then client type (all of a person's TVs), then user (all their devices), then the server's defaults from Appearance.
+  - The user and client-type layers have API routes from the start but no UI yet. They're what client-settings.md's open question "use this theme on all my devices" would use.
+- **Keys:** a typed list (theme, sound on, volume, and later more), each a zod schema in `@highsea/personalization`. An unknown key is refused, never stored.
+- **Lifetime:** device-layer rows are deleted with their device row (ADR 0023). A TV that signs out starts again from the person's layers.
+- **The admin's own sound** stays a per-browser choice in `localStorage`, as appearance.md decides. A new admin session is a new device row each time, so the device layer would forget it.
+- **Clients keep a copy** to start instantly and offline, and refresh it on `preferences.updated`.
+
+### Widgets: the whole registry now, data as it arrives
+
+- **The registry moves to `@highsea/personalization`** with all ten widgets, from `design/prototypes/src/mock/widgets.ts`.
+  - **Each entry has:** id, title, widths and heights, the default size, the roles that may add it, its data source, and a zod settings schema with defaults.
+  - **The prototype then imports the registry from the package,** as "Porting the prototype" above says.
+- **The prototype wins over dashboard.md** where they differ, because it's the signed-off reference. Widgets resize in height (84px rows) as well as width, and the allowed sizes are the prototype's. dashboard.md is updated to match in this checkpoint.
+- **Widgets whose data doesn't exist yet show their empty state from dashboard.md,** and those states are true on a server that has none of these things yet. They don't call routes that don't exist: the registry names each widget's source, and the server's public info lists the sources it has.
+  - **Has data now:** System health and Storage (free and total; the "what uses it" bar arrives with the library).
+  - **From checkpoint 4:** Upcoming, Calendar and Recently added.
+  - **From checkpoint 6:** Network and Queue (`activity`).
+  - **From checkpoint 7:** Subtitles. **From checkpoint 8:** Announcement.
+  - Network has no empty state in the spec yet. It gets "No downloads yet" with the speeds at zero.
+  - **Why the whole registry now:** role defaults and saved layouts stay valid as packages land, and setup leads to the full dashboard (exit criterion 1). Hiding widgets until their data exists would leave most of the default layout empty.
+- **Layouts:**
+  - **Kept:** order is the layout; reset forgets rather than copies; staff widgets are filtered on the server (dashboard.md › Decisions).
+  - **Unknown kinds:** a saved placement whose kind the server doesn't know (a widget removed in a later version) is kept but not returned, so a downgrade doesn't lose it.
+- **Per-widget settings (owner's decision):** dashboard.md leaves open where they'd be edited, and the prototype has no design for it. **Decided:** store each widget's settings schema and defaults now, and add no editing UI in this checkpoint. A widget's defaults are what it shows (Upcoming: 14 days).
+- **One of each widget,** as the prototype allows. Placements keep their own `id`, so allowing two later needs no change to the data.
+
+### Themes and branding
+
+- **Themes:** custom themes are `ThemeInput`s, built with `createTheme` and checked with `auditTheme` from `@highsea/tokens`, on the server as well as in the editor. A failing theme can't be saved (appearance.md).
+  - Deleting the default theme falls back to Abyss Neutral.
+  - The brand accent goes through the same generator.
+- **The mark:** an SVG or PNG, square, at least 256 px, at most 1 MB.
+  - **Storage:** it's kept in the database with its type. Backups and restore then cover it with no extra step. SQLite measures blobs up to about 100 KB as faster inside the database and larger ones as faster in files (sqlite.org, "Internal Versus External BLOB Storage"). A mark is usually small, and it's read rarely and cached with an `ETag`, so its speed doesn't matter.
+  - **Checks:** PNG by its signature and header, square and at least 256 px. SVG by its root element, with a square `viewBox`. The type is never taken from the client's word alone (OWASP File Upload Cheat Sheet).
+  - **Serving:**
+    - it's served from `/api/v1/appearance/mark` with `X-Content-Type-Options: nosniff`;
+    - an SVG also gets `Content-Security-Policy: sandbox; default-src 'none'; style-src 'unsafe-inline'`;
+    - why: shown in an `<img>`, an SVG can't run scripts, but someone opening its URL directly could; the sandbox stops that (MDN, CSP `sandbox`).
+  - **For native clients,** which may not draw SVG, a PNG rendering is a Phase 4 concern. appearance.md's open question about a small-size TV mark stays open.
+
+### Sound packs
+
+- **A pack is data, not audio** (sound.md › Recipe format): a JSON recipe that the web synthesizes and native clients render.
+- **Uploading** is a JSON file checked by `checkSoundPack` from `@highsea/tokens`, the same loudness and length rules the catalog's CI applies (sound.md › Sound packs). A failing pack is refused with the report's issues.
+- **Built in:** "Felt and wood" (the default). It can't be deleted.
+- **Owner's choices:** the server's default pack, plus the per-app-kind sound defaults (TVs on, phones and web off).
+- **Packs from the catalog,** and whether they're signed, come with the catalog in checkpoint 5 or later. appearance.md's open question stays open until then.
+
+### Home layout
+
+- `GET` and `PUT /api/v1/me/home` store a person's row order and hidden rows (client-settings.md).
+- The hero is never part of it.
+- **The rows** come from the library (checkpoint 4) and curation (checkpoint 8). Until then the API returns the layout with the rows known so far.
+- **Ids not offered yet** are kept, so a row that appears later lands where the person put it.
+
+### Moves from the prototype
+
+As "Porting the prototype" above lists them; the prototype imports each one afterwards:
+- `kit/widget-editor.tsx`, `kit/sortable-list.tsx` and `kit/sparkline.tsx` move to `ui-web`, each with a story, tests and a README line;
+- `admin/format.ts` moves to `@highsea/core`;
+- the widget registry moves to `@highsea/personalization`.
+
+### ADRs
+
+- **0027, preferences in layers:** the store, resolution, keys and lifetime above.
+- **0028, files the owner uploads:** where marks and sound packs live, how they're checked, and how they're served.
 
 ## ADRs to write
 
