@@ -149,7 +149,7 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `dashboard` gr
 ## Decisions
 
 - **The queue is a widget** (Queue, 4 wide by default), not a fixed card below the grid as [admin.md](../design-language/platforms/admin.md#main-area) describes. That lets members and owners move or remove it like anything else. *Locked layout: needs the owner's approval.*
-- **Widgets can be up to 4 wide.** admin.md says widgets span 1 or 2 columns. The queue, calendar, upcoming and recently added need the width. Network stays at 1 or 2, as the signed-off prototype has it. *Locked layout: needs the owner's approval.*
+- **Widgets can be up to 4 wide.** admin.md says widgets span 1 or 2 columns. The queue, calendar, upcoming and recently added need the width. Network stays at 1 or 2, as the signed-off prototype has it. *Approved by the owner on 2026-10-20.*
 - **Order is the layout.** Widgets flow through the grid; resize changes the span only, snapped to allowed sizes. No free x/y placement and no dense packing, so the visual, DOM and keyboard orders always agree, and the same layout works at 4, 2 and 1 columns.
 - **Widgets resize in height too,** in 84px rows, as the signed-off prototype does. A widget's content is cut at a whole row with a link to the rest, so the grid stays even.
 - **Draft until Done.** Every change is local until Done, so Cancel is a full undo and nothing half-arranged reaches other devices.

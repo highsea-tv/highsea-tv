@@ -7,8 +7,8 @@ highsea is a self-hosted replacement for the *ARR suite (Radarr, Sonarr, Prowlar
 - **Phase 1** (brand and design system v1.0): signed off 2026-10-16.
 - **Phase 2** (clickable prototypes of every screen, in `design/prototypes`): signed off 2026-10-19. The prototypes and their specs in `docs/product/` are the **build reference**.
 - **Phase 3** (server milestone 1): the plan is [docs/plans/phase-3-server.md](docs/plans/phase-3-server.md), approved with the owner's decisions recorded in it.
-  - Checkpoint 1 (the platform) and checkpoint 2 (accounts, network and the admin shell) are signed off, checkpoint 2 on 2026-10-20.
-  - **Checkpoint 3 (personalization and the dashboard) is built and waiting for the owner's review.** Its scope and the owner's decisions are in the plan's "Checkpoint 3 in detail". Checkpoint 4 waits for sign-off.
+  - Checkpoint 1 (the platform), checkpoint 2 (accounts, network and the admin shell) and checkpoint 3 (personalization and the dashboard) are signed off, checkpoints 2 and 3 on 2026-10-20.
+  - **Next is checkpoint 4: movies, without downloading.** Scope it in the plan, as "Checkpoint 3 in detail" did, and settle what the specs leave open with the owner before building.
 
 Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2, 0027–0028 with checkpoint 3.
 
