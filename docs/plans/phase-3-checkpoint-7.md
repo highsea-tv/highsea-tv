@@ -1,6 +1,6 @@
 # Phase 3, checkpoint 7: subtitles
 
-- **Status:** Scoped on 2026-10-21, before building. The owner answered the [open questions](#open-questions-for-the-owner) the same day, taking every recommendation ([the answers](#the-owners-answers)). 7a was built on 2026-10-21 and waits for review; its judgement calls are 1–12 and [20–34](#made-while-building-7a).
+- **Status:** Scoped on 2026-10-21, before building. The owner answered the [open questions](#open-questions-for-the-owner) the same day, taking every recommendation ([the answers](#the-owners-answers)). 7a was built and signed off on 2026-10-21, and 7b is in progress; its judgement calls are 1–12 and [20–34](#made-while-building-7a).
 - **Gate:** stop when each half is built (7a, then 7b; [question 1](#open-questions-for-the-owner)). Report what was built, the judgement calls, the API added, screenshots and the check results, then ask for review. Checkpoint 8 (automation, owner tools and the rest) starts only after sign-off.
 - **Parent plan:** [phase-3-server.md](phase-3-server.md). Its standing rules, architecture and decisions all apply, including decision 1 (every [M1] item stays in milestone 1), decision 5 (nothing is published until the owner says so) and decision 6 (the admin is for the owner and admins only). This document settles what that plan's checkpoint 7 item, the roadmap and the specs leave open, and what the research of 2026-10-21 changed.
 
