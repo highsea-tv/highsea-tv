@@ -98,6 +98,8 @@ export const subtitleFiles = sqliteTable(
     /** The decoded original, gzipped, before cleanup; null for image subtitles. */
     original: blob('original', { mode: 'buffer' }),
     encoding: text('encoding'),
+    /** The SDH lines were removed from the original (the fallback for a track without SDH). */
+    hiRemoved: integer('hi_removed', { mode: 'boolean' }).notNull().default(false),
     syncStatus: text('sync_status', { enum: SYNC_STATUSES }).notNull(),
     syncConfidence: real('sync_confidence'),
     syncRatio: real('sync_ratio'),

@@ -488,3 +488,24 @@ To be listed again in the checkpoint report:
 32. A6 and A10 as real data needed: "From the release", "Matches the video" (the prototype's "Embedded"), embedded tracks show forced and SDH, "Not synced", the attribution under the results, the refusal lines, the toasts and run counter, the four waiting captions, the owner-only Edit dialog, `Intl.DisplayNames` with "Unknown language", and "—" for an unknown count.
 33. System's provider attribution is an underlined link (axe's `link-in-text-block`); setup's language select is `w-full max-w-56`, so 200% text doesn't widen the page.
 34. Manual import still attaches a file to the first version without one, whatever its quality (6b's behaviour); the sweep chooses the 1080p version itself.
+
+### Made while building 7b
+
+35. **Against speech, a cue counts only for its first `characters / 17` seconds.** It stays up for reading after its line is spoken. Netflix's style guide caps reading speed at 20 characters a second for adults and 17 for children; calibration chose 17 (ADR 0044).
+36. **Confidence marks:** clarity is full at 0.2. The overlap's and coverage's first marks (a lift from 0.15 to 0.35, coverage 0.9), set on 40 synthetic films and Sintel, were replaced at review by judgement call 45.
+37. **Each split's section must stand clear in its window** (local clarity 0.3), or the split penalty doubles and the search runs again. A split costs one typical cue, and a framerate ratio costs one as well.
+38. **A replaced file's tracks lose a hash match:** their score drops to title and year (56), and each text track is queued to re-sync.
+39. **Re-sync answers with the track Waiting to sync, not Syncing:** the job hasn't started yet. The badge moves to Syncing when it does.
+40. **The offset is one number:** the API's `sync.offsetMs`, and `setOffset`'s `ms`, are the offset A6 shows, the sync's own plus the nudge. The service stores the nudge as what's left after the sync's, so A6's − and + send the shown value ± 50, as the prototype does.
+41. **The sync's correction applies only while the track reads Synced.** Not synced, Failed and Waiting tracks show only the nudge.
+42. **A6 hides − and + and Re-sync on image tracks** (PGS, VobSub from the release): they have no text to move.
+    - The first result toast waits until a read has shown the track waiting, so the read from before Re-sync can't toast an old result.
+    - A sync that finishes before any read shows it waiting gets no result toast; the badge still shows the result.
+43. **`subtitle_files.hi_removed`** (migration 0008) records whether the hearing-impaired text was removed, so a re-sync and a replaced file write the sidecar as the download did.
+44. **The prototype's mock syncs in the background** through its pipeline, with "Syncing {language} to the audio" and the download toast's new description. These are copy changes to a locked screen, which the plan lists (Specs owed).
+
+#### Made at 7b's review (2026-10-21)
+
+The owner asked for a measurement on a real film before sign-off. On 5 films the engine placed subtitles exactly, but kept the timing on only 3 of them: the share of the cues' speech on speech depends on how much speech the VAD hears in the mix.
+
+45. **The overlap is measured as significance, not as a share:** its standard deviations above the same placed cues moved to 300 other places in the film. It counts from 4 (a wrong subtitle is the best of about a thousand independent tries, whose noise reaches √(2 ln 1000) ≈ 3.7) and is full at 6. Coverage's mark drops to 0.75. Calibrated with `scripts/calibrate-sync.ts` on 24 films from the owner's library: 56 of 58 right placements kept, 0 of 72 wrong subtitles, 0 of 14 placements that were wrong or can't be verified (ADR 0044 has the table). *Sintel*'s 12 cues earn 0.69, so the tests that sync the clip set the minimum to 0.6.

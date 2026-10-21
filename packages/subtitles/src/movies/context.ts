@@ -5,6 +5,7 @@ import type { promises as fsp } from 'node:fs'
 import type { EventBus } from '@highsea/core'
 import type { JobQueue } from '@highsea/jobs'
 import type { Media } from '@highsea/media/shared'
+import type { SyncOutcome, SyncTask } from '../sync/worker.ts'
 import type { AccountsDeps } from './accounts.ts'
 
 export type SubtitlesDeps = AccountsDeps & {
@@ -13,6 +14,8 @@ export type SubtitlesDeps = AccountsDeps & {
   media: Media
   /** The filesystem calls sidecars use; a test fails a rename through it. */
   fs?: SidecarFs
+  /** Runs the sync engine: the runtime's worker pool; in this thread when absent. */
+  sync?: (task: SyncTask, signal: AbortSignal) => Promise<SyncOutcome>
 }
 
 export type SidecarFs = Pick<

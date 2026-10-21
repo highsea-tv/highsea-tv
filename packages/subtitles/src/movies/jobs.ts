@@ -9,6 +9,7 @@ import type { Settings } from '../shared/settings.ts'
 import type { Bundled } from './bundled.ts'
 import { DAY, type SubtitlesDeps } from './context.ts'
 import type { DownloadPayload, Search } from './search.ts'
+import type { Sync } from './sync.ts'
 import type { Wanted } from './wanted.ts'
 
 const { mediaFiles, subtitleFiles } = schema
@@ -20,7 +21,13 @@ export const JOBS = {
   wanted: 'subtitles.wanted',
   upgrade: 'subtitles.upgrade',
   hash: 'subtitles.moviehash',
+  sync: 'subtitles.sync',
+  resync: 'subtitles.resync',
 } as const
+
+/** A sync's limits (checkpoint 7, Where it runs): one at a time, 15 minutes, two tries. */
+export const SYNC_TIMEOUT_MS = 15 * 60_000
+const SYNC_ATTEMPTS = 2
 
 /** The prototype's interval for the wanted search (`j-subs`). */
 export const WANTED_EVERY_MS = 6 * 60 * 60_000
@@ -48,7 +55,8 @@ export function createJobs(
     wanted,
     bundled,
     settings,
-  }: { search: Search; wanted: Wanted; bundled: Bundled; settings: Settings },
+    sync,
+  }: { search: Search; wanted: Wanted; bundled: Bundled; settings: Settings; sync: Sync },
 ) {
   const { jobs, db, clock } = deps
   const log = deps.logger.child('subtitles')
@@ -58,6 +66,13 @@ export function createJobs(
 
   const queueDownload = (p: DownloadPayload) =>
     jobs.enqueue(JOBS.download, p, { dedupeKey: `download:${p.fileId}:${flagsOf(p)}` })
+
+  const queueSync = (request: { trackId: string; requestedAt: number }) =>
+    jobs.enqueue(JOBS.sync, request, { dedupeKey: `sync:${request.trackId}` })
+
+  /** A replaced file's tracks: rescored and synced again. */
+  const queueResync = (fileId: string) =>
+    jobs.enqueue(JOBS.resync, { fileId }, { dedupeKey: `resync:${fileId}` })
 
   /** One movie (by its library id), or every movie when there's none. */
   const queueRefresh = (itemId?: string) =>
@@ -98,7 +113,32 @@ export function createJobs(
       attempts: 3,
       timeoutMs: 5 * 60_000,
       run: async (p, ctx) => {
-        await search.keep(p, ctx.signal)
+        const kept = await search.keep(p, ctx.signal)
+        // a rerun finds the row already queued, and the dedupe key holds one sync
+        if (kept.syncStatus === 'queued')
+          queueSync({ trackId: kept.id, requestedAt: kept.updatedAt })
+      },
+    })
+    jobs.define({
+      type: JOBS.sync,
+      payload: z.object({ trackId: z.string(), requestedAt: z.number() }),
+      concurrency: 1,
+      attempts: SYNC_ATTEMPTS,
+      timeoutMs: SYNC_TIMEOUT_MS,
+      run: (p, ctx) =>
+        sync.syncTrack(p, {
+          jobId: ctx.jobId,
+          signal: ctx.signal,
+          attempt: ctx.attempt,
+          attempts: SYNC_ATTEMPTS,
+        }),
+    })
+    jobs.define({
+      type: JOBS.resync,
+      payload: z.object({ fileId: z.string() }),
+      attempts: 3,
+      async run({ fileId }) {
+        for (const request of sync.replaced(fileId)) queueSync(request)
       },
     })
     jobs.define({
@@ -164,8 +204,9 @@ export function createJobs(
     jobs.schedule(JOBS.upgrade, UPGRADE_EVERY_MS)
   }
 
-  /** On boot: queues the one-time hash job when a file still lacks one. */
+  /** On boot: syncs a stop left waiting, and the one-time hash job when a file still lacks one. */
   function start() {
+    for (const request of sync.waiting()) queueSync(request)
     const unhashed = db
       .select({ id: mediaFiles.id })
       .from(mediaFiles)
@@ -181,7 +222,17 @@ export function createJobs(
     return files.length
   }
 
-  return { define, schedule, start, queueSearch, queueDownload, queueRefresh, searchAllMissing }
+  return {
+    define,
+    schedule,
+    start,
+    queueSearch,
+    queueDownload,
+    queueRefresh,
+    queueSync,
+    queueResync,
+    searchAllMissing,
+  }
 }
 
 export type Jobs = ReturnType<typeof createJobs>

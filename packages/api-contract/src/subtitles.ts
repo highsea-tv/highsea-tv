@@ -2,7 +2,7 @@
 // Subtitles (docs/product/subtitles.md, checkpoint 7a): the wanted list, a movie's tracks, search
 // and Use, the providers and their accounts, language profiles and the settings. All staff's,
 // except saving and testing a provider's account, which holds the owner's own credentials with a
-// third party (checkpoint 7's plan, "API"). The sync and the offset arrive with 7b.
+// third party (checkpoint 7's plan, "API"). 7b adds Re-sync and the manual offset.
 import { createRoute, z } from '@hono/zod-openapi'
 import {
   API_PREFIX,
@@ -104,7 +104,10 @@ export const SubtitleTrack = z
     sync: z.object({
       status: z.enum(SYNC_STATUSES),
       confidence: z.number().nullable(),
+      /** The offset the sync found plus the owner's nudge, in milliseconds. */
       offsetMs: z.number().int(),
+      /** "Framerate corrected (25 → 23.976)" or "2 sections moved"; null for one offset. */
+      detail: z.string().nullable(),
     }),
     path: z.string(),
     addedAt: IsoDate,
@@ -293,6 +296,37 @@ export const subtitles = {
     ...access('staff'),
     request: { params: IdParam },
     responses: { ...noContent, ...errors('unauthorized', 'forbidden', 'not-found') },
+  }),
+  sync: createRoute({
+    method: 'post',
+    path: `${SUBS}/{id}/sync`,
+    tags: ['Subtitles'],
+    summary: 'Re-sync a track to its video',
+    description:
+      'Answers at once with the track Waiting to sync; the sync runs in the background and `subtitles.updated` announces its end. The manual offset goes back to zero. 400 `image-subtitle` for a track with no text to move.',
+    ...access('staff'),
+    request: { params: IdParam },
+    responses: {
+      200: json(SubtitleTrack, 'The track, waiting to sync'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
+    },
+  }),
+  setOffset: createRoute({
+    method: 'put',
+    path: `${SUBS}/{id}/offset`,
+    tags: ['Subtitles'],
+    summary: "Set a track's manual offset",
+    description:
+      "`ms` is the track's offset as `sync.offsetMs` shows it, the sync's own and the owner's nudge together; the sync's correction is kept and the sidecar rewritten. 400 `image-subtitle` for a track with no text to move.",
+    ...access('staff'),
+    request: {
+      params: IdParam,
+      ...body(z.object({ ms: z.number().int().min(-600_000).max(600_000) })),
+    },
+    responses: {
+      200: json(SubtitleTrack, 'The track'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
+    },
   }),
   providers: createRoute({
     method: 'get',

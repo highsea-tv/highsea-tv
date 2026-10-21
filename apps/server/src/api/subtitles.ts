@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Subtitles over HTTP (checkpoint 7a): A10's Wanted, Providers, Languages and Scoring tabs, and A6's
-// Subtitles tab. Thin handlers over @highsea/subtitles/movies. The contract keeps a provider's
+// Subtitles over HTTP (checkpoint 7): A10's Wanted, Providers, Languages and Scoring tabs, and A6's
+// Subtitles tab with Re-sync and the offset (7b). Thin handlers over @highsea/subtitles/movies. The contract keeps a provider's
 // account the owner's; saving one goes in the audit log, its credentials never do.
 import { routes, type SubtitleProvider } from '@highsea/api-contract'
 import type { ProviderView } from '@highsea/subtitles/movies'
@@ -42,6 +42,12 @@ export function registerSubtitles(app: OpenAPIHono<Env>) {
     await subtitles(c).delete(c.req.valid('param').id)
     return c.body(null, 204)
   })
+
+  app.openapi(routes.subtitles.sync, (c) => c.json(subtitles(c).sync(c.req.valid('param').id), 200))
+
+  app.openapi(routes.subtitles.setOffset, async (c) =>
+    c.json(await subtitles(c).setOffset(c.req.valid('param').id, c.req.valid('json').ms), 200),
+  )
 
   app.openapi(routes.subtitles.providers, (c) =>
     c.json(subtitles(c).providers.list().map(view), 200),

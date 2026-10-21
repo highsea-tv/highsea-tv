@@ -836,10 +836,7 @@ function Subtitles({ movie: m }: { movie: MediaItem }) {
                         busy={sync.pending || offset.pending}
                         onSync={() =>
                           sync.run(t.id).then(
-                            (r) =>
-                              toast.success('Synced to the audio', {
-                                description: `Offset ${offsetLabel(r.sync.offsetMs)}, ${percent(r.sync.confidence ?? 0)} confidence.`,
-                              }),
+                            () => toast({ title: `Syncing ${name(t.language)} to the audio` }),
                             (e: Error) => toast.error('Sync failed', { description: e.message }),
                           )
                         }
@@ -1032,7 +1029,7 @@ function SubtitleSearch({
                               download.run(r).then(
                                 () =>
                                   toast.success('Subtitles downloaded', {
-                                    description: 'Synced to the audio and ready on every client.',
+                                    description: 'Syncing to the audio in the background.',
                                   }),
                                 (e: Error) =>
                                   toast.error('Couldn’t download them', { description: e.message }),

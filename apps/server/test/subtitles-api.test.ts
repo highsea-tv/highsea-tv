@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Subtitles' routes through the SDK (checkpoint 7a): A10's tabs and A6's Search, Use and Delete,
-// against the providers' fakes. Staff use them; a provider's account is the owner's, and saving
+// Subtitles' routes through the SDK (checkpoint 7): A10's tabs and A6's Search, Use, Delete,
+// Re-sync and the offset, against the providers' fakes and a fake engine. Staff use them; a provider's account is the owner's, and saving
 // one is in the audit log without its credentials. The behaviour behind them is tested in
 // packages/subtitles.
 import { afterEach, describe, expect, test } from 'bun:test'
@@ -11,6 +11,7 @@ import { accessOf, routes } from '@highsea/api-contract'
 import { schema } from '@highsea/db'
 import type { Runtime } from '@highsea/runtime'
 import { createFakeSubtitles, FAKE_ACCOUNTS, FAKE_OPENSUBTITLES_KEY } from '@highsea/subtitles/fake'
+import type { SyncOutcome } from '@highsea/subtitles/sync'
 import { createApi } from '../src/api/app.ts'
 import { addMember, bootRuntime, cleanup, clientFor, failure, withOwner } from './helpers.ts'
 
@@ -22,10 +23,25 @@ afterEach(async () => {
 
 const SINTEL = 45745
 
+/** What the engine found, for the routes' tests: the engine's own are in packages/subtitles. */
+const outcome: SyncOutcome = {
+  correction: { ratio: 25 / 23.976, sections: [{ from: 0, fromMs: 0, offsetMs: 1_200 }] },
+  offsetMs: 1_200,
+  confidence: 0.92,
+  measures: { overlap: 1, clarity: 0.92, coverage: 1 },
+  raw: { lift: 0.4, significance: 9, clarity: 0.18, coverage: 1 },
+  cues: 3,
+  reference: 'audio',
+}
+
 async function started() {
   const fake = createFakeSubtitles()
   const runtime = await bootRuntime({
-    subtitles: { fetch: fake.fetch, openSubtitlesKey: FAKE_OPENSUBTITLES_KEY },
+    subtitles: {
+      fetch: fake.fetch,
+      openSubtitlesKey: FAKE_OPENSUBTITLES_KEY,
+      sync: async () => outcome,
+    },
   })
   const app = createApi(runtime)
   const { owner, token } = await withOwner(runtime)
@@ -92,7 +108,20 @@ function sintel(runtime: Runtime) {
           duration: 60,
           container: 'matroska,webm',
           video: { index: 0, codec: 'h264', codecTag: null },
-          audio: [],
+          audio: [
+            {
+              index: 1,
+              codec: 'aac',
+              codecTag: null,
+              profile: null,
+              channels: 2,
+              layout: 'stereo',
+              language: 'eng',
+              title: null,
+              default: true,
+              bitrate: 128_000,
+            },
+          ],
           subtitles: [],
         },
       },
@@ -240,6 +269,72 @@ describe('subtitles over the API', () => {
     await adminApi.subtitles.delete({ params: { id: track.id } })
     expect(await adminApi.subtitles.forItem({ params: { id: SINTEL } })).toEqual([])
     expect((await failure(adminApi.subtitles.delete({ params: { id: track.id } }))).code).toBe(
+      'not-found',
+    )
+  })
+
+  test('A6: a downloaded track syncs; Re-sync and the offset', async () => {
+    const { runtime, ownerApi, adminApi, userApi } = await started()
+    sintel(runtime)
+    await ownerApi.subtitles.saveProvider({
+      params: { id: 'subdl' },
+      body: { apiKey: FAKE_ACCOUNTS.subdl.apiKey },
+    })
+    await adminApi.subtitles.toggleProvider({ params: { id: 'subdl' }, body: { enabled: true } })
+    const [best] = await adminApi.subtitles.search({
+      params: { id: SINTEL },
+      body: { language: 'en' },
+    })
+    if (!best) throw new Error('expected a result')
+    const track = await adminApi.subtitles.download({
+      params: { id: SINTEL },
+      body: { resultId: best.id },
+    })
+    expect(track.sync).toMatchObject({ status: 'queued', offsetMs: 0 })
+
+    // the test runtime runs jobs when ticked
+    const synced = async () => {
+      for (let i = 0; i < 20; i++) {
+        await runtime.jobs.tick()
+        await runtime.jobs.idle()
+        const [t] = await adminApi.subtitles.forItem({ params: { id: SINTEL } })
+        if (t?.sync.status === 'synced') return t
+      }
+      throw new Error('the track never synced')
+    }
+    expect((await synced()).sync).toEqual({
+      status: 'synced',
+      confidence: 0.92,
+      offsetMs: 1_200,
+      detail: 'Framerate corrected (25 → 23.976)',
+    })
+
+    const moved = await adminApi.subtitles.setOffset({
+      params: { id: track.id },
+      body: { ms: 1_150 },
+    })
+    expect(moved.sync).toMatchObject({ status: 'synced', offsetMs: 1_150 })
+    expect(
+      (await failure(adminApi.subtitles.setOffset({ params: { id: track.id }, body: { ms: 0.5 } })))
+        .code,
+    ).toBe('invalid')
+    expect(
+      (
+        await failure(
+          adminApi.subtitles.setOffset({ params: { id: track.id }, body: { ms: 600_001 } }),
+        )
+      ).code,
+    ).toBe('invalid')
+
+    // Re-sync answers at once, the nudge back at zero, and the sync runs in the background
+    const again = await adminApi.subtitles.sync({ params: { id: track.id } })
+    expect(again.sync).toMatchObject({ status: 'queued', offsetMs: 0 })
+    expect((await synced()).sync.offsetMs).toBe(1_200)
+
+    expect((await failure(userApi.subtitles.sync({ params: { id: track.id } }))).code).toBe(
+      'forbidden',
+    )
+    expect((await failure(adminApi.subtitles.sync({ params: { id: 'nope' } }))).code).toBe(
       'not-found',
     )
   })

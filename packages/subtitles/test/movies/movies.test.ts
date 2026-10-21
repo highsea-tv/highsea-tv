@@ -156,7 +156,7 @@ describe('the automatic search', () => {
     ])
     for (const r of rows) {
       expect(r.kind).toBe('external')
-      expect(r.syncStatus).toBe('unsynced')
+      expect(r.syncStatus).toBe('synced')
       expect(r.score).toBeGreaterThanOrEqual(80)
       expect(existsSync(r.path)).toBe(true)
       expect(gunzipSync(must(r.original)).toString('utf8').length).toBeGreaterThan(0)
@@ -168,7 +168,12 @@ describe('the automatic search', () => {
       join(m.folder, 'Sintel (2010) Bluray-1080p.en.forced.srt'),
     )
     expect(t.wantedRows()).toEqual([])
-    expect(t.history().map((h) => h.type)).toEqual(['subtitle-downloaded', 'subtitle-downloaded'])
+    expect(
+      t
+        .history()
+        .map((h) => h.type)
+        .sort(),
+    ).toEqual(['subtitle-downloaded', 'subtitle-downloaded', 'subtitle-synced', 'subtitle-synced'])
     expect(
       t.seen.some((e) => e.topic === 'subtitles.updated' && e.ids?.includes('movie:45745')),
     ).toBe(true)
@@ -178,7 +183,7 @@ describe('the automatic search', () => {
     for (const job of t.jobs.list({ status: ['succeeded'] })) t.jobs.enqueue(job.type, job.payload)
     await t.drain()
     expect(t.rows()).toEqual(rows)
-    expect(t.history()).toHaveLength(2)
+    expect(t.history()).toHaveLength(4)
     expect(t.fake.downloads).toBe(downloads)
   })
 
@@ -276,7 +281,7 @@ describe('Search and Use', () => {
       chosen: true,
       kind: 'external',
     })
-    expect(track.sync.status).toBe('unsynced')
+    expect(track.sync.status).toBe('queued')
     expect(t.subtitles.forItem(SINTEL.tmdbId).map((x) => x.id)).toEqual([track.id])
   })
 
@@ -359,7 +364,12 @@ describe('upgrades', () => {
     expect(after?.id).toBe(before?.id)
     expect(after?.score).toBeGreaterThan(must(before).score)
     expect(after?.releaseName).toBe('Sintel.2010.1080p.BluRay.x264-GRP')
-    expect(t.history().map((h) => h.type)).toEqual(['subtitle-downloaded', 'subtitle-upgraded'])
+    expect(t.history().map((h) => h.type)).toEqual([
+      'subtitle-downloaded',
+      'subtitle-synced',
+      'subtitle-upgraded',
+      'subtitle-synced',
+    ])
 
     // outside the window nothing is asked
     t.clock.advance(15 * DAY)

@@ -411,8 +411,9 @@ export function createSearch(
       chosen: p.chosen,
       original: gzipSync(Buffer.from(processed.original, 'utf8')),
       encoding: processed.encoding,
-      // the sync engine arrives in 7b; until then every download waits for it
-      syncStatus: 'unsynced' as const,
+      hiRemoved: fallback,
+      // the download job queues the sync; with Sync to the audio off the track keeps its timing
+      syncStatus: settings.get().autoSync ? ('queued' as const) : ('unsynced' as const),
       syncConfidence: null,
       syncRatio: null,
       syncOffsetMs: null,

@@ -8487,12 +8487,19 @@
               },
               "offsetMs": {
                 "type": "integer"
+              },
+              "detail": {
+                "type": [
+                  "string",
+                  "null"
+                ]
               }
             },
             "required": [
               "status",
               "confidence",
-              "offsetMs"
+              "offsetMs",
+              "detail"
             ]
           },
           "path": {
@@ -21221,6 +21228,186 @@
         "responses": {
           "204": {
             "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subtitles/{id}/sync": {
+      "post": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Re-sync a track to its video",
+        "description": "Answers at once with the track Waiting to sync; the sync runs in the background and `subtitles.updated` announces its end. The manual offset goes back to zero. 400 `image-subtitle` for a track with no text to move.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The track, waiting to sync",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubtitleTrack"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subtitles/{id}/offset": {
+      "put": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Set a track's manual offset",
+        "description": "`ms` is the track's offset as `sync.offsetMs` shows it, the sync's own and the owner's nudge together; the sync's correction is kept and the sidecar rewritten. 400 `image-subtitle` for a track with no text to move.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ms": {
+                    "type": "integer",
+                    "minimum": -600000,
+                    "maximum": 600000
+                  }
+                },
+                "required": [
+                  "ms"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The track",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubtitleTrack"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "401": {
             "description": "unauthorized",

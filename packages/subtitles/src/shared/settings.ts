@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The `subtitles` settings row: Settings › Subtitles' Scoring and sync, the prototype's
-// `SubtitleSettings` with its defaults. Sync to the audio and Minimum confidence are saved now and
-// act once the sync engine arrives (7b).
+// `SubtitleSettings` with its defaults. Sync to the audio and Minimum confidence steer the sync
+// engine (ADR 0044).
 import { AppError, type Clock } from '@highsea/core'
 import { type Db, readSetting, writeSetting } from '@highsea/db'
 import { z } from 'zod'

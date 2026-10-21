@@ -13,9 +13,7 @@
 //   a count the provider doesn't report is a dash. The attribution its terms ask for is under the
 //   table;
 // - a new profile gets its id from the server; a refused delete (a profile in use) says why;
-// - the minimum score hint says "about 99", the score a hash match gets (judgement call 8);
-// - sync to the audio is saved but does nothing until the sync engine (7b), and says so under its
-//   settings (judgement call 19).
+// - the minimum score hint says "about 99", the score a hash match gets (judgement call 8).
 import type {
   Language,
   LanguageProfile,
@@ -863,7 +861,6 @@ function ScoringForm({ settings }: { settings: SubtitleSettings }) {
           className="w-32"
         />
       </Field>
-      <p className="text-caption text-text-3">{t('scoring.syncNext')}</p>
       <Field label={t('scoring.upgrade')} hint={t('scoring.upgradeHint')}>
         <Input
           inputMode="numeric"

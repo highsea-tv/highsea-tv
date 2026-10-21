@@ -5,7 +5,7 @@
 // writes a sidecar again from that original, with the cleanup and a time shift (the sync's
 // correction, the manual offset), always in the original's own format.
 import type { TextFormat } from '../types.ts'
-import { parseAss, writeAss } from './ass.ts'
+import { assCues, parseAss, writeAss } from './ass.ts'
 import { cleanCues, cleanText } from './cleanup.ts'
 import { detectFormat } from './detect.ts'
 import { decodeSubtitle } from './encoding.ts'
@@ -27,15 +27,21 @@ export type Processed =
   | { ok: true; format: TextFormat; encoding: string; original: string; text: string; cues: number }
   | { ok: false; reason: 'too-large' | 'not-subtitle' | 'empty'; message: string }
 
-export type RenderOptions = { removeHi: boolean; shift?: (ms: number) => number }
+/**
+ * `shift` moves a time; `anchor` is its cue's start, so a cue's end moves with its start even when a
+ * sync's split falls between them (ADR 0044).
+ */
+export type Shift = (ms: number, anchor: number) => number
+
+export type RenderOptions = { removeHi: boolean; shift?: Shift }
 
 const NOT_SUBTITLE = "This file isn't a subtitle highsea can read: SRT, WebVTT or ASS."
 
-function shifter(shift: ((ms: number) => number) | undefined): (cue: Cue) => Cue {
+function shifter(shift: Shift | undefined): (cue: Cue) => Cue {
   return (cue) => {
     if (!shift) return cue
-    const start = Math.max(0, Math.round(shift(cue.start)))
-    const end = Math.max(start, Math.round(shift(cue.end)))
+    const start = Math.max(0, Math.round(shift(cue.start, cue.start)))
+    const end = Math.max(start, Math.round(shift(cue.end, cue.start)))
     return { ...cue, start, end }
   }
 }
@@ -89,6 +95,19 @@ export function renderSubtitle(
     return move({ ...cue, text: cleaned })
   })
   return { format, text: text.endsWith('\n') ? text : `${text}\n`, cues: count }
+}
+
+/** A text subtitle's cues after cleanup, in any of the three formats: what a sync aligns. */
+export function subtitleCues(original: string, options: { removeHi: boolean }): Cue[] {
+  const format = detectFormat(original)
+  if (format === null) throw new Error(NOT_SUBTITLE)
+  if (format === 'srt') return cleanCues(parseSrt(original), options)
+  if (format === 'vtt')
+    return cleanCues(
+      parseVtt(original).blocks.filter((b): b is VttCue => b.kind === 'cue'),
+      options,
+    )
+  return cleanCues(assCues(parseAss(original)), options)
 }
 
 export function processSubtitle(bytes: Uint8Array, options: { removeHi: boolean }): Processed {

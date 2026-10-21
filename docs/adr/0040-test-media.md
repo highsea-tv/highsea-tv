@@ -26,3 +26,18 @@ Downloading and importing need media to move and a swarm to move it through, and
 - Every download and import test runs offline, on any machine with ffmpeg, in seconds.
 - Generated clips test the pipeline, not real-world encodes. The owner's NAS (read-only) is the check against real releases, by hand, in the checkpoint report.
 - No copyrighted or downloaded media sits in the repository or its fixtures.
+
+## Checkpoint 7b: the *Sintel* fixture (2026-10-21)
+The last decision above is settled by the owner's answer 12 to checkpoint 7's questions.
+
+- **A 52-second cut of *Sintel*** (2010) is committed in `packages/subtitles/test/fixtures/sintel/`. It holds:
+  - the audio from 1:45 to 2:37 as 16 kHz mono FLAC, 1,581,376 bytes. The plan estimated about 800 KB; FLAC of real speech and music compresses less than that;
+  - the 12 official English cues inside the cut, re-timed to it.
+- **Its sources:**
+  - the audio comes from Wikimedia Commons' `Sintel_movie_4K.webm`, not download.blender.org, whose challenge a script can't pass;
+  - the subtitles come from durian.blender.org, checked against Xiph's published SHA-1.
+- **How it was made:** `scripts/fixtures/sintel.ts` made the cut once. It reads the network, so it never runs in CI or a test.
+- **Its credit:** "© copyright Blender Foundation | durian.blender.org", under CC BY 3.0. Its README has the credit, the licence, the sources, the cut and each file's SHA-256, and the repository README's licence section lists it.
+- **The clips built from it:** the end-to-end's release clip and the Node smoke test borrow the audio. `makeSyncClip` in `@highsea/subtitles/testing` muxes it under a black picture, at 1080p for the end-to-end, so the release's import and its subtitle's sync are both tested on real speech.
+- **A PGS track's timings:** `fixtures/pgs/show-frames.json` is ffprobe's report of a commercial Blu-ray's PGS stream: timings only, with no picture or text. The image-reference tests read it.
+- **One change to the Consequences above:** the line "No copyrighted or downloaded media sits in the repository" now has one exception, the CC BY cut, which is downloaded and credited.

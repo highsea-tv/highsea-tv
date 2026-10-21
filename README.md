@@ -43,3 +43,7 @@ bun run typecheck && bun run test
 ## License
 
 [AGPL-3.0-only](LICENSE). Every source file carries an `SPDX-License-Identifier: AGPL-3.0-only` header.
+
+### Third-party material
+
+- **Sintel** (test fixture): a 52-second cut of the audio and English subtitles in [packages/subtitles/test/fixtures/sintel](packages/subtitles/test/fixtures/sintel/README.md). © copyright Blender Foundation | durian.blender.org, licensed under [Creative Commons Attribution 3.0](https://creativecommons.org/licenses/by/3.0/).

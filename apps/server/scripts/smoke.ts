@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The platform under Node, the server's runtime (ADR 0019): `bun test` covers bun:sqlite; this
-// covers better-sqlite3, workers, the API and the torrent engine on a real file database. Run with
+// covers better-sqlite3, workers, the API, the torrent engine and the subtitle sync (its WebAssembly
+// voice detector in a pool worker, ffmpeg reading the clip) on a real file database. Run with
 // `node`; exits 1 on the first failure. CI runs it after the tests. TMDB answers from the
 // recordings (ADR 0029), so the metadata package and the image cache run as production runs them,
 // without the network; the engine listens on a free port with no DHT and a torrent with no
@@ -13,6 +14,8 @@ import { issueDevice } from '@highsea/auth'
 import { defineJob } from '@highsea/jobs'
 import { createReplayFetch } from '@highsea/metadata/replay'
 import { boot, loadConfig } from '@highsea/runtime'
+import { SYNC_WORKER, type SyncOutcome } from '@highsea/subtitles/sync'
+import { makeSyncClip, sintel } from '@highsea/subtitles/testing'
 import { makeTorrent, randomData, until, writeFiles } from '@highsea/torrent/testing'
 import { z } from 'zod'
 import { assertNodeVersion } from '../../../scripts/check-node.ts'
@@ -115,6 +118,17 @@ try {
     manual: true,
   })
   await until(() => runtime.engine.get(added.id).state === 'seeding', 20_000, 'the check')
+
+  // the subtitle sync (checkpoint 7b): Sintel's speech against its cues 2.5 s late, in the pool
+  const clip = makeSyncClip(join(dir, 'sintel.mkv'), { audio: 'sintel' })
+  const late = sintel.cues().map((c) => ({ ...c, start: c.start + 2_500, end: c.end + 2_500 }))
+  const outcome = await runtime.workers.run<SyncOutcome>({
+    module: SYNC_WORKER,
+    fn: 'sync',
+    input: { file: clip, reference: { kind: 'audio', index: 1 }, cues: late },
+  })
+  assert.ok(outcome.confidence >= sintel.minConfidence, `the sync is sure (${outcome.confidence})`)
+  assert.ok(Math.abs(outcome.offsetMs + 2_500) < 450, `the sync moved it ${outcome.offsetMs} ms`)
 
   const sealed = runtime.sealer.seal('secret')
   assert.equal(runtime.sealer.open(sealed), 'secret')

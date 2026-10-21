@@ -78,17 +78,23 @@ export function makeClips(dir: string): Clips {
 /**
  * A clip as long as a feature, for what needs the import's sample check to pass (the sweeps):
  * 10 minutes by default, the shortest Radarr allows an unknown or feature-length runtime. Small
- * and at 1 frame a second, so it encodes in about a second. English audio and a forced English
- * subtitle, like `main`.
+ * and at 1 frame a second, so it encodes in about a second. English audio (a tone, or `audio`
+ * padded with silence) and a forced English subtitle, like `main`.
  */
-export function makeFeature(path: string, seconds = 600): string {
+export function makeFeature(path: string, seconds = 600, audio?: string): string {
   const srt = `${path}.srt`
   writeFileSync(srt, '1\n00:00:00,000 --> 00:00:02,000\nHello.\n')
+  // `audio`: a recording to start with, padded with silence to the length (apad,
+  // https://ffmpeg.org/ffmpeg-filters.html#apad), in place of the tone
+  const sound = audio
+    ? ['-i', audio]
+    : ['-f', 'lavfi', '-i', `sine=frequency=440:duration=${seconds}`]
+  const pad = audio ? ['-filter:a', `apad=whole_dur=${seconds}`] : []
   ffmpeg([
     ...['-f', 'lavfi', '-i', `testsrc2=size=320x180:rate=1:duration=${seconds}`],
-    ...['-f', 'lavfi', '-i', `sine=frequency=440:duration=${seconds}`],
+    ...sound,
     ...['-i', srt],
-    ...['-map', '0:v', '-map', '1:a', '-map', '2:s'],
+    ...['-map', '0:v', '-map', '1:a', '-map', '2:s', ...pad],
     ...['-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p'],
     ...['-c:a', 'aac', '-c:s', 'srt'],
     ...['-metadata:s:a:0', 'language=eng', '-metadata:s:s:0', 'language=eng'],

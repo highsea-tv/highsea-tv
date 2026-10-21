@@ -322,11 +322,11 @@ describe('A10 Subtitles', () => {
     expect(page.getByRole('button', { name: 'Save profile' })).toBeTruthy()
   })
 
-  test('scoring and sync says sync comes next', async () => {
+  test('scoring and sync has no note that sync comes later: it’s here', async () => {
     const { user, page } = await open()
     await user.click(page.getByRole('tab', { name: 'Scoring and sync' }))
     await settle()
-    expect(page.getByText('Sync arrives in the next update.')).toBeTruthy()
+    expect(page.queryByText('Sync arrives in the next update.')).toBeNull()
     expect(page.getByLabelText('Prefer release matches')).toBeTruthy()
   })
 })

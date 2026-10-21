@@ -23,7 +23,7 @@ Subtitles are first class: highsea finds them for every movie it imports, scores
 - **Providers:** OpenSubtitles.com, Subdl and SubSource (checkpoint 7a). Columns: provider, account (the username or a masked key, "Needs an account", or "Not needed"), requests left today (a bar and "184/200"; warning tone under 10%; a dash when the provider doesn't say), an Enabled switch, and **Edit** for the owner. Under the table: "Subtitles provided by OpenSubtitles.com", as its terms ask of free keys.
 - **Edit dialog** (owner only, checkpoint 7a, built like A9's): the provider's fields (OpenSubtitles.com: username and password; Subdl and SubSource: an API key). A saved secret shows as set and stays blank to keep it. **Test** signs in without saving and says what happened; **Save** keeps the account.
 - **Languages:** one card per profile: its languages in order (with forced and SDH rules), the cutoff, the minimum score, **Edit**. Editing turns the card into a form in place: name; the ordered languages, each with a Forced select (Regular only, Regular and forced, Forced only), an SDH select (Without SDH, With or without SDH, SDH only), a drag handle and Remove; **Add a language**; Cutoff; Minimum score; **Save profile**, **Cancel**, **Delete**. **New profile** adds an empty one.
-- **Scoring and sync:** a form (max 42rem): Minimum score; Prefer release matches; Sync to the audio; Minimum confidence (disabled while sync is off); Keep upgrading for N days; **Save** and **Discard changes** (enabled once something changed). Until the sync engine ships (checkpoint 7b), one caption under the sync settings: "Sync arrives in the next update."; they're saved but do nothing yet.
+- **Scoring and sync:** a form (max 42rem): Minimum score; Prefer release matches; Sync to the audio; Minimum confidence (disabled while sync is off); Keep upgrading for N days; **Save** and **Discard changes** (enabled once something changed). Since checkpoint 7b they steer the sync engine (ADR 0044): with Sync to the audio off, a download is stored **Not synced** and nothing is queued; a sync below Minimum confidence keeps the original timing and reads **Not synced** with its confidence. The stats card counts synced since midnight UTC, the tracks waiting (Waiting to sync and Syncing), and the average correction and confidence of today's syncs.
 
 ## States
 
@@ -51,7 +51,7 @@ Subtitles are first class: highsea finds them for every movie it imports, scores
 | Where | Text |
 | --- | --- |
 | Page description | highsea finds subtitles for every movie it imports, then syncs them to the audio. |
-| Search all toast | Searching every provider · 3 movies are queued. What’s found downloads in the background. (7a; "and syncing" returns with 7b) |
+| Search all toast | Searching every provider · 3 movies are queued. What’s found downloads and syncs in the background. |
 | Edit dialog | Edit {Provider} · highsea signs in with your own account. It stays on this server. |
 | A saved secret, left blank | Saved. Leave it empty to keep it. |
 | Throttled, too many requests | Too many requests. Resumes {when}. |
@@ -66,14 +66,13 @@ Subtitles are first class: highsea finds them for every movie it imports, scores
 | Sync to the audio | Every downloaded subtitle is lined up with the speech, in the background. |
 | Minimum confidence | Below this, highsea keeps the original timing and marks the track for review. |
 | Keep upgrading for | Look for a better match this many days after import. |
-| Sync caption (until 7b) | Sync arrives in the next update. |
 | Attribution | Subtitles provided by OpenSubtitles.com |
 | Switch without an account | Add your account first. |
 | No key in this build | This build of highsea has no OpenSubtitles.com key. The release images include one. |
 
 ## Data
 
-As built in checkpoint 7a; the OpenAPI document at `/api/docs` has every shape. All staff, except saving and testing an account, which are the owner's.
+As built in checkpoints 7a and 7b; the OpenAPI document at `/api/docs` has every shape. All staff, except saving and testing an account, which are the owner's.
 
 | SDK | Route | |
 | --- | --- | --- |
@@ -84,6 +83,8 @@ As built in checkpoint 7a; the OpenAPI document at `/api/docs` has every shape. 
 | `subtitles.search({ params: { id }, body: { language, fileId? } })` | `POST /api/v1/movies/{id}/subtitles/search` | Results, best first, kept 30 minutes; 409 `no-providers`, 503 `providers-failed` |
 | `subtitles.download({ params: { id }, body: { resultId } })` | `POST /api/v1/movies/{id}/subtitles` | **Use**: the track, kept from upgrades |
 | `subtitles.delete({ params: { id } })` | `DELETE /api/v1/subtitles/{id}` | The sidecar and its record |
+| `subtitles.sync({ params: { id } })` | `POST /api/v1/subtitles/{id}/sync` | **Re-sync** (7b): the track, Waiting to sync, its nudge back at zero; the result arrives on `subtitles.updated`. 400 `image-subtitle` for a track with no text |
+| `subtitles.setOffset({ params: { id }, body: { ms } })` | `PUT /api/v1/subtitles/{id}/offset` | − and + (7b): `ms` is the offset as `sync.offsetMs` shows it, the sync's plus the nudge, within ±10 minutes; the sidecar is rewritten at once |
 | `subtitles.providers()` | `GET /api/v1/subtitles/providers` | `SubtitleProvider`: account, requests left, throttle, fields, attribution |
 | `subtitles.toggleProvider(…)` | `PATCH /api/v1/subtitles/providers/{id}` | `{ enabled }` |
 | `subtitles.saveProvider(…)` | `PUT /api/v1/subtitles/providers/{id}` | Owner; in the audit log, without the credentials |

@@ -13,11 +13,14 @@ import { boot, getRuntime, hasRuntime, loadConfig } from '../src/index.ts'
 const torrent = { offline: true }
 const dirs: string[] = []
 const savedUnar = process.env.HIGHSEA_UNAR
+const savedFfmpeg = process.env.HIGHSEA_FFMPEG
 afterEach(async () => {
   if (hasRuntime()) await getRuntime().shutdown()
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true })
   if (savedUnar === undefined) delete process.env.HIGHSEA_UNAR
   else process.env.HIGHSEA_UNAR = savedUnar
+  if (savedFfmpeg === undefined) delete process.env.HIGHSEA_FFMPEG
+  else process.env.HIGHSEA_FFMPEG = savedFfmpeg
 })
 
 async function start(watch?: WatchFn) {
@@ -89,6 +92,16 @@ describe('the library at runtime', () => {
     await until(() => rt.issues().some((i) => i.id === 'unar-missing'), 'the unar check')
     expect(rt.issues().find((i) => i.id === 'unar-missing')).toMatchObject({
       source: 'Import',
+      level: 'warning',
+    })
+  })
+
+  test('ffmpeg missing is a warning on System › Health, under Subtitles', async () => {
+    process.env.HIGHSEA_FFMPEG = join(tmpdir(), 'highsea-no-such-ffmpeg')
+    const { rt } = await start(() => ({ close() {}, on: (() => undefined) as never }))
+    await until(() => rt.issues().some((i) => i.id === 'ffmpeg-missing'), 'the ffmpeg check')
+    expect(rt.issues().find((i) => i.id === 'ffmpeg-missing')).toMatchObject({
+      source: 'Subtitles',
       level: 'warning',
     })
   })

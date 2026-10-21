@@ -19,8 +19,10 @@
 //   first (a movie with two versions can have two);
 // - History pages with Show more, which the prototype's single page doesn't need;
 // - a file without a scene name leaves out the Release line;
-// - the Subtitles tab (checkpoint 7a) leaves out Re-sync and the offset buttons until the sync
-//   engine (7b), and its Offset column with them; a bundled track says the release carried it;
+// - the Subtitles tab: a bundled track says the release carried it; an image track (PGS, VobSub)
+//   has no offset buttons or Re-sync, having no text to move; Re-sync toasts "Syncing {language}
+//   to the audio" and the result when it arrives, and Use says whether a sync follows (checkpoint
+//   7's changes real data forces); a correction that isn't one offset says so under the offset;
 //   search results say which provider's terms ask for a credit, under the table; a search with no
 //   provider on, or none answering, says so in place of the results;
 // - Edit (in More) and the version list's add, edit and remove, which the prototype doesn't draw;
@@ -1386,10 +1388,18 @@ function streamLanguage(code: string, locale: string, unknown: string): string {
 
 const SUBTITLE_TAB_TOPICS = [SUBTITLE_TOPICS.subtitles, MEDIA_TOPICS.item]
 
+/** Image subtitles (PGS, VobSub) a release carried: nothing to sync or move. */
+const IMAGE_FORMATS = new Set(['sup', 'idx'])
+
+const offsetLabel = (ms: number) => `${ms > 0 ? '+' : ms < 0 ? '−' : ''}${Math.abs(ms)}`
+
+/** A sync's end, from Waiting to sync or Syncing to one of these. */
+const SETTLED: SyncStatus[] = ['synced', 'unsynced', 'failed']
+
 /**
  * The prototype's Subtitles tab: the sidecars highsea keeps (downloaded and bundled), then the
- * file's own streams, read-only; then Search for subtitles. Re-sync and the offset buttons come
- * with the sync engine (7b) and aren't shown before it (checkpoint 7, judgement call 19).
+ * file's own streams, read-only; then Search for subtitles. Re-sync runs in the background, so it
+ * toasts at once and again when the result arrives, while the tab is open.
  */
 function Subtitles({ movie: m }: { movie: Movie }) {
   const t = useT(messages)
@@ -1407,6 +1417,45 @@ function Subtitles({ movie: m }: { movie: Movie }) {
     SUBTITLE_TAB_TOPICS,
   )
   const remove = useAction((c, trackId: string) => c.subtitles.delete({ params: { id: trackId } }))
+  const sync = useAction((c, trackId: string) => c.subtitles.sync({ params: { id: trackId } }))
+  const offset = useAction((c, trackId: string, ms: number) =>
+    c.subtitles.setOffset({ params: { id: trackId }, body: { ms } }),
+  )
+  // the tracks Re-synced from this tab, by id: their language, and whether a read has shown them
+  // waiting yet, since the read before Re-sync's still shows the last result
+  const [syncing, setSyncing] = useState<Record<string, { language: string; seen: boolean }>>({})
+  const tracks = data.status === 'success' ? data.data.tracks : null
+  useEffect(() => {
+    if (!tracks) return
+    const seen = tracks.filter(
+      (r) => syncing[r.id]?.seen === false && !SETTLED.includes(r.sync.status),
+    )
+    const done = tracks.filter((r) => syncing[r.id]?.seen && SETTLED.includes(r.sync.status))
+    if (!seen.length && !done.length) return
+    for (const r of done) {
+      const language = syncing[r.id]?.language ?? ''
+      if (r.sync.status === 'synced')
+        toast.success(t('subs.synced', { language }), {
+          description: t('subs.syncedBody', {
+            offset: offsetLabel(r.sync.offsetMs),
+            confidence: percent(r.sync.confidence ?? 0),
+          }),
+        })
+      else if (r.sync.status === 'unsynced')
+        toast({
+          title: t('subs.kept', { language }),
+          tone: 'warning',
+          description: t('subs.keptBody', { confidence: percent(r.sync.confidence ?? 0) }),
+        })
+      else toast.error(t('subs.syncFailed', { language }))
+    }
+    setSyncing((was) => {
+      const next = { ...was }
+      for (const r of seen) next[r.id] = { language: was[r.id]?.language ?? '', seen: true }
+      for (const r of done) delete next[r.id]
+      return next
+    })
+  }, [tracks, syncing, t])
 
   return (
     <Loadable query={data} what={t('subs.what')}>
@@ -1442,6 +1491,7 @@ function Subtitles({ movie: m }: { movie: Movie }) {
                       <TableHead>{t('subs.source')}</TableHead>
                       <TableHead numeric>{t('subs.score')}</TableHead>
                       <TableHead>{t('subs.sync')}</TableHead>
+                      <TableHead numeric>{t('subs.offset')}</TableHead>
                       <TableHead>
                         <span className="sr-only">{t('subs.actions')}</span>
                       </TableHead>
@@ -1453,6 +1503,30 @@ function Subtitles({ movie: m }: { movie: Movie }) {
                         key={track.id}
                         track={track}
                         language={name(track.language)}
+                        busy={sync.pending || offset.pending}
+                        onSync={() => {
+                          const language = name(track.language)
+                          sync.run(track.id).then(
+                            () => {
+                              setSyncing((was) => ({
+                                ...was,
+                                [track.id]: { language, seen: false },
+                              }))
+                              toast({ title: t('subs.syncing', { language }) })
+                            },
+                            (e: Error) =>
+                              toast.error(t('subs.syncFailed', { language }), {
+                                description: e.message,
+                              }),
+                          )
+                        }}
+                        onOffset={(ms) =>
+                          offset
+                            .run(track.id, ms)
+                            .catch((e: Error) =>
+                              toast.error(t('subs.offsetFailed'), { description: e.message }),
+                            )
+                        }
                         onRemove={() =>
                           remove.run(track.id).then(
                             () => toast({ title: t('subs.deleted') }),
@@ -1482,6 +1556,7 @@ function Subtitles({ movie: m }: { movie: Movie }) {
                         <TableCell>
                           <Badge tone="neutral">{t('subs.matchesVideo')}</Badge>
                         </TableCell>
+                        <TableCell numeric>—</TableCell>
                         <TableCell />
                       </TableRow>
                     ))}
@@ -1500,15 +1575,23 @@ function Subtitles({ movie: m }: { movie: Movie }) {
 function TrackRow({
   track: s,
   language,
+  busy,
+  onSync,
+  onOffset,
   onRemove,
 }: {
   track: SubtitleTrack
   language: string
+  busy: boolean
+  onSync: () => void
+  onOffset: (ms: number) => void
   onRemove: () => void
 }) {
   const t = useT(messages)
   const flags = [s.forced && t('stream.forced'), s.hi && t('stream.sdh'), s.format.toUpperCase()]
   const shown = flags.filter(Boolean)
+  const movable = !IMAGE_FORMATS.has(s.format)
+  const waiting = s.sync.status === 'queued' || s.sync.status === 'syncing'
   return (
     <TableRow>
       <TitleCell title={[language, ...shown].join(' · ')} detail={s.path} />
@@ -1524,17 +1607,64 @@ function TrackRow({
           )}
         </span>
       </TableCell>
+      <TableCell numeric>
+        {movable ? (
+          <span className="inline-grid justify-items-end gap-0.5">
+            <span className="inline-flex items-center gap-1">
+              <Button
+                size="sm"
+                variant="ghost"
+                iconOnly
+                icon="remove"
+                aria-label={t('subs.earlier', { language })}
+                onClick={() => onOffset(s.sync.offsetMs - 50)}
+                disabled={busy || waiting}
+              />
+              <output aria-label={t('subs.offsetLabel', { language })} className="w-16 text-center">
+                {t('subs.ms', { value: offsetLabel(s.sync.offsetMs) })}
+              </output>
+              <Button
+                size="sm"
+                variant="ghost"
+                iconOnly
+                icon="add"
+                aria-label={t('subs.later', { language })}
+                onClick={() => onOffset(s.sync.offsetMs + 50)}
+                disabled={busy || waiting}
+              />
+            </span>
+            {s.sync.detail && <span className="text-caption text-text-3">{s.sync.detail}</span>}
+          </span>
+        ) : (
+          '—'
+        )}
+      </TableCell>
       <TableCell className="text-end">
-        <Tooltip content={t('subs.delete')}>
-          <Button
-            size="sm"
-            variant="ghost"
-            iconOnly
-            icon="delete"
-            aria-label={t('subs.deleteLabel', { language })}
-            onClick={onRemove}
-          />
-        </Tooltip>
+        <span className="inline-flex gap-1">
+          {movable && (
+            <Tooltip content={t('subs.resync')}>
+              <Button
+                size="sm"
+                variant="ghost"
+                iconOnly
+                icon="subtitle-sync"
+                aria-label={t('subs.resyncLabel', { language })}
+                onClick={onSync}
+                disabled={busy || waiting}
+              />
+            </Tooltip>
+          )}
+          <Tooltip content={t('subs.delete')}>
+            <Button
+              size="sm"
+              variant="ghost"
+              iconOnly
+              icon="delete"
+              aria-label={t('subs.deleteLabel', { language })}
+              onClick={onRemove}
+            />
+          </Tooltip>
+        </span>
       </TableCell>
     </TableRow>
   )
@@ -1631,7 +1761,14 @@ function SubtitleSearch({
                                 disabled={download.pending}
                                 onClick={() =>
                                   download.run(r).then(
-                                    () => toast.success(t('subs.downloaded')),
+                                    (track) =>
+                                      // a sync follows unless Sync to the audio is off
+                                      toast.success(
+                                        t('subs.downloaded'),
+                                        track.sync.status === 'queued'
+                                          ? { description: t('subs.downloadedSyncing') }
+                                          : undefined,
+                                      ),
                                     (e: Error) =>
                                       toast.error(t('subs.downloadFailed'), {
                                         description: e.message,

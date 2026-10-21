@@ -325,8 +325,9 @@ export function createServer(
       state.pipeline.splice(state.pipeline.indexOf(p), 1)
       const t = state.torrents.find((x) => x.id === p.torrentId)
       const m = state.items.find((x) => x.id === p.itemId)
-      if (!t || !m) continue
-      if (p.stage === 'importing') {
+      // a Re-sync's step has no torrent
+      if (!m || (!t && p.stage !== 'subtitle-sync')) continue
+      if (p.stage === 'importing' && t) {
         importTorrent(state, clock, t, m, now)
         state.pipeline.push({
           ...p,
@@ -1909,30 +1910,19 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         srv.events.emit({ type: 'history.updated' })
         return newTrack
       },
+      /** Re-sync runs in the background, as the server's job does: Syncing, then the result. */
       sync: (trackId: string) => {
         requireStaff()
         const track = state.subtitles.find((s) => s.id === trackId)
         if (!track) throw new ApiError(404, 'not-found', 'Subtitle track not found.')
-        track.sync = {
-          status: 'synced',
-          confidence: 0.98,
-          offsetMs: -350,
-        }
-        const m = state.items.find((x) => x.id === track.itemId)
-        if (m) {
-          state.history.unshift({
-            id: `h-sync-${trackId}-${now()}`,
-            itemId: track.itemId,
-            type: 'subtitle-synced',
-            date: iso(now()),
-            sourceTitle: m.title,
-            quality: null,
-            indexer: null,
-            message: `Audio sync completed: offset -350 ms, confidence 98%`,
-          })
-        }
+        track.sync = { status: 'syncing', confidence: null, offsetMs: 0 }
+        state.pipeline.push({
+          itemId: track.itemId,
+          torrentId: '',
+          stage: 'subtitle-sync',
+          until: now() + SUBTITLE_SYNC_SECONDS * 1000,
+        })
         srv.events.emit({ type: 'subtitles.updated', itemId: track.itemId })
-        srv.events.emit({ type: 'history.updated' })
         return track
       },
       setOffset: (trackId: string, offsetMs: number) => {

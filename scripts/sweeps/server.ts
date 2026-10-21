@@ -9,7 +9,9 @@
 // (packages/indexers/test/fake) on a local port: the catalog is the seed the development key signs,
 // plus a local copy of the Internet Archive's definition pointed at the fake, so a public indexer
 // and a private one are added without the network. Subtitles come from the providers' fakes
-// (HIGHSEA_SUBTITLES_FAKE), for two movies imported from generated clips. Usage: bun scripts/sweeps/server.ts [pages|keyboard]
+// (HIGHSEA_SUBTITLES_FAKE), for two movies imported from generated clips; the sync is the real
+// engine, so Sintel's clip speaks Sintel and its release's subtitle comes back Synced, while
+// Nosferatu's tone leaves its downloaded track Not synced, under the minimum confidence. Usage: bun scripts/sweeps/server.ts [pages|keyboard]
 import { type ChildProcess, execFileSync, spawn } from 'node:child_process'
 import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -17,6 +19,7 @@ import { join } from 'node:path'
 import { FAKE_CREDENTIALS, serveFakeIndexer } from '@highsea/indexers/fake'
 import { makeFeature } from '@highsea/media/testing'
 import { FAKE_ACCOUNTS } from '@highsea/subtitles/fake'
+import { sintel } from '@highsea/subtitles/testing'
 import type { BrowserContext, Page } from 'playwright-core'
 import { axe, heightFor, launch, overflow, pool, ROOT, settleAnimations, walk } from './lib.ts'
 
@@ -77,6 +80,12 @@ const stop = () => {
   server.kill('SIGTERM')
   indexer.stop()
   rmSync(dir, { recursive: true, force: true })
+}
+
+/** "00:01:02,500". */
+const srtTime = (ms: number) => {
+  const p = (n: number, w = 2) => String(n).padStart(w, '0')
+  return `${p(Math.floor(ms / 3_600_000))}:${p(Math.floor(ms / 60_000) % 60)}:${p(Math.floor(ms / 1000) % 60)},${p(ms % 1000, 3)}`
 }
 
 async function api<T>(method: string, path: string, body?: unknown, token?: string): Promise<T> {
@@ -394,24 +403,32 @@ try {
     '',
   )
 
-  // subtitles (checkpoint 7a): two providers signed in, the third left without an account; then
-  // Sintel imported with the English subtitle its release carried, and Nosferatu with only the
-  // forced English stream inside the clip, whose import searches the fakes.
+  // subtitles (checkpoint 7): two providers signed in, the third left without an account; then
+  // Sintel imported with the English subtitle its release carried, 2.5 s late against its speech,
+  // and Nosferatu with only the forced English stream inside the clip, whose import searches the
+  // fakes.
   await api('PUT', '/subtitles/providers/opensubtitles', FAKE_ACCOUNTS.opensubtitles, token)
   await api('PUT', '/subtitles/providers/subdl', FAKE_ACCOUNTS.subdl, token)
   for (const id of ['opensubtitles', 'subdl'])
     await api('PATCH', `/subtitles/providers/${id}`, { enabled: true }, token)
   // feature length, or the import skips them as samples
   const feature = makeFeature(join(dir, 'feature.mkv'))
-  const release = (name: string, srt?: string) => {
+  const speaking = makeFeature(join(dir, 'sintel.mkv'), 600, sintel.audio)
+  const late = sintel
+    .cues()
+    .map(
+      (c, i) => `${i + 1}\n${srtTime(c.start + 2_500)} --> ${srtTime(c.end + 2_500)}\n${c.text}\n`,
+    )
+    .join('\n')
+  const release = (name: string, srt?: string, clip = feature) => {
     const folder = join(dataDir, 'downloads', name)
     mkdirSync(folder, { recursive: true })
-    copyFileSync(feature, join(folder, `${name}.mkv`))
+    copyFileSync(clip, join(folder, `${name}.mkv`))
     if (srt) writeFileSync(join(folder, `${name}.en.srt`), srt)
     return folder
   }
   for (const folder of [
-    release('Sintel.2010.1080p.BluRay.x264-GRP', '1\n00:00:00,500 --> 00:00:02,000\nHello.\n'),
+    release('Sintel.2010.1080p.BluRay.x264-GRP', late, speaking),
     release('Nosferatu.1922.1080p.BluRay.x264-GRP'),
   ]) {
     const found = await api<
@@ -449,6 +466,33 @@ try {
     if (i === 49) throw new Error('the import’s subtitle search found nothing for Nosferatu')
     await new Promise((r) => setTimeout(r, 200))
   }
+  // Re-sync Sintel's release subtitle against its speech, and wait for every sync to finish, so
+  // A6 shows Synced and Not synced rather than whatever was mid-sync
+  type Track = { id: string; kind: string; sync: { status: string } }
+  const tracksOf = (id: number) => api<Track[]>('GET', `/movies/${id}/subtitles`, undefined, token)
+  const carried = (await tracksOf(45745)).find((t) => t.kind === 'bundled')
+  if (!carried) throw new Error('Sintel’s release subtitle wasn’t kept')
+  // the 52-second clip's 12 cues earn less confidence than a film's: its minimum for this sync,
+  // then the default again, so Settings shows what it ships with
+  const settings = await api<{ minConfidence: number }>(
+    'GET',
+    '/settings/subtitles',
+    undefined,
+    token,
+  )
+  await api('PATCH', '/settings/subtitles', { minConfidence: sintel.minConfidence }, token)
+  await api('POST', `/subtitles/${carried.id}/sync`, undefined, token)
+  for (let i = 0; ; i++) {
+    const all = [...(await tracksOf(45745)), ...(await tracksOf(653))]
+    if (all.every((t) => t.sync.status !== 'queued' && t.sync.status !== 'syncing')) {
+      const status = (await tracksOf(45745)).find((t) => t.id === carried.id)?.sync.status
+      if (status !== 'synced') throw new Error(`Sintel’s subtitle came back ${status}`)
+      break
+    }
+    if (i === 300) throw new Error('the subtitle syncs didn’t finish')
+    await new Promise((r) => setTimeout(r, 200))
+  }
+  await api('PATCH', '/settings/subtitles', { minConfidence: settings.minConfidence }, token)
 
   // signed out
   await sweep(
@@ -664,7 +708,10 @@ try {
       { name: 'movie:files', path: '/movies/45745', act: tab('Files') },
       { name: 'movie:search', path: '/movies/45745', act: tab('Search') },
       { name: 'movie:history', path: '/movies/45745', act: tab('History') },
+      // Synced, with the release's track and the clip's forced stream
       { name: 'movie:subtitles', path: '/movies/45745', act: tab('Subtitles') },
+      // a downloaded track under the minimum confidence: Not synced, with its confidence
+      { name: 'movie:subtitles:unsynced', path: '/movies/653', act: tab('Subtitles') },
       {
         name: 'movie:subtitles:results',
         path: '/movies/45745',

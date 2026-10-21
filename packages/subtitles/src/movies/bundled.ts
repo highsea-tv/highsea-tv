@@ -19,7 +19,9 @@ import { toLanguageCode } from '../shared/languages.ts'
 import { moviehash } from '../shared/moviehash.ts'
 import { sidecarPath } from '../shared/naming.ts'
 import { MAX_SUBTITLE_BYTES, processSubtitle, renderSubtitle } from '../shared/processing/index.ts'
+import { applyCorrection } from '../sync/align.ts'
 import { announce, type SubtitlesDeps } from './context.ts'
+import { correctionOf } from './sync.ts'
 import { providerName, type TrackRow, type Tracks } from './tracks.ts'
 import type { Wanted } from './wanted.ts'
 
@@ -69,7 +71,10 @@ export function createBundled(
   deps: SubtitlesDeps,
   tracks: Tracks,
   wanted: Wanted,
-  queueSearch: (fileId: string) => void,
+  {
+    queueSearch,
+    queueResync,
+  }: { queueSearch: (fileId: string) => void; queueResync: (fileId: string) => void },
 ) {
   const { db, clock, events } = deps
   const fs = tracks.fs
@@ -240,7 +245,15 @@ export function createBundled(
           log.warn('couldn’t move a subtitle with its video', { path: row.path })
           continue
         }
-        await tracks.write(path, renderSubtitle(original, { removeHi: false }).text)
+        const c = correctionOf(row)
+        const nudge = row.manualOffsetMs
+        await tracks.write(
+          path,
+          renderSubtitle(original, {
+            removeHi: row.hiRemoved,
+            shift: (ms, anchor) => applyCorrection(c, ms, anchor) + nudge,
+          }).text,
+        )
       }
       if (row.format === 'idx')
         await fs.rename(`${row.path.slice(0, -4)}.sub`, `${path.slice(0, -4)}.sub`).catch(() => {})
@@ -251,8 +264,12 @@ export function createBundled(
     }
   }
 
+  /** Files whose tracks came from the file they replaced: synced again after the import. */
+  const replacedFiles = new Set<string>()
+
   const hooks: ImportHooks = {
     replacing(tx: Tx, from: string, to: string) {
+      replacedFiles.add(to)
       // the old file's tracks belong to the new one; the new file may already have the same track
       const moving = tx
         .select()
@@ -281,6 +298,7 @@ export function createBundled(
     async afterImport(file: ImportedFile) {
       await hash(file.fileId, file.path)
       await follow(file.fileId, file.path)
+      if (replacedFiles.delete(file.fileId)) queueResync(file.fileId)
       const entries = file.inPlace
         ? await besideInPlace(file)
         : file.sourceFolder

@@ -210,7 +210,12 @@ const track = (id: string, extra: Record<string, unknown> = {}) => ({
   score: 99,
   matches: ['hash'],
   chosen: false,
-  sync: { status: 'unsynced', confidence: null, offsetMs: 0 },
+  sync: {
+    status: 'unsynced',
+    confidence: null as number | null,
+    offsetMs: 0,
+    detail: null as string | null,
+  },
   path: '/data/media/movies/The Matrix (1999)/The Matrix (1999) Bluray-1080p.en.srt',
   addedAt: '2026-10-21T00:00:00.000Z',
   ...extra,
@@ -498,6 +503,18 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     const item = queueItem(state.queue.length + 1, 603)
     state.queue.push(item)
     return json(item)
+  }
+  const subtitle = /^\/api\/v1\/subtitles\/([^/]+)\/(sync|offset)$/.exec(path)
+  if (subtitle) {
+    const found = state.tracks.find((t) => t.id === subtitle[1])
+    if (!found) return json({ error: { code: 'not-found', message: 'Not found' } }, 404)
+    found.sync =
+      subtitle[2] === 'sync'
+        ? { status: 'queued', confidence: null, offsetMs: 0, detail: null }
+        : { ...found.sync, offsetMs: body.ms }
+    // the server announces the track's change
+    setTimeout(() => state.push?.('subtitles.updated'), 0)
+    return json(found)
   }
   if (method === 'DELETE' && path.startsWith('/api/v1/subtitles/')) {
     state.tracks = state.tracks.filter((t) => t.id !== path.split('/').pop())
@@ -893,8 +910,8 @@ describe('a movie in the library', () => {
     expect(page.getByText('Nothing has happened yet')).toBeTruthy()
   })
 
-  describe('Subtitles (checkpoint 7a)', () => {
-    test('sidecars, then the file’s own streams, read-only; no Re-sync or offset before 7b', async () => {
+  describe('Subtitles (checkpoint 7)', () => {
+    test('sidecars with their offset, then the file’s own streams, read-only', async () => {
       state.files = [mediaFile('v1')]
       state.tracks = [
         track('t1'),
@@ -912,13 +929,59 @@ describe('a movie in the library', () => {
       expect(rows[2]).toContain('From the release')
       expect(rows[3]).toContain('Stream 2 in The Matrix (1999) Bluray-1080p.mkv')
       expect(rows[3]).toContain('Matches the video')
-      expect(page.queryByRole('button', { name: /^Re-sync/ })).toBeNull()
-      expect(page.queryByRole('button', { name: /50 ms/ })).toBeNull()
+      expect(rows[1]).toContain('0 ms')
+      expect(rows[3]).toContain('—')
+      expect(page.getAllByRole('button', { name: /^Re-sync/ })).toHaveLength(2)
 
       await user.click(page.getByRole('button', { name: 'Delete English subtitles' }))
       await settle()
       expect(requested('DELETE', '/api/v1/subtitles/t1')).toHaveLength(1)
       expect(page.getByText('Subtitles deleted')).toBeTruthy()
+    })
+
+    test('Re-sync says it’s syncing, then the result; − and + move the track 50 ms', async () => {
+      state.files = [mediaFile('v1')]
+      state.tracks = [
+        track('t1', {
+          sync: {
+            status: 'synced',
+            confidence: 0.92,
+            offsetMs: -1200,
+            detail: 'Framerate corrected (25 → 23.976)',
+          },
+        }),
+        track('t2', { kind: 'bundled', provider: null, format: 'sup', language: 'fr' }),
+      ]
+      const { page, user } = await open(<MovieDetail id="603" />)
+      await user.click(page.getByRole('tab', { name: 'Subtitles' }))
+      await settle()
+      expect(page.getByText('Framerate corrected (25 → 23.976)')).toBeTruthy()
+      expect(page.getByRole('status', { name: 'English offset' }).textContent).toBe('−1200 ms')
+      // an image track has nothing to move
+      expect(page.queryByRole('button', { name: 'Re-sync French' })).toBeNull()
+
+      await user.click(page.getByRole('button', { name: 'Show English subtitles 50 ms later' }))
+      await settle()
+      expect(requested('PUT', '/api/v1/subtitles/t1/offset')[0]?.body).toEqual({ ms: -1150 })
+      expect(page.getByRole('status', { name: 'English offset' }).textContent).toBe('−1150 ms')
+
+      await user.click(page.getByRole('button', { name: 'Re-sync English' }))
+      await settle()
+      expect(requested('POST', '/api/v1/subtitles/t1/sync')).toHaveLength(1)
+      expect(page.getByText('Syncing English to the audio')).toBeTruthy()
+      // the result comes from the sync, not the read before it
+      expect(page.queryByText('Synced English to the audio')).toBeNull()
+      expect(page.getByText('Waiting to sync')).toBeTruthy()
+      expect(
+        (page.getByRole('button', { name: 'Re-sync English' }) as HTMLButtonElement).disabled,
+      ).toBe(true)
+
+      const [t1] = state.tracks
+      if (t1) t1.sync = { status: 'synced', confidence: 0.98, offsetMs: -900, detail: null }
+      await act(async () => state.push?.('subtitles.updated'))
+      await settle()
+      expect(page.getByText('Synced English to the audio')).toBeTruthy()
+      expect(page.getByText('Offset −900 ms, 98% confidence.')).toBeTruthy()
     })
 
     test('Search, then Use; the attribution once under the results', async () => {
@@ -946,6 +1009,8 @@ describe('a movie in the library', () => {
       await settle()
       expect(requested('POST', '/api/v1/movies/603/subtitles')[0]?.body).toEqual({ resultId: 'r3' })
       expect(page.getByText('Subtitles downloaded')).toBeTruthy()
+      // the fake's track isn't waiting for a sync, as with Sync to the audio off
+      expect(page.queryByText('Syncing to the audio in the background.')).toBeNull()
     })
 
     test('no provider on, or none answering, says so in place of the results', async () => {

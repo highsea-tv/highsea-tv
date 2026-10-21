@@ -67,9 +67,15 @@ import {
   type Personalization,
   type WidgetSource,
 } from '@highsea/personalization'
-import { createSubtitles, type Subtitles } from '@highsea/subtitles/movies'
+import { createSubtitles, type RunSync, type Subtitles } from '@highsea/subtitles/movies'
 import { PROVIDER_INFO } from '@highsea/subtitles/providers'
 import { isLanguageCode } from '@highsea/subtitles/shared'
+import {
+  binaryAvailable,
+  ffmpegBinary,
+  SYNC_WORKER,
+  type SyncOutcome,
+} from '@highsea/subtitles/sync'
 import { createTorrentEngine, HASH_WORKER, type TorrentEngine } from '@highsea/torrent'
 import { CommandFailed, createVpn, type Vpn } from '@highsea/vpn'
 import { and, eq } from 'drizzle-orm'
@@ -287,7 +293,12 @@ export type BootOptions = {
    * The subtitle providers' fetch and highsea's OpenSubtitles.com key. By default the outside
    * fetch and the configured key; tests and the sweeps pass `@highsea/subtitles/fake`.
    */
-  subtitles?: { fetch?: Fetch; openSubtitlesKey?: string | null }
+  subtitles?: {
+    fetch?: Fetch
+    openSubtitlesKey?: string | null
+    /** The sync engine; the worker pool when absent. Tests answer with a set outcome. */
+    sync?: RunSync
+  }
 }
 
 const g = globalThis as typeof globalThis & { __highsea?: Runtime }
@@ -508,6 +519,11 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       options.subtitles?.openSubtitlesKey !== undefined
         ? options.subtitles.openSubtitlesKey
         : (config.opensubtitlesKey ?? null),
+    // the sync engine in the pool: the worker spawns ffmpeg itself, and the job's signal stops it
+    sync:
+      options.subtitles?.sync ??
+      ((task, signal) =>
+        workers.run<SyncOutcome>({ module: SYNC_WORKER, fn: 'sync', input: task }, { signal })),
   })
   subtitles.seed()
   subtitles.defineJobs()
@@ -582,6 +598,13 @@ export async function boot(options: BootOptions): Promise<Runtime> {
   // root folders added or removed announce `settings.updated` (the root folder routes)
   const stopWatchSync = events.subscribe((e) => {
     if (e.topic === 'settings.updated') syncWatch()
+  })
+  // ffmpeg, for syncing subtitles to the audio: missing is a health warning, and each sync fails
+  // with the same reason (ADR 0044)
+  let ffmpegMissing = false
+  void binaryAvailable(ffmpegBinary()).then((ok) => {
+    ffmpegMissing = !ok
+    if (!ok) log.warn('ffmpeg isn’t installed, so subtitles can’t be synced to the audio')
   })
   // unar, found as ffprobe is: missing is a health note and a clear reason on each archive's import
   let unarMissing = false
@@ -933,6 +956,15 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       for (const i of ipBlocklist.issues()) out.push({ ...i, source: 'Downloads' })
       for (const i of vpn.issues()) out.push({ ...i, source: 'VPN' })
       for (const i of subtitles.issues()) out.push({ ...i, source: 'Subtitles' })
+      if (ffmpegMissing)
+        out.push({
+          id: 'ffmpeg-missing',
+          source: 'Subtitles',
+          level: 'warning',
+          message:
+            'ffmpeg isn’t installed, so subtitles can’t be synced to the audio. Install FFmpeg, or set HIGHSEA_FFMPEG to its path.',
+          since: startedAt,
+        })
       if (unarMissing)
         out.push({
           id: 'unar-missing',

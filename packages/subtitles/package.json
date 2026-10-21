@@ -8,12 +8,15 @@
     "./fake": "./test/fake/index.ts",
     "./movies": "./src/movies/index.ts",
     "./providers": "./src/providers/index.ts",
-    "./shared": "./src/shared/index.ts"
+    "./shared": "./src/shared/index.ts",
+    "./sync": "./src/sync/index.ts",
+    "./testing": "./test/testing/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@echogarden/fvad-wasm": "0.2.0",
     "@highsea/api-contract": "workspace:*",
     "@highsea/core": "workspace:*",
     "@highsea/db": "workspace:*",
@@ -22,6 +25,7 @@
     "@highsea/parser": "workspace:*",
     "chardet": "2.2.0",
     "drizzle-orm": "0.45.3",
+    "fft.js": "4.0.4",
     "zod": "4.6.7"
   },
   "devDependencies": {

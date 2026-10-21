@@ -18,6 +18,7 @@ import { createJobQueue } from '@highsea/jobs'
 import type { SubtitleInfo } from '@highsea/media/shared'
 import { createMedia } from '@highsea/media/shared'
 import { createSubtitles } from '../../src/movies/index.ts'
+import type { SyncOutcome, SyncTask } from '../../src/sync/index.ts'
 import { createFakeSubtitles, FAKE_ACCOUNTS, FAKE_OPENSUBTITLES_KEY } from '../fake/index.ts'
 
 export const DAY = 24 * 60 * 60 * 1000
@@ -25,6 +26,18 @@ export const DAY = 24 * 60 * 60 * 1000
 export const SINTEL = { tmdbId: 45745, imdbId: 'tt1727587', title: 'Sintel', year: 2010 }
 
 type ProviderName = 'opensubtitles' | 'subdl' | 'subsource'
+
+/** What the fake engine answers unless a test says otherwise: 1.2 seconds early, 92% sure. */
+export const syncedOutcome = (over: Partial<SyncOutcome> = {}): SyncOutcome => ({
+  correction: { ratio: 1, sections: [{ from: 0, fromMs: 0, offsetMs: 1_200 }] },
+  offsetMs: 1_200,
+  confidence: 0.92,
+  measures: { overlap: 1, clarity: 0.92, coverage: 1 },
+  raw: { lift: 0.4, significance: 9, clarity: 0.18, coverage: 1 },
+  cues: 3,
+  reference: 'audio',
+  ...over,
+})
 
 export function setup({
   generate = true,
@@ -44,18 +57,34 @@ export function setup({
   const dir = mkdtempSync(join(tmpdir(), 'highsea-subtitles-'))
   const media = createMedia({ db, clock, logger: silentLogger })
   media.seed()
-  const subtitles = createSubtitles({
-    db,
-    clock,
-    logger: silentLogger,
-    sealer: createSealer(generateSecretKey()),
-    fetch: fake.fetch,
-    userAgent: 'highsea v0.0.0',
-    openSubtitlesKey: FAKE_OPENSUBTITLES_KEY,
-    jobs,
-    events,
-    media,
-  })
+  // the engine is tested on real audio in test/sync; here it answers what a test sets
+  const engine = {
+    outcome: syncedOutcome() as SyncOutcome | Error,
+    tasks: [] as SyncTask[],
+    /** The engine never answers, as a sync cut short by a crash. */
+    hold: false,
+  }
+  const service = (queue: typeof jobs) =>
+    createSubtitles({
+      db,
+      clock,
+      logger: silentLogger,
+      sealer,
+      fetch: fake.fetch,
+      userAgent: 'highsea v0.0.0',
+      openSubtitlesKey: FAKE_OPENSUBTITLES_KEY,
+      jobs: queue,
+      events,
+      media,
+      sync: (task) => {
+        engine.tasks.push(task)
+        if (engine.hold) return new Promise<SyncOutcome>(() => {})
+        if (engine.outcome instanceof Error) return Promise.reject(engine.outcome)
+        return Promise.resolve(engine.outcome)
+      },
+    })
+  const sealer = createSealer(generateSecretKey())
+  const subtitles = service(jobs)
   subtitles.seed()
   subtitles.defineJobs()
   for (const id of providers) {
@@ -135,7 +164,20 @@ export function setup({
             duration: 60,
             container: 'matroska,webm',
             video: { index: 0, codec: 'h264', codecTag: null },
-            audio: [],
+            audio: [
+              {
+                index: 1,
+                codec: 'aac',
+                codecTag: null,
+                profile: null,
+                channels: 2,
+                layout: 'stereo',
+                language: 'eng',
+                title: null,
+                default: true,
+                bitrate: 128_000,
+              },
+            ],
             subtitles: embedded.map((s, index) => ({
               index: index + 2,
               codec: 'subrip',
@@ -155,12 +197,25 @@ export function setup({
   }
 
   /** Runs every job that's due, until none is. */
-  async function drain() {
+  async function drain(queue = jobs) {
     for (let i = 0; i < 20; i++) {
-      await jobs.tick()
-      await jobs.idle()
-      if (!jobs.list({ status: ['queued'] }).some((j) => j.runAt <= clock.now())) return
+      await queue.tick()
+      await queue.idle()
+      if (!queue.list({ status: ['queued'] }).some((j) => j.runAt <= clock.now())) return
     }
+  }
+
+  /**
+   * A second boot on the same database, as after a crash: a new queue recovers what was running,
+   * and a new service starts. The first one's work is abandoned, not finished.
+   */
+  function restart() {
+    const queue = createJobQueue({ db, clock, events })
+    const again = service(queue)
+    again.defineJobs()
+    queue.recover()
+    const stop = again.start()
+    return { jobs: queue, subtitles: again, drain: () => drain(queue), stop }
   }
 
   const rows = () => db.select().from(schema.subtitleFiles).all()
@@ -178,8 +233,10 @@ export function setup({
     dir,
     media,
     subtitles,
+    engine,
     movie,
     drain,
+    restart,
     rows,
     wantedRows,
     history,

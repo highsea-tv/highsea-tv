@@ -51,7 +51,7 @@ beforeAll(() => {
       raw.run(
         `INSERT INTO subtitle_files (id, media_file_id, item_id, language, forced, hi, format, kind, path,
           provider, score, matches, chosen, sync_status, manual_offset_ms, created_at, updated_at)
-         VALUES (?, ?, ?, 'en', 0, 0, 'srt', 'external', ?, 'subdl', 90, '[]', 0, 'unsynced', 0, ?, ?)`,
+         VALUES (?, ?, ?, 'en', 0, 0, 'srt', 'external', ?, 'subdl', 90, '[]', 0, 'queued', 0, ?, ?)`,
         `sub_${i}`,
         `fil_${i}`,
         id(i),
@@ -118,9 +118,7 @@ describe(`subtitles at ${ROWS.toLocaleString('en')} movies`, () => {
         .map((r) => String(r.detail))
         .join(' | ')
     expect(
-      plan(
-        `SELECT count(*) FROM subtitle_files WHERE sync_status IN ('queued','syncing','unsynced')`,
-      ),
+      plan(`SELECT count(*) FROM subtitle_files WHERE sync_status IN ('queued','syncing')`),
     ).toContain('subtitle_files_sync')
     expect(
       plan(

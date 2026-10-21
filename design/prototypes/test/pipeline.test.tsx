@@ -262,9 +262,13 @@ describe('A6 movie detail', () => {
     const after = (await client(mock).subtitles.forItem('4'))[0]
     expect(after?.sync.offsetMs).toBe((before?.sync.offsetMs ?? 0) + 50)
 
+    // Re-sync runs in the background, as the server's job does
     await user.click(page().getByRole('button', { name: 'Re-sync English' }))
     await settle()
-    expect((await client(mock).subtitles.forItem('4'))[0]?.sync.status).toBe('synced')
+    expect(page().getByText('Syncing English to the audio')).toBeTruthy()
+    const track = () => mock.servers.populated.state.subtitles.find((s) => s.itemId === '4')
+    expect(track()?.sync.status).toBe('syncing')
+    await run(mock, () => track()?.sync.status === 'synced')
 
     await user.click(page().getByRole('button', { name: 'Search providers' }))
     await settle()

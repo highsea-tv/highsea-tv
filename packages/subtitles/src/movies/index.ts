@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // `@highsea/subtitles/movies`: subtitles for the movie library (checkpoint 7a). One service the
 // runtime creates once: language profiles, providers and their accounts, the wanted list, search,
-// downloads, the import's hooks and the jobs. The sync engine (7b) joins it later.
+// downloads, the import's hooks, the sync (ADR 0044) and the jobs.
 import type { ClientSubtitle } from '@highsea/api-contract'
 import { schema } from '@highsea/db'
 import { and, avg, count, eq, gte, inArray, sql } from 'drizzle-orm'
 import { languageList, languageName } from '../shared/languages.ts'
 import { createProfiles, profileNotFound } from '../shared/profiles.ts'
 import { createSettings } from '../shared/settings.ts'
+import { sync as syncInProcess } from '../sync/worker.ts'
 import { createAccounts } from './accounts.ts'
 import { createBundled } from './bundled.ts'
 import { announce, type SubtitlesDeps } from './context.ts'
 import { createJobs } from './jobs.ts'
 import { createSearch } from './search.ts'
+import { createSync, type RunSync } from './sync.ts'
 import { createTracks, type TrackView } from './tracks.ts'
 import { createWanted } from './wanted.ts'
 
@@ -36,13 +38,39 @@ export function createSubtitles(deps: SubtitlesDeps) {
   const tracks = createTracks(deps)
   const wanted = createWanted(deps, tracks, profiles)
   const search = createSearch(deps, { accounts, tracks, wanted, profiles, settings })
-  // the hooks queue searches through the jobs, which are made after them
+  // the runtime runs the engine in its worker pool; without one (tests) it runs here
+  const run: RunSync = deps.sync ?? ((task, signal) => syncInProcess(task, { signal }))
+  const sync = createSync(deps, { tracks, settings, run })
+  // the hooks queue searches and syncs through the jobs, which are made after them
   let queueSearch: (fileId: string) => void = () => {}
-  const bundled = createBundled(deps, tracks, wanted, (fileId) => queueSearch(fileId))
-  const jobs = createJobs(deps, { search, wanted, bundled, settings })
+  let queueResync: (fileId: string) => void = () => {}
+  const bundled = createBundled(deps, tracks, wanted, {
+    queueSearch: (fileId) => queueSearch(fileId),
+    queueResync: (fileId) => queueResync(fileId),
+  })
+  const jobs = createJobs(deps, { search, wanted, bundled, settings, sync })
   queueSearch = (fileId) => void jobs.queueSearch(fileId)
+  queueResync = (fileId) => void jobs.queueResync(fileId)
 
-  /** A10's stats card. "Today" is the server's UTC day; nothing syncs before 7b. */
+  /** Re-sync: queues the sync and answers with the track, waiting for it. */
+  function requestSync(trackId: string): TrackView {
+    const request = sync.request(trackId)
+    jobs.queueSync(request)
+    const row = tracks.track(trackId)
+    const item = tracks.item(row.itemId)
+    if (item) announce(events, [item.tmdbId])
+    return tracks.view(row, item?.tmdbId ?? 0)
+  }
+
+  /** Use: the download, then its sync. */
+  async function download(tmdbId: number, resultId: string): Promise<TrackView> {
+    const view = await search.use(tmdbId, resultId)
+    if (view.sync.status === 'queued')
+      jobs.queueSync({ trackId: view.id, requestedAt: tracks.track(view.id).updatedAt })
+    return view
+  }
+
+  /** A10's stats card. "Today" is the server's UTC day. */
   function stats(): SubtitleStats {
     const since = startOfUtcDay(clock.now())
     const synced = db
@@ -58,7 +86,7 @@ export function createSubtitles(deps: SubtitlesDeps) {
       db
         .select({ n: count() })
         .from(subtitleFiles)
-        .where(inArray(subtitleFiles.syncStatus, ['queued', 'syncing', 'unsynced']))
+        .where(inArray(subtitleFiles.syncStatus, ['queued', 'syncing']))
         .get()?.n ?? 0
     return {
       syncedToday: synced?.n ?? 0,
@@ -218,7 +246,9 @@ export function createSubtitles(deps: SubtitlesDeps) {
     searchAllMissing: () => ({ queued: jobs.searchAllMissing() }),
     forItem: (tmdbId: number): TrackView[] => tracks.forItem(tmdbId),
     search: search.searchItem,
-    download: search.use,
+    download,
+    sync: requestSync,
+    setOffset: sync.setOffset,
     delete: remove,
     clientTracks,
     embedded: tracks.embedded,
@@ -249,7 +279,8 @@ export { NO_APP_KEY, type ProviderView } from './accounts.ts'
 export { trackFromName } from './bundled.ts'
 export type { SidecarFs, SubtitlesDeps } from './context.ts'
 export { TOPICS } from './context.ts'
-export { JOBS, UPGRADE_EVERY_MS, WANTED_EVERY_MS } from './jobs.ts'
+export { JOBS, SYNC_TIMEOUT_MS, UPGRADE_EVERY_MS, WANTED_EVERY_MS } from './jobs.ts'
 export type { ResultView } from './search.ts'
+export { correctionDetail, MAX_NUDGE_MS, type RunSync } from './sync.ts'
 export type { EmbeddedTrack, TrackView } from './tracks.ts'
 export { BACKOFF_DAYS, type WantedMovie, type WantedPage } from './wanted.ts'

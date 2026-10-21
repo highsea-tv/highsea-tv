@@ -16,6 +16,7 @@ import { toLanguageCode } from '../shared/languages.ts'
 import type { PresentTrack } from '../shared/profiles.ts'
 import type { ProviderId } from '../shared/types.ts'
 import type { SidecarFs, SubtitlesDeps } from './context.ts'
+import { correctionDetail, correctionOf, syncedOffsetOf } from './sync.ts'
 
 const { mediaFiles, mediaItems, subtitleFiles } = schema
 
@@ -64,7 +65,14 @@ export type TrackView = {
   score: number | null
   matches: string[]
   chosen: boolean
-  sync: { status: TrackRow['syncStatus']; confidence: number | null; offsetMs: number }
+  sync: {
+    status: TrackRow['syncStatus']
+    confidence: number | null
+    /** The correction at the first cue plus the nudge: A6's Offset column. */
+    offsetMs: number
+    /** "Framerate corrected (25 → 23.976)" or "2 sections moved"; null for one offset. */
+    detail: string | null
+  }
   path: string
   addedAt: string
 }
@@ -161,7 +169,8 @@ export function createTracks(deps: SubtitlesDeps) {
       sync: {
         status: row.syncStatus,
         confidence: row.syncConfidence,
-        offsetMs: (row.syncOffsetMs ?? 0) + row.manualOffsetMs,
+        offsetMs: syncedOffsetOf(row) + row.manualOffsetMs,
+        detail: correctionDetail(correctionOf(row)),
       },
       path: row.path,
       addedAt: new Date(row.createdAt).toISOString(),

@@ -25,7 +25,7 @@ export const subtitles = defineMessages({
   'wanted.searchAll': 'Search all',
   'wanted.searchedAll': 'Searching every provider',
   'wanted.searchedAllBody':
-    '{count, plural, one {# movie is} other {# movies are}} queued. What’s found downloads in the background.',
+    '{count, plural, one {# movie is} other {# movies are}} queued. What’s found downloads and syncs in the background.',
   'wanted.movie': 'Movie',
   'wanted.missing': 'Missing',
   'wanted.actions': 'Actions',
@@ -116,7 +116,6 @@ export const subtitles = defineMessages({
   'scoring.confidence': 'Minimum confidence',
   'scoring.confidenceHint':
     'Below this, highsea keeps the original timing and marks the track for review.',
-  'scoring.syncNext': 'Sync arrives in the next update.',
   'scoring.upgrade': 'Keep upgrading for',
   'scoring.upgradeHint': 'Look for a better match this many days after import.',
   'scoring.days': 'days',

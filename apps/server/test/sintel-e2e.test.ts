@@ -4,14 +4,18 @@
 // follow its progress over SSE, and find the file at
 // media/movies/Sintel (2010)/Sintel (2010) Bluray-1080p.mkv with history saying so. The release is
 // a generated clip (ADR 0040), seeded by a second engine through a tracker, both on loopback; the
-// runtime's engine is bound to loopback too, so nothing leaves the machine.
+// runtime's engine is bound to loopback too, so nothing leaves the machine. Step 6 (checkpoint 7b):
+// the clip speaks 52 seconds of Sintel, the fake Subdl serves its English subtitle 2.5 s late, and
+// the real engine, in the worker pool, syncs the `.en.srt` it attaches.
 import { afterEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 import type { Fetch } from '@highsea/core'
 import { createFakeIndexer, FAKE_CREDENTIALS, FAKE_ORIGIN } from '@highsea/indexers/fake'
-import { hasFfmpeg, makeClips } from '@highsea/media/testing'
+import { hasFfmpeg } from '@highsea/media/testing'
 import { createReplayFetch } from '@highsea/metadata/replay'
+import { createFakeSubtitles, FAKE_ACCOUNTS, FAKE_OPENSUBTITLES_KEY } from '@highsea/subtitles/fake'
+import { makeSyncClip, sintel } from '@highsea/subtitles/testing'
 import {
   LOOPBACK,
   makeTorrent,
@@ -34,13 +38,25 @@ const SINTEL = 45745
 const RELEASE = 'Sintel.2010.1080p.BluRay.x264-GRP'
 const RELEASE_ID = 101
 
+/** An SRT's every time moved by `ms`. */
+const shiftSrt = (text: string, ms: number) =>
+  text.replace(/(\d\d):(\d\d):(\d\d),(\d\d\d)/g, (_, h, m, sec, milli) => {
+    const t = Math.max(0, ((+h * 60 + +m) * 60 + +sec) * 1000 + +milli + ms)
+    const pad = (n: number, w = 2) => String(n).padStart(w, '0')
+    return `${pad(Math.floor(t / 3_600_000))}:${pad(Math.floor(t / 60_000) % 60)}:${pad(Math.floor(t / 1000) % 60)},${pad(t % 1000, 3)}`
+  })
+
 describe.skipIf(!hasFfmpeg)('Sintel, from grab to library', () => {
   test('grabbed, downloaded, imported and in history', async () => {
-    // the release: a generated 1080p clip in a folder named for it, seeded on loopback
+    // the release: a generated 1080p clip speaking Sintel, in a folder named for it, seeded on
+    // loopback
     const clipDir = tempDir('clips')
     closers.push(() => rmSync(clipDir, { recursive: true, force: true }))
-    const clips = makeClips(clipDir)
-    const clip = new Uint8Array(readFileSync(clips.main))
+    const clip = new Uint8Array(
+      readFileSync(
+        makeSyncClip(join(clipDir, 'sintel.mkv'), { audio: 'sintel', size: '1920x1080' }),
+      ),
+    )
     const files = [{ path: `${RELEASE}/${RELEASE}.mkv`, data: clip }]
     const tracker = await startTracker()
     closers.push(() => tracker.close())
@@ -66,8 +82,21 @@ describe.skipIf(!hasFfmpeg)('Sintel, from grab to library', () => {
       String(input instanceof Request ? input.url : input).startsWith(FAKE_ORIGIN)
         ? fake.fetch(input, init)
         : replay(input, init)
-    // a 3-second clip isn't a sample here: the movie's runtime would call it one
-    const runtime = await bootRuntime({ fetch, importing: { sampleSeconds: 2 } })
+    // the subtitle Subdl has for the release: the official one, 2.5 s late
+    const subtitles = createFakeSubtitles({ generate: false })
+    subtitles.add({
+      provider: 'subdl',
+      tmdbId: SINTEL,
+      language: 'en',
+      releaseName: RELEASE,
+      content: shiftSrt(sintel.srt(), 2_500),
+    })
+    // a short clip isn't a sample here: the movie's runtime would call it one
+    const runtime = await bootRuntime({
+      fetch,
+      importing: { sampleSeconds: 2 },
+      subtitles: { fetch: subtitles.fetch, openSubtitlesKey: FAKE_OPENSUBTITLES_KEY },
+    })
     // the VPN is off in tests and the engine boots offline; loopback stands in for the tunnel
     await runtime.engine.setBinding(LOOPBACK)
     const app = createApi(runtime)
@@ -79,9 +108,18 @@ describe.skipIf(!hasFfmpeg)('Sintel, from grab to library', () => {
     const folder = join(runtime.config.dataDir, 'media', 'movies')
     mkdirSync(folder, { recursive: true })
     await api.rootFolders.add({ body: { path: folder } })
+    await api.subtitles.saveProvider({
+      params: { id: 'subdl' },
+      body: { apiKey: FAKE_ACCOUNTS.subdl.apiKey },
+    })
+    await api.subtitles.toggleProvider({ params: { id: 'subdl' }, body: { enabled: true } })
+    // a 52-second clip's 12 cues are less evidence than a film's: the minimum it can earn
+    await api.subtitles.saveSettings({ body: { minConfidence: sintel.minConfidence } })
+    const [english] = await api.subtitles.languageProfiles()
     await api.movies.add({
       body: {
         tmdbId: SINTEL,
+        languageProfileId: english?.id ?? null,
         rootFolder: folder,
         monitored: true,
         minimumAvailability: 'released',
@@ -155,5 +193,27 @@ describe.skipIf(!hasFfmpeg)('Sintel, from grab to library', () => {
     expect((await api.queue.list()).find((q) => q.id === item.id)?.state ?? 'gone').not.toBe(
       'import-blocked',
     )
-  }, 60_000)
+
+    // step 6: the import's search attaches Subdl's `.en.srt`, and the sync moves it back
+    const sidecar = join(folder, 'Sintel (2010)', 'Sintel (2010) Bluray-1080p.en.srt')
+    let track: Awaited<ReturnType<typeof api.subtitles.forItem>>[number] | undefined
+    const started = Date.now()
+    for (;;) {
+      await runtime.jobs.tick()
+      await runtime.jobs.idle()
+      ;[track] = await api.subtitles.forItem({ params: { id: SINTEL } })
+      const status = track?.sync.status
+      if (status === 'synced' || status === 'unsynced' || status === 'failed') break
+      if (Date.now() - started > 30_000) throw new Error(`Timed out syncing: ${status ?? 'none'}`)
+      await new Promise((r) => setTimeout(r, 50))
+    }
+    expect(track).toMatchObject({ language: 'en', provider: 'Subdl', path: sidecar })
+    expect(track?.sync.status).toBe('synced')
+    expect(track?.sync.confidence ?? 0).toBeGreaterThanOrEqual(sintel.minConfidence)
+    // 2.5 s late, moved back: within the 450 ms the official timing is off the speech (ADR 0044)
+    expect(Math.abs((track?.sync.offsetMs ?? 0) + 2_500)).toBeLessThan(450)
+    expect(readFileSync(sidecar, 'utf8')).not.toBe(shiftSrt(sintel.srt(), 2_500))
+    const synced = (await api.movies.history({ params: { id: SINTEL }, query: {} })).items
+    expect(synced.map((h) => h.type)).toContain('subtitle-synced')
+  }, 90_000)
 })

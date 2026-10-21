@@ -7,3 +7,14 @@ export function double(n: number) {
 export function fail() {
   throw new Error('nope')
 }
+
+/** Waits until it's cancelled, then reports that it stopped. */
+export function wait(_input: unknown, { signal }: { signal: AbortSignal }) {
+  return new Promise((_, reject) => {
+    const timer = setTimeout(() => reject(new Error('never cancelled')), 10_000)
+    signal.addEventListener('abort', () => {
+      clearTimeout(timer)
+      reject(new Error('stopped'))
+    })
+  })
+}

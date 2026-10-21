@@ -6,6 +6,8 @@ import { join } from 'node:path'
 import { createFakeClock } from '@highsea/core'
 import { schema } from '@highsea/db'
 import { DOWNLOADS_STALL_JOB } from '@highsea/downloads'
+import { hasFfmpeg } from '@highsea/media/testing'
+import { makeSyncClip, sintel } from '@highsea/subtitles/testing'
 import { boot, createWorkerPool, getRuntime, hasRuntime, loadConfig } from '../src/index.ts'
 
 // the engine opens no socket: a file-backed boot would otherwise listen on 6881 and join the DHT
@@ -156,7 +158,7 @@ describe('worker pool', () => {
   })
 
   // the server runs the pool on Node; Bun's worker_threads are documented as not battle-tested
-  test('under Node, reports a task’s error and keeps the worker', () => {
+  test('under Node, reports a task’s error and keeps the worker, and cancels on a signal', () => {
     const run = Bun.spawnSync([
       'node',
       new URL('./fixtures/pool-under-node.ts', import.meta.url).pathname,
@@ -166,8 +168,36 @@ describe('worker pool', () => {
       results: [2, 4, 6, 8],
       errors: ['nope', 'nope', expect.stringContaining('no function missing')],
       after: 10,
+      cancelled: ['stopped', 'stopped', 'This operation was aborted'],
+      later: 12,
     })
   })
+})
+
+describe.skipIf(!hasFfmpeg)('the subtitle sync in the pool', () => {
+  test('under Node, aligns a clip’s speech, and a cancelled sync stops its ffmpeg', () => {
+    const dir = temp()
+    const clip = makeSyncClip(join(dir, 'clip.mkv'), { audio: 'sintel' })
+    const pidFile = join(dir, 'ffmpeg.pid')
+    const slow = join(dir, 'slow-ffmpeg.sh')
+    writeFileSync(slow, `#!/bin/sh\necho $$ > '${pidFile}'\nexec sleep 60\n`, { mode: 0o755 })
+    const run = Bun.spawnSync([
+      'node',
+      new URL('./fixtures/sync-under-node.ts', import.meta.url).pathname,
+      clip,
+      slow,
+      pidFile,
+    ])
+    expect(run.stderr.toString()).toBe('')
+    const out = JSON.parse(run.stdout.toString())
+    expect(out.confidence).toBeGreaterThanOrEqual(sintel.minConfidence)
+    expect(Math.abs(out.offsetMs + 2_760)).toBeLessThanOrEqual(150)
+    expect(out).toMatchObject({
+      started: true,
+      cancelled: 'The task was cancelled.',
+      running: false,
+    })
+  }, 60_000)
 })
 
 describe('the catalog and indexers', () => {

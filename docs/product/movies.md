@@ -48,7 +48,7 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
   - **History:** this movie's events, newest first.
     - *As built:* 50 at a time, with **Show more**; grabs, imports, failed downloads and imports, renames and blocklistings.
   - **Search:** interactive search. See Interactions.
-  - **Subtitles:** a tracks table (external, then embedded), then **Search for subtitles**. As built in 7a: the columns are Language, Source, Score, Sync and Actions; a track the release carried reads "From the release", one picked with **Use** "Added by hand", and an embedded stream "Stream {index} in {file}" (its language named by `Intl.DisplayNames`, `und` as "Unknown language"). An embedded stream's forced and SDH flags follow its language, as a sidecar's do. Sync reads "Matches the video" for a release's own sidecar and for embedded streams (the prototype's "Embedded" fit only the streams). Until the sync engine (7b), a downloaded track's Sync reads "Not synced", and the Offset column, the − and + buttons and **Re-sync** are hidden. The search panel shows only when the movie has a file, and "Subtitles provided by OpenSubtitles.com" sits under its results.
+  - **Subtitles:** a tracks table (external, then embedded), then **Search for subtitles**. As built in 7a: the columns are Language, Source, Score, Sync and Actions; a track the release carried reads "From the release", one picked with **Use** "Added by hand", and an embedded stream "Stream {index} in {file}" (its language named by `Intl.DisplayNames`, `und` as "Unknown language"). An embedded stream's forced and SDH flags follow its language, as a sidecar's do. Sync reads "Matches the video" for a release's own sidecar and for embedded streams (the prototype's "Embedded" fit only the streams). Since 7b the Offset column sits between Sync and Actions: − and + around the offset, and, under it, "Framerate corrected (25 → 23.976)" or "2 sections moved" when the sync's correction isn't one offset. A track the release carried as pictures (PGS, VobSub) has no text to move, so its offset reads "—" and it has no **Re-sync**; embedded streams read "—" too. The buttons wait while the track is Waiting to sync or Syncing. The search panel shows only when the movie has a file, and "Subtitles provided by OpenSubtitles.com" sits under its results.
 - **Responsive:** tables scroll sideways inside their frame below their natural width; the page never does. Header actions wrap below the title on compact.
 
 ## States
@@ -82,8 +82,8 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
   - **Grab** sends the release's indexer and fills the movie's first version; **Grab anyway** sends `force`, which also takes a blocklisted release. A refusal (already downloading, on the blocklist, the results expired) is the server's message in a toast, "Couldn't grab it". (Built in checkpoint 6a; until then Grab was disabled with "Grabbing comes with downloads.", checkpoint 5's answer 6.)
   - releases are judged by the movie's **first version's** profile, since the tab has no version picker;
   - the tab opens on the last search's results while they're fresh (30 minutes), and searches when there are none; indexers that didn't answer are listed under the table.
-- **Subtitle tracks:** − and + move a track 50 ms earlier or later and save at once; the offset reads "+250 ms" / "−120 ms". **Re-sync** runs the audio sync and toasts the result ("Offset −350 ms, 98% confidence"). These arrive with 7b. Delete removes an external track and toasts "Subtitles deleted".
-- **Subtitle search:** pick a language (the movie's profile's first, else English), **Search providers**, then **Use** on a result: it downloads and joins the tracks (and, from 7b, syncs). No provider on reads "Turn on a subtitle provider in Subtitles to search."; none answering reads "No subtitle provider answered. Try again in a few minutes."; nothing found reads "No provider has subtitles in that language."
+- **Subtitle tracks:** − and + move a track 50 ms earlier or later and save at once; the offset reads "+250 ms" / "−120 ms". The offset shown is the sync's correction at the first cue plus the owner's nudge. **Re-sync** queues the sync in the background and toasts "Syncing English to the audio"; the badge follows, and while the tab is open a second toast gives the result: "Synced English to the audio · Offset −350 ms, 98% confidence.", "Kept the original English timing · The sync was 52% sure, under the minimum confidence." or "Couldn’t sync English". Re-sync puts the nudge back to zero (checkpoint 7b). Delete removes an external track and toasts "Subtitles deleted".
+- **Subtitle search:** pick a language (the movie's profile's first, else English), **Search providers**, then **Use** on a result: it downloads and joins the tracks (and, unless Sync to the audio is off, syncs in the background). No provider on reads "Turn on a subtitle provider in Subtitles to search."; none answering reads "No subtitle provider answered. Try again in a few minutes."; nothing found reads "No provider has subtitles in that language."
 - **Subtitle languages (bulk):** the library's bulk bar sets a profile on every selected movie and toasts "Subtitle languages set to {profile} for 3 movies".
 - **Keyboard:** every control is a native button, link, switch or Radix control in reading order; the reasons toggle has `aria-expanded`. No custom shortcuts.
 - **Sound:** none; admin sound is off by default.
@@ -102,7 +102,7 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
 | Remove (bulk) | Remove 3 movies? · They leave the library and stop being monitored. Their files stay on disk. |
 | Remove (one) | Remove {Title}? · It leaves the library and stops being monitored. ☐ Also delete its files from disk |
 | Grab toast | Grabbed · {release} is downloading. Follow it in Activity. |
-| Subtitle download toast | Subtitles downloaded (7a; "Synced to the audio and ready on every client." returns with the sync in 7b) |
+| Subtitle download toast | Subtitles downloaded · Syncing to the audio in the background. With Sync to the audio off: Subtitles downloaded. (The prototype's "Synced to the audio and ready on every client." was true only after the sync.) |
 | Subtitle delete toast | Subtitles deleted |
 
 ## Data
@@ -132,12 +132,13 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `movies`, `roo
   - `movies.grabRelease({ params: { id, guid }, body })` → `POST /api/v1/movies/{id}/releases/{guid}/grab`, a release from the last search. `GrabReleaseInput` is `indexerId`, `versionId` (the first version by default) and `force` (Grab anyway). 409 when it's rejected or blocklisted without `force`, already downloading, or already in Downloads;
   - `movies.files({ params: { id } })` → `GET /api/v1/movies/{id}/files`: `MediaFile[]` with ffprobe `streams`, the version, quality, release group, scene name, edition and how it arrived (`hardlink`, `copy` or `move`);
   - `movies.history({ params: { id }, query: { cursor? } })` → `GET /api/v1/movies/{id}/history`: a `HistoryPage` of 50.
-- Subtitles (checkpoint 7a), staff:
+- Subtitles (checkpoints 7a and 7b), staff:
   - `subtitles.forItem({ params: { id } })` → `GET /api/v1/movies/{id}/subtitles`: the tracks, external then embedded.
   - `subtitles.search({ params: { id }, body: { language, fileId? } })` → `POST /api/v1/movies/{id}/subtitles/search`: every ready provider at once; the results are kept 30 minutes. 409 `no-providers` when none is on, 503 `providers-failed` when none answers.
   - `subtitles.download({ params: { id }, body: { resultId } })` → `POST /api/v1/movies/{id}/subtitles`: **Use**; it sends a result's id, never a link.
   - `subtitles.delete({ params: { id } })` → `DELETE /api/v1/subtitles/{id}`: an external track and its sidecar.
-  - Later, with 7b: `subtitles.sync(trackId)` and `subtitles.setOffset(trackId, ms)`.
+  - `subtitles.sync({ params: { id } })` → `POST /api/v1/subtitles/{id}/sync`: **Re-sync**; answers at once with the track Waiting to sync.
+  - `subtitles.setOffset({ params: { id }, body: { ms } })` → `PUT /api/v1/subtitles/{id}/offset`: − and +; `ms` is the offset A6 shows.
 - Events: `movies.updated` (the library changed; ids are TMDB ids), `item.updated` (one title's library layer; ids `movie:{id}`), `metadata.updated` (after a refresh; ids `movie:{id}`, `person:{id}`, `collection:{id}`). Since checkpoint 6a: `queue.updated` (the In the queue card), `history.updated`, `torrents.updated`; an import announces `item.updated`. Since checkpoint 7a: `subtitles.updated`.
 
 ## Decisions

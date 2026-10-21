@@ -17,5 +17,20 @@ const results = await Promise.all(
 )
 const errors = [await failure('fail'), await failure('fail'), await failure('missing')]
 const after = await pool.run<number>({ module, fn: 'double', input: 5 })
+
+// cancelling: a running task is asked to stop; a queued one never starts
+const running = [new AbortController(), new AbortController()]
+const queued = new AbortController()
+const outcome = (p: Promise<unknown>) =>
+  p.then(
+    () => 'finished',
+    (e: Error) => e.message,
+  )
+const tasks = running.map((c) => outcome(pool.run({ module, fn: 'wait', input: null }, c)))
+const third = outcome(pool.run({ module, fn: 'double', input: 1 }, queued))
+queued.abort()
+for (const c of running) c.abort()
+const cancelled = [...(await Promise.all(tasks)), await third]
+const later = await pool.run<number>({ module, fn: 'double', input: 6 })
 await pool.close()
-console.log(JSON.stringify({ results, errors, after }))
+console.log(JSON.stringify({ results, errors, after, cancelled, later }))
