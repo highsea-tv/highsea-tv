@@ -393,13 +393,14 @@ Tags: **[M1]** pull into server milestone 1 · **[Arch]** affects architecture n
   - reject torrents containing `.exe`, `.lnk`, `.scr`, `.zipx` or password-protected archives;
   - stalled/slow-download detection, removal and re-search;
   - sample-file filtering.
-- **[M1] Health checks** (*arr "Health"): paths, permissions, disk space, indexer status, catalog status, VPN binding.
+- **[M1] Health checks** (*arr "Health"): paths, permissions, disk space, indexer status, catalog status, VPN (down, the exit address your own, port forwarding).
 - **[M1] Backups and restore**: scheduled DB + config backups, plus a backup before every migration.
 - **[M1] Manual / interactive import**: file browser, rename preview, mass rename, multiple root folders and disks.
 - **[M1] Media management extras**: NFO and artwork writing (Kodi), permissions (chmod/chown), editions, alternative titles, delay profiles, tags for scoping rules.
 - **[M1] Torrent engine production features**:
   - IP blocklists; UPnP/NAT-PMP and VPN port-forwarding;
   - interface-binding kill-switch; uTP, IPv6;
+  - **VPN connections as a first-class feature** (added 2026-10-20): Settings › VPN connects to the owner's provider (highsea runs WireGuard itself, or reads a gluetun container), checks the tunnel, exit address and port forwarding, and supports common providers through the signed catalog ([vpn.md](product/vpn.md));
   - watch folder; manual (non-managed) torrent adds and generic RSS auto-download;
   - categories.
 - **[M1] Per-tracker seeding rules** (qbit_manage): min seed time/ratio per tracker, hit-and-run protection for private trackers.

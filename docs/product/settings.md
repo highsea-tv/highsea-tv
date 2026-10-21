@@ -32,7 +32,8 @@ Everything about how the server runs, in one place, one area per page: the regio
 | **Profiles and formats** | Quality profiles (allowed qualities, the cutoff marked, upgrades, format scores) · Custom formats (what they match, Preset or Yours) · Presets from the catalog (TRaSH-style: HD Bluray + WEB, UHD Bluray + WEB, Remux + WEB 2160p) |
 | **Quality sizes** | A table of MB per minute (min, preferred, max) per quality, with what that means for a 2-hour film |
 | **Import lists** | Each list (Trakt, TMDB, IMDb, Letterboxd): on, its count and behaviour, its quality profile |
-| **Download client** | VPN binding: bound or not, the interface, stop downloads if it goes down · Connections: listening port, encryption, downloading at once, UPnP |
+| **VPN** | Scoped on 2026-10-20, not prototyped: [vpn.md](vpn.md). Status (the checks, **Check now**, **Reconnect**) · Connection: highsea connects (a provider and its fields), A VPN container (gluetun's control server), An interface on this machine, or Off · Behaviour |
+| **Download client** | VPN: its status in one line, with **VPN settings** (was the binding group, before Settings › VPN) · Connections: listening port, encryption, downloading at once, UPnP |
 | **Connections** | Notifications: each channel on or off, its events, **Test** · Add a connection: Discord, Slack, Telegram, ntfy, Gotify, Pushover, Email, Webhook, Apprise |
 
 ## States
@@ -52,7 +53,7 @@ Everything about how the server runs, in one place, one area per page: the regio
 
 ## Data
 
-- `settings.get(section)` / `settings.save(section, value)` → `GET|PUT /api/v1/settings/{section}` for `general`, `media`, `downloadClient`, `network`, `security`, `backups`, `connections`, `importLists` (draft shapes in `design/prototypes/src/mock/settings.ts`). Network and Security are built (checkpoint 2); the rest come with their checkpoints.
+- `settings.get(section)` / `settings.save(section, value)` → `GET|PUT /api/v1/settings/{section}` for `general`, `media`, `downloadClient`, `vpn` ([vpn.md](vpn.md)), `network`, `security`, `backups`, `connections`, `importLists` (draft shapes in `design/prototypes/src/mock/settings.ts`). Network and Security are built (checkpoint 2); the rest come with their checkpoints.
 - **General › Metadata** (checkpoint 4): the TMDB key, the metadata language and the region live together in one settings row, `GET`, `PUT` and `DELETE /api/v1/settings/metadata`:
   - `settings.metadata()` (staff) → `MetadataSettings`: `key` (`set`, and `last4`, its last four characters; never the key itself), `language` (`en-US`, TMDB's language parameter) and `region` (`GB`, ISO 3166-1; the owner's locale by default, set in setup);
   - `settings.saveMetadata({ body })` (the owner) → `PUT`, any of `key`, `language` and `region`. A new key is checked with TMDB first (400 `tmdb-key-rejected`; 503 `tmdb-unreachable` or 429 `tmdb-rate-limited` when TMDB can't say), and nothing is saved unless every field is. The key is stored encrypted;

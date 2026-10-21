@@ -1,6 +1,6 @@
 # Phase 3, checkpoint 5: indexers and the catalog
 
-- **Status:** Scoped on 2026-10-20. The owner answered the [open questions](#open-questions-for-the-owner) on 2026-10-20, taking every recommendation, and gave the go-ahead. Built on 2026-10-20; waiting for the owner's review.
+- **Status:** Scoped on 2026-10-20. The owner answered the [open questions](#open-questions-for-the-owner) on 2026-10-20, taking every recommendation, and gave the go-ahead. Built on 2026-10-20. At review the owner asked for domain packages with subpath exports and a shared media layer (ADR 0036), then signed the checkpoint off on 2026-10-20.
 - **Gate:** stop when the checkpoint is built. Report what was built, the judgement calls, the API added, screenshots and the check results, then ask for review. Checkpoint 6 (downloading and importing) starts only after sign-off.
 - **Parent plan:** [phase-3-server.md](phase-3-server.md). Its standing rules, architecture and decisions all apply, including decision 5 (nothing is published until the owner says so) and decision 6 (the admin is for the owner and admins only). This document settles what that plan's checkpoint 5 item and the specs leave open.
 
