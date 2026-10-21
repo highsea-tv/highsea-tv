@@ -32,7 +32,7 @@ import { AdminPage, adminHref } from '../shell.tsx'
 export type WantedTab = 'missing' | 'cutoff' | 'calendar'
 
 const useMovies = () =>
-  useQuery('wanted:movies', (c) => c.movies.list(), ['movies.updated', 'queue.changed'])
+  useQuery('wanted:movies', (c) => c.movies.list(), ['movies.updated', 'queue.updated'])
 
 export function Wanted({ tab = 'missing' }: { tab?: WantedTab }) {
   const [, navigate] = useLocation()

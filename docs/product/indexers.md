@@ -24,6 +24,7 @@ Where highsea looks for releases. The page shows whether each indexer is working
 - **Catalog:** a search field, a privacy segmented control (All, Public, Semi-private, Private), a language select; then cards in 1, 2 or 3 columns. Each card: name, privacy badge (and **Local** for a definition from `/config/definitions`), description, then language · version · license in mono, and **Add** (public, with nothing to fill in), **Set up** (others, and public ones that need a setting such as an address) or an **Installed** badge.
 - **Private setup** dialog (`md`): one field per setting in the definition, each with its "where to find this" help as the hint; **Test and save**.
 - **Edit** dialog (`md`, from More): the same generated form, prefilled, plus the name and **Priority** (1 to 50, 25 by default, lower first). A secret field shows empty; leaving it empty keeps the saved one. New settings are tested before saving, as in setup.
+  - **Seeding** (checkpoint 6a, 2026-10-20): **Ratio**, **Time, in hours** and **Minimum, in hours** ("For trackers with hit-and-run rules."), under "Stops at the ratio or the time, whichever comes first, and never before the minimum. An empty ratio or time uses Settings › Download client's." An empty ratio or time reads **Default**, an empty minimum **None**. A torrent grabbed from the indexer keeps the rule it was grabbed with, shown on Downloads' Seeding tab.
 - **What changed** dialog: the catalog's recent versions with their notes. When updates ask first (Settings › General › Catalog), a waiting version is shown at the top with **Install**.
 
 ## States
@@ -66,7 +67,7 @@ As built at checkpoint 5 (`@highsea/api-contract`'s `indexers.ts`). All routes a
 | `catalog.indexers({ starter? })` | `GET /api/v1/catalog/indexers` | `CatalogIndexer`: `settings: SettingField[]`, `privacy`, `kind`, `protocol`, `language`, `version`, `source` (`author`, `documentation`), `license`, `local`, `origin`, `installed`. `?starter=true` for setup |
 | `indexers.add({ definitionId, settings, name?, priority? })` | `POST /api/v1/indexers` | Tests first and adds only on a pass; returns `{ indexer, test }`. A failed test answers 400 with the result in `details.test` |
 | `indexers.test({ id, settings? })` | `POST /api/v1/indexers/test` | `{ ok, message, latencyMs }`. `id` is an installed indexer or a definition |
-| `indexers.update(id, { name?, enabled?, priority?, settings? })` | `PATCH /api/v1/indexers/{id}` | Replaces the draft's `toggle`; new settings start over (no backoff, no saved sign-in) |
+| `indexers.update(id, { name?, enabled?, priority?, settings?, seeding? })` | `PATCH /api/v1/indexers/{id}` | Replaces the draft's `toggle`; new settings start over (no backoff, no saved sign-in). `seeding` (checkpoint 6a) is `IndexerSeeding`: `ratio`, `minutes`, `minMinutes`, each null for Settings › Download client's; `Indexer` carries it too |
 | `indexers.retry(id)` | `POST /api/v1/indexers/{id}/retry` | The draft's `clearBackoff` |
 | `indexers.remove(id)` | `DELETE /api/v1/indexers/{id}` | |
 | `catalog.status()` | `GET /api/v1/catalog` | The version, channel, last check, `changes` for What changed, and `available` when updates ask first |
@@ -87,9 +88,9 @@ As built at checkpoint 5 (`@highsea/api-contract`'s `indexers.ts`). All routes a
 
 - **Priority is a number** (1 to 50, 25 by default, lower first, the scale Radarr and Prowlarr document) in an Edit dialog from the row's More menu (checkpoint 5, answer 5; the Edit item is an approved change to the locked layout).
 - **Catalog updates install on their own,** with the version and What changed here; Settings › General › Catalog switches to "Ask first" (answer 4).
+- **Seeding rules are per indexer** (checkpoint 5, answer 5), in the Edit dialog since checkpoint 6a, falling back to Settings › Download client's default rule (a ratio of 2 or 7 days). Times are entered in hours.
 - **Definitions are highsea's own,** written from each site's documentation under CC0-1.0 (ADR 0033): Prowlarr's have no licence and Jackett's are GPL-2.0.
 
 ## Open questions
 
-- **Per-indexer seeding rules** (ratio, time) for private trackers: in the Edit dialog with checkpoint 6's torrent engine (answer 5).
 - **Proxies** (FlareSolverr-style) for indexers behind a challenge: in M1?

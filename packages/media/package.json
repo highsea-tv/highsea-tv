@@ -6,7 +6,9 @@
   "type": "module",
   "exports": {
     "./movies": "./src/movies/index.ts",
-    "./shared": "./src/shared/index.ts"
+    "./naming": "./src/shared/naming.ts",
+    "./shared": "./src/shared/index.ts",
+    "./testing": "./test/clips.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

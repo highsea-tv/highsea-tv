@@ -42,8 +42,11 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
 - **Summary card:** the media page's, plus status and a quality tag per version, the path and the **Monitored** switch.
 - **Tabs** (line variant): Overview and Cast and crew, then:
   - **Overview** gains **In the queue** while it's downloading (live progress), and **In the library** in the aside: versions with their profiles, subtitle profile, minimum availability, root folder.
+    - *As built (checkpoint 6a, 2026-10-20):* a card for each of the movie's downloads, where the prototype shows its first, since a movie with two versions can have two. Each moves live over `queue.updated`, with the state, progress, rate and ETA, and a stalled or blocked download's reason.
   - **Files:** one card per version: its size, path, each stream on one line (video: codec, resolution, HDR, bitrate; audio: codec, channels, language, default; subtitles: codec, language, forced, SDH), and the release name. A version without a file says "No file yet" or "Downloading".
+    - *As built:* the streams come from ffprobe at import (`MediaFile.streams`); a file without a scene name leaves out the Release line.
   - **History:** this movie's events, newest first.
+    - *As built:* 50 at a time, with **Show more**; grabs, imports, failed downloads and imports, renames and blocklistings.
   - **Search:** interactive search. See Interactions.
   - **Subtitles:** a tracks table (external, then embedded), then **Search for subtitles**.
 - **Responsive:** tables scroll sideways inside their frame below their natural width; the page never does. Header actions wrap below the title on compact.
@@ -76,7 +79,7 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
   - each row: indexer with the release name under it, quality and up to two custom formats as tags, format score, size, seeders/leechers, age, the decision, and a grab button;
   - the decision badge ("Accepted", or "Rejected (2)") is a button that expands a row of reasons, each marked ✓ accepted, ! warning or × rejected;
   - **Grab** (primary) on accepted releases; **Grab anyway** (ghost, with a tooltip "overrides your profile") on rejected ones. A grabbed row shows a **Grabbed** badge, and the toast points to Activity.
-  - **Until downloads arrive** (checkpoint 6), Grab is shown but disabled, with the tooltip "Grabbing comes with downloads." (checkpoint 5, answer 6);
+  - **Grab** sends the release's indexer and fills the movie's first version; **Grab anyway** sends `force`, which also takes a blocklisted release. A refusal (already downloading, on the blocklist, the results expired) is the server's message in a toast, "Couldn't grab it". (Built in checkpoint 6a; until then Grab was disabled with "Grabbing comes with downloads.", checkpoint 5's answer 6.)
   - releases are judged by the movie's **first version's** profile, since the tab has no version picker;
   - the tab opens on the last search's results while they're fresh (30 minutes), and searches when there are none; indexers that didn't answer are listed under the table.
 - **Subtitle tracks:** − and + move a track 50 ms earlier or later and save at once; the offset reads "+250 ms" / "−120 ms". **Re-sync** runs the audio sync and toasts the result ("Offset −350 ms, 98% confidence"). Delete removes an external track.
@@ -122,13 +125,14 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `movies`, `roo
 - **Release search** (checkpoint 5), staff:
   - `movies.interactiveSearch(id)` → `POST /api/v1/movies/{id}/search` (a `POST`, because it costs every indexer a query): `{ releases, searched, failed }`. Each `Release` has `approved`, `reasons: { kind: 'accepted' | 'rejected' | 'warning'; message }[]`, `protocol`, nullable `size`, `seeders`, `leechers`, `ageHours` and `publishedAt`, and indexer `flags`. 409 `no-indexers` while no indexer is enabled;
   - `movies.releases(id)` → `GET /api/v1/movies/{id}/releases`: the last search's `Release[]` from the last 30 minutes, best first.
-- **Search now and bulk Search** queue a background search once an indexer is enabled; checkpoint 6 grabs what it finds. With no enabled indexer they still answer 409 `no-indexers`.
-- Later, with their checkpoints:
-  - `movies.files(id)` → `GET /api/v1/movies/{id}/files` (`MediaFile` with ffprobe `streams`);
-  - `movies.history(id)` → `GET /api/v1/movies/{id}/history`;
-  - `movies.grabRelease(id, guid)` → `POST /api/v1/movies/{id}/releases/{guid}/grab`;
+- **Search now and bulk Search** queue a background search once an indexer is enabled, and since checkpoint 6a the search grabs the best approved release. With no enabled indexer they still answer 409 `no-indexers`.
+- **Downloads** (checkpoint 6a), staff:
+  - `movies.grabRelease({ params: { id, guid }, body })` → `POST /api/v1/movies/{id}/releases/{guid}/grab`, a release from the last search. `GrabReleaseInput` is `indexerId`, `versionId` (the first version by default) and `force` (Grab anyway). 409 when it's rejected or blocklisted without `force`, already downloading, or already in Downloads;
+  - `movies.files({ params: { id } })` → `GET /api/v1/movies/{id}/files`: `MediaFile[]` with ffprobe `streams`, the version, quality, release group, scene name, edition and how it arrived (`hardlink`, `copy` or `move`);
+  - `movies.history({ params: { id }, query: { cursor? } })` → `GET /api/v1/movies/{id}/history`: a `HistoryPage` of 50.
+- Later, with checkpoint 7:
   - `subtitles.forItem(id)`, `subtitles.search(id, language)`, `subtitles.download(id, result)`, `subtitles.sync(trackId)`, `subtitles.setOffset(trackId, ms)`, `subtitles.delete(trackId)` → `/api/v1/movies/{id}/subtitles…` and `/api/v1/subtitles/{trackId}…`.
-- Events: `movies.updated` (the library changed; ids are TMDB ids), `item.updated` (one title's library layer; ids `movie:{id}`), `metadata.updated` (after a refresh; ids `movie:{id}`, `person:{id}`, `collection:{id}`). Later: `history.updated`, `queue.changed`, `subtitles.updated`.
+- Events: `movies.updated` (the library changed; ids are TMDB ids), `item.updated` (one title's library layer; ids `movie:{id}`), `metadata.updated` (after a refresh; ids `movie:{id}`, `person:{id}`, `collection:{id}`). Since checkpoint 6a: `queue.updated` (the In the queue card), `history.updated`, `torrents.updated`; an import announces `item.updated`. Later: `subtitles.updated`.
 
 ## Decisions
 
@@ -142,6 +146,7 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `movies`, `roo
 - **Two versions are one item** with a tag per version, never two rows (ADR 0012).
 - **Rejected releases are shown by default,** with the reasons one click away. The point of interactive search is usually "why didn't it grab this?".
 - **Grab anyway exists,** but is a ghost button with a warning tooltip, never the primary.
+- **Grab fills the first version** in 6a, since the Search tab has no version picker; the API takes `versionId` (see Per-version actions below).
 - **The offset nudge is 50 ms,** matching the player's nudge (C5), and saves on each step rather than through a form.
 - **Embedded subtitle streams appear in the tracks table** as read-only rows, so the tab answers "what can people watch with" in one place.
 

@@ -8,6 +8,7 @@ export {
   type SettingValue,
 } from './engine.ts'
 export { type Caps, readCaps, readItems } from './feed.ts'
+export { type Fetched, fetchRelease, MAX_TORRENT_BYTES } from './grab.ts'
 export {
   BACKOFF_STEPS_MS,
   backoffDelay,

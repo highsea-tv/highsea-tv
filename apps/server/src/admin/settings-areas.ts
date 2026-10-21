@@ -14,6 +14,7 @@ export type AreaId =
   | 'profiles'
   | 'quality'
   | 'lists'
+  | 'vpn'
   | 'downloads'
   | 'subtitles'
   | 'connections'
@@ -51,7 +52,9 @@ export const areaGroups: { id: 'server' | 'people' | 'library' | 'downloads'; ar
   {
     id: 'downloads',
     areas: [
-      { id: 'downloads', icon: 'downloads' },
+      { id: 'vpn', icon: 'shield', ownerOnly: true },
+      // the port and encryption are network settings, the owner's (checkpoint 6's access table)
+      { id: 'downloads', icon: 'downloads', ownerOnly: true },
       { id: 'subtitles', icon: 'subtitles', href: '/subtitles' },
       { id: 'connections', icon: 'notification' },
     ],

@@ -47,3 +47,18 @@ export const INDEXER_TOPICS = {
   catalog: 'catalog.updated',
   health: 'health.updated',
 } as const
+
+/**
+ * Downloading and importing (checkpoint 6):
+ * - `queue.updated`: a grab started, moved on or was removed; ids are queue ids;
+ * - `torrents.updated`: a torrent's state or progress changed; ids are torrent ids;
+ * - `history.updated`: history or the blocklist changed;
+ * - `vpn.updated`: the VPN's state or checks changed.
+ * An import changes the title, so it announces `item.updated`.
+ */
+export const DOWNLOAD_TOPICS = {
+  queue: 'queue.updated',
+  torrents: 'torrents.updated',
+  history: 'history.updated',
+  vpn: 'vpn.updated',
+} as const

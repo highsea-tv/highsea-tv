@@ -346,6 +346,11 @@ describe('appearance', () => {
 
   test('public info lists the sources this server has', async () => {
     const { anon } = await started()
-    expect((await anon.system.publicInfo()).sources).toEqual(['system', 'movies', 'indexers'])
+    expect((await anon.system.publicInfo()).sources).toEqual([
+      'system',
+      'movies',
+      'indexers',
+      'downloads',
+    ])
   })
 })

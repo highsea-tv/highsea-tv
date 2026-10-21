@@ -1,6 +1,6 @@
 # Phase 3, checkpoint 6: downloading and importing
 
-- **Status:** Scoped on 2026-10-20, before building. The owner answered the [open questions](#open-questions-for-the-owner) on 2026-10-20, taking every recommendation: the checkpoint is built in two gated halves, 6a and 6b. The same day the owner made VPN connections a first-class feature: its own settings to connect and check, with support for common providers ([VPN connections](#vpn-connections), spec [vpn.md](../product/vpn.md)). The owner answered its questions V1 to V6 the same day, again taking every recommendation. The owner approved the Settings › VPN prototype on 2026-10-20 (V5); 6a's build waits for the go-ahead.
+- **Status:** Scoped on 2026-10-20, before building. The owner answered the [open questions](#open-questions-for-the-owner) on 2026-10-20, taking every recommendation: the checkpoint is built in two gated halves, 6a and 6b. The same day the owner made VPN connections a first-class feature: its own settings to connect and check, with support for common providers ([VPN connections](#vpn-connections), spec [vpn.md](../product/vpn.md)). The owner answered its questions V1 to V6 the same day, again taking every recommendation. The owner approved the Settings › VPN prototype on 2026-10-20 (V5) and gave 6a the go-ahead the same day. **6a was built on 2026-10-20 and waits for the owner’s review;** 6b starts after its sign-off.
 - **Gate:** stop when each half is built (6a, then 6b). Report what was built, the judgement calls, the API added, screenshots and the check results, then ask for review. Checkpoint 7 (subtitles) starts only after sign-off.
 - **Parent plan:** [phase-3-server.md](phase-3-server.md). Its standing rules, architecture and decisions all apply, including decision 1 (every [M1] item stays in milestone 1), decision 5 (nothing is published until the owner says so) and decision 6 (the admin is for the owner and admins only). This document settles what that plan's checkpoint 6 item and the specs leave open.
 
@@ -550,3 +550,37 @@ These are listed again in the checkpoint report:
 16. The exit check's IP echo service is chosen at build from documented services that need no key, and is a setting.
 17. The kill switch is always on in highsea connects; a failing check that means a leak stops torrents, and the others only warn.
 18. highsea sets the tunnel up with `wg set` and `ip`, not `wg-quick`, which would route the whole container through it.
+
+### Made while building 6a
+
+19. A `.torrent` added from the browser is sent as base64 in the JSON body, so `POST /torrents` stays one JSON route like the rest of the API.
+20. `vpn.providers` is built in 6a, ahead of highsea connects, because the VPN container mode's compose block uses it.
+21. `GET /fs` lists the data root, the root folders and the downloads folder, not the data root alone, because a root folder can live outside it. A17 opens in the downloads folder and looks inside straight away.
+22. A torrent resumed while the engine waits for the VPN's binding reads as queued, not stalled.
+23. `ImportInput.force` is accepted and ignored in 6a: nothing a manual import refuses can be forced yet.
+24. A download with no progress for the stall time counts from its last progress (`progressAt`), not from the grab.
+25. Torrents added by hand take the category `manual`, which the import pipeline never touches.
+26. The default seeding rule is ratio 2 or 7 days, whichever comes first; indexers and the Download client can change it.
+27. Interface mode shows a standing warning that highsea can't guarantee the kill switch there (ADR 0042).
+28. An empty `{Release Group}` token leaves nothing behind, separators included.
+29. When two files would take the same name, the second gets ` - {label}`, the version's label.
+30. The blocked extensions are Radarr’s executable and “dangerous” lists (`FileExtensions.cs`), not a setting: a download that carries one stops (call 9), and the queue offers to import it without that file.
+31. HDR10+ isn’t told apart in 6a: it needs the first frame’s side data (`-show_frames`), which 6a doesn’t read, so a PQ file without mastering metadata reads as PQ.
+32. The naming token `{Edition}` became `{Edition Tags}`, Radarr's name for it, so imported naming formats work.
+33. History and blocklist rows carry the movie's title and year, so Activity reads without a lookup per row.
+34. VPN failures appear in System's health list with the source "VPN".
+35. Seeding times are entered in hours in the forms and stored in minutes.
+36. Live rates on A8 and the Network widget come from `GET /system/speeds`, polled every 2 seconds while the page is open; progress itself arrives over `torrents.updated`.
+37. `HIGHSEA_TORRENT_OFFLINE=1` starts the engine without sockets: grabs queue, nothing downloads. The server sweep uses it so no sweep touches the network.
+38. The smoke test runs the engine under Node: it listens on a free port with no DHT, hash-checks a file in the worker pool and fast-resumes it on a second boot.
+
+### Prototype changes that real data forced
+
+- **A7 Activity:** actions use the queue row's id, not the torrent's; History pages with Show more; the "Subtitles are next" line is dropped until checkpoint 7; History's Clear button is left out (the route exists).
+- **A8 Downloads:** no categories filter yet (6b); Add takes a file as well as a link; the link check is looser (a magnet or any `http(s)` address); the sheet adds a Swarm row and "Not contacted yet" for trackers, and shows the minimum seed time.
+- **A6 Movie:** an In the queue card for each download, not one; History has Show more.
+- **System:** no tabs and no Check now in 6a; VPN issues join the health list.
+- **Network widget:** the caption names the VPN's state.
+- **Settings › VPN:** highsea connects is shown but disabled until 6b; "Drop the tunnel" is removed, because neither 6a mode owns a tunnel; the mode radios keep the global focus outline (the prototype turned it off, and the sweep found it).
+- **Settings › Download client:** a new Seeding group holds the default rule; speed limits stay on A8's Limits dialog.
+- **Settings › Media management:** adds the colon replacement, the chmod switch and the recycle bin's days; the hardlink hint is shorter.

@@ -389,7 +389,7 @@ function InTheLibrary({ movie: m }: { movie: MediaItem }) {
 }
 
 function InTheQueue({ movie: m }: { movie: MediaItem }) {
-  const queue = useQuery('queue', (c) => c.queue.list(), ['queue.changed', 'torrents.updated'])
+  const queue = useQuery('queue', (c) => c.queue.list(), ['queue.updated', 'torrents.updated'])
   const live = queue.data?.find((q) => q.itemId === m.id)
   if (!live) return null
   return (

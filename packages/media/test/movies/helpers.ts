@@ -16,7 +16,7 @@ import { migrate, openDatabase, schema } from '@highsea/db'
 import { createJobQueue } from '@highsea/jobs'
 import { createMetadata } from '@highsea/metadata'
 import { createReplayFetch } from '@highsea/metadata/replay'
-import { createMovies } from '../../src/movies/index.ts'
+import { createMovies, type ImportOptions } from '../../src/movies/index.ts'
 import { createMedia } from '../../src/shared/index.ts'
 
 /** Not a real key: the replay accepts anything that doesn't start with `invalid`. */
@@ -40,7 +40,13 @@ export const LLAMIGOS = 406956
 export const MABUSE = 5998
 
 /** The shared media services and a movie service on an in-memory database, TMDB replayed from the recordings. */
-export async function setup({ key = true }: { key?: boolean } = {}) {
+export async function setup({
+  key = true,
+  importing,
+}: {
+  key?: boolean
+  importing?: ImportOptions
+} = {}) {
   const { db, raw } = openDatabase(':memory:')
   migrate(raw)
   const clock = createFakeClock()
@@ -70,7 +76,10 @@ export async function setup({ key = true }: { key?: boolean } = {}) {
   const media = createMedia({ db, clock, logger: silentLogger })
   media.seed()
   const folder = media.rootFolders.add(library)
-  const movies = createMovies({ db, jobs, clock, events, logger: silentLogger, metadata }, media)
+  const movies = createMovies(
+    { db, jobs, clock, events, logger: silentLogger, metadata, importing },
+    media,
+  )
   seen.length = 0
 
   const input = (tmdbId: number, patch: Partial<AddMovieInput> = {}): AddMovieInput => ({

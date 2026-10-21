@@ -63,6 +63,8 @@ const server: ChildProcess = spawn('node', ['server.ts'], {
     HIGHSEA_DISCOVERY_PORT: String(PORT + 1),
     HIGHSEA_LOG_LEVEL: 'warn',
     HIGHSEA_TMDB_REPLAY: '1',
+    // the engine opens no socket: grabs join the queue, nothing downloads, nothing reaches the network
+    HIGHSEA_TORRENT_OFFLINE: '1',
   },
   stdio: ['ignore', 'ignore', 'inherit'],
 })
@@ -331,7 +333,41 @@ try {
     },
     token,
   )
-  await api('POST', '/movies/45745/search', undefined, token)
+  const found = await api<{ releases: { guid: string; indexerId: string }[] }>(
+    'POST',
+    '/movies/45745/search',
+    undefined,
+    token,
+  )
+
+  // downloads (checkpoint 6a): the two best releases, grabbed anyway (only one is approved) and
+  // the first then blocklisted, a torrent added by hand, and a stray file for manual import
+  for (const r of found.releases.slice(0, 2))
+    await api(
+      'POST',
+      `/movies/45745/releases/${encodeURIComponent(r.guid)}/grab`,
+      { indexerId: r.indexerId, force: true },
+      token,
+    )
+  const queue = await api<{ id: string }[]>('GET', '/queue', undefined, token)
+  if (queue[1])
+    await api('DELETE', `/queue/${queue[1].id}`, { deleteData: true, blocklist: true }, token)
+  await api(
+    'POST',
+    '/torrents',
+    {
+      urlOrMagnet:
+        'magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567&dn=Home.Movies.2024',
+    },
+    token,
+  )
+  mkdirSync(join(dataDir, 'downloads', 'Big.Buck.Bunny.2008.1080p.BluRay.x264-GRP'), {
+    recursive: true,
+  })
+  writeFileSync(
+    join(dataDir, 'downloads', 'Big.Buck.Bunny.2008.1080p.BluRay.x264-GRP', 'bbb.mkv'),
+    '',
+  )
 
   // signed out
   await sweep(
@@ -360,7 +396,7 @@ try {
     return () => browser.newContext({ storageState })
   }
   const ownerContext = await signIn(OWNER.username, OWNER.password)
-  const tab = (name: string) => (p: Page) => p.getByRole('tab', { name }).click()
+  const tab = (name: string | RegExp) => (p: Page) => p.getByRole('tab', { name }).click()
   const customize = (p: Page) => p.getByRole('button', { name: 'Customize' }).click()
   await sweep(
     [
@@ -401,6 +437,38 @@ try {
       { name: 'settings:media', path: '/settings/media' },
       { name: 'settings:profiles', path: '/settings/profiles' },
       { name: 'settings:quality', path: '/settings/quality' },
+      { name: 'settings:vpn', path: '/settings/vpn' },
+      {
+        name: 'settings:vpn:container',
+        path: '/settings/vpn',
+        act: (p) => p.getByRole('radio', { name: /A VPN container/ }).click(),
+      },
+      { name: 'settings:downloads', path: '/settings/downloads' },
+      // A7, A17 and A8 (checkpoint 6a)
+      { name: 'activity', path: '/activity' },
+      { name: 'activity:history', path: '/activity', act: tab('History') },
+      { name: 'activity:blocklist', path: '/activity', act: tab(/Blocklist/) },
+      { name: 'import', path: '/activity/import' },
+      { name: 'downloads', path: '/downloads' },
+      {
+        name: 'downloads:sheet',
+        path: '/downloads',
+        act: (p) =>
+          p
+            .getByRole('button', { name: /Sintel/ })
+            .first()
+            .click(),
+      },
+      {
+        name: 'downloads:add',
+        path: '/downloads',
+        act: (p) => p.getByRole('button', { name: 'Add torrent' }).click(),
+      },
+      {
+        name: 'downloads:limits',
+        path: '/downloads',
+        act: (p) => p.getByRole('button', { name: 'Limits' }).click(),
+      },
       { name: 'system', path: '/system' },
       // A9, with a Local public indexer and a private one against the fake indexer
       { name: 'indexers', path: '/indexers' },
@@ -479,6 +547,7 @@ try {
       { name: 'movie:library', path: '/movies/45745' },
       { name: 'movie:files', path: '/movies/45745', act: tab('Files') },
       { name: 'movie:search', path: '/movies/45745', act: tab('Search') },
+      { name: 'movie:history', path: '/movies/45745', act: tab('History') },
       { name: 'movie:upcoming', path: '/movies/1117898' },
       // and from the recorded TMDB fixtures, not in the library
       { name: 'movie:not-added', path: '/movies/19' },
@@ -508,6 +577,10 @@ try {
       { name: 'admin:movies', path: '/movies' },
       { name: 'admin:movie', path: '/movies/45745' },
       { name: 'admin:discover', path: '/discover' },
+      { name: 'admin:activity', path: '/activity' },
+      { name: 'admin:downloads', path: '/downloads' },
+      // Settings › VPN and Download client are the owner's: not there for an admin
+      { name: 'admin:vpn', path: '/settings/vpn' },
     ],
     await signIn('ruth', 'ruth ruth ruth'),
   )
@@ -526,6 +599,8 @@ try {
         '/discover',
         '/system',
         '/people/68',
+        '/activity',
+        '/downloads',
       ].map((path) => ({ name: `user:${path}`, path, act: refused })),
     ],
     await signIn('theo', 'theo theo theo'),

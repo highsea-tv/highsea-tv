@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The platform under Node, the server's runtime (ADR 0019): `bun test` covers bun:sqlite; this
-// covers better-sqlite3, workers and the API on a real file database. Run with `node`; exits 1 on
-// the first failure. CI runs it after the tests. TMDB answers from the recordings (ADR 0029), so the
-// metadata package and the image cache run as production runs them, without the network. It runs
-// on the Node in `.nvmrc` only (`bun run smoke` checks before anything loads).
+// covers better-sqlite3, workers, the API and the torrent engine on a real file database. Run with
+// `node`; exits 1 on the first failure. CI runs it after the tests. TMDB answers from the
+// recordings (ADR 0029), so the metadata package and the image cache run as production runs them,
+// without the network; the engine listens on a free port with no DHT and a torrent with no
+// trackers. It runs on the Node in `.nvmrc` only (`bun run smoke` checks before anything loads).
 import assert from 'node:assert/strict'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -12,6 +13,7 @@ import { issueDevice } from '@highsea/auth'
 import { defineJob } from '@highsea/jobs'
 import { createReplayFetch } from '@highsea/metadata/replay'
 import { boot, loadConfig } from '@highsea/runtime'
+import { makeTorrent, randomData, until, writeFiles } from '@highsea/torrent/testing'
 import { z } from 'zod'
 import { assertNodeVersion } from '../../../scripts/check-node.ts'
 import { createApi } from '../src/api/app.ts'
@@ -25,12 +27,15 @@ const config = loadConfig({
 })
 try {
   const replay = createReplayFetch()
+  // the engine listens on a free port, without the DHT: nothing reaches the network
+  const torrent = { port: 0, dht: false }
   const runtime = await boot({
     config,
     version: '0.0.0-smoke',
     quiet: true,
     manualTicks: true,
     fetch: replay,
+    torrent,
   })
   assert.equal(runtime.database.driver, 'node', 'production runs on better-sqlite3')
 
@@ -96,12 +101,39 @@ try {
   assert.equal(ran, 2)
   assert.equal(runtime.jobs.get(id)?.status, 'succeeded')
 
+  // the torrent engine (checkpoint 6): it binds its port once the VPN, off here, says it may, and
+  // checks a file already on disk with SHA-1 in the worker pool, as production does
+  await until(() => runtime.engine.status().listening, 10_000, 'the engine to listen')
+  const files = [{ path: 'smoke/smoke.bin', data: randomData(300_000) }]
+  const savePath = join(config.dataDir, 'downloads', 'manual')
+  writeFiles(savePath, files)
+  const made = makeTorrent({ name: 'smoke', files })
+  const added = await runtime.engine.add({
+    source: { torrent: made.torrent },
+    savePath,
+    category: 'manual',
+    manual: true,
+  })
+  await until(() => runtime.engine.get(added.id).state === 'seeding', 20_000, 'the check')
+
   const sealed = runtime.sealer.seal('secret')
   assert.equal(runtime.sealer.open(sealed), 'secret')
   await runtime.shutdown()
 
   // a second boot on the same files: same identity, nothing to migrate
-  const again = await boot({ config, version: '0.0.0-smoke', quiet: true, manualTicks: true })
+  const again = await boot({
+    config,
+    version: '0.0.0-smoke',
+    quiet: true,
+    manualTicks: true,
+    torrent,
+  })
+  // shutdown wrote the resume data, so the torrent is whole at boot, without a recheck, and seeds
+  // once the binding arrives (until then it waits as queued)
+  const resumed = again.engine.get(added.id)
+  assert.notEqual(resumed.state, 'checking', 'fast resume trusted the files')
+  assert.equal(resumed.progress, 1)
+  await until(() => again.engine.get(added.id).state === 'seeding', 10_000, 'it to seed again')
   assert.equal(again.identity().id, info.id)
   assert.equal(again.sealer.open(sealed), 'secret')
   await again.shutdown()

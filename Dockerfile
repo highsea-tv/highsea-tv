@@ -1,5 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # The highsea server: one Node process (ADR 0003) with ffmpeg, under tini, as PUID:PGID.
+# 6881 is the torrent engine's port, TCP and the DHT (ADR 0037). Checkpoint 6b adds unar, wireguard-tools,
+# iproute2 and wireguard-go, and keeps CAP_NET_ADMIN for the PUID user when the container has it (ADR 0042).
 # Checkpoint 1 keeps it simple: the whole workspace and its dependencies. Checkpoint 9 slims it
 # and builds it for amd64 and arm64.
 

@@ -4,7 +4,7 @@
 // and hourly stats (ADR 0035); `releases` caches interactive search results so a grab can take one
 // by its guid without searching again. The catalog's installed version, channel and extra URLs are
 // the `catalog` settings row.
-import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 /**
  * Definitions as loaded: from the main catalog (`main`), an extra catalog (`extra:{url}`), or
@@ -47,6 +47,11 @@ export const indexers = sqliteTable(
     settings: text('settings', { mode: 'json' }).notNull(),
     /** A new definition version needs a setting this indexer doesn't have. */
     needsAttention: integer('needs_attention', { mode: 'boolean' }).notNull().default(false),
+    /** Seeding rules from this indexer (checkpoint 5's answer 5); null uses the global default. */
+    seedRatio: real('seed_ratio'),
+    seedMinutes: integer('seed_minutes'),
+    /** Private trackers' minimum seed time: never removed before it (hit-and-run). */
+    minSeedMinutes: integer('min_seed_minutes'),
     addedAt: integer('added_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },

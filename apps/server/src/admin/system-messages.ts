@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // System (ADR 0021): the page header from the prototype, and About, which checkpoint 4 adds for
-// TMDB's attribution (system.md; the prototype has no About), and the indexer catalog's version
-// (checkpoint 5).
+// TMDB's attribution (system.md; the prototype has no About), the indexer catalog's version
+// (checkpoint 5), and the prototype's Health list (checkpoint 6).
 import { defineMessages } from '@highsea/i18n'
 
 export const system = defineMessages({
@@ -23,6 +23,18 @@ export const system = defineMessages({
   'catalog.available': 'Catalog {version} is ready to install',
   'catalog.availableBody': 'Install it from Indexers.',
   'catalog.failed': 'Couldn’t check the catalog',
+  'health.title': 'Health',
+  'health.description':
+    'What needs your attention: downloads, indexers, the catalog and the network.',
+  'health.what': 'the health checks',
+  'health.label': 'Health checks',
+  'health.none': 'Everything’s healthy',
+  'health.noneBody': 'Nothing needs your attention.',
+  'health.ok': 'OK',
+  'health.notice': 'Notice',
+  'health.warning': 'Warning',
+  'health.error': 'Error',
+  'health.since': 'since {ago}',
   later:
-    'Status, health, tasks, logs, events, backups and updates arrive in a later checkpoint of the server plan.',
+    'Status, tasks, logs, events, backups and updates arrive in a later checkpoint of the server plan.',
 })

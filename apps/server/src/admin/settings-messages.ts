@@ -32,9 +32,11 @@ export const settings = defineMessages({
   'area.quality.description': 'How big a release can be for each quality.',
   'area.lists': 'Import lists',
   'area.lists.description': 'Watchlists that add movies on their own.',
+  'area.vpn': 'VPN',
+  'area.vpn.description':
+    'Torrents through your VPN provider, the checks that prove it, and port forwarding.',
   'area.downloads': 'Download client',
-  'area.downloads.description':
-    'The built-in torrent client: port, encryption and the VPN binding.',
+  'area.downloads.description': 'The built-in torrent client: port, encryption and connections.',
   'area.subtitles': 'Subtitles',
   'area.subtitles.description': 'Providers, languages and sync, on the Subtitles page.',
   'area.connections': 'Connections',

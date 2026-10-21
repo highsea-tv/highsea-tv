@@ -2,6 +2,7 @@
 
 - **Platforms:** Admin, every breakpoint.
 - **Prototype:** `design/prototypes/src/admin/settings/vpn.tsx` (`#/admin/settings/vpn`), approved by the owner on 2026-10-20 (answer V5): the build reference. The owner asked on 2026-10-20 for VPN connections to be a first-class feature, after Phase 2's sign-off, and answered its questions the same day ([checkpoint 6 › VPN questions](../plans/phase-3-checkpoint-6.md#vpn-questions)). In the prototype, **Reconnect** plays connecting, a PIA password or gluetun key of `wrong` plays a failure, **Prototype only · Drop the tunnel** plays the down state, and the empty server lacks NET_ADMIN.
+- **Built:** checkpoint 6a, 2026-10-20: `/settings/vpn` in `apps/server` (`src/admin/vpn.tsx`) on `@highsea/vpn` ([ADR 0042](../adr/0042-vpn-connections.md)), with the VPN container and interface modes and their checks (answer V1). highsea connects, the providers' own connection steps and port forwarding come with 6b. What real data changed from the prototype is marked *As built*.
 - **Roadmap:** the built-in torrent engine's bind interface and kill switch, VPN port forwarding ([M1] torrent production features), the VPN binding health check.
 - **Plan:** [phase-3-checkpoint-6.md › VPN connections](../plans/phase-3-checkpoint-6.md#vpn-connections).
 
@@ -19,6 +20,7 @@ Torrents leave through the owner's VPN, highsea shows that they do, and nothing 
 | **Off** | Torrents use the server's own connection | Nothing | — |
 
 - **Only torrents use the tunnel** in highsea connects. The admin, TMDB, the catalog and updates stay on the normal network, so the admin stays reachable on the LAN. Indexer searches can go through the tunnel too (a switch, [question V6](../plans/phase-3-checkpoint-6.md#vpn-questions)).
+- *As built in 6a:* **highsea connects** is shown with "Arrives in a later update. Use a VPN container or an interface for now." and can't be chosen. A server already set to it shows "highsea connects arrives in the next update. Use a VPN container or an interface on this machine for now." as its failure. The container's binding is "any address" while gluetun reports the tunnel running and none otherwise; the interface's is its IPv4 address, read every 2 seconds, and none while it's gone. The engine waits, its torrents reading as queued, until the first checks are done and a binding arrives.
 - **WireGuard** is the protocol highsea runs itself. Providers that only offer OpenVPN come through the VPN container ([question V3](../plans/phase-3-checkpoint-6.md#vpn-questions)).
 
 ## Providers
@@ -50,6 +52,12 @@ highsea checks the connection when it connects, every 5 minutes, after a reconne
 
 - **The VPN container mode** reads the tunnel and the exit address from gluetun. In that mode highsea has no route to the server's own address, so the exit check shows the address and its country without the comparison.
 - **The interface mode** can't promise the kill switch row. It says: "Bound to {interface}. Your system's routing decides the path; a VPN container or highsea connects guarantees it."
+- *As built in 6a* (ADR 0042):
+  - **Which failures stop torrents:** in these two modes only the tunnel going (gluetun not running, or the interface gone), which takes the binding away. The other checks only warn: the container has no other route, and in the interface mode every socket is already bound to the tunnel's address.
+  - **Matching exit answers in the interface mode** are a warning, not a leak: "Both answers came from the same address · So highsea can't compare them. That's expected if your whole machine uses the VPN. Torrents still leave only through {interface}." In highsea connects (6b) a matching answer is a leak and stops torrents.
+  - **The echo service** answering neither way is a warning too ("Couldn't check the exit address"), checked again in 5 minutes. Its address is a setting (`echoUrl`).
+  - **The down rows** say what each mode can see: "gluetun reports the tunnel stopped · Reconnecting. Torrents are stopped until it's back.", "Couldn't reach gluetun at {url}", "{interface} has no address".
+  - **Port forwarding:** the container mode reads gluetun's forwarded port when **Use the forwarded port** is on and shows it; the engine moving to that port comes with 6b. Without one, the row says "Torrents listen on port {port} · Forward it through your tunnel yourself, if your provider allows it."
 
 ## Layout
 
@@ -60,9 +68,11 @@ highsea checks the connection when it connects, every 5 minutes, after a reconne
   - **A VPN container:** the control server's address (`http://127.0.0.1:8000` by default, because the containers share a network) and its API key. **Compose for your provider:** pick a provider and copy a gluetun service block, with highsea's `network_mode` line, ready for the compose file.
   - **An interface on this machine:** the interface, picked from the ones the server has.
 - **Behaviour:** stop torrents when the VPN is down (always on in highsea connects, and said so), use the forwarded port, and send indexer searches through the VPN.
+  - *As built:* "Stop torrents when the VPN is down" is on and can't be turned off in every mode, with each mode's reason ("Always on in a VPN container: it has no other route.", "Torrents stop the moment the interface or its address goes."). The indexers switch is saved in 6a and takes effect with 6b (answer V6).
+- *As built, not in the prototype:* the interface select lists the server's interfaces besides loopback, with "This server has no network interfaces besides loopback." when there are none; the save's errors name their field ("Choose an interface.", "Enter a port from 1 to 65535.", "Enter the address of an IP echo service, starting with http:// or https://."); a WireGuard file's parser names what's wrong ("That WireGuard configuration has no [Peer] section."). The prototype's **Prototype only · Drop the tunnel** is gone.
 - **Elsewhere:**
   - A8's VPN line names the provider and port ("Through Proton VPN · 185.159.157.4 (Netherlands) · Port 53186").
-  - System's health checks cover the VPN being down, the exit address being your own, and port forwarding failing.
+  - System's health checks cover the VPN being down, the exit address being your own, and port forwarding failing. *As built:* "The VPN is down. Torrents are stopped until it's back." (an error), "The VPN couldn't connect: {reason}", and for each failing check "VPN: {title}. Open Settings › VPN to see why.", with the source **VPN** ([system.md](system.md)).
   - Downloads with the VPN off shows "Torrents use your own connection. Anyone in the swarm can see your address." and **Set up a VPN**.
 
 ## States
@@ -76,11 +86,20 @@ highsea checks the connection when it connects, every 5 minutes, after a reconne
 
 ## Data
 
-- `vpn.status()` → `GET /api/v1/vpn/status` (staff, so A8 can show it): the mode, provider, state, exit address and country, forwarded port, each check's result, and when it last ran. Live over `vpn.updated`.
-- `settings.get('vpn')` / `settings.save('vpn', value)` → `GET|PUT /api/v1/settings/vpn` (owner). Secrets (private keys, the PIA password, gluetun's API key) are stored encrypted, like the TMDB key, and come back as set or not.
-- `vpn.check()` → `POST /api/v1/vpn/check` and `vpn.reconnect()` → `POST /api/v1/vpn/reconnect` (owner).
-- `vpn.providers()` → `GET /api/v1/vpn/providers` (owner): the catalog's providers, with their steps and fields.
-- A8's `TorrentLimits` VPN fields (`vpnConnected`, `vpnInterface`, `vpnIp`) come from `vpn.status()`.
+As built in 6a (`packages/api-contract/src/vpn.ts`):
+
+| Call | Route | Access | What |
+| --- | --- | --- | --- |
+| `vpn.status()` | `GET /api/v1/vpn/status` | staff, so A8 can show it | `VpnStatus`: `mode`, `provider`, `state` (`off`, `connecting`, `connected`, `down`, `failed`), `message` when failed, `needsCapability`, `exitIp`, `country`, `forwardedPort`, `checks` (each `id`, `label`, `result` of `pass`, `warn`, `fail`, `info` or `pending`, `title`, `detail`) and `checkedAt`. Live over `vpn.updated` |
+| `vpn.check()` | `POST /api/v1/vpn/check` | owner | Run the checks now |
+| `vpn.reconnect()` | `POST /api/v1/vpn/reconnect` | owner | Restart the tunnel, or look at the interface again |
+| `vpn.providers()` | `GET /api/v1/vpn/providers` | owner | The providers with their steps, how they connect (`config` or `account`) and port forwarding (`natpmp`, `pia`, `static`, `none`). Built into the server in 6a; 6b moves them into the signed catalog |
+| `vpn.interfaces()` | `GET /api/v1/vpn/interfaces` | owner | The machine's interfaces, for the interface mode |
+| `vpn.compose(input)` | `POST /api/v1/vpn/compose` | owner | The gluetun compose block for a provider, with highsea's `network_mode` line |
+| `vpn.settings()`, `vpn.save(input)` | `GET\|PUT /api/v1/settings/vpn` | owner | `VpnSettings`; saving reconnects with them. Secrets (the WireGuard configuration, the PIA password, gluetun's API key) are write-only and stored encrypted, like the TMDB key: they come back as `configName`, `piaPasswordSet` and `containerKeySet`, and an empty value keeps what's stored |
+
+- A8's VPN line reads `vpn.status()`; `TorrentLimits` carries no VPN fields.
+- The repository's `compose.gluetun.yaml` is a worked example of the container mode.
 
 ## Decisions
 
@@ -90,6 +109,8 @@ highsea checks the connection when it connects, every 5 minutes, after a reconne
 - **Provider facts are catalog data, mechanisms are code:** NAT-PMP, PIA's API and configuration files are written once, and each provider entry names which it uses.
 
 - **Answered by the owner on 2026-10-20** ([checkpoint 6 › VPN questions](../plans/phase-3-checkpoint-6.md#vpn-questions)): 6a builds this area with the VPN container and interface modes, 6b adds highsea connects, the providers and port forwarding (V1); WireGuard only inside highsea (V3); the seven providers above plus any WireGuard configuration (V4); a prototype first (V5); indexers through the VPN is a switch, off by default (V6).
+
+- **Built in 6a on 2026-10-20** with the VPN container and interface modes; the changes real data forced are marked *As built* above and listed in the checkpoint report.
 
 ## Open questions
 

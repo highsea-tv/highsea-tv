@@ -11,6 +11,8 @@
 //   opens Set up, since one click can't fill it in;
 // - Edit in More opens the same form with the name and priority (owner's answer 5); a secret shows
 //   empty and keeps the saved one unless something is typed;
+// - Edit also has the seeding rule (checkpoint 6a; checkpoint 5's answer 5): a ratio, a time and a
+//   minimum seed time for hit-and-run rules, in hours; an empty field uses Download client's;
 // - Local badges, a line for indexers that need attention, and a dash for stats with no queries.
 import type {
   CatalogIndexer,
@@ -55,6 +57,7 @@ import {
   toast,
 } from '@highsea/ui-web'
 import { useState } from 'react'
+import { hoursText, minutesOf, ratioOf, ratioText } from './download-client-seeding.ts'
 import { indexers as messages } from './indexers-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { AdminPage } from './shell.tsx'
@@ -607,7 +610,24 @@ const toSettings = (fields: SettingField[], values: Record<string, Value>) =>
     }),
   )
 
-/** Set up (add) or Edit: the definition's fields, plus the name and priority when editing. */
+/** An indexer's seeding rule (A9) as the Edit dialog types it: hours where the API has minutes. */
+const seedingText = (indexer: Indexer | null) => ({
+  ratio: ratioText(indexer?.seeding.ratio ?? null),
+  hours: hoursText(indexer?.seeding.minutes ?? null),
+  minHours: hoursText(indexer?.seeding.minMinutes ?? null),
+})
+
+/** The rule to save, null fields using Download client's; undefined while a field is invalid. */
+function seedingOf(text: ReturnType<typeof seedingText>): Indexer['seeding'] | undefined {
+  const ratio = ratioOf(text.ratio)
+  const minutes = minutesOf(text.hours)
+  const minMinutes = minutesOf(text.minHours)
+  if (ratio === undefined || minutes === undefined || minMinutes === undefined) return undefined
+  return { ratio, minutes, minMinutes }
+}
+
+/** Set up (add) or Edit: the definition's fields, plus the name, priority and seeding rule when
+ * editing. */
 function SettingsDialog({
   mode,
   indexer,
@@ -654,6 +674,7 @@ function SettingsForm({
   const [values, setValues] = useState<Record<string, Value>>(initial)
   const [name, setName] = useState(indexer?.name ?? '')
   const [priority, setPriority] = useState(String(indexer?.priority ?? 25))
+  const [seeding, setSeeding] = useState(() => seedingText(indexer))
   const [touched, setTouched] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
   const save = useAction(async (c) => {
@@ -662,12 +683,19 @@ function SettingsForm({
       return (await c.indexers.add({ body: { definitionId: d.id, settings } })).indexer.name
     if (!indexer) return ''
     const changed = fields.some((f) => values[f.key] !== initial[f.key])
+    const rule = seedingOf(seeding)
+    const was = indexer.seeding
+    const seedingChanged =
+      rule?.ratio !== was.ratio ||
+      rule?.minutes !== was.minutes ||
+      rule?.minMinutes !== was.minMinutes
     const saved = await c.indexers.update({
       params: { id: indexer.id },
       body: {
         name: name.trim(),
         priority: Number(priority),
         ...(changed ? { settings } : {}),
+        ...(seedingChanged && rule ? { seeding: rule } : {}),
       },
     })
     return saved.name
@@ -682,12 +710,17 @@ function SettingsForm({
   }
   const priorityOk = /^\d+$/.test(priority) && Number(priority) >= 1 && Number(priority) <= 50
   const nameOk = name.trim().length > 0
+  const seedOk = {
+    ratio: ratioOf(seeding.ratio) !== undefined,
+    hours: minutesOf(seeding.hours) !== undefined,
+    minHours: minutesOf(seeding.minHours) !== undefined,
+  }
 
   const submit = async () => {
     setTouched(true)
     setFailure(null)
     if (fields.some(missing)) return
-    if (mode === 'edit' && (!priorityOk || !nameOk)) return
+    if (mode === 'edit' && (!priorityOk || !nameOk || !seedingOf(seeding))) return
     try {
       const saved = await save.run()
       onClose()
@@ -751,6 +784,54 @@ function SettingsForm({
                 className="w-28"
               />
             </Field>
+            <fieldset className="grid gap-3">
+              <legend className="mb-1 font-medium text-text text-ui">{t('form.seeding')}</legend>
+              <p className="text-caption text-text-3">{t('form.seedingHint')}</p>
+              <div className="grid gap-4 medium:grid-cols-3">
+                <Field
+                  label={t('form.seedRatio')}
+                  error={touched && !seedOk.ratio ? t('form.seedRatioInvalid') : undefined}
+                >
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    max={100}
+                    step="0.1"
+                    value={seeding.ratio}
+                    placeholder={t('form.seedDefault')}
+                    onChange={(e) => setSeeding({ ...seeding, ratio: e.target.value })}
+                  />
+                </Field>
+                <Field
+                  label={t('form.seedHours')}
+                  error={touched && !seedOk.hours ? t('form.seedHoursInvalid') : undefined}
+                >
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    value={seeding.hours}
+                    placeholder={t('form.seedDefault')}
+                    onChange={(e) => setSeeding({ ...seeding, hours: e.target.value })}
+                  />
+                </Field>
+                <Field
+                  label={t('form.seedMinHours')}
+                  hint={t('form.seedMinHoursHint')}
+                  error={touched && !seedOk.minHours ? t('form.seedHoursInvalid') : undefined}
+                >
+                  <Input
+                    type="number"
+                    inputMode="decimal"
+                    min={0}
+                    value={seeding.minHours}
+                    placeholder={t('form.seedNone')}
+                    onChange={(e) => setSeeding({ ...seeding, minHours: e.target.value })}
+                  />
+                </Field>
+              </div>
+            </fieldset>
           </>
         )}
         {fields.map((f) => {

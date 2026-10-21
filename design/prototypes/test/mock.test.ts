@@ -36,7 +36,7 @@ describe('simulation', () => {
 
     until(mock, () => t.state === 'importing')
     expect(t.progress).toBe(1)
-    expect(events).toContain('queue.changed')
+    expect(events).toContain('queue.updated')
 
     until(mock, () => t.state === 'seeding')
     const sintel = srv.state.items.find((m) => m.id === '1')

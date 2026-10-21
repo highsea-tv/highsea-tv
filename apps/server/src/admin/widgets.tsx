@@ -4,12 +4,28 @@
 // Each fills the size it's given, fetches its own data and shows its own loading, empty and error
 // states. A widget's data comes from a source public info lists (`sources`): the system feeds
 // Storage and System health; `movies` (checkpoint 4) feeds Upcoming, Calendar and Recently added,
-// and Storage's root folders; `indexers` (checkpoint 5) feeds Indexers. The rest show their empty states from dashboard.md, which are true on
+// and Storage's root folders; `indexers` (checkpoint 5) feeds Indexers; `downloads` (checkpoint 6)
+// feeds Network and Queue. The rest show their empty states from dashboard.md, which are true on
 // a server without those things yet, and call no route until their checkpoint adds it (Phase 3
-// plan › Widgets); so do the movie widgets on a server without the `movies` source.
+// plan › Widgets); so does each widget on a server without its source.
 
-import { INDEXER_TOPICS, MEDIA_TOPICS, type Movie, type RootFolder } from '@highsea/api-contract'
-import { bytes, bytesParts, duration, percent, rateParts, shortDate } from '@highsea/core/format'
+import {
+  DOWNLOAD_TOPICS,
+  INDEXER_TOPICS,
+  MEDIA_TOPICS,
+  type Movie,
+  type QueueItem,
+  type RootFolder,
+} from '@highsea/api-contract'
+import {
+  bytes,
+  bytesParts,
+  duration,
+  percent,
+  rate,
+  rateParts,
+  shortDate,
+} from '@highsea/core/format'
 import { useLocale, useT } from '@highsea/i18n/react'
 import { type WidgetKind, widgetDefinition, widgetMessages } from '@highsea/personalization/widgets'
 import { type Query, useQuery } from '@highsea/sdk/react'
@@ -21,18 +37,32 @@ import {
   type FrameProps,
   Icon,
   Poster,
+  Progress,
   Skeleton,
   SkeletonText,
   Sparkline,
   Stat,
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+  TitleCell,
   useClip,
   useWidth,
   WidgetFrame,
 } from '@highsea/ui-web'
 import { useRouter } from 'next/navigation'
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import { widgets as messages } from './dashboard-messages.ts'
+import { type QueueFilter, queueFilters, torrentTone } from './downloads-status.ts'
 import { foldersOnDisk, releasesByDay } from './library-figures.ts'
+import { torrentState } from './movie-detail-messages.ts'
 import { useNow } from './time.ts'
 
 export type WidgetProps = {
@@ -53,7 +83,7 @@ const MOVIE_TOPICS = [MEDIA_TOPICS.movies, MEDIA_TOPICS.item]
  * Whether this server has a source yet: `undefined` until public info answers. Every widget asks
  * under one key; the SDK keeps each answer per widget, and it's a small public call.
  */
-function useSource(source: 'movies' | 'indexers'): boolean | undefined {
+function useSource(source: 'movies' | 'indexers' | 'downloads'): boolean | undefined {
   const info = useQuery('public-info', (c) => c.system.publicInfo())
   return info.status === 'success' ? info.data.sources.includes(source) : undefined
 }
@@ -162,11 +192,31 @@ const fill = 'min-h-0 flex-1 overflow-y-clip'
 
 // ---------------------------------------------------------------- network
 
+/**
+ * The speeds come a sample a second and have no event of their own (the plan's `tick`): the widget
+ * asks again this often.
+ */
+const NETWORK_INTERVAL = 2_000
+
+const networkMinutes = (settings: Record<string, unknown>) =>
+  Number(settings.minutes ?? widgetDefinition('network').settings.parse({}).minutes)
+
 function Network(props: WidgetProps) {
+  const source = useSource('downloads')
+  if (source) return <NetworkLive {...props} />
+  return <NetworkIdle {...props} />
+}
+
+/** Without downloads: the speeds at zero (dashboard.md › Network, no downloads). */
+function NetworkIdle(props: WidgetProps) {
   const t = useT(messages)
   const [zero, unit] = rateParts(0)
   return (
-    <Static {...props} kind="network" meta={t('network.meta')}>
+    <Static
+      {...props}
+      kind="network"
+      meta={t('network.meta', { minutes: networkMinutes(props.settings) })}
+    >
       <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
         <Stat value={zero} unit={t('network.down', { unit })} caption={t('network.none')} />
         <Stat
@@ -184,6 +234,77 @@ function Network(props: WidgetProps) {
         ]}
       />
     </Static>
+  )
+}
+
+/**
+ * The prototype's Network: the torrents' rates now, and the sparkline of the last minutes. When
+ * the VPN is down the kill switch has stopped every torrent, so the caption says why it's quiet.
+ */
+function NetworkLive(props: WidgetProps) {
+  const t = useT(messages)
+  const minutes = networkMinutes(props.settings)
+  const query = useQuery(
+    'widget:network',
+    async (c) => {
+      const [speeds, torrents] = await Promise.all([c.system.speeds(), c.downloads.list()])
+      return {
+        speeds,
+        down: torrents.reduce((s, x) => s + x.downRate, 0),
+        up: torrents.reduce((s, x) => s + x.upRate, 0),
+        active: torrents.filter((x) => x.state === 'downloading').length,
+      }
+    },
+    [DOWNLOAD_TOPICS.queue],
+    { interval: NETWORK_INTERVAL },
+  )
+  const vpn = useQuery('widget:network-vpn', (c) => c.vpn.status(), [DOWNLOAD_TOPICS.vpn])
+  const vpnDown = vpn.data?.state === 'down' || vpn.data?.state === 'failed'
+  return (
+    <Widget {...props} kind="network" query={query} meta={() => t('network.meta', { minutes })}>
+      {(d) => {
+        const [down, downUnit] = rateParts(d.down)
+        const [up, upUnit] = rateParts(d.up)
+        const shown = d.speeds.slice(-minutes * 60)
+        return (
+          <>
+            <div className="flex flex-wrap items-baseline gap-x-6 gap-y-2">
+              <Stat
+                value={down}
+                unit={t('network.down', { unit: downUnit })}
+                caption={
+                  vpnDown
+                    ? t('network.vpnDown')
+                    : d.active
+                      ? t('network.downloads', { count: d.active })
+                      : t('network.idle')
+                }
+              />
+              <Stat
+                value={up}
+                unit={t('network.up', { unit: upUnit })}
+                caption={t('network.seeding')}
+                className="opacity-85"
+              />
+            </div>
+            <Sparkline
+              className="h-auto min-h-12 flex-1"
+              series={[
+                {
+                  values: shown.length ? shown.map((s) => s.up) : [0, 0],
+                  className: 'text-text-3',
+                },
+                {
+                  values: shown.length ? shown.map((s) => s.down) : [0, 0],
+                  className: 'text-accent',
+                  fill: true,
+                },
+              ]}
+            />
+          </>
+        )
+      }}
+    </Widget>
   )
 }
 
@@ -496,14 +617,197 @@ function Announcement(props: WidgetProps) {
 
 // ---------------------------------------------------------------- queue
 
+/** What changes the Queue: a grab, an import or a removal, and each torrent's progress. */
+const QUEUE_TOPICS = [DOWNLOAD_TOPICS.queue, DOWNLOAD_TOPICS.torrents]
+
 function Queue(props: WidgetProps) {
   const t = useT(messages)
+  const source = useSource('downloads')
+  if (source) return <QueueLive {...props} />
   return (
     <Static {...props} kind="activity">
-      <EmptyState size="sm" icon="downloads" title={t('activity.none')}>
-        {t('activity.noneBody')}
-      </EmptyState>
+      {source === undefined ? (
+        <SkeletonText lines={3} />
+      ) : (
+        <EmptyState size="sm" icon="downloads" title={t('activity.none')}>
+          {t('activity.noneBody')}
+        </EmptyState>
+      )}
     </Static>
+  )
+}
+
+const queueFilter = (settings: Record<string, unknown>): QueueFilter =>
+  widgetDefinition('activity').settings.parse(settings).filter as QueueFilter
+
+/** The prototype's Queue: the filter tabs with counts, then rows laid out for the width. */
+function QueueLive(props: WidgetProps) {
+  const t = useT(messages)
+  const query = useQuery('widget:activity', (c) => c.queue.list(), QUEUE_TOPICS)
+  const [filter, setFilter] = useState<QueueFilter>(() => queueFilter(props.settings))
+  const { ref: body, width } = useWidth<HTMLDivElement>()
+  const layout = width >= 760 ? 'table' : width >= 520 ? 'mid' : 'stacked'
+  const clip = useClip<HTMLDivElement>('tbody > tr, ul > li')
+  return (
+    <Widget
+      {...props}
+      kind="activity"
+      query={query}
+      meta={(xs) =>
+        xs.length
+          ? t('activity.meta', {
+              count: xs.length,
+              rate: rate(xs.reduce((s, q) => s + q.downRate, 0)),
+            })
+          : null
+      }
+      skeleton={
+        <div className="grid gap-3">
+          <Skeleton className="h-7 w-64" />
+          {[0, 1, 2].map((i) => (
+            <Skeleton key={i} className="h-10" />
+          ))}
+        </div>
+      }
+    >
+      {(xs) => {
+        if (xs.length === 0)
+          return (
+            <EmptyState size="sm" icon="downloads" title={t('activity.none')}>
+              {t('activity.noneBody')}
+            </EmptyState>
+          )
+        const count = (f: QueueFilter) => xs.filter((q) => queueFilters[f](q.state)).length
+        const shown = xs.filter((q) => queueFilters[filter](q.state))
+        return (
+          <div ref={body} className="flex min-h-0 min-w-0 flex-1 flex-col gap-2">
+            <Tabs
+              value={filter}
+              onValueChange={(v) => setFilter(v as QueueFilter)}
+              className="flex min-h-0 min-w-0 flex-1 flex-col gap-2"
+            >
+              <TabsList
+                aria-label={t('activity.filter')}
+                className="max-w-full justify-self-start overflow-x-auto"
+              >
+                {(['all', 'downloading', 'seeding', 'issues'] as const).map((f) => (
+                  <TabsTrigger key={f} value={f} count={count(f)}>
+                    {t(`activity.${f}`)}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+              <TabsContent ref={clip.ref} value={filter} className={cn('min-w-0', fill)}>
+                {shown.length ? (
+                  <QueueRows items={shown} layout={layout} />
+                ) : (
+                  <p className="py-4 text-center text-caption text-text-3">
+                    {t('activity.nothing')}
+                  </p>
+                )}
+              </TabsContent>
+            </Tabs>
+            <More count={clip.hidden} page={t('page.activity')} path="/activity" />
+          </div>
+        )
+      }}
+    </Widget>
+  )
+}
+
+function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'mid' | 'stacked' }) {
+  const t = useT(messages)
+  const ts = useT(torrentState)
+  const locale = useLocale()
+  const dash = t('activity.unknown')
+  if (layout === 'stacked')
+    return (
+      <ul className="-mx-(--size-widget-padding) grid">
+        {items.map((q) => {
+          const s = torrentTone[q.state]
+          return (
+            <li
+              key={q.id}
+              className="grid gap-1.5 border-line border-t px-(--size-widget-padding) py-2.5"
+            >
+              <div className="flex min-w-0 items-center gap-2">
+                <span className="min-w-0 flex-1 truncate text-text text-ui">{q.title}</span>
+                <Badge tone={s.tone}>{ts(q.state)}</Badge>
+              </div>
+              <Progress
+                value={q.progress * 100}
+                tone={s.bar}
+                showValue
+                aria-label={t('activity.progressOf', { title: q.title })}
+              />
+              <p className="truncate font-mono text-figure text-text-3">
+                {q.state === 'downloading'
+                  ? `${rate(q.downRate)} · ${q.eta ? t('activity.left', { duration: duration(q.eta, locale) }) : dash}`
+                  : (q.stateReason ?? bytes(q.size))}
+              </p>
+            </li>
+          )
+        })}
+      </ul>
+    )
+  const full = layout === 'table'
+  return (
+    <div className="relative -mx-(--size-widget-padding) overflow-x-auto">
+      <Table>
+        <TableHeader>
+          <TableRow>
+            <TableHead>{t('activity.title')}</TableHead>
+            {full && <TableHead numeric>{t('activity.size')}</TableHead>}
+            <TableHead>{t('activity.progress')}</TableHead>
+            <TableHead numeric>{t('activity.down')}</TableHead>
+            {full && <TableHead numeric>{t('activity.up')}</TableHead>}
+            <TableHead numeric>{t('activity.eta')}</TableHead>
+            <TableHead>{t('activity.status')}</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {items.map((q) => {
+            const s = torrentTone[q.state]
+            return (
+              <TableRow key={q.id} title={q.stateReason ?? undefined}>
+                <TitleCell
+                  title={
+                    q.movieId ? (
+                      <a href={`/movies/${q.movieId}`} className="hover:underline">
+                        {q.title}
+                      </a>
+                    ) : (
+                      q.title
+                    )
+                  }
+                  detail={q.release}
+                />
+                {full && <TableCell numeric>{bytes(q.size)}</TableCell>}
+                <TableCell className="w-40">
+                  <Progress
+                    value={q.progress * 100}
+                    tone={s.bar}
+                    showValue
+                    aria-label={t('activity.progressOf', { title: q.title })}
+                  />
+                </TableCell>
+                <TableCell numeric>{q.downRate ? rate(q.downRate) : dash}</TableCell>
+                {full && <TableCell numeric>{q.upRate ? rate(q.upRate) : dash}</TableCell>}
+                <TableCell numeric>
+                  {q.state === 'downloading' && q.eta
+                    ? duration(q.eta, locale)
+                    : q.state === 'queued'
+                      ? t('activity.queued')
+                      : dash}
+                </TableCell>
+                <TableCell>
+                  <Badge tone={s.tone}>{ts(q.state)}</Badge>
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </div>
   )
 }
 
@@ -690,6 +994,8 @@ function SystemHealth(props: WidgetProps) {
   const query = useQuery('widget:system-health', (c) => c.system.healthChecks(), [
     'server.updated',
     'settings.updated',
+    DOWNLOAD_TOPICS.queue,
+    DOWNLOAD_TOPICS.vpn,
   ])
   const clip = useClip<HTMLUListElement>(':scope > li')
   return (

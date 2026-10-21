@@ -4,33 +4,42 @@
 // prototype's movies/detail.tsx. One page at one address, `/movies/{tmdbId}`, whether the movie is
 // in the library or not (ADR 0014, amended 2026-10-20). Not added: the summary, Overview and Cast
 // and crew, with Add movie. Added, it gains the library layer in place: Search, Interactive search
-// and More in the header; the status, a tag per version, the path and Monitored; In the library
-// with the versions; the Files, History and Search tabs.
+// and More in the header; the status, a tag per version, the path and Monitored; In the queue and
+// In the library; the Files, History and Search tabs.
 //
 // What this checkpoint changes from the prototype (each listed in the checkpoint report):
 // - search waits for an enabled indexer (decision 2): until there is one, Search is disabled with
 //   the reason, and the Search tab says the same with a link to Indexers;
 // - Search queues a search; the Search tab shows the last 30 minutes' results before searching
-//   again, says which indexers didn't answer, and its Grab is shown but disabled until downloads
-//   (checkpoint 5, the owner's answer 6); size, peers and age show a dash when an indexer omits them;
-// - Files and History show their empty states: files and history arrive with checkpoint 6;
-// - no Subtitles tab (checkpoint 7) and no In the queue card (checkpoint 6);
+//   again and says which indexers didn't answer; size, peers and age show a dash when an indexer
+//   omits them;
+// - Grab sends the release's indexer; a rejected release's Grab anyway sends `force`, and a refusal
+//   (on the blocklist, already grabbed, results expired) is the server's message in a toast;
+// - In the queue shows a card for each of the movie's downloads, where the prototype shows its
+//   first (a movie with two versions can have two);
+// - History pages with Show more, which the prototype's single page doesn't need;
+// - a file without a scene name leaves out the Release line;
+// - no Subtitles tab (checkpoint 7);
 // - Edit (in More) and the version list's add, edit and remove, which the prototype doesn't draw;
 // - Remove keeps the page where it is, without its library layer (Addresses are TMDB ids);
 // - a movie TMDB no longer has keeps its rows and address and says so (judgement call 4).
 
-import type {
-  DiscoverMovie,
-  LanguageProfile,
-  MinimumAvailability,
-  Movie,
-  MovieUpdate,
-  MovieVersion,
-  QualityProfile,
-  Release,
-  RootFolder,
+import {
+  type DiscoverMovie,
+  DOWNLOAD_TOPICS,
+  type HistoryEvent,
+  type LanguageProfile,
+  MEDIA_TOPICS,
+  type MediaFile,
+  type MinimumAvailability,
+  type Movie,
+  type MovieUpdate,
+  type MovieVersion,
+  type QualityProfile,
+  type Release,
+  type RootFolder,
 } from '@highsea/api-contract'
-import { bytes, duration } from '@highsea/core/format'
+import { bytes, duration, percent, rate } from '@highsea/core/format'
 import { useLocale, useT } from '@highsea/i18n/react'
 import type { ApiError } from '@highsea/sdk'
 import { useAction, useQuery } from '@highsea/sdk/react'
@@ -45,11 +54,13 @@ import {
   EmptyState,
   Field,
   Icon,
+  type IconName,
   Input,
   Menu,
   MenuContent,
   MenuItem,
   MenuTrigger,
+  Progress,
   QualityTag,
   Select,
   Skeleton,
@@ -73,6 +84,7 @@ import {
 import { useRouter } from 'next/navigation'
 import { Fragment, useCallback, useEffect, useState } from 'react'
 import { AddMovieDialog } from './add-dialog.tsx'
+import { torrentTone } from './downloads-status.ts'
 import { useSearchable } from './indexer-state.ts'
 import { library } from './library-messages.ts'
 import { Loadable } from './loadable.tsx'
@@ -90,9 +102,10 @@ import {
 } from './media-sections.tsx'
 import { media } from './media-sections-messages.ts'
 import { shell } from './messages.ts'
-import { AVAILABILITY } from './movie-data.ts'
-import { movieDetail as messages } from './movie-detail-messages.ts'
+import { AVAILABILITY, loadHistory } from './movie-data.ts'
+import { movieDetail as messages, torrentState } from './movie-detail-messages.ts'
 import { AdminPage } from './shell.tsx'
+import { useRelative } from './time.ts'
 
 type Tab = 'overview' | 'cast' | 'files' | 'history' | 'search'
 
@@ -499,6 +512,7 @@ function LibraryBody({
             meta={meta}
             onAllCast={() => onTab('cast')}
             onAdd={onAdd}
+            main={<InTheQueue movie={m} />}
             aside={<InTheLibrary movie={m} options={options} onChange={onChange} />}
           />
         </TabsContent>
@@ -509,15 +523,59 @@ function LibraryBody({
           <Files movie={m} />
         </TabsContent>
         <TabsContent value="history" className="pt-5">
-          <EmptyState size="sm" icon="clock" title={t('history.none')}>
-            {t('history.noneBody')}
-          </EmptyState>
+          <History id={m.id} />
         </TabsContent>
         <TabsContent value="search" className="pt-5">
           <SearchTab id={m.id} />
         </TabsContent>
       </Tabs>
     </>
+  )
+}
+
+// ---------------------------------------------------------------- overview: in the queue
+
+/** What changes a download's card: the queue, and each torrent's progress. */
+const QUEUE_TOPICS = [DOWNLOAD_TOPICS.queue, DOWNLOAD_TOPICS.torrents]
+
+/** The movie's downloads with live progress; nothing while it has none. */
+function InTheQueue({ movie: m }: { movie: Movie }) {
+  const t = useT(messages)
+  const ts = useT(torrentState)
+  const locale = useLocale()
+  const queue = useQuery('queue', (c) => c.queue.list(), QUEUE_TOPICS)
+  const live = queue.data?.filter((q) => q.movieId === m.id) ?? []
+  if (!live.length) return null
+  return (
+    <section aria-labelledby="in-the-queue" className="grid grid-cols-1 content-start gap-3">
+      <h2 id="in-the-queue" className="text-title text-text">
+        {t('inTheQueue')}
+      </h2>
+      {live.map((q) => (
+        <div
+          key={q.id}
+          className="grid grid-cols-1 gap-2 rounded-md border border-line bg-s1 p-3.5"
+        >
+          <div className="flex items-center gap-2">
+            <span className="min-w-0 flex-1 truncate font-mono text-release text-text-2">
+              {q.release}
+            </span>
+            <Badge tone={torrentTone[q.state].tone}>{ts(q.state)}</Badge>
+          </div>
+          <Progress
+            value={q.progress * 100}
+            tone={torrentTone[q.state].bar}
+            aria-label={t('queue.progress', { title: m.title })}
+          />
+          <p className="font-mono text-figure text-text-3">
+            {percent(q.progress)}
+            {q.downRate ? ` · ${rate(q.downRate)}` : ''}
+            {q.eta ? ` · ${t('queue.left', { duration: duration(q.eta, locale) })}` : ''}
+            {q.stateReason ? ` · ${q.stateReason}` : ''}
+          </p>
+        </div>
+      ))}
+    </section>
   )
 }
 
@@ -895,32 +953,154 @@ function EditDialog({
 const withCurrent = (paths: string[], current: string) =>
   paths.includes(current) ? paths : [current, ...paths]
 
-// ---------------------------------------------------------------- files and search
+// ---------------------------------------------------------------- files
 
-/** One card per version. Files arrive with importing (checkpoint 6), so each says it has none. */
+type Stream = MediaFile['streams'][number]
+
+/** One card per version: its file with the probe's streams, or why it has none. */
 function Files({ movie: m }: { movie: Movie }) {
   const t = useT(messages)
+  const files = useQuery(`files:${m.id}`, (c) => c.movies.files({ params: { id: m.id } }), [
+    MEDIA_TOPICS.item,
+  ])
   return (
-    <div className="grid gap-4">
-      {m.versions.map((v) => (
-        <section
-          key={v.id}
-          aria-label={t('files.version', { label: v.label })}
-          className="grid gap-3 rounded-lg border border-line bg-s1 p-4"
-        >
-          <div className="flex flex-wrap items-center gap-2">
-            <QualityTag>{v.label}</QualityTag>
-            {v.fileId === null && (
-              <Badge tone={m.status === 'downloading' ? 'accent' : 'danger'}>
-                {m.status === 'downloading' ? t('files.downloading') : t('files.none')}
-              </Badge>
-            )}
-          </div>
-        </section>
-      ))}
-    </div>
+    <Loadable query={files} what={t('files.what')}>
+      {(fs) => (
+        <div className="grid gap-4">
+          {m.versions.map((v) => {
+            const f = fs.find((x) => x.versionId === v.id)
+            return (
+              <section
+                key={v.id}
+                aria-label={t('files.version', { label: v.label })}
+                className="grid gap-3 rounded-lg border border-line bg-s1 p-4"
+              >
+                <div className="flex flex-wrap items-center gap-2">
+                  <QualityTag>{v.label}</QualityTag>
+                  {f ? (
+                    <span className="font-mono text-figure text-text-2">{bytes(f.size)}</span>
+                  ) : (
+                    <Badge tone={m.status === 'downloading' ? 'accent' : 'danger'}>
+                      {m.status === 'downloading' ? t('files.downloading') : t('files.none')}
+                    </Badge>
+                  )}
+                </div>
+                {f && <FileStreams file={f} />}
+              </section>
+            )
+          })}
+        </div>
+      )}
+    </Loadable>
   )
 }
+
+function FileStreams({ file: f }: { file: MediaFile }) {
+  const t = useT(messages)
+  const line = (s: Stream) =>
+    s.type === 'video'
+      ? `${s.codec.toUpperCase()} · ${s.width}×${s.height}${s.hdr !== 'none' ? ` · ${s.hdr.toUpperCase()}` : ''} · ${rate(s.bitrate / 8)}`
+      : s.type === 'audio'
+        ? `${s.codec.toUpperCase()} ${s.channels} · ${s.language}${s.title ? ` · ${s.title}` : ''}${s.default ? ` · ${t('stream.default')}` : ''}`
+        : `${s.codec} · ${s.language}${s.forced ? ` · ${t('stream.forced')}` : ''}${s.hi ? ` · ${t('stream.sdh')}` : ''}`
+  return (
+    <>
+      <p className="truncate font-mono text-release text-text-3" title={f.path}>
+        {f.path}
+      </p>
+      <ul className="grid gap-1 text-ui">
+        {f.streams.map((s) => (
+          <li key={s.index} className="flex gap-3">
+            <span className="w-16 shrink-0 text-text-3">{t(`stream.${s.type}`)}</span>
+            <span className="min-w-0 font-mono text-figure text-text-2">{line(s)}</span>
+          </li>
+        ))}
+      </ul>
+      {f.sceneName && (
+        <p className="text-caption text-text-3">
+          {t('files.release')} <span className="font-mono">{f.sceneName}</span>
+        </p>
+      )}
+    </>
+  )
+}
+
+// ---------------------------------------------------------------- history
+
+const historyIcon: Record<HistoryEvent['type'], IconName> = {
+  grabbed: 'download',
+  imported: 'check',
+  'import-failed': 'error',
+  'download-failed': 'error',
+  deleted: 'delete',
+  renamed: 'edit',
+  blocklisted: 'lock',
+  'subtitle-downloaded': 'subtitles',
+  'subtitle-synced': 'subtitle-sync',
+}
+
+/** The movie's history, newest first, a page at a time; an event elsewhere asks again. */
+function History({ id }: { id: number }) {
+  const t = useT(messages)
+  const { relative } = useRelative()
+  const [pages, setPages] = useState(1)
+  const history = useQuery(`history:${id}:${pages}`, (c) => loadHistory(c, id, pages), [
+    DOWNLOAD_TOPICS.history,
+  ])
+  return (
+    <Loadable query={history} what={t('history.what')}>
+      {({ items, next }) =>
+        items.length === 0 ? (
+          <EmptyState size="sm" icon="clock" title={t('history.none')}>
+            {t('history.noneBody')}
+          </EmptyState>
+        ) : (
+          <div className="grid gap-3">
+            <TableFrame>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('history.event')}</TableHead>
+                    <TableHead>{t('history.release')}</TableHead>
+                    <TableHead>{t('history.source')}</TableHead>
+                    <TableHead numeric>{t('history.when')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {items.map((e) => (
+                    <TableRow key={e.id} title={e.message ?? undefined}>
+                      <TableCell>
+                        <span className="flex items-center gap-2 text-text">
+                          <Icon name={historyIcon[e.type]} size={14} className="text-text-3" />
+                          {t(`history.${e.type}`)}
+                        </span>
+                      </TableCell>
+                      <TitleCell
+                        title={e.message ?? e.sourceTitle ?? t('search.unknown')}
+                        detail={e.message ? e.sourceTitle : undefined}
+                      />
+                      <TableCell className="text-text-2">
+                        {e.indexer ?? t('search.unknown')}
+                      </TableCell>
+                      <TableCell numeric>{relative(e.date)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </TableFrame>
+            {next && (
+              <Button size="sm" className="justify-self-start" onClick={() => setPages(pages + 1)}>
+                {t('history.more')}
+              </Button>
+            )}
+          </div>
+        )
+      }
+    </Loadable>
+  )
+}
+
+// ---------------------------------------------------------------- search
 
 /**
  * Interactive search (movies.md › Search tab). While no indexer is enabled, decision 2's reason and
@@ -971,6 +1151,22 @@ function InteractiveSearch({ id, indexers }: { id: number; indexers: number }) {
   const [open, setOpen] = useState<string | null>(null)
   const [showRejected, setShowRejected] = useState(true)
   const dash = t('search.unknown')
+  // a rejected release's button is Grab anyway: it overrides the profile, so it sends `force`
+  const grab = useAction((c, r: Release) =>
+    c.movies.grabRelease({
+      params: { id, guid: r.guid },
+      body: { indexerId: r.indexerId, ...(r.approved ? {} : { force: true }) },
+    }),
+  )
+  const [grabbed, setGrabbed] = useState<string | null>(null)
+  const doGrab = (r: Release) =>
+    grab.run(r).then(
+      () => {
+        setGrabbed(r.guid)
+        toast.success(t('grab.done'), { description: t('grab.doneBody', { title: r.title }) })
+      },
+      (e: Error) => toast.error(t('grab.failed'), { description: e.message }),
+    )
 
   return (
     <Loadable
@@ -1067,21 +1263,28 @@ function InteractiveSearch({ id, indexers }: { id: number; indexers: number }) {
                               </button>
                             </TableCell>
                             <TableCell className="text-end">
-                              {/* the owner's answer 6: shown, disabled until downloads. aria-disabled
-                                keeps it focusable, so the tooltip saying why is reachable */}
-                              <Tooltip content={t('search.grabLater')}>
-                                <Button
-                                  size="sm"
-                                  variant={r.approved ? 'primary' : 'ghost'}
-                                  iconOnly
-                                  icon="download"
-                                  aria-disabled
-                                  aria-label={t(r.approved ? 'search.grab' : 'search.grabAnyway', {
-                                    title: r.title,
-                                  })}
-                                  className="cursor-not-allowed opacity-45"
-                                />
-                              </Tooltip>
+                              {grabbed === r.guid ? (
+                                <Badge tone="accent">{t('search.grabbed')}</Badge>
+                              ) : (
+                                <Tooltip
+                                  content={t(
+                                    r.approved ? 'search.grabTip' : 'search.grabAnywayTip',
+                                  )}
+                                >
+                                  <Button
+                                    size="sm"
+                                    variant={r.approved ? 'primary' : 'ghost'}
+                                    iconOnly
+                                    icon="download"
+                                    aria-label={t(
+                                      r.approved ? 'search.grab' : 'search.grabAnyway',
+                                      { title: r.title },
+                                    )}
+                                    onClick={() => doGrab(r)}
+                                    disabled={grab.pending}
+                                  />
+                                </Tooltip>
+                              )}
                             </TableCell>
                           </TableRow>
                           {expanded && (

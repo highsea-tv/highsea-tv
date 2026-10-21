@@ -113,6 +113,7 @@ const indexer = (extra: Record<string, unknown> = {}) => ({
   logo: null,
   settings: { values: { baseUrl: 'https://fake.test/torznab' }, secrets: { apiKey: true } },
   stats: { queries24h: 0, grabs24h: 0, avgResponseMs: null, successRate: null },
+  seeding: { ratio: null, minutes: null, minMinutes: null },
   addedAt: new Date().toISOString(),
   ...extra,
 })
@@ -255,6 +256,34 @@ describe('A9 Indexers', () => {
     expect(requested('PATCH', '/api/v1/indexers/ix_1')[0]?.body).toEqual({
       name: 'Fake Torznab',
       priority: 10,
+    })
+  })
+
+  test('Edit sets the seeding rule in hours; empty fields use Download client’s', async () => {
+    state.indexers = [indexer({ seeding: { ratio: 2, minutes: null, minMinutes: null } })]
+    const { user, page } = await open()
+    await user.click(page.getByRole('button', { name: 'More for Fake Torznab' }))
+    await user.click(await page.findByRole('menuitem', { name: 'Edit' }))
+    await settle()
+    const dialog = within(page.getByRole('dialog'))
+    expect((dialog.getByLabelText('Ratio') as HTMLInputElement).value).toBe('2')
+    const minimum = dialog.getByLabelText('Minimum, in hours')
+    await user.type(minimum, '-1')
+    await user.click(dialog.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(dialog.getByText('Use a number of hours up to a year, or leave it empty.')).toBeTruthy()
+    expect(requested('PATCH', '/api/v1/indexers/ix_1')).toHaveLength(0)
+
+    await user.clear(minimum)
+    await user.type(minimum, '72')
+    await user.clear(dialog.getByLabelText('Ratio'))
+    await user.type(dialog.getByLabelText('Time, in hours'), '1.5')
+    await user.click(dialog.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(requested('PATCH', '/api/v1/indexers/ix_1')[0]?.body).toEqual({
+      name: 'Fake Torznab',
+      priority: 25,
+      seeding: { ratio: null, minutes: 90, minMinutes: 4320 },
     })
   })
 

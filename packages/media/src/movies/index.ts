@@ -18,18 +18,23 @@
 //   movies.parse(title) → ParseResult
 //   movies.searchInput(id)                 what a release search is judged by (the indexers search)
 //   await movies.client.list(query, userId) / item('movie', id, userId) / search(q, { userId, mayRequest })
+//   await movies.importDownload(ImportInput) → imported { fileId, path, transfer } | blocked | failed
+//   await movies.manualImport.scan(path) → ImportCandidate[]     run(files, 'hardlink' | 'move')
+//   movies.files(id) → MediaFileView[]     movies.history(id, cursor?) → HistoryPage
 //   movies.close()                         stops listening for metadata.updated
 //
 // Movies, pages and client shapes are @highsea/api-contract's (ratings out of 5, ISO times).
 // Errors are AppErrors with `details.reason` where the contract names one: `no-indexers` (409,
 // search now and bulk search while no indexer is enabled), `last-version` (409),
 // `unknown-root-folder`, `duplicate-label`, `versions` and `bad-cursor` (400),
-// `unknown-quality-profile` (404).
+// `unknown-quality-profile` (404), `outside-roots` (400, manual import outside the root folders
+// and the downloads folder).
 import type { DiscoverMovie as ApiDiscoverMovie } from '@highsea/api-contract'
 import type { DiscoverMovie } from '@highsea/metadata'
 import type { Media } from '../shared/index.ts'
 import { createClient } from './client.ts'
 import type { MoviesDeps } from './context.ts'
+import { createImports } from './import.ts'
 import { defineMovieJobs, MOVIE_JOB_TYPES, scheduleMovieJobs } from './jobs.ts'
 import { createLibrary } from './library.ts'
 import { toApiDiscoverMovie } from './map.ts'
@@ -39,6 +44,7 @@ export function createMovies(deps: MoviesDeps, media: Media) {
   const library = createLibrary(deps, media)
   const parse = createParse(deps, { media, library })
   const client = createClient(deps, { library })
+  const imports = createImports(deps, { media, library })
   defineMovieJobs(deps.jobs, library.internal.checkAvailability)
 
   // the library's sort columns and statuses follow the cache
@@ -74,6 +80,14 @@ export function createMovies(deps: MoviesDeps, media: Media) {
     },
     parse,
     client,
+    /** A finished download into the library (checkpoint 6's import pipeline). */
+    importDownload: imports.importDownload,
+    /** A17: what a folder holds, and importing the files the owner picks. */
+    manualImport: imports.manualImport,
+    /** A movie's files with their streams, in its versions' order. */
+    files: imports.files,
+    /** A movie's history, newest first, cursor-paged. */
+    history: imports.history,
     jobs: {
       types: MOVIE_JOB_TYPES,
       /** The daily availability check. The runtime calls this once at boot. */
@@ -92,6 +106,16 @@ export type Movies = ReturnType<typeof createMovies>
 
 export type { ClientListQuery } from './client.ts'
 export type { MovieSearch, MoviesDeps } from './context.ts'
+export type {
+  ImportCandidate,
+  ImportInput,
+  ImportMode,
+  ImportOptions,
+  ImportResult,
+  ManualImportFile,
+  MediaFileView,
+  StoredFileInfo,
+} from './import.ts'
 export { MOVIE_JOB_TYPES } from './jobs.ts'
 export { DEFAULT_LIMIT, type ExtraFilters, type ListQuery, MAX_LIMIT } from './library.ts'
 export { toApiDiscoverMovie } from './map.ts'

@@ -6,6 +6,8 @@ import { join } from 'node:path'
 import { createFakeClock } from '@highsea/core'
 import { boot, createWorkerPool, getRuntime, hasRuntime, loadConfig } from '../src/index.ts'
 
+// the engine opens no socket: a file-backed boot would otherwise listen on 6881 and join the DHT
+const torrent = { offline: true }
 const dirs: string[] = []
 const temp = () => {
   const d = mkdtempSync(join(tmpdir(), 'highsea-rt-'))
@@ -52,7 +54,7 @@ describe('runtime', () => {
   test('boots: secret key, migrated database, a stable server id, health', async () => {
     const dir = temp()
     const config = configFor(dir)
-    const rt = await boot({ config, version: '0.1.0', quiet: true, manualTicks: true })
+    const rt = await boot({ config, version: '0.1.0', quiet: true, manualTicks: true, torrent })
     expect(getRuntime()).toBe(rt)
     const key = join(config.configDir, 'secret.key')
     expect(statSync(key).size).toBe(32)
@@ -72,7 +74,7 @@ describe('runtime', () => {
     expect(hasRuntime()).toBe(false)
 
     // the second boot keeps the id and the key, and has nothing to migrate or back up
-    const again = await boot({ config, version: '0.1.0', quiet: true, manualTicks: true })
+    const again = await boot({ config, version: '0.1.0', quiet: true, manualTicks: true, torrent })
     expect(again.identity().id).toBe(id)
     expect(again.sealer.open(sealed)).toBe('x')
     expect(readdirSync(join(config.configDir, 'backups'))).toEqual([])
@@ -82,6 +84,7 @@ describe('runtime', () => {
     const clock = createFakeClock()
     const rt = await boot({
       config: configFor(temp()),
+      torrent,
       version: '0.1.0',
       quiet: true,
       memory: true,
@@ -96,6 +99,7 @@ describe('runtime', () => {
   test('shutdown hooks run last-first, before the database closes', async () => {
     const rt = await boot({
       config: configFor(temp()),
+      torrent,
       version: '0.1.0',
       quiet: true,
       memory: true,
@@ -153,6 +157,7 @@ describe('the catalog and indexers', () => {
   test('a development boot installs the signed seed; no indexer is a health warning', async () => {
     const rt = await boot({
       config: configFor(temp()),
+      torrent,
       version: '0.1.0',
       quiet: true,
       manualTicks: true,
@@ -172,7 +177,7 @@ describe('the catalog and indexers', () => {
       HIGHSEA_DATA_DIR: join(temp(), 'data'),
       NODE_ENV: 'production',
     })
-    const rt = await boot({ config, version: '0.1.0', quiet: true, manualTicks: true })
+    const rt = await boot({ config, version: '0.1.0', quiet: true, manualTicks: true, torrent })
     expect(rt.catalog.version()).toBeNull()
     expect(rt.indexers.catalog()).toEqual([])
   })

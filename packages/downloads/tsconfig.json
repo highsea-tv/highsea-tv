@@ -1,0 +1,7 @@
+{
+  "extends": "@highsea/config/tsconfig/library.json",
+  "compilerOptions": {
+    "types": ["bun", "node"]
+  },
+  "include": ["src", "test"]
+}

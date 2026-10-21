@@ -223,6 +223,17 @@ async function signIn(ctx: RunContext, def: Definition, base: string): Promise<s
   return cookies
 }
 
+/** Signs in to a site with a form sign-in, for a grab whose session ran out. */
+export function signInTo(ctx: RunContext): Promise<string> {
+  return signIn(ctx, ctx.definition, baseUrlOf(ctx.definition, ctx.settings))
+}
+
+/** The cookie a site with a cookie sign-in takes, from its settings. */
+export function cookieOf(ctx: Pick<RunContext, 'definition' | 'settings'>): string | null {
+  const login = ctx.definition.login
+  return login.method === 'cookie' ? renderTemplate(login.cookie, { Config: ctx.settings }) : null
+}
+
 async function siteSearch(
   ctx: RunContext,
   def: Extract<Definition, { kind: 'json' | 'html' | 'rss' }>,

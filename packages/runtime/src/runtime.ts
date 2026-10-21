@@ -29,11 +29,18 @@ import {
   type Sealer,
   systemClock,
 } from '@highsea/core'
-import { type Database, type Db, migrate, openDatabase, schema } from '@highsea/db'
+import { type Database, type Db, migrate, openDatabase, readSetting, schema } from '@highsea/db'
+import {
+  createDownloads,
+  DEFAULT_DOWNLOAD_CLIENT,
+  DOWNLOAD_CLIENT_KEY,
+  type DownloadClientSettings,
+  type Downloads,
+} from '@highsea/downloads'
 import { createIndexers, type Indexers } from '@highsea/indexers'
 import { createJobQueue, type JobQueue } from '@highsea/jobs'
 import { createMovies, type Movies } from '@highsea/media/movies'
-import { createMedia, type Media } from '@highsea/media/shared'
+import { createMedia, type Media, vetFiles } from '@highsea/media/shared'
 import { createMetadata, type Metadata, TMDB_ATTRIBUTION } from '@highsea/metadata'
 import type { MdnsResponder } from '@highsea/network'
 import {
@@ -42,23 +49,28 @@ import {
   type Personalization,
   type WidgetSource,
 } from '@highsea/personalization'
-import { eq } from 'drizzle-orm'
+import { createTorrentEngine, HASH_WORKER, type TorrentEngine } from '@highsea/torrent'
+import { createVpn, type Vpn } from '@highsea/vpn'
+import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
+import { type BrowseListing, browse } from './browse.ts'
 import type { Config } from './config.ts'
 import { homeRows } from './home-rows.ts'
 import { createNetworkService, type NetworkService } from './network.ts'
 import {
   checkSetup,
+  FOLDERS_KEY,
   isSetupComplete,
   type MediaFolders,
   type RemoteAccessInput,
   saveSetup,
+  setupDefaults,
 } from './setup.ts'
 import { createCpuMeter, type Disk, disks, type HealthIssue, memory } from './system.ts'
 import { createWorkerPool, type WorkerPool } from './workers.ts'
 
-/** Milestone 1 has the server, the movie library and indexers; each later checkpoint adds its own. */
-const SOURCES: WidgetSource[] = ['system', 'movies', 'indexers']
+/** Milestone 1 has the server, the movie library, indexers and downloads; later checkpoints add theirs. */
+const SOURCES: WidgetSource[] = ['system', 'movies', 'indexers', 'downloads']
 
 /** Searches an indexer search for a movie in the background: Search now and bulk search queue it. */
 export const MOVIE_SEARCH_JOB = 'movies.search'
@@ -159,6 +171,18 @@ export type Runtime = {
   catalog: Catalog
   /** Indexers, their health and release search (ADR 0035). */
   indexers: Indexers
+  /** The BitTorrent engine (ADR 0037). */
+  engine: TorrentEngine
+  /** Grabs, the queue, the monitor and the blocklist (ADR 0038). */
+  downloads: Downloads
+  /** VPN connections: the mode, the tunnel, the checks and the binding (ADR 0040). */
+  vpn: Vpn
+  /** Setup's movies and downloads folders. */
+  folders(): MediaFolders
+  /** A folder inside the data root, a root folder or the downloads folder (A17's Browse). */
+  browse(path?: string): BrowseListing
+  /** A library movie's row id, from its TMDB id; not-found when it isn't in the library. */
+  itemId(tmdbId: number): string
   identity(): ServerIdentity
   rename(name: string): void
   /** `origin` is the browser's, when known: passkeys depend on it. */
@@ -208,6 +232,14 @@ export type BootOptions = {
   }
   /** Each indexer's time to answer; tests shorten it. */
   indexerTimeoutMs?: number
+  /**
+   * The torrent engine's listening port and DHT. By default Settings › Download client's port and
+   * the DHT on; an in-memory runtime (tests) takes any free port and no DHT. `offline` never hands
+   * the engine a binding, so no torrent opens a socket: tests that don't download pass it.
+   */
+  torrent?: { port?: number; dht?: boolean; offline?: boolean }
+  /** ffprobe, the downloads folder and the rest the import pipeline takes; tests pass clips. */
+  importing?: Parameters<typeof createMovies>[0]['importing']
 }
 
 const g = globalThis as typeof globalThis & { __highsea?: Runtime }
@@ -364,6 +396,24 @@ export async function boot(options: BootOptions): Promise<Runtime> {
   indexers.schedule()
   const stopIndexers = indexers.start()
 
+  const folders = (): MediaFolders => readSetting(db, FOLDERS_KEY, setupDefaults(config).folders)
+  const { mediaItems } = schema
+  const movieRow = (tmdbId: number) =>
+    db
+      .select()
+      .from(mediaItems)
+      .where(and(eq(mediaItems.type, 'movie'), eq(mediaItems.tmdbId, tmdbId)))
+      .get()
+  /** A library row's movie, as downloads names it. */
+  const movieOf = (itemId: string) => {
+    const row = db
+      .select({ tmdbId: mediaItems.tmdbId, title: mediaItems.title, year: mediaItems.year })
+      .from(mediaItems)
+      .where(eq(mediaItems.id, itemId))
+      .get()
+    return row?.tmdbId != null ? { tmdbId: row.tmdbId, title: row.title, year: row.year } : null
+  }
+
   // what every media type shares: profiles, formats, sizes and root folders
   const media = createMedia({ db, clock, logger })
   media.seed()
@@ -375,6 +425,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       events,
       logger,
       metadata,
+      importing: { ...options.importing, downloadDirs: () => [folders().downloads] },
       search: {
         canSearch: () => indexers.hasEnabled(),
         queue(tmdbIds) {
@@ -405,9 +456,85 @@ export async function boot(options: BootOptions): Promise<Runtime> {
         approved: result.releases.filter((r) => r.approved).length,
         searched: result.searched,
       })
+      // a monitored movie without a file grabs the best approved release; grabBest skips a
+      // version that's already downloading, so a repeated job grabs nothing twice
+      const row = movieRow(tmdbId)
+      if (row?.monitored && row.status !== 'available' && result.releases.some((r) => r.approved))
+        await downloads.grabBest(row.id, null)
     },
   })
   movies.jobs.schedule(clock.now())
+
+  // the torrent engine: hashing in the worker pool, every torrent's files vetted before a byte
+  // downloads, and no networking until the VPN hands it a binding (ADR 0037, 0040)
+  const client = readSetting<DownloadClientSettings>(
+    db,
+    DOWNLOAD_CLIENT_KEY,
+    DEFAULT_DOWNLOAD_CLIENT,
+  )
+  const torrentLog = logger.child('downloads')
+  let onEngineEvent: Parameters<typeof createTorrentEngine>[0]['emit'] = () => {}
+  const engine = createTorrentEngine({
+    db,
+    logger,
+    clock,
+    hash: (data) => workers.run<string>({ module: HASH_WORKER, fn: 'sha1', input: data }),
+    vet: (files) => vetFiles(files.map((f) => f.path)),
+    port: options.torrent?.port ?? (options.memory ? 0 : client.port),
+    dht: (options.torrent?.dht ?? !options.memory) ? { enabled: true } : undefined,
+    emit: (e) => onEngineEvent?.(e),
+  })
+  await engine.start()
+
+  const downloads = createDownloads({
+    db,
+    clock,
+    logger: torrentLog,
+    events,
+    jobs,
+    engine,
+    indexers,
+    fetch: outside,
+    movie: movieOf,
+    async search(itemId) {
+      const movie = movieOf(itemId)
+      if (!movie) return []
+      return (await indexers.search(movies.searchInput(movie.tmdbId))).releases
+    },
+    downloadsFolder: () => folders().downloads,
+    history: (entry) => {
+      media.history.write(entry)
+    },
+    async importer(input) {
+      const result = await movies.importDownload({
+        itemId: input.itemId,
+        versionId: input.versionId,
+        folder: input.path,
+        releaseTitle: input.releaseTitle,
+        quality: input.quality,
+        indexer: input.indexer,
+        downloadId: input.downloadId,
+      })
+      return result.status === 'imported'
+        ? { ok: true, transfer: result.transfer }
+        : { ok: false, reason: result.reason }
+    },
+  })
+  onEngineEvent = downloads.onEngineEvent
+  downloads.defineJobs()
+  const stopDownloads = downloads.start()
+
+  const vpn = createVpn({
+    db,
+    sealer,
+    logger,
+    clock,
+    events,
+    fetch: outside,
+    onBinding: (binding) => (options.torrent?.offline ? undefined : engine.setBinding(binding)),
+    listeningPort: () => engine.status().port,
+  })
+  vpn.start()
 
   const personalization = createPersonalization(
     {
@@ -443,6 +570,25 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     movies,
     catalog,
     indexers,
+    engine,
+    downloads,
+    vpn,
+    folders,
+    // starts in the downloads folder, where stray files usually are (A17), else the data root
+    browse: (path) =>
+      browse(
+        [
+          resolve(config.dataDir),
+          ...media.rootFolders.list().map((f) => f.path),
+          folders().downloads,
+        ],
+        path ?? (existsSync(folders().downloads) ? folders().downloads : undefined),
+      ),
+    itemId(tmdbId) {
+      const row = movieRow(tmdbId)
+      if (!row) throw new AppError('not-found', 'That movie isn’t in the library.')
+      return row.id
+    },
     identity,
     rename,
     publicInfo,
@@ -558,6 +704,8 @@ export async function boot(options: BootOptions): Promise<Runtime> {
         })
       for (const i of catalog.issues()) out.push({ ...i, source: 'Catalog', since: startedAt })
       for (const i of indexers.issues()) out.push({ ...i, source: 'Indexers' })
+      for (const i of downloads.issues()) out.push({ ...i, source: 'Downloads' })
+      for (const i of vpn.issues()) out.push({ ...i, source: 'VPN' })
       return out
     },
     health() {
@@ -582,6 +730,9 @@ export async function boot(options: BootOptions): Promise<Runtime> {
           log.error('a shutdown step failed', { error: (e as Error).message })
         }
       }
+      vpn.stop()
+      stopDownloads()
+      await engine.close()
       movies.close()
       stopIndexers()
       await network.stopDiscovery()

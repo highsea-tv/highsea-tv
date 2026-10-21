@@ -11,7 +11,7 @@ import { defaultNetworkSettings, type NetworkSettings, PRIVATE_RANGES } from '@h
 import type { Config } from './config.ts'
 
 export const SETUP_KEY = 'setup'
-export const MEDIA_KEY = 'media'
+export const FOLDERS_KEY = 'folders'
 export const CLOUD_KEY = 'cloud'
 
 export type SetupState = { completedAt: number | null }
@@ -51,7 +51,7 @@ export function setupDefaults(config: Config) {
   const dataDir = resolve(config.dataDir)
   return {
     dataDir,
-    folders: { movies: join(dataDir, 'movies'), downloads: join(dataDir, 'downloads') },
+    folders: { movies: join(dataDir, 'media', 'movies'), downloads: join(dataDir, 'downloads') },
     serverName: 'highsea',
   }
 }
@@ -163,7 +163,7 @@ export function saveSetup(
   for (const dir of [movies, downloads]) mkdirSync(dir, { recursive: true })
   const now = clock.now()
   rename(serverName.trim())
-  writeSetting<MediaFolders>(db, MEDIA_KEY, { movies, downloads }, now)
+  writeSetting<MediaFolders>(db, FOLDERS_KEY, { movies, downloads }, now)
   writeSetting(db, 'network', networkFor(input.remoteAccess), now)
   // linking happens when highsea cloud exists; until then the choice is remembered
   writeSetting(db, CLOUD_KEY, { wanted: input.cloudLink, linked: false }, now)

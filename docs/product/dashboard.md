@@ -35,6 +35,10 @@ The first page after sign-in. It answers "is everything working, and what's happ
 
 - **Role defaults:** owners and admins start from Network (2 × 2), Storage, Indexers, Subtitles, Upcoming (2 × 2), Announcement, then the Queue (4 × 5). Each role's default can be saved apart.
 - **Content that doesn't fit** the widget's height is cut at a whole row, with "{count} more in {page}" linking to the page with the rest.
+- **Live since checkpoint 6a** (2026-10-20), with the `downloads` source:
+  - **Network:** the download and upload rates now, over a sparkline of the last 10 minutes from `system.speeds()`, asked again every 2 seconds, since the rates have no event (the plan's `tick`). The ↓ caption counts active downloads ("2 downloads", "Nothing downloading"); while the VPN is down or failed it reads "Stopped while the VPN is down" (not in the prototype). The ↑ caption reads "seeding".
+  - **Queue:** `queue.list()`, moving over `queue.updated` and `torrents.updated`; the filter tabs count with the same rules as Activity's.
+  - **System health** listens to `queue.updated` and `vpn.updated` too, for the downloads' and the VPN's health checks ([system.md](system.md)).
 - **Queue widget** chooses its layout from its own width, not the viewport's: a full table from 760px, a table with fewer columns from 520px, and stacked rows below that.
 - **Responsive:**
 
@@ -141,7 +145,7 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `dashboard` gr
 - `dashboard.saveRoleDefault({ params: { role }, body: { widgets } })` → `PUT /api/v1/dashboard/defaults/{role}`. Owner only. Widgets the role can't see are dropped and listed in `dropped`.
 - Event `layout.updated` on the event stream.
 - **The widget registry** is `@highsea/personalization/widgets`: each widget's id, title, description, width and height ranges, default size, the roles that may add it, its data source and a zod settings schema with defaults (Network: 10 minutes; Upcoming: 14 days; Queue: the All filter). The settings are stored with each placement; there's no UI to edit them yet.
-- **Data sources:** the server's public info lists the sources it has (`sources`). A widget whose source isn't there shows its empty state and calls nothing. In checkpoint 3 the server has `system`, which feeds Storage (`system.status`) and System health (`system.healthChecks`); the movie, download, indexer, subtitle and curation sources arrive with their checkpoints.
+- **Data sources:** the server's public info lists the sources it has (`sources`). A widget whose source isn't there shows its empty state and calls nothing. In checkpoint 3 the server has `system`, which feeds Storage (`system.status`) and System health (`system.healthChecks`). Checkpoints 4 and 5 add `movies` and `indexers`; checkpoint 6a adds `downloads`, which feeds Network (`system.speeds`, `downloads.list`, `vpn.status`) and Queue (`queue.list`). The subtitle and curation sources arrive with their checkpoints.
 
 ## Decisions
 

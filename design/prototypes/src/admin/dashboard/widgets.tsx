@@ -552,7 +552,7 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
 
 function Queue(props: WidgetProps) {
   const query = useWidgetQuery('activity', (c) => c.queue.list(), [
-    'queue.changed',
+    'queue.updated',
     'torrents.updated',
   ])
   const [filter, setFilter] = useState<keyof typeof queueFilters>('all')

@@ -290,3 +290,64 @@ export const rootFolders = sqliteTable('root_folders', {
   path: text('path').notNull().unique(),
   createdAt: integer('created_at').notNull(),
 })
+
+/** A file in the library (ADR 0012): a version's file, with what ffprobe found in it. */
+export const mediaFiles = sqliteTable(
+  'media_files',
+  {
+    id: text('id').primaryKey(),
+    itemId: text('item_id')
+      .notNull()
+      .references(() => mediaItems.id, { onDelete: 'cascade' }),
+    versionId: text('version_id').references(() => versions.id, { onDelete: 'set null' }),
+    path: text('path').notNull().unique(),
+    size: integer('size').notNull(),
+    quality: text('quality'),
+    releaseGroup: text('release_group'),
+    /** The release name it came from. */
+    sceneName: text('scene_name'),
+    edition: text('edition'),
+    /** The probe: duration, container, video, audio and subtitle streams. */
+    mediaInfo: text('media_info', { mode: 'json' }),
+    /** How it reached the library: hardlink, reflink or copy, or a move. */
+    transfer: text('transfer'),
+    addedAt: integer('added_at').notNull(),
+  },
+  (t) => [index('media_files_item').on(t.itemId), index('media_files_version').on(t.versionId)],
+)
+
+export const HISTORY_TYPES = [
+  'grabbed',
+  'imported',
+  'import-failed',
+  'deleted',
+  'renamed',
+  'blocklisted',
+  'download-failed',
+  'subtitle-downloaded',
+  'subtitle-synced',
+] as const
+
+/** What happened to each item, newest first, cursor-paged on (date, id). */
+export const history = sqliteTable(
+  'history',
+  {
+    id: text('id').primaryKey(),
+    itemId: text('item_id')
+      .notNull()
+      .references(() => mediaItems.id, { onDelete: 'cascade' }),
+    type: text('type', { enum: HISTORY_TYPES }).notNull(),
+    date: integer('date').notNull(),
+    sourceTitle: text('source_title').notNull(),
+    quality: text('quality'),
+    indexer: text('indexer'),
+    message: text('message'),
+    downloadId: text('download_id'),
+    data: text('data', { mode: 'json' }),
+  },
+  (t) => [
+    index('history_item').on(t.itemId, t.date, t.id),
+    index('history_date').on(t.date, t.id),
+    index('history_type').on(t.type, t.date, t.id),
+  ],
+)

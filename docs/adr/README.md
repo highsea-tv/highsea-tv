@@ -8,7 +8,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0002](0002-bun-monorepo-multiple-apps.md) | Bun monorepo with multiple apps | Accepted |
 | [0003](0003-server-runtime-custom-entry.md) | Server runtime: custom Node entry hosting Next.js + Hono | Accepted |
 | [0004](0004-sqlite-drizzle.md) | SQLite + Drizzle for server data | Accepted |
-| [0005](0005-in-process-torrent-engine.md) | In-process TypeScript torrent engine | Accepted |
+| [0005](0005-in-process-torrent-engine.md) | In-process TypeScript torrent engine | Accepted; amended by 0037 |
 | [0006](0006-public-api-openapi-sdk.md) | Public API: Hono + OpenAPI, typed SDK | Accepted |
 | [0007](0007-signed-independent-catalogs.md) | Signed catalogs released independently of apps | Accepted |
 | [0008](0008-clients-react-everywhere.md) | Clients: React everywhere | Accepted |
@@ -40,5 +40,10 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0034](0034-catalog-service-and-signing.md) | The catalog service and signing | Accepted |
 | [0035](0035-indexer-health-and-search.md) | Indexer health, rate limits and search fan-out | Accepted |
 | [0036](0036-domain-packages-with-subpath-exports.md) | Domain packages with a subpath export per kind | Accepted |
+| [0037](0037-the-torrent-engine-as-built.md) | The torrent engine as built: our session layer, one socket factory | Accepted |
+| [0038](0038-downloads.md) | Downloads: grabbing, the queue, protection and seeding | Accepted |
+| [0039](0039-importing.md) | Importing: an idempotent pipeline with Radarr's naming | Accepted |
+| [0040](0040-test-media.md) | Test media generated with ffmpeg, and a local swarm | Accepted |
+| [0042](0042-vpn-connections.md) | VPN connections: one binding, four modes | Accepted |
 
 Template: copy [`template.md`](template.md).

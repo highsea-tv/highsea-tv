@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The movie screens' data, apart from React: the add dialog's starting values and what it sends,
-// the missing-key check, and the library's paged loading. Kept free of the DOM so tests import it
-// directly.
+// the missing-key check, the library's paged loading, and how a download's state looks
+// (checkpoint 6). Kept free of the DOM so tests import it directly.
 import type {
   AddMovieDefaults,
   AddMovieInput,
+  HistoryPage,
   LanguageProfile,
   MinimumAvailability,
   Movie,
@@ -125,4 +126,22 @@ export async function loadMovies(
     cursor = page.next ?? undefined
   } while (cursor && items.length < count)
   return { ...page, items }
+}
+
+/** Every page of a movie's history up to `pages`, following the cursor (Show more asks for more). */
+export async function loadHistory(
+  c: Pick<HighseaClient, 'movies'>,
+  id: number,
+  pages: number,
+): Promise<HistoryPage> {
+  const items: HistoryPage['items'] = []
+  let cursor: string | undefined
+  let page: HistoryPage
+  let n = 0
+  do {
+    page = await c.movies.history({ params: { id }, query: cursor ? { cursor } : {} })
+    items.push(...page.items)
+    cursor = page.next ?? undefined
+  } while (cursor && ++n < pages)
+  return { items, next: page.next }
 }

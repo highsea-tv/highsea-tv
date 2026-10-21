@@ -246,8 +246,13 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
   - file storage with piece↔file mapping and per-file priority;
   - verification and **fast resume** in the DB;
   - rate, queue, ratio and seed-time limits; move-on-complete.
-- **Primitives**: `bittorrent-protocol`, `ut_metadata`, `ut_pex`, `bittorrent-dht`, `bittorrent-tracker`, `parse-torrent`, `magnet-uri`.
+- **Primitives**: `bittorrent-protocol`, `ut_metadata`, `ut_pex`, `bittorrent-dht`, `magnet-uri`, `bencode`.
 - It sits behind a `TorrentEngine` interface, with a configurable port (6881 TCP/UDP) and bind interface for VPN routing.
+- **Found while building it (checkpoint 6, [ADR 0037](adr/0037-the-torrent-engine-as-built.md)):**
+  - Node can bind a socket to an address but not to a device ([nodejs/node#35769](https://github.com/nodejs/node/issues/35769)), so "bind to `wg0`" means binding every socket to the interface's address, from one socket factory, and closing them all when it goes. What guarantees the path is the VPN mode's ([ADR 0042](adr/0042-vpn-connections.md)): a VPN container, or highsea's own WireGuard tunnel with routing by source address (6b).
+  - The `webtorrent` client can't bind its sockets, and `bittorrent-tracker`'s client opens unbound sockets and uses the system's resolver, so highsea writes its own tracker client (HTTP and UDP) and resolves tracker names through a resolver bound to the tunnel.
+  - No maintained pure-JS uTP or protocol encryption exists: highsea writes its own uTP (BEP 29 with LEDBAT) and Message Stream Encryption in 6b, with TCP as the fallback and encryption defaulting to Prefer.
+  - Built in 6a: the session layer, the picker (with the sequential mode for streaming), choking, storage, SHA-1 checks in the worker pool, fast resume, global limits, seeding rules with a minimum time, private torrents, trackers and the DHT. 6b: uTP, IPv6, encryption, IP blocklists, UPnP and NAT-PMP.
 
 ### Movie pipeline
 1. Discover (TMDB) → Add (root folder, quality profile, subtitle language profile, monitored, minimum availability, search now).
@@ -342,7 +347,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
 5. `metadata` + `media/movies` + Discover/Movies UI.
 6. `schemas/indexers` + `indexers` + `catalog/indexers` pipeline + `CatalogService` + one-click UI.
 7. `torrent` + `/downloads`.
-8. `downloads` + `library` (import, rename, existing-library import).
+8. `downloads` + importing in `media/shared` and `media/movies` (import, rename, existing-library import; [ADR 0036](adr/0036-domain-packages-with-subpath-exports.md) replaced the `library` package).
 9. `subtitles`: providers, profiles, scoring, sync engine, UI.
 10. Automation + `notifications`.
 11. `curation`.
@@ -388,22 +393,24 @@ Tags: **[M1]** pull into server milestone 1 · **[Arch]** affects architecture n
   Every cloud feature has a self-hosted fallback (own TMDB key, port-forward/reverse proxy, self-hosted relay, ntfy/web-push). Cloud services live in `cloud/` and are built after server M1. Server and SDK auth must allow cloud-account sign-in alongside local users from the start.
 
 ### Acquisition (*ARR / download-stack parity)
-- **[M1] Archive extraction** (Unpackerr): RAR/7z/zip, multi-part, password detection.
+- **[M1] Archive extraction** (Unpackerr): RAR/7z/zip, multi-part, password detection. Checkpoint 6b, with `unar` from Debian's main archive (LGPL-2.1, RAR5 and multi-volume sets included). Not unRAR or anything built from it: its licence forbids recreating the RAR algorithm and Debian ships it in non-free, so it can't sit in an AGPL work.
 - **[M1] Malicious/fake release protection** (Cleanuparr/Decluttarr):
   - reject torrents containing `.exe`, `.lnk`, `.scr`, `.zipx` or password-protected archives;
   - stalled/slow-download detection, removal and re-search;
   - sample-file filtering.
-- **[M1] Health checks** (*arr "Health"): paths, permissions, disk space, indexer status, catalog status, VPN (down, the exit address your own, port forwarding).
+
+  Built in checkpoint 6a: a release whose file list carries an executable or dangerous extension (Radarr's lists) is refused before a byte downloads, blocklisted and replaced; a download with no seeds for 3 hours is blocklisted and replaced; samples and extras are skipped at import. Password-protected archives are caught at extraction (6b).
+- **[M1] Health checks** (*arr "Health"): paths, permissions, disk space, indexer status, catalog status, VPN (down, the exit address your own, port forwarding). Downloads and the VPN joined System's health list in checkpoint 6a.
 - **[M1] Backups and restore**: scheduled DB + config backups, plus a backup before every migration.
-- **[M1] Manual / interactive import**: file browser, rename preview, mass rename, multiple root folders and disks.
+- **[M1] Manual / interactive import**: file browser, rename preview, mass rename, multiple root folders and disks. Manual import (A17) built in checkpoint 6a.
 - **[M1] Media management extras**: NFO and artwork writing (Kodi), permissions (chmod/chown), editions, alternative titles, delay profiles, tags for scoping rules.
 - **[M1] Torrent engine production features**:
   - IP blocklists; UPnP/NAT-PMP and VPN port-forwarding;
   - interface-binding kill-switch; uTP, IPv6;
-  - **VPN connections as a first-class feature** (added 2026-10-20): Settings › VPN connects to the owner's provider (highsea runs WireGuard itself, or reads a gluetun container), checks the tunnel, exit address and port forwarding, and supports common providers through the signed catalog ([vpn.md](product/vpn.md));
+  - **VPN connections as a first-class feature** (added 2026-10-20): Settings › VPN connects to the owner's provider (highsea runs WireGuard itself, or reads a gluetun container), checks the tunnel, exit address and port forwarding, and supports common providers through the signed catalog ([vpn.md](product/vpn.md)). Checkpoint 6a built the VPN container and interface modes and their checks; 6b adds highsea connects, the providers and port forwarding ([ADR 0042](adr/0042-vpn-connections.md));
   - watch folder; manual (non-managed) torrent adds and generic RSS auto-download;
   - categories.
-- **[M1] Per-tracker seeding rules** (qbit_manage): min seed time/ratio per tracker, hit-and-run protection for private trackers.
+- **[M1] Per-tracker seeding rules** (qbit_manage): min seed time/ratio per tracker, hit-and-run protection for private trackers. Built per indexer in checkpoint 6a (A9's Edit dialog), over a default rule in Settings › Download client.
 - **[M1] Import lists** (Radarr lists): Trakt, IMDb, Letterboxd, TMDB lists; auto-add + sync.
 - **[M1] Calendar** plus an iCal feed.
 - **[Later] Cloudflare challenge solving** (FlareSolverr/Byparr): optional headless-browser component, needed by some public indexers.
@@ -418,7 +425,7 @@ Tags: **[M1]** pull into server milestone 1 · **[Arch]** affects architecture n
   - qBittorrent torrents with resume data;
   - Plex/Jellyfin/Emby users, watch history, collections, playlists.
 
-  This is critical for "drop-in"; at minimum the Radarr + qBittorrent importers belong with M1.
+  This is critical for "drop-in"; at minimum the Radarr + qBittorrent importers belong with M1. They come with checkpoint 6b, and have known limits: Radarr's API returns indexer and download-client credentials as `********`, so those are entered again; qBittorrent's API doesn't expose fast-resume data, so each imported torrent is checked once before it seeds; and its `.torrent` export needs qBittorrent 4.5.0 or later.
 
 ### Streaming server (Plex / Jellyfin / Emby parity)
 - **[Later, Arch now] Playback engine**:

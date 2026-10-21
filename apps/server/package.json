@@ -18,6 +18,7 @@
     "@highsea/catalog": "workspace:*",
     "@highsea/core": "workspace:*",
     "@highsea/db": "workspace:*",
+    "@highsea/downloads": "workspace:*",
     "@highsea/fixtures": "workspace:*",
     "@highsea/i18n": "workspace:*",
     "@highsea/indexers": "workspace:*",
@@ -32,6 +33,7 @@
     "@highsea/sdk": "workspace:*",
     "@highsea/tokens": "workspace:*",
     "@highsea/ui-web": "workspace:*",
+    "@highsea/vpn": "workspace:*",
     "@hono/node-server": "2.1.3",
     "@hono/zod-openapi": "1.6.3",
     "@scalar/hono-api-reference": "0.12.10",
@@ -48,6 +50,7 @@
   "devDependencies": {
     "@happy-dom/global-registrator": "21.0.3",
     "@highsea/config": "workspace:*",
+    "@highsea/torrent": "workspace:*",
     "@tailwindcss/postcss": "4.3.3",
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",

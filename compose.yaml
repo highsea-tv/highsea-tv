@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # highsea on one machine. Host networking lets clients find the server on the LAN (ADR 0020);
 # without it, publish the ports below instead and LAN discovery is limited to the UDP broadcast.
+# Torrents behind a VPN container: compose.gluetun.yaml (ADR 0042).
 services:
   highsea:
     build: .

@@ -5,17 +5,34 @@
 // its header, About from the public info (the server, its version and the providers it credits),
 // and a line saying the rest comes later. Checkpoint 5 adds the indexer catalog's version to About,
 // with Check now (ADR 0034; system.md lists the catalog under Updates, which comes with the rest).
-import { INDEXER_TOPICS, TMDB_ATTRIBUTION } from '@highsea/api-contract'
+// Checkpoint 6 adds the prototype's Health list above About, where the torrent client's and
+// imports' problems show beside the indexers' and the network's; the prototype's Check now waits
+// for Tasks, which runs the check, and its rate graph is the dashboard's Network widget.
+import {
+  DOWNLOAD_TOPICS,
+  type HealthCheck,
+  INDEXER_TOPICS,
+  TMDB_ATTRIBUTION,
+} from '@highsea/api-contract'
 import { duration } from '@highsea/core/format'
 import { useLocale, useT } from '@highsea/i18n/react'
 import { useAction, useQuery } from '@highsea/sdk/react'
-import { Button, Skeleton, toast } from '@highsea/ui-web'
+import {
+  Badge,
+  type BadgeTone,
+  Button,
+  EmptyState,
+  Icon,
+  type IconName,
+  Skeleton,
+  toast,
+} from '@highsea/ui-web'
 import { TmdbNotice } from './attribution.tsx'
 import { Loadable } from './loadable.tsx'
 import { Group } from './settings.tsx'
 import { AdminPage } from './shell.tsx'
 import { system as messages } from './system-messages.ts'
-import { useNow } from './time.ts'
+import { useNow, useRelative } from './time.ts'
 
 export function System() {
   const t = useT(messages)
@@ -23,6 +40,9 @@ export function System() {
   return (
     <AdminPage title={t('title')} description={t('description')}>
       <div className="grid max-w-200 gap-6">
+        <Group title={t('health.title')} description={t('health.description')}>
+          <Health />
+        </Group>
         <Group title={t('about.title')} description={t('about.description')}>
           <Loadable query={info} what={t('what')}>
             {(i) => (
@@ -112,5 +132,60 @@ function Catalog() {
         {t('catalog.check')}
       </Button>
     </div>
+  )
+}
+
+const levels: Record<HealthCheck['level'], { tone: BadgeTone; icon: IconName }> = {
+  ok: { tone: 'success', icon: 'success' },
+  notice: { tone: 'info', icon: 'info' },
+  warning: { tone: 'warning', icon: 'warning' },
+  error: { tone: 'danger', icon: 'error' },
+}
+
+/** What changes a check: the server and its settings, an indexer, a download or the VPN. */
+const HEALTH_TOPICS = [
+  'server.updated',
+  'settings.updated',
+  INDEXER_TOPICS.health,
+  DOWNLOAD_TOPICS.queue,
+  DOWNLOAD_TOPICS.vpn,
+]
+
+/** The prototype's Health list: each check with its level, where it comes from and since when. */
+function Health() {
+  const t = useT(messages)
+  const { relative } = useRelative()
+  const health = useQuery('system:health', (c) => c.system.healthChecks(), HEALTH_TOPICS)
+  return (
+    <Loadable query={health} what={t('health.what')}>
+      {(checks) =>
+        checks.length === 0 ? (
+          <EmptyState icon="success" title={t('health.none')}>
+            {t('health.noneBody')}
+          </EmptyState>
+        ) : (
+          <ul aria-label={t('health.label')} className="grid gap-2">
+            {checks.map((c) => {
+              const l = levels[c.level]
+              return (
+                <li key={c.id} className="flex gap-3 rounded-lg border border-line bg-s1 p-4">
+                  <Icon name={l.icon} size={18} className="mt-0.5 shrink-0 text-text-2" />
+                  <div className="grid gap-1">
+                    <p className="flex flex-wrap items-center gap-2">
+                      <Badge tone={l.tone}>{t(`health.${c.level}`)}</Badge>
+                      <span className="font-semibold text-text text-ui">{c.source}</span>
+                      <span className="text-caption text-text-3">
+                        {t('health.since', { ago: relative(c.since) })}
+                      </span>
+                    </p>
+                    <p className="text-body text-text-2">{c.message}</p>
+                  </div>
+                </li>
+              )
+            })}
+          </ul>
+        )
+      }
+    </Loadable>
   )
 }

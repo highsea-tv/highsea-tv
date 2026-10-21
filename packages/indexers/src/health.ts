@@ -126,6 +126,17 @@ export function createHealth(db: Db, random: () => number) {
         .run()
     },
 
+    /** A release grabbed from it, for "grabs in the last 24 hours". */
+    grab(id: string, now: number) {
+      db.insert(indexerStats)
+        .values({ indexerId: id, hour: hourOf(now), grabs: 1 })
+        .onConflictDoUpdate({
+          target: [indexerStats.indexerId, indexerStats.hour],
+          set: { grabs: sql`${indexerStats.grabs} + 1` },
+        })
+        .run()
+    },
+
     /** Retry now: the next search tries it. The run of failures still counts. */
     clearBackoff(id: string, now: number) {
       db.update(indexerStatus)

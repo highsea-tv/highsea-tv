@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A6 movie detail's library layer (movies.md § Movie detail, § Copy; ADR 0021): the prototype's
 // copy, with search disabled while no indexer is enabled (checkpoint 4 plan, decision 2), the
-// Search tab's results with Grab disabled until downloads (checkpoint 5, the owner's answer 6), and the
-// smallest additions for what the prototype doesn't draw: Edit and the version list.
+// Search tab's results with Grab, In the queue, Files and History (checkpoint 6), and the smallest
+// additions for what the prototype doesn't draw: Edit, the version list and History's Show more.
 import { defineMessages } from '@highsea/i18n'
 
 export const movieDetail = defineMessages({
@@ -24,7 +24,7 @@ export const movieDetail = defineMessages({
   noIndexers: 'Add an indexer to search for releases.',
   goToIndexers: 'Indexers',
   'search.toast': 'Searching for {title}',
-  'search.toastBody': 'The Search tab shows what your indexers find.',
+  'search.toastBody': 'Follow it in Activity.',
   'search.failed': 'Search failed',
   // the Search tab
   'search.what': 'the releases',
@@ -48,7 +48,12 @@ export const movieDetail = defineMessages({
   'search.reasons': ': show the reasons',
   'search.grab': 'Grab {title}',
   'search.grabAnyway': 'Grab anyway {title}',
-  'search.grabLater': 'Grabbing comes with downloads.',
+  'search.grabTip': 'Grab',
+  'search.grabAnywayTip': 'Grab anyway: overrides your profile',
+  'search.grabbed': 'Grabbed',
+  'grab.done': 'Grabbed',
+  'grab.doneBody': '{title} is downloading. Follow it in Activity.',
+  'grab.failed': 'Couldn’t grab it',
   'search.failedIndexer': '{indexer} didn’t answer: {message}',
   // tabs
   'tab.files': 'Files',
@@ -57,8 +62,35 @@ export const movieDetail = defineMessages({
   'files.version': '{label} version',
   'files.none': 'No file yet',
   'files.downloading': 'Downloading',
+  'files.what': 'the files',
+  'files.release': 'Release',
+  'stream.video': 'Video',
+  'stream.audio': 'Audio',
+  'stream.subtitle': 'Subtitle',
+  'stream.default': 'default',
+  'stream.forced': 'forced',
+  'stream.sdh': 'SDH',
+  'history.what': 'the history',
   'history.none': 'Nothing has happened yet',
   'history.noneBody': 'Grabs, imports and subtitle downloads show here.',
+  'history.event': 'Event',
+  'history.release': 'Release',
+  'history.source': 'Source',
+  'history.when': 'When',
+  'history.more': 'Show more',
+  'history.grabbed': 'Grabbed',
+  'history.imported': 'Imported',
+  'history.import-failed': 'Import failed',
+  'history.download-failed': 'Download failed',
+  'history.deleted': 'Deleted',
+  'history.renamed': 'Renamed',
+  'history.blocklisted': 'Blocklisted',
+  'history.subtitle-downloaded': 'Subtitles downloaded',
+  'history.subtitle-synced': 'Subtitles synced',
+  // in the queue
+  inTheQueue: 'In the queue',
+  'queue.progress': '{title} progress',
+  'queue.left': '{duration} left',
   // in the library
   inTheLibrary: 'In the library',
   versions: 'Versions',
@@ -116,4 +148,18 @@ export const movieDetail = defineMessages({
   'gone.body':
     'It may have been merged with another entry. The library keeps it as it is. Find its new match on Discover, add it, then remove this one.',
   'gone.action': 'Find it on Discover',
+})
+
+/** A download's state, as a badge says it (the prototype's status.ts); A6 and the Queue widget. */
+export const torrentState = defineMessages({
+  queued: 'Queued',
+  checking: 'Checking',
+  downloading: 'Downloading',
+  stalled: 'Stalled',
+  paused: 'Paused',
+  importing: 'Importing',
+  'import-blocked': 'Import blocked',
+  seeding: 'Seeding',
+  completed: 'Completed',
+  error: 'Error',
 })

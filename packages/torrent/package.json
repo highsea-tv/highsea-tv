@@ -1,0 +1,29 @@
+{
+  "name": "@highsea/torrent",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./testing": "./test/helpers.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea/core": "workspace:*",
+    "@highsea/db": "workspace:*",
+    "bencode": "4.0.1",
+    "bittorrent-dht": "11.0.12",
+    "bittorrent-protocol": "5.0.9",
+    "drizzle-orm": "0.45.3",
+    "magnet-uri": "7.0.10",
+    "ut_metadata": "5.0.1",
+    "ut_pex": "5.0.2"
+  },
+  "devDependencies": {
+    "@highsea/config": "workspace:*",
+    "@types/node": "25.9.9"
+  }
+}

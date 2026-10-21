@@ -115,7 +115,7 @@ function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => vo
   const current = pageAt(location)
   const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
   const movies = useQuery('movies', (c) => c.movies.list(), ['item.updated'])
-  const queue = useQuery('queue', (c) => c.queue.list(), ['queue.changed'])
+  const queue = useQuery('queue', (c) => c.queue.list(), ['queue.updated'])
   // the rail is 64px: the mark alone (brand.tsx: the lockup needs 96px)
   const auto = useSidebarMode()
   const health = useQuery('health', (c) => c.system.health(), ['health.updated'])

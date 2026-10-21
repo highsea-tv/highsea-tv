@@ -821,7 +821,7 @@ export type SetupInput = {
 export type ServerEvent =
   | { type: 'tick'; now: number }
   | { type: 'torrents.updated' }
-  | { type: 'queue.changed' }
+  | { type: 'queue.updated' }
   | { type: 'item.updated'; id: string }
   | { type: 'movies.updated' }
   | { type: 'history.updated' }

@@ -42,7 +42,7 @@ type Tab = 'queue' | 'history' | 'blocklist'
 
 export function Activity() {
   const [tab, setTab] = useState<Tab>('queue')
-  const queue = useQuery('queue', (c) => c.queue.list(), ['queue.changed', 'torrents.updated'])
+  const queue = useQuery('queue', (c) => c.queue.list(), ['queue.updated', 'torrents.updated'])
   const blocklist = useQuery('blocklist', (c) => c.blocklist.list(), ['history.updated'])
   return (
     <AdminPage
@@ -81,7 +81,7 @@ export function Activity() {
 // ---------------------------------------------------------------- queue
 
 function Queue() {
-  const queue = useQuery('queue', (c) => c.queue.list(), ['queue.changed', 'torrents.updated'])
+  const queue = useQuery('queue', (c) => c.queue.list(), ['queue.updated', 'torrents.updated'])
   const [filter, setFilter] = useState<keyof typeof queueFilters>('all')
   const [removing, setRemoving] = useState<QueueItem | null>(null)
   const pause = useAction((c, id: string) => c.queue.pause(id))

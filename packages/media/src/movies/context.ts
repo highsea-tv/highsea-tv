@@ -5,6 +5,7 @@ import { AppError, type EventBus } from '@highsea/core'
 import type { JobQueue } from '@highsea/jobs'
 import type { Metadata } from '@highsea/metadata'
 import type { MediaDeps } from '../shared/context.ts'
+import type { ImportOptions } from './import.ts'
 
 /**
  * Searching for releases, which the indexers own (checkpoint 5). The runtime joins the two, so this
@@ -22,12 +23,18 @@ export type MoviesDeps = MediaDeps & {
   events: EventBus
   metadata: Metadata
   search?: MovieSearch
+  /** Importing's setup (checkpoint 6): the downloads folder, and seams for tests. */
+  importing?: ImportOptions
 }
 
 export type Ctx = MoviesDeps
 
-/** The library's topics (@highsea/api-contract's `MEDIA_TOPICS`). */
-export const TOPICS = { movies: 'movies.updated', item: 'item.updated' } as const
+/** The library's topics (@highsea/api-contract's `MEDIA_TOPICS`; `history.updated` is checkpoint 6's). */
+export const TOPICS = {
+  movies: 'movies.updated',
+  item: 'item.updated',
+  history: 'history.updated',
+} as const
 
 /** Says what changed: the movies (by TMDB id) and each title's library layer (`movie:{id}`). */
 export function announce(events: EventBus, tmdbIds: number[], { many = false } = {}) {

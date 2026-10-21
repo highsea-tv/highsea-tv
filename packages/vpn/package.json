@@ -1,0 +1,22 @@
+{
+  "name": "@highsea/vpn",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./fake": "./test/fake/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea/core": "workspace:*",
+    "@highsea/db": "workspace:*"
+  },
+  "devDependencies": {
+    "@highsea/config": "workspace:*",
+    "@types/node": "25.9.9"
+  }
+}

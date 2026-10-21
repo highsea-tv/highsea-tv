@@ -10,7 +10,7 @@ import {
   protocolOf,
   type SettingField,
 } from '@highsea/schemas/indexers'
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, eq, gt } from 'drizzle-orm'
 import { z } from 'zod'
 import {
   type DefinitionSource,
@@ -18,8 +18,16 @@ import {
   INDEXERS_TOPIC,
   type IndexersDeps,
 } from './context.ts'
-import { type RunResult, runSearch, type SearchQuery } from './engine.ts'
+import {
+  baseUrlOf,
+  cookieOf,
+  type RunResult,
+  runSearch,
+  type SearchQuery,
+  signInTo,
+} from './engine.ts'
 import type { Caps } from './feed.ts'
+import { type Fetched, fetchRelease } from './grab.ts'
 import {
   createHealth,
   type Health,
@@ -30,7 +38,7 @@ import {
 } from './health.ts'
 import { IndexerError, redact } from './http.ts'
 import { createRateLimiter } from './rate-limit.ts'
-import { createSearch, type SearchInput } from './search.ts'
+import { createSearch, type ReleaseView, type SearchInput } from './search.ts'
 import {
   migrateSettings,
   openSettings,
@@ -41,7 +49,7 @@ import {
   viewSettings,
 } from './settings.ts'
 
-const { indexers } = schema
+const { indexers, releases: releasesTable } = schema
 
 export const DEFAULT_PRIORITY = 25
 /** Each indexer's time to answer a search (owner's answer 7). */
@@ -74,6 +82,8 @@ export type IndexerView = {
   logo: string | null
   settings: SettingsView
   stats: IndexerStats
+  /** Seeding rules from this indexer; null fields use the global default. */
+  seeding: { ratio: number | null; minutes: number | null; minMinutes: number | null }
   addedAt: string
 }
 
@@ -102,11 +112,21 @@ export type CatalogEntry = {
 
 export type TestResult = { ok: boolean; message: string; latencyMs: number }
 
+/** A grabbed release, fetched: what the download client is handed. */
+export type GrabbedRelease = {
+  release: ReleaseView
+  source: Fetched
+  /** The indexer's seeding rules; null where it uses the global default. */
+  seeding: { ratio: number | null; minutes: number | null; minMinutes: number | null }
+}
+
 export type IndexerPatch = {
   name?: string
   enabled?: boolean
   priority?: number
   settings?: Record<string, unknown>
+  /** Its own seeding rules; a null field falls back to Settings › Download client's. */
+  seeding?: { ratio: number | null; minutes: number | null; minMinutes: number | null }
 }
 
 type Row = typeof indexers.$inferSelect
@@ -174,6 +194,7 @@ export function createIndexers(deps: IndexersDeps) {
       logo: loaded?.logo ?? null,
       settings: viewSettings(def, r.settings as StoredSettings),
       stats: summarize(stats.get(r.id)),
+      seeding: { ratio: r.seedRatio, minutes: r.seedMinutes, minMinutes: r.minSeedMinutes },
       addedAt: iso(r.addedAt),
     }
   }
@@ -536,6 +557,11 @@ export function createIndexers(deps: IndexersDeps) {
         capsCache.delete(id)
         healthChanged = true
       }
+      if (patch.seeding !== undefined) {
+        set.seedRatio = patch.seeding.ratio
+        set.seedMinutes = patch.seeding.minutes
+        set.minSeedMinutes = patch.seeding.minMinutes
+      }
       db.update(indexers).set(set).where(eq(indexers.id, id)).run()
       emit([id], healthChanged)
       return view(required(id))
@@ -564,6 +590,135 @@ export function createIndexers(deps: IndexersDeps) {
 
     /** The last search's releases for a movie, while they're fresh. */
     releases: (tmdbId: number) => search.cached(tmdbId),
+
+    /**
+     * Fetches a release from the last search by its indexer and guid: its `.torrent` through the
+     * indexer's rate limit and sign-in, or its magnet. A grab counts in the indexer's stats; a
+     * failure counts against its health as a search's does.
+     */
+    async grab(input: {
+      tmdbId: number
+      indexerId: string
+      guid: string
+    }): Promise<GrabbedRelease> {
+      const cached = db
+        .select()
+        .from(releasesTable)
+        .where(
+          and(
+            eq(releasesTable.tmdbId, input.tmdbId),
+            eq(releasesTable.indexerId, input.indexerId),
+            eq(releasesTable.guid, input.guid),
+            gt(releasesTable.expiresAt, clock.now()),
+          ),
+        )
+        .get()
+      if (!cached)
+        throw new AppError(
+          'not-found',
+          'That release is no longer in the search results. Search again.',
+        )
+      const r = required(input.indexerId)
+      const loaded = definitionOf(r)
+      if (!loaded)
+        throw new AppError('conflict', `${r.name}’s definition is gone from the catalog.`)
+      const def = loaded.definition
+      const { rank: _rank, ...release } = cached.data as ReleaseView & { rank: number }
+      const link = cached.download as {
+        download: string | null
+        magnet: string | null
+        infohash: string | null
+      }
+      const seeding = {
+        ratio: r.seedRatio,
+        minutes: r.seedMinutes,
+        minMinutes: r.minSeedMinutes,
+      }
+      const done = (source: Fetched): GrabbedRelease => {
+        health.grab(r.id, clock.now())
+        emit([r.id], false)
+        return { release, source, seeding }
+      }
+      if (!link.download) {
+        const magnet =
+          link.magnet ??
+          (link.infohash ? `magnet:?xt=urn:btih:${link.infohash.toLowerCase()}` : null)
+        if (!magnet) throw new AppError('conflict', 'That release has nothing to download.')
+        return done({ magnet })
+      }
+      const stored = r.settings as StoredSettings
+      const opened = openSettings(def, stored, sealer)
+      const secrets = secretsOf(def, opened)
+      const runCtx = {
+        definition: def,
+        settings: opened,
+        session: openSession(r.id),
+        caps: null,
+        fetch: deps.fetch,
+        timeoutMs,
+        now: clock.now,
+        beforeRequest: () => limiter.acquire(r.id, def.rateLimit),
+      }
+      const before = health.get(r.id)
+      const attempt = (cookie: string | null) =>
+        fetchRelease(
+          {
+            fetch: deps.fetch,
+            timeoutMs,
+            now: clock.now,
+            beforeRequest: runCtx.beforeRequest,
+            origin: new URL(baseUrlOf(def, opened)).origin,
+            cookie,
+          },
+          link.download as string,
+        )
+      try {
+        let source: Fetched
+        if (def.login.method === 'form') {
+          let session = runCtx.session ?? (await signInTo(runCtx))
+          try {
+            source = await attempt(session)
+          } catch (e) {
+            // a session that ran out sends the sign-in page: sign in once more and try again
+            if (!(e instanceof IndexerError && e.kind === 'auth')) throw e
+            session = await signInTo(runCtx)
+            source = await attempt(session)
+          }
+          if (session !== runCtx.session)
+            health.saveSession(r.id, clock.now(), sealer.seal(session))
+        } else source = await attempt(cookieOf(runCtx))
+        return done(source)
+      } catch (e) {
+        const err = e instanceof IndexerError ? e : new IndexerError('parse', (e as Error).message)
+        const message = redact(err.message, secrets)
+        health.failure(r.id, clock.now(), err.kind, message, err.retryAfterMs)
+        emit(
+          [r.id],
+          healthOf(before, true, clock.now()) !== healthOf(health.get(r.id), true, clock.now()),
+        )
+        logger.warn('a grab failed', { indexer: r.id, kind: err.kind, error: message })
+        throw new AppError('unavailable', `${r.name} couldn’t send the release: ${message}`)
+      }
+    },
+
+    /** Seeding rules for an indexer: null fields use the global default. */
+    setSeeding(
+      id: string,
+      rules: { ratio: number | null; minutes: number | null; minMinutes: number | null },
+    ): IndexerView {
+      required(id)
+      db.update(indexers)
+        .set({
+          seedRatio: rules.ratio,
+          seedMinutes: rules.minutes,
+          minSeedMinutes: rules.minMinutes,
+          updatedAt: clock.now(),
+        })
+        .where(eq(indexers.id, id))
+        .run()
+      emit([id], false)
+      return view(required(id))
+    },
 
     /** How many indexers a search would ask, for "Searching {n} indexers…". */
     searchable: () => search.count(),

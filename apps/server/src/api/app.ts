@@ -7,6 +7,7 @@ import type { Runtime } from '@highsea/runtime'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
 import { registerAccounts } from './accounts.ts'
+import { registerDownloads } from './downloads.ts'
 import { events } from './events.ts'
 import { type Env, guard } from './guard.ts'
 import { registerIndexers } from './indexers.ts'
@@ -71,6 +72,7 @@ export function createApi(runtime: Runtime) {
   registerQuality(app)
   registerLibrary(app)
   registerIndexers(app)
+  registerDownloads(app)
 
   app.doc31(`${API_PREFIX}/openapi.json`, {
     openapi: '3.1.0',

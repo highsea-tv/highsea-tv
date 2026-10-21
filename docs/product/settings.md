@@ -11,7 +11,7 @@ Everything about how the server runs, in one place, one area per page: the regio
 ## Entry points
 
 - Sidebar › **Settings** (owners and admins); the palette (every area by name).
-- **Security** and **Backups** are the owner's alone ([ADR 0032](../adr/0032-administrative-and-normal-access.md)): admins don't see them in the index or beside an area, and their addresses say there's no setting there.
+- **Security** and **Backups** are the owner's alone ([ADR 0032](../adr/0032-administrative-and-normal-access.md)): admins don't see them in the index or beside an area, and their addresses say there's no setting there. So are **VPN** and **Download client** (checkpoint 6, judgement call 13), like the other network settings.
 - Links from elsewhere: Backups from System › Backups, Download client from Downloads.
 
 ## Layout
@@ -28,12 +28,12 @@ Everything about how the server runs, in one place, one area per page: the regio
 | **Security** | Signing in: **Require two-step for the owner and admins** (on for new servers; [ADR 0032](../adr/0032-administrative-and-normal-access.md)), passkeys, session length · Single sign-on (OIDC): on, button label, client ID, issuer URL, client secret, the redirect URL to copy · Ownership: Hand the server over |
 | **Backups** | Schedule: every day, week or never; the time; how many to keep; the folder. Making and restoring backups is in [System › Backups](system.md) |
 | **Users and devices** | [users-devices.md](users-devices.md) |
-| **Media management** | Naming: Rename movies, Folder and File formats with a live preview ("Becomes Sintel (2010) Bluray-1080p.mkv") and the tokens · Importing: hardlinks, NFO files, stop monitoring deleted files, folder permissions, recycle bin |
+| **Media management** | Naming: Rename movies, Folder and File formats with a live preview ("Becomes Sintel (2010) Bluray-1080p.mkv") and the tokens · Importing: hardlinks, NFO files, stop monitoring deleted files, folder permissions, recycle bin · Root folders (checkpoint 4). *As built (6a):* Naming adds **Colons** (delete, a dash, a space and a dash, a dash between spaces, or Smart, the default); the preview names Sintel with the import's own functions (`@highsea/media/naming`), so it can't disagree with what an import writes; the tokens are `{Movie Title}` `{Release Year}` `{Quality Full}` `{Movie CleanTitle}` `{Edition Tags}` (the prototype's `{Edition}` is Radarr's `{Edition Tags}`). Importing adds **Set folder permissions** (off by default) before the chmod, and **Keep deleted files for** (days, 7 by default) after the recycle bin |
 | **Profiles and formats** | Quality profiles (allowed qualities, the cutoff marked, upgrades, format scores) · Custom formats (what they match, Preset or Yours) · Presets from the catalog (TRaSH-style: HD Bluray + WEB, UHD Bluray + WEB, Remux + WEB 2160p) |
 | **Quality sizes** | A table of MB per minute (min, preferred, max) per quality, with what that means for a 2-hour film |
 | **Import lists** | Each list (Trakt, TMDB, IMDb, Letterboxd): on, its count and behaviour, its quality profile |
-| **VPN** | Scoped on 2026-10-20, not prototyped: [vpn.md](vpn.md). Status (the checks, **Check now**, **Reconnect**) · Connection: highsea connects (a provider and its fields), A VPN container (gluetun's control server), An interface on this machine, or Off · Behaviour |
-| **Download client** | VPN: its status in one line, with **VPN settings** (was the binding group, before Settings › VPN) · Connections: listening port, encryption, downloading at once, UPnP |
+| **VPN** | [vpn.md](vpn.md), prototyped and approved on 2026-10-20, built in 6a. Status (the checks, **Check now**, **Reconnect**) · Connection: highsea connects (a provider and its fields; shown, and disabled until 6b), A VPN container (gluetun's control server, and a compose block for your provider), An interface on this machine, or Off · Behaviour |
+| **Download client** | VPN: its status in one line, with **VPN settings** (was the binding group, before Settings › VPN) · Connections: listening port (6881), encryption (Prefer), downloading at once (3), UPnP (off). *As built (6a):* encryption and UPnP are stored and take effect with 6b, which a caption says · **Seeding** (new, not in the prototype): the default rule an indexer's own falls back to, a ratio (2) and a time in hours (168, 7 days), each empty for no limit · Speed limits stay on Downloads, with a link there. uTP, the blocklist and the watch folder join Connections with 6b |
 | **Connections** | Notifications: each channel on or off, its events, **Test** · Add a connection: Discord, Slack, Telegram, ntfy, Gotify, Pushover, Email, Webhook, Apprise |
 
 ## States
@@ -53,7 +53,9 @@ Everything about how the server runs, in one place, one area per page: the regio
 
 ## Data
 
-- `settings.get(section)` / `settings.save(section, value)` → `GET|PUT /api/v1/settings/{section}` for `general`, `media`, `downloadClient`, `vpn` ([vpn.md](vpn.md)), `network`, `security`, `backups`, `connections`, `importLists` (draft shapes in `design/prototypes/src/mock/settings.ts`). Network and Security are built (checkpoint 2); the rest come with their checkpoints.
+- `settings.get(section)` / `settings.save(section, value)` → `GET|PUT /api/v1/settings/{section}` for `general`, `mediaManagement`, `downloadClient`, `vpn` ([vpn.md](vpn.md)), `network`, `security`, `backups`, `connections`, `importLists` (draft shapes in `design/prototypes/src/mock/settings.ts`). Network and Security are built (checkpoint 2); `mediaManagement`, `downloadClient` and `vpn` with checkpoint 6a; the rest come with their checkpoints. Setup's `media` row became `folders`, so these names are settings.md's sections (the checkpoint's judgement call 3).
+- **Media management** (checkpoint 6a): `settings.mediaManagement()`, `settings.saveMediaManagement(value)` → `GET|PUT /api/v1/settings/mediaManagement` (staff) → `MediaManagementSettings`: `rename`, `folderFormat`, `fileFormat`, `colonReplacement`, `hardlinks`, `nfo`, `unmonitorDeleted`, `permissions`, `chmod` (three octal digits), `recycleBin` (a path, or empty to delete straight away) and `recycleBinDays`.
+- **Download client** (checkpoint 6a): `settings.downloadClient()`, `settings.saveDownloadClient(value)` → `GET|PUT /api/v1/settings/downloadClient` (the owner's) → `DownloadClientSettings`: `port` (1024–65535), `encryption` (`require`, `prefer` or `allow`), `upnp`, `maxActive` (1–20), `downloadRate` and `uploadRate` (bytes per second, 0 for none; A8's Limits edit them too), `seedRatio` and `seedMinutes` (null for no limit). The admin shows the time in hours.
 - **General › Metadata** (checkpoint 4): the TMDB key, the metadata language and the region live together in one settings row, `GET`, `PUT` and `DELETE /api/v1/settings/metadata`:
   - `settings.metadata()` (staff) → `MetadataSettings`: `key` (`set`, and `last4`, its last four characters; never the key itself), `language` (`en-US`, TMDB's language parameter) and `region` (`GB`, ISO 3166-1; the owner's locale by default, set in setup);
   - `settings.saveMetadata({ body })` (the owner) → `PUT`, any of `key`, `language` and `region`. A new key is checked with TMDB first (400 `tmdb-key-rejected`; 503 `tmdb-unreachable` or 429 `tmdb-rate-limited` when TMDB can't say), and nothing is saved unless every field is. The key is stored encrypted;
@@ -74,6 +76,8 @@ Everything about how the server runs, in one place, one area per page: the regio
 - **The TMDB key lives in General › Metadata,** with the metadata language and region; setup sets it first, and every missing-key message links here. Approved by the owner on 2026-10-20 ([checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#owners-decisions)); the prototype doesn't show the group.
 - **The catalog's settings sit in General after Metadata,** owner only, and the search timeout stays a fixed 30 seconds (checkpoint 5, answer 7). The prototype doesn't show the group.
 - **Profiles and formats stay read-only until checkpoint 8.** Their editors are prototyped and approved first.
+- **Settings › VPN** is its own area, before Download client, prototyped and approved by the owner on 2026-10-20 ([vpn.md](vpn.md)); Download client's VPN group became one line.
+- **The default seeding rule lives in Download client** (checkpoint 6a): an indexer's rule (A9) falls back to it, and Downloads' Seeding tab only reads it, so no prototype screen set it. Times are entered in hours.
 
 ## Open questions
 

@@ -41,7 +41,7 @@ What the library is still waiting for: monitored movies with no file yet, movies
 
 - `movies.list()` (status `missing`, `cutoff-unmet`, monitored), `movies.qualityProfiles()`, `movies.bulkSearch(ids)`.
 - The feed: `GET /feed/v1/calendar.ics?key=…`, signed by a read-only API key ([users-devices.md](users-devices.md)).
-- Events: `movies.updated`, `queue.changed`.
+- Events: `movies.updated`, `queue.updated`.
 
 ## Decisions
 

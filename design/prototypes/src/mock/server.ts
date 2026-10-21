@@ -461,7 +461,7 @@ export function createServer(
 
     events.emit({ type: 'tick', now })
     if (torrentsChanged) events.emit({ type: 'torrents.updated' })
-    if (queueChanged) events.emit({ type: 'queue.changed' })
+    if (queueChanged) events.emit({ type: 'queue.updated' })
     if (jobsChanged) events.emit({ type: 'jobs.updated' })
     if (indexersChanged) {
       events.emit({ type: 'indexers.updated' })
@@ -1335,7 +1335,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
               message: `Grabbed from ${chosen.indexer} (format score ${chosen.formatScore})`,
             })
             srv.events.emit({ type: 'torrents.updated' })
-            srv.events.emit({ type: 'queue.changed' })
+            srv.events.emit({ type: 'queue.updated' })
             srv.events.emit({ type: 'history.updated' })
           }
         }
@@ -1377,7 +1377,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         })
         srv.events.emit({ type: 'movies.updated' })
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         srv.events.emit({ type: 'history.updated' })
       },
       bulkUpdate: (ids: string[], patch: Partial<MediaItem>) => {
@@ -1411,7 +1411,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         }
         srv.events.emit({ type: 'movies.updated' })
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
       },
       bulkSearch: (ids: string[]) => {
         requireStaff()
@@ -1469,7 +1469,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         }
         srv.events.emit({ type: 'movies.updated' })
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
       },
       files: (id: string) => {
         return state.files.filter((f) => f.itemId === id)
@@ -1545,7 +1545,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           message: `Manually grabbed from ${chosen.indexer}`,
         })
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         srv.events.emit({ type: 'movies.updated' })
         srv.events.emit({ type: 'history.updated' })
         return newTorrent
@@ -1566,7 +1566,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           t.downRate = 0
           t.eta = null
           srv.events.emit({ type: 'torrents.updated' })
-          srv.events.emit({ type: 'queue.changed' })
+          srv.events.emit({ type: 'queue.updated' })
         }
       },
       resume: (torrentId: string) => {
@@ -1576,7 +1576,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           t.state = 'downloading'
           t.downRate = 12 * MB
           srv.events.emit({ type: 'torrents.updated' })
-          srv.events.emit({ type: 'queue.changed' })
+          srv.events.emit({ type: 'queue.updated' })
         }
       },
       remove: (torrentId: string, _deleteData = false) => {
@@ -1590,7 +1590,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         }
         state.torrents = state.torrents.filter((x) => x.id !== torrentId)
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         srv.events.emit({ type: 'movies.updated' })
       },
       forceImport: (torrentId: string) => {
@@ -1605,7 +1605,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         t.stateReason = null
         importTorrent(state, srv.clock, t, m, now())
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         srv.events.emit({ type: 'movies.updated' })
         srv.events.emit({ type: 'history.updated' })
       },
@@ -1672,7 +1672,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           state.torrents.unshift(newTorrent)
         }
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         srv.events.emit({ type: 'history.updated' })
       },
     },
@@ -1756,7 +1756,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         }
         state.torrents.unshift(newTorrent)
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         return newTorrent
       },
       delete: (id: string, _deleteFiles = false) => {
@@ -1770,7 +1770,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         }
         state.torrents = state.torrents.filter((x) => x.id !== id)
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         srv.events.emit({ type: 'movies.updated' })
       },
       pause: (id: string) => {
@@ -1781,7 +1781,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           t.downRate = 0
           t.eta = null
           srv.events.emit({ type: 'torrents.updated' })
-          srv.events.emit({ type: 'queue.changed' })
+          srv.events.emit({ type: 'queue.updated' })
         }
       },
       resume: (id: string) => {
@@ -1791,7 +1791,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           t.state = 'downloading'
           t.downRate = 14 * MB
           srv.events.emit({ type: 'torrents.updated' })
-          srv.events.emit({ type: 'queue.changed' })
+          srv.events.emit({ type: 'queue.updated' })
         }
       },
       pauseAll: () => {
@@ -1803,13 +1803,13 @@ export function createApi(srv: MockServer, ctx: Ctx) {
             t.eta = null
           }
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
       },
       resumeAll: () => {
         requireStaff()
         for (const t of state.torrents) if (t.state === 'paused') t.state = 'queued'
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
       },
       setFilePriority: (
         torrentId: string,

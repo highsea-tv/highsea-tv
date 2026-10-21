@@ -4,7 +4,14 @@ import { schema } from '@highsea/db'
 import type { Definition } from '@highsea/schemas/indexers'
 import { BACKOFF_STEPS_MS, FAILING_AFTER_MS } from '../src/health.ts'
 import { HEALTH_TOPIC, INDEXERS_TOPIC } from '../src/index.ts'
-import { FAKE_CREDENTIALS, FAKE_ORIGIN, fakeHtml, fakeJson, fakeNewznab } from './fake/index.ts'
+import {
+  FAKE_CREDENTIALS,
+  FAKE_ORIGIN,
+  fakeHtml,
+  fakeJson,
+  fakeNewznab,
+  madeUpTorrent,
+} from './fake/index.ts'
 import { any, catalogDefinition, setup, sintelSearch } from './helpers.ts'
 
 const torznabSettings = { baseUrl: `${FAKE_ORIGIN}/torznab`, apiKey: FAKE_CREDENTIALS.torznabKey }
@@ -401,6 +408,84 @@ describe('interactive search', () => {
     await t.jobs.tick()
     await t.jobs.idle()
     expect(t.db.select().from(schema.releases).all()).toEqual([])
+  })
+})
+
+describe('grabs', () => {
+  test('fetches the .torrent through the indexer and counts the grab', async () => {
+    const t = withTorznab()
+    const { indexer } = await t.indexers.add('generic-torznab', { settings: torznabSettings })
+    t.indexers.setSeeding(indexer.id, { ratio: 1.5, minutes: null, minMinutes: 7200 })
+    const [best] = (await t.indexers.search(sintelSearch())).releases
+    const grabbed = await t.indexers.grab({
+      tmdbId: 45745,
+      indexerId: indexer.id,
+      guid: best?.guid as string,
+    })
+    expect(grabbed.release.title).toBe('Sintel.2010.1080p.BluRay.x264-GRP')
+    expect(grabbed.source).toEqual({ torrent: madeUpTorrent('Sintel.2010.1080p.BluRay.x264-GRP') })
+    expect(grabbed.seeding).toEqual({ ratio: 1.5, minutes: null, minMinutes: 7200 })
+    expect(t.indexers.get(indexer.id).stats.grabs24h).toBe(1)
+    expect(t.indexers.get(indexer.id).seeding.minMinutes).toBe(7200)
+  })
+
+  test('a redirect to a magnet is the magnet', async () => {
+    const t = withTorznab()
+    const { indexer } = await t.indexers.add('generic-torznab', { settings: torznabSettings })
+    const magnet = 'magnet:?xt=urn:btih:0123456789abcdef0123456789abcdef01234567&dn=Sintel'
+    t.fake.serve(101, magnet)
+    await t.indexers.search(sintelSearch())
+    const grabbed = await t.indexers.grab({
+      tmdbId: 45745,
+      indexerId: indexer.id,
+      guid: 'fake-101',
+    })
+    expect(grabbed.source).toEqual({ magnet })
+  })
+
+  test('a site with a form sign-in signs in again when its session ran out', async () => {
+    const t = setup({ definitions: [fakeHtml(FAKE_ORIGIN)] })
+    const { indexer } = await t.indexers.add('fake-html', {
+      settings: { username: FAKE_CREDENTIALS.username, password: FAKE_CREDENTIALS.password },
+    })
+    const [best] = (await t.indexers.search(sintelSearch())).releases
+    t.fake.expireSessions()
+    const grabbed = await t.indexers.grab({
+      tmdbId: 45745,
+      indexerId: indexer.id,
+      guid: best?.guid as string,
+    })
+    expect('torrent' in grabbed.source).toBe(true)
+    expect(t.fake.logins).toBe(3)
+    const cookies = t.fake.requests
+      .filter((r) => r.url.pathname === '/html/download.php')
+      .map((r) => r.headers.get('cookie'))
+    expect(cookies).toEqual(['sid=sid-1; theme=dark', 'sid=sid-2; theme=dark'])
+  })
+
+  test('a web page instead of a torrent fails the grab and counts against health', async () => {
+    const t = setup({ definitions: [fakeJson(FAKE_ORIGIN)] })
+    const { indexer } = await t.indexers.add('fake-json', {
+      settings: { passkey: FAKE_CREDENTIALS.jsonPasskey },
+    })
+    const [best] = (await t.indexers.search(sintelSearch())).releases
+    t.fake.serve(101, new TextEncoder().encode('<!doctype html><p>Sign in</p>'))
+    await expect(
+      t.indexers.grab({ tmdbId: 45745, indexerId: indexer.id, guid: best?.guid as string }),
+    ).rejects.toThrow('Fake JSON couldn’t send the release: The indexer sent a web page')
+    expect(t.indexers.get(indexer.id).lastError).toContain('web page')
+    const passkey = FAKE_CREDENTIALS.jsonPasskey
+    expect(JSON.stringify(t.logs.entries())).not.toContain(passkey)
+  })
+
+  test('a release that left the cache asks for a new search', async () => {
+    const t = withTorznab()
+    const { indexer } = await t.indexers.add('generic-torznab', { settings: torznabSettings })
+    await t.indexers.search(sintelSearch())
+    t.clock.advance(31 * 60 * 1000)
+    await expect(
+      t.indexers.grab({ tmdbId: 45745, indexerId: indexer.id, guid: 'fake-101' }),
+    ).rejects.toThrow('That release is no longer in the search results. Search again.')
   })
 })
 

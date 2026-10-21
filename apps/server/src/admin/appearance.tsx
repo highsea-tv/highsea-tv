@@ -43,6 +43,7 @@ import {
 } from '@highsea/ui-web'
 import { useEffect, useMemo, useState } from 'react'
 import { appearance as messages } from './appearance-messages.ts'
+import { toBase64 } from './base64.ts'
 import { Loadable } from './loadable.tsx'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
 
@@ -66,16 +67,6 @@ type Draft = {
   accent: string | null
   defaultTheme: string
   sound: SoundDefaults
-}
-
-/** A file's bytes as base64, for the JSON upload (the contract's `MarkUpload`). */
-async function toBase64(file: File): Promise<string> {
-  const bytes = new Uint8Array(await file.arrayBuffer())
-  let binary = ''
-  // String.fromCharCode takes its arguments on the stack, so a big file goes in chunks
-  for (let i = 0; i < bytes.length; i += 0x8000)
-    binary += String.fromCharCode(...bytes.subarray(i, i + 0x8000))
-  return btoa(binary)
 }
 
 export function Appearance() {

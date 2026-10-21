@@ -25,6 +25,7 @@ Page header "System", "What the server is doing, and how it's holding up." Line 
 - **Backups:** what's in a backup (and isn't), a link to the schedule, **Back up now**; a table of backups (when, kind: Scheduled, Made by hand, Before an update; size) with **Download** and **Restore**.
 - **Updates:** the channel, "highsea 1.0.1 is out. You have 1.0.0.", the notes, **Update and restart**, **Update settings**, and the Docker note.
 - **About** (checkpoint 4; the prototype has none): "This server, and the services whose data it shows." The server's name and version, then **Data from**: TMDB's logo, linked to themoviedb.org, and its notice in its terms' wording, "This product uses TMDB and the TMDB APIs but is not endorsed, certified, or otherwise approved by TMDB." TMDB's terms ask for both in an About or Credits section. Until the rest of System arrives (checkpoint 8), the page is About and a line saying the rest comes later. Checkpoint 5 adds **Indexer catalog** to About: the installed version, the last check (when, and its message if it failed) and **Check now**, until Updates arrives to hold it.
+- **Health, before the tabs** (checkpoint 6a, 2026-10-20): the prototype's Health list as a group above About, "What needs your attention: downloads, indexers, the catalog and the network.", each check with its level badge, source, since when and message, live over `queue.updated`, `vpn.updated`, `indexers` health and settings changes. Its **Check now** waits for Tasks (checkpoint 8), which runs the check; the prototype's rate graph is the dashboard's Network widget. The tabs and the rest of System stay checkpoint 8's.
 
 ## States
 
@@ -49,7 +50,9 @@ Page header "System", "What the server is doing, and how it's holding up." Line 
 - `system.backups()`, `system.backupNow()`, `system.restore(id)`; `system.updates()`.
 - `catalog.status()` and `catalog.check()` for About's Indexer catalog (checkpoint 5); `system.server().catalogVersion` for the Status strip.
 - Health checks from checkpoint 5: source **Catalog** (a failed check, keeping the installed version) and **Indexers** (none enabled, a warning; failing, an error; needs attention or a definition gone, a warning). Backing off isn't a health issue; A9 shows it.
-- Events used: `jobs.updated`, `health.updated`, `history.updated`, `catalog.updated`.
+- Health checks from checkpoint 6a: source **Downloads** ("The torrent client can't accept connections: {problem}", an error; "{release} couldn't be imported: {reason}" for each blocked import, a warning) and **VPN** ("The VPN is down. Torrents are stopped until it's back.", an error; "The VPN couldn't connect: {reason}", an error; "VPN: {title}. Open Settings › VPN to see why." for each failing check). `system.healthChecks()` → `GET /api/v1/system/health` lists them.
+- Tasks from checkpoint 6a, for the Tasks tab when it comes: the downloads' stall check every 5 minutes (`downloads.stall`), and the import, the replacement of a refused or stalled release and letting go after seeding as jobs on demand ([ADR 0038](../adr/0038-downloads.md)).
+- Events used: `jobs.updated`, `health.updated`, `history.updated`, `catalog.updated`, and since checkpoint 6a `queue.updated` and `vpn.updated`.
 
 ## Decisions
 

@@ -7,7 +7,14 @@ import { defaultSecuritySettings, issueDevice, SECURITY_KEY } from '@highsea/aut
 import type { Fetch } from '@highsea/core'
 import { writeSetting } from '@highsea/db'
 import { createReplayFetch, type ReplayFetch } from '@highsea/metadata/replay'
-import { boot, getRuntime, hasRuntime, loadConfig, type Runtime } from '@highsea/runtime'
+import {
+  type BootOptions,
+  boot,
+  getRuntime,
+  hasRuntime,
+  loadConfig,
+  type Runtime,
+} from '@highsea/runtime'
 import { ApiError, createClient } from '@highsea/sdk'
 import type { createApi } from '../src/api/app.ts'
 
@@ -24,9 +31,12 @@ export async function cleanup() {
 
 /**
  * A booted runtime whose outside requests go to TMDB's recordings (ADR 0029): no test reaches the
- * network, and one with no recording fails. Pass `fetch` to count or fail requests.
+ * network, and one with no recording fails. Pass `fetch` to count or fail requests, and `importing`
+ * for the import pipeline's options.
  */
-export async function bootRuntime(options: { fetch?: ReplayFetch | Fetch } = {}): Promise<Runtime> {
+export async function bootRuntime(
+  options: { fetch?: ReplayFetch | Fetch; importing?: BootOptions['importing'] } = {},
+): Promise<Runtime> {
   const dir = mkdtempSync(join(tmpdir(), 'highsea-api-'))
   dirs.push(dir)
   return boot({
@@ -40,6 +50,9 @@ export async function bootRuntime(options: { fetch?: ReplayFetch | Fetch } = {})
     memory: true,
     manualTicks: true,
     indexerTimeoutMs: 2000,
+    // no torrent opens a socket: grabs are added, nothing downloads
+    torrent: { offline: true },
+    importing: options.importing,
   })
 }
 

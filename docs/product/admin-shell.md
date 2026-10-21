@@ -88,7 +88,7 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
   - `announcements.active()` → `GET /api/v1/me/announcements`, for live announcements to this user with `seen`;
   - `announcements.dismiss(id)` → `POST /api/v1/me/announcements/{id}/seen`;
   - `downloads.pauseAll()` and `downloads.resumeAll()`, for the palette actions.
-- Events on the SSE stream (`GET /api/v1/events`): `server.updated`, `jobs.updated`, `users.updated`, `settings.updated`, `audit.updated`. Later ones: `item.updated`, `queue.changed`, `health.updated`, `announcements.updated`.
+- Events on the SSE stream (`GET /api/v1/events`): `server.updated`, `jobs.updated`, `users.updated`, `settings.updated`, `audit.updated`. Later ones: `item.updated`, `queue.updated`, `health.updated`, `announcements.updated`.
 
 ## Decisions
 

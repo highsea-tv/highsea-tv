@@ -2,7 +2,9 @@
 // A6 movie detail, person pages and collection pages (media-pages.md, movies.md § Movie detail),
 // rendered against a fake of the checkpoint 4 API: the page in each state, adding and removing in
 // place, the library layer's edits, trailers that load nothing before the click, live refetches,
-// and the Search tab once an indexer is enabled (checkpoint 5). The shell and Next's router are stood in for; everything else is the real screen.
+// the Search tab once an indexer is enabled (checkpoint 5), and checkpoint 6's live states: Grab and
+// Grab anyway, In the queue, Files with their streams and paged History. The shell and Next's
+// router are stood in for; everything else is the real screen.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import type { ReactNode } from 'react'
@@ -95,6 +97,11 @@ type State = {
   indexers: { id: string; name: string; enabled: boolean }[]
   /** The last 30 minutes' results, as GET …/releases answers them. */
   cached: ReturnType<typeof release>[]
+  queue: ReturnType<typeof queueItem>[]
+  files: ReturnType<typeof mediaFile>[]
+  history: ReturnType<typeof historyEvent>[]
+  /** Guids the server refuses without `force`, as the blocklist does. */
+  blocked: Set<string>
 }
 let state: State
 
@@ -122,6 +129,83 @@ const release = (n: number, approved: boolean, extra: Record<string, unknown> = 
     : [{ kind: 'rejected', message: 'Smaller than the minimum size for Bluray-1080p.' }],
   ...extra,
 })
+
+const queueItem = (n: number, movieId: number | null, extra: Record<string, unknown> = {}) => ({
+  id: `q${n}`,
+  torrentId: `t${n}`,
+  movieId,
+  title: 'The Matrix',
+  year: 1999,
+  release: `The.Matrix.1999.1080p.BluRay.x264-GRP${n}`,
+  quality: 'Bluray-1080p',
+  size: 8_000_000_000,
+  progress: 0.42,
+  downRate: 2_500_000,
+  upRate: 0,
+  eta: 1800,
+  ratio: 0,
+  state: 'downloading',
+  stateReason: null,
+  ...extra,
+})
+
+const mediaFile = (versionId: string) => ({
+  id: 'f1',
+  movieId: 603,
+  versionId,
+  path: '/data/media/movies/The Matrix (1999)/The Matrix (1999) Bluray-1080p.mkv',
+  size: 8_000_000_000,
+  quality: { name: 'Bluray-1080p', resolution: '1080p', source: 'bluray', codec: 'x264' },
+  releaseGroup: 'GRP1',
+  sceneName: 'The.Matrix.1999.1080p.BluRay.x264-GRP1',
+  edition: null,
+  transfer: 'hardlink',
+  addedAt: '2026-10-20T00:00:00.000Z',
+  streams: [
+    {
+      index: 0,
+      type: 'video',
+      codec: 'h264',
+      width: 1920,
+      height: 1080,
+      hdr: 'none',
+      bitrate: 8e6,
+    },
+    {
+      index: 1,
+      type: 'audio',
+      codec: 'dts',
+      language: 'English',
+      channels: '5.1',
+      title: null,
+      default: true,
+    },
+    {
+      index: 2,
+      type: 'subtitle',
+      codec: 'subrip',
+      language: 'English',
+      forced: false,
+      hi: true,
+      default: false,
+    },
+  ],
+})
+
+const historyEvent = (n: number, type: string, extra: Record<string, unknown> = {}) => ({
+  id: `h${n}`,
+  movieId: 603,
+  type,
+  date: new Date(Date.now() - n * 3_600_000).toISOString(),
+  sourceTitle: `The.Matrix.1999.1080p.BluRay.x264-GRP${n}`,
+  quality: 'Bluray-1080p',
+  indexer: 'Internet Archive',
+  message: null,
+  ...extra,
+})
+
+/** History's page size in the fake: small, so Show more has something to show. */
+const HISTORY_PAGE = 2
 
 const metadata = () => ({
   ...discover(603, 'The Matrix', 1999, state.inLibrary),
@@ -328,6 +412,16 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         searched: 2,
         failed: [{ indexerId: 'ix2', indexer: 'Slow tracker', message: 'it timed out' }],
       })
+    case 'GET /api/v1/queue':
+      return json(state.queue)
+    case 'GET /api/v1/movies/603/files':
+      return json(state.files)
+    case 'GET /api/v1/movies/603/history': {
+      const at = Number(u.searchParams.get('cursor') ?? 0)
+      const items = state.history.slice(at, at + HISTORY_PAGE)
+      const next = at + HISTORY_PAGE < state.history.length ? String(at + HISTORY_PAGE) : null
+      return json({ items, next })
+    }
     case 'POST /api/v1/movies/bulk':
       return new Response(null, { status: 202 })
     case 'POST /api/v1/movies': {
@@ -335,6 +429,18 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
       else state.owned.add(body.tmdbId)
       return json({ ...libraryMovie(), id: body.tmdbId }, 201)
     }
+  }
+  const grab = /^\/api\/v1\/movies\/603\/releases\/([^/]+)\/grab$/.exec(path)
+  if (method === 'POST' && grab) {
+    const guid = decodeURIComponent(grab[1] ?? '')
+    if (state.blocked.has(guid) && !body.force)
+      return json(
+        { error: { code: 'conflict', message: 'That release is on the blocklist.' } },
+        409,
+      )
+    const item = queueItem(state.queue.length + 1, 603)
+    state.queue.push(item)
+    return json(item)
   }
   if (method === 'DELETE' && path.startsWith('/api/v1/movies/603/versions/')) {
     const versionId = path.split('/').pop()
@@ -362,6 +468,10 @@ beforeEach(() => {
     push: null,
     indexers: [],
     cached: [],
+    queue: [],
+    files: [],
+    history: [],
+    blocked: new Set(),
   }
 })
 afterEach(() => cleanup())
@@ -569,7 +679,7 @@ describe('a movie in the library', () => {
       })
     })
 
-    test('the tab searches when nothing is cached: dashes for what an indexer left out, Grab waits, a quiet note for one that failed', async () => {
+    test('the tab searches when nothing is cached: dashes for what an indexer left out, a quiet note for one that failed', async () => {
       const { page, user } = await open(<MovieDetail id="603" />)
       await user.click(page.getByRole('button', { name: 'Interactive search' }))
       await settle()
@@ -580,8 +690,7 @@ describe('a movie in the library', () => {
       // size and age, then seeders and leechers
       expect(page.getAllByText('—')).toHaveLength(2)
       expect(page.getByText('—/—')).toBeTruthy()
-      const grab = page.getByRole('button', { name: /^Grab The\.Matrix/ })
-      expect(grab.getAttribute('aria-disabled')).toBe('true')
+      expect(page.getByRole('button', { name: /^Grab The\.Matrix/ })).toBeTruthy()
       expect(page.getByRole('button', { name: /^Grab anyway/ })).toBeTruthy()
       expect(page.getByText('Slow tracker didn’t answer: it timed out')).toBeTruthy()
 
@@ -603,6 +712,110 @@ describe('a movie in the library', () => {
       expect(requested('POST', '/api/v1/movies/603/search')).toHaveLength(1)
       expect(page.getByText('2 releases')).toBeTruthy()
     })
+
+    test('Grab sends the release’s indexer, and the row says Grabbed', async () => {
+      const { page, user } = await open(<MovieDetail id="603" />)
+      await user.click(page.getByRole('button', { name: 'Interactive search' }))
+      await settle()
+      await user.click(page.getByRole('button', { name: /^Grab The\.Matrix.*GRP1$/ }))
+      await settle()
+      expect(requested('POST', '/api/v1/movies/603/releases/g1/grab')[0]?.body).toEqual({
+        indexerId: 'ix1',
+      })
+      expect(page.getAllByText('Grabbed').length).toBeGreaterThan(0)
+      expect(page.getAllByText(/is downloading\. Follow it in Activity\./).length).toBeGreaterThan(
+        0,
+      )
+    })
+
+    test('Grab anyway sends force for a rejected release', async () => {
+      const { page, user } = await open(<MovieDetail id="603" />)
+      await user.click(page.getByRole('button', { name: 'Interactive search' }))
+      await settle()
+      await user.click(page.getByRole('button', { name: /^Grab anyway/ }))
+      await settle()
+      expect(requested('POST', '/api/v1/movies/603/releases/g2/grab')[0]?.body).toEqual({
+        indexerId: 'ix1',
+        force: true,
+      })
+    })
+
+    test('a refused grab says why and leaves the button', async () => {
+      state.blocked.add('g1')
+      const { page, user } = await open(<MovieDetail id="603" />)
+      await user.click(page.getByRole('button', { name: 'Interactive search' }))
+      await settle()
+      await user.click(page.getByRole('button', { name: /^Grab The\.Matrix.*GRP1$/ }))
+      await settle()
+      expect(page.getByText('Couldn’t grab it')).toBeTruthy()
+      expect(page.getByText('That release is on the blocklist.')).toBeTruthy()
+      expect(page.getByRole('button', { name: /^Grab The\.Matrix.*GRP1$/ })).toBeTruthy()
+    })
+  })
+
+  test('In the queue: each of its downloads with live progress, and none of another movie’s', async () => {
+    state.queue = [queueItem(1, 603), queueItem(2, 604, { release: 'Reloaded.2003' })]
+    const { page } = await open(<MovieDetail id="603" />)
+    const card = page.getByRole('region', { name: 'In the queue' })
+    expect(within(card).getByText('The.Matrix.1999.1080p.BluRay.x264-GRP1')).toBeTruthy()
+    expect(within(card).getByText('Downloading')).toBeTruthy()
+    expect(within(card).getByText('42% · 2.5 MB/s · 30m left')).toBeTruthy()
+    expect(within(card).queryByText('Reloaded.2003')).toBeNull()
+
+    // the import is blocked: the badge, the bar and the reason follow the event
+    state.queue = [
+      queueItem(1, 603, {
+        progress: 1,
+        downRate: 0,
+        eta: null,
+        state: 'import-blocked',
+        stateReason: 'No video file in the download',
+      }),
+    ]
+    await act(async () => state.push?.('queue.updated'))
+    await settle()
+    const blocked = page.getByRole('region', { name: 'In the queue' })
+    expect(within(blocked).getByText('Import blocked')).toBeTruthy()
+    expect(within(blocked).getByText('100% · No video file in the download')).toBeTruthy()
+
+    state.queue = []
+    await act(async () => state.push?.('queue.updated'))
+    await settle()
+    expect(page.queryByRole('region', { name: 'In the queue' })).toBeNull()
+  })
+
+  test('Files: a version’s file with its streams; History pages with Show more', async () => {
+    state.files = [mediaFile('v1')]
+    state.history = [
+      historyEvent(1, 'imported', { message: 'Hardlinked into the library' }),
+      historyEvent(2, 'grabbed'),
+      historyEvent(3, 'download-failed', { indexer: null }),
+    ]
+    const { page, user } = await open(<MovieDetail id="603" />)
+    await user.click(page.getByRole('tab', { name: 'Files' }))
+    await settle()
+    const version = page.getByRole('region', { name: 'HD 1080p version' })
+    expect(within(version).getByText('8.0 GB')).toBeTruthy()
+    expect(within(version).getByText('H264 · 1920×1080 · 1.0 MB/s')).toBeTruthy()
+    expect(within(version).getByText('DTS 5.1 · English · default')).toBeTruthy()
+    expect(within(version).getByText('subrip · English · SDH')).toBeTruthy()
+    expect(within(version).getByText('The.Matrix.1999.1080p.BluRay.x264-GRP1')).toBeTruthy()
+
+    await user.click(page.getByRole('tab', { name: 'History' }))
+    await settle()
+    const rows = () => page.getAllByRole('row').map((r) => r.textContent)
+    expect(rows()).toHaveLength(3)
+    expect(rows()[1]).toContain('Imported')
+    expect(rows()[1]).toContain('Hardlinked into the library')
+    expect(rows()[2]).toContain('Grabbed')
+    await user.click(page.getByRole('button', { name: 'Show more' }))
+    await settle()
+    expect(rows()).toHaveLength(4)
+    // no indexer: a dash
+    expect(rows()[3]).toContain('Download failed')
+    expect(rows()[3]).toContain('—')
+    expect(page.queryByRole('button', { name: 'Show more' })).toBeNull()
+    expect(requested('GET', '/api/v1/movies/603/history?cursor=2').length).toBeGreaterThan(0)
   })
 
   test('Files and History show their empty states', async () => {

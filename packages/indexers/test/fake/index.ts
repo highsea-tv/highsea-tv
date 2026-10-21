@@ -10,6 +10,9 @@
 //   /html/login        a sign-in form; /html/browse needs its cookie
 //   /rss/feed/{key}    a feed with the key in its address
 //   archive.org/services/search/v1/scrape, or /archive/services/search/v1/scrape
+//   /dl/{id}.torrent, /json/download/{id}?passkey=, /html/download.php?id= (needs the cookie)
+//                      a release's .torrent: a small made-up one unless a test serves its own,
+//                      or a redirect to a magnet
 import { FAKE_CREDENTIALS, FAKE_NOW, type FakeRelease, find, RELEASES } from './fixtures.ts'
 
 export * from './definitions.ts'
@@ -141,6 +144,49 @@ ${rows}
 </body></html>`
 }
 
+/** Bencode (BEP 3), enough for a made-up `.torrent`. */
+function bencode(v: unknown): Uint8Array {
+  const enc = new TextEncoder()
+  const parts: Uint8Array[] = []
+  const walk = (x: unknown) => {
+    if (typeof x === 'number') parts.push(enc.encode(`i${Math.trunc(x)}e`))
+    else if (typeof x === 'string' || x instanceof Uint8Array) {
+      const b = typeof x === 'string' ? enc.encode(x) : x
+      parts.push(enc.encode(`${b.length}:`), b)
+    } else if (Array.isArray(x)) {
+      parts.push(enc.encode('l'))
+      for (const i of x) walk(i)
+      parts.push(enc.encode('e'))
+    } else {
+      parts.push(enc.encode('d'))
+      for (const k of Object.keys(x as object).sort()) {
+        walk(k)
+        walk((x as Record<string, unknown>)[k])
+      }
+      parts.push(enc.encode('e'))
+    }
+  }
+  walk(v)
+  const out = new Uint8Array(parts.reduce((n, p) => n + p.length, 0))
+  let o = 0
+  for (const p of parts) {
+    out.set(p, o)
+    o += p.length
+  }
+  return out
+}
+
+/** A small, valid `.torrent` named after the release: one 16 KiB piece of zeros. */
+export function madeUpTorrent(name: string): Uint8Array {
+  // the SHA-1 of 16384 zero bytes
+  const zeros = '897256b6709e1a4da9daba92b6bde39ccfccd8c1'
+  const pieces = new Uint8Array(zeros.match(/../g)?.map((h) => Number.parseInt(h, 16)) ?? [])
+  return bencode({
+    announce: 'udp://tracker.invalid:6969',
+    info: { length: 16384, name: `${name}.mkv`, 'piece length': 16384, pieces },
+  })
+}
+
 const LOGIN_PAGE = `<!doctype html><html><body><form method="post" action="/html/login">
 <input name="username"><input name="password" type="password"></form></body></html>`
 
@@ -154,6 +200,8 @@ export type FakeIndexer = {
   expireSessions(): void
   /** How many times someone signed in. */
   logins: number
+  /** Serves this `.torrent`, or redirects to this magnet, for a release; null goes back to the default. */
+  serve(id: number, answer: Uint8Array | string | null): void
 }
 
 export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexer {
@@ -162,6 +210,18 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
   const rules = new Map<string, Misbehaviour>()
   let session = 'sid-1'
   let sessionCount = 1
+  const served = new Map<number, Uint8Array | string>()
+
+  const torrentFor = (id: number): Response => {
+    const release = RELEASES.find((r) => r.id === id)
+    if (!release) return html('Not found', 404)
+    const answer = served.get(id) ?? madeUpTorrent(release.name)
+    if (typeof answer === 'string')
+      return new Response(null, { status: 302, headers: { location: answer } })
+    return new Response(new Uint8Array(answer), {
+      headers: { 'content-type': 'application/x-bittorrent' },
+    })
+  }
 
   const xml = (body: string, status = 200) =>
     new Response(body, {
@@ -296,6 +356,22 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
       return json({ items: empty ? [] : items, count: items.length, total: items.length })
     }
 
+    const dl = /^\/dl\/(\d+)\.torrent$/.exec(path)
+    if (dl) return torrentFor(Number(dl[1]))
+
+    const jsonDl = /^\/json\/download\/(\d+)$/.exec(path)
+    if (jsonDl) {
+      if (p.get('passkey') !== FAKE_CREDENTIALS.jsonPasskey)
+        return json({ error: 'Invalid passkey' })
+      return torrentFor(Number(jsonDl[1]))
+    }
+
+    if (path === '/html/download.php') {
+      const cookie = request.headers.get('cookie') ?? ''
+      if (!cookie.split(/;\s*/).includes(`sid=${session}`)) return html(LOGIN_PAGE)
+      return torrentFor(Number(p.get('id')))
+    }
+
     return html('Not found', 404)
   }
 
@@ -340,6 +416,10 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
     },
     expireSessions() {
       session = `sid-${++sessionCount}`
+    },
+    serve(id, answer) {
+      if (answer === null) served.delete(id)
+      else served.set(id, answer)
     },
   }
   return fake

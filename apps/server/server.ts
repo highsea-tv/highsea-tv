@@ -18,10 +18,14 @@ const runtime = await boot({
   version: pkg.version,
   discovery: true,
   fetch: await outsideFetch(),
+  // HIGHSEA_TORRENT_OFFLINE=1: the engine opens no socket, for the browser sweeps (no network)
+  torrent: process.env.HIGHSEA_TORRENT_OFFLINE === '1' ? { offline: true } : undefined,
 })
 const log = runtime.logger.child('http')
 if (process.env.HIGHSEA_TMDB_REPLAY === '1')
   log.warn('TMDB answers come from recordings', { env: 'HIGHSEA_TMDB_REPLAY' })
+if (process.env.HIGHSEA_TORRENT_OFFLINE === '1')
+  log.warn('The torrent engine is offline: nothing downloads', { env: 'HIGHSEA_TORRENT_OFFLINE' })
 
 const app = next({ dev: config.dev, dir: dirname(fileURLToPath(import.meta.url)) })
 await app.prepare()

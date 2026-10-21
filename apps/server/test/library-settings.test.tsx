@@ -4,7 +4,8 @@
 // › Metadata, Media management's root folders, Profiles and formats and Quality sizes (read-only),
 // System › About with TMDB's notice, and the Upcoming, Calendar, Recently added and Storage widgets
 // with and without the `movies` source. Checkpoint 5 adds setup's indexer step, Settings › General
-// › Catalog, the catalog's version in About, and the Indexers widget. The shell and Next's router
+// › Catalog, the catalog's version in About, and the Indexers widget; checkpoint 6a, Media
+// management's Naming and Importing. The shell and Next's router
 // are stood in for.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
@@ -126,6 +127,7 @@ let state: {
     autoUpdate: boolean
     extras: { url: string; keyId: string; publicKey: string }[]
   }
+  media: Record<string, unknown>
   indexers: {
     id: string
     name: string
@@ -200,6 +202,15 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'DELETE /api/v1/settings/metadata':
       state.metadata = { ...state.metadata, key: { set: false, last4: null } }
       return json(state.metadata)
+    case 'GET /api/v1/settings/mediaManagement':
+      return json(state.media)
+    case 'PUT /api/v1/settings/mediaManagement':
+      if (String(body.fileFormat).includes('{Nonsense}'))
+        return failure('invalid', 'highsea doesn’t know the token {Nonsense}.', 400, {
+          reason: 'fileFormat',
+        })
+      state.media = body
+      return json(state.media)
     case 'GET /api/v1/rootfolders':
       return json(state.folders)
     case 'POST /api/v1/rootfolders':
@@ -307,6 +318,19 @@ beforeEach(() => {
     requests: [],
     checkedAt: null,
     catalog: { channel: 'stable', autoUpdate: true, extras: [] },
+    media: {
+      rename: true,
+      folderFormat: '{Movie Title} ({Release Year})',
+      fileFormat: '{Movie Title} ({Release Year}) {Quality Full}',
+      colonReplacement: 'smart',
+      hardlinks: true,
+      nfo: false,
+      unmonitorDeleted: true,
+      permissions: false,
+      chmod: '755',
+      recycleBin: '',
+      recycleBinDays: 7,
+    },
     indexers: [],
   }
 })
@@ -616,6 +640,53 @@ describe('Settings › Media management › root folders', () => {
     await settle()
     expect(requested('DELETE', '/api/v1/rootfolders/rf2')).toHaveLength(1)
     expect(page.queryByText('/data/media/old')).toBeNull()
+  })
+})
+
+describe('Settings › Media management › naming and importing', () => {
+  test('shows what Sintel would become, and saves the whole draft', async () => {
+    const { user, page } = await open(<MediaManagement />)
+    expect(page.getByText('Sintel (2010)')).toBeTruthy()
+    expect(page.getByText('Sintel (2010) Bluray-1080p.mkv')).toBeTruthy()
+    expect(page.queryByText(/arrive in a later checkpoint/)).toBeNull()
+    // permissions and the bin's days wait for their switches
+    expect((page.getByLabelText('Folder permissions') as HTMLInputElement).disabled).toBe(true)
+    expect((page.getByLabelText('Keep deleted files for') as HTMLInputElement).disabled).toBe(true)
+
+    await user.click(page.getByRole('switch', { name: 'Write NFO files' }))
+    await user.type(page.getByLabelText('Recycle bin'), '/data/.recycle')
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(requested('PUT', '/api/v1/settings/mediaManagement')[0]?.body).toMatchObject({
+      nfo: true,
+      recycleBin: '/data/.recycle',
+      recycleBinDays: 7,
+    })
+    expect(page.queryByRole('region', { name: 'Unsaved changes' })).toBeNull()
+  })
+
+  test('a format the server refuses shows its sentence under the field', async () => {
+    const { user, page } = await open(<MediaManagement />)
+    const file = page.getByLabelText('File')
+    await user.clear(file)
+    await user.type(file, '{{Nonsense}')
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(page.getAllByText('highsea doesn’t know the token {Nonsense}.').length).toBeGreaterThan(
+      0,
+    )
+  })
+
+  test('folder permissions are checked before saving', async () => {
+    const { user, page } = await open(<MediaManagement />)
+    await user.click(page.getByRole('switch', { name: 'Set folder permissions' }))
+    const chmod = page.getByLabelText('Folder permissions')
+    await user.clear(chmod)
+    await user.type(chmod, '789')
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(page.getByText('Use three digits from 0 to 7, like 755.')).toBeTruthy()
+    expect(requested('PUT', '/api/v1/settings/mediaManagement')).toHaveLength(0)
   })
 })
 

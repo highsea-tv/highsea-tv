@@ -103,6 +103,25 @@ export const IndexerStats = z
   })
   .openapi('IndexerStats')
 
+/** Stop at a ratio or a time, whichever first; never before the minimum (hit-and-run rules). */
+export const IndexerSeeding = z
+  .object({
+    ratio: z.number().min(0).max(100).nullable(),
+    minutes: z
+      .number()
+      .int()
+      .min(0)
+      .max(60 * 24 * 365)
+      .nullable(),
+    minMinutes: z
+      .number()
+      .int()
+      .min(0)
+      .max(60 * 24 * 365)
+      .nullable(),
+  })
+  .openapi('IndexerSeeding')
+
 export const Indexer = z
   .object({
     id: z.string(),
@@ -131,6 +150,8 @@ export const Indexer = z
       secrets: z.record(z.string(), z.boolean()),
     }),
     stats: IndexerStats,
+    /** Its seeding rules (A9); a null field uses Settings › Download client's. */
+    seeding: IndexerSeeding,
     addedAt: IsoDate,
   })
   .openapi('Indexer')
@@ -166,6 +187,7 @@ export const IndexerPatch = z
     enabled: z.boolean().optional(),
     priority: z.number().int().min(INDEXER_PRIORITY.min).max(INDEXER_PRIORITY.max).optional(),
     settings: Settings.optional(),
+    seeding: IndexerSeeding.optional(),
   })
   .openapi('IndexerPatch')
 

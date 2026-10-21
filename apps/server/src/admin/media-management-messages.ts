@@ -1,11 +1,47 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Settings › Media management (ADR 0021): the Importing group's root folders (checkpoint 4). The
-// prototype's Importing group has no folder list, so this copy follows the plan (Admin › Root
-// folders), setup's folder step and the brand brief.
+// Settings › Media management (ADR 0021). Naming and Importing follow the prototype's copy
+// (design/prototypes/src/admin/settings/reference.tsx); the settings it doesn't show (colon
+// replacement, setting permissions, the recycle bin's days) and the field errors are added in its
+// voice. The prototype's Importing group has no folder list, so the root folders' copy follows the
+// plan (Admin › Root folders), setup's folder step and the brand brief.
 import { defineMessages } from '@highsea/i18n'
 
 export const media = defineMessages({
+  what: 'these settings',
+  saved: 'Settings saved',
+  saveError: 'Couldn’t save',
+  'naming.title': 'Naming',
+  'naming.description': 'How highsea names what it imports.',
+  rename: 'Rename movies',
+  folder: 'Folder',
+  file: 'File',
+  becomes: 'Becomes',
+  tokens: 'Tokens:',
+  'format.missing': 'Enter a format.',
+  colon: 'Colons',
+  colonHint: 'A file name can’t carry one, as in Dune: Part Two.',
+  'colon.delete': 'Delete them',
+  'colon.dash': 'Replace with a dash',
+  'colon.space-dash': 'Replace with a space and a dash',
+  'colon.space-dash-space': 'Replace with a dash between spaces',
+  'colon.smart': 'Smart: a dash, with spaces where the title has them',
   'importing.title': 'Importing',
+  hardlinks: 'Use hardlinks',
+  hardlinksHint: 'Imports take no extra space and torrents keep seeding.',
+  nfo: 'Write NFO files',
+  nfoHint: 'For other media players reading the same folders.',
+  unmonitorDeleted: 'Stop monitoring movies whose files I delete',
+  unmonitorDeletedHint: 'Otherwise highsea downloads them again.',
+  permissions: 'Set folder permissions',
+  permissionsHint: 'Off: folders get what the server’s user gives them.',
+  chmod: 'Folder permissions',
+  chmodHint: 'chmod, for folders highsea makes.',
+  'chmod.invalid': 'Use three digits from 0 to 7, like 755.',
+  recycleBin: 'Recycle bin',
+  recycleBinHint: 'Deleted files go here first. Empty: delete straight away.',
+  days: 'Keep deleted files for',
+  daysHint: 'Days. 0 keeps them until you empty the bin.',
+  'days.invalid': 'Use a whole number of days up to 3650.',
   'folders.title': 'Root folders',
   'folders.description':
     'The folders movies are filed under. Each movie lives in a folder of its own inside one.',
@@ -36,6 +72,4 @@ export const media = defineMessages({
   'add.notFound': 'That folder doesn’t exist on the server.',
   'add.notWritable': 'highsea can’t write to that folder. Check its permissions.',
   'add.conflict': 'That folder is a root folder already, or inside or around one.',
-  later:
-    'Naming, hardlinks, NFO files, stop monitoring deleted files, folder permissions and the recycle bin arrive in a later checkpoint.',
 })
