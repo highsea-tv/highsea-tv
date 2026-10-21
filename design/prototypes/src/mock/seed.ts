@@ -45,6 +45,7 @@ import type {
   TorrentState,
   User,
 } from './types.ts'
+import type { VpnRuntime } from './vpn.ts'
 
 export const GB = 1e9
 export const MB = 1e6
@@ -103,6 +104,8 @@ export type ServerState = {
   appearance: Appearance
   apiKeys: ApiKey[]
   settings: Settings
+  /** The tunnel's state apart from its settings (docs/product/vpn.md). */
+  vpn: VpnRuntime
   backups: Backup[]
   /** Per user: their own order and hidden rows on Home (C7). */
   homeLayouts: Record<string, HomeLayout>
@@ -1032,7 +1035,15 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
             lastUsed: iso(now - 20 * HOUR),
           },
         ]) satisfies ApiKey[],
-    settings: defaultSettings(),
+    settings: defaultSettings(kind),
+    vpn: {
+      capability: kind === 'populated',
+      phase: 'connected',
+      failure: null,
+      until: 0,
+      connectedAt: now - 3 * HOUR,
+      checkedAt: now - 4 * 60_000,
+    } satisfies VpnRuntime,
     homeLayouts: {},
     backups: [
       ...Array.from(

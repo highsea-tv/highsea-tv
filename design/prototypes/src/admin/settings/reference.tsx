@@ -31,6 +31,7 @@ import type {
 } from '../../mock/settings.ts'
 import { adminHref } from '../shell.tsx'
 import { AreaPage, Group, SaveBar, useSettingsDraft } from './settings.tsx'
+import { VpnSummary } from './vpn.tsx'
 
 /** An area backed by one settings section: loads it, keeps a draft, and shows the save bar. */
 function Area<K extends SettingsSection>({
@@ -785,41 +786,14 @@ export function DownloadClient() {
     <Area id="downloads" section="downloadClient">
       {(v, set) => (
         <>
-          <Group
-            title="VPN binding"
-            description="Torrent traffic goes out through one network interface. If it drops, downloads stop rather than leak."
-          >
-            <div className="flex flex-wrap items-center gap-2 rounded-md border border-line bg-s2 p-3">
-              <Badge tone={v.bindInterface === 'any' ? 'warning' : 'success'}>
-                {v.bindInterface === 'any' ? 'Not bound' : `Bound to ${v.bindInterface}`}
-              </Badge>
-              <span className="text-caption text-text-3">
-                {v.bindInterface === 'any'
-                  ? 'Torrents use whatever network the server has.'
-                  : 'wg0 is up · 185.65.134.71 (Amsterdam)'}
-              </span>
-            </div>
-            <div className="grid gap-4 medium:grid-cols-2">
-              <Field label="Interface">
-                <Select
-                  value={v.bindInterface}
-                  onValueChange={(bindInterface) => set({ bindInterface })}
-                  options={options([
-                    ['wg0', 'wg0 (WireGuard)'],
-                    ['tun0', 'tun0 (OpenVPN)'],
-                    ['eth0', 'eth0 (LAN)'],
-                    ['any', 'Any interface'],
-                  ])}
-                />
-              </Field>
-            </div>
-            <Field inline label="Stop downloads if the interface goes down">
-              <Switch
-                checked={v.killSwitch}
-                disabled={v.bindInterface === 'any'}
-                onCheckedChange={(killSwitch) => set({ killSwitch })}
-              />
-            </Field>
+          <Group title="VPN">
+            <VpnSummary
+              action={
+                <Button size="sm" variant="secondary" asChild>
+                  <a href={adminHref('/settings/vpn')}>VPN settings</a>
+                </Button>
+              }
+            />
           </Group>
           <Group title="Connections">
             <div className="grid gap-4 medium:grid-cols-3">

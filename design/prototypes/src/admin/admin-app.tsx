@@ -34,6 +34,7 @@ import {
 } from './settings/reference.tsx'
 import { SettingsArea, SettingsIndex } from './settings/settings.tsx'
 import { UsersDevices } from './settings/users.tsx'
+import { Vpn } from './settings/vpn.tsx'
 import { Setup } from './setup/setup.tsx'
 import { AdminPage, AdminShell } from './shell.tsx'
 import { Subtitles } from './subtitles/subtitles.tsx'
@@ -92,6 +93,7 @@ const settingsAreas: Record<string, () => ReactNode> = {
   profiles: Profiles,
   quality: QualitySizes,
   lists: ImportLists,
+  vpn: Vpn,
   downloads: DownloadClient,
   connections: Connections,
 }

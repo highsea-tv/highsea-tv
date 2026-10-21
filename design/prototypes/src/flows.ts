@@ -304,7 +304,10 @@ export const flows: Flow[] = [
       fidelity: 'reference',
       ready: true,
       spec: 'docs/product/settings.md',
-      hints: ['Change anything: a save bar appears. Media management previews file names live.'],
+      hints: [
+        'Change anything: a save bar appears. Media management previews file names live.',
+        'VPN: Reconnect plays connecting; a PIA password or gluetun key of “wrong” plays a failure; Drop the tunnel plays the down state. The empty server lacks NET_ADMIN.',
+      ],
     },
   ),
   admin(

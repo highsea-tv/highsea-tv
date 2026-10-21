@@ -833,6 +833,7 @@ export type ServerEvent =
   | { type: 'curation.updated' }
   | { type: 'users.updated' }
   | { type: 'settings.updated' }
+  | { type: 'vpn.updated' }
   | { type: 'layout.updated' }
   | { type: 'server.updated' }
   | { type: 'watch.updated' }

@@ -102,10 +102,18 @@ export const areaGroups: { title: string; areas: Area[] }[] = [
     title: 'Downloads and alerts',
     areas: [
       {
+        id: 'vpn',
+        label: 'VPN',
+        icon: 'shield',
+        description:
+          'Torrents through your VPN provider, the checks that prove it, and port forwarding.',
+        ownerOnly: true,
+      },
+      {
         id: 'downloads',
         label: 'Download client',
         icon: 'downloads',
-        description: 'The built-in torrent client: port, encryption and the VPN binding.',
+        description: 'The built-in torrent client: port, encryption and connections.',
       },
       {
         id: 'subtitles',

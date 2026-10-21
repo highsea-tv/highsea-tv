@@ -15,6 +15,7 @@ import {
   EmptyState,
   Field,
   Icon,
+  type IconName,
   Input,
   Progress,
   Select,
@@ -35,12 +36,12 @@ import {
   TitleCell,
   toast,
 } from '@highsea/ui-web'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { Torrent, TorrentFile, TorrentLimits } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
-import { AdminPage } from '../shell.tsx'
+import { AdminPage, adminHref } from '../shell.tsx'
 import { torrentStatus } from '../status.ts'
 
 const MBps = 1_000_000
@@ -230,28 +231,59 @@ export function Downloads() {
 // ---------------------------------------------------------------- VPN
 
 function VpnBanner({ limits: l }: { limits: TorrentLimits }) {
+  const status = useQuery('vpn:status', (c) => c.vpn.status(), ['vpn.updated'])
+  const v = status.data
+  if (!v) return null
+  const rates = (
+    <span className="ms-auto font-mono text-figure text-text-3">
+      {l.downRateLimit ? `↓ ${rate(l.downRateLimit)}` : '↓ unlimited'} ·{' '}
+      {l.upRateLimit ? `↑ ${rate(l.upRateLimit)}` : '↑ unlimited'}
+    </span>
+  )
+  const [icon, tone, title, line]: [IconName, string, string, ReactNode] =
+    v.state === 'connected'
+      ? [
+          'shield',
+          'text-success',
+          `Through ${v.provider}`,
+          [`${v.exitIp} (${v.country})`, v.forwardedPort && `Port ${v.forwardedPort}`]
+            .filter(Boolean)
+            .join(' · '),
+        ]
+      : v.state === 'connecting'
+        ? [
+            'loading',
+            'text-text-3',
+            `Connecting to ${v.provider}…`,
+            'Torrents wait until the tunnel is up.',
+          ]
+        : v.state === 'off'
+          ? [
+              'warning',
+              'text-warning',
+              'No VPN',
+              'Torrents use your own connection. Anyone in the swarm can see your address.',
+            ]
+          : [
+              'error',
+              'text-danger',
+              v.state === 'down' ? `${v.provider} is down` : 'The VPN couldn’t connect',
+              'Torrents are stopped until the tunnel is back. Nothing leaks onto your own connection.',
+            ]
   return (
     <div
       role="status"
       className="flex flex-wrap items-center gap-x-3 gap-y-1 rounded-md border border-line bg-s1 px-3.5 py-2.5 text-ui"
     >
-      <Icon
-        name={l.vpnConnected ? 'shield' : 'warning'}
-        size={16}
-        className={l.vpnConnected ? 'text-success' : 'text-danger'}
-      />
-      <span className="font-medium text-text">
-        {l.vpnConnected ? `Bound to ${l.vpnInterface}` : `${l.vpnInterface} is down`}
-      </span>
-      <span className="text-text-2">
-        {l.vpnConnected
-          ? `All torrent traffic leaves through ${l.vpnIp}. If the tunnel drops, torrents stop.`
-          : 'Torrents are stopped until the tunnel is back. Nothing leaks onto your own connection.'}
-      </span>
-      <span className="ms-auto font-mono text-figure text-text-3">
-        {l.downRateLimit ? `↓ ${rate(l.downRateLimit)}` : '↓ unlimited'} ·{' '}
-        {l.upRateLimit ? `↑ ${rate(l.upRateLimit)}` : '↑ unlimited'}
-      </span>
+      <Icon name={icon} size={16} className={tone} />
+      <span className="font-medium text-text">{title}</span>
+      <span className="text-text-2">{line}</span>
+      {v.state === 'off' && (
+        <a href={adminHref('/settings/vpn')} className="text-text underline underline-offset-2">
+          Set up a VPN
+        </a>
+      )}
+      {rates}
     </div>
   )
 }

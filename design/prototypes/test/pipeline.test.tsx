@@ -305,7 +305,7 @@ describe('A7 activity', () => {
 describe('A8 downloads', () => {
   test('open a torrent, skip a file, add a magnet', async () => {
     const { mock, user } = await open('/admin/downloads')
-    expect(page().getByText('Bound to wg0')).toBeTruthy()
+    expect(page().getByText('Through Proton VPN')).toBeTruthy()
     await clean()
     await user.click(page().getByRole('button', { name: /^Sintel\.2010/ }))
     const sheet = page().getByRole('dialog', { name: /^Sintel\.2010/ })

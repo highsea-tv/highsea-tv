@@ -3,6 +3,7 @@
 // reference pages edit these as plain values; Phase 3 gives each section its own schema.
 import { defaultQualitySizes, type QualitySize } from '@highsea/quality'
 import type { ImportList } from './types.ts'
+import { defaultVpnSettings, type VpnSettings } from './vpn.ts'
 
 export type GeneralSettings = {
   language: string
@@ -27,8 +28,6 @@ export type MediaSettings = {
 export type DownloadClientSettings = {
   port: number
   encryption: 'require' | 'prefer' | 'allow'
-  bindInterface: string
-  killSwitch: boolean
   upnp: boolean
   maxActive: number
 }
@@ -82,6 +81,7 @@ export type Settings = {
   general: GeneralSettings
   media: MediaSettings
   downloadClient: DownloadClientSettings
+  vpn: VpnSettings
   network: NetworkSettings
   security: SecuritySettings
   backups: BackupSettings
@@ -92,7 +92,7 @@ export type Settings = {
 
 export type SettingsSection = keyof Settings
 
-export const defaultSettings = (): Settings => ({
+export const defaultSettings = (kind: 'populated' | 'empty' = 'populated'): Settings => ({
   general: {
     language: 'en-GB',
     timeZone: 'Europe/Lisbon',
@@ -112,13 +112,12 @@ export const defaultSettings = (): Settings => ({
     unmonitorDeleted: true,
   },
   downloadClient: {
-    port: 51413,
+    port: 6881,
     encryption: 'prefer',
-    bindInterface: 'wg0',
-    killSwitch: true,
     upnp: false,
     maxActive: 3,
   },
+  vpn: defaultVpnSettings(kind),
   network: {
     externalUrl: 'https://harbor.example.net',
     trustedProxies: '172.18.0.0/16',

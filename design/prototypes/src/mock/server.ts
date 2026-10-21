@@ -69,6 +69,7 @@ import type {
   WidgetLayout,
   WidgetPlacement,
 } from './types.ts'
+import { connectionFailure, type VpnSettings, vpnProviders, vpnStatus } from './vpn.ts'
 
 export class ApiError extends Error {
   readonly status: number
@@ -443,6 +444,21 @@ export function createServer(
     }
     state.status.cpu = Math.round((active > 0 ? 10 : 3) + random() * 6)
 
+    // the VPN: a connection takes a few seconds; a dropped tunnel reconnects on its own
+    const vpn = state.vpn
+    if ((vpn.phase === 'connecting' || vpn.phase === 'down') && now >= vpn.until) {
+      if (vpn.phase === 'down') {
+        vpn.phase = 'connecting'
+        vpn.until = now + 4_000
+      } else {
+        vpn.phase = 'connected'
+        vpn.connectedAt = now
+        vpn.checkedAt = now
+      }
+      events.emit({ type: 'vpn.updated' })
+      events.emit({ type: 'health.updated' })
+    }
+
     events.emit({ type: 'tick', now })
     if (torrentsChanged) events.emit({ type: 'torrents.updated' })
     if (queueChanged) events.emit({ type: 'queue.changed' })
@@ -637,6 +653,35 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     return role
   }
   const layoutKey = (scope: string) => `layout:${srv.kind}:${scope}`
+  const currentVpn = () =>
+    vpnStatus(state.settings.vpn, state.vpn, srv.clock.now(), state.settings.downloadClient.port)
+  /**
+   * New VPN settings: write-only secrets are taken in and dropped, then highsea connects again,
+   * or fails with the step's copy.
+   */
+  const saveVpn = (value: VpnSettings): VpnSettings => {
+    const failure = connectionFailure(value)
+    const { config, piaPassword, containerKey, ...rest } = value
+    const saved: VpnSettings = {
+      ...rest,
+      piaPasswordSet: rest.piaPasswordSet || (!!piaPassword && !failure),
+      containerKeySet: rest.containerKeySet || (!!containerKey && !failure),
+    }
+    if (failure) {
+      state.vpn.phase = 'failed'
+      state.vpn.failure = failure
+    } else if (saved.mode !== 'off') {
+      state.vpn.phase = 'connecting'
+      state.vpn.failure = null
+      state.vpn.until = srv.clock.now() + 4_000
+    }
+    // a failed configuration isn't kept, so the last good one stays on file
+    if (failure && config !== undefined) saved.configName = state.settings.vpn.configName
+    state.settings.vpn = saved
+    srv.events.emit({ type: 'settings.updated' })
+    srv.events.emit({ type: 'vpn.updated' })
+    return saved
+  }
 
   const queueItem = (t: Torrent): QueueItem => {
     const m = state.items.find((x) => x.id === t.itemId)
@@ -1781,7 +1826,14 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
       limits: () => {
         requireStaff()
-        return state.torrentLimits
+        const v = currentVpn()
+        // the VPN line on Downloads reads the VPN's status (docs/product/vpn.md)
+        return {
+          ...state.torrentLimits,
+          vpnConnected: v.state === 'connected',
+          vpnInterface: v.provider ?? 'No VPN',
+          vpnIp: v.exitIp ?? '',
+        }
       },
       setLimits: (patch: Partial<TorrentLimits>) => {
         requireStaff()
@@ -2646,17 +2698,54 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
     },
 
+    vpn: {
+      /** Staff: Downloads shows the VPN line. */
+      status: () => {
+        requireStaff()
+        return currentVpn()
+      },
+      providers: () => {
+        requireOwner()
+        return vpnProviders
+      },
+      check: () => {
+        requireOwner()
+        state.vpn.checkedAt = srv.clock.now()
+        srv.events.emit({ type: 'vpn.updated' })
+        return currentVpn()
+      },
+      reconnect: () => {
+        requireOwner()
+        if (state.settings.vpn.mode === 'off') return currentVpn()
+        state.vpn.phase = 'connecting'
+        state.vpn.until = srv.clock.now() + 4_000
+        srv.events.emit({ type: 'vpn.updated' })
+        return currentVpn()
+      },
+      /** The prototype's own control, to review the tunnel dropping; not in the API. */
+      simulateDrop: () => {
+        requireOwner()
+        if (state.vpn.phase !== 'connected') return currentVpn()
+        state.vpn.phase = 'down'
+        state.vpn.until = srv.clock.now() + 20_000
+        srv.events.emit({ type: 'vpn.updated' })
+        srv.events.emit({ type: 'health.updated' })
+        return currentVpn()
+      },
+    },
+
     settings: {
       get: <K extends SettingsSection>(section: K): Settings[K] => {
         requireStaff()
-        // security and backups are the owner's alone, even to read (ADR 0032)
-        if (section === 'security' || section === 'backups') requireOwner()
+        // security, backups and the VPN are the owner's alone, even to read (ADR 0032)
+        if (section === 'security' || section === 'backups' || section === 'vpn') requireOwner()
         return state.settings[section]
       },
       save: <K extends SettingsSection>(section: K, value: Settings[K]): Settings[K] => {
         requireStaff()
-        // security and backups are the owner's alone (ADR 0032)
-        if (section === 'security' || section === 'backups') requireOwner()
+        // security, backups and the VPN are the owner's alone (ADR 0032)
+        if (section === 'security' || section === 'backups' || section === 'vpn') requireOwner()
+        if (section === 'vpn') return saveVpn(value as VpnSettings) as Settings[K]
         state.settings[section] = value
         srv.events.emit({ type: 'settings.updated' })
         return value

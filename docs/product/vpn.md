@@ -1,7 +1,7 @@
 # VPN
 
 - **Platforms:** Admin, every breakpoint.
-- **Prototype:** none yet. The owner asked on 2026-10-20 for VPN connections to be a first-class feature, after Phase 2's sign-off. The owner answered its questions the same day ([checkpoint 6 › VPN questions](../plans/phase-3-checkpoint-6.md#vpn-questions)). The layout below is a draft: it's prototyped in `design/prototypes` and approved by the owner before 6a builds it (answer V5).
+- **Prototype:** `design/prototypes/src/admin/settings/vpn.tsx` (`#/admin/settings/vpn`), approved by the owner on 2026-10-20 (answer V5): the build reference. The owner asked on 2026-10-20 for VPN connections to be a first-class feature, after Phase 2's sign-off, and answered its questions the same day ([checkpoint 6 › VPN questions](../plans/phase-3-checkpoint-6.md#vpn-questions)). In the prototype, **Reconnect** plays connecting, a PIA password or gluetun key of `wrong` plays a failure, **Prototype only · Drop the tunnel** plays the down state, and the empty server lacks NET_ADMIN.
 - **Roadmap:** the built-in torrent engine's bind interface and kill switch, VPN port forwarding ([M1] torrent production features), the VPN binding health check.
 - **Plan:** [phase-3-checkpoint-6.md › VPN connections](../plans/phase-3-checkpoint-6.md#vpn-connections).
 
@@ -51,12 +51,12 @@ highsea checks the connection when it connects, every 5 minutes, after a reconne
 - **The VPN container mode** reads the tunnel and the exit address from gluetun. In that mode highsea has no route to the server's own address, so the exit check shows the address and its country without the comparison.
 - **The interface mode** can't promise the kill switch row. It says: "Bound to {interface}. Your system's routing decides the path; a VPN container or highsea connects guarantees it."
 
-## Layout (draft)
+## Layout
 
 - **Where:** Settings › **VPN**, in the index's Downloads and alerts group, before Download client. The owner's alone, like the other network settings ([ADR 0032](../adr/0032-administrative-and-normal-access.md)). Download client's VPN group becomes one line, the status and **VPN settings**.
-- **Status** (the first group): a shield and the state ("Connected through Proton VPN"), the checks as rows, **Check now** and **Reconnect**.
+- **Status** (the first group): a shield and the state ("Connected through Proton VPN"), the checks as rows, **Check now** and **Reconnect**. Missing NET_ADMIN shows the compose lines to copy here.
 - **Connection:** the mode, as four choices with one line each. Then:
-  - **highsea connects:** the provider (a select with logos), its steps ("In your Proton account, open Downloads › WireGuard configuration, choose a P2P server, turn on NAT-PMP, then upload the file here."), and its fields: a configuration file (upload or paste), or a username, password and region for PIA. **Connect**.
+  - **highsea connects:** the provider (a select with logos), its steps ("In your Proton account, open Downloads › WireGuard configuration, choose a P2P server, turn on NAT-PMP, then upload the file here."), and its fields: a configuration file (upload or paste), or a username, password and region for PIA. Saving connects, through the save bar every settings area uses; secrets come back only as set.
   - **A VPN container:** the control server's address (`http://127.0.0.1:8000` by default, because the containers share a network) and its API key. **Compose for your provider:** pick a provider and copy a gluetun service block, with highsea's `network_mode` line, ready for the compose file.
   - **An interface on this machine:** the interface, picked from the ones the server has.
 - **Behaviour:** stop torrents when the VPN is down (always on in highsea connects, and said so), use the forwarded port, and send indexer searches through the VPN.
@@ -93,4 +93,4 @@ highsea checks the connection when it connects, every 5 minutes, after a reconne
 
 ## Open questions
 
-None yet. The prototype's review may raise some.
+None. The owner approved the prototype on 2026-10-20 without changes.
