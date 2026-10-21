@@ -4,7 +4,11 @@
 // torrent, the library's and manual ones, with live rates; a detail sheet with files and their
 // priority, trackers and the seeding rule; add by magnet, address or file; global limits; and the
 // VPN's state, always visible. What real data changes from the prototype:
-// - no categories in 6a: the toolbar's category filter and Add's category field are left out;
+// - categories come from the server (6b): the toolbar's filter lists the ones torrents use, as the
+//   prototype's does, and Add's select offers manual and the owner's, not movies, which is the
+//   library's (answer 5);
+// - a finished manual torrent's sheet has a More menu with Import into the library, opening A17
+//   on its folder (answer 7);
 // - Add takes a .torrent file too, picked or dropped, sent as base64; any http(s) address passes,
 //   since an indexer's download link rarely ends in .torrent, and the server has the last word;
 // - rates refresh every two seconds, as no event announces them; changes come by `torrents.updated`;
@@ -27,6 +31,10 @@ import {
   Icon,
   type IconName,
   Input,
+  Menu,
+  MenuContent,
+  MenuItem,
+  MenuTrigger,
   Progress,
   Select,
   Sheet,
@@ -83,6 +91,7 @@ export function Downloads() {
   })
   const limits = useQuery('torrents:limits', (c) => c.downloads.limits(), ['torrents.updated'])
   const [filter, setFilter] = useState<StateFilter>('all')
+  const [category, setCategory] = useState('all')
   const [open, setOpen] = useState<string | null>(null)
   const [adding, setAdding] = useState(false)
   const [editingLimits, setEditingLimits] = useState(false)
@@ -143,7 +152,10 @@ export function Downloads() {
                 {t('empty.body')}
               </EmptyState>
             )
-          const shown = ts.filter(states[filter])
+          const used = [...new Set(ts.map((x) => x.category))].sort()
+          const shown = ts
+            .filter(states[filter])
+            .filter((x) => category === 'all' || x.category === category)
           const down = ts.reduce((s, x) => s + x.downRate, 0)
           const up = ts.reduce((s, x) => s + x.upRate, 0)
           return (
@@ -157,6 +169,16 @@ export function Downloads() {
                       </TabsTrigger>
                     ))}
                   </TabsList>
+                  <Select
+                    value={used.includes(category) ? category : 'all'}
+                    onValueChange={setCategory}
+                    aria-label={t('category')}
+                    options={[
+                      { value: 'all', label: t('category.all') },
+                      ...used.map((c) => ({ value: c, label: c })),
+                    ]}
+                    className="w-44"
+                  />
                   <span className="ms-auto font-mono text-figure text-text-3">
                     {t('totals', { down: rate(down), up: rate(up) })}
                   </span>
@@ -389,6 +411,8 @@ function LimitsDialog({
 // ---------------------------------------------------------------- add
 
 const LINK = /^(magnet:\?xt=urn:btih:|https?:\/\/.+)/i
+/** Torrents added without a category go here (judgement call 25). */
+const MANUAL = 'manual'
 
 function AddTorrentDialog({
   open,
@@ -404,11 +428,17 @@ function AddTorrentDialog({
   const [file, setFile] = useState<File | null>(null)
   const [inputKey, setInputKey] = useState(0)
   const [start, setStart] = useState(true)
+  const [category, setCategory] = useState(MANUAL)
   const [touched, setTouched] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const categories = useQuery('torrents:categories', (c) => c.downloads.categories(), [
+    'torrents.updated',
+  ])
   const add = useAction(
-    async (c, input: { urlOrMagnet?: string; torrent?: string; paused: boolean }) =>
-      c.downloads.add({ body: input }),
+    async (
+      c,
+      input: { urlOrMagnet?: string; torrent?: string; paused: boolean; category: string },
+    ) => c.downloads.add({ body: input }),
   )
   const trimmed = link.trim()
   const linkError = file
@@ -436,8 +466,8 @@ function AddTorrentDialog({
     try {
       const added = await add.run(
         file
-          ? { torrent: await toBase64(file), paused: !start }
-          : { urlOrMagnet: trimmed, paused: !start },
+          ? { torrent: await toBase64(file), paused: !start, category }
+          : { urlOrMagnet: trimmed, paused: !start, category },
       )
       onAdded()
       onOpenChange(false)
@@ -528,6 +558,15 @@ function AddTorrentDialog({
               )}
             </div>
           </Field>
+          <Field label={t('add.category')} hint={t('add.categoryHint')}>
+            <Select
+              value={category}
+              onValueChange={setCategory}
+              options={(categories.data ?? [{ name: MANUAL }])
+                .filter((c) => c.name !== 'movies')
+                .map((c) => ({ value: c.name, label: c.name }))}
+            />
+          </Field>
           <Field inline label={t('add.start')}>
             <Checkbox checked={start} onCheckedChange={(v) => setStart(v === true)} />
           </Field>
@@ -547,6 +586,10 @@ function AddTorrentDialog({
 const PRIORITIES: TorrentFile['priority'][] = ['high', 'normal', 'skip']
 
 const fileName = (path: string) => path.split('/').pop() ?? path
+
+/** A17 on the torrent's content: its folder, or its one file (the scan takes either). */
+export const importPath = (x: Pick<Torrent, 'savePath' | 'name'>) =>
+  `/activity/import?path=${encodeURIComponent(`${x.savePath.replace(/\/+$/, '')}/${x.name}`)}`
 
 function TorrentSheet({
   torrent: x,
@@ -609,6 +652,28 @@ function TorrentSheet({
               <Button size="sm" variant="danger" icon="delete" onClick={() => setRemoving(true)}>
                 {t('remove')}
               </Button>
+              {x.manual && (
+                <Menu>
+                  <MenuTrigger asChild>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      iconOnly
+                      icon="more"
+                      aria-label={t('more', { name: x.name })}
+                    />
+                  </MenuTrigger>
+                  <MenuContent>
+                    <MenuItem
+                      icon="import"
+                      disabled={x.progress < 1}
+                      onSelect={() => router.push(importPath(x))}
+                    >
+                      {x.progress < 1 ? t('importLater') : t('import')}
+                    </MenuItem>
+                  </MenuContent>
+                </Menu>
+              )}
             </div>
             {x.stateReason && (
               <p className="rounded-md border border-line bg-s2 p-3 text-caption text-text-2">

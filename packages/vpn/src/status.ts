@@ -3,7 +3,7 @@
 // reported. It follows the prototype's `vpnStatus` (design/prototypes/src/mock/vpn.ts) row for
 // row; the values are real instead of played.
 import { checkCopy as c, failures, labels } from './copy.ts'
-import { providerById } from './providers.ts'
+import type { VpnProviderDefinition } from './providers.ts'
 import type { StoredVpnSettings } from './settings.ts'
 import type { VpnCheck, VpnStatus } from './types.ts'
 
@@ -14,13 +14,21 @@ export type VpnRuntime = {
   failure: string | null
   /** The tunnel row while it's down: what this mode can see. */
   down: readonly [string, string] | null
-  /** The interface's addresses, in the interface mode. */
+  /** The interface's addresses in the interface mode; the tunnel's in highsea connects. */
   address: string | null
   ipv6: string | null
   exit: { ip: string; country: string | null } | null
-  exitResult: 'pass' | 'unknown' | 'own-unknown' | 'same' | null
+  /** `own` and `not-provider` are leaks in highsea connects: torrents stop. */
+  exitResult: 'pass' | 'unknown' | 'own-unknown' | 'same' | 'own' | 'not-provider' | null
   forwardedPort: number | null
   checkedAt: number | null
+  /** highsea connects: the latest handshake, in milliseconds since the epoch. */
+  handshakeAt: number | null
+  /** highsea connects: whether names go through the tunnel (a DNS line), and the kill switch. */
+  names: boolean | null
+  killSwitch: boolean | null
+  /** highsea connects: the provider didn't forward a port the last time highsea asked. */
+  forwardFailed: boolean
 }
 
 export const initialRuntime = (): VpnRuntime => ({
@@ -33,7 +41,18 @@ export const initialRuntime = (): VpnRuntime => ({
   exitResult: null,
   forwardedPort: null,
   checkedAt: null,
+  handshakeAt: null,
+  names: null,
+  killSwitch: null,
+  forwardFailed: false,
 })
+
+/** Whether a check found a leak, which takes the binding away in highsea connects. */
+export const leaking = (rt: VpnRuntime) =>
+  rt.names === false ||
+  rt.killSwitch === false ||
+  rt.exitResult === 'own' ||
+  rt.exitResult === 'not-provider'
 
 const check = (
   id: VpnCheck['id'],
@@ -50,10 +69,11 @@ const IDS: VpnCheck['id'][] = ['tunnel', 'exit', 'names', 'killSwitch', 'portFor
 export function buildStatus(
   s: StoredVpnSettings,
   rt: VpnRuntime,
+  p: VpnProviderDefinition | undefined,
   listeningPort: number,
   peersIn: number,
+  now: number,
 ): VpnStatus {
-  const p = providerById(s.provider)
   const name =
     s.mode === 'builtin'
       ? (p?.name ?? 'your provider')
@@ -99,6 +119,7 @@ export function buildStatus(
         ),
       ],
     }
+  if (s.mode === 'builtin') return { ...base, ...builtinChecks(s, rt, p, name, peersIn, now) }
 
   const container = s.mode === 'container'
   const tunnel = container
@@ -136,5 +157,62 @@ export function buildStatus(
     country: rt.exit?.country ?? null,
     forwardedPort,
     checks: [tunnel, exit, names, killSwitch, portForwarding, ipv6],
+  }
+}
+
+/** highsea connects' rows (vpn.md › Checks), where a leak fails and stops torrents. */
+function builtinChecks(
+  s: StoredVpnSettings,
+  rt: VpnRuntime,
+  p: VpnProviderDefinition | undefined,
+  name: string,
+  peersIn: number,
+  now: number,
+): Pick<VpnStatus, 'state' | 'exitIp' | 'country' | 'forwardedPort' | 'checks'> {
+  const seconds =
+    rt.handshakeAt === null ? 0 : Math.max(0, Math.round((now - rt.handshakeAt) / 1000))
+  const tunnel = check('tunnel', 'pass', ...c.builtinTunnel(name, seconds))
+  const exit =
+    rt.exitResult === 'own'
+      ? check('exit', 'fail', ...c.exitOwn)
+      : rt.exitResult === 'not-provider'
+        ? check('exit', 'fail', ...c.exitNotProvider(name, rt.exit?.ip ?? ''))
+        : rt.exitResult === 'own-unknown' && rt.exit
+          ? check('exit', 'warn', ...c.exitOwnUnknown)
+          : rt.exitResult === 'pass' && rt.exit
+            ? check('exit', 'pass', c.exit(rt.exit.ip, rt.exit.country), c.exitNotOwn)
+            : check('exit', 'warn', ...c.exitUnknown)
+  const names =
+    rt.names === false ? check('names', 'fail', ...c.namesOutside) : check('names', 'pass', c.names)
+  const killSwitch =
+    rt.killSwitch === false
+      ? check('killSwitch', 'fail', ...c.killSwitchMissing)
+      : check('killSwitch', 'pass', ...c.killSwitchBuiltin)
+  const method = p?.portForwarding.method ?? 'none'
+  const forwardedPort = s.useForwardedPort ? rt.forwardedPort : null
+  const portForwarding = !s.useForwardedPort
+    ? check('portForwarding', 'info', ...c.notForwarding)
+    : forwardedPort
+      ? check('portForwarding', 'pass', ...c.forwarded(forwardedPort, peersIn))
+      : method === 'none'
+        ? check('portForwarding', 'warn', ...c.doesntForward(name))
+        : method === 'static'
+          ? check('portForwarding', 'warn', ...c.noForwardedPortSet)
+          : rt.forwardFailed
+            ? check('portForwarding', 'warn', ...c.forwardingFailed(name))
+            : check('portForwarding', 'pending', c.askingForPort(name))
+  return {
+    state: 'connected',
+    exitIp: rt.exit?.ip ?? null,
+    country: rt.exit?.country ?? null,
+    forwardedPort,
+    checks: [
+      tunnel,
+      exit,
+      names,
+      killSwitch,
+      portForwarding,
+      check('ipv6', 'info', ...c.ipv4OnlyBuiltin),
+    ],
   }
 }

@@ -3,9 +3,17 @@
 // recorded event bus and binding, and an echo service that answers per address. Nothing leaves
 // 127.0.0.1.
 import type os from 'node:os'
+import { join } from 'node:path'
+import { createVpnProviderCatalog, SEED_DIR } from '@highsea/catalog'
 import { createFakeClock, createSealer, type Fetch, silentLogger } from '@highsea/core'
 import { migrate, openDatabase } from '@highsea/db'
-import { createVpn, type VpnBinding, type VpnDeps } from '../src/index.ts'
+import {
+  createVpn,
+  type Runner,
+  type VpnBinding,
+  type VpnDeps,
+  type VpnProviderDefinition,
+} from '../src/index.ts'
 import { createFakeTimers } from './fake/index.ts'
 
 export const KEY_A = Buffer.alloc(32, 1).toString('base64')
@@ -23,6 +31,34 @@ PublicKey = ${KEY_B}
 AllowedIPs = 0.0.0.0/0, ::/0
 Endpoint = 185.159.157.4:51820
 `
+
+let seeded: VpnProviderDefinition[] | null = null
+
+/** The providers in the catalog's signed seed, as the runtime reads them. */
+export function seedProviders(): VpnProviderDefinition[] {
+  if (!seeded) {
+    const reader = createVpnProviderCatalog({
+      logger: silentLogger,
+      clock: createFakeClock(),
+      fetch: async () => new Response(null, { status: 404 }),
+      configDir: join(SEED_DIR, 'no-cache-here'),
+      trustedKeys: [],
+      seedDir: join(SEED_DIR, 'vpn-providers'),
+      mainUrl: null,
+      settings: () => ({ channel: 'stable', autoUpdate: true }),
+    })
+    reader.start()
+    seeded = reader.providers()
+  }
+  return seeded
+}
+
+/** A runner that refuses everything, so a test that reaches it by mistake runs nothing. */
+export const refusingRunner: Runner = async (cmd) => ({
+  code: 1,
+  stdout: '',
+  stderr: `not in tests: ${cmd.program}`,
+})
 
 export function testDb() {
   const database = openDatabase(':memory:')
@@ -77,6 +113,8 @@ export function testVpn(overrides: Partial<VpnDeps> = {}) {
     },
     listeningPort: () => 51413,
     peersIn: () => 3,
+    providers: seedProviders,
+    runner: refusingRunner,
     ...overrides,
   })
   return { vpn, clock, timers, events, bindings, db, last: () => bindings.at(-1) }

@@ -4,6 +4,8 @@ import { existsSync, mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createFakeClock } from '@highsea/core'
+import { schema } from '@highsea/db'
+import { DOWNLOADS_STALL_JOB } from '@highsea/downloads'
 import { boot, createWorkerPool, getRuntime, hasRuntime, loadConfig } from '../src/index.ts'
 
 // the engine opens no socket: a file-backed boot would otherwise listen on 6881 and join the DHT
@@ -169,6 +171,23 @@ describe('the catalog and indexers', () => {
       expect.objectContaining({ id: 'indexers-none', source: 'Indexers', level: 'warning' }),
     )
     expect(rt.publicInfo().sources).toContain('indexers')
+  })
+
+  test('boot schedules the indexers’ and the downloads’ recurring jobs', async () => {
+    const rt = await boot({
+      config: configFor(temp()),
+      torrent,
+      version: '0.1.0',
+      quiet: true,
+      manualTicks: true,
+    })
+    const types = rt.database.db
+      .select()
+      .from(schema.jobSchedules)
+      .all()
+      .map((s) => s.type)
+    // the stall check (ADR 0038) once went unscheduled outside tests
+    expect(types).toContain(DOWNLOADS_STALL_JOB)
   })
 
   test('a production boot trusts no development key, so the seed isn’t installed', async () => {

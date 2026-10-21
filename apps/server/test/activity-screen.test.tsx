@@ -101,6 +101,7 @@ let state: {
   queue: ReturnType<typeof item>[]
   history: ReturnType<typeof event>[][]
   blocklist: Record<string, unknown>[]
+  extraCandidates: ReturnType<typeof candidate>[]
   requests: Req[]
 }
 
@@ -124,7 +125,17 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
       return json(state.blocklist)
     case 'GET /api/v1/movies':
       return json({
-        items: [{ id: SINTEL, title: 'Sintel', year: 2010 }],
+        items: [
+          {
+            id: SINTEL,
+            title: 'Sintel',
+            year: 2010,
+            versions: [
+              { id: 'v_1', label: '1080p', qualityProfileId: 'p_1', fileId: null },
+              { id: 'v_2', label: '4K HDR', qualityProfileId: 'p_2', fileId: 'f_1' },
+            ],
+          },
+        ],
         next: null,
         total: 1,
         counts: {},
@@ -149,6 +160,7 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
       return json([
         candidate('/data/downloads/Sintel/Sintel.mkv'),
         candidate('/data/downloads/Sintel/Sintel.sample.mkv', { skip: 'It’s a sample.' }),
+        ...state.extraCandidates,
         candidate('/data/downloads/Unknown.mkv', {
           movieId: null,
           versionId: null,
@@ -209,6 +221,7 @@ beforeEach(() => {
         date: ago(60),
       },
     ],
+    extraCandidates: [],
     requests: [],
   }
 })
@@ -346,5 +359,37 @@ describe('A17 Manual import', () => {
     })
     const sintel = within(page.getByRole('row', { name: /Sintel\.mkv/ }))
     expect(sintel.getByText('There’s already a better file for Sintel.')).toBeTruthy()
+  })
+
+  test('opened on a torrent’s folder, it looks inside that folder', async () => {
+    await open(<ManualImport initialPath="/data/downloads/books/Sintel" />)
+    expect(requested('POST', '/api/v1/import/scan').map((r) => r.body)).toEqual([
+      { path: '/data/downloads/books/Sintel' },
+    ])
+  })
+
+  test('each file picks a version; two files for one version are refused', async () => {
+    state.extraCandidates = [candidate('/data/downloads/Sintel/Sintel.4k.mkv')]
+    const { user, page } = await open(<ManualImport />)
+    const first = page.getByRole('combobox', { name: 'Sintel.mkv: version' })
+    expect(first.textContent).toContain('1080p')
+    expect(page.getAllByText('Pick another version for one of these.')).toHaveLength(2)
+    expect(
+      (page.getByRole('button', { name: 'Import 2 files' }) as HTMLButtonElement).disabled,
+    ).toBe(true)
+
+    await user.click(page.getByRole('combobox', { name: 'Sintel.4k.mkv: version' }))
+    await user.click(await page.findByRole('option', { name: '4K HDR · has a file' }))
+    await settle()
+    expect(page.queryByText('Pick another version for one of these.')).toBeNull()
+    await user.click(page.getByRole('button', { name: 'Import 2 files' }))
+    await settle()
+    expect(requested('POST', '/api/v1/import')[0]?.body).toEqual({
+      files: [
+        { path: '/data/downloads/Sintel/Sintel.mkv', movieId: SINTEL, versionId: 'v_1' },
+        { path: '/data/downloads/Sintel/Sintel.4k.mkv', movieId: SINTEL, versionId: 'v_2' },
+      ],
+      mode: 'hardlink',
+    })
   })
 })

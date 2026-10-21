@@ -3,7 +3,6 @@
 // BEP 6 and the extension protocol of BEP 10), the blocks it asks for, the pieces it verifies and
 // writes, whom it uploads to, and its trackers. The engine (engine.ts) owns sessions, sockets,
 // limits and persistence; a session only uses what it's handed in its context.
-import type net from 'node:net'
 import bencode from 'bencode'
 import Wire from 'bittorrent-protocol'
 import utMetadata from 'ut_metadata'
@@ -13,10 +12,12 @@ import type { Bucket } from './limits.ts'
 import { createMeter } from './limits.ts'
 import type { Magnet, Metainfo } from './metainfo.ts'
 import { parseInfo, pieceSize } from './metainfo.ts'
+import type { Attempt, EncryptionPolicy, Method } from './mse.ts'
+import { firstAttempt, nextAttempt, secureOutgoing } from './mse.ts'
 import type { BlockRef, Picker } from './picker.ts'
 import { BLOCK, createPicker } from './picker.ts'
-import type { SocketFactory } from './sockets.ts'
-import { Unbound } from './sockets.ts'
+import type { PeerSocket, SocketFactory } from './sockets.ts'
+import { addressKey, familyOf, Unbound } from './sockets.ts'
 import type { Priority, Storage } from './storage.ts'
 import { createStorage } from './storage.ts'
 import type { AnnounceEvent, TrackerStatus } from './trackers.ts'
@@ -58,6 +59,11 @@ export type SessionContext = {
   /** Asks the DHT for peers; they arrive through `addPeers`. Public torrents only. */
   dhtLookup(infoHash: string): void
   dhtAnnounce(infoHash: string): void
+  /**
+   * A uTP connection to a peer (BEP 29), or null when uTP is off or there's no UDP socket for the
+   * peer's family: the session connects over TCP then.
+   */
+  utp(host: string, port: number): PeerSocket | null
   /** Peer connections allowed for this torrent now, against the engine's overall limit. */
   connectionsFree(): number
   /** Something visible changed: state, progress, peers, trackers. The engine throttles it. */
@@ -69,6 +75,10 @@ export type SessionContext = {
   /** The seeding rule was met. */
   seeded(): void
   log(level: 'debug' | 'info' | 'warn', message: string, fields?: Record<string, unknown>): void
+  /** Settings › Download client's encryption (6b): how outgoing connections open. */
+  encryption?(): EncryptionPolicy
+  /** On the IP blocklist (6b): never connected to, whatever source named it. */
+  blocked?(host: string): boolean
 }
 
 export type SessionInit = {
@@ -96,7 +106,10 @@ export type PeerInfo = {
   progress: number
   downRate: number
   upRate: number
-  /** Short flags as qBittorrent shows them: D downloading, U uploading, I incoming, X from PEX… */
+  /**
+   * Short flags as qBittorrent shows them: D downloading, U uploading, I incoming, X from PEX,
+   * P over uTP.
+   */
   flags: string
 }
 
@@ -148,11 +161,14 @@ type Peer = {
   outgoing: boolean
   fromPex: boolean
   wire: Wire
-  socket: net.Socket
+  socket: PeerSocket
+  transport: 'tcp' | 'utp'
   requests: Map<string, BlockRef>
   down: ReturnType<typeof createMeter>
   up: ReturnType<typeof createMeter>
   handshaked: boolean
+  /** How the connection is encrypted (6b): qBittorrent's E and e flags. */
+  method: Method
   has(piece: number): boolean
 }
 
@@ -205,7 +221,15 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
   const up = createMeter()
   const peers = new Map<string, Peer>()
   /** Addresses heard of, with when to try each next. */
-  const candidates = new Map<string, { next: number; fails: number; pex: boolean }>()
+  // `attempt`: the next way to open a connection, when the first failed (MSE's fallback, 6b).
+  // `utp` false: the last uTP attempt failed, so the next goes over TCP (libtorrent's
+  // `supports_utp`, cleared on a failed uTP connect: torrent.cpp `connect_to_peer`, RC_2_0)
+  const candidates = new Map<
+    string,
+    { next: number; fails: number; pex: boolean; utp: boolean | null; attempt?: Attempt }
+  >()
+  const policy = (): EncryptionPolicy => ctx.encryption?.() ?? 'allow'
+  const isBlocked = (host: string) => ctx.blocked?.(host) ?? false
   const banned = new Set<string>()
   const badShare = new Map<string, number>()
   let halfOpen = 0
@@ -391,20 +415,33 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
     picker?.dropPeer(peer.key)
     peer.requests.clear()
     peer.wire.ut_pex?.reset()
-    for (const p of peers.values()) if (peer.outgoing) p.wire.ut_pex?.dropPeer(peer.key)
+    if (peer.outgoing) for (const p of peers.values()) pexDrop(p.wire, peer)
     if (optimistic === peer.key) optimistic = null
     ctx.changed()
+  }
+
+  /** BEP 11: an IPv6 peer goes in `added6`, a uTP one with its flag (0x04). */
+  const pexAdd = (wire: Wire, p: Peer) => {
+    const flags = { supportsUtp: p.transport === 'utp' }
+    if (familyOf(p.host) === 6) wire.ut_pex?.addPeer6(p.key, flags)
+    else wire.ut_pex?.addPeer(p.key, flags)
+  }
+  const pexDrop = (wire: Wire, p: Peer) => {
+    if (familyOf(p.host) === 6) wire.ut_pex?.dropPeer6(p.key)
+    else wire.ut_pex?.dropPeer(p.key)
   }
 
   /** Sets up a wire whose socket is connected: extensions, events, and our handshake. */
   const attach = (
     wire: Wire,
-    socket: net.Socket,
+    socket: PeerSocket,
     host: string,
     port: number,
     outgoing: boolean,
+    method: Method = 'plain',
+    transport: 'tcp' | 'utp' = 'tcp',
   ) => {
-    const key = `${host}:${port}`
+    const key = addressKey(host, port)
     const peer: Peer = {
       key,
       host,
@@ -413,10 +450,12 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
       fromPex: candidates.get(key)?.pex ?? false,
       wire,
       socket,
+      transport,
       requests: new Map(),
       down: createMeter(),
       up: createMeter(),
       handshaked: false,
+      method,
       has: (p) => wire.peerPieces.get(p),
     }
     peers.set(key, peer)
@@ -468,9 +507,9 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
       if (!metainfo) wire.ut_metadata?.fetch()
       if (wire.ut_pex) {
         wire.ut_pex.start()
-        for (const p of peers.values()) if (p.outgoing && p !== peer) wire.ut_pex.addPeer(p.key)
+        for (const p of peers.values()) if (p.outgoing && p !== peer) pexAdd(wire, p)
       }
-      for (const p of peers.values()) if (outgoing && p !== peer) p.wire.ut_pex?.addPeer(key)
+      if (outgoing) for (const p of peers.values()) if (p !== peer) pexAdd(p.wire, peer)
     })
     wire.on('bitfield', onPeerPieces)
     wire.on('have-all', onPeerPieces)
@@ -495,8 +534,8 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
     )
     wire.ut_metadata?.on('metadata', (torrent: Uint8Array) => void onMetadata(torrent))
     wire.ut_metadata?.on('warning', () => {})
+    // ut_pex 5.0.2 hands both families to 'peer', an IPv6 one as `[address]:port`
     wire.ut_pex?.on('peer', (p: string) => addPeers([p], true))
-    wire.ut_pex?.on('peer6', (p: string) => addPeers([p], true))
 
     if (outgoing) wire.handshake(infoHash, Buffer.from(ctx.peerId).toString('hex'), dhtFlags())
     return peer
@@ -545,42 +584,79 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
       const i = addr.lastIndexOf(':')
       const host = addr.slice(0, i).replace(/^\[|\]$/g, '')
       const port = Number(addr.slice(i + 1))
-      if (banned.has(host)) continue
+      if (banned.has(host) || isBlocked(host)) continue
+      // a peer in a family the binding has no address in can't be reached; it waits
+      if (!ctx.sockets.reachable(host)) continue
       budget--
       halfOpen++
       c.next = now + HANDSHAKE_MS
-      let socket: net.Socket
+      // uTP first, as libtorrent does with `enable_outgoing_utp` on; TCP after a uTP failure
+      let socket: PeerSocket | null = null
+      let transport: 'tcp' | 'utp' = 'tcp'
       try {
-        socket = ctx.sockets.connect(host, port)
+        if (c.utp !== false) socket = ctx.utp(host, port)
+        if (socket) transport = 'utp'
+        else socket = ctx.sockets.connect(host, port)
       } catch {
         halfOpen--
         c.fails++
         continue
       }
+      const conn = socket
       let opened = false
-      socket.once('connect', () => {
+      let shook = false
+      const attempt = c.attempt ?? firstAttempt(policy())
+      conn.once('connect', () => {
         opened = true
         halfOpen--
         c.fails = 0
+        if (transport === 'utp') c.utp = true
         if (!running) {
-          socket.destroy()
+          conn.destroy()
           return
         }
-        const wire = new Wire()
-        socket.pipe(wire).pipe(socket)
-        attach(wire, socket, host, port, true)
+        // MSE below the wire when the policy says so (mse.ts); plaintext hands the socket back
+        secureOutgoing(conn, infoHash, attempt, policy()).then(
+          ({ stream, method }) => {
+            if (!running || conn.destroyed) {
+              conn.destroy()
+              return
+            }
+            const wire = new Wire()
+            stream.pipe(wire).pipe(stream)
+            wire.once('handshake', () => {
+              shook = true
+            })
+            attach(wire, conn, host, port, true, method, transport)
+          },
+          () => conn.destroy(),
+        )
       })
-      socket.once('close', () => {
+      conn.once('close', () => {
         if (opened) {
+          // hung up before its handshake: the other way of opening is tried next (prefer falls
+          // back to plaintext, allow to encrypted), then back to the first after a long wait
+          const next = shook ? null : nextAttempt(policy(), attempt)
+          c.attempt = next ?? undefined
+          if (next) {
+            c.next = Date.now() + 1_000
+            return
+          }
           // a peer that hung up is tried again later, not at once
           c.next = Date.now() + 30_000
           return
         }
         halfOpen--
+        if (transport === 'utp') {
+          // no answer over uTP: TCP at once, as libtorrent falls back
+          c.utp = false
+          c.next = 0
+          return
+        }
         c.fails++
         c.next = Date.now() + Math.min(30 * 60_000, 60_000 * 2 ** (c.fails - 1))
       })
-      socket.on('error', () => {})
+      conn.on('error', () => {})
     }
   }
 
@@ -781,9 +857,24 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
     for (const a of addrs) {
       if (candidates.size >= 2000) break
       if (!/^(\[[0-9a-fA-F:.]+\]|[0-9.]+):\d{1,5}$/.test(a)) continue
-      const port = Number(a.slice(a.lastIndexOf(':') + 1))
+      const i = a.lastIndexOf(':')
+      const port = Number(a.slice(i + 1))
       if (port <= 0 || port > 65535) continue
-      if (!candidates.has(a)) candidates.set(a, { next: 0, fails: 0, pex })
+      let host = a.slice(0, i).replace(/^\[|\]$/g, '')
+      if (a.startsWith('[')) {
+        // one spelling per IPv6 address, so the same peer isn't two candidates
+        try {
+          host = new URL(`http://[${host}]/`).hostname.slice(1, -1)
+        } catch {
+          continue
+        }
+        // an IPv4-mapped address is the IPv4 peer
+        const mapped = /^::ffff:(\d+\.\d+\.\d+\.\d+)$/.exec(host)
+        if (mapped) host = mapped[1] as string
+      }
+      if (isBlocked(host)) continue
+      const key = addressKey(host, port)
+      if (!candidates.has(key)) candidates.set(key, { next: 0, fails: 0, pex, utp: null })
     }
   }
 
@@ -839,17 +930,27 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
     },
 
     /** Adopts an incoming connection whose handshake named this torrent. */
-    adopt(wire: Wire, socket: net.Socket) {
+    adopt(
+      wire: Wire,
+      socket: PeerSocket,
+      method: Method = 'plain',
+      transport: 'tcp' | 'utp' = 'tcp',
+    ) {
       if (!running) {
         wire.destroy()
         return
       }
       const host = (socket.remoteAddress ?? '').replace(/^::ffff:/, '')
-      if (banned.has(host) || peers.size >= MAX_PEERS || ctx.connectionsFree() <= 0) {
+      if (
+        banned.has(host) ||
+        isBlocked(host) ||
+        peers.size >= MAX_PEERS ||
+        ctx.connectionsFree() <= 0
+      ) {
         wire.destroy()
         return
       }
-      const peer = attach(wire, socket, host, socket.remotePort ?? 0, false)
+      const peer = attach(wire, socket, host, socket.remotePort ?? 0, false, method, transport)
       // the engine read the handshake already: replay it into the session's listener
       peer.wire.emit('handshake', infoHash, wire.peerId, wire.peerExtensions)
     },
@@ -972,6 +1073,8 @@ export function createSession(init: SessionInit, ctx: SessionContext) {
             p.wire.peerInterested && !p.wire.amChoking ? 'U' : '',
             p.outgoing ? '' : 'I',
             p.fromPex ? 'X' : '',
+            p.method === 'rc4' ? 'E' : p.method === 'obfuscated' ? 'e' : '',
+            p.transport === 'utp' ? 'P' : '',
           ].join('')
           return {
             address: p.key,

@@ -46,8 +46,6 @@ type Draft = VpnSettings & { config?: string; piaPassword?: string; containerKey
 type Set = (patch: Partial<Draft>) => void
 
 const MODES = ['builtin', 'container', 'interface', 'off'] as const
-/** Built-in mode arrives with 6b. */
-const LATER: ReadonlySet<Draft['mode']> = new Set(['builtin'])
 
 const CONTAINER_URL = /^https?:\/\/[^\s/]+/
 
@@ -332,44 +330,33 @@ function ConnectionGroup({
     <Group title={t('connection.title')} description={t('connection.description')}>
       <fieldset className="grid gap-2 medium:grid-cols-2">
         <legend className="sr-only">{t('mode.legend')}</legend>
-        {MODES.map((m) => {
-          const later = LATER.has(m) && v.mode !== m
-          return (
-            <label
-              key={m}
-              className={cn(
-                'grid grid-cols-[auto_minmax(0,1fr)] content-start gap-x-2.5 gap-y-0.5 rounded-md border p-3 transition-tint has-[:focus-visible]:ring-focus',
-                later ? 'cursor-not-allowed border-line' : 'cursor-pointer',
-                v.mode === m ? 'border-accent bg-accent-soft' : !later && 'border-line hover:bg-s2',
+        {MODES.map((m) => (
+          <label
+            key={m}
+            className={cn(
+              'grid cursor-pointer grid-cols-[auto_minmax(0,1fr)] gap-x-2.5 gap-y-0.5 rounded-md border p-3 transition-tint has-[:focus-visible]:ring-focus',
+              v.mode === m ? 'border-accent bg-accent-soft' : 'border-line hover:bg-s2',
+            )}
+          >
+            <input
+              type="radio"
+              name="vpn-mode"
+              value={m}
+              checked={v.mode === m}
+              onChange={() => set({ mode: m })}
+              className="mt-1 accent-[var(--color-accent)]"
+            />
+            <span className="font-semibold text-text text-ui">
+              {t(`mode.${m}`)}
+              {m === 'builtin' && (
+                <Badge tone="accent" className="ms-2 align-middle">
+                  {t('recommended')}
+                </Badge>
               )}
-            >
-              <input
-                type="radio"
-                name="vpn-mode"
-                value={m}
-                checked={v.mode === m}
-                disabled={later}
-                aria-describedby={later ? `vpn-later-${m}` : undefined}
-                onChange={() => set({ mode: m })}
-                className="mt-1 accent-[var(--color-accent)]"
-              />
-              <span className={cn('font-semibold text-ui', later ? 'text-text-2' : 'text-text')}>
-                {t(`mode.${m}`)}
-                {m === 'builtin' && (
-                  <Badge tone="accent" className="ms-2 align-middle">
-                    {t('recommended')}
-                  </Badge>
-                )}
-              </span>
-              <span className="col-start-2 text-caption text-text-3">{t(`mode.${m}.line`)}</span>
-              {LATER.has(m) && (
-                <span id={`vpn-later-${m}`} className="col-start-2 text-caption text-text-2">
-                  {t('mode.builtin.later')}
-                </span>
-              )}
-            </label>
-          )
-        })}
+            </span>
+            <span className="col-start-2 text-caption text-text-3">{t(`mode.${m}.line`)}</span>
+          </label>
+        ))}
       </fieldset>
       {v.mode === 'builtin' && <BuiltIn v={v} set={set} />}
       {v.mode === 'container' && <Container v={v} set={set} errors={errors} />}

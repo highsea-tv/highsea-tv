@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from IVPN's own help pages; nothing was copied.
+id: ivpn
+version: 1.0.0
+minEngineVersion: 1.0.0
+name: IVPN
+connect: config
+steps:
+  - Sign in at ivpn.net and open the Client Area’s WireGuard configuration generator. It needs an account id like i-XXXX-XXXX-XXXX.
+  - Generate a key, pick a server, and download the file.
+  - Upload it here.
+links:
+  - label: IVPN’s configuration files
+    url: https://www.ivpn.net/knowledgebase/general/do-you-offer-openvpn-wireguard-config-files/
+portForwarding:
+  # removed on 2023-09-30
+  method: none
+ipv6: false
+sources:
+  - https://www.ivpn.net/knowledgebase/general/do-you-offer-openvpn-wireguard-config-files/
+  - https://www.ivpn.net/blog/gradual-removal-of-port-forwarding

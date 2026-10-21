@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Download client (ADR 0021), in the prototype's copy
 // (design/prototypes/src/admin/settings/reference.tsx). Added here: the default seeding rule's
-// group, which no prototype screen has, the later-update line for encryption and UPnP, and the
-// field errors.
+// group, which no prototype screen has, the field errors, and 6b's IP blocklist field and uTP
+// switch.
 import { defineMessages } from '@highsea/i18n'
 
 export const downloadClient = defineMessages({
@@ -23,7 +23,14 @@ export const downloadClient = defineMessages({
   maxActiveInvalid: 'Use a whole number from 1 to 20.',
   upnp: 'Open the port with UPnP',
   upnpHint: 'Off behind a VPN: forward the port there instead.',
-  later: 'Encryption and UPnP take effect in a later update. highsea keeps your choice until then.',
+  blocklist: 'IP blocklist',
+  blocklistHint:
+    'An address or a file in the config folder, in P2P, DAT or P2B format. highsea updates it daily and never connects to the addresses on it. Empty: off.',
+  blocklistPlaceholder: 'https://… or blocklist.p2p',
+  blocklistInvalid: 'Use an http or https address, or a file in the config folder.',
+  utp: 'Connect to peers over uTP',
+  utpHint:
+    'Lighter on your connection than TCP. highsea uses TCP with peers that don’t support it.',
   'seeding.title': 'Seeding',
   'seeding.description':
     'When a torrent stops seeding: at the ratio or the time, whichever comes first. An indexer’s own rule comes before this one.',

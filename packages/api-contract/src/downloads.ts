@@ -73,6 +73,8 @@ export const Torrent = z
     /** The movie it was grabbed for (its TMDB id); null for a torrent added by hand. */
     movieId: z.number().int().nullable(),
     category: z.string(),
+    /** Added by hand or from the watch folder, not grabbed for the library (6b). */
+    manual: z.boolean(),
     size: z.number(),
     downloaded: z.number(),
     uploaded: z.number(),
@@ -144,6 +146,8 @@ export const AddTorrentInput = z
     torrent: z.base64().max(14_000_000).optional(),
     /** Add it paused. */
     paused: z.boolean().optional(),
+    /** One of `categories()` other than `movies` (6b); `manual` when left out. */
+    category: z.string().min(1).max(40).optional(),
   })
   .refine((v) => (v.urlOrMagnet ? 1 : 0) + (v.torrent ? 1 : 0) === 1, {
     message: 'Give a magnet link, an address or a .torrent file.',
@@ -157,6 +161,34 @@ export const DeleteTorrentInput = z
 export const FilePriorityInput = z
   .object({ path: z.string().max(4096), priority: z.enum(FILE_PRIORITIES) })
   .openapi('FilePriorityInput')
+
+/**
+ * A category (6b, answer 5): `movies` holds the library's grabs and `manual` torrents added
+ * without one; the owner adds their own, each with a folder.
+ */
+export const TorrentCategory = z
+  .object({
+    name: z.string(),
+    /** Where its torrents save. */
+    folder: z.string(),
+    /** `movies` and `manual`: built in, never removed. */
+    fixed: z.boolean(),
+    /** Torrents in Downloads that use it now; a category in use can't be removed. */
+    torrents: z.number().int(),
+  })
+  .openapi('TorrentCategory')
+
+export const TorrentCategoryInput = z
+  .object({
+    name: z.string().min(1).max(40),
+    /** Inside the data folder or the downloads folder; empty for `{downloads}/{name}`. */
+    folder: z.string().max(4096).nullable().optional(),
+  })
+  .openapi('TorrentCategoryInput')
+
+const CategoryParam = z.object({
+  name: z.string().openapi({ param: { name: 'name', in: 'path' } }),
+})
 
 /** Every torrent together, bytes per second; 0 is no limit. */
 export const TorrentLimits = z
@@ -391,6 +423,8 @@ export const DownloadClientSettings = z
     port: z.number().int().min(1024).max(65_535),
     encryption: z.enum(['require', 'prefer', 'allow']),
     upnp: z.boolean(),
+    /** uTP (BEP 29) for peers, beside TCP. */
+    utp: z.boolean(),
     maxActive: z.number().int().min(1).max(20),
     downloadRate: z.number().int().min(0),
     uploadRate: z.number().int().min(0),
@@ -401,6 +435,23 @@ export const DownloadClientSettings = z
       .min(0)
       .max(60 * 24 * 365)
       .nullable(),
+    /** The watch folder (6b): a `.torrent` dropped there is added, then renamed `.torrent.added`. Null is off. */
+    watchFolder: z.string().min(1).max(4096).nullable(),
+    /** The category the watch folder's torrents go in: `manual` or one of the owner's. */
+    watchCategory: z.string().min(1).max(40),
+    /**
+     * The IP blocklist (6b): an http(s) address, fetched daily, or a file in the config folder, in
+     * P2P, DAT or P2B format. Empty is off.
+     */
+    blocklistUrl: z
+      .string()
+      .trim()
+      .max(2048)
+      .refine(
+        (s) => !s || (/^https?:\/\//i.test(s) ? URL.canParse(s) : !/^[a-z][a-z0-9+.-]*:/i.test(s)),
+        'Use an http or https address, or a file in the config folder.',
+      )
+      .default(''),
   })
   .openapi('DownloadClientSettings')
 
@@ -577,6 +628,45 @@ export const downloads = {
   }),
   pauseAll: allAction('pauseAll', 'Pause every torrent'),
   resumeAll: allAction('resumeAll', 'Resume every torrent'),
+  categories: createRoute({
+    method: 'get',
+    path: `${TORRENTS}/categories`,
+    tags: ['Downloads'],
+    summary: 'The categories: movies, manual, then the owner’s, by name',
+    ...access('staff'),
+    responses: {
+      200: json(z.array(TorrentCategory), 'The categories'),
+      ...errors('unauthorized', 'forbidden'),
+    },
+  }),
+  saveCategory: createRoute({
+    method: 'post',
+    path: `${TORRENTS}/categories`,
+    tags: ['Downloads'],
+    summary: 'Add a category, or change its folder',
+    description:
+      'Managed in Settings › Download client, so the owner’s, like it. Torrents already in the category stay where they are. A reserved name (movies, manual, shows, music) or a folder outside the data folder and the downloads folder is 400 with `details.field`.',
+    ...access('owner'),
+    request: { ...body(TorrentCategoryInput) },
+    responses: {
+      200: json(TorrentCategory, 'Saved'),
+      ...errors('invalid', 'unauthorized', 'forbidden'),
+    },
+  }),
+  removeCategory: createRoute({
+    method: 'delete',
+    path: `${TORRENTS}/categories/{name}`,
+    tags: ['Downloads'],
+    summary: 'Remove a category',
+    description:
+      '409 while a torrent or the watch folder uses it, and for movies and manual, which are built in.',
+    ...access('owner'),
+    request: { params: CategoryParam },
+    responses: {
+      ...noContent,
+      ...errors('unauthorized', 'forbidden', 'not-found', 'conflict'),
+    },
+  }),
   get: createRoute({
     method: 'get',
     path: `${TORRENTS}/{id}`,
@@ -595,7 +685,7 @@ export const downloads = {
     tags: ['Downloads'],
     summary: 'Add a torrent by hand: a magnet, an address or a .torrent',
     description:
-      'It downloads to the downloads folder’s `manual` folder and isn’t imported. 409 when it’s already in Downloads.',
+      'It downloads to its category’s folder (`manual` by default) and isn’t imported. 409 when it’s already in Downloads; 400 for an unknown category or `movies`.',
     ...access('staff'),
     request: { ...body(AddTorrentInput) },
     responses: {
@@ -793,6 +883,8 @@ export type QueueItem = z.infer<typeof QueueItem>
 export type QueueRemoveInput = z.input<typeof QueueRemoveInput>
 export type AddTorrentInput = z.infer<typeof AddTorrentInput>
 export type TorrentLimits = z.infer<typeof TorrentLimits>
+export type TorrentCategory = z.infer<typeof TorrentCategory>
+export type TorrentCategoryInput = z.infer<typeof TorrentCategoryInput>
 export type HistoryEvent = z.infer<typeof HistoryEvent>
 export type HistoryPage = z.infer<typeof HistoryPage>
 export type BlocklistEntry = z.infer<typeof BlocklistEntry>

@@ -50,6 +50,20 @@ export function createMedia(deps: MediaDeps) {
 export type Media = ReturnType<typeof createMedia>
 
 export { invalid, type MediaDeps, noIndexers } from './context.ts'
+export {
+  archivesIn,
+  createExtractor,
+  EXTRACT_MESSAGES,
+  type Extract,
+  ExtractError,
+  type ExtractFailure,
+  extractDownload,
+  removeUnpacked,
+  UNAR_ARGS,
+  unarAvailable,
+  unarBinary,
+  unpackedFolder,
+} from './extract.ts'
 export { createProbe, ffprobeBinary, PROBE_ARGS } from './ffprobe.ts'
 export {
   blockedMessage,
@@ -144,3 +158,11 @@ export {
   transferMessage,
 } from './transfer.ts'
 export { watchOf } from './watch.ts'
+export {
+  createLibraryWatch,
+  type LibraryWatch,
+  type LibraryWatchOptions,
+  type WatchFn,
+  type WatchProblem,
+  watchFailure,
+} from './watching.ts'

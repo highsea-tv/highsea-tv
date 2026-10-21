@@ -193,17 +193,34 @@ const requested = (method: string, path: string) =>
 // ---------------------------------------------------------------- tests
 
 describe('Settings › VPN', () => {
-  test('off: the warning, and built-in shown but not pickable yet', async () => {
+  test('off: the warning, and highsea connects can be picked', async () => {
     const { page } = await open()
     const status = page.getByRole('status')
     expect(within(status).getByText('No VPN')).toBeTruthy()
     expect(page.queryByRole('button', { name: 'Check now' })).toBeNull()
     const builtin = page.getByRole('radio', { name: /highsea connects/ }) as HTMLInputElement
-    expect(builtin.disabled).toBe(true)
-    expect(page.getByText(/Arrives in a later update/)).toBeTruthy()
+    expect(builtin.disabled).toBe(false)
+    expect(page.queryByText(/Arrives in a later update/)).toBeNull()
     expect((page.getByRole('radio', { name: /^Off/ }) as HTMLInputElement).checked).toBe(true)
     // nothing to behave with while it's off
     expect(page.queryByRole('region', { name: 'Behaviour' })).toBeNull()
+  })
+
+  test('highsea connects: the provider’s steps, and a pasted configuration saved with it', async () => {
+    const { user, page } = await open()
+    await user.click(page.getByRole('radio', { name: /highsea connects/ }))
+    await settle()
+    expect(page.getByText('Sign in to Proton.')).toBeTruthy()
+    await user.click(page.getByRole('button', { name: 'Paste instead' }))
+    await user.type(page.getByLabelText('Paste the configuration'), 'not a real config')
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    const saved = requested('PUT', '/api/v1/settings/vpn').at(-1)?.body as Record<string, unknown>
+    expect(saved).toMatchObject({
+      mode: 'builtin',
+      provider: 'proton',
+      config: 'not a real config',
+    })
   })
 
   test('connected: the exit, the checks, Check now and when it last checked', async () => {

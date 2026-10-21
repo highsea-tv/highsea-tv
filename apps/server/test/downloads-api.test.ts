@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The checkpoint 6a routes through the SDK: grabbing a release from the fake indexer into the
 // queue and Downloads, the blocklist, history, manual import's folder browser, the settings areas
-// and the VPN's status. The engine is offline (helpers.ts), so a grab is added and nothing
+// and the VPN's status; 6b's categories. The engine is offline (helpers.ts), so a grab is added and nothing
 // downloads; the downloads package's tests cover the swarm. Who may call what: the guard table.
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, writeFileSync } from 'node:fs'
@@ -152,6 +152,53 @@ describe('Downloads', () => {
   })
 })
 
+describe('categories (6b)', () => {
+  test('staff list them; the owner adds and removes; a torrent saves to its folder', async () => {
+    const { adminApi, ownerApi, runtime } = await started()
+    const downloads = runtime.folders().downloads
+    expect((await adminApi.downloads.categories()).map((c) => c.name)).toEqual(['movies', 'manual'])
+
+    expect(
+      await failure(adminApi.downloads.saveCategory({ body: { name: 'books' } })),
+    ).toMatchObject({ code: 'forbidden' })
+    const saved = await ownerApi.downloads.saveCategory({ body: { name: 'books' } })
+    expect(saved).toEqual({
+      name: 'books',
+      folder: join(downloads, 'books'),
+      fixed: false,
+      torrents: 0,
+    })
+    expect(
+      await failure(ownerApi.downloads.saveCategory({ body: { name: 'movies' } })),
+    ).toMatchObject({ code: 'invalid' })
+    expect(
+      await failure(
+        ownerApi.downloads.saveCategory({ body: { name: 'odd', folder: '/etc/highsea' } }),
+      ),
+    ).toMatchObject({ code: 'invalid' })
+
+    const magnet = `magnet:?xt=urn:btih:${'cd'.repeat(20)}&dn=Notes`
+    const added = await adminApi.downloads.add({
+      body: { urlOrMagnet: magnet, paused: true, category: 'books' },
+    })
+    expect(added).toMatchObject({
+      category: 'books',
+      manual: true,
+      savePath: join(downloads, 'books'),
+    })
+    expect(
+      await failure(ownerApi.downloads.removeCategory({ params: { name: 'books' } })),
+    ).toMatchObject({ code: 'conflict' })
+    expect(
+      await failure(adminApi.downloads.removeCategory({ params: { name: 'books' } })),
+    ).toMatchObject({ code: 'forbidden' })
+
+    await adminApi.downloads.delete({ params: { id: added.id }, body: { deleteData: false } })
+    await ownerApi.downloads.removeCategory({ params: { name: 'books' } })
+    expect((await adminApi.downloads.categories()).map((c) => c.name)).toEqual(['movies', 'manual'])
+  })
+})
+
 describe('manual import', () => {
   test('browses inside the data root only, and scans a folder', async () => {
     const { adminApi, runtime } = await started()
@@ -192,8 +239,12 @@ describe('settings', () => {
 
     const client = await ownerApi.settings.downloadClient()
     expect(client.port).toBe(6881)
-    const saved = await ownerApi.settings.saveDownloadClient({ body: { ...client, maxActive: 5 } })
+    expect(client.utp).toBe(true)
+    const saved = await ownerApi.settings.saveDownloadClient({
+      body: { ...client, maxActive: 5, utp: false },
+    })
     expect(saved.maxActive).toBe(5)
+    expect(saved.utp).toBe(false)
 
     const status = await adminApi.vpn.status()
     expect(status).toMatchObject({ mode: 'off', state: 'off' })

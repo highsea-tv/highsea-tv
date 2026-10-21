@@ -74,7 +74,8 @@ describe('An interface on this machine', () => {
     timers.advance(2_000)
     expect(last()).toBeNull()
     await vpn.settled()
-    expect(last()).toEqual({ address: '10.2.0.15', dns: [] })
+    // with an IPv6 address the binding carries it, and torrents use IPv6 too (6b)
+    expect(last()).toEqual({ address: '10.2.0.15', address6: 'fd00::15', dns: [] })
     expect(vpn.status().checks[5]).toMatchObject({
       result: 'pass',
       title: 'IPv6 goes through the tunnel too',

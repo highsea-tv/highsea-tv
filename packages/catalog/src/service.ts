@@ -238,6 +238,8 @@ export function createCatalog(deps: CatalogDeps) {
   function verify(envelope: unknown, bundleBytes: Uint8Array, keys: readonly TrustedKey[]) {
     const text = verifyEnvelope(envelope, keys)
     const manifest = manifestSchema.parse(JSON.parse(text))
+    // the VPN providers ride the same format (ADR 0042) and have their own reader
+    if (manifest.kind !== 'indexers') throw new SignatureError('That catalog isn’t indexers.')
     if (
       bundleBytes.byteLength !== manifest.bundle.size ||
       sha256(bundleBytes) !== manifest.bundle.sha256

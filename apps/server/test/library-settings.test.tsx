@@ -603,6 +603,17 @@ describe('Settings › Media management › root folders', () => {
     expect(page.getByText(/3 movies are filed under it/)).toBeTruthy()
   })
 
+  test('each folder opens Library import for what’s already in it (6b)', async () => {
+    const { page } = await open(<MediaManagement />)
+    const link = page.getByRole('link', {
+      name: 'Import what’s already in /data/media/movies',
+    }) as HTMLAnchorElement
+    expect(link.textContent).toBe('Import what’s already here')
+    expect(link.getAttribute('href')).toBe(
+      `/activity/import?mode=library&root=${encodeURIComponent('/data/media/movies')}`,
+    )
+  })
+
   test('adding checks the path; the server’s reasons read as plain sentences', async () => {
     const { user, page } = await open(<MediaManagement />)
     const field = page.getByLabelText('Add a root folder')

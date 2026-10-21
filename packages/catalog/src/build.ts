@@ -8,15 +8,22 @@ import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import { compareVersions, type Definition } from '@highsea/schemas/indexers'
 import {
+  compareProviderVersions,
+  formatProviderIssues,
+  type VpnProviderDefinition,
+  validateVpnProvider,
+} from '@highsea/schemas/vpn'
+import {
   type Bundle,
   CATALOG_FORMAT,
   type CatalogChange,
+  type CatalogKind,
   CHANNELS,
   type Channel,
   isCatalogVersion,
   type Manifest,
 } from './format.ts'
-import { type BrokenFile, loadDefinitionFiles } from './load.ts'
+import { type BrokenFile, type LoadedFile, loadDefinitionFiles, loadEntryFiles } from './load.ts'
 import { sha256, signManifest } from './signing.ts'
 
 /** How many versions' notes a manifest carries. */
@@ -78,22 +85,29 @@ function logosOf(dir: string): Record<string, string> {
   return out
 }
 
-export type BuiltChannel = {
+export type BuiltChannel<T = Definition> = {
   channel: Channel
   manifest: Manifest
   /** The envelope's JSON text, as published. */
   envelope: string
   bundle: string
-  definitions: Definition[]
+  definitions: T[]
 }
 
-/** Builds and signs both channels in memory. Throws `BuildError` listing every broken file. */
-export function buildCatalog(
+/** What the build needs to know about a kind's entries. */
+type KindRules<T extends { id: string; minEngineVersion: string; logo?: string }> = {
+  kind: CatalogKind
+  load(dir: string): { loaded: LoadedFile<T>[]; broken: BrokenFile[] }
+  compare(a: string, b: string): number
+}
+
+function buildKind<T extends { id: string; minEngineVersion: string; logo?: string }>(
+  rules: KindRules<T>,
   sources: CatalogSources,
   key: { privateKey: string; keyId: string },
-): BuiltChannel[] {
-  const stable = loadDefinitionFiles(join(sources.root, 'definitions'))
-  const beta = loadDefinitionFiles(join(sources.root, 'beta'))
+): BuiltChannel<T>[] {
+  const stable = rules.load(join(sources.root, 'definitions'))
+  const beta = rules.load(join(sources.root, 'beta'))
   const broken = [...stable.broken, ...beta.broken]
   if (broken.length) throw new BuildError('Some definitions don’t validate.', broken)
   const changes = parseChanges(readFileSync(join(sources.root, 'CHANGES.md'), 'utf8'))
@@ -114,7 +128,7 @@ export function buildCatalog(
     )
     const bundleData: Bundle = {
       format: CATALOG_FORMAT,
-      kind: 'indexers',
+      kind: rules.kind,
       version,
       definitions: chosen.map((f) => f.raw),
       logos: usedLogos,
@@ -122,15 +136,15 @@ export function buildCatalog(
     const bundle = JSON.stringify(bundleData)
     const minEngineVersion = chosen
       .map((f) => f.definition.minEngineVersion)
-      .reduce((a, b) => (compareVersions(a, b) >= 0 ? a : b), '1.0.0')
+      .reduce((a, b) => (rules.compare(a, b) >= 0 ? a : b), '1.0.0')
     const manifest: Manifest = {
       format: CATALOG_FORMAT,
-      kind: 'indexers',
+      kind: rules.kind,
       channel,
       version,
       minEngineVersion,
       bundle: {
-        path: `indexers-${version}.json`,
+        path: `${rules.kind}-${version}.json`,
         sha256: sha256(bundle),
         size: Buffer.byteLength(bundle),
       },
@@ -141,8 +155,44 @@ export function buildCatalog(
   })
 }
 
+/** Builds and signs the indexers' channels in memory. Throws `BuildError` listing every broken file. */
+export function buildCatalog(
+  sources: CatalogSources,
+  key: { privateKey: string; keyId: string },
+): BuiltChannel[] {
+  return buildKind(
+    { kind: 'indexers', load: loadDefinitionFiles, compare: compareVersions },
+    sources,
+    key,
+  )
+}
+
+/** Checks a VPN provider entry with `@highsea/schemas/vpn`, for the loader. */
+export function validateProviderEntry(raw: unknown) {
+  const result = validateVpnProvider(raw)
+  return result.ok
+    ? { ok: true as const, value: result.definition }
+    : { ok: false as const, message: formatProviderIssues(result.errors) }
+}
+
+/** The same for the VPN providers (`catalog/vpn-providers`, ADR 0042). */
+export function buildVpnProviderCatalog(
+  sources: CatalogSources,
+  key: { privateKey: string; keyId: string },
+): BuiltChannel<VpnProviderDefinition>[] {
+  return buildKind(
+    {
+      kind: 'vpn-providers',
+      load: (dir) => loadEntryFiles(dir, validateProviderEntry),
+      compare: compareProviderVersions,
+    },
+    sources,
+    key,
+  )
+}
+
 /** Writes `{out}/{channel}/manifest.json` and the bundle beside it. */
-export function writeCatalog(built: readonly BuiltChannel[], out: string): void {
+export function writeCatalog(built: readonly BuiltChannel<unknown>[], out: string): void {
   for (const b of built) {
     const dir = join(out, b.channel)
     mkdirSync(dir, { recursive: true })

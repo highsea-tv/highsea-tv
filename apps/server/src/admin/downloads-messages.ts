@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A8 Downloads (ADR 0021): the prototype's copy, with what real data adds: a .torrent file beside
-// the link, private torrents, trackers not contacted yet, and the seeding rule's minimum time.
+// the link, private torrents, trackers not contacted yet, and the seeding rule's minimum time; 6b
+// adds the categories and the sheet's Import into the library.
 import { defineMessages } from '@highsea/i18n'
 
 export const downloads = defineMessages({
@@ -32,6 +33,8 @@ export const downloads = defineMessages({
   'col.ratio': 'Ratio',
   'col.status': 'Status',
   detail: '{category} · {indexer}',
+  category: 'Category',
+  'category.all': 'Every category',
   byHand: 'Added by hand',
   progressOf: '{name} progress',
 
@@ -84,6 +87,8 @@ export const downloads = defineMessages({
   'add.fileHint': 'Pick one, or drop it here. It’s used instead of the link.',
   'add.fileChosen': '{name} · {size}',
   'add.fileClear': 'Use the link instead',
+  'add.category': 'Category',
+  'add.categoryHint': 'Sets the folder it saves to. Add categories in Settings › Download client.',
   'add.start': 'Start right away',
   'add.submit': 'Add',
   'add.added': 'Torrent added',
@@ -97,6 +102,9 @@ export const downloads = defineMessages({
   remove: 'Remove',
   failed: 'That didn’t work',
   details: 'Torrent details',
+  more: 'More for {name}',
+  import: 'Import into the library',
+  importLater: 'Import into the library when it finishes',
   'tab.general': 'General',
   'tab.files': 'Files',
   'tab.trackers': 'Trackers',

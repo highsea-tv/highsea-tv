@@ -6,8 +6,6 @@
 // automated use under one request a minute; highsea asks once from each address every 5 minutes,
 // plus Check now. It's a setting, so an owner can point it at their own
 // echoip, or at any service answering `ip` (or `public_ip`) in JSON, or the bare address as text.
-import http from 'node:http'
-import https from 'node:https'
 import { isIP } from 'node:net'
 import type { Fetch } from '@highsea/core'
 
@@ -40,30 +38,24 @@ export async function askEcho(fetch: Fetch, url: string, timeoutMs = 10_000): Pr
   return echo
 }
 
-/**
- * A `Fetch` whose requests leave from `localAddress`, for the bound half of the exit check. The
- * global `fetch` can't choose its local address without undici's own Agent, so this asks with
- * node:http's `localAddress` (https://nodejs.org/docs/latest-v24.x/api/http.html#httprequesturl-options-callback),
- * as the torrent engine's tracker requests do. GET only, which is all the echo needs.
- */
-export function boundFetch(localAddress: string): Fetch {
-  return (input, init) =>
-    new Promise<Response>((resolve, reject) => {
-      const url = new URL(input instanceof Request ? input.url : input)
-      const client = url.protocol === 'https:' ? https : http
-      const headers: Record<string, string> = {}
-      new Headers(init?.headers).forEach((v, k) => {
-        headers[k] = v
-      })
-      const req = client.get(url, { localAddress, headers, signal: init?.signal ?? undefined })
-      req.on('response', (res) => {
-        const chunks: Buffer[] = []
-        res.on('data', (c: Buffer) => chunks.push(c))
-        res.on('end', () =>
-          resolve(new Response(Buffer.concat(chunks), { status: res.statusCode ?? 502 })),
-        )
-        res.on('error', reject)
-      })
-      req.on('error', reject)
-    })
+/** The echo's address, plus the answer's other fields, for a provider's own check. */
+export async function askEchoFields(
+  fetch: Fetch,
+  url: string,
+  timeoutMs = 10_000,
+): Promise<Echo & { fields: Record<string, unknown> }> {
+  const res = await fetch(url, {
+    headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(timeoutMs),
+  })
+  if (!res.ok) throw new Error(`The echo service answered with HTTP ${res.status}.`)
+  const body = await res.text()
+  const echo = parseEcho(body)
+  if (!echo) throw new Error('The echo service’s answer has no address.')
+  let fields: Record<string, unknown> = {}
+  try {
+    const v = JSON.parse(body) as unknown
+    if (v && typeof v === 'object') fields = v as Record<string, unknown>
+  } catch {}
+  return { ...echo, fields }
 }

@@ -8,7 +8,10 @@
 // - Up goes to the listing's parent, and only while it's still inside what highsea may browse;
 // - Becomes is the server's name for the matched movie; a movie chosen by hand gets its name on
 //   the next Look inside, so the column shows a dash until then;
-// - each file comes back imported or with the reason it wasn't, shown in its row.
+// - each file comes back imported or with the reason it wasn't, shown in its row;
+// - `initialPath` (Downloads' Import into the library, 6b) opens it on a torrent's folder;
+// - a Version column (6b, answer 8): each file picks one of its movie's versions, the scan's
+//   choice (the first without a file) by default; two files for one version are refused.
 import type { ImportCandidate, Movie } from '@highsea/api-contract'
 import { bytes } from '@highsea/core/format'
 import { useT } from '@highsea/i18n/react'
@@ -32,18 +35,20 @@ import {
   TableToolbar,
   toast,
 } from '@highsea/ui-web'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { manualImport as messages } from './import-messages.ts'
+import { clashes, defaultVersion, VersionSelect } from './import-versions.tsx'
+import { ImportModes } from './library-import.tsx'
 import { loadMovies } from './movie-data.ts'
 import { AdminPage } from './shell.tsx'
 
 type Mode = 'hardlink' | 'move'
 type Row = ImportCandidate & { selected: boolean; done: boolean; error: string | null }
 
-export function ManualImport() {
+export function ManualImport({ initialPath }: { initialPath?: string } = {}) {
   const t = useT(messages)
   const client = useClient()
-  const [path, setPath] = useState('')
+  const [path, setPath] = useState(initialPath ?? '')
   const [scanned, setScanned] = useState('')
   const [rows, setRows] = useState<Row[] | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -97,8 +102,15 @@ export function ManualImport() {
       .finally(() => setScanning(false))
   }
 
+  // opened on a torrent's folder: look inside it straight away
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once, on arrival
+  useEffect(() => {
+    if (initialPath) scan(initialPath)
+  }, [])
+
   const label = (m: Movie) => (m.year ? t('movieLabel', { title: m.title, year: m.year }) : m.title)
   const chosen = (rows ?? []).filter((r) => r.selected && r.movieId !== null && !r.done)
+  const clash = clashes(chosen)
   const set = (i: number, patch: Partial<Row>) =>
     setRows((rs) => rs?.map((r, j) => (j === i ? { ...r, ...patch } : r)) ?? null)
 
@@ -138,6 +150,7 @@ export function ManualImport() {
       }
     >
       <div className="grid gap-5">
+        <ImportModes mode="files" />
         <section
           aria-label={t('folder')}
           className="grid gap-3 rounded-lg border border-line bg-s1 p-4"
@@ -197,7 +210,7 @@ export function ManualImport() {
               <Button
                 variant="primary"
                 className="ms-auto"
-                disabled={!chosen.length}
+                disabled={!chosen.length || clash.size > 0}
                 loading={run.pending}
                 onClick={importChosen}
               >
@@ -212,6 +225,7 @@ export function ManualImport() {
                   </TableHead>
                   <TableHead>{t('col.file')}</TableHead>
                   <TableHead>{t('col.movie')}</TableHead>
+                  <TableHead>{t('col.version')}</TableHead>
                   <TableHead>{t('col.quality')}</TableHead>
                   <TableHead numeric>{t('col.size')}</TableHead>
                   <TableHead>{t('col.becomes')}</TableHead>
@@ -256,7 +270,9 @@ export function ManualImport() {
                           onValueChange={(id) =>
                             set(i, {
                               movieId: Number(id),
-                              versionId: null,
+                              versionId: defaultVersion(
+                                movies.data?.find((m) => m.id === Number(id)),
+                              ),
                               becomes: null,
                               selected: true,
                               error: null,
@@ -266,6 +282,16 @@ export function ManualImport() {
                             value: String(m.id),
                             label: label(m),
                           }))}
+                        />
+                      </TableCell>
+                      <TableCell className="w-44">
+                        <VersionSelect
+                          file={file}
+                          movie={movies.data?.find((m) => m.id === r.movieId)}
+                          value={r.versionId}
+                          disabled={!!r.skip || r.done}
+                          clash={clash.has(r.path)}
+                          onChange={(versionId) => set(i, { versionId, error: null })}
                         />
                       </TableCell>
                       <TableCell className="text-text-2">{r.quality}</TableCell>

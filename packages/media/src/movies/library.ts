@@ -182,6 +182,32 @@ export function createLibrary(ctx: Ctx, media: Media) {
   /** `available` and `downloading` belong to files and the queue (checkpoint 6), not the calendar. */
   const keepStatus = (s: LibraryStatus) => s === 'available' || s === 'downloading'
 
+  /**
+   * After a file came or went outside an import (6b's library scan): Available while a version has
+   * a file, else what the calendar says, or Downloading while a grab is under way. Returns whether
+   * the status changed.
+   */
+  function settleFiles(itemId: string): boolean {
+    const row = db.select().from(mediaItems).where(eq(mediaItems.id, itemId)).get()
+    if (!row) return false
+    const hasFile = db
+      .select({ id: versions.id })
+      .from(versions)
+      .where(and(eq(versions.itemId, itemId), sql`${versions.fileId} IS NOT NULL`))
+      .get()
+    const status: LibraryStatus = hasFile
+      ? 'available'
+      : row.status === 'downloading'
+        ? 'downloading'
+        : statusOf(released(row, cached(row.tmdbId), row.minimumAvailability), row.monitored)
+    if (status === row.status) return false
+    db.update(mediaItems)
+      .set({ status, updatedAt: clock.now() })
+      .where(eq(mediaItems.id, itemId))
+      .run()
+    return true
+  }
+
   /** After `metadata.updated`: the library movies among the ids get the new facts. */
   function onMetadataUpdated(ids: string[]) {
     const tmdbIds = ids.flatMap((id) => {
@@ -682,6 +708,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
       versionsOf,
       onMetadataUpdated,
       checkAvailability,
+      settleFiles,
     },
   }
 }

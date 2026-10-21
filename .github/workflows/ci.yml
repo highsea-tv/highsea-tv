@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Every push and pull request: lint, types, tests (Bun), the platform under Node, the license
-# audit, the admin's build, and the Docker image booting healthy.
+# audit, the admin's build, the Docker image booting healthy, and highsea connects' leak test.
 name: CI
 
 on:
@@ -24,6 +24,9 @@ jobs:
         with:
           node-version-file: .nvmrc
       - run: bun install --frozen-lockfile
+      # ffprobe and unar, so the probing and extraction tests run instead of skipping (ADR 0039)
+      - name: ffmpeg and unar
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg unar
       - name: Lint
         run: bun run lint
       - name: Types
@@ -38,6 +41,21 @@ jobs:
         run: bun run --filter @highsea/server build
         env:
           NEXT_TELEMETRY_DISABLED: 1
+
+  # highsea connects' kill switch on a real kernel: the runner's kernel has WireGuard, and sudo
+  # gives the test the root it needs to make a network namespace and a second peer
+  leak:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - name: Install wireguard-tools and iproute2
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends wireguard-tools iproute2
+      - name: The leak test
+        run: sudo env "PATH=$PATH" HIGHSEA_LEAK_TEST=1 "$(command -v bun)" test packages/vpn/test/leak.test.ts
 
   docker:
     runs-on: ubuntu-24.04

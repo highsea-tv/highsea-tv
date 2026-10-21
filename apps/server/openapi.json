@@ -6091,6 +6091,9 @@
           "category": {
             "type": "string"
           },
+          "manual": {
+            "type": "boolean"
+          },
           "size": {
             "type": "number"
           },
@@ -6222,6 +6225,7 @@
           "infoHash",
           "movieId",
           "category",
+          "manual",
           "size",
           "downloaded",
           "uploaded",
@@ -6350,6 +6354,49 @@
           "uploadRate"
         ]
       },
+      "TorrentCategory": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "folder": {
+            "type": "string"
+          },
+          "fixed": {
+            "type": "boolean"
+          },
+          "torrents": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "folder",
+          "fixed",
+          "torrents"
+        ]
+      },
+      "TorrentCategoryInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "folder": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
       "AddTorrentInput": {
         "type": "object",
         "properties": {
@@ -6363,6 +6410,11 @@
           },
           "paused": {
             "type": "boolean"
+          },
+          "category": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
           }
         }
       },
@@ -6921,6 +6973,9 @@
           "upnp": {
             "type": "boolean"
           },
+          "utp": {
+            "type": "boolean"
+          },
           "maxActive": {
             "type": "integer",
             "minimum": 1,
@@ -6949,17 +7004,38 @@
             ],
             "minimum": 0,
             "maximum": 525600
+          },
+          "watchFolder": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "watchCategory": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "blocklistUrl": {
+            "type": "string",
+            "maxLength": 2048,
+            "default": ""
           }
         },
         "required": [
           "port",
           "encryption",
           "upnp",
+          "utp",
           "maxActive",
           "downloadRate",
           "uploadRate",
           "seedRatio",
-          "seedMinutes"
+          "seedMinutes",
+          "watchFolder",
+          "watchCategory"
         ]
       },
       "VpnStatus": {
@@ -7331,6 +7407,865 @@
           "at",
           "down",
           "up"
+        ]
+      },
+      "LibraryCandidate": {
+        "type": "object",
+        "properties": {
+          "folder": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "file": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "size": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "quality": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "match": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "tmdbId": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "title": {
+                "type": "string"
+              },
+              "year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "tmdbId",
+              "title",
+              "year"
+            ]
+          },
+          "inLibrary": {
+            "type": "boolean"
+          },
+          "skip": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "folder",
+          "name",
+          "file",
+          "size",
+          "quality",
+          "match",
+          "inLibrary",
+          "skip"
+        ]
+      },
+      "LibraryImportScanInput": {
+        "type": "object",
+        "properties": {
+          "root": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "root"
+        ]
+      },
+      "LibraryImportStatus": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "idle",
+              "running",
+              "done",
+              "failed"
+            ]
+          },
+          "root": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rename": {
+            "type": "boolean"
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "done": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "imported": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "folder": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "folder",
+                "message"
+              ]
+            }
+          },
+          "startedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "finishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "state",
+          "root",
+          "rename",
+          "total",
+          "done",
+          "imported",
+          "failures",
+          "startedAt",
+          "finishedAt"
+        ]
+      },
+      "LibraryImportRunInput": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "folder": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 4096
+                },
+                "tmdbId": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "required": [
+                "folder",
+                "tmdbId"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 2000
+          },
+          "rename": {
+            "type": "boolean"
+          },
+          "qualityProfileId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "items"
+        ]
+      },
+      "RadarrTest": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "movies": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "version",
+          "movies"
+        ]
+      },
+      "RadarrConnection": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "example": "http://radarr:7878"
+          },
+          "apiKey": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "url",
+          "apiKey"
+        ]
+      },
+      "RadarrPreview": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "movies": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "withFiles": {
+                "type": "integer"
+              },
+              "inLibrary": {
+                "type": "integer"
+              },
+              "ready": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "withFiles",
+              "inLibrary",
+              "ready"
+            ]
+          },
+          "profiles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "radarrId": {
+                  "type": "integer"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "cutoff": {
+                  "type": "string"
+                },
+                "movies": {
+                  "type": "integer"
+                },
+                "options": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              },
+              "required": [
+                "radarrId",
+                "name",
+                "cutoff",
+                "movies",
+                "options"
+              ]
+            }
+          },
+          "rootFolders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "radarr": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "root-folder",
+                    "add",
+                    "outside"
+                  ]
+                },
+                "movies": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "radarr",
+                "path",
+                "status",
+                "movies"
+              ]
+            }
+          },
+          "tags": {
+            "type": "integer"
+          },
+          "blocklist": {
+            "type": "integer"
+          },
+          "naming": {
+            "type": "object",
+            "properties": {
+              "rename": {
+                "type": "boolean"
+              },
+              "folderFormat": {
+                "type": "string"
+              },
+              "fileFormat": {
+                "type": "string"
+              },
+              "problem": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "rename",
+              "folderFormat",
+              "fileFormat",
+              "problem"
+            ]
+          },
+          "kept": {
+            "type": "object",
+            "properties": {
+              "indexers": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "downloadClients": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "indexers",
+              "downloadClients"
+            ]
+          },
+          "problems": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "title",
+                "message"
+              ]
+            }
+          }
+        },
+        "required": [
+          "version",
+          "movies",
+          "profiles",
+          "rootFolders",
+          "tags",
+          "blocklist",
+          "naming",
+          "kept",
+          "problems"
+        ]
+      },
+      "RadarrPreviewInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/RadarrConnection"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "pathMappings": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PathMapping"
+                },
+                "maxItems": 20
+              }
+            },
+            "required": [
+              "pathMappings"
+            ]
+          }
+        ]
+      },
+      "PathMapping": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "example": "/movies"
+          },
+          "to": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096,
+            "example": "/data/media/movies"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ]
+      },
+      "ImportStatus": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "idle",
+              "running",
+              "done",
+              "failed"
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "done": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "imported": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
+          "startedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "finishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "state",
+          "total",
+          "done",
+          "imported",
+          "skipped",
+          "failures",
+          "startedAt",
+          "finishedAt"
+        ]
+      },
+      "RadarrRunInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/RadarrPreviewInput"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "profiles": {
+                "type": "object",
+                "additionalProperties": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 64
+                }
+              },
+              "settings": {
+                "type": "boolean"
+              }
+            }
+          }
+        ]
+      },
+      "QbittorrentTest": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "webApi": {
+            "type": "string"
+          },
+          "torrents": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "version",
+          "webApi",
+          "torrents"
+        ]
+      },
+      "QbittorrentConnection": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048,
+            "example": "http://qbittorrent:8080"
+          },
+          "username": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 200
+          }
+        },
+        "required": [
+          "url",
+          "username",
+          "password"
+        ]
+      },
+      "QbittorrentPreview": {
+        "type": "object",
+        "properties": {
+          "version": {
+            "type": "string"
+          },
+          "webApi": {
+            "type": "string"
+          },
+          "torrents": {
+            "type": "object",
+            "properties": {
+              "total": {
+                "type": "integer"
+              },
+              "ready": {
+                "type": "integer"
+              },
+              "inDownloads": {
+                "type": "integer"
+              },
+              "outside": {
+                "type": "integer"
+              },
+              "linked": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "total",
+              "ready",
+              "inDownloads",
+              "outside",
+              "linked"
+            ]
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "qbittorrent": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "folder": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "qbittorrent",
+                "name",
+                "folder"
+              ]
+            }
+          },
+          "savePaths": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "qbittorrent": {
+                  "type": "string"
+                },
+                "path": {
+                  "type": "string"
+                },
+                "ok": {
+                  "type": "boolean"
+                },
+                "torrents": {
+                  "type": "integer"
+                }
+              },
+              "required": [
+                "qbittorrent",
+                "path",
+                "ok",
+                "torrents"
+              ]
+            }
+          },
+          "list": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "hash": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "size": {
+                  "type": "number"
+                },
+                "category": {
+                  "type": "string"
+                },
+                "savePath": {
+                  "type": "string"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "ready",
+                    "in-downloads",
+                    "outside"
+                  ]
+                },
+                "movie": {
+                  "type": [
+                    "integer",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "hash",
+                "name",
+                "size",
+                "category",
+                "savePath",
+                "status",
+                "movie"
+              ]
+            }
+          }
+        },
+        "required": [
+          "version",
+          "webApi",
+          "torrents",
+          "categories",
+          "savePaths",
+          "list"
+        ]
+      },
+      "QbittorrentPreviewInput": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/QbittorrentConnection"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "pathMappings": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/PathMapping"
+                },
+                "maxItems": 20
+              }
+            },
+            "required": [
+              "pathMappings"
+            ]
+          }
+        ]
+      },
+      "QbittorrentImportStatus": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "idle",
+              "running",
+              "done",
+              "failed"
+            ]
+          },
+          "total": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "done": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "imported": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "skipped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failures": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "message": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "name",
+                "message"
+              ]
+            }
+          },
+          "startedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "finishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "paused": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "checking": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "resumedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "state",
+          "total",
+          "done",
+          "imported",
+          "skipped",
+          "failures",
+          "startedAt",
+          "finishedAt",
+          "paused",
+          "checking",
+          "resumedAt"
         ]
       }
     },
@@ -16137,7 +17072,7 @@
           "Downloads"
         ],
         "summary": "Add a torrent by hand: a magnet, an address or a .torrent",
-        "description": "It downloads to the downloads folder’s `manual` folder and isn’t imported. 409 when it’s already in Downloads.",
+        "description": "It downloads to its category’s folder (`manual` by default) and isn’t imported. 409 when it’s already in Downloads; 400 for an unknown category or `movies`.",
         "x-highsea-access": "staff",
         "security": [
           {
@@ -16421,6 +17356,199 @@
           },
           "403": {
             "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/torrents/categories": {
+      "get": {
+        "tags": [
+          "Downloads"
+        ],
+        "summary": "The categories: movies, manual, then the owner’s, by name",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The categories",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/TorrentCategory"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Downloads"
+        ],
+        "summary": "Add a category, or change its folder",
+        "description": "Managed in Settings › Download client, so the owner’s, like it. Torrents already in the category stay where they are. A reserved name (movies, manual, shows, music) or a folder outside the data folder and the downloads folder is 400 with `details.field`.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TorrentCategoryInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TorrentCategory"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/torrents/categories/{name}": {
+      "delete": {
+        "tags": [
+          "Downloads"
+        ],
+        "summary": "Remove a category",
+        "description": "409 while a torrent or the watch folder uses it, and for movies and manual, which are built in.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "name",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
             "content": {
               "application/json": {
                 "schema": {
@@ -18044,6 +19172,868 @@
           },
           "403": {
             "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/import/library/scan": {
+      "post": {
+        "tags": [
+          "Import"
+        ],
+        "summary": "Look through a root folder for movies already there, and match each on TMDB",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryImportScanInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One candidate per folder",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryCandidate"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/import/library": {
+      "post": {
+        "tags": [
+          "Import"
+        ],
+        "summary": "Add the confirmed movies where they are, as a job",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LibraryImportRunInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The job started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryImportStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": [
+          "Import"
+        ],
+        "summary": "The library import’s progress",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The last or current run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryImportStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/importers/radarr/test": {
+      "post": {
+        "tags": [
+          "Migration"
+        ],
+        "summary": "Check Radarr’s address and API key",
+        "description": "A wrong key is 400 with `bad-credentials`; an address that doesn’t answer is 503 with `unreachable`.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadarrConnection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Radarr answered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RadarrTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/importers/radarr/preview": {
+      "post": {
+        "tags": [
+          "Migration"
+        ],
+        "summary": "What would come across from Radarr, with the profile mapping",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadarrPreviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RadarrPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/importers/radarr/run": {
+      "post": {
+        "tags": [
+          "Migration"
+        ],
+        "summary": "Import from Radarr, as a job",
+        "description": "One run at a time (409 `running`). Safe to run again: what’s there is skipped.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RadarrRunInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The job started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/importers/radarr": {
+      "get": {
+        "tags": [
+          "Migration"
+        ],
+        "summary": "The Radarr import’s progress",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The last or current run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/importers/qbittorrent/test": {
+      "post": {
+        "tags": [
+          "Migration"
+        ],
+        "summary": "Sign in to qBittorrent and check its version",
+        "description": "A wrong username or password is 400 with `bad-credentials`; below qBittorrent 4.5.0 (Web API 2.8.18) it’s 400 with `too-old`.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QbittorrentConnection"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "qBittorrent answered",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QbittorrentTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/importers/qbittorrent/preview": {
+      "post": {
+        "tags": [
+          "Migration"
+        ],
+        "summary": "What would come across from qBittorrent",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QbittorrentPreviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The preview",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QbittorrentPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/importers/qbittorrent/run": {
+      "post": {
+        "tags": [
+          "Migration"
+        ],
+        "summary": "Import qBittorrent’s torrents, paused, as a job",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QbittorrentPreviewInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The job started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QbittorrentImportStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/importers/qbittorrent": {
+      "get": {
+        "tags": [
+          "Migration"
+        ],
+        "summary": "The qBittorrent import’s progress, and how many torrents wait paused",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The last or current run",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QbittorrentImportStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/importers/qbittorrent/resume": {
+      "post": {
+        "tags": [
+          "Migration"
+        ],
+        "summary": "Resume the torrents brought across, once qBittorrent is stopped",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resumed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QbittorrentImportStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
             "content": {
               "application/json": {
                 "schema": {

@@ -338,17 +338,26 @@ function Folder({ folder: f, onRemove }: { folder: RootFolder; onRemove: () => v
           </p>
         )}
       </div>
-      <Button
-        size="sm"
-        variant="danger"
-        className="justify-self-start medium:justify-self-end"
-        aria-label={t('folders.removeLabel', { path: f.path })}
-        aria-describedby={inUse ? `in-use-${f.id}` : undefined}
-        disabled={inUse}
-        onClick={onRemove}
-      >
-        {t('folders.remove')}
-      </Button>
+      <div className="flex flex-wrap gap-2 justify-self-start medium:justify-self-end">
+        <Button size="sm" variant="ghost" icon="import" asChild>
+          <a
+            href={`/activity/import?mode=library&root=${encodeURIComponent(f.path)}`}
+            aria-label={t('folders.importExistingLabel', { path: f.path })}
+          >
+            {t('folders.importExisting')}
+          </a>
+        </Button>
+        <Button
+          size="sm"
+          variant="danger"
+          aria-label={t('folders.removeLabel', { path: f.path })}
+          aria-describedby={inUse ? `in-use-${f.id}` : undefined}
+          disabled={inUse}
+          onClick={onRemove}
+        >
+          {t('folders.remove')}
+        </Button>
+      </div>
     </li>
   )
 }

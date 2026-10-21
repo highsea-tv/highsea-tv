@@ -361,6 +361,8 @@ try {
     },
     token,
   )
+  // 6b: an owner's category, so Downloads' filter and Settings' Categories group have one
+  await api('POST', '/torrents/categories', { name: 'books', folder: null }, token)
   mkdirSync(join(dataDir, 'downloads', 'Big.Buck.Bunny.2008.1080p.BluRay.x264-GRP'), {
     recursive: true,
   })
@@ -443,7 +445,18 @@ try {
         path: '/settings/vpn',
         act: (p) => p.getByRole('radio', { name: /A VPN container/ }).click(),
       },
+      {
+        name: 'settings:vpn:connects',
+        path: '/settings/vpn',
+        act: (p) => p.getByRole('radio', { name: /highsea connects/ }).click(),
+      },
       { name: 'settings:downloads', path: '/settings/downloads' },
+      // 6b: the importers, and A17's library mode on the root folder seeded above
+      { name: 'settings:migration', path: '/settings/migration' },
+      {
+        name: 'import:library',
+        path: `/activity/import?mode=library&root=${encodeURIComponent(join(dataDir, 'films'))}`,
+      },
       // A7, A17 and A8 (checkpoint 6a)
       { name: 'activity', path: '/activity' },
       { name: 'activity:history', path: '/activity', act: tab('History') },
@@ -571,6 +584,8 @@ try {
       { name: 'admin:general', path: '/settings/general' },
       // Security and Backups are the owner's: not there for an admin
       { name: 'admin:security', path: '/settings/security' },
+      // Migration is the owner's too (6b)
+      { name: 'admin:migration', path: '/settings/migration' },
       { name: 'admin:users', path: '/settings/users' },
       { name: 'admin:users:devices', path: '/settings/users', act: tab('Devices') },
       { name: 'admin:users:keys', path: '/settings/users', act: tab('API keys') },

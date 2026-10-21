@@ -1,0 +1,30 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from PIA's manual-connection scripts (MIT); no code was copied.
+id: pia
+version: 1.0.0
+minEngineVersion: 1.0.0
+name: Private Internet Access
+connect: pia
+steps:
+  - Use the username and password you sign in to PIA with. The username starts with p.
+  - Pick a region. highsea registers its own WireGuard key with PIA, so there’s no file.
+links:
+  - label: PIA’s manual connections
+    url: https://github.com/pia-foss/manual-connections
+portForwarding:
+  method: pia
+ipv6: false
+# shown when PIA's server list can't be read; the live list replaces it
+regions:
+  - CA Montreal
+  - CA Toronto
+  - CA Vancouver
+  - DE Frankfurt
+  - DE Berlin
+  - Netherlands
+  - Sweden
+  - Switzerland
+  - Romania
+  - Czech Republic
+sources:
+  - https://github.com/pia-foss/manual-connections

@@ -12,6 +12,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@achingbrain/nat-port-mapper": "4.0.5",
     "@highsea/core": "workspace:*",
     "@highsea/db": "workspace:*",
     "bencode": "4.0.1",

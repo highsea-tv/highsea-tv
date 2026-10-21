@@ -16,6 +16,7 @@
     "@highsea/core": "workspace:*",
     "@highsea/db": "workspace:*",
     "@highsea/downloads": "workspace:*",
+    "@highsea/importers": "workspace:*",
     "@highsea/indexers": "workspace:*",
     "@highsea/jobs": "workspace:*",
     "@highsea/media": "workspace:*",

@@ -229,6 +229,14 @@ export function createMetadataCore(deps: MetadataDeps) {
       const result = await api.search(credential, q, page(pageNumber), settings.language())
       return toPage(result, toDiscoverMovie)
     },
+    /** The movie an IMDb id belongs to, through TMDB's Find by ID; null when TMDB has none. */
+    async findByImdb(imdbId: string): Promise<DiscoverMovie | null> {
+      if (!/^tt\d{1,10}$/.test(imdbId)) return null
+      const credential = requireKey()
+      const result = await api.findImdb(credential, imdbId, settings.language())
+      const first = result.movie_results?.[0]
+      return first ? toDiscoverMovie(first) : null
+    },
     /** Trending (this week), Popular, Now playing or Upcoming, for the server's region. */
     async list(list: DiscoverList, pageNumber?: number): Promise<Page<DiscoverMovie>> {
       const credential = requireKey()

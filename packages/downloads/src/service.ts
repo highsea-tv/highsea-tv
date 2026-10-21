@@ -5,7 +5,7 @@
 // event handler (parent plan, Known pitfalls): the import, a refused release's replacement, and
 // letting go after seeding. A download that stalls for 2 hours says so; at 3 it is blocklisted and
 // replaced (activity-downloads.md). Every job checks what already happened, so it's safe to repeat.
-import { join } from 'node:path'
+import { isAbsolute, join, resolve } from 'node:path'
 import {
   AppError,
   type Clock,
@@ -32,8 +32,9 @@ import type {
   TorrentSnapshot,
   TrackerStatus,
 } from '@highsea/torrent'
-import { and, desc, eq, inArray, isNotNull, lt, or } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, isNull, lt, or } from 'drizzle-orm'
 import { z } from 'zod'
+import { categoryFolder, createCategories, MANUAL_CATEGORY, MOVIES_CATEGORY } from './categories.ts'
 import {
   DEFAULT_DOWNLOAD_CLIENT,
   DOWNLOAD_CLIENT_KEY,
@@ -58,10 +59,6 @@ export const REPLACE_MS = 3 * 60 * 60 * 1000
 const STALL_CHECK_EVERY_MS = 5 * 60 * 1000
 /** The Network widget's sparkline: the last 10 minutes, a sample a second. */
 const SPEED_SAMPLES = 600
-
-/** Library grabs go to `{downloads}/movies`; manual torrents to `{downloads}/manual` until 6b's categories. */
-export const MOVIES_CATEGORY = 'movies'
-export const MANUAL_CATEGORY = 'manual'
 
 /** The prototype's `TorrentState`: the engine's states, plus the ones only downloads knows. */
 export type QueueState = EngineState | 'stalled' | 'importing' | 'import-blocked'
@@ -93,6 +90,8 @@ export type TorrentView = {
   infoHash: string
   movieId: number | null
   category: string
+  /** Added by hand (or from the watch folder), not grabbed for the library. */
+  manual: boolean
   size: number
   downloaded: number
   uploaded: number
@@ -155,7 +154,8 @@ export type ImportInput = {
 
 export type ImportOutcome =
   | { ok: true; transfer: 'hardlink' | 'reflink' | 'copy' | 'move' }
-  | { ok: false; reason: string }
+  /** `replace`: the release can never import (a password-protected archive): blocklist it and grab another. */
+  | { ok: false; reason: string; replace?: boolean }
 
 export type DownloadsDeps = {
   db: Db
@@ -175,6 +175,12 @@ export type DownloadsDeps = {
   downloadsFolder(): string
   history(entry: HistoryEntry): void
   importer(input: ImportInput): Promise<ImportOutcome>
+  /**
+   * A folder the owner typed (a category's, the watch folder), absolute and inside the folders
+   * highsea may write to, or it throws. The runtime passes media's `checkPath` over the data root
+   * and the downloads folder; without it, any absolute path passes.
+   */
+  checkFolder?(path: string): string
 }
 
 export type GrabInput = {
@@ -189,6 +195,32 @@ export type GrabInput = {
 export type AddTorrentInput = {
   source: { torrent: Uint8Array } | { magnet: string } | { url: string }
   paused?: boolean
+  /** A category for manual torrents (6b); `manual` when none is given. */
+  category?: string
+}
+
+/** A torrent another client had, brought across by the qBittorrent importer (6b). */
+export type AdoptTorrentInput = {
+  torrent: Uint8Array
+  /** Where its data already is: the other client's save path, through the owner's path mapping. */
+  savePath: string
+  /** `manual` or one of the owner's categories; a linked torrent may be in any. */
+  category: string
+  rule: SeedRule
+  totals: { uploaded: number; downloaded: number; seedingMs: number }
+  priorities?: Priority[]
+  /** The library movie it was grabbed for, when the other program's history says so. */
+  link?: { itemId: string; releaseTitle: string } | null
+}
+
+/** A blocklist entry brought across from Radarr: no guid or hash, so it matches by title. */
+export type ImportedBlock = {
+  itemId: string
+  releaseTitle: string
+  indexer: string | null
+  quality: string | null
+  reason: string
+  date: number
 }
 
 type Row = typeof downloads.$inferSelect
@@ -211,6 +243,21 @@ export function createDownloads(deps: DownloadsDeps) {
     db.select().from(downloads).where(eq(downloads.torrentId, torrentId)).get()
   const snapshot = (torrentId: string | null): TorrentSnapshot | null =>
     torrentId && engine.has(torrentId) ? engine.get(torrentId) : null
+  const checkFolder =
+    deps.checkFolder ??
+    ((path: string) => {
+      if (!isAbsolute(path)) throw new AppError('invalid', `${path} isn’t an absolute path.`)
+      return resolve(path)
+    })
+  const categories = createCategories({
+    db,
+    clock,
+    events,
+    engine,
+    downloadsFolder: deps.downloadsFolder,
+    checkFolder,
+    topic: TORRENTS_TOPIC,
+  })
 
   function announce(opts: { queue?: string[]; torrents?: string[]; history?: boolean }) {
     if (opts.queue) events.emit({ topic: QUEUE_TOPIC, ids: opts.queue })
@@ -240,14 +287,29 @@ export function createDownloads(deps: DownloadsDeps) {
 
   function isBlocked(
     itemId: string,
-    release: { indexerId?: string | null; guid?: string | null; infoHash?: string | null },
+    release: {
+      indexerId?: string | null
+      guid?: string | null
+      infoHash?: string | null
+      title?: string | null
+    },
   ): boolean {
     const byHash = release.infoHash ? eq(blocklist.infoHash, release.infoHash) : undefined
     const byGuid =
       release.guid && release.indexerId
         ? and(eq(blocklist.guid, release.guid), eq(blocklist.indexerId, release.indexerId))
         : undefined
-    const match = byHash && byGuid ? or(byHash, byGuid) : (byHash ?? byGuid)
+    // an entry brought across from Radarr has neither (its API leaves the hash out): it matches by
+    // the release's title, as Radarr's own blocklist does for a torrent without a hash
+    const byTitle = release.title
+      ? and(
+          isNull(blocklist.guid),
+          isNull(blocklist.infoHash),
+          eq(blocklist.releaseTitle, release.title),
+        )
+      : undefined
+    const parts = [byHash, byGuid, byTitle].filter((x) => x !== undefined)
+    const match = parts.length > 1 ? or(...parts) : parts[0]
     if (!match) return false
     return !!db
       .select({ id: blocklist.id })
@@ -303,7 +365,7 @@ export function createDownloads(deps: DownloadsDeps) {
         `That release was rejected${why ? `: ${why}` : ''}. Grab anyway takes it.`,
       )
     }
-    if (!input.force && isBlocked(input.itemId, input))
+    if (!input.force && isBlocked(input.itemId, { ...input, title: view.title }))
       throw new AppError('conflict', 'That release is blocklisted. Grab anyway takes it.')
     const got = await deps.indexers.grab({
       tmdbId: movie.tmdbId,
@@ -490,6 +552,7 @@ export function createDownloads(deps: DownloadsDeps) {
       infoHash: snap.infoHash,
       movieId: d ? (deps.movie(d.itemId)?.tmdbId ?? null) : null,
       category: snap.category,
+      manual: snap.manual,
       size: snap.size,
       downloaded: snap.downloaded,
       uploaded: snap.uploaded,
@@ -549,6 +612,14 @@ export function createDownloads(deps: DownloadsDeps) {
       })
     } catch (e) {
       outcome = { ok: false, reason: (e as Error).message }
+    }
+    if (!outcome.ok && outcome.replace) {
+      logger.warn('a release can’t be imported; replacing it', {
+        download: d.id,
+        reason: outcome.reason,
+      })
+      await replace(d, outcome.reason)
+      return
     }
     if (!outcome.ok) {
       update(d.id, { state: 'import-blocked', stateReason: outcome.reason })
@@ -663,12 +734,38 @@ export function createDownloads(deps: DownloadsDeps) {
     if (speeds.length > SPEED_SAMPLES) speeds.shift()
   }
 
+  /** The watch folder inside the folders highsea may write to, and a category it can add to. */
+  function checkWatch(s: DownloadClientSettings) {
+    const typed = s.watchFolder?.trim()
+    let watchFolder: string | null = null
+    if (typed)
+      try {
+        watchFolder = checkFolder(typed)
+      } catch {
+        throw new AppError(
+          'invalid',
+          `${typed} isn’t inside the data folder or the downloads folder.`,
+          { field: 'watchFolder' },
+        )
+      }
+    if (s.watchCategory === MOVIES_CATEGORY || !categoryFolder(db, '', s.watchCategory))
+      throw new AppError('invalid', 'Choose one of your categories, or manual.', {
+        field: 'watchCategory',
+      })
+    return { watchFolder, watchCategory: s.watchCategory }
+  }
+
   function applySettings(s: DownloadClientSettings) {
     engine.setLimits({
       downloadRate: s.downloadRate,
       uploadRate: s.uploadRate,
       maxActive: s.maxActive,
     })
+    // 6b: encryption and uTP for new connections, and the router's mapping when the UPnP switch
+    // moved
+    engine.setEncryption(s.encryption)
+    engine.setUtp(s.utp)
+    void engine.refreshPortMapping()
   }
 
   return {
@@ -830,6 +927,20 @@ export function createDownloads(deps: DownloadsDeps) {
 
     /** Add torrent: a magnet, a `.torrent`, or its URL. Manual torrents aren't imported. */
     async add(input: AddTorrentInput): Promise<TorrentView> {
+      const category = input.category ?? MANUAL_CATEGORY
+      if (category === MOVIES_CATEGORY)
+        throw new AppError(
+          'invalid',
+          'movies is for the library’s grabs. Choose another category.',
+          {
+            field: 'category',
+          },
+        )
+      const savePath = categoryFolder(db, deps.downloadsFolder(), category)
+      if (!savePath)
+        throw new AppError('invalid', `There’s no category named ${category}.`, {
+          field: 'category',
+        })
       let source: { torrent: Uint8Array } | { magnet: string }
       if ('url' in input.source) {
         try {
@@ -850,8 +961,8 @@ export function createDownloads(deps: DownloadsDeps) {
       } else source = input.source
       const added = await engine.add({
         source,
-        savePath: join(deps.downloadsFolder(), MANUAL_CATEGORY),
-        category: MANUAL_CATEGORY,
+        savePath,
+        category,
         manual: true,
         paused: input.paused,
         rule: ruleOf(null),
@@ -859,6 +970,92 @@ export function createDownloads(deps: DownloadsDeps) {
       if (added.existing) throw new AppError('conflict', 'That torrent is already in Downloads.')
       announce({ torrents: [added.id] })
       return torrentView(engine.get(added.id))
+    },
+
+    /**
+     * The qBittorrent importer's add (6b): paused, at the data's own folder, with the totals the
+     * other client counted. The engine checks the data that's there once, in the background, since
+     * no other client's resume data can be trusted (ADR 0041). Safe to repeat: a torrent already in
+     * Downloads is returned with `existing`, and its link is written once.
+     */
+    async adoptTorrent(input: AdoptTorrentInput): Promise<{ id: string; existing: boolean }> {
+      if (input.category !== MANUAL_CATEGORY && input.category !== MOVIES_CATEGORY)
+        if (!categoryFolder(db, deps.downloadsFolder(), input.category))
+          throw new AppError('invalid', `There’s no category named ${input.category}.`, {
+            field: 'category',
+          })
+      const added = await engine.add({
+        source: { torrent: input.torrent },
+        savePath: checkFolder(input.savePath),
+        category: input.category,
+        manual: !input.link,
+        paused: true,
+        rule: input.rule,
+        priorities: input.priorities,
+        totals: input.totals,
+      })
+      if (input.link && !byTorrent(added.id)) {
+        const snap = engine.get(added.id)
+        const now = clock.now()
+        // completed: it's the movie's record of where its file came from, never imported again
+        db.insert(downloads)
+          .values({
+            id: newId('dl'),
+            torrentId: added.id,
+            itemId: input.link.itemId,
+            versionId: null,
+            indexerId: null,
+            indexerName: null,
+            guid: null,
+            infoHash: added.infoHash,
+            releaseTitle: input.link.releaseTitle,
+            quality: null,
+            size: snap.size,
+            release: { importedFrom: 'qbittorrent' },
+            state: 'completed',
+            stateReason: null,
+            progressAt: now,
+            grabbedAt: snap.addedAt,
+            importedAt: now,
+            updatedAt: now,
+          })
+          .run()
+      }
+      announce({ torrents: [added.id] })
+      return { id: added.id, existing: added.existing }
+    },
+
+    /** Brings one of Radarr's blocklist entries across. Safe to repeat: the same entry is kept once. */
+    importBlock(entry: ImportedBlock): boolean {
+      const there = db
+        .select({ id: blocklist.id })
+        .from(blocklist)
+        .where(
+          and(
+            eq(blocklist.itemId, entry.itemId),
+            eq(blocklist.releaseTitle, entry.releaseTitle),
+            isNull(blocklist.guid),
+            isNull(blocklist.infoHash),
+          ),
+        )
+        .get()
+      if (there) return false
+      db.insert(blocklist)
+        .values({
+          id: newId('blk'),
+          itemId: entry.itemId,
+          releaseTitle: entry.releaseTitle,
+          indexerId: null,
+          indexerName: entry.indexer,
+          guid: null,
+          infoHash: null,
+          quality: entry.quality,
+          reason: entry.reason,
+          date: entry.date,
+        })
+        .run()
+      announce({ history: true })
+      return true
     },
 
     async deleteTorrent(id: string, deleteData: boolean) {
@@ -930,7 +1127,8 @@ export function createDownloads(deps: DownloadsDeps) {
     settings,
 
     async saveSettings(value: DownloadClientSettings): Promise<DownloadClientSettings> {
-      const next = downloadClientSchema.parse(value)
+      const parsed = downloadClientSchema.parse(value)
+      const next = { ...parsed, ...checkWatch(parsed) }
       const before = settings()
       writeSetting(db, DOWNLOAD_CLIENT_KEY, next, clock.now())
       applySettings(next)
@@ -938,6 +1136,14 @@ export function createDownloads(deps: DownloadsDeps) {
       events.emit({ topic: 'settings.updated' })
       return next
     },
+
+    // -------------------------------------------------------------- categories (6b)
+
+    categories: categories.list,
+    saveCategory: categories.save,
+    removeCategory: categories.remove,
+    /** The owner's categories' folders: A17 may browse and import from them. */
+    categoryFolders: categories.folders,
 
     // -------------------------------------------------------------- the blocklist
 

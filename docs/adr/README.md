@@ -44,6 +44,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0038](0038-downloads.md) | Downloads: grabbing, the queue, protection and seeding | Accepted |
 | [0039](0039-importing.md) | Importing: an idempotent pipeline with Radarr's naming | Accepted |
 | [0040](0040-test-media.md) | Test media generated with ffmpeg, and a local swarm | Accepted |
+| [0041](0041-migration-importers.md) | The migration importers: Radarr and qBittorrent through their APIs | Accepted |
 | [0042](0042-vpn-connections.md) | VPN connections: one binding, four modes | Accepted |
 
 Template: copy [`template.md`](template.md).

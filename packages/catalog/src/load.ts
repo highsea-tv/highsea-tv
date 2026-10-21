@@ -7,7 +7,7 @@ import { join } from 'node:path'
 import { type Definition, formatIssues, validateDefinition } from '@highsea/schemas/indexers'
 import { parseDocument } from 'yaml'
 
-export type LoadedFile = { file: string; raw: unknown; definition: Definition }
+export type LoadedFile<T = Definition> = { file: string; raw: unknown; definition: T }
 export type BrokenFile = { file: string; message: string }
 
 const DEFINITION_FILE = /\.(ya?ml|json)$/
@@ -24,7 +24,25 @@ function readYaml(text: string): unknown {
 }
 
 export function loadDefinitionFiles(dir: string): { loaded: LoadedFile[]; broken: BrokenFile[] } {
-  const loaded: LoadedFile[] = []
+  return loadEntryFiles(dir, (raw) => {
+    const result = validateDefinition(raw)
+    return result.ok
+      ? { ok: true, value: result.definition }
+      : { ok: false, message: formatIssues(result.errors) }
+  })
+}
+
+/** Checks one entry: its parsed value, or every problem on one line each. */
+export type EntryValidator<T> = (
+  raw: unknown,
+) => { ok: true; value: T } | { ok: false; message: string }
+
+/** The same for any kind whose entries carry an `id` (the VPN providers, ADR 0042). */
+export function loadEntryFiles<T extends { id: string }>(
+  dir: string,
+  validate: EntryValidator<T>,
+): { loaded: LoadedFile<T>[]; broken: BrokenFile[] } {
+  const loaded: LoadedFile<T>[] = []
   const broken: BrokenFile[] = []
   if (!existsSync(dir)) return { loaded, broken }
   for (const file of readdirSync(dir)
@@ -38,9 +56,9 @@ export function loadDefinitionFiles(dir: string): { loaded: LoadedFile[]; broken
       broken.push({ file, message: `Couldn’t read it: ${(e as Error).message}` })
       continue
     }
-    const result = validateDefinition(raw)
-    if (result.ok) loaded.push({ file, raw, definition: result.definition })
-    else broken.push({ file, message: formatIssues(result.errors) })
+    const result = validate(raw)
+    if (result.ok) loaded.push({ file, raw, definition: result.value })
+    else broken.push({ file, message: result.message })
   }
   const ids = new Map<string, string>()
   for (const l of loaded) {

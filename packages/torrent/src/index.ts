@@ -2,6 +2,8 @@
 /// <reference path="./vendor.d.ts" />
 // The torrent engine (ADR 0005, ADR 0037).
 export { Bitfield } from './bitfield.ts'
+export type { BlocklistFormat, ParsedBlocklist, RangeSet } from './blocklist.ts'
+export { MAX_LIST_BYTES, parseBlocklist } from './blocklist.ts'
 export type { Dht } from './dht.ts'
 export { DEFAULT_BOOTSTRAP } from './dht.ts'
 export type {
@@ -22,6 +24,8 @@ export {
   toMagnet,
   torrentFileOf,
 } from './metainfo.ts'
+export type { EncryptionPolicy, Method } from './mse.ts'
+export type { MappingStatus } from './portmap.ts'
 export type { Binding, SocketRecord } from './sockets.ts'
 export type { Priority } from './storage.ts'
 export type { EngineState, PeerInfo, SeedRule, SessionStats } from './torrent.ts'

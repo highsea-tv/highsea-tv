@@ -52,9 +52,13 @@ declare module 'bittorrent-protocol' {
     ut_pex?: {
       start(): void
       reset(): void
-      addPeer(peer: string): void
+      addPeer(peer: string, flags?: { supportsUtp?: boolean }): void
       dropPeer(peer: string): void
-      on(event: 'peer', fn: (peer: string) => void): void
+      /** BEP 11's `added6` and `dropped6`: `[address]:port`. */
+      addPeer6(peer: string, flags?: { supportsUtp?: boolean }): void
+      dropPeer6(peer: string): void
+      /** Both families arrive here, an IPv6 peer as `[address]:port` (ut_pex 5.0.2, index.js). */
+      on(event: 'peer', fn: (peer: string, flags: { supportsUtp: boolean }) => void): void
       on(event: 'peer6', fn: (peer: string) => void): void
     }
     use(extension: Extension): void

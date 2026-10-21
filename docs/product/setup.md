@@ -90,6 +90,8 @@ Takes a freshly started server to a working one in a few minutes: a name, the ow
 | 8 | Link to highsea cloud | Optional. Everything works without it: the cloud only adds conveniences, and your library never leaves this server. |
 | 9 | Check and finish | Everything here can be changed later in Settings. |
 
+*As built (6b; checkpoint 6's answer 10):* step 1 adds a line under the name: "Coming from Radarr or qBittorrent? You can bring your library across after setup." It's plain text, because Settings › Migration opens only once setup has signed the owner in.
+
 **TMDB key** (checkpoint 4, as built):
 - the field is "TMDB API key or Read Access Token", with the hint "Either one works. TMDB shows both on your account's API page.";
 - the link: **Open TMDB's API page**;

@@ -80,7 +80,15 @@ export type VpnStatus = {
  * to bind every socket to (null for any), and DNS servers (empty for the system's). `null` in its
  * place means the tunnel is down and nothing may leave.
  */
-export type VpnBinding = { address: string | null; dns: string[] }
+export type VpnBinding = {
+  address: string | null
+  dns: string[]
+  /**
+   * The tunnel's IPv6 address beside `address`, or null when it has none: IPv6 is used only then
+   * (6b). Absent with no VPN: the torrent engine uses IPv6 when the host has a global address.
+   */
+  address6?: string | null
+}
 
 /** An interface the owner can pick in the interface mode. */
 export type VpnInterface = { name: string; ipv4: string | null; ipv6: string | null }

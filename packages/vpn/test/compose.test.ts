@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { composeFor, gluetunProviders, vpnProviders } from '../src/index.ts'
+import { composeFor, gluetunProviders } from '../src/index.ts'
+import { seedProviders } from './helpers.ts'
 
 describe('Compose for your provider', () => {
   test('Proton VPN’s block, as the prototype shows it', () => {
@@ -38,7 +39,7 @@ describe('Compose for your provider', () => {
 
   test('an unknown provider gets Proton’s block; every listed provider but other has its own', () => {
     expect(composeFor({ provider: 'nope' })).toBe(composeFor({ provider: 'proton' }))
-    for (const p of vpnProviders.filter((p) => p.id !== 'other'))
+    for (const p of seedProviders().filter((p) => p.id !== 'other'))
       expect(gluetunProviders[p.id]).toBeDefined()
   })
 

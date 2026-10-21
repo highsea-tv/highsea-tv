@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# highsea running its own WireGuard tunnel (docs/product/vpn.md › highsea connects, ADR 0042).
+#   docker compose -f compose.connects.yaml up --build
+# Then in Settings › VPN choose "highsea connects", pick your provider and add its configuration.
+#
+# - NET_ADMIN lets highsea make its interface (hswg0), its routes and its rule. The entrypoint keeps
+#   the capability for the PUID user (docker/entrypoint.sh); nothing else in the image gets root.
+# - The container has its own network, not the host's: with host networking, highsea's interface and
+#   rule would land in the host's network, beside everything else on the machine. So the ports are
+#   published, and LAN discovery is limited to the UDP broadcast (ADR 0020).
+# - Kernel WireGuard (Linux 5.6 and later) needs nothing more. Where the kernel has none, highsea
+#   falls back to wireguard-go, which needs the TUN device: uncomment `devices`.
+services:
+  highsea:
+    build: .
+    image: highsea:dev
+    container_name: highsea
+    cap_add: [NET_ADMIN]
+    # devices: [/dev/net/tun:/dev/net/tun]
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Etc/UTC
+    volumes:
+      - ./.dev/docker/config:/config
+      # one root for downloads and the library, so imports can hardlink
+      - ./.dev/docker/data:/data
+    ports:
+      - "3000:3000"
+      - "8443:8443"   # built-in TLS, when it's on (ADR 0026)
+      - "6881:6881/tcp"
+      - "6881:6881/udp"
+      - "7368:7368/udp"
+    restart: unless-stopped

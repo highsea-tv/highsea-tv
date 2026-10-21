@@ -3,11 +3,11 @@
 // Downloads, manual import and the folder browser, a movie's grab, files and history, Settings ›
 // Media management, › Download client and › VPN, and System's rates. Thin handlers over
 // @highsea/downloads, @highsea/media and @highsea/vpn; what changes things goes in the audit log.
-// `/torrents/limits`, `/pauseAll` and `/resumeAll` are registered before `/torrents/{id}`.
+// `/torrents/limits`, `/categories`, `/pauseAll` and `/resumeAll` are registered before
+// `/torrents/{id}`. Categories (6b) are listed for staff and managed by the owner.
 import { routes } from '@highsea/api-contract'
 import { AppError } from '@highsea/core'
 import type { ImportResult } from '@highsea/media/movies'
-import { providerById, vpnProviders } from '@highsea/vpn'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'
@@ -115,12 +115,27 @@ export function registerDownloads(app: OpenAPIHono<Env>) {
     return c.body(null, 204)
   })
 
+  app.openapi(routes.downloads.categories, (c) => c.json(runtime(c).downloads.categories(), 200))
+
+  app.openapi(routes.downloads.saveCategory, (c) => {
+    const saved = runtime(c).downloads.saveCategory(c.req.valid('json'))
+    audit(c, 'downloads.category-saved', { type: 'category', id: saved.name })
+    return c.json(saved, 200)
+  })
+
+  app.openapi(routes.downloads.removeCategory, (c) => {
+    const { name } = c.req.valid('param')
+    runtime(c).downloads.removeCategory(name)
+    audit(c, 'downloads.category-removed', { type: 'category', id: name })
+    return c.body(null, 204)
+  })
+
   app.openapi(routes.downloads.get, (c) =>
     c.json(runtime(c).downloads.torrent(c.req.valid('param').id), 200),
   )
 
   app.openapi(routes.downloads.add, async (c) => {
-    const { urlOrMagnet, torrent: file, paused } = c.req.valid('json')
+    const { urlOrMagnet, torrent: file, paused, category } = c.req.valid('json')
     const link = urlOrMagnet?.trim() ?? ''
     const source = file
       ? { torrent: new Uint8Array(Buffer.from(file, 'base64')) }
@@ -133,7 +148,7 @@ export function registerDownloads(app: OpenAPIHono<Env>) {
       throw new AppError('invalid', 'That isn’t a magnet link or an address.', {
         field: 'urlOrMagnet',
       })
-    const added = await runtime(c).downloads.add({ source, paused })
+    const added = await runtime(c).downloads.add({ source, paused, category })
     audit(c, 'torrent.added', torrent(added.id))
     return c.json(added, 201)
   })
@@ -250,13 +265,13 @@ export function registerDownloads(app: OpenAPIHono<Env>) {
     return c.json(status, 200)
   })
 
-  app.openapi(routes.vpn.providers, (c) => c.json(vpnProviders, 200))
+  app.openapi(routes.vpn.providers, (c) => c.json(runtime(c).vpn.providers(), 200))
 
   app.openapi(routes.vpn.interfaces, (c) => c.json(runtime(c).vpn.interfaces(), 200))
 
   app.openapi(routes.vpn.compose, (c) => {
     const input = c.req.valid('json')
-    if (!providerById(input.provider))
+    if (!runtime(c).vpn.provider(input.provider))
       throw new AppError('invalid', 'That provider isn’t one highsea knows.', { field: 'provider' })
     return c.json({ yaml: runtime(c).vpn.compose(input) }, 200)
   })

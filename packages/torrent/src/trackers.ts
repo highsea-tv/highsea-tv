@@ -5,9 +5,18 @@
 // resolver (lib/client/udp-tracker.js and http-tracker.js at 11.2.3): every request here goes
 // through the socket factory. Announce answers carry the swarm's seeders and leechers, which is
 // what A8 shows, so no separate scrape is sent.
+//
+// IPv6 (6b): BEP 7 (https://www.bittorrent.org/beps/bep_0007.html) asks for one announce from each
+// local address the client listens on, with that address as the source, and discourages the old
+// `ipv4=` and `ipv6=` parameters, which let anyone announce a victim's address. So with an IPv6 side
+// to the binding a tracker is announced to over each family it has an address in (an A and an AAAA
+// record), from that family's address, HTTP and UDP alike; IPv6 peers come back as `peers6` (BEP 7)
+// or, from a UDP tracker over IPv6, as 18-byte entries (BEP 15).
 import { randomBytes } from 'node:crypto'
+import { isIP } from 'node:net'
 import bencode from 'bencode'
-import type { SocketFactory } from './sockets.ts'
+import { ipv6Text } from './dht.ts'
+import type { Family, SocketFactory } from './sockets.ts'
 
 export type AnnounceEvent = 'started' | 'completed' | 'stopped' | null
 
@@ -68,13 +77,10 @@ export function compactPeers(data: Uint8Array, family: 4 | 6): { host: string; p
     const view = new DataView(data.buffer, data.byteOffset + i, size)
     const port = view.getUint16(size - 2)
     if (port === 0) continue
-    let host: string
-    if (family === 4) host = `${data[i]}.${data[i + 1]}.${data[i + 2]}.${data[i + 3]}`
-    else {
-      const groups: string[] = []
-      for (let g = 0; g < 8; g++) groups.push(view.getUint16(g * 2).toString(16))
-      host = groups.join(':')
-    }
+    const host =
+      family === 4
+        ? `${data[i]}.${data[i + 1]}.${data[i + 2]}.${data[i + 3]}`
+        : ipv6Text(data.subarray(i, i + 16))
     out.push({ host, port })
   }
   return out
@@ -87,6 +93,7 @@ export async function announceHttp(
   url: string,
   a: Announce,
   timeoutMs = 15_000,
+  family?: Family,
 ): Promise<AnnounceResult> {
   const u = new URL(url)
   const params = [
@@ -102,7 +109,7 @@ export async function announceHttp(
     ...(a.event ? [`event=${a.event}`] : []),
   ]
   u.search = u.search ? `${u.search}&${params.join('&')}` : `?${params.join('&')}`
-  const res = await sockets.get(u, timeoutMs)
+  const res = await sockets.get(u, timeoutMs, family)
   if (res.status < 200 || res.status >= 300)
     throw new TrackerError(`The tracker answered with HTTP ${res.status}.`)
   let body: unknown
@@ -148,7 +155,7 @@ async function udpExchange(
   packet: (txid: number) => Uint8Array,
   timeoutMs: number,
 ): Promise<DataView> {
-  const socket = await sockets.udp(0)
+  const socket = await sockets.udp(0, isIP(host) === 6 ? 6 : 4)
   try {
     const txid = randomBytes(4).readUInt32BE(0)
     // BEP 15 retries after 15 * 2^n seconds; highsea gives up sooner, at the caller's deadline
@@ -185,9 +192,10 @@ export async function announceUdp(
   url: string,
   a: Announce,
   timeoutMs = 15_000,
+  family?: Family,
 ): Promise<AnnounceResult> {
   const u = new URL(url)
-  const host = await sockets.resolve(u.hostname.replace(/^\[|\]$/g, ''))
+  const host = await sockets.resolve(u.hostname.replace(/^\[|\]$/g, ''), family)
   const port = Number(u.port)
   if (!port) throw new TrackerError('The tracker’s address has no port.')
   const key = `${host}:${port}`
@@ -250,9 +258,34 @@ export async function announceUdp(
   }
 }
 
-export function announce(sockets: SocketFactory, url: string, a: Announce, timeoutMs?: number) {
-  if (url.startsWith('udp:')) return announceUdp(sockets, url, a, timeoutMs)
-  return announceHttp(sockets, url, a, timeoutMs)
+/**
+ * Announces to one tracker over each family the binding allows and the tracker has an address in
+ * (BEP 7): the peers of every answer together, an error only when no family got one.
+ */
+export async function announce(
+  sockets: SocketFactory,
+  url: string,
+  a: Announce,
+  timeoutMs?: number,
+): Promise<AnnounceResult> {
+  const one = (family?: Family) =>
+    url.startsWith('udp:')
+      ? announceUdp(sockets, url, a, timeoutMs, family)
+      : announceHttp(sockets, url, a, timeoutMs, family)
+  const literal = isIP(new URL(url).hostname.replace(/^\[|\]$/g, ''))
+  const families = sockets.locals().map((l) => l.family)
+  if (literal || families.length < 2) return one()
+  const settled = await Promise.allSettled(families.map((f) => one(f)))
+  const answers = settled.flatMap((r) => (r.status === 'fulfilled' ? [r.value] : []))
+  const first = answers[0]
+  if (!first) throw (settled[0] as PromiseRejectedResult).reason
+  return {
+    interval: Math.min(...answers.map((r) => r.interval)),
+    peers: answers.flatMap((r) => r.peers),
+    seeders: first.seeders,
+    leechers: first.leechers,
+    warning: answers.find((r) => r.warning)?.warning ?? null,
+  }
 }
 
 /**

@@ -5,6 +5,7 @@
 export * from './format.ts'
 export * from './keys.ts'
 export * from './load.ts'
+export * from './providers.ts'
 export * from './service.ts'
 export * from './signing.ts'
 

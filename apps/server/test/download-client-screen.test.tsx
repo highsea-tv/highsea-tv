@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Download client (checkpoint 6a), rendered against a fake of the API: the VPN in one
-// line with the way to Settings › VPN; Connections, with encryption and UPnP stored for a later
-// update; the default seeding rule in hours; and a save that sends Downloads' current speed limits
-// rather than stale ones. The shell and Next's router are stood in for.
+// line with the way to Settings › VPN; Connections, with 6b's IP blocklist; the default seeding rule
+// in hours; a save that sends Downloads' current speed limits rather than stale ones; 6b's watch
+// folder and categories. The shell and Next's router are stood in for.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ReactNode } from 'react'
@@ -48,6 +48,7 @@ type Req = { method: string; path: string; body: unknown }
 let state: {
   client: Record<string, unknown>
   limits: { downloadRate: number; uploadRate: number }
+  categories: { name: string; folder: string; fixed: boolean; torrents: number }[]
   requests: Req[]
 }
 
@@ -65,6 +66,21 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'PUT /api/v1/settings/downloadClient':
       state.client = body
       return json(state.client)
+    case 'GET /api/v1/torrents/categories':
+      return json(state.categories)
+    case 'POST /api/v1/torrents/categories': {
+      const { name, folder } = body as { name: string; folder: string | null }
+      if (name === 'movies')
+        return json(
+          {
+            error: { code: 'invalid', message: 'movies is built in.', details: { field: 'name' } },
+          },
+          400,
+        )
+      const saved = { name, folder: folder ?? `/data/downloads/${name}`, fixed: false, torrents: 0 }
+      state.categories = [...state.categories.filter((c) => c.name !== name), saved]
+      return json(saved)
+    }
     case 'GET /api/v1/torrents/limits':
       return json(state.limits)
     case 'GET /api/v1/vpn/status':
@@ -81,6 +97,11 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         checkedAt: null,
       })
   }
+  if (method === 'DELETE' && path.startsWith('/api/v1/torrents/categories/')) {
+    const name = decodeURIComponent(path.split('/').pop() ?? '')
+    state.categories = state.categories.filter((c) => c.name !== name)
+    return new Response(null, { status: 204 })
+  }
   return json({ error: { code: 'not-found', message: `Nothing at ${path}.` } }, 404)
 }
 
@@ -90,13 +111,23 @@ beforeEach(() => {
       port: 6881,
       encryption: 'prefer',
       upnp: false,
+      utp: true,
       maxActive: 3,
       downloadRate: 0,
       uploadRate: 0,
       seedRatio: 2,
       seedMinutes: 10_080,
+      watchFolder: null,
+      watchCategory: 'manual',
+      blocklistUrl: '',
     },
     limits: { downloadRate: 0, uploadRate: 0 },
+    categories: [
+      { name: 'movies', folder: '/data/downloads/movies', fixed: true, torrents: 2 },
+      { name: 'manual', folder: '/data/downloads/manual', fixed: true, torrents: 0 },
+      { name: 'books', folder: '/data/downloads/books', fixed: false, torrents: 1 },
+      { name: 'linux', folder: '/data/downloads/linux', fixed: false, torrents: 0 },
+    ],
     requests: [],
   }
 })
@@ -150,7 +181,8 @@ describe('Settings › Download client', () => {
       '/settings/vpn',
     )
     expect(page.getByRole('link', { name: 'Downloads' }).getAttribute('href')).toBe('/downloads')
-    expect(page.getByText(/Encryption and UPnP take effect in a later update/)).toBeTruthy()
+    // 6b: encryption and UPnP work, so the line saying they'd come later is gone
+    expect(page.queryByText(/take effect in a later update/)).toBeNull()
   })
 
   test('the seeding rule shows in hours, and the save sends minutes with today’s limits', async () => {
@@ -161,6 +193,7 @@ describe('Settings › Download client', () => {
     await user.type(hours, '72')
     await user.clear(page.getByLabelText('Ratio'))
     await user.click(page.getByRole('switch', { name: 'Open the port with UPnP' }))
+    await user.click(page.getByRole('switch', { name: 'Connect to peers over uTP' }))
     // Downloads changed the limits since this page loaded
     state.limits = { downloadRate: 5_000_000, uploadRate: 1_000_000 }
     await user.click(page.getByRole('button', { name: 'Save' }))
@@ -169,11 +202,15 @@ describe('Settings › Download client', () => {
       port: 6881,
       encryption: 'prefer',
       upnp: true,
+      utp: false,
       maxActive: 3,
+      blocklistUrl: '',
       seedRatio: null,
       seedMinutes: 4320,
       downloadRate: 5_000_000,
       uploadRate: 1_000_000,
+      watchFolder: null,
+      watchCategory: 'manual',
     })
   })
 
@@ -190,5 +227,81 @@ describe('Settings › Download client', () => {
     expect(page.getByText('Use a port from 1024 to 65535.')).toBeTruthy()
     expect(page.getByText('Use a whole number from 1 to 20.')).toBeTruthy()
     expect(requested('PUT', '/api/v1/settings/downloadClient')).toHaveLength(0)
+  })
+
+  test('the watch folder saves with the rest, in one of the categories but not movies', async () => {
+    const { user, page } = await open()
+    const watch = within(page.getByRole('region', { name: 'Watch folder' }))
+    await user.type(watch.getByLabelText('Folder'), '/data/watch')
+    await user.click(watch.getByRole('combobox'))
+    expect((await page.findAllByRole('option')).map((o) => o.textContent)).toEqual([
+      'manual',
+      'books',
+      'linux',
+    ])
+    await user.click(page.getByRole('option', { name: 'linux' }))
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(requested('PUT', '/api/v1/settings/downloadClient')[0]?.body).toMatchObject({
+      watchFolder: '/data/watch',
+      watchCategory: 'linux',
+    })
+  })
+
+  test('categories: built in ones stay, one in use can’t go, others save and remove at once', async () => {
+    const { user, page } = await open()
+    const group = within(page.getByRole('region', { name: 'Categories' }))
+    expect(group.queryByRole('button', { name: 'Remove movies' })).toBeNull()
+    expect(
+      (group.getByRole('button', { name: 'Remove books' }) as HTMLButtonElement).disabled,
+    ).toBe(true)
+    expect(group.getByText('A torrent uses it. Remove it from Downloads first.')).toBeTruthy()
+
+    await user.type(group.getByLabelText('Name'), 'movies')
+    await user.click(group.getByRole('button', { name: 'Save the category' }))
+    await settle()
+    expect(group.getByText('movies is built in.')).toBeTruthy()
+
+    await user.clear(group.getByLabelText('Name'))
+    await user.type(group.getByLabelText('Name'), 'music videos')
+    await user.click(group.getByRole('button', { name: 'Save the category' }))
+    await settle()
+    expect(requested('POST', '/api/v1/torrents/categories')[1]?.body).toEqual({
+      name: 'music videos',
+      folder: null,
+    })
+    expect(group.getByText('/data/downloads/music videos')).toBeTruthy()
+
+    await user.click(group.getByRole('button', { name: 'Remove linux' }))
+    await settle()
+    await user.click(
+      within(page.getByRole('alertdialog')).getByRole('button', { name: 'Remove the category' }),
+    )
+    await settle()
+    expect(requested('DELETE', '/api/v1/torrents/categories/linux')).toHaveLength(1)
+    expect(group.queryByText('/data/downloads/linux')).toBeNull()
+  })
+})
+
+describe('the IP blocklist', () => {
+  test('an address is saved as typed, trimmed; another scheme is caught before saving', async () => {
+    const { user, page } = await open()
+    const field = page.getByLabelText('IP blocklist') as HTMLInputElement
+    expect(field.value).toBe('')
+    await user.type(field, 'ftp://lists.example/level1.gz')
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(
+      page.getByText('Use an http or https address, or a file in the config folder.'),
+    ).toBeTruthy()
+    expect(requested('PUT', '/api/v1/settings/downloadClient')).toHaveLength(0)
+    await user.clear(field)
+    await user.type(field, ' https://lists.example/level1.gz ')
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(
+      (requested('PUT', '/api/v1/settings/downloadClient')[0]?.body as { blocklistUrl?: string })
+        ?.blocklistUrl,
+    ).toBe('https://lists.example/level1.gz')
   })
 })

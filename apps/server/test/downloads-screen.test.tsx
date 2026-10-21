@@ -50,6 +50,7 @@ const torrent = (extra: Record<string, unknown> = {}) => ({
   infoHash: 'ab'.repeat(20),
   movieId: 45745,
   category: 'movies',
+  manual: false,
   size: 2_000_000_000,
   downloaded: 1_000_000_000,
   uploaded: 0,
@@ -85,6 +86,7 @@ const STALLED = torrent({
   name: 'Something.Else',
   movieId: null,
   category: 'manual',
+  manual: true,
   indexer: null,
   state: 'stalled',
   stateReason: 'No one in the swarm has the rest.',
@@ -130,6 +132,12 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'PATCH /api/v1/torrents/limits':
       state.limits = { ...state.limits, ...(body as object) }
       return json(state.limits)
+    case 'GET /api/v1/torrents/categories':
+      return json([
+        { name: 'movies', folder: '/data/downloads/movies', fixed: true, torrents: 1 },
+        { name: 'manual', folder: '/data/downloads/manual', fixed: true, torrents: 1 },
+        { name: 'books', folder: '/data/downloads/books', fixed: false, torrents: 0 },
+      ])
     case 'GET /api/v1/vpn/status':
       return json(state.vpn)
     case 'POST /api/v1/torrents':
@@ -257,7 +265,11 @@ describe('A8 Downloads', () => {
     await user.click(dialog.getByRole('checkbox'))
     await user.click(dialog.getByRole('button', { name: 'Add' }))
     await settle()
-    expect(sent('POST', '/api/v1/torrents')[0]?.body).toEqual({ urlOrMagnet: magnet, paused: true })
+    expect(sent('POST', '/api/v1/torrents')[0]?.body).toEqual({
+      urlOrMagnet: magnet,
+      paused: true,
+      category: 'manual',
+    })
     expect(page.queryByRole('dialog')).toBeNull()
   })
 
@@ -279,7 +291,40 @@ describe('A8 Downloads', () => {
     expect(sent('POST', '/api/v1/torrents')[0]?.body).toEqual({
       torrent: btoa('d8:e'),
       paused: false,
+      category: 'manual',
     })
+  })
+
+  test('Add: the category select offers manual and the owner’s, not movies', async () => {
+    const { user, page } = await open()
+    await user.click(page.getAllByRole('button', { name: 'Add torrent' })[0] as HTMLElement)
+    await settle()
+    const dialog = within(page.getByRole('dialog'))
+    await user.click(dialog.getByRole('combobox', { name: 'Category' }))
+    expect((await page.findAllByRole('option')).map((o) => o.textContent)).toEqual([
+      'manual',
+      'books',
+    ])
+    await user.click(page.getByRole('option', { name: 'books' }))
+    const magnet = `magnet:?xt=urn:btih:${'cd'.repeat(20)}&dn=Something`
+    await user.click(dialog.getByLabelText('Magnet link or .torrent URL'))
+    await user.paste(magnet)
+    await user.click(dialog.getByRole('button', { name: 'Add' }))
+    await settle()
+    expect(sent('POST', '/api/v1/torrents')[0]?.body).toEqual({
+      urlOrMagnet: magnet,
+      paused: false,
+      category: 'books',
+    })
+  })
+
+  test('the category filter shows one category’s torrents', async () => {
+    const { user, page } = await open()
+    await user.click(page.getByRole('combobox', { name: 'Category' }))
+    await user.click(await page.findByRole('option', { name: 'manual' }))
+    await settle()
+    expect(page.queryByRole('row', { name: /Sintel\.2010/ })).toBeNull()
+    expect(page.getByRole('row', { name: /Something\.Else/ })).toBeTruthy()
   })
 
   test('Limits sends bytes per second, 0 for no limit', async () => {
@@ -343,6 +388,47 @@ describe('A8 Downloads', () => {
     expect(sheet.queryByRole('button', { name: 'Open the movie' })).toBeNull()
     expect(sheet.getByText('No one in the swarm has the rest.')).toBeTruthy()
     expect(sheet.getByText('Public')).toBeTruthy()
+  })
+
+  test('the sheet: a finished torrent added by hand can be imported into the library', async () => {
+    state.torrents = [
+      torrent({
+        id: 'tr_4',
+        name: 'Sintel (2010)',
+        movieId: null,
+        category: 'books',
+        manual: true,
+        progress: 1,
+        state: 'seeding',
+        savePath: '/data/downloads/books',
+      }),
+    ]
+    const { user, page } = await open()
+    await user.click(page.getByRole('button', { name: 'Sintel (2010)' }))
+    await settle()
+    const sheet = within(page.getByRole('dialog'))
+    await user.click(sheet.getByRole('button', { name: 'More for Sintel (2010)' }))
+    await user.click(await page.findByRole('menuitem', { name: 'Import into the library' }))
+    expect(pushed).toEqual(['/activity/import?path=%2Fdata%2Fdownloads%2Fbooks%2FSintel%20(2010)'])
+  })
+
+  test('the sheet: until it finishes, Import into the library waits; grabs have no More', async () => {
+    const { user, page } = await open()
+    await user.click(page.getByRole('button', { name: 'Something.Else' }))
+    await settle()
+    let sheet = within(page.getByRole('dialog'))
+    await user.click(sheet.getByRole('button', { name: 'More for Something.Else' }))
+    const item = await page.findByRole('menuitem', {
+      name: 'Import into the library when it finishes',
+    })
+    expect(item.getAttribute('aria-disabled')).toBe('true')
+    cleanup()
+
+    await open()
+    await user.click(page.getByRole('button', { name: 'Sintel.2010.1080p.BluRay.x264-GRP' }))
+    await settle()
+    sheet = within(page.getByRole('dialog'))
+    expect(sheet.queryByRole('button', { name: /^More for/ })).toBeNull()
   })
 
   test('Remove asks first, and can delete the data', async () => {

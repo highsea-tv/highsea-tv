@@ -12,8 +12,12 @@ import { z } from 'zod'
 export const CATALOG_FORMAT = 1
 export const CHANNELS = ['stable', 'beta'] as const
 export type Channel = (typeof CHANNELS)[number]
-/** Only indexers ship now; presets and sound packs can ride the same format later (owner's answer 8). */
-export const CATALOG_KINDS = ['indexers'] as const
+/**
+ * Indexers, and since checkpoint 6b the VPN providers highsea connects to (ADR 0042); presets and
+ * sound packs can ride the same format later (owner's answer 8).
+ */
+export const CATALOG_KINDS = ['indexers', 'vpn-providers'] as const
+export type CatalogKind = (typeof CATALOG_KINDS)[number]
 
 /** `2026.10.21`, or `2026.10.21.2` for a second release that day. */
 const CATALOG_VERSION = /^(\d{4})\.(\d{1,2})\.(\d{1,2})(?:\.(\d{1,3}))?$/

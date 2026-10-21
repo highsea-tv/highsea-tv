@@ -4,8 +4,11 @@ import { networkInterfaces } from 'node:os'
 import { join, resolve } from 'node:path'
 import { type Auth, createAuth, type Issued, type RequestMeta } from '@highsea/auth'
 import {
+  CATALOG_SETTINGS_KEY,
   type Catalog,
   createCatalog,
+  createVpnProviderCatalog,
+  defaultCatalogSettings,
   SEED_DIR,
   type TrustedKey,
   trustedKeys,
@@ -32,15 +35,30 @@ import {
 import { type Database, type Db, migrate, openDatabase, readSetting, schema } from '@highsea/db'
 import {
   createDownloads,
+  createIpBlocklist,
+  createWatchFolder,
   DEFAULT_DOWNLOAD_CLIENT,
   DOWNLOAD_CLIENT_KEY,
   type DownloadClientSettings,
   type Downloads,
+  type WatchFolder,
 } from '@highsea/downloads'
+import { createQbittorrentImporter, type QbittorrentImporter } from '@highsea/importers/qbittorrent'
+import { createRadarrImporter, type RadarrImporter } from '@highsea/importers/radarr'
 import { createIndexers, type Indexers } from '@highsea/indexers'
 import { createJobQueue, type JobQueue } from '@highsea/jobs'
 import { createMovies, type Movies } from '@highsea/media/movies'
-import { createMedia, type Media, vetFiles } from '@highsea/media/shared'
+import {
+  checkPath,
+  createLibraryWatch,
+  createMedia,
+  type LibraryWatch,
+  type Media,
+  unarAvailable,
+  unarBinary,
+  vetFiles,
+  type WatchFn,
+} from '@highsea/media/shared'
 import { createMetadata, type Metadata, TMDB_ATTRIBUTION } from '@highsea/metadata'
 import type { MdnsResponder } from '@highsea/network'
 import {
@@ -50,7 +68,7 @@ import {
   type WidgetSource,
 } from '@highsea/personalization'
 import { createTorrentEngine, HASH_WORKER, type TorrentEngine } from '@highsea/torrent'
-import { createVpn, type Vpn } from '@highsea/vpn'
+import { CommandFailed, createVpn, type Vpn } from '@highsea/vpn'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { type BrowseListing, browse } from './browse.ts'
@@ -173,10 +191,20 @@ export type Runtime = {
   indexers: Indexers
   /** The BitTorrent engine (ADR 0037). */
   engine: TorrentEngine
-  /** Grabs, the queue, the monitor and the blocklist (ADR 0038). */
+  /** Grabs, the queue, the monitor and the blocklist (ADR 0038); categories (6b). */
   downloads: Downloads
+  /** The watch folder (6b): `tick()` looks once; the runtime looks every 10 seconds. */
+  watchFolder: WatchFolder
   /** VPN connections: the mode, the tunnel, the checks and the binding (ADR 0040). */
   vpn: Vpn
+  /** The one-time importers from Radarr and qBittorrent: Settings › Migration (ADR 0041). */
+  importers: { radarr: RadarrImporter; qbittorrent: QbittorrentImporter }
+  /**
+   * Watching the root folders (6b): a change asks for a scan of its title folder. `sync()` after
+   * root folders change; a root that can't be watched is a health note, and the 12-hourly scan
+   * covers it.
+   */
+  libraryWatch: Pick<LibraryWatch, 'problems' | 'watching'> & { sync(): void }
   /** Setup's movies and downloads folders. */
   folders(): MediaFolders
   /** A folder inside the data root, a root folder or the downloads folder (A17's Browse). */
@@ -240,6 +268,8 @@ export type BootOptions = {
   torrent?: { port?: number; dht?: boolean; offline?: boolean }
   /** ffprobe, the downloads folder and the rest the import pipeline takes; tests pass clips. */
   importing?: Parameters<typeof createMovies>[0]['importing']
+  /** `fs.watch` for the root folders; tests pass one that fails. */
+  watch?: WatchFn
 }
 
 const g = globalThis as typeof globalThis & { __highsea?: Runtime }
@@ -381,6 +411,34 @@ export async function boot(options: BootOptions): Promise<Runtime> {
   catalog.start()
   catalog.schedule(clock.now())
 
+  // the VPN providers, the catalog's `vpn-providers` kind (ADR 0042 › 6b), on its channel
+  const vpnProviders = createVpnProviderCatalog({
+    logger,
+    clock,
+    jobs,
+    fetch: outside,
+    configDir: config.configDir,
+    trustedKeys: options.catalog?.trustedKeys ?? trustedKeys(config.catalogDevKey ?? false),
+    seedDir: join(SEED_DIR, 'vpn-providers'),
+    mainUrl:
+      options.catalog?.mainUrl === undefined
+        ? (config.catalogUrl ?? null)
+        : options.catalog.mainUrl,
+    settings: () => {
+      const s = readSetting(db, CATALOG_SETTINGS_KEY, defaultCatalogSettings)
+      return { channel: s.channel, autoUpdate: s.autoUpdate }
+    },
+  })
+  vpnProviders.defineJobs()
+  vpnProviders.start()
+  vpnProviders.schedule(clock.now())
+
+  // indexer searches and .torrent downloads go through the VPN when its switch is on (answer V6);
+  // the VPN is created after the engine, so they reach it through this
+  let vpnRef: Vpn | null = null
+  const indexerFetch: Fetch = (input, init) =>
+    vpnRef ? vpnRef.indexerFetch(input, init) : outside(input, init)
+
   const indexers = createIndexers({
     db,
     jobs,
@@ -388,7 +446,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     logger,
     events,
     sealer,
-    fetch: outside,
+    fetch: indexerFetch,
     definitions: catalog,
     timeoutMs: options.indexerTimeoutMs,
   })
@@ -425,7 +483,11 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       events,
       logger,
       metadata,
-      importing: { ...options.importing, downloadDirs: () => [folders().downloads] },
+      // the owner's categories may keep their torrents outside the downloads folder (6b)
+      importing: {
+        ...options.importing,
+        downloadDirs: () => [folders().downloads, ...downloads.categoryFolders()],
+      },
       search: {
         canSearch: () => indexers.hasEnabled(),
         queue(tmdbIds) {
@@ -465,6 +527,25 @@ export async function boot(options: BootOptions): Promise<Runtime> {
   })
   movies.jobs.schedule(clock.now())
 
+  // watching only speeds the library scan up: a change asks for its title folder's scan
+  const watch = createLibraryWatch({
+    onChange: (folder) => movies.libraryScan.queue(folder),
+    watch: options.watch,
+    log: logger.child('watch'),
+  })
+  const syncWatch = () => watch.sync(media.rootFolders.list().map((f) => f.path))
+  syncWatch()
+  // root folders added or removed announce `settings.updated` (the root folder routes)
+  const stopWatchSync = events.subscribe((e) => {
+    if (e.topic === 'settings.updated') syncWatch()
+  })
+  // unar, found as ffprobe is: missing is a health note and a clear reason on each archive's import
+  let unarMissing = false
+  void unarAvailable(unarBinary()).then((ok) => {
+    unarMissing = !ok
+    if (!ok) log.warn('unar isn’t installed, so downloads in archives can’t be imported')
+  })
+
   // the torrent engine: hashing in the worker pool, every torrent's files vetted before a byte
   // downloads, and no networking until the VPN hands it a binding (ADR 0037, 0040)
   const client = readSetting<DownloadClientSettings>(
@@ -482,7 +563,16 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     vet: (files) => vetFiles(files.map((f) => f.path)),
     port: options.torrent?.port ?? (options.memory ? 0 : client.port),
     dht: (options.torrent?.dht ?? !options.memory) ? { enabled: true } : undefined,
+    utp: client.utp,
     emit: (e) => onEngineEvent?.(e),
+    encryption: client.encryption,
+    // 6b: the router opens the port only with the UPnP switch on and no VPN set: a mapping on the
+    // home router does nothing for a tunnel (the plan's Production features)
+    portMapping: {
+      wanted: () =>
+        readSetting<DownloadClientSettings>(db, DOWNLOAD_CLIENT_KEY, DEFAULT_DOWNLOAD_CLIENT)
+          .upnp && vpn.settings().mode === 'off',
+    },
   })
   await engine.start()
 
@@ -494,7 +584,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     jobs,
     engine,
     indexers,
-    fetch: outside,
+    fetch: indexerFetch,
     movie: movieOf,
     async search(itemId) {
       const movie = movieOf(itemId)
@@ -515,14 +605,43 @@ export async function boot(options: BootOptions): Promise<Runtime> {
         indexer: input.indexer,
         downloadId: input.downloadId,
       })
-      return result.status === 'imported'
-        ? { ok: true, transfer: result.transfer }
+      if (result.status === 'imported') return { ok: true, transfer: result.transfer }
+      return result.status === 'blocked' && result.replace
+        ? { ok: false, reason: result.reason, replace: true }
         : { ok: false, reason: result.reason }
     },
+    // a category's folder and the watch folder: inside the data root or the downloads folder,
+    // checked the way the importer checks paths (symlinks resolved first)
+    checkFolder: (path) => checkPath(path, [resolve(config.dataDir), folders().downloads]),
   })
   onEngineEvent = downloads.onEngineEvent
   downloads.defineJobs()
+  // the stall check every few minutes (ADR 0038), as indexers.schedule() does for its jobs
+  downloads.schedule()
   const stopDownloads = downloads.start()
+  // the watch folder (6b): a timer the runtime owns; tests tick it by hand
+  const watchFolder = createWatchFolder({
+    clock,
+    logger: torrentLog,
+    settings: downloads.settings,
+    checkFolder: (path) => checkPath(path, [resolve(config.dataDir), folders().downloads]),
+    add: (input) => downloads.add(input),
+  })
+  const stopWatching = options.manualTicks ? () => {} : watchFolder.start()
+
+  // the IP blocklist (6b): fetched daily through the fetch seam, kept in the config folder
+  const ipBlocklist = createIpBlocklist({
+    db,
+    jobs,
+    clock,
+    logger: torrentLog,
+    events,
+    fetch: outside,
+    engine,
+    configDir: config.configDir,
+  })
+  ipBlocklist.defineJobs()
+  const stopIpBlocklist = ipBlocklist.start()
 
   const vpn = createVpn({
     db,
@@ -531,10 +650,59 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     clock,
     events,
     fetch: outside,
+    providers: () => vpnProviders.providers(),
+    // an in-memory runtime (tests, the sweeps) never changes the host's network
+    ...(options.memory
+      ? {
+          runner: async (cmd) => {
+            throw new CommandFailed(cmd.op, 'platform', 'Not in an in-memory runtime.')
+          },
+        }
+      : {}),
     onBinding: (binding) => (options.torrent?.offline ? undefined : engine.setBinding(binding)),
+    // a forwarded port becomes the engine's listening port (6b); none keeps the one it has
+    onForwardedPort: (port) => {
+      if (port !== null && !options.torrent?.offline)
+        engine.setPort(port).catch((e) =>
+          torrentLog.warn('couldn’t listen on the forwarded port', {
+            error: (e as Error).message,
+          }),
+        )
+    },
     listeningPort: () => engine.status().port,
   })
+  vpnRef = vpn
   vpn.start()
+
+  // the one-time importers (ADR 0041): Radarr and qBittorrent through the fetch seam, credentials
+  // sealed in the job's payload, root folders added only inside the data root
+  const migrationLog = logger.child('migration')
+  const radarr = createRadarrImporter({
+    db,
+    jobs,
+    clock,
+    events,
+    logger: migrationLog,
+    fetch: outside,
+    sealer,
+    media,
+    movies,
+    downloads,
+    allowedRoots: () => [resolve(config.dataDir)],
+  })
+  const qbittorrent = createQbittorrentImporter({
+    db,
+    jobs,
+    clock,
+    events,
+    logger: migrationLog,
+    fetch: outside,
+    sealer,
+    downloads,
+    engine,
+    checkFolder: (path) => checkPath(path, [resolve(config.dataDir), folders().downloads]),
+    grabs: radarr.grabs,
+  })
 
   const personalization = createPersonalization(
     {
@@ -572,7 +740,10 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     indexers,
     engine,
     downloads,
+    watchFolder,
     vpn,
+    importers: { radarr, qbittorrent },
+    libraryWatch: { sync: syncWatch, problems: watch.problems, watching: watch.watching },
     folders,
     // starts in the downloads folder, where stray files usually are (A17), else the data root
     browse: (path) =>
@@ -581,6 +752,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
           resolve(config.dataDir),
           ...media.rootFolders.list().map((f) => f.path),
           folders().downloads,
+          ...downloads.categoryFolders(),
         ],
         path ?? (existsSync(folders().downloads) ? folders().downloads : undefined),
       ),
@@ -614,6 +786,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       const folder = resolve(input.folders.movies)
       try {
         if (!media.rootFolders.list().some((f) => f.path === folder)) media.rootFolders.add(folder)
+        syncWatch()
       } catch (e) {
         log.warn('couldn’t add the movies folder as a root folder', { error: (e as Error).message })
       }
@@ -705,7 +878,25 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       for (const i of catalog.issues()) out.push({ ...i, source: 'Catalog', since: startedAt })
       for (const i of indexers.issues()) out.push({ ...i, source: 'Indexers' })
       for (const i of downloads.issues()) out.push({ ...i, source: 'Downloads' })
+      for (const i of ipBlocklist.issues()) out.push({ ...i, source: 'Downloads' })
       for (const i of vpn.issues()) out.push({ ...i, source: 'VPN' })
+      if (unarMissing)
+        out.push({
+          id: 'unar-missing',
+          source: 'Import',
+          level: 'warning',
+          message:
+            'unar isn’t installed, so downloads that come as archives can’t be imported. Install unar, or set HIGHSEA_UNAR to its path.',
+          since: startedAt,
+        })
+      for (const p of watch.problems())
+        out.push({
+          id: `watch:${p.root}`,
+          source: 'Library',
+          level: 'notice',
+          message: `${p.root} isn’t watched for changes (${p.message}). The library scan still finds them every 12 hours.`,
+          since: startedAt,
+        })
       return out
     },
     health() {
@@ -730,8 +921,12 @@ export async function boot(options: BootOptions): Promise<Runtime> {
           log.error('a shutdown step failed', { error: (e as Error).message })
         }
       }
-      vpn.stop()
+      await vpn.stop()
+      stopWatching()
+      stopWatchSync()
+      watch.stop()
       stopDownloads()
+      stopIpBlocklist()
       await engine.close()
       movies.close()
       stopIndexers()

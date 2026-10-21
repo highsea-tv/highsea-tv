@@ -7,7 +7,7 @@ import { AppError, type Sealer } from '@highsea/core'
 import { type Db, readSetting, writeSetting } from '@highsea/db'
 import { failures } from './copy.ts'
 import { DEFAULT_ECHO_URL } from './echo.ts'
-import { providerById } from './providers.ts'
+import { findProvider, type VpnProviderDefinition } from './providers.ts'
 import type { VpnMode, VpnSettings, VpnSettingsInput } from './types.ts'
 import { parseWireGuard, WireGuardError } from './wireguard.ts'
 
@@ -82,6 +82,7 @@ export function mergeSettings(
   current: StoredVpnSettings,
   input: VpnSettingsInput,
   sealer: Sealer,
+  providers: readonly VpnProviderDefinition[],
 ): StoredVpnSettings {
   const { config, piaPassword, containerKey, ...fields } = input
   const next: StoredVpnSettings = { ...current }
@@ -89,7 +90,7 @@ export function mergeSettings(
     if (v !== undefined && k in DEFAULT_VPN_SETTINGS) (next as Record<string, unknown>)[k] = v
 
   if (!MODES.includes(next.mode)) throw invalid(failures.mode, 'mode')
-  const provider = providerById(next.provider)
+  const provider = findProvider(providers, next.provider)
   if (!provider) throw invalid(failures.provider, 'provider')
   next.containerUrl = next.containerUrl.trim().replace(/\/+$/, '')
   next.interface = next.interface.trim()
@@ -104,7 +105,14 @@ export function mergeSettings(
 
   if (filled(config)) {
     try {
-      parseWireGuard(config)
+      const parsed = parseWireGuard(config)
+      // highsea connects builds the tunnel from the file, so it needs what wg-quick would: an
+      // address to bind torrents to, and an endpoint for each peer
+      if (next.mode === 'builtin' && provider.connect === 'config') {
+        if (!parsed.addresses.some((a) => !a.includes(':')))
+          throw invalid(failures.noAddress, 'config')
+        if (parsed.peers.some((p) => !p.endpoint)) throw invalid(failures.noEndpoint, 'config')
+      }
     } catch (e) {
       if (e instanceof WireGuardError) throw invalid(e.message, 'config')
       throw e
@@ -120,7 +128,7 @@ export function mergeSettings(
   if (filled(containerKey)) next.containerKeySealed = sealer.seal(containerKey.trim())
 
   if (next.mode === 'builtin') {
-    if (provider.connect === 'account') {
+    if (provider.connect === 'pia') {
       if (!next.piaUsername) throw invalid(failures.piaUsername, 'piaUsername')
       if (next.piaPasswordSealed === null) throw invalid(failures.piaPassword, 'piaPassword')
     } else if (next.configSealed === null) throw invalid(failures.upload(provider.name), 'config')

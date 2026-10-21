@@ -50,6 +50,8 @@ export const media = defineMessages({
   'folders.free': '{free} free of {total}',
   'folders.unreadable': 'Can’t be read now',
   'folders.movies': '{count, plural, =0 {No movies} one {# movie} other {# movies}}',
+  'folders.importExisting': 'Import what’s already here',
+  'folders.importExistingLabel': 'Import what’s already in {path}',
   'folders.remove': 'Remove',
   'folders.removeLabel': 'Remove {path}',
   'folders.inUse':

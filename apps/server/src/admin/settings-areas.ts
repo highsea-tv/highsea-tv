@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Settings' areas in their four groups (the prototype's settings.tsx). Plain data, so the
+// Settings' areas in their five groups (System and its Migration area came with 6b) (the prototype's settings.tsx). Plain data, so the
 // `/settings/{area}` route can check an id on the server.
 import type { IconName } from '@highsea/ui-web'
 
@@ -18,6 +18,7 @@ export type AreaId =
   | 'downloads'
   | 'subtitles'
   | 'connections'
+  | 'migration'
 
 export type Area = {
   id: AreaId
@@ -28,7 +29,10 @@ export type Area = {
   ownerOnly?: true
 }
 
-export const areaGroups: { id: 'server' | 'people' | 'library' | 'downloads'; areas: Area[] }[] = [
+export const areaGroups: {
+  id: 'server' | 'people' | 'library' | 'downloads' | 'system'
+  areas: Area[]
+}[] = [
   {
     id: 'server',
     areas: [
@@ -59,12 +63,14 @@ export const areaGroups: { id: 'server' | 'people' | 'library' | 'downloads'; ar
       { id: 'connections', icon: 'notification' },
     ],
   },
+  // the one-time importers take another program's credentials: the owner's (the owner's answer 10)
+  { id: 'system', areas: [{ id: 'migration', icon: 'import', ownerOnly: true }] },
 ]
 
 const areas = areaGroups.flatMap((g) => g.areas)
 export const isArea = (id: string): id is AreaId => areas.some((a) => a.id === id)
 
-/** Whether `role` sees the area: Security and Backups are the owner's alone. */
+/** Whether `role` sees the area: Security, Backups, VPN, Download client and Migration are the owner's alone. */
 export const seesArea = (id: AreaId, role: string) =>
   role === 'owner' || !areas.find((a) => a.id === id)?.ownerOnly
 

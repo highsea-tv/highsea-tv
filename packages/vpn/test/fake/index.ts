@@ -109,3 +109,5 @@ export function createFakeTimers(clock: FakeClock): FakeTimers {
     },
   }
 }
+
+export * from './wireguard.ts'

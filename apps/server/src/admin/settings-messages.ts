@@ -11,6 +11,7 @@ export const settings = defineMessages({
   'group.people': 'People',
   'group.library': 'Library',
   'group.downloads': 'Downloads and alerts',
+  'group.system': 'System',
   'area.general': 'General',
   'area.general.description': 'Language, time zone, updates and logging.',
   'area.appearance': 'Appearance',
@@ -41,6 +42,9 @@ export const settings = defineMessages({
   'area.subtitles.description': 'Providers, languages and sync, on the Subtitles page.',
   'area.connections': 'Connections',
   'area.connections.description': 'Notifications to Discord, ntfy, email and more.',
+  'area.migration': 'Migration',
+  'area.migration.description':
+    'Bring your library across from Radarr and your torrents from qBittorrent, once.',
   'later.title': 'This area comes later',
   'later.body': 'It’s built in a later checkpoint of the server plan.',
   'unsaved.label': 'Unsaved changes',

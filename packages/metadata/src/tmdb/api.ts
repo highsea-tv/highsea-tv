@@ -52,6 +52,15 @@ export function tmdbApi(client: TmdbClient) {
         language,
         include_adult: false,
       }),
+    /**
+     * `GET /3/find/{external_id}?external_source=imdb_id`: the TMDB titles an IMDb id belongs to
+     * ([Find by ID](https://developer.themoviedb.org/reference/find-by-id)).
+     */
+    findImdb: (c: Credential, imdbId: string, language: string) =>
+      client.json<{ movie_results: TmdbMovieItem[] }>(c, `/3/find/${encodeURIComponent(imdbId)}`, {
+        external_source: 'imdb_id',
+        language,
+      }),
     list: (
       c: Credential,
       list: keyof typeof LIST_PATHS,

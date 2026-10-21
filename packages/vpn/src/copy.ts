@@ -14,9 +14,19 @@ export const failures = {
   containerKey: 'Enter the control server’s API key.',
   needsCapability:
     'highsea needs the NET_ADMIN capability to run the tunnel. Add it to highsea’s service in your compose file, then restart.',
-  // Not in the prototype: highsea connects arrives in 6b (answer V1).
-  builtinLater:
-    'highsea connects arrives in the next update. Use a VPN container or an interface on this machine for now.',
+  // Not in the prototype: what highsea connects can meet that the prototype didn't play (6b).
+  linuxOnly:
+    'highsea connects runs on Linux, as highsea’s Docker image does. Use a VPN container or an interface on this machine here.',
+  noDevice:
+    'highsea couldn’t create the WireGuard interface: the kernel has no WireGuard, and /dev/net/tun isn’t there for wireguard-go. Add the /dev/net/tun device to highsea’s service in your compose file, then restart.',
+  notInstalled:
+    'highsea couldn’t find the ip and wg programs. They come with highsea’s Docker image.',
+  tunnelFailed: (reason: string) => `highsea couldn’t set up the tunnel: ${reason}`,
+  noAddress:
+    'highsea connects needs an IPv4 Address in the WireGuard configuration’s [Interface] section.',
+  noEndpoint:
+    'A [Peer] in that WireGuard configuration has no Endpoint, so highsea can’t reach it.',
+  piaRegion: (region: string) => `PIA has no WireGuard server in ${region}. Pick another region.`,
   // Not in the prototype: the interface picker and the typed-in port can't be left wrong.
   interfaceName: 'Choose an interface.',
   staticPort: 'Enter a port from 1 to 65535.',
@@ -108,6 +118,42 @@ export const checkCopy = {
   notForwarding: ['Not using a forwarded port', 'Downloads still work; fewer peers can reach you.'],
   doesntForward: (name: string) =>
     [`${name} doesn’t forward ports`, 'Downloads still work; fewer peers can reach you.'] as const,
+  // highsea connects' rows, from vpn.md's table; the ones marked weren't in the prototype
+  builtinTunnel: (provider: string, seconds: number) =>
+    [`Connected to ${provider}`, `Last handshake ${seconds} seconds ago.`] as const,
+  noHandshake: [
+    'No handshake for 3 minutes',
+    'Reconnecting. Torrents are stopped until it’s back.',
+  ],
+  // Not in the prototype: the provider's API didn't answer while connecting.
+  providerUnreachable: (provider: string) =>
+    [`Couldn’t reach ${provider}`, 'Reconnecting. Torrents are stopped until it’s back.'] as const,
+  exitOwn: ['The exit address is your own', 'Torrents are stopped.'],
+  // Not in the prototype: the provider's own check (Mullvad's) says the exit isn't theirs.
+  exitNotProvider: (provider: string, ip: string) =>
+    [`${provider} says ${ip} isn’t one of its addresses`, 'Torrents are stopped.'] as const,
+  namesOutside: [
+    'Names are being looked up outside the tunnel',
+    'The WireGuard configuration has no DNS line, so torrents are stopped. Upload one that has it.',
+  ],
+  killSwitchBuiltin: ['If the tunnel drops, torrents stop', 'Nothing can leave outside it.'],
+  killSwitchMissing: [
+    'The routing rule is missing',
+    'Torrents are stopped until highsea puts it back.',
+  ],
+  noForwardedPortSet: ['No forwarded port set', 'Downloads still work; fewer peers can reach you.'],
+  // Not in the prototype: asking for the port, and the provider not giving one.
+  askingForPort: (provider: string) => `Asking ${provider} for a forwarded port.`,
+  forwardingFailed: (provider: string) =>
+    [
+      `${provider} didn’t forward a port`,
+      'Downloads still work; fewer peers can reach you. Trying again in a minute.',
+    ] as const,
+  // Not in the prototype: highsea connects routes IPv4 only for now (6b, judgement call).
+  ipv4OnlyBuiltin: [
+    'IPv4 only',
+    'highsea connects carries IPv4 for now, so torrents use IPv4 only.',
+  ],
   ipv6: 'IPv6 goes through the tunnel too',
   ipv4Only: ['IPv4 only', 'The tunnel has no IPv6 address, so torrents use IPv4 only.'],
 } as const
@@ -118,4 +164,9 @@ export const systemCopy = {
   failed: (message: string | null) =>
     message ? `The VPN couldn’t connect: ${message}` : 'The VPN couldn’t connect.',
   check: (title: string) => `VPN: ${title}. Open Settings › VPN to see why.`,
+  // Not in the prototype: an indexer search while the VPN it goes through is down (answer V6).
+  indexersWaiting:
+    'Indexer searches go through the VPN, and it’s down. They work again once it’s back.',
+  forwarding: (provider: string) =>
+    `VPN: ${provider} didn’t forward a port. Downloads still work; fewer peers can reach you.`,
 }

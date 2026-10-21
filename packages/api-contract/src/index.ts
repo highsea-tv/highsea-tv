@@ -7,8 +7,10 @@ export * from './accounts.ts'
 export * from './common.ts'
 export * from './downloads.ts'
 export * from './events.ts'
+export * from './importers.ts'
 export * from './indexers.ts'
 export * from './library.ts'
+export * from './library-import.ts'
 export * from './metadata.ts'
 export * from './movies.ts'
 export * from './personalization.ts'
@@ -30,8 +32,10 @@ import {
   queue,
   speedRoutes,
 } from './downloads.ts'
+import { importers } from './importers.ts'
 import { catalog, indexers, releaseRoutes } from './indexers.ts'
 import { library } from './library.ts'
+import { libraryImport } from './library-import.ts'
 import { metadata } from './metadata.ts'
 import { movies, rootFolders } from './movies.ts'
 import { appearance, dashboard, home, preferences } from './personalization.ts'
@@ -70,5 +74,7 @@ export const routes = {
   downloads,
   fs,
   manualImport,
+  libraryImport,
+  importers,
   vpn,
 } as const

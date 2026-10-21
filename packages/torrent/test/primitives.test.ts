@@ -13,6 +13,7 @@ import { createSocketFactory, Unbound } from '../src/sockets.ts'
 import { createStorage, type Priority } from '../src/storage.ts'
 import { clientOf } from '../src/torrent.ts'
 import { compactPeers, createTrackerSet, escapeBytes, TrackerError } from '../src/trackers.ts'
+import { createUdpMux } from '../src/udp.ts'
 import { makeTorrent, randomData, sha1, tempDir } from './helpers.ts'
 
 describe('metainfo', () => {
@@ -217,7 +218,22 @@ describe('trackers', () => {
     v6[15] = 1
     v6[16] = 0x1a
     v6[17] = 0xe1
-    expect(compactPeers(v6, 6)).toEqual([{ host: '0:0:0:0:0:0:0:1', port: 6881 }])
+    expect(compactPeers(v6, 6)).toEqual([{ host: '::1', port: 6881 }])
+  })
+
+  test('peers6 (BEP 7): 18 bytes a peer, in canonical form, a zero port skipped', () => {
+    const peers6 = Buffer.concat([
+      Buffer.from('20010db8000000000000000000000042', 'hex'),
+      Buffer.from([0xc8, 0xd5]),
+      Buffer.from('2a0104f8000000000000000000000001', 'hex'),
+      Buffer.from([0, 0]),
+      Buffer.from('fe800000000000000000000000000001', 'hex'),
+      Buffer.from([0x1a, 0xe1]),
+    ])
+    expect(compactPeers(peers6, 6)).toEqual([
+      { host: '2001:db8::42', port: 51413 },
+      { host: 'fe80::1', port: 6881 },
+    ])
   })
 
   test('a tier is tried in order, a tracker that answers moves to the front, the next tier only after', async () => {
@@ -268,27 +284,22 @@ describe('the DHT', () => {
     const socket = dgram.createSocket('udp4')
     await new Promise<void>((r) => socket.bind(0, '127.0.0.1', r))
     let online = true
-    let closed = false
-    socket.on('close', () => {
-      closed = true
-    })
-    const sockets = {
-      udp: async () => socket,
+    const krpc = createUdpMux(socket).krpc()
+    const dht = await startDht({
+      socket: krpc,
+      family: 4,
       // the engine goes offline during the lookup, as a shutdown or a VPN change can
       resolve: async () => {
         online = false
         return '127.0.0.1'
       },
-    } as unknown as Parameters<typeof startDht>[0]['sockets']
-    const dht = await startDht({
-      sockets,
-      port: 0,
       bootstrap: ['router.example:6881'],
       onPeer: () => {},
       current: () => online,
     })
     expect(dht).toBeNull()
-    await new Promise((r) => setTimeout(r, 20))
-    expect(closed).toBe(true)
+    // the DHT's view of the shared socket is let go; the socket itself belongs to the engine
+    expect(krpc.closed).toBe(true)
+    socket.close()
   })
 })

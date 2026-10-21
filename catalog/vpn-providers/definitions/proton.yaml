@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from Proton VPN's own support pages; nothing was copied.
+id: proton
+version: 1.0.0
+minEngineVersion: 1.0.0
+name: Proton VPN
+connect: config
+steps:
+  - Sign in at account.protonvpn.com and open Downloads › WireGuard configuration.
+  - Choose a server marked P2P (the double arrow), and turn on NAT-PMP (port forwarding).
+  - Download the file and upload it here.
+links:
+  - label: Proton’s WireGuard configurations
+    url: https://account.protonvpn.com/downloads
+  - label: Port forwarding, by hand
+    url: https://protonvpn.com/support/port-forwarding-manual-setup
+portForwarding:
+  # Proton's guide: natpmpc -a 1 0 udp 60 -g 10.2.0.1 (and tcp), again every 45 seconds
+  method: natpmp
+  gateway: 10.2.0.1
+  lifetimeSeconds: 60
+  renewSeconds: 45
+ipv6: true
+sources:
+  - https://protonvpn.com/support/port-forwarding-manual-setup
+  - https://protonvpn.com/support/wireguard-manual-linux

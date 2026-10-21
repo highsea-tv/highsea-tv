@@ -25,6 +25,9 @@ export const setup = defineMessages({
   'name.detail': 'Everyone who connects sees this name. You can change it later in Settings.',
   'name.label': 'Server name',
   'name.missing': 'Give the server a name.',
+  // the owner's answer 10: one line pointing at Settings › Migration
+  'name.migrate':
+    'Coming from Radarr or qBittorrent? You can bring your library across after setup.',
   'owner.title': 'Create the owner account',
   'owner.detail':
     'The owner can do everything, including inviting people and giving them roles. Keep this password somewhere safe.',

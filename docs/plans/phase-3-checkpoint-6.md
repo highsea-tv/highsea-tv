@@ -1,6 +1,6 @@
 # Phase 3, checkpoint 6: downloading and importing
 
-- **Status:** Scoped on 2026-10-20, before building. The owner answered the [open questions](#open-questions-for-the-owner) on 2026-10-20, taking every recommendation: the checkpoint is built in two gated halves, 6a and 6b. The same day the owner made VPN connections a first-class feature: its own settings to connect and check, with support for common providers ([VPN connections](#vpn-connections), spec [vpn.md](../product/vpn.md)). The owner answered its questions V1 to V6 the same day, again taking every recommendation. The owner approved the Settings › VPN prototype on 2026-10-20 (V5) and gave 6a the go-ahead the same day. **6a was built and signed off on 2026-10-20; 6b is in progress.**
+- **Status:** Scoped on 2026-10-20, before building. The owner answered the [open questions](#open-questions-for-the-owner) on 2026-10-20, taking every recommendation: the checkpoint is built in two gated halves, 6a and 6b. The same day the owner made VPN connections a first-class feature: its own settings to connect and check, with support for common providers ([VPN connections](#vpn-connections), spec [vpn.md](../product/vpn.md)). The owner answered its questions V1 to V6 the same day, again taking every recommendation. The owner approved the Settings › VPN prototype on 2026-10-20 (V5) and gave 6a the go-ahead the same day. **6a was built and signed off on 2026-10-20; 6b was built the same day and waits for review.**
 - **Gate:** stop when each half is built (6a, then 6b). Report what was built, the judgement calls, the API added, screenshots and the check results, then ask for review. Checkpoint 7 (subtitles) starts only after sign-off.
 - **Parent plan:** [phase-3-server.md](phase-3-server.md). Its standing rules, architecture and decisions all apply, including decision 1 (every [M1] item stays in milestone 1), decision 5 (nothing is published until the owner says so) and decision 6 (the admin is for the owner and admins only). This document settles what that plan's checkpoint 6 item and the specs leave open.
 
@@ -585,3 +585,141 @@ These are listed again in the checkpoint report:
 - **Settings › VPN:** highsea connects is shown but disabled until 6b; "Drop the tunnel" is removed, because neither 6a mode owns a tunnel; the mode radios keep the global focus outline (the prototype turned it off, and the sweep found it).
 - **Settings › Download client:** a new Seeding group holds the default rule; speed limits stay on A8's Limits dialog.
 - **Settings › Media management:** adds the colon replacement, the chmod switch and the recycle bin's days; the hardlink hint is shorter.
+
+### Made while building 6b (categories and the watch folder)
+
+39. Categories are a settings row (`torrentCategories`, a list of names and folders), not a table: they're a handful of rows read with the settings, and no migration is needed. A folder left empty is stored as null and follows the downloads folder (`{downloads}/{name}`).
+40. `manual` stays a built-in category beside `movies`, for torrents added without one and as the watch folder's default; neither can be renamed or removed. `shows` and `music` are reserved for the library's later media types. Names are letters, digits, spaces, dots, dashes and underscores, up to 40, matched without case.
+41. Listing categories is staff, since A8's filter and Add torrent use them; saving and removing are the owner's, because they're managed in Settings › Download client (owner only, call 13) and decide where the server writes. The task named them staff; this follows the area they live in.
+42. Removing a category is refused while a torrent uses it ("A torrent still uses books. Remove it from Downloads first.") or while the watch folder adds to it, rather than moving those torrents to `manual`: moving would mean relocating data on disk or leaving a torrent in a category whose folder isn't its own. The Remove button is disabled with the reason beside it, and the server refuses as well.
+43. A category's folder and the watch folder must be inside the data folder or the downloads folder, through `checkPath`, which resolves symlinks first (the same rule as A17's browser). The owner's category folders join the folders A17 may browse and import from, so a torrent in `/data/books` can still go into the library.
+44. Add torrent doesn't offer `movies`, and the API refuses it ("movies is for the library’s grabs. Choose another category."): a manual torrent in `movies` would sit among grabs that the import pipeline expects to own. The prototype's select offered movies and manual.
+45. Every torrent added by hand or from the watch folder carries `manual: true`, and `Torrent` in the API gains `manual`, so A8 knows which torrents get Import into the library without inferring it from the category.
+46. The watch folder is checked every 10 seconds on a timer the runtime owns, not a scheduled job: qBittorrent polls at that interval (`WATCH_INTERVAL` in [src/base/torrentfileswatcher.cpp](https://github.com/qbittorrent/qBittorrent/blob/master/src/base/torrentfileswatcher.cpp)), and a job every 10 seconds would write 8,640 rows a day to the jobs table. No `fs.watch`: Node calls it unreliable on network shares, where a watch folder often lives. Each tick is safe to repeat (ADR 0022's rule): a file is only added and renamed, and one added before a crash cut the rename short is refused as a duplicate next time and renamed then.
+47. A file that's been added is renamed `.torrent.added`, as Transmission's daemon does (`onFileAdded` in [daemon/daemon.cc](https://github.com/transmission/transmission/blob/main/daemon/daemon.cc)). The plan said qBittorrent does too; it deletes the file instead. A file that doesn't parse is left alone for a minute after it last changed, since it may still be being written (qBittorrent retries 5 times, 10 seconds apart, before renaming it `.qbt_rejected`), then renamed `.torrent.invalid` and logged. A file larger than 10 MB is renamed `.torrent.invalid` at once. A torrent already in Downloads is renamed `.added` without a second copy. Only `.torrent` files are read; hidden files, folders and magnet text files are ignored.
+48. Watch-folder torrents are added running, not paused, in the chosen category, and aren't imported into the library, the same as Add torrent's manual torrents.
+49. Categories and the watch folder are groups of their own in Settings › Download client, not rows in Connections. The watch folder saves with the page's Save. Category changes save at once, like Media management's root folders, so the page's save bar never holds half a category; the form's button says "Save the category" so the page doesn't have two buttons named Save.
+50. The sheet's More menu shows only on manual torrents, and its Import into the library is disabled until the torrent finishes ("Import into the library when it finishes"), so the owner can see where it will be. It opens `/activity/import?path=` on `{savePath}/{name}`, which is the torrent's folder or, for a one-file torrent, the file itself; the scan takes either.
+51. A17's version select starts on the scan's version and, when a movie is chosen by hand, on that movie's first version without a file. Two files for one version are caught in the screen, which disables Import; the server takes what it's sent, as in 6a.
+52. A 6a bug found on the way: `downloads.schedule()`, which plans the stall check, was never called in `packages/runtime/src/runtime.ts`, so the stall check (call 24) never ran outside tests. The runtime now schedules it at boot, and a runtime test checks it.
+
+### Prototype changes in 6b (categories and the watch folder)
+
+- **A8 Downloads:** the category filter lists only the categories torrents use, plus Every category; Add torrent's select leaves out `movies`; the sheet's More menu exists only for manual torrents and holds one item.
+- **A17 Manual import:** a Version column the prototype doesn't have (answer 8), and `?path=` to open on a folder.
+- **Settings › Download client:** two new groups, Watch folder and Categories, which no prototype screen has.
+
+### Made while building 6b (encryption, blocklists, port mapping)
+
+53. MSE is highsea's own layer below the wire, not `bittorrent-protocol`'s built-in one: that one's responder accepts a plain handshake even when set to RC4 only, and it hooks the wire's parser, where highsea's wraps any duplex, uTP included.
+54. RC4 is written in TypeScript, because Node 24's OpenSSL 3 keeps it in the legacy provider and highsea won't ask for `--openssl-legacy-provider`.
+55. Allow connects in plaintext first and retries encrypted; as the answering side it picks plaintext whenever the other side offers it. Prefer retries a peer in plaintext once when the encrypted handshake fails.
+56. Peers' flags gain `E` (RC4) and `e` (obfuscated header only), as qBittorrent shows them.
+57. NAT-PMP is written from RFC 6886, and the library is used for UPnP only: its NAT-PMP binds port 5350 and writes milliseconds into the lifetime field. Tries are capped at 4 (about 4 seconds), not the RFC's 9, so a router that doesn't answer doesn't hold up UPnP for minutes.
+58. The default gateway comes from `/proc/net/route`, which is where highsea runs (the Docker image); elsewhere only UPnP is tried.
+59. Port mapping runs only when UPnP is on and the VPN's mode is off: it would punch a hole around the tunnel, and UPnP's SSDP sockets don't go through the socket factory.
+60. The blocklist's last good copy is kept in `<config>/blocklist/`; a file source must be inside the config folder; a list that fails to fetch or parse keeps the one in use, unless the source itself changed, when nothing from the old source stays blocked.
+61. A blocklist that can't be updated is a warning in System's health list with the source "Downloads".
+62. There's no Tasks tab yet (checkpoint 8), so the daily `downloads.ip-blocklist` job is listed in system.md for it.
+63. The engine's encryption defaults to Prefer, the setting's default, so the existing engine tests now run encrypted between two engines.
+
+### Made while building 6b (uTP and IPv6)
+
+64. uTP is tried first and TCP is the fallback, as libtorrent does: a uTP connect that fails sends the next try straight to TCP, and a peer that answered over uTP stays on it.
+65. With uTP off, incoming uTP connections are refused with `ST_RESET` rather than ignored, so the other side falls back to TCP at once instead of waiting out its timeouts. The UDP socket stays open for the DHT either way.
+66. uTP packets are at most 1200 bytes of UDP payload (RFC 9000 § 14's safe size), with no path MTU discovery. That costs a little throughput on clean paths and avoids fragmentation behind VPNs.
+67. A packet goes up to 6 times before the connection gives up; libtorrent's `utp_num_resends` is 3. The extra tries suit lossy links behind a VPN.
+68. Trackers over IPv6 follow BEP 7's current text: one announce from each local family, and never `ipv4=` or `ipv6=`, which BEP 7 discourages. A tracker given as an address literal gets one announce, in that address's family.
+69. The "any" binding (no VPN, or the container mode) uses IPv6 when the host has a global unicast address, not Teredo. A VPN binding uses IPv6 only when the tunnel has an IPv6 address: `Binding.address6`, which the interface mode passes. highsea connects, built separately in 6b, should pass its tunnel’s IPv6 address the same way.
+70. The IPv6 DHT runs the same libraries through an adapter socket that gives IPv6 nodes IPv4 stand-ins from 240.0.0.0/4 (RFC 1112 § 4). That avoids patching k-rpc and bittorrent-dht, and touches neither package.json nor the lockfile. The stand-ins never leave the process.
+71. The IPv6 DHT saves its nodes under its own settings key (`torrentDht6`). Its bootstrap adds `dht.libtorrent.org:25401`, the default router in libtorrent's settings reference.
+72. A listener or UDP socket that fails on IPv6 beside a working IPv4 one is logged, not shown as the engine's problem, because IPv4 still carries everything.
+73. A peer list entry over uTP has the flag **P**, qBittorrent's letter for it.
+74. IPv6 peer addresses are kept in canonical form (WHATWG URL's serializer, RFC 5952), and an IPv4-mapped one becomes the IPv4 peer, so a peer heard of twice is one candidate.
+
+### Made while building 6b (extraction, the scan, the library import)
+
+75. Archives go into a folder beside the download (`{download}.unpacked`), never into the download's own folder or the library. Moving or changing the download would stop it seeding; the folder is removed after the import and the archives stay.
+76. A password-protected archive answers `replace`: the release is blocklisted and another grabbed, as for a stalled one. A damaged archive or a timeout blocks the import with unar's message, and so does a missing unar, which also shows on System › Health. A missing tool isn't the release's fault.
+77. Extraction gets a 30-minute timeout, against ffprobe's 60 seconds, because a 50 GB multi-volume set takes minutes on a NAS.
+78. The scan notices a changed file by its size and modification time, kept in the file's `media_info`, so 6b needs no migration.
+79. A root folder the scan can't read is skipped whole, so an unmounted disk never reads as every file deleted. Inside a readable root folder, a file counts as gone only when `lstat` on it fails.
+80. After an import, the scan covers only the movie's folder, not the whole root folder.
+81. A file the scan finds in a movie's folder is recorded against the first version without a file, with the history message "Found in the movie’s folder." Samples and extras are skipped, as in the import.
+82. A watch that can't start, or that fails, is a notice, not a warning: nothing is missed, only found later. Watches are rebuilt when settings change, which covers root folders added or removed.
+83. Library import's progress lives in one settings row and is announced on `import.updated`. `GET /import/library` was added to the plan's two routes, so the page can show a run that's already going.
+84. `POST /import/library` answers 200 with the run's status, not 202: the SDK's typed output reads 200 and 201 only.
+85. TMDB search is sent lowercased (TMDB's search ignores case, and the recordings match the query exactly). Results are ranked locally: the same title and year, then a year off by one, then TMDB's first result.
+86. A folder with no TMDB match can't be picked; the copy says to add `{tmdb-…}` to its name. Picking a movie by hand waits until a search can be built into the row.
+87. Library import uses the chosen quality profile, or the first one, and gives each movie one version named after the profile.
+88. With **Rename to my format** on, the folder takes the folder format and the file the file format, each renamed in place on the same disk; off, nothing on disk changes.
+89. The IMDb path (`{imdb-…}`, TMDB's Find by ID) is tested at the API boundary only: no recording of `/3/find` exists yet, and recording one needs a key.
+90. The library scan is registered with the job schedules, so checkpoint 8's System › Tasks lists it with no extra work.
+91. The test archives come from libarchive's test suite (BSD-2-Clause) at a pinned commit, with its licence beside them (`COPYING.libarchive`) and a README naming each file's source.
+
+Layout notes for 6b:
+
+- **A17 Manual import:** a "What to import" nav above the page switches between Manual import and Library import.
+- **A17 Library import:** a root folder select replaces the folder browser. The table has no Becomes column: names change only with Rename to my format, and then to the formats. The profile select and Rename to my format sit in the toolbar beside Import.
+- **Settings › Media management:** each root folder row gains a ghost link, **Import what’s already here**, beside Remove.
+
+### Made while building 6b (highsea connects)
+
+92. VPN providers are read by their own catalog reader (`createVpnProviderCatalog`), cached as files in the config directory like the indexer catalog, not in the database.
+93. The provider seed that ships inside the server is trusted with the development key even in production, because it's part of the release; an update from the catalog host needs a release key.
+94. Provider updates follow the indexer catalog's channel and "Ask first" setting rather than a setting of their own.
+95. NAT-PMP is written in `vpn` (RFC 6886) instead of using `@achingbrain/nat-port-mapper` (decision 15), because that library binds a wildcard socket on port 5350, which can't be bound to the tunnel's address.
+96. No provider logos ship: the provider select shows names only, because logos are trademarks and the catalog is data.
+97. A WireGuard configuration without a `DNS` line fails the names check in highsea connects, because there's no tunnel resolver to use.
+98. PIA's regions come from PIA's live server list when it answers; the catalog entry's list is the fallback.
+99. The API contract didn't change: `vpn.providers()` keeps its shape, now read from the catalog, so `openapi.json` wasn't regenerated.
+100. highsea connects needs its own network namespace, so `compose.connects.yaml` leaves host networking and publishes the ports; with host networking, `hswg0` and the rule would land in the host's network.
+101. PIA's port-forwarding calls (`getSignature`, `bindPort`) go through the tunnel, as PIA's scripts do; `addKey` goes outside it, because it runs before the tunnel exists.
+102. WireGuard keys reach `wg` on its standard input (`/dev/stdin`), never in its arguments, which other processes can read.
+103. The command runner works only on Linux, and the in-memory runtime (tests, development without Docker) gets one that refuses everything, so nothing touches this machine's network.
+104. highsea connects carries IPv4 only for now, with an "IPv4 only" row; the prototype played an IPv6 pass.
+105. When the provider's own check (Mullvad's) says the exit isn't its address, that's a leak and torrents stop.
+106. In the interface mode, indexers through the VPN look names up with the system resolver, because highsea doesn't know that tunnel's resolvers; the connections themselves leave from the interface's address.
+107. A routing rule or unreachable route that goes missing is put back at once; the kill switch fails, and torrents stop, only if that doesn't work.
+108. PIA's username and password are checked with PIA when they're saved, and a refusal shows under the password field.
+109. A failed port forward is retried every minute, with a warning; it never stops torrents.
+110. When kernel WireGuard is missing and wireguard-go can't start either, the failure reads as the missing `/dev/net/tun` device, its usual cause.
+111. The entrypoint switches user with `setpriv` only when the container has `CAP_NET_ADMIN`; otherwise it uses gosu as before.
+
+### Prototype changes that 6b forced (highsea connects)
+
+- **Settings › VPN:** highsea connects can be picked, as the prototype has it. The failures, check rows and System warnings that real servers meet and the prototype didn't play are listed in [vpn.md](../product/vpn.md) as *As built in 6b*: Linux only, no WireGuard device, the programs missing, no IPv4 address or endpoint, PIA's region, the provider unreachable, the provider's own exit check, the names row without a `DNS` line, asking for a port and failing to get one, and "IPv4 only".
+- **Provider select:** names without logos (call 96).
+
+### Made while building 6b (the importers)
+
+112. Settings gains a fifth group, **System**, holding Migration alone, as the owner's answer 10 places it. Nothing else moved; later system areas can join it.
+113. Each importer has a **Test** route besides preview, run and status (`POST /importers/{radarr,qbittorrent}/test`), so a wrong key or an old qBittorrent is caught before a preview reads the whole library. qBittorrent has a fifth route, **resume**, for "asks the owner to stop qBittorrent before resuming them".
+114. Connections aren't saved. The owner enters them for each run, and the job's payload carries them sealed with the server's key, so a restart can carry on without the API key or password ever stored in the clear. A test checks the key isn't in the jobs table.
+115. Radarr's history is read through the paged `/history?eventType=1` (grabs only) and its blocklist through the paged `/blocklist`, not `history/movie` and `blocklist/movie` per movie as the plan listed. It's the same data in tens of requests instead of thousands.
+116. Radarr's blocklist resource carries no info hash, so an imported entry has a null guid and hash and matches a release by its title (`isBlocked` gained a title match for exactly those rows).
+117. A torrent is linked to a movie through Radarr's grab history: an info hash Radarr grabbed, for a movie now in highsea's library. When the torrent's files are the library's own files (Radarr imported in place), it isn't linked, because a linked download's data is removed after seeding (ADR 0038). It stays a manual torrent in its category.
+118. Checks run one at a time in the engine's check queue, not "a few at a time" as the plan said: the engine already serialises checks so disks aren't thrashed, and a second queue would fight it.
+119. qBittorrent's ratio or seed-time limit of -2 ("use the global") becomes highsea's default rule; -1 ("no limit") becomes no limit; any other value is kept on the torrent.
+120. qBittorrent's category names are sanitised to highsea's rules: a subcategory's `/` becomes `-`, and a name highsea keeps for itself (`movies`, `manual`, `shows`, `music`) gains `-qbittorrent`. A torrent with no category goes to `manual`.
+121. qBittorrent's file priorities map onto highsea's three: 0 is Skip, 6 and 7 are High, and the rest are Normal.
+122. Radarr's naming format and file settings come across by default, behind a switch the owner can turn off in the preview. A format with a token highsea doesn't know stays highsea's, and that's recorded as a failure with the token named.
+123. Root folders are added only inside the data root, whatever the mapping says. A movie whose folder lands elsewhere is a failure ("Add a path mapping…"), not a root folder outside what highsea may write.
+124. A movie added without its file (the file isn't where the mapping says) counts as imported and also lists a failure, "Added, without its file", so the owner sees it and can fix the mapping and run again.
+125. Each movie gets one version named after its profile, as library import does (call 87). Tags are written to the tags tables, which have no screen yet; checkpoint 8's filters will read them.
+126. A torrent whose skipped file shares a piece with a kept one fetches that boundary piece again after Resume, as any torrent with skipped files does (ADR 0037's `.parts`). The check can't confirm a piece it only half has.
+127. Setup's line about Migration is plain text, not a link: the admin opens only once setup has signed the owner in.
+128. `@highsea/importers` also depends on `db`, `jobs` and `quality` beyond the plan's `core`, `media`, `downloads` and `torrent`: the progress rows, the jobs and the profile mapping need them. `@highsea/media/movies` gained `migrate.addInPlace` (add a movie where it is and adopt its file), the engine's `add` gained `totals`, and downloads gained `adoptTorrent` and `importBlock`.
+129. qBittorrent 4.5.0 / Web API 2.8.18 is checked against qBittorrent's tagged source (`release-4.5.0` declares 2.8.18 and has `exportAction`; `release-4.4.5`, 2.8.5, doesn't), because the WebAPI changelog now begins at 2.11.6 and the 5.0 wiki page doesn't list `torrents/export`.
+130. The fakes (`@highsea/importers/fake`) are written from the documented resource shapes, not recorded from live programs, so no fixture carries a real key or path.
+
+Layout notes for the importers:
+
+- **Settings › Migration** is new layout, approved with answer 10, built from Settings' own parts: a line on what it does, then a group each for Radarr and qBittorrent. Each group has its connection fields, its path-mapping rows, Test and Preview, then the preview, Import and the run's progress.
+- **Radarr's preview** lists root folders with a badge each, a table of profiles with a select per row (nearest first), the settings switch, and a "What can't come across" box with **Go to Indexers**.
+- **qBittorrent's progress** adds how many torrents wait paused, with **Resume torrents** behind a confirmation.
+- **Setup › Name your server** gains one caption line under the field.
+
+### Found when the archive tests first ran with unar (6b)
+
+131. libarchive's `test_read_format_zip.zip` gives `file2` a wrong CRC on purpose (`unzip -t` and Python's `zipfile` both report it), so the real unar rightly refused it and the "7z and zip" test failed the first time `unar` was installed. That fixture is now the damaged-archive case (the `failed` failure, nothing left behind), and the good zip is written by the test from PKWARE's APPNOTE, with stored entries and `zlib.crc32`, rather than fetching another fixture.

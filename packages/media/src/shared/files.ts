@@ -144,7 +144,8 @@ export function sampleReason(
   return durationSeconds < minimumSeconds ? `A sample (${bytes(size)}). Skipped.` : null
 }
 
-export type FoundFile = { path: string; size: number }
+/** A file found on disk; `mtimeMs` lets the library scan (6b) tell a changed file. */
+export type FoundFile = { path: string; size: number; mtimeMs?: number }
 
 /**
  * Every file under `folder` (or `folder` itself when it's a file), depth-first, symlinks not
@@ -153,7 +154,7 @@ export type FoundFile = { path: string; size: number }
  */
 export async function listFiles(folder: string, limit = 10_000): Promise<FoundFile[]> {
   const top = await fsp.lstat(folder)
-  if (top.isFile()) return [{ path: folder, size: top.size }]
+  if (top.isFile()) return [{ path: folder, size: top.size, mtimeMs: top.mtimeMs }]
   if (!top.isDirectory()) return []
   const out: FoundFile[] = []
   const walk = async (dir: string) => {
@@ -163,7 +164,10 @@ export async function listFiles(folder: string, limit = 10_000): Promise<FoundFi
       if (out.length >= limit) return
       const path = join(dir, e.name)
       if (e.isDirectory()) await walk(path)
-      else if (e.isFile()) out.push({ path, size: (await fsp.stat(path)).size })
+      else if (e.isFile()) {
+        const st = await fsp.stat(path)
+        out.push({ path, size: st.size, mtimeMs: st.mtimeMs })
+      }
     }
   }
   await walk(folder)

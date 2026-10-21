@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Importing movies (checkpoint 6, The import pipeline and Manual import, 6a): a finished download,
-// or files the owner picks, into the library. The steps are the plan's 1 and 3 to 9 (2,
-// extraction, is 6b's): find the files, probe, decide, name, transfer, replace, record, announce.
+// or files the owner picks, into the library. The steps are the plan's 1 to 9: find the files,
+// extract archives (6b, extract.ts), probe, decide, name, transfer, replace, record, announce.
 // A job runs it at least once (ADR 0022), so each step checks whether it already happened: a
 // file already recorded from this release is the import done, a finished transfer isn't redone,
 // and the history entry is written once.
@@ -24,6 +24,13 @@ import {
   qualityOf,
 } from '@highsea/quality'
 import { and, asc, eq } from 'drizzle-orm'
+import {
+  createExtractor,
+  type Extract,
+  ExtractError,
+  extractDownload,
+  removeUnpacked,
+} from '../shared/extract.ts'
 import { createProbe } from '../shared/ffprobe.ts'
 import {
   blockedMessage,
@@ -76,6 +83,8 @@ export type ImportOptions = {
   sampleSeconds?: number
   /** The filesystem calls transfers make; a test forces `EXDEV` through it. */
   fs?: TransferFs
+  /** unar (6b); defaults to `HIGHSEA_UNAR` or `unar` on the PATH. */
+  extract?: Extract
 }
 
 export type ImportMode = 'hardlink' | 'move'
@@ -107,7 +116,8 @@ export type ImportResult =
       /** It was already imported; nothing changed this time. */
       already: boolean
     }
-  | { status: 'blocked'; reason: string }
+  /** `replace`: the release can never import (a password-protected archive), so find another. */
+  | { status: 'blocked'; reason: string; replace?: boolean }
   | { status: 'failed'; reason: string }
 
 /** What manual import found: the prototype's `ImportCandidate`, with what the scan worked out. */
@@ -155,6 +165,8 @@ export type StoredFileInfo = {
   revision: { version: number; real: number; proper: boolean; repack: boolean }
   formats: string[]
   formatScore: number
+  /** The file's modification time when it was recorded, so the library scan (6b) can tell a change. */
+  mtimeMs?: number
 }
 
 /** The specifications that apply to a file at import: the quality and upgrades (Radarr's import specs). */
@@ -184,6 +196,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
   const options = ctx.importing ?? {}
   const probe = options.probe ?? createProbe()
   const fs = options.fs ?? nodeFs
+  const extract = options.extract ?? createExtractor()
 
   const roots = () => [
     ...media.rootFolders.list().map((r) => r.path),
@@ -332,6 +345,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
       indexer?: string | null
       downloadId?: string | null
     },
+    replace = false,
   ): ImportResult {
     media.history.write({
       itemId: row.id,
@@ -344,7 +358,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
       data: { status },
     })
     events.emit({ topic: TOPICS.history, ids: [`movie:${row.tmdbId}`] })
-    return { status, reason }
+    return status === 'blocked' && replace ? { status, reason, replace } : { status, reason }
   }
 
   /**
@@ -486,6 +500,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
       revision: release.quality.revision,
       formats: decision.formats.map((f) => f.name),
       formatScore: decision.formatScore,
+      mtimeMs: stats.mtimeMs,
     }
     const now = clock.now()
     const fileId = db.transaction((tx) => {
@@ -633,11 +648,35 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
     }
     const blocked = findBlocked(files.map((f) => f.path))
     if (blocked) return failed(row, 'blocked', blockedMessage(basename(blocked)), history)
+
+    // Step 2, extract: archives into a folder beside the download, whose files join the rest. A
+    // password-protected archive can never import, so the release is replaced.
+    let unpacked: string | null = null
+    try {
+      unpacked = await extractDownload(
+        folder,
+        files.map((f) => f.path),
+        extract,
+      )
+    } catch (e) {
+      if (!(e instanceof ExtractError)) throw e
+      log.warn('couldn’t extract a download', { folder, kind: e.kind, unar: e.detail })
+      return failed(row, 'blocked', e.message, history, e.kind === 'password')
+    }
+    const extracted = unpacked ? await listFiles(unpacked) : []
+    const blockedInside = findBlocked(extracted.map((f) => f.path))
+    if (blockedInside)
+      return failed(row, 'blocked', blockedMessage(basename(blockedInside)), history)
+
     const meta = library.internal.cached(row.tmdbId)
     const root = files.length === 1 && files[0]?.path === folder ? dirname(folder) : folder
     const candidates: { file: FoundFile; info: MediaInfo }[] = []
     const skipped: string[] = []
-    for (const file of files.filter((f) => isVideo(f.path))) {
+    const all = [
+      ...files.map((file) => ({ file, root })),
+      ...extracted.map((file) => ({ file, root: unpacked as string })),
+    ]
+    for (const { file, root } of all.filter((f) => isVideo(f.file.path))) {
       // Step 3, probe.
       const p = await probed(file, root, meta)
       if (p.skip === null) candidates.push({ file, info: p.info })
@@ -654,7 +693,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
           : 'Nothing to import: the download has no video file.'
       return failed(row, 'blocked', reason, history)
     }
-    return importFile({
+    const result = await importFile({
       row,
       version,
       source: best.file,
@@ -664,8 +703,101 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
       grabbedQuality: input.quality,
       indexer: input.indexer,
       downloadId: input.downloadId,
+      // an extracted file is hardlinked too, never moved: a move would read as the download's
+      // files having gone, and the torrent would stop seeding the archives
       mode: input.mode ?? 'hardlink',
     })
+    // the extracted copy goes once the file is in; the archives stay to seed
+    if (unpacked && result.status === 'imported')
+      await removeUnpacked(folder).catch((e) =>
+        log.warn('couldn’t remove the extracted copy', { folder, error: (e as Error).message }),
+      )
+    return result
+  }
+
+  /**
+   * Records a file that's already in the movie's folder, in place (6b): a file the library scan
+   * finds there, and the existing-library import's. Nothing is transferred; with `rename`, the file
+   * is renamed beside itself to the naming format, unless another file has that name. Safe to
+   * repeat: a file already recorded at its path is updated, and its history written once.
+   */
+  async function adopt(args: {
+    row: ItemRow
+    version: VersionRow
+    path: string
+    info: MediaInfo
+    /** The name the quality and group are read from: the file's own, or its folder's. */
+    sourceTitle: string
+    rename?: boolean
+    /** The history's message ("Found in the movie’s folder."). */
+    message: string
+  }): Promise<{ fileId: string; path: string }> {
+    const { row, version, info, sourceTitle } = args
+    const allowed = roots()
+    let path = checkPath(args.path, allowed)
+    const release = parse(sourceTitle)
+    const quality = qualityFor(release, info, null)
+    const meta = library.internal.cached(row.tmdbId)
+    if (args.rename) {
+      const settings = { ...media.mediaManagement.get(), rename: true }
+      const name = targetName(
+        settings,
+        row,
+        meta,
+        {
+          quality,
+          revision: release.quality.revision,
+          releaseGroup: release.releaseGroup,
+          edition: release.edition,
+          mediaInfo: info,
+          sceneName: sourceTitle,
+        },
+        path,
+      )
+      const dest = checkPath(join(dirname(path), name), allowed)
+      if (dest !== path && !(await fsp.stat(dest).catch(() => null))) {
+        await fsp.rename(path, dest)
+        path = dest
+      }
+    }
+    const stats = await fsp.stat(path)
+    const fileInfo: StoredFileInfo = {
+      probe: info,
+      revision: release.quality.revision,
+      formats: [],
+      formatScore: 0,
+      mtimeMs: stats.mtimeMs,
+    }
+    const now = clock.now()
+    const fileId = db.transaction((tx) => {
+      const at = tx
+        .select({ id: mediaFiles.id })
+        .from(mediaFiles)
+        .where(eq(mediaFiles.path, path))
+        .get()
+      const id = at?.id ?? newId('fil')
+      const values = {
+        itemId: row.id,
+        versionId: version.id,
+        path,
+        size: stats.size,
+        quality,
+        releaseGroup: release.releaseGroup,
+        sceneName: sourceTitle,
+        edition: release.edition,
+        mediaInfo: fileInfo,
+        transfer: null,
+      }
+      if (at) tx.update(mediaFiles).set(values).where(eq(mediaFiles.id, id)).run()
+      else
+        tx.insert(mediaFiles)
+          .values({ id, ...values, addedAt: now })
+          .run()
+      return id
+    })
+    settle(row, version, fileId, path, sourceTitle, quality, {}, null, args.message)
+    log.info('recorded a file in place', { tmdbId: row.tmdbId, path })
+    return { fileId, path }
   }
 
   // ------------------------------------------------------------ manual import
@@ -893,7 +1025,14 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
     return media.history.forItem(row.id, cursor, limit)
   }
 
-  return { importDownload, manualImport, files, history, internal: { roots } }
+  return {
+    importDownload,
+    manualImport,
+    files,
+    history,
+    adopt,
+    internal: { roots, probed, qualityFor, pickVersion, versionRows, namingMovie },
+  }
 }
 
 export type Imports = ReturnType<typeof createImports>

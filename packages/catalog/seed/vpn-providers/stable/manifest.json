@@ -1,0 +1,5 @@
+{
+  "keyId": "development",
+  "manifest": "{\n  \"format\": 1,\n  \"kind\": \"vpn-providers\",\n  \"channel\": \"stable\",\n  \"version\": \"2026.10.21\",\n  \"minEngineVersion\": \"1.0.0\",\n  \"bundle\": {\n    \"path\": \"vpn-providers-2026.10.21.json\",\n    \"sha256\": \"1353d0c9de349b4c2f84637a2f688e462e4170d4b1d3b9a53ab9a8f8fc5c44e6\",\n    \"size\": 5683\n  },\n  \"changes\": [\n    {\n      \"version\": \"2026.10.21\",\n      \"date\": \"2026-10-21\",\n      \"notes\": [\n        \"The first providers for highsea connects: Proton VPN, Private Internet Access, AirVPN, Mullvad, IVPN, Windscribe and Surfshark, and any other WireGuard configuration.\"\n      ]\n    }\n  ]\n}",
+  "signature": "dposH+ur/TIBbuYrXFmg6Mm0u+Qzp+clr6De2xe7Y9PRk8ag26y+2Npug4BU/g5BVEYrdTWRjV1L0eu/HIQ3Aw=="
+}

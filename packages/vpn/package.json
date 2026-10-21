@@ -13,9 +13,11 @@
   },
   "dependencies": {
     "@highsea/core": "workspace:*",
-    "@highsea/db": "workspace:*"
+    "@highsea/db": "workspace:*",
+    "@highsea/schemas": "workspace:*"
   },
   "devDependencies": {
+    "@highsea/catalog": "workspace:*",
     "@highsea/config": "workspace:*",
     "@types/node": "25.9.9"
   }

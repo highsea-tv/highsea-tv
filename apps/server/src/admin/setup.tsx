@@ -293,15 +293,19 @@ export function Setup() {
       title: t('name.title'),
       detail: t('name.detail'),
       content: (
-        <Field label={t('name.label')} error={errors.serverName}>
-          <Input
-            value={draft.serverName}
-            placeholder="Harbor"
-            autoComplete="off"
-            maxLength={60}
-            onChange={(e) => update({ serverName: e.target.value })}
-          />
-        </Field>
+        <>
+          <Field label={t('name.label')} error={errors.serverName}>
+            <Input
+              value={draft.serverName}
+              placeholder="Harbor"
+              autoComplete="off"
+              maxLength={60}
+              onChange={(e) => update({ serverName: e.target.value })}
+            />
+          </Field>
+          {/* plain text: Settings › Migration opens only once setup has signed the owner in */}
+          <p className="text-caption text-text-3">{t('name.migrate')}</p>
+        </>
       ),
     },
     owner: {

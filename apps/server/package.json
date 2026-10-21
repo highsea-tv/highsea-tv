@@ -21,6 +21,7 @@
     "@highsea/downloads": "workspace:*",
     "@highsea/fixtures": "workspace:*",
     "@highsea/i18n": "workspace:*",
+    "@highsea/importers": "workspace:*",
     "@highsea/indexers": "workspace:*",
     "@highsea/jobs": "workspace:*",
     "@highsea/media": "workspace:*",

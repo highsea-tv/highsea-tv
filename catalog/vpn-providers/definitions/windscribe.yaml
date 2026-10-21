@@ -1,0 +1,23 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from Windscribe's own knowledge base; nothing was copied.
+id: windscribe
+version: 1.0.0
+minEngineVersion: 1.0.0
+name: Windscribe
+connect: config
+steps:
+  - Sign in at windscribe.com and open My Account › Config Generator › WireGuard. It needs a paid account.
+  - Choose a location and port 443, keep New Key Pair, and download the file.
+  - Upload it here. To forward a port, open My Account › Port Forwarding, request an ephemeral port with Matching Port, and type it below. It lasts 7 days.
+links:
+  - label: Windscribe’s WireGuard configurations
+    url: https://windscribe.com/knowledge-base/articles/where-do-i-access-my-wireguard-configs
+  - label: Ephemeral port forwarding
+    url: https://windscribe.com/knowledge-base/articles/what-is-ephemeral-port-forwarding-and-how-to-use-it
+portForwarding:
+  method: static
+ipv6: false
+sources:
+  - https://windscribe.com/knowledge-base/articles/where-do-i-access-my-wireguard-configs
+  - https://windscribe.com/knowledge-base/articles/do-you-support-port-forwarding
+  - https://windscribe.com/knowledge-base/articles/what-is-ephemeral-port-forwarding-and-how-to-use-it

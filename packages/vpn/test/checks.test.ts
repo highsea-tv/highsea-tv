@@ -5,7 +5,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import type os from 'node:os'
 import { VPN_TIMINGS } from '../src/index.ts'
 import { startFakeGluetun } from './fake/index.ts'
-import { echoes, iface, testVpn, wgConfig } from './helpers.ts'
+import { echoes, iface, testVpn } from './helpers.ts'
 
 let close: (() => Promise<void>) | null = null
 afterEach(async () => {
@@ -136,23 +136,11 @@ describe('The checks', () => {
     expect(timers.pending()).toBe(0)
   })
 
-  test('off hands over an unbound binding, and highsea connects waits for the next update', async () => {
+  test('off hands over an unbound binding', async () => {
     const { vpn, last } = testVpn()
     vpn.start()
     expect(last()).toEqual({ address: null, dns: [] })
     expect(vpn.status()).toMatchObject({ state: 'off', provider: null, checks: [] })
-    await vpn.save({
-      mode: 'builtin',
-      provider: 'airvpn',
-      config: wgConfig(),
-    })
-    expect(last()).toBeNull()
-    expect(vpn.status()).toMatchObject({
-      state: 'failed',
-      provider: 'AirVPN',
-      message:
-        'highsea connects arrives in the next update. Use a VPN container or an interface on this machine for now.',
-    })
     vpn.stop()
   })
 })

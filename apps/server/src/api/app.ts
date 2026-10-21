@@ -10,8 +10,10 @@ import { registerAccounts } from './accounts.ts'
 import { registerDownloads } from './downloads.ts'
 import { events } from './events.ts'
 import { type Env, guard } from './guard.ts'
+import { registerImporters } from './importers.ts'
 import { registerIndexers } from './indexers.ts'
 import { registerLibrary } from './library.ts'
+import { registerLibraryImport } from './library-import.ts'
 import { registerMetadata } from './metadata.ts'
 import { registerMovies } from './movies.ts'
 import { registerPersonalization } from './personalization.ts'
@@ -73,6 +75,8 @@ export function createApi(runtime: Runtime) {
   registerLibrary(app)
   registerIndexers(app)
   registerDownloads(app)
+  registerLibraryImport(app)
+  registerImporters(app)
 
   app.doc31(`${API_PREFIX}/openapi.json`, {
     openapi: '3.1.0',

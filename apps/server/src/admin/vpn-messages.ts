@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › VPN (ADR 0021), in the prototype's copy (design/prototypes/src/admin/settings/vpn.tsx).
 // The lines the server writes, a provider's steps, a check's title and a failure's message, come
-// with the data. Added here: the built-in mode's later line, the interface list's empty state and
-// the save errors.
+// with the data. Added here: the interface list's empty state and the save errors.
 import { defineMessages } from '@highsea/i18n'
 
 export const vpn = defineMessages({
@@ -13,7 +12,6 @@ export const vpn = defineMessages({
   'mode.builtin': 'highsea connects',
   'mode.builtin.line':
     'highsea runs a WireGuard tunnel to your provider. Only torrents use it, and they can’t leave outside it.',
-  'mode.builtin.later': 'Arrives in a later update. Use a VPN container or an interface for now.',
   'mode.container': 'A VPN container',
   'mode.container.line':
     'highsea shares a gluetun container’s network and reads its status and forwarded port.',

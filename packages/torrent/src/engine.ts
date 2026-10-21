@@ -3,21 +3,30 @@
 // TCP and the DHT, the global limits, the download queue, fast resume and the network binding.
 // Nothing here opens a socket itself; the socket factory does, bound to what `@highsea/vpn` hands
 // over, and when the binding goes every torrent's networking stops at once.
+//
+// 6b: each address family the binding allows (sockets.ts) gets a TCP listener and a UDP socket on
+// the same port. The UDP socket carries uTP (utp.ts) and that family's DHT (dht.ts), split by
+// udp.ts; the IPv6 DHT is BEP 32's second DHT, with the IPv4 one's node id.
 import type net from 'node:net'
 import { AppError, type Clock, type Logger, newId, systemClock } from '@highsea/core'
 import { type Db, readSetting, schema, writeSetting } from '@highsea/db'
 import Wire from 'bittorrent-protocol'
 import { asc, eq } from 'drizzle-orm'
-import { DEFAULT_BOOTSTRAP, type Dht, startDht } from './dht.ts'
+import { NO_BLOCKLIST, type RangeSet } from './blocklist.ts'
+import { DEFAULT_BOOTSTRAP, DEFAULT_BOOTSTRAP6, type Dht, startDht } from './dht.ts'
 import { createBucket } from './limits.ts'
 import type { Metainfo } from './metainfo.ts'
 import { parseInfo, parseMagnet, parseTorrentFile, toMagnet } from './metainfo.ts'
-import type { Binding, SocketRecord } from './sockets.ts'
-import { createSocketFactory } from './sockets.ts'
+import { type EncryptionPolicy, secureIncoming } from './mse.ts'
+import { createPortMapper, type MappingStatus, type PortMapperOptions } from './portmap.ts'
+import type { Binding, Family, PeerSocket, SocketRecord } from './sockets.ts'
+import { addressKey, createSocketFactory } from './sockets.ts'
 import type { Priority } from './storage.ts'
 import type { PeerInfo, SeedRule, Session, SessionStats } from './torrent.ts'
 import { createSession } from './torrent.ts'
 import { newPeerId } from './trackers.ts'
+import { createUdpMux, type UdpMux, type UdpSend } from './udp.ts'
+import { createUtp, type Utp } from './utp.ts'
 
 const { torrents, torrentFiles, torrentResume } = schema
 
@@ -58,6 +67,11 @@ export type AddInput = {
   paused?: boolean
   rule?: SeedRule
   priorities?: Priority[]
+  /**
+   * What another client already moved for it (the qBittorrent importer, 6b): its uploaded and
+   * downloaded totals and time seeded, so ratios and seeding rules carry on rather than restart.
+   */
+  totals?: { uploaded: number; downloaded: number; seedingMs: number }
 }
 
 export type TorrentSnapshot = SessionStats & {
@@ -85,12 +99,26 @@ export type EngineStatus = {
   upRate: number
   dhtNodes: number
   connections: number
+  /** The router's mapping of the listening port (UPnP or NAT-PMP), when one is in place. */
+  portMapping: MappingStatus | null
+  /** Ranges on the IP blocklist; 0 when there's none. */
+  blocklistRanges: number
 }
 
 const NO_RULE: SeedRule = { ratio: null, minutes: null, minMinutes: null }
 const RESUME_EVERY_MS = 30_000
 const CHANGE_EVERY_MS = 1_000
 const DHT_KEY = 'torrentDht'
+const DHT6_KEY = 'torrentDht6'
+
+/** One address family's networking: its listener, its UDP socket, uTP and the DHT on it. */
+type Stack = {
+  family: Family
+  server: net.Server | null
+  mux: UdpMux | null
+  utp: Utp | null
+  dht: Dht | null
+}
 
 export type TorrentEngine = ReturnType<typeof createTorrentEngine>
 
@@ -104,15 +132,31 @@ export function createTorrentEngine(options: {
   port?: number
   limits?: Partial<Limits>
   /** Off for tests and private-only setups. `bootstrap` defaults to the public routers. */
-  dht?: { enabled: boolean; bootstrap?: string[] }
+  dht?: { enabled: boolean; bootstrap?: string[]; bootstrap6?: string[] }
+  /** uTP (BEP 29) for peers, beside TCP; on by default. */
+  utp?: boolean
+  /** Tests only: what every UDP datagram passes through on its way out (a lossy link). */
+  udpWrap?: (send: UdpSend) => UdpSend
   clock?: Clock
   audit?: (r: SocketRecord) => void
   emit?: (event: EngineEvent) => void
+  /** Settings › Download client's encryption (6b, mse.ts); prefer by default. */
+  encryption?: EncryptionPolicy
+  /**
+   * Port mapping (6b, portmap.ts): `wanted` says whether the router should open the port now (the
+   * runtime: the UPnP switch is on and no VPN is set). The rest is for tests.
+   */
+  portMapping?: { wanted(): boolean } & Partial<Omit<PortMapperOptions, 'udp' | 'log'>>
 }) {
   const { db } = options
   const clock = options.clock ?? systemClock
   const log = options.logger.child('torrent')
-  const sockets = createSocketFactory({ audit: options.audit })
+  let encryption: EncryptionPolicy = options.encryption ?? 'prefer'
+  let blocklist: RangeSet = NO_BLOCKLIST
+  const sockets = createSocketFactory({
+    audit: options.audit,
+    refuse: (host) => blocklist.has(host),
+  })
   const peerId = newPeerId()
   const key = Math.floor(Math.random() * 0xffffffff)
   const down = createBucket()
@@ -123,8 +167,8 @@ export function createTorrentEngine(options: {
   let port = options.port ?? DEFAULT_PORT
   const sessions = new Map<string, Session>()
   const byHash = new Map<string, Session>()
-  let server: net.Server | null = null
-  let dht: Dht | null = null
+  let stacks: Stack[] = []
+  let utpOn = options.utp ?? true
   // bumped by goOffline: a goOnline still awaiting its listener or the DHT (which resolves the
   // bootstrap names first) sees it went stale and stops what it started
   let generation = 0
@@ -330,8 +374,21 @@ export function createTorrentEngine(options: {
           }
           return reason
         },
-        dhtLookup: (h) => dht?.lookup(h),
-        dhtAnnounce: (h) => dht?.announce(h, port),
+        encryption: () => encryption,
+        blocked: (host) => blocklist.has(host),
+        dhtLookup: (h) => {
+          for (const st of stacks) st.dht?.lookup(h)
+        },
+        dhtAnnounce: (h) => {
+          for (const st of stacks) st.dht?.announce(h, port)
+        },
+        utp: (host, p) => {
+          if (!utpOn || !sockets.reachable(host)) return null
+          const family: Family = host.includes(':') ? 6 : 4
+          const u = stacks.find((st) => st.family === family)?.utp
+          if (!u) return null
+          return sockets.adopt(u.connect(host, p), family, addressKey(host, p))
+        },
         connectionsFree: () => limits.maxConnections - connections(),
         changed: () => markChanged(r.id),
         gotMetadata: (meta) => {
@@ -364,74 +421,161 @@ export function createTorrentEngine(options: {
 
   // --- the network -----------------------------------------------------------------------------
 
-  const accept = (socket: net.Socket) => {
-    sockets.accepted(socket)
+  /** A connection that came in: over TCP from a listener, or over uTP. */
+  const accept = (socket: PeerSocket, transport: 'tcp' | 'utp' = 'tcp', family: Family = 4) => {
+    if (transport === 'tcp') sockets.accepted(socket as net.Socket)
+    else
+      sockets.adopt(socket, family, addressKey(socket.remoteAddress ?? '', socket.remotePort ?? 0))
     socket.on('error', () => {})
-    const wire = new Wire()
-    socket.pipe(wire).pipe(socket)
-    const timer = setTimeout(() => wire.destroy(), 25_000)
-    timer.unref?.()
-    wire.on('error', () => wire.destroy())
-    wire.once('close', () => {
-      clearTimeout(timer)
+    // a blocked address is hung up on before a byte is read (6b, blocklist.ts)
+    if (blocklist.has((socket.remoteAddress ?? '').replace(/^::ffff:/, ''))) {
       socket.destroy()
-    })
-    wire.once('handshake', (hash: string) => {
-      clearTimeout(timer)
-      const s = byHash.get(hash)
-      if (!s) {
-        wire.destroy()
-        return
+      return
+    }
+    const timer = setTimeout(() => socket.destroy(), 25_000)
+    timer.unref?.()
+    socket.once('close', () => clearTimeout(timer))
+    // plaintext or MSE, as the policy allows (mse.ts); the wire reads what comes after
+    secureIncoming(socket, encryption, () => byHash.keys()).then(
+      ({ stream, method, infoHash }) => {
+        const wire = new Wire()
+        stream.pipe(wire).pipe(stream)
+        wire.on('error', () => wire.destroy())
+        wire.once('close', () => {
+          clearTimeout(timer)
+          socket.destroy()
+        })
+        wire.once('handshake', (hash: string) => {
+          clearTimeout(timer)
+          const s = byHash.get(hash)
+          // an encrypted handshake names its torrent twice: both must agree
+          if (!s || (infoHash && infoHash !== hash)) {
+            wire.destroy()
+            return
+          }
+          s.adopt(wire, socket, method, transport)
+        })
+      },
+      () => socket.destroy(),
+    )
+  }
+
+  const mapper = createPortMapper({
+    ...options.portMapping,
+    udp: () => sockets.udp(0),
+    log: (level, message, fields) => log[level](message, fields),
+  })
+  const wantMapping = () => {
+    try {
+      return options.portMapping?.wanted() ?? false
+    } catch {
+      return false
+    }
+  }
+
+  /** The IPv4 DHT's file of saved nodes, or the IPv6 one's. */
+  const dhtKey = (family: Family) => (family === 6 ? DHT6_KEY : DHT_KEY)
+
+  /** One family's listener, UDP socket and uTP. A failure on IPv6 beside IPv4 is only logged. */
+  const openStack = async (family: Family, quiet: boolean): Promise<Stack> => {
+    const st: Stack = { family, server: null, mux: null, utp: null, dht: null }
+    const name = family === 6 ? 'IPv6' : 'IPv4'
+    const fail = (what: string, e: unknown) => {
+      const message = `highsea couldn’t ${what} on port ${port} over ${name}: ${(e as Error).message}`
+      if (quiet) log.info(message)
+      else {
+        problem ??= message
+        log.warn(message)
       }
-      s.adopt(wire, socket)
-    })
+    }
+    try {
+      const server = await sockets.listen(port, family)
+      server.on('connection', (socket: net.Socket) => accept(socket, 'tcp', family))
+      server.on('error', (e) => log.warn('The torrent listener failed.', { error: String(e) }))
+      st.server = server
+    } catch (e) {
+      fail('listen', e)
+    }
+    try {
+      const mux = createUdpMux(await sockets.udp(port, family), options.udpWrap)
+      // the socket always takes uTP packets, so a refused connection gets a reset at once and the
+      // peer tries TCP (libtorrent does the same with outgoing uTP off)
+      const utp = createUtp({
+        send: mux.send,
+        accept: () => utpOn && sockets.up(),
+        onConnection: (stream) => accept(stream, 'utp', family),
+      })
+      mux.onUtp((buf, from) => utp.handle(buf, from))
+      mux.onClose(() => utp.close())
+      st.mux = mux
+      st.utp = utp
+    } catch (e) {
+      fail('open the UDP socket', e)
+    }
+    return st
   }
 
   const goOnline = async () => {
     const mine = generation
     problem = null
-    try {
-      server = await sockets.listen(port)
-      server.on('connection', accept)
-      server.on('error', (e) => log.warn('The torrent listener failed.', { error: String(e) }))
-    } catch (e) {
-      problem = `highsea couldn’t listen on port ${port}: ${(e as Error).message}`
-      log.warn(problem)
+    const locals = sockets.locals()
+    for (const [i, l] of locals.entries()) {
+      const st = await openStack(l.family, i > 0)
+      if (mine !== generation) return
+      stacks.push(st)
     }
-    if (options.dht?.enabled !== false && options.dht) {
-      try {
-        const node = await startDht({
-          sockets,
-          port,
-          bootstrap: options.dht.bootstrap ?? DEFAULT_BOOTSTRAP,
-          nodes: readSetting<{ nodes: string[] }>(db, DHT_KEY, { nodes: [] }).nodes,
-          onPeer: (hash, address) => byHash.get(hash)?.addPeers([address]),
-          current: () => mine === generation,
-        })
-        if (!node || mine !== generation) {
-          await node?.destroy().catch(() => {})
-          return
+    const dhtOptions = options.dht
+    if (dhtOptions && dhtOptions.enabled !== false) {
+      let nodeId: Uint8Array | undefined
+      for (const st of stacks) {
+        if (!st.mux) continue
+        try {
+          const node = await startDht({
+            socket: st.mux.krpc(),
+            family: st.family,
+            resolve: (host) => sockets.resolve(host, st.family),
+            bootstrap:
+              st.family === 6
+                ? (dhtOptions.bootstrap6 ?? dhtOptions.bootstrap ?? DEFAULT_BOOTSTRAP6)
+                : (dhtOptions.bootstrap ?? DEFAULT_BOOTSTRAP),
+            nodes: readSetting<{ nodes: string[] }>(db, dhtKey(st.family), { nodes: [] }).nodes,
+            nodeId,
+            onPeer: (hash, address) => byHash.get(hash)?.addPeers([address]),
+            current: () => mine === generation,
+          })
+          if (!node || mine !== generation) {
+            await node?.destroy().catch(() => {})
+            return
+          }
+          st.dht = node
+          nodeId ??= node.id()
+        } catch (e) {
+          const name = st.family === 6 ? 'IPv6' : 'IPv4'
+          if (st === stacks[0])
+            problem ??= `The DHT couldn’t start on port ${port}: ${(e as Error).message}`
+          log.warn(`The ${name} DHT couldn’t start.`, { error: String(e) })
         }
-        dht = node
-      } catch (e) {
-        problem ??= `The DHT couldn’t start on port ${port}: ${(e as Error).message}`
-        log.warn('The DHT couldn’t start.', { error: String(e) })
       }
     }
+    if (mine === generation && stacks.some((st) => st.server) && wantMapping())
+      void mapper.start(port)
     schedule()
   }
 
   const goOffline = async () => {
     generation++
-    if (dht) {
-      const nodes = dht.saved()
-      if (nodes.length) writeSetting(db, DHT_KEY, { nodes: nodes.slice(0, 200) }, clock.now())
-      const d = dht
-      dht = null
-      await d.destroy().catch(() => {})
+    const gone = stacks
+    stacks = []
+    for (const st of gone) {
+      if (st.dht) {
+        const nodes = st.dht.saved()
+        if (nodes.length)
+          writeSetting(db, dhtKey(st.family), { nodes: nodes.slice(0, 200) }, clock.now())
+        await st.dht.destroy().catch(() => {})
+      }
+      st.utp?.close()
     }
     for (const s of sessions.values()) s.offline()
-    server = null
   }
 
   const engine = {
@@ -477,7 +621,15 @@ export function createTorrentEngine(options: {
      */
     async setBinding(next: Binding | null) {
       const was = sockets.binding()
-      if (was && next && was.address === next.address && was.dns.join() === next.dns.join()) return
+      if (
+        was &&
+        next &&
+        was.address === next.address &&
+        was.address6 === next.address6 &&
+        was.dns.join() === next.dns.join()
+      )
+        return
+      await mapper.stop()
       sockets.rebind(next)
       await goOffline()
       if (next && !closing) await goOnline()
@@ -489,6 +641,7 @@ export function createTorrentEngine(options: {
       port = next
       const b = sockets.binding()
       if (!b) return
+      await mapper.stop()
       sockets.rebind(b)
       await goOffline()
       await goOnline()
@@ -503,6 +656,33 @@ export function createTorrentEngine(options: {
     },
 
     limits: () => limits,
+
+    /** Settings › Download client's encryption: new connections follow it at once. */
+    setEncryption(next: EncryptionPolicy) {
+      encryption = next
+    },
+
+    /** The IP blocklist, or null for none: blocked peers are refused from now on. */
+    setBlocklist(next: RangeSet | null) {
+      blocklist = next ?? NO_BLOCKLIST
+    },
+
+    /** Opens or closes the router's mapping when `wanted` changed (the setting, or the VPN). */
+    async refreshPortMapping() {
+      const want = sockets.up() && stacks.some((st) => st.server) && !closing && wantMapping()
+      if (want && !mapper.active()) await mapper.start(port)
+      else if (!want && mapper.active()) await mapper.stop()
+    },
+
+    /**
+     * uTP on or off. Off, new connections go over TCP and incoming uTP connections are refused with
+     * a reset, so the peer falls back to TCP; connections already open stay.
+     */
+    setUtp(on: boolean) {
+      utpOn = on
+    },
+
+    utp: () => utpOn,
 
     async add(input: AddInput): Promise<{ id: string; infoHash: string; existing: boolean }> {
       let infoHash: string
@@ -550,6 +730,9 @@ export function createTorrentEngine(options: {
           seedRatio: rule.ratio,
           seedMinutes: rule.minutes,
           minSeedMinutes: rule.minMinutes,
+          uploaded: Math.max(0, Math.round(input.totals?.uploaded ?? 0)),
+          downloaded: Math.max(0, Math.round(input.totals?.downloaded ?? 0)),
+          seedingMs: Math.max(0, Math.round(input.totals?.seedingMs ?? 0)),
           addedAt: clock.now(),
         })
         .run()
@@ -698,13 +881,15 @@ export function createTorrentEngine(options: {
       return {
         up: sockets.up(),
         port,
-        listening: server?.listening ?? false,
+        listening: stacks.some((st) => st.server?.listening),
         binding: sockets.binding(),
         problem,
         downRate,
         upRate,
-        dhtNodes: dht?.nodes() ?? 0,
+        dhtNodes: stacks.reduce((n, st) => n + (st.dht?.nodes() ?? 0), 0),
         connections: connections(),
+        portMapping: mapper.status(),
+        blocklistRanges: blocklist.size,
       }
     },
 
@@ -717,6 +902,7 @@ export function createTorrentEngine(options: {
       closing = true
       if (resumeTimer) clearInterval(resumeTimer)
       if (changeTimer) clearTimeout(changeTimer)
+      await mapper.stop()
       await persistAll()
       await Promise.all([...sessions.values()].map((s) => s.close(true).catch(() => {})))
       await goOffline()
