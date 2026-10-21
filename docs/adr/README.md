@@ -46,5 +46,6 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0040](0040-test-media.md) | Test media generated with ffmpeg, and a local swarm | Accepted |
 | [0041](0041-migration-importers.md) | The migration importers: Radarr and qBittorrent through their APIs | Accepted |
 | [0042](0042-vpn-connections.md) | VPN connections: one binding, four modes | Accepted |
+| [0043](0043-subtitles.md) | Subtitles: providers in code, Bazarr's scoring, originals kept | Accepted |
 
 Template: copy [`template.md`](template.md).

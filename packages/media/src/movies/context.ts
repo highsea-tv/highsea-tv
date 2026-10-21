@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What the movie services share: the platform every media type gets (@highsea/media/shared), plus
 // the job queue, events, the metadata service the library reads TMDB's facts from, and search.
+import type { ClientSubtitle } from '@highsea/api-contract'
 import { AppError, type EventBus } from '@highsea/core'
 import type { JobQueue } from '@highsea/jobs'
 import type { Metadata } from '@highsea/metadata'
@@ -23,6 +24,8 @@ export type MoviesDeps = MediaDeps & {
   events: EventBus
   metadata: Metadata
   search?: MovieSearch
+  /** A file's subtitle tracks for the client API (checkpoint 7); the runtime joins subtitles. */
+  subtitles?: { forFile(fileId: string): ClientSubtitle[] }
   /** Importing's setup (checkpoint 6): the downloads folder, and seams for tests. */
   importing?: ImportOptions
 }

@@ -176,6 +176,15 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
           settings: [],
         },
       ])
+    case 'GET /api/v1/setup/languages':
+      return json([
+        { code: 'zh', name: 'Chinese' },
+        { code: 'en', name: 'English' },
+        { code: 'fr', name: 'French' },
+        { code: 'is', name: 'Icelandic' },
+        { code: 'pt', name: 'Portuguese' },
+        { code: 'pt-BR', name: 'Brazilian Portuguese' },
+      ])
     case 'GET /api/v1/setup/fs/hardlinks':
       return json({ ok: true, sameDevice: true, message: 'Both folders are on the same disk.' })
     case 'POST /api/v1/setup/metadata-key':
@@ -382,6 +391,7 @@ describe('setup’s TMDB key step', () => {
     for (const heading of [
       'Choose your folders',
       'Add indexers',
+      'Subtitle languages',
       'Watching away from home',
       'Link to highsea cloud',
     ]) {
@@ -474,7 +484,7 @@ describe('setup’s indexer step', () => {
   }
 
   async function finish(user: ReturnType<typeof userEvent.setup>, page: ReturnType<typeof within>) {
-    for (let i = 0; i < 3; i++) {
+    for (let i = 0; i < 4; i++) {
       await user.click(page.getByRole('button', { name: 'Continue' }))
       await settle()
     }
@@ -516,6 +526,69 @@ describe('setup’s indexer step', () => {
     const again = await open(<Setup />)
     await settle()
     expect(again.page.getByText('None yet')).toBeTruthy()
+  })
+})
+
+describe('setup’s subtitle step', () => {
+  async function toSubtitles() {
+    localStorage.setItem(
+      'highsea:setup',
+      JSON.stringify({
+        step: 5,
+        reached: 5,
+        draft: {
+          serverName: 'Harbor',
+          owner: { displayName: 'Ana Lima', username: 'ana' },
+          folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
+        },
+      }),
+    )
+    const opened = await open(<Setup />)
+    await settle()
+    expect(opened.page.getByRole('heading', { level: 1, name: 'Subtitle languages' })).toBeTruthy()
+    return opened
+  }
+
+  test('comes between indexers and remote access, with English picked', async () => {
+    const { page } = await toSubtitles()
+    const steps = page.getAllByRole('listitem').map((li) => li.textContent ?? '')
+    const at = (label: string) => steps.findIndex((s) => s.includes(label))
+    expect(at('Indexers')).toBeLessThan(at('Subtitles'))
+    expect(at('Subtitles')).toBeLessThan(at('Remote access'))
+    expect(page.getByRole('button', { name: 'English' }).getAttribute('aria-pressed')).toBe('true')
+    expect(page.getByText('English only.')).toBeTruthy()
+    // the prototype's chips, from what the server knows; the rest are in the select
+    expect(page.queryByRole('button', { name: 'Icelandic' })).toBeNull()
+    expect(page.getByRole('combobox', { name: 'Add another language' })).toBeTruthy()
+  })
+
+  test('none picked says so in place; the order picked is sent with Finish', async () => {
+    const { user, page } = await toSubtitles()
+    await user.click(page.getByRole('button', { name: 'English' }))
+    await user.click(page.getByRole('button', { name: 'Continue' }))
+    expect(
+      page.getByText('Pick at least one language, or turn subtitles off later in Settings.'),
+    ).toBeTruthy()
+    expect(page.getByRole('heading', { level: 1, name: 'Subtitle languages' })).toBeTruthy()
+
+    await user.click(page.getByRole('button', { name: 'Portuguese' }))
+    await user.click(page.getByRole('button', { name: 'English' }))
+    expect(page.getByText('Portuguese, then English, in that order.')).toBeTruthy()
+    for (let i = 0; i < 3; i++) {
+      await user.click(page.getByRole('button', { name: 'Continue' }))
+      await settle()
+    }
+    expect(page.getByText('Portuguese, English')).toBeTruthy()
+    await user.click(page.getByRole('button', { name: 'Finish setup' }))
+    await settle()
+    await user.type(page.getByLabelText('Password'), 'correct horse battery')
+    await user.type(page.getByLabelText('Confirm password'), 'correct horse battery')
+    await user.click(page.getByRole('button', { name: /Review/ }))
+    await settle()
+    await user.click(page.getByRole('button', { name: 'Finish setup' }))
+    await settle()
+    const sent = requested('POST', '/api/v1/setup')[0]?.body as { subtitleLanguages: string[] }
+    expect(sent.subtitleLanguages).toEqual(['pt', 'en'])
   })
 })
 

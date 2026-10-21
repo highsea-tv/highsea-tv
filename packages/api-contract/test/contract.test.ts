@@ -238,7 +238,7 @@ describe('contract', () => {
       directors: [],
       videos: [],
       collection: null,
-      versions: [{ id: 'v1', label: '1080p', detail: null, playable: false }],
+      versions: [{ id: 'v1', label: '1080p', detail: null, playable: false, subtitles: [] }],
       related: [],
     })
     ok(SearchResults, {

@@ -7,7 +7,8 @@
 //
 //   const media = createMedia({ db, clock, logger })
 //   media.seed()                           first boot: profiles, formats, quality sizes; idempotent
-//   media.profiles.list / get, customFormats(), qualitySizes(), languageProfiles()
+//   media.profiles.list / get, customFormats(), qualitySizes()
+//   (language profiles are @highsea/subtitles/shared's, since checkpoint 7)
 //   media.rootFolders.list / find / add / remove
 //   media.mediaManagement.get / save       the `mediaManagement` settings row: naming and importing
 //   media.history.write / forItem / list   what happened to each title, cursor-paged on (date, id)
@@ -40,7 +41,6 @@ export function createMedia(deps: MediaDeps) {
     profiles: profiles.profiles,
     customFormats: profiles.customFormats,
     qualitySizes: profiles.qualitySizes,
-    languageProfiles: profiles.languageProfiles,
     rootFolders,
     mediaManagement: createMediaManagement(deps),
     history: createHistory(deps),
@@ -135,7 +135,7 @@ export {
   type VideoInfo,
   videoCodecName,
 } from './probe.ts'
-export { LANGUAGE_PROFILES, profileNotFound, QUALITY_SIZES_KEY } from './profiles.ts'
+export { profileNotFound, QUALITY_SIZES_KEY } from './profiles.ts'
 export { type FiledCounts, normalizeFolder, type RootFolders } from './root-folders.ts'
 export { matchScore } from './search.ts'
 export {

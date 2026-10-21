@@ -2,10 +2,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A2 Setup wizard (docs/product/setup.md), ported from the prototype. First run, before anyone has
 // signed in: name the server, create the owner, add a TMDB key (checkpoint 4; skippable), pick
-// folders, add indexers from the starter pack (checkpoint 5; skippable), choose remote access and
-// the optional highsea cloud link, then review and finish on the dashboard. The subtitle step
-// arrives with its package. The starter pack lists only public starters that need no setting, so
-// each adds without a form; the prototype's "Needs an account" badge has nothing to mark. Progress is kept in the
+// folders, add indexers from the starter pack (checkpoint 5; skippable), pick subtitle languages
+// (checkpoint 7a), choose remote access and the optional highsea cloud link, then review and
+// finish on the dashboard. The starter pack lists only public starters that need no setting, so
+// each adds without a form; the prototype's "Needs an account" badge has nothing to mark. The
+// prototype offers a dozen languages as chips; highsea knows 186, so the chips are the
+// prototype's dozen and whatever is picked, and a select adds any other. Progress is kept in the
 // browser so a reload picks up where you left off, except the password and the TMDB key, which
 // never go into storage (OWASP HTML5 Security Cheat Sheet: no sensitive data in localStorage).
 import type { SetupInput } from '@highsea/api-contract'
@@ -24,6 +26,7 @@ import {
   Icon,
   Input,
   Lockup,
+  Select,
   Skeleton,
   type Step,
   Stepper,
@@ -41,13 +44,23 @@ import {
 } from './metadata-locale.ts'
 import { setup as messages } from './setup-messages.ts'
 
-type StepId = 'name' | 'owner' | 'metadata' | 'folders' | 'indexers' | 'remote' | 'cloud' | 'review'
+type StepId =
+  | 'name'
+  | 'owner'
+  | 'metadata'
+  | 'folders'
+  | 'indexers'
+  | 'subtitles'
+  | 'remote'
+  | 'cloud'
+  | 'review'
 const STEP_IDS: StepId[] = [
   'name',
   'owner',
   'metadata',
   'folders',
   'indexers',
+  'subtitles',
   'remote',
   'cloud',
   'review',
@@ -63,6 +76,8 @@ type Draft = {
   folders: { movies: string; downloads: string }
   /** Starter-pack definition ids to add at Finish. */
   indexers: string[]
+  /** Codes, in order: the first is preferred. */
+  subtitleLanguages: string[]
   remote: Remote
   proxyUrl: string
   port: string
@@ -76,6 +91,7 @@ const blank: Draft = {
   keyChecked: false,
   folders: { movies: '', downloads: '' },
   indexers: [],
+  subtitleLanguages: ['en'],
   remote: 'local-only',
   proxyUrl: '',
   port: '8484',
@@ -125,6 +141,7 @@ function validate(step: StepId, d: Draft, t: T): Errors {
     if (d.folders.movies && d.folders.movies === d.folders.downloads)
       e.downloads = t('folders.same')
   }
+  if (step === 'subtitles' && d.subtitleLanguages.length === 0) e.languages = t('subtitles.missing')
   if (step === 'remote') {
     if (d.remote === 'reverse-proxy' && !/^https:\/\/[^\s/]+/.test(d.proxyUrl))
       e.proxyUrl = t('remote.addressInvalid')
@@ -144,6 +161,7 @@ const FIELDS: Record<string, [StepId, string]> = {
   'metadata.key': ['metadata', 'metadataKey'],
   'folders.movies': ['folders', 'movies'],
   'folders.downloads': ['folders', 'downloads'],
+  subtitleLanguages: ['subtitles', 'languages'],
   'remoteAccess.url': ['remote', 'proxyUrl'],
   'remoteAccess.port': ['remote', 'port'],
 }
@@ -157,6 +175,7 @@ const toInput = (d: Draft): SetupInput => ({
   },
   folders: d.folders,
   indexers: d.indexers,
+  subtitleLanguages: d.subtitleLanguages,
   remoteAccess:
     d.remote === 'reverse-proxy'
       ? { kind: 'reverse-proxy', url: d.proxyUrl }
@@ -393,6 +412,17 @@ export function Setup() {
         />
       ),
     },
+    subtitles: {
+      title: t('subtitles.title'),
+      detail: t('subtitles.detail'),
+      content: (
+        <Languages
+          selected={draft.subtitleLanguages}
+          error={errors.languages}
+          onChange={(subtitleLanguages) => update({ subtitleLanguages })}
+        />
+      ),
+    },
     remote: {
       title: t('remote.title'),
       detail: t('remote.detail'),
@@ -553,6 +583,97 @@ function Indexers({
         </li>
       ))}
     </ul>
+  )
+}
+
+// ---------------------------------------------------------------- subtitles
+
+/** The prototype's chips: the languages most libraries want, in its order. */
+const COMMON = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'ja', 'ko', 'zh', 'ar', 'hi']
+
+function Languages({
+  selected,
+  error,
+  onChange,
+}: {
+  selected: string[]
+  error?: string
+  onChange: (codes: string[]) => void
+}) {
+  const t = useT(messages)
+  const languages = useQuery('setup-languages', (c) => c.setup.languages())
+  if (languages.status === 'loading') return <Skeleton className="h-24" />
+  if (languages.status === 'error')
+    return (
+      <EmptyState
+        size="sm"
+        tone="error"
+        title={t('subtitles.failed')}
+        action={<Button onClick={languages.refetch}>{t('indexers.retry')}</Button>}
+      >
+        {languages.error.message}
+      </EmptyState>
+    )
+  const all = languages.data
+  const name = (code: string) => all.find((l) => l.code === code)?.name ?? code
+  const chips = [
+    ...COMMON.filter((c) => all.some((l) => l.code === c)),
+    ...selected.filter((c) => !COMMON.includes(c)),
+  ]
+  const others = all.filter((l) => !chips.includes(l.code))
+  return (
+    <div className="grid gap-3">
+      <fieldset className="grid gap-2">
+        <legend className="mb-2 font-medium text-[13px] text-text-2">
+          {t('subtitles.legend')}
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {chips.map((code) => {
+            const on = selected.includes(code)
+            return (
+              <button
+                key={code}
+                type="button"
+                aria-pressed={on}
+                onClick={() =>
+                  onChange(on ? selected.filter((c) => c !== code) : [...selected, code])
+                }
+                className={cn(
+                  'flex h-8 items-center gap-1.5 rounded-full border px-3 text-ui transition-tint',
+                  on
+                    ? 'border-accent bg-accent-soft text-accent-text'
+                    : 'border-line-strong text-text-2 hover:bg-s2 hover:text-text',
+                )}
+              >
+                {on && <Icon name="check" size={14} />}
+                {name(code)}
+              </button>
+            )
+          })}
+        </div>
+      </fieldset>
+      <Select
+        value=""
+        onValueChange={(code) => code && onChange([...selected, code])}
+        placeholder={t('subtitles.more')}
+        aria-label={t('subtitles.more')}
+        options={others.map((l) => ({ value: l.code, label: l.name }))}
+        className="w-full max-w-56"
+      />
+      {/* the error is about none being picked, so picking one answers it */}
+      {error && selected.length === 0 ? (
+        <p role="alert" className="flex items-start gap-1.5 text-badge-danger text-caption">
+          <Icon name="alert" size={14} className="mt-px shrink-0" />
+          {error}
+        </p>
+      ) : selected.length === 0 ? null : (
+        <p className="text-caption text-text-3" aria-live="polite">
+          {selected.length === 1
+            ? t('subtitles.only', { language: name(selected[0] ?? '') })
+            : t('subtitles.order', { languages: selected.map(name).join(t('subtitles.then')) })}
+        </p>
+      )}
+    </div>
   )
 }
 
@@ -890,6 +1011,10 @@ function Review({ draft, onEdit }: { draft: Draft; onEdit: (step: number) => voi
   const t = useT(messages)
   const pack = useQuery('starter-pack', (c) => c.setup.starterPack())
   const indexerNames = draft.indexers.map((i) => pack.data?.find((d) => d.id === i)?.name ?? i)
+  const languages = useQuery('setup-languages', (c) => c.setup.languages())
+  const languageNames = draft.subtitleLanguages.map(
+    (c) => languages.data?.find((l) => l.code === c)?.name ?? c,
+  )
   const rows: { step: StepId; label: string; value: ReactNode }[] = [
     { step: 'name', label: t('step.name'), value: draft.serverName },
     {
@@ -924,6 +1049,7 @@ function Review({ draft, onEdit }: { draft: Draft; onEdit: (step: number) => voi
       label: t('step.indexers'),
       value: indexerNames.length ? indexerNames.join(', ') : t('review.noIndexers'),
     },
+    { step: 'subtitles', label: t('step.subtitles'), value: languageNames.join(', ') },
     {
       step: 'remote',
       label: t('step.remote'),

@@ -2,7 +2,6 @@
 // What adding and deciding read, for every media type: quality profiles, custom formats, quality
 // sizes and language profiles. Seeded on first boot and read-only until their editors come with
 // checkpoint 8 (profiles and formats) and checkpoint 7 (language profiles).
-import type { LanguageProfile } from '@highsea/api-contract'
 import { AppError } from '@highsea/core'
 import { schema, writeSetting } from '@highsea/db'
 import {
@@ -24,20 +23,6 @@ const { qualityProfiles, customFormats, settings } = schema
 
 /** The settings row holding @highsea/quality's `QualitySizes`: one entry per quality, MiB a minute. */
 export const QUALITY_SIZES_KEY = 'qualitySizes'
-
-/**
- * The language profiles the add dialog offers until checkpoint 7 seeds and edits them: English
- * alone, the prototype's first. A judgement call kept minimal: a title stores the id it's given.
- */
-export const LANGUAGE_PROFILES: LanguageProfile[] = [
-  {
-    id: 'lp-en',
-    name: 'English',
-    languages: [{ code: 'en', forced: 'also', hi: 'no' }],
-    cutoff: 'en',
-    minScore: 80,
-  },
-]
 
 export const profileNotFound = () =>
   new AppError('not-found', 'That quality profile doesn’t exist.', {
@@ -158,7 +143,6 @@ export function createProfiles({ db, clock, logger }: MediaDeps) {
     profiles: { list: profiles, get: profile },
     customFormats: formats,
     qualitySizes,
-    languageProfiles: (): LanguageProfile[] => LANGUAGE_PROFILES.map((p) => structuredClone(p)),
   }
 }
 

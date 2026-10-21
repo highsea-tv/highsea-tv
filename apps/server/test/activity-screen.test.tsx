@@ -5,7 +5,7 @@
 // inside, and an import where one file goes in and one says why it didn't. The shell is stood in
 // for.
 import './dom.ts'
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import type { ReactNode } from 'react'
 
 mock.module('next/navigation', () => ({
@@ -39,7 +39,7 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea/sdk')
 const { ClientProvider } = await import('@highsea/sdk/react')
-const { TooltipProvider } = await import('@highsea/ui-web')
+const { toast, TooltipProvider } = await import('@highsea/ui-web')
 const { Activity } = await import('../src/admin/activity.tsx')
 const { ManualImport } = await import('../src/admin/import.tsx')
 
@@ -169,11 +169,11 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
       ])
     case 'POST /api/v1/import':
       return json({
-        results: (body as { files: { path: string }[] }).files.map((f) => ({
-          path: f.path,
-          ok: false,
-          message: 'There’s already a better file for Sintel.',
-        })),
+        results: (body as { files: { path: string }[] }).files.map((f) =>
+          importsGoIn
+            ? { path: f.path, ok: true, message: null }
+            : { path: f.path, ok: false, message: 'There’s already a better file for Sintel.' },
+        ),
       })
   }
   if (method === 'POST' && path.startsWith('/api/v1/queue/'))
@@ -184,7 +184,11 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
   return json({ error: { code: 'not-found', message: `No fake for ${method} ${path}` } }, 404)
 }
 
+/** Whether the fake imports every file, or refuses each with a reason. */
+let importsGoIn = false
+
 beforeEach(() => {
+  importsGoIn = false
   state = {
     queue: [
       item('q_1'),
@@ -359,6 +363,18 @@ describe('A17 Manual import', () => {
     })
     const sintel = within(page.getByRole('row', { name: /Sintel\.mkv/ }))
     expect(sintel.getByText('There’s already a better file for Sintel.')).toBeTruthy()
+  })
+
+  test('a file that went in says so, and that subtitles are next', async () => {
+    importsGoIn = true
+    const success = spyOn(toast, 'success')
+    const { user, page } = await open(<ManualImport />)
+    await user.click(page.getByRole('button', { name: 'Import 1 file' }))
+    await settle()
+    expect(success).toHaveBeenCalledWith('1 file imported', {
+      description: 'Renamed into the library. Subtitles are next.',
+    })
+    success.mockRestore()
   })
 
   test('opened on a torrent’s folder, it looks inside that folder', async () => {

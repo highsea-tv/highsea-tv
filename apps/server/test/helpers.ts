@@ -31,11 +31,15 @@ export async function cleanup() {
 
 /**
  * A booted runtime whose outside requests go to TMDB's recordings (ADR 0029): no test reaches the
- * network, and one with no recording fails. Pass `fetch` to count or fail requests, and `importing`
- * for the import pipeline's options.
+ * network, and one with no recording fails. Pass `fetch` to count or fail requests, `importing`
+ * for the import pipeline's options, and `subtitles` for the subtitle providers' fakes.
  */
 export async function bootRuntime(
-  options: { fetch?: ReplayFetch | Fetch; importing?: BootOptions['importing'] } = {},
+  options: {
+    fetch?: ReplayFetch | Fetch
+    importing?: BootOptions['importing']
+    subtitles?: BootOptions['subtitles']
+  } = {},
 ): Promise<Runtime> {
   const dir = mkdtempSync(join(tmpdir(), 'highsea-api-'))
   dirs.push(dir)
@@ -53,6 +57,7 @@ export async function bootRuntime(
     // no torrent opens a socket: grabs are added, nothing downloads
     torrent: { offline: true },
     importing: options.importing,
+    subtitles: options.subtitles,
   })
 }
 

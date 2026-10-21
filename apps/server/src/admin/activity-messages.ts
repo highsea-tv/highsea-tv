@@ -83,6 +83,9 @@ export const activity = defineMessages({
   'event.blocklisted': 'Blocklisted',
   'event.subtitle-downloaded': 'Subtitles downloaded',
   'event.subtitle-synced': 'Subtitles synced',
+  'event.subtitle-upgraded': 'Subtitles upgraded',
+  'event.subtitle-deleted': 'Subtitles deleted',
+  'event.subtitle-sync-failed': 'Subtitles not synced',
   /** A movie that has left the library since: its TMDB id stands in for the title. */
 
   'blocklist.what': 'the blocklist',

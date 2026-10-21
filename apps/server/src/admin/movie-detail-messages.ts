@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A6 movie detail's library layer (movies.md § Movie detail, § Copy; ADR 0021): the prototype's
 // copy, with search disabled while no indexer is enabled (checkpoint 4 plan, decision 2), the
-// Search tab's results with Grab, In the queue, Files and History (checkpoint 6), and the smallest
-// additions for what the prototype doesn't draw: Edit, the version list and History's Show more.
+// Search tab's results with Grab, In the queue, Files and History (checkpoint 6), the Subtitles tab
+// (checkpoint 7a), and the smallest additions for what the prototype doesn't draw: Edit, the
+// version list and History's Show more.
 import { defineMessages } from '@highsea/i18n'
 
 export const movieDetail = defineMessages({
@@ -59,6 +60,7 @@ export const movieDetail = defineMessages({
   'tab.files': 'Files',
   'tab.history': 'History',
   'tab.search': 'Search',
+  'tab.subtitles': 'Subtitles',
   'files.version': '{label} version',
   'files.none': 'No file yet',
   'files.downloading': 'Downloading',
@@ -70,6 +72,47 @@ export const movieDetail = defineMessages({
   'stream.default': 'default',
   'stream.forced': 'forced',
   'stream.sdh': 'SDH',
+  // the Subtitles tab (checkpoint 7a)
+  'subs.what': 'the subtitles',
+  'subs.noFile': 'No file to find subtitles for yet',
+  'subs.noFileBody': 'Subtitles are searched and synced as soon as the movie is imported.',
+  'subs.tracks': 'Tracks',
+  'subs.counts': '{external} external · {embedded} embedded',
+  'subs.none': 'No subtitles yet. Search below to pick some.',
+  'subs.language': 'Language',
+  'subs.source': 'Source',
+  'subs.score': 'Score',
+  'subs.sync': 'Sync',
+  'subs.actions': 'Actions',
+  'subs.stream': 'Stream {index} in {file}',
+  'subs.embedded': 'Embedded',
+  'subs.unknown': 'Unknown language',
+  'subs.matchesVideo': 'Matches the video',
+  'subs.bundled': 'From the release',
+  'subs.byHand': 'Added by hand',
+  'subs.delete': 'Delete',
+  'subs.deleteLabel': 'Delete {language} subtitles',
+  'subs.deleted': 'Subtitles deleted',
+  'subs.deleteFailed': 'Couldn’t delete them',
+  'subs.search': 'Search for subtitles',
+  'subs.searchProviders': 'Search providers',
+  'subs.resultsWhat': 'subtitle results',
+  'subs.noResults': 'No provider has subtitles in that language.',
+  'subs.no-providers': 'Turn on a subtitle provider in Subtitles to search.',
+  'subs.providers-failed': 'No subtitle provider answered. Try again in a few minutes.',
+  'subs.release': 'Release',
+  'subs.provider': 'Provider',
+  'subs.use': 'Use',
+  'subs.useLabel': 'Download {release} from {provider}',
+  'subs.downloaded': 'Subtitles downloaded',
+  'subs.downloadFailed': 'Couldn’t download them',
+  'sync.synced': 'Synced',
+  'sync.syncing': 'Syncing',
+  'sync.queued': 'Waiting to sync',
+  'sync.unsynced': 'Not synced',
+  'sync.failed': 'Sync failed',
+  // the prototype's "Embedded"; a release's own sidecar is not-needed too, and it isn't embedded
+  'sync.not-needed': 'Matches the video',
   'history.what': 'the history',
   'history.none': 'Nothing has happened yet',
   'history.noneBody': 'Grabs, imports and subtitle downloads show here.',
@@ -87,6 +130,9 @@ export const movieDetail = defineMessages({
   'history.blocklisted': 'Blocklisted',
   'history.subtitle-downloaded': 'Subtitles downloaded',
   'history.subtitle-synced': 'Subtitles synced',
+  'history.subtitle-upgraded': 'Subtitles upgraded',
+  'history.subtitle-deleted': 'Subtitles deleted',
+  'history.subtitle-sync-failed': 'Subtitles not synced',
   // in the queue
   inTheQueue: 'In the queue',
   'queue.progress': '{title} progress',

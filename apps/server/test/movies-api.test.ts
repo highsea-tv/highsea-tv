@@ -367,7 +367,7 @@ describe('quality', () => {
     expect((await failure(memberApi.quality.customFormats())).code).toBe('forbidden')
     const sizes = await ownerApi.settings.qualitySizes()
     expect(sizes[0]?.quality).toBe('Unknown')
-    expect((await adminApi.quality.languageProfiles()).length).toBeGreaterThan(0)
+    expect((await adminApi.subtitles.languageProfiles()).length).toBeGreaterThan(0)
   })
 
   test('the parser reads a name, its quality and the formats it matches', async () => {

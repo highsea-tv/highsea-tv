@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Configuration from the environment. Everything else is a setting in the database, changed in
 // the admin; only what's needed before the database opens lives here.
+import { readFileSync } from 'node:fs'
 import { LEVELS } from '@highsea/core'
 import { z } from 'zod'
 
@@ -27,6 +28,13 @@ export const configSchema = z.object({
    * `NODE_ENV` is `production`; `HIGHSEA_CATALOG_DEV_KEY=0` or `1` overrides it.
    */
   catalogDevKey: z.boolean().optional(),
+  /**
+   * highsea's OpenSubtitles.com consumer key (`HIGHSEA_OPENSUBTITLES_KEY`), given to release builds
+   * as a secret and never kept in the repository. Without it OpenSubtitles.com can't be turned on.
+   * The image reads it from a file (`HIGHSEA_OPENSUBTITLES_KEY_FILE`), the `_FILE` convention
+   * Docker's documentation gives for secrets; the variable wins when both are set.
+   */
+  opensubtitlesKey: z.string().min(1).optional(),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -46,10 +54,22 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
       env.HIGHSEA_CATALOG_DEV_KEY !== undefined && env.HIGHSEA_CATALOG_DEV_KEY !== ''
         ? env.HIGHSEA_CATALOG_DEV_KEY === '1' || env.HIGHSEA_CATALOG_DEV_KEY === 'true'
         : env.NODE_ENV !== 'production',
+    opensubtitlesKey:
+      env.HIGHSEA_OPENSUBTITLES_KEY?.trim() || keyFile(env.HIGHSEA_OPENSUBTITLES_KEY_FILE),
   })
   if (!parsed.success) {
     const problems = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)
     throw new Error(`The server's configuration isn't valid:\n  ${problems.join('\n  ')}`)
   }
   return parsed.data
+}
+
+/** A key kept in a file: absent or empty is no key. */
+function keyFile(path: string | undefined): string | undefined {
+  if (!path) return undefined
+  try {
+    return readFileSync(path, 'utf8').trim() || undefined
+  } catch {
+    return undefined
+  }
 }

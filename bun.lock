@@ -8,6 +8,8 @@
         "@biomejs/biome": "2.5.15",
         "@highsea/catalog": "workspace:*",
         "@highsea/indexers": "workspace:*",
+        "@highsea/media": "workspace:*",
+        "@highsea/subtitles": "workspace:*",
         "@types/bun": "^1.4.3",
         "axe-core": "4.14.0",
         "playwright-core": "1.63.0",
@@ -38,6 +40,7 @@
         "@highsea/quality": "workspace:*",
         "@highsea/runtime": "workspace:*",
         "@highsea/sdk": "workspace:*",
+        "@highsea/subtitles": "workspace:*",
         "@highsea/tokens": "workspace:*",
         "@highsea/ui-web": "workspace:*",
         "@highsea/vpn": "workspace:*",
@@ -414,6 +417,7 @@
         "@highsea/metadata": "workspace:*",
         "@highsea/network": "workspace:*",
         "@highsea/personalization": "workspace:*",
+        "@highsea/subtitles": "workspace:*",
         "@highsea/torrent": "workspace:*",
         "@highsea/vpn": "workspace:*",
         "drizzle-orm": "0.45.3",
@@ -455,6 +459,25 @@
       },
       "peerDependencies": {
         "react": "^19.3.0",
+      },
+    },
+    "packages/subtitles": {
+      "name": "@highsea/subtitles",
+      "version": "0.0.0",
+      "dependencies": {
+        "@highsea/api-contract": "workspace:*",
+        "@highsea/core": "workspace:*",
+        "@highsea/db": "workspace:*",
+        "@highsea/jobs": "workspace:*",
+        "@highsea/media": "workspace:*",
+        "@highsea/parser": "workspace:*",
+        "chardet": "2.2.0",
+        "drizzle-orm": "0.45.3",
+        "zod": "4.6.7",
+      },
+      "devDependencies": {
+        "@highsea/config": "workspace:*",
+        "@types/node": "25.9.9",
       },
     },
     "packages/tokens": {
@@ -760,6 +783,8 @@
     "@highsea/server": ["@highsea/server@workspace:apps/server"],
 
     "@highsea/storybook": ["@highsea/storybook@workspace:apps/storybook"],
+
+    "@highsea/subtitles": ["@highsea/subtitles@workspace:packages/subtitles"],
 
     "@highsea/tokens": ["@highsea/tokens@workspace:packages/tokens"],
 
@@ -1406,6 +1431,8 @@
     "caniuse-lite": ["caniuse-lite@1.0.30001816", "", {}, "sha512-+8Yx7BXCoqk6IF8yTicjfUR6D/ldJzdlsodlEOiOSPmhK844WIgk67/zIQaGAOxNkZyyvBlrRFnLvqKIoqbAFw=="],
 
     "chai": ["chai@5.3.3", "", { "dependencies": { "assertion-error": "^2.0.1", "check-error": "^2.1.1", "deep-eql": "^5.0.1", "loupe": "^3.1.0", "pathval": "^2.0.0" } }, "sha512-4zNhdJD/iOjSH0A05ea+Ke6MU5mmpQcbQsSOkgdaUMJ9zTlDTD/GYlwohmIE2u0gaxHYiVHEn1Fw9mZ/ktJWgw=="],
+
+    "chardet": ["chardet@2.2.0", "", {}, "sha512-rddelWYNPRrXq6PtNEN2S3f6t9ILzvqaN5pVgi4kqt9jHQaXIial9PznB5iSPVlQSLNaaH22ItWz3EJtQ10+OA=="],
 
     "check-error": ["check-error@2.1.3", "", {}, "sha512-PAJdDJusoxnwm1VwW07VWwUN1sl7smmC3OKggvndJFadxxDRyFJBX/ggnu/KE4kQAB7a3Dp8f/YXC1FlUprWmA=="],
 

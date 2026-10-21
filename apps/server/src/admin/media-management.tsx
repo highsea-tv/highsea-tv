@@ -163,6 +163,12 @@ function Form({
               <span className="font-mono text-text-2">
                 {buildFileName(v.fileFormat, PREVIEW_MOVIE, PREVIEW_FILE, naming)}.mkv
               </span>
+              {' · '}
+              {/* a subtitle keeps the video's name, then its language: sidecarPath in
+                  @highsea/subtitles/shared, which reads node:path, so it isn't imported here */}
+              <span className="font-mono text-text-2">
+                {buildFileName(v.fileFormat, PREVIEW_MOVIE, PREVIEW_FILE, naming)}.en.srt
+              </span>
             </>
           }
           error={errors.fileFormat}

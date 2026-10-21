@@ -294,6 +294,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
   - movie detail Subtitles tab: tracks, embedded, manual search/pick, sync status and confidence, offset;
   - `/wanted/subtitles`;
   - `/settings/subtitles`: providers, language profiles, sync options.
+- **As built (checkpoint 7a, [ADR 0043](adr/0043-subtitles.md)):** the providers are OpenSubtitles.com, Subdl and SubSource. OpenSubtitles.com uses highsea's own consumer key, kept out of the repository and built into release images, with each owner's own account. Podnapisi closed in 2026, Gestdown and Addic7ed come back with shows (they're TV only), and YIFY Subtitles has no API. Embedded streams count toward the profile and aren't extracted. Scores are Bazarr's movie weights scaled to 100. Ads are always removed, and SDH text only for the Without SDH fallback, with no cleanup switches. Sidecars use `.sdh`, not `.hi`, after the video file's name. Defaults per root folder wait for checkpoint 8. The wanted list and the settings share A10 (`/subtitles`). The sync engine is 7b, as designed in the checkpoint's plan: audio through ffmpeg in a worker, WebRTC's VAD, FFT correlation with ffsubsync's framerates, and splits written fresh from alass's problem.
 
 ### Personalization (`@highsea/personalization`)
 - **Preferences** are stored server-side with layers: user → client type → device. They sync to every client.

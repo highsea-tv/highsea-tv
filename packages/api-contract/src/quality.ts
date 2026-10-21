@@ -310,16 +310,6 @@ export const quality = {
       ...errors('unauthorized', 'forbidden'),
     },
   }),
-  languageProfiles: createRoute({
-    method: 'get',
-    path: `${API_PREFIX}/languageprofiles`,
-    tags: ['Quality'],
-    summary: 'Subtitle language profiles',
-    description:
-      'What the add dialog’s Subtitle languages offers. Seeded and edited with subtitles (checkpoint 7); until then the server lists its built-in default.',
-    ...access('staff'),
-    responses: { 200: json(z.array(LanguageProfile), 'Profiles'), ...errors('unauthorized') },
-  }),
   parse: createRoute({
     method: 'get',
     path: `${API_PREFIX}/parse`,

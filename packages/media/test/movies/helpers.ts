@@ -75,6 +75,18 @@ export async function setup({
   fetch.requests.length = 0
   const media = createMedia({ db, clock, logger: silentLogger })
   media.seed()
+  // the language profile the movies here use; @highsea/subtitles seeds it in the runtime
+  db.insert(schema.languageProfiles)
+    .values({
+      id: 'lp-en',
+      name: 'English',
+      rules: [{ code: 'en', forced: 'also', hi: 'no' }],
+      cutoff: 'en',
+      minScore: 80,
+      createdAt: 0,
+      updatedAt: 0,
+    })
+    .run()
   const folder = media.rootFolders.add(library)
   const movies = createMovies(
     { db, jobs, clock, events, logger: silentLogger, metadata, importing },

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { afterEach, describe, expect, test } from 'bun:test'
-import { existsSync, mkdtempSync, readdirSync, rmSync, statSync } from 'node:fs'
+import { existsSync, mkdtempSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createFakeClock } from '@highsea/core'
@@ -44,6 +44,21 @@ describe('config', () => {
     )
     expect(loadConfig({ HIGHSEA_CATALOG_DEV_KEY: '0' }).catalogDevKey).toBe(false)
     expect(loadConfig({}).catalogUrl).toBeUndefined()
+  })
+
+  test('reads the OpenSubtitles.com key from the variable, or from its file', () => {
+    const file = join(temp(), 'key')
+    writeFileSync(file, 'from-file\n')
+    expect(loadConfig({}).opensubtitlesKey).toBeUndefined()
+    expect(loadConfig({ HIGHSEA_OPENSUBTITLES_KEY_FILE: file }).opensubtitlesKey).toBe('from-file')
+    expect(
+      loadConfig({ HIGHSEA_OPENSUBTITLES_KEY: ' given ', HIGHSEA_OPENSUBTITLES_KEY_FILE: file })
+        .opensubtitlesKey,
+    ).toBe('given')
+    // a release built without the secret has no file
+    expect(
+      loadConfig({ HIGHSEA_OPENSUBTITLES_KEY_FILE: join(temp(), 'missing') }).opensubtitlesKey,
+    ).toBeUndefined()
   })
 
   test('says which setting is wrong', () => {

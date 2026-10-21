@@ -11,7 +11,7 @@
 import { promises as fsp } from 'node:fs'
 import { basename, dirname, extname, join, relative } from 'node:path'
 import { AppError, newId } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { type Db, schema } from '@highsea/db'
 import type { MovieMetadata } from '@highsea/metadata'
 import { type ParsedRelease, parse } from '@highsea/parser'
 import {
@@ -85,6 +85,38 @@ export type ImportOptions = {
   fs?: TransferFs
   /** unar (6b); defaults to `HIGHSEA_UNAR` or `unar` on the PATH. */
   extract?: Extract
+  /** What another package does as files arrive (checkpoint 7's subtitles); the runtime wires it. */
+  hooks?: ImportHooks
+}
+
+/** A transaction, as `db.transaction` hands it to its callback. */
+export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
+
+/** A file just recorded in the library, as the import hook sees it. */
+export type ImportedFile = {
+  fileId: string
+  itemId: string
+  /** Where it is now, in the movie's folder. */
+  path: string
+  /**
+   * The release's folder it came from, for the files that came with it (subtitles); null when it
+   * came alone, or was recorded where it already was.
+   */
+  sourceFolder: string | null
+  /** Recorded in place (the scan, the existing-library import, the importers): nothing was copied. */
+  inPlace: boolean
+}
+
+/**
+ * The import pipeline's hooks (checkpoint 7): `media` calls them and doesn't know who listens, so it
+ * doesn't depend on `subtitles`. Both run inside the import, before it finishes: a Move import
+ * removes the download's files as soon as it does.
+ */
+export type ImportHooks = {
+  /** Inside the record's transaction, before a replaced file's row goes: what hangs off it moves. */
+  replacing?: (tx: Tx, from: string, to: string) => void
+  /** After a file is recorded. A failure is logged; the import stands. */
+  afterImport?: (file: ImportedFile) => Promise<void>
 }
 
 export type ImportMode = 'hardlink' | 'move'
@@ -197,6 +229,16 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
   const probe = options.probe ?? createProbe()
   const fs = options.fs ?? nodeFs
   const extract = options.extract ?? createExtractor()
+  const hooks = options.hooks ?? {}
+
+  /** The import hook, which never fails an import: its own errors are logged. */
+  async function afterImport(file: ImportedFile) {
+    try {
+      await hooks.afterImport?.(file)
+    } catch (e) {
+      log.warn('the import hook failed', { path: file.path, error: (e as Error).message })
+    }
+  }
 
   const roots = () => [
     ...media.rootFolders.list().map((r) => r.path),
@@ -376,6 +418,8 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
     indexer?: string | null
     downloadId?: string | null
     mode: ImportMode
+    /** The release's folder, for the files that came with the video (ImportedFile). */
+    sourceFolder?: string | null
   }): Promise<ImportResult> {
     const { row, version, source, info, release, sourceTitle } = args
     const allowed = roots()
@@ -527,8 +571,10 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
         tx.insert(mediaFiles)
           .values({ id, ...values, addedAt: now })
           .run()
-      if (existing && existing.id !== id)
+      if (existing && existing.id !== id) {
+        hooks.replacing?.(tx, existing.id, id)
         tx.delete(mediaFiles).where(eq(mediaFiles.id, existing.id)).run()
+      }
       return id
     })
     if (settings.permissions)
@@ -539,6 +585,14 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
       await nfoAndArtwork(row, meta, dest, info).catch((e) =>
         log.warn('couldn’t write the NFO', { path: dest, error: (e as Error).message }),
       )
+
+    await afterImport({
+      fileId,
+      itemId: row.id,
+      path: dest,
+      sourceFolder: args.sourceFolder ?? null,
+      inPlace: false,
+    })
 
     // Step 9, announce.
     settle(row, version, fileId, dest, sourceTitle, quality, args, method, message)
@@ -703,6 +757,8 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
       grabbedQuality: input.quality,
       indexer: input.indexer,
       downloadId: input.downloadId,
+      // a download that's one file has no folder of its own: its parent is the downloads folder
+      sourceFolder: root === folder ? folder : null,
       // an extracted file is hardlinked too, never moved: a move would read as the download's
       // files having gone, and the torrent would stop seeding the archives
       mode: input.mode ?? 'hardlink',
@@ -795,6 +851,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
           .run()
       return id
     })
+    await afterImport({ fileId, itemId: row.id, path, sourceFolder: dirname(path), inPlace: true })
     settle(row, version, fileId, path, sourceTitle, quality, {}, null, args.message)
     log.info('recorded a file in place', { tmdbId: row.tmdbId, path })
     return { fileId, path }
@@ -971,6 +1028,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
             release,
             sourceTitle: name,
             mode,
+            sourceFolder: allowed.includes(dirname(path)) ? null : dirname(path),
           }),
         })
       }

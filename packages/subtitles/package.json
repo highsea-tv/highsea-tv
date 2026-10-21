@@ -1,0 +1,31 @@
+{
+  "name": "@highsea/subtitles",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    "./fake": "./test/fake/index.ts",
+    "./movies": "./src/movies/index.ts",
+    "./providers": "./src/providers/index.ts",
+    "./shared": "./src/shared/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea/api-contract": "workspace:*",
+    "@highsea/core": "workspace:*",
+    "@highsea/db": "workspace:*",
+    "@highsea/jobs": "workspace:*",
+    "@highsea/media": "workspace:*",
+    "@highsea/parser": "workspace:*",
+    "chardet": "2.2.0",
+    "drizzle-orm": "0.45.3",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@highsea/config": "workspace:*",
+    "@types/node": "25.9.9"
+  }
+}

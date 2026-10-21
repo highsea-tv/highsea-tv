@@ -3,8 +3,8 @@
 // rendered against a fake of the checkpoint 4 API: the page in each state, adding and removing in
 // place, the library layer's edits, trailers that load nothing before the click, live refetches,
 // the Search tab once an indexer is enabled (checkpoint 5), and checkpoint 6's live states: Grab and
-// Grab anyway, In the queue, Files with their streams and paged History. The shell and Next's
-// router are stood in for; everything else is the real screen.
+// Grab anyway, In the queue, Files with their streams and paged History; and checkpoint 7a's
+// Subtitles tab. The shell and Next's router are stood in for; everything else is the real screen.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import type { ReactNode } from 'react'
@@ -102,6 +102,10 @@ type State = {
   history: ReturnType<typeof historyEvent>[]
   /** Guids the server refuses without `force`, as the blocklist does. */
   blocked: Set<string>
+  /** The movie's sidecars (checkpoint 7a). */
+  tracks: ReturnType<typeof track>[]
+  /** What a subtitle search answers: results, or the server's refusal. */
+  subtitleSearch: ReturnType<typeof subtitleResult>[] | { status: number; reason: string }
 }
 let state: State
 
@@ -190,6 +194,39 @@ const mediaFile = (versionId: string) => ({
       default: false,
     },
   ],
+})
+
+const track = (id: string, extra: Record<string, unknown> = {}) => ({
+  id,
+  itemId: 603,
+  fileId: 'f1',
+  language: 'en',
+  kind: 'external',
+  format: 'srt',
+  forced: false,
+  hi: false,
+  provider: 'OpenSubtitles.com',
+  releaseName: 'The.Matrix.1999.1080p.BluRay.x264-GRP1',
+  score: 99,
+  matches: ['hash'],
+  chosen: false,
+  sync: { status: 'unsynced', confidence: null, offsetMs: 0 },
+  path: '/data/media/movies/The Matrix (1999)/The Matrix (1999) Bluray-1080p.en.srt',
+  addedAt: '2026-10-21T00:00:00.000Z',
+  ...extra,
+})
+
+const subtitleResult = (n: number, provider: string, attribution: string | null) => ({
+  id: `r${n}`,
+  language: 'en',
+  releaseName: `The.Matrix.1999.1080p.BluRay.x264-GRP${n}`,
+  provider,
+  score: 90 - n,
+  matches: ['title', 'year'],
+  forced: false,
+  hi: false,
+  format: 'srt',
+  attribution,
 })
 
 const historyEvent = (n: number, type: string, extra: Record<string, unknown> = {}) => ({
@@ -424,6 +461,26 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     }
     case 'POST /api/v1/movies/bulk':
       return new Response(null, { status: 202 })
+    case 'GET /api/v1/movies/603/subtitles':
+      return json(state.tracks)
+    case 'GET /api/v1/subtitles/languages':
+      return json([
+        { code: 'en', name: 'English' },
+        { code: 'fr', name: 'French' },
+      ])
+    case 'POST /api/v1/movies/603/subtitles/search': {
+      const answer = state.subtitleSearch
+      if (Array.isArray(answer)) return json(answer)
+      return json(
+        { error: { code: 'conflict', message: 'Refused', details: { reason: answer.reason } } },
+        answer.status,
+      )
+    }
+    case 'POST /api/v1/movies/603/subtitles': {
+      const added = track('t-new', { chosen: true, provider: 'Subdl' })
+      state.tracks.push(added)
+      return json(added)
+    }
     case 'POST /api/v1/movies': {
       if (body.tmdbId === 603) state.inLibrary = true
       else state.owned.add(body.tmdbId)
@@ -441,6 +498,10 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     const item = queueItem(state.queue.length + 1, 603)
     state.queue.push(item)
     return json(item)
+  }
+  if (method === 'DELETE' && path.startsWith('/api/v1/subtitles/')) {
+    state.tracks = state.tracks.filter((t) => t.id !== path.split('/').pop())
+    return new Response(null, { status: 204 })
   }
   if (method === 'DELETE' && path.startsWith('/api/v1/movies/603/versions/')) {
     const versionId = path.split('/').pop()
@@ -472,6 +533,8 @@ beforeEach(() => {
     files: [],
     history: [],
     blocked: new Set(),
+    tracks: [],
+    subtitleSearch: [],
   }
 })
 afterEach(() => cleanup())
@@ -586,6 +649,7 @@ describe('a movie that isn’t in the library', () => {
       'Files',
       'History',
       'Search',
+      'Subtitles',
     ])
     expect(page.getByText('Wanted')).toBeTruthy()
     expect(pushed).toEqual([])
@@ -827,6 +891,87 @@ describe('a movie in the library', () => {
     await user.click(page.getByRole('tab', { name: 'History' }))
     await settle()
     expect(page.getByText('Nothing has happened yet')).toBeTruthy()
+  })
+
+  describe('Subtitles (checkpoint 7a)', () => {
+    test('sidecars, then the file’s own streams, read-only; no Re-sync or offset before 7b', async () => {
+      state.files = [mediaFile('v1')]
+      state.tracks = [
+        track('t1'),
+        track('t2', { kind: 'bundled', provider: null, score: 100, forced: true, language: 'fr' }),
+      ]
+      const { page, user } = await open(<MovieDetail id="603" />)
+      await user.click(page.getByRole('tab', { name: 'Subtitles' }))
+      await settle()
+      expect(page.getByText('2 external · 1 embedded')).toBeTruthy()
+      const rows = page.getAllByRole('row').map((r) => r.textContent)
+      expect(rows[1]).toContain('English · SRT')
+      expect(rows[1]).toContain('OpenSubtitles.com')
+      expect(rows[1]).toContain('Not synced')
+      expect(rows[2]).toContain('French · forced · SRT')
+      expect(rows[2]).toContain('From the release')
+      expect(rows[3]).toContain('Stream 2 in The Matrix (1999) Bluray-1080p.mkv')
+      expect(rows[3]).toContain('Matches the video')
+      expect(page.queryByRole('button', { name: /^Re-sync/ })).toBeNull()
+      expect(page.queryByRole('button', { name: /50 ms/ })).toBeNull()
+
+      await user.click(page.getByRole('button', { name: 'Delete English subtitles' }))
+      await settle()
+      expect(requested('DELETE', '/api/v1/subtitles/t1')).toHaveLength(1)
+      expect(page.getByText('Subtitles deleted')).toBeTruthy()
+    })
+
+    test('Search, then Use; the attribution once under the results', async () => {
+      state.files = [mediaFile('v1')]
+      const credit = 'Subtitles provided by OpenSubtitles.com'
+      state.subtitleSearch = [
+        subtitleResult(1, 'OpenSubtitles.com', credit),
+        subtitleResult(2, 'OpenSubtitles.com', credit),
+        subtitleResult(3, 'Subdl', null),
+      ]
+      const { page, user } = await open(<MovieDetail id="603" />)
+      await user.click(page.getByRole('tab', { name: 'Subtitles' }))
+      await settle()
+      await user.click(page.getByRole('button', { name: 'Search providers' }))
+      await settle()
+      expect(requested('POST', '/api/v1/movies/603/subtitles/search')[0]?.body).toEqual({
+        language: 'en',
+      })
+      expect(page.getAllByText(credit)).toHaveLength(1)
+      await user.click(
+        page.getByRole('button', {
+          name: 'Download The.Matrix.1999.1080p.BluRay.x264-GRP3 from Subdl',
+        }),
+      )
+      await settle()
+      expect(requested('POST', '/api/v1/movies/603/subtitles')[0]?.body).toEqual({ resultId: 'r3' })
+      expect(page.getByText('Subtitles downloaded')).toBeTruthy()
+    })
+
+    test('no provider on, or none answering, says so in place of the results', async () => {
+      state.files = [mediaFile('v1')]
+      state.subtitleSearch = { status: 409, reason: 'no-providers' }
+      const { page, user } = await open(<MovieDetail id="603" />)
+      await user.click(page.getByRole('tab', { name: 'Subtitles' }))
+      await settle()
+      await user.click(page.getByRole('button', { name: 'Search providers' }))
+      await settle()
+      expect(page.getByText('Turn on a subtitle provider in Subtitles to search.')).toBeTruthy()
+
+      state.subtitleSearch = { status: 503, reason: 'providers-failed' }
+      await user.click(page.getByRole('button', { name: 'Search providers' }))
+      await settle()
+      expect(
+        page.getByText('No subtitle provider answered. Try again in a few minutes.'),
+      ).toBeTruthy()
+    })
+
+    test('a movie without a file says subtitles come after the import', async () => {
+      const { page, user } = await open(<MovieDetail id="603" />)
+      await user.click(page.getByRole('tab', { name: 'Subtitles' }))
+      await settle()
+      expect(page.getByText('No file to find subtitles for yet')).toBeTruthy()
+    })
   })
 
   test('Monitored saves at once', async () => {

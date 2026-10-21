@@ -102,8 +102,13 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
       ),
       videos: (meta?.videos ?? []).map(toApiVideo),
       collection: meta?.collection ?? null,
-      // no version has a file until checkpoint 6
-      versions: versions.map((v) => ({ id: v.id, label: v.label, detail: null, playable: false })),
+      versions: versions.map((v) => ({
+        id: v.id,
+        label: v.label,
+        detail: null,
+        playable: false,
+        subtitles: v.fileId ? (ctx.subtitles?.forFile(v.fileId) ?? []) : [],
+      })),
       related,
     }
   }

@@ -173,7 +173,7 @@ export const mediaItems = sqliteTable(
     minimumAvailability: text('minimum_availability', { enum: MINIMUM_AVAILABILITY }).notNull(),
     /** The first version's profile, for the library's filter. */
     qualityProfileId: text('quality_profile_id').notNull(),
-    /** Seeded and edited in checkpoint 7; stored as given until then. */
+    /** A `language_profiles` row, checked by the subtitles package (no foreign key: subtitles.ts). */
     languageProfileId: text('language_profile_id'),
     rootFolder: text('root_folder').notNull(),
     path: text('path').notNull(),
@@ -326,6 +326,9 @@ export const HISTORY_TYPES = [
   'download-failed',
   'subtitle-downloaded',
   'subtitle-synced',
+  'subtitle-upgraded',
+  'subtitle-deleted',
+  'subtitle-sync-failed',
 ] as const
 
 /** What happened to each item, newest first, cursor-paged on (date, id). */

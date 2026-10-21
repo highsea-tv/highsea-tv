@@ -206,7 +206,10 @@ export const HISTORY_TYPES = [
   'renamed',
   'blocklisted',
   'subtitle-downloaded',
+  'subtitle-upgraded',
+  'subtitle-deleted',
   'subtitle-synced',
+  'subtitle-sync-failed',
 ] as const
 
 export const HistoryEvent = z

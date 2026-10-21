@@ -18,6 +18,7 @@ import { registerMetadata } from './metadata.ts'
 import { registerMovies } from './movies.ts'
 import { registerPersonalization } from './personalization.ts'
 import { registerQuality } from './quality.ts'
+import { registerSubtitles } from './subtitles.ts'
 import { registerSystem } from './system.ts'
 
 export type { Env }
@@ -77,6 +78,7 @@ export function createApi(runtime: Runtime) {
   registerDownloads(app)
   registerLibraryImport(app)
   registerImporters(app)
+  registerSubtitles(app)
 
   app.doc31(`${API_PREFIX}/openapi.json`, {
     openapi: '3.1.0',

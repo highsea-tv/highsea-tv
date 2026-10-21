@@ -8,12 +8,15 @@
 // the library is seeded from them through the API. Indexers search the fake indexer
 // (packages/indexers/test/fake) on a local port: the catalog is the seed the development key signs,
 // plus a local copy of the Internet Archive's definition pointed at the fake, so a public indexer
-// and a private one are added without the network. Usage: bun scripts/sweeps/server.ts [pages|keyboard]
+// and a private one are added without the network. Subtitles come from the providers' fakes
+// (HIGHSEA_SUBTITLES_FAKE), for two movies imported from generated clips. Usage: bun scripts/sweeps/server.ts [pages|keyboard]
 import { type ChildProcess, execFileSync, spawn } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { copyFileSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { FAKE_CREDENTIALS, serveFakeIndexer } from '@highsea/indexers/fake'
+import { makeFeature } from '@highsea/media/testing'
+import { FAKE_ACCOUNTS } from '@highsea/subtitles/fake'
 import type { BrowserContext, Page } from 'playwright-core'
 import { axe, heightFor, launch, overflow, pool, ROOT, settleAnimations, walk } from './lib.ts'
 
@@ -65,6 +68,8 @@ const server: ChildProcess = spawn('node', ['server.ts'], {
     HIGHSEA_TMDB_REPLAY: '1',
     // the engine opens no socket: grabs join the queue, nothing downloads, nothing reaches the network
     HIGHSEA_TORRENT_OFFLINE: '1',
+    // the subtitle providers are the fakes in packages/subtitles: no accounts, no network
+    HIGHSEA_SUBTITLES_FAKE: '1',
   },
   stdio: ['ignore', 'ignore', 'inherit'],
 })
@@ -211,12 +216,12 @@ async function sweep(visits: Visit[], context: () => Promise<BrowserContext>) {
 const draft = (step: number) =>
   JSON.stringify({
     step,
-    reached: 7,
+    reached: 8,
     draft: {
       serverName: 'Harbor',
       owner: { displayName: 'Ines', username: 'ines' },
       folders: { movies: join(dataDir, 'movies'), downloads: join(dataDir, 'downloads') },
-      remote: step === 5 ? 'reverse-proxy' : 'local-only',
+      remote: step === 6 ? 'reverse-proxy' : 'local-only',
       proxyUrl: 'https://movies.example.com',
       port: '8484',
       cloudLink: false,
@@ -225,7 +230,17 @@ const draft = (step: number) =>
 
 try {
   // setup, each step, while there's no owner yet
-  const steps = ['name', 'owner', 'metadata', 'folders', 'indexers', 'remote', 'cloud', 'review']
+  const steps = [
+    'name',
+    'owner',
+    'metadata',
+    'folders',
+    'indexers',
+    'subtitles',
+    'remote',
+    'cloud',
+    'review',
+  ]
   await sweep(
     steps.map((s, i) => ({ name: `setup:${s}`, path: '/setup', init: i ? draft(i) : undefined })),
     () => browser.newContext(),
@@ -311,7 +326,15 @@ try {
     api(
       'POST',
       '/movies',
-      { tmdbId, rootFolder: movies, monitored: true, minimumAvailability: 'released', versions },
+      {
+        tmdbId,
+        rootFolder: movies,
+        monitored: true,
+        minimumAvailability: 'released',
+        versions,
+        // the seeded English profile, as the add dialog sends; without one nothing is wanted
+        languageProfileId: 'lp-en',
+      },
       token,
     )
   await add(45745, [
@@ -370,6 +393,62 @@ try {
     join(dataDir, 'downloads', 'Big.Buck.Bunny.2008.1080p.BluRay.x264-GRP', 'bbb.mkv'),
     '',
   )
+
+  // subtitles (checkpoint 7a): two providers signed in, the third left without an account; then
+  // Sintel imported with the English subtitle its release carried, and Nosferatu with only the
+  // forced English stream inside the clip, whose import searches the fakes.
+  await api('PUT', '/subtitles/providers/opensubtitles', FAKE_ACCOUNTS.opensubtitles, token)
+  await api('PUT', '/subtitles/providers/subdl', FAKE_ACCOUNTS.subdl, token)
+  for (const id of ['opensubtitles', 'subdl'])
+    await api('PATCH', `/subtitles/providers/${id}`, { enabled: true }, token)
+  // feature length, or the import skips them as samples
+  const feature = makeFeature(join(dir, 'feature.mkv'))
+  const release = (name: string, srt?: string) => {
+    const folder = join(dataDir, 'downloads', name)
+    mkdirSync(folder, { recursive: true })
+    copyFileSync(feature, join(folder, `${name}.mkv`))
+    if (srt) writeFileSync(join(folder, `${name}.en.srt`), srt)
+    return folder
+  }
+  for (const folder of [
+    release('Sintel.2010.1080p.BluRay.x264-GRP', '1\n00:00:00,500 --> 00:00:02,000\nHello.\n'),
+    release('Nosferatu.1922.1080p.BluRay.x264-GRP'),
+  ]) {
+    const found = await api<
+      { path: string; movieId: number | null; versionId: string | null; skip: string | null }[]
+    >('POST', '/import/scan', { path: folder }, token)
+    // into the 1080p version, as the owner would pick it in the Version column: the scan suggests
+    // the first without a file, and Sintel's first is 4K HDR, which refuses a 1080p release
+    const files = []
+    for (const f of found) {
+      if (!f.movieId || f.skip) continue
+      const movie = await api<{ versions: { id: string; label: string }[] }>(
+        'GET',
+        `/movies/${f.movieId}`,
+        undefined,
+        token,
+      )
+      const hd = movie.versions.find((v) => v.label === '1080p')
+      files.push({ path: f.path, movieId: f.movieId, versionId: hd?.id ?? f.versionId })
+    }
+    if (!files.length) throw new Error(`nothing to import in ${folder}: ${JSON.stringify(found)}`)
+    const ran = await api<{ results: { ok: boolean; message: string }[] }>(
+      'POST',
+      '/import',
+      { files, mode: 'hardlink' },
+      token,
+    )
+    const refused = ran.results.filter((r) => !r.ok)
+    if (refused.length) throw new Error(`not imported: ${JSON.stringify(refused)}`)
+  }
+  // Sintel has what its profile asks for (the release's English and the clip's forced stream);
+  // Nosferatu lacks regular English, so its import searched the fakes
+  for (let i = 0; i < 50; i++) {
+    const tracks = await api<unknown[]>('GET', '/movies/653/subtitles', undefined, token)
+    if (tracks.length > 0) break
+    if (i === 49) throw new Error('the import’s subtitle search found nothing for Nosferatu')
+    await new Promise((r) => setTimeout(r, 200))
+  }
 
   // signed out
   await sweep(
@@ -483,6 +562,30 @@ try {
         act: (p) => p.getByRole('button', { name: 'Limits' }).click(),
       },
       { name: 'system', path: '/system' },
+      // A10, with OpenSubtitles.com and Subdl signed in against their fakes
+      { name: 'subtitles', path: '/subtitles' },
+      { name: 'subtitles:providers', path: '/subtitles', act: tab('Providers') },
+      {
+        name: 'subtitles:provider-edit',
+        path: '/subtitles',
+        act: async (p) => {
+          await tab('Providers')(p)
+          await p.getByRole('button', { name: 'Edit Subdl' }).click()
+        },
+      },
+      { name: 'subtitles:languages', path: '/subtitles', act: tab('Languages') },
+      {
+        name: 'subtitles:profile',
+        path: '/subtitles',
+        act: async (p) => {
+          await tab('Languages')(p)
+          await p
+            .getByRole('button', { name: /^Edit / })
+            .first()
+            .click()
+        },
+      },
+      { name: 'subtitles:scoring', path: '/subtitles', act: tab('Scoring and sync') },
       // A9, with a Local public indexer and a private one against the fake indexer
       { name: 'indexers', path: '/indexers' },
       { name: 'indexers:catalog', path: '/indexers', act: tab('Catalog') },
@@ -561,6 +664,20 @@ try {
       { name: 'movie:files', path: '/movies/45745', act: tab('Files') },
       { name: 'movie:search', path: '/movies/45745', act: tab('Search') },
       { name: 'movie:history', path: '/movies/45745', act: tab('History') },
+      { name: 'movie:subtitles', path: '/movies/45745', act: tab('Subtitles') },
+      {
+        name: 'movie:subtitles:results',
+        path: '/movies/45745',
+        act: async (p) => {
+          await tab('Subtitles')(p)
+          await p.getByRole('button', { name: 'Search providers' }).click()
+          // Use's accessible name says what it downloads
+          await p
+            .getByRole('button', { name: /^Download .+ from / })
+            .first()
+            .waitFor()
+        },
+      },
       { name: 'movie:upcoming', path: '/movies/1117898' },
       // and from the recorded TMDB fixtures, not in the library
       { name: 'movie:not-added', path: '/movies/19' },

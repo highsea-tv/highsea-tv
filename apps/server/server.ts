@@ -20,12 +20,15 @@ const runtime = await boot({
   fetch: await outsideFetch(),
   // HIGHSEA_TORRENT_OFFLINE=1: the engine opens no socket, for the browser sweeps (no network)
   torrent: process.env.HIGHSEA_TORRENT_OFFLINE === '1' ? { offline: true } : undefined,
+  subtitles: await fakeSubtitles(),
 })
 const log = runtime.logger.child('http')
 if (process.env.HIGHSEA_TMDB_REPLAY === '1')
   log.warn('TMDB answers come from recordings', { env: 'HIGHSEA_TMDB_REPLAY' })
 if (process.env.HIGHSEA_TORRENT_OFFLINE === '1')
   log.warn('The torrent engine is offline: nothing downloads', { env: 'HIGHSEA_TORRENT_OFFLINE' })
+if (process.env.HIGHSEA_SUBTITLES_FAKE === '1')
+  log.warn('Subtitle providers are fakes', { env: 'HIGHSEA_SUBTITLES_FAKE' })
 
 const app = next({ dev: config.dev, dir: dirname(fileURLToPath(import.meta.url)) })
 await app.prepare()
@@ -82,4 +85,15 @@ async function outsideFetch(): Promise<Fetch | undefined> {
     const url = new URL(input instanceof Request ? input.url : input.toString())
     return tmdb.has(url.hostname) ? replay(input, init) : fetch(input, init)
   }
+}
+
+/**
+ * `HIGHSEA_SUBTITLES_FAKE=1` answers OpenSubtitles.com, Subdl and SubSource from the fakes in
+ * packages/subtitles, with their own key, for development and the browser sweeps without accounts
+ * or the network. Their accounts are in the fake's fixtures.
+ */
+async function fakeSubtitles() {
+  if (process.env.HIGHSEA_SUBTITLES_FAKE !== '1') return undefined
+  const { createFakeSubtitles, FAKE_OPENSUBTITLES_KEY } = await import('@highsea/subtitles/fake')
+  return { fetch: createFakeSubtitles().fetch, openSubtitlesKey: FAKE_OPENSUBTITLES_KEY }
 }

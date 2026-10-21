@@ -54,6 +54,7 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `library` grou
   - Paged by cursor: up to `limit` (60 by default, 200 at most), and `next` to pass back as `cursor`, null on the last page.
 - `ClientItem` is the title's `id` (its TMDB id) and `type`, title, year, runtime, genres, synopsis, `rating` out of 5, `voteCount`, release date, `addedAt`, `status`, `playable`, `art` (poster and backdrop URLs on this server) and this person's place in it: `progress` (0–1, null when not started or finished) and `position` in seconds.
 - Until files arrive (checkpoint 6) no title is `playable`; until playback writes positions (Phase 4) none is started.
+- A title's page (`library.item`) lists its versions, and since checkpoint 7a each version's `subtitles`: `ClientSubtitle` (`id`, `language`, `label` such as "English (SDH)", `forced`, `hi`, `format`, and `kind`: `embedded` for a stream inside the file, `external` for one highsea downloaded, `bundled` for one the release carried). Embedded streams come first, as the file orders them.
 - **No route lists the genres yet** for the Genre select. `GET /api/v1/genres` comes with the first client (Phase 4), with a genres column that also takes the genre filter off the cached TMDB data (owner's decision, 2026-10-20).
 - Events: `movies.updated`, `item.updated`. Later: `watch.updated`.
 

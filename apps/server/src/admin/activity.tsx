@@ -60,6 +60,9 @@ const historyIcon: Record<HistoryEvent['type'], ComponentProps<typeof Icon>['nam
   blocklisted: 'lock',
   'subtitle-downloaded': 'subtitles',
   'subtitle-synced': 'subtitle-sync',
+  'subtitle-upgraded': 'subtitles',
+  'subtitle-deleted': 'delete',
+  'subtitle-sync-failed': 'warning',
 }
 
 const QUEUE_LIVE = ['queue.updated', 'torrents.updated']

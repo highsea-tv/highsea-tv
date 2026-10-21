@@ -1,6 +1,6 @@
 # Phase 3, checkpoint 7: subtitles
 
-- **Status:** Scoped on 2026-10-21, before building. The owner answered the [open questions](#open-questions-for-the-owner) the same day, taking every recommendation ([the answers](#the-owners-answers)). 7a's build waits for the owner's go-ahead.
+- **Status:** Scoped on 2026-10-21, before building. The owner answered the [open questions](#open-questions-for-the-owner) the same day, taking every recommendation ([the answers](#the-owners-answers)). 7a was built on 2026-10-21 and waits for review; its judgement calls are 1–12 and [20–34](#made-while-building-7a).
 - **Gate:** stop when each half is built (7a, then 7b; [question 1](#open-questions-for-the-owner)). Report what was built, the judgement calls, the API added, screenshots and the check results, then ask for review. Checkpoint 8 (automation, owner tools and the rest) starts only after sign-off.
 - **Parent plan:** [phase-3-server.md](phase-3-server.md). Its standing rules, architecture and decisions all apply, including decision 1 (every [M1] item stays in milestone 1), decision 5 (nothing is published until the owner says so) and decision 6 (the admin is for the owner and admins only). This document settles what that plan's checkpoint 7 item, the roadmap and the specs leave open, and what the research of 2026-10-21 changed.
 
@@ -470,3 +470,21 @@ To be listed again in the checkpoint report:
 17. Confidence is the minimum of overlap, peak clarity and coverage, defined in ADR 0044.
 18. Re-sync resets the manual nudge to zero.
 19. Before 7b, A10 says "Sync arrives in the next update." under the sync settings, and A6 hides Re-sync and the offset buttons.
+
+### Made while building 7a
+
+20. The cutoff works as Bazarr's: once a movie has a track in the cutoff language, nothing more is searched for it.
+21. Edition and streaming service count only when both sides name one (Bazarr's `_check_optional`); a release group counts only with the source.
+22. Ties go to the most downloads, then the rating, then the providers' order (a refinement of answer 5).
+23. A movie is searched only once it has a file; the default profile's language is English.
+24. After an import, the search runs on the next tick rather than inside it, and stopping the server cancels what's still waiting.
+25. The import hook counts the movie as available, because it runs before the import marks it Available (a bug the sweep found).
+26. The key can also come from `HIGHSEA_OPENSUBTITLES_KEY_FILE` and a Docker build secret; CI's Docker job passes neither, so that image runs without OpenSubtitles.com. Development reads `.env.local` with `--env-file-if-exists`.
+27. `HIGHSEA_SUBTITLES_FAKE=1` runs the server against the providers' fakes.
+28. `GET /api/v1/setup/languages` is public, for setup's Subtitles step, which shows chips and an "Add another language" select.
+29. SubSource's parameters follow Bazarr's; Subdl is called with `client=custom_integration`; Subdl's language list returns 404, so its documented codes are used.
+30. OpenSubtitles.com's 406 body isn't documented; a 406 counts as out of downloads. Its allowance comes from the sign-in, what's left from each download.
+31. Turning a provider off doesn't clear its wait. An API key shows as "••••" and its last characters.
+32. A6 and A10 as real data needed: "From the release", "Matches the video" (the prototype's "Embedded"), embedded tracks show forced and SDH, "Not synced", the attribution under the results, the refusal lines, the toasts and run counter, the four waiting captions, the owner-only Edit dialog, `Intl.DisplayNames` with "Unknown language", and "—" for an unknown count.
+33. System's provider attribution is an underlined link (axe's `link-in-text-block`); setup's language select is `w-full max-w-56`, so 200% text doesn't widen the page.
+34. Manual import still attaches a file to the first version without one, whatever its quality (6b's behaviour); the sweep chooses the 1080p version itself.

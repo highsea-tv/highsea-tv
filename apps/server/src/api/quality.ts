@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Quality over HTTP (ADR 0031): profiles, custom formats and sizes, read-only until their editors
-// (checkpoint 8, decision 3); the language profiles the add dialog offers; and the parser, for
-// checking a release name by hand. Thin handlers over @highsea/media/shared, which seeds them, and
+// (checkpoint 8, decision 3), and the parser for checking a release name by hand. Thin handlers over @highsea/media/shared, which seeds them, and
 // @highsea/media/movies for the parser.
 import { routes } from '@highsea/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'
@@ -18,8 +17,6 @@ export function registerQuality(app: OpenAPIHono<Env>) {
   )
 
   app.openapi(routes.quality.customFormats, (c) => c.json(media(c).customFormats(), 200))
-
-  app.openapi(routes.quality.languageProfiles, (c) => c.json(media(c).languageProfiles(), 200))
 
   app.openapi(routes.quality.parse, (c) =>
     c.json(c.get('runtime').movies.parse(c.req.valid('query').title), 200),

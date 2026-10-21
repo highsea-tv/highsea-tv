@@ -588,7 +588,7 @@ describe('the client API', () => {
     expect(detail.cast.length).toBeGreaterThan(0)
     expect(new Set(detail.cast.map((c) => c.id)).size).toBe(detail.cast.length)
     expect(detail.versions).toEqual([
-      { id: expect.any(String), label: '1080p', detail: null, playable: false },
+      { id: expect.any(String), label: '1080p', detail: null, playable: false, subtitles: [] },
     ])
     // none of its recommendations are here
     expect(detail.related).toEqual([])

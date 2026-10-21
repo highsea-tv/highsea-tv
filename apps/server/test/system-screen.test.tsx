@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Checkpoint 6's live states outside the movie page, rendered against a fake of the API: System's
 // Health list, where the torrent client's and imports' problems show, and the dashboard's Network
-// and Queue widgets, which come alive with the `downloads` source. The shell and Next's router are
-// stood in for.
+// and Queue widgets, which come alive with the `downloads` source; and checkpoint 7a's Subtitles
+// widget, alive with the `subtitles` source. The shell and Next's router are stood in for.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ReactNode } from 'react'
@@ -58,6 +58,12 @@ type State = {
   torrents: { downRate: number; upRate: number; state: string }[]
   speeds: { at: string; down: number; up: number }[]
   vpn: string
+  subtitleStats: {
+    syncedToday: number
+    waiting: number
+    avgOffsetMs: number
+    avgConfidence: number
+  }
   requests: { method: string; path: string }[]
   push: ((topic: string) => void) | null
 }
@@ -104,6 +110,8 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
       return json(state.torrents)
     case 'GET /api/v1/system/speeds':
       return json(state.speeds)
+    case 'GET /api/v1/subtitles/stats':
+      return json(state.subtitleStats)
     case 'GET /api/v1/vpn/status':
       return json({
         mode: state.vpn === 'off' ? 'off' : 'container',
@@ -129,6 +137,7 @@ beforeEach(() => {
     torrents: [],
     speeds: [],
     vpn: 'off',
+    subtitleStats: { syncedToday: 0, waiting: 0, avgOffsetMs: 0, avgConfidence: 0 },
     requests: [],
     push: null,
   }
@@ -272,5 +281,29 @@ describe('the Queue widget', () => {
     const { page } = await open(<Queue frame={frame('q', 4, 5)} settings={{}} />)
     expect(page.getByText('The queue is empty')).toBeTruthy()
     expect(requested('/api/v1/queue')).toHaveLength(0)
+  })
+})
+
+describe('the Subtitles widget', () => {
+  const Subtitles = widgetRenderers.subtitles
+
+  test('today’s syncs and the tracks waiting, live', async () => {
+    state.sources = ['system', 'subtitles']
+    state.subtitleStats = { syncedToday: 0, waiting: 3, avgOffsetMs: 0, avgConfidence: 0 }
+    const { page } = await open(<Subtitles frame={frame('s')} settings={{}} />)
+    expect(page.getByText('3 waiting')).toBeTruthy()
+    expect(page.getByRole('progressbar', { name: 'Subtitles synced today' })).toBeTruthy()
+
+    state.subtitleStats = { syncedToday: 0, waiting: 0, avgOffsetMs: 0, avgConfidence: 0 }
+    await act(async () => state.push?.('subtitles.updated'))
+    await settle()
+    expect(page.getByText('No subtitles yet')).toBeTruthy()
+  })
+
+  test('without the subtitles source: the empty state, and no calls', async () => {
+    state.sources = ['system']
+    const { page } = await open(<Subtitles frame={frame('s')} settings={{}} />)
+    expect(page.getByText('No subtitles yet')).toBeTruthy()
+    expect(requested('/api/v1/subtitles/stats')).toHaveLength(0)
   })
 })

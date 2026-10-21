@@ -46,7 +46,7 @@ describe('simulation', () => {
 
     const track = () =>
       srv.state.subtitles.find(
-        (s) => s.itemId === '1' && s.provider === 'OpenSubtitles' && s.kind === 'external',
+        (s) => s.itemId === '1' && s.provider === 'OpenSubtitles.com' && s.kind === 'external',
       )
     until(mock, () => track()?.sync.status === 'syncing')
     until(mock, () => track()?.sync.status === 'synced')

@@ -5,7 +5,7 @@
   "license": "AGPL-3.0-only",
   "type": "module",
   "scripts": {
-    "dev": "node ../../scripts/check-node.ts && NODE_ENV=development HIGHSEA_CONFIG_DIR=../../.dev/config HIGHSEA_DATA_DIR=../../.dev/data node server.ts",
+    "dev": "node ../../scripts/check-node.ts && NODE_ENV=development HIGHSEA_CONFIG_DIR=../../.dev/config HIGHSEA_DATA_DIR=../../.dev/data node --env-file-if-exists=../../.env.local server.ts",
     "build": "next build",
     "start": "NODE_ENV=production node server.ts",
     "openapi": "bun scripts/openapi.ts",
@@ -32,6 +32,7 @@
     "@highsea/quality": "workspace:*",
     "@highsea/runtime": "workspace:*",
     "@highsea/sdk": "workspace:*",
+    "@highsea/subtitles": "workspace:*",
     "@highsea/tokens": "workspace:*",
     "@highsea/ui-web": "workspace:*",
     "@highsea/vpn": "workspace:*",

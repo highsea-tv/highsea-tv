@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A5 Movies library (docs/product/movies.md#library-a5), ported from the prototype. Grid or table
 // in one frame, status tabs with counts, a title filter and a sort. The table selects rows for
-// bulk edit: monitor, quality profile, search and remove. A movie with two versions (1080p beside
+// bulk edit: monitor, quality profile, subtitle languages (checkpoint 7a), search and remove. A movie with two versions (1080p beside
 // 4K HDR) is one row with a tag for each.
 //
 // What real data changes:
@@ -145,6 +145,9 @@ export function MoviesLibrary() {
     : movies
 
   const profiles = useQuery('quality-profiles', (c) => c.quality.profiles())
+  const languageProfiles = useQuery('language-profiles', (c) => c.subtitles.languageProfiles(), [
+    'subtitles.updated',
+  ])
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [confirm, setConfirm] = useState(false)
   const bulkAction = useAction((c, body: BulkInput) => c.movies.bulk({ body }))
@@ -315,6 +318,22 @@ export function MoviesLibrary() {
                                   action: 'setQualityProfile',
                                   ids,
                                   qualityProfileId: p.id,
+                                })
+                              }
+                            >
+                              {p.name}
+                            </MenuItem>
+                          ))}
+                          <MenuSeparator />
+                          <MenuLabel>{t('subtitleLanguages')}</MenuLabel>
+                          {(languageProfiles.data ?? []).map((p) => (
+                            <MenuItem
+                              key={p.id}
+                              onSelect={() =>
+                                bulk((count) => t('done.languages', { count, profile: p.name }), {
+                                  action: 'setLanguageProfile',
+                                  ids,
+                                  languageProfileId: p.id,
                                 })
                               }
                             >

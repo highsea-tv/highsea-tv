@@ -35,7 +35,7 @@ Takes a freshly started server to a working one in a few minutes: a name, the ow
   | 8 | highsea cloud | One switch, and what linking does and doesn't share | Off |
   | 9 | Review | Every choice in a list, each with **Change** | |
 
-  The TMDB key step is new in Phase 3 (decision 4), between the owner and the folders as the [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#the-key) places it; the prototype has the other 8. The indexer step arrived with checkpoint 5; until the subtitle step arrives, the server's wizard has 8. The server's starter pack lists only public starters that need no setting, so each adds without a form and the "Needs an account" badge has nothing to mark.
+  The TMDB key step is new in Phase 3 (decision 4), between the owner and the folders as the [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#the-key) places it; the prototype has the other 8. The indexer step arrived with checkpoint 5 and the subtitle step with 7a, so the server's wizard has all 9. The server's starter pack lists only public starters that need no setting, so each adds without a form and the "Needs an account" badge has nothing to mark.
 
 - **Path picker** (a dialog from **Browse**): the server's folders, not this device's. Breadcrumbs at the top (each segment is a button), "Up one level", the folders in the current one, then **Cancel** and **Use this folder**.
 - **Hardlink check** (step 3): a banner under the folders. Success when both are on the same disk; a warning when they're not, explaining the cost and how to avoid it.
@@ -136,7 +136,7 @@ Takes a freshly started server to a working one in a few minutes: a name, the ow
 
 ## Data
 
-As built in Phase 3, checkpoints 2, 4 and 5. The subtitle step arrives with its package.
+As built in Phase 3, checkpoints 2, 4, 5 and 7a.
 
 - `system.publicInfo()` → `GET /api/v1/system/info/public`: `{ id, name, version, setupComplete, auth, sources, attributions }`. Unauthenticated.
 - `setup.defaults()` → `GET /api/v1/setup/defaults`: the media root and the suggested folders.
@@ -144,7 +144,7 @@ As built in Phase 3, checkpoints 2, 4 and 5. The subtitle step arrives with its 
 - `setup.checkHardlinks(a, b)` → `GET /api/v1/setup/fs/hardlinks?a=…&b=…`: `{ ok, sameDevice, message }`.
 - `setup.checkMetadataKey({ body: { key } })` → `POST /api/v1/setup/metadata-key`: the key step's Continue. It asks TMDB (`GET /3/authentication`) without saving the key: 204 when TMDB accepts it, 400 with `details.reason` `tmdb-key-rejected` when it doesn't, 503 `tmdb-unreachable` or 429 `tmdb-rate-limited` when TMDB can't say. Either credential works, the v3 API key or the Read Access Token, told apart by shape.
 - `setup.starterPack()` → `GET /api/v1/setup/indexers` (checkpoint 5): the catalog's public starters that need no setting, as `CatalogIndexer[]`. Unauthenticated, like the rest of setup, and a 404 once setup is complete; staff use `catalog.indexers({ starter: true })` afterwards.
-- Later: `subtitles.languages()` → `GET /api/v1/subtitles/languages`.
+- `setup.languages()` → `GET /api/v1/setup/languages` (checkpoint 7a): the languages the subtitle step offers, as `SubtitleLanguage[]`. Unauthenticated like the rest of setup, and a 404 once setup is complete; staff use `subtitles.languages()` afterwards.
 - `setup.complete(input)` → `POST /api/v1/setup`, allowed only while `setupComplete` is false. It returns the server and starts a session for the owner.
 
   ```ts
@@ -162,7 +162,10 @@ As built in Phase 3, checkpoints 2, 4 and 5. The subtitle step arrives with its 
     // the indexer step: starter definition ids, added after the owner exists, each tested first;
     // a failure is logged and doesn't hold up setup (checkpoint 5)
     indexers?: string[]
-    // later: subtitleLanguages: string[]
+    // the subtitle step (checkpoint 7a): language codes in preference order, written into the
+    // seeded profile (renamed after them, each Regular and forced, Without SDH); 400
+    // `subtitleLanguages` for a code not in `subtitles.languages()`
+    subtitleLanguages?: string[]
   }
   ```
 

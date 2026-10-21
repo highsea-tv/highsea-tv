@@ -343,6 +343,8 @@ export type SubtitleProvider = {
   rateLimitMax: number
   requiresAuth: boolean
   username?: string
+  /** The line the provider's terms ask for where its subtitles are picked. */
+  attribution?: string
 }
 
 export type TorrentLimits = {

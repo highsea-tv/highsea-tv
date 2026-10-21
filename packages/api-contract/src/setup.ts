@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // First-run setup (setup.md). Open only until setup is complete, then every route here answers
-// 404. The indexer step arrived with checkpoint 5; the subtitle step arrives with its package.
+// 404. The indexer step arrived with checkpoint 5, the subtitle step with checkpoint 7a.
 import { createRoute, z } from '@hono/zod-openapi'
 import { Session } from './accounts.ts'
 import { API_PREFIX, access, body, errors, json, noContent } from './common.ts'
 import { CatalogIndexer } from './indexers.ts'
 import { MetadataInput, MetadataKey } from './settings.ts'
+import { Language } from './subtitles.ts'
 import { Server } from './system.ts'
 
 export const FsEntry = z
@@ -50,6 +51,11 @@ export const SetupInput = z
      * tested once the owner exists; one that fails is skipped and can be added later.
      */
     indexers: z.array(z.string().max(100)).max(50).optional(),
+    /**
+     * The subtitle step (checkpoint 7): profile codes in order, written into the seeded profile,
+     * each as Regular and forced, Without SDH. Omitted keeps English.
+     */
+    subtitleLanguages: z.array(z.string().max(10)).max(20).optional(),
   })
   .openapi('SetupInput')
 
@@ -114,6 +120,16 @@ export const setup = {
       'The catalog’s public starters that need no setting to add: `GET /api/v1/catalog/indexers?starter=true` without the ones asking for an account or an address.',
     ...access('public'),
     responses: { 200: json(z.array(CatalogIndexer), 'Definitions'), ...errors('not-found') },
+  }),
+  languages: createRoute({
+    method: 'get',
+    path: `${SETUP}/languages`,
+    tags: ['Setup'],
+    summary: 'The subtitle step’s languages',
+    description:
+      'The languages a subtitle profile can ask for, as `GET /api/v1/subtitles/languages` lists them for staff.',
+    ...access('public'),
+    responses: { 200: json(z.array(Language), 'Languages'), ...errors('not-found') },
   }),
   complete: createRoute({
     method: 'post',

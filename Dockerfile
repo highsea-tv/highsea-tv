@@ -38,10 +38,18 @@ WORKDIR /app
 COPY --from=build /app /app
 COPY docker/entrypoint.sh /usr/local/bin/highsea-entrypoint
 COPY docker/NOTICE /usr/share/doc/highsea/NOTICE
+# highsea's OpenSubtitles.com key: release builds pass it as a build secret
+# (`--secret id=opensubtitles,env=HIGHSEA_OPENSUBTITLES_KEY`) and it's kept in the image, never in
+# the repository. Without it, OpenSubtitles.com shows as unavailable.
+RUN --mount=type=secret,id=opensubtitles,required=false \
+  if [ -s /run/secrets/opensubtitles ]; then \
+    install -D -m 0444 /run/secrets/opensubtitles /usr/share/highsea/opensubtitles.key; \
+  fi
 ENV NODE_ENV=production \
   NEXT_TELEMETRY_DISABLED=1 \
   HIGHSEA_CONFIG_DIR=/config \
   HIGHSEA_DATA_DIR=/data \
+  HIGHSEA_OPENSUBTITLES_KEY_FILE=/usr/share/highsea/opensubtitles.key \
   PORT=3000 \
   PUID=1000 \
   PGID=1000

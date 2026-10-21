@@ -30,7 +30,7 @@ import { announce, type Ctx, notInLibrary } from './context.ts'
 import { toApiMovie } from './map.ts'
 import { isAvailable, moviePath, regionalReleaseDate, statusOf } from './titles.ts'
 
-const { mediaItems, versions, movieMetadata } = schema
+const { mediaItems, versions, movieMetadata, languageProfiles } = schema
 
 const DAY = 24 * 60 * 60 * 1000
 const MAX_VERSIONS = 10
@@ -357,6 +357,23 @@ export function createLibrary(ctx: Ctx, media: Media) {
 
   // ------------------------------------------------------------ changing it
 
+  /**
+   * A language profile must exist (checkpoint 7): `media_items.language_profile_id` has no foreign
+   * key (the schema's subtitles.ts says why), so the library checks it.
+   */
+  function checkLanguageProfile(id: string | null) {
+    if (id === null) return
+    const row = db
+      .select({ id: languageProfiles.id })
+      .from(languageProfiles)
+      .where(eq(languageProfiles.id, id))
+      .get()
+    if (!row)
+      throw new AppError('not-found', 'That language profile doesn’t exist.', {
+        reason: 'unknown-language-profile',
+      })
+  }
+
   function requireFolder(path: string) {
     const folder = media.rootFolders.find(path)
     if (!folder) throw invalid('Pick one of the root folders.', 'unknown-root-folder')
@@ -386,6 +403,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
     if (input.versions.length === 0 || input.versions.length > MAX_VERSIONS)
       throw invalid('A movie has one to ten versions.', 'versions')
     for (const v of input.versions) media.profiles.get(v.qualityProfileId)
+    checkLanguageProfile(input.languageProfileId ?? null)
     checkLabels(input.versions.map((v) => v.label))
 
     const meta = await metadata.movie(input.tmdbId)
@@ -482,7 +500,10 @@ export function createLibrary(ctx: Ctx, media: Media) {
     }
     if (patch.monitored !== undefined) set.monitored = patch.monitored
     if (patch.minimumAvailability !== undefined) set.minimumAvailability = patch.minimumAvailability
-    if (patch.languageProfileId !== undefined) set.languageProfileId = patch.languageProfileId
+    if (patch.languageProfileId !== undefined) {
+      checkLanguageProfile(patch.languageProfileId)
+      set.languageProfileId = patch.languageProfileId
+    }
     const next = { ...row, ...set }
     if (!keepStatus(row.status))
       set.status = statusOf(
@@ -562,6 +583,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
       return { ids: tmdbIds, missing }
     }
     if (input.action === 'setQualityProfile') media.profiles.get(input.qualityProfileId)
+    if (input.action === 'setLanguageProfile') checkLanguageProfile(input.languageProfileId)
     const { rows, missing } = resolve(input.ids)
     const itemIds = rows.map((r) => r.id)
     const tmdbIds = rows.map((r) => r.tmdbId)
@@ -585,6 +607,13 @@ export function createLibrary(ctx: Ctx, media: Media) {
         }
         case 'setQualityProfile':
           setFirstProfile(itemIds, input.qualityProfileId, now)
+          break
+        case 'setLanguageProfile':
+          for (const part of chunks(itemIds))
+            tx.update(mediaItems)
+              .set({ languageProfileId: input.languageProfileId, updatedAt: now })
+              .where(inArray(mediaItems.id, part))
+              .run()
           break
         case 'delete':
           // no files until checkpoint 6, so `deleteFiles` has nothing to remove (see `remove`)

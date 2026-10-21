@@ -107,8 +107,9 @@ describe('HTTP server', () => {
     await until(() => client.events.connected())
     runtime.events.emit({ topic: 'jobs.updated', ids: ['job_1'] })
     runtime.events.emit({ topic: 'movies.updated' })
-    await until(() => got.length === 2)
-    expect(got.map((e) => [e.topic, e.ids])).toEqual([
+    // a bare movies.updated also queues the subtitles' wanted refresh, whose job announces itself
+    await until(() => got.length >= 2)
+    expect(got.slice(0, 2).map((e) => [e.topic, e.ids])).toEqual([
       ['jobs.updated', ['job_1']],
       ['movies.updated', undefined],
     ])

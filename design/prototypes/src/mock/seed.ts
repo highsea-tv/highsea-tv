@@ -588,7 +588,7 @@ function track(m: MediaItem, f: MediaFile, n: number): SubtitleTrack {
     format: 'srt',
     forced: false,
     hi: false,
-    provider: n % 3 === 0 ? 'Podnapisi' : 'OpenSubtitles',
+    provider: n % 3 === 0 ? 'Subdl' : 'OpenSubtitles.com',
     score: 92 - (n % 9),
     sync,
     path: f.path.replace(/\.mkv$/, '.en.srt'),
@@ -680,47 +680,35 @@ function torrent(
   }
 }
 
+// the three providers highsea ships (checkpoint 7's answer 2); Podnapisi closed, Addic7ed is TV
+// only, YIFY Subtitles has no API
 const defaultProviders: SubtitleProvider[] = [
   {
-    id: 'prov-opensubtitles',
+    id: 'opensubtitles',
     name: 'OpenSubtitles.com',
     enabled: true,
-    rateLimitRemaining: 184,
-    rateLimitMax: 200,
+    rateLimitRemaining: 17,
+    rateLimitMax: 20,
     requiresAuth: true,
     username: 'harbor_admin',
+    attribution: 'Subtitles provided by OpenSubtitles.com',
   },
   {
-    id: 'prov-subsource',
+    id: 'subdl',
+    name: 'Subdl',
+    enabled: true,
+    rateLimitRemaining: 1840,
+    rateLimitMax: 2000,
+    requiresAuth: true,
+    username: '••••8f2c',
+  },
+  {
+    id: 'subsource',
     name: 'SubSource',
-    enabled: true,
-    rateLimitRemaining: 95,
-    rateLimitMax: 100,
-    requiresAuth: false,
-  },
-  {
-    id: 'prov-podnapisi',
-    name: 'Podnapisi',
-    enabled: true,
-    rateLimitRemaining: 49,
-    rateLimitMax: 50,
-    requiresAuth: false,
-  },
-  {
-    id: 'prov-addic7ed',
-    name: 'Addic7ed',
     enabled: false,
     rateLimitRemaining: 0,
-    rateLimitMax: 100,
+    rateLimitMax: 7200,
     requiresAuth: true,
-  },
-  {
-    id: 'prov-yify',
-    name: 'YIFY Subtitles',
-    enabled: true,
-    rateLimitRemaining: 480,
-    rateLimitMax: 500,
-    requiresAuth: false,
   },
 ]
 

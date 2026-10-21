@@ -710,6 +710,22 @@
           "help"
         ]
       },
+      "Language": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "example": "pt-BR"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "name"
+        ]
+      },
       "SetupResult": {
         "type": "object",
         "properties": {
@@ -938,6 +954,14 @@
               "maxLength": 100
             },
             "maxItems": 50
+          },
+          "subtitleLanguages": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 10
+            },
+            "maxItems": 20
           }
         },
         "required": [
@@ -3564,6 +3588,39 @@
               "action": {
                 "type": "string",
                 "enum": [
+                  "setLanguageProfile"
+                ]
+              },
+              "ids": {
+                "type": "array",
+                "items": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "minItems": 1,
+                "maxItems": 10000
+              },
+              "languageProfileId": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "minLength": 1,
+                "maxLength": 64
+              }
+            },
+            "required": [
+              "action",
+              "ids",
+              "languageProfileId"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "action": {
+                "type": "string",
+                "enum": [
                   "search"
                 ]
               },
@@ -4284,66 +4341,6 @@
           "remux"
         ]
       },
-      "LanguageProfile": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string",
-            "example": "English and Portuguese"
-          },
-          "languages": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "code": {
-                  "type": "string"
-                },
-                "forced": {
-                  "type": "string",
-                  "enum": [
-                    "no",
-                    "also",
-                    "only"
-                  ]
-                },
-                "hi": {
-                  "type": "string",
-                  "enum": [
-                    "no",
-                    "also",
-                    "only"
-                  ]
-                }
-              },
-              "required": [
-                "code",
-                "forced",
-                "hi"
-              ]
-            }
-          },
-          "cutoff": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "minScore": {
-            "type": "integer"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "languages",
-          "cutoff",
-          "minScore"
-        ]
-      },
       "ParseResult": {
         "type": "object",
         "properties": {
@@ -4843,13 +4840,61 @@
           },
           "playable": {
             "type": "boolean"
+          },
+          "subtitles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientSubtitle"
+            }
           }
         },
         "required": [
           "id",
           "label",
           "detail",
-          "playable"
+          "playable",
+          "subtitles"
+        ]
+      },
+      "ClientSubtitle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string",
+            "example": "en"
+          },
+          "label": {
+            "type": "string"
+          },
+          "forced": {
+            "type": "boolean"
+          },
+          "hi": {
+            "type": "boolean"
+          },
+          "format": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "embedded",
+              "external",
+              "bundled"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "language",
+          "label",
+          "forced",
+          "hi",
+          "format",
+          "kind"
         ]
       },
       "SearchResults": {
@@ -5967,7 +6012,10 @@
               "renamed",
               "blocklisted",
               "subtitle-downloaded",
-              "subtitle-synced"
+              "subtitle-upgraded",
+              "subtitle-deleted",
+              "subtitle-synced",
+              "subtitle-sync-failed"
             ]
           },
           "date": {
@@ -8267,6 +8315,595 @@
           "checking",
           "resumedAt"
         ]
+      },
+      "SubtitleStats": {
+        "type": "object",
+        "properties": {
+          "syncedToday": {
+            "type": "integer"
+          },
+          "waiting": {
+            "type": "integer"
+          },
+          "avgOffsetMs": {
+            "type": "integer"
+          },
+          "avgConfidence": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "syncedToday",
+          "waiting",
+          "avgOffsetMs",
+          "avgConfidence"
+        ]
+      },
+      "WantedSubtitlesPage": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/WantedSubtitles"
+            }
+          },
+          "next": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "total": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "items",
+          "next",
+          "total"
+        ]
+      },
+      "WantedSubtitles": {
+        "type": "object",
+        "properties": {
+          "movie": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "year": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "path": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "year",
+              "path"
+            ]
+          },
+          "missingLanguages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "movie",
+          "missingLanguages"
+        ]
+      },
+      "SubtitleTrack": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "itemId": {
+            "type": "integer"
+          },
+          "fileId": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string",
+            "example": "en"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "external",
+              "bundled"
+            ]
+          },
+          "format": {
+            "type": "string",
+            "example": "srt"
+          },
+          "forced": {
+            "type": "boolean"
+          },
+          "hi": {
+            "type": "boolean"
+          },
+          "provider": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "releaseName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "score": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "chosen": {
+            "type": "boolean"
+          },
+          "sync": {
+            "type": "object",
+            "properties": {
+              "status": {
+                "type": "string",
+                "enum": [
+                  "synced",
+                  "syncing",
+                  "queued",
+                  "unsynced",
+                  "failed",
+                  "not-needed"
+                ]
+              },
+              "confidence": {
+                "type": [
+                  "number",
+                  "null"
+                ]
+              },
+              "offsetMs": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "status",
+              "confidence",
+              "offsetMs"
+            ]
+          },
+          "path": {
+            "type": "string"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "itemId",
+          "fileId",
+          "language",
+          "kind",
+          "format",
+          "forced",
+          "hi",
+          "provider",
+          "releaseName",
+          "score",
+          "matches",
+          "chosen",
+          "sync",
+          "path",
+          "addedAt"
+        ]
+      },
+      "SubtitleSearchResult": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string"
+          },
+          "releaseName": {
+            "type": "string"
+          },
+          "provider": {
+            "type": "string"
+          },
+          "score": {
+            "type": "integer"
+          },
+          "matches": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "hash",
+                "title",
+                "year",
+                "source",
+                "edition",
+                "releaseGroup",
+                "resolution",
+                "videoCodec",
+                "audioCodec",
+                "streamingService",
+                "hearingImpaired"
+              ]
+            }
+          },
+          "forced": {
+            "type": "boolean"
+          },
+          "hi": {
+            "type": "boolean"
+          },
+          "format": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "attribution": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "language",
+          "releaseName",
+          "provider",
+          "score",
+          "matches",
+          "forced",
+          "hi",
+          "format",
+          "attribution"
+        ]
+      },
+      "SubtitleProvider": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "enum": [
+              "opensubtitles",
+              "subdl",
+              "subsource"
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "requiresAuth": {
+            "type": "boolean"
+          },
+          "account": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "rateLimitRemaining": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "rateLimitMax": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "throttledUntil": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "throttleReason": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "enum": [
+              "rate-limited",
+              "quota",
+              "auth",
+              "unavailable",
+              null
+            ]
+          },
+          "fields": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "key": {
+                  "type": "string",
+                  "enum": [
+                    "username",
+                    "password",
+                    "apiKey"
+                  ]
+                },
+                "secret": {
+                  "type": "boolean"
+                },
+                "set": {
+                  "type": "boolean"
+                },
+                "value": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "required": [
+                "key",
+                "secret",
+                "set",
+                "value"
+              ]
+            }
+          },
+          "attribution": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "unavailable": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "url",
+          "enabled",
+          "requiresAuth",
+          "account",
+          "rateLimitRemaining",
+          "rateLimitMax",
+          "throttledUntil",
+          "throttleReason",
+          "fields",
+          "attribution",
+          "unavailable"
+        ]
+      },
+      "SubtitleProviderCredentials": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "password": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "apiKey": {
+            "type": "string",
+            "maxLength": 500
+          }
+        }
+      },
+      "SubtitleProviderTest": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "account": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "ok",
+          "message",
+          "account"
+        ]
+      },
+      "LanguageProfile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "example": "English and Portuguese"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "forced": {
+                  "type": "string",
+                  "enum": [
+                    "no",
+                    "also",
+                    "only"
+                  ]
+                },
+                "hi": {
+                  "type": "string",
+                  "enum": [
+                    "no",
+                    "also",
+                    "only"
+                  ]
+                }
+              },
+              "required": [
+                "code",
+                "forced",
+                "hi"
+              ]
+            }
+          },
+          "cutoff": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "minScore": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "languages",
+          "cutoff",
+          "minScore"
+        ]
+      },
+      "LanguageProfileInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "English and Portuguese"
+          },
+          "languages": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "code": {
+                  "type": "string"
+                },
+                "forced": {
+                  "type": "string",
+                  "enum": [
+                    "no",
+                    "also",
+                    "only"
+                  ]
+                },
+                "hi": {
+                  "type": "string",
+                  "enum": [
+                    "no",
+                    "also",
+                    "only"
+                  ]
+                }
+              },
+              "required": [
+                "code",
+                "forced",
+                "hi"
+              ]
+            }
+          },
+          "cutoff": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "minScore": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "languages",
+          "cutoff",
+          "minScore"
+        ]
+      },
+      "SubtitleSettings": {
+        "type": "object",
+        "properties": {
+          "minScore": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "autoSync": {
+            "type": "boolean"
+          },
+          "minConfidence": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "upgradeDays": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 365
+          },
+          "preferReleaseMatch": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "minScore",
+          "autoSync",
+          "minConfidence",
+          "upgradeDays",
+          "preferReleaseMatch"
+        ]
       }
     },
     "parameters": {}
@@ -8720,6 +9357,41 @@
                   "type": "array",
                   "items": {
                     "$ref": "#/components/schemas/CatalogIndexer"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/setup/languages": {
+      "get": {
+        "tags": [
+          "Setup"
+        ],
+        "summary": "The subtitle step’s languages",
+        "description": "The languages a subtitle profile can ask for, as `GET /api/v1/subtitles/languages` lists them for staff.",
+        "x-highsea-access": "public",
+        "responses": {
+          "200": {
+            "description": "Languages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Language"
                   }
                 }
               }
@@ -14966,49 +15638,6 @@
         }
       }
     },
-    "/api/v1/languageprofiles": {
-      "get": {
-        "tags": [
-          "Quality"
-        ],
-        "summary": "Subtitle language profiles",
-        "description": "What the add dialog’s Subtitle languages offers. Seeded and edited with subtitles (checkpoint 7); until then the server lists its built-in default.",
-        "x-highsea-access": "staff",
-        "security": [
-          {
-            "session": []
-          },
-          {
-            "bearer": []
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Profiles",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/components/schemas/LanguageProfile"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "unauthorized",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/Error"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/api/v1/parse": {
       "get": {
         "tags": [
@@ -20034,6 +20663,1430 @@
           },
           "409": {
             "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subtitles/stats": {
+      "get": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Synced today, waiting, and the day’s average offset and confidence",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The stats",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubtitleStats"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subtitles/wanted": {
+      "get": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Movies missing a language their profile asks for",
+        "description": "Cursor-paged by sort title, 50 to a page.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WantedSubtitlesPage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subtitles/wanted/search": {
+      "post": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Search for every movie on the wanted list",
+        "description": "Queues a search per file and answers at once.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Searches queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "queued": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "queued"
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/movies/{id}/subtitles": {
+      "get": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "A movie’s external and bundled tracks",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tracks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubtitleTrack"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Use a search result: download it and keep it",
+        "description": "404 `result-expired` when the result is older than 30 minutes.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "resultId": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "resultId"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The track",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubtitleTrack"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate-limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/movies/{id}/subtitles/search": {
+      "post": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Ask the providers for a language now",
+        "description": "A POST, because it spends provider requests. Results are kept for 30 minutes for Use. 409 `no-providers` when none is on; 503 `providers-failed` when none answered.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "language": {
+                    "type": "string",
+                    "maxLength": 10
+                  },
+                  "fileId": {
+                    "type": "string",
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "language"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Results, best first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubtitleSearchResult"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate-limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subtitles/{id}": {
+      "delete": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Delete a track and its sidecar",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subtitles/providers": {
+      "get": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "The providers, their accounts, today’s counts and throttles",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Providers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/SubtitleProvider"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subtitles/providers/{id}": {
+      "patch": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Turn a provider on or off",
+        "description": "409 `no-account` while its account is missing; `no-app-key` for OpenSubtitles.com in a build without highsea’s key.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "opensubtitles",
+                "subdl",
+                "subsource"
+              ]
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "enabled"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The provider",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubtitleProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Save a provider’s account",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "opensubtitles",
+                "subdl",
+                "subsource"
+              ]
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubtitleProviderCredentials"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The provider",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubtitleProvider"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subtitles/providers/{id}/test": {
+      "post": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Sign in with an account, given or saved, without saving it",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "opensubtitles",
+                "subdl",
+                "subsource"
+              ]
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubtitleProviderCredentials"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The result",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubtitleProviderTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/subtitles/languages": {
+      "get": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "The languages a profile can ask for",
+        "description": "ISO 639-1, plus `pt-BR`, `zh-Hans` and `zh-Hant`.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Languages",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Language"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/languageprofiles": {
+      "get": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Subtitle language profiles",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LanguageProfile"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Add a language profile",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LanguageProfileInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LanguageProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/languageprofiles/{id}": {
+      "put": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Change a language profile",
+        "description": "Movies using it look again for what it now asks.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LanguageProfileInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LanguageProfile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Delete a language profile",
+        "description": "409 `in-use` while movies use it; 409 `last-profile` for the last one.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/subtitles": {
+      "get": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Scoring and sync",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubtitleSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Subtitles"
+        ],
+        "summary": "Change scoring and sync",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "minScore": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "autoSync": {
+                    "type": "boolean"
+                  },
+                  "minConfidence": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1
+                  },
+                  "upgradeDays": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 365
+                  },
+                  "preferReleaseMatch": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SubtitleSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
             "content": {
               "application/json": {
                 "schema": {

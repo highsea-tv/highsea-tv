@@ -88,6 +88,10 @@ export const widgets = defineMessages({
   'subtitles.meta': 'today',
   'subtitles.none': 'No subtitles yet',
   'subtitles.noneBody': 'highsea finds and syncs them as movies arrive.',
+  'subtitles.synced': 'synced',
+  'subtitles.waiting': '{count} waiting',
+  'subtitles.progress': 'Subtitles synced today',
+  'subtitles.average': 'Average offset corrected {offset} s · confidence {confidence}',
 
   'upcoming.meta': 'next {days} days',
   'upcoming.none': 'Nothing due in the next {days} days',

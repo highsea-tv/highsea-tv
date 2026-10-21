@@ -17,6 +17,7 @@ export * from './personalization.ts'
 export * from './quality.ts'
 export * from './settings.ts'
 export * from './setup.ts'
+export * from './subtitles.ts'
 export * from './system.ts'
 export * from './vpn.ts'
 
@@ -42,6 +43,7 @@ import { appearance, dashboard, home, preferences } from './personalization.ts'
 import { quality } from './quality.ts'
 import { settings } from './settings.ts'
 import { setup } from './setup.ts'
+import { subtitles } from './subtitles.ts'
 import { system } from './system.ts'
 import { vpn } from './vpn.ts'
 
@@ -77,4 +79,5 @@ export const routes = {
   libraryImport,
   importers,
   vpn,
+  subtitles,
 } as const

@@ -39,6 +39,19 @@ export const ClientItem = z
   })
   .openapi('ClientItem')
 
+export const ClientSubtitle = z
+  .object({
+    id: z.string(),
+    language: z.string().openapi({ example: 'en' }),
+    /** "English (forced)". */
+    label: z.string(),
+    forced: z.boolean(),
+    hi: z.boolean(),
+    format: z.string(),
+    kind: z.enum(['embedded', 'external', 'bundled']),
+  })
+  .openapi('ClientSubtitle')
+
 export const ClientVersion = z
   .object({
     id: z.string(),
@@ -46,6 +59,11 @@ export const ClientVersion = z
     /** "4K · HDR10 · HEVC · 18.2 GB" once it has a file; null until then. */
     detail: z.string().nullable(),
     playable: z.boolean(),
+    /**
+     * Its subtitle tracks (checkpoint 7): the file's own streams, then the sidecars highsea keeps.
+     * Playing them waits for `/stream`.
+     */
+    subtitles: z.array(ClientSubtitle),
   })
   .openapi('ClientVersion')
 
@@ -176,6 +194,7 @@ export const library = {
 } as const
 
 export type ClientItem = z.infer<typeof ClientItem>
+export type ClientSubtitle = z.infer<typeof ClientSubtitle>
 export type ClientVersion = z.infer<typeof ClientVersion>
 export type ClientDetail = z.infer<typeof ClientDetail>
 export type ClientItemPage = z.infer<typeof ClientItemPage>

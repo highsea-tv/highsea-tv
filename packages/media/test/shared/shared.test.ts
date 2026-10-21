@@ -157,9 +157,4 @@ describe('profiles, formats, sizes and language profiles', () => {
     })
     expect(after.find((s) => s.quality === 'Remux-2160p')?.min).toBe(187.4)
   })
-
-  test('language profiles are English alone until checkpoint 7', async () => {
-    const { media } = await start()
-    expect(media.languageProfiles().map((p) => p.id)).toEqual(['lp-en'])
-  })
 })

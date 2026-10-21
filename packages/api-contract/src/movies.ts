@@ -75,7 +75,7 @@ export const Movie = z
     status: MovieStatus,
     monitored: z.boolean(),
     minimumAvailability: MinimumAvailability,
-    /** Subtitle languages; profiles arrive with checkpoint 7, so it's stored as given. */
+    /** The movie's subtitle language profile (checkpoint 7a), `subtitles.languageProfiles()`. */
     languageProfileId: z.string().nullable(),
     /** The first version's profile, which the library filters on. */
     qualityProfileId: z.string(),
@@ -141,6 +141,12 @@ export const BulkInput = z
       action: z.literal('setQualityProfile'),
       ids: Ids,
       qualityProfileId: z.string().min(1).max(64),
+    }),
+    /** The library's Subtitle languages menu (checkpoint 7); null for none. */
+    z.object({
+      action: z.literal('setLanguageProfile'),
+      ids: Ids,
+      languageProfileId: z.string().min(1).max(64).nullable(),
     }),
     z.object({ action: z.literal('search'), ids: Ids }),
     z.object({ action: z.literal('refresh'), ids: Ids }),

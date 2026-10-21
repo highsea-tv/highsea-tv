@@ -38,7 +38,7 @@ export const manualImport = defineMessages({
   noMatch: 'Didn’t match a movie. Choose one.',
   movieLabel: '{title} ({year})',
   'done.title': '{count, plural, one {# file} other {# files}} imported',
-  'done.body': 'Renamed into the library.',
+  'done.body': 'Renamed into the library. Subtitles are next.',
   'done.some':
     '{failed, plural, one {# file} other {# files}} of {count} couldn’t be imported. Each one says why.',
   'fail.run': 'Couldn’t import them',

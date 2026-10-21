@@ -63,11 +63,15 @@ export function System() {
                         a.name === TMDB_ATTRIBUTION.name ? (
                           <TmdbNotice key={a.name} />
                         ) : (
-                          <p key={a.name} className="text-caption text-text-3">
-                            <a href={a.url} className="text-text-2 hover:underline">
-                              {a.name}
-                            </a>{' '}
-                            {a.notice}
+                          // the notice names the service ("Subtitles provided by OpenSubtitles.com"),
+                          // so it's the link; underlined, since colour alone doesn't mark a link
+                          <p key={a.name} className="text-caption">
+                            <a
+                              href={a.url}
+                              className="text-text-2 underline underline-offset-2 hover:text-text"
+                            >
+                              {a.notice || a.name}
+                            </a>
                           </p>
                         ),
                       )}

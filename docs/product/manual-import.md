@@ -31,7 +31,7 @@ Bring in files highsea didn't download, or couldn't import on its own: a folder 
 - **Before looking:** "Choose a folder, then look inside it."
 - **Nothing there:** "Nothing to import here" · There are no video files in {folder}.
 - **A missing folder:** the server's message under the path ("/data/nope doesn't exist on the server.").
-- **Imported:** the rows say so and can't be picked again; a toast: "2 files imported · Renamed into the library." (*As built:* "Subtitles are next" waits for checkpoint 7.)
+- **Imported:** the rows say so and can't be picked again; a toast: "2 files imported · Renamed into the library. Subtitles are next." (*As built:* the second sentence came back with checkpoint 7a, once the import starts the subtitle search.)
 - **Some failed** (*as built*): each file comes back imported or with the reason it wasn't, in its row; the toast says "{n} files of {count} couldn't be imported. Each one says why."
 
 ## Interactions

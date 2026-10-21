@@ -351,6 +351,7 @@ describe('appearance', () => {
       'movies',
       'indexers',
       'downloads',
+      'subtitles',
     ])
   })
 })

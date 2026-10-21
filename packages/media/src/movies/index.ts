@@ -148,6 +148,8 @@ export type { ClientListQuery } from './client.ts'
 export type { MovieSearch, MoviesDeps } from './context.ts'
 export type {
   ImportCandidate,
+  ImportedFile,
+  ImportHooks,
   ImportInput,
   ImportMode,
   ImportOptions,
@@ -155,6 +157,7 @@ export type {
   ManualImportFile,
   MediaFileView,
   StoredFileInfo,
+  Tx,
 } from './import.ts'
 export { MOVIE_JOB_TYPES } from './jobs.ts'
 export { DEFAULT_LIMIT, type ExtraFilters, type ListQuery, MAX_LIMIT } from './library.ts'

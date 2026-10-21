@@ -5,9 +5,10 @@
 // states. A widget's data comes from a source public info lists (`sources`): the system feeds
 // Storage and System health; `movies` (checkpoint 4) feeds Upcoming, Calendar and Recently added,
 // and Storage's root folders; `indexers` (checkpoint 5) feeds Indexers; `downloads` (checkpoint 6)
-// feeds Network and Queue. The rest show their empty states from dashboard.md, which are true on
-// a server without those things yet, and call no route until their checkpoint adds it (Phase 3
-// plan › Widgets); so does each widget on a server without its source.
+// feeds Network and Queue; `subtitles` (checkpoint 7) feeds Subtitles. The rest show their empty
+// states from dashboard.md, which are true on a server without those things yet, and call no route
+// until their checkpoint adds it (Phase 3 plan › Widgets); so does each widget on a server without
+// its source.
 
 import {
   DOWNLOAD_TOPICS,
@@ -16,6 +17,7 @@ import {
   type Movie,
   type QueueItem,
   type RootFolder,
+  SUBTITLE_TOPICS,
 } from '@highsea/api-contract'
 import {
   bytes,
@@ -83,7 +85,7 @@ const MOVIE_TOPICS = [MEDIA_TOPICS.movies, MEDIA_TOPICS.item]
  * Whether this server has a source yet: `undefined` until public info answers. Every widget asks
  * under one key; the SDK keeps each answer per widget, and it's a small public call.
  */
-function useSource(source: 'movies' | 'indexers' | 'downloads'): boolean | undefined {
+function useSource(source: 'movies' | 'indexers' | 'downloads' | 'subtitles'): boolean | undefined {
   const info = useQuery('public-info', (c) => c.system.publicInfo())
   return info.status === 'success' ? info.data.sources.includes(source) : undefined
 }
@@ -513,12 +515,56 @@ function IndexerList(props: WidgetProps) {
 
 function Subtitles(props: WidgetProps) {
   const t = useT(messages)
+  const source = useSource('subtitles')
+  if (source) return <SubtitleStats {...props} />
   return (
     <Static {...props} kind="subtitles" meta={t('subtitles.meta')}>
-      <EmptyState size="sm" icon="subtitles" title={t('subtitles.none')}>
-        {t('subtitles.noneBody')}
-      </EmptyState>
+      {source === undefined ? (
+        <SkeletonText lines={3} />
+      ) : (
+        <EmptyState size="sm" icon="subtitles" title={t('subtitles.none')}>
+          {t('subtitles.noneBody')}
+        </EmptyState>
+      )}
     </Static>
+  )
+}
+
+/** Today's syncs and the tracks waiting for one (checkpoint 7); a download or a sync updates it. */
+function SubtitleStats(props: WidgetProps) {
+  const t = useT(messages)
+  const query = useQuery('widget:subtitles', (c) => c.subtitles.stats(), [
+    SUBTITLE_TOPICS.subtitles,
+  ])
+  return (
+    <Widget {...props} kind="subtitles" query={query} meta={() => t('subtitles.meta')}>
+      {(s) =>
+        s.syncedToday === 0 && s.waiting === 0 ? (
+          <EmptyState size="sm" icon="subtitles" title={t('subtitles.none')}>
+            {t('subtitles.noneBody')}
+          </EmptyState>
+        ) : (
+          <>
+            <Stat
+              value={s.syncedToday}
+              unit={t('subtitles.synced')}
+              caption={t('subtitles.waiting', { count: s.waiting })}
+            />
+            <Progress
+              value={(s.syncedToday / Math.max(1, s.syncedToday + s.waiting)) * 100}
+              tone="success"
+              aria-label={t('subtitles.progress')}
+            />
+            <p className="text-caption text-text-3">
+              {t('subtitles.average', {
+                offset: (s.avgOffsetMs / 1000).toFixed(2),
+                confidence: s.avgConfidence.toFixed(2),
+              })}
+            </p>
+          </>
+        )
+      }
+    </Widget>
   )
 }
 

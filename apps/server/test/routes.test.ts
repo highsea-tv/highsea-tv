@@ -77,6 +77,48 @@ describe('setup', () => {
   })
 })
 
+describe('setup’s subtitle step', () => {
+  async function finish(app: ReturnType<typeof createApi>, subtitleLanguages: string[]) {
+    return app.request(`${ORIGIN}/api/v1/setup`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', origin: ORIGIN },
+      body: JSON.stringify({
+        serverName: 'Harbor',
+        owner: OWNER,
+        folders: (await clientFor(app).setup.defaults()).folders,
+        remoteAccess: { kind: 'local-only' },
+        cloudLink: false,
+        subtitleLanguages,
+      }),
+    })
+  }
+
+  test('lists the languages until setup ends; Finish makes the first profile from the picks', async () => {
+    const runtime = await bootRuntime()
+    const app = createApi(runtime)
+    const anon = clientFor(app)
+    const languages = await anon.setup.languages()
+    expect(languages).toContainEqual({ code: 'pt-BR', name: 'Brazilian Portuguese' })
+
+    expect((await finish(app, ['pt-BR', 'en'])).status).toBe(200)
+    expect(await failure(anon.setup.languages())).toEqual({ code: 'not-found', reason: undefined })
+    const [profile] = runtime.subtitles.profiles.list()
+    expect(profile?.languages.map((l) => l.code)).toEqual(['pt-BR', 'en'])
+    expect(profile?.cutoff).toBe('pt-BR')
+  })
+
+  test('a language not on the list is refused under the step, and nothing is made', async () => {
+    const runtime = await bootRuntime()
+    const app = createApi(runtime)
+    const res = await finish(app, ['xx'])
+    expect(res.status).toBe(400)
+    expect(((await res.json()) as { error: { details: unknown } }).error.details).toEqual({
+      field: 'subtitleLanguages',
+    })
+    expect(runtime.setupComplete()).toBe(false)
+  })
+})
+
 describe('setup’s indexer step', () => {
   test('lists the starter pack until setup ends, and Finish adds what was chosen', async () => {
     // the Internet Archive goes to the fake indexer, TMDB to its recordings: no network

@@ -67,6 +67,9 @@ import {
   type Personalization,
   type WidgetSource,
 } from '@highsea/personalization'
+import { createSubtitles, type Subtitles } from '@highsea/subtitles/movies'
+import { PROVIDER_INFO } from '@highsea/subtitles/providers'
+import { isLanguageCode } from '@highsea/subtitles/shared'
 import { createTorrentEngine, HASH_WORKER, type TorrentEngine } from '@highsea/torrent'
 import { CommandFailed, createVpn, type Vpn } from '@highsea/vpn'
 import { and, eq } from 'drizzle-orm'
@@ -87,8 +90,8 @@ import {
 import { createCpuMeter, type Disk, disks, type HealthIssue, memory } from './system.ts'
 import { createWorkerPool, type WorkerPool } from './workers.ts'
 
-/** Milestone 1 has the server, the movie library, indexers and downloads; later checkpoints add theirs. */
-const SOURCES: WidgetSource[] = ['system', 'movies', 'indexers', 'downloads']
+/** Milestone 1 has the server, the movie library, indexers, downloads and subtitles; later checkpoints add theirs. */
+const SOURCES: WidgetSource[] = ['system', 'movies', 'indexers', 'downloads', 'subtitles']
 
 /** Searches an indexer search for a movie in the background: Search now and bulk search queue it. */
 export const MOVIE_SEARCH_JOB = 'movies.search'
@@ -102,6 +105,12 @@ export type Attribution = { name: string; notice: string; url: string }
  */
 const ATTRIBUTIONS: Attribution[] = [
   { name: 'TMDB', notice: TMDB_ATTRIBUTION, url: 'https://www.themoviedb.org' },
+  // OpenSubtitles.com's terms for integrators ask for its credit where subtitles are used
+  {
+    name: 'OpenSubtitles.com',
+    notice: PROVIDER_INFO.opensubtitles.attribution ?? '',
+    url: PROVIDER_INFO.opensubtitles.url,
+  },
 ]
 
 export type ServerIdentity = { id: string; name: string; createdAt: number }
@@ -155,6 +164,8 @@ export type SetupInput = {
   metadata?: { key?: string; language?: string; region?: string }
   /** The indexer step: definition ids from the starter pack. */
   indexers?: string[]
+  /** The subtitles step: language codes, in order, for the first language profile. */
+  subtitleLanguages?: string[]
 }
 
 export type HealthReport = {
@@ -185,6 +196,8 @@ export type Runtime = {
   media: Media
   /** The movie library. */
   movies: Movies
+  /** Subtitles for the movie library (checkpoint 7a). */
+  subtitles: Subtitles
   /** Signed definitions: the seed, the main catalog, extra catalogs and local ones (ADR 0034). */
   catalog: Catalog
   /** Indexers, their health and release search (ADR 0035). */
@@ -270,6 +283,11 @@ export type BootOptions = {
   importing?: Parameters<typeof createMovies>[0]['importing']
   /** `fs.watch` for the root folders; tests pass one that fails. */
   watch?: WatchFn
+  /**
+   * The subtitle providers' fetch and highsea's OpenSubtitles.com key. By default the outside
+   * fetch and the configured key; tests and the sweeps pass `@highsea/subtitles/fake`.
+   */
+  subtitles?: { fetch?: Fetch; openSubtitlesKey?: string | null }
 }
 
 const g = globalThis as typeof globalThis & { __highsea?: Runtime }
@@ -475,6 +493,30 @@ export async function boot(options: BootOptions): Promise<Runtime> {
   // what every media type shares: profiles, formats, sizes and root folders
   const media = createMedia({ db, clock, logger })
   media.seed()
+  // subtitles before the library: the import's hooks keep a release's subtitles and the hash
+  const subtitles = createSubtitles({
+    db,
+    clock,
+    logger,
+    sealer,
+    jobs,
+    events,
+    media,
+    fetch: options.subtitles?.fetch ?? outside,
+    userAgent: `highsea v${version}`,
+    openSubtitlesKey:
+      options.subtitles?.openSubtitlesKey !== undefined
+        ? options.subtitles.openSubtitlesKey
+        : (config.opensubtitlesKey ?? null),
+  })
+  subtitles.seed()
+  subtitles.defineJobs()
+  subtitles.schedule()
+  const stopSubtitles = subtitles.start()
+  // Node's official builds carry full ICU, which decoding subtitles' legacy encodings needs
+  // (https://nodejs.org/api/intl.html)
+  if (!process.versions.icu)
+    log.warn('this Node has no ICU, so subtitles in legacy encodings may not decode')
   const movies = createMovies(
     {
       db,
@@ -486,8 +528,10 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       // the owner's categories may keep their torrents outside the downloads folder (6b)
       importing: {
         ...options.importing,
+        hooks: options.importing?.hooks ?? subtitles.hooks,
         downloadDirs: () => [folders().downloads, ...downloads.categoryFolders()],
       },
+      subtitles: { forFile: subtitles.clientTracks },
       search: {
         canSearch: () => indexers.hasEnabled(),
         queue(tmdbIds) {
@@ -736,6 +780,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     metadata,
     media,
     movies,
+    subtitles,
     catalog,
     indexers,
     engine,
@@ -773,6 +818,11 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       if (isSetupComplete(db)) throw new AppError('not-found', 'Setup is already complete.')
       // everything that can be checked before the owner exists, so a mistake leaves nothing behind
       checkSetup(config, input)
+      const languages = [...new Set(input.subtitleLanguages ?? [])]
+      if (languages.some((code) => !isLanguageCode(code)))
+        throw new AppError('invalid', 'Choose subtitle languages from the list.', {
+          field: 'subtitleLanguages',
+        })
       const md = input.metadata ?? {}
       const key = md.key?.trim()
       // the key step checked the key already; checking again keeps a bad one from being stored
@@ -813,6 +863,8 @@ export async function boot(options: BootOptions): Promise<Runtime> {
             }),
           ),
         )
+      // the subtitle step: the chosen languages into the seeded profile
+      if (languages.length) subtitles.profiles.fromSetup(languages)
       log.info('setup complete', { owner: owner.username })
       return auth.signInAfterSetup(owner.id, meta)
     },
@@ -880,6 +932,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       for (const i of downloads.issues()) out.push({ ...i, source: 'Downloads' })
       for (const i of ipBlocklist.issues()) out.push({ ...i, source: 'Downloads' })
       for (const i of vpn.issues()) out.push({ ...i, source: 'VPN' })
+      for (const i of subtitles.issues()) out.push({ ...i, source: 'Subtitles' })
       if (unarMissing)
         out.push({
           id: 'unar-missing',
@@ -929,6 +982,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       stopIpBlocklist()
       await engine.close()
       movies.close()
+      stopSubtitles()
       stopIndexers()
       await network.stopDiscovery()
       await jobs.drain()

@@ -72,7 +72,7 @@ export function AddMovieDialog({
       const [folders, quality, language, prefs, indexers] = await Promise.all([
         c.rootFolders.list(),
         c.quality.profiles(),
-        c.quality.languageProfiles(),
+        c.subtitles.languageProfiles(),
         c.preferences.get(),
         c.indexers.list(),
       ])

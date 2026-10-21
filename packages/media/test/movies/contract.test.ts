@@ -6,7 +6,6 @@ import {
   ClientItemPage,
   CustomFormat,
   DiscoverMovie,
-  LanguageProfile,
   Movie,
   MoviePage,
   ParseResult,
@@ -28,7 +27,6 @@ test('movies, pages, profiles, formats, sizes, folders and parses match the cont
   z.array(QualityProfile).parse(s.media.profiles.list())
   z.array(CustomFormat).parse(s.media.customFormats())
   z.array(QualitySize).parse(s.media.qualitySizes())
-  z.array(LanguageProfile).parse(s.media.languageProfiles())
   z.array(RootFolder).parse(s.media.rootFolders.list())
   ParseResult.parse(s.movies.parse('Sintel.2010.1080p.BluRay.x264-GROUP'))
 })

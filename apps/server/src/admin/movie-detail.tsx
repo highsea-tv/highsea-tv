@@ -19,7 +19,10 @@
 //   first (a movie with two versions can have two);
 // - History pages with Show more, which the prototype's single page doesn't need;
 // - a file without a scene name leaves out the Release line;
-// - no Subtitles tab (checkpoint 7);
+// - the Subtitles tab (checkpoint 7a) leaves out Re-sync and the offset buttons until the sync
+//   engine (7b), and its Offset column with them; a bundled track says the release carried it;
+//   search results say which provider's terms ask for a credit, under the table; a search with no
+//   provider on, or none answering, says so in place of the results;
 // - Edit (in More) and the version list's add, edit and remove, which the prototype doesn't draw;
 // - Remove keeps the page where it is, without its library layer (Addresses are TMDB ids);
 // - a movie TMDB no longer has keeps its rows and address and says so (judgement call 4).
@@ -38,6 +41,9 @@ import {
   type QualityProfile,
   type Release,
   type RootFolder,
+  SUBTITLE_TOPICS,
+  type SubtitleSearchResult,
+  type SubtitleTrack,
 } from '@highsea/api-contract'
 import { bytes, duration, percent, rate } from '@highsea/core/format'
 import { useLocale, useT } from '@highsea/i18n/react'
@@ -45,6 +51,7 @@ import type { ApiError } from '@highsea/sdk'
 import { useAction, useQuery } from '@highsea/sdk/react'
 import {
   Badge,
+  type BadgeTone,
   Banner,
   Button,
   Checkbox,
@@ -107,7 +114,7 @@ import { movieDetail as messages, torrentState } from './movie-detail-messages.t
 import { AdminPage } from './shell.tsx'
 import { useRelative } from './time.ts'
 
-type Tab = 'overview' | 'cast' | 'files' | 'history' | 'search'
+type Tab = 'overview' | 'cast' | 'files' | 'history' | 'search' | 'subtitles'
 
 /** Where Discover finds a title by name: its search is kept in the address (movies.md). */
 const discoverSearch = (title: string) => `/discover?q=${encodeURIComponent(title)}`
@@ -219,7 +226,7 @@ function useLibraryOptions() {
   return useQuery('movie-options', async (c) => {
     const [quality, language, folders] = await Promise.all([
       c.quality.profiles(),
-      c.quality.languageProfiles(),
+      c.subtitles.languageProfiles(),
       c.rootFolders.list(),
     ])
     return { quality, language, folders }
@@ -506,6 +513,7 @@ function LibraryBody({
           <TabsTrigger value="files">{t('tab.files')}</TabsTrigger>
           <TabsTrigger value="history">{t('tab.history')}</TabsTrigger>
           <TabsTrigger value="search">{t('tab.search')}</TabsTrigger>
+          <TabsTrigger value="subtitles">{t('tab.subtitles')}</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="pt-5">
           <MediaOverview
@@ -527,6 +535,9 @@ function LibraryBody({
         </TabsContent>
         <TabsContent value="search" className="pt-5">
           <SearchTab id={m.id} />
+        </TabsContent>
+        <TabsContent value="subtitles" className="pt-5">
+          <Subtitles movie={m} />
         </TabsContent>
       </Tabs>
     </>
@@ -1037,6 +1048,9 @@ const historyIcon: Record<HistoryEvent['type'], IconName> = {
   blocklisted: 'lock',
   'subtitle-downloaded': 'subtitles',
   'subtitle-synced': 'subtitle-sync',
+  'subtitle-upgraded': 'subtitles',
+  'subtitle-deleted': 'delete',
+  'subtitle-sync-failed': 'warning',
 }
 
 /** The movie's history, newest first, a page at a time; an event elsewhere asks again. */
@@ -1340,5 +1354,316 @@ function Reasons({ release: r }: { release: Release }) {
         </li>
       ))}
     </ul>
+  )
+}
+
+// ---------------------------------------------------------------- subtitles
+
+type SyncStatus = SubtitleTrack['sync']['status']
+
+/** Each sync status's badge tone; its label is `sync.{status}`. */
+const syncTone: Record<SyncStatus, BadgeTone> = {
+  synced: 'success',
+  syncing: 'accent',
+  queued: 'neutral',
+  unsynced: 'warning',
+  failed: 'danger',
+  'not-needed': 'neutral',
+}
+
+/**
+ * An embedded stream's language: ffprobe gives ISO 639-2 (`eng`), which the subtitle language list
+ * (ISO 639-1) doesn't hold, and Intl.DisplayNames canonicalizes it to its 639-1 name.
+ */
+function streamLanguage(code: string, locale: string, unknown: string): string {
+  if (code === 'und') return unknown
+  try {
+    return new Intl.DisplayNames([locale], { type: 'language' }).of(code) ?? code
+  } catch {
+    return code
+  }
+}
+
+const SUBTITLE_TAB_TOPICS = [SUBTITLE_TOPICS.subtitles, MEDIA_TOPICS.item]
+
+/**
+ * The prototype's Subtitles tab: the sidecars highsea keeps (downloaded and bundled), then the
+ * file's own streams, read-only; then Search for subtitles. Re-sync and the offset buttons come
+ * with the sync engine (7b) and aren't shown before it (checkpoint 7, judgement call 19).
+ */
+function Subtitles({ movie: m }: { movie: Movie }) {
+  const t = useT(messages)
+  const locale = useLocale()
+  const data = useQuery(
+    `subtitles:${m.id}`,
+    async (c) => {
+      const [tracks, files, languages] = await Promise.all([
+        c.subtitles.forItem({ params: { id: m.id } }),
+        c.movies.files({ params: { id: m.id } }),
+        c.subtitles.languages(),
+      ])
+      return { tracks, files, languages }
+    },
+    SUBTITLE_TAB_TOPICS,
+  )
+  const remove = useAction((c, trackId: string) => c.subtitles.delete({ params: { id: trackId } }))
+
+  return (
+    <Loadable query={data} what={t('subs.what')}>
+      {({ tracks, files, languages }) => {
+        const name = (code: string) =>
+          languages.find((l) => l.code === code)?.name ??
+          streamLanguage(code, locale, t('subs.unknown'))
+        const embedded = files.flatMap((f) =>
+          f.streams.flatMap((s) => (s.type === 'subtitle' ? [{ file: f, stream: s }] : [])),
+        )
+        if (!files.length && !tracks.length)
+          return (
+            <EmptyState size="sm" icon="subtitles" title={t('subs.noFile')}>
+              {t('subs.noFileBody')}
+            </EmptyState>
+          )
+        return (
+          <div className="grid gap-6">
+            <TableFrame>
+              <TableToolbar>
+                <span className="text-text">{t('subs.tracks')}</span>
+                <span className="text-text-3">
+                  {t('subs.counts', { external: tracks.length, embedded: embedded.length })}
+                </span>
+              </TableToolbar>
+              {tracks.length + embedded.length === 0 ? (
+                <p className="px-3.5 py-8 text-center text-caption text-text-3">{t('subs.none')}</p>
+              ) : (
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>{t('subs.language')}</TableHead>
+                      <TableHead>{t('subs.source')}</TableHead>
+                      <TableHead numeric>{t('subs.score')}</TableHead>
+                      <TableHead>{t('subs.sync')}</TableHead>
+                      <TableHead>
+                        <span className="sr-only">{t('subs.actions')}</span>
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {tracks.map((track) => (
+                      <TrackRow
+                        key={track.id}
+                        track={track}
+                        language={name(track.language)}
+                        onRemove={() =>
+                          remove.run(track.id).then(
+                            () => toast({ title: t('subs.deleted') }),
+                            (e: Error) =>
+                              toast.error(t('subs.deleteFailed'), { description: e.message }),
+                          )
+                        }
+                      />
+                    ))}
+                    {embedded.map(({ file, stream }) => (
+                      <TableRow key={`${file.id}-${stream.index}`}>
+                        <TitleCell
+                          title={[
+                            name(stream.language),
+                            stream.forced && t('stream.forced'),
+                            stream.hi && t('stream.sdh'),
+                          ]
+                            .filter(Boolean)
+                            .join(' · ')}
+                          detail={t('subs.stream', {
+                            index: stream.index,
+                            file: file.path.split('/').pop() ?? file.path,
+                          })}
+                        />
+                        <TableCell className="text-text-2">{t('subs.embedded')}</TableCell>
+                        <TableCell numeric>—</TableCell>
+                        <TableCell>
+                          <Badge tone="neutral">{t('subs.matchesVideo')}</Badge>
+                        </TableCell>
+                        <TableCell />
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              )}
+            </TableFrame>
+            {files.length > 0 && <SubtitleSearch id={m.id} languages={languages} />}
+          </div>
+        )
+      }}
+    </Loadable>
+  )
+}
+
+function TrackRow({
+  track: s,
+  language,
+  onRemove,
+}: {
+  track: SubtitleTrack
+  language: string
+  onRemove: () => void
+}) {
+  const t = useT(messages)
+  const flags = [s.forced && t('stream.forced'), s.hi && t('stream.sdh'), s.format.toUpperCase()]
+  const shown = flags.filter(Boolean)
+  return (
+    <TableRow>
+      <TitleCell title={[language, ...shown].join(' · ')} detail={s.path} />
+      <TableCell className="text-text-2">
+        {s.kind === 'bundled' ? t('subs.bundled') : (s.provider ?? t('subs.byHand'))}
+      </TableCell>
+      <TableCell numeric>{s.score ?? '—'}</TableCell>
+      <TableCell>
+        <span className="flex items-center gap-2">
+          <Badge tone={syncTone[s.sync.status]}>{t(`sync.${s.sync.status}`)}</Badge>
+          {s.sync.confidence !== null && (
+            <span className="font-mono text-figure text-text-3">{percent(s.sync.confidence)}</span>
+          )}
+        </span>
+      </TableCell>
+      <TableCell className="text-end">
+        <Tooltip content={t('subs.delete')}>
+          <Button
+            size="sm"
+            variant="ghost"
+            iconOnly
+            icon="delete"
+            aria-label={t('subs.deleteLabel', { language })}
+            onClick={onRemove}
+          />
+        </Tooltip>
+      </TableCell>
+    </TableRow>
+  )
+}
+
+/** Why a search found nothing to show: no provider on, or none answered (the server's reasons). */
+const searchRefusal = (error: unknown) => {
+  const reason = ((error as ApiError).details as { reason?: string } | undefined)?.reason
+  return reason === 'no-providers' || reason === 'providers-failed' ? reason : null
+}
+
+function SubtitleSearch({
+  id,
+  languages,
+}: {
+  id: number
+  languages: { code: string; name: string }[]
+}) {
+  const t = useT(messages)
+  const [language, setLanguage] = useState(
+    languages.some((l) => l.code === 'en') ? 'en' : (languages[0]?.code ?? ''),
+  )
+  // each Search asks the providers again; the results stay put while the tab is open
+  const [search, setSearch] = useState<{ language: string; run: number } | null>(null)
+  const results = useQuery(`subtitle-search:${id}:${search?.language}:${search?.run}`, (c) =>
+    search
+      ? c.subtitles.search({ params: { id }, body: { language: search.language } })
+      : Promise.resolve([] as SubtitleSearchResult[]),
+  )
+  const download = useAction((c, r: SubtitleSearchResult) =>
+    c.subtitles.download({ params: { id }, body: { resultId: r.id } }),
+  )
+  const refusal = results.status === 'error' ? searchRefusal(results.error) : null
+  return (
+    <section aria-labelledby="sub-search" className="grid gap-3">
+      <h2 id="sub-search" className="text-title text-text">
+        {t('subs.search')}
+      </h2>
+      <div className="flex flex-wrap items-end gap-3">
+        <Field label={t('subs.language')} className="w-56">
+          <Select
+            value={language}
+            onValueChange={setLanguage}
+            options={languages.map((l) => ({ value: l.code, label: l.name }))}
+          />
+        </Field>
+        <Button icon="search" onClick={() => setSearch({ language, run: (search?.run ?? 0) + 1 })}>
+          {t('subs.searchProviders')}
+        </Button>
+      </div>
+      {search &&
+        (refusal ? (
+          <p className="text-caption text-text-3">{t(`subs.${refusal}`)}</p>
+        ) : (
+          <Loadable query={results} what={t('subs.resultsWhat')}>
+            {(rs) =>
+              rs.length === 0 ? (
+                <p className="text-caption text-text-3">{t('subs.noResults')}</p>
+              ) : (
+                <div className="grid gap-2">
+                  <TableFrame>
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('subs.release')}</TableHead>
+                          <TableHead>{t('subs.provider')}</TableHead>
+                          <TableHead numeric>{t('subs.score')}</TableHead>
+                          <TableHead>
+                            <span className="sr-only">{t('subs.actions')}</span>
+                          </TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {rs.map((r) => (
+                          <TableRow key={r.id}>
+                            <TitleCell
+                              title={
+                                [
+                                  r.format?.toUpperCase(),
+                                  r.forced && t('stream.forced'),
+                                  r.hi && t('stream.sdh'),
+                                ]
+                                  .filter(Boolean)
+                                  .join(' · ') || r.language
+                              }
+                              detail={r.releaseName}
+                            />
+                            <TableCell className="text-text-2">{r.provider}</TableCell>
+                            <TableCell numeric>{r.score}</TableCell>
+                            <TableCell className="text-end">
+                              <Button
+                                size="sm"
+                                icon="download"
+                                disabled={download.pending}
+                                onClick={() =>
+                                  download.run(r).then(
+                                    () => toast.success(t('subs.downloaded')),
+                                    (e: Error) =>
+                                      toast.error(t('subs.downloadFailed'), {
+                                        description: e.message,
+                                      }),
+                                  )
+                                }
+                                aria-label={t('subs.useLabel', {
+                                  release: r.releaseName,
+                                  provider: r.provider,
+                                })}
+                              >
+                                {t('subs.use')}
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableFrame>
+                  {/* the line OpenSubtitles.com's terms ask for where its subtitles are picked */}
+                  {[...new Set(rs.flatMap((r) => (r.attribution ? [r.attribution] : [])))].map(
+                    (line) => (
+                      <p key={line} className="text-caption text-text-3">
+                        {line}
+                      </p>
+                    ),
+                  )}
+                </div>
+              )
+            }
+          </Loadable>
+        ))}
+    </section>
   )
 }
