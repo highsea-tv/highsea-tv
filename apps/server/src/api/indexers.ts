@@ -95,8 +95,9 @@ export function registerIndexers(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.movies.interactiveSearch, async (c) => {
     const { id } = c.req.valid('param')
-    const { movies, indexers } = runtime(c)
-    const input = movies.searchInput(id)
+    const { movies, indexers, automation } = runtime(c)
+    // judged with the movie's blocklist, as automation's searches are (checkpoint 8a)
+    const input = automation.inputFor(id) ?? movies.searchInput(id)
     if (!indexers.hasEnabled())
       throw new AppError('conflict', 'Add an indexer to search for releases.', {
         reason: 'no-indexers',

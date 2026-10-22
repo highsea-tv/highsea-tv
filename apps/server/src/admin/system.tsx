@@ -1,17 +1,16 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
-// System (A16, system.md) arrives with checkpoint 8. Checkpoint 4 needs one part of it now: About,
-// where TMDB's terms ask for its logo and notice (checkpoint 4 plan › Attribution). So the page is
-// its header, About from the public info (the server, its version and the providers it credits),
-// and a line saying the rest comes later. Checkpoint 5 adds the indexer catalog's version to About,
-// with Check now (ADR 0034; system.md lists the catalog under Updates, which comes with the rest).
-// Checkpoint 6 adds the prototype's Health list above About, where the torrent client's and
-// imports' problems show beside the indexers' and the network's; the prototype's Check now waits
-// for Tasks, which runs the check, and its rate graph is the dashboard's Network widget.
+// System (A16, system.md): the prototype's tabs, each at its own address, as far as checkpoint 8a
+// builds them. Health (`/system`, and `/system/health` as the prototype has it) is the prototype's
+// Health list with About below it: About is the server's addition (checkpoint 4, for TMDB's terms;
+// checkpoint 5 adds the indexer catalog's version and Check now). Tasks (`/system/tasks`, 8a) lists
+// every schedule with Run now. The prototype opens on Status, which comes with 8b's Status, Logs,
+// Events, Backups and Updates; until then Health is the first tab.
 import {
   DOWNLOAD_TOPICS,
   type HealthCheck,
   INDEXER_TOPICS,
+  type Task,
   TMDB_ATTRIBUTION,
 } from '@highsea/api-contract'
 import { duration } from '@highsea/core/format'
@@ -25,8 +24,20 @@ import {
   Icon,
   type IconName,
   Skeleton,
+  Table,
+  TableBody,
+  TableCell,
+  TableFrame,
+  TableHead,
+  TableHeader,
+  TableRow,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
   toast,
 } from '@highsea/ui-web'
+import { useRouter } from 'next/navigation'
 import { TmdbNotice } from './attribution.tsx'
 import { Loadable } from './loadable.tsx'
 import { Group } from './settings.tsx'
@@ -34,57 +45,84 @@ import { AdminPage } from './shell.tsx'
 import { system as messages } from './system-messages.ts'
 import { useNow, useRelative } from './time.ts'
 
-export function System() {
+export type SystemTab = 'health' | 'tasks'
+const tabPath = (tab: SystemTab) => (tab === 'health' ? '/system' : `/system/${tab}`)
+
+export function System({ tab = 'health' }: { tab?: SystemTab }) {
+  const t = useT(messages)
+  const router = useRouter()
+  const health = useQuery('system:health', (c) => c.system.healthChecks(), HEALTH_TOPICS)
+  const problems = (health.data ?? []).filter((h) => h.level === 'warning' || h.level === 'error')
+  return (
+    <AdminPage title={t('title')} description={t('description')}>
+      <Tabs value={tab} onValueChange={(v) => router.push(tabPath(v as SystemTab))} variant="line">
+        <TabsList aria-label={t('sections')}>
+          <TabsTrigger value="health" count={problems.length || undefined}>
+            {t('tab.health')}
+          </TabsTrigger>
+          <TabsTrigger value="tasks">{t('tab.tasks')}</TabsTrigger>
+        </TabsList>
+        <TabsContent value="health" className="pt-5">
+          <div className="grid max-w-200 gap-6">
+            <Group title={t('health.title')} description={t('health.description')}>
+              <Health />
+            </Group>
+            <About />
+            <p className="text-caption text-text-3">{t('later')}</p>
+          </div>
+        </TabsContent>
+        <TabsContent value="tasks" className="pt-5">
+          <Tasks />
+        </TabsContent>
+      </Tabs>
+    </AdminPage>
+  )
+}
+
+/** The server, its version, the indexer catalog, and the services whose data it shows. */
+function About() {
   const t = useT(messages)
   const info = useQuery('public-info', (c) => c.system.publicInfo(), ['server.updated'])
   return (
-    <AdminPage title={t('title')} description={t('description')}>
-      <div className="grid max-w-200 gap-6">
-        <Group title={t('health.title')} description={t('health.description')}>
-          <Health />
-        </Group>
-        <Group title={t('about.title')} description={t('about.description')}>
-          <Loadable query={info} what={t('what')}>
-            {(i) => (
-              <dl className="grid gap-3 text-ui medium:grid-cols-[10rem_minmax(0,1fr)]">
-                <dt className="text-caption text-text-3 medium:pt-0.5">{t('about.name')}</dt>
-                <dd className="text-text">{i.name}</dd>
-                <dt className="text-caption text-text-3 medium:pt-0.5">{t('about.version')}</dt>
-                <dd className="font-mono text-figure text-text">{i.version}</dd>
-                <dt className="text-caption text-text-3 medium:pt-0.5">{t('about.catalog')}</dt>
-                <dd>
-                  <Catalog />
+    <Group title={t('about.title')} description={t('about.description')}>
+      <Loadable query={info} what={t('what')}>
+        {(i) => (
+          <dl className="grid gap-3 text-ui medium:grid-cols-[10rem_minmax(0,1fr)]">
+            <dt className="text-caption text-text-3 medium:pt-0.5">{t('about.name')}</dt>
+            <dd className="text-text">{i.name}</dd>
+            <dt className="text-caption text-text-3 medium:pt-0.5">{t('about.version')}</dt>
+            <dd className="font-mono text-figure text-text">{i.version}</dd>
+            <dt className="text-caption text-text-3 medium:pt-0.5">{t('about.catalog')}</dt>
+            <dd>
+              <Catalog />
+            </dd>
+            {i.attributions.length > 0 && (
+              <>
+                <dt className="text-caption text-text-3 medium:pt-0.5">{t('about.data')}</dt>
+                <dd className="grid gap-3">
+                  {i.attributions.map((a) =>
+                    a.name === TMDB_ATTRIBUTION.name ? (
+                      <TmdbNotice key={a.name} />
+                    ) : (
+                      // the notice names the service ("Subtitles provided by OpenSubtitles.com"),
+                      // so it's the link; underlined, since colour alone doesn't mark a link
+                      <p key={a.name} className="text-caption">
+                        <a
+                          href={a.url}
+                          className="text-text-2 underline underline-offset-2 hover:text-text"
+                        >
+                          {a.notice || a.name}
+                        </a>
+                      </p>
+                    ),
+                  )}
                 </dd>
-                {i.attributions.length > 0 && (
-                  <>
-                    <dt className="text-caption text-text-3 medium:pt-0.5">{t('about.data')}</dt>
-                    <dd className="grid gap-3">
-                      {i.attributions.map((a) =>
-                        a.name === TMDB_ATTRIBUTION.name ? (
-                          <TmdbNotice key={a.name} />
-                        ) : (
-                          // the notice names the service ("Subtitles provided by OpenSubtitles.com"),
-                          // so it's the link; underlined, since colour alone doesn't mark a link
-                          <p key={a.name} className="text-caption">
-                            <a
-                              href={a.url}
-                              className="text-text-2 underline underline-offset-2 hover:text-text"
-                            >
-                              {a.notice || a.name}
-                            </a>
-                          </p>
-                        ),
-                      )}
-                    </dd>
-                  </>
-                )}
-              </dl>
+              </>
             )}
-          </Loadable>
-        </Group>
-        <p className="text-caption text-text-3">{t('later')}</p>
-      </div>
-    </AdminPage>
+          </dl>
+        )}
+      </Loadable>
+    </Group>
   )
 }
 
@@ -188,6 +226,104 @@ function Health() {
               )
             })}
           </ul>
+        )
+      }
+    </Loadable>
+  )
+}
+
+const taskStates: Record<Task['state'], BadgeTone> = {
+  running: 'accent',
+  queued: 'info',
+  idle: 'neutral',
+  failed: 'danger',
+}
+
+/** A task's name from its job type; a type without one shows as it is. */
+const taskName = (t: ReturnType<typeof useT<typeof messages>>, id: string) => {
+  const key = `task.${id}`
+  return key in messages ? t(key as keyof typeof messages & `task.${string}`) : id
+}
+
+/** The prototype's Tasks table: every schedule, its state, interval, last and next run, Run now. */
+function Tasks() {
+  const t = useT(messages)
+  const locale = useLocale()
+  const { relative } = useRelative()
+  const tasks = useQuery('system:tasks', (c) => c.system.tasks(), ['jobs.updated'])
+  const run = useAction((c, id: string) => c.system.runTask({ params: { id } }))
+  const onRun = (task: Task) => {
+    const name = taskName(t, task.id)
+    run.run(task.id).then(
+      () => {
+        toast({ title: t('tasks.started', { name }) })
+        tasks.refetch()
+      },
+      (e: Error) => toast.error(t('tasks.failed', { name }), { description: e.message }),
+    )
+  }
+  return (
+    <Loadable query={tasks} what={t('tasks.what')}>
+      {(ts) =>
+        ts.length === 0 ? (
+          <EmptyState icon="system" title={t('tasks.none')}>
+            {t('tasks.noneBody')}
+          </EmptyState>
+        ) : (
+          <TableFrame>
+            <Table aria-label={t('tasks.label')}>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>{t('tasks.task')}</TableHead>
+                  <TableHead>{t('tasks.state')}</TableHead>
+                  <TableHead>{t('tasks.every')}</TableHead>
+                  <TableHead>{t('tasks.lastRun')}</TableHead>
+                  <TableHead>{t('tasks.nextRun')}</TableHead>
+                  <TableHead>
+                    <span className="sr-only">{t('tasks.actions')}</span>
+                  </TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {ts.map((task) => {
+                  const name = taskName(t, task.id)
+                  return (
+                    <TableRow key={task.id}>
+                      <TableCell className="text-text">{name}</TableCell>
+                      <TableCell className="w-44">
+                        <div className="grid justify-items-start gap-1">
+                          <Badge tone={taskStates[task.state]}>{t(`state.${task.state}`)}</Badge>
+                          {task.state === 'failed' && task.lastError && (
+                            <span className="text-caption text-text-3">{task.lastError}</span>
+                          )}
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-text-2">
+                        {duration(task.interval, locale)}
+                      </TableCell>
+                      <TableCell className="text-text-2">
+                        {task.lastRun ? relative(task.lastRun) : t('tasks.never')}
+                      </TableCell>
+                      <TableCell className="text-text-2">
+                        {task.nextRun ? relative(task.nextRun) : t('tasks.off')}
+                      </TableCell>
+                      <TableCell className="text-end">
+                        <Button
+                          size="sm"
+                          icon="play"
+                          disabled={task.state === 'running' || task.state === 'queued'}
+                          aria-label={t('tasks.runLabel', { name })}
+                          onClick={() => onRun(task)}
+                        >
+                          {t('tasks.run')}
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </TableFrame>
         )
       }
     </Loadable>

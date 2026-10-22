@@ -136,7 +136,8 @@ export const LinkInfo = z
   })
   .openapi('LinkInfo')
 
-export const ApiKeyScope = z.enum(['read', 'full']).openapi('ApiKeyScope')
+/** `calendar` opens the calendar feed and nothing else (checkpoint 8a): made from Wanted. */
+export const ApiKeyScope = z.enum(['read', 'full', 'calendar']).openapi('ApiKeyScope')
 
 export const ApiKey = z
   .object({

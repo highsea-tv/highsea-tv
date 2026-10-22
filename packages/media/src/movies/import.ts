@@ -635,6 +635,8 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
         .where(eq(mediaItems.id, row.id))
         .run()
     })
+    // an upgrade that still isn't at the cutoff stays in Wanted; one that is leaves it (8a)
+    library.internal.refreshCutoff([row.id])
     const key = `${path}|${sourceTitle}|${args.downloadId ?? ''}`
     if (!media.history.has(row.id, 'imported', 'key', key))
       media.history.write({

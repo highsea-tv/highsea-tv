@@ -24,6 +24,10 @@ export {
   matchesMovie,
   RELEASES_TTL_MS,
   type ReleaseView,
+  RSS_SEEN_MS,
+  type RssResult,
+  type RssTarget,
+  rssMatcher,
   type SearchInput,
   type SearchResult,
 } from './search.ts'

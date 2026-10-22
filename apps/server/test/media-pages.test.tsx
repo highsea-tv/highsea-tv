@@ -106,6 +106,8 @@ type State = {
   tracks: ReturnType<typeof track>[]
   /** What a subtitle search answers: results, or the server's refusal. */
   subtitleSearch: ReturnType<typeof subtitleResult>[] | { status: number; reason: string }
+  /** How many import lists there are (checkpoint 8a): with one, Remove offers to exclude. */
+  importLists: number
 }
 let state: State
 
@@ -430,6 +432,8 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'PATCH /api/v1/movies/603':
       state.movie = { ...state.movie, ...body }
       return json(libraryMovie())
+    case 'GET /api/v1/import-lists':
+      return json(Array.from({ length: state.importLists }, (_, i) => ({ id: `lst_${i}` })))
     case 'DELETE /api/v1/movies/603':
       state.inLibrary = false
       return new Response(null, { status: 204 })
@@ -552,6 +556,7 @@ beforeEach(() => {
     blocked: new Set(),
     tracks: [],
     subtitleSearch: [],
+    importLists: 0,
   }
 })
 afterEach(() => cleanup())
@@ -1118,6 +1123,30 @@ describe('a movie in the library', () => {
     expect(requested('DELETE', '/api/v1/movies/603?deleteFiles=true')).toHaveLength(1)
     expect(page.getByText('Not in the library')).toBeTruthy()
     expect(pushed).toEqual([])
+  })
+
+  test('Remove, with an import list, can keep lists from adding it again', async () => {
+    state.importLists = 1
+    const { page, user } = await open(<MovieDetail id="603" />)
+    await user.click(page.getByRole('button', { name: 'More actions' }))
+    await settle()
+    await user.click(page.getByRole('menuitem', { name: 'Remove from library' }))
+    await settle()
+    const confirm = page.getByRole('alertdialog', { name: 'Remove The Matrix?' })
+    await user.click(within(confirm).getByLabelText('Don’t add it again from lists'))
+    await user.click(within(confirm).getByRole('button', { name: 'Remove' }))
+    await settle()
+    expect(requested('DELETE', '/api/v1/movies/603?deleteFiles=false&exclude=true')).toHaveLength(1)
+  })
+
+  test('without import lists, Remove doesn’t mention them', async () => {
+    const { page, user } = await open(<MovieDetail id="603" />)
+    await user.click(page.getByRole('button', { name: 'More actions' }))
+    await settle()
+    await user.click(page.getByRole('menuitem', { name: 'Remove from library' }))
+    await settle()
+    const confirm = page.getByRole('alertdialog', { name: 'Remove The Matrix?' })
+    expect(within(confirm).queryByLabelText('Don’t add it again from lists')).toBeNull()
   })
 
   test('a movie TMDB no longer has keeps its page and offers Discover to find its match', async () => {

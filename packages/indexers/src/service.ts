@@ -38,7 +38,7 @@ import {
 } from './health.ts'
 import { IndexerError, redact } from './http.ts'
 import { createRateLimiter } from './rate-limit.ts'
-import { createSearch, type ReleaseView, type SearchInput } from './search.ts'
+import { createSearch, type ReleaseView, type RssTarget, type SearchInput } from './search.ts'
 import {
   migrateSettings,
   openSettings,
@@ -590,6 +590,13 @@ export function createIndexers(deps: IndexersDeps) {
 
     /** The last search's releases for a movie, while they're fresh. */
     releases: (tmdbId: number) => search.cached(tmdbId),
+
+    /**
+     * RSS sync (checkpoint 8a): every usable indexer's newest releases, matched to the targets and
+     * judged by each one's search input. Indexers resting after failures aren't read.
+     */
+    rss: (targets: readonly RssTarget[], inputFor: (tmdbId: number) => SearchInput | null) =>
+      search.rss(targets, inputFor),
 
     /**
      * Fetches a release from the last search by its indexer and guid: its `.torrent` through the

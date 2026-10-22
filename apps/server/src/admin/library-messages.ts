@@ -64,4 +64,5 @@ export const library = defineMessages({
   failed: 'That didn’t work',
   'confirm.title': 'Remove {count, plural, one {# movie} other {# movies}}?',
   'confirm.body': 'They leave the library and stop being monitored. Their files stay on disk.',
+  'confirm.exclude': 'Don’t add them again from lists',
 })

@@ -576,6 +576,16 @@ try {
       { name: 'settings:downloads', path: '/settings/downloads' },
       // 6b: the importers, and A17's library mode on the root folder seeded above
       { name: 'settings:migration', path: '/settings/migration' },
+      // 8a: Import lists, Wanted and System's Tasks
+      { name: 'settings:lists', path: '/settings/lists' },
+      {
+        name: 'settings:lists:add',
+        path: '/settings/lists',
+        act: (p) => p.getByRole('button', { name: 'Add a list' }).click(),
+      },
+      { name: 'wanted', path: '/wanted' },
+      { name: 'wanted:cutoff', path: '/wanted/cutoff' },
+      { name: 'wanted:calendar', path: '/wanted/calendar' },
       {
         name: 'import:library',
         path: `/activity/import?mode=library&root=${encodeURIComponent(join(dataDir, 'films'))}`,
@@ -606,6 +616,7 @@ try {
         act: (p) => p.getByRole('button', { name: 'Limits' }).click(),
       },
       { name: 'system', path: '/system' },
+      { name: 'system:tasks', path: '/system/tasks' },
       // A10, with OpenSubtitles.com and Subdl signed in against their fakes
       { name: 'subtitles', path: '/subtitles' },
       { name: 'subtitles:providers', path: '/subtitles', act: tab('Providers') },

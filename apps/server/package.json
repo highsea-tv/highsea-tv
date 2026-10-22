@@ -24,6 +24,7 @@
     "@highsea/importers": "workspace:*",
     "@highsea/indexers": "workspace:*",
     "@highsea/jobs": "workspace:*",
+    "@highsea/lists": "workspace:*",
     "@highsea/media": "workspace:*",
     "@highsea/metadata": "workspace:*",
     "@highsea/network": "workspace:*",

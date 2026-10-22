@@ -14,6 +14,7 @@
     "@highsea/brand": "workspace:*",
     "@highsea/core": "workspace:*",
     "@highsea/fixtures": "workspace:*",
+    "@highsea/parser": "workspace:*",
     "@highsea/personalization": "workspace:*",
     "@highsea/quality": "workspace:*",
     "@highsea/tokens": "workspace:*",

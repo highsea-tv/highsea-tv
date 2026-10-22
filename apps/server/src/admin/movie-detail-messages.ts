@@ -201,6 +201,7 @@ export const movieDetail = defineMessages({
   'remove.title': 'Remove {title}?',
   'remove.body': 'It leaves the library and stops being monitored.',
   'remove.files': 'Also delete its files from disk',
+  'remove.exclude': 'Don’t add it again from lists',
   'remove.confirm': 'Remove',
   'remove.done': '{title} removed',
   'remove.failed': 'Couldn’t remove it',

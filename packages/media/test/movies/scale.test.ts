@@ -119,6 +119,27 @@ describe(`the library service at ${ROWS.toLocaleString('en')} movies`, () => {
     }
   })
 
+  test('Wanted’s lists and the sweep (checkpoint 8a)', () => {
+    const missing = timed(() => s.movies.wanted.missing())
+    expect(missing.result.items).toHaveLength(60)
+    expect(missing.ms).toBeLessThan(FILTERED_BUDGET_MS)
+    const cutoff = timed(() => s.movies.wanted.cutoff())
+    expect(cutoff.result.total).toBe(0)
+    expect(cutoff.ms).toBeLessThan(FILTERED_BUDGET_MS)
+    const due = timed(() => s.movies.wanted.takeDue())
+    expect(due.result).toHaveLength(20)
+    expect(due.ms).toBeLessThan(BUDGET_MS)
+    const plan = s.raw
+      .all(
+        `EXPLAIN QUERY PLAN SELECT id FROM media_items WHERE type = 'movie' AND monitored = 1
+         AND (status = 'wanted' OR cutoff_unmet = 1) AND (next_search_at IS NULL OR next_search_at <= 0)
+         ORDER BY next_search_at, id LIMIT 20`,
+      )
+      .map((r) => String((r as { detail: string }).detail))
+      .join(' | ')
+    expect(plan).toContain('media_items_wanted')
+  })
+
   test('paging to the end of a sort visits every movie once', () => {
     // a filter keeps it to a few thousand rows: the walk itself is what's tested
     const ids = new Set<number>()

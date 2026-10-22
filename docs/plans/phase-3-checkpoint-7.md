@@ -1,6 +1,6 @@
 # Phase 3, checkpoint 7: subtitles
 
-- **Status:** Scoped on 2026-10-21, before building. The owner answered the [open questions](#open-questions-for-the-owner) the same day, taking every recommendation ([the answers](#the-owners-answers)). 7a was built and signed off on 2026-10-21, and 7b is in progress; its judgement calls are 1–12 and [20–34](#made-while-building-7a).
+- **Status:** Scoped on 2026-10-21, before building. The owner answered the [open questions](#open-questions-for-the-owner) the same day, taking every recommendation ([the answers](#the-owners-answers)). Both halves were built and signed off on 2026-10-21, so checkpoint 7 is signed off. Its judgement calls are 1–12, [20–34](#made-while-building-7a) and [35–45](#made-while-building-7b); what it leaves for later is [Left open](#left-open-for-later-iterations).
 - **Gate:** stop when each half is built (7a, then 7b; [question 1](#open-questions-for-the-owner)). Report what was built, the judgement calls, the API added, screenshots and the check results, then ask for review. Checkpoint 8 (automation, owner tools and the rest) starts only after sign-off.
 - **Parent plan:** [phase-3-server.md](phase-3-server.md). Its standing rules, architecture and decisions all apply, including decision 1 (every [M1] item stays in milestone 1), decision 5 (nothing is published until the owner says so) and decision 6 (the admin is for the owner and admins only). This document settles what that plan's checkpoint 7 item, the roadmap and the specs leave open, and what the research of 2026-10-21 changed.
 
@@ -509,3 +509,15 @@ To be listed again in the checkpoint report:
 The owner asked for a measurement on a real film before sign-off. On 5 films the engine placed subtitles exactly, but kept the timing on only 3 of them: the share of the cues' speech on speech depends on how much speech the VAD hears in the mix.
 
 45. **The overlap is measured as significance, not as a share:** its standard deviations above the same placed cues moved to 300 other places in the film. It counts from 4 (a wrong subtitle is the best of about a thousand independent tries, whose noise reaches √(2 ln 1000) ≈ 3.7) and is full at 6. Coverage's mark drops to 0.75. Calibrated with `scripts/calibrate-sync.ts` on 24 films from the owner's library: 56 of 58 right placements kept, 0 of 72 wrong subtitles, 0 of 14 placements that were wrong or can't be verified (ADR 0044 has the table). *Sintel*'s 12 cues earn 0.69, so the tests that sync the clip set the minimum to 0.6.
+
+## Left open for later iterations
+
+The owner signed off 7b on 2026-10-21 and kept these open for future iterations. None of them blocks checkpoint 8.
+
+- **Cache each file's speech.** The decode is the whole cost of a sync: 1 to 26 minutes a film from a NAS, against about a second to align. A file's speech doesn't change, so keeping it, keyed by the file and its audio stream, would make Re-sync and every further language nearly free.
+- **Listen to the dialogue channel.** Dialogue sits in a 5.1 mix's centre channel. Feeding the VAD the centre alone, rather than a downmix with music and effects, should help the films whose speech it barely hears (*Watchmen* at 8%, *Avengers: Endgame*, *Blair Witch*).
+- **Cuts through silence.** A cut placed in a stretch without speech can leave the lines near it in the wrong section (*Predator 2*, *Don't Look Up*).
+- **Short subtitles.** A clip's dozen cues earn less confidence than a film's thousand (*Sintel* scores 0.69). Whether short extras and trailers need their own minimum is open.
+- **Measure more films.** `scripts/calibrate-sync.ts` runs on any library; more genres, older films and other languages would test the marks further.
+- **A slow test.** The torrent engine's loopback test failed once under the full suite's load and passed alone; its timing deserves a look.
+

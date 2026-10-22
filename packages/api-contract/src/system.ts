@@ -2,7 +2,7 @@
 // System routes: health for Docker, the public info clients read before signing in (connectivity
 // .md), and the event stream.
 import { createRoute, z } from '@hono/zod-openapi'
-import { API_PREFIX, access, errors, IsoDate, json } from './common.ts'
+import { API_PREFIX, access, errors, IdParam, IsoDate, json, noContent } from './common.ts'
 import { Branding, WIDGET_SOURCES } from './personalization.ts'
 
 export const Health = z
@@ -87,6 +87,21 @@ export const JobInfo = z
   })
   .openapi('JobInfo')
 
+/** A scheduled task (System › Tasks, checkpoint 8a): a job type the server runs on a schedule. */
+export const Task = z
+  .object({
+    /** The job type, e.g. `indexers.rss`. */
+    id: z.string(),
+    state: z.enum(['running', 'queued', 'idle', 'failed']),
+    /** Seconds between runs. */
+    interval: z.number().int(),
+    lastRun: IsoDate.nullable(),
+    nextRun: IsoDate.nullable(),
+    /** The last run's error, when it failed. */
+    lastError: z.string().nullable(),
+  })
+  .openapi('Task')
+
 export const HealthCheck = z
   .object({
     id: z.string(),
@@ -168,6 +183,26 @@ export const system = {
     ...access('staff'),
     responses: { 200: json(z.array(JobInfo), 'Jobs'), ...errors('unauthorized') },
   }),
+  tasks: createRoute({
+    method: 'get',
+    path: `${API_PREFIX}/system/tasks`,
+    tags: ['System'],
+    summary: 'The scheduled tasks, with their last and next runs',
+    ...access('staff'),
+    responses: {
+      200: json(z.array(Task), 'Tasks, by id'),
+      ...errors('unauthorized', 'forbidden'),
+    },
+  }),
+  runTask: createRoute({
+    method: 'post',
+    path: `${API_PREFIX}/system/tasks/{id}/run`,
+    tags: ['System'],
+    summary: 'Run a scheduled task now',
+    ...access('staff'),
+    request: { params: IdParam },
+    responses: { ...noContent, ...errors('unauthorized', 'forbidden', 'not-found') },
+  }),
   healthChecks: createRoute({
     method: 'get',
     path: `${API_PREFIX}/system/health`,
@@ -185,3 +220,4 @@ export type Server = z.infer<typeof Server>
 export type SystemStatus = z.infer<typeof SystemStatus>
 export type JobInfo = z.infer<typeof JobInfo>
 export type HealthCheck = z.infer<typeof HealthCheck>
+export type Task = z.infer<typeof Task>

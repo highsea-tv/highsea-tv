@@ -11,6 +11,7 @@ export * from './importers.ts'
 export * from './indexers.ts'
 export * from './library.ts'
 export * from './library-import.ts'
+export * from './lists.ts'
 export * from './metadata.ts'
 export * from './movies.ts'
 export * from './personalization.ts'
@@ -20,6 +21,7 @@ export * from './setup.ts'
 export * from './subtitles.ts'
 export * from './system.ts'
 export * from './vpn.ts'
+export * from './wanted.ts'
 
 import { apiKeys, audit, auth, devices, links, me, users } from './accounts.ts'
 import {
@@ -37,6 +39,7 @@ import { importers } from './importers.ts'
 import { catalog, indexers, releaseRoutes } from './indexers.ts'
 import { library } from './library.ts'
 import { libraryImport } from './library-import.ts'
+import { importLists } from './lists.ts'
 import { metadata } from './metadata.ts'
 import { movies, rootFolders } from './movies.ts'
 import { appearance, dashboard, home, preferences } from './personalization.ts'
@@ -46,6 +49,7 @@ import { setup } from './setup.ts'
 import { subtitles } from './subtitles.ts'
 import { system } from './system.ts'
 import { vpn } from './vpn.ts'
+import { wanted } from './wanted.ts'
 
 /** Every route, by group. The SDK builds its methods from this. */
 export const routes = {
@@ -80,4 +84,6 @@ export const routes = {
   importers,
   vpn,
   subtitles,
+  wanted,
+  importLists,
 } as const

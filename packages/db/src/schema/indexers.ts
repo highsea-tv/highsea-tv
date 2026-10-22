@@ -117,3 +117,19 @@ export const releases = sqliteTable(
     index('releases_expires').on(t.expiresAt),
   ],
 )
+
+/**
+ * The releases RSS sync has already judged, per indexer (checkpoint 8a): a feed read twice grabs
+ * nothing twice. Kept 14 days, longer than any feed keeps an item.
+ */
+export const rssSeen = sqliteTable(
+  'rss_seen',
+  {
+    indexerId: text('indexer_id')
+      .notNull()
+      .references(() => indexers.id, { onDelete: 'cascade' }),
+    guid: text('guid').notNull(),
+    seenAt: integer('seen_at').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.indexerId, t.guid] }), index('rss_seen_at').on(t.seenAt)],
+)

@@ -5,6 +5,8 @@
 // what the owner added: items in the unified tree with their versions (ADR 0012). The acquisition
 // tables (profiles, formats, root folders, tags) belong to the pipeline. Server-wide areas
 // (`metadata`, `qualitySizes`) are settings rows.
+
+import { sql } from 'drizzle-orm'
 import {
   index,
   integer,
@@ -168,7 +170,15 @@ export const mediaItems = sqliteTable(
     /** TMDB's `vote_average`, 0 to 10. */
     rating: real('rating').notNull().default(0),
     releaseDate: text('release_date'),
+    /** The region's earliest digital and physical dates (checkpoint 8a), for the calendar. */
+    digitalRelease: text('digital_release'),
+    physicalRelease: text('physical_release'),
     status: text('status', { enum: LIBRARY_STATUSES }).notNull(),
+    /** A version's file is under its profile's cutoff (checkpoint 8a): Wanted › Cutoff unmet. */
+    cutoffUnmet: integer('cutoff_unmet', { mode: 'boolean' }).notNull().default(false),
+    /** When the backlog sweep may search it next, and how many sweeps found nothing (8a). */
+    nextSearchAt: integer('next_search_at'),
+    searches: integer('searches').notNull().default(0),
     monitored: integer('monitored', { mode: 'boolean' }).notNull(),
     minimumAvailability: text('minimum_availability', { enum: MINIMUM_AVAILABILITY }).notNull(),
     /** The first version's profile, for the library's filter. */
@@ -194,6 +204,15 @@ export const mediaItems = sqliteTable(
     // the status tabs' counts under a profile or monitored filter
     index('media_items_profile_status').on(t.type, t.qualityProfileId, t.status),
     index('media_items_monitored_status').on(t.type, t.monitored, t.status),
+    // Wanted and the calendar (checkpoint 8a)
+    index('media_items_cutoff').on(t.type, t.cutoffUnmet, t.sortTitle, t.id),
+    // the backlog sweep and RSS: only the rows they read, so 100k movies with files cost nothing
+    // (https://sqlite.org/partialindex.html); the queries repeat this WHERE word for word
+    index('media_items_wanted')
+      .on(t.type, t.nextSearchAt)
+      .where(sql`monitored = 1 AND (status = 'wanted' OR cutoff_unmet = 1)`),
+    index('media_items_digital').on(t.type, t.digitalRelease),
+    index('media_items_physical').on(t.type, t.physicalRelease),
   ],
 )
 

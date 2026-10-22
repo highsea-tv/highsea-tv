@@ -93,6 +93,8 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
       ])
     case 'GET /api/v1/indexers':
       return json([])
+    case 'GET /api/v1/import-lists':
+      return json([{ id: 'lst_1' }])
     case 'POST /api/v1/movies/bulk':
       return json({ ids: body.ids, missing: [] })
   }
@@ -146,5 +148,19 @@ describe('A5’s bulk bar', () => {
     expect(
       page.getByText('Subtitle languages set to English and Portuguese for 2 movies'),
     ).toBeTruthy()
+  })
+
+  test('Remove, with an import list, can keep lists from adding them again', async () => {
+    const { user, page } = await open()
+    await user.click(page.getByRole('checkbox', { name: 'Select Sintel' }))
+    const bar = within(page.getByRole('toolbar', { name: /./ }))
+    await user.click(bar.getByRole('button', { name: 'Remove' }))
+    await settle()
+    const confirm = page.getByRole('alertdialog')
+    await user.click(within(confirm).getByLabelText('Don’t add them again from lists'))
+    await user.click(within(confirm).getByRole('button', { name: 'Remove' }))
+    await settle()
+    const sent = requests.filter((r) => r.method === 'POST' && r.path === '/api/v1/movies/bulk')
+    expect(sent.map((r) => r.body)).toEqual([{ action: 'delete', ids: [45745], exclude: true }])
   })
 })

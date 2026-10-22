@@ -139,7 +139,10 @@ export const apiKeys = sqliteTable(
     /** The first characters, to tell keys apart (`hs_7Kq2`). */
     prefix: text('prefix').notNull(),
     secretHash: text('secret_hash').notNull(),
-    scope: text('scope', { enum: ['read', 'full'] }).notNull(),
+    /** `calendar` (checkpoint 8a) opens only the iCal feed, since its key sits in a URL. */
+    scope: text('scope', { enum: ['read', 'full', 'calendar'] }).notNull(),
+    /** A calendar key's secret, sealed, so Wanted can show its feed's address again (8a). */
+    secretSealed: text('secret_sealed'),
     /** The key acts for this person, no further than an admin. */
     userId: text('user_id')
       .notNull()

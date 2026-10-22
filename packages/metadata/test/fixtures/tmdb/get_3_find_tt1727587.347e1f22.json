@@ -1,0 +1,37 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/find/tt1727587?external_source=imdb_id&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "movie_results": [
+        {
+          "adult": false,
+          "backdrop_path": "/msqeiEyIRpPAtrCeRGFNZQ9tkJL.jpg",
+          "genre_ids": [16, 14],
+          "id": 45745,
+          "original_language": "en",
+          "original_title": "Sintel",
+          "overview": "A wandering warrior finds an unlikely friend in the form of a young dragon. The two develop a close bond, until one day the dragon is snatched away. She then sets out on a relentless quest to reclaim her friend, finding in the end that her quest exacts a far greater price than she had ever imagined.",
+          "popularity": 16.37,
+          "poster_path": "/l98Zns4oQe1BSvbF4hJ8oL6VSf0.jpg",
+          "release_date": "2010-09-30",
+          "title": "Sintel",
+          "video": false,
+          "vote_average": 7.333,
+          "vote_count": 180
+        }
+      ],
+      "person_results": [],
+      "tv_results": [],
+      "tv_episode_results": [],
+      "tv_season_results": []
+    }
+  }
+}

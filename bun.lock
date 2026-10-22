@@ -32,6 +32,7 @@
         "@highsea/importers": "workspace:*",
         "@highsea/indexers": "workspace:*",
         "@highsea/jobs": "workspace:*",
+        "@highsea/lists": "workspace:*",
         "@highsea/media": "workspace:*",
         "@highsea/metadata": "workspace:*",
         "@highsea/network": "workspace:*",
@@ -110,6 +111,7 @@
         "@highsea/brand": "workspace:*",
         "@highsea/core": "workspace:*",
         "@highsea/fixtures": "workspace:*",
+        "@highsea/parser": "workspace:*",
         "@highsea/personalization": "workspace:*",
         "@highsea/quality": "workspace:*",
         "@highsea/tokens": "workspace:*",
@@ -314,6 +316,23 @@
         "@types/node": "25.9.9",
       },
     },
+    "packages/lists": {
+      "name": "@highsea/lists",
+      "version": "0.0.0",
+      "dependencies": {
+        "@highsea/api-contract": "workspace:*",
+        "@highsea/core": "workspace:*",
+        "@highsea/db": "workspace:*",
+        "@highsea/jobs": "workspace:*",
+        "@highsea/metadata": "workspace:*",
+        "drizzle-orm": "0.45.3",
+        "zod": "4.6.7",
+      },
+      "devDependencies": {
+        "@highsea/config": "workspace:*",
+        "@types/node": "25.9.9",
+      },
+    },
     "packages/media": {
       "name": "@highsea/media",
       "version": "0.0.0",
@@ -413,6 +432,7 @@
         "@highsea/importers": "workspace:*",
         "@highsea/indexers": "workspace:*",
         "@highsea/jobs": "workspace:*",
+        "@highsea/lists": "workspace:*",
         "@highsea/media": "workspace:*",
         "@highsea/metadata": "workspace:*",
         "@highsea/network": "workspace:*",
@@ -763,6 +783,8 @@
     "@highsea/indexers": ["@highsea/indexers@workspace:packages/indexers"],
 
     "@highsea/jobs": ["@highsea/jobs@workspace:packages/jobs"],
+
+    "@highsea/lists": ["@highsea/lists@workspace:packages/lists"],
 
     "@highsea/media": ["@highsea/media@workspace:packages/media"],
 

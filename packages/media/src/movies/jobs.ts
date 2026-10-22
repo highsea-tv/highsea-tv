@@ -7,7 +7,11 @@ import { z } from 'zod'
 
 const DAY = 24 * 60 * 60 * 1000
 
-export const MOVIE_JOB_TYPES = { availability: 'movies.availability' } as const
+export const MOVIE_JOB_TYPES = {
+  availability: 'movies.availability',
+  /** Every movie's calendar dates and cutoff, brought up to date (checkpoint 8a). */
+  backfill: 'movies.wantedRefresh',
+} as const
 
 export function defineMovieJobs(jobs: JobQueue, checkAvailability: () => number) {
   jobs.define({

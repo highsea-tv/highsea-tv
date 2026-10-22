@@ -35,6 +35,13 @@ export const configSchema = z.object({
    * Docker's documentation gives for secrets; the variable wins when both are set.
    */
   opensubtitlesKey: z.string().min(1).optional(),
+  /**
+   * highsea's Trakt application (`HIGHSEA_TRAKT_CLIENT_ID`, `HIGHSEA_TRAKT_CLIENT_SECRET`, each with
+   * a `_FILE` form), kept the way the OpenSubtitles.com key is. Without the Client ID, Trakt lists
+   * can't be added; without the secret, an account can't be connected.
+   */
+  traktClientId: z.string().min(1).optional(),
+  traktClientSecret: z.string().min(1).optional(),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -56,6 +63,9 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
         : env.NODE_ENV !== 'production',
     opensubtitlesKey:
       env.HIGHSEA_OPENSUBTITLES_KEY?.trim() || keyFile(env.HIGHSEA_OPENSUBTITLES_KEY_FILE),
+    traktClientId: env.HIGHSEA_TRAKT_CLIENT_ID?.trim() || keyFile(env.HIGHSEA_TRAKT_CLIENT_ID_FILE),
+    traktClientSecret:
+      env.HIGHSEA_TRAKT_CLIENT_SECRET?.trim() || keyFile(env.HIGHSEA_TRAKT_CLIENT_SECRET_FILE),
   })
   if (!parsed.success) {
     const problems = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)

@@ -237,8 +237,14 @@ export function createMetadataCore(deps: MetadataDeps) {
       const first = result.movie_results?.[0]
       return first ? toDiscoverMovie(first) : null
     },
-    /** Trending (this week), Popular, Now playing or Upcoming, for the server's region. */
-    async list(list: DiscoverList, pageNumber?: number): Promise<Page<DiscoverMovie>> {
+    /**
+     * Trending (this week), Popular, Now playing or Upcoming, for the server's region; Top rated
+     * for import lists.
+     */
+    async list(
+      list: DiscoverList | 'top-rated',
+      pageNumber?: number,
+    ): Promise<Page<DiscoverMovie>> {
       const credential = requireKey()
       const result = await api.list(
         credential,
@@ -248,6 +254,22 @@ export function createMetadataCore(deps: MetadataDeps) {
         settings.region(),
       )
       return toPage(result, toDiscoverMovie)
+    },
+    /**
+     * A public TMDB list's movies, a page at a time (import lists, checkpoint 8a). TV shows on a
+     * mixed list are left out until highsea has TV.
+     */
+    async publicList(id: string, pageNumber?: number): Promise<Page<DiscoverMovie>> {
+      const credential = requireKey()
+      const result = await api.publicList(credential, id, page(pageNumber), settings.language())
+      return {
+        page: result.page,
+        totalPages: result.total_pages,
+        totalResults: result.total_results,
+        results: result.items
+          .filter((i) => (i.media_type ?? 'movie') === 'movie')
+          .map(toDiscoverMovie),
+      }
     },
   }
 

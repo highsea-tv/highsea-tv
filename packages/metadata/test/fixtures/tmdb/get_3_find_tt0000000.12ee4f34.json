@@ -1,0 +1,20 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/find/tt0000000?external_source=imdb_id&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "movie_results": [],
+      "person_results": [],
+      "tv_results": [],
+      "tv_episode_results": [],
+      "tv_season_results": []
+    }
+  }
+}

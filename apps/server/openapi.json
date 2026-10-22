@@ -407,6 +407,56 @@
           "nextRun"
         ]
       },
+      "Task": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string",
+            "enum": [
+              "running",
+              "queued",
+              "idle",
+              "failed"
+            ]
+          },
+          "interval": {
+            "type": "integer"
+          },
+          "lastRun": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "nextRun": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "lastError": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "state",
+          "interval",
+          "lastRun",
+          "nextRun",
+          "lastError"
+        ]
+      },
       "HealthCheck": {
         "type": "object",
         "properties": {
@@ -1683,7 +1733,8 @@
         "type": "string",
         "enum": [
           "read",
-          "full"
+          "full",
+          "calendar"
         ]
       },
       "CreatedApiKey": {
@@ -3682,6 +3733,9 @@
                 "maxItems": 10000
               },
               "deleteFiles": {
+                "type": "boolean"
+              },
+              "exclude": {
                 "type": "boolean"
               }
             },
@@ -8911,6 +8965,404 @@
           "upgradeDays",
           "preferReleaseMatch"
         ]
+      },
+      "WantedSearchResult": {
+        "type": "object",
+        "properties": {
+          "queued": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "queued"
+        ]
+      },
+      "WantedSearchInput": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "type": "array",
+            "items": {
+              "type": "integer"
+            },
+            "maxItems": 10000
+          },
+          "all": {
+            "type": "string",
+            "enum": [
+              "missing",
+              "cutoff"
+            ]
+          }
+        }
+      },
+      "CalendarEntry": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "cinema",
+              "digital",
+              "physical"
+            ]
+          },
+          "movie": {
+            "$ref": "#/components/schemas/Movie"
+          }
+        },
+        "required": [
+          "date",
+          "kind",
+          "movie"
+        ]
+      },
+      "CalendarFeed": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "url",
+          "createdAt"
+        ]
+      },
+      "ImportList": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ImportListInput"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "tmdb",
+                  "trakt",
+                  "generic"
+                ]
+              },
+              "lastSync": {
+                "type": [
+                  "string",
+                  "null"
+                ],
+                "format": "date-time",
+                "example": "2026-10-17T20:15:00.000Z"
+              },
+              "lastResult": {
+                "$ref": "#/components/schemas/ImportListResult"
+              },
+              "items": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "lastSync",
+              "lastResult",
+              "items"
+            ]
+          }
+        ]
+      },
+      "ImportListSettings": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "tmdb"
+                ]
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "list",
+                  "popular",
+                  "top-rated",
+                  "upcoming",
+                  "now-playing"
+                ]
+              },
+              "list": {
+                "type": "string",
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "kind",
+              "source"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "trakt"
+                ]
+              },
+              "source": {
+                "type": "string",
+                "enum": [
+                  "list",
+                  "trending",
+                  "popular",
+                  "anticipated",
+                  "watchlist"
+                ]
+              },
+              "list": {
+                "type": "string",
+                "maxLength": 500
+              }
+            },
+            "required": [
+              "kind",
+              "source"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "generic"
+                ]
+              },
+              "url": {
+                "type": "string",
+                "maxLength": 2000
+              }
+            },
+            "required": [
+              "kind",
+              "url"
+            ]
+          }
+        ]
+      },
+      "ImportListResult": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "found": {
+            "type": "integer"
+          },
+          "added": {
+            "type": "integer"
+          },
+          "skipped": {
+            "type": "integer"
+          },
+          "unresolved": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "error": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "found",
+          "added",
+          "skipped",
+          "unresolved",
+          "error"
+        ]
+      },
+      "ImportListInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "settings": {
+            "$ref": "#/components/schemas/ImportListSettings"
+          },
+          "rootFolder": {
+            "type": "string",
+            "maxLength": 4096
+          },
+          "qualityProfileId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "languageProfileId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "monitored": {
+            "type": "boolean"
+          },
+          "minimumAvailability": {
+            "$ref": "#/components/schemas/MinimumAvailability"
+          },
+          "searchOnAdd": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "enabled",
+          "settings",
+          "rootFolder",
+          "qualityProfileId",
+          "languageProfileId",
+          "monitored",
+          "minimumAvailability",
+          "searchOnAdd"
+        ]
+      },
+      "ImportListTest": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": "string"
+          },
+          "found": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "ok",
+          "message",
+          "found"
+        ]
+      },
+      "ListExclusion": {
+        "type": "object",
+        "properties": {
+          "tmdbId": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "tmdbId",
+          "title",
+          "year",
+          "createdAt"
+        ]
+      },
+      "TraktStatus": {
+        "type": "object",
+        "properties": {
+          "available": {
+            "type": "boolean"
+          },
+          "account": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "available",
+          "account"
+        ]
+      },
+      "TraktDeviceCode": {
+        "type": "object",
+        "properties": {
+          "userCode": {
+            "type": "string"
+          },
+          "verificationUrl": {
+            "type": "string"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "interval": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "userCode",
+          "verificationUrl",
+          "expiresAt",
+          "interval"
+        ]
+      },
+      "TraktPoll": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "connected",
+              "expired",
+              "denied"
+            ]
+          }
+        },
+        "required": [
+          "state"
+        ]
       }
     },
     "parameters": {}
@@ -9137,6 +9589,120 @@
           },
           "401": {
             "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/tasks": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "The scheduled tasks, with their last and next runs",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Tasks, by id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Task"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/tasks/{id}/run": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Run a scheduled task now",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
             "content": {
               "application/json": {
                 "schema": {
@@ -14863,7 +15429,7 @@
           "Movies"
         ],
         "summary": "Remove a movie from the library",
-        "description": "Its metadata stays cached, so its page keeps working without the library layer. Files stay on disk unless `deleteFiles` is true.",
+        "description": "Its metadata stays cached, so its page keeps working without the library layer. Files stay on disk unless `deleteFiles` is true. `exclude` keeps import lists from adding it again (checkpoint 8a).",
         "x-highsea-access": "staff",
         "security": [
           {
@@ -14894,6 +15460,18 @@
             },
             "required": false,
             "name": "deleteFiles",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            },
+            "required": false,
+            "name": "exclude",
             "in": "query"
           }
         ],
@@ -22274,6 +22852,1306 @@
           },
           "403": {
             "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wanted/missing": {
+      "get": {
+        "tags": [
+          "Wanted"
+        ],
+        "summary": "Monitored movies past their minimum availability without a file",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "title",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "title",
+                "added",
+                "year",
+                "rating"
+              ],
+              "description": "Title when absent"
+            },
+            "required": false,
+            "description": "Title when absent",
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            },
+            "required": false,
+            "name": "dir",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of movies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoviePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wanted/cutoff": {
+      "get": {
+        "tags": [
+          "Wanted"
+        ],
+        "summary": "Monitored movies with a file under its profile’s cutoff",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "title",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "title",
+                "added",
+                "year",
+                "rating"
+              ],
+              "description": "Title when absent"
+            },
+            "required": false,
+            "description": "Title when absent",
+            "name": "sort",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "asc",
+                "desc"
+              ]
+            },
+            "required": false,
+            "name": "dir",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 500
+            },
+            "required": false,
+            "name": "cursor",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 200
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A page of movies",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MoviePage"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/wanted/search": {
+      "post": {
+        "tags": [
+          "Wanted"
+        ],
+        "summary": "Search for some movies, or every movie on one of the lists",
+        "description": "Queues a search for each; results land in Activity. 409 `no-indexers` until an indexer is set up.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WantedSearchInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WantedSearchResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/calendar": {
+      "get": {
+        "tags": [
+          "Wanted"
+        ],
+        "summary": "Monitored movies’ release dates between two days",
+        "description": "Each of a movie’s dates (in cinemas, digital, physical) is its own entry.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "1999-03-30"
+            },
+            "required": true,
+            "name": "from",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "1999-03-30",
+              "description": "Inclusive; at most 400 days after `from`"
+            },
+            "required": true,
+            "description": "Inclusive; at most 400 days after `from`",
+            "name": "to",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Entries, soonest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CalendarEntry"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/feed/v1/calendar.ics": {
+      "get": {
+        "tags": [
+          "Wanted"
+        ],
+        "summary": "The calendar as an iCal feed (RFC 5545), for calendar apps",
+        "description": "Takes a `calendar` key in the address. 30 days back and 365 forward; each date an all-day event.",
+        "x-highsea-access": "public",
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "required": true,
+            "name": "key",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The calendar",
+            "content": {
+              "text/calendar": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/calendar-key": {
+      "get": {
+        "tags": [
+          "Wanted"
+        ],
+        "summary": "Your calendar feed’s address",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The feed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarFeed"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Wanted"
+        ],
+        "summary": "Make your calendar feed’s key, replacing the one you had",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The feed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CalendarFeed"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Wanted"
+        ],
+        "summary": "Turn your calendar feed off",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/import-lists": {
+      "get": {
+        "tags": [
+          "Import lists"
+        ],
+        "summary": "The import lists",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ImportList"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Import lists"
+        ],
+        "summary": "Add a list; it’s checked straight away when it’s on",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportListInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/import-lists/test": {
+      "post": {
+        "tags": [
+          "Import lists"
+        ],
+        "summary": "Read a list without saving it or adding anything",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "settings": {
+                    "$ref": "#/components/schemas/ImportListSettings"
+                  }
+                },
+                "required": [
+                  "settings"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "What the list says",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportListTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/import-lists/exclusions": {
+      "get": {
+        "tags": [
+          "Import lists"
+        ],
+        "summary": "Movies no list adds again",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Exclusions, newest first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ListExclusion"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/import-lists/exclusions/{tmdbId}": {
+      "delete": {
+        "tags": [
+          "Import lists"
+        ],
+        "summary": "Let lists add a movie again",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "required": true,
+            "name": "tmdbId",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/import-lists/trakt": {
+      "get": {
+        "tags": [
+          "Import lists"
+        ],
+        "summary": "Whether Trakt is available, and the account connected",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trakt",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraktStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Import lists"
+        ],
+        "summary": "Forget the connected Trakt account",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/import-lists/trakt/connect": {
+      "post": {
+        "tags": [
+          "Import lists"
+        ],
+        "summary": "Start connecting a Trakt account: a code to enter on trakt.tv",
+        "description": "503 `trakt-unavailable` in a build without highsea’s Trakt application.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The code",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraktDeviceCode"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/import-lists/trakt/poll": {
+      "post": {
+        "tags": [
+          "Import lists"
+        ],
+        "summary": "Whether the code has been entered yet",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TraktPoll"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/import-lists/{id}": {
+      "put": {
+        "tags": [
+          "Import lists"
+        ],
+        "summary": "Change a list",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ImportListInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ImportList"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Import lists"
+        ],
+        "summary": "Remove a list; the movies it added stay",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/import-lists/{id}/sync": {
+      "post": {
+        "tags": [
+          "Import lists"
+        ],
+        "summary": "Check a list now",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
             "content": {
               "application/json": {
                 "schema": {

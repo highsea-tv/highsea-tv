@@ -34,6 +34,7 @@ import {
   DOWNLOAD_TOPICS,
   type HistoryEvent,
   type LanguageProfile,
+  LIST_TOPICS,
   MEDIA_TOPICS,
   type MediaFile,
   type MinimumAvailability,
@@ -271,6 +272,10 @@ function LibraryMovie({
   const [tab, setTab] = useState<Tab>('overview')
   const [removing, setRemoving] = useState(false)
   const [deleteFiles, setDeleteFiles] = useState(false)
+  const [exclude, setExclude] = useState(false)
+  // "Don't add it again" only means something once a list exists (checkpoint 8a)
+  const lists = useQuery('import-lists', (c) => c.importLists.list(), [LIST_TOPICS.lists])
+  const hasLists = (lists.data?.length ?? 0) > 0
   const [editing, setEditing] = useState(false)
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
   const [monitoring, setMonitoring] = useState<boolean | null>(null)
@@ -279,8 +284,11 @@ function LibraryMovie({
   const refresh = useAction((c) => c.movies.refresh({ params: { id } }))
   const searchable = useSearchable()
   const search = useAction((c) => c.movies.bulk({ body: { action: 'search', ids: [id] } }))
-  const remove = useAction((c, files: boolean) =>
-    c.movies.delete({ params: { id }, query: { deleteFiles: files ? 'true' : 'false' } }),
+  const remove = useAction((c, o: { files: boolean; exclude: boolean }) =>
+    c.movies.delete({
+      params: { id },
+      query: { deleteFiles: o.files ? 'true' : 'false', ...(o.exclude ? { exclude: 'true' } : {}) },
+    }),
   )
 
   const onMonitor = (monitored: boolean) => {
@@ -408,7 +416,10 @@ function LibraryMovie({
         open={removing}
         onOpenChange={(o) => {
           setRemoving(o)
-          if (!o) setDeleteFiles(false)
+          if (!o) {
+            setDeleteFiles(false)
+            setExclude(false)
+          }
         }}
         title={t('remove.title', { title })}
         description={
@@ -422,12 +433,22 @@ function LibraryMovie({
               />
               <label htmlFor="delete-files">{t('remove.files')}</label>
             </span>
+            {hasLists && (
+              <span className="flex items-center gap-2">
+                <Checkbox
+                  id="exclude-from-lists"
+                  checked={exclude}
+                  onCheckedChange={(v) => setExclude(v === true)}
+                />
+                <label htmlFor="exclude-from-lists">{t('remove.exclude')}</label>
+              </span>
+            )}
           </span>
         }
         confirmLabel={t('remove.confirm')}
         destructive
         onConfirm={() =>
-          remove.run(deleteFiles).then(
+          remove.run({ files: deleteFiles, exclude: hasLists && exclude }).then(
             () => {
               toast.success(t('remove.done', { title }))
               // the page stays at its address, without its library layer

@@ -54,6 +54,7 @@ const queueItem = (n: number, state: string, extra: Record<string, unknown> = {}
 type State = {
   sources: string[]
   health: { id: string; source: string; level: string; message: string; since: string }[]
+  tasks: Record<string, unknown>[]
   queue: ReturnType<typeof queueItem>[]
   torrents: { downRate: number; upRate: number; state: string }[]
   speeds: { at: string; down: number; up: number }[]
@@ -104,6 +105,10 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
       return json({ version: null, lastCheck: null, available: null })
     case 'GET /api/v1/system/health':
       return json(state.health)
+    case 'GET /api/v1/system/tasks':
+      return json(state.tasks)
+    case 'POST /api/v1/system/tasks/indexers.rss/run':
+      return new Response(null, { status: 204 })
     case 'GET /api/v1/queue':
       return json(state.queue)
     case 'GET /api/v1/torrents':
@@ -133,6 +138,7 @@ beforeEach(() => {
   state = {
     sources: ['system', 'movies', 'indexers', 'downloads'],
     health: [],
+    tasks: [],
     queue: [],
     torrents: [],
     speeds: [],
@@ -167,6 +173,57 @@ const requested = (path: string) => state.requests.filter((r) => r.path === path
 const frame = (id: string, span = 2, rows = 3) => ({ span, rows, 'data-widget-id': id }) as never
 
 // ---------------------------------------------------------------- System
+
+describe('System › Tasks', () => {
+  test('names each schedule, shows a failure’s reason, and runs one now', async () => {
+    const hour = 3_600_000
+    state.tasks = [
+      {
+        id: 'indexers.rss',
+        state: 'idle',
+        interval: 900,
+        lastRun: new Date(Date.now() - hour).toISOString(),
+        nextRun: new Date(Date.now() + 10 * 60_000).toISOString(),
+        lastError: null,
+      },
+      {
+        id: 'lists.sync',
+        state: 'failed',
+        interval: 21_600,
+        lastRun: new Date(Date.now() - 2 * hour).toISOString(),
+        nextRun: new Date(Date.now() + 4 * hour).toISOString(),
+        lastError: 'Trakt didn’t answer',
+      },
+      {
+        id: 'some.new-job',
+        state: 'running',
+        interval: 60,
+        lastRun: null,
+        nextRun: null,
+        lastError: null,
+      },
+    ]
+    const { page, user } = await open(<System tab="tasks" />)
+    const table = page.getByRole('table', { name: 'Scheduled tasks' })
+    expect(within(table).getByText('RSS sync')).toBeTruthy()
+    expect(within(table).getByText('Import lists')).toBeTruthy()
+    expect(within(table).getByText('Failed')).toBeTruthy()
+    expect(within(table).getByText('Trakt didn’t answer')).toBeTruthy()
+    // a type without a name shows as it is, and can't run while it's running
+    expect(within(table).getByText('some.new-job')).toBeTruthy()
+    expect(
+      (page.getByRole('button', { name: 'Run some.new-job now' }) as HTMLButtonElement).disabled,
+    ).toBe(true)
+    expect(within(table).getByText('Never')).toBeTruthy()
+    await user.click(page.getByRole('button', { name: 'Run RSS sync now' }))
+    await settle()
+    expect(
+      state.requests.some(
+        (r) => r.method === 'POST' && r.path === '/api/v1/system/tasks/indexers.rss/run',
+      ),
+    ).toBe(true)
+  })
+})
 
 describe('System › Health', () => {
   test('says everything’s healthy when nothing needs attention', async () => {

@@ -19,6 +19,15 @@ import { AppError, newId } from '@highsea/core'
 import { schema } from '@highsea/db'
 import type { LibraryStatus, MinimumAvailability } from '@highsea/db/schema'
 import type { MovieMetadata } from '@highsea/metadata'
+import { parse } from '@highsea/parser'
+import {
+  type ExistingFile,
+  existingFile,
+  isCutoffMet,
+  isQualityName,
+  type QualityProfile,
+  qualityOf,
+} from '@highsea/quality'
 import { and, asc, desc, eq, gte, inArray, lte, type SQL, sql } from 'drizzle-orm'
 import { invalid, noIndexers } from '../shared/context.ts'
 import type { Media } from '../shared/index.ts'
@@ -26,11 +35,11 @@ import type { ItemRow, VersionRow } from '../shared/map.ts'
 import { dayOf, fold, sortTitleOf } from '../shared/names.ts'
 import { type Dir, defaultDir, pageRows, type Sort } from '../shared/paging.ts'
 import { CHUNK, chunks, escapeLike } from '../shared/sql.ts'
-import { announce, type Ctx, notInLibrary } from './context.ts'
+import { announce, type Ctx, notInLibrary, TOPICS } from './context.ts'
 import { toApiMovie } from './map.ts'
 import { isAvailable, moviePath, regionalReleaseDate, statusOf } from './titles.ts'
 
-const { mediaItems, versions, movieMetadata, languageProfiles } = schema
+const { mediaItems, versions, mediaFiles, movieMetadata, languageProfiles } = schema
 
 const DAY = 24 * 60 * 60 * 1000
 const MAX_VERSIONS = 10
@@ -44,6 +53,8 @@ export type ListQuery = {
   qualityProfileId?: string
   /** The contract's query string (`'true'`/`'false'`) or a boolean. */
   monitored?: boolean | 'true' | 'false'
+  /** Wanted › Cutoff unmet (checkpoint 8a): a version's file is under its profile's cutoff. */
+  cutoffUnmet?: boolean
   sort?: Sort
   dir?: Dir
   cursor?: string
@@ -155,6 +166,8 @@ export function createLibrary(ctx: Ctx, media: Media) {
     year: meta.year,
     rating: meta.rating,
     releaseDate: regionalReleaseDate(meta),
+    digitalRelease: meta.releases.digital,
+    physicalRelease: meta.releases.physical,
   })
 
   /**
@@ -200,6 +213,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
       : row.status === 'downloading'
         ? 'downloading'
         : statusOf(released(row, cached(row.tmdbId), row.minimumAvailability), row.monitored)
+    refreshCutoff([itemId])
     if (status === row.status) return false
     db.update(mediaItems)
       .set({ status, updatedAt: clock.now() })
@@ -268,6 +282,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
     if (query.qualityProfileId) where.push(eq(mediaItems.qualityProfileId, query.qualityProfileId))
     if (query.monitored !== undefined)
       where.push(eq(mediaItems.monitored, query.monitored === true || query.monitored === 'true'))
+    if (query.cutoffUnmet !== undefined) where.push(eq(mediaItems.cutoffUnmet, query.cutoffUnmet))
     if (query.title?.trim()) where.push(titleMatch(query.title))
     if (query.genre?.trim()) where.push(genreMatch(query.genre.trim()))
     // nothing has a file to play until checkpoint 6
@@ -460,15 +475,50 @@ export function createLibrary(ctx: Ctx, media: Media) {
   }
 
   /**
-   * What a release search for a movie is judged by: its ids, title and year, TMDB's facts, and its
-   * first version's profile (the Search tab has no version picker, so it judges by the first).
-   * No files yet (checkpoint 6), so nothing existing to upgrade.
+   * The file a version has, as the decision engine compares releases with it (checkpoint 8a): the
+   * quality it was imported as, and the revision and format score its release name gives under the
+   * profile. Null without a file.
    */
-  function searchInput(tmdbId: number) {
+  function existingOf(
+    version: Pick<VersionRow, 'fileId'>,
+    profile: QualityProfile,
+    meta: MovieMetadata | null,
+  ): ExistingFile | null {
+    if (!version.fileId) return null
+    const file = db
+      .select({
+        path: mediaFiles.path,
+        size: mediaFiles.size,
+        quality: mediaFiles.quality,
+        sceneName: mediaFiles.sceneName,
+      })
+      .from(mediaFiles)
+      .where(eq(mediaFiles.id, version.fileId))
+      .get()
+    if (!file) return null
+    const release = parse(file.sceneName ?? basename(file.path))
+    return existingFile({
+      quality:
+        file.quality && isQualityName(file.quality) ? file.quality : qualityOf(release.quality),
+      release,
+      size: file.size,
+      profile,
+      formats: media.customFormats(),
+      originalLanguage: meta?.originalLanguage ?? null,
+    })
+  }
+
+  /**
+   * What a release search for a movie is judged by: its ids, title and year, TMDB's facts, and a
+   * version's profile and file (checkpoint 8a), so a release that isn't an upgrade is rejected.
+   * Without a version it's the first: the Search tab has no version picker.
+   */
+  function searchInput(tmdbId: number, versionId?: string | null) {
     const row = requireRow(tmdbId)
     const meta = cached(tmdbId)
-    const first = versionsOf([row.id]).get(row.id)?.[0]
-    const profile = media.profiles.get(first?.qualityProfileId ?? row.qualityProfileId)
+    const all = versionsOf([row.id]).get(row.id) ?? []
+    const version = (versionId ? all.find((v) => v.id === versionId) : undefined) ?? all[0]
+    const profile = media.profiles.get(version?.qualityProfileId ?? row.qualityProfileId)
     return {
       tmdbId,
       imdbId: meta?.imdbId ?? null,
@@ -483,8 +533,53 @@ export function createLibrary(ctx: Ctx, media: Media) {
       profile,
       formats: media.customFormats(),
       sizes: media.qualitySizes(),
-      existing: null,
+      existing: version ? existingOf(version, profile, meta) : null,
+      versionId: version?.id ?? null,
     }
+  }
+
+  // ------------------------------------------------------------ cutoff (checkpoint 8a)
+
+  /** Whether each of a movie's versions with a file is under its cutoff, where upgrades are allowed. */
+  function unmetVersions(row: ItemRow): string[] {
+    const meta = cached(row.tmdbId)
+    const out: string[] = []
+    for (const v of versionsOf([row.id]).get(row.id) ?? []) {
+      if (!v.fileId) continue
+      let profile: ReturnType<Media['profiles']['get']>
+      try {
+        profile = media.profiles.get(v.qualityProfileId)
+      } catch {
+        continue
+      }
+      if (!profile.upgradeAllowed) continue
+      const existing = existingOf(v, profile, meta)
+      if (existing && !isCutoffMet(profile, existing)) out.push(v.id)
+    }
+    return out
+  }
+
+  /**
+   * Recomputes `cutoff_unmet` for items, after an import, a scan, or a change of version or profile.
+   * A movie whose state changes starts its sweep afresh. Returns the TMDB ids that changed.
+   */
+  function refreshCutoff(itemIds: string[]): number[] {
+    const changed: number[] = []
+    for (const part of chunks([...new Set(itemIds)]))
+      for (const row of db.select().from(mediaItems).where(inArray(mediaItems.id, part)).all()) {
+        const unmet = unmetVersions(row).length > 0
+        if (unmet === row.cutoffUnmet) continue
+        db.update(mediaItems)
+          .set({ cutoffUnmet: unmet, nextSearchAt: null, searches: 0, updatedAt: clock.now() })
+          .where(eq(mediaItems.id, row.id))
+          .run()
+        changed.push(row.tmdbId)
+      }
+    if (changed.length) {
+      announce(events, changed, { many: changed.length > 1 })
+      events.emit({ topic: TOPICS.wanted })
+    }
+    return changed
   }
 
   function update(tmdbId: number, patch: MovieUpdate): Movie {
@@ -607,6 +702,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
         }
         case 'setQualityProfile':
           setFirstProfile(itemIds, input.qualityProfileId, now)
+          refreshCutoff(itemIds)
           break
         case 'setLanguageProfile':
           for (const part of chunks(itemIds))
@@ -693,6 +789,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
         .where(eq(versions.id, versionId))
         .run()
       syncFirst(row)
+      refreshCutoff([row.id])
       announce(events, [tmdbId])
       return get(tmdbId)
     },
@@ -708,6 +805,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
         })
       db.delete(versions).where(eq(versions.id, versionId)).run()
       syncFirst(row)
+      refreshCutoff([row.id])
       announce(events, [tmdbId])
       return get(tmdbId)
     },
@@ -738,6 +836,11 @@ export function createLibrary(ctx: Ctx, media: Media) {
       onMetadataUpdated,
       checkAvailability,
       settleFiles,
+      cacheColumns,
+      existingOf,
+      requireRow,
+      unmetVersions,
+      refreshCutoff,
     },
   }
 }

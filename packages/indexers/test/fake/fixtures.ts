@@ -130,13 +130,17 @@ const words = (s: string) =>
     .filter(Boolean)
 
 /** What a search finds: by TMDB id, by IMDb id (with or without "tt"), or by every word of `q`. */
-export function find(params: {
-  q?: string | null
-  tmdbId?: string | null
-  imdbId?: string | null
-  categories?: number[]
-}): FakeRelease[] {
-  return RELEASES.filter((r) => {
+export function find(
+  params: {
+    q?: string | null
+    tmdbId?: string | null
+    imdbId?: string | null
+    categories?: number[]
+  },
+  published: FakeRelease[] = [],
+): FakeRelease[] {
+  // a fake's own releases first, newest, as an indexer's feed lists them
+  return [...published, ...RELEASES].filter((r) => {
     if (params.tmdbId) return r.tmdbId === Number(params.tmdbId)
     if (params.imdbId) return r.imdbId?.replace(/^tt/, '') === params.imdbId.replace(/^tt/, '')
     if (params.q) {

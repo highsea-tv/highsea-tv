@@ -37,10 +37,12 @@ import { VpnSummary } from './vpn.tsx'
 function Area<K extends SettingsSection>({
   id,
   section,
+  actions,
   children,
 }: {
   id: string
   section: K
+  actions?: ReactNode
   children: (
     value: AllSettings[K],
     set: (patch: Partial<AllSettings[K]>) => void,
@@ -49,7 +51,7 @@ function Area<K extends SettingsSection>({
 }) {
   const s = useSettingsDraft(section)
   return (
-    <AreaPage id={id}>
+    <AreaPage id={id} actions={actions}>
       {s.query.status === 'error' ? (
         <p className="text-badge-danger text-ui">
           Couldn’t load these settings. {s.query.error.message}
@@ -566,7 +568,14 @@ export function Profiles() {
   const profiles = useQuery('settings:profiles', (c) => c.movies.qualityProfiles())
   const formats = useQuery('settings:formats', (c) => c.movies.customFormats())
   return (
-    <AreaPage id="profiles" actions={<Soon icon="add">New profile</Soon>}>
+    <AreaPage
+      id="profiles"
+      actions={
+        <Button icon="add" asChild>
+          <a href={adminHref('/settings/profiles/new')}>New profile</a>
+        </Button>
+      }
+    >
       <Group
         title="Quality profiles"
         description="Each movie uses one: what to download, and when to stop upgrading."
@@ -593,9 +602,11 @@ export function Profiles() {
                   {p.formats.length} custom format scores
                 </p>
               </div>
-              <Soon size="sm" icon="edit">
-                Edit
-              </Soon>
+              <Button size="sm" icon="edit" asChild>
+                <a href={adminHref(`/settings/profiles/${p.id}`)} aria-label={`Edit ${p.name}`}>
+                  Edit
+                </a>
+              </Button>
             </li>
           ))}
         </ul>
@@ -616,7 +627,14 @@ export function Profiles() {
             <TableBody>
               {(formats.data ?? []).map((f) => (
                 <TableRow key={f.id}>
-                  <TableCell className="text-text">{f.name}</TableCell>
+                  <TableCell className="text-text">
+                    <a
+                      href={adminHref(`/settings/profiles/formats/${f.id}`)}
+                      className="hover:underline"
+                    >
+                      {f.name}
+                    </a>
+                  </TableCell>
                   <TableCell className="whitespace-normal break-words font-mono text-figure text-text-2">
                     {describeFormat(f).join(' · ')}
                   </TableCell>
@@ -630,6 +648,9 @@ export function Profiles() {
             </TableBody>
           </Table>
         </TableFrame>
+        <Button size="sm" variant="secondary" icon="add" className="justify-self-start" asChild>
+          <a href={adminHref('/settings/profiles/formats/new')}>New format</a>
+        </Button>
       </Group>
       <Group
         title="Presets from the catalog"
@@ -658,7 +679,15 @@ export function Profiles() {
 
 export function QualitySizes() {
   return (
-    <Area id="quality" section="qualitySizes">
+    <Area
+      id="quality"
+      section="qualitySizes"
+      actions={
+        <Button icon="edit" asChild>
+          <a href={adminHref('/settings/quality/sizes')}>Edit sizes</a>
+        </Button>
+      }
+    >
       {(rows, _set, replace) => (
         <Group
           title="Sizes per minute of runtime"

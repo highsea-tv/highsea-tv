@@ -39,6 +39,7 @@ export async function bootRuntime(
     fetch?: ReplayFetch | Fetch
     importing?: BootOptions['importing']
     subtitles?: BootOptions['subtitles']
+    lists?: BootOptions['lists']
   } = {},
 ): Promise<Runtime> {
   const dir = mkdtempSync(join(tmpdir(), 'highsea-api-'))
@@ -58,6 +59,7 @@ export async function bootRuntime(
     torrent: { offline: true },
     importing: options.importing,
     subtitles: options.subtitles,
+    lists: options.lists,
   })
 }
 

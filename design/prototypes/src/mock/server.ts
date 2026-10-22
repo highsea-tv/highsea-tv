@@ -3,6 +3,12 @@
 // the clock. Screens never touch this directly; they go through the client (client.ts).
 import { backdropArt, posterArt, stillArt } from '@highsea/fixtures'
 import { allowed, normalize, roleDefault } from '@highsea/personalization/widgets'
+import {
+  type CustomFormat,
+  customFormatSchema,
+  type QualityProfile,
+  qualityProfileSchema,
+} from '@highsea/quality'
 import { type Clock, createEmitter, createRandom, type Emitter, iso } from './clock.ts'
 import {
   collection,
@@ -1553,6 +1559,61 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
       qualityProfiles: () => state.qualityProfiles,
       customFormats: () => state.customFormats,
+      // The editors (checkpoint 8a's prototype for 8c): save checks the profile or format as
+      // @highsea/quality's schema does, and the first issue comes back as the server's would.
+      saveQualityProfile: (input: QualityProfile) => {
+        requireStaff()
+        const parsed = qualityProfileSchema.safeParse(input)
+        if (!parsed.success)
+          throw new ApiError(
+            400,
+            'invalid',
+            parsed.error.issues[0]?.message ?? 'Check the profile.',
+          )
+        const p = parsed.data
+        if (state.qualityProfiles.some((x) => x.id !== p.id && x.name === p.name))
+          throw new ApiError(409, 'conflict', `There’s a profile called ${p.name} already.`)
+        const i = state.qualityProfiles.findIndex((x) => x.id === p.id)
+        if (i >= 0) state.qualityProfiles[i] = p
+        else state.qualityProfiles.push(p)
+        srv.events.emit({ type: 'settings.updated' })
+        return p
+      },
+      deleteQualityProfile: (id: string) => {
+        requireStaff()
+        // as Radarr: a profile a movie uses can't be deleted
+        const using = state.items.filter((m) => m.versions.some((v) => v.qualityProfileId === id))
+        if (using.length > 0)
+          throw new ApiError(
+            409,
+            'in-use',
+            `${using.length === 1 ? '1 movie uses' : `${using.length} movies use`} this profile. Move ${using.length === 1 ? 'it' : 'them'} to another first.`,
+          )
+        state.qualityProfiles = state.qualityProfiles.filter((p) => p.id !== id)
+        srv.events.emit({ type: 'settings.updated' })
+      },
+      saveCustomFormat: (input: CustomFormat) => {
+        requireStaff()
+        const parsed = customFormatSchema.safeParse(input)
+        if (!parsed.success)
+          throw new ApiError(400, 'invalid', parsed.error.issues[0]?.message ?? 'Check the format.')
+        const f = parsed.data
+        const i = state.customFormats.findIndex((x) => x.id === f.id)
+        // editing a preset makes it yours: the catalog's updates leave it alone from then on
+        const saved = i >= 0 ? { ...f, source: 'custom' as const } : f
+        if (i >= 0) state.customFormats[i] = saved
+        else state.customFormats.push(saved)
+        srv.events.emit({ type: 'settings.updated' })
+        return saved
+      },
+      deleteCustomFormat: (id: string) => {
+        requireStaff()
+        // and its scores go from every profile, as Radarr removes them
+        state.customFormats = state.customFormats.filter((f) => f.id !== id)
+        for (const p of state.qualityProfiles)
+          p.formats = p.formats.filter((s) => s.formatId !== id)
+        srv.events.emit({ type: 'settings.updated' })
+      },
       languageProfiles: () => state.languageProfiles,
       rootFolders: () => ['/data/media/movies', '/data/media/movies-4k'],
     },

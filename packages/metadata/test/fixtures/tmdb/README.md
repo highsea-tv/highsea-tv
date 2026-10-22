@@ -25,6 +25,7 @@ What they hold is real, read from TMDB's public web pages (no key needed) on 202
 - **Long lists are cut short:** *Spider-Man: Brand New Day* keeps 60 cast, 40 crew and 12 videos; *The Cat in the Hat* 12 videos; recommendations keep 8; search results and Discover's lists keep the first page as the web shows it (20 or fewer).
 - ***Caminandes: Llamigos*** (406956) has its recommendations emptied, so the "similar" fallback (owner's decision 6) has a case; its `similar` list is chosen by hand from the Blender films here.
 - **The change lists** (`/3/movie/changes`, `/3/person/changes`) for 2026-10-16 to 2026-10-17 are made up for the changes job's test.
+- **Import lists' recordings (checkpoint 8a)** are put together from the movies above: *Top rated* holds the silent films here, ranked by their recorded ratings; the public list **8512345** (*Blender open films*) is made up, with the Blender films and one TV show, so the TV-skipping has a case; and the two IMDb lookups (`/3/find/tt1727587`, Sintel, and `tt0000000`, nothing) follow TMDB's documented [Find by ID](https://developer.themoviedb.org/reference/find-by-id) answer.
 - **The 404** (`/3/movie/999999999`) and the bad-key **401** use TMDB's documented error bodies ([Errors](https://developer.themoviedb.org/docs/errors)).
 
 ## The catalogue
@@ -35,6 +36,7 @@ What they hold is real, read from TMDB's public web pages (no key needed) on 202
 | Collections | Caminandes Collection (339473), Dr. Mabuse Collection (11140), Spider-Man (MCU) Collection (531241) |
 | People | Fritz Lang (68), Max Schreck (9839), Robert Flaherty (10092), Colin Levy (133631) |
 | Search | `sintel`, `metropolis`, `nanook`, `caminandes`, `nosferatu` |
-| Lists | Trending (week), Popular, Now playing and Upcoming, page 1, region US |
+| Lists | Trending (week), Popular, Now playing, Upcoming and Top rated, page 1, region US; the public list 8512345 |
+| Find | `tt1727587` (Sintel), `tt0000000` (no match) |
 
 A test fails if any file here holds something shaped like a key or a token, or isn't named for its request.

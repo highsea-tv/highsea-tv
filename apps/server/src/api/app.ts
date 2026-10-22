@@ -14,12 +14,14 @@ import { registerImporters } from './importers.ts'
 import { registerIndexers } from './indexers.ts'
 import { registerLibrary } from './library.ts'
 import { registerLibraryImport } from './library-import.ts'
+import { registerLists } from './lists.ts'
 import { registerMetadata } from './metadata.ts'
 import { registerMovies } from './movies.ts'
 import { registerPersonalization } from './personalization.ts'
 import { registerQuality } from './quality.ts'
 import { registerSubtitles } from './subtitles.ts'
 import { registerSystem } from './system.ts'
+import { registerWanted } from './wanted.ts'
 
 export type { Env }
 
@@ -79,6 +81,8 @@ export function createApi(runtime: Runtime) {
   registerLibraryImport(app)
   registerImporters(app)
   registerSubtitles(app)
+  registerWanted(app)
+  registerLists(app)
 
   app.doc31(`${API_PREFIX}/openapi.json`, {
     openapi: '3.1.0',

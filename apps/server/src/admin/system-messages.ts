@@ -1,13 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// System (ADR 0021): the page header from the prototype, and About, which checkpoint 4 adds for
+// System (ADR 0021): the page header and tabs from the prototype, About, which checkpoint 4 adds for
 // TMDB's attribution (system.md; the prototype has no About), the indexer catalog's version
-// (checkpoint 5), and the prototype's Health list (checkpoint 6).
+// (checkpoint 5), the prototype's Health list (checkpoint 6), and Tasks (checkpoint 8a), with a
+// name for each scheduled job type.
 import { defineMessages } from '@highsea/i18n'
 
 export const system = defineMessages({
   title: 'System',
   description: 'What the server is doing, and how it’s holding up.',
   what: 'the server’s details',
+  sections: 'System sections',
+  'tab.health': 'Health',
+  'tab.tasks': 'Tasks',
   'about.title': 'About',
   'about.description': 'This server, and the services whose data it shows.',
   'about.name': 'Server',
@@ -36,5 +40,40 @@ export const system = defineMessages({
   'health.error': 'Error',
   'health.since': 'since {ago}',
   later:
-    'Status, tasks, logs, events, backups and updates arrive in a later checkpoint of the server plan.',
+    'Status, logs, events, backups and updates arrive in a later checkpoint of the server plan.',
+  'tasks.what': 'the tasks',
+  'tasks.label': 'Scheduled tasks',
+  'tasks.none': 'No scheduled tasks',
+  'tasks.noneBody': 'The server hasn’t scheduled anything yet.',
+  'tasks.task': 'Task',
+  'tasks.state': 'State',
+  'tasks.every': 'Every',
+  'tasks.lastRun': 'Last run',
+  'tasks.nextRun': 'Next run',
+  'tasks.actions': 'Actions',
+  'tasks.never': 'Never',
+  'tasks.off': 'Off',
+  'tasks.run': 'Run now',
+  'tasks.runLabel': 'Run {name} now',
+  'tasks.started': '{name} is running',
+  'tasks.failed': 'Couldn’t run {name}',
+  'state.running': 'Running',
+  'state.queued': 'Queued',
+  'state.idle': 'Idle',
+  'state.failed': 'Failed',
+  'task.catalog.check': 'Check the indexer catalog',
+  'task.catalog.check.vpn-providers': 'Check the VPN providers',
+  'task.downloads.ip-blocklist': 'Update the IP blocklist',
+  'task.downloads.stall': 'Check for stalled downloads',
+  'task.indexers.prune': 'Clear old indexer results',
+  'task.indexers.rss': 'RSS sync',
+  'task.library.scan': 'Scan the library',
+  'task.lists.sync': 'Import lists',
+  'task.metadata.changes': 'Refresh changed metadata',
+  'task.metadata.purge': 'Clear unused metadata',
+  'task.metadata.sweep': 'Refresh all metadata',
+  'task.movies.availability': 'Check movie availability',
+  'task.movies.wanted': 'Search for wanted movies',
+  'task.subtitles.upgrade': 'Upgrade subtitles',
+  'task.subtitles.wanted': 'Search for wanted subtitles',
 })

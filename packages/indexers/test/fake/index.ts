@@ -202,6 +202,8 @@ export type FakeIndexer = {
   logins: number
   /** Serves this `.torrent`, or redirects to this magnet, for a release; null goes back to the default. */
   serve(id: number, answer: Uint8Array | string | null): void
+  /** Adds a release to this fake only, at the top of its feeds: a new upload, for RSS. */
+  publish(release: FakeRelease): void
 }
 
 export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexer {
@@ -211,9 +213,10 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
   let session = 'sid-1'
   let sessionCount = 1
   const served = new Map<number, Uint8Array | string>()
+  const published: FakeRelease[] = []
 
   const torrentFor = (id: number): Response => {
-    const release = RELEASES.find((r) => r.id === id)
+    const release = [...published, ...RELEASES].find((r) => r.id === id)
     if (!release) return html('Not found', 404)
     const answer = served.get(id) ?? madeUpTorrent(release.name)
     if (typeof answer === 'string')
@@ -256,12 +259,15 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
       if (t === 'caps') return xml(capsXml(ns === 'torznab' ? 'q,imdbid,tmdbid' : 'q,imdbid'))
       if (t !== 'movie' && t !== 'search') return xml(errorXml(202, 'No such function'))
       const categories = (p.get('cat') ?? '').split(',').filter(Boolean).map(Number)
-      const found = find({
-        q: p.get('q'),
-        tmdbId: p.get('tmdbid'),
-        imdbId: p.get('imdbid'),
-        categories,
-      })
+      const found = find(
+        {
+          q: p.get('q'),
+          tmdbId: p.get('tmdbid'),
+          imdbId: p.get('imdbid'),
+          categories,
+        },
+        published,
+      )
       return xml(feedXml(empty ? [] : found, { ns, origin }))
     }
 
@@ -270,7 +276,7 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
         return json({ error: 'Invalid passkey' }, 200)
       const categories = (p.get('cat') ?? '').split(',').filter(Boolean)
       const map: Record<string, number> = { '11': 2040, '12': 2045, '13': 2030, '20': 5040 }
-      const found = find({ q: p.get('q'), imdbId: p.get('imdb') }).filter(
+      const found = find({ q: p.get('q'), imdbId: p.get('imdb') }, published).filter(
         (r) => !categories.length || categories.some((c) => map[c] === r.category),
       )
       const rows = (empty ? [] : found).map((r) => ({
@@ -313,13 +319,13 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
       const cookie = request.headers.get('cookie') ?? ''
       if (!cookie.split(/;\s*/).includes(`sid=${session}`)) return html(LOGIN_PAGE)
       const q = p.get('search')
-      return html(htmlPage(empty ? [] : find({ q }), rule?.kind === 'layout'))
+      return html(htmlPage(empty ? [] : find({ q }, published), rule?.kind === 'layout'))
     }
 
     const feed = /^\/rss\/feed\/(.+)$/.exec(path)
     if (feed) {
       if (feed[1] !== FAKE_CREDENTIALS.rssPasskey) return html('Not found', 404)
-      return xml(feedXml(empty ? [] : RELEASES, { ns: null, origin }))
+      return xml(feedXml(empty ? [] : [...published, ...RELEASES], { ns: null, origin }))
     }
 
     if (path === '/archive/services/search/v1/scrape') {
@@ -416,6 +422,9 @@ export function createFakeIndexer(options: { origin?: string } = {}): FakeIndexe
     },
     expireSessions() {
       session = `sid-${++sessionCount}`
+    },
+    publish(release) {
+      published.unshift(release)
     },
     serve(id, answer) {
       if (answer === null) served.delete(id)

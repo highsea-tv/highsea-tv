@@ -16,7 +16,9 @@
 //   movies.versions.add / update / remove → Movie
 //   movies.inLibrary(ids) → Set<number>    movies.decorate(DiscoverMovie[]) → API DiscoverMovie[]
 //   movies.parse(title) → ParseResult
-//   movies.searchInput(id)                 what a release search is judged by (the indexers search)
+//   movies.searchInput(id, versionId?)     what a release search is judged by (the indexers search)
+//   movies.wanted.missing(query) / cutoff(query) → MoviePage   calendar(from, to) → CalendarEntry[]
+//   movies.wanted.wants(id) / takeDue() / found(id) / rssTargets()   the sweep and RSS (8a)
 //   await movies.client.list(query, userId) / item('movie', id, userId) / search(q, { userId, mayRequest })
 //   await movies.importDownload(ImportInput) → imported { fileId, path, transfer } | blocked | failed
 //   await movies.manualImport.scan(path) → ImportCandidate[]     run(files, 'hardlink' | 'move')
@@ -34,6 +36,7 @@
 // and the downloads folder).
 import { dirname } from 'node:path'
 import type { DiscoverMovie as ApiDiscoverMovie } from '@highsea/api-contract'
+import { readSetting, writeSetting } from '@highsea/db'
 import type { DiscoverMovie } from '@highsea/metadata'
 import { z } from 'zod'
 import type { Media } from '../shared/index.ts'
@@ -47,6 +50,10 @@ import { toApiDiscoverMovie } from './map.ts'
 import { createMigrate } from './migrate.ts'
 import { createParse } from './parse.ts'
 import { createLibraryScan, LIBRARY_SCAN_JOB, SCAN_EVERY_MS } from './scan.ts'
+import { createWanted } from './wanted.ts'
+
+/** Migration 0009's calendar dates and cutoffs, filled once (checkpoint 8a). */
+const WANTED_BACKFILL_KEY = 'movies.wantedBackfill'
 
 export function createMovies(deps: MoviesDeps, media: Media) {
   const library = createLibrary(deps, media)
@@ -57,6 +64,17 @@ export function createMovies(deps: MoviesDeps, media: Media) {
   const libraryScan = createLibraryScan(deps, { media, library, imports })
   const libraryImport = createLibraryImport(deps, { media, library, imports })
   const migrate = createMigrate(deps, { media, library, imports })
+  const wanted = createWanted(deps, { media, library })
+  deps.jobs.define({
+    type: MOVIE_JOB_TYPES.backfill,
+    payload: z.object({}),
+    attempts: 2,
+    timeoutMs: 60 * 60 * 1000,
+    async run() {
+      wanted.backfill()
+      writeSetting(deps.db, WANTED_BACKFILL_KEY, { version: 1 }, deps.clock.now())
+    },
+  })
   deps.jobs.define({
     type: LIBRARY_SCAN_JOB,
     payload: z.object({ folder: z.string().optional() }),
@@ -119,6 +137,20 @@ export function createMovies(deps: MoviesDeps, media: Media) {
     files: imports.files,
     /** A movie's history, newest first, cursor-paged. */
     history: imports.history,
+    /** Wanted (8a): missing, cutoff unmet, the sweep's bookkeeping, RSS's targets, the calendar. */
+    wanted: {
+      missing: wanted.missing,
+      cutoff: wanted.cutoff,
+      calendar: wanted.calendar,
+      wants: wanted.wants,
+      takeDue: wanted.takeDue,
+      found: wanted.found,
+      rssTargets: wanted.rssTargets,
+      /** Every movie's dates and cutoff brought up to date now; the job runs it in the background. */
+      backfill: wanted.backfill,
+      /** Every movie's dates and cutoff again, as a job (after a profile changes). */
+      refreshAll: () => deps.jobs.enqueue(MOVIE_JOB_TYPES.backfill, {}, { dedupeKey: 'all' }),
+    },
     /** The library scan (6b): what changed on disk outside highsea. */
     libraryScan: { scan: libraryScan.scan, queue: queueScan },
     /** A17's Library import mode (6b): a library already on disk, added in place. */
@@ -130,6 +162,8 @@ export function createMovies(deps: MoviesDeps, media: Media) {
       /** The daily availability check and the 12-hourly library scan. The runtime calls this once at boot. */
       schedule: (now: number) => {
         scheduleMovieJobs(deps.jobs, now)
+        if (readSetting(deps.db, WANTED_BACKFILL_KEY, { version: 0 }).version < 1)
+          deps.jobs.enqueue(MOVIE_JOB_TYPES.backfill, {}, { dedupeKey: 'all' })
         deps.jobs.schedule(LIBRARY_SCAN_JOB, SCAN_EVERY_MS, { firstRunAt: now + 10 * 60_000 })
       },
       /** The same check, now: returns how many movies changed. */
@@ -145,7 +179,7 @@ export function createMovies(deps: MoviesDeps, media: Media) {
 export type Movies = ReturnType<typeof createMovies>
 
 export type { ClientListQuery } from './client.ts'
-export type { MovieSearch, MoviesDeps } from './context.ts'
+export { type MovieSearch, type MoviesDeps, WANTED_TOPIC } from './context.ts'
 export type {
   ImportCandidate,
   ImportedFile,
@@ -181,3 +215,10 @@ export {
   regionalReleaseDate,
   statusOf,
 } from './titles.ts'
+export {
+  CALENDAR_MAX_DAYS,
+  type RssTarget,
+  SWEEP_BACKOFF_DAYS,
+  SWEEP_SIZE,
+  type Want,
+} from './wanted.ts'

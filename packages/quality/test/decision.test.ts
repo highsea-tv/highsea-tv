@@ -5,6 +5,8 @@ import {
   type DecisionInput,
   decide,
   defaultSpecifications,
+  existingFile,
+  isCutoffMet,
   SPECIFICATION_IDS,
   withSpecification,
 } from '../src/decision.ts'
@@ -250,6 +252,43 @@ describe('decide', () => {
         message: 'Not an upgrade: the file is Bluray-1080p with format score 0',
       })
     })
+  })
+
+  describe('the file in the library', () => {
+    test('its revision and format score come from its release name under the profile', () => {
+      const parsed = release('Sintel.2010.PROPER.1080p.BluRay.x265-GRP', {
+        quality: { revision: revision({ version: 2, proper: true }) },
+      })
+      const existing = existingFile({
+        quality: 'Bluray-1080p',
+        release: parsed,
+        size: null,
+        profile: hd,
+        formats: seedFormats(),
+        originalLanguage: 'en',
+      })
+      expect(existing).toEqual({
+        quality: 'Bluray-1080p',
+        revision: revision({ version: 2, proper: true }),
+        formatScore: 100,
+      })
+    })
+
+    test('the cutoff is met by the cutoff quality and the cutoff score together', () => {
+      expect(isCutoffMet(hd, { quality: 'Bluray-1080p', formatScore: hd.cutoffFormatScore })).toBe(
+        true,
+      )
+      expect(isCutoffMet(hd, { quality: 'HDTV-720p', formatScore: 10_000 })).toBe(false)
+      expect(
+        isCutoffMet({ ...hd, cutoffFormatScore: 50 }, { quality: 'Bluray-1080p', formatScore: 0 }),
+      ).toBe(false)
+    })
+  })
+
+  test('a release on the movie’s blocklist is rejected', () => {
+    const d = decide(input({ blocklisted: true }))
+    expect(d.approved).toBe(false)
+    expect(d.reasons.at(-1)).toEqual({ kind: 'rejected', message: 'On this movie’s blocklist' })
   })
 
   describe('the registry', () => {

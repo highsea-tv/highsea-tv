@@ -150,7 +150,13 @@ export const BulkInput = z
     }),
     z.object({ action: z.literal('search'), ids: Ids }),
     z.object({ action: z.literal('refresh'), ids: Ids }),
-    z.object({ action: z.literal('delete'), ids: Ids, deleteFiles: z.boolean().optional() }),
+    /** `exclude`: import lists don't add them again (checkpoint 8a). */
+    z.object({
+      action: z.literal('delete'),
+      ids: Ids,
+      deleteFiles: z.boolean().optional(),
+      exclude: z.boolean().optional(),
+    }),
   ])
   .openapi('BulkInput')
 
@@ -362,9 +368,12 @@ export const movies = {
     tags: ['Movies'],
     summary: 'Remove a movie from the library',
     description:
-      'Its metadata stays cached, so its page keeps working without the library layer. Files stay on disk unless `deleteFiles` is true.',
+      'Its metadata stays cached, so its page keeps working without the library layer. Files stay on disk unless `deleteFiles` is true. `exclude` keeps import lists from adding it again (checkpoint 8a).',
     ...access('staff'),
-    request: { params: TmdbIdParam, query: z.object({ deleteFiles: Bool.optional() }) },
+    request: {
+      params: TmdbIdParam,
+      query: z.object({ deleteFiles: Bool.optional(), exclude: Bool.optional() }),
+    },
     responses: { ...noContent, ...errors('unauthorized', 'forbidden', 'not-found') },
   }),
   refresh: createRoute({

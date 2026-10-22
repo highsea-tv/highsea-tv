@@ -202,6 +202,14 @@ export function createAuth(deps: AuthDeps) {
       ) => keys.createApiKey(ctx, input, actor, meta),
       revoke: (id: string, actor: accounts.Actor, meta: RequestMeta) =>
         keys.revokeApiKey(ctx, id, actor, meta),
+      /** The calendar feed's key (checkpoint 8a): one per person, opening only the feed. */
+      calendar: {
+        get: (actor: { id: string }) => keys.calendarKey(ctx, actor),
+        make: (actor: accounts.Actor, meta: RequestMeta) => keys.makeCalendarKey(ctx, actor, meta),
+        revoke: (actor: accounts.Actor, meta: RequestMeta) =>
+          keys.revokeCalendarKey(ctx, actor, meta),
+        authenticate: (secret: string) => keys.authenticateCalendarKey(ctx, secret),
+      },
     },
 
     security: {

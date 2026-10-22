@@ -25,10 +25,10 @@ import {
 } from '../src/index.ts'
 
 describe('contract', () => {
-  test('every route has a method, a path under /api and a summary', () => {
+  test('every route has a method, a path under /api (or the calendar feed’s) and a summary', () => {
     for (const [group, rs] of Object.entries(routes))
       for (const [name, r] of Object.entries(rs)) {
-        expect(r.path, `${group}.${name}`).toMatch(/^\/api\//)
+        expect(r.path, `${group}.${name}`).toMatch(/^\/(api|feed)\//)
         expect(r.summary, `${group}.${name}`).toBeTruthy()
       }
   })

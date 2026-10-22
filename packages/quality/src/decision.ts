@@ -67,6 +67,8 @@ export type DecisionInput = {
   sizes: readonly QualitySize[]
   existing?: ExistingFile | null
   indexer?: IndexerFacts | null
+  /** Set when the release is on the movie's blocklist (checkpoint 6's downloads): it's rejected. */
+  blocklisted?: boolean
 }
 
 export type MatchedFormat = { id: string; name: string; score: number }
@@ -198,9 +200,41 @@ const isRevisionUpgrade = (e: Evaluation, existing: ExistingFile) =>
   compareRevisions(e.release.quality.revision, existing.revision) > 0
 
 const cutoffMet = (e: Evaluation, existing: ExistingFile) =>
-  meetsCutoff(e.profile, existing.quality) &&
-  existing.formatScore >= e.profile.cutoffFormatScore &&
-  !isRevisionUpgrade(e, existing)
+  isCutoffMet(e.profile, existing) && !isRevisionUpgrade(e, existing)
+
+/**
+ * Whether a file meets its profile's cutoff: its quality at or above the cutoff and its format
+ * score at or above the cutoff score (Servarr wiki, Radarr settings › Quality Profiles). A file
+ * that doesn't is "cutoff unmet": Wanted lists it and the searches look for an upgrade.
+ */
+export function isCutoffMet(
+  profile: Pick<QualityProfile, 'items' | 'cutoff' | 'cutoffFormatScore'>,
+  existing: Pick<ExistingFile, 'quality' | 'formatScore'>,
+): boolean {
+  return meetsCutoff(profile, existing.quality) && existing.formatScore >= profile.cutoffFormatScore
+}
+
+/**
+ * A file in the library as the decision engine compares releases with it: the quality it was
+ * imported as, and the revision and format score its release name gives under the profile.
+ */
+export function existingFile(input: {
+  quality: QualityName
+  release: ParsedRelease
+  size: number | null
+  profile: Pick<QualityProfile, 'formats'>
+  formats: readonly CustomFormat[]
+  originalLanguage: string | null
+}): ExistingFile {
+  const { formatScore } = scoreFormats(input.profile, input.formats, {
+    release: input.release,
+    size: input.size,
+    indexerFlags: [],
+    originalLanguage: input.originalLanguage,
+    multiLanguages: [],
+  })
+  return { quality: input.quality, revision: input.release.quality.revision, formatScore }
+}
 
 const upgradeAllowedSpec: Specification = {
   id: 'upgradeAllowed',
@@ -303,6 +337,12 @@ const blockedIndexerSpec: Specification = {
       : [],
 }
 
+/** A release on the movie's blocklist is never taken again (Servarr wiki, Radarr activity › Blocklist). */
+const blocklistedSpec: Specification = {
+  id: 'blocklisted',
+  evaluate: ({ blocklisted, t }) => (blocklisted ? [rejected(t('blocklisted'))] : []),
+}
+
 /** The specifications, in the order their reasons are listed. */
 export const defaultSpecifications: readonly Specification[] = [
   qualitySpec,
@@ -319,7 +359,7 @@ export const defaultSpecifications: readonly Specification[] = [
   // Checkpoint 6: the queue and history.
   slot('alreadyQueued'),
   slot('alreadyImported'),
-  slot('blocklisted'),
+  blocklistedSpec,
 ]
 
 export const SPECIFICATION_IDS = defaultSpecifications.map((s) => s.id)

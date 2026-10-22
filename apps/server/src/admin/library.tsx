@@ -15,6 +15,7 @@
 //   with one, it queues a search for each movie (checkpoint 5).
 import {
   type BulkInput,
+  LIST_TOPICS,
   MOVIE_SORTS,
   type MoviePage,
   type MovieStatus,
@@ -150,6 +151,10 @@ export function MoviesLibrary() {
   ])
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [confirm, setConfirm] = useState(false)
+  const [exclude, setExclude] = useState(false)
+  // "Don't add them again" only means something once a list exists (checkpoint 8a)
+  const lists = useQuery('import-lists', (c) => c.importLists.list(), [LIST_TOPICS.lists])
+  const hasLists = (lists.data?.length ?? 0) > 0
   const bulkAction = useAction((c, body: BulkInput) => c.movies.bulk({ body }))
   const searchable = useSearchable()
 
@@ -476,12 +481,37 @@ export function MoviesLibrary() {
       </Loadable>
       <ConfirmDialog
         open={confirm}
-        onOpenChange={setConfirm}
+        onOpenChange={(o) => {
+          setConfirm(o)
+          if (!o) setExclude(false)
+        }}
         title={t('confirm.title', { count: ids.length })}
-        description={t('confirm.body')}
+        description={
+          hasLists ? (
+            <span className="grid gap-3">
+              {t('confirm.body')}
+              <span className="flex items-center gap-2">
+                <Checkbox
+                  id="exclude-from-lists"
+                  checked={exclude}
+                  onCheckedChange={(v) => setExclude(v === true)}
+                />
+                <label htmlFor="exclude-from-lists">{t('confirm.exclude')}</label>
+              </span>
+            </span>
+          ) : (
+            t('confirm.body')
+          )
+        }
         confirmLabel={t('remove')}
         destructive
-        onConfirm={() => bulk((count) => t('done.remove', { count }), { action: 'delete', ids })}
+        onConfirm={() =>
+          bulk((count) => t('done.remove', { count }), {
+            action: 'delete',
+            ids,
+            ...(hasLists && exclude ? { exclude: true } : {}),
+          })
+        }
       />
     </AdminPage>
   )

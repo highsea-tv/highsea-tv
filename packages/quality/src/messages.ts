@@ -31,6 +31,8 @@ export const qualityMessages = defineMessages({
   'seeders.tooFew': '{seeders, plural, one {# seeder} other {# seeders}}; the minimum is {minimum}',
   'age.tooNew': 'Posted {age} ago; the minimum age is {minimum}',
   'indexer.blocked': '{indexer} is failing, so its releases can’t be taken',
+  // The queue and history
+  blocklisted: 'On this movie’s blocklist',
   // Condition summaries, for Settings › Profiles and formats
   'condition.title': 'Title matches {value}',
   'condition.edition': 'Edition matches {value}',

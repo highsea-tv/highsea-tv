@@ -37,7 +37,11 @@ export const TOPICS = {
   movies: 'movies.updated',
   item: 'item.updated',
   history: 'history.updated',
+  /** Wanted's lists (checkpoint 8a): a cutoff changed, or the sweep or RSS moved on. */
+  wanted: 'wanted.updated',
 } as const
+
+export const WANTED_TOPIC = TOPICS.wanted
 
 /** Says what changed: the movies (by TMDB id) and each title's library layer (`movie:{id}`). */
 export function announce(events: EventBus, tmdbIds: number[], { many = false } = {}) {

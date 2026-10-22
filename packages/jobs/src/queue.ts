@@ -39,6 +39,17 @@ export const defineJob = <P>(definition: JobDefinition<P>) => definition
 
 export type Job = typeof jobs.$inferSelect
 
+/** A scheduled job type, as System › Tasks lists it. */
+export type Task = {
+  type: string
+  everyMs: number
+  enabled: boolean
+  nextRunAt: number
+  lastRunAt: number | null
+  lastError: string | null
+  state: 'running' | 'queued' | 'idle' | 'failed'
+}
+
 export type EnqueueOptions = { runAt?: number; dedupeKey?: string; attempts?: number }
 
 const defaultBackoff = (attempt: number) => Math.min(30_000 * 2 ** (attempt - 1), 3_600_000)
@@ -322,6 +333,56 @@ export function createJobQueue({
 
   const get = (id: string) => db.select().from(jobs).where(eq(jobs.id, id)).get() ?? null
 
+  /**
+   * System › Tasks (checkpoint 8a): each scheduled job type with its interval, next and last run,
+   * and whether a job of it is running or waiting, or the last run failed.
+   */
+  function tasks(): Task[] {
+    return db
+      .select()
+      .from(jobSchedules)
+      .orderBy(asc(jobSchedules.type))
+      .all()
+      .map((s) => {
+        const active = db
+          .select({ status: jobs.status })
+          .from(jobs)
+          .where(and(eq(jobs.type, s.type), inArray(jobs.status, ['running', 'queued'])))
+          .orderBy(desc(jobs.status))
+          .all()
+        const last = db
+          .select()
+          .from(jobRuns)
+          .where(eq(jobRuns.type, s.type))
+          .orderBy(desc(jobRuns.startedAt))
+          .limit(1)
+          .get()
+        const state: Task['state'] = active.some((j) => j.status === 'running')
+          ? 'running'
+          : active.length
+            ? 'queued'
+            : last?.outcome === 'failed'
+              ? 'failed'
+              : 'idle'
+        return {
+          type: s.type,
+          everyMs: s.everyMs,
+          enabled: s.enabled,
+          nextRunAt: s.nextRunAt,
+          lastRunAt: last?.startedAt ?? s.lastRunAt ?? null,
+          lastError: last?.outcome === 'failed' ? (last.error ?? null) : null,
+          state,
+        }
+      })
+  }
+
+  /** Runs a scheduled task now, as its schedule would: once, whatever is already waiting. */
+  function runNow(type: string): string {
+    const s = db.select().from(jobSchedules).where(eq(jobSchedules.type, type)).get()
+    if (!s || !definitions.has(type)) throw new AppError('not-found', 'That task doesn’t exist.')
+    return enqueue(type, {}, { dedupeKey: 'schedule' })
+  }
+
   const runsOf = (jobId: string) =>
     db.select().from(jobRuns).where(eq(jobRuns.jobId, jobId)).orderBy(asc(jobRuns.attempt)).all()
 
@@ -336,6 +397,8 @@ export function createJobQueue({
     list,
     get,
     runsOf,
+    tasks,
+    runNow,
     /** Ticks every `intervalMs` until stopped. */
     startTicking(intervalMs = 1000) {
       accepting = true

@@ -44,6 +44,28 @@ export function registerSystem(app: OpenAPIHono<Env>) {
     )
   })
 
+  // System › Tasks (checkpoint 8a): every schedule, its last run and its next
+  app.openapi(routes.system.tasks, (c) =>
+    c.json(
+      rt(c)
+        .jobs.tasks()
+        .map((t) => ({
+          id: t.type,
+          state: t.state,
+          interval: Math.round(t.everyMs / 1000),
+          lastRun: t.lastRunAt ? iso(t.lastRunAt) : null,
+          nextRun: t.enabled ? iso(t.nextRunAt) : null,
+          lastError: t.lastError,
+        })),
+      200,
+    ),
+  )
+
+  app.openapi(routes.system.runTask, (c) => {
+    rt(c).jobs.runNow(c.req.valid('param').id)
+    return c.body(null, 204)
+  })
+
   app.openapi(routes.system.healthChecks, (c) =>
     c.json(
       rt(c)

@@ -1,0 +1,132 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/top_rated?language=en-US&page=1&region=US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "page": 1,
+      "results": [
+        {
+          "adult": false,
+          "backdrop_path": "/eeMoFKxjjiCi6iep2GEZtSAMYIr.jpg",
+          "genre_ids": [18, 878],
+          "id": 19,
+          "original_language": "de",
+          "original_title": "Metropolis",
+          "overview": "In a futuristic city sharply divided between the rich and the poor, the son of the city's mastermind meets a prophet who predicts the coming of a savior to mediate their differences.",
+          "popularity": 6.83,
+          "poster_path": "/kr9wXRN23zLuWJIelahas1mtnYj.jpg",
+          "release_date": "1927-01-10",
+          "title": "Metropolis",
+          "video": false,
+          "vote_average": 8.082,
+          "vote_count": 3236
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/5Pk1rGAtyblh9Xaq72T7ARCQSDQ.jpg",
+          "genre_ids": [18, 53, 80],
+          "id": 832,
+          "original_language": "de",
+          "original_title": "M - Eine Stadt sucht einen Mörder",
+          "overview": "In this classic German thriller, Hans Beckert, a serial killer who preys on children, becomes the focus of a massive Berlin police manhunt. Beckert's heinous crimes are so repellant and disruptive to city life that he is even targeted by others in the seedy underworld network. With both cops and criminals in pursuit, the murderer soon realizes that people are on his trail, sending him into a tense, panicked attempt to escape justice.",
+          "popularity": 4.68,
+          "poster_path": "/bTdZk3q2DWpBRnLiaaItKFWOVhI.jpg",
+          "release_date": "1931-05-11",
+          "title": "M",
+          "video": false,
+          "vote_average": 8.058,
+          "vote_count": 2570
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/sLq72hBx8Xs2IISVsZJqgjOd31b.jpg",
+          "genre_ids": [18, 27, 53, 80],
+          "id": 234,
+          "original_language": "de",
+          "original_title": "Das Cabinet des Dr. Caligari",
+          "overview": "Francis, a young man, recalls in his memory the horrible experiences he and his fiancée Jane recently went through. Francis and his friend Alan visit The Cabinet of Dr. Caligari, an exhibit where the mysterious doctor shows the somnambulist Cesare, and awakens him for some moments from his death-like sleep.",
+          "popularity": 29.14,
+          "poster_path": "/myK9DeIsXWGKgUTZyGXg2IfFk0W.jpg",
+          "release_date": "1920-02-27",
+          "title": "The Cabinet of Dr. Caligari",
+          "video": false,
+          "vote_average": 7.929,
+          "vote_count": 1840
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/g67r1eiQD3ERSEQFCFkSn7TeGw5.jpg",
+          "genre_ids": [12, 878, 35],
+          "id": 775,
+          "original_language": "fr",
+          "original_title": "Le Voyage dans la Lune",
+          "overview": "Professor Barbenfouillis and five of his colleagues from the Academy of Astronomy travel to the Moon aboard a rocket propelled by a giant cannon. Once on the lunar surface, the bold explorers face the many perils hidden in the caves of the mysterious planet.",
+          "popularity": 27.65,
+          "poster_path": "/9o0v5LLFk51nyTBHZSre6OB37n2.jpg",
+          "release_date": "1902-06-15",
+          "title": "A Trip to the Moon",
+          "video": false,
+          "vote_average": 7.871,
+          "vote_count": 2094
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/sHIwzZ0GBE3Y9vMdQWtsFtc5duV.jpg",
+          "genre_ids": [80, 53],
+          "id": 5998,
+          "original_language": "de",
+          "original_title": "Dr. Mabuse, der Spieler",
+          "overview": "Dr. Mabuse and his organization of criminals are in the process of completing their latest scheme, a theft of information that will allow Mabuse to make huge profits on the stock exchange. Afterwards, Mabuse disguises himself and attends the Folies Bergères show, where Cara Carozza, the main attraction of the show, passes him information on Mabuse's next intended victim, the young millionaire Edgar Hull. Mabuse then uses psychic manipulation to lure Hull into a card game where he loses heavily. When Police Commissioner von Wenk begins an investigation of this mysterious crime spree, he has little to go on, and he needs to find someone who can help him.",
+          "popularity": 17.41,
+          "poster_path": "/giarOpuBw8fRlNejbBbPMlRHz1I.jpg",
+          "release_date": "1922-04-27",
+          "title": "Dr. Mabuse, the Gambler",
+          "video": false,
+          "vote_average": 7.686,
+          "vote_count": 220
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/cA9iGtvjRGJHzDBfrq48l0eyCvA.jpg",
+          "genre_ids": [27, 14],
+          "id": 653,
+          "original_language": "de",
+          "original_title": "Nosferatu, eine Symphonie des Grauens",
+          "overview": "The mysterious Count Orlok summons a happily married real estate agent to his castle, located up in the Transylvanian mountains, to finalise a terrifying deal.",
+          "popularity": 29.13,
+          "poster_path": "/zv7J85D8CC9qYagAEhPM63CIG6j.jpg",
+          "release_date": "1922-02-16",
+          "title": "Nosferatu",
+          "video": false,
+          "vote_average": 7.651,
+          "vote_count": 2558
+        },
+        {
+          "adult": false,
+          "backdrop_path": "/1Zgfk1raynguQf9Pvcmx9M5dyDN.jpg",
+          "genre_ids": [99, 18],
+          "id": 669,
+          "original_language": "en",
+          "original_title": "Nanook of the North",
+          "overview": "This pioneering documentary film depicts the lives of the indigenous Inuit people of Canada's northern Quebec region. Although the production contains some fictional elements, it vividly shows how its resourceful subjects survive in such a harsh climate, revealing how they construct their igloo homes and find food by hunting and fishing. The film also captures the beautiful, if unforgiving, frozen landscape of the Great White North, far removed from conventional civilization.",
+          "popularity": 36.47,
+          "poster_path": "/9WAboi1QbKu41WkyGxQVNpXwwxx.jpg",
+          "release_date": "1922-06-11",
+          "title": "Nanook of the North",
+          "video": false,
+          "vote_average": 7.1,
+          "vote_count": 335
+        }
+      ],
+      "total_pages": 1,
+      "total_results": 7
+    }
+  }
+}

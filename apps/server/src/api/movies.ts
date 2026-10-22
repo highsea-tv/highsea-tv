@@ -19,6 +19,8 @@ export function registerMovies(app: OpenAPIHono<Env>) {
       ...(target ? { targetType: target.type, targetId: target.id } : {}),
     })
   const movie = (id: number) => ({ type: 'movie', id: String(id) })
+  /** "Don't add it again from lists" (checkpoint 8a): exclusions written before the delete. */
+  const exclude = (c: Context<Env>, tmdbIds: number[]) => c.get('runtime').excludeFromLists(tmdbIds)
 
   // ---------------------------------------------------------------- the library
 
@@ -33,6 +35,7 @@ export function registerMovies(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.movies.bulk, async (c) => {
     const input = c.req.valid('json')
+    if (input.action === 'delete' && input.exclude) exclude(c, input.ids)
     const result = await movies(c).bulk(input)
     audit(c, `movies.bulk-${input.action}`, { type: 'movies', id: String(result.ids.length) })
     return c.json(result, 200)
@@ -57,7 +60,10 @@ export function registerMovies(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.movies.delete, (c) => {
     const { id } = c.req.valid('param')
-    const deleteFiles = c.req.valid('query').deleteFiles === 'true'
+    const query = c.req.valid('query')
+    const deleteFiles = query.deleteFiles === 'true'
+    movies(c).get(id)
+    if (query.exclude === 'true') exclude(c, [id])
     movies(c).delete(id, { deleteFiles })
     audit(c, deleteFiles ? 'movie.deleted-with-files' : 'movie.deleted', movie(id))
     return c.body(null, 204)

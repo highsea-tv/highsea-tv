@@ -26,6 +26,8 @@ export const LIST_PATHS = {
   popular: '/3/movie/popular',
   'now-playing': '/3/movie/now_playing',
   upcoming: '/3/movie/upcoming',
+  /** Import lists' chart (checkpoint 8a); Discover doesn't show it. */
+  'top-rated': '/3/movie/top_rated',
 } as const
 
 export function tmdbApi(client: TmdbClient) {
@@ -73,6 +75,19 @@ export function tmdbApi(client: TmdbClient) {
         page,
         region: list === 'trending' ? undefined : region,
       }),
+    /**
+     * `GET /3/list/{list_id}`: a public list's movies, 20 a page (import lists, checkpoint 8a;
+     * [List details](https://developer.themoviedb.org/reference/list-details)).
+     */
+    publicList: (c: Credential, id: string, page: number, language: string) =>
+      client.json<{
+        id: number | string
+        name: string
+        items: (TmdbMovieItem & { media_type?: string })[]
+        page: number
+        total_pages: number
+        total_results: number
+      }>(c, `/3/list/${encodeURIComponent(id)}`, { language, page }),
     /** Ids changed between two dates (`YYYY-MM-DD`), up to 14 days apart, 100 a page. */
     changes: (
       c: Credential,

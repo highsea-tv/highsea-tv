@@ -21,6 +21,7 @@ const runtime = await boot({
   // HIGHSEA_TORRENT_OFFLINE=1: the engine opens no socket, for the browser sweeps (no network)
   torrent: process.env.HIGHSEA_TORRENT_OFFLINE === '1' ? { offline: true } : undefined,
   subtitles: await fakeSubtitles(),
+  lists: await fakeLists(),
 })
 const log = runtime.logger.child('http')
 if (process.env.HIGHSEA_TMDB_REPLAY === '1')
@@ -96,4 +97,24 @@ async function fakeSubtitles() {
   if (process.env.HIGHSEA_SUBTITLES_FAKE !== '1') return undefined
   const { createFakeSubtitles, FAKE_OPENSUBTITLES_KEY } = await import('@highsea/subtitles/fake')
   return { fetch: createFakeSubtitles().fetch, openSubtitlesKey: FAKE_OPENSUBTITLES_KEY }
+}
+
+/**
+ * `HIGHSEA_LISTS_FAKE=1` answers Trakt and generic lists from the fakes in packages/lists, with a
+ * made-up Trakt application, so Settings › Import lists works without highsea's Client ID or the
+ * network. TMDB lists still go through TMDB (or its recordings with `HIGHSEA_TMDB_REPLAY=1`).
+ */
+async function fakeLists() {
+  if (process.env.HIGHSEA_LISTS_FAKE !== '1') return undefined
+  const { createFakeLists, FAKE_TRAKT_CLIENT_ID, FAKE_TRAKT_CLIENT_SECRET } = await import(
+    '@highsea/lists/fake'
+  )
+  const fake = createFakeLists()
+  // the device flow's code is entered at once, so Connect completes on its first poll
+  fake.trakt.device = 'approved'
+  return {
+    fetch: fake.fetch,
+    traktClientId: FAKE_TRAKT_CLIENT_ID,
+    traktClientSecret: FAKE_TRAKT_CLIENT_SECRET,
+  }
 }

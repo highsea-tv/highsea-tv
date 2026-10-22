@@ -1,6 +1,6 @@
 # Phase 3 plan: server milestone 1
 
-- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoints 1 to 5 are signed off, checkpoints 2 to 5 on 2026-10-20. Checkpoint 3's scope and the owner's decisions are in [Checkpoint 3 in detail](#checkpoint-3-in-detail); with its sign-off the owner approved widgets up to 4 columns wide (dashboard.md › Decisions). Checkpoint 4's scope, judgement calls and the owner's decisions (all 2026-10-20, including addresses by TMDB id, amending ADR 0014) are in [phase-3-checkpoint-4.md](phase-3-checkpoint-4.md); its review added decision 6 (the admin is for the owner and admins only), built on 2026-10-20 ([phase-3-admin-access.md](phase-3-admin-access.md)). Checkpoint 5's scope, the owner's answers and judgement calls are in [phase-3-checkpoint-5.md](phase-3-checkpoint-5.md); its review added ADR 0036 (domain packages, and `@highsea/media/shared` for what every media type shares). Checkpoint 6 is scoped in [phase-3-checkpoint-6.md](phase-3-checkpoint-6.md), with the owner's answers of 2026-10-20: it's built in two gated halves, 6a and 6b. The owner then made VPN connections a first-class feature, scoped in the same plan; the owner answered its questions V1 to V6 on 2026-10-20, and approved its Settings › VPN prototype the same day. 6a was signed off on 2026-10-20 and 6b on 2026-10-21, so checkpoint 6 is signed off; checkpoint 7 (subtitles) is scoped in [phase-3-checkpoint-7.md](phase-3-checkpoint-7.md), with the owner's answers of 2026-10-21 (every recommendation taken): it's built in two gated halves, 7a and 7b, 7a was signed off on 2026-10-21, and 7b is in progress. A follow-up after Phase 3 brings the dashboard's customization to Homarr's level ([dashboard-customization.md](dashboard-customization.md)). Phase 2 (the design prototypes) was signed off on 2026-10-19.
+- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoints 1 to 5 are signed off, checkpoints 2 to 5 on 2026-10-20. Checkpoint 3's scope and the owner's decisions are in [Checkpoint 3 in detail](#checkpoint-3-in-detail); with its sign-off the owner approved widgets up to 4 columns wide (dashboard.md › Decisions). Checkpoint 4's scope, judgement calls and the owner's decisions (all 2026-10-20, including addresses by TMDB id, amending ADR 0014) are in [phase-3-checkpoint-4.md](phase-3-checkpoint-4.md); its review added decision 6 (the admin is for the owner and admins only), built on 2026-10-20 ([phase-3-admin-access.md](phase-3-admin-access.md)). Checkpoint 5's scope, the owner's answers and judgement calls are in [phase-3-checkpoint-5.md](phase-3-checkpoint-5.md); its review added ADR 0036 (domain packages, and `@highsea/media/shared` for what every media type shares). Checkpoint 6 is scoped in [phase-3-checkpoint-6.md](phase-3-checkpoint-6.md), with the owner's answers of 2026-10-20: it's built in two gated halves, 6a and 6b. The owner then made VPN connections a first-class feature, scoped in the same plan; the owner answered its questions V1 to V6 on 2026-10-20, and approved its Settings › VPN prototype the same day. 6a was signed off on 2026-10-20 and 6b on 2026-10-21, so checkpoint 6 is signed off; checkpoint 7 (subtitles) is scoped in [phase-3-checkpoint-7.md](phase-3-checkpoint-7.md), with the owner's answers of 2026-10-21 (every recommendation taken): it was built in two gated halves, 7a and 7b, both signed off on 2026-10-21, so checkpoint 7 is signed off. Checkpoint 8 (automation, owner tools and the rest) is scoped in [phase-3-checkpoint-8.md](phase-3-checkpoint-8.md), with the owner's answers of 2026-10-21: it's built in three gated parts, 8a, 8b and 8c, and media-server refresh is dropped (decision 7). A follow-up after Phase 3 brings the dashboard's customization to Homarr's level ([dashboard-customization.md](dashboard-customization.md)). Phase 2 (the design prototypes) was signed off on 2026-10-19.
 - **Gate:** the owner signs off on milestone 1. Phase 4 (the client apps) then builds on its API and SDK.
 - **Source:** the Phase 3 section of the [roadmap](../roadmap.md#phase-3-server-milestone-1-implementation) and the gap analysis items tagged **[M1]**. This plan turns them into steps.
 - **Build reference:** the signed-off prototypes in [`design/prototypes`](../../design/prototypes/README.md) and their specs in [`docs/product/`](../product/).
@@ -307,7 +307,6 @@ After each move, the prototype imports the package too, so the two can't drift. 
 | Indexers (Torznab, Newznab, JSON, HTML, RSS) | Search and RSS | A local fake indexer serving recorded results |
 | BitTorrent swarm | Downloads | A local tracker, and a second engine seeding |
 | OpenSubtitles.com, Podnapisi, Subdl, Gestdown | Subtitle search and download | Recorded responses; a mock provider for end to end |
-| Plex, Jellyfin, Emby | Library refresh after import | Recorded responses |
 | Notification channels | Discord, Telegram, ntfy, Gotify, Pushover, SMTP, Apprise, Matrix, Slack, webhooks, web push | Local fake endpoints; an SMTP sink |
 | Trakt, IMDb, Letterboxd, TMDB lists | Import lists | Recorded responses |
 
@@ -444,7 +443,7 @@ The roadmap's [build order](../roadmap.md#phase-3-build-order), grouped into che
    - **Jobs:** search on import, wanted, upgrades, sync after download, re-sync on replace.
    - **Admin:** A10 subtitles, the Subtitles tab on A6, and the subtitle step of setup.
    - **Checks:** the ±100 ms sync test.
-8. **Checkpoint 8: automation, owner tools and the rest.**
+8. **Checkpoint 8: automation, owner tools and the rest.** Scoped in detail in [phase-3-checkpoint-8.md](phase-3-checkpoint-8.md).
    - **Automation:**
      - RSS sync;
      - missing and cutoff searches;
@@ -452,7 +451,7 @@ The roadmap's [build order](../roadmap.md#phase-3-build-order), grouped into che
      - blocklist and re-search;
      - import lists;
      - the calendar and iCal feed.
-   - **`notifications`:** every channel in the gap analysis, and media server refresh.
+   - **`notifications`:** every channel in the gap analysis. No media-server refresh (decision 7).
    - **`curation`:**
      - announcements and featured sections, with resolution per user and client type;
      - the client home and announcement API, live over SSE.
@@ -581,6 +580,10 @@ The owner decided these on 2026-10-19:
 The owner decided this on 2026-10-20, reviewing checkpoint 4:
 
 6. **The admin is for the owner and admins only.** Members and restricted accounts use the clients; they never open the admin, and **Manage the library** becomes an admin's permission alone. This replaces the members' shorter sidebar in admin-shell.md. Scoped, with the owner's decisions of 2026-10-20 (three roles: Owner, Admin, User), in [phase-3-admin-access.md](phase-3-admin-access.md); built before checkpoint 5.
+
+The owner decided this on 2026-10-21, answering checkpoint 8's questions:
+
+7. **No media-server refresh.** highsea replaces Plex, Jellyfin and Emby, as the roadmap sets out, so it doesn't notify them after an import. The roadmap's "Jellyfin/Plex/Emby refresh" leaves milestone 1, and the external-services table drops them ([phase-3-checkpoint-8.md](phase-3-checkpoint-8.md), answer 7).
 
 ## Out of scope for Phase 3
 

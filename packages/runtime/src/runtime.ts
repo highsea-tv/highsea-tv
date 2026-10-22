@@ -47,6 +47,8 @@ import { createQbittorrentImporter, type QbittorrentImporter } from '@highsea/im
 import { createRadarrImporter, type RadarrImporter } from '@highsea/importers/radarr'
 import { createIndexers, type Indexers } from '@highsea/indexers'
 import { createJobQueue, type JobQueue } from '@highsea/jobs'
+import { createLists, type Lists } from '@highsea/lists/service'
+import { createTrakt } from '@highsea/lists/trakt'
 import { createMovies, type Movies } from '@highsea/media/movies'
 import {
   checkPath,
@@ -79,10 +81,11 @@ import {
 import { createTorrentEngine, HASH_WORKER, type TorrentEngine } from '@highsea/torrent'
 import { CommandFailed, createVpn, type Vpn } from '@highsea/vpn'
 import { and, eq } from 'drizzle-orm'
-import { z } from 'zod'
+import { type Automation, createAutomation } from './automation.ts'
 import { type BrowseListing, browse } from './browse.ts'
 import type { Config } from './config.ts'
 import { homeRows } from './home-rows.ts'
+import { createListLibrary } from './list-library.ts'
 import { createNetworkService, type NetworkService } from './network.ts'
 import {
   checkSetup,
@@ -98,9 +101,6 @@ import { createWorkerPool, type WorkerPool } from './workers.ts'
 
 /** Milestone 1 has the server, the movie library, indexers, downloads and subtitles; later checkpoints add theirs. */
 const SOURCES: WidgetSource[] = ['system', 'movies', 'indexers', 'downloads', 'subtitles']
-
-/** Searches an indexer search for a movie in the background: Search now and bulk search queue it. */
-export const MOVIE_SEARCH_JOB = 'movies.search'
 
 /** A provider's credit, in the wording its terms ask for. */
 export type Attribution = { name: string; notice: string; url: string }
@@ -208,6 +208,12 @@ export type Runtime = {
   catalog: Catalog
   /** Indexers, their health and release search (ADR 0035). */
   indexers: Indexers
+  /** RSS, the backlog sweep and each movie's search (checkpoint 8a, ADR 0045). */
+  automation: Automation
+  /** Import lists (checkpoint 8a): TMDB, Trakt and generic lists adding movies. */
+  lists: Lists
+  /** "Don't add it again from lists": library movies excluded, before they're deleted. */
+  excludeFromLists(tmdbIds: number[]): void
   /** The BitTorrent engine (ADR 0037). */
   engine: TorrentEngine
   /** Grabs, the queue, the monitor and the blocklist (ADR 0038); categories (6b). */
@@ -299,6 +305,11 @@ export type BootOptions = {
     /** The sync engine; the worker pool when absent. Tests answer with a set outcome. */
     sync?: RunSync
   }
+  /**
+   * The import lists' fetch and highsea's Trakt application. By default the outside fetch and the
+   * configured Client ID and secret; tests and the sweeps pass `@highsea/lists/fake`.
+   */
+  lists?: { fetch?: Fetch; traktClientId?: string | null; traktClientSecret?: string | null }
 }
 
 const g = globalThis as typeof globalThis & { __highsea?: Runtime }
@@ -550,41 +561,11 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       subtitles: { forFile: subtitles.clientTracks },
       search: {
         canSearch: () => indexers.hasEnabled(),
-        queue(tmdbIds) {
-          for (const tmdbId of tmdbIds)
-            jobs.enqueue(MOVIE_SEARCH_JOB, { tmdbId }, { dedupeKey: `movie:${tmdbId}` })
-        },
+        queue: (tmdbIds) => automation.queue(tmdbIds),
       },
     },
     media,
   )
-  // safe to repeat: a search replaces the movie's cached results; a removed movie is skipped
-  jobs.define({
-    type: MOVIE_SEARCH_JOB,
-    payload: z.object({ tmdbId: z.number().int() }),
-    attempts: 2,
-    async run({ tmdbId }) {
-      let input: ReturnType<Movies['searchInput']>
-      try {
-        input = movies.searchInput(tmdbId)
-      } catch (e) {
-        if (e instanceof AppError && e.code === 'not-found') return
-        throw e
-      }
-      const result = await indexers.search(input)
-      log.info('searched for a movie', {
-        tmdbId,
-        releases: result.releases.length,
-        approved: result.releases.filter((r) => r.approved).length,
-        searched: result.searched,
-      })
-      // a monitored movie without a file grabs the best approved release; grabBest skips a
-      // version that's already downloading, so a repeated job grabs nothing twice
-      const row = movieRow(tmdbId)
-      if (row?.monitored && row.status !== 'available' && result.releases.some((r) => r.approved))
-        await downloads.grabBest(row.id, null)
-    },
-  })
   movies.jobs.schedule(clock.now())
 
   // watching only speeds the library scan up: a change asks for its title folder's scan
@@ -653,10 +634,10 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     indexers,
     fetch: indexerFetch,
     movie: movieOf,
-    async search(itemId) {
+    async search(itemId, versionId) {
       const movie = movieOf(itemId)
-      if (!movie) return []
-      return (await indexers.search(movies.searchInput(movie.tmdbId))).releases
+      const input = movie ? automation.inputFor(movie.tmdbId, versionId) : null
+      return input ? (await indexers.search(input)).releases : []
     },
     downloadsFolder: () => folders().downloads,
     history: (entry) => {
@@ -682,6 +663,47 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     checkFolder: (path) => checkPath(path, [resolve(config.dataDir), folders().downloads]),
   })
   onEngineEvent = downloads.onEngineEvent
+  // RSS, the backlog sweep and each movie's search (checkpoint 8a)
+  const automation = createAutomation({
+    jobs,
+    events,
+    logger,
+    movies,
+    indexers,
+    downloads,
+    itemId: (tmdbId) => movieRow(tmdbId)?.id ?? null,
+  })
+  automation.schedule(clock.now())
+  // import lists (checkpoint 8a): through the fetch seam, Trakt's account sealed in a setting
+  const listFetch = options.lists?.fetch ?? outside
+  const listLibrary = createListLibrary({
+    db,
+    media,
+    movies,
+    canSearch: () => indexers.hasEnabled(),
+  })
+  const pick = (given: string | null | undefined, configured: string | undefined) =>
+    given !== undefined ? (given ?? undefined) : configured
+  const lists = createLists({
+    db,
+    clock,
+    events,
+    jobs,
+    logger,
+    fetch: listFetch,
+    metadata,
+    trakt: createTrakt({
+      db,
+      clock,
+      sealer,
+      fetch: listFetch,
+      clientId: pick(options.lists?.traktClientId, config.traktClientId),
+      clientSecret: pick(options.lists?.traktClientSecret, config.traktClientSecret),
+      userAgent: `highsea/${version}`,
+    }),
+    library: listLibrary,
+  })
+  lists.schedule(clock.now())
   downloads.defineJobs()
   // the stall check every few minutes (ADR 0038), as indexers.schedule() does for its jobs
   downloads.schedule()
@@ -806,6 +828,9 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     subtitles,
     catalog,
     indexers,
+    automation,
+    lists,
+    excludeFromLists: (tmdbIds) => lists.exclude(listLibrary.titles(tmdbIds)),
     engine,
     downloads,
     watchFolder,

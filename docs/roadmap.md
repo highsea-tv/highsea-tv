@@ -259,8 +259,8 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
 2. `RefreshMovie` job: details and cached images.
 3. `MovieSearch` job: indexers → `parser` → map → decision engine (profile, size, seeders, custom-format score, upgrades, blocklist, queued) → grab via `downloads` → torrent engine.
 4. Monitor progress over SSE. On completion: import (ffprobe, quality, rename template, hardlink or copy), `media_files`, history, then **trigger the subtitle pipeline**. Seed to the limit, then remove the torrent.
-5. Automation: RSS sync every 15 min, missing and cutoff-unmet searches, upgrades, blocklist + re-search.
-6. Notifications: Jellyfin/Plex/Emby refresh and webhooks.
+5. Automation: RSS sync every 15 min, missing and cutoff-unmet searches, upgrades, blocklist + re-search. Built in checkpoint 8a, with a 6-hourly backlog sweep that backs off per movie ([ADR 0045](adr/0045-automation.md)).
+6. Notifications: every channel, webhooks included. No Jellyfin, Plex or Emby refresh: highsea replaces them rather than feeding them (decided 2026-10-21).
 7. Existing-library import for users migrating from Radarr.
 
 ### Subtitles, first class (`@highsea/subtitles`)
@@ -420,7 +420,9 @@ Tags: **[M1]** pull into server milestone 1 · **[Arch]** affects architecture n
   - categories.
 - **[M1] Per-tracker seeding rules** (qbit_manage): min seed time/ratio per tracker, hit-and-run protection for private trackers. Built per indexer in checkpoint 6a (A9's Edit dialog), over a default rule in Settings › Download client.
 - **[M1] Import lists** (Radarr lists): Trakt, IMDb, Letterboxd, TMDB lists; auto-add + sync.
+  - *As built (checkpoint 8a, [ADR 0045](adr/0045-automation.md)):* TMDB lists and charts, Trakt (charts, public lists, and the watchlist through the device flow), and a generic JSON list (StevenLu or MDBList), through which IMDb and Letterboxd lists come, since neither has an open list API. Checked every 6 hours; a list never removes a movie, and exclusions keep a deleted one away.
 - **[M1] Calendar** plus an iCal feed.
+  - *As built (checkpoint 8a):* each of a movie's dates (in cinemas, digital, physical) is its own entry; the feed is RFC 5545 at `/feed/v1/calendar.ics`, with a `calendar` key that opens only the feed.
 - **[Later] Cloudflare challenge solving** (FlareSolverr/Byparr): optional headless-browser component, needed by some public indexers.
 - **[Later] TV series** (Sonarr): seasons/episodes, season packs, multi-episode files, daily shows, specials, scene numbering (TheXEM). Metadata from TVDB/TMDB/TVmaze.
 - **[Later] Anime**: absolute numbering, AniDB/AniList mappings, dual-audio, fansub groups.

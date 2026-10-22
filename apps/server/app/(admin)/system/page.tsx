@@ -5,5 +5,5 @@ import { System } from '../../../src/admin/system.tsx'
 export const metadata: Metadata = { title: 'System' }
 
 export default function SystemPage() {
-  return <System />
+  return <System tab="health" />
 }

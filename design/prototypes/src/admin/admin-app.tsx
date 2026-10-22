@@ -20,6 +20,7 @@ import { MovieDetail } from './movies/detail.tsx'
 import { MoviesLibrary } from './movies/library.tsx'
 import { type Page, pageGroups } from './nav.ts'
 import { Appearance } from './settings/appearance.tsx'
+import { FormatEditor, ProfileEditor, SizeEditor } from './settings/editors.tsx'
 import {
   Backups,
   Connections,
@@ -131,6 +132,11 @@ export function AdminApp() {
             <Route path="/system/:tab">{(p) => <System tab={p.tab as SystemTab} />}</Route>
             <Route path="/activity/import">
               <ManualImport />
+            </Route>
+            <Route path="/settings/profiles/formats/:id">{(p) => <FormatEditor id={p.id} />}</Route>
+            <Route path="/settings/profiles/:id">{(p) => <ProfileEditor id={p.id} />}</Route>
+            <Route path="/settings/quality/sizes">
+              <SizeEditor />
             </Route>
             <Route path="/settings/:area">
               <SettingsArea pages={settingsAreas} />
