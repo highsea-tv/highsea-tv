@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// @highsea/media/shared: what every media type shares (ADR 0036). Media types today: movies;
+// @highsea-tv/media/shared: what every media type shares (ADR 0036). Media types today: movies;
 // planned: shows and music, perhaps books and games. Anything here works for all of them; anything
 // one type alone needs lives in its folder (movies/).
 //
@@ -10,7 +10,7 @@
 //   media.profiles.list / get / add / save / remove / order       the editors (8c)
 //   media.customFormats() / .get / .add / .save / .remove
 //   media.qualitySizes() / .save
-//   (language profiles are @highsea/subtitles/shared's, since checkpoint 7)
+//   (language profiles are @highsea-tv/subtitles/shared's, since checkpoint 7)
 //   media.rootFolders.list / find / add / setLanguageProfile / remove
 //   media.tags.list / add / rename / remove, check, ofItems, apply   tags (checkpoint 8c)
 //   media.mediaManagement.get / save       the `mediaManagement` settings row: naming and importing

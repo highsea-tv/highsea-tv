@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// @highsea/catalog: the signed catalog (ADR 0034). The service fetches, verifies, filters and caches
+// @highsea-tv/catalog: the signed catalog (ADR 0034). The service fetches, verifies, filters and caches
 // definitions; the format, signing and build live here too, so the pipeline and the server can't
-// disagree about what a valid catalog is. `@highsea/catalog/build` is the pipeline's entry.
+// disagree about what a valid catalog is. `@highsea-tv/catalog/build` is the pipeline's entry.
 export * from './format.ts'
 export * from './keys.ts'
 export * from './load.ts'

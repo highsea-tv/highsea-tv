@@ -1,4 +1,4 @@
-# @highsea/tokens
+# @highsea-tv/tokens
 
 The single source for highsea's design values: color roles and themes, type, spacing, radii, elevation, blur, density, focus, motion and sound. The rules for *using* them are in [`docs/design-language/`](../../docs/design-language/README.md). Locked values come from [`docs/brand/direction.md`](../../docs/brand/direction.md).
 
@@ -6,10 +6,10 @@ The single source for highsea's design values: color roles and themes, type, spa
 
 | Import | For | Contents |
 | --- | --- | --- |
-| `@highsea/tokens` | TypeScript (web, server, tooling) | All values, the theme engine, contrast audit and sound-pack tools |
-| `@highsea/tokens/native` | React Native (Expo, react-native-tvos) | `nativeTokens`: numbers, hex colors with alpha, raw spring parameters, `boxShadow` strings |
-| `@highsea/tokens/tailwind.css` | Tailwind v4 apps | An `@theme` that **replaces** Tailwind's defaults, plus one block per built-in theme |
-| `@highsea/tokens/tokens.css` | CSS without Tailwind | The same variables as plain custom properties |
+| `@highsea-tv/tokens` | TypeScript (web, server, tooling) | All values, the theme engine, contrast audit and sound-pack tools |
+| `@highsea-tv/tokens/native` | React Native (Expo, react-native-tvos) | `nativeTokens`: numbers, hex colors with alpha, raw spring parameters, `boxShadow` strings |
+| `@highsea-tv/tokens/tailwind.css` | Tailwind v4 apps | An `@theme` that **replaces** Tailwind's defaults, plus one block per built-in theme |
+| `@highsea-tv/tokens/tokens.css` | CSS without Tailwind | The same variables as plain custom properties |
 
 The CSS in `generated/` is committed. After changing a value, run `bun run build` here. `bun run check` (and the test suite) fails when the files are stale.
 
@@ -17,7 +17,7 @@ The CSS in `generated/` is committed. After changing a value, run `bun run build
 
 ```css
 @import "tailwindcss";
-@import "@highsea/tokens/tailwind.css";
+@import "@highsea-tv/tokens/tailwind.css";
 ```
 
 Tailwind's palette, shadows, radii, breakpoints and animations are cleared. Only highsea roles and scales generate utilities, so `bg-blue-500`, `font-bold`, `shadow-lg` and `md:` don't exist. Components reference roles, never raw values.
@@ -47,7 +47,7 @@ Set `data-theme` on any element: `default` (also `:root`), `oled` or `high-contr
 A custom theme is a partial override of a built-in one:
 
 ```ts
-import { createTheme, encodeTheme, nearestPassing, themeCss } from '@highsea/tokens'
+import { createTheme, encodeTheme, nearestPassing, themeCss } from '@highsea-tv/tokens'
 
 const { theme, audit } = createTheme({ base: 'oled', accent: '#8fbfb7', name: 'Harbor' })
 audit.pass // every pairing in the contrast policy, measured as rendered
@@ -63,7 +63,7 @@ nearestPassing(input, 'text-3') // the closest value that makes a failing theme 
 ## Sound packs
 
 ```ts
-import { checkSoundPack, defaultSoundPack } from '@highsea/tokens'
+import { checkSoundPack, defaultSoundPack } from '@highsea-tv/tokens'
 
 checkSoundPack(pack) // validates the shape, renders every event offline, checks length, peak, glide and room rules
 ```

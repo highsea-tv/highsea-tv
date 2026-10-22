@@ -13,9 +13,9 @@ import type {
   FeaturedSource,
   HomeItem,
   RuleOptions,
-} from '@highsea/api-contract'
-import { FEATURED_RULES } from '@highsea/api-contract'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { FEATURED_RULES } from '@highsea-tv/api-contract'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Button,
   ConfirmDialog,
@@ -25,7 +25,7 @@ import {
   Select,
   SortableList,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { useRuleOptions } from './curation.tsx'

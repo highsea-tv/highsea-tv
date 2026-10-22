@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A section's data states in one place (the prototype's loadable.tsx): a skeleton while loading,
 // an error with Try again, and the content once it's in.
-import { useT } from '@highsea/i18n/react'
-import type { Query } from '@highsea/sdk/react'
-import { Button, EmptyState, Skeleton } from '@highsea/ui-web'
+import { useT } from '@highsea-tv/i18n/react'
+import type { Query } from '@highsea-tv/sdk/react'
+import { Button, EmptyState, Skeleton } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import { shell } from './messages.ts'
 

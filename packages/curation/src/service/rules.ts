@@ -8,7 +8,7 @@ import type {
   CurationStatus,
   FeaturedRule,
   FeaturedSource,
-} from '@highsea/api-contract'
+} from '@highsea-tv/api-contract'
 
 /** A draft stays a draft; otherwise the schedule decides. */
 export function statusOf(

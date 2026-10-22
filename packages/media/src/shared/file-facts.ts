@@ -4,8 +4,8 @@
 // and embedded subtitle languages (`media_file_languages`). Written whenever a probe is, and once
 // by the runtime's `media.file-facts` for files recorded before 8d, always from the stored probe,
 // so it's safe to repeat.
-import { type Db, readSetting, schema, writeSetting } from '@highsea/db'
-import { streamLanguage } from '@highsea/parser'
+import { type Db, readSetting, schema, writeSetting } from '@highsea-tv/db'
+import { streamLanguage } from '@highsea-tv/parser'
 import { asc, eq, gt } from 'drizzle-orm'
 import { type MediaInfo, resolutionOf } from './probe.ts'
 

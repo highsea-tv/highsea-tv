@@ -2,7 +2,7 @@
 // A19 Collections (ADR 0021; checkpoint 8d): the list, the editor and its rule builder, in the
 // prototype's words (design/prototypes/src/admin/collections/). The API's fields carry no labels,
 // so the admin names and groups them here, as the prototype's mock does.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const collections = defineMessages({
   title: 'Collections',

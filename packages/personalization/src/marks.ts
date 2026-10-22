@@ -2,7 +2,7 @@
 // The server's mark (ADR 0028): a square SVG or PNG, at least 256 px, at most 1 MB. The type comes
 // from the bytes, never from the client's word (OWASP File Upload Cheat Sheet: validate the file
 // type by its content, not its name or Content-Type).
-import { AppError } from '@highsea/core'
+import { AppError } from '@highsea-tv/core'
 
 export const MARK_MAX_BYTES = 1_000_000
 export const MARK_MIN_PX = 256

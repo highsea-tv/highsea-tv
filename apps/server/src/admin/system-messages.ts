@@ -3,7 +3,7 @@
 // TMDB's attribution (system.md; the prototype has no About), the indexer catalog's version
 // (checkpoint 5), the prototype's Health list (checkpoint 6), Tasks (checkpoint 8a), with a name for
 // each scheduled job type, and Status, Logs, Events, Backups and Updates (checkpoint 8b).
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const system = defineMessages({
   title: 'System',

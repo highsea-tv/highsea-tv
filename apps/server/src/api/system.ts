@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // System, setup and network settings over HTTP.
-import { routes } from '@highsea/api-contract'
-import { AppError, iso } from '@highsea/core'
-import { checkHardlinks, listFolders, localAddresses, setupDefaults } from '@highsea/runtime'
+import { routes } from '@highsea-tv/api-contract'
+import { AppError, iso } from '@highsea-tv/core'
+import { checkHardlinks, listFolders, localAddresses, setupDefaults } from '@highsea-tv/runtime'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { setSession } from './accounts.ts'

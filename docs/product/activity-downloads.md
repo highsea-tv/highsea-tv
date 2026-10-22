@@ -2,7 +2,7 @@
 
 - **Platforms:** Admin (`apps/server`), every breakpoint.
 - **Prototype:** `#/admin/activity` (A7), `#/admin/downloads` (A8).
-- **Built:** checkpoint 6a, 2026-10-20: `/activity` and `/downloads` in `apps/server` (`src/admin/activity.tsx`, `downloads.tsx`), on `@highsea/downloads` and `@highsea/torrent` ([ADR 0037](../adr/0037-the-torrent-engine-as-built.md), [ADR 0038](../adr/0038-downloads.md)). What real data changed from the prototype is marked *As built* below. Checkpoint 6b added the categories, the watch folder ([settings.md](settings.md)) and the sheet's **Import into the library**.
+- **Built:** checkpoint 6a, 2026-10-20: `/activity` and `/downloads` in `apps/server` (`src/admin/activity.tsx`, `downloads.tsx`), on `@highsea-tv/downloads` and `@highsea-tv/torrent` ([ADR 0037](../adr/0037-the-torrent-engine-as-built.md), [ADR 0038](../adr/0038-downloads.md)). What real data changed from the prototype is marked *As built* below. Checkpoint 6b added the categories, the watch folder ([settings.md](settings.md)) and the sheet's **Import into the library**.
 - **Roadmap:** [Phase 2 › A7, A8](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Built-in torrent engine](../roadmap.md#built-in-torrent-engine-highseatorrent), [Movie pipeline](../roadmap.md#movie-pipeline), [Admin UI routes](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes) (`/activity`, `/downloads`). Engine: [ADR 0005](../adr/0005-in-process-torrent-engine.md).
 
 ## Purpose
@@ -100,7 +100,7 @@ Two views of the same downloads, for two jobs. **Activity** is the library's vie
 
 ## Data
 
-As built in 6a and 6b (`packages/api-contract/src/downloads.ts`). Every route is staff except saving and removing a category; the admin calls them through `@highsea/sdk`.
+As built in 6a and 6b (`packages/api-contract/src/downloads.ts`). Every route is staff except saving and removing a category; the admin calls them through `@highsea-tv/sdk`.
 
 | Call | Route | What |
 | --- | --- | --- |

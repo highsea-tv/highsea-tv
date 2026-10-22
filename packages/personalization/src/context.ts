@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What the personalization services share: the platform they were given.
-import type { Clock, EventBus } from '@highsea/core'
-import type { Db } from '@highsea/db'
+import type { Clock, EventBus } from '@highsea-tv/core'
+import type { Db } from '@highsea-tv/db'
 
 export type PersonalizationDeps = {
   db: Db

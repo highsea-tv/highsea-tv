@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What the admin's server components need before they render (ADR 0018): whether setup is done,
 // and who's signed in, read from the runtime directly. They redirect on it; they never change data.
-import { getRuntime } from '@highsea/runtime'
+import { getRuntime } from '@highsea-tv/runtime'
 import { cookies, headers } from 'next/headers'
 import { COOKIE, PEER_HEADER } from '../session-cookie.ts'
 

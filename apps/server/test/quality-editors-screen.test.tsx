@@ -37,10 +37,10 @@ mock.module('../src/admin/shell.tsx', () => ({
 
 const { act, cleanup, fireEvent, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
-const { createClient } = await import('@highsea/sdk')
-const { ClientProvider } = await import('@highsea/sdk/react')
-const { TooltipProvider } = await import('@highsea/ui-web')
-const { defaultQualitySizes } = await import('@highsea/quality/browser')
+const { createClient } = await import('@highsea-tv/sdk')
+const { ClientProvider } = await import('@highsea-tv/sdk/react')
+const { TooltipProvider } = await import('@highsea-tv/ui-web')
+const { defaultQualitySizes } = await import('@highsea-tv/quality/browser')
 const { FormatEditor, ProfileEditor, SizeEditor } = await import('../src/admin/quality-editors.tsx')
 
 const json = (body: unknown, status = 200) =>

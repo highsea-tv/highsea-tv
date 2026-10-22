@@ -23,7 +23,7 @@ import net, { isIP } from 'node:net'
 import os from 'node:os'
 import type { Duplex } from 'node:stream'
 
-/** Where torrent traffic leaves from, handed over by `@highsea/vpn`. */
+/** Where torrent traffic leaves from, handed over by `@highsea-tv/vpn`. */
 export type Binding = {
   /**
    * The local address every socket binds to, or null for any address: no VPN, or a VPN container

@@ -19,7 +19,7 @@ import {
   type QueueItem,
   type RootFolder,
   SUBTITLE_TOPICS,
-} from '@highsea/api-contract'
+} from '@highsea-tv/api-contract'
 import {
   bytes,
   bytesParts,
@@ -28,15 +28,15 @@ import {
   rate,
   rateParts,
   shortDate,
-} from '@highsea/core/format'
-import { useLocale, useT } from '@highsea/i18n/react'
+} from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
 import {
   type WidgetKind,
   type WidgetSource,
   widgetDefinition,
   widgetMessages,
-} from '@highsea/personalization/widgets'
-import { type Query, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/personalization/widgets'
+import { type Query, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -64,7 +64,7 @@ import {
   useClip,
   useWidth,
   WidgetFrame,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useState } from 'react'
 import { widgets as messages } from './dashboard-messages.ts'

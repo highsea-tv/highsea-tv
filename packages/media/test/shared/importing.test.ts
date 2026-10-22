@@ -17,8 +17,8 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createFakeClock, silentLogger } from '@highsea/core'
-import { migrate, openDatabase, schema } from '@highsea/db'
+import { createFakeClock, silentLogger } from '@highsea-tv/core'
+import { migrate, openDatabase, schema } from '@highsea-tv/db'
 import {
   blockedMessage,
   buildFileName,

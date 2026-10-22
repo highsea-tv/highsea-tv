@@ -9,8 +9,8 @@
 // recorded is found by its path; a tag link is written once.
 import { promises as fsp } from 'node:fs'
 import { basename, extname } from 'node:path'
-import { newId } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { newId } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import { eq, sql } from 'drizzle-orm'
 import type { Media } from '../shared/index.ts'
 import { checkPath } from '../shared/paths.ts'

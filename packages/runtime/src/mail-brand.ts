@@ -10,9 +10,9 @@
 // - The poster comes from the metadata image cache at w185, near twice the 96px the email shows it
 //   at, as a JPEG from TMDB; a movie with no cached poster has none.
 import { readFile } from 'node:fs/promises'
-import type { CachedImage } from '@highsea/metadata'
-import { parseImageUrl } from '@highsea/metadata'
-import type { MailBrand } from '@highsea/notifications/channels'
+import type { CachedImage } from '@highsea-tv/metadata'
+import { parseImageUrl } from '@highsea-tv/metadata'
+import type { MailBrand } from '@highsea-tv/notifications/channels'
 
 const POSTER_SIZE = 'w185'
 

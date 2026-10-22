@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Profile languages (judgement call 5): ISO 639-1 codes, plus `pt-BR`, `zh-Hans` and `zh-Hant`,
 // which OpenSubtitles.com also tells apart. ffprobe reports a stream's language as Matroska stores
-// it, ISO 639-2 (`eng`, and `fre` or `fra`), read through @highsea/parser's table of the Library of
+// it, ISO 639-2 (`eng`, and `fre` or `fra`), read through @highsea-tv/parser's table of the Library of
 // Congress list (https://www.loc.gov/standards/iso639-2/php/code_list.php). Names come from
 // `Intl.DisplayNames`.
-import { iso6391Of, languageCode, ISO_639_1 as ONE } from '@highsea/parser'
+import { iso6391Of, languageCode, ISO_639_1 as ONE } from '@highsea-tv/parser'
 
 /** The regional codes a profile may use, beside ISO 639-1, and the base language each refines. */
 export const REGIONAL: Record<string, string> = { 'pt-BR': 'pt', 'zh-Hans': 'zh', 'zh-Hant': 'zh' }

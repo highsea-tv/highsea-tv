@@ -116,7 +116,7 @@ Each type keeps the anatomy above and adds its own sections. Only movies are bui
 
 ## Data
 
-Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `metadata` group). Every id is TMDB's; everyone signed in may read them, and nothing here adds to the library.
+Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `metadata` group). Every id is TMDB's; everyone signed in may read them, and nothing here adds to the library.
 
 - `metadata.movie({ params: { id } })` → `GET /api/v1/movies/{id}/metadata`, for any movie on TMDB, from the cache or from TMDB: `MovieMetadata`, a `DiscoverMovie` (title, year, runtime, genres, synopsis, `rating` out of 5, `voteCount`, release date, `art`, `inLibrary`) with the original title and language, tagline, `certification`, budget, revenue, studios, `imdbId` and `wikidataId` (either may be null), `cast`, `crew`, `videos`, `collection` (`{ id, name }`), `gone` and `fetchedAt`.
   - **Certification by region:** the server's region (Settings › General › Metadata), from the theatrical release first, then digital, then any release there; null when there's none.

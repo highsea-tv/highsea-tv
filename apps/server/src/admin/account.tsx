@@ -5,9 +5,9 @@
 // client's Profile lists them as "not in the prototype"); this follows the shell's sheet and the
 // settings groups' look. Every change re-asks for the password (OWASP Authentication Cheat Sheet:
 // re-authenticate before sensitive changes).
-import type { Passkey, User } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import { useAction, useQuery } from '@highsea/sdk/react'
+import type { Passkey, User } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -20,7 +20,7 @@ import {
   SheetContent,
   Skeleton,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import {
   browserSupportsWebAuthn,
   type PublicKeyCredentialCreationOptionsJSON,

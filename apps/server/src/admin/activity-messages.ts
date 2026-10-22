@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A7 Activity (ADR 0021): the prototype's copy, with what real data adds: history a page at a
 // time, failed downloads in history, and a release whose movie has left the library.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const activity = defineMessages({
   title: 'Activity',

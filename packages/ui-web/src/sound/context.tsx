@@ -1,6 +1,6 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
-import type { SoundEvent, SoundPack } from '@highsea/tokens'
+import type { SoundEvent, SoundPack } from '@highsea-tv/tokens'
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react'
 import { createSoundPlayer, type SoundPlayer } from './player.ts'
 

@@ -41,7 +41,7 @@ A collection opens a page of its own: "Collection", its name, "3 movies here · 
 
 ## Data
 
-Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `library` group), as built in Phase 3, checkpoint 4. Everyone signed in.
+Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `library` group), as built in Phase 3, checkpoint 4. Everyone signed in.
 
 - `library.search({ query: { query } })` → `GET /api/v1/search?query=`: `SearchResults`, `sections` in ranked order, each `{ kind, items }`, up to 20 items a section:
   - `movies`: library `ClientItem`s by title, genre or person (cast or crew), title matches first. Each says whether it's `playable`; none is until files arrive (checkpoint 6);

@@ -3,9 +3,9 @@
 // a single sign-on round trip, a TV waiting for approval). The caller holds a random secret; the
 // row's id is its SHA-256 verifier. Each is single use and expires within minutes (OWASP: bind
 // every step of a multi-step flow to the session that started it, and expire it).
-import { AppError } from '@highsea/core'
-import { schema } from '@highsea/db'
-import type { ChallengeKind } from '@highsea/db/schema'
+import { AppError } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
+import type { ChallengeKind } from '@highsea-tv/db/schema'
 import { and, eq, lt } from 'drizzle-orm'
 import type { Ctx } from './context.ts'
 import { newSecret, verifier } from './secrets.ts'

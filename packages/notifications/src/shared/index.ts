@@ -6,9 +6,9 @@
 // - rendering a payload into a message: a title, a body, and the link and poster when the server's
 //   external URL is known;
 // - the delivery error a channel throws, which says whether the service asked to try again later.
-import { bytes, retryAfterMs } from '@highsea/core'
-import { schema } from '@highsea/db'
-import { createT, defineMessages, type T } from '@highsea/i18n'
+import { bytes, retryAfterMs } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
+import { createT, defineMessages, type T } from '@highsea-tv/i18n'
 
 export const NOTIFICATION_EVENTS = schema.NOTIFICATION_EVENTS
 export const CONNECTION_KINDS = schema.CONNECTION_KINDS

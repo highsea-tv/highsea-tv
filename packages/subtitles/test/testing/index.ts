@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// `@highsea/subtitles/testing`: the sync's test material. The Sintel fixture (its README has the
+// `@highsea-tv/subtitles/testing`: the sync's test material. The Sintel fixture (its README has the
 // credit and the licence), timelines of speech and cues made from a seed, and the distortions a
 // release can put on a subtitle: an offset, a framerate, and sections moved apart.
 import { execFileSync } from 'node:child_process'

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Each kind against the fake indexer, through caps, search and the field mappings.
 import { describe, expect, test } from 'bun:test'
-import { createFakeClock } from '@highsea/core'
-import type { Definition } from '@highsea/schemas/indexers'
+import { createFakeClock } from '@highsea-tv/core'
+import type { Definition } from '@highsea-tv/schemas/indexers'
 import { type RunContext, runSearch, type SearchQuery } from '../src/engine.ts'
 import { readCaps } from '../src/feed.ts'
 import { type IndexerError, joinUrl, redact } from '../src/http.ts'

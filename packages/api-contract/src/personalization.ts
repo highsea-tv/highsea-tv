@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Personalization (ADR 0027, 0028): dashboard layouts with role defaults, preferences in layers,
 // the home screen's rows, and Appearance (themes, sound packs, the server's mark). The widget
-// kinds and sources mirror @highsea/personalization's registry; a server test keeps them equal.
+// kinds and sources mirror @highsea-tv/personalization's registry; a server test keeps them equal.
 import { createRoute, z } from '@hono/zod-openapi'
 import { ClientType } from './accounts.ts'
 import { API_PREFIX, access, body, errors, IdParam, json, noContent } from './common.ts'
@@ -338,7 +338,7 @@ export const SoundPackSummary = z
   .object({ id: z.string(), name: z.string(), builtIn: z.boolean() })
   .openapi('SoundPackSummary')
 
-/** A sound pack's recipe (@highsea/tokens `SoundPack`), checked by the sound rules on upload. */
+/** A sound pack's recipe (@highsea-tv/tokens `SoundPack`), checked by the sound rules on upload. */
 export const SoundPack = z
   .object({ id: z.string().regex(THEME_ID), name: z.string().min(1).max(40) })
   .catchall(z.unknown())

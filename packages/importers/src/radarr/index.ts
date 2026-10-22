@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// @highsea/importers/radarr: the one-time Radarr importer (checkpoint 6b, ADR 0041). It reads
+// @highsea-tv/importers/radarr: the one-time Radarr importer (checkpoint 6b, ADR 0041). It reads
 // Radarr's API v3 and emulates nothing (ADR 0011).
 //
 //   const radarr = createRadarrImporter(deps)
@@ -26,13 +26,13 @@ import {
   type Fetch,
   type Logger,
   type Sealer,
-} from '@highsea/core'
-import { type Db, readSetting, schema, writeSetting } from '@highsea/db'
-import type { Downloads } from '@highsea/downloads'
-import type { JobQueue } from '@highsea/jobs'
-import type { Movies } from '@highsea/media/movies'
-import { checkFormat } from '@highsea/media/naming'
-import type { Media } from '@highsea/media/shared'
+} from '@highsea-tv/core'
+import { type Db, readSetting, schema, writeSetting } from '@highsea-tv/db'
+import type { Downloads } from '@highsea-tv/downloads'
+import type { JobQueue } from '@highsea-tv/jobs'
+import type { Movies } from '@highsea-tv/media/movies'
+import { checkFormat } from '@highsea-tv/media/naming'
+import type { Media } from '@highsea-tv/media/shared'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { mapPath, type PathMapping, pathMappingSchema, within } from '../shared/paths.ts'

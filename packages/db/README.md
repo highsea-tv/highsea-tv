@@ -1,4 +1,4 @@
-# @highsea/db
+# @highsea-tv/db
 
 SQLite in WAL mode through Drizzle, on `bun:sqlite` under Bun (tests) and `better-sqlite3` under Node (the server), on one schema ([ADR 0019](../../docs/adr/0019-database-driver-seam.md)).
 

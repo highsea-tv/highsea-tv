@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { createFakeClock, createSealer, generateSecretKey, silentLogger } from '@highsea/core'
-import { migrate, openDatabase, schema } from '@highsea/db'
+import { createFakeClock, createSealer, generateSecretKey, silentLogger } from '@highsea-tv/core'
+import { migrate, openDatabase, schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import { createAccounts, NO_APP_KEY } from '../../src/movies/accounts.ts'
 import { ProviderError } from '../../src/shared/types.ts'

@@ -6,7 +6,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { Fetch } from '@highsea/core'
+import type { Fetch } from '@highsea-tv/core'
 import { type RecordedCredential, type Recording, recordingKey } from './recording.ts'
 
 /** The recordings in this package: `test/fixtures/tmdb`. */

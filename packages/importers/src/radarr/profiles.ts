@@ -2,15 +2,15 @@
 // Radarr's quality profiles onto highsea's (checkpoint 6, The importers; the owner's answer 10):
 // nearest first by cutoff. A profile's cutoff is where upgrading stops, so it says best what the
 // owner wanted from it. Radarr's quality names are the ones highsea's vocabulary uses
-// (@highsea/quality's QUALITIES follow Radarr's Quality.cs), so a cutoff is compared by rank: a
+// (@highsea-tv/quality's QUALITIES follow Radarr's Quality.cs), so a cutoff is compared by rank: a
 // group's cutoff by its best member. Ties keep highsea's own order.
 //
 // Since checkpoint 8c's editors, a Radarr profile can also come across as it is (`COPY_PROFILE`,
 // `profileFromRadarr`): its qualities and groups, cutoff, upgrades and score thresholds, its
 // language, and the scores of the custom formats highsea has by the same name (Radarr's own formats
 // don't come across, ADR 0041).
-import type { ProfileInput } from '@highsea/media/shared'
-import { languageCode } from '@highsea/parser'
+import type { ProfileInput } from '@highsea-tv/media/shared'
+import { languageCode } from '@highsea-tv/parser'
 import {
   completeItems,
   isQualityName,
@@ -19,7 +19,7 @@ import {
   type QualityProfile,
   qualityProfileSchema,
   qualityRank,
-} from '@highsea/quality'
+} from '@highsea-tv/quality'
 import type { RadarrProfile, RadarrProfileItem } from './client.ts'
 
 const best = (names: readonly string[]) =>

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Import lists over HTTP (settings.md › Import lists; checkpoint 8a): thin handlers over
-// `@highsea/lists`. Static paths (`/test`, `/exclusions`, `/trakt`) come before `/{id}`, in the
+// `@highsea-tv/lists`. Static paths (`/test`, `/exclusions`, `/trakt`) come before `/{id}`, in the
 // contract's order. Changes go in the audit log, as other settings do.
-import { routes } from '@highsea/api-contract'
+import { routes } from '@highsea-tv/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'

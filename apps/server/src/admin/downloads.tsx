@@ -15,10 +15,10 @@
 // - the VPN line reads `vpn.status`, and an exit address not checked yet says so;
 // - trackers can be not contacted yet, private torrents say so in General, and the seeding rule
 //   carries its minimum time.
-import type { Torrent, TorrentFile, TorrentLimits, VpnStatus } from '@highsea/api-contract'
-import { bytes, duration, percent, rate } from '@highsea/core/format'
-import { useLocale, useT } from '@highsea/i18n/react'
-import { useAction, useQuery } from '@highsea/sdk/react'
+import type { Torrent, TorrentFile, TorrentLimits, VpnStatus } from '@highsea-tv/api-contract'
+import { bytes, duration, percent, rate } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -53,7 +53,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useState } from 'react'
 import { toBase64 } from './base64.ts'

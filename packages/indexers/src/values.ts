@@ -2,7 +2,7 @@
 // Reading what sites write: sizes, dates and numbers in the forms trackers use, and the field
 // filters a definition chains (ADR 0033). Each filter takes text and gives text, or null when the
 // value isn't there; the conversion to numbers and dates happens once, in `toRelease`.
-import type { FieldFilter } from '@highsea/schemas/indexers'
+import type { FieldFilter } from '@highsea-tv/schemas/indexers'
 
 const UNITS: Record<string, number> = { b: 0, k: 1, m: 2, g: 3, t: 4, p: 5 }
 

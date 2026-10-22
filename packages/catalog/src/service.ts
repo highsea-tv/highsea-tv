@@ -10,16 +10,16 @@
 // tampered is ever loaded from a catalog.
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { AppError, type Clock, type EventBus, type Fetch, type Logger } from '@highsea/core'
-import { type Db, readSetting, schema, writeSetting } from '@highsea/db'
-import type { JobQueue } from '@highsea/jobs'
+import { AppError, type Clock, type EventBus, type Fetch, type Logger } from '@highsea-tv/core'
+import { type Db, readSetting, schema, writeSetting } from '@highsea-tv/db'
+import type { JobQueue } from '@highsea-tv/jobs'
 import {
   type Definition,
   ENGINE_VERSION,
   engineSupports,
   formatIssues,
   validateDefinition,
-} from '@highsea/schemas/indexers'
+} from '@highsea-tv/schemas/indexers'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import {

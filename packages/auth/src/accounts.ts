@@ -2,9 +2,9 @@
 // People (users-devices.md): the owner from setup, invites and password-reset links, role and
 // access changes, removal, and each person's own name and password.
 import { randomBytes } from 'node:crypto'
-import { AppError, newId } from '@highsea/core'
-import { schema } from '@highsea/db'
-import type { Permission, Role } from '@highsea/db/schema'
+import { AppError, newId } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
+import type { Permission, Role } from '@highsea-tv/db/schema'
 import { and, eq, ne } from 'drizzle-orm'
 import type { Ctx, RequestMeta, UserView } from './context.ts'
 import { notFound } from './context.ts'

@@ -4,10 +4,10 @@
 // approval of a TV's sign-in code (connectivity.md § Pairing, after RFC 8628 § 3.3: the person
 // types the code on a device that's already signed in). Pairing never asks for a second factor:
 // the approving device is signed in already (ADR 0024).
-import { useT } from '@highsea/i18n/react'
-import type { ApiError } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
-import { Button, EmptyState, Field, Input, Skeleton } from '@highsea/ui-web'
+import { useT } from '@highsea-tv/i18n/react'
+import type { ApiError } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { Button, EmptyState, Field, Input, Skeleton } from '@highsea-tv/ui-web'
 import { type FormEvent, useState } from 'react'
 import { Card, FormAlert, Heading } from './auth-card.tsx'
 import { login as messages } from './login-messages.ts'

@@ -3,7 +3,7 @@
 // title and Back on top; the scrubber with a trickplay frame, the transport and the track menu
 // at the bottom; the Audio and subtitles panel with the timing nudge and its live preview line.
 // Keyboard: Space plays or pauses, ←/→ seek 10 s, M mutes, F full screen, Esc closes the panel.
-import { Button, cn, EmptyState, Icon, QualityTag } from '@highsea/ui-web'
+import { Button, cn, EmptyState, Icon, QualityTag } from '@highsea-tv/ui-web'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock } from '../client/data.ts'

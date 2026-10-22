@@ -7,7 +7,7 @@
 // a new file out of the roots either.
 import { realpathSync } from 'node:fs'
 import { basename, dirname, isAbsolute, join, relative, resolve, sep } from 'node:path'
-import { AppError } from '@highsea/core'
+import { AppError } from '@highsea-tv/core'
 
 export const outsideRoots = (path: string) =>
   new AppError('invalid', `${path} isn’t inside a root folder or the downloads folder.`, {

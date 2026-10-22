@@ -2,7 +2,7 @@
 // The metadata cache (ADR 0030): TMDB's responses keyed by TMDB id beside the library, each with
 // the time it was fetched. Writing a response replaces the row whole, so writing it twice changes
 // nothing (ADR 0022).
-import { type Db, schema } from '@highsea/db'
+import { type Db, schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import { movieColumns, replaceTerms } from './facts.ts'
 import { departmentOf } from './map.ts'

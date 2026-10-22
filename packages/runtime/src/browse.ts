@@ -5,8 +5,8 @@
 // `checkPath` from the import pipeline, so the browser and the importer agree on what's inside.
 import { readdirSync, statSync } from 'node:fs'
 import { dirname, join } from 'node:path'
-import { AppError } from '@highsea/core'
-import { checkPath, isWithin } from '@highsea/media/shared'
+import { AppError } from '@highsea-tv/core'
+import { checkPath, isWithin } from '@highsea-tv/media/shared'
 
 export type BrowseEntry = { name: string; path: string; kind: 'folder' | 'file'; size?: number }
 export type BrowseListing = { path: string; parent: string | null; entries: BrowseEntry[] }

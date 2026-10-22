@@ -5,8 +5,8 @@
 // the folder (docs/plans/phase-3-server.md, Known pitfalls › Paths).
 import { mkdirSync, renameSync, rmSync, statSync, writeFileSync } from 'node:fs'
 import { join, resolve, sep } from 'node:path'
-import { AppError, newId } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { AppError, newId } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import { and, eq } from 'drizzle-orm'
 import type { MetadataDeps } from './context.ts'
 import { contentTypeOf, type ImageRef, parseImageRef } from './image-url.ts'

@@ -10,9 +10,9 @@ import type {
   SearchPerson,
   SearchResults,
   SearchSection,
-} from '@highsea/api-contract'
-import { schema } from '@highsea/db'
-import { DEFAULT_SIZES, imageUrl } from '@highsea/metadata'
+} from '@highsea-tv/api-contract'
+import { schema } from '@highsea-tv/db'
+import { DEFAULT_SIZES, imageUrl } from '@highsea-tv/metadata'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { type ItemRow, toApiCredit, toApiVideo } from '../shared/map.ts'
 import type { Dir, Sort } from '../shared/paging.ts'

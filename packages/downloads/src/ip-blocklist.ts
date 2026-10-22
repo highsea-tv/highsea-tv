@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The IP blocklist (checkpoint 6b): Settings › Download client's `blocklistUrl`, an http(s)
-// address or a file in the config folder, parsed by `@highsea/torrent` (P2P, DAT or P2B, maybe
+// address or a file in the config folder, parsed by `@highsea-tv/torrent` (P2P, DAT or P2B, maybe
 // gzipped) and handed to the engine, which refuses those addresses (ADR 0037).
 // - A URL is fetched through the fetch seam once a day, by a job that's safe to repeat (ADR 0022):
 //   fetch, parse, write the copy, hand it over. A list that fails to fetch or parse leaves the one
@@ -11,10 +11,10 @@
 // - A changed setting is picked up from `settings.updated`, and fetched straight away.
 import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import { isAbsolute, join, relative, resolve } from 'node:path'
-import type { Clock, EventBus, Fetch, Logger } from '@highsea/core'
-import { type Db, readSetting } from '@highsea/db'
-import type { JobQueue } from '@highsea/jobs'
-import { MAX_LIST_BYTES, parseBlocklist, type TorrentEngine } from '@highsea/torrent'
+import type { Clock, EventBus, Fetch, Logger } from '@highsea-tv/core'
+import { type Db, readSetting } from '@highsea-tv/db'
+import type { JobQueue } from '@highsea-tv/jobs'
+import { MAX_LIST_BYTES, parseBlocklist, type TorrentEngine } from '@highsea-tv/torrent'
 import { z } from 'zod'
 import { DEFAULT_DOWNLOAD_CLIENT, DOWNLOAD_CLIENT_KEY } from './settings.ts'
 

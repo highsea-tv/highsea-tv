@@ -4,8 +4,8 @@
 // signal stops the ffmpeg it started. Prints what happened as JSON.
 // Usage: node sync-under-node.ts <clip> <slow ffmpeg> <its pid file>
 import { readFileSync } from 'node:fs'
-import { SYNC_WORKER, type SyncOutcome } from '@highsea/subtitles/sync'
-import { distort, sintel } from '@highsea/subtitles/testing'
+import { SYNC_WORKER, type SyncOutcome } from '@highsea-tv/subtitles/sync'
+import { distort, sintel } from '@highsea-tv/subtitles/testing'
 import { createWorkerPool } from '../../src/workers.ts'
 
 const [clip, slow, pidFile] = process.argv.slice(2) as [string, string, string]

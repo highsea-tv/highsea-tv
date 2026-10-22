@@ -5,7 +5,7 @@
 // Logs lists them and the owner downloads one to attach to an issue. Nothing is sent anywhere.
 import { mkdirSync, readdirSync, readFileSync, statSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { AppError, type Clock, type LogEntry, newId } from '@highsea/core'
+import { AppError, type Clock, type LogEntry, newId } from '@highsea-tv/core'
 
 /** Recent log lines in a report. */
 const RECENT = 50

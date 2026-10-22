@@ -4,9 +4,9 @@
 // desktop's width. The controls show how it reads with another server name, with or without an
 // external URL, as plain text, and in clients that invert colours (docs/product/emails.md).
 
-import logo from '@highsea/brand/icons/web/icon-192.png'
-import { compileOptions, palette } from '@highsea/notifications/mail'
-import { cn, SegmentedControl, Select } from '@highsea/ui-web'
+import logo from '@highsea-tv/brand/icons/web/icon-192.png'
+import { compileOptions, palette } from '@highsea-tv/notifications/mail'
+import { cn, SegmentedControl, Select } from '@highsea-tv/ui-web'
 import mjml2html from 'mjml-browser'
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { HARBOR_URL, renderSample, type SampleId, sampleIds, sampleLabels } from './samples.ts'

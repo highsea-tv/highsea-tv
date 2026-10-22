@@ -4,7 +4,7 @@
 // the server's region, and the genres, keywords, production companies and countries as
 // `movie_terms`. Written with the movie, and again by `metadata.facts` when the region changes or
 // rows from before 8d are filled, always from the stored response, so it's safe to repeat.
-import { type Db, readSetting, schema, writeSetting } from '@highsea/db'
+import { type Db, readSetting, schema, writeSetting } from '@highsea-tv/db'
 import { asc, eq, gt } from 'drizzle-orm'
 import { certificationFor } from './map.ts'
 import type { TmdbMovie } from './tmdb/types.ts'

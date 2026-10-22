@@ -3,7 +3,7 @@
 // answer by its kind, and returns normalized releases (ADR 0033). It holds no state: the caller
 // passes the capabilities and the session it has, and keeps what comes back.
 
-import type { Fetch } from '@highsea/core'
+import type { Fetch } from '@highsea-tv/core'
 import {
   type Definition,
   isMovieCategory,
@@ -12,7 +12,7 @@ import {
   type RequestTemplate,
   renderTemplate,
   type TemplateInputs,
-} from '@highsea/schemas/indexers'
+} from '@highsea-tv/schemas/indexers'
 import { type Caps, movieCategoryIds, readCaps, readItems } from './feed.ts'
 import { type Answer, checkStatus, IndexerError, joinUrl, send } from './http.ts'
 import type { IndexerRelease } from './release.ts'

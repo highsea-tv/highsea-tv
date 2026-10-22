@@ -4,7 +4,7 @@
 // one is reported with its problems instead of stopping the rest.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { type Definition, formatIssues, validateDefinition } from '@highsea/schemas/indexers'
+import { type Definition, formatIssues, validateDefinition } from '@highsea-tv/schemas/indexers'
 import { parseDocument } from 'yaml'
 
 export type LoadedFile<T = Definition> = { file: string; raw: unknown; definition: T }

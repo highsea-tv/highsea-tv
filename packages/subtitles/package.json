@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/subtitles",
+  "name": "@highsea-tv/subtitles",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -17,19 +17,19 @@
   },
   "dependencies": {
     "@echogarden/fvad-wasm": "0.2.0",
-    "@highsea/api-contract": "workspace:*",
-    "@highsea/core": "workspace:*",
-    "@highsea/db": "workspace:*",
-    "@highsea/jobs": "workspace:*",
-    "@highsea/media": "workspace:*",
-    "@highsea/parser": "workspace:*",
+    "@highsea-tv/api-contract": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/db": "workspace:*",
+    "@highsea-tv/jobs": "workspace:*",
+    "@highsea-tv/media": "workspace:*",
+    "@highsea-tv/parser": "workspace:*",
     "chardet": "2.2.0",
     "drizzle-orm": "0.45.3",
     "fft.js": "4.0.4",
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@highsea/config": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
     "@types/node": "25.9.9"
   }
 }

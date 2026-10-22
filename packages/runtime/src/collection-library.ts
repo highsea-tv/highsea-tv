@@ -2,18 +2,18 @@
 // The movie library as smart collections see it (checkpoint 8d, ADR 0049): a collection's titles
 // from its rules (`collection-query.ts`), the editor's choices from what's in the library, people
 // by name and role, and TMDB's collections with titles here. Curation doesn't import
-// `@highsea/media`; the runtime hands it this.
+// `@highsea-tv/media`; the runtime hands it this.
 //
 // Language names are the platform's (`Intl.DisplayNames`, ECMA-402 § 12), so they follow the
 // server's language without a table of our own. People's names live in TMDB's credits in the
 // metadata cache, read with SQLite's json_each (https://sqlite.org/json1.html), as search does.
-import type { RuleField, RulePerson } from '@highsea/api-contract'
-import { ROLE_JOBS } from '@highsea/api-contract'
-import type { Clock } from '@highsea/core'
-import type { CollectionLibrary, Option, TmdbCollection } from '@highsea/curation/collections'
-import { type Db, schema } from '@highsea/db'
-import type { Movies } from '@highsea/media/movies'
-import { DEFAULT_SIZES, imageUrl } from '@highsea/metadata'
+import type { RuleField, RulePerson } from '@highsea-tv/api-contract'
+import { ROLE_JOBS } from '@highsea-tv/api-contract'
+import type { Clock } from '@highsea-tv/core'
+import type { CollectionLibrary, Option, TmdbCollection } from '@highsea-tv/curation/collections'
+import { type Db, schema } from '@highsea-tv/db'
+import type { Movies } from '@highsea-tv/media/movies'
+import { DEFAULT_SIZES, imageUrl } from '@highsea-tv/metadata'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { collectionQuery, IN_LIBRARY, PLAYABLE, PRIMARY_SUBTAG } from './collection-query.ts'
 
@@ -42,7 +42,7 @@ export function createCollectionLibrary(deps: {
   movies: Movies
   /** The server's language, for language names. */
   locale?: () => string
-  /** The region's certifications from mildest, from `@highsea/metadata`; null until known. */
+  /** The region's certifications from mildest, from `@highsea-tv/metadata`; null until known. */
   certifications?: () => string[] | null
 }): CollectionLibrary {
   const { db, clock, movies } = deps

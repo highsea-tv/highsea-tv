@@ -4,9 +4,9 @@
 // and its count for today. `call` is the only way to reach a provider: it skips one that's waiting,
 // counts requests for those that don't report their own quota, and turns a failure into a throttle.
 // The account's secrets are never returned; the Edit dialog leaves a secret blank to keep it.
-import { AppError, type Clock, type Fetch, type Logger, type Sealer } from '@highsea/core'
-import type { Db } from '@highsea/db'
-import { subtitleDownloads, subtitleProviders } from '@highsea/db/schema'
+import { AppError, type Clock, type Fetch, type Logger, type Sealer } from '@highsea-tv/core'
+import type { Db } from '@highsea-tv/db'
+import { subtitleDownloads, subtitleProviders } from '@highsea-tv/db/schema'
 import { eq, lt } from 'drizzle-orm'
 import { createProvider, PROVIDER_INFO, PROVIDER_ORDER } from '../providers/index.ts'
 import {

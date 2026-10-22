@@ -2,7 +2,7 @@
 // Configuration from the environment. Everything else is a setting in the database, changed in
 // the admin; only what's needed before the database opens lives here.
 import { readFileSync } from 'node:fs'
-import { LEVELS } from '@highsea/core'
+import { LEVELS } from '@highsea-tv/core'
 import { z } from 'zod'
 
 const port = z.coerce.number().int().min(1).max(65535)
@@ -38,7 +38,8 @@ export const configSchema = z.object({
   /**
    * highsea's Trakt application (`HIGHSEA_TRAKT_CLIENT_ID`, `HIGHSEA_TRAKT_CLIENT_SECRET`, each with
    * a `_FILE` form), kept the way the OpenSubtitles.com key is. Without the Client ID, Trakt lists
-   * can't be added; without the secret, an account can't be connected.
+   * can't be added. The secret is optional: Trakt deprecated it for sign-in and no longer issues one
+   * to new applications, so the device flow works with the Client ID alone.
    */
   traktClientId: z.string().min(1).optional(),
   traktClientSecret: z.string().min(1).optional(),

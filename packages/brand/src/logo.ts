@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The wordmark and lockup, built from outlined Geist so they render the same everywhere.
 // docs/brand/logo.md
-import { defaultTheme } from '@highsea/tokens'
+import { defaultTheme } from '@highsea-tv/tokens'
 import { MARK_GRID, type MarkPaint, markElements } from './mark.ts'
 import { wordmarkOutline } from './wordmark-data.ts'
 

@@ -2,8 +2,8 @@
 // The TV home (Hero + rows) on the real spatial navigator, in screen units on a 16:9 frame.
 // A preview of the focus model for Phase 2, not the finished TV client.
 
-import { art, byId, type Title, titles } from '@highsea/fixtures'
-import { durations } from '@highsea/tokens'
+import { art, byId, type Title, titles } from '@highsea-tv/fixtures'
+import { durations } from '@highsea-tv/tokens'
 import {
   Icon,
   Mark,
@@ -13,7 +13,7 @@ import {
   useDwell,
   useSound,
   useSpatialNavigation,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'

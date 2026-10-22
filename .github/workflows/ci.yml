@@ -38,7 +38,7 @@ jobs:
       - name: License audit
         run: bun run licenses
       - name: Build the admin
-        run: bun run --filter @highsea/server build
+        run: bun run --filter @highsea-tv/server build
         env:
           NEXT_TELEMETRY_DISABLED: 1
 

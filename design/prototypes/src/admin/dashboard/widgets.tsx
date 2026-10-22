@@ -13,8 +13,8 @@ import {
   rate,
   rateParts,
   shortDate,
-} from '@highsea/core/format'
-import { widgetDefinition } from '@highsea/personalization/widgets'
+} from '@highsea-tv/core/format'
+import { widgetDefinition } from '@highsea-tv/personalization/widgets'
 import {
   Badge,
   Button,
@@ -41,7 +41,7 @@ import {
   useClip,
   useWidth,
   WidgetFrame,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
 import type { HighseaClient } from '../../mock/client.ts'

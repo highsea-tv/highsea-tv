@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Importing a library that's already on disk (checkpoint 6, Manual import, 6b; the owner's answer
 // 9): A17's Library import mode. Each folder under a root folder is a candidate: its name is read
-// with @highsea/parser (`Title (Year)`, `{tmdb-…}`, `{imdb-…}`, as Radarr's and Jellyfin's naming
+// with @highsea-tv/parser (`Title (Year)`, `{tmdb-…}`, `{imdb-…}`, as Radarr's and Jellyfin's naming
 // put ids in folder names) and matched on TMDB, which needs the key. The owner confirms the
 // matches, and a job adds each movie where it is: no move, and no rename unless Rename to my
 // format is ticked (then the folder takes the folder format and the file the file format).
@@ -12,11 +12,11 @@
 // items, so a restart picks up where it stopped.
 import { promises as fsp } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
-import type { AddMovieInput } from '@highsea/api-contract'
-import { AppError } from '@highsea/core'
-import { readSetting, schema, writeSetting } from '@highsea/db'
-import type { DiscoverMovie } from '@highsea/metadata'
-import { parse } from '@highsea/parser'
+import type { AddMovieInput } from '@highsea-tv/api-contract'
+import { AppError } from '@highsea-tv/core'
+import { readSetting, schema, writeSetting } from '@highsea-tv/db'
+import type { DiscoverMovie } from '@highsea-tv/metadata'
+import { parse } from '@highsea-tv/parser'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { type FoundFile, isVideo, listFiles, skipBeforeProbe } from '../shared/files.ts'
@@ -32,7 +32,7 @@ const { mediaItems, mediaFiles } = schema
 
 export const LIBRARY_IMPORT_JOB = 'library.import'
 export const LIBRARY_IMPORT_KEY = 'libraryImport'
-/** @highsea/api-contract's `LIBRARY_IMPORT_TOPIC`. */
+/** @highsea-tv/api-contract's `LIBRARY_IMPORT_TOPIC`. */
 export const LIBRARY_IMPORT_TOPIC = 'import.updated'
 /** One scan reads at most this many folders: a root with more is imported in parts. */
 export const MAX_FOLDERS = 2_000

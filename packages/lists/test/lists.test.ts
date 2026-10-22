@@ -5,7 +5,7 @@ import { describe, expect, test } from 'bun:test'
 import { mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { ImportListInput, ImportListSettings } from '@highsea/api-contract'
+import type { ImportListInput, ImportListSettings } from '@highsea-tv/api-contract'
 import {
   AppError,
   createEventBus,
@@ -13,11 +13,11 @@ import {
   createSealer,
   generateSecretKey,
   silentLogger,
-} from '@highsea/core'
-import { migrate, openDatabase, schema } from '@highsea/db'
-import { createJobQueue } from '@highsea/jobs'
-import { createMetadata } from '@highsea/metadata'
-import { createReplayFetch } from '@highsea/metadata/replay'
+} from '@highsea-tv/core'
+import { migrate, openDatabase, schema } from '@highsea-tv/db'
+import { createJobQueue } from '@highsea-tv/jobs'
+import { createMetadata } from '@highsea-tv/metadata'
+import { createReplayFetch } from '@highsea-tv/metadata/replay'
 import { readGeneric } from '../src/generic/index.ts'
 import { createLists, LIST_SYNC_JOB, type ListLibrary } from '../src/service/index.ts'
 import { readTmdb, tmdbListId } from '../src/tmdb/index.ts'
@@ -32,7 +32,13 @@ import {
 
 const GENERIC_URL = 'https://lists.example/blender.json'
 
-async function setup({ traktApp = true }: { traktApp?: boolean } = {}) {
+async function setup({
+  traktApp = true,
+  traktSecret = true,
+}: {
+  traktApp?: boolean
+  traktSecret?: boolean
+} = {}) {
   const { db, raw } = openDatabase(':memory:')
   migrate(raw)
   const clock = createFakeClock()
@@ -62,7 +68,7 @@ async function setup({ traktApp = true }: { traktApp?: boolean } = {}) {
     sealer,
     fetch: fake.fetch,
     clientId: traktApp ? FAKE_TRAKT_CLIENT_ID : undefined,
-    clientSecret: traktApp ? FAKE_TRAKT_CLIENT_SECRET : undefined,
+    clientSecret: traktApp && traktSecret ? FAKE_TRAKT_CLIENT_SECRET : undefined,
     userAgent: 'highsea/test',
   })
   const library = new Set<number>()
@@ -208,6 +214,20 @@ describe('Trakt’s device flow', () => {
     await trakt.disconnect()
     expect(fake.trakt.revoked.length).toBe(1)
     expect(trakt.status().account).toBeNull()
+  })
+
+  test('an application with only a Client ID, as Trakt issues them now', async () => {
+    const { trakt, fake, clock } = await setup({ traktSecret: false })
+    expect(trakt.status().available).toBe(true)
+    await trakt.connect()
+    fake.trakt.device = 'approved'
+    expect(await trakt.poll()).toBe('connected')
+    // the refresh names the registered redirect, on auth.trakt.tv, without a secret
+    clock.advance(6.5 * 24 * 60 * 60 * 1000)
+    expect((await trakt.read({ source: 'watchlist' })).map((e) => e.tmdbId)).toEqual([653, 19])
+    expect(fake.trakt.requests).toContain('POST /oauth/token')
+    await trakt.disconnect()
+    expect(fake.trakt.revoked.length).toBe(1)
   })
 
   test('a denied or expired code', async () => {

@@ -9,9 +9,9 @@ import {
   type RuleCondition,
   type RuleField,
   type RuleGroup,
-} from '@highsea/api-contract'
-import { AppError } from '@highsea/core'
-import { createT, defineMessages } from '@highsea/i18n'
+} from '@highsea-tv/api-contract'
+import { AppError } from '@highsea-tv/core'
+import { createT, defineMessages } from '@highsea-tv/i18n'
 
 /** A collection's id: `sc-` and a random part. A TMDB collection is its number. */
 export const SMART_PREFIX = 'sc-'
@@ -19,7 +19,7 @@ export const isSmartId = (id: string) => id.startsWith(SMART_PREFIX)
 
 /**
  * Not rated: a title without a certification in the server's region. The region's own ratings come
- * from TMDB (`/3/certification/movie/list`, through `@highsea/metadata`), mildest first; they're
+ * from TMDB (`/3/certification/movie/list`, through `@highsea-tv/metadata`), mildest first; they're
  * null until TMDB has been asked.
  */
 export const NOT_RATED = 'NR'

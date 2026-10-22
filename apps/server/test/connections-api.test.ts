@@ -7,15 +7,15 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Fetch } from '@highsea/core'
-import { createReplayFetch } from '@highsea/metadata/replay'
+import type { Fetch } from '@highsea-tv/core'
+import { createReplayFetch } from '@highsea-tv/metadata/replay'
 import {
   createFakeNotifications,
   createFakeSmtp,
   createPushSubscriber,
   type FakeSmtp,
   readMail,
-} from '@highsea/notifications/fake'
+} from '@highsea-tv/notifications/fake'
 import { createApi } from '../src/api/app.ts'
 import {
   addMember,

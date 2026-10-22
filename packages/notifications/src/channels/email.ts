@@ -89,7 +89,7 @@ export const DEFAULT_BRAND: MailBrand = {
 }
 
 /**
- * highsea's app icon, the logo when the server has none of its own: read from @highsea/brand where
+ * highsea's app icon, the logo when the server has none of its own: read from @highsea-tv/brand where
  * the module resolver finds it (`import.meta.resolve`, https://nodejs.org/api/esm.html), which is
  * the workspace in development and in the Docker image alike.
  */
@@ -97,7 +97,7 @@ let appIcon: MailImage | undefined
 function highseaIcon(): MailImage {
   appIcon ??= {
     content: readFileSync(
-      fileURLToPath(import.meta.resolve('@highsea/brand/icons/web/icon-192.png')),
+      fileURLToPath(import.meta.resolve('@highsea-tv/brand/icons/web/icon-192.png')),
     ),
     contentType: 'image/png',
     filename: 'highsea.png',

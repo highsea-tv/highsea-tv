@@ -2,7 +2,7 @@
 import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { networkInterfaces } from 'node:os'
 import { join, resolve } from 'node:path'
-import { type Auth, createAuth, type Issued, type RequestMeta } from '@highsea/auth'
+import { type Auth, createAuth, type Issued, type RequestMeta } from '@highsea-tv/auth'
 import {
   CATALOG_SETTINGS_KEY,
   type Catalog,
@@ -12,7 +12,7 @@ import {
   SEED_DIR,
   type TrustedKey,
   trustedKeys,
-} from '@highsea/catalog'
+} from '@highsea-tv/catalog'
 import {
   AppError,
   type Clock,
@@ -32,9 +32,9 @@ import {
   SECRET_KEY_BYTES,
   type Sealer,
   systemClock,
-} from '@highsea/core'
-import { type Collections, createCollections } from '@highsea/curation/collections'
-import { type Curation, createCuration } from '@highsea/curation/service'
+} from '@highsea-tv/core'
+import { type Collections, createCollections } from '@highsea-tv/curation/collections'
+import { type Curation, createCuration } from '@highsea-tv/curation/service'
 import {
   type Database,
   type Db,
@@ -43,7 +43,7 @@ import {
   readSetting,
   schema,
   writeSetting,
-} from '@highsea/db'
+} from '@highsea-tv/db'
 import {
   createDownloads,
   createIpBlocklist,
@@ -53,14 +53,17 @@ import {
   type DownloadClientSettings,
   type Downloads,
   type WatchFolder,
-} from '@highsea/downloads'
-import { createQbittorrentImporter, type QbittorrentImporter } from '@highsea/importers/qbittorrent'
-import { createRadarrImporter, type RadarrImporter } from '@highsea/importers/radarr'
-import { createIndexers, type Indexers } from '@highsea/indexers'
-import { createJobQueue, type JobQueue } from '@highsea/jobs'
-import { createLists, type Lists } from '@highsea/lists/service'
-import { createTrakt } from '@highsea/lists/trakt'
-import { createMovies, type Movies } from '@highsea/media/movies'
+} from '@highsea-tv/downloads'
+import {
+  createQbittorrentImporter,
+  type QbittorrentImporter,
+} from '@highsea-tv/importers/qbittorrent'
+import { createRadarrImporter, type RadarrImporter } from '@highsea-tv/importers/radarr'
+import { createIndexers, type Indexers } from '@highsea-tv/indexers'
+import { createJobQueue, type JobQueue } from '@highsea-tv/jobs'
+import { createLists, type Lists } from '@highsea-tv/lists/service'
+import { createTrakt } from '@highsea-tv/lists/trakt'
+import { createMovies, type Movies } from '@highsea-tv/media/movies'
 import {
   checkPath,
   createLibraryWatch,
@@ -71,27 +74,27 @@ import {
   unarBinary,
   vetFiles,
   type WatchFn,
-} from '@highsea/media/shared'
-import { createMetadata, type Metadata, TMDB_ATTRIBUTION } from '@highsea/metadata'
-import type { MdnsResponder } from '@highsea/network'
-import { createNotifications, type Notifications } from '@highsea/notifications/service'
+} from '@highsea-tv/media/shared'
+import { createMetadata, type Metadata, TMDB_ATTRIBUTION } from '@highsea-tv/metadata'
+import type { MdnsResponder } from '@highsea-tv/network'
+import { createNotifications, type Notifications } from '@highsea-tv/notifications/service'
 import {
   type Branding,
   createPersonalization,
   type Personalization,
   type WidgetSource,
-} from '@highsea/personalization'
-import { createSubtitles, type RunSync, type Subtitles } from '@highsea/subtitles/movies'
-import { PROVIDER_INFO } from '@highsea/subtitles/providers'
-import { isLanguageCode } from '@highsea/subtitles/shared'
+} from '@highsea-tv/personalization'
+import { createSubtitles, type RunSync, type Subtitles } from '@highsea-tv/subtitles/movies'
+import { PROVIDER_INFO } from '@highsea-tv/subtitles/providers'
+import { isLanguageCode } from '@highsea-tv/subtitles/shared'
 import {
   binaryAvailable,
   ffmpegBinary,
   SYNC_WORKER,
   type SyncOutcome,
-} from '@highsea/subtitles/sync'
-import { createTorrentEngine, HASH_WORKER, type TorrentEngine } from '@highsea/torrent'
-import { CommandFailed, createVpn, type Vpn } from '@highsea/vpn'
+} from '@highsea-tv/subtitles/sync'
+import { createTorrentEngine, HASH_WORKER, type TorrentEngine } from '@highsea-tv/torrent'
+import { CommandFailed, createVpn, type Vpn } from '@highsea-tv/vpn'
 import { and, eq } from 'drizzle-orm'
 import { type Automation, createAutomation } from './automation.ts'
 import {
@@ -338,11 +341,11 @@ export type BootOptions = {
   mdns?: () => Promise<MdnsResponder>
   /**
    * Every outside request: single sign-on's provider and TMDB (ADR 0029). Tests, the sweeps and
-   * the replay mode pass `createReplayFetch()` from `@highsea/metadata/replay`.
+   * the replay mode pass `createReplayFetch()` from `@highsea-tv/metadata/replay`.
    */
   fetch?: Fetch
   /**
-   * Where the catalog comes from. By default the seed shipped in `@highsea/catalog`, the keys the
+   * Where the catalog comes from. By default the seed shipped in `@highsea-tv/catalog`, the keys the
    * config trusts, and `config.catalogUrl`. Tests and the sweeps pass a locally signed one.
    */
   catalog?: {
@@ -364,7 +367,7 @@ export type BootOptions = {
   watch?: WatchFn
   /**
    * The subtitle providers' fetch and highsea's OpenSubtitles.com key. By default the outside
-   * fetch and the configured key; tests and the sweeps pass `@highsea/subtitles/fake`.
+   * fetch and the configured key; tests and the sweeps pass `@highsea-tv/subtitles/fake`.
    */
   subtitles?: {
     fetch?: Fetch
@@ -374,12 +377,12 @@ export type BootOptions = {
   }
   /**
    * The import lists' fetch and highsea's Trakt application. By default the outside fetch and the
-   * configured Client ID and secret; tests and the sweeps pass `@highsea/lists/fake`.
+   * configured Client ID and secret; tests and the sweeps pass `@highsea-tv/lists/fake`.
    */
   lists?: { fetch?: Fetch; traktClientId?: string | null; traktClientSecret?: string | null }
   /**
    * The notification channels' fetch and the VAPID contact. By default the outside fetch; tests
-   * and the sweeps pass `@highsea/notifications/fake`'s.
+   * and the sweeps pass `@highsea-tv/notifications/fake`'s.
    */
   notifications?: { fetch?: Fetch; vapidSubject?: string | null }
   /**

@@ -4,7 +4,7 @@
 // checks that stop torrents, the handshake lost and the reconnect, port forwarding and its
 // renewals, and the indexers' fetch. Nothing runs and nothing leaves the machine.
 import { describe, expect, test } from 'bun:test'
-import { AppError, type Fetch } from '@highsea/core'
+import { AppError, type Fetch } from '@highsea-tv/core'
 import {
   CommandFailed,
   createPia,

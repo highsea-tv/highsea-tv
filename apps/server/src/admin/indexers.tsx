@@ -20,11 +20,11 @@ import type {
   Indexer,
   IndexerTestResult,
   SettingField,
-} from '@highsea/api-contract'
-import { percent } from '@highsea/core/format'
-import { useLocale, useT } from '@highsea/i18n/react'
-import { ApiError } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { percent } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { ApiError } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   type BadgeTone,
@@ -55,7 +55,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { hoursText, minutesOf, ratioOf, ratioText } from './download-client-seeding.ts'
 import { indexers as messages } from './indexers-messages.ts'

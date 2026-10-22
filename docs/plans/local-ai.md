@@ -197,14 +197,14 @@ More from the runtime docs:
 
 ## Architecture
 
-### A new package: `@highsea/ai`
+### A new package: `@highsea-tv/ai`
 
 A domain package with no React, Next or Hono, as the parent plan's layering asks. It depends on `core`, `sdk` and `api-contract`, and on nothing else in the domain layer: everything it does to highsea, it does through the SDK.
 
 | Part | What |
 | --- | --- |
 | `provider` | `createChatProvider({ baseUrl, apiKey?, model, fetch })`. One method, `chat({ messages, tools?, responseSchema?, signal })`, over `/v1/chat/completions`. Timeouts, a concurrency limit of 1 by default, and a circuit breaker that turns AI off for a while after repeated failures. A `classifier` provider for a Laya-style `/v1/systemone` sidecar is a later addition with the same seam. |
-| `tools` | The tool registry: each tool's name, description, zod input and output, the API call it makes, its access level, and whether it needs confirmation. **Generated from `@highsea/api-contract`** where a tool is one route, so access and shapes can't drift. |
+| `tools` | The tool registry: each tool's name, description, zod input and output, the API call it makes, its access level, and whether it needs confirmation. **Generated from `@highsea-tv/api-contract`** where a tool is one route, so access and shapes can't drift. |
 | `assistant` | The chat loop: system prompt, tool list, the plan-then-confirm flow, and the transcript. |
 | `advisors` | Advisory checks (release sanity, NFO text, subtitle language) that return `DecisionReason`s of kind `warning`. |
 | `mcp` | The MCP server, built on the official TypeScript SDK (`@modelcontextprotocol/server` 2.3.1, Apache-2.0, or `@modelcontextprotocol/sdk` 1.32.1, MIT; both released 2026-10-05, per npm). |
@@ -384,7 +384,7 @@ Nothing before Phase 3 is signed off, unless the owner decides otherwise. Each s
 | --- | --- | --- | --- |
 | **0. Now** | This document. Two cheap seams kept in mind while Phase 3 is built, with no code: the `x-highsea-access` metadata already makes tool generation possible, and the decision engine's registry can take a final advisory slot. | Nothing | None |
 | **1. MCP server** | `/api/mcp`, API-key auth, read-only tools first, then write tools with elicitation and pending approvals, the audit log, the stdio shim, and an ADR. | Phase 3 signed off; the routes from checkpoints 5–8 | None |
-| **2. Provider seam and assistant** | `@highsea/ai` provider and assistant, Settings › AI, the assistant panel (prototype first), "Explain" on rejected releases, and the tool-use and injection evaluations. Documented runtimes: llama.cpp and Ollama, with an optional compose service. | Stage 1 | Owner's choice; defaults by tier |
+| **2. Provider seam and assistant** | `@highsea-tv/ai` provider and assistant, Settings › AI, the assistant panel (prototype first), "Explain" on rejected releases, and the tool-use and injection evaluations. Documented runtimes: llama.cpp and Ollama, with an optional compose service. | Stage 1 | Owner's choice; defaults by tier |
 | **3. Advisors** | The advisory slot and job, language detection (classical), log triage, and NL library search. | Stage 2; the labelled release set | Same endpoint |
 | **4. Classifier experiment** | Fine-tune and calibrate Laya (or a similar encoder) on the release set; ship only if it beats rules plus an LLM on the held-out set. | Stage 3's data | Laya sidecar |
 | **Later** | Whisper subtitle generation and translation (roadmap [Later]), OAuth sign-in for MCP clients, the client apps' assistant (Phase 4 or after). | | |

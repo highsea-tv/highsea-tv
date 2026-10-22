@@ -4,7 +4,7 @@
 // (https://wiki.servarr.com/radarr/settings#qualities-defined); the order follows Radarr's default
 // profile order as the TRaSH Guides' profiles record it (docs/json/radarr/quality-profiles, MIT),
 // with BR-DISK and Raw-HD moved below Remux-2160p (ADR 0031). Written from documentation, not code.
-import type { Modifier, ParsedQuality, Resolution, Source } from '@highsea/parser'
+import type { Modifier, ParsedQuality, Resolution, Source } from '@highsea-tv/parser'
 
 export type QualityDefinition = {
   name: QualityName

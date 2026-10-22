@@ -2,7 +2,7 @@
 // C7 Settings, TV (docs/product/client-settings.md#tv): the sections down the left, the chosen
 // one on the right. Focus moving down the list shows each section (as tvOS does); Right enters it,
 // Left returns to the list. Theme and sound apply to this TV; the home layout follows the person.
-import { cn } from '@highsea/ui-web'
+import { cn } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { useServer } from '../client/data.ts'

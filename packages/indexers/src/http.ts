@@ -2,7 +2,7 @@
 // Requests to indexers and what can go wrong with them. Every failure becomes an `IndexerError`
 // of one kind, because the kind decides what health does next (ADR 0035): credentials fail at
 // once, a 429 waits as long as it's told, everything else backs off on the schedule.
-import { type Fetch, retryAfterMs } from '@highsea/core'
+import { type Fetch, retryAfterMs } from '@highsea-tv/core'
 
 export type FailureKind =
   /** The indexer refused the credentials. Retrying never helps, so health fails at once. */

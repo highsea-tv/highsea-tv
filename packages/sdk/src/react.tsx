@@ -2,7 +2,7 @@
 // React bindings with the prototype's shapes (ADR 0018): `useQuery(key, call, topics)` keeps a
 // result and refetches it in place when an event names one of its topics; `useAction(call)`
 // wraps a change. A `reset` event (the stream fell behind) refetches every live query.
-import { RESET_TOPIC } from '@highsea/api-contract'
+import { RESET_TOPIC } from '@highsea-tv/api-contract'
 import {
   createContext,
   type ReactNode,

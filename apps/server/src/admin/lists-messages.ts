@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Import lists (ADR 0021; checkpoint 8a): the prototype's Lists group, the Add a list
 // dialog the prototype doesn't have, Trakt's account and the exclusions.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const lists = defineMessages({
   what: 'the import lists',

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Smart collections over HTTP (collections.md; checkpoint 8d, ADR 0049): thin handlers over
-// `@highsea/curation/collections`. The admin's routes are staff only (ADR 0032) and sit beside
+// `@highsea-tv/curation/collections`. The admin's routes are staff only (ADR 0032) and sit beside
 // featured sections; the apps' Library › Collections is every signed-in person's, resolved for
 // them and the kind of app asking. Static paths (`/preview`, `/fields`, `/people`) come before
 // `/{id}`, in the contract's order. Changes go in the audit log, as curation's do.
-import { routes } from '@highsea/api-contract'
+import { routes } from '@highsea-tv/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'

@@ -4,8 +4,8 @@
 // server's key; recovery codes are stored as verifiers and each works once. Turning it on or off,
 // or making new recovery codes, asks for the password again. Someone who loses both the app and
 // the codes asks the owner to turn it off for them (OWASP, "Resetting MFA").
-import { AppError, newId } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { AppError, newId } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import { and, eq, isNull } from 'drizzle-orm'
 import { type Actor, assertCanManage, confirmPassword } from './accounts.ts'
 import type { Ctx, RequestMeta } from './context.ts'

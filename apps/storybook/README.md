@@ -1,12 +1,12 @@
-# @highsea/storybook
+# @highsea-tv/storybook
 
-highsea's living style guide: the design system's foundations, every [`@highsea/ui-web`](../../packages/ui-web/README.md) component, and the compositions they build. Everything here renders the real tokens and components; nothing is redrawn for the guide. The rules behind it are in [`docs/design-language/`](../../docs/design-language/README.md).
+highsea's living style guide: the design system's foundations, every [`@highsea-tv/ui-web`](../../packages/ui-web/README.md) component, and the compositions they build. Everything here renders the real tokens and components; nothing is redrawn for the guide. The rules behind it are in [`docs/design-language/`](../../docs/design-language/README.md).
 
 ## Run it
 
 ```sh
 bun run storybook                                  # from the repo root: http://localhost:6006
-bun run --filter @highsea/storybook build          # a static build in apps/storybook/storybook-static
+bun run --filter @highsea-tv/storybook build          # a static build in apps/storybook/storybook-static
 ```
 
 ## Toolbar
@@ -29,14 +29,14 @@ The Accessibility panel runs axe on each story; a violation fails the story's te
 | Shell | Admin: the sidebar (full and rail), command palette, widget dashboard and a full admin layout |
 | TV | Home: a 1920×1080 TV home on screen units with D-pad focus. Click into it, then use the arrow keys, Enter and Escape |
 
-The titles and their generated placeholder artwork come from [`@highsea/fixtures`](../../packages/fixtures/README.md), shared with the Phase 2 prototypes, so the guide ships no third-party images.
+The titles and their generated placeholder artwork come from [`@highsea-tv/fixtures`](../../packages/fixtures/README.md), shared with the Phase 2 prototypes, so the guide ships no third-party images.
 
 ## Tests
 
 `bun test` (from here or the root) runs:
 
 - `test/stories.test.tsx`: every story, composed with the real preview, renders in happy-dom and passes axe (WCAG 2.2 AA tags). Contrast is checked per theme by the token tests and in the browser by the addon, since happy-dom has no layout.
-- `test/theme.test.ts`: Storybook's own chrome is themed before any CSS loads, so `.storybook/theme.ts` and the head files hardcode the default theme's values. This checks them against `@highsea/tokens`.
+- `test/theme.test.ts`: Storybook's own chrome is themed before any CSS loads, so `.storybook/theme.ts` and the head files hardcode the default theme's values. This checks them against `@highsea-tv/tokens`.
 
 ## Adding a story
 

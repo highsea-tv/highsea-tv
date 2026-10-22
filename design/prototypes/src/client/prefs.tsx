@@ -2,8 +2,8 @@
 // What each device remembers for itself (C7): its theme and its sound. Until someone changes
 // them, a device follows the server's defaults (A12). In the prototype the toolbar's theme and
 // sound stand in for those defaults, and a choice made here wins over them on that platform.
-import { createTheme, themeCss } from '@highsea/tokens'
-import { useSoundPlayer } from '@highsea/ui-web'
+import { createTheme, themeCss } from '@highsea-tv/tokens'
+import { useSoundPlayer } from '@highsea-tv/ui-web'
 import { useEffect, useState } from 'react'
 import { useQuery } from '../mock/hooks.tsx'
 import { useProto } from '../screen/screen.tsx'

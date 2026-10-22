@@ -3,7 +3,7 @@
 // can't send one). One connection is shared by every subscriber, opened by the first and closed
 // after the last. It reconnects with backoff, sending Last-Event-ID so nothing is missed.
 
-import { API_PREFIX, RESET_TOPIC, type ServerEvent } from '@highsea/api-contract'
+import { API_PREFIX, RESET_TOPIC, type ServerEvent } from '@highsea-tv/api-contract'
 import type { Fetch } from './client.ts'
 
 export type EventListener = (event: ServerEvent) => void

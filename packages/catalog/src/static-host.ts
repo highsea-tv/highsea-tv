@@ -4,7 +4,7 @@
 // versions into the directory and the server checks them, with no network (the plan's rule).
 import { existsSync, readFileSync, statSync } from 'node:fs'
 import { join, normalize } from 'node:path'
-import type { Fetch } from '@highsea/core'
+import type { Fetch } from '@highsea-tv/core'
 import { sha256 } from './signing.ts'
 
 export type StaticHost = Fetch & { requests: string[] }

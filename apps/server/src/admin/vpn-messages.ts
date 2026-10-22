@@ -2,7 +2,7 @@
 // Settings › VPN (ADR 0021), in the prototype's copy (design/prototypes/src/admin/settings/vpn.tsx).
 // The lines the server writes, a provider's steps, a check's title and a failure's message, come
 // with the data. Added here: the interface list's empty state and the save errors.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const vpn = defineMessages({
   what: 'these settings',

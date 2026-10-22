@@ -10,7 +10,7 @@
 //
 // One function names a file for the import, the settings preview and manual import's "becomes"
 // column, so the three never disagree.
-import type { QualityName } from '@highsea/quality'
+import type { QualityName } from '@highsea-tv/quality'
 import {
   audioChannelsOf,
   audioCodecName,

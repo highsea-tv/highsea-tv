@@ -35,10 +35,10 @@ mock.module('../src/admin/shell.tsx', () => ({
 
 const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
-const { createClient } = await import('@highsea/sdk')
-const { ClientProvider } = await import('@highsea/sdk/react')
-const { TooltipProvider } = await import('@highsea/ui-web')
-const { RULE_FIELDS } = await import('@highsea/api-contract')
+const { createClient } = await import('@highsea-tv/sdk')
+const { ClientProvider } = await import('@highsea-tv/sdk/react')
+const { TooltipProvider } = await import('@highsea-tv/ui-web')
+const { RULE_FIELDS } = await import('@highsea-tv/api-contract')
 const { Collections } = await import('../src/admin/collections.tsx')
 const { CollectionEditor, handoff } = await import('../src/admin/collections-editor.tsx')
 

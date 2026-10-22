@@ -10,10 +10,10 @@
 // - the query and the tab live in the address (`?q=`, `?list=`), so Back returns to them;
 // - TMDB answers a page at a time: Show more under the grid loads the next;
 // - no TMDB key says so, and links to Settings › General (decision 1).
-import { DISCOVER_LISTS, type DiscoverMovie } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import type { HighseaClient } from '@highsea/sdk'
-import { useQuery } from '@highsea/sdk/react'
+import { DISCOVER_LISTS, type DiscoverMovie } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import type { HighseaClient } from '@highsea-tv/sdk'
+import { useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -26,7 +26,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useDeferredValue, useState } from 'react'
 import { AddMovieDialog, isNoMetadataKey, METADATA_SETTINGS } from './add-dialog.tsx'
 import { useAddressParam } from './address.ts'

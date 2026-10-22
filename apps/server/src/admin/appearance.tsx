@@ -9,10 +9,10 @@ import type {
   Appearance as AppearanceData,
   CustomTheme,
   SoundDefaults,
-} from '@highsea/api-contract'
-import { art, titles } from '@highsea/fixtures'
-import { useLocale, useT } from '@highsea/i18n/react'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { art, titles } from '@highsea-tv/fixtures'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   type BuiltInThemeId,
   builtInThemes,
@@ -28,7 +28,7 @@ import {
   type SoundPack,
   type ThemeableRole,
   themeCss,
-} from '@highsea/tokens'
+} from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -40,7 +40,7 @@ import {
   Switch,
   toast,
   useSoundPlayer,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useMemo, useState } from 'react'
 import { appearance as messages } from './appearance-messages.ts'
 import { toBase64 } from './base64.ts'

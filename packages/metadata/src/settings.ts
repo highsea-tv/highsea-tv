@@ -3,8 +3,8 @@
 // (docs/plans/phase-3-server.md, Data › Secrets) and never returned, and the metadata language and
 // region (owner's decisions 1 and 5). Each server uses its owner's own key, as TMDB's terms ask:
 // they don't allow sublicensing access to the API (https://www.themoviedb.org/api-terms-of-use).
-import { AppError } from '@highsea/core'
-import { readSetting, writeSetting } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { readSetting, writeSetting } from '@highsea-tv/db'
 import type { MetadataDeps } from './context.ts'
 import { type Credential, credentialOf, TMDB_STATUS, TmdbHttpError } from './tmdb/client.ts'
 import type { MetadataSettingsView } from './types.ts'

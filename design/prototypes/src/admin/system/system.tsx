@@ -3,7 +3,7 @@
 // Status, health checks, scheduled tasks with Run now, the log, the live event stream, backups
 // with restore, and updates. The one place, with the sidebar's server card, that shows health.
 
-import { bytes, bytesParts, duration, percent, relative } from '@highsea/core/format'
+import { bytes, bytesParts, duration, percent, relative } from '@highsea-tv/core/format'
 import {
   Badge,
   type BadgeTone,
@@ -29,7 +29,7 @@ import {
   TabsList,
   TabsTrigger,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'wouter'
 import { Soon } from '../../kit/soon.tsx'

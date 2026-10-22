@@ -21,7 +21,7 @@ import {
 } from 'drizzle-orm/sqlite-core'
 import { mediaFiles, mediaItems } from './media.ts'
 
-/** A language profile: ordered rules (`@highsea/subtitles/shared`'s `LanguageRule[]`). */
+/** A language profile: ordered rules (`@highsea-tv/subtitles/shared`'s `LanguageRule[]`). */
 export const languageProfiles = sqliteTable('language_profiles', {
   id: text('id').primaryKey(),
   name: text('name').notNull().unique(),
@@ -39,7 +39,7 @@ export const SUBTITLE_PROVIDER_IDS = ['opensubtitles', 'subdl', 'subsource'] as 
 export const subtitleProviders = sqliteTable('subtitle_providers', {
   id: text('id', { enum: SUBTITLE_PROVIDER_IDS }).primaryKey(),
   enabled: integer('enabled', { mode: 'boolean' }).notNull().default(false),
-  /** The account's fields by key, sealed as one JSON string (`@highsea/core`'s Sealer). */
+  /** The account's fields by key, sealed as one JSON string (`@highsea-tv/core`'s Sealer). */
   credentials: text('credentials'),
   /** What A10's Account column shows: the username, or a masked key. Never a secret. */
   account: text('account'),
@@ -156,7 +156,7 @@ export const subtitleResults = sqliteTable(
     language: text('language').notNull(),
     provider: text('provider').notNull(),
     score: integer('score').notNull(),
-    /** The provider's result with its scoring, as `@highsea/subtitles/shared` keeps it. */
+    /** The provider's result with its scoring, as `@highsea-tv/subtitles/shared` keeps it. */
     result: text('result', { mode: 'json' }).notNull(),
     expiresAt: integer('expires_at').notNull(),
   },

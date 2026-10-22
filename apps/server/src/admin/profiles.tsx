@@ -1,15 +1,15 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Profiles and formats and › Quality sizes (settings.md), ported from the prototype's
-// reference areas with real data. A format's conditions read as @highsea/quality describes them.
+// reference areas with real data. A format's conditions read as @highsea-tv/quality describes them.
 // Since checkpoint 8c, Edit, New profile, New format and Edit sizes open the editors
 // (quality-editors.tsx), and a preset someone changed reads as theirs. The catalog's profile
 // presets stay inert, with a tooltip: the catalog has none to add yet.
-import type { QualitySize } from '@highsea/api-contract'
-import { bytes } from '@highsea/core/format'
-import { useLocale, useT } from '@highsea/i18n/react'
-import { describeFormat } from '@highsea/quality/browser'
-import { useQuery } from '@highsea/sdk/react'
+import type { QualitySize } from '@highsea-tv/api-contract'
+import { bytes } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { describeFormat } from '@highsea-tv/quality/browser'
+import { useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -23,7 +23,7 @@ import {
   TableHeader,
   TableRow,
   Tooltip,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { filmBytes } from './library-figures.ts'
 import { Loadable } from './loadable.tsx'
 import { profiles as messages, sizes as sizeMessages } from './profiles-messages.ts'

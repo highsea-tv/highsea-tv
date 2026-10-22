@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Two kinds of access (ADR 0032): the owner and admins are "staff" and run the server, by their
 // role alone; users watch, with "Ask for titles" and "Download for offline" set per person.
-import type { Permission, Role } from '@highsea/db/schema'
+import type { Permission, Role } from '@highsea-tv/db/schema'
 
 export const isStaff = (role: Role) => role === 'owner' || role === 'admin'
 

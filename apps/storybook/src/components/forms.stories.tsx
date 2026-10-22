@@ -12,7 +12,7 @@ import {
   SelectSeparator,
   Switch,
   Textarea,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 const meta = {

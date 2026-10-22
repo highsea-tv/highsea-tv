@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A movie's rules, pure: its folder, when it counts as released, and its status until files and
-// downloads exist (checkpoint 6). Naming any title is @highsea/media/shared's (names.ts).
-import type { LibraryStatus, MinimumAvailability } from '@highsea/db/schema'
-import type { MovieMetadata } from '@highsea/metadata'
+// downloads exist (checkpoint 6). Naming any title is @highsea-tv/media/shared's (names.ts).
+import type { LibraryStatus, MinimumAvailability } from '@highsea-tv/db/schema'
+import type { MovieMetadata } from '@highsea-tv/metadata'
 import { dayOf, titlePath } from '../shared/names.ts'
 
 /** `{rootFolder}/{Title} ({Year})`, Radarr's default movie folder format. */
@@ -44,7 +44,7 @@ export function isAvailable(
 }
 
 /**
- * A library movie's status until files exist (checkpoint 6), one of @highsea/db's
+ * A library movie's status until files exist (checkpoint 6), one of @highsea-tv/db's
  * `LIBRARY_STATUSES`: `not-released` before its minimum availability, otherwise `wanted` when
  * monitored and `unmonitored` when not. `available` and `downloading` come with files and the queue.
  */

@@ -12,10 +12,10 @@
 // - `initialPath` (Downloads' Import into the library, 6b) opens it on a torrent's folder;
 // - a Version column (6b, answer 8): each file picks one of its movie's versions, the scan's
 //   choice (the first without a file) by default; two files for one version are refused.
-import type { ImportCandidate, Movie } from '@highsea/api-contract'
-import { bytes } from '@highsea/core/format'
-import { useT } from '@highsea/i18n/react'
-import { useAction, useClient, useQuery } from '@highsea/sdk/react'
+import type { ImportCandidate, Movie } from '@highsea-tv/api-contract'
+import { bytes } from '@highsea-tv/core/format'
+import { useT } from '@highsea-tv/i18n/react'
+import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -34,7 +34,7 @@ import {
   TableRow,
   TableToolbar,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useState } from 'react'
 import { manualImport as messages } from './import-messages.ts'
 import { clashes, defaultVersion, VersionSelect } from './import-versions.tsx'

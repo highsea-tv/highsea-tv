@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { icons } from '@highsea/ui-web'
+import { icons } from '@highsea-tv/ui-web'
 
 /** A select control over every icon name. */
 export const iconControl = {

@@ -5,8 +5,8 @@
 // started until Resume; a torrent Radarr grabbed linked to its movie; a second run skipping.
 import { afterEach, describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
-import { schema, writeSetting } from '@highsea/db'
-import { makeTorrent, randomData, until, writeFiles } from '@highsea/torrent/testing'
+import { schema, writeSetting } from '@highsea-tv/db'
+import { makeTorrent, randomData, until, writeFiles } from '@highsea-tv/torrent/testing'
 import { categoryName, priorityOf, versionAtLeast } from '../src/qbittorrent/index.ts'
 import { RADARR_GRABS_KEY } from '../src/radarr/index.ts'
 import {

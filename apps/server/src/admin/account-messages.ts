@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // "Your account" (ADR 0021). Not in the prototype: its copy follows the brand brief's voice and
 // the login and security specs' terms ("two-step verification", "passkeys").
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const account = defineMessages({
   title: 'Your account',

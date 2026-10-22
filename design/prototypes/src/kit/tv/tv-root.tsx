@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The TV screen's root: the 16:9 container (cqw screen units), spatial navigation and the remote's
 // OK and Back. The frame sizes the viewport to 16:9, so the root just fills it.
-import { useSound, useSpatialNavigation } from '@highsea/ui-web'
+import { useSound, useSpatialNavigation } from '@highsea-tv/ui-web'
 import { type ReactNode, useEffect, useRef } from 'react'
 
 export function TvRoot({ children, onBack }: { children: ReactNode; onBack?: () => void }) {

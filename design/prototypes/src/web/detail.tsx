@@ -13,7 +13,7 @@ import {
   Select,
   Skeleton,
   SkeletonText,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
 import { left, runtime, useItem } from '../client/data.ts'
 import { useAction } from '../mock/hooks.tsx'

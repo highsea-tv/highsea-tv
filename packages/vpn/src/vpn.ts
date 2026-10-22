@@ -32,8 +32,8 @@ import {
   type Fetch,
   type Logger,
   type Sealer,
-} from '@highsea/core'
-import type { Db } from '@highsea/db'
+} from '@highsea-tv/core'
+import type { Db } from '@highsea-tv/db'
 import { type Runner, spawnRunner } from './commands.ts'
 import { type ComposeInput, composeFor } from './compose.ts'
 import { checkCopy, failures, systemCopy, wireGuardFailures } from './copy.ts'
@@ -122,7 +122,7 @@ export type VpnDeps = {
   /** A fetch leaving from an address: the bound half of the exit check, and indexers (V6). */
   boundFetch?: (localAddress: string, options?: BoundFetchOptions) => Fetch
   interfaces?: () => NodeJS.Dict<os.NetworkInterfaceInfo[]>
-  /** The catalog's `vpn-providers` entries (`@highsea/catalog`'s provider reader). */
+  /** The catalog's `vpn-providers` entries (`@highsea-tv/catalog`'s provider reader). */
   providers?: () => readonly VpnProviderDefinition[]
   /** Runs `ip` and `wg` for highsea connects; tests pass a fake that records each command. */
   runner?: Runner

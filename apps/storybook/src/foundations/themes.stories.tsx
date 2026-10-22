@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { art, titles } from '@highsea/fixtures'
+import { art, titles } from '@highsea-tv/fixtures'
 import {
   type BuiltInThemeId,
   builtInThemes,
@@ -13,7 +13,7 @@ import {
   type ThemeableRole,
   type ThemeInput,
   themeCss,
-} from '@highsea/tokens'
+} from '@highsea-tv/tokens'
 import {
   Badge,
   Banner,
@@ -26,7 +26,7 @@ import {
   SegmentedControl,
   Select,
   Switch,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useMemo, useState } from 'react'
 import { Page, Section } from './page.tsx'

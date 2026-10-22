@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What both composers share (docs/product/curation.md): who sees it (audience), when (schedule),
 // the status badge, and one-line summaries for the lists.
-import { Badge, type BadgeTone, Checkbox, Field, Input, SegmentedControl } from '@highsea/ui-web'
+import { Badge, type BadgeTone, Checkbox, Field, Input, SegmentedControl } from '@highsea-tv/ui-web'
 import { useQuery } from '../../mock/hooks.tsx'
 import type { Audience, ClientType, CurationStatus, User, UserRole } from '../../mock/types.ts'
 

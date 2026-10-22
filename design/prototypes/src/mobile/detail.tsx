@@ -11,7 +11,7 @@ import {
   Rating,
   Skeleton,
   SkeletonText,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
 import { left, runtime, useItem } from '../client/data.ts'
 import { WatchWith } from '../web/detail.tsx'

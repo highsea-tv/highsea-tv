@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { DiscoverMovie } from '@highsea/metadata'
+import type { DiscoverMovie } from '@highsea-tv/metadata'
 import { bestMatch } from '../../src/movies/index.ts'
 import { type Clips, hasFfmpeg, makeClips } from '../clips.ts'
 import { METROPOLIS, NOSFERATU, reason, SINTEL, setup } from './helpers.ts'

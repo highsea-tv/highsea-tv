@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Download client's Categories and Watch folder groups (checkpoint 6b, ADR 0021). No
 // prototype screen has them; the copy follows the brief's voice and the root folders' list.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const categories = defineMessages({
   title: 'Categories',

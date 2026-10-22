@@ -7,11 +7,15 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { accessOf, routes } from '@highsea/api-contract'
-import { schema } from '@highsea/db'
-import type { Runtime } from '@highsea/runtime'
-import { createFakeSubtitles, FAKE_ACCOUNTS, FAKE_OPENSUBTITLES_KEY } from '@highsea/subtitles/fake'
-import type { SyncOutcome } from '@highsea/subtitles/sync'
+import { accessOf, routes } from '@highsea-tv/api-contract'
+import { schema } from '@highsea-tv/db'
+import type { Runtime } from '@highsea-tv/runtime'
+import {
+  createFakeSubtitles,
+  FAKE_ACCOUNTS,
+  FAKE_OPENSUBTITLES_KEY,
+} from '@highsea-tv/subtitles/fake'
+import type { SyncOutcome } from '@highsea-tv/subtitles/sync'
 import { createApi } from '../src/api/app.ts'
 import { addMember, bootRuntime, cleanup, clientFor, failure, withOwner } from './helpers.ts'
 

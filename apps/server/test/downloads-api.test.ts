@@ -6,9 +6,9 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Fetch } from '@highsea/core'
-import { createFakeIndexer, FAKE_CREDENTIALS, FAKE_ORIGIN } from '@highsea/indexers/fake'
-import { createReplayFetch } from '@highsea/metadata/replay'
+import type { Fetch } from '@highsea-tv/core'
+import { createFakeIndexer, FAKE_CREDENTIALS, FAKE_ORIGIN } from '@highsea-tv/indexers/fake'
+import { createReplayFetch } from '@highsea-tv/metadata/replay'
 import { createApi } from '../src/api/app.ts'
 import { addMember, bootRuntime, cleanup, clientFor, failure, withOwner } from './helpers.ts'
 

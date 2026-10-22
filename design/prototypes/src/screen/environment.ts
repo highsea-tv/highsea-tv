@@ -2,7 +2,7 @@
 // Applies the toolbar's theme, reduced motion and text size to the screen's document, without
 // changing ui-web or the OS: attributes on <html>, the custom theme's CSS, and a matchMedia shim
 // so hooks that read `prefers-reduced-motion` (spatial navigation, carousels) see the toggle.
-import { createTheme, themeCss } from '@highsea/tokens'
+import { createTheme, themeCss } from '@highsea-tv/tokens'
 import type { ProtoState } from '../proto/state.ts'
 
 /** The custom theme: what an owner might build in Appearance (A12). OLED base, a sea-glass accent. */

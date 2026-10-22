@@ -4,7 +4,7 @@
 // its settings. Renderers live with each app. A size is a width in columns of the 4-column grid
 // and a height in 84px rows; resizing snaps to whole columns and rows within each widget's range.
 // Browser-safe: the admin, the prototype and the clients import it as `/widgets`.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 import { z } from 'zod'
 
 export const WIDGET_KINDS = [

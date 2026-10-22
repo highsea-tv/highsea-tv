@@ -6,7 +6,7 @@
 //   here, never highsea's real application;
 // - generic lists: any address registered on the fake answers its JSON.
 // The movies are the recorded TMDB ones (the Blender films and the silent classics).
-import type { Fetch } from '@highsea/core'
+import type { Fetch } from '@highsea-tv/core'
 
 export const FAKE_TRAKT_CLIENT_ID = 'fake-trakt-client-id-0001'
 export const FAKE_TRAKT_CLIENT_SECRET = 'fake-trakt-client-secret-0001'
@@ -82,7 +82,7 @@ const json = (body: unknown, status = 200, headers: Record<string, string> = {})
   })
 
 /**
- * A fetch that answers `api.trakt.tv` and the generic lists registered in `generic`, and passes
+ * A fetch that answers `api.trakt.tv`, `auth.trakt.tv` and the generic lists registered in `generic`, and passes
  * everything else to `next` (the TMDB replay in tests), or fails.
  */
 export function createFakeLists(options: { next?: Fetch } = {}) {
@@ -114,7 +114,13 @@ export function createFakeLists(options: { next?: Fetch } = {}) {
     const authed = !!bearer && trakt.tokens.has(bearer)
     const body =
       method === 'POST' ? (JSON.parse(String(init?.body ?? '{}')) as Record<string, string>) : {}
-    const secretOk = body.client_secret === FAKE_TRAKT_CLIENT_SECRET
+    // Trakt deprecated the secret for sign-in: absent is fine, a wrong one isn't
+    const secretOk =
+      body.client_id === FAKE_TRAKT_CLIENT_ID &&
+      (body.client_secret === undefined || body.client_secret === FAKE_TRAKT_CLIENT_SECRET)
+    // sign-in lives on auth.trakt.tv, everything else on api.trakt.tv
+    if (path.startsWith('/oauth/') !== (url.hostname === 'auth.trakt.tv'))
+      return json({ error: 'not found' }, 404)
     const tokens = () => {
       issued++
       const access = `fake-access-${issued}`
@@ -144,7 +150,12 @@ export function createFakeLists(options: { next?: Fetch } = {}) {
       return tokens()
     }
     if (method === 'POST' && path === '/oauth/token') {
-      if (!secretOk || !body.refresh_token?.startsWith('fake-refresh-')) return json({}, 401)
+      if (
+        !secretOk ||
+        body.redirect_uri !== 'https://api.highsea.tv/oauth/trakt' ||
+        !body.refresh_token?.startsWith('fake-refresh-')
+      )
+        return json({}, 401)
       return tokens()
     }
     if (method === 'POST' && path === '/oauth/revoke') {
@@ -177,7 +188,8 @@ export function createFakeLists(options: { next?: Fetch } = {}) {
 
   const fetch: Fetch = async (input, init) => {
     const url = new URL(input instanceof Request ? input.url : String(input))
-    if (url.hostname === 'api.trakt.tv') return answerTrakt(url, init)
+    if (url.hostname === 'api.trakt.tv' || url.hostname === 'auth.trakt.tv')
+      return answerTrakt(url, init)
     const g = generic.get(url.toString())
     if (g) return json(g.body, g.status ?? 200)
     if (options.next) return options.next(input, init)

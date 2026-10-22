@@ -14,7 +14,7 @@
 // reads as every file deleted. Safe to repeat (ADR 0022): a second scan finds nothing to do.
 import { promises as fsp } from 'node:fs'
 import { basename, dirname, extname } from 'node:path'
-import { schema } from '@highsea/db'
+import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import { writeFileFacts } from '../shared/file-facts.ts'
 import { type FoundFile, isVideo, listFiles } from '../shared/files.ts'

@@ -4,7 +4,7 @@
 // `<error code description>` (Torznab 1.3: https://torznab.github.io/spec-1.3-draft/torznab/Specification-v1.3.html;
 // Newznab: https://newznab.readthedocs.io/en/latest/misc/api/). A plain RSS feed is the same items
 // without the attributes.
-import { isMovieCategory } from '@highsea/schemas/indexers'
+import { isMovieCategory } from '@highsea-tv/schemas/indexers'
 import { XMLParser, XMLValidator } from 'fast-xml-parser'
 import { IndexerError } from './http.ts'
 import { type IndexerRelease, toRelease } from './release.ts'

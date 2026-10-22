@@ -3,7 +3,7 @@
 // them everywhere, and the library's tags and filter. Root folders' default language profile is
 // here too, since both came with 8c.
 import { afterEach, describe, expect, test } from 'bun:test'
-import { schema } from '@highsea/db'
+import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import { tagsMatch } from '../../src/shared/index.ts'
 import { BIG_BUCK_BUNNY, reason, SINTEL, setup } from '../movies/helpers.ts'

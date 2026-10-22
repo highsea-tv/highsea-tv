@@ -3,7 +3,7 @@
 // profile asks for) with search for one or all; then the settings: providers with their rate
 // limits, language profiles (ordered, forced and SDH, cutoff), scoring and the automatic sync.
 
-import { percent } from '@highsea/core/format'
+import { percent } from '@highsea-tv/core/format'
 import {
   Badge,
   Button,
@@ -29,7 +29,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { Language, LanguageProfile, LanguageRule, SubtitleSettings } from '../../mock/types.ts'

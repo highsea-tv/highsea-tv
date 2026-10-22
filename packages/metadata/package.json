@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/metadata",
+  "name": "@highsea-tv/metadata",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -13,14 +13,14 @@
     "record:tmdb": "bun scripts/record.ts"
   },
   "dependencies": {
-    "@highsea/core": "workspace:*",
-    "@highsea/db": "workspace:*",
-    "@highsea/jobs": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/db": "workspace:*",
+    "@highsea-tv/jobs": "workspace:*",
     "drizzle-orm": "0.45.3",
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@highsea/config": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
     "@types/node": "25.9.9"
   }
 }

@@ -2,7 +2,7 @@
 // The emails' own words (docs/product/emails.md, ADR 0021): the server's mail (an invite, a
 // password reset written for a link the owner makes on A13) and the frame around a notification,
 // whose title and body come from the shared catalog (`notificationMessages`).
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const emailMessages = defineMessages({
   'invite.subject': 'You’re invited to {server}',

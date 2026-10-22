@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/indexers",
+  "name": "@highsea-tv/indexers",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -12,19 +12,19 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@highsea/core": "workspace:*",
-    "@highsea/db": "workspace:*",
-    "@highsea/schemas": "workspace:*",
-    "@highsea/jobs": "workspace:*",
-    "@highsea/parser": "workspace:*",
-    "@highsea/quality": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/db": "workspace:*",
+    "@highsea-tv/schemas": "workspace:*",
+    "@highsea-tv/jobs": "workspace:*",
+    "@highsea-tv/parser": "workspace:*",
+    "@highsea-tv/quality": "workspace:*",
     "cheerio": "1.2.0",
     "drizzle-orm": "0.45.3",
     "fast-xml-parser": "5.11.2",
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@highsea/config": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
     "@types/node": "25.9.9"
   }
 }

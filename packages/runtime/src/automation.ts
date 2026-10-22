@@ -18,12 +18,12 @@
 // content (non-RSS feed searches) will ignore delay profile settings", so Search, Search all and
 // Search now never wait). A held movie is looked at again when the wait is up, by
 // `movies.held`, which grabs the best release found by then.
-import { AppError, type EventBus, type Logger } from '@highsea/core'
-import type { Downloads } from '@highsea/downloads'
-import type { Indexers, SearchInput } from '@highsea/indexers'
-import type { JobQueue } from '@highsea/jobs'
-import { type Movies, WANTED_TOPIC } from '@highsea/media/movies'
-import { holdUntil } from '@highsea/quality'
+import { AppError, type EventBus, type Logger } from '@highsea-tv/core'
+import type { Downloads } from '@highsea-tv/downloads'
+import type { Indexers, SearchInput } from '@highsea-tv/indexers'
+import type { JobQueue } from '@highsea-tv/jobs'
+import { type Movies, WANTED_TOPIC } from '@highsea-tv/media/movies'
+import { holdUntil } from '@highsea-tv/quality'
 import { z } from 'zod'
 
 /** Searches indexers for a movie in the background: Search, Search all and Search now queue it. */

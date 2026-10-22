@@ -2,9 +2,9 @@
 // `media.file-facts` (checkpoint 8d): queued at boot until it has filled the files recorded before
 // 8d, then not again.
 import { expect, test } from 'bun:test'
-import { createEventBus, createFakeClock } from '@highsea/core'
-import { migrate, openDatabase, schema } from '@highsea/db'
-import { createJobQueue } from '@highsea/jobs'
+import { createEventBus, createFakeClock } from '@highsea-tv/core'
+import { migrate, openDatabase, schema } from '@highsea-tv/db'
+import { createJobQueue } from '@highsea-tv/jobs'
 import { FILE_FACTS_JOB, scheduleFileFacts } from '../src/file-facts.ts'
 
 test('fills old files once, and isn’t queued again', async () => {

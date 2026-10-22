@@ -16,7 +16,7 @@ import {
   Switch,
   Textarea,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type ReactNode, useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import {

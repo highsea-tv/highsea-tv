@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The profile, format and size editors (checkpoint 8a's prototype, built in 8c; the plan's question
 // 9): what the owner reviews before the server's Settings › Profiles and Quality stop being
-// read-only. Each edits @highsea/quality's real shapes, as the Servarr wiki describes them:
+// read-only. Each edits @highsea-tv/quality's real shapes, as the Servarr wiki describes them:
 // - a quality profile (https://wiki.servarr.com/radarr/settings#quality-profiles): the qualities
 //   highest first, "qualities within the same group are equal", only ticked ones wanted; the cutoff
 //   ("Upgrade Until"); the format scores, with a minimum, a score to stop upgrading at and the least
@@ -13,8 +13,8 @@
 //   with an empty preferred size or maximum meaning no limit, as TRaSH's defaults leave them.
 // Each is a draft with the save bar, like every settings page (settings.md › Decisions).
 
-import { bytes } from '@highsea/core/format'
-import { parse } from '@highsea/parser'
+import { bytes } from '@highsea-tv/core/format'
+import { parse } from '@highsea-tv/parser'
 import {
   CONDITION_KINDS,
   type Condition,
@@ -41,7 +41,7 @@ import {
   RESOLUTIONS,
   SOURCES,
   validateFormat,
-} from '@highsea/quality/browser'
+} from '@highsea-tv/quality/browser'
 import {
   Badge,
   Banner,
@@ -67,7 +67,7 @@ import {
   TableHeader,
   TableRow,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'

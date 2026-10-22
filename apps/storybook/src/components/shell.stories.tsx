@@ -25,7 +25,7 @@ import {
   useCommandPaletteShortcut,
   WidgetFrame,
   WidgetGrid,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useCallback, useState } from 'react'
 

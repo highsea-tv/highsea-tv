@@ -1,8 +1,8 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Sign out, outside the shell: signs this browser out, then loads the sign-in page afresh.
-import { useAction } from '@highsea/sdk/react'
-import { Button } from '@highsea/ui-web'
+import { useAction } from '@highsea-tv/sdk/react'
+import { Button } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { FormAlert } from './auth-card.tsx'
 

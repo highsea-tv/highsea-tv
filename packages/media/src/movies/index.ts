@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// @highsea/media/movies: the movie library (checkpoint 4). Two layers joined by TMDB id (ADR 0014):
-// @highsea/metadata's cache holds what TMDB says about any movie, and this package holds what the
+// @highsea-tv/media/movies: the movie library (checkpoint 4). Two layers joined by TMDB id (ADR 0014):
+// @highsea-tv/metadata's cache holds what TMDB says about any movie, and this package holds what the
 // owner added: movies in the unified tree with their versions (ADR 0012), the client API's reads,
 // and the parser's page. The profiles, formats, sizes and root folders every media type uses are
-// @highsea/media/shared's, handed in as `media`.
+// @highsea-tv/media/shared's, handed in as `media`.
 //
 // The shape, for the API routes (apps/server/src/api/):
 //
@@ -28,16 +28,16 @@
 //   await movies.migrate.addInPlace(InPlaceInput) → { added, file }  (the importers, 6b)
 //   movies.close()                         stops listening for metadata.updated
 //
-// Movies, pages and client shapes are @highsea/api-contract's (ratings out of 5, ISO times).
+// Movies, pages and client shapes are @highsea-tv/api-contract's (ratings out of 5, ISO times).
 // Errors are AppErrors with `details.reason` where the contract names one: `no-indexers` (409,
 // search now and bulk search while no indexer is enabled), `last-version` (409),
 // `unknown-root-folder`, `duplicate-label`, `versions` and `bad-cursor` (400),
 // `unknown-quality-profile` (404), `outside-roots` (400, manual import outside the root folders
 // and the downloads folder).
 import { dirname } from 'node:path'
-import type { DiscoverMovie as ApiDiscoverMovie } from '@highsea/api-contract'
-import { readSetting, writeSetting } from '@highsea/db'
-import type { DiscoverMovie } from '@highsea/metadata'
+import type { DiscoverMovie as ApiDiscoverMovie } from '@highsea-tv/api-contract'
+import { readSetting, writeSetting } from '@highsea-tv/db'
+import type { DiscoverMovie } from '@highsea-tv/metadata'
 import { z } from 'zod'
 import type { Media } from '../shared/index.ts'
 import { createClient } from './client.ts'

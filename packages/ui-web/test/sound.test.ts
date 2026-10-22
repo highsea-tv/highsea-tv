@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { COMPRESSOR, defaultSoundPack, expandVoices, NAVIGATE_THROTTLE_MS } from '@highsea/tokens'
+import {
+  COMPRESSOR,
+  defaultSoundPack,
+  expandVoices,
+  NAVIGATE_THROTTLE_MS,
+} from '@highsea-tv/tokens'
 import { createSoundPlayer, dbToGain } from '../src/sound/player.ts'
 
 type Call = [method: string, ...args: number[]]

@@ -3,7 +3,7 @@
 // Announcement bodies are markdown; the admin renders the inline part the composer offers, as the
 // prototypes do (kit/inline.tsx): **bold**, _italic_ and [links](https://…). Links open in a new
 // tab, away from the app.
-import { Button } from '@highsea/ui-web'
+import { Button } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 
 const TOKENS = /(\*\*[^*]+\*\*|_[^_]+_|\[[^\]]+\]\([^)\s]+\))/

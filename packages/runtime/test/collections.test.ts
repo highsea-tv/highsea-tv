@@ -5,11 +5,11 @@
 // the editor's choices and people by role. The service's own behaviour is tested in
 // packages/curation against a fake library.
 import { beforeAll, describe, expect, test } from 'bun:test'
-import type { RuleCondition, RuleGroup } from '@highsea/api-contract'
-import { createFakeClock } from '@highsea/core'
-import type { CollectionDef, CollectionLibrary } from '@highsea/curation/collections'
-import { migrate, openDatabase } from '@highsea/db'
-import type { Movies } from '@highsea/media/movies'
+import type { RuleCondition, RuleGroup } from '@highsea-tv/api-contract'
+import { createFakeClock } from '@highsea-tv/core'
+import type { CollectionDef, CollectionLibrary } from '@highsea-tv/curation/collections'
+import { migrate, openDatabase } from '@highsea-tv/db'
+import type { Movies } from '@highsea-tv/media/movies'
 import { createCollectionLibrary } from '../src/collection-library.ts'
 
 const DAY = 86_400_000
@@ -22,7 +22,7 @@ const TEARS = 3
 const NOSFERATU = 4
 const SPRING = 5
 
-/** Regions' certifications, mildest first, as `@highsea/metadata` gives them from TMDB's list. */
+/** Regions' certifications, mildest first, as `@highsea-tv/metadata` gives them from TMDB's list. */
 const US = ['NR', 'G', 'PG', 'PG-13', 'R', 'NC-17']
 const GB = ['U', 'PG', '12A', '12', '15', '18', 'R18']
 const DE = ['0', '6', '12', '16', '18']

@@ -15,7 +15,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { schema } from '@highsea/db'
+import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import type { ImportOptions } from '../../src/movies/index.ts'
 import {

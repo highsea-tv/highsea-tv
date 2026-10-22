@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { AppError } from '@highsea/core'
-import { schema } from '@highsea/db'
-import { defaultSoundPack } from '@highsea/tokens'
+import { AppError } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
+import { defaultSoundPack } from '@highsea-tv/tokens'
 import { eq } from 'drizzle-orm'
 import { appKind } from '../src/keys.ts'
 import { checkMark } from '../src/marks.ts'

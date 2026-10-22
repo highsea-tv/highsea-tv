@@ -3,7 +3,7 @@
 // frame stays portrait, so the prototype turns the player a quarter turn inside it, as the phone
 // would be held. A tap shows or hides the chrome; skip back and forward sit beside Play, in thumb
 // reach; Audio and subtitles opens the same panel as the web, sized for touch.
-import { Button, EmptyState, Icon } from '@highsea/ui-web'
+import { Button, EmptyState, Icon } from '@highsea-tv/ui-web'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock } from '../client/data.ts'

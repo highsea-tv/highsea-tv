@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The movie library as import lists see it (checkpoint 8a): which movies are here, adding one with
 // a list's folder and profiles, and checking those exist when a list is saved. Lists don't import
-// `@highsea/media`; the runtime hands them this.
-import { AppError } from '@highsea/core'
-import { type Db, schema } from '@highsea/db'
-import type { ListLibrary } from '@highsea/lists/service'
-import type { Movies } from '@highsea/media/movies'
-import type { Media } from '@highsea/media/shared'
+// `@highsea-tv/media`; the runtime hands them this.
+import { AppError } from '@highsea-tv/core'
+import { type Db, schema } from '@highsea-tv/db'
+import type { ListLibrary } from '@highsea-tv/lists/service'
+import type { Movies } from '@highsea-tv/media/movies'
+import type { Media } from '@highsea-tv/media/shared'
 import { and, eq, inArray } from 'drizzle-orm'
 
 const { mediaItems, languageProfiles } = schema

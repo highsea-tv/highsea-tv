@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// @highsea/tokens: the single source for highsea's design values.
+// @highsea-tv/tokens: the single source for highsea's design values.
 // Rules for using them: docs/design-language/.
 
 export * from './color.ts'

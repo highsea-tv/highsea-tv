@@ -1,4 +1,4 @@
-# @highsea/server
+# @highsea-tv/server
 
 The highsea server: the admin UI (Next.js), the public API (Hono, under `/api`) and the background runtime, in one Node process ([ADR 0003](../../docs/adr/0003-server-runtime-custom-entry.md)). The plan is [phase-3-server.md](../../docs/plans/phase-3-server.md); the screens follow the signed-off [prototypes](../../design/prototypes/README.md).
 
@@ -16,10 +16,10 @@ Development keeps its database and files in `.dev/` at the repo root. The API's 
 
 | Path | What it is |
 | --- | --- |
-| `server.ts` | The entry: boots `@highsea/runtime`, then serves `/api` (Hono) and everything else (Next) on one port; SIGTERM shuts down in order |
+| `server.ts` | The entry: boots `@highsea-tv/runtime`, then serves `/api` (Hono) and everything else (Next) on one port; SIGTERM shuts down in order |
 | `src/http.ts` | The router between Hono and Next; `/stream` and `/ws` are reserved for playback |
-| `src/api/` | The API: thin handlers implementing `@highsea/api-contract` over the runtime's services, and the SSE event stream |
-| `app/`, `src/admin/` | The admin UI. It reads and writes through the API with `@highsea/sdk/react`, never Server Actions ([ADR 0018](../../docs/adr/0018-admin-data-through-the-api.md)). ui-web marks its client modules with `"use client"`, so server components can import it |
+| `src/api/` | The API: thin handlers implementing `@highsea-tv/api-contract` over the runtime's services, and the SSE event stream |
+| `app/`, `src/admin/` | The admin UI. It reads and writes through the API with `@highsea-tv/sdk/react`, never Server Actions ([ADR 0018](../../docs/adr/0018-admin-data-through-the-api.md)). ui-web marks its client modules with `"use client"`, so server components can import it |
 | `scripts/smoke.ts` | The platform under Node (`node scripts/smoke.ts`); CI runs it after the Bun tests |
 
 ## Environment

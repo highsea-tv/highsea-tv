@@ -4,7 +4,7 @@
 import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { boot, loadConfig } from '@highsea/runtime'
+import { boot, loadConfig } from '@highsea-tv/runtime'
 import pkg from '../package.json' with { type: 'json' }
 import { createApi } from '../src/api/app.ts'
 

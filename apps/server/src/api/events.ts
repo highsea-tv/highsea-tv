@@ -4,9 +4,9 @@
 // from closing an idle stream. The guard has already checked the caller is signed in; the log's
 // topic goes to the owner and admins only (STAFF_TOPICS, checkpoint 8b), and a personal event (`to`,
 // checkpoint 8c's curation) only to the people it names, without the list.
-import { RESET_TOPIC, type ServerEvent, STAFF_TOPICS } from '@highsea/api-contract'
-import { isStaff, type Principal } from '@highsea/auth'
-import type { Runtime } from '@highsea/runtime'
+import { RESET_TOPIC, type ServerEvent, STAFF_TOPICS } from '@highsea-tv/api-contract'
+import { isStaff, type Principal } from '@highsea-tv/auth'
+import type { Runtime } from '@highsea-tv/runtime'
 import type { Context } from 'hono'
 import { streamSSE } from 'hono/streaming'
 

@@ -7,9 +7,9 @@
 // table would add a migration for a handful of rows nothing joins to. A stored folder of null
 // follows the downloads folder, so moving that moves the categories with it.
 import { join } from 'node:path'
-import { AppError, type Clock, type EventBus } from '@highsea/core'
-import { type Db, readSetting, writeSetting } from '@highsea/db'
-import type { TorrentEngine } from '@highsea/torrent'
+import { AppError, type Clock, type EventBus } from '@highsea-tv/core'
+import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
+import type { TorrentEngine } from '@highsea-tv/torrent'
 import { z } from 'zod'
 import { DEFAULT_DOWNLOAD_CLIENT, DOWNLOAD_CLIENT_KEY } from './settings.ts'
 

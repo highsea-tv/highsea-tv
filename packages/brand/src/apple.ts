@@ -2,7 +2,7 @@
 // Apple's source formats: an Icon Composer document (iOS, iPadOS, macOS) and the tvOS brand
 // assets (layered image stacks and the top shelf) for an Xcode asset catalog.
 // docs/brand/logo.md#app-icons
-import { defaultTheme } from '@highsea/tokens'
+import { defaultTheme } from '@highsea-tv/tokens'
 import { backgroundSvg, bannerSvg, ICON_BG, ICON_MARK, type ImageSpec } from './icons.ts'
 import { MARK_GRID } from './mark.ts'
 import { markOutline } from './mark-outline.ts'

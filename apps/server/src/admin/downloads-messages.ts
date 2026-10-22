@@ -2,7 +2,7 @@
 // A8 Downloads (ADR 0021): the prototype's copy, with what real data adds: a .torrent file beside
 // the link, private torrents, trackers not contacted yet, and the seeding rule's minimum time; 6b
 // adds the categories and the sheet's Import into the library.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const downloads = defineMessages({
   title: 'Downloads',

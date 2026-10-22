@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A12 Appearance's strings (appearance.md › Copy, and the prototype).
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const appearance = defineMessages({
   what: 'the appearance settings',

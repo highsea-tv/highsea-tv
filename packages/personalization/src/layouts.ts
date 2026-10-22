@@ -4,8 +4,8 @@
 // to the default still reaches that person. Staff widgets are filtered here, on the server, so no
 // layout can leak them. A placement whose kind this version doesn't know (a widget removed in a
 // later release) is kept but not returned, so a downgrade doesn't lose it.
-import { AppError } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import type { Ctx } from './context.ts'
 import {

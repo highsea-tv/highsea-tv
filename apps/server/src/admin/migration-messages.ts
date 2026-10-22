@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Migration's copy (ADR 0021; brief § 6): the one-time importers from Radarr and
 // qBittorrent (ADR 0041).
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const migration = defineMessages({
   intro:

@@ -3,8 +3,8 @@
 // movies in varied states, a live queue, five indexers (one backing off), synced subtitles and a
 // live announcement. "empty" is the same server just after setup: profiles and the catalog exist,
 // nothing else does.
-import { art, backdropArt, library, posterArt, stillArt, type Title } from '@highsea/fixtures'
-import { seedFormats, seedProfiles } from '@highsea/quality'
+import { art, backdropArt, library, posterArt, stillArt, type Title } from '@highsea-tv/fixtures'
+import { seedFormats, seedProfiles } from '@highsea-tv/quality'
 import { iso } from './clock.ts'
 import { defaultSettings, type Settings } from './settings.ts'
 import type {
@@ -295,7 +295,7 @@ const users = (now: number): User[] => [
   },
 ]
 
-// The profiles and formats a new server starts with, from @highsea/quality.
+// The profiles and formats a new server starts with, from @highsea-tv/quality.
 const qualityProfiles: QualityProfile[] = seedProfiles()
 const customFormats: CustomFormat[] = seedFormats()
 

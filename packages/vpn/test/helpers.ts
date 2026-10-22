@@ -4,9 +4,9 @@
 // 127.0.0.1.
 import type os from 'node:os'
 import { join } from 'node:path'
-import { createVpnProviderCatalog, SEED_DIR } from '@highsea/catalog'
-import { createFakeClock, createSealer, type Fetch, silentLogger } from '@highsea/core'
-import { migrate, openDatabase } from '@highsea/db'
+import { createVpnProviderCatalog, SEED_DIR } from '@highsea-tv/catalog'
+import { createFakeClock, createSealer, type Fetch, silentLogger } from '@highsea-tv/core'
+import { migrate, openDatabase } from '@highsea-tv/db'
 import {
   createVpn,
   type Runner,

@@ -3,16 +3,16 @@
 // per person and app, reach, the home screen's order, the personal events, the preview that
 // saves nothing, and the schedule job run twice.
 import { describe, expect, test } from 'bun:test'
-import type { AnnouncementInput, ClientItem, FeaturedSectionInput } from '@highsea/api-contract'
+import type { AnnouncementInput, ClientItem, FeaturedSectionInput } from '@highsea-tv/api-contract'
 import {
   AppError,
   createEventBus,
   createFakeClock,
   type ServerEvent,
   silentLogger,
-} from '@highsea/core'
-import { migrate, openDatabase, schema } from '@highsea/db'
-import { createJobQueue } from '@highsea/jobs'
+} from '@highsea-tv/core'
+import { migrate, openDatabase, schema } from '@highsea-tv/db'
+import { createJobQueue } from '@highsea-tv/jobs'
 import {
   type BuiltInRow,
   CURATION_JOB,

@@ -5,7 +5,7 @@
 // edits a draft: move, resize, add and remove widgets, then Done saves it. Owners can also make
 // the draft the default for admins.
 
-import { useLocale, useT } from '@highsea/i18n/react'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
 import {
   allowed,
   roleDefault,
@@ -15,8 +15,8 @@ import {
   widgetDefinition,
   widgetDefinitions,
   widgetMessages,
-} from '@highsea/personalization/widgets'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/personalization/widgets'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Button,
   EmptyState,
@@ -32,7 +32,7 @@ import {
   toast,
   WidgetEditor,
   type WidgetEditorMessages,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useMemo, useState } from 'react'
 import { dashboard as messages } from './dashboard-messages.ts'
 import { shell } from './messages.ts'

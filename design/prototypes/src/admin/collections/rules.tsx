@@ -10,7 +10,7 @@ import {
   MenuContent,
   MenuTrigger,
   Select,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import type {
   RuleCondition,

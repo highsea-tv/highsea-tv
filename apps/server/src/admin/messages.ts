@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The admin shell's strings (ADR 0021). English is the source; it's the prototype's copy.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const shell = defineMessages({
   skip: 'Skip to content',

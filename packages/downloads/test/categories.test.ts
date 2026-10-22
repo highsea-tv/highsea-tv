@@ -6,7 +6,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, utimesSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { createFakeClock, silentLogger } from '@highsea/core'
+import { createFakeClock, silentLogger } from '@highsea-tv/core'
 import { createWatchFolder, WATCH_SETTLE_MS } from '../src/index.ts'
 import { makeTorrent, setup, tempDir } from './helpers.ts'
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// @highsea/personalization: how highsea looks, sounds and arranges itself for each person (ADR 0027,
+// @highsea-tv/personalization: how highsea looks, sounds and arranges itself for each person (ADR 0027,
 // 0028). Preferences in layers, dashboard layouts with role defaults, the home screen's rows, and
 // the owner's appearance: themes, sound packs and the server's mark. The widget registry and the
 // preference keys are browser-safe and have their own entry points (`/widgets`, `/keys`).

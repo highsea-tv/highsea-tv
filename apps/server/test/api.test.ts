@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { afterEach, describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
-import { ERROR_CODES, routes } from '@highsea/api-contract'
-import { AppError, ERROR_CODES as CORE_CODES } from '@highsea/core'
+import { ERROR_CODES, routes } from '@highsea-tv/api-contract'
+import { AppError, ERROR_CODES as CORE_CODES } from '@highsea-tv/core'
 import { createApi } from '../src/api/app.ts'
 import { bootRuntime, cleanup } from './helpers.ts'
 

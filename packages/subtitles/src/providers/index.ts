@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// `@highsea/subtitles/providers`: the three provider adapters (checkpoint 7's plan, "Providers"),
+// `@highsea-tv/subtitles/providers`: the three provider adapters (checkpoint 7's plan, "Providers"),
 // what A10 shows about each, and the zip reader their downloads share.
 import type { Provider, ProviderDeps, ProviderId } from '../shared/types.ts'
 import { createOpenSubtitles } from './opensubtitles.ts'

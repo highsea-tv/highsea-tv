@@ -2,7 +2,7 @@
 // Each event's facts for a notification email's details (docs/product/emails.md), from its payload:
 // only what the payload carries. The details stand in for the body where there are any; the other
 // events keep their sentence.
-import { bytes } from '@highsea/core/format'
+import { bytes } from '@highsea-tv/core/format'
 import type { EventPayload, EventPayloads, MessageEvent } from '../shared/index.ts'
 import type { Detail } from './templates.ts'
 

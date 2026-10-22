@@ -14,7 +14,7 @@
 //   Sonarr (https://github.com/Radarr/Radarr/blob/develop/src/NzbDrone.Core/MediaFiles/FileExtensions.cs).
 import { promises as fsp } from 'node:fs'
 import { basename, extname, join, relative, sep } from 'node:path'
-import { bytes } from '@highsea/core'
+import { bytes } from '@highsea-tv/core'
 
 export const VIDEO_EXTENSIONS: ReadonlySet<string> = new Set([
   '.3gp',

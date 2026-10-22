@@ -20,10 +20,10 @@ import {
   TRAKT_LIST_SOURCES,
   type TraktDeviceCode,
   type TraktStatus,
-} from '@highsea/api-contract'
-import type { T as Translate } from '@highsea/i18n'
-import { useT } from '@highsea/i18n/react'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import type { T as Translate } from '@highsea-tv/i18n'
+import { useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -37,7 +37,7 @@ import {
   Select,
   Switch,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useState } from 'react'
 import { lists as messages } from './lists-messages.ts'
 import { Loadable } from './loadable.tsx'

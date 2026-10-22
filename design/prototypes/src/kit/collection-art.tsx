@@ -2,7 +2,7 @@
 // A collection's poster: the one uploaded, or a mosaic of its first four posters, as Plex draws a
 // smart collection's (docs/product/collections.md#artwork). The tile around it is the apps' Library ›
 // Collections grid, built like Poster's (the same lift and ring on focus), with the smart mark.
-import { Badge, cn, Icon } from '@highsea/ui-web'
+import { Badge, cn, Icon } from '@highsea-tv/ui-web'
 
 export function CollectionArt({
   poster,

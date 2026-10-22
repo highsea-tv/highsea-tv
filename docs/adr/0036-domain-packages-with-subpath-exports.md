@@ -22,3 +22,7 @@ Checkpoints 4 and 5 added `@highsea/media-movies` and `@highsea/indexer-schema`.
 - Root folders answer `in-use` with `details.counts` by type (`{ movie: 2 }`), not a movie count.
 - Imports name the kind (`@highsea/media/movies`), so the layout reads the same in code and in docs.
 - The earlier names stay in the history of ADR 0033 and the checkpoint 4 and 5 plans, each marked with the new name.
+
+## 2026-10-22: the `@highsea-tv/` scope
+
+At the owner's request (checkpoint 9a), every workspace package moved from the `@highsea/` scope to `@highsea-tv/`, to match the `highsea-tv` GitHub organisation: `@highsea/media/movies` is now `@highsea-tv/media/movies`, and so on. The subpath convention is unchanged. This ADR and the others keep the names as they were when written.

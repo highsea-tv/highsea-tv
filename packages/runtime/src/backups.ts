@@ -22,9 +22,9 @@ import {
 } from 'node:fs'
 import { isAbsolute, join, resolve } from 'node:path'
 import { pipeline } from 'node:stream/promises'
-import { AppError, type Clock, type EventBus, type Logger } from '@highsea/core'
-import { migrations, type RawDatabase } from '@highsea/db'
-import type { JobQueue } from '@highsea/jobs'
+import { AppError, type Clock, type EventBus, type Logger } from '@highsea-tv/core'
+import { migrations, type RawDatabase } from '@highsea-tv/db'
+import type { JobQueue } from '@highsea-tv/jobs'
 import { z } from 'zod'
 import { extractZipEntry, readZipEntry, writeZip, ZipError, zipEntries } from './zip.ts'
 

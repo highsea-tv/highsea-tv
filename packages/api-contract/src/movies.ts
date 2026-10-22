@@ -26,7 +26,7 @@ import { TagIds } from './tags.ts'
 
 /**
  * What the library shows for a movie until files and downloads exist (checkpoint 6). Mirrors
- * @highsea/db's `LIBRARY_STATUSES`.
+ * @highsea-tv/db's `LIBRARY_STATUSES`.
  */
 export const LIBRARY_STATUSES = [
   'available',

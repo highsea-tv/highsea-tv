@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The highsea mark and lockup for product UI: live text and a live mark that follows the theme's
-// accent (docs/brand/logo.md). The outlined files in @highsea/brand are for everywhere else.
-import { MARK_GRID, MARK_SMALL_BELOW, markGeometry } from '@highsea/brand'
+// accent (docs/brand/logo.md). The outlined files in @highsea-tv/brand are for everywhere else.
+import { MARK_GRID, MARK_SMALL_BELOW, markGeometry } from '@highsea-tv/brand'
 import { type ComponentProps, useId } from 'react'
 import { cn } from '../lib/cn.ts'
 

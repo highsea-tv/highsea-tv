@@ -14,12 +14,12 @@ import type {
   MovieUpdate,
   VersionInput,
   VersionUpdate,
-} from '@highsea/api-contract'
-import { AppError, newId } from '@highsea/core'
-import { schema } from '@highsea/db'
-import type { LibraryStatus, MinimumAvailability } from '@highsea/db/schema'
-import type { MovieMetadata } from '@highsea/metadata'
-import { parse } from '@highsea/parser'
+} from '@highsea-tv/api-contract'
+import { AppError, newId } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
+import type { LibraryStatus, MinimumAvailability } from '@highsea-tv/db/schema'
+import type { MovieMetadata } from '@highsea-tv/metadata'
+import { parse } from '@highsea-tv/parser'
 import {
   type ExistingFile,
   existingFile,
@@ -27,7 +27,7 @@ import {
   isQualityName,
   type QualityProfile,
   qualityOf,
-} from '@highsea/quality'
+} from '@highsea-tv/quality'
 import { and, asc, desc, eq, gte, inArray, lte, type SQL, sql } from 'drizzle-orm'
 import { invalid, noIndexers } from '../shared/context.ts'
 import type { Media } from '../shared/index.ts'

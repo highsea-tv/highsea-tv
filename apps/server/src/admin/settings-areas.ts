@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings' areas in their five groups (System and its Migration area came with 6b) (the prototype's settings.tsx). Plain data, so the
 // `/settings/{area}` route can check an id on the server.
-import type { IconName } from '@highsea/ui-web'
+import type { IconName } from '@highsea-tv/ui-web'
 
 export type AreaId =
   | 'general'

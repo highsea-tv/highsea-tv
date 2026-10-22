@@ -9,7 +9,7 @@ import type {
   Session,
   SignInResult,
   User,
-} from '@highsea/api-contract'
+} from '@highsea-tv/api-contract'
 import type {
   ApiKeyView,
   AuditEntry as AuditRow,
@@ -18,8 +18,8 @@ import type {
   SessionView,
   SignInOutcome,
   UserView,
-} from '@highsea/auth'
-import { iso } from '@highsea/core'
+} from '@highsea-tv/auth'
+import { iso } from '@highsea-tv/core'
 
 const isoOrNull = (ms: number | null) => (ms === null ? null : iso(ms))
 

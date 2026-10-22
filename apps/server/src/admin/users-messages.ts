@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A13 Users and devices (ADR 0021): the prototype's copy. Links are shown to copy, and emailed as
 // well when the server's mail is set up (checkpoint 8b).
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const users = defineMessages({
   sections: 'Users and devices sections',

@@ -2,7 +2,7 @@
 // Library › Collections, TV (docs/product/collections.md#in-the-apps): Movies and Collections as a
 // pair of choices under the global nav, then the collections as a poster grid, smart ones marked.
 // Up from the grid reaches the choices, Up again the nav; focus starts on the first collection.
-import { Icon } from '@highsea/ui-web'
+import { Icon } from '@highsea-tv/ui-web'
 import { collectionCaption, useCollections } from '../client/data.ts'
 import { CollectionTile } from '../kit/collection-art.tsx'
 import { GlobalNav, ServerIdentity, TvButton, TvMessage, tvHref, useInitialFocus } from './kit.tsx'

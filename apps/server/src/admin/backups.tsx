@@ -5,11 +5,11 @@
 // checks the folder on Save; its refusal shows on the field. A backup holds the database, never
 // secret.key, so a group says so and what a restore on another machine needs (the owner's answer
 // 13). Making and restoring backups is System › Backups.
-import { BACKUP_SCHEDULES, type BackupSettings, OPERATIONS_TOPICS } from '@highsea/api-contract'
-import { useLocale, useT } from '@highsea/i18n/react'
-import type { ApiError } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
-import { Field, Input, Select, toast } from '@highsea/ui-web'
+import { BACKUP_SCHEDULES, type BackupSettings, OPERATIONS_TOPICS } from '@highsea-tv/api-contract'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import type { ApiError } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { Field, Input, Select, toast } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { backups as messages } from './backups-messages.ts'
 import { Loadable } from './loadable.tsx'

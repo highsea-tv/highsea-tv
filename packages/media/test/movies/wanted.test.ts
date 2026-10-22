@@ -3,7 +3,7 @@
 // sweep's backoff on a fake clock, RSS's targets, the calendar's three dates, and the queries'
 // use of the partial index `media_items_wanted`.
 import { afterEach, describe, expect, test } from 'bun:test'
-import { schema } from '@highsea/db'
+import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import { SWEEP_SIZE } from '../../src/movies/index.ts'
 import {

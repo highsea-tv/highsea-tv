@@ -12,13 +12,13 @@
 // (decision 5), and the workflow's publish step is disabled.
 import { readFileSync, rmSync } from 'node:fs'
 import { join } from 'node:path'
-import { generateSigningKey } from '@highsea/catalog'
+import { generateSigningKey } from '@highsea-tv/catalog'
 import {
   BuildError,
   buildCatalog,
   buildVpnProviderCatalog,
   writeCatalog,
-} from '@highsea/catalog/build'
+} from '@highsea-tv/catalog/build'
 
 const root = join(import.meta.dir, '..')
 export const SEED_DIR = join(root, 'packages/catalog/seed')

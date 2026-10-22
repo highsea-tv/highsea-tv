@@ -56,11 +56,11 @@ Smaller than checkpoint 6, but it has two distinct parts with different risks: f
 | `subtitles/providers` | One adapter per provider: OpenSubtitles.com, Subdl, SubSource ([question 2](#open-questions-for-the-owner)), each behind the fetch seam (ADR 0029) | `subtitles/shared` |
 | `subtitles/movies` | What's movie-only: the wanted list over movies, the search and upgrade jobs, the import hook, the client API's tracks | `subtitles/shared`, `subtitles/providers`, `media/shared`, `media/movies`, `jobs` |
 | `subtitles/sync` (7b) | The sync engine: pure alignment code, the VAD in WebAssembly, and the worker entry that runs ffmpeg and both. No database | `core`, the VAD and FFT dependencies below |
-| `subtitles/fake` | Fake providers on loopback, written from each API's documented shapes, as `@highsea/indexers/fake` is | `subtitles/providers` |
+| `subtitles/fake` | Fake providers on loopback, written from each API's documented shapes, as `@highsea-tv/indexers/fake` is | `subtitles/providers` |
 | `subtitles/testing` (7b) | The Sintel fixture's loader and the span-list generators the sync tests share | `subtitles/sync` |
 | `media/shared` (grows) | The import pipeline gains one hook, `afterImport(file, sourceFolder)`, which the runtime wires to `subtitles/movies`; `media` doesn't import `subtitles` | as now |
 
-- **Why its own package:** ADR 0036 keeps a kind "with heavy or unusual dependencies (native, network)" in its own package. Subtitles talk to three providers and run WebAssembly in the worker pool. Its subpaths follow ADR 0036: `movies` is the media type, as in `@highsea/media/movies`, so shows arrive as `@highsea/subtitles/shows`; `shared` is what every type uses.
+- **Why its own package:** ADR 0036 keeps a kind "with heavy or unusual dependencies (native, network)" in its own package. Subtitles talk to three providers and run WebAssembly in the worker pool. Its subpaths follow ADR 0036: `movies` is the media type, as in `@highsea-tv/media/movies`, so shows arrive as `@highsea-tv/subtitles/shows`; `shared` is what every type uses.
 - **Why the hook and not a job queued by media:** bundled subtitles live in the download's folder, and a manual import in Move mode removes the torrent "as soon as the import finishes" (checkpoint 6). They have to be copied inside the import job, before it finishes. The hook does only that and queues `subtitles.search`; everything slow is a job of its own.
 - **New dependencies** (each pinned with `bun run pin`, licence checked with `bun run licenses`):
   - `chardet` (MIT; 2.2.0, published 2026-06-20) for encoding detection ([npm](https://www.npmjs.com/package/chardet)). Decoding uses Node's own `TextDecoder` (below), so no `iconv-lite`.

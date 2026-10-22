@@ -1,5 +1,5 @@
 {
-  "extends": "@highsea/config/tsconfig/react-library.json",
+  "extends": "@highsea-tv/config/tsconfig/react-library.json",
   "compilerOptions": {
     "types": ["bun", "vite/client"]
   },

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // TMDB over HTTP: Discover, media pages (a movie's metadata, recommendations, collections, people),
 // the image cache, the metadata settings and setup's key check. Thin handlers over
-// @highsea/metadata (ADR 0029, 0030); the library's side (`inLibrary`) comes from the movie service.
+// @highsea-tv/metadata (ADR 0029, 0030); the library's side (`inLibrary`) comes from the movie service.
 import { readFile } from 'node:fs/promises'
-import { routes } from '@highsea/api-contract'
+import { routes } from '@highsea-tv/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'

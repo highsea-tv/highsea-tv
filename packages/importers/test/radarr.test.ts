@@ -8,9 +8,9 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { schema } from '@highsea/db'
-import { type Clips, hasFfmpeg, makeClips } from '@highsea/media/testing'
-import { seedProfiles } from '@highsea/quality'
+import { schema } from '@highsea-tv/db'
+import { type Clips, hasFfmpeg, makeClips } from '@highsea-tv/media/testing'
+import { seedProfiles } from '@highsea-tv/quality'
 import {
   COPY_PROFILE,
   mapPath,

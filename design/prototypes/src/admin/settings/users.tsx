@@ -4,7 +4,7 @@
 // keys for scripts, shown once. People are the owner's to manage; admins see them read-only, and
 // their own API keys (ADR 0032).
 
-import { relative } from '@highsea/core/format'
+import { relative } from '@highsea-tv/core/format'
 import {
   Badge,
   type BadgeTone,
@@ -38,7 +38,7 @@ import {
   TabsList,
   TabsTrigger,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type {

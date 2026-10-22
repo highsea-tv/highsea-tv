@@ -7,8 +7,8 @@ import {
   newId,
   silentLogger,
   systemClock,
-} from '@highsea/core'
-import { type Db, schema } from '@highsea/db'
+} from '@highsea-tv/core'
+import { type Db, schema } from '@highsea-tv/db'
 import { and, asc, desc, eq, inArray, lte, type SQL } from 'drizzle-orm'
 import type { z } from 'zod'
 

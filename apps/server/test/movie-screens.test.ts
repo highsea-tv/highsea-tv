@@ -9,8 +9,8 @@ import type {
   MoviePage,
   QualityProfile,
   RootFolder,
-} from '@highsea/api-contract'
-import { ApiError } from '@highsea/sdk'
+} from '@highsea-tv/api-contract'
+import { ApiError } from '@highsea-tv/sdk'
 import {
   type AddOptions,
   addInput,

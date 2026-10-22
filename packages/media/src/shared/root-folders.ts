@@ -4,10 +4,10 @@
 // an unmounted disk shows as inaccessible rather than with stale numbers.
 import { accessSync, constants, statfsSync, statSync } from 'node:fs'
 import { isAbsolute, relative, resolve, sep } from 'node:path'
-import type { RootFolder } from '@highsea/api-contract'
-import { AppError, newId } from '@highsea/core'
-import { schema } from '@highsea/db'
-import type { MediaType } from '@highsea/db/schema'
+import type { RootFolder } from '@highsea-tv/api-contract'
+import { AppError, newId } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
+import type { MediaType } from '@highsea-tv/db/schema'
 import { asc, eq, sql } from 'drizzle-orm'
 import { invalid, type MediaDeps } from './context.ts'
 

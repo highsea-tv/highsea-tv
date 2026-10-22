@@ -6,8 +6,8 @@
 // device tokens instead. A `calendar` key (checkpoint 8a) opens the calendar feed and nothing else,
 // since a calendar app keeps it in the feed's address; its secret is also kept sealed, so Wanted
 // can show that address again.
-import { AppError, newId } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { AppError, newId } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import { and, desc, eq } from 'drizzle-orm'
 import type { Ctx, RequestMeta } from './context.ts'
 import { notFound } from './context.ts'

@@ -4,7 +4,7 @@
 // owner turns it on, and believed only from a trusted proxy's address; anyone else could send the
 // header themselves (Authelia's and Authentik's proxy docs both rest on this). It maps to an
 // existing account and never creates one.
-import { schema } from '@highsea/db'
+import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import type { Ctx } from './context.ts'
 import type { Principal } from './sessions.ts'

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What the parser reads out of a release name. The vocabulary (sources, modifiers, resolutions)
-// follows the Servarr wiki's quality definitions; @highsea/quality combines the three into named
+// follows the Servarr wiki's quality definitions; @highsea-tv/quality combines the three into named
 // qualities ("Bluray-1080p", "WEB-2160p") and ranks them.
 
 /** Where the video came from. `webdl` is a lossless capture of a stream, `webrip` a re-encode. */

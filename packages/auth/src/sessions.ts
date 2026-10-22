@@ -3,9 +3,9 @@
 // after the security setting's days; an app holds a bearer token until it's signed out. Each
 // secret is 256 random bits and only its SHA-256 verifier is stored (OWASP Session Management
 // Cheat Sheet). A new secret is issued at every sign-in, so a session id can't be fixed in advance.
-import { AppError, newId } from '@highsea/core'
-import { schema } from '@highsea/db'
-import type { ClientType, SignInMethod } from '@highsea/db/schema'
+import { AppError, newId } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
+import type { ClientType, SignInMethod } from '@highsea-tv/db/schema'
 import { and, desc, eq, lt, ne } from 'drizzle-orm'
 import type { Ctx, DeviceInput, RequestMeta, SessionView, UserView } from './context.ts'
 import { notFound } from './context.ts'

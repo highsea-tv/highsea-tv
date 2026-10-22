@@ -2,7 +2,7 @@
 // A collection on the TV (reference, docs/product/client-search.md#collections): the ambient
 // backdrop, the name, years and overview, then its titles here as a row, oldest first; a smart one says so and gives its rules in words. Focus
 // starts on the first title; Back goes back to wherever it was opened from.
-import { Icon } from '@highsea/ui-web'
+import { Icon } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
 import { useCollection } from '../client/data.ts'
 import {

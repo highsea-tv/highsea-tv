@@ -118,7 +118,7 @@ The first page after sign-in. It answers "is everything working, and what's happ
 
 ## Data
 
-Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `dashboard` group):
+Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `dashboard` group):
 
 - `dashboard.layout()` → `GET /api/v1/me/dashboard`. Staff, as are saving and resetting it.
 
@@ -144,7 +144,7 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `dashboard` gr
 - `dashboard.roleDefault({ params: { role } })` → `GET /api/v1/dashboard/defaults/{role}`. Staff.
 - `dashboard.saveRoleDefault({ params: { role }, body: { widgets } })` → `PUT /api/v1/dashboard/defaults/{role}`. Owner only. Widgets the role can't see are dropped and listed in `dropped`.
 - Event `layout.updated` on the event stream.
-- **The widget registry** is `@highsea/personalization/widgets`: each widget's id, title, description, width and height ranges, default size, the roles that may add it, its data source and a zod settings schema with defaults (Network: 10 minutes; Upcoming: 14 days; Queue: the All filter). The settings are stored with each placement; there's no UI to edit them yet.
+- **The widget registry** is `@highsea-tv/personalization/widgets`: each widget's id, title, description, width and height ranges, default size, the roles that may add it, its data source and a zod settings schema with defaults (Network: 10 minutes; Upcoming: 14 days; Queue: the All filter). The settings are stored with each placement; there's no UI to edit them yet.
 - **Data sources:** the server's public info lists the sources it has (`sources`). A widget whose source isn't there shows its empty state and calls nothing. In checkpoint 3 the server has `system`, which feeds Storage (`system.status`) and System health (`system.healthChecks`). Checkpoints 4 and 5 add `movies` and `indexers`; checkpoint 6a adds `downloads`, which feeds Network (`system.speeds`, `downloads.list`, `vpn.status`) and Queue (`queue.list`); checkpoint 7a adds `subtitles`, which feeds Subtitles (`subtitles.stats`, `subtitles.wanted`). Since checkpoint 7b its sync figures are live: synced since midnight UTC, the tracks waiting, and today's average correction. Checkpoint 8c adds `curation`, which feeds Announcement (`curation.announcements`).
 
 ## Decisions
@@ -158,7 +158,7 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `dashboard` gr
 - **Widget meta hides while customizing,** so the handle, title and remove button fit in a 1-column widget at 1024 (about 175px wide).
 - **The queue lays out by its own width** (container measurement), not the viewport, because the same widget can be 2 or 4 columns wide.
 - **The members' dashboard is gone** (owner's decision, 2026-10-20). Migration `0004_roles` deletes their saved role layouts. The registry still filters widgets by role on the server, so an owner-only widget could be added later without leaking.
-- **The editor is ui-web's `WidgetEditor`,** shared by the admin and the prototype; the registry is `@highsea/personalization`'s.
+- **The editor is ui-web's `WidgetEditor`,** shared by the admin and the prototype; the registry is `@highsea-tv/personalization`'s.
 - **Per-widget settings are stored, not yet edited** (owner's decision, 2026-10-20). Each widget shows its defaults.
 - **Columns come from the main area's width, not the viewport's.** At 1024 with the 216px sidebar, a 1-column widget is about 175px: tight for Indexers and Storage. The grid chooses 4, 3 or 2 columns from the main area's width (a container query). *Approved by the owner on 2026-10-20; built with the [dashboard follow-up](#follow-up-customization-on-homarrs-level).*
 

@@ -2,7 +2,7 @@
 // Outlines the wordmark and tagline from Geist, so logo files never depend on an installed font.
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { tracking } from '@highsea/tokens'
+import { tracking } from '@highsea-tv/tokens'
 import opentype from 'opentype.js'
 
 const require = createRequire(import.meta.url)

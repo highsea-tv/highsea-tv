@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // App icons, favicons, TV banners and social images: geometry and the full output list.
 // docs/brand/logo.md#app-icons
-import { defaultTheme } from '@highsea/tokens'
+import { defaultTheme } from '@highsea-tv/tokens'
 import { lockupBox, lockupElements } from './logo.ts'
 import { MARK_GRID, MARK_SMALL_BELOW, type MarkPaint, markElements } from './mark.ts'
 import { taglineOutline } from './wordmark-data.ts'

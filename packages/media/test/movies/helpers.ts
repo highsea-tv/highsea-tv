@@ -2,7 +2,7 @@
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { AddMovieInput } from '@highsea/api-contract'
+import type { AddMovieInput } from '@highsea-tv/api-contract'
 import {
   AppError,
   createEventBus,
@@ -11,11 +11,11 @@ import {
   generateSecretKey,
   type ServerEvent,
   silentLogger,
-} from '@highsea/core'
-import { migrate, openDatabase, schema } from '@highsea/db'
-import { createJobQueue } from '@highsea/jobs'
-import { createMetadata } from '@highsea/metadata'
-import { createReplayFetch } from '@highsea/metadata/replay'
+} from '@highsea-tv/core'
+import { migrate, openDatabase, schema } from '@highsea-tv/db'
+import { createJobQueue } from '@highsea-tv/jobs'
+import { createMetadata } from '@highsea-tv/metadata'
+import { createReplayFetch } from '@highsea-tv/metadata/replay'
 import { createMovies, type ImportOptions } from '../../src/movies/index.ts'
 import { createMedia } from '../../src/shared/index.ts'
 
@@ -75,7 +75,7 @@ export async function setup({
   fetch.requests.length = 0
   const media = createMedia({ db, clock, logger: silentLogger })
   media.seed()
-  // the language profile the movies here use; @highsea/subtitles seeds it in the runtime
+  // the language profile the movies here use; @highsea-tv/subtitles seeds it in the runtime
   db.insert(schema.languageProfiles)
     .values({
       id: 'lp-en',

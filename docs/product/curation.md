@@ -107,7 +107,7 @@ Two columns from expanded (the form at 22–28rem, the preview beside it and sti
 
 ## As built (8c)
 
-Built in checkpoint 8c, on 2026-10-21: `/curation`, `/curation/featured`, and the composers at `/curation/announcements/{id|new}` and `/curation/featured/{id|new}`, in `apps/server` (`src/admin/curation*.tsx`). The server side is `@highsea/curation/service` ([ADR 0048](../adr/0048-curation.md)). What real data changed from the prototype:
+Built in checkpoint 8c, on 2026-10-21: `/curation`, `/curation/featured`, and the composers at `/curation/announcements/{id|new}` and `/curation/featured/{id|new}`, in `apps/server` (`src/admin/curation*.tsx`). The server side is `@highsea-tv/curation/service` ([ADR 0048](../adr/0048-curation.md)). What real data changed from the prototype:
 
 - **The preview is the server's own drawing** of a home screen, at `/curation-frame`. The prototype framed the real client screens, and those arrive in Phase 4. The frame is the device's size: TV at 1600 × 900, the web at 1280 × 800, a phone at 390 × 844. It is scaled to fit and inert, as specified, and the admin posts it the result of `POST /curation/preview`. It follows the draft about 150 ms after typing stops.
 - **Preview as** lists every accepted person, not the prototype's Ines and Ruth, and starts on you.

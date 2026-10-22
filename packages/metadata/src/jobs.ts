@@ -6,8 +6,8 @@
 // - `metadata.purge`, daily, removes what's past TMDB's six-month limit and the library doesn't use;
 // - `metadata.facts` derives collection rules' facts again from the stored responses (checkpoint 8d):
 //   queued at boot when they were derived for another region or version, and when the region changes.
-import type { Db } from '@highsea/db'
-import type { JobQueue } from '@highsea/jobs'
+import type { Db } from '@highsea-tv/db'
+import type { JobQueue } from '@highsea-tv/jobs'
 import { z } from 'zod'
 import { deriveAllFacts, factsCurrent } from './facts.ts'
 import type { createMetadataCore } from './service.ts'

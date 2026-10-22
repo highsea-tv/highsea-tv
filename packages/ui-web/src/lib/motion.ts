@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Motion tokens as `motion/react` transitions: docs/design-language/motion.md
-import { choreography, durations, springs } from '@highsea/tokens'
+import { choreography, durations, springs } from '@highsea-tv/tokens'
 import type { Transition } from 'motion/react'
 
 /** `spring.base`: layout, focus moves, rows and tracks, sheets, entrances. */

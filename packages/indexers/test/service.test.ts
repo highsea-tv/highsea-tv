@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { schema } from '@highsea/db'
-import type { Definition } from '@highsea/schemas/indexers'
+import { schema } from '@highsea-tv/db'
+import type { Definition } from '@highsea-tv/schemas/indexers'
 import { BACKOFF_STEPS_MS, FAILING_AFTER_MS } from '../src/health.ts'
 import { HEALTH_TOPIC, INDEXERS_TOPIC } from '../src/index.ts'
 import {

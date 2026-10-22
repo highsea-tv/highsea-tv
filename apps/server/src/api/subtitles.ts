@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Subtitles over HTTP (checkpoint 7): A10's Wanted, Providers, Languages and Scoring tabs, and A6's
-// Subtitles tab with Re-sync and the offset (7b). Thin handlers over @highsea/subtitles/movies. The contract keeps a provider's
+// Subtitles tab with Re-sync and the offset (7b). Thin handlers over @highsea-tv/subtitles/movies. The contract keeps a provider's
 // account the owner's; saving one goes in the audit log, its credentials never do.
-import { routes, type SubtitleProvider } from '@highsea/api-contract'
-import type { ProviderView } from '@highsea/subtitles/movies'
+import { routes, type SubtitleProvider } from '@highsea-tv/api-contract'
+import type { ProviderView } from '@highsea-tv/subtitles/movies'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'

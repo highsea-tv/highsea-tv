@@ -7,7 +7,7 @@
 | **Geist** | Display, UI and body, everywhere |
 | **Geist Mono** | Figures and machine text: sizes, rates, ETAs, durations, release names, paths, keyboard hints, labels |
 
-Both are licensed under SIL OFL 1.1 and are bundled with the apps by `@highsea/brand`. Self-hosted clients must not depend on a font CDN.
+Both are licensed under SIL OFL 1.1 and are bundled with the apps by `@highsea-tv/brand`. Self-hosted clients must not depend on a font CDN.
 
 ## Weights and tracking
 

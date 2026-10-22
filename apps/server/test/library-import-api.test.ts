@@ -6,7 +6,7 @@ import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { hasFfmpeg, makeClips } from '@highsea/media/testing'
+import { hasFfmpeg, makeClips } from '@highsea-tv/media/testing'
 import { createApi } from '../src/api/app.ts'
 import { addMember, bootRuntime, cleanup, clientFor, failure, withOwner } from './helpers.ts'
 

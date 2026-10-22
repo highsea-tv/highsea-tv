@@ -2,7 +2,7 @@
 // The server admin (A1–A18). Sign-in and first-run setup stand alone; everything else sits in the
 // shell. Pages a later checkpoint builds show a placeholder in the real page frame, so the shell
 // can be walked end to end.
-import { Button, EmptyState } from '@highsea/ui-web'
+import { Button, EmptyState } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import { Route, Switch, useLocation } from 'wouter'
 import { Activity } from './activity/activity.tsx'

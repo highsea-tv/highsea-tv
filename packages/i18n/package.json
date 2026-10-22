@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/i18n",
+  "name": "@highsea-tv/i18n",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -18,7 +18,7 @@
     "react": "^19.3.0"
   },
   "devDependencies": {
-    "@highsea/config": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
     "@types/react": "19.3.0",
     "react": "19.3.1"
   }

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A fake gluetun control server on 127.0.0.1, answering the routes `@highsea/vpn` reads as
+// A fake gluetun control server on 127.0.0.1, answering the routes `@highsea-tv/vpn` reads as
 // gluetun's wiki documents them (https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md):
 // GET and PUT /v1/vpn/status, GET /v1/publicip/ip and GET /v1/portforward, each behind the
 // `X-API-Key` header. Tests set its state; the sweeps can serve it for the admin. Also timers that
 // run on a fake clock, so the checks' 5 minutes and the backoff pass in no time.
 import http from 'node:http'
 import type { AddressInfo } from 'node:net'
-import type { FakeClock } from '@highsea/core'
+import type { FakeClock } from '@highsea-tv/core'
 import type { Timers } from '../../src/vpn.ts'
 
 export type FakeGluetunState = {

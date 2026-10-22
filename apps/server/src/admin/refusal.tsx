@@ -3,7 +3,7 @@
 // that loads no admin data, says where to watch, and offers Sign out. It tells them nothing the
 // sign-in page doesn't already: that this is a highsea server. Once the web client exists
 // (Phase 4), it links there.
-import { createT } from '@highsea/i18n'
+import { createT } from '@highsea-tv/i18n'
 import { Card, Heading } from './auth-card.tsx'
 import { refusal } from './refusal-messages.ts'
 import { SignOutButton } from './sign-out-button.tsx'

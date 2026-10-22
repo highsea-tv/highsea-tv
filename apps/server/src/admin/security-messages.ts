@@ -2,7 +2,7 @@
 // Settings › Security (ADR 0021). Signing in and Single sign-on follow the prototype's copy
 // (design/prototypes/src/admin/settings/reference.tsx); proxy sign-in, which the prototype doesn't
 // show and the API has, removing the client secret, and the field errors are added in its voice.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const security = defineMessages({
   what: 'these settings',

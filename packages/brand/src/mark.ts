@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The highsea mark: a disc over the horizon, cut by two swells. Drawn on a 48-unit grid.
 // The geometry is exactly the signed-off reference board's (design/explorations/a2-abyss-neutral.html).
-import { defaultTheme } from '@highsea/tokens'
+import { defaultTheme } from '@highsea-tv/tokens'
 
 export const MARK_GRID = 48
 

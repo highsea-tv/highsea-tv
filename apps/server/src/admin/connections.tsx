@@ -16,10 +16,10 @@ import {
   type ConnectionInput,
   type ConnectionTest,
   NOTIFICATION_EVENTS,
-} from '@highsea/api-contract'
-import type { T as Translate } from '@highsea/i18n'
-import { useT } from '@highsea/i18n/react'
-import { useAction, useClient, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import type { T as Translate } from '@highsea-tv/i18n'
+import { useT } from '@highsea-tv/i18n/react'
+import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -33,7 +33,7 @@ import {
   Select,
   Switch,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useState } from 'react'
 import { connections as messages } from './connections-messages.ts'
 import { Loadable } from './loadable.tsx'
@@ -92,7 +92,7 @@ type Spec = {
   half?: boolean
 }
 
-/** The settings each kind's channel checks (`@highsea/notifications/channels`). */
+/** The settings each kind's channel checks (`@highsea-tv/notifications/channels`). */
 const FIELDS: Record<Exclude<Kind, 'browser'>, Spec[]> = {
   discord: [
     { key: 'webhookUrl', type: 'secret-url', required: true, hint: 'hint.discord.webhookUrl' },

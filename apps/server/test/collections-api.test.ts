@@ -6,9 +6,9 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import type { SmartCollectionInput } from '@highsea/api-contract'
-import type { Fetch } from '@highsea/core'
-import { createReplayFetch } from '@highsea/metadata/replay'
+import type { SmartCollectionInput } from '@highsea-tv/api-contract'
+import type { Fetch } from '@highsea-tv/core'
+import { createReplayFetch } from '@highsea-tv/metadata/replay'
 import { createApi } from '../src/api/app.ts'
 import { addMember, bootRuntime, cleanup, clientFor, failure, withOwner } from './helpers.ts'
 

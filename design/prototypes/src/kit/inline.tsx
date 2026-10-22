@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Announcement bodies are markdown; the prototypes render the inline part the composer offers:
 // **bold**, _italic_ and [links](https://…). Links open in a new tab, away from the app.
-import { Button } from '@highsea/ui-web'
+import { Button } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 
 const TOKENS = /(\*\*[^*]+\*\*|_[^_]+_|\[[^\]]+\]\([^)\s]+\))/

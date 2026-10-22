@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Tags (checkpoint 8c, ADR 0021). The prototypes have no tags, so this copy follows the plan
 // (checkpoint 8 › Tags), Radarr's help text for what each tag does, and the brand brief's voice.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const tagsMessages = defineMessages({
   // the picker, in each edit dialog

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Geist and Geist Mono (SIL Open Font License 1.1, see fonts/OFL.txt), shipped in `fonts/`.
-import { weights } from '@highsea/tokens'
+import { weights } from '@highsea-tv/tokens'
 
-/** Variable fonts for the web, declared by `@highsea/brand/fonts.css`. */
+/** Variable fonts for the web, declared by `@highsea-tv/brand/fonts.css`. */
 export const WEB_FONTS = {
   sans: 'Geist-Variable.woff2',
   mono: 'GeistMono-Variable.woff2',

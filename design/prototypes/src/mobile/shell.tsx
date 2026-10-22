@@ -4,7 +4,7 @@
 // avatar; the owner's announcements (a card, or a dialog when it must be acknowledged); and what
 // an unreachable server looks like. Sizes are in pt (≈ px here).
 
-import { relative } from '@highsea/core/format'
+import { relative } from '@highsea-tv/core/format'
 import {
   Banner,
   Button,
@@ -17,7 +17,7 @@ import {
   Mark,
   Sheet,
   SheetContent,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
 import {

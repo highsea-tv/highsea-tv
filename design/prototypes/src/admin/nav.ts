@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The admin's pages, in the sidebar's groups (admin.md#sidebar). Paths mirror the server's routes.
 // Only the owner and admins open the admin (ADR 0032), so every page is theirs.
-import type { IconName } from '@highsea/ui-web'
+import type { IconName } from '@highsea-tv/ui-web'
 
 export type Page = {
   id: string

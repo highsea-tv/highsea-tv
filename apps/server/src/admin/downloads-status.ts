@@ -3,8 +3,8 @@
 // the prototype's status.ts, in one place for Activity, Downloads, the movie page's queue card and
 // the Queue widget. Every state also has a label in each screen's catalog, so color is never the
 // only signal.
-import type { TorrentState } from '@highsea/api-contract'
-import type { BadgeTone, ProgressTone } from '@highsea/ui-web'
+import type { TorrentState } from '@highsea-tv/api-contract'
+import type { BadgeTone, ProgressTone } from '@highsea-tv/ui-web'
 
 export const torrentTone: Record<TorrentState, { tone: BadgeTone; bar: ProgressTone }> = {
   queued: { tone: 'neutral', bar: 'neutral' },

@@ -3,8 +3,8 @@
 // gluetun's API key are sealed with the server's key (`Sealer`, as the indexers' credentials are)
 // and never leave the server: the API sees `configName`, `piaPasswordSet` and `containerKeySet`.
 // An absent or empty secret in a save keeps the stored one, as the prototype's form expects.
-import { AppError, type Sealer } from '@highsea/core'
-import { type Db, readSetting, writeSetting } from '@highsea/db'
+import { AppError, type Sealer } from '@highsea-tv/core'
+import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
 import { failures } from './copy.ts'
 import { DEFAULT_ECHO_URL } from './echo.ts'
 import { findProvider, type VpnProviderDefinition } from './providers.ts'

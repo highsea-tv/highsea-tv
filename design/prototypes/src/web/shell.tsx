@@ -4,7 +4,7 @@
 // profile; then the page. The owner's acknowledge-required announcement opens over everything,
 // and an unreachable server replaces the page with what to do about it.
 
-import { relative } from '@highsea/core/format'
+import { relative } from '@highsea-tv/core/format'
 import {
   Banner,
   Button,
@@ -21,7 +21,7 @@ import {
   MenuSeparator,
   MenuTrigger,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import {

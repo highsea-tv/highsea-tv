@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The mock server's simulation and API semantics: what the screens rely on to show live states.
 import { describe, expect, test } from 'bun:test'
-import { ownerDefault } from '@highsea/personalization/widgets'
+import { ownerDefault } from '@highsea-tv/personalization/widgets'
 import { ApiError, createClient, createMock, type Mock } from '../src/mock/client.ts'
 import type { MockServer } from '../src/mock/server.ts'
 import type { WidgetPlacement } from '../src/mock/types.ts'

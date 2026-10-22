@@ -29,10 +29,10 @@ import type {
   HomeSection,
   RuleOptions,
   SectionSummary,
-} from '@highsea/api-contract'
-import { AppError, type Clock, type EventBus, type Logger, newId } from '@highsea/core'
-import { type Db, schema } from '@highsea/db'
-import type { JobQueue } from '@highsea/jobs'
+} from '@highsea-tv/api-contract'
+import { AppError, type Clock, type EventBus, type Logger, newId } from '@highsea-tv/core'
+import { type Db, schema } from '@highsea-tv/db'
+import type { JobQueue } from '@highsea-tv/jobs'
 import { and, asc, eq, inArray, isNotNull } from 'drizzle-orm'
 import { z } from 'zod'
 import {

@@ -2,7 +2,7 @@
 // Indexer health, backoff and stats (ADR 0035). A failure backs off on a growing schedule; a run of
 // failures that lasts 6 hours, or a refused credential, is failing; a success is healthy at once.
 // Stats are hourly rows, so the 24-hour numbers are one sum over at most 24 rows per indexer.
-import { type Db, schema } from '@highsea/db'
+import { type Db, schema } from '@highsea-tv/db'
 import { eq, gte, lt, sql } from 'drizzle-orm'
 import type { FailureKind } from './http.ts'
 

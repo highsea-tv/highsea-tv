@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// @highsea/importers/qbittorrent: the one-time qBittorrent importer (checkpoint 6b, ADR 0041). It
+// @highsea-tv/importers/qbittorrent: the one-time qBittorrent importer (checkpoint 6b, ADR 0041). It
 // reads qBittorrent's WebUI API v2 and emulates nothing (ADR 0011).
 //
 //   const qbt = createQbittorrentImporter(deps)
@@ -28,11 +28,11 @@ import {
   type Fetch,
   type Logger,
   type Sealer,
-} from '@highsea/core'
-import { type Db, schema } from '@highsea/db'
-import type { Downloads } from '@highsea/downloads'
-import type { JobQueue } from '@highsea/jobs'
-import type { Priority, SeedRule, TorrentEngine } from '@highsea/torrent'
+} from '@highsea-tv/core'
+import { type Db, schema } from '@highsea-tv/db'
+import type { Downloads } from '@highsea-tv/downloads'
+import type { JobQueue } from '@highsea-tv/jobs'
+import type { Priority, SeedRule, TorrentEngine } from '@highsea-tv/torrent'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { mapPath, type PathMapping, pathMappingSchema } from '../shared/paths.ts'

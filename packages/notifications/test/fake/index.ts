@@ -16,7 +16,7 @@ import {
   verify,
 } from 'node:crypto'
 import { createServer, type Socket } from 'node:net'
-import type { Fetch } from '@highsea/core'
+import type { Fetch } from '@highsea-tv/core'
 
 export type FakeRequest = {
   method: string

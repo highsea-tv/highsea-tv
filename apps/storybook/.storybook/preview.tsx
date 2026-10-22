@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import '../src/storybook.css'
-import { builtInThemes } from '@highsea/tokens'
-import { UIProvider } from '@highsea/ui-web'
+import { builtInThemes } from '@highsea-tv/tokens'
+import { UIProvider } from '@highsea-tv/ui-web'
 import { withThemeByDataAttribute } from '@storybook/addon-themes'
 import type { Decorator, Preview } from '@storybook/react-vite'
 import { theme } from './theme.ts'

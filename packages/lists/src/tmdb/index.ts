@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // TMDB as an import list source (checkpoint 8a): a public list by id or address, read a page at a
 // time (https://developer.themoviedb.org/reference/list-details), or one of TMDB's charts for the
-// server's region, its first page. Everything goes through `@highsea/metadata`, so the server's TMDB
+// server's region, its first page. Everything goes through `@highsea-tv/metadata`, so the server's TMDB
 // key, language and region apply, and the recordings answer in tests.
-import { AppError } from '@highsea/core'
-import type { Metadata } from '@highsea/metadata'
+import { AppError } from '@highsea-tv/core'
+import type { Metadata } from '@highsea-tv/metadata'
 import { type ListEntry, MAX_PAGES } from '../shared/index.ts'
 
 export type TmdbListSource = 'list' | 'popular' | 'top-rated' | 'upcoming' | 'now-playing'

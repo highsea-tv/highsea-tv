@@ -8,9 +8,9 @@
 // Torznab defines as the latest items: https://torznab.github.io/spec-1.3-draft/), parses each once,
 // matches it to the movies still wanted, and judges it for each as a search would, so nothing RSS
 // grabs couldn't be grabbed by hand. Guids already read are remembered per indexer for 14 days.
-import type { Clock, Logger } from '@highsea/core'
-import { type Db, schema } from '@highsea/db'
-import { type ParsedRelease, parse } from '@highsea/parser'
+import type { Clock, Logger } from '@highsea-tv/core'
+import { type Db, schema } from '@highsea-tv/db'
+import { type ParsedRelease, parse } from '@highsea-tv/parser'
 import {
   type CustomFormat,
   compareReleases,
@@ -24,8 +24,8 @@ import {
   type QualityProfile,
   type QualitySize,
   sizeLimits,
-} from '@highsea/quality'
-import type { Definition } from '@highsea/schemas/indexers'
+} from '@highsea-tv/quality'
+import type { Definition } from '@highsea-tv/schemas/indexers'
 import { and, asc, eq, gt, inArray, lte } from 'drizzle-orm'
 import type { RunResult, SearchQuery } from './engine.ts'
 import type { IndexerRelease } from './release.ts'

@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/catalog",
+  "name": "@highsea-tv/catalog",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -13,16 +13,16 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@highsea/core": "workspace:*",
-    "@highsea/db": "workspace:*",
-    "@highsea/schemas": "workspace:*",
-    "@highsea/jobs": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/db": "workspace:*",
+    "@highsea-tv/schemas": "workspace:*",
+    "@highsea-tv/jobs": "workspace:*",
     "drizzle-orm": "0.45.3",
     "yaml": "2.9.1",
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@highsea/config": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
     "@types/node": "25.9.9"
   }
 }

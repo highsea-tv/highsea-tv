@@ -3,11 +3,11 @@
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { defaultSecuritySettings, issueDevice, SECURITY_KEY } from '@highsea/auth'
-import type { Fetch } from '@highsea/core'
-import { writeSetting } from '@highsea/db'
-import { createReplayFetch, type ReplayFetch } from '@highsea/metadata/replay'
-import { createFakeNotifications } from '@highsea/notifications/fake'
+import { defaultSecuritySettings, issueDevice, SECURITY_KEY } from '@highsea-tv/auth'
+import type { Fetch } from '@highsea-tv/core'
+import { writeSetting } from '@highsea-tv/db'
+import { createReplayFetch, type ReplayFetch } from '@highsea-tv/metadata/replay'
+import { createFakeNotifications } from '@highsea-tv/notifications/fake'
 import {
   type BootOptions,
   boot,
@@ -15,8 +15,8 @@ import {
   hasRuntime,
   loadConfig,
   type Runtime,
-} from '@highsea/runtime'
-import { ApiError, createClient } from '@highsea/sdk'
+} from '@highsea-tv/runtime'
+import { ApiError, createClient } from '@highsea-tv/sdk'
 import type { createApi } from '../src/api/app.ts'
 
 export const meta = { address: '127.0.0.1', userAgent: 'bun test' }
@@ -34,7 +34,7 @@ export async function cleanup() {
  * A booted runtime whose outside requests go to TMDB's recordings (ADR 0029): no test reaches the
  * network, and one with no recording fails. Pass `fetch` to count or fail requests, `importing`
  * for the import pipeline's options, and `subtitles` for the subtitle providers' fakes. The
- * notification channels answer from `@highsea/notifications/fake` unless `notifications` says.
+ * notification channels answer from `@highsea-tv/notifications/fake` unless `notifications` says.
  */
 export async function bootRuntime(
   options: {

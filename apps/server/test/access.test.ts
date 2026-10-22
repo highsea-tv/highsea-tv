@@ -4,8 +4,8 @@
 // route does happens; only the guard answers. The `user` routes are listed by name, so a new one
 // is a decision, not an accident: nothing administrative is `user`.
 import { afterEach, describe, expect, test } from 'bun:test'
-import { ACCESS, ACCESS_KEY, type Access, routes } from '@highsea/api-contract'
-import { isAppError } from '@highsea/core'
+import { ACCESS, ACCESS_KEY, type Access, routes } from '@highsea-tv/api-contract'
+import { isAppError } from '@highsea-tv/core'
 import { Hono } from 'hono'
 import { type Env, guard } from '../src/api/guard.ts'
 import { addMember, bootRuntime, cleanup, meta, ORIGIN, withOwner } from './helpers.ts'

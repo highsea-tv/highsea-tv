@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The indexers service: the owner's installed indexers, each made from a catalog definition and
 // its settings; testing, health, stats and interactive search (ADR 0033, ADR 0035).
-import { AppError, iso, newId } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { AppError, iso, newId } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import {
   categoryName,
   type Definition,
   ENGINE_VERSION,
   protocolOf,
   type SettingField,
-} from '@highsea/schemas/indexers'
+} from '@highsea-tv/schemas/indexers'
 import { and, asc, eq, gt } from 'drizzle-orm'
 import { z } from 'zod'
 import {

@@ -76,7 +76,7 @@ highsea.tv/
 │  └─ presets/  themes/  sounds/  device-profiles/   (TRaSH-style quality/CF presets, naming, theme & sound packs, client profiles)
 └─ cloud/                    optional highsea cloud services [later]: accounts/server registry, relay (self-hostable), push relay, metadata proxy
 ```
-Reserved for later: `@highsea/media`'s `shows`, `music`, `video` (yt-dlp channels), and perhaps `books` (ebooks/audiobooks/podcasts) and `games` exports beside `movies` and `shared` ([ADR 0036](adr/0036-domain-packages-with-subpath-exports.md)), `usenet`, `requests`, `stream`, `stats`, `ui-native`.
+Reserved for later: `@highsea-tv/media`'s `shows`, `music`, `video` (yt-dlp channels), and perhaps `books` (ebooks/audiobooks/podcasts) and `games` exports beside `movies` and `shared` ([ADR 0036](adr/0036-domain-packages-with-subpath-exports.md)), `usenet`, `requests`, `stream`, `stats`, `ui-native`.
 
 Internal packages export raw TS (`"exports": {".": "./src/index.ts"}`) and only apps build. Domain packages are framework-free.
 
@@ -112,19 +112,19 @@ Everything later depends on this, so it comes first and is finalized before any 
    - **sound** (event taxonomy, character, loudness rules);
    - **platform guides**: 10-foot TV focus model, mobile, desktop/web, admin density;
    - accessibility standard (WCAG 2.2 AA, full keyboard and D-pad).
-4. **`@highsea/tokens`**:
+4. **`@highsea-tv/tokens`**:
    - a platform-agnostic token source (color roles, type, space, radius, elevation, blur, density, breakpoints, focus rings, **motion tokens** shared by Motion and Reanimated, **sound tokens**);
    - build outputs: CSS vars + Tailwind v4 `@theme` preset, and a typed RN object;
    - the **theme engine**: a theme is a validated partial override with contrast checks. It ships built-in themes (default dark, OLED black, high contrast) and supports custom themes with share codes.
 
    **✅ Done (2026-10-16).** See [`packages/tokens`](../packages/tokens/README.md).
-5. **`@highsea/brand`**:
+5. **`@highsea-tv/brand`**:
    - final logo, wordmark, app icons (all platform sizes), favicon;
    - fonts;
    - **default sound pack**: short UI sounds, procedurally synthesized or CC0, with sources in `design/assets/sounds`.
 
    **✅ Done (2026-10-16).** See [`packages/brand`](../packages/brand/README.md) and [logo and app icons](brand/logo.md). The custom icon glyphs moved to `ui-web` (step 6).
-6. **`@highsea/ui-web` core** on Radix + Tailwind v4 + `motion/react`:
+6. **`@highsea-tv/ui-web` core** on Radix + Tailwind v4 + `motion/react`:
    - primitives: Button, Input, Select, Dialog, Sheet, Popover, Tabs, Table, Badge, Toast, Tooltip, Skeleton, Progress;
    - media components: Poster, Backdrop hero, Carousel row, Rating;
    - shell components: Sidebar, CommandPalette, WidgetFrame, Banner;
@@ -174,17 +174,17 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
 
 ### Runtime and platform
 - **Process model**: Bun handles packages, scripts and tests. **Node 24 LTS**, pinned to 24.21.0 in `.nvmrc`, runs the Next server, locally, in CI and in the image alike.
-  - A **custom entry `apps/server/server.ts`** (a Node `http` server) calls `@highsea/runtime.boot()`, which starts migrations, jobs, the torrent engine, the download monitor, catalog sync, the discovery responder and the event bus.
+  - A **custom entry `apps/server/server.ts`** (a Node `http` server) calls `@highsea-tv/runtime.boot()`, which starts migrations, jobs, the torrent engine, the download monitor, catalog sync, the discovery responder and the event bus.
   - The entry then routes `/api/*`, `/stream/*` (reserved) and `/ws` (reserved) to Hono, and everything else to Next's request handler.
   - The singleton lives on `globalThis.__highsea`, so Next-rendered code shares it; routes and actions use `getRuntime()`.
   - CPU-heavy work runs in `worker_threads`, and ffmpeg runs as child processes.
   - SIGTERM: save resume data, drain jobs, close the DB.
   - `next.config.ts`: `transpilePackages` and `serverExternalPackages` (better-sqlite3, sharp, BitTorrent libs). No `output: 'standalone'`: Next documents it as incompatible with a custom server ([ADR 0003](adr/0003-server-runtime-custom-entry.md#amendment-2026-10-20-no-standalone-output)).
 - **API**:
-  - Hono + `@hono/zod-openapi`, mounted by the custom server entry and defined in `@highsea/api-contract`;
+  - Hono + `@hono/zod-openapi`, mounted by the custom server entry and defined in `@highsea-tv/api-contract`;
   - `/api/v1/openapi.json` and `/api/docs`;
   - SSE `/api/v1/events` (WebSockets come later with playback);
-  - `@highsea/sdk` is the typed client for all apps.
+  - `@highsea-tv/sdk` is the typed client for all apps.
 
   Domain services hold the logic. API handlers and admin Server Actions are thin adapters, and every admin capability is reachable via the API with admin scope.
 - **Data**: SQLite (WAL) + Drizzle at `/config/highsea.db`.
@@ -200,13 +200,13 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
 
   Pairing codes come later; the model supports them.
 
-### Connectivity, local and remote (`@highsea/network` + `sdk`)
+### Connectivity, local and remote (`@highsea-tv/network` + `sdk`)
 **Server side**
 - A stable `serverId`, plus an unauthenticated `GET /api/v1/system/info/public` returning id, name, version, local addresses and the configured public URL.
 - **LAN discovery**: a UDP broadcast responder plus **mDNS** `_highsea._tcp` advertisement.
 - Remote access: a configurable external URL, trusted reverse-proxy headers, optional built-in TLS, and docs for port-forward, reverse-proxy and Tailscale setups.
 
-**Client side** (`@highsea/sdk` `ServerConnection`)
+**Client side** (`@highsea-tv/sdk` `ServerConnection`)
 - Keeps a list of known servers (discovered and saved).
 - Probes candidate addresses (LAN first, then remote) by latency, keeps the winner and fails over automatically.
 - Stores tokens per server and supports multi-server switching.
@@ -216,7 +216,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
 **Docker**: discovery needs `network_mode: host` or the discovery UDP port published. The port is decided in an ADR.
 
 ### Indexers and the independent catalog
-- **`@highsea/schemas/indexers`**: definitions are **declarative only, with no code**, so remote updates are safe.
+- **`@highsea-tv/schemas/indexers`**: definitions are **declarative only, with no code**, so remote updates are safe.
   - Kinds: torznab, newznab, json-api, html (selectors), rss.
   - Each definition carries: id, version, `minEngineVersion`, logo, privacy, language, categories, settings fields (with "where to find this" help), login flow, request templates, field mappings, rate-limit hints, test query.
 - **`catalog/indexers` pipeline** (its own CI on `catalog/**`):
@@ -238,7 +238,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
   - health, backoff and stats per indexer.
 - **Licensing**: checked at Phase 3 checkpoint 5 (2026-10-20): Prowlarr's definitions repository has no licence, so they can't be copied, and Jackett's are GPL-2.0, which AGPL-3.0 can't take. highsea writes its own definitions in its own format, from each site's documentation, under CC0-1.0 (contributions may be MIT), and every definition records its source and licence ([ADR 0033](adr/0033-indexer-definitions.md)). The generic Torznab definition lets an owner use an existing Prowlarr or Jackett as one indexer.
 
-### Built-in torrent engine (`@highsea/torrent`)
+### Built-in torrent engine (`@highsea-tv/torrent`)
 - **Our code**:
   - session manager and state machine;
   - piece picker: rarest-first, plus a **sequential/priority mode** for future streaming;
@@ -263,7 +263,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
 6. Notifications: every channel, webhooks included. No Jellyfin, Plex or Emby refresh: highsea replaces them rather than feeding them (decided 2026-10-21). Built in checkpoint 8b ([ADR 0046](adr/0046-notifications.md)).
 7. Existing-library import for users migrating from Radarr.
 
-### Subtitles, first class (`@highsea/subtitles`)
+### Subtitles, first class (`@highsea-tv/subtitles`)
 - **Providers** (interface + implementations):
   - OpenSubtitles.com (REST, user API key), Podnapisi, Subdl, Gestdown/Addic7ed (TV-ready);
   - **embedded tracks**: detected via ffprobe, extractable via ffmpeg;
@@ -303,7 +303,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
   - **Replaced files** re-sync their tracks.
   - **The ±100 ms test** measures against the engine's own placement of the official cues, which sit 240–420 ms off the speech.
 
-### Personalization (`@highsea/personalization`)
+### Personalization (`@highsea-tv/personalization`)
 - **Preferences** are stored server-side with layers: user → client type → device. They sync to every client.
 - **Widgets**:
   - a registry: id, sizes, zod settings schema, data dependency, per-platform renderer;
@@ -312,7 +312,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
 - **Themes**: built-in and custom themes from the theme engine. The owner sets the server default theme and branding (name, logo, accent) that clients inherit.
 - **Sound**: a Web Audio engine with an event map, sound packs (built-in or uploaded), volume and a toggle. Off by default in admin; on by default in TV clients.
 
-### Curation (`@highsea/curation`)
+### Curation (`@highsea-tv/curation`)
 - **Announcements**:
   - markdown body, image, CTA;
   - severity;

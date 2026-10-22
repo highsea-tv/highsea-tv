@@ -2,7 +2,7 @@
 // Collections (docs/product/collections.md#the-list): every collection the owner and admins made,
 // smart or picked by hand, with its mosaic, what it holds now and who sees it. Each opens the
 // editor, where rules, exceptions and the live result sit side by side.
-import { Badge, Button, ConfirmDialog, EmptyState, toast } from '@highsea/ui-web'
+import { Badge, Button, ConfirmDialog, EmptyState, toast } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { CollectionArt } from '../../kit/collection-art.tsx'

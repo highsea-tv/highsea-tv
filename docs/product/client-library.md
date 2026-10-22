@@ -46,7 +46,7 @@ Everything the household can watch on this server, to browse rather than search:
 
 ## Data
 
-Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `library` group), as built in Phase 3, checkpoint 4. Everyone signed in.
+Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `library` group), as built in Phase 3, checkpoint 4. Everyone signed in.
 
 - `library.list({ query })` → `GET /api/v1/items?type=&genre=&playable=&sort=&dir=&cursor=&limit=`: a `ClientItemPage` (`items`, `next`, `total`), sorted, filtered and paged on the server. The prototype sorts and filters on the client.
   - `type` is `movie`, the only type yet (every type when absent); `genre` is one genre by name, ignoring case; `playable=true` keeps titles with a file to play.

@@ -4,8 +4,8 @@
 // They're rewritten for one movie when its file, tracks or profile change, and for every movie when
 // a profile changes, so A10's page reads an index instead of every file's streams. Each row keeps
 // when it may be searched again: after 1 day, then 3, then 7, then weekly (judgement call 6).
-import { AppError } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import { and, asc, count, countDistinct, eq, gt, inArray, lte, or, sql } from 'drizzle-orm'
 import { missing, type Profiles, type Want } from '../shared/profiles.ts'
 import type { SubtitlesDeps } from './context.ts'

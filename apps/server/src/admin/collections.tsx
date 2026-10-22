@@ -5,11 +5,11 @@
 // with its mosaic, what it holds now and who sees it. Each opens the editor. A collection a
 // featured section draws on can't be deleted: the server refuses (409) and the toast names the
 // section, from the list's `usedBy`.
-import { COLLECTION_TOPICS, type CollectionSummary } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import { ApiError } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
-import { Badge, Button, ConfirmDialog, EmptyState, toast } from '@highsea/ui-web'
+import { COLLECTION_TOPICS, type CollectionSummary } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import { ApiError } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { Badge, Button, ConfirmDialog, EmptyState, toast } from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { CollectionArt } from './collection-art.tsx'

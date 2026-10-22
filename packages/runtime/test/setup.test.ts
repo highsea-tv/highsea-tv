@@ -3,7 +3,7 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync, symlinkSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { AppError } from '@highsea/core'
+import { AppError } from '@highsea-tv/core'
 import {
   checkHardlinks,
   checkSetup,

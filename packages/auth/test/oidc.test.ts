@@ -3,8 +3,8 @@
 // discovery, the JWKS, and a token endpoint that checks PKCE and signs ID tokens with RS256.
 import { describe, expect, test } from 'bun:test'
 import { createHash, generateKeyPairSync, randomBytes, sign } from 'node:crypto'
-import { isAppError } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { isAppError } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import type { Fetch } from '../src/index.ts'
 import { meta, withOwner } from './helpers.ts'
 

@@ -38,9 +38,9 @@ mock.module('../src/admin/shell.tsx', () => ({
 
 const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
-const { createClient } = await import('@highsea/sdk')
-const { ClientProvider } = await import('@highsea/sdk/react')
-const { UIProvider } = await import('@highsea/ui-web')
+const { createClient } = await import('@highsea-tv/sdk')
+const { ClientProvider } = await import('@highsea-tv/sdk/react')
+const { UIProvider } = await import('@highsea-tv/ui-web')
 const { MovieDetail } = await import('../src/admin/movie-detail.tsx')
 const { PersonPage } = await import('../src/admin/person.tsx')
 const { CollectionPage } = await import('../src/admin/collection.tsx')

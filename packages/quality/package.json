@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/quality",
+  "name": "@highsea-tv/quality",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -12,13 +12,13 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@highsea/core": "workspace:*",
-    "@highsea/i18n": "workspace:*",
-    "@highsea/parser": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/i18n": "workspace:*",
+    "@highsea-tv/parser": "workspace:*",
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@highsea/config": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
     "@types/node": "25.9.9"
   }
 }

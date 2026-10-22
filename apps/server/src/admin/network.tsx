@@ -9,10 +9,10 @@
 // name and discovery port in place of the prototype's, and the addresses it answers on. The
 // prototype's Check from outside is gone (the owner's call, 2026-10-21). Admins read the area;
 // only the owner saves it (the API refuses anyone else), so their fields are disabled.
-import type { NetworkSettings, NetworkStatus } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import { useAction, useQuery } from '@highsea/sdk/react'
-import { Field, Input, SegmentedControl, Switch, toast } from '@highsea/ui-web'
+import type { NetworkSettings, NetworkStatus } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { Field, Input, SegmentedControl, Switch, toast } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { network as messages } from './network-messages.ts'

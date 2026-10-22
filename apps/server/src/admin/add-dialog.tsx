@@ -17,9 +17,9 @@ import type {
   MinimumAvailability,
   Movie,
   QualityProfile,
-} from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Button,
   Checkbox,
@@ -29,7 +29,7 @@ import {
   Select,
   Switch,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { addDialog as messages } from './add-dialog-messages.ts'

@@ -1,7 +1,7 @@
 # Custom format presets: sources
 
 The JSON files in `radarr/` are custom formats from the **TRaSH Guides**, copied unchanged except for
-whitespace (Biome's formatting). `@highsea/quality` reads them as data (`src/presets.ts`) and imports
+whitespace (Biome's formatting). `@highsea-tv/quality` reads them as data (`src/presets.ts`) and imports
 them into its own condition model (`src/trash.ts`).
 
 - **Repository:** https://github.com/TRaSH-Guides/Guides

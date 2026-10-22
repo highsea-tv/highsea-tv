@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The catalog's `vpn-providers` kind (ADR 0042, docs/plans/phase-3-checkpoint-6.md › Providers):
-// the providers Settings › VPN › highsea connects offers, in `@highsea/schemas/vpn`'s format,
+// the providers Settings › VPN › highsea connects offers, in `@highsea-tv/schemas/vpn`'s format,
 // signed and verified exactly as the indexers are (ADR 0034). It's a small reader beside the
 // indexer service rather than a part of it: the entries are a short list read whole, so they're
 // kept in memory and in `/config/catalog/vpn-providers/`, not in the definitions table.
@@ -14,14 +14,14 @@
 // A failure keeps what was there; nothing unsigned or tampered is loaded.
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Clock, Fetch, Logger } from '@highsea/core'
-import type { JobQueue } from '@highsea/jobs'
+import type { Clock, Fetch, Logger } from '@highsea-tv/core'
+import type { JobQueue } from '@highsea-tv/jobs'
 import {
   formatProviderIssues,
   type VpnProviderDefinition,
   validateVpnProvider,
   vpnEngineSupports,
-} from '@highsea/schemas/vpn'
+} from '@highsea-tv/schemas/vpn'
 import { z } from 'zod'
 import {
   bundleSchema,

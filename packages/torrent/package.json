@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/torrent",
+  "name": "@highsea-tv/torrent",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -13,8 +13,8 @@
   },
   "dependencies": {
     "@achingbrain/nat-port-mapper": "4.0.5",
-    "@highsea/core": "workspace:*",
-    "@highsea/db": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/db": "workspace:*",
     "bencode": "4.0.1",
     "bittorrent-dht": "11.0.12",
     "bittorrent-protocol": "5.0.9",
@@ -24,7 +24,7 @@
     "ut_pex": "5.0.2"
   },
   "devDependencies": {
-    "@highsea/config": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
     "@types/node": "25.9.9"
   }
 }

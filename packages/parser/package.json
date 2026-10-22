@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/parser",
+  "name": "@highsea-tv/parser",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -11,10 +11,10 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@highsea/core": "workspace:*"
+    "@highsea-tv/core": "workspace:*"
   },
   "devDependencies": {
-    "@highsea/config": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
     "@types/node": "25.9.9"
   }
 }

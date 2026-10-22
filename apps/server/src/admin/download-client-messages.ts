@@ -3,7 +3,7 @@
 // (design/prototypes/src/admin/settings/reference.tsx). Added here: the default seeding rule's
 // group, which no prototype screen has, the field errors, and 6b's IP blocklist field and uTP
 // switch.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const downloadClient = defineMessages({
   what: 'these settings',

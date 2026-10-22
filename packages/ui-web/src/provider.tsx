@@ -1,6 +1,6 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
-import type { SoundPack } from '@highsea/tokens'
+import type { SoundPack } from '@highsea-tv/tokens'
 import { MotionConfig } from 'motion/react'
 import type { ReactNode } from 'react'
 import { Toaster } from './components/toast.tsx'

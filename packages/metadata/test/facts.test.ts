@@ -2,7 +2,7 @@
 // Collection rules' facts (checkpoint 8d): written with the movie, derived again when the region
 // changes, and filled once for rows cached before 8d.
 import { afterEach, describe, expect, test } from 'bun:test'
-import { schema } from '@highsea/db'
+import { schema } from '@highsea-tv/db'
 import { asc, eq } from 'drizzle-orm'
 import { deriveAllFacts, FACTS_STATE_KEY, movieTermsOf, readFactsState } from '../src/facts.ts'
 import { JOB_TYPES } from '../src/index.ts'

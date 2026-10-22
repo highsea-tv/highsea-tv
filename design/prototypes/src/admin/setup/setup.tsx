@@ -21,7 +21,7 @@ import {
   Stepper,
   Switch,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'

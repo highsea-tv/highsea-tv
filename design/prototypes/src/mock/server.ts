@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // An in-memory highsea server: state, the handlers behind each API call, and a simulation driven by
 // the clock. Screens never touch this directly; they go through the client (client.ts).
-import { backdropArt, posterArt, stillArt } from '@highsea/fixtures'
-import { allowed, normalize, roleDefault } from '@highsea/personalization/widgets'
+import { backdropArt, posterArt, stillArt } from '@highsea-tv/fixtures'
+import { allowed, normalize, roleDefault } from '@highsea-tv/personalization/widgets'
 import {
   type CustomFormat,
   customFormatSchema,
   type QualityProfile,
   qualityProfileSchema,
-} from '@highsea/quality'
+} from '@highsea-tv/quality'
 import { type Clock, createEmitter, createRandom, type Emitter, iso } from './clock.ts'
 import { describe, evaluate, type Facts, fields, preview } from './collections.ts'
 import {
@@ -492,7 +492,7 @@ export function createServer(
 export type Ctx = { userId: string; storage?: Storage }
 
 /**
- * The handlers behind each API call, grouped as @highsea/sdk will group them. Each returns plain
+ * The handlers behind each API call, grouped as @highsea-tv/sdk will group them. Each returns plain
  * data; the client makes them async and applies the toolbar's data state.
  */
 function generateReleases(m: MediaItem, state: ServerState): Release[] {
@@ -1619,7 +1619,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       qualityProfiles: () => state.qualityProfiles,
       customFormats: () => state.customFormats,
       // The editors (checkpoint 8a's prototype for 8c): save checks the profile or format as
-      // @highsea/quality's schema does, and the first issue comes back as the server's would.
+      // @highsea-tv/quality's schema does, and the first issue comes back as the server's would.
       saveQualityProfile: (input: QualityProfile) => {
         requireStaff()
         const parsed = qualityProfileSchema.safeParse(input)

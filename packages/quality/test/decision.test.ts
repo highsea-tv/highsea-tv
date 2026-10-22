@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import type { ParsedRelease } from '@highsea/parser'
+import type { ParsedRelease } from '@highsea-tv/parser'
 import {
   type DecisionInput,
   decide,

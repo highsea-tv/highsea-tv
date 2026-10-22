@@ -8,7 +8,7 @@
 //   PUT /v1/vpn/status      {"status":"running"} or {"status":"stopped"}
 //   GET /v1/publicip/ip     {"public_ip":"58.98.64.104"}  (the wiki documents only this field)
 //   GET /v1/portforward     {"port":5914}                 (0 when nothing is forwarded)
-import type { Fetch } from '@highsea/core'
+import type { Fetch } from '@highsea-tv/core'
 
 export class GluetunError extends Error {
   readonly kind: 'refused' | 'unreachable'

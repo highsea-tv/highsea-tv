@@ -5,9 +5,9 @@
 // signed-in device with sign-out, and API keys for scripts, shown once. Managing people is the
 // owner's; admins see people and devices read-only (ADR 0032). Invite and reset links are always
 // shown to copy, and also emailed when the server's mail is set up in Connections (checkpoint 8b).
-import type { ApiKey, Device, User } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import { useAction, useQuery } from '@highsea/sdk/react'
+import type { ApiKey, Device, User } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   type BadgeTone,
@@ -41,7 +41,7 @@ import {
   TabsList,
   TabsTrigger,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { AreaPage } from './settings.tsx'

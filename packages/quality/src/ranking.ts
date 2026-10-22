@@ -10,7 +10,7 @@
 // (https://trash-guides.info/Sonarr/sonarr-setup-quality-profiles/#sonarr-current-logic). Priority
 // is 1 to 50, 1 first, a tiebreaker (https://wiki.servarr.com/radarr/settings#indexers); size is
 // nearest the quality's preferred size, which Radarr prefers (https://wiki.servarr.com/radarr/settings#quality).
-import type { Revision } from '@highsea/parser'
+import type { Revision } from '@highsea-tv/parser'
 import { preference, type QualityProfile } from './profiles.ts'
 import type { QualityName } from './qualities.ts'
 

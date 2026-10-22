@@ -2,7 +2,7 @@
 // LAN discovery (ADR 0020): a client broadcasts `highsea:discover:1` to UDP 7368; the server
 // answers the sender with its public info as JSON. mDNS advertising is in mdns.ts.
 import { createSocket, type Socket } from 'node:dgram'
-import type { Logger } from '@highsea/core'
+import type { Logger } from '@highsea-tv/core'
 
 export const DISCOVERY_MESSAGE = 'highsea:discover:1'
 export const DEFAULT_DISCOVERY_PORT = 7368

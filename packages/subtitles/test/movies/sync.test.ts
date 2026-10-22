@@ -7,7 +7,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { schema } from '@highsea/db'
+import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import { JOBS } from '../../src/movies/index.ts'
 import { SyncError } from '../../src/sync/index.ts'

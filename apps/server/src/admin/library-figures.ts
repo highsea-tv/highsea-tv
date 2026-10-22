@@ -2,7 +2,7 @@
 // Small calculations the library's admin screens share (checkpoint 4): quality sizes for a film,
 // release days on the calendar, and which root folders sit on a disk. Plain functions, so they're
 // tested without a DOM.
-import type { RootFolder, SystemStatus } from '@highsea/api-contract'
+import type { RootFolder, SystemStatus } from '@highsea-tv/api-contract'
 
 type Disk = SystemStatus['disks'][number]
 

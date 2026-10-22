@@ -2,7 +2,7 @@
 // What every import list source shares (checkpoint 8a, ADR 0045): a list read as entries, each a
 // movie by TMDB id or IMDb id with its title for the result's wording, and requests through the fetch
 // seam (ADR 0029) with a timeout and their failures in plain words.
-import { AppError, type Fetch } from '@highsea/core'
+import { AppError, type Fetch } from '@highsea-tv/core'
 
 /** A movie on a list. A source gives its TMDB id when it knows it, else its IMDb id. */
 export type ListEntry = {

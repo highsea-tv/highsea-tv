@@ -2,7 +2,7 @@
 // Collection rules' file facts (checkpoint 8d): read from a probe, and derived again for files
 // recorded before 8d, safely repeated. The import and the scan writing them is in movies/.
 import { describe, expect, test } from 'bun:test'
-import { migrate, openDatabase, readSetting, schema } from '@highsea/db'
+import { migrate, openDatabase, readSetting, schema } from '@highsea-tv/db'
 import { asc } from 'drizzle-orm'
 import {
   deriveAllFileFacts,

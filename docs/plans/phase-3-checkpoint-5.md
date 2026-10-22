@@ -32,7 +32,7 @@ The owner can add indexers from a signed catalog: a public one in one click, a p
 
 | Package | Holds | Depends on |
 | --- | --- | --- |
-| `schemas` (`@highsea/schemas/indexers`) | The definition format as zod schemas, its JSON Schema export, `ENGINE_VERSION`, and `validateDefinition()`. Pure; no I/O | `core` |
+| `schemas` (`@highsea-tv/schemas/indexers`) | The definition format as zod schemas, its JSON Schema export, `ENGINE_VERSION`, and `validateDefinition()`. Pure; no I/O | `core` |
 | `indexers` | The engine: the five kinds, the request templates and field mappings, caps and category mapping, login flows, rate limits; health, backoff and stats; the indexer service (add, test, toggle, remove, search) | `core`, `db`, `jobs`, `schemas/indexers`, `parser`, `quality` |
 | `catalog` | `CatalogService`: fetch, verify, filter, cache, update, the seed snapshot, extra URLs, `/config/definitions`; the bundle and manifest format; the signing tool the pipeline uses | `core`, `db`, `jobs`, `schemas/indexers` |
 | `catalog/indexers` (not a package) | The definitions as YAML, logos, `SOURCES.md`, the pipeline script | `schemas/indexers` |
@@ -209,7 +209,7 @@ The parent plan's rule: indexers are tested against a local fake indexer serving
 - **0033, indexer definitions:** the declarative format, the five kinds, the template language and why it's closed, the engine version, and writing definitions ourselves (the licence findings above).
 - **0034, the catalog service and signing:** the manifest, ed25519, key ids and rotation, refusing older versions, the seed snapshot, extra URLs and local definitions. It implements ADR 0007, which stays the decision; 0034 is how.
 - **0035, indexer health:** backoff, failing, rate limits, stats roll-ups, and search fan-out.
-- **0036, domain packages** (added at the owner's review): `@highsea/schemas` and `@highsea/media` with a subpath per kind, and `@highsea/media/shared` for what every media type shares (root folders, profiles, formats, sizes, names, paging), so shows and music start from it.
+- **0036, domain packages** (added at the owner's review): `@highsea-tv/schemas` and `@highsea-tv/media` with a subpath per kind, and `@highsea-tv/media/shared` for what every media type shares (root folders, profiles, formats, sizes, names, paging), so shows and music start from it.
 
 ## Specs owed
 

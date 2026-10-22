@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// `@highsea/subtitles/shared`: what every subtitle kind shares. Language codes, profiles and what
+// `@highsea-tv/subtitles/shared`: what every subtitle kind shares. Language codes, profiles and what
 // they want, scoring, sidecar names, the moviehash, processing, throttles and the settings row.
 export * from './languages.ts'
 export * from './moviehash.ts'

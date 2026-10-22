@@ -59,7 +59,7 @@ Where highsea looks for releases. The page shows whether each indexer is working
 
 ## Data
 
-As built at checkpoint 5 (`@highsea/api-contract`'s `indexers.ts`). All routes are staff; the catalog's settings are the owner's.
+As built at checkpoint 5 (`@highsea-tv/api-contract`'s `indexers.ts`). All routes are staff; the catalog's settings are the owner's.
 
 | SDK | Route | Notes |
 | --- | --- | --- |

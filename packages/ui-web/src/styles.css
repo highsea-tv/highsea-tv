@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /*
- * @highsea/ui-web: the Tailwind entry for apps. Import this one file; add `@source` lines for the
- * app's own files. Values come from @highsea/tokens; rules from docs/design-language/.
+ * @highsea-tv/ui-web: the Tailwind entry for apps. Import this one file; add `@source` lines for the
+ * app's own files. Values come from @highsea-tv/tokens; rules from docs/design-language/.
  */
 @import "tailwindcss";
-@import "@highsea/tokens/tailwind.css";
-@import "@highsea/brand/fonts.css";
+@import "@highsea-tv/tokens/tailwind.css";
+@import "@highsea-tv/brand/fonts.css";
 
 @source "./";
 

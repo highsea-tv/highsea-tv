@@ -2,9 +2,9 @@
 // What the movie subtitle services share: the platform, the media services (history), the job
 // queue and events, and the providers' seams.
 import type { promises as fsp } from 'node:fs'
-import type { EventBus } from '@highsea/core'
-import type { JobQueue } from '@highsea/jobs'
-import type { Media } from '@highsea/media/shared'
+import type { EventBus } from '@highsea-tv/core'
+import type { JobQueue } from '@highsea-tv/jobs'
+import type { Media } from '@highsea-tv/media/shared'
 import type { SyncOutcome, SyncTask } from '../sync/worker.ts'
 import type { AccountsDeps } from './accounts.ts'
 

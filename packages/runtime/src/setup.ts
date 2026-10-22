@@ -5,9 +5,9 @@
 // Path Traversal: canonicalize, then check the prefix).
 import { existsSync, mkdirSync, readdirSync, realpathSync, statSync } from 'node:fs'
 import { dirname, join, resolve, sep } from 'node:path'
-import { AppError, type Clock, type EventBus } from '@highsea/core'
-import { type Db, readSetting, writeSetting } from '@highsea/db'
-import { defaultNetworkSettings, type NetworkSettings, PRIVATE_RANGES } from '@highsea/network'
+import { AppError, type Clock, type EventBus } from '@highsea-tv/core'
+import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
+import { defaultNetworkSettings, type NetworkSettings, PRIVATE_RANGES } from '@highsea-tv/network'
 import type { Config } from './config.ts'
 
 export const SETUP_KEY = 'setup'

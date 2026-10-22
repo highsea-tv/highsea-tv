@@ -8,7 +8,7 @@
 // sends the preview over postMessage, from its own origin only
 // (https://developer.mozilla.org/en-US/docs/Web/API/Window/postMessage#security_concerns); the
 // frame fetches nothing.
-import type { ClientAnnouncement, CurationPreview, HomeSection } from '@highsea/api-contract'
+import type { ClientAnnouncement, CurationPreview, HomeSection } from '@highsea-tv/api-contract'
 import {
   BackdropHero,
   Banner,
@@ -17,7 +17,7 @@ import {
   CarouselRow,
   Lockup,
   Poster,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useState } from 'react'
 import { useCurationT } from './curation-shared.tsx'
 import { Cta, Inline } from './inline.tsx'

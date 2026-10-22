@@ -2,10 +2,10 @@
 // Appearance (appearance.md): how the server presents itself to everyone who connects. Its name,
 // mark and accent; the default theme and the owner's own themes; and where interface sounds play
 // by default. Themes and sound packs are checked by the design system's own rules before they're
-// saved (@highsea/tokens), so a failing one never reaches a client.
+// saved (@highsea-tv/tokens), so a failing one never reaches a client.
 import { createHash } from 'node:crypto'
-import { AppError } from '@highsea/core'
-import { readSetting, schema, writeSetting } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { readSetting, schema, writeSetting } from '@highsea-tv/db'
 import {
   type BuiltInThemeId,
   builtInThemes,
@@ -15,7 +15,7 @@ import {
   formatHex,
   parseColor,
   type SoundPack,
-} from '@highsea/tokens'
+} from '@highsea-tv/tokens'
 import { asc, eq } from 'drizzle-orm'
 import type { Ctx } from './context.ts'
 import { checkMark, type MarkType } from './marks.ts'

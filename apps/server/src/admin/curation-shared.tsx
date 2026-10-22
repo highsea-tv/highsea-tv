@@ -9,11 +9,11 @@ import type {
   CurationStatus,
   FeaturedSource,
   User,
-} from '@highsea/api-contract'
-import type { T as Translate } from '@highsea/i18n'
-import { useLocale, useT } from '@highsea/i18n/react'
-import { type Query, useQuery } from '@highsea/sdk/react'
-import { Badge, type BadgeTone, Checkbox, Field, Input, SegmentedControl } from '@highsea/ui-web'
+} from '@highsea-tv/api-contract'
+import type { T as Translate } from '@highsea-tv/i18n'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { type Query, useQuery } from '@highsea-tv/sdk/react'
+import { Badge, type BadgeTone, Checkbox, Field, Input, SegmentedControl } from '@highsea-tv/ui-web'
 import { useEffect, useRef, useState } from 'react'
 import { curation as messages } from './curation-messages.ts'
 

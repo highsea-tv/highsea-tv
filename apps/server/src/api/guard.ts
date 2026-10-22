@@ -7,11 +7,11 @@
 // 4. whether they may: the access each route declares in the contract.
 
 import type { TLSSocket } from 'node:tls'
-import { ACCESS_KEY, type Access, routes } from '@highsea/api-contract'
-import { isStaff, type Principal, type RequestMeta } from '@highsea/auth'
-import { AppError } from '@highsea/core'
-import { type ClientInfo, plainAddress, resolveClient } from '@highsea/network'
-import type { Runtime } from '@highsea/runtime'
+import { ACCESS_KEY, type Access, routes } from '@highsea-tv/api-contract'
+import { isStaff, type Principal, type RequestMeta } from '@highsea-tv/auth'
+import { AppError } from '@highsea-tv/core'
+import { type ClientInfo, plainAddress, resolveClient } from '@highsea-tv/network'
+import type { Runtime } from '@highsea-tv/runtime'
 import type { HttpBindings } from '@hono/node-server'
 import type { Context, MiddlewareHandler } from 'hono'
 import { getCookie } from 'hono/cookie'

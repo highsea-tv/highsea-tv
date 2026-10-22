@@ -3,8 +3,8 @@
 // Settings (A12; docs/product/settings.md), ported from the prototype: an index of every area in
 // four groups, and each area's page with the areas beside it from expanded widths. Users and
 // devices is the area this checkpoint builds; the others say they come later.
-import { useT } from '@highsea/i18n/react'
-import { Button, cn, EmptyState, Icon } from '@highsea/ui-web'
+import { useT } from '@highsea-tv/i18n/react'
+import { Button, cn, EmptyState, Icon } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import { type Area, type AreaId, areaGroupsFor } from './settings-areas.ts'
 import { settings as messages } from './settings-messages.ts'

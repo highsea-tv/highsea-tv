@@ -11,9 +11,9 @@ import {
   createSealer,
   generateSecretKey,
   silentLogger,
-} from '@highsea/core'
-import { migrate, openDatabase, readSetting, schema } from '@highsea/db'
-import { createJobQueue } from '@highsea/jobs'
+} from '@highsea-tv/core'
+import { migrate, openDatabase, readSetting, schema } from '@highsea-tv/db'
+import { createJobQueue } from '@highsea-tv/jobs'
 import { eq } from 'drizzle-orm'
 import {
   type ConnectionInput,

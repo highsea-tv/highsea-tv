@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A2 Setup (ADR 0021): the prototype's copy, without the indexer and subtitle steps, and the TMDB
 // key step (checkpoint 4 plan › TMDB › The key), which the prototype doesn't have.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const setup = defineMessages({
   pageTitle: 'Set up highsea',

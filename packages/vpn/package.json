@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/vpn",
+  "name": "@highsea-tv/vpn",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -12,13 +12,13 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@highsea/core": "workspace:*",
-    "@highsea/db": "workspace:*",
-    "@highsea/schemas": "workspace:*"
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/db": "workspace:*",
+    "@highsea-tv/schemas": "workspace:*"
   },
   "devDependencies": {
-    "@highsea/catalog": "workspace:*",
-    "@highsea/config": "workspace:*",
+    "@highsea-tv/catalog": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
     "@types/node": "25.9.9"
   }
 }

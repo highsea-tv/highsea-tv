@@ -12,11 +12,11 @@ import {
   generateSecretKey,
   type ServerEvent,
   silentLogger,
-} from '@highsea/core'
-import { migrate, openDatabase, schema } from '@highsea/db'
-import { createJobQueue } from '@highsea/jobs'
-import type { SubtitleInfo } from '@highsea/media/shared'
-import { createMedia } from '@highsea/media/shared'
+} from '@highsea-tv/core'
+import { migrate, openDatabase, schema } from '@highsea-tv/db'
+import { createJobQueue } from '@highsea-tv/jobs'
+import type { SubtitleInfo } from '@highsea-tv/media/shared'
+import { createMedia } from '@highsea-tv/media/shared'
 import { createSubtitles } from '../../src/movies/index.ts'
 import type { SyncOutcome, SyncTask } from '../../src/sync/index.ts'
 import { createFakeSubtitles, FAKE_ACCOUNTS, FAKE_OPENSUBTITLES_KEY } from '../fake/index.ts'

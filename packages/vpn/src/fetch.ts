@@ -16,7 +16,7 @@ import http from 'node:http'
 import https from 'node:https'
 import type { LookupFunction } from 'node:net'
 import { isIP } from 'node:net'
-import type { Fetch } from '@highsea/core'
+import type { Fetch } from '@highsea-tv/core'
 
 const MAX_REDIRECTS = 5
 

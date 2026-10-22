@@ -9,7 +9,7 @@ import {
   type FieldMapping,
   renderTemplate,
   type TemplateInputs,
-} from '@highsea/schemas/indexers'
+} from '@highsea-tv/schemas/indexers'
 import { load } from 'cheerio/slim'
 import { IndexerError } from './http.ts'
 import { type IndexerRelease, toRelease } from './release.ts'

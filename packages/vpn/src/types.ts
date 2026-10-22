@@ -76,7 +76,7 @@ export type VpnStatus = {
 }
 
 /**
- * Where torrent traffic leaves from, the same shape as `@highsea/torrent`'s `Binding`: an address
+ * Where torrent traffic leaves from, the same shape as `@highsea-tv/torrent`'s `Binding`: an address
  * to bind every socket to (null for any), and DNS servers (empty for the system's). `null` in its
  * place means the tunnel is down and nothing may leave.
  */

@@ -3,7 +3,7 @@
 // RFC 6762/6763 (probing, conflict resolution, goodbye packets) and passes Apple's Bonjour
 // Conformance Test. The TXT record carries the server id and version, so a client can tell
 // servers apart before probing. The responder is injected, so tests don't multicast.
-import type { Logger } from '@highsea/core'
+import type { Logger } from '@highsea-tv/core'
 
 export const MDNS_TYPE = 'highsea'
 

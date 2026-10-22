@@ -3,7 +3,7 @@
 // posters with their titles, rows that scroll by focus, the server identity, the announcement
 // pill, and the global navigation, a top tab row that appears when focus moves Up from the hero
 // actions (new design work, client-home.md#tv).
-import { cn, Icon, type IconName, Mark, Poster } from '@highsea/ui-web'
+import { cn, Icon, type IconName, Mark, Poster } from '@highsea-tv/ui-web'
 import { type ComponentProps, type ReactNode, useEffect } from 'react'
 import { useLocation } from 'wouter'
 import { clientHref, left, useAnnouncements, useConnection, useServer } from '../client/data.ts'

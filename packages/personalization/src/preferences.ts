@@ -4,9 +4,9 @@
 // has (all their TVs), then the person on every device, then the server's defaults from
 // Appearance. A device's layer goes with the device: a TV that signs out starts again from the
 // person's layers.
-import { AppError } from '@highsea/core'
-import { schema } from '@highsea/db'
-import type { ClientType } from '@highsea/db/schema'
+import { AppError } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
+import type { ClientType } from '@highsea-tv/db/schema'
 import { and, eq } from 'drizzle-orm'
 import type { AppearanceService } from './appearance.ts'
 import type { Ctx } from './context.ts'

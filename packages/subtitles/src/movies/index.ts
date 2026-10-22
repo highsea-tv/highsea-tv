@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// `@highsea/subtitles/movies`: subtitles for the movie library (checkpoint 7a). One service the
+// `@highsea-tv/subtitles/movies`: subtitles for the movie library (checkpoint 7a). One service the
 // runtime creates once: language profiles, providers and their accounts, the wanted list, search,
 // downloads, the import's hooks, the sync (ADR 0044) and the jobs.
-import type { ClientSubtitle } from '@highsea/api-contract'
-import { schema } from '@highsea/db'
+import type { ClientSubtitle } from '@highsea-tv/api-contract'
+import { schema } from '@highsea-tv/db'
 import { and, avg, count, eq, gte, inArray, sql } from 'drizzle-orm'
 import { languageList, languageName } from '../shared/languages.ts'
 import { createProfiles, profileNotFound } from '../shared/profiles.ts'

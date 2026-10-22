@@ -10,7 +10,7 @@
 // browsers' push services answer 410 Gone for one that was unsubscribed; either way it's forgotten.
 // 429 and 5xx are tried again, after the Retry-After a push service under load sends (§ 8.4), and
 // anything else is the request's fault.
-import { retryAfterMs } from '@highsea/core'
+import { retryAfterMs } from '@highsea-tv/core'
 import webPush from 'web-push'
 import { z } from 'zod'
 import { DeliveryError, unreachable } from '../shared/index.ts'

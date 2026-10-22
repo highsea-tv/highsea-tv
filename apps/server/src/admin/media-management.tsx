@@ -3,7 +3,7 @@
 // Settings › Media management (settings.md), ported from the signed-off prototype's
 // MediaManagement (design/prototypes/src/admin/settings/reference.tsx). Naming: rename, the folder
 // and file formats with what Sintel's would become, named by the import's own functions
-// (@highsea/media/naming), and the tokens. Importing: hardlinks, NFO files, stop monitoring deleted
+// (@highsea-tv/media/naming), and the tokens. Importing: hardlinks, NFO files, stop monitoring deleted
 // files, folder permissions and the recycle bin; then the root folders checkpoint 4 built, where
 // the plan manages them (Admin › Root folders): each with its free space and how many movies are
 // filed under it (the API's device is a filesystem id for matching disks, not a name, so it isn't
@@ -23,12 +23,17 @@ import {
   type LanguageProfile,
   type MediaManagementSettings,
   type RootFolder,
-} from '@highsea/api-contract'
-import { bytes } from '@highsea/core/format'
-import { useT } from '@highsea/i18n/react'
-import { buildFileName, buildFolderName, PREVIEW_FILE, PREVIEW_MOVIE } from '@highsea/media/naming'
-import type { ApiError } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { bytes } from '@highsea-tv/core/format'
+import { useT } from '@highsea-tv/i18n/react'
+import {
+  buildFileName,
+  buildFolderName,
+  PREVIEW_FILE,
+  PREVIEW_MOVIE,
+} from '@highsea-tv/media/naming'
+import type { ApiError } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -39,7 +44,7 @@ import {
   Select,
   Switch,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type FormEvent, type ReactNode, useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { media as messages } from './media-management-messages.ts'
@@ -173,7 +178,7 @@ function Form({
               </span>
               {' · '}
               {/* a subtitle keeps the video's name, then its language: sidecarPath in
-                  @highsea/subtitles/shared, which reads node:path, so it isn't imported here */}
+                  @highsea-tv/subtitles/shared, which reads node:path, so it isn't imported here */}
               <span className="font-mono text-text-2">
                 {buildFileName(v.fileFormat, PREVIEW_MOVIE, PREVIEW_FILE, naming)}.en.srt
               </span>

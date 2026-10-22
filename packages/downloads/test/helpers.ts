@@ -9,9 +9,9 @@ import {
   generateSecretKey,
   type ServerEvent,
   silentLogger,
-} from '@highsea/core'
-import { migrate, openDatabase, schema } from '@highsea/db'
-import { createIndexers, type SearchInput } from '@highsea/indexers'
+} from '@highsea-tv/core'
+import { migrate, openDatabase, schema } from '@highsea-tv/db'
+import { createIndexers, type SearchInput } from '@highsea-tv/indexers'
 import {
   createFakeIndexer,
   FAKE_CREDENTIALS,
@@ -19,16 +19,16 @@ import {
   FAKE_ORIGIN,
   fakeJson,
   MOVIES,
-} from '@highsea/indexers/fake'
-import { createJobQueue } from '@highsea/jobs'
+} from '@highsea-tv/indexers/fake'
+import { createJobQueue } from '@highsea-tv/jobs'
 import {
   defaultQualitySizes,
   type QualityProfile,
   seedFormats,
   seedProfiles,
-} from '@highsea/quality'
-import type { Definition } from '@highsea/schemas/indexers'
-import type { EngineEvent } from '@highsea/torrent'
+} from '@highsea-tv/quality'
+import type { Definition } from '@highsea-tv/schemas/indexers'
+import type { EngineEvent } from '@highsea-tv/torrent'
 import {
   LOOPBACK,
   makeTorrent,
@@ -37,7 +37,7 @@ import {
   testEngine,
   until,
   writeFiles,
-} from '@highsea/torrent/testing'
+} from '@highsea-tv/torrent/testing'
 import {
   createDownloads,
   type HistoryEntry,

@@ -2,7 +2,7 @@
 // The mobile tabs after Library: Search (C6, reference), Offline (C8, reference), and You (C8),
 // which leads to the settings (C7). docs/product/client-search.md, client-settings.md.
 
-import { bytes } from '@highsea/core/format'
+import { bytes } from '@highsea-tv/core/format'
 import {
   Button,
   cn,
@@ -14,7 +14,7 @@ import {
   Select,
   Switch,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import {

@@ -9,16 +9,16 @@ import {
   generateSecretKey,
   memorySink,
   type ServerEvent,
-} from '@highsea/core'
-import { migrate, openDatabase } from '@highsea/db'
-import { createJobQueue } from '@highsea/jobs'
+} from '@highsea-tv/core'
+import { migrate, openDatabase } from '@highsea-tv/db'
+import { createJobQueue } from '@highsea-tv/jobs'
 import {
   defaultQualitySizes,
   type QualityProfile,
   seedFormats,
   seedProfiles,
-} from '@highsea/quality'
-import { type Definition, formatIssues, validateDefinition } from '@highsea/schemas/indexers'
+} from '@highsea-tv/quality'
+import { type Definition, formatIssues, validateDefinition } from '@highsea-tv/schemas/indexers'
 import type { DefinitionSource, SourceDefinition } from '../src/context.ts'
 import { createIndexers } from '../src/index.ts'
 import type { SearchInput } from '../src/search.ts'

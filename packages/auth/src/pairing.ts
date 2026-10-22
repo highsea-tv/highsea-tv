@@ -7,8 +7,8 @@
 //
 // The TV never meets two-step verification or passkeys: the approving device already passed
 // them (ADR 0024).
-import { AppError } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import { and, eq, gt } from 'drizzle-orm'
 import {
   createChallenge,

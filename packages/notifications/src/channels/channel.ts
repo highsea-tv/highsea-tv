@@ -3,7 +3,7 @@
 // settings that names which of them are secret (sealed at rest, shown masked), and a `send` that
 // turns a rendered message into the service's documented request through the fetch seam (ADR 0029).
 // A channel throws a DeliveryError when the message didn't arrive; the service decides what to do.
-import type { Fetch } from '@highsea/core'
+import type { Fetch } from '@highsea-tv/core'
 import { z } from 'zod'
 import type { ConnectionKind, Message, NotificationT } from '../shared/index.ts'
 import { notificationT, render } from '../shared/index.ts'

@@ -10,10 +10,10 @@
 // before anything is read or written (paths.ts).
 import { promises as fsp } from 'node:fs'
 import { basename, dirname, extname, join, relative } from 'node:path'
-import { AppError, newId } from '@highsea/core'
-import { type Db, schema } from '@highsea/db'
-import type { MovieMetadata } from '@highsea/metadata'
-import { type ParsedRelease, parse } from '@highsea/parser'
+import { AppError, newId } from '@highsea-tv/core'
+import { type Db, schema } from '@highsea-tv/db'
+import type { MovieMetadata } from '@highsea-tv/metadata'
+import { type ParsedRelease, parse } from '@highsea-tv/parser'
 import {
   decide,
   defaultSpecifications,
@@ -22,7 +22,7 @@ import {
   type QualityName,
   qualityDefinition,
   qualityOf,
-} from '@highsea/quality'
+} from '@highsea-tv/quality'
 import { and, asc, eq } from 'drizzle-orm'
 import {
   createExtractor,
@@ -356,7 +356,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
     }
     await writeNfo(path, nfo, info)
     const cached = async (address: string | null, size: string) => {
-      // `/api/v1/images/{owner}/{ownerId}/{kind}/{size}/{file}` (@highsea/metadata's image-url.ts)
+      // `/api/v1/images/{owner}/{ownerId}/{kind}/{size}/{file}` (@highsea-tv/metadata's image-url.ts)
       const parts = address?.split('/').slice(4)
       if (parts?.length !== 5) return null
       const [owner, ownerId, kind, , file] = parts as [string, string, string, string, string]

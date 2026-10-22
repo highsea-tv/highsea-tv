@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Tags over HTTP (checkpoint 8c): thin handlers over @highsea/media/shared's tags. Each change goes
+// Tags over HTTP (checkpoint 8c): thin handlers over @highsea-tv/media/shared's tags. Each change goes
 // in the audit log and announces `tags.updated`; removing one changes what carries it, so the
 // library, indexers, lists and connections hear their own topics too.
-import { routes, TAG_TOPICS } from '@highsea/api-contract'
+import { routes, TAG_TOPICS } from '@highsea-tv/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'

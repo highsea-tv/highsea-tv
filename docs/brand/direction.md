@@ -1,7 +1,7 @@
 # highsea.tv — Official Brand Direction: Abyss Neutral (Bone)
 
 - **Status:** Locked, v1.0, signed off by the owner on 2026-10-16. Recorded in [ADR 0013](../adr/0013-brand-direction-abyss-neutral.md).
-- **Reference board:** [`design/explorations/a2-abyss-neutral.html`](../../design/explorations/a2-abyss-neutral.html). It was the visual source of truth until [`@highsea/tokens`](../../packages/tokens/README.md) existed. The tokens package is now the source, and this document describes it.
+- **Reference board:** [`design/explorations/a2-abyss-neutral.html`](../../design/explorations/a2-abyss-neutral.html). It was the visual source of truth until [`@highsea-tv/tokens`](../../packages/tokens/README.md) existed. The tokens package is now the source, and this document describes it.
 - **Scope:** identity, color, type, shape, focus, layouts, motion and sound. The full design-language docs (`docs/design-language/`) expand on this and must not contradict it. Any change to what is listed here needs a new owner sign-off.
 
 ## Summary
@@ -124,7 +124,7 @@ The TV uses the same styles scaled for 10-foot viewing. The design-language docs
 | Notify | Soft two-note chime (E5 → B5) in a small room | 356 ms |
 | Arrival (app launch) | Warm low swell, then C–E–G felt notes | 1.0 s |
 
-Audible length is measured offline to −40 dB below the sound's peak. The exact synthesis parameters live in the reference board and move into `@highsea/tokens` as sound tokens.
+Audible length is measured offline to −40 dB below the sound's peak. The exact synthesis parameters live in the reference board and move into `@highsea-tv/tokens` as sound tokens.
 
 ## Considered and not chosen
 

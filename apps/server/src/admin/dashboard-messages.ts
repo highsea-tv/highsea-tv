@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A3 Dashboard's strings (dashboard.md › Copy). Widget titles and descriptions are the registry's
-// (@highsea/personalization `widgetMessages`).
-import { defineMessages } from '@highsea/i18n'
+// (@highsea-tv/personalization `widgetMessages`).
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const dashboard = defineMessages({
   customize: 'Customize',

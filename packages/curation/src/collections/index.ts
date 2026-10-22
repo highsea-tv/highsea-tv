@@ -21,17 +21,17 @@ import type {
   RulePerson,
   SmartCollection,
   SmartCollectionInput,
-} from '@highsea/api-contract'
+} from '@highsea-tv/api-contract'
 import {
   type Audience,
   PLAYBACK_FIELDS,
   RULE_FIELD_NAMES,
   RULE_FIELDS,
   RuleGroup as RuleGroupSchema,
-} from '@highsea/api-contract'
-import { AppError, type Clock, type EventBus, type Logger, newId } from '@highsea/core'
-import { type Db, schema } from '@highsea/db'
-import { createT, defineMessages } from '@highsea/i18n'
+} from '@highsea-tv/api-contract'
+import { AppError, type Clock, type EventBus, type Logger, newId } from '@highsea-tv/core'
+import { type Db, schema } from '@highsea-tv/db'
+import { createT, defineMessages } from '@highsea-tv/i18n'
 import { asc, eq, inArray, max } from 'drizzle-orm'
 import { mayReach, parseFilter, reaches, type Viewer } from '../service/rules.ts'
 import {

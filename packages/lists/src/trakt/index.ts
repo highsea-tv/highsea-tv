@@ -10,8 +10,8 @@
 // - the account's tokens are sealed in one settings row, refreshed before they run out (`expires_in`;
 //   the docs give 7 days) with the refresh token, and revoked when the owner disconnects.
 // A build without highsea's Client ID offers Trakt as unavailable, with a line saying why.
-import { AppError, type Clock, type Fetch, type Sealer } from '@highsea/core'
-import { type Db, readSetting, schema, writeSetting } from '@highsea/db'
+import { AppError, type Clock, type Fetch, type Sealer } from '@highsea-tv/core'
+import { type Db, readSetting, schema, writeSetting } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import {
   CHART_SIZE,
@@ -24,10 +24,19 @@ import {
 } from '../shared/index.ts'
 
 export const TRAKT_API = 'https://api.trakt.tv'
+/**
+ * Sign-in calls (`/oauth/*`) go to Trakt's auth host, as its developer portal sends them
+ * ([Trakt API Guides: Authentication](https://developer.trakt.tv/docs/authentication-oauth)).
+ */
+export const TRAKT_AUTH = 'https://auth.trakt.tv'
+/**
+ * The redirect URI registered with highsea's Trakt application. The device flow never redirects,
+ * but a Production app must register an `https://` address, and a token refresh names it, so it
+ * matches exactly. It's on `api.highsea.tv`, highsea's subdomain for machine-facing services.
+ */
+export const TRAKT_REDIRECT = 'https://api.highsea.tv/oauth/trakt'
 /** The settings row holding the connected account, its tokens sealed. */
 export const TRAKT_ACCOUNT_SETTING = 'lists.trakt'
-/** Trakt's out-of-band redirect, for apps without a web callback such as the device flow. */
-const OOB = 'urn:ietf:wg:oauth:2.0:oob'
 /** Tokens are refreshed when they have less than this left. */
 const REFRESH_BEFORE_MS = 24 * 60 * 60 * 1000
 /** Items per page when reading a list. */
@@ -85,13 +94,19 @@ export function createTrakt(deps: {
   sealer: Sealer
   fetch: Fetch
   clientId: string | undefined
+  /**
+   * Deprecated by Trakt for user sign-in, and not issued to applications made since October 2026;
+   * sent only when this build has one.
+   */
   clientSecret: string | undefined
   /** `highsea/0.1.0`, for the User-Agent. */
   userAgent: string
   baseUrl?: string
+  authUrl?: string
 }) {
   const { db, clock, sealer, fetch } = deps
   const base = deps.baseUrl ?? TRAKT_API
+  const auth = deps.authUrl ?? TRAKT_AUTH
   let pending: Pending | null = null
 
   const unavailable = () =>
@@ -106,9 +121,12 @@ export function createTrakt(deps: {
     return deps.clientId
   }
 
-  function clientSecret(): string {
-    if (!deps.clientSecret) throw unavailable()
-    return deps.clientSecret
+  /** The client's own fields for an `/oauth/*` body: the id, and the secret where there is one. */
+  function client(): Record<string, string> {
+    return {
+      client_id: clientId(),
+      ...(deps.clientSecret ? { client_secret: deps.clientSecret } : {}),
+    }
   }
 
   const empty: Account = { username: null, access: null, refresh: null, expiresAt: 0 }
@@ -129,7 +147,7 @@ export function createTrakt(deps: {
   }
 
   async function post(path: string, body: Record<string, unknown>) {
-    return request(fetch, 'Trakt', `${base}${path}`, {
+    return request(fetch, 'Trakt', `${path.startsWith('/oauth/') ? auth : base}${path}`, {
       method: 'POST',
       headers: headers(),
       body: JSON.stringify(body),
@@ -152,9 +170,8 @@ export function createTrakt(deps: {
     if (a.expiresAt - clock.now() > REFRESH_BEFORE_MS) return sealer.open(a.access)
     const res = await post('/oauth/token', {
       refresh_token: sealer.open(a.refresh),
-      client_id: clientId(),
-      client_secret: clientSecret(),
-      redirect_uri: OOB,
+      ...client(),
+      redirect_uri: TRAKT_REDIRECT,
       grant_type: 'refresh_token',
     })
     if (res.status === 400 || res.status === 401) {
@@ -261,7 +278,6 @@ export function createTrakt(deps: {
     },
     /** Starts the device flow: the code the owner enters at Trakt's address. */
     async connect() {
-      clientSecret()
       const res = await post('/oauth/device/code', { client_id: clientId() })
       if (!res.ok)
         throw new AppError('unavailable', `Trakt answered ${res.status}.`, { reason: 'bad-answer' })
@@ -293,8 +309,7 @@ export function createTrakt(deps: {
       }
       const res = await post('/oauth/device/token', {
         code: pending.deviceCode,
-        client_id: clientId(),
-        client_secret: clientSecret(),
+        ...client(),
       })
       if (res.status === 400 || res.status === 429) return 'pending'
       if (res.status === 418) {
@@ -320,13 +335,9 @@ export function createTrakt(deps: {
       const a = account()
       pending = null
       db.delete(schema.settings).where(eq(schema.settings.key, TRAKT_ACCOUNT_SETTING)).run()
-      if (!a.access || !deps.clientId || !deps.clientSecret) return
+      if (!a.access || !deps.clientId) return
       try {
-        await post('/oauth/revoke', {
-          token: sealer.open(a.access),
-          client_id: deps.clientId,
-          client_secret: deps.clientSecret,
-        })
+        await post('/oauth/revoke', { token: sealer.open(a.access), ...client() })
       } catch {}
     },
   }

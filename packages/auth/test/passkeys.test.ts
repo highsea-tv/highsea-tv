@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { isAppError } from '@highsea/core'
+import { isAppError } from '@highsea-tv/core'
 import { createAuthenticator, FLAGS } from './authenticator.ts'
 import { codeFor, meta, OWNER, withOwner } from './helpers.ts'
 

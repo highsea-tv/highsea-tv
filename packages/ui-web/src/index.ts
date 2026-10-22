@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// @highsea/ui-web: highsea's React components for web, desktop and TV web builds.
-// Styles: import '@highsea/ui-web/styles.css'. Rules: docs/design-language/.
+// @highsea-tv/ui-web: highsea's React components for web, desktop and TV web builds.
+// Styles: import '@highsea-tv/ui-web/styles.css'. Rules: docs/design-language/.
 
 export * from './components/badge.tsx'
 export * from './components/banner.tsx'

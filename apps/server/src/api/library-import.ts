@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Importing a library already on disk over HTTP (checkpoint 6b): A17's Library import mode. Thin
-// handlers over @highsea/media's `movies.libraryImport`; starting a run goes in the audit log.
-import { type LibraryImportStatus, routes } from '@highsea/api-contract'
-import type { LibraryImportState } from '@highsea/media/movies'
+// handlers over @highsea-tv/media's `movies.libraryImport`; starting a run goes in the audit log.
+import { type LibraryImportStatus, routes } from '@highsea-tv/api-contract'
+import type { LibraryImportState } from '@highsea-tv/media/movies'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'

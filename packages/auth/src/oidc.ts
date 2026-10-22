@@ -8,8 +8,8 @@
 // Claims, used together, are the only Claims that an RP can rely upon as a stable identifier").
 // Email and username aren't used, since a provider may let people change them. An unknown
 // identity is refused; following an invite link and signing in with the provider links it.
-import { AppError } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import { and, eq } from 'drizzle-orm'
 import * as client from 'openid-client'
 import { createChallenge, deleteChallenge, findChallenge } from './challenges.ts'

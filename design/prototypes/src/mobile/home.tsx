@@ -2,7 +2,7 @@
 // C2 Home, mobile (docs/product/client-home.md#mobile): the locked Tabs + carousel layout. The
 // header, the owner's announcement card, the featured carousel (78% wide cards with the next one
 // peeking, never auto-advancing), then poster rows (about 30% wide, three and a peek).
-import { Button, cn, EmptyState, Poster, Skeleton } from '@highsea/ui-web'
+import { Button, cn, EmptyState, Poster, Skeleton } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import { left, useHome } from '../client/data.ts'
 import type { ClientItem, HomeSection } from '../mock/types.ts'

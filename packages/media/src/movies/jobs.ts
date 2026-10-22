@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The library's background job (ADR 0022, safe to repeat): `movies.availability`, daily, moves
 // movies whose minimum availability has come from `not-released` to `wanted` or `unmonitored`.
-// Metadata refreshes go through @highsea/metadata's `metadata.refresh`.
-import type { JobQueue } from '@highsea/jobs'
+// Metadata refreshes go through @highsea-tv/metadata's `metadata.refresh`.
+import type { JobQueue } from '@highsea-tv/jobs'
 import { z } from 'zod'
 
 const DAY = 24 * 60 * 60 * 1000

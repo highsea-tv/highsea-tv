@@ -3,7 +3,7 @@
 // in by code first: it shows a short code and a QR code; a phone or computer that's signed in
 // opens the link and approves, and the TV is in. Entering a password with the on-screen keyboard
 // is the fallback, and another server can be picked from the ones answering on this network.
-import { cn, Icon, Mark } from '@highsea/ui-web'
+import { cn, Icon, Mark } from '@highsea-tv/ui-web'
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useDiscovery, useSignIn } from '../client/connect.ts'

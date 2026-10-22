@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Library › Collections, web and desktop (docs/product/collections.md#in-the-apps): the owner's
 // collections this person sees, marked smart, then TMDB's, as a grid of posters and mosaics.
-import { Button, cn, EmptyState, Skeleton } from '@highsea/ui-web'
+import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui-web'
 import { collectionCaption, useCollections } from '../client/data.ts'
 import { CollectionTile } from '../kit/collection-art.tsx'
 import { gutter, webHref } from './shell.tsx'

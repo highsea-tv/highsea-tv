@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { createFakeClock } from '@highsea/core'
+import { createFakeClock } from '@highsea-tv/core'
 import { createProvider, PROVIDER_INFO, PROVIDER_ORDER } from '../../src/providers/index.ts'
 import { createFakeSubtitles, FAKE_OPENSUBTITLES_KEY } from '../fake/index.ts'
 import { memoryStore } from './store.ts'

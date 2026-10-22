@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { adminText, fonts, type TextStyle, tvText, webText, weights } from '@highsea/tokens'
-import { cn } from '@highsea/ui-web'
+import { adminText, fonts, type TextStyle, tvText, webText, weights } from '@highsea-tv/tokens'
+import { cn } from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import type { CSSProperties } from 'react'
 import { Page, Section } from './page.tsx'

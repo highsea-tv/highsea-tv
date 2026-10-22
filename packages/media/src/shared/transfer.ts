@@ -13,7 +13,7 @@
 // under the library's name, and a repeat finds the finished file and does nothing.
 import { constants, promises as fsp, type Stats } from 'node:fs'
 import { basename, dirname, join } from 'node:path'
-import { newId } from '@highsea/core'
+import { newId } from '@highsea-tv/core'
 
 /** The filesystem calls transfers make, injectable so a test can force `EXDEV`. */
 export type TransferFs = {

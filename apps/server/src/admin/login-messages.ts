@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A18 Login, setup's link pages and TV pairing approval (ADR 0021). The login copy is
 // login.md's; what the spec leaves open (recovery codes, passkeys, enrolment) follows its voice.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const login = defineMessages({
   pageTitle: 'Sign in',

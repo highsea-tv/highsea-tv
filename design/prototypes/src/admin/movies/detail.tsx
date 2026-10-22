@@ -6,7 +6,7 @@
 // release with the decision engine's verdict and reasons) and Subtitles (tracks with sync status,
 // confidence and offset; manual search and pick; re-sync).
 
-import { bytes, duration, percent, rate, relative } from '@highsea/core/format'
+import { bytes, duration, percent, rate, relative } from '@highsea-tv/core/format'
 import {
   Badge,
   Button,
@@ -39,7 +39,7 @@ import {
   TitleCell,
   Tooltip,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { Fragment, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'

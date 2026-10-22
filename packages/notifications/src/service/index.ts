@@ -22,9 +22,9 @@ import {
   type Logger,
   newId,
   type Sealer,
-} from '@highsea/core'
-import { type Db, readSetting, schema, writeSetting } from '@highsea/db'
-import type { JobQueue } from '@highsea/jobs'
+} from '@highsea-tv/core'
+import { type Db, readSetting, schema, writeSetting } from '@highsea-tv/db'
+import type { JobQueue } from '@highsea-tv/jobs'
 import { and, desc, eq, inArray, lt } from 'drizzle-orm'
 import { z } from 'zod'
 import {

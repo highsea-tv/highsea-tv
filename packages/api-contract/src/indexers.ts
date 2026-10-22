@@ -25,7 +25,7 @@ export const INDEXER_KINDS = ['torznab', 'newznab', 'json', 'html', 'rss'] as co
 export const INDEXER_PROTOCOLS = ['torrent', 'usenet'] as const
 export const INDEXER_HEALTH = ['healthy', 'backoff', 'failing', 'disabled'] as const
 export const CATALOG_CHANNELS = ['stable', 'beta'] as const
-/** @highsea/quality's `INDEXER_FLAGS`. */
+/** @highsea-tv/quality's `INDEXER_FLAGS`. */
 export const RELEASE_FLAGS = [
   'freeleech',
   'halfleech',

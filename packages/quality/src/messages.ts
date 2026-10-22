@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What the decision engine and the format summaries say (ADR 0021). The reasons follow the
 // prototype's copy ("Bluray-1080p isn’t allowed in HD 1080p"); sizes and runtimes arrive formatted
-// by @highsea/core/format, so they read as everywhere else in highsea.
-import { createT, defineMessages, type T } from '@highsea/i18n'
+// by @highsea-tv/core/format, so they read as everywhere else in highsea.
+import { createT, defineMessages, type T } from '@highsea-tv/i18n'
 
 export const qualityMessages = defineMessages({
   // The quality

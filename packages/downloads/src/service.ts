@@ -14,15 +14,15 @@ import {
   iso,
   type Logger,
   newId,
-} from '@highsea/core'
-import { type Db, readSetting, schema, writeSetting } from '@highsea/db'
+} from '@highsea-tv/core'
+import { type Db, readSetting, schema, writeSetting } from '@highsea-tv/db'
 import {
   fetchRelease,
   type GrabbedRelease,
   type Indexers,
   type ReleaseView,
-} from '@highsea/indexers'
-import type { JobQueue } from '@highsea/jobs'
+} from '@highsea-tv/indexers'
+import type { JobQueue } from '@highsea-tv/jobs'
 import type {
   EngineEvent,
   EngineState,
@@ -31,7 +31,7 @@ import type {
   TorrentEngine,
   TorrentSnapshot,
   TrackerStatus,
-} from '@highsea/torrent'
+} from '@highsea-tv/torrent'
 import { and, desc, eq, inArray, isNotNull, isNull, lt, or } from 'drizzle-orm'
 import { z } from 'zod'
 import { categoryFolder, createCategories, MANUAL_CATEGORY, MOVIES_CATEGORY } from './categories.ts'

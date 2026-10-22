@@ -22,9 +22,9 @@ import {
   type MetadataSettings,
   type MetricsSettings,
   OPERATIONS_TOPICS,
-} from '@highsea/api-contract'
-import { useLocale, useT } from '@highsea/i18n/react'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -36,7 +36,7 @@ import {
   Select,
   Switch,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { general as messages } from './general-messages.ts'
 import { Loadable } from './loadable.tsx'

@@ -8,10 +8,15 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createFakeClock, type FakeClock, type Fetch } from '@highsea/core'
-import { schema } from '@highsea/db'
-import { createFakeIndexer, FAKE_CREDENTIALS, FAKE_NOW, FAKE_ORIGIN } from '@highsea/indexers/fake'
-import { createReplayFetch } from '@highsea/metadata/replay'
+import { createFakeClock, type FakeClock, type Fetch } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
+import {
+  createFakeIndexer,
+  FAKE_CREDENTIALS,
+  FAKE_NOW,
+  FAKE_ORIGIN,
+} from '@highsea-tv/indexers/fake'
+import { createReplayFetch } from '@highsea-tv/metadata/replay'
 import { eq } from 'drizzle-orm'
 import { boot, getRuntime, hasRuntime, loadConfig } from '../src/index.ts'
 

@@ -3,8 +3,8 @@
 // sizes. Seeded on first boot, and written by their editors since checkpoint 8c (settings.md): the
 // seeded profiles are marked `builtIn` and stay editable; a seeded format the owner saves is marked
 // `edited` ("Yours"), and the bundled presets' updates, applied at boot, leave it alone.
-import { AppError, newId } from '@highsea/core'
-import { schema, writeSetting } from '@highsea/db'
+import { AppError, newId } from '@highsea-tv/core'
+import { schema, writeSetting } from '@highsea-tv/db'
 import {
   type Condition,
   type CustomFormat,
@@ -21,13 +21,13 @@ import {
   seedFormats,
   seedProfiles,
   validateFormat,
-} from '@highsea/quality'
+} from '@highsea-tv/quality'
 import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import type { MediaDeps } from './context.ts'
 
 const { qualityProfiles, customFormats, settings, mediaItems, versions } = schema
 
-/** The settings row holding @highsea/quality's `QualitySizes`: one entry per quality, MiB a minute. */
+/** The settings row holding @highsea-tv/quality's `QualitySizes`: one entry per quality, MiB a minute. */
 export const QUALITY_SIZES_KEY = 'qualitySizes'
 
 export const profileNotFound = () =>
@@ -47,7 +47,7 @@ export type StoredFormat = CustomFormat & { edited: boolean }
 
 /**
  * What the profile editor saves: everything but the id and whether it's built in. Loosely typed,
- * as the API hands it over; @highsea/quality's schema checks it.
+ * as the API hands it over; @highsea-tv/quality's schema checks it.
  */
 export type ProfileInput = Omit<QualityProfile, 'id' | 'waitMinutes' | 'items' | 'language'> & {
   items: { name: string; allowed: boolean; qualities: string[] }[]
@@ -179,7 +179,7 @@ export function createProfiles({ db, clock, logger }: MediaDeps) {
 
   /**
    * Every quality's size limits, lowest quality first. A quality missing from the stored row (one
-   * a later release adds) reads its default, as other settings areas do (@highsea/db's
+   * a later release adds) reads its default, as other settings areas do (@highsea-tv/db's
    * `readSetting`, which merges objects and so can't take this row's list).
    */
   function qualitySizes(): QualitySizes {
@@ -194,7 +194,7 @@ export function createProfiles({ db, clock, logger }: MediaDeps) {
     return QUALITY_NAMES.map((q) => stored.get(q) ?? (defaults.get(q) as QualitySizes[number]))
   }
 
-  /** The profile checked as @highsea/quality checks it, with every quality listed. */
+  /** The profile checked as @highsea-tv/quality checks it, with every quality listed. */
   function checkProfile(id: string, input: ProfileInput): QualityProfile {
     const known = new Set(formats().map((f) => f.id))
     const parsed = qualityProfileSchema.safeParse({

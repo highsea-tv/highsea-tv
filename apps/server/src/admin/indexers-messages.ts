@@ -2,7 +2,7 @@
 // A9 Indexers (ADR 0021): the prototype's copy, with what real data adds: the catalog's real
 // changelog and an update waiting when updates ask first, Local definitions, Edit with priority,
 // indexers that need attention, and stats that have no queries yet.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const indexers = defineMessages({
   title: 'Indexers',

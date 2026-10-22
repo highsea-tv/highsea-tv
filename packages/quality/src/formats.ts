@@ -7,7 +7,7 @@
 // - negate inverts a condition;
 // - regular expressions are case-insensitive.
 // Written from that page, not from Radarr's code (ADR 0031).
-import type { ParsedRelease } from '@highsea/parser'
+import type { ParsedRelease } from '@highsea-tv/parser'
 import { z } from 'zod'
 import { languageName, type QualityT, qualityT } from './messages.ts'
 

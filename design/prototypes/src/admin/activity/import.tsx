@@ -3,7 +3,7 @@
 // couldn't import on its own. Pick a folder, check what each file matched, see the name it will
 // get, then hardlink or move them in.
 
-import { bytes } from '@highsea/core/format'
+import { bytes } from '@highsea-tv/core/format'
 import {
   Badge,
   Button,
@@ -22,7 +22,7 @@ import {
   TableRow,
   TableToolbar,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useState } from 'react'
 import { useAction, useClient, useQuery } from '../../mock/hooks.tsx'
 import type { ImportCandidate } from '../../mock/types.ts'

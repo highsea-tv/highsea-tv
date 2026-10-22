@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { createEventBus, createFakeClock, type ServerEvent } from '@highsea/core'
-import { migrate, openDatabase, schema } from '@highsea/db'
-import type { ClientType } from '@highsea/db/schema'
+import { createEventBus, createFakeClock, type ServerEvent } from '@highsea-tv/core'
+import { migrate, openDatabase, schema } from '@highsea-tv/db'
+import type { ClientType } from '@highsea-tv/db/schema'
 import { createPersonalization } from '../src/index.ts'
 
 export function setup() {

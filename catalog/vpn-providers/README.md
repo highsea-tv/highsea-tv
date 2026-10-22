@@ -1,6 +1,6 @@
 # The VPN provider catalog
 
-The providers Settings › VPN › highsea connects offers ([vpn.md](../../docs/product/vpn.md), ADR 0042), in the format `@highsea/schemas/vpn` defines, signed and released like the indexers (ADR 0034).
+The providers Settings › VPN › highsea connects offers ([vpn.md](../../docs/product/vpn.md), ADR 0042), in the format `@highsea-tv/schemas/vpn` defines, signed and released like the indexers (ADR 0034).
 
 - `definitions/`: one YAML entry per provider, shipped on both channels.
 - `beta/`: entries shipped on the beta channel only. A file here replaces the stable one with the same id.

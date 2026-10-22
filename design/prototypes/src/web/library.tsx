@@ -2,7 +2,7 @@
 // C3 Library browse, web/desktop (docs/product/client-library.md). Everything you can watch on this
 // server as a poster grid, with a genre filter and a sort. Other media types appear as tabs only
 // once the server has them; in M1 it's movies only, so there are no tabs.
-import { Button, cn, EmptyState, Poster, Select, Skeleton } from '@highsea/ui-web'
+import { Button, cn, EmptyState, Poster, Select, Skeleton } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { left, useLibrary } from '../client/data.ts'
 import type { ClientItem } from '../mock/types.ts'

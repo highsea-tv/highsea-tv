@@ -2,8 +2,8 @@
 // The real HTTP server (without Next), driven through the SDK as a client would.
 import { afterEach, describe, expect, test } from 'bun:test'
 import type { AddressInfo } from 'node:net'
-import type { ServerEvent } from '@highsea/api-contract'
-import { createClient } from '@highsea/sdk'
+import type { ServerEvent } from '@highsea-tv/api-contract'
+import { createClient } from '@highsea-tv/sdk'
 import { selfSigned } from '../../../packages/network/test/self-signed.ts'
 import { createApi } from '../src/api/app.ts'
 import { createHttpServer, createTlsServer } from '../src/http.ts'

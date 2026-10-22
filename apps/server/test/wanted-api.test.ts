@@ -6,15 +6,15 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Fetch } from '@highsea/core'
-import { createFakeIndexer, FAKE_CREDENTIALS, FAKE_ORIGIN } from '@highsea/indexers/fake'
+import type { Fetch } from '@highsea-tv/core'
+import { createFakeIndexer, FAKE_CREDENTIALS, FAKE_ORIGIN } from '@highsea-tv/indexers/fake'
 import {
   createFakeLists,
   FAKE_TRAKT_CLIENT_ID,
   FAKE_TRAKT_CLIENT_SECRET,
   GENERIC_LIST,
-} from '@highsea/lists/fake'
-import { createReplayFetch } from '@highsea/metadata/replay'
+} from '@highsea-tv/lists/fake'
+import { createReplayFetch } from '@highsea-tv/metadata/replay'
 import { createApi } from '../src/api/app.ts'
 import { escapeText, fold } from '../src/api/ics.ts'
 import {

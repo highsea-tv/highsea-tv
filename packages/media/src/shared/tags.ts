@@ -6,9 +6,9 @@
 // to count and strip them, so those packages never import media (ADR 0036).
 //
 // A label is unique ignoring case ("Kids" and "kids" are one tag), as Radarr's are.
-import type { Tag } from '@highsea/api-contract'
-import { AppError, newId } from '@highsea/core'
-import { schema } from '@highsea/db'
+import type { Tag } from '@highsea-tv/api-contract'
+import { AppError, newId } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import { and, asc, eq, inArray, sql } from 'drizzle-orm'
 import { invalid, type MediaDeps } from './context.ts'
 import { chunks } from './sql.ts'

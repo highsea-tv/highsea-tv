@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A collection's poster (collections.md#artwork), ported from the prototype's kit/collection-art.tsx:
 // the one chosen, or a mosaic of its first four posters, as Plex draws a smart collection's.
-import { cn } from '@highsea/ui-web'
+import { cn } from '@highsea-tv/ui-web'
 
 export function CollectionArt({
   poster,

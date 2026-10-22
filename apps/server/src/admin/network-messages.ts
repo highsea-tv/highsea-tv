@@ -3,7 +3,7 @@
 // (design/prototypes/src/admin/settings/reference.tsx); what it doesn't show and the API has (the
 // HTTPS port, why built-in TLS isn't serving, the addresses on this network, the discovery port)
 // and the field errors are added in its voice.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const network = defineMessages({
   what: 'these settings',

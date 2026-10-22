@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// @highsea/metadata: TMDB, the metadata cache, images and refresh (ADR 0029, 0030). Titles, people
+// @highsea-tv/metadata: TMDB, the metadata cache, images and refresh (ADR 0029, 0030). Titles, people
 // and collections are addressed by their TMDB ids. The replaying `fetch` for tests and the dev
-// server has its own entry point (`@highsea/metadata/replay`).
+// server has its own entry point (`@highsea-tv/metadata/replay`).
 import type { MetadataDeps } from './context.ts'
 import { defineMetadataJobs, queueFacts, scheduleMetadataJobs } from './jobs.ts'
 import { createMetadataCore, JOB_TYPES } from './service.ts'

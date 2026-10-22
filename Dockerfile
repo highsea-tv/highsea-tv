@@ -46,7 +46,8 @@ RUN --mount=type=secret,id=opensubtitles,required=false \
     install -D -m 0444 /run/secrets/opensubtitles /usr/share/highsea/opensubtitles.key; \
   fi
 # highsea's Trakt application, the same way (`--secret id=trakt_id,env=HIGHSEA_TRAKT_CLIENT_ID`,
-# `--secret id=trakt_secret,env=HIGHSEA_TRAKT_CLIENT_SECRET`). Without them, Trakt lists are off.
+# `--secret id=trakt_secret,env=HIGHSEA_TRAKT_CLIENT_SECRET`, optional). Without the Client ID, Trakt
+# lists are off.
 RUN --mount=type=secret,id=trakt_id,required=false \
   --mount=type=secret,id=trakt_secret,required=false \
   if [ -s /run/secrets/trakt_id ]; then \

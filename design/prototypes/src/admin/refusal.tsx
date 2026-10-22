@@ -2,7 +2,7 @@
 // What a user sees at every admin address (ADR 0032, decision 9): the admin is the owner's and
 // admins' only. It loads no admin data and says nothing an outsider couldn't learn from the
 // sign-in page. Once the web client exists (Phase 4), it links there.
-import { Button } from '@highsea/ui-web'
+import { Button } from '@highsea-tv/ui-web'
 import { useEffect } from 'react'
 import { useLocation } from 'wouter'
 import { Card, Heading } from './login.tsx'

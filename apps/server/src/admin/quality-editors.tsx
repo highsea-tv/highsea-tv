@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The profile, format and size editors (checkpoint 8c; settings.md › As built (8c)), ported from
 // the signed-off prototype's editors.tsx with the mock client swapped for the SDK. Each edits
-// @highsea/quality's real shapes, as the Servarr wiki describes them:
+// @highsea-tv/quality's real shapes, as the Servarr wiki describes them:
 // - a quality profile (https://wiki.servarr.com/radarr/settings#quality-profiles): the qualities
 //   highest first, "qualities within the same group are equal", only ticked ones wanted; the cutoff
 //   ("Upgrade Until"); the format scores, with a minimum, a score to stop upgrading at and the least
@@ -20,10 +20,10 @@ import type {
   QualityProfile as ApiProfile,
   FormatCondition,
   QualitySize,
-} from '@highsea/api-contract'
-import { bytes } from '@highsea/core/format'
-import { useLocale, useT } from '@highsea/i18n/react'
-import { parse } from '@highsea/parser'
+} from '@highsea-tv/api-contract'
+import { bytes } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { parse } from '@highsea-tv/parser'
 import {
   CONDITION_KINDS,
   type Condition,
@@ -50,8 +50,8 @@ import {
   RESOLUTIONS,
   SOURCES,
   validateFormat,
-} from '@highsea/quality/browser'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/quality/browser'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Banner,
@@ -77,7 +77,7 @@ import {
   TableHeader,
   TableRow,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useMemo, useState } from 'react'
 import { Loadable } from './loadable.tsx'
@@ -656,7 +656,7 @@ function conditionOf(kind: ConditionKind, from?: Condition): Condition {
 
 type FormatDraft = { name: string; conditions: Condition[] }
 
-/** The draft as @highsea/quality's matcher and checks take a format. */
+/** The draft as @highsea-tv/quality's matcher and checks take a format. */
 const asFormat = (f: FormatDraft): CustomFormat => ({
   id: 'draft',
   source: 'custom',

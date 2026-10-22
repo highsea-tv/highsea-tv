@@ -6,8 +6,8 @@ import { afterAll, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createProbe } from '@highsea/media/shared'
-import { hasFfmpeg } from '@highsea/media/testing'
+import { createProbe } from '@highsea-tv/media/shared'
+import { hasFfmpeg } from '@highsea-tv/media/testing'
 import {
   align,
   applyCorrection,

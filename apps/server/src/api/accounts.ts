@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// People and access over HTTP: thin handlers over @highsea/auth (ADR 0023, 0024, 0025).
-import { routes } from '@highsea/api-contract'
-import { CALLBACK_PATH, type Issued, SECRET_PREFIX, type SignInOutcome } from '@highsea/auth'
-import { AppError } from '@highsea/core'
+// People and access over HTTP: thin handlers over @highsea-tv/auth (ADR 0023, 0024, 0025).
+import { routes } from '@highsea-tv/api-contract'
+import { CALLBACK_PATH, type Issued, SECRET_PREFIX, type SignInOutcome } from '@highsea-tv/auth'
+import { AppError } from '@highsea-tv/core'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { AuthenticationResponseJSON, RegistrationResponseJSON } from '@simplewebauthn/server'
 import type { Context } from 'hono'

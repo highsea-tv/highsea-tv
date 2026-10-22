@@ -11,7 +11,7 @@ import { TagIds } from './tags.ts'
 
 // ---------------------------------------------------------------- shapes
 
-/** The kinds at launch (the owner's answer 6), as `@highsea/db`'s schema names them. */
+/** The kinds at launch (the owner's answer 6), as `@highsea-tv/db`'s schema names them. */
 export const CONNECTION_KINDS = [
   'discord',
   'slack',

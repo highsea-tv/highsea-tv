@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The profile, format and size editors (ADR 0021): the prototype's copy (editors.tsx), with what
 // the server adds, the wait before grabbing and the refusals it sends back.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const editors = defineMessages({
   // shared

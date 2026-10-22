@@ -2,7 +2,7 @@
 // A10 Subtitles (ADR 0021): the prototype's copy, with what real data adds (checkpoint 7a): the
 // wanted list's pages, the providers' accounts, Edit dialog, throttling and attribution, a refused
 // delete, the minimum score hint's "about 99", and the line saying sync comes next.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const subtitles = defineMessages({
   title: 'Subtitles',

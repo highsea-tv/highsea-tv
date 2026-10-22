@@ -9,9 +9,9 @@ import {
   generateSecretKey,
   type ServerEvent,
   silentLogger,
-} from '@highsea/core'
-import { migrate, openDatabase, schema } from '@highsea/db'
-import { createJobQueue } from '@highsea/jobs'
+} from '@highsea-tv/core'
+import { migrate, openDatabase, schema } from '@highsea-tv/db'
+import { createJobQueue } from '@highsea-tv/jobs'
 import { createMetadata } from '../src/index.ts'
 import { createReplayFetch, type ReplayOptions } from '../src/replay.ts'
 

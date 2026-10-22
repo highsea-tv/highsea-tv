@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Personalization over HTTP: thin handlers over @highsea/personalization (ADR 0027, 0028).
-import { MARK_UPLOAD_MAX, routes } from '@highsea/api-contract'
-import { isStaff } from '@highsea/auth'
-import { AppError } from '@highsea/core'
+// Personalization over HTTP: thin handlers over @highsea-tv/personalization (ADR 0027, 0028).
+import { MARK_UPLOAD_MAX, routes } from '@highsea-tv/api-contract'
+import { isStaff } from '@highsea-tv/auth'
+import { AppError } from '@highsea-tv/core'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { bodyLimit } from 'hono/body-limit'

@@ -2,7 +2,7 @@
 // The media page's shared anatomy (media-pages.md § Layout and § Copy; ADR 0021): the summary,
 // the Overview's rows, About, and the Cast and crew tab. TMDB's 12 departments and 7 video kinds
 // are widened from the prototype's lists (checkpoint 4, Fields and how they map).
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const media = defineMessages({
   summary: 'Summary',

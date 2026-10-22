@@ -11,7 +11,7 @@ import {
   Select,
   SortableList,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'

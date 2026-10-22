@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The mock server's entities: a first draft of the shapes @highsea/sdk will return in Phase 3.
+// The mock server's entities: a first draft of the shapes @highsea-tv/sdk will return in Phase 3.
 // Names follow the roadmap (docs/roadmap.md, Phase 3) and ADR 0012 (the unified media item tree).
 // Times are ISO 8601 strings; sizes are bytes; rates are bytes per second; durations are seconds
 // unless a name says otherwise.
@@ -222,8 +222,8 @@ export type MediaFile = {
 
 // ---------------------------------------------------------------- acquisition
 
-// Profiles, custom formats and the decision engine's reasons are @highsea/quality's (ADR 0031).
-import type { CustomFormat, DecisionReason, QualityProfile } from '@highsea/quality'
+// Profiles, custom formats and the decision engine's reasons are @highsea-tv/quality's (ADR 0031).
+import type { CustomFormat, DecisionReason, QualityProfile } from '@highsea-tv/quality'
 
 export type { CustomFormat, DecisionReason, QualityProfile }
 
@@ -882,9 +882,9 @@ export type Appearance = {
 // ---------------------------------------------------------------- personalization
 
 // the registry's types, from the package the server uses
-import type { WidgetPlacement } from '@highsea/personalization/widgets'
+import type { WidgetPlacement } from '@highsea-tv/personalization/widgets'
 
-export type { WidgetKind, WidgetPlacement, WidgetSpan } from '@highsea/personalization/widgets'
+export type { WidgetKind, WidgetPlacement, WidgetSpan } from '@highsea-tv/personalization/widgets'
 
 /** Only staff have a dashboard: it's the admin's. */
 export type StaffRole = Exclude<UserRole, 'user'>

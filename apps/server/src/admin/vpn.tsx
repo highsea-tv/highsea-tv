@@ -15,10 +15,10 @@ import type {
   VpnSettings,
   VpnSettingsInput,
   VpnStatus,
-} from '@highsea/api-contract'
-import type { T as Translate } from '@highsea/i18n'
-import { useT } from '@highsea/i18n/react'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import type { T as Translate } from '@highsea-tv/i18n'
+import { useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   type BadgeTone,
@@ -32,7 +32,7 @@ import {
   Switch,
   Textarea,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type ReactNode, useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { AreaPage, Group, SaveBar } from './settings.tsx'

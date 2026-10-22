@@ -2,7 +2,7 @@
 // The screen inside the frame: the toolbar's state applied (theme, motion, text size, sound),
 // the mock client for the chosen data state and role, and the routes. Tests render `ScreenApp`
 // directly with a memory location; the app renders `FramedScreen`, which talks to the chrome.
-import { UIProvider } from '@highsea/ui-web'
+import { UIProvider } from '@highsea-tv/ui-web'
 import { MotionConfig } from 'motion/react'
 import {
   createContext,

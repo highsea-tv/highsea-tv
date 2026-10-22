@@ -6,8 +6,8 @@
 // - each event's UID (stable, so a changed date moves the event rather than adding one), DTSTAMP,
 //   DTSTART as a DATE (its duration is then one day, § 3.6.1, so no DTEND), SUMMARY and DESCRIPTION;
 // - TEXT escaped (§ 3.3.11), lines ending CRLF and folded at 75 octets (§ 3.1).
-import type { CalendarEntry, CalendarKind } from '@highsea/api-contract'
-import { createT, defineMessages } from '@highsea/i18n'
+import type { CalendarEntry, CalendarKind } from '@highsea-tv/api-contract'
+import { createT, defineMessages } from '@highsea-tv/i18n'
 
 export const icsMessages = defineMessages({
   'ics.name': '{server}: movies',

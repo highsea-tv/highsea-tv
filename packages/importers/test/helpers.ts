@@ -12,15 +12,15 @@ import {
   createSealer,
   generateSecretKey,
   silentLogger,
-} from '@highsea/core'
-import { migrate, openDatabase } from '@highsea/db'
-import { createDownloads } from '@highsea/downloads'
-import { createJobQueue } from '@highsea/jobs'
-import { createMovies } from '@highsea/media/movies'
-import { checkPath, createMedia } from '@highsea/media/shared'
-import { createMetadata } from '@highsea/metadata'
-import { createReplayFetch } from '@highsea/metadata/replay'
-import { testEngine } from '@highsea/torrent/testing'
+} from '@highsea-tv/core'
+import { migrate, openDatabase } from '@highsea-tv/db'
+import { createDownloads } from '@highsea-tv/downloads'
+import { createJobQueue } from '@highsea-tv/jobs'
+import { createMovies } from '@highsea-tv/media/movies'
+import { checkPath, createMedia } from '@highsea-tv/media/shared'
+import { createMetadata } from '@highsea-tv/metadata'
+import { createReplayFetch } from '@highsea-tv/metadata/replay'
+import { testEngine } from '@highsea-tv/torrent/testing'
 import { createQbittorrentImporter } from '../src/qbittorrent/index.ts'
 import { createRadarrImporter } from '../src/radarr/index.ts'
 

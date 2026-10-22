@@ -3,10 +3,10 @@
 // codec, audio and subtitle languages) from the probes of files recorded before 8d. New probes write
 // their own as they're stored, so it's queued at boot only until it has run once for this version.
 // It derives everything from what's stored, so it's safe to repeat (ADR 0022).
-import type { Clock } from '@highsea/core'
-import type { Db } from '@highsea/db'
-import type { JobQueue } from '@highsea/jobs'
-import { deriveAllFileFacts, fileFactsCurrent } from '@highsea/media/shared'
+import type { Clock } from '@highsea-tv/core'
+import type { Db } from '@highsea-tv/db'
+import type { JobQueue } from '@highsea-tv/jobs'
+import { deriveAllFileFacts, fileFactsCurrent } from '@highsea-tv/media/shared'
 import { z } from 'zod'
 
 export const FILE_FACTS_JOB = 'media.file-facts'

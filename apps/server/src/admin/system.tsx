@@ -19,11 +19,11 @@ import {
   type SystemStatus,
   type Task,
   TMDB_ATTRIBUTION,
-} from '@highsea/api-contract'
-import { bytes, duration, percent } from '@highsea/core/format'
-import { useLocale, useT } from '@highsea/i18n/react'
-import type { ApiError } from '@highsea/sdk'
-import { useAction, useClient, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { bytes, duration, percent } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import type { ApiError } from '@highsea-tv/sdk'
+import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   type BadgeTone,
@@ -50,7 +50,7 @@ import {
   TabsList,
   TabsTrigger,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { TmdbNotice } from './attribution.tsx'

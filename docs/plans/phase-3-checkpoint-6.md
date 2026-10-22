@@ -48,7 +48,7 @@ Checkpoint 6 is the largest in the plan: a BitTorrent engine with production fea
 | `downloads` | The pipeline from a release to a finished download: grab, the queue, the monitor, stall detection, protection from malicious releases, Find another, the blocklist, the watch folder and manual torrents | `core`, `db`, `jobs`, `torrent`, `indexers`, `media/shared` |
 | `media/shared` (grows) | What importing shares across media types: `media_files`, ffprobe through one child-process wrapper, the naming engine, transfers (hardlink, reflink, copy), archive extraction, sample detection, NFO and artwork writing, permissions, the recycle bin, history, the library scan and filesystem watching | `core`, `db`, `jobs`, `quality`, `parser` |
 | `media/movies` (grows) | What's movie-only: matching a file to a movie and a version, the movie naming tokens, the movie NFO, the movie import decision, the existing-library import's folder matching | as now |
-| `importers` | One-time migration, one subpath each (ADR 0036): `@highsea/importers/radarr`, `@highsea/importers/qbittorrent` | `core`, `media`, `downloads`, `torrent` |
+| `importers` | One-time migration, one subpath each (ADR 0036): `@highsea-tv/importers/radarr`, `@highsea-tv/importers/qbittorrent` | `core`, `media`, `downloads`, `torrent` |
 | `vpn` | VPN connections: the modes, the WireGuard tunnel through `ip` and `wg`, its routing rules, the provider mechanisms (configuration files, PIA's API, NAT-PMP, typed-in ports), gluetun's control server, and the checks. It hands `torrent` a binding: an address, a DNS resolver and up or down | `core`, `db`, `catalog`, `schemas` |
 | `schemas/vpn` (new subpath) | The catalog's VPN provider format (ADR 0036) | as now |
 
@@ -154,7 +154,7 @@ Settings › VPN offers four, as vpn.md describes: **highsea connects**, **A VPN
 
 ### Providers (6b)
 
-- **A new catalog kind, `vpn-providers`,** in the format `@highsea/schemas/vpn` defines, signed and released through ADR 0034's pipeline beside the indexers. An entry holds:
+- **A new catalog kind, `vpn-providers`,** in the format `@highsea-tv/schemas/vpn` defines, signed and released through ADR 0034's pipeline beside the indexers. An entry holds:
   - the provider's name and logo;
   - how highsea connects (a configuration file, or a PIA account);
   - the steps and links for finding what highsea needs in the provider's account, and the fields to show;
@@ -709,9 +709,9 @@ Layout notes for 6b:
 125. Each movie gets one version named after its profile, as library import does (call 87). Tags are written to the tags tables, which have no screen yet; checkpoint 8's filters will read them.
 126. A torrent whose skipped file shares a piece with a kept one fetches that boundary piece again after Resume, as any torrent with skipped files does (ADR 0037's `.parts`). The check can't confirm a piece it only half has.
 127. Setup's line about Migration is plain text, not a link: the admin opens only once setup has signed the owner in.
-128. `@highsea/importers` also depends on `db`, `jobs` and `quality` beyond the plan's `core`, `media`, `downloads` and `torrent`: the progress rows, the jobs and the profile mapping need them. `@highsea/media/movies` gained `migrate.addInPlace` (add a movie where it is and adopt its file), the engine's `add` gained `totals`, and downloads gained `adoptTorrent` and `importBlock`.
+128. `@highsea-tv/importers` also depends on `db`, `jobs` and `quality` beyond the plan's `core`, `media`, `downloads` and `torrent`: the progress rows, the jobs and the profile mapping need them. `@highsea-tv/media/movies` gained `migrate.addInPlace` (add a movie where it is and adopt its file), the engine's `add` gained `totals`, and downloads gained `adoptTorrent` and `importBlock`.
 129. qBittorrent 4.5.0 / Web API 2.8.18 is checked against qBittorrent's tagged source (`release-4.5.0` declares 2.8.18 and has `exportAction`; `release-4.4.5`, 2.8.5, doesn't), because the WebAPI changelog now begins at 2.11.6 and the 5.0 wiki page doesn't list `torrents/export`.
-130. The fakes (`@highsea/importers/fake`) are written from the documented resource shapes, not recorded from live programs, so no fixture carries a real key or path.
+130. The fakes (`@highsea-tv/importers/fake`) are written from the documented resource shapes, not recorded from live programs, so no fixture carries a real key or path.
 
 Layout notes for the importers:
 

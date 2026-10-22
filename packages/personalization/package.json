@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/personalization",
+  "name": "@highsea-tv/personalization",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -13,15 +13,15 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@highsea/core": "workspace:*",
-    "@highsea/db": "workspace:*",
-    "@highsea/i18n": "workspace:*",
-    "@highsea/tokens": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/db": "workspace:*",
+    "@highsea-tv/i18n": "workspace:*",
+    "@highsea-tv/tokens": "workspace:*",
     "drizzle-orm": "0.45.3",
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@highsea/config": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
     "@types/node": "25.9.9"
   }
 }

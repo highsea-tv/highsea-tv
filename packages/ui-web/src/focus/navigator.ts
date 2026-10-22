@@ -7,7 +7,7 @@
 //   [data-scroll="x|y"]        a track that moves by transform to keep focus in view
 //   [data-keep="0.3"]          where in the viewport the track keeps focus (default 0.5)
 //   [data-center]              don't clamp the track at its ends
-import { choreography, durations } from '@highsea/tokens'
+import { choreography, durations } from '@highsea-tv/tokens'
 import { type Box, type Direction, isAhead, pickBest, trackOffset } from './spatial.ts'
 
 export type NavigatorOptions = {

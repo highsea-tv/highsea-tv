@@ -3,7 +3,7 @@
 // name, years and overview over the first part's backdrop, then its titles on this server, oldest
 // first. Reached from search and Library › Collections; a smart one (docs/product/collections.md)
 // says so and gives its rules in words.
-import { Button, cn, EmptyState, Poster, Skeleton, SkeletonText } from '@highsea/ui-web'
+import { Button, cn, EmptyState, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
 import { left, useCollection } from '../client/data.ts'
 import { gutter, webHref } from './shell.tsx'

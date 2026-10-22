@@ -3,7 +3,7 @@
 // remote. Probing asks each for the server's public info at once; a LAN address that answers
 // wins (the fastest, if several), else the fastest remote one. A call that can't reach the
 // current address re-probes and retries once, so the app fails over without the person noticing.
-import { routes } from '@highsea/api-contract'
+import { routes } from '@highsea-tv/api-contract'
 import { createClient, type Fetch, type HighseaClient } from './client.ts'
 import { ApiError } from './errors.ts'
 

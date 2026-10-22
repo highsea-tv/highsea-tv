@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { createFakeClock } from '@highsea/core'
-import { migrate, openDatabase, schema } from '@highsea/db'
+import { createFakeClock } from '@highsea-tv/core'
+import { migrate, openDatabase, schema } from '@highsea-tv/db'
 import {
   createProfiles,
   cutoffMet,

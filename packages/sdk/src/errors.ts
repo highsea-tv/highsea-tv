@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import type { ErrorBody } from '@highsea/api-contract'
+import type { ErrorBody } from '@highsea-tv/api-contract'
 
 export type ErrorCode = ErrorBody['error']['code']
 

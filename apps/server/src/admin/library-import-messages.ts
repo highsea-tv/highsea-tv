@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A17's Library import mode (ADR 0021): a library already on disk, matched on TMDB and added where
 // it is. Opened from Settings › Media management's root folders.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const libraryImport = defineMessages({
   title: 'Library import',

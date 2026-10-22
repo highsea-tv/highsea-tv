@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Connections (ADR 0021; checkpoint 8b): the prototype's Notifications group, the Add a
 // connection dialog with each kind's fields, and this browser's web push.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const connections = defineMessages({
   what: 'the connections',

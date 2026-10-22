@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Indexers and the catalog over HTTP (indexers.md, checkpoint 5): thin handlers over
-// @highsea/indexers and @highsea/catalog, and release search for a library movie. Changes go in
+// @highsea-tv/indexers and @highsea-tv/catalog, and release search for a library movie. Changes go in
 // the audit log, as other write routes do. `/indexers/test` is registered before `/indexers/{id}`.
-import { routes } from '@highsea/api-contract'
-import type { CatalogStatus } from '@highsea/catalog'
-import { AppError } from '@highsea/core'
+import { routes } from '@highsea-tv/api-contract'
+import type { CatalogStatus } from '@highsea-tv/catalog'
+import { AppError } from '@highsea-tv/core'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'

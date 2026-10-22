@@ -10,10 +10,10 @@
 // prototype's dozen and whatever is picked, and a select adds any other. Progress is kept in the
 // browser so a reload picks up where you left off, except the password and the TMDB key, which
 // never go into storage (OWASP HTML5 Security Cheat Sheet: no sensitive data in localStorage).
-import type { SetupInput } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import type { ApiError } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
+import type { SetupInput } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import type { ApiError } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Banner,
   Button,
@@ -32,7 +32,7 @@ import {
   Stepper,
   Switch,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { TmdbNotice } from './attribution.tsx'
 import {

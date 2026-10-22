@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { art, titles } from '@highsea/fixtures'
+import { art, titles } from '@highsea-tv/fixtures'
 import {
   choreography,
   durations,
@@ -9,7 +9,7 @@ import {
   springMetrics,
   springPosition,
   springs,
-} from '@highsea/tokens'
+} from '@highsea-tv/tokens'
 import {
   Button,
   Poster,
@@ -17,7 +17,7 @@ import {
   springQuick,
   staggerDelay,
   usePrefersReducedMotion,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'

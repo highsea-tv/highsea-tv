@@ -17,11 +17,18 @@ import type {
   ImportListSettings,
   ImportListTest,
   ListExclusion,
-} from '@highsea/api-contract'
-import { AppError, type Clock, type EventBus, type Fetch, type Logger, newId } from '@highsea/core'
-import { type Db, schema } from '@highsea/db'
-import type { JobQueue } from '@highsea/jobs'
-import type { Metadata } from '@highsea/metadata'
+} from '@highsea-tv/api-contract'
+import {
+  AppError,
+  type Clock,
+  type EventBus,
+  type Fetch,
+  type Logger,
+  newId,
+} from '@highsea-tv/core'
+import { type Db, schema } from '@highsea-tv/db'
+import type { JobQueue } from '@highsea-tv/jobs'
+import type { Metadata } from '@highsea-tv/metadata'
 import { asc, count, desc, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { readGeneric } from '../generic/index.ts'

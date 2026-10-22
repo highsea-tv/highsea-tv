@@ -3,7 +3,7 @@
 // the log on disk and its level, crash reports, backups, updates from the signed catalog, and
 // `/metrics`. The runtime joins them to the services they read.
 import { monitorEventLoopDelay } from 'node:perf_hooks'
-import type { Catalog, HighseaRelease } from '@highsea/catalog'
+import type { Catalog, HighseaRelease } from '@highsea-tv/catalog'
 import {
   AppError,
   type Clock,
@@ -12,9 +12,9 @@ import {
   type Level,
   type Logger,
   type MemorySink,
-} from '@highsea/core'
-import { type Db, type RawDatabase, readSetting, writeSetting } from '@highsea/db'
-import type { JobQueue } from '@highsea/jobs'
+} from '@highsea-tv/core'
+import { type Db, type RawDatabase, readSetting, writeSetting } from '@highsea-tv/db'
+import type { JobQueue } from '@highsea-tv/jobs'
 import { z } from 'zod'
 import {
   BACKUP_SCHEDULES,

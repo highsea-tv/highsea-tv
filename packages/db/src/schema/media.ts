@@ -311,7 +311,7 @@ export const mediaItemTags = sqliteTable(
 
 /**
  * A quality profile (ADR 0031): allowed qualities in groups with the cutoff, upgrades, the format
- * scores. `data` holds @highsea/quality's `QualityProfile`, checked with its schema on read.
+ * scores. `data` holds @highsea-tv/quality's `QualityProfile`, checked with its schema on read.
  */
 export const qualityProfiles = sqliteTable('quality_profiles', {
   id: text('id').primaryKey(),

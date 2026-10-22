@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// @highsea/schemas/vpn: the VPN provider format, the catalog's `vpn-providers` kind
+// @highsea-tv/schemas/vpn: the VPN provider format, the catalog's `vpn-providers` kind
 // (docs/plans/phase-3-checkpoint-6.md › Providers, ADR 0042). Facts are data, mechanisms are code:
 // an entry says which of highsea's mechanisms a provider uses (a WireGuard configuration file or
 // PIA's API to connect; NAT-PMP, PIA's API, a typed-in port or nothing to forward a port), and

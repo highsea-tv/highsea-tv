@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The public API (ADR 0006): a Hono app implementing @highsea/api-contract's routes over the
+// The public API (ADR 0006): a Hono app implementing @highsea-tv/api-contract's routes over the
 // runtime's services. Handlers stay thin; the logic lives in the domain packages.
-import { API_PREFIX, type ErrorBody, routes } from '@highsea/api-contract'
-import { isAppError } from '@highsea/core'
-import type { Runtime } from '@highsea/runtime'
+import { API_PREFIX, type ErrorBody, routes } from '@highsea-tv/api-contract'
+import { isAppError } from '@highsea-tv/core'
+import type { Runtime } from '@highsea-tv/runtime'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
 import { registerAccounts } from './accounts.ts'
@@ -123,7 +123,7 @@ export function createApi(runtime: Runtime) {
   app.onError((err, c) => {
     if (isAppError(err)) return c.json(body(err.code, err.message, err.details), err.status as 400)
     // the replay mode (HIGHSEA_TMDB_REPLAY) has no recording for this request: TMDB's answer is
-    // unknown, which is what `tmdb-unreachable` says (@highsea/metadata/replay's ReplayMissError)
+    // unknown, which is what `tmdb-unreachable` says (@highsea-tv/metadata/replay's ReplayMissError)
     if (err.name === 'ReplayMissError') {
       runtime.logger
         .child('api')

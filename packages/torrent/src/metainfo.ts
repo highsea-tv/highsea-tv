@@ -4,7 +4,7 @@
 // disk: a name of `..` or one with a slash would otherwise write outside the save folder. Tracker
 // tiers follow BEP 12, private torrents BEP 27.
 import { createHash } from 'node:crypto'
-import { AppError } from '@highsea/core'
+import { AppError } from '@highsea-tv/core'
 import bencode from 'bencode'
 import magnetDecode, { encode as magnetEncode } from 'magnet-uri'
 

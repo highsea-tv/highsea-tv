@@ -2,11 +2,11 @@
 // An import's progress: one settings row per importer, announced on `migration.updated`, as the
 // library import keeps its own (judgement call 83). The job's payload carries what to do, so a
 // restart picks up at `done`.
-import type { Clock, EventBus } from '@highsea/core'
-import { type Db, readSetting, writeSetting } from '@highsea/db'
-import type { JobQueue } from '@highsea/jobs'
+import type { Clock, EventBus } from '@highsea-tv/core'
+import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
+import type { JobQueue } from '@highsea-tv/jobs'
 
-/** @highsea/api-contract's `MIGRATION_TOPIC`. */
+/** @highsea-tv/api-contract's `MIGRATION_TOPIC`. */
 export const MIGRATION_TOPIC = 'migration.updated'
 
 export type MigrationState = {

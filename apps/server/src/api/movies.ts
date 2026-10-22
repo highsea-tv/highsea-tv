@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The movie library over HTTP (movies.md: A5 Movies, A6 movie detail) and the root folders: thin
-// handlers over @highsea/media/movies and, for the folders every media type shares,
-// @highsea/media/shared. Static paths (`/movies/bulk`, `/movies/upcoming`) are registered before
+// handlers over @highsea-tv/media/movies and, for the folders every media type shares,
+// @highsea-tv/media/shared. Static paths (`/movies/bulk`, `/movies/upcoming`) are registered before
 // `/movies/{id}`, in the contract's order. Every change goes in the audit log, as other write
 // routes do.
-import { routes } from '@highsea/api-contract'
+import { routes } from '@highsea-tv/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'

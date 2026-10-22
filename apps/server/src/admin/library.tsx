@@ -23,10 +23,10 @@ import {
   type MoviePage,
   type MovieStatus,
   type RuleCondition,
-} from '@highsea/api-contract'
-import { shortDate } from '@highsea/core/format'
-import { useLocale, useT } from '@highsea/i18n/react'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { shortDate } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -59,7 +59,7 @@ import {
   TitleCell,
   Tooltip,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { Fragment, useDeferredValue, useRef, useState, useSyncExternalStore } from 'react'
 import { useAddressParam } from './address.ts'

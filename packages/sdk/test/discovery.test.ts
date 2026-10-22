@@ -5,7 +5,7 @@ import {
   createDiscoveryResponder,
   DEFAULT_DISCOVERY_PORT,
   DISCOVERY_MESSAGE as SERVER_MESSAGE,
-} from '@highsea/network'
+} from '@highsea-tv/network'
 import { DISCOVERY_MESSAGE, DISCOVERY_PORT, discover } from '../src/discovery.ts'
 
 const info = {

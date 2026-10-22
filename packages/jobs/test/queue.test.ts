@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { createEventBus, createFakeClock } from '@highsea/core'
-import { migrate, openDatabase } from '@highsea/db'
+import { createEventBus, createFakeClock } from '@highsea-tv/core'
+import { migrate, openDatabase } from '@highsea-tv/db'
 import { z } from 'zod'
 import { createJobQueue, defineJob } from '../src/index.ts'
 

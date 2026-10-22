@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/fixtures",
+  "name": "@highsea-tv/fixtures",
   "version": "1.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -11,6 +11,6 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "devDependencies": {
-    "@highsea/config": "workspace:*"
+    "@highsea-tv/config": "workspace:*"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/importers",
+  "name": "@highsea-tv/importers",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -13,20 +13,20 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@highsea/core": "workspace:*",
-    "@highsea/db": "workspace:*",
-    "@highsea/downloads": "workspace:*",
-    "@highsea/jobs": "workspace:*",
-    "@highsea/media": "workspace:*",
-    "@highsea/parser": "workspace:*",
-    "@highsea/quality": "workspace:*",
-    "@highsea/torrent": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/db": "workspace:*",
+    "@highsea-tv/downloads": "workspace:*",
+    "@highsea-tv/jobs": "workspace:*",
+    "@highsea-tv/media": "workspace:*",
+    "@highsea-tv/parser": "workspace:*",
+    "@highsea-tv/quality": "workspace:*",
+    "@highsea-tv/torrent": "workspace:*",
     "drizzle-orm": "0.45.3",
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@highsea/config": "workspace:*",
-    "@highsea/metadata": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
+    "@highsea-tv/metadata": "workspace:*",
     "@types/node": "25.9.9"
   }
 }

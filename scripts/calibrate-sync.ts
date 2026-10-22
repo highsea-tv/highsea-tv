@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { parseArgs } from 'node:util'
-import { parseSrt } from '@highsea/subtitles/shared'
+import { parseSrt } from '@highsea-tv/subtitles/shared'
 import {
   ALIGN_DEFAULTS,
   type Alignment,
@@ -18,8 +18,8 @@ import {
   type CueSpan,
   density,
   speechFrames,
-} from '@highsea/subtitles/sync'
-import { type Distortion, distort, random } from '@highsea/subtitles/testing'
+} from '@highsea-tv/subtitles/sync'
+import { type Distortion, distort, random } from '@highsea-tv/subtitles/testing'
 
 const { values, positionals } = parseArgs({
   allowPositionals: true,

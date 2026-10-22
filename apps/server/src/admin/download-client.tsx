@@ -1,6 +1,6 @@
 'use client'
-import type { DownloadClientSettings } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
+import type { DownloadClientSettings } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Download client (settings.md), ported from the signed-off prototype's DownloadClient
 // (design/prototypes/src/admin/settings/reference.tsx): the VPN in one line with the way to
@@ -14,9 +14,9 @@ import { useT } from '@highsea/i18n/react'
 //   there.
 // 6b adds two groups no prototype screen has (judgement calls in phase-3-checkpoint-6.md): the
 // watch folder, saved with the rest, and the categories, which save at once (download-categories).
-import type { ApiError } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
-import { Button, Field, Input, Select, Switch, toast } from '@highsea/ui-web'
+import type { ApiError } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { Button, Field, Input, Select, Switch, toast } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { CATEGORY_TOPICS, Categories } from './download-categories.tsx'
 import { watchFolder as watchMessages } from './download-categories-messages.ts'

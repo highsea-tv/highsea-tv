@@ -20,7 +20,7 @@ import {
   TabsList,
   TabsTrigger,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'

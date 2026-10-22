@@ -2,7 +2,7 @@
 // A person's page (media-pages.md § Person page, § Copy; ADR 0021): the prototype's copy, with the
 // department filter over TMDB's 12 departments (checkpoint 4 plan, Admin › People and collection
 // pages) and no place of death, which TMDB doesn't have.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const person = defineMessages({
   person: 'Person',

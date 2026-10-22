@@ -7,11 +7,11 @@
 // - history comes a page at a time, with Show more under it, and failed downloads are an event;
 // - history and the blocklist rows carry the movie's title; a blocklist entry whose movie has
 //   left the library shows the release alone.
-import type { BlocklistEntry, HistoryEvent, QueueItem } from '@highsea/api-contract'
-import { bytes, duration, rate } from '@highsea/core/format'
-import { useLocale, useT } from '@highsea/i18n/react'
-import type { HighseaClient } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
+import type { BlocklistEntry, HistoryEvent, QueueItem } from '@highsea-tv/api-contract'
+import { bytes, duration, rate } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import type { HighseaClient } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -38,7 +38,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type ComponentProps, useRef, useState } from 'react'
 import { activity as messages } from './activity-messages.ts'
 import { type QueueFilter, queueFilters, torrentTone } from './downloads-status.ts'

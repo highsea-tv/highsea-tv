@@ -5,7 +5,7 @@
 // as Fetch's spec has it throw a TypeError for network errors
 // (https://fetch.spec.whatwg.org/#fetch-method); statuses follow RFC 9110: 429 with `Retry-After`
 // (§ 10.2.3, read by `retryAfterMs`), 5xx `unavailable`, 401 and 403 `auth`.
-import { type Fetch, retryAfterMs } from '@highsea/core'
+import { type Fetch, retryAfterMs } from '@highsea-tv/core'
 import { ProviderError } from '../shared/types.ts'
 
 /** Nothing a subtitle provider answers is anywhere near this; more is refused unread. */

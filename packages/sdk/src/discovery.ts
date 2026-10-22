@@ -3,7 +3,7 @@
 // broadcast `highsea:discover:1` to UDP 7368 and collect the answers, each a server's public info.
 // Browsers can't send UDP; the admin doesn't need to.
 import { createSocket } from 'node:dgram'
-import { PublicInfo } from '@highsea/api-contract'
+import { PublicInfo } from '@highsea-tv/api-contract'
 
 export const DISCOVERY_MESSAGE = 'highsea:discover:1'
 export const DISCOVERY_PORT = 7368

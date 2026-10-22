@@ -3,7 +3,7 @@
 // credits, studios, trailers and collections for every title the mock knows, people built from
 // those credits, and recommendations from shared people and genres. Titles are looked up by media
 // id. Credits are the films' real ones; the ids (TMDB, IMDb, Wikidata) and trailer keys are made up.
-import { portraitArt, stillArt } from '@highsea/fixtures'
+import { portraitArt, stillArt } from '@highsea-tv/fixtures'
 import { iso } from './clock.ts'
 import type { ServerState } from './seed.ts'
 import type {

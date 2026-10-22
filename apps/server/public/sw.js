@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The admin's service worker (checkpoint 8b): web push only. It has no fetch handler, so it never
 // stands between the admin and the server. A push carries the message as JSON (`title`, `body`,
-// `url`, `image`, `tag`, from @highsea/notifications' browser channel); a click opens its page, or
+// `url`, `image`, `tag`, from @highsea-tv/notifications' browser channel); a click opens its page, or
 // the admin. As Next's PWA guide sets it up: https://nextjs.org/docs/app/guides/progressive-web-apps
 // and MDN's https://developer.mozilla.org/en-US/docs/Web/API/ServiceWorkerRegistration/showNotification
 

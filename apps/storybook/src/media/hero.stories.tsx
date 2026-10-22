@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { art, byId, titles } from '@highsea/fixtures'
-import { BackdropHero, Button, CarouselRow, Poster, QualityTag } from '@highsea/ui-web'
+import { art, byId, titles } from '@highsea-tv/fixtures'
+import { BackdropHero, Button, CarouselRow, Poster, QualityTag } from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useEffect, useState } from 'react'
 

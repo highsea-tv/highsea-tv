@@ -16,7 +16,7 @@
 // and refers to them by Content-ID (Nodemailer embedded images,
 // https://nodemailer.com/message/embedded-images/), so nothing loads remotely and they show
 // without an external URL.
-import { createT, type T } from '@highsea/i18n'
+import { createT, type T } from '@highsea-tv/i18n'
 import { emailMessages } from './messages.ts'
 import { fonts, type Level, palette, shape, type } from './tokens.ts'
 
@@ -57,7 +57,7 @@ export type Detail = {
   value: string
 }
 
-/** A notification as the service renders it (`Message` in @highsea/notifications), plus details. */
+/** A notification as the service renders it (`Message` in @highsea-tv/notifications), plus details. */
 export type NotificationEmail = {
   event: EventKind
   level: Level

@@ -17,13 +17,13 @@
 // sealed in settings. Without an external URL there's no address a service could reach, so the
 // messages carry no link and no poster.
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto'
-import type { Clock, Logger, Sealer } from '@highsea/core'
-import { type Db, readSetting, schema, writeSetting } from '@highsea/db'
-import type { DownloadFailure } from '@highsea/downloads'
-import type { HistoryInput } from '@highsea/media/shared'
-import { IMAGE_ROUTE } from '@highsea/metadata'
-import type { Notifications } from '@highsea/notifications/service'
-import type { MovieRef } from '@highsea/notifications/shared'
+import type { Clock, Logger, Sealer } from '@highsea-tv/core'
+import { type Db, readSetting, schema, writeSetting } from '@highsea-tv/db'
+import type { DownloadFailure } from '@highsea-tv/downloads'
+import type { HistoryInput } from '@highsea-tv/media/shared'
+import { IMAGE_ROUTE } from '@highsea-tv/metadata'
+import type { Notifications } from '@highsea-tv/notifications/service'
+import type { MovieRef } from '@highsea-tv/notifications/shared'
 import { and, eq } from 'drizzle-orm'
 import type { HealthIssue } from './system.ts'
 

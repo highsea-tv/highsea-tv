@@ -9,7 +9,7 @@
 // - Rate limits: TMDB's limit sits around 40 requests a second, and it answers 429 above it (https://developer.themoviedb.org/docs/rate-limiting). Four requests at a time stays
 //   far below it. A 429 or 5xx is retried after `Retry-After` when TMDB sends one (the docs don't
 //   say whether it does), otherwise with exponential backoff.
-import { AppError, type Clock, type Fetch, type Logger, retryAfterMs } from '@highsea/core'
+import { AppError, type Clock, type Fetch, type Logger, retryAfterMs } from '@highsea-tv/core'
 
 export const TMDB_API = 'https://api.themoviedb.org'
 

@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The movie library as curation sees it (checkpoint 8c, ADR 0048): which titles are here and have
 // a file, what a section's rule picks, the home's built-in rows, and the genres and collections a
-// rule can name. Curation doesn't import `@highsea/media`; the runtime hands it this.
+// rule can name. Curation doesn't import `@highsea-tv/media`; the runtime hands it this.
 //
 // A title counts once a version has a file: the prototype's "playable", which streaming (Phase 4)
 // will narrow to what can actually be played. The rules read TMDB's own JSON in the metadata cache
 // with SQLite's json_each and json_extract (https://sqlite.org/json1.html), as the genre rows do.
-import type { Clock } from '@highsea/core'
-import type { BuiltInRow, CurationLibrary, LibraryPick } from '@highsea/curation/service'
-import { type Db, schema } from '@highsea/db'
-import type { Movies } from '@highsea/media/movies'
+import type { Clock } from '@highsea-tv/core'
+import type { BuiltInRow, CurationLibrary, LibraryPick } from '@highsea-tv/curation/service'
+import { type Db, schema } from '@highsea-tv/db'
+import type { Movies } from '@highsea-tv/media/movies'
 import { and, eq, inArray, type SQL, sql } from 'drizzle-orm'
 import { homeRows } from './home-rows.ts'
 

@@ -6,13 +6,13 @@
 // owner says so (decision 5).
 import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
-import { compareVersions, type Definition } from '@highsea/schemas/indexers'
+import { compareVersions, type Definition } from '@highsea-tv/schemas/indexers'
 import {
   compareProviderVersions,
   formatProviderIssues,
   type VpnProviderDefinition,
   validateVpnProvider,
-} from '@highsea/schemas/vpn'
+} from '@highsea-tv/schemas/vpn'
 import {
   type Bundle,
   CATALOG_FORMAT,
@@ -186,7 +186,7 @@ export function buildCatalog(
   )
 }
 
-/** Checks a VPN provider entry with `@highsea/schemas/vpn`, for the loader. */
+/** Checks a VPN provider entry with `@highsea-tv/schemas/vpn`, for the loader. */
 export function validateProviderEntry(raw: unknown) {
   const result = validateVpnProvider(raw)
   return result.ok

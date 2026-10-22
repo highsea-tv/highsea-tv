@@ -5,7 +5,7 @@
 //   Play/Pause    play or pause, from anywhere
 // The chrome shows on any key and hides after 3 s while playing. A legend of the mapping sits
 // under the scrubber while the chrome shows.
-import { cn, Icon, QualityTag } from '@highsea/ui-web'
+import { cn, Icon, QualityTag } from '@highsea-tv/ui-web'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock } from '../client/data.ts'

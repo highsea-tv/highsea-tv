@@ -3,7 +3,7 @@
 // its states, with the main controls working (edit, save, discard) and the rest marked as not in
 // the prototype.
 
-import { describeFormat } from '@highsea/quality/browser'
+import { describeFormat } from '@highsea-tv/quality/browser'
 import {
   Badge,
   Button,
@@ -20,7 +20,7 @@ import {
   TableHeader,
   TableRow,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import { Soon } from '../../kit/soon.tsx'
 import { useQuery } from '../../mock/hooks.tsx'

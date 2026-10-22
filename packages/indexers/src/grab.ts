@@ -5,7 +5,7 @@
 // a redirect to one is taken as the magnet, as Radarr's TorrentClientBase.DownloadFromWebUrl does
 // (src/NzbDrone.Core/Download/TorrentClientBase.cs). The bytes are checked to be a bencoded
 // dictionary (BEP 3), so a sign-in page that came back instead fails here, not in the engine.
-import type { Fetch } from '@highsea/core'
+import type { Fetch } from '@highsea-tv/core'
 import { checkStatus, IndexerError } from './http.ts'
 
 /** A `.torrent` is metadata: no real one comes near this. */

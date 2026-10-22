@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Pieces of two-step verification that sign-in and "Your account" share: the code field, the
 // authenticator's QR code with its key, and the recovery codes shown once.
-import { useT } from '@highsea/i18n/react'
-import { Button, Field, Input, QrCode, toast } from '@highsea/ui-web'
+import { useT } from '@highsea-tv/i18n/react'
+import { Button, Field, Input, QrCode, toast } from '@highsea-tv/ui-web'
 import type { Ref } from 'react'
 import { account } from './account-messages.ts'
 

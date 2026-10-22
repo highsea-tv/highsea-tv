@@ -1,13 +1,13 @@
-# @highsea/ui-web
+# @highsea-tv/ui-web
 
-highsea's React components for the web: the server's admin app, the web and desktop clients, and the TV web builds (webOS, Tizen). Built on Radix, Tailwind v4 and `motion/react`. The values come from [`@highsea/tokens`](../tokens/README.md); the rules they follow are in [`docs/design-language/`](../../docs/design-language/README.md).
+highsea's React components for the web: the server's admin app, the web and desktop clients, and the TV web builds (webOS, Tizen). Built on Radix, Tailwind v4 and `motion/react`. The values come from [`@highsea-tv/tokens`](../tokens/README.md); the rules they follow are in [`docs/design-language/`](../../docs/design-language/README.md).
 
 ## Setup
 
 The app needs React 19 and Tailwind 4 (for example `@tailwindcss/vite`). Its stylesheet imports one file:
 
 ```css
-@import "@highsea/ui-web/styles.css";
+@import "@highsea-tv/ui-web/styles.css";
 ```
 
 That brings in Tailwind, the token theme, the Geist fonts and the component animations, and tells Tailwind to scan this package. Tailwind finds the app's own files by itself. The token theme **replaces** Tailwind's defaults, so only highsea's roles and scales exist (`bg-s1`, `text-title`, `medium:`); see the [tokens README](../tokens/README.md#using-the-tailwind-theme).
@@ -15,7 +15,7 @@ That brings in Tailwind, the token theme, the Geist fonts and the component anim
 Wrap the app once:
 
 ```tsx
-import { UIProvider } from '@highsea/ui-web'
+import { UIProvider } from '@highsea-tv/ui-web'
 
 <UIProvider sound={{ enabled: false }}>
   <App />

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { glyphs, Icon, type IconName, Input, icons, SegmentedControl } from '@highsea/ui-web'
+import { glyphs, Icon, type IconName, Input, icons, SegmentedControl } from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { Page, Section } from './page.tsx'

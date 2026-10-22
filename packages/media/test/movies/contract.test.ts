@@ -13,7 +13,7 @@ import {
   QualitySize,
   RootFolder,
   SearchResults,
-} from '@highsea/api-contract'
+} from '@highsea-tv/api-contract'
 import { z } from 'zod'
 import { LLAMA_DRAMA, SINTEL, setup } from './helpers.ts'
 

@@ -4,7 +4,7 @@
 // https://github.com/Radarr/Radarr/blob/develop/src/NzbDrone.Core/Organizer/NamingConfig.cs), with
 // rename on (the checkpoint's judgement call 11: highsea owns the library from the first import).
 import { isAbsolute } from 'node:path'
-import { readSetting, writeSetting } from '@highsea/db'
+import { readSetting, writeSetting } from '@highsea-tv/db'
 import { z } from 'zod'
 import { invalid, type MediaDeps } from './context.ts'
 import { checkFormat } from './naming.ts'

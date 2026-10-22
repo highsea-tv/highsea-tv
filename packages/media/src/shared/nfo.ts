@@ -6,7 +6,7 @@
 // https://kodi.wiki/view/Movie_artwork). Written beside and renamed, so a reader never sees half.
 import { promises as fsp } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
-import { newId } from '@highsea/core'
+import { newId } from '@highsea-tv/core'
 import type { MediaInfo } from './probe.ts'
 
 export type NfoMovie = {

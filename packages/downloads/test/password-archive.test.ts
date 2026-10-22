@@ -3,7 +3,7 @@
 // blocklisted and replaced through the same path a stalled release takes, not left waiting.
 import { afterEach, describe, expect, test } from 'bun:test'
 import { randomBytes } from 'node:crypto'
-import { schema } from '@highsea/db'
+import { schema } from '@highsea-tv/db'
 import { ITEM, setup, sintelSearch, until, VERSION } from './helpers.ts'
 
 type T = Awaited<ReturnType<typeof setup>>

@@ -4,7 +4,7 @@
 // (https://wiki.servarr.com/radarr/supported). MDBList and similar tools
 // publish IMDb and Letterboxd lists in it. A `tmdb_id` is used when an entry has one, so the IMDb
 // lookup is skipped; MDBList's `id` and `release_year` are read too when `mediatype` is `movie`.
-import { AppError, type Fetch } from '@highsea/core'
+import { AppError, type Fetch } from '@highsea-tv/core'
 import { idOf, imdbIdOf, jsonOf, type ListEntry, request } from '../shared/index.ts'
 
 /** The most entries a generic list is read to. */

@@ -7,8 +7,8 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { createFakeClock, createLogger, type ServerEvent } from '@highsea/core'
-import { migrate, migrations, openDatabase, readSetting, writeSetting } from '@highsea/db'
+import { createFakeClock, createLogger, type ServerEvent } from '@highsea-tv/core'
+import { migrate, migrations, openDatabase, readSetting, writeSetting } from '@highsea-tv/db'
 import {
   BACKUP_JOB,
   beginRestore,

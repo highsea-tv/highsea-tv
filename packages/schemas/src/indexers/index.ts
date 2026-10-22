@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// @highsea/schemas/indexers: the indexer definition format (ADR 0033). Pure: no I/O, no clock, so
+// @highsea-tv/schemas/indexers: the indexer definition format (ADR 0033). Pure: no I/O, no clock, so
 // the catalog pipeline, the server and the prototype share it.
 export * from './categories.ts'
 export * from './definition.ts'

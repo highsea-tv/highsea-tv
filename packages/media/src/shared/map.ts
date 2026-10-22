@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The conversions into the API's shapes (@highsea/api-contract) that every media type makes the
+// The conversions into the API's shapes (@highsea-tv/api-contract) that every media type makes the
 // same way (checkpoint 4, Fields and how they map): TMDB's 0–10 rating becomes five stars, times
 // become ISO strings, art drops the card-size still the lists don't use, and a watch position
 // becomes progress. Each type's own shapes are in its folder (movies/map.ts).
-import type { Credit as ApiCredit, Video as ApiVideo } from '@highsea/api-contract'
-import type { schema } from '@highsea/db'
-import type { Credit, Video } from '@highsea/metadata'
+import type { Credit as ApiCredit, Video as ApiVideo } from '@highsea-tv/api-contract'
+import type { schema } from '@highsea-tv/db'
+import type { Credit, Video } from '@highsea-tv/metadata'
 
 export type ItemRow = typeof schema.mediaItems.$inferSelect
 export type VersionRow = typeof schema.versions.$inferSelect

@@ -6,9 +6,9 @@
 // own size, scaled to fit (curation-frame.tsx). The frame is inert: a picture of the client, not a
 // second app to tab into. "Preview as" offers everyone on the server, not the prototype's two
 // sample people.
-import type { ClientType, CurationPreviewInput } from '@highsea/api-contract'
-import { useQuery } from '@highsea/sdk/react'
-import { Icon, SegmentedControl, Select, useWidth } from '@highsea/ui-web'
+import type { ClientType, CurationPreviewInput } from '@highsea-tv/api-contract'
+import { useQuery } from '@highsea-tv/sdk/react'
+import { Icon, SegmentedControl, Select, useWidth } from '@highsea-tv/ui-web'
 import { useEffect, useRef, useState } from 'react'
 import { FRAME_READY, type FrameMessage, type PreviewPlatform } from './curation-frame.tsx'
 import { useCurationT, useKept, usePeople, useSettled } from './curation-shared.tsx'

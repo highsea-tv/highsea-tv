@@ -3,7 +3,7 @@
 // filter and a sort. The table selects rows for bulk edit: monitor, quality profile, search and
 // remove. An item with two versions (1080p beside 4K HDR) is one row with both.
 
-import { shortDate } from '@highsea/core/format'
+import { shortDate } from '@highsea-tv/core/format'
 import {
   Badge,
   type BadgeTone,
@@ -36,7 +36,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'

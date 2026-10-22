@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Storybook's chrome is themed before any CSS loads, so .storybook/theme.ts hardcodes the default
-// theme's values. This keeps them in step with @highsea/tokens.
+// theme's values. This keeps them in step with @highsea-tv/tokens.
 import { describe, expect, test } from 'bun:test'
-import { builtInThemes, composite, formatHex, parseColor } from '@highsea/tokens'
+import { builtInThemes, composite, formatHex, parseColor } from '@highsea-tv/tokens'
 import { chrome } from '../.storybook/theme.ts'
 
 const { colors } = builtInThemes.default

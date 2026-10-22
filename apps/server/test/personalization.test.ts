@@ -5,9 +5,9 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import {
   WIDGET_KINDS as CONTRACT_KINDS,
   WIDGET_SOURCES as CONTRACT_SOURCES,
-} from '@highsea/api-contract'
-import { WIDGET_KINDS, WIDGET_SOURCES } from '@highsea/personalization'
-import { defaultSoundPack } from '@highsea/tokens'
+} from '@highsea-tv/api-contract'
+import { WIDGET_KINDS, WIDGET_SOURCES } from '@highsea-tv/personalization'
+import { defaultSoundPack } from '@highsea-tv/tokens'
 import { createApi } from '../src/api/app.ts'
 import {
   addMember,

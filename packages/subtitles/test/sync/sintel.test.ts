@@ -8,7 +8,7 @@
 // back within ±100 ms of where the engine puts the undistorted cues, and the undistorted cues may
 // move at most 450 ms from the official timing.
 import { beforeAll, describe, expect, test } from 'bun:test'
-import { hasFfmpeg } from '@highsea/media/testing'
+import { hasFfmpeg } from '@highsea-tv/media/testing'
 import {
   type Alignment,
   align,

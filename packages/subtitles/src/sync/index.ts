@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// `@highsea/subtitles/sync`: the sync engine (ADR 0044). The alignment is pure; the worker task
+// `@highsea-tv/subtitles/sync`: the sync engine (ADR 0044). The alignment is pure; the worker task
 // reads the reference with ffmpeg or ffprobe and runs in the runtime's worker pool.
 export {
   ALIGN_DEFAULTS,

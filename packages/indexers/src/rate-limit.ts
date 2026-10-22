@@ -2,7 +2,7 @@
 // Per-indexer rate limits from the definition's hints (ADR 0035): at most `requests` in any
 // `seconds`, and at least `minGapMs` between two. Searches and tests share one queue per indexer,
 // so a test can't push a search over the limit.
-import type { Clock } from '@highsea/core'
+import type { Clock } from '@highsea-tv/core'
 
 export type RateRule = { requests: number; seconds: number; minGapMs: number }
 

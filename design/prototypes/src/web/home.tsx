@@ -12,7 +12,7 @@ import {
   Poster,
   QualityTag,
   Skeleton,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type ReactNode, useState } from 'react'
 import { left, meta, qualityTags, useHome } from '../client/data.ts'
 import type { ClientItem, HomeSection } from '../mock/types.ts'

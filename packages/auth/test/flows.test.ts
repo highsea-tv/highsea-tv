@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { isAppError } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { isAppError } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import type { SignInOutcome } from '../src/index.ts'
 import { addMember, codeFor, meta, OWNER, setup, tv, withOwner } from './helpers.ts'

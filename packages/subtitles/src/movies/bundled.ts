@@ -11,9 +11,9 @@
 // - then the movie's wanted rows are rewritten and a search is queued.
 import { basename, dirname, extname, join } from 'node:path'
 import { gzipSync } from 'node:zlib'
-import { newId } from '@highsea/core'
-import { schema } from '@highsea/db'
-import type { ImportedFile, ImportHooks, Tx } from '@highsea/media/movies'
+import { newId } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
+import type { ImportedFile, ImportHooks, Tx } from '@highsea-tv/media/movies'
 import { and, eq, sql } from 'drizzle-orm'
 import { toLanguageCode } from '../shared/languages.ts'
 import { moviehash } from '../shared/moviehash.ts'

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A movie's shapes in the API's (@highsea/api-contract): a TMDB list entry, a library movie and a
-// client item. The conversions every media type makes alike are @highsea/media/shared's (map.ts).
-import type { DiscoverMovie as ApiDiscoverMovie, ClientItem, Movie } from '@highsea/api-contract'
-import type { DiscoverMovie, MovieMetadata } from '@highsea/metadata'
+// A movie's shapes in the API's (@highsea-tv/api-contract): a TMDB list entry, a library movie and a
+// client item. The conversions every media type makes alike are @highsea-tv/media/shared's (map.ts).
+import type { DiscoverMovie as ApiDiscoverMovie, ClientItem, Movie } from '@highsea-tv/api-contract'
+import type { DiscoverMovie, MovieMetadata } from '@highsea-tv/metadata'
 import {
   artOf,
   type ItemRow,

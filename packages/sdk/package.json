@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/sdk",
+  "name": "@highsea-tv/sdk",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -13,8 +13,8 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@highsea/api-contract": "workspace:*",
-    "@highsea/core": "workspace:*",
+    "@highsea-tv/api-contract": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
     "zod": "4.6.7"
   },
   "peerDependencies": {
@@ -22,8 +22,8 @@
   },
   "devDependencies": {
     "@happy-dom/global-registrator": "21.0.3",
-    "@highsea/config": "workspace:*",
-    "@highsea/network": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
+    "@highsea-tv/network": "workspace:*",
     "@testing-library/react": "16.3.3",
     "@types/react": "19.3.0",
     "react": "19.3.1",

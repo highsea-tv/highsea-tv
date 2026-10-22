@@ -1,4 +1,4 @@
-# @highsea/parser
+# @highsea-tv/parser
 
 Release names into their parts, without I/O or a clock.
 
@@ -10,7 +10,7 @@ Release names into their parts, without I/O or a clock.
 - release group, hardcoded subs, and the IMDb and TMDB ids;
 - codec, dynamic range and 3D.
 
-`@highsea/quality` turns these parts into named qualities and ranks them.
+`@highsea-tv/quality` turns these parts into named qualities and ranks them.
 
 **How it reads a name.** Ordered, named regular expressions find the tags first. The title is whatever precedes the year or the first tag, so a word like "French" or "Extended" inside a film's name is never read as a tag. The year is the last one before the first quality tag, which keeps the years in "1917.2019…" and "Blade Runner 2049 (2017)" in the title. The group is the `-GROUP` suffix from scene rules 18.4.1. Each rule cites its source in the code: the scene rules, the Servarr wiki or the TRaSH guides. `parseQuality`, `parseLanguages`, `readEdition` and `languageCode` expose the parts on their own.
 

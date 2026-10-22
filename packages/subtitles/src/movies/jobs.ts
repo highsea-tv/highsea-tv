@@ -2,7 +2,7 @@
 // The subtitle jobs (checkpoint 7's plan, "Jobs"). Each is safe to repeat (ADR 0022): a search
 // asks only for what's still wanted when it runs, a download finds the row it wrote, and a refresh
 // rewrites rows from the current state.
-import { schema } from '@highsea/db'
+import { schema } from '@highsea-tv/db'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Settings } from '../shared/settings.ts'

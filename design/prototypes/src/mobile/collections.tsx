@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Library › Collections, mobile (docs/product/collections.md#in-the-apps): the same large title
 // as Movies with a switch between the two, then the collections three a row, smart ones marked.
-import { Button, cn, EmptyState, Skeleton } from '@highsea/ui-web'
+import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui-web'
 import { collectionCaption, useCollections } from '../client/data.ts'
 import { CollectionTile } from '../kit/collection-art.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'

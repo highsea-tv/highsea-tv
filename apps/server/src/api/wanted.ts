@@ -2,10 +2,10 @@
 // Wanted and the calendar over HTTP (wanted.md, A14; checkpoint 8a): thin handlers over
 // `movies.wanted` and the runtime's automation, the person's calendar key, and the iCal feed, which
 // authenticates by the `calendar` key in its address since calendar apps can't send headers.
-import { routes } from '@highsea/api-contract'
-import { AppError } from '@highsea/core'
-import { CALENDAR_MAX_DAYS } from '@highsea/media/movies'
-import { noIndexers } from '@highsea/media/shared'
+import { routes } from '@highsea-tv/api-contract'
+import { AppError } from '@highsea-tv/core'
+import { CALENDAR_MAX_DAYS } from '@highsea-tv/media/movies'
+import { noIndexers } from '@highsea-tv/media/shared'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { type Env, me, ownOrigin } from './guard.ts'

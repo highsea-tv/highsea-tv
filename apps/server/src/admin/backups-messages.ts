@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Backups (ADR 0021, checkpoint 8b): the prototype's schedule, with the weekday a weekly
 // backup needs and the note that the secret key isn't in a backup (the owner's answer 13).
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const backups = defineMessages({
   what: 'the backup settings',

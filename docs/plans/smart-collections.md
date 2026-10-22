@@ -92,7 +92,7 @@ The rules are matched with **Match all**. The prototype's seed includes this col
 
 Built only after the owner's answers. The sketch gives an idea of the size.
 
-- **Package:** smart collections become a new subpath of curation, `@highsea/curation/collections`. Like featured sections, it reaches the library through the runtime, so curation still never imports media (ADR 0036). An ADR records the rule format and how it's evaluated.
+- **Package:** smart collections become a new subpath of curation, `@highsea-tv/curation/collections`. Like featured sections, it reaches the library through the runtime, so curation still never imports media (ADR 0036). An ADR records the rule format and how it's evaluated.
 - **Rules:**
   - stored as a JSON tree with a zod schema in the contract, so a client or a script can build one;
   - checked when saved: unknown fields, impossible ranges, or a collection that includes itself are refused with the field named.
@@ -210,13 +210,13 @@ The owner signed off checkpoint 8d on 2026-10-22.
 
 Checkpoint 8d is built as [ADR 0049](../adr/0049-smart-collections.md) describes:
 
-- **Contract:** `@highsea/api-contract`'s `collections.ts`.
+- **Contract:** `@highsea-tv/api-contract`'s `collections.ts`.
 - **Migration:** 0012.
 - **Facts:**
-  - `@highsea/metadata`'s `facts.ts`;
-  - `@highsea/media/shared`'s `file-facts.ts`;
+  - `@highsea-tv/metadata`'s `facts.ts`;
+  - `@highsea-tv/media/shared`'s `file-facts.ts`;
   - the runtime's `media.file-facts` job.
-- **Service:** `@highsea/curation/collections`.
+- **Service:** `@highsea-tv/curation/collections`.
 - **Query:** the runtime's `collection-query.ts` and `collection-library.ts`.
 - **Routes:** `apps/server/src/api/collections.ts`.
 - **Admin:** `collections*.tsx`, Movies' "Save as smart collection", and the section composer's "A collection".
@@ -236,7 +236,7 @@ Checkpoint 8d is built as [ADR 0049](../adr/0049-smart-collections.md) describes
    - The prototype offered x264, HEVC and AV1, Radarr's naming names, which change with the release name.
    - This is a change real data forced.
 5. **HDR values** are `none`, `hdr10`, `dolby-vision` and `hlg`. HDR10+ and PQ count as HDR10, and every Dolby Vision profile as Dolby Vision.
-6. **One language table.** The ISO 639-2 table moved into `@highsea/parser`, so media and subtitles share it. Audio and embedded subtitle languages are stored as ISO 639-1.
+6. **One language table.** The ISO 639-2 table moved into `@highsea-tv/parser`, so media and subtitles share it. Audio and embedded subtitle languages are stored as ISO 639-1.
 7. **Sidecar subtitles match on the primary subtag,** so `en` matches `en-GB` (RFC 5646 § 2.2.1).
 8. **Two backfill jobs.**
    - `metadata.facts` lives in metadata, which owns the cache and the region.

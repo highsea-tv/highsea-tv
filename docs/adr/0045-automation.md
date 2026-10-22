@@ -63,3 +63,13 @@ Until checkpoint 8, highsea found releases only when someone pressed Search. Che
 - RSS and the sweep add steady indexer traffic: one request per indexer every 15 minutes, and at most 20 searches every 6 hours.
 - A Trakt watchlist needs highsea's Trakt application. A build without its Client ID (`HIGHSEA_TRAKT_CLIENT_ID`) shows Trakt as unavailable, and the other kinds still work.
 - A shared calendar address shows only release dates, and its owner can replace it at any time.
+
+## 2026-10-22: Trakt's new developer portal (checkpoint 9a)
+
+Registering highsea's Trakt application on Trakt's new portal changed three things ([Trakt API Guides: Authentication](https://developer.trakt.tv/docs/authentication-oauth)):
+
+- **The sign-in host.** `/oauth/*` calls go to `auth.trakt.tv`. Everything else stays on `api.trakt.tv`.
+- **The client secret.** Trakt deprecated it for user sign-in, and new applications get only a Client ID. highsea sends the secret only when a build has one, so the device flow works with the Client ID alone.
+- **The redirect URI.** A Production application must register an `https://` redirect URI, which rules out `urn:ietf:wg:oauth:2.0:oob`. highsea's is `https://api.highsea.tv/oauth/trakt`, on `api.highsea.tv`, highsea's subdomain for machine-facing services (the checkpoint 9 plan's subdomains). The device flow never redirects there. A token refresh names it, so it matches the registration exactly.
+
+Refresh tokens are now single-use. highsea already replaces both tokens on every refresh.

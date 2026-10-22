@@ -4,8 +4,8 @@
 // genre in the library, most titles first. Built-in rows have no title, so each app names them from
 // its own catalog; a genre row carries TMDB's genre name in the metadata language, and its id keeps
 // TMDB's genre id, which doesn't change with the language.
-import type { Db } from '@highsea/db'
-import type { HomeRow } from '@highsea/personalization'
+import type { Db } from '@highsea-tv/db'
+import type { HomeRow } from '@highsea-tv/personalization'
 import { sql } from 'drizzle-orm'
 
 /** Enough rows to browse by; the rest of the genres are in the library's Genre filter. */

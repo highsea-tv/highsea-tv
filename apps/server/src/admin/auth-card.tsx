@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The centred card that sign-in, invite and reset links and device pairing sit in (the
 // prototype's login.tsx).
-import { Icon, Lockup } from '@highsea/ui-web'
+import { Icon, Lockup } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 
 export function Card({ children }: { children: ReactNode }) {

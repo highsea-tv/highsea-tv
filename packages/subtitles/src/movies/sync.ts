@@ -5,8 +5,8 @@
 // nudge, and records the result. A sync is safe to repeat (ADR 0022): it works from the original,
 // writes the sidecar by renaming a finished file, and keys its history entry by its job, which
 // keeps its id through retries and restarts.
-import { AppError } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import { eq, inArray } from 'drizzle-orm'
 import { languageName } from '../shared/languages.ts'
 import { renderSubtitle, subtitleCues } from '../shared/processing/index.ts'

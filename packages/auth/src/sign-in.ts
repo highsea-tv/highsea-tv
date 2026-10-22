@@ -7,8 +7,8 @@
 // device that's already signed in, so it never sees a code or a passkey. When an app signs in
 // with a password instead, the code step appears only if the person has turned two-step on; the
 // security policy that requires two-step only ever forces enrolment in the admin.
-import { AppError } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import { createChallenge, deleteChallenge, failChallenge, requireChallenge } from './challenges.ts'
 import type { Ctx, DeviceInput, RequestMeta, SessionView } from './context.ts'

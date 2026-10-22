@@ -9,9 +9,9 @@ import {
   type Logger,
   newId,
   type Sealer,
-} from '@highsea/core'
-import { type Db, readSetting, schema } from '@highsea/db'
-import type { ClientType, Permission, Role, SignInMethod } from '@highsea/db/schema'
+} from '@highsea-tv/core'
+import { type Db, readSetting, schema } from '@highsea-tv/db'
+import type { ClientType, Permission, Role, SignInMethod } from '@highsea-tv/db/schema'
 import { desc, eq, inArray, lt, sql } from 'drizzle-orm'
 import { ALL_LIBRARIES } from './roles.ts'
 import { defaultSecuritySettings, SECURITY_KEY, type SecuritySettings } from './settings.ts'

@@ -7,12 +7,18 @@
 // (checkpoint 4, Fields and how they map): trailers have no length and use the movie's backdrop
 // as their still; crew is grouped by TMDB's 12 departments; IMDb and Wikidata links may be missing.
 
-import type { Collection, Credit, DiscoverMovie, MovieMetadata, Video } from '@highsea/api-contract'
-import { DEPARTMENTS } from '@highsea/api-contract'
-import { duration } from '@highsea/core/format'
-import { useLocale, useT } from '@highsea/i18n/react'
-import type { ApiError } from '@highsea/sdk'
-import { type Query, useQuery } from '@highsea/sdk/react'
+import type {
+  Collection,
+  Credit,
+  DiscoverMovie,
+  MovieMetadata,
+  Video,
+} from '@highsea-tv/api-contract'
+import { DEPARTMENTS } from '@highsea-tv/api-contract'
+import { duration } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import type { ApiError } from '@highsea-tv/sdk'
+import { type Query, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -27,7 +33,7 @@ import {
   Rating,
   Skeleton,
   SkeletonText,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { Fragment, type ReactNode, useState } from 'react'
 import { Loadable } from './loadable.tsx'
@@ -58,7 +64,7 @@ export const useMovieMetadata = (id: number) =>
 // ---------------------------------------------------------------- formatting
 
 /**
- * "1 June 1922". English reads day-month-year, as the prototype and @highsea/core/format do;
+ * "1 June 1922". English reads day-month-year, as the prototype and @highsea-tv/core/format do;
  * TMDB's release dates are calendar days, so they're formatted in UTC and never shift a day.
  */
 export function useLongDate() {

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Parsed releases written by hand, so these tests don't depend on the parser.
-import type { ParsedQuality, ParsedRelease, Revision } from '@highsea/parser'
+import type { ParsedQuality, ParsedRelease, Revision } from '@highsea-tv/parser'
 
 export const revision = (r: Partial<Revision> = {}): Revision => ({
   version: 1,

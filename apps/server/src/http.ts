@@ -4,7 +4,7 @@
 // everything else to Next's handler. The same handler serves HTTPS when built-in TLS is on.
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { createServer as createHttpsServer } from 'node:https'
-import type { Certificate } from '@highsea/network'
+import type { Certificate } from '@highsea-tv/network'
 import { getRequestListener } from '@hono/node-server'
 import type { Api } from './api/app.ts'
 import { PATH_HEADER, PEER_HEADER } from './session-cookie.ts'

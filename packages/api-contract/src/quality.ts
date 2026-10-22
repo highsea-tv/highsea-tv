@@ -2,11 +2,11 @@
 // Quality (checkpoint 4, ADR 0031): profiles, custom formats and sizes, written by their editors
 // since checkpoint 8c; the parser, for checking a release name by hand; and
 // the language profiles the add dialog offers (seeded and edited in checkpoint 7). The shapes mirror
-// @highsea/parser's `ParsedRelease` and @highsea/quality's types.
+// @highsea-tv/parser's `ParsedRelease` and @highsea-tv/quality's types.
 import { createRoute, z } from '@hono/zod-openapi'
 import { API_PREFIX, access, body, errors, IdParam, json, noContent } from './common.ts'
 
-// ---------------------------------------------------------------- vocabulary (@highsea/parser)
+// ---------------------------------------------------------------- vocabulary (@highsea-tv/parser)
 
 export const SOURCES = [
   'unknown',
@@ -25,10 +25,10 @@ export const MODIFIERS = ['none', 'regional', 'screener', 'rawhd', 'brdisk', 're
 
 export const RESOLUTIONS = [360, 480, 540, 576, 720, 1080, 2160] as const
 
-/** @highsea/parser's `VideoCodec`. */
+/** @highsea-tv/parser's `VideoCodec`. */
 export const VIDEO_CODECS = ['avc', 'hevc', 'av1', 'vc1', 'mpeg2', 'xvid', 'divx', 'vp9'] as const
 
-/** @highsea/parser's `DynamicRange`, as TRaSH's HDR formats name them. */
+/** @highsea-tv/parser's `DynamicRange`, as TRaSH's HDR formats name them. */
 export const DYNAMIC_RANGES = ['dv', 'hdr10plus', 'hdr10', 'hdr', 'hlg', 'sdr'] as const
 
 const Source = z.enum(SOURCES).openapi('QualitySource')
@@ -45,7 +45,7 @@ const Resolution = z
   ])
   .openapi('Resolution', { description: 'Vertical lines' })
 
-/** A named quality ("Bluray-1080p", "WEB-2160p", "Remux-2160p"), from @highsea/quality's list. */
+/** A named quality ("Bluray-1080p", "WEB-2160p", "Remux-2160p"), from @highsea-tv/quality's list. */
 const QualityName = z.string().openapi({ example: 'Bluray-1080p' })
 
 // ---------------------------------------------------------------- profiles
@@ -102,7 +102,7 @@ export const QualityProfileInput = QualityProfile.omit({ id: true, builtIn: true
 
 // ---------------------------------------------------------------- custom formats
 
-/** The indexer flags the Servarr wiki lists, plus Internal: @highsea/quality's `INDEXER_FLAGS`. */
+/** The indexer flags the Servarr wiki lists, plus Internal: @highsea-tv/quality's `INDEXER_FLAGS`. */
 export const INDEXER_FLAGS = [
   'freeleech',
   'halfleech',
@@ -115,7 +115,7 @@ export const INDEXER_FLAGS = [
   'freeleech25',
 ] as const
 
-/** @highsea/quality's `CONDITION_KINDS`: one vocabulary from the engine to the screen. */
+/** @highsea-tv/quality's `CONDITION_KINDS`: one vocabulary from the engine to the screen. */
 export const CONDITION_KINDS = [
   'title',
   'edition',
@@ -158,7 +158,7 @@ const condition = <K extends string, V extends z.ZodType>(kind: K, value: V) =>
   })
 
 /**
- * A custom format's test, as @highsea/quality models it (`conditionSchema`). Matching follows the
+ * A custom format's test, as @highsea-tv/quality models it (`conditionSchema`). Matching follows the
  * Servarr wiki: conditions of the same kind are alternatives; different kinds must all hold; a
  * required condition must hold on its own; `negate` inverts one. `title`, `edition` and
  * `releaseGroup` are regular expressions, matched case-insensitively.
@@ -241,7 +241,7 @@ export const LanguageProfile = z
 
 // ---------------------------------------------------------------- the parser
 
-/** @highsea/parser's `ParsedRelease`. */
+/** @highsea-tv/parser's `ParsedRelease`. */
 export const ParsedRelease = z
   .object({
     name: z.string(),

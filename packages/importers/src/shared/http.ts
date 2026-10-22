@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Talking to the program being migrated from, through the fetch seam (ADR 0029): a timeout on every
 // request, and its failures in plain words as AppErrors the API passes on.
-import { AppError, type Fetch } from '@highsea/core'
+import { AppError, type Fetch } from '@highsea-tv/core'
 
 export const TIMEOUT_MS = 30_000
 

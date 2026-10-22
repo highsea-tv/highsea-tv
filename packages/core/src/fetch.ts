@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The one HTTP seam (ADR 0029): every adapter for an outside service takes a `Fetch` it's given.
 // The runtime passes the platform's; tests pass one that replays recordings, so no test reaches the
-// network. Browser-safe, so the SDK imports it too (`@highsea/core/fetch`).
+// network. Browser-safe, so the SDK imports it too (`@highsea-tv/core/fetch`).
 
 /** Just the call: platforms' `fetch` types add extras (Bun's `preconnect`) a test double lacks. */
 export type Fetch = (input: string | URL | Request, init?: RequestInit) => Promise<Response>

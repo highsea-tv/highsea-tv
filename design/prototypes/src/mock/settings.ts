@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The server's settings pages (A15, `/settings/*`): what each holds, with Harbor's values. The
 // reference pages edit these as plain values; Phase 3 gives each section its own schema.
-import { defaultQualitySizes, type QualitySize } from '@highsea/quality'
+import { defaultQualitySizes, type QualitySize } from '@highsea-tv/quality'
 import type { ImportList } from './types.ts'
 import { defaultVpnSettings, type VpnSettings } from './vpn.ts'
 
@@ -74,7 +74,7 @@ export type Connection = {
   enabled: boolean
 }
 
-/** MiB per minute of runtime: below `min` or above `max` a release is rejected (@highsea/quality). */
+/** MiB per minute of runtime: below `min` or above `max` a release is rejected (@highsea-tv/quality). */
 export type { QualitySize }
 
 export type Settings = {

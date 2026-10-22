@@ -6,9 +6,9 @@
 // later checkpoints bring is left out until then: the queue's sidebar count, the palette's
 // download actions and import toasts.
 
-import { bytes } from '@highsea/core/format'
-import { useT } from '@highsea/i18n/react'
-import { useAction, useQuery } from '@highsea/sdk/react'
+import { bytes } from '@highsea-tv/core/format'
+import { useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Button,
   type CommandGroup,
@@ -28,7 +28,7 @@ import {
   toast,
   useCommandPaletteShortcut,
   useSidebarMode,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   createContext,

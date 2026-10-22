@@ -4,7 +4,7 @@
 // admin and a user are refused every route. Starting an import is in the audit log, and the key
 // isn't. The importers' own behaviour is tested in packages/importers.
 import { afterEach, describe, expect, test } from 'bun:test'
-import { accessOf, routes } from '@highsea/api-contract'
+import { accessOf, routes } from '@highsea-tv/api-contract'
 import {
   FAKE_QBT_PASSWORD,
   FAKE_QBT_USER,
@@ -13,8 +13,8 @@ import {
   radarrLibrary,
   startFakeQbittorrent,
   startFakeRadarr,
-} from '@highsea/importers/fake'
-import { createReplayFetch } from '@highsea/metadata/replay'
+} from '@highsea-tv/importers/fake'
+import { createReplayFetch } from '@highsea-tv/metadata/replay'
 import { createApi } from '../src/api/app.ts'
 import { addMember, bootRuntime, cleanup, clientFor, failure, withOwner } from './helpers.ts'
 

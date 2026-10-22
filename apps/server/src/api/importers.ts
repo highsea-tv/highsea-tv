@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The one-time importers over HTTP (checkpoint 6b; ADR 0041): Settings › Migration. Thin handlers
-// over @highsea/importers; the contract keeps every route the owner's. Starting an import and
+// over @highsea-tv/importers; the contract keeps every route the owner's. Starting an import and
 // resuming the torrents brought across go in the audit log; the credentials never do.
-import { type ImportStatus, type QbittorrentImportStatus, routes } from '@highsea/api-contract'
-import type { QbtStatus } from '@highsea/importers/qbittorrent'
-import type { MigrationState } from '@highsea/importers/radarr'
+import { type ImportStatus, type QbittorrentImportStatus, routes } from '@highsea-tv/api-contract'
+import type { QbtStatus } from '@highsea-tv/importers/qbittorrent'
+import type { MigrationState } from '@highsea-tv/importers/radarr'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'

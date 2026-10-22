@@ -13,8 +13,8 @@ import type {
   MovieStatus,
   QualityProfile,
   RootFolder,
-} from '@highsea/api-contract'
-import type { ApiError, HighseaClient } from '@highsea/sdk'
+} from '@highsea-tv/api-contract'
+import type { ApiError, HighseaClient } from '@highsea-tv/sdk'
 
 /** Where the missing-key messages link (checkpoint 4 plan, decision 1). */
 export const METADATA_SETTINGS = '/settings/general#metadata'

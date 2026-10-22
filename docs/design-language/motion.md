@@ -4,7 +4,7 @@
 
 ## Springs
 
-Springs are defined physically by stiffness, damping and mass (1). `@highsea/tokens` exports them two ways:
+Springs are defined physically by stiffness, damping and mass (1). `@highsea-tv/tokens` exports them two ways:
 - for the web, sampled into a CSS `linear()` easing (49 points) with a matching duration;
 - for native, as raw parameters for Reanimated.
 

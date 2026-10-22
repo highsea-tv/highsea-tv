@@ -62,7 +62,7 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 
 ## Spatial focus model
 
-The reference implementation is the focus engine in `design/explorations/shared/board.js`. `@highsea/ui-web` (TV web builds) and `ui-native` must behave identically.
+The reference implementation is the focus engine in `design/explorations/shared/board.js`. `@highsea-tv/ui-web` (TV web builds) and `ui-native` must behave identically.
 
 ### Picking the next item
 

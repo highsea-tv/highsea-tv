@@ -5,8 +5,8 @@
 // values: https://sqlite.org/rowvalue.html) and a page deep in a 100k library costs what the first
 // does. The indexes are `(type, sort column, id)` (packages/db/src/schema/media.ts), and
 // packages/db's library-scale test holds them to it.
-import { AppError } from '@highsea/core'
-import { type Db, schema } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { type Db, schema } from '@highsea-tv/db'
 import { and, asc, desc, gt, isNotNull, isNull, lt, type SQL, sql } from 'drizzle-orm'
 import type { ItemRow } from './map.ts'
 

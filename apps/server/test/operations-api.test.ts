@@ -4,7 +4,7 @@
 // crash reports from an API failure; updates; /metrics behind its switch and an API key; the three
 // settings rows; and the log's topic held back from people who aren't staff.
 import { afterEach, describe, expect, test } from 'bun:test'
-import { STAFF_TOPICS } from '@highsea/api-contract'
+import { STAFF_TOPICS } from '@highsea-tv/api-contract'
 import { createApi } from '../src/api/app.ts'
 import { routeFor } from '../src/api/guard.ts'
 import {

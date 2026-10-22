@@ -4,8 +4,8 @@
 // the prototype's curation/announcement-editor.tsx: the message, how loud it is, where it shows,
 // who sees it and when, beside the live client preview. Publish checks everything; a draft needs
 // only its title, as the server does.
-import type { Announcement, AnnouncementInput, Placement } from '@highsea/api-contract'
-import { useAction, useQuery } from '@highsea/sdk/react'
+import type { Announcement, AnnouncementInput, Placement } from '@highsea-tv/api-contract'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Button,
   Checkbox,
@@ -16,7 +16,7 @@ import {
   Switch,
   Textarea,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { useEffect, useMemo, useState } from 'react'
 import { ClientPreview } from './curation-preview.tsx'

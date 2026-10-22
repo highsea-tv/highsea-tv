@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Profiles and formats and › Quality sizes (ADR 0021): the prototype's copy. The
 // editors' own copy is in quality-editors-messages.ts.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const profiles = defineMessages({
   later:

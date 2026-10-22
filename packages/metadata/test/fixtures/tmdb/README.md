@@ -5,7 +5,7 @@ One JSON file per request to TMDB, in the format `bun run record:tmdb` writes ([
 - `request`: the method, the URL with its query sorted and the credential stripped, and whether the credential was one TMDB accepts (`valid`) or refuses (`invalid`);
 - `response`: the status, the content type and the body.
 
-The replaying `fetch` (`@highsea/metadata/replay`) serves them, answers image requests with a tiny placeholder, and fails on any request it has no recording for.
+The replaying `fetch` (`@highsea-tv/metadata/replay`) serves them, answers image requests with a tiny placeholder, and fails on any request it has no recording for.
 
 ## These are hand-built
 

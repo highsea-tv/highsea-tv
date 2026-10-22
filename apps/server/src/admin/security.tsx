@@ -8,16 +8,16 @@
 // pasted it's replaced, and it can be removed. The redirect URL is built from Network's external
 // URL, as the server builds it, and without one the area says so. The prototype's Ownership group
 // (Hand the server over) has no API yet and is left out.
-import type { SecurityInput, SecuritySettings } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import { useAction, useQuery } from '@highsea/sdk/react'
-import { Button, Field, Input, Select, Switch, toast } from '@highsea/ui-web'
+import type { SecurityInput, SecuritySettings } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { Button, Field, Input, Select, Switch, toast } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { security as messages } from './security-messages.ts'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
 
-/** The choices the server takes (SESSION_DAYS in @highsea/auth). */
+/** The choices the server takes (SESSION_DAYS in @highsea-tv/auth). */
 const SESSION_DAYS = [1, 7, 30, 90]
 /** Where the provider sends people back (the contract's `auth/oidc/callback`). */
 const CALLBACK_PATH = '/api/v1/auth/oidc/callback'

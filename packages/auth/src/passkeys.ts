@@ -8,8 +8,8 @@
 // WebAuthn only runs in a secure context, and its relying party id must be a domain, never an IP
 // address (WebAuthn L3 § 5.1.3, the RP ID's "valid domain" rule; HTML's secure contexts). So
 // passkeys work at the server's external HTTPS address and at localhost, and nowhere else.
-import { AppError } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import {
   type AuthenticationResponseJSON,
   generateAuthenticationOptions,

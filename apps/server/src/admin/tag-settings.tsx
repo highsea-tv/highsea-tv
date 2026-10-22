@@ -4,10 +4,18 @@
 // laid out as the root folders above it are: each tag with what carries it, Rename and Remove, and
 // a field to add one. Changes are immediate actions, as folders are; removing asks first and says
 // what the tag comes off. A refused label (`exists`) shows the server's sentence under its field.
-import type { Tag } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import { useAction } from '@highsea/sdk/react'
-import { Button, ConfirmDialog, Dialog, DialogContent, Field, Input, toast } from '@highsea/ui-web'
+import type { Tag } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import { useAction } from '@highsea-tv/sdk/react'
+import {
+  Button,
+  ConfirmDialog,
+  Dialog,
+  DialogContent,
+  Field,
+  Input,
+  toast,
+} from '@highsea-tv/ui-web'
 import { type FormEvent, useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { Group } from './settings.tsx'

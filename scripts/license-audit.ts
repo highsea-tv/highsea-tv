@@ -4,7 +4,7 @@
 // run, unless reviewed and listed in license-exceptions.json with the reason.
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { loadDefinitionFiles } from '@highsea/catalog'
+import { loadDefinitionFiles } from '@highsea-tv/catalog'
 
 const ALLOWED = new Set([
   '0BSD',

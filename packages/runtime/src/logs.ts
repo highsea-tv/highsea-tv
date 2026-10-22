@@ -4,7 +4,7 @@
 // System › Logs reads the ring buffer (`memorySink`); Download logs streams the files.
 import { closeSync, mkdirSync, openSync, readdirSync, rmSync, statSync, writeSync } from 'node:fs'
 import { join } from 'node:path'
-import { jsonLine, LEVELS, type Level, type LogEntry, type LogSink } from '@highsea/core'
+import { jsonLine, LEVELS, type Level, type LogEntry, type LogSink } from '@highsea-tv/core'
 
 export const LOGS_PRUNE_JOB = 'logs.prune'
 /** Owner and admins only: the event stream holds it back from everyone else. */

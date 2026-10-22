@@ -34,7 +34,7 @@ The owner can find a film on TMDB, open its page, add it to the library with a q
 | `parser` | Release name → title, year, edition, quality (source, resolution, modifier), revision (proper, repack, version), languages, release group, hardcoded subs, ids in the name | `core` |
 | `quality` | The quality vocabulary, profiles, custom formats and their conditions, sizes, the decision engine (specifications → `DecisionReason[]`), ranking | `core`, `parser` |
 | `metadata` | The TMDB adapter, the metadata cache, images, the refresh logic | `core`, `db`, `jobs` |
-| `media-movies` (now `@highsea/media/movies`, [ADR 0036](../adr/0036-domain-packages-with-subpath-exports.md)) | The movie service: add, update, delete, bulk, versions, collections, people; seeds (profiles, sizes) | `core`, `db`, `jobs`, `metadata`, `quality` |
+| `media-movies` (now `@highsea-tv/media/movies`, [ADR 0036](../adr/0036-domain-packages-with-subpath-exports.md)) | The movie service: add, update, delete, bulk, versions, collections, people; seeds (profiles, sizes) | `core`, `db`, `jobs`, `metadata`, `quality` |
 
 `parser` and `quality` are pure: no database, no clock, no I/O. They're the parts later checkpoints call most, and pure code is easy to test against a large corpus. The prototype imports `parser` and `quality` after the move, as the parent plan's [porting rule](phase-3-server.md#porting-the-prototype) asks.
 
@@ -296,7 +296,7 @@ Routes from movies.md and media-pages.md, with the changes real data forces:
   - the changes job across its 14-day window;
   - the six-month purge;
   - a recording that leaks a key fails a test.
-- **`media-movies`** (now `@highsea/media/movies`):
+- **`media-movies`** (now `@highsea-tv/media/movies`):
   - add by TMDB id, and opening a movie the server has never seen;
   - versions, bulk edits, delete with and without files;
   - collection and person pages;

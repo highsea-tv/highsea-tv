@@ -9,16 +9,16 @@ import type {
   RuleCondition,
   RuleGroup,
   SmartCollectionInput,
-} from '@highsea/api-contract'
+} from '@highsea-tv/api-contract'
 import {
   AppError,
   createEventBus,
   createFakeClock,
   type ServerEvent,
   silentLogger,
-} from '@highsea/core'
-import { migrate, openDatabase, schema } from '@highsea/db'
-import { createJobQueue } from '@highsea/jobs'
+} from '@highsea-tv/core'
+import { migrate, openDatabase, schema } from '@highsea-tv/db'
+import { createJobQueue } from '@highsea-tv/jobs'
 import {
   type CollectionDef,
   type CollectionLibrary,
@@ -36,7 +36,7 @@ const TITLES = new Map([
   [30, { year: 2010, genre: '35', file: true }],
   [40, { year: 2020, genre: '18', file: false }],
 ])
-/** Regions' certifications, mildest first, as `@highsea/metadata` gives them from TMDB's list. */
+/** Regions' certifications, mildest first, as `@highsea-tv/metadata` gives them from TMDB's list. */
 const US = ['NR', 'G', 'PG', 'PG-13', 'R', 'NC-17']
 const GB = ['U', 'PG', '12A', '12', '15', '18', 'R18']
 const DE = ['0', '6', '12', '16', '18']

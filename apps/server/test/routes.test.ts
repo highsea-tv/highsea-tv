@@ -2,11 +2,11 @@
 // The checkpoint 2 routes through the SDK, as the admin and the apps call them: the happy path,
 // and who may not.
 import { afterEach, describe, expect, test } from 'bun:test'
-import { base32Decode, hotp, totpStep } from '@highsea/auth'
-import type { Fetch } from '@highsea/core'
-import { createFakeIndexer } from '@highsea/indexers/fake'
-import { createReplayFetch } from '@highsea/metadata/replay'
-import type { Runtime } from '@highsea/runtime'
+import { base32Decode, hotp, totpStep } from '@highsea-tv/auth'
+import type { Fetch } from '@highsea-tv/core'
+import { createFakeIndexer } from '@highsea-tv/indexers/fake'
+import { createReplayFetch } from '@highsea-tv/metadata/replay'
+import type { Runtime } from '@highsea-tv/runtime'
 import { createApi } from '../src/api/app.ts'
 import {
   addMember,

@@ -2,7 +2,7 @@
 
 - **Platforms:** Admin, every breakpoint.
 - **Prototype:** `#/admin/activity/import` (A17, reference fidelity).
-- **Built:** checkpoint 6a, 2026-10-20: `/activity/import` in `apps/server` (`src/admin/import.tsx`), on the import pipeline in `@highsea/media/movies` ([ADR 0039](../adr/0039-importing.md)). What real data changed is marked *As built*.
+- **Built:** checkpoint 6a, 2026-10-20: `/activity/import` in `apps/server` (`src/admin/import.tsx`), on the import pipeline in `@highsea-tv/media/movies` ([ADR 0039](../adr/0039-importing.md)). What real data changed is marked *As built*.
 - **Roadmap:** [Phase 2 › A17](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), the movies pipeline's import step ([movies.md](movies.md)).
 
 ## Purpose
@@ -60,7 +60,7 @@ As built in 6a; every route is staff.
 
 ## Library import (6b)
 
-*Built in checkpoint 6b, 2026-10-20* (the owner's answer 9; `src/admin/library-import.tsx`, `@highsea/media/movies` › `library-import.ts`, [ADR 0039 › 6b](../adr/0039-importing.md)). It brings in an existing movie library where it is, for someone moving to highsea from a folder of movies or from Radarr.
+*Built in checkpoint 6b, 2026-10-20* (the owner's answer 9; `src/admin/library-import.tsx`, `@highsea-tv/media/movies` › `library-import.ts`, [ADR 0039 › 6b](../adr/0039-importing.md)). It brings in an existing movie library where it is, for someone moving to highsea from a folder of movies or from Radarr.
 
 - **Modes:** a nav above the page, "What to import": **Manual import** and **Library import** (`/activity/import?mode=library`), the current one marked.
 - **Folder:** a select of the root folders and **Look inside**. Opened from a root folder's link, it looks inside straight away.

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A5 Movies (ADR 0021): the prototype's copy (docs/product/movies.md › Copy), with the library's
 // statuses as the server has them.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const library = defineMessages({
   title: 'Movies',

@@ -4,7 +4,7 @@
 // status bar. Pages render inside through `AdminPage`. Only the owner and admins open the admin
 // (ADR 0032), so it has one shape; a user gets the refusal page instead.
 
-import { bytes, relative } from '@highsea/core/format'
+import { bytes, relative } from '@highsea-tv/core/format'
 import {
   Banner,
   Button,
@@ -25,7 +25,7 @@ import {
   toast,
   useCommandPaletteShortcut,
   useSidebarMode,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import {
   createContext,
   type ReactNode,

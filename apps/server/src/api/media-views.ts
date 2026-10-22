@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The metadata's domain shapes (@highsea/metadata) as the contract has them. The edge is where:
+// The metadata's domain shapes (@highsea-tv/metadata) as the contract has them. The edge is where:
 // - TMDB's `vote_average` (0 to 10) becomes the five-star rating, halved to one decimal
 //   (checkpoint 4 › Fields and how they map: the Rating component draws five stars);
 // - times become ISO 8601, as every API date is;
 // - each title says whether it's in the library, which the metadata doesn't know;
 // - credits get keys, unique within their list, since TMDB's credit ids aren't kept.
-import type * as Api from '@highsea/api-contract'
-import { iso } from '@highsea/core'
-import { stars } from '@highsea/media/shared'
-import type * as Md from '@highsea/metadata'
+import type * as Api from '@highsea-tv/api-contract'
+import { iso } from '@highsea-tv/core'
+import { stars } from '@highsea-tv/media/shared'
+import type * as Md from '@highsea-tv/metadata'
 
 /** A `YYYY-MM-DD` day as the contract's date-time, at midnight UTC. */
 const dayTime = (day: string | null) => (day ? `${day}T00:00:00.000Z` : null)

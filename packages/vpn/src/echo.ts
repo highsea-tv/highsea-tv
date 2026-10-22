@@ -7,7 +7,7 @@
 // plus Check now. It's a setting, so an owner can point it at their own
 // echoip, or at any service answering `ip` (or `public_ip`) in JSON, or the bare address as text.
 import { isIP } from 'node:net'
-import type { Fetch } from '@highsea/core'
+import type { Fetch } from '@highsea-tv/core'
 
 export const DEFAULT_ECHO_URL = 'https://ifconfig.co/json'
 

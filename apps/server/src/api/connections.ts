@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Connections over HTTP (settings.md › Connections; checkpoint 8b, ADR 0046): thin handlers over
-// `@highsea/notifications`. Static paths (`/test`, `/push-key`) come before `/{id}`, in the
+// `@highsea-tv/notifications`. Static paths (`/test`, `/push-key`) come before `/{id}`, in the
 // contract's order. Changes go in the audit log, as other settings do; secrets never do. A Browser
 // connection made without people is for whoever made it. Web push subscriptions are each person's
 // own: nobody sees or removes another's.
-import { routes } from '@highsea/api-contract'
-import type { ConnectionInput, ConnectionView, LogEntry } from '@highsea/notifications/service'
+import { routes } from '@highsea-tv/api-contract'
+import type { ConnectionInput, ConnectionView, LogEntry } from '@highsea-tv/notifications/service'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'

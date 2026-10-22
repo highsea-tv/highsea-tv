@@ -2,8 +2,8 @@
 // Settings › Network and what follows from it: the external URL, the trusted proxies, built-in
 // TLS's certificate, and LAN discovery (UDP and mDNS, ADR 0020), restarted when the settings
 // change. Also counts the clients with the event stream open, for the server card.
-import { AppError, type Clock, type EventBus, type Logger } from '@highsea/core'
-import { type Db, readSetting, writeSetting } from '@highsea/db'
+import { AppError, type Clock, type EventBus, type Logger } from '@highsea-tv/core'
+import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
 import {
   ciaoResponder,
   createDiscoveryResponder,
@@ -15,7 +15,7 @@ import {
   type NetworkSettings,
   parseTrustedProxies,
   type TrustedProxies,
-} from '@highsea/network'
+} from '@highsea-tv/network'
 import type { Config } from './config.ts'
 
 export type NetworkService = {

@@ -11,8 +11,8 @@ import {
   CURATION_TOPICS,
   type Placement,
   type SectionSummary,
-} from '@highsea/api-contract'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -31,7 +31,7 @@ import {
   TabsList,
   TabsTrigger,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useState } from 'react'
 import {

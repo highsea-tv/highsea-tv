@@ -4,9 +4,9 @@
 // 100k rows seeks on `history_item` or `history_date` as the first does (SQLite's row values:
 // https://sqlite.org/rowvalue.html). The API addresses titles by TMDB id, so a page carries each
 // row's movie id from `media_items`.
-import { AppError, newId } from '@highsea/core'
-import { schema } from '@highsea/db'
-import type { HISTORY_TYPES } from '@highsea/db/schema'
+import { AppError, newId } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
+import type { HISTORY_TYPES } from '@highsea-tv/db/schema'
 import { and, desc, eq, sql } from 'drizzle-orm'
 import type { MediaDeps } from './context.ts'
 import { isoOf } from './map.ts'

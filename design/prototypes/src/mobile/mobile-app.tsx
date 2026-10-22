@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The mobile client (C1–C8), drawn inside the phone's safe areas: connect, the five tabs (Home,
 // Search, Library, Offline, You), item detail, the player, and settings under You.
-import { EmptyState } from '@highsea/ui-web'
+import { EmptyState } from '@highsea-tv/ui-web'
 import { Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'

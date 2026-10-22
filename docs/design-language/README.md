@@ -3,13 +3,13 @@
 - **Status:** v1.0, signed off 2026-10-16 ([roadmap](../roadmap.md)).
 - **Builds on:** the locked brand direction, [Abyss Neutral (Bone)](../brand/direction.md) ([ADR 0013](../adr/0013-brand-direction-abyss-neutral.md)).
 
-These documents turn the brand direction into rules that designers and engineers can apply on every surface. `@highsea/tokens`, `@highsea/ui-web`, `@highsea/ui-native` and every app implement what is written here. If code and docs disagree, one of them is a bug.
+These documents turn the brand direction into rules that designers and engineers can apply on every surface. `@highsea-tv/tokens`, `@highsea-tv/ui-web`, `@highsea-tv/ui-native` and every app implement what is written here. If code and docs disagree, one of them is a bug.
 
 ## How to read these docs
 
 - Every rule here is settled. Most come from the locked direction or the signed-off reference board (`design/explorations/a2-abyss-neutral.html`). The rest fill gaps the board didn't cover, and were signed off with these docs.
 - Rules marked "designed in Phase 2" are settled as constraints. Their detailed layout and interaction come from the Phase 2 prototypes.
-- Values live in one place. Color, type, motion and sound values are listed in [direction.md](../brand/direction.md) and implemented in [`@highsea/tokens`](../../packages/tokens/README.md). These docs explain how to *use* them and only repeat a value when the rule needs it.
+- Values live in one place. Color, type, motion and sound values are listed in [direction.md](../brand/direction.md) and implemented in [`@highsea-tv/tokens`](../../packages/tokens/README.md). These docs explain how to *use* them and only repeat a value when the rule needs it.
 
 ## Contents
 

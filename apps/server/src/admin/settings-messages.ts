@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings' index and frame (ADR 0021): the prototype's areas and their copy.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const settings = defineMessages({
   title: 'Settings',

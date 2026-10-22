@@ -14,10 +14,10 @@ import {
   type QbittorrentImportStatus,
   type QbittorrentPreview,
   type RadarrPreview,
-} from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import type { ApiError } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import type { ApiError } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -34,7 +34,7 @@ import {
   TableHeader,
   TableRow,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type ReactNode, useState } from 'react'
 import { migration as messages } from './migration-messages.ts'
 import { AreaPage, Group } from './settings.tsx'

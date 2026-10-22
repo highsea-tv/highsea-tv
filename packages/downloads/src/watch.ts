@@ -18,8 +18,8 @@
 // `.qbt_rejected`. After that highsea renames it `.torrent.invalid` and logs why.
 import { readdirSync, readFileSync, renameSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import { AppError, type Clock, type Logger } from '@highsea/core'
-import { parseTorrentFile } from '@highsea/torrent'
+import { AppError, type Clock, type Logger } from '@highsea-tv/core'
+import { parseTorrentFile } from '@highsea-tv/torrent'
 import type { DownloadClientSettings } from './settings.ts'
 
 export const WATCH_EVERY_MS = 10_000

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The emails the preview shows, on Harbor (or a server left named highsea), rendered by the
-// server's own templates (@highsea/notifications/mail). Each notification's title, body and level
-// are what @highsea/notifications' `render()` says for `payload`; the browser can't import that
+// server's own templates (@highsea-tv/notifications/mail). Each notification's title, body and level
+// are what @highsea-tv/notifications' `render()` says for `payload`; the browser can't import that
 // entry (it reaches the database schema), so the words are written out here and
 // test/emails.test.ts renders each payload to check they still match. The details come from the
 // payload as the server derives them (`emailDetails`).
-import { posterArt } from '@highsea/fixtures'
+import { posterArt } from '@highsea-tv/fixtures'
 import {
   type Brand,
   type EventKind,
@@ -14,7 +14,7 @@ import {
   type RenderedEmail,
   renderLinkEmail,
   renderNotificationEmail,
-} from '@highsea/notifications/mail'
+} from '@highsea-tv/notifications/mail'
 
 export type SampleId =
   | 'invite'

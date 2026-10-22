@@ -2,8 +2,8 @@
 // The metadata service: TMDB through the cache. Reads come from the cache when it has the row in the
 // metadata language and it's recent, otherwise from TMDB, written back. Without a key, cached rows
 // still read and anything new throws `no-tmdb-key`.
-import { AppError } from '@highsea/core'
-import { readSetting, schema, writeSetting } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { readSetting, schema, writeSetting } from '@highsea-tv/db'
 import { and, asc, eq, inArray, isNotNull, isNull, lt, notInArray } from 'drizzle-orm'
 import { createCache } from './cache.ts'
 import { METADATA_TOPIC, type MetadataDeps } from './context.ts'

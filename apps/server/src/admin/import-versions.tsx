@@ -4,9 +4,9 @@
 // the first without a file by default, as the scan picks; two files for one version are refused
 // with the answer's copy, "Pick another version for one of these." Kept apart from import.tsx so
 // the screen's other modes don't carry it.
-import type { Movie } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import { Select } from '@highsea/ui-web'
+import type { Movie } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import { Select } from '@highsea-tv/ui-web'
 import { manualImport as messages } from './import-messages.ts'
 
 /** The first version without a file, else the first: what the scan picks (ADR 0012). */

@@ -3,7 +3,7 @@
 // need a person (stalled, import blocked) explained in the row and fixed from it; then history and
 // the blocklist.
 
-import { bytes, duration, rate, relative } from '@highsea/core/format'
+import { bytes, duration, rate, relative } from '@highsea-tv/core/format'
 import {
   Badge,
   Button,
@@ -29,7 +29,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { QueueItem } from '../../mock/types.ts'

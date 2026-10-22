@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C3 Library browse, mobile (docs/product/client-library.md#mobile): a large title, the count and
 // one Sort and filter button that opens a sheet; then three posters a row.
-import { Button, cn, EmptyState, Poster, Sheet, SheetContent, Skeleton } from '@highsea/ui-web'
+import { Button, cn, EmptyState, Poster, Sheet, SheetContent, Skeleton } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { left, useLibrary } from '../client/data.ts'
 import { ALL, arrange, genresOf, type Sort, sorts } from '../web/library.tsx'

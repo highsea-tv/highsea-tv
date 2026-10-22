@@ -2,7 +2,7 @@
 // A person's home screen (client-settings.md › Home screen): the order of the rows below the hero,
 // and the rows they've hidden, by row id. Ids not offered yet (a curated row that goes live next
 // week) are kept, so arranging today doesn't forget them.
-import { schema } from '@highsea/db'
+import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import type { Ctx } from './context.ts'
 

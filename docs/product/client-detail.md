@@ -49,7 +49,7 @@ Decide to watch, and how: Play or Resume, with the version, audio and subtitles 
 
 ## Data
 
-Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `library` group), as built in Phase 3, checkpoint 4. Everyone signed in.
+Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `library` group), as built in Phase 3, checkpoint 4. Everyone signed in.
 
 - `library.item({ params: { type, id } })` → `GET /api/v1/items/{type}/{id}`, by type and TMDB id (`/api/v1/items/movie/603`), so a movie and a show with the same number stay apart. 404 when the title isn't in the library here. A `ClientDetail`:
   - `item`: the `ClientItem` ([client-library.md › Data](client-library.md#data)), with this person's `progress` and `position`;

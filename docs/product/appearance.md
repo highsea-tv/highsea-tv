@@ -57,14 +57,14 @@ A settings area ([settings.md](settings.md#layout)): the areas beside it from ex
 
 ## Data
 
-Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `appearance` group):
+Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `appearance` group):
 
 - `appearance.get()` → `GET /api/v1/appearance`. Everyone signed in: clients read their defaults here. `Appearance` is `defaultTheme`, `themes: CustomTheme[]`, `sound: SoundDefaults`, `packs` (the sound packs, built in or uploaded) and the server's `branding` (`name`, `accent`, `customMark`, and `mark`, the mark's URL or null for the highsea mark).
 - `appearance.save({ body })` → `PATCH /api/v1/appearance`. Staff. The name, accent, default theme and sound defaults, any of them.
 - `appearance.saveTheme({ params: { id }, body })` → `PUT /api/v1/appearance/themes/{id}`; `appearance.deleteTheme({ params: { id } })` → `DELETE`. Staff. A theme that fails the contrast audit is refused (`invalid`, `contrast`); deleting the default theme puts the default back to Abyss Neutral.
 - `appearance.uploadMark({ body: { data } })` → `PUT /api/v1/appearance/mark`, the file base64-encoded; `appearance.removeMark()` → `DELETE`. Staff. The mark itself is `GET /api/v1/appearance/mark`, public, with an `ETag` ([ADR 0028](../adr/0028-files-the-owner-uploads.md)).
 - `appearance.soundPack({ params: { id } })` → `GET /api/v1/appearance/sound-packs/{id}`, a pack's recipe; `uploadSoundPack` and `deleteSoundPack` for staff. There's no upload UI yet: packs come with the catalog.
-- Themes are `ThemeInput`s for `@highsea/tokens`' theme engine (`createTheme`, `auditTheme`, `nearestPassing`, `encodeTheme`/`decodeTheme`). The server checks them with the same engine.
+- Themes are `ThemeInput`s for `@highsea-tv/tokens`' theme engine (`createTheme`, `auditTheme`, `nearestPassing`, `encodeTheme`/`decodeTheme`). The server checks them with the same engine.
 - Every change is written to the audit log.
 - Events: `server.updated`.
 

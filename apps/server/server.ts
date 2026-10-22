@@ -5,9 +5,9 @@
 // exiting with RESTART_EXIT_CODE for Docker's restart policy (ADR 0047).
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import type { Fetch } from '@highsea/core'
-import { loadCertificate } from '@highsea/network'
-import { boot, loadConfig, RESTART_EXIT_CODE } from '@highsea/runtime'
+import type { Fetch } from '@highsea-tv/core'
+import { loadCertificate } from '@highsea-tv/network'
+import { boot, loadConfig, RESTART_EXIT_CODE } from '@highsea-tv/runtime'
 import next from 'next'
 import pkg from './package.json' with { type: 'json' }
 import { createApi } from './src/api/app.ts'
@@ -86,7 +86,7 @@ process.on('SIGINT', () => void stop('SIGINT'))
  */
 async function outsideFetch(): Promise<Fetch | undefined> {
   if (process.env.HIGHSEA_TMDB_REPLAY !== '1') return undefined
-  const { createReplayFetch } = await import('@highsea/metadata/replay')
+  const { createReplayFetch } = await import('@highsea-tv/metadata/replay')
   const replay = createReplayFetch()
   const tmdb = new Set(['api.themoviedb.org', 'image.tmdb.org'])
   return (input, init) => {
@@ -102,7 +102,7 @@ async function outsideFetch(): Promise<Fetch | undefined> {
  */
 async function fakeSubtitles() {
   if (process.env.HIGHSEA_SUBTITLES_FAKE !== '1') return undefined
-  const { createFakeSubtitles, FAKE_OPENSUBTITLES_KEY } = await import('@highsea/subtitles/fake')
+  const { createFakeSubtitles, FAKE_OPENSUBTITLES_KEY } = await import('@highsea-tv/subtitles/fake')
   return { fetch: createFakeSubtitles().fetch, openSubtitlesKey: FAKE_OPENSUBTITLES_KEY }
 }
 
@@ -114,7 +114,7 @@ async function fakeSubtitles() {
 async function fakeLists() {
   if (process.env.HIGHSEA_LISTS_FAKE !== '1') return undefined
   const { createFakeLists, FAKE_TRAKT_CLIENT_ID, FAKE_TRAKT_CLIENT_SECRET } = await import(
-    '@highsea/lists/fake'
+    '@highsea-tv/lists/fake'
   )
   const fake = createFakeLists()
   // the device flow's code is entered at once, so Connect completes on its first poll

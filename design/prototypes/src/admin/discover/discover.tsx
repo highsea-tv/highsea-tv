@@ -2,7 +2,7 @@
 // A4 Discover → add movie (docs/product/movies.md#discover). Trending from the metadata source
 // until you type, then instant results. A poster opens the movie's page, the same page whether
 // it's in the library or not (ADR 0014). Add opens the add dialog.
-import { Badge, Button, EmptyState, Input, Poster, Rating } from '@highsea/ui-web'
+import { Badge, Button, EmptyState, Input, Poster, Rating } from '@highsea-tv/ui-web'
 import { useDeferredValue, useState } from 'react'
 import { useQuery } from '../../mock/hooks.tsx'
 import type { DiscoverMovie } from '../../mock/types.ts'

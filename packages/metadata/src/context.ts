@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What the metadata service is built from: the platform the runtime gives every domain package.
-import type { Clock, EventBus, Fetch, Logger, Sealer } from '@highsea/core'
-import type { Db } from '@highsea/db'
-import type { JobQueue } from '@highsea/jobs'
+import type { Clock, EventBus, Fetch, Logger, Sealer } from '@highsea-tv/core'
+import type { Db } from '@highsea-tv/db'
+import type { JobQueue } from '@highsea-tv/jobs'
 
 export type MetadataDeps = {
   db: Db

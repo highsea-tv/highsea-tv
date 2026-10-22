@@ -40,7 +40,7 @@ export const VIDEO_KINDS = [
 export const DISCOVER_LISTS = ['trending', 'popular', 'now-playing', 'upcoming'] as const
 
 /**
- * Why a metadata route couldn't answer, in the error's `details.reason`, as @highsea/metadata
+ * Why a metadata route couldn't answer, in the error's `details.reason`, as @highsea-tv/metadata
  * throws them:
  * - `no-tmdb-key`: no TMDB key is set and the cache doesn't have it (503 `unavailable`);
  * - `tmdb-unreachable`: TMDB didn't answer, or answered with a server error (503 `unavailable`);
@@ -54,7 +54,7 @@ export const METADATA_REASONS = [
   'tmdb-key-rejected',
 ] as const
 
-/** The owners, kinds and sizes of cached images: @highsea/metadata's `image-url.ts`. */
+/** The owners, kinds and sizes of cached images: @highsea-tv/metadata's `image-url.ts`. */
 export const IMAGE_OWNERS = ['movie', 'person', 'collection'] as const
 export const IMAGE_KINDS = ['poster', 'backdrop', 'profile', 'still', 'logo'] as const
 

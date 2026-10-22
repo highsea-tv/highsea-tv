@@ -1,5 +1,5 @@
 {
-  "extends": "@highsea/config/tsconfig/nextjs.json",
+  "extends": "@highsea-tv/config/tsconfig/nextjs.json",
   "compilerOptions": {
     "types": ["bun", "node"],
     "paths": {}

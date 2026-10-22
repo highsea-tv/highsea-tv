@@ -6,8 +6,8 @@
 // result per wanted track above the minimum score; the download job keeps it.
 import { basename, extname } from 'node:path'
 import { gzipSync } from 'node:zlib'
-import { AppError, newId } from '@highsea/core'
-import { schema } from '@highsea/db'
+import { AppError, newId } from '@highsea-tv/core'
+import { schema } from '@highsea-tv/db'
 import { and, eq, gt, lt, sql } from 'drizzle-orm'
 import { PROVIDER_INFO, PROVIDER_ORDER } from '../providers/index.ts'
 import { languageName } from '../shared/languages.ts'

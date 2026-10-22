@@ -16,7 +16,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { schema } from '@highsea/db'
+import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import { LIBRARY_SCAN_JOB, SCAN_EVERY_MS } from '../../src/movies/index.ts'
 import { type Clips, hasFfmpeg, makeClips } from '../clips.ts'

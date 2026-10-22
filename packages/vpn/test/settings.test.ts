@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { AppError } from '@highsea/core'
-import { readSetting } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { readSetting } from '@highsea-tv/db'
 import {
   DEFAULT_VPN_SETTINGS,
   openSecrets,

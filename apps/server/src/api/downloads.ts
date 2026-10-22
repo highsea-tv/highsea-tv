@@ -2,12 +2,12 @@
 // Downloading and importing over HTTP (checkpoint 6a): Activity's queue, history and blocklist,
 // Downloads, manual import and the folder browser, a movie's grab, files and history, Settings ›
 // Media management, › Download client and › VPN, and System's rates. Thin handlers over
-// @highsea/downloads, @highsea/media and @highsea/vpn; what changes things goes in the audit log.
+// @highsea-tv/downloads, @highsea-tv/media and @highsea-tv/vpn; what changes things goes in the audit log.
 // `/torrents/limits`, `/categories`, `/pauseAll` and `/resumeAll` are registered before
 // `/torrents/{id}`. Categories (6b) are listed for staff and managed by the owner.
-import { routes } from '@highsea/api-contract'
-import { AppError } from '@highsea/core'
-import type { ImportResult } from '@highsea/media/movies'
+import { routes } from '@highsea-tv/api-contract'
+import { AppError } from '@highsea-tv/core'
+import type { ImportResult } from '@highsea-tv/media/movies'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'

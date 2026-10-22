@@ -22,11 +22,11 @@ import type {
   SubtitleProviderTest,
   SubtitleSettings,
   WantedSubtitlesPage,
-} from '@highsea/api-contract'
-import { percent } from '@highsea/core/format'
-import { useT } from '@highsea/i18n/react'
-import type { HighseaClient } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { percent } from '@highsea-tv/core/format'
+import { useT } from '@highsea-tv/i18n/react'
+import type { HighseaClient } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -54,7 +54,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useRef, useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'

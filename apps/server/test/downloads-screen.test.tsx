@@ -34,9 +34,9 @@ mock.module('../src/admin/shell.tsx', () => ({
 
 const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
-const { createClient } = await import('@highsea/sdk')
-const { ClientProvider } = await import('@highsea/sdk/react')
-const { TooltipProvider } = await import('@highsea/ui-web')
+const { createClient } = await import('@highsea-tv/sdk')
+const { ClientProvider } = await import('@highsea-tv/sdk/react')
+const { TooltipProvider } = await import('@highsea-tv/ui-web')
 const { Downloads } = await import('../src/admin/downloads.tsx')
 
 // ---------------------------------------------------------------- the fake API

@@ -87,7 +87,7 @@ Every theme, built-in or custom, must pass these checks against its rendered col
 | Badges | 60 | |
 
 - **Method:** APCA (0.0.98G) is the gate, with the WCAG 2 ratio reported alongside. Measure each pairing over the backdrop it actually sits on. The reference board's audit does this live.
-- **Automated audit:** `auditTheme()` in `@highsea/tokens` checks every built-in and custom theme. Text roles are measured on `bg` through `s3` (`s4` carries `text` only; see [elevation](elevation.md#elevation-is-tone-first-shadow-second)), accent text on `bg` and `s1`, and buttons and badges on `s1`. The weakest surface decides.
+- **Automated audit:** `auditTheme()` in `@highsea-tv/tokens` checks every built-in and custom theme. Text roles are measured on `bg` through `s3` (`s4` carries `text` only; see [elevation](elevation.md#elevation-is-tone-first-shadow-second)), accent text on `bg` and `s1`, and buttons and badges on `s1`. The weakest surface decides.
 - **Default theme results:**
   - text Lc 96;
   - text-2 72;
@@ -99,7 +99,7 @@ Every theme, built-in or custom, must pass these checks against its rendered col
 
 ## Built-in themes
 
-The theme engine (`@highsea/tokens`) ships three built-in themes. All three pass the contrast policy.
+The theme engine (`@highsea-tv/tokens`) ships three built-in themes. All three pass the contrast policy.
 
 | Theme | Rule |
 | --- | --- |

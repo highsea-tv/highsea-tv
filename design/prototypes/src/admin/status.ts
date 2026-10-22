@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Torrent and indexer states as badges and bars (color.md#status-colors). Every state has a label;
 // color is never the only signal.
-import type { BadgeTone, ProgressTone } from '@highsea/ui-web'
+import type { BadgeTone, ProgressTone } from '@highsea-tv/ui-web'
 import type { IndexerHealth, TorrentState } from '../mock/types.ts'
 
 export const torrentStatus: Record<

@@ -2,8 +2,8 @@
 // An indexer's settings, as its definition's form describes them. Secret ones (passwords, keys,
 // cookies) are sealed at rest like the TMDB key, never returned by the API (a read says whether
 // each is set), and opened only to make a request.
-import { AppError, type Sealer } from '@highsea/core'
-import { type Definition, isSecret, type SettingField } from '@highsea/schemas/indexers'
+import { AppError, type Sealer } from '@highsea-tv/core'
+import { type Definition, isSecret, type SettingField } from '@highsea-tv/schemas/indexers'
 import type { SettingValue } from './engine.ts'
 
 /** By key; secret values are sealed strings. */

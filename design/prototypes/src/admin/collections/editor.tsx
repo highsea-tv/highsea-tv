@@ -13,7 +13,7 @@ import {
   SortableList,
   Textarea,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { CollectionArt } from '../../kit/collection-art.tsx'

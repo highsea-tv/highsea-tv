@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The engine behind `TorrentEngine` (ADR 0005, ADR 0037): every session, the one listening port for
 // TCP and the DHT, the global limits, the download queue, fast resume and the network binding.
-// Nothing here opens a socket itself; the socket factory does, bound to what `@highsea/vpn` hands
+// Nothing here opens a socket itself; the socket factory does, bound to what `@highsea-tv/vpn` hands
 // over, and when the binding goes every torrent's networking stops at once.
 //
 // 6b: each address family the binding allows (sockets.ts) gets a TCP listener and a UDP socket on
 // the same port. The UDP socket carries uTP (utp.ts) and that family's DHT (dht.ts), split by
 // udp.ts; the IPv6 DHT is BEP 32's second DHT, with the IPv4 one's node id.
 import type net from 'node:net'
-import { AppError, type Clock, type Logger, newId, systemClock } from '@highsea/core'
-import { type Db, readSetting, schema, writeSetting } from '@highsea/db'
+import { AppError, type Clock, type Logger, newId, systemClock } from '@highsea-tv/core'
+import { type Db, readSetting, schema, writeSetting } from '@highsea-tv/db'
 import Wire from 'bittorrent-protocol'
 import { asc, eq } from 'drizzle-orm'
 import { NO_BLOCKLIST, type RangeSet } from './blocklist.ts'
@@ -616,7 +616,7 @@ export function createTorrentEngine(options: {
     },
 
     /**
-     * Where torrent traffic goes, from `@highsea/vpn`. Null stops every torrent's networking at
+     * Where torrent traffic goes, from `@highsea-tv/vpn`. Null stops every torrent's networking at
      * once: the listener, the peers, the trackers and the DHT. A new binding starts them again.
      */
     async setBinding(next: Binding | null) {

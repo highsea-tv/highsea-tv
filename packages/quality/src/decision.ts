@@ -6,8 +6,8 @@
 //
 // Later checkpoints fill the named slots (seeders, minimum age, blocked indexer, already queued,
 // already imported, blocklisted) with `withSpecification`, once they have the facts.
-import { bytes, duration } from '@highsea/core/format'
-import type { ParsedRelease, Revision } from '@highsea/parser'
+import { bytes, duration } from '@highsea-tv/core/format'
+import type { ParsedRelease, Revision } from '@highsea-tv/parser'
 import {
   type CustomFormat,
   type FormatInput,

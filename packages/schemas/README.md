@@ -1,14 +1,14 @@
-# @highsea/schemas
+# @highsea-tv/schemas
 
 Shared, pure data formats, one subpath export each ([ADR 0036](../../docs/adr/0036-domain-packages-with-subpath-exports.md)). There's no root export: import the format you need, and nothing else comes with it.
 
 | Export | Source | What |
 | --- | --- | --- |
-| `@highsea/schemas/indexers` | `src/indexers/` | The indexer definition format ([ADR 0033](../../docs/adr/0033-indexer-definitions.md)) |
+| `@highsea-tv/schemas/indexers` | `src/indexers/` | The indexer definition format ([ADR 0033](../../docs/adr/0033-indexer-definitions.md)) |
 
 A new format gets its own folder under `src/` and `test/`, and its own line in `exports`.
 
-## `@highsea/schemas/indexers`
+## `@highsea-tv/schemas/indexers`
 
 The indexer definition format, as data the engine interprets. Pure: the catalog pipeline, the server and the prototype share it.
 

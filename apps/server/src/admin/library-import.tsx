@@ -11,10 +11,10 @@ import {
   type LibraryCandidate,
   type LibraryImportRunInput,
   type LibraryImportStatus,
-} from '@highsea/api-contract'
-import { bytes } from '@highsea/core/format'
-import { useT } from '@highsea/i18n/react'
-import { useAction, useClient, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { bytes } from '@highsea-tv/core/format'
+import { useT } from '@highsea-tv/i18n/react'
+import { useAction, useClient, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -32,7 +32,7 @@ import {
   TableRow,
   TableToolbar,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useRef, useState } from 'react'
 import { libraryImport as messages } from './library-import-messages.ts'
 import { errorReason } from './metadata-locale.ts'

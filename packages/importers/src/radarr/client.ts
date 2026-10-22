@@ -4,7 +4,7 @@
 // The shapes are the resources' fields this importer uses, as the docs' schemas name them
 // (MovieResource, MovieFileResource, QualityProfileResource, RootFolderResource, TagResource,
 // NamingConfigResource, MediaManagementConfigResource, BlocklistResource, HistoryResource).
-import { AppError, type Fetch } from '@highsea/core'
+import { AppError, type Fetch } from '@highsea-tv/core'
 import { baseUrl, jsonOf, request } from '../shared/http.ts'
 
 export type RadarrConnection = { url: string; apiKey: string }

@@ -1,15 +1,15 @@
 'use client'
-import type { TorrentCategory } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
+import type { TorrentCategory } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Download client's Categories group (checkpoint 6b, answer 5): new layout, since no
 // prototype screen manages categories. It follows Media management's root folders: a list, each
 // with its folder and how many torrents use it, Remove asked first and disabled while torrents use
 // it, and a form below to add one or change a folder. Changes save at once, through
 // `downloads.saveCategory` and `removeCategory`, not the page's save bar.
-import type { ApiError } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
-import { Badge, Button, ConfirmDialog, Field, Icon, Input, toast } from '@highsea/ui-web'
+import type { ApiError } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { Badge, Button, ConfirmDialog, Field, Icon, Input, toast } from '@highsea-tv/ui-web'
 import { type FormEvent, useState } from 'react'
 import { categories as messages } from './download-categories-messages.ts'
 import { Loadable } from './loadable.tsx'

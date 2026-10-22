@@ -10,12 +10,16 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, readFileSync, rmSync, statSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Fetch } from '@highsea/core'
-import { createFakeIndexer, FAKE_CREDENTIALS, FAKE_ORIGIN } from '@highsea/indexers/fake'
-import { hasFfmpeg } from '@highsea/media/testing'
-import { createReplayFetch } from '@highsea/metadata/replay'
-import { createFakeSubtitles, FAKE_ACCOUNTS, FAKE_OPENSUBTITLES_KEY } from '@highsea/subtitles/fake'
-import { makeSyncClip, sintel } from '@highsea/subtitles/testing'
+import type { Fetch } from '@highsea-tv/core'
+import { createFakeIndexer, FAKE_CREDENTIALS, FAKE_ORIGIN } from '@highsea-tv/indexers/fake'
+import { hasFfmpeg } from '@highsea-tv/media/testing'
+import { createReplayFetch } from '@highsea-tv/metadata/replay'
+import {
+  createFakeSubtitles,
+  FAKE_ACCOUNTS,
+  FAKE_OPENSUBTITLES_KEY,
+} from '@highsea-tv/subtitles/fake'
+import { makeSyncClip, sintel } from '@highsea-tv/subtitles/testing'
 import {
   LOOPBACK,
   makeTorrent,
@@ -24,7 +28,7 @@ import {
   testEngine,
   until,
   writeFiles,
-} from '@highsea/torrent/testing'
+} from '@highsea-tv/torrent/testing'
 import { createApi } from '../src/api/app.ts'
 import { bootRuntime, cleanup, clientFor, ORIGIN, withOwner } from './helpers.ts'
 

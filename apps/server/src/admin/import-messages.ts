@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A17 Manual import (ADR 0021): the prototype's copy, with what real data adds: a file the server
 // couldn't bring in says why, and the name a hand-chosen movie gives shows after Look inside.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const manualImport = defineMessages({
   title: 'Manual import',

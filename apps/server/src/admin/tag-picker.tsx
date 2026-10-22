@@ -6,9 +6,9 @@
 // DropdownMenu.CheckboxItem, kept open while choosing by preventing `onSelect`'s close, as Radix's
 // docs describe: https://www.radix-ui.com/primitives/docs/components/dropdown-menu#checkboxitem).
 // Tags are made in Settings › Media management, which the empty menu links to.
-import type { Tag } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import { useQuery } from '@highsea/sdk/react'
+import type { Tag } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import { useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   Button,
@@ -19,7 +19,7 @@ import {
   MenuSeparator,
   MenuTrigger,
   useFieldControl,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { tagsMessages as messages } from './tags-messages.ts'
 

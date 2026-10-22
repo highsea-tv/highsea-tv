@@ -4,8 +4,8 @@
 // below it don't bind it: focus there lifts the page past the hero. Up from the featured row goes
 // to the hero actions, and Up from those opens the global navigation. Rows remember their spot.
 // An announcement that must be acknowledged comes first, on its own.
-import { durations } from '@highsea/tokens'
-import { Icon, QualityTag, springBase, useDwell } from '@highsea/ui-web'
+import { durations } from '@highsea-tv/tokens'
+import { Icon, QualityTag, springBase, useDwell } from '@highsea-tv/ui-web'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { left, meta, qualityTags, useAnnouncements, useHome } from '../client/data.ts'

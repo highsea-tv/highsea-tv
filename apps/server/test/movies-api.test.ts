@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import type { Runtime } from '@highsea/runtime'
+import type { Runtime } from '@highsea-tv/runtime'
 import { createApi } from '../src/api/app.ts'
 import { IMAGE_CACHE_CONTROL } from '../src/api/metadata.ts'
 import {

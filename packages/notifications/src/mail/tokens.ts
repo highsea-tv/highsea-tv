@@ -5,7 +5,7 @@
 // is painted onto the surface it sits on first (`composite`, as the contrast audit measures it)
 // and written as solid hex: the card's border is `line` over `s1`, each badge's pill is its status
 // at 14% over `s1`. Badge labels are already solid (status mixed into `text`, color.md's recipe).
-import { composite, defaultTheme, formatHex, parseColor, resolveTheme } from '@highsea/tokens'
+import { composite, defaultTheme, formatHex, parseColor, resolveTheme } from '@highsea-tv/tokens'
 
 const theme = resolveTheme(defaultTheme)
 const role = (r: keyof typeof theme.colors) => parseColor(theme.colors[r])

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What the indexers service is built from: the platform the runtime gives every domain package,
 // and the definitions, which come from the catalog without this package depending on it.
-import type { Clock, EventBus, Fetch, Logger, Sealer } from '@highsea/core'
-import type { Db } from '@highsea/db'
-import type { JobQueue } from '@highsea/jobs'
-import type { Definition } from '@highsea/schemas/indexers'
+import type { Clock, EventBus, Fetch, Logger, Sealer } from '@highsea-tv/core'
+import type { Db } from '@highsea-tv/db'
+import type { JobQueue } from '@highsea-tv/jobs'
+import type { Definition } from '@highsea-tv/schemas/indexers'
 
 /** A definition as the catalog serves it. */
 export type SourceDefinition = {
@@ -15,7 +15,7 @@ export type SourceDefinition = {
   logo: string | null
 }
 
-/** The part of `@highsea/catalog` the indexers read. */
+/** The part of `@highsea-tv/catalog` the indexers read. */
 export type DefinitionSource = {
   definitions(): SourceDefinition[]
   definition(id: string): SourceDefinition | null

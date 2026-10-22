@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A11 Curation (ADR 0021; checkpoint 8c): the lists, both composers and the client preview, in the
 // prototype's words (design/prototypes/src/admin/curation/).
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const curation = defineMessages({
   title: 'Curation',

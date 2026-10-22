@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { ErrorBody, routes } from '@highsea/api-contract'
-import type { Fetch } from '@highsea/core/fetch'
+import { ErrorBody, routes } from '@highsea-tv/api-contract'
+import type { Fetch } from '@highsea-tv/core/fetch'
 import type { z } from 'zod'
 import { ApiError } from './errors.ts'
 import { createEventStream, type EventStream } from './events.ts'

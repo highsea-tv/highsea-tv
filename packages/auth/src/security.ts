@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Reading and saving Settings › Security. The OIDC client secret is write-only: it's sealed on
 // save and the API only says whether one is set.
-import { AppError } from '@highsea/core'
-import { writeSetting } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { writeSetting } from '@highsea-tv/db'
 import type { Ctx, RequestMeta } from './context.ts'
 import { SECURITY_KEY, SESSION_DAYS, type SecuritySettings } from './settings.ts'
 

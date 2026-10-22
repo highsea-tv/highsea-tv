@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Curation over HTTP (curation.md; checkpoint 8c, ADR 0048): thin handlers over
-// `@highsea/curation`. The admin's routes are staff only (ADR 0032); the home screen and the
+// `@highsea-tv/curation`. The admin's routes are staff only (ADR 0032); the home screen and the
 // announcements are every signed-in person's, resolved for them and the kind of app asking.
 // Static paths (`/sections/order`, `/sections/resolve`) come before `/{id}`, in the contract's
 // order. Changes go in the audit log, as settings do.
-import { routes } from '@highsea/api-contract'
+import { routes } from '@highsea-tv/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import { actor, type Env, me } from './guard.ts'

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // An in-memory ProviderStore for the adapters' tests, with what it was asked to keep on show.
-import type { Clock } from '@highsea/core'
-import { createFakeClock } from '@highsea/core'
+import type { Clock } from '@highsea-tv/core'
+import { createFakeClock } from '@highsea-tv/core'
 import type { ProviderDeps, ProviderStore, ProviderToken } from '../../src/shared/types.ts'
 import { createFakeSubtitles, FAKE_ACCOUNTS } from '../fake/index.ts'
 

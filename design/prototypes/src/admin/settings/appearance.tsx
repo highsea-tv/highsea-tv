@@ -15,7 +15,7 @@ import {
   type SoundEvent,
   type ThemeableRole,
   themeCss,
-} from '@highsea/tokens'
+} from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -27,7 +27,7 @@ import {
   Switch,
   toast,
   useSoundPlayer,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useMemo, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { Appearance as AppearanceData, CustomTheme, SoundDefaults } from '../../mock/types.ts'

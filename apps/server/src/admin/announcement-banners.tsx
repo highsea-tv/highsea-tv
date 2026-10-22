@@ -4,10 +4,10 @@
 // shows them: a banner above the page for each live one the person hasn't dismissed. One that
 // must be acknowledged has Got it in place of dismiss. Each is for this person on the admin
 // (`GET /announcements?client=admin`), and the stream says when that changes.
-import type { ClientAnnouncement } from '@highsea/api-contract'
-import { CURATION_TOPICS } from '@highsea/api-contract'
-import { useAction, useQuery } from '@highsea/sdk/react'
-import { Banner, type BannerTone, toast } from '@highsea/ui-web'
+import type { ClientAnnouncement } from '@highsea-tv/api-contract'
+import { CURATION_TOPICS } from '@highsea-tv/api-contract'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { Banner, type BannerTone, toast } from '@highsea-tv/ui-web'
 import { useCurationT } from './curation-shared.tsx'
 import { Cta, Inline } from './inline.tsx'
 

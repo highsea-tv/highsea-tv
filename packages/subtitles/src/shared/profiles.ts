@@ -8,9 +8,9 @@
 //           its SDH text removed; `also` takes either; `only` wants SDH.
 // A profile in use can't be deleted, nor can the last one. `media_items.language_profile_id` has
 // no foreign key (the schema's subtitles.ts says why), so this module is what checks it.
-import { AppError, type Clock, newId } from '@highsea/core'
-import type { Db } from '@highsea/db'
-import { languageProfiles, mediaItems, rootFolders } from '@highsea/db/schema'
+import { AppError, type Clock, newId } from '@highsea-tv/core'
+import type { Db } from '@highsea-tv/db'
+import { languageProfiles, mediaItems, rootFolders } from '@highsea-tv/db/schema'
 import { asc, count, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { isLanguageCode, languageName, satisfies } from './languages.ts'

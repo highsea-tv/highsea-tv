@@ -15,10 +15,10 @@ import type {
   RuleFieldInfo,
   RuleGroup,
   RuleOp,
-} from '@highsea/api-contract'
-import type { T as Translate } from '@highsea/i18n'
-import { useT } from '@highsea/i18n/react'
-import { useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import type { T as Translate } from '@highsea-tv/i18n'
+import { useT } from '@highsea-tv/i18n/react'
+import { useQuery } from '@highsea-tv/sdk/react'
 import {
   Button,
   Input,
@@ -29,7 +29,7 @@ import {
   Select,
   SelectGroup,
   SelectItem,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { collections as messages } from './collections-messages.ts'
 import { useSettled } from './curation-shared.tsx'

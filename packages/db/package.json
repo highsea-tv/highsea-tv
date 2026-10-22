@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/db",
+  "name": "@highsea-tv/db",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -14,12 +14,12 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@highsea/core": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
     "better-sqlite3": "13.0.3",
     "drizzle-orm": "0.45.3"
   },
   "devDependencies": {
-    "@highsea/config": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
     "@types/better-sqlite3": "9.6.0",
     "@types/node": "25.9.9",
     "drizzle-kit": "0.31.11"

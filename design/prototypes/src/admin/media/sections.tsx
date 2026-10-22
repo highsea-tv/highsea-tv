@@ -3,7 +3,7 @@
 // movie's page and, later, by the other media types: the summary card, the Overview's rows (cast,
 // trailers, collection, More like this) and its About aside, and the Cast and crew tab.
 
-import { duration } from '@highsea/core/format'
+import { duration } from '@highsea-tv/core/format'
 import {
   Badge,
   Button,
@@ -17,7 +17,7 @@ import {
   Rating,
   Skeleton,
   SkeletonText,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { Fragment, type ReactNode, useState } from 'react'
 import { useNow, useQuery } from '../../mock/hooks.tsx'
 import type { Credit, Department, DiscoverMovie, MovieMetadata, Video } from '../../mock/types.ts'

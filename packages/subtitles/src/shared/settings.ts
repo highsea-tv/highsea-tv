@@ -2,8 +2,8 @@
 // The `subtitles` settings row: Settings › Subtitles' Scoring and sync, the prototype's
 // `SubtitleSettings` with its defaults. Sync to the audio and Minimum confidence steer the sync
 // engine (ADR 0044).
-import { AppError, type Clock } from '@highsea/core'
-import { type Db, readSetting, writeSetting } from '@highsea/db'
+import { AppError, type Clock } from '@highsea-tv/core'
+import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
 import { z } from 'zod'
 import type { SubtitleSettings } from './types.ts'
 

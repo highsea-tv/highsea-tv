@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { auditTheme, type ColorRole, LOCKED_ROLES } from '@highsea/tokens'
-import { Badge, Icon } from '@highsea/ui-web'
+import { auditTheme, type ColorRole, LOCKED_ROLES } from '@highsea-tv/tokens'
+import { Badge, Icon } from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { activeTheme, Page, Section } from './page.tsx'
 

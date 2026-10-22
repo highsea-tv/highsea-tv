@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A path outside the admin that doesn't exist, such as a mistyped link page.
-import { createT } from '@highsea/i18n'
-import { Button, EmptyState } from '@highsea/ui-web'
+import { createT } from '@highsea-tv/i18n'
+import { Button, EmptyState } from '@highsea-tv/ui-web'
 import { Card } from '../src/admin/auth-card.tsx'
 import { shell } from '../src/admin/messages.ts'
 

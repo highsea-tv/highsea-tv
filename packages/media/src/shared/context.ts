@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What every media type's services share: the platform the runtime gives each domain package. A
 // media type adds what it needs on top (movies: the job queue, events, TMDB's metadata, search).
-import { AppError, type Clock, type Logger } from '@highsea/core'
-import type { Db } from '@highsea/db'
+import { AppError, type Clock, type Logger } from '@highsea-tv/core'
+import type { Db } from '@highsea-tv/db'
 import type { HistoryInput } from './history.ts'
 
 export type MediaDeps = {

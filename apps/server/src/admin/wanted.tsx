@@ -17,10 +17,10 @@ import {
   type MoviePage,
   WANTED_TOPICS,
   type WantedSearchInput,
-} from '@highsea/api-contract'
-import { useLocale, useT } from '@highsea/i18n/react'
-import type { HighseaClient } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import type { HighseaClient } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Button,
   ConfirmDialog,
@@ -42,7 +42,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Loadable } from './loadable.tsx'

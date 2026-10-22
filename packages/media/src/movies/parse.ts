@@ -2,10 +2,10 @@
 // Checking a release name by hand, as Radarr's Parse page does: what the parser reads, the named
 // quality, the custom formats it matches, what they score in each profile, and the library movie
 // it points to.
-import type { ParseResult } from '@highsea/api-contract'
-import { schema } from '@highsea/db'
-import { type ParsedRelease, parse } from '@highsea/parser'
-import { type FormatInput, matchingFormats, qualityOf, scoreFormats } from '@highsea/quality'
+import type { ParseResult } from '@highsea-tv/api-contract'
+import { schema } from '@highsea-tv/db'
+import { type ParsedRelease, parse } from '@highsea-tv/parser'
+import { type FormatInput, matchingFormats, qualityOf, scoreFormats } from '@highsea-tv/quality'
 import { and, eq, sql } from 'drizzle-orm'
 import type { Media } from '../shared/index.ts'
 import type { ItemRow } from '../shared/map.ts'

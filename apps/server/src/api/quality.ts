@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Quality over HTTP (ADR 0031): profiles, custom formats and sizes, written by their editors since
 // checkpoint 8c, and the parser for checking a release name by hand. Thin handlers over
-// @highsea/media/shared, which seeds and stores them, and @highsea/media/movies for the parser.
+// @highsea-tv/media/shared, which seeds and stores them, and @highsea-tv/media/movies for the parser.
 // Every write announces `settings.updated`, which the editors and the add dialog listen to.
-import { routes } from '@highsea/api-contract'
+import { routes } from '@highsea-tv/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
 import type { Env } from './guard.ts'

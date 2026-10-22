@@ -2,8 +2,8 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { AppError } from '@highsea/core'
-import { readSetting, schema, writeSetting } from '@highsea/db'
+import { AppError } from '@highsea-tv/core'
+import { readSetting, schema, writeSetting } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import {
   CHANGES_STATE_KEY,

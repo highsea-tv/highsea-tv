@@ -5,11 +5,11 @@
 // when the server requires it. A passkey or the server's single sign-on provider skip the
 // password. The OIDC round trip is real: the browser goes to the provider and comes back through
 // /api/v1/auth/oidc/callback, which lands on the dashboard or back here with `?error=`.
-import type { SignInResult } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import { ApiError } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
-import { Button, EmptyState, Field, Icon, Input, Skeleton } from '@highsea/ui-web'
+import type { SignInResult } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import { ApiError } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import { Button, EmptyState, Field, Icon, Input, Skeleton } from '@highsea-tv/ui-web'
 import {
   browserSupportsWebAuthn,
   type PublicKeyCredentialRequestOptionsJSON,

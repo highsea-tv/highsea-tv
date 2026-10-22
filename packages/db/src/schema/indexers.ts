@@ -19,7 +19,7 @@ export const catalogDefinitions = sqliteTable(
     id: text('id').notNull(),
     version: text('version').notNull(),
     kind: text('kind').notNull(),
-    /** The validated definition, as `@highsea/schemas/indexers` parsed it. */
+    /** The validated definition, as `@highsea-tv/schemas/indexers` parsed it. */
     definition: text('definition', { mode: 'json' }).notNull(),
     author: text('author').notNull(),
     license: text('license').notNull(),
@@ -44,7 +44,7 @@ export const indexers = sqliteTable(
     enabled: integer('enabled', { mode: 'boolean' }).notNull(),
     /** 1 to 50, lower first (owner's answer 5). */
     priority: integer('priority').notNull(),
-    /** The settings by key; secret ones are sealed strings (`@highsea/core`'s Sealer). */
+    /** The settings by key; secret ones are sealed strings (`@highsea-tv/core`'s Sealer). */
     settings: text('settings', { mode: 'json' }).notNull(),
     /** A new definition version needs a setting this indexer doesn't have. */
     needsAttention: integer('needs_attention', { mode: 'boolean' }).notNull().default(false),

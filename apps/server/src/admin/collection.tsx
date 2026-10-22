@@ -6,9 +6,9 @@
 // "{n} of {total} in the library" and Add {n} missing. This page is the smallest addition around
 // that row: the media page's summary card (backdrop, poster, overview), then the same row.
 
-import type { DiscoverMovie } from '@highsea/api-contract'
-import { useT } from '@highsea/i18n/react'
-import { Poster } from '@highsea/ui-web'
+import type { DiscoverMovie } from '@highsea-tv/api-contract'
+import { useT } from '@highsea-tv/i18n/react'
+import { Poster } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { AddMovieDialog } from './add-dialog.tsx'
 import { collection as messages } from './collection-messages.ts'

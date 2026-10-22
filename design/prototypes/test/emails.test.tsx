@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The email preview (docs/product/emails.md): the server's templates (@highsea/notifications/mail)
+// The email preview (docs/product/emails.md): the server's templates (@highsea-tv/notifications/mail)
 // compile as strict MJML in the browser too, the samples read the same as the server's words, and
 // the preview at `?emails` renders cleanly.
 import './dom.ts'
 import { afterEach, describe, expect, test } from 'bun:test'
-import { compileOptions } from '@highsea/notifications/mail'
-import { notificationT, render } from '@highsea/notifications/shared'
+import { compileOptions } from '@highsea-tv/notifications/mail'
+import { notificationT, render } from '@highsea-tv/notifications/shared'
 import { act, cleanup, render as mount, within } from '@testing-library/react'
 import mjml2html from 'mjml-browser'
 import { EmailPreview } from '../src/email/preview.tsx'
@@ -54,7 +54,7 @@ describe('templates', () => {
     expect(renderSample('imported', plain).mjml).not.toContain('Open in')
   })
 
-  test('each notification reads as @highsea/notifications renders it', () => {
+  test('each notification reads as @highsea-tv/notifications renders it', () => {
     const t = notificationT()
     for (const [id, s] of Object.entries(notificationSamples)) {
       // biome-ignore lint/suspicious/noExplicitAny: each sample's payload is its event's

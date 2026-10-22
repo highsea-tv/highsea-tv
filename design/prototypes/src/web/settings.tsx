@@ -2,7 +2,7 @@
 // C7 Settings and C8 Profile on the web and desktop (docs/product/client-settings.md): the
 // sections beside each other from medium widths, an index on a phone-width window; the account
 // page; and Downloads, which needs the desktop app.
-import { cn, EmptyState, Icon } from '@highsea/ui-web'
+import { cn, EmptyState, Icon } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
 import { useServer } from '../client/data.ts'
 import { type SettingsSectionId, settingsSections } from '../client/settings.ts'

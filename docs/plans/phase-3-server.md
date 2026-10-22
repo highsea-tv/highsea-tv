@@ -1,6 +1,6 @@
 # Phase 3 plan: server milestone 1
 
-- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoints 1 to 5 are signed off, checkpoints 2 to 5 on 2026-10-20. Checkpoint 3's scope and the owner's decisions are in [Checkpoint 3 in detail](#checkpoint-3-in-detail); with its sign-off the owner approved widgets up to 4 columns wide (dashboard.md › Decisions). Checkpoint 4's scope, judgement calls and the owner's decisions (all 2026-10-20, including addresses by TMDB id, amending ADR 0014) are in [phase-3-checkpoint-4.md](phase-3-checkpoint-4.md); its review added decision 6 (the admin is for the owner and admins only), built on 2026-10-20 ([phase-3-admin-access.md](phase-3-admin-access.md)). Checkpoint 5's scope, the owner's answers and judgement calls are in [phase-3-checkpoint-5.md](phase-3-checkpoint-5.md); its review added ADR 0036 (domain packages, and `@highsea/media/shared` for what every media type shares). Checkpoint 6 is scoped in [phase-3-checkpoint-6.md](phase-3-checkpoint-6.md), with the owner's answers of 2026-10-20: it's built in two gated halves, 6a and 6b. The owner then made VPN connections a first-class feature, scoped in the same plan; the owner answered its questions V1 to V6 on 2026-10-20, and approved its Settings › VPN prototype the same day. 6a was signed off on 2026-10-20 and 6b on 2026-10-21, so checkpoint 6 is signed off; checkpoint 7 (subtitles) is scoped in [phase-3-checkpoint-7.md](phase-3-checkpoint-7.md), with the owner's answers of 2026-10-21 (every recommendation taken): it was built in two gated halves, 7a and 7b, both signed off on 2026-10-21, so checkpoint 7 is signed off. Checkpoint 8 (automation, owner tools and the rest) is scoped in [phase-3-checkpoint-8.md](phase-3-checkpoint-8.md), with the owner's answers of 2026-10-21: it’s built in three gated parts, 8a, 8b and 8c, and media-server refresh is dropped (decision 7). 8a (automation and Wanted), 8b (notifications and the owner’s tools) and 8c (curation and the rest) were signed off on 2026-10-21, so checkpoint 8 is signed off. At 8c's review the owner asked for smart collections, scoped in [smart-collections.md](smart-collections.md) and awaiting the owner's answers. A follow-up after Phase 3 brings the dashboard's customization to Homarr's level ([dashboard-customization.md](dashboard-customization.md)). Phase 2 (the design prototypes) was signed off on 2026-10-19.
+- **Status:** Approved by the owner on 2026-10-19, with the decisions below. Checkpoints 1 to 5 are signed off, checkpoints 2 to 5 on 2026-10-20. Checkpoint 3's scope and the owner's decisions are in [Checkpoint 3 in detail](#checkpoint-3-in-detail); with its sign-off the owner approved widgets up to 4 columns wide (dashboard.md › Decisions). Checkpoint 4's scope, judgement calls and the owner's decisions (all 2026-10-20, including addresses by TMDB id, amending ADR 0014) are in [phase-3-checkpoint-4.md](phase-3-checkpoint-4.md); its review added decision 6 (the admin is for the owner and admins only), built on 2026-10-20 ([phase-3-admin-access.md](phase-3-admin-access.md)). Checkpoint 5's scope, the owner's answers and judgement calls are in [phase-3-checkpoint-5.md](phase-3-checkpoint-5.md); its review added ADR 0036 (domain packages, and `@highsea-tv/media/shared` for what every media type shares). Checkpoint 6 is scoped in [phase-3-checkpoint-6.md](phase-3-checkpoint-6.md), with the owner's answers of 2026-10-20: it's built in two gated halves, 6a and 6b. The owner then made VPN connections a first-class feature, scoped in the same plan; the owner answered its questions V1 to V6 on 2026-10-20, and approved its Settings › VPN prototype the same day. 6a was signed off on 2026-10-20 and 6b on 2026-10-21, so checkpoint 6 is signed off; checkpoint 7 (subtitles) is scoped in [phase-3-checkpoint-7.md](phase-3-checkpoint-7.md), with the owner's answers of 2026-10-21 (every recommendation taken): it was built in two gated halves, 7a and 7b, both signed off on 2026-10-21, so checkpoint 7 is signed off. Checkpoint 8 (automation, owner tools and the rest) is scoped in [phase-3-checkpoint-8.md](phase-3-checkpoint-8.md), with the owner's answers of 2026-10-21: it’s built in three gated parts, 8a, 8b and 8c, and media-server refresh is dropped (decision 7). 8a (automation and Wanted), 8b (notifications and the owner’s tools) and 8c (curation and the rest) were signed off on 2026-10-21, so checkpoint 8 is signed off. At 8c's review the owner asked for smart collections, scoped in [smart-collections.md](smart-collections.md) and awaiting the owner's answers. A follow-up after Phase 3 brings the dashboard's customization to Homarr's level ([dashboard-customization.md](dashboard-customization.md)). Phase 2 (the design prototypes) was signed off on 2026-10-19.
 - **Gate:** the owner signs off on milestone 1. Phase 4 (the client apps) then builds on its API and SDK.
 - **Source:** the Phase 3 section of the [roadmap](../roadmap.md#phase-3-server-milestone-1-implementation) and the gap analysis items tagged **[M1]**. This plan turns them into steps.
 - **Build reference:** the signed-off prototypes in [`design/prototypes`](../../design/prototypes/README.md) and their specs in [`docs/product/`](../product/).
@@ -29,7 +29,7 @@ Run `bun run prototypes` and click through each flow before building it.
 These carry over from Phase 2 and apply to every step:
 
 - **Gated phases.** Phase 4 starts only after the owner signs off on Phase 3. Within Phase 3, stop at each checkpoint below and ask for review.
-- **Everything stays in the repo.** Docs, specs, plans and test fixtures live here. Never publish them as hosted artifacts or pages.
+- **Everything stays in the repo.** Docs, specs, plans and test fixtures live here. Never publish them as hosted artifacts or pages. On 2026-10-22 the owner separated these internal docs (how highsea is structured and built) from public docs (guides for setting highsea up and using it). The public docs live only in `apps/docs`, served at `docs.highsea.tv` on Vercel ([phase-3-checkpoint-9.md](phase-3-checkpoint-9.md#docs-9b)).
 - **Git:**
   - commit only when asked; never push unless asked;
   - no attribution or co-author lines in commit messages;
@@ -170,7 +170,7 @@ Each domain package exposes a service built from the platform it's given (`creat
 As [ADR 0003](../adr/0003-server-runtime-custom-entry.md):
 
 1. **`apps/server/server.ts`** is a Node `http` server and the only entry.
-2. **`@highsea/runtime.boot()`** runs, in order:
+2. **`@highsea-tv/runtime.boot()`** runs, in order:
    1. read the config;
    2. back up the database, then migrate;
    3. start the event bus;
@@ -195,7 +195,7 @@ In development, both are folders under `.dev/` (gitignored).
 
 ### API and contract
 
-- **Where it comes from:** the prototype's `types.ts` is the first draft. Each type becomes a zod schema in `@highsea/api-contract`, and each mock namespace becomes a route group:
+- **Where it comes from:** the prototype's `types.ts` is the first draft. Each type becomes a zod schema in `@highsea-tv/api-contract`, and each mock namespace becomes a route group:
   - `system`, `auth`, `setup`, `fs`;
   - `catalog`, `indexers`, `metadata`, `movies`;
   - `queue`, `history`, `blocklist`, `downloads`;
@@ -209,12 +209,12 @@ In development, both are folders under `.dev/` (gitignored).
 - **Paging and sorting:** cursor paging on every list that can grow (history, logs, events, the library).
 - **Events:** SSE at `/api/v1/events`, with the mock's topics (`movies.updated`, `queue.updated`, `curation.updated` and so on). Each event carries the ids that changed, never full objects, so clients refetch what they show. `Last-Event-ID` replays from a short ring buffer.
 - **Auth on the API:** session cookie (admin), bearer device token (clients), or API key (scripts). The scope is checked per route from the contract.
-- **SDK:** `@highsea/sdk` is a typed client over the contract, plus `ServerConnection`. It works in browsers, Node and React Native.
-- **React hooks:** `@highsea/sdk/react` provides `useQuery(key, call, topics)` and `useAction(call)` with the same shape as the prototype's mock hooks: cached, refetched on matching SSE topics, with optimistic updates where the prototype has them. Admin screens and the Phase 4 clients use it.
+- **SDK:** `@highsea-tv/sdk` is a typed client over the contract, plus `ServerConnection`. It works in browsers, Node and React Native.
+- **React hooks:** `@highsea-tv/sdk/react` provides `useQuery(key, call, topics)` and `useAction(call)` with the same shape as the prototype's mock hooks: cached, refetched on matching SSE topics, with optimistic updates where the prototype has them. Admin screens and the Phase 4 clients use it.
 
 ### Data
 
-- **Engine:** SQLite in WAL mode, with Drizzle ([ADR 0004](../adr/0004-sqlite-drizzle.md)). Production runs on Node with `better-sqlite3`. **Tests run under Bun,** which can't always load native Node modules, so `@highsea/db` takes a driver (Drizzle's `bun:sqlite` driver in tests, `better-sqlite3` in production), on the same schema and migrations. Record this in an ADR.
+- **Engine:** SQLite in WAL mode, with Drizzle ([ADR 0004](../adr/0004-sqlite-drizzle.md)). Production runs on Node with `better-sqlite3`. **Tests run under Bun,** which can't always load native Node modules, so `@highsea-tv/db` takes a driver (Drizzle's `bun:sqlite` driver in tests, `better-sqlite3` in production), on the same schema and migrations. Record this in an ADR.
 - **Schema, first pass:**
   - **Media:**
     - `media_items` (the unified tree: `type`, `parent_id`) and `movie_details`;
@@ -255,7 +255,7 @@ In development, both are folders under `.dev/` (gitignored).
 
 ### Jobs, events and workers
 
-- **Jobs:** a SQLite-backed queue in `@highsea/jobs`.
+- **Jobs:** a SQLite-backed queue in `@highsea-tv/jobs`.
   - Named job types with zod payloads.
   - Intervals, concurrency per type, retries with backoff, and history.
   - On boot, a job that was running when the process stopped is retried or failed, by its type's policy.
@@ -274,7 +274,7 @@ In development, both are folders under `.dev/` (gitignored).
 - **Framework:** Next.js 16, App Router, in `apps/server`, built with `next build` and served by our entry. Not `output: 'standalone'`, which Next documents as incompatible with a custom server ([ADR 0003, amended](../adr/0003-server-runtime-custom-entry.md#amendment-2026-10-20-no-standalone-output)).
 - **Routes:** the paths match the prototype's admin routes without the `#/admin` prefix (`/movies/[id]`, `/settings/[area]`, …).
 - **Data access goes through the API, not Server Actions.**
-  - Admin screens are client components that call `@highsea/sdk/react`, as the prototype's screens call the mock.
+  - Admin screens are client components that call `@highsea-tv/sdk/react`, as the prototype's screens call the mock.
   - This keeps one path for every capability (exit criterion 7), and keeps the screens close to the prototype's code.
   - Server components handle the shell, the auth redirect and the first paint.
   - The owner chose this over Server Actions ([ADR 0018](../adr/0018-admin-data-through-the-api.md)).
@@ -293,9 +293,9 @@ Shared pieces move out of the prototype first:
 | From the prototype | To | Why |
 | --- | --- | --- |
 | `kit/widget-editor.tsx`, `kit/sortable-list.tsx`, `kit/stepper.tsx`, `kit/sparkline.tsx` | `ui-web` (each with a story, tests and a README line) | The server needs them, and the prototype already uses them: two users |
-| `admin/format.ts`, `admin/status.ts` | `@highsea/core` (formatting) and `ui-web` (status mapping) | Shared by the server and, later, the clients |
-| `mock/types.ts` | `@highsea/api-contract` (as zod) | The real contract; the prototype then imports its types from there |
-| Widget registry and layouts (`mock/widgets.ts`) | `@highsea/personalization` | Layout rules belong to the domain |
+| `admin/format.ts`, `admin/status.ts` | `@highsea-tv/core` (formatting) and `ui-web` (status mapping) | Shared by the server and, later, the clients |
+| `mock/types.ts` | `@highsea-tv/api-contract` (as zod) | The real contract; the prototype then imports its types from there |
+| Widget registry and layouts (`mock/widgets.ts`) | `@highsea-tv/personalization` | Layout rules belong to the domain |
 
 After each move, the prototype imports the package too, so the two can't drift. The prototype keeps its mock server.
 
@@ -489,14 +489,14 @@ The sources disagree.
 - **What the store adds:** the server holds every layer. A client gets its effective preferences in one call, and an owner can see why a device behaves as it does.
 - **Resolution, most specific first:** device, then client type (all of a person's TVs), then user (all their devices), then the server's defaults from Appearance.
   - The user and client-type layers have API routes from the start but no UI yet. They're what client-settings.md's open question "use this theme on all my devices" would use.
-- **Keys:** a typed list (theme, sound on, volume, and later more), each a zod schema in `@highsea/personalization`. An unknown key is refused, never stored.
+- **Keys:** a typed list (theme, sound on, volume, and later more), each a zod schema in `@highsea-tv/personalization`. An unknown key is refused, never stored.
 - **Lifetime:** device-layer rows are deleted with their device row (ADR 0023). A TV that signs out starts again from the person's layers.
 - **The admin's own sound** stays a per-browser choice in `localStorage`, as appearance.md decides. A new admin session is a new device row each time, so the device layer would forget it.
 - **Clients keep a copy** to start instantly and offline, and refresh it on `preferences.updated`.
 
 ### Widgets: the whole registry now, data as it arrives
 
-- **The registry moves to `@highsea/personalization`** with all ten widgets, from `design/prototypes/src/mock/widgets.ts`.
+- **The registry moves to `@highsea-tv/personalization`** with all ten widgets, from `design/prototypes/src/mock/widgets.ts`.
   - **Each entry has:** id, title, widths and heights, the default size, the roles that may add it, its data source, and a zod settings schema with defaults.
   - **The prototype then imports the registry from the package,** as "Porting the prototype" above says.
 - **The prototype wins over dashboard.md** where they differ, because it's the signed-off reference. Widgets resize in height (84px rows) as well as width, and the allowed sizes are the prototype's. dashboard.md is updated to match in this checkpoint.
@@ -515,7 +515,7 @@ The sources disagree.
 
 ### Themes and branding
 
-- **Themes:** custom themes are `ThemeInput`s, built with `createTheme` and checked with `auditTheme` from `@highsea/tokens`, on the server as well as in the editor. A failing theme can't be saved (appearance.md).
+- **Themes:** custom themes are `ThemeInput`s, built with `createTheme` and checked with `auditTheme` from `@highsea-tv/tokens`, on the server as well as in the editor. A failing theme can't be saved (appearance.md).
   - Deleting the default theme falls back to Abyss Neutral.
   - The brand accent goes through the same generator.
 - **The mark:** an SVG or PNG, square, at least 256 px, at most 1 MB.
@@ -530,7 +530,7 @@ The sources disagree.
 ### Sound packs
 
 - **A pack is data, not audio** (sound.md › Recipe format): a JSON recipe that the web synthesizes and native clients render.
-- **Uploading** is a JSON file checked by `checkSoundPack` from `@highsea/tokens`, the same loudness and length rules the catalog's CI applies (sound.md › Sound packs). A failing pack is refused with the report's issues.
+- **Uploading** is a JSON file checked by `checkSoundPack` from `@highsea-tv/tokens`, the same loudness and length rules the catalog's CI applies (sound.md › Sound packs). A failing pack is refused with the report's issues.
 - **Built in:** "Felt and wood" (the default). It can't be deleted.
 - **Owner's choices:** the server's default pack, plus the per-app-kind sound defaults (TVs on, phones and web off).
 - **Packs from the catalog,** and whether they're signed, come with the catalog in checkpoint 5 or later. appearance.md's open question stays open until then.
@@ -546,8 +546,8 @@ The sources disagree.
 
 As "Porting the prototype" above lists them; the prototype imports each one afterwards:
 - `kit/widget-editor.tsx`, `kit/sortable-list.tsx` and `kit/sparkline.tsx` move to `ui-web`, each with a story, tests and a README line;
-- `admin/format.ts` moves to `@highsea/core`;
-- the widget registry moves to `@highsea/personalization`.
+- `admin/format.ts` moves to `@highsea-tv/core`;
+- the widget registry moves to `@highsea-tv/personalization`.
 
 ### ADRs
 

@@ -4,7 +4,7 @@
 // Search tab's results with Grab, In the queue, Files and History (checkpoint 6), the Subtitles tab
 // (checkpoint 7a), and the smallest additions for what the prototype doesn't draw: Edit, the
 // version list and History's Show more.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const movieDetail = defineMessages({
   movie: 'Movie',

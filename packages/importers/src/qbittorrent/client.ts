@@ -4,7 +4,7 @@
 // Web API 2.8.18, qBittorrent 4.5.0 (WebAPI_Changelog.md:
 // https://github.com/qbittorrent/qBittorrent/blob/master/WebAPI_Changelog.md), so older versions
 // are refused with the version needed. Only reads: the importer changes nothing in qBittorrent.
-import { AppError, type Fetch } from '@highsea/core'
+import { AppError, type Fetch } from '@highsea-tv/core'
 import { baseUrl, jsonOf, request } from '../shared/http.ts'
 
 export type QbtConnection = { url: string; username: string; password: string }

@@ -7,7 +7,7 @@ import {
   type DefinitionInput,
   formatIssues,
   validateDefinition,
-} from '@highsea/schemas/indexers'
+} from '@highsea-tv/schemas/indexers'
 
 const source = { author: 'highsea tests', documentation: 'https://fake-indexer.test/' }
 

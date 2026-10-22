@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Button, buttonVariants, Kbd } from '@highsea/ui-web'
+import { Button, buttonVariants, Kbd } from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { iconControl } from '../controls.ts'
 

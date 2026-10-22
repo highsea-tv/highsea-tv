@@ -4,7 +4,7 @@
 import { describe, expect, test } from 'bun:test'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { createFakeClock, silentLogger } from '@highsea/core'
+import { createFakeClock, silentLogger } from '@highsea-tv/core'
 import { stringify } from 'yaml'
 import { buildCatalog, buildVpnProviderCatalog, writeCatalog } from '../src/build.ts'
 import { SEED_DIR } from '../src/index.ts'

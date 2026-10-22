@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The admin's pages, in the sidebar's groups (admin.md#sidebar), as the prototype has them. Only the
 // owner and admins open the admin (ADR 0032), so it has one shape.
-import type { IconName } from '@highsea/ui-web'
+import type { IconName } from '@highsea-tv/ui-web'
 import type { shell } from './messages.ts'
 
 type Id =

@@ -1,5 +1,5 @@
 {
-  "name": "@highsea/notifications",
+  "name": "@highsea-tv/notifications",
   "version": "0.0.0",
   "private": true,
   "license": "AGPL-3.0-only",
@@ -15,12 +15,12 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
-    "@highsea/brand": "workspace:*",
-    "@highsea/core": "workspace:*",
-    "@highsea/db": "workspace:*",
-    "@highsea/i18n": "workspace:*",
-    "@highsea/jobs": "workspace:*",
-    "@highsea/tokens": "workspace:*",
+    "@highsea-tv/brand": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/db": "workspace:*",
+    "@highsea-tv/i18n": "workspace:*",
+    "@highsea-tv/jobs": "workspace:*",
+    "@highsea-tv/tokens": "workspace:*",
     "drizzle-orm": "0.45.3",
     "mjml": "5.4.1",
     "nodemailer": "10.0.16",
@@ -28,7 +28,7 @@
     "zod": "4.6.7"
   },
   "devDependencies": {
-    "@highsea/config": "workspace:*",
+    "@highsea-tv/config": "workspace:*",
     "@types/node": "25.9.9",
     "@types/web-push": "3.6.4"
   }

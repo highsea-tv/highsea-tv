@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The shapes every part of @highsea/subtitles shares: language profiles and their rules, the
+// The shapes every part of @highsea-tv/subtitles shares: language profiles and their rules, the
 // settings row, and the provider interface each adapter implements (ADR 0043). A provider is code,
 // one adapter each; it's handed the fetch seam (ADR 0029), a clock and a store for what it keeps
 // between calls (its credentials, opened; its token; its quota; an in-flight download's link).
-import type { Clock, Fetch } from '@highsea/core'
-import type { SUBTITLE_PROVIDER_IDS } from '@highsea/db/schema'
+import type { Clock, Fetch } from '@highsea-tv/core'
+import type { SUBTITLE_PROVIDER_IDS } from '@highsea-tv/db/schema'
 
 // ---------------------------------------------------------------- profiles
 

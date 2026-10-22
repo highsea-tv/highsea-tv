@@ -7,11 +7,11 @@
 // IMDb id counts as title and year. The percentage is `round(points × 100 / 180)`, as Bazarr's
 // processing.py computes it, so a hash match is 99. With Prefer release matches off, only hash,
 // title and year count. Bazarr is read for behaviour only; nothing is copied (ADR 0031's practice).
-// The release fields come from @highsea/parser on both sides: the subtitle's release names and the
+// The release fields come from @highsea-tv/parser on both sides: the subtitle's release names and the
 // library file's scene name (or its file name).
 
-import type { ParsedRelease } from '@highsea/parser'
-import { parse } from '@highsea/parser'
+import type { ParsedRelease } from '@highsea-tv/parser'
+import { parse } from '@highsea-tv/parser'
 import { satisfies } from './languages.ts'
 import type { LanguageRule, ProviderResult } from './types.ts'
 

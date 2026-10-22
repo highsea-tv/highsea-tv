@@ -47,11 +47,11 @@ import {
   SUBTITLE_TOPICS,
   type SubtitleSearchResult,
   type SubtitleTrack,
-} from '@highsea/api-contract'
-import { bytes, duration, percent, rate } from '@highsea/core/format'
-import { useLocale, useT } from '@highsea/i18n/react'
-import type { ApiError } from '@highsea/sdk'
-import { useAction, useQuery } from '@highsea/sdk/react'
+} from '@highsea-tv/api-contract'
+import { bytes, duration, percent, rate } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
+import type { ApiError } from '@highsea-tv/sdk'
+import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   Badge,
   type BadgeTone,
@@ -90,7 +90,7 @@ import {
   TitleCell,
   Tooltip,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useRouter } from 'next/navigation'
 import { Fragment, useCallback, useEffect, useState } from 'react'
 import { AddMovieDialog } from './add-dialog.tsx'

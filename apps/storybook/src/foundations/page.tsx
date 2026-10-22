@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The frame for foundation pages: a title, a lead and sections, with a link to the governing doc.
-import { type BuiltInThemeId, builtInThemes, resolveTheme } from '@highsea/tokens'
+import { type BuiltInThemeId, builtInThemes, resolveTheme } from '@highsea-tv/tokens'
 import type { ReactNode } from 'react'
 
 export function Page({

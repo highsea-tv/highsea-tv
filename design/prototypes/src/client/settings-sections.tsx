@@ -3,8 +3,8 @@
 // controls. Theme and sound change this device at once; the home layout saves to the server, so
 // it follows the person; servers and devices act on the account.
 
-import { relative } from '@highsea/core/format'
-import { createTheme, SOUND_EVENTS, themeCss } from '@highsea/tokens'
+import { relative } from '@highsea-tv/core/format'
+import { createTheme, SOUND_EVENTS, themeCss } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
@@ -17,7 +17,7 @@ import {
   Switch,
   toast,
   useSoundPlayer,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import { useLocation } from 'wouter'
 import { Soon } from '../kit/soon.tsx'

@@ -1,6 +1,6 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
-import { durations } from '@highsea/tokens'
+import { durations } from '@highsea-tv/tokens'
 import { useEffect, useState, useSyncExternalStore } from 'react'
 
 /** Subscribes to a media query. Server renders and the first client render report `fallback`. */

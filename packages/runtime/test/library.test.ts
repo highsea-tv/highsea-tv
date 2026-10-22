@@ -6,8 +6,8 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { schema } from '@highsea/db'
-import type { WatchFn } from '@highsea/media/shared'
+import { schema } from '@highsea-tv/db'
+import type { WatchFn } from '@highsea-tv/media/shared'
 import { boot, getRuntime, hasRuntime, loadConfig } from '../src/index.ts'
 
 const torrent = { offline: true }

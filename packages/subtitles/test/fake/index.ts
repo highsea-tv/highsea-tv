@@ -13,7 +13,7 @@
 //                                                      /subtitles/{id}/download
 //
 // No key, token or account in it is real.
-import { type Clock, type Fetch, systemClock } from '@highsea/core'
+import { type Clock, type Fetch, systemClock } from '@highsea-tv/core'
 import type { ProviderId } from '../../src/shared/types.ts'
 import type { FakeSubtitle } from './fixtures.ts'
 import { createFakeOpenSubtitles } from './opensubtitles.ts'

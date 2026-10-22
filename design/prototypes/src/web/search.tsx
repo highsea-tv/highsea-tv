@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C6 Search on the web and desktop (reference, docs/product/client-search.md): instant results
 // as you type, in a section per kind (movies, collections, people), the best-matching kind first.
-import { cn, Icon, Input, Poster } from '@highsea/ui-web'
+import { cn, Icon, Input, Poster } from '@highsea-tv/ui-web'
 import { searchKinds, searchSuggestions, useSearch, useSearchQuery } from '../client/data.ts'
 import type { SearchSection } from '../mock/types.ts'
 import { gutter, webHref } from './shell.tsx'

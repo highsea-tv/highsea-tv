@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Client settings (C7, docs/product/client-settings.md), shared by web, mobile and TV: the
 // sections, the themes a device can pick, the person's home layout, and their own devices.
-import { builtInThemes } from '@highsea/tokens'
-import type { IconName } from '@highsea/ui-web'
+import { builtInThemes } from '@highsea-tv/tokens'
+import type { IconName } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useAction, useQuery } from '../mock/hooks.tsx'
 import type { HomeLayout } from '../mock/types.ts'

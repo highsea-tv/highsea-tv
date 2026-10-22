@@ -4,7 +4,7 @@
 // (TMDB › The key; checkpoint 5 › The catalog service) and the brand brief. Region, Updates and
 // Diagnostics (checkpoint 8b) take the prototype's copy, with the Docker note for updates and
 // /metrics in Diagnostics.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const general = defineMessages({
   what: 'these settings',

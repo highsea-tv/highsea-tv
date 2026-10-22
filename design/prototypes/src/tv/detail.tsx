@@ -2,7 +2,7 @@
 // C4 Item detail, TV (docs/product/client-detail.md#tv): the ambient backdrop (the artwork,
 // blurred 2.6u and dimmed: elevation.md#blur), the title and its actions, then the cast and More
 // like this as rows. Audio and subtitles opens the shared panel; Back closes it, then leaves.
-import { Icon, Poster, QualityTag, Rating } from '@highsea/ui-web'
+import { Icon, Poster, QualityTag, Rating } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { left, runtime, useItem } from '../client/data.ts'

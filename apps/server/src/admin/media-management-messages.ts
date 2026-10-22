@@ -4,7 +4,7 @@
 // replacement, setting permissions, the recycle bin's days) and the field errors are added in its
 // voice. The prototype's Importing group has no folder list, so the root folders' copy follows the
 // plan (Admin › Root folders), setup's folder step and the brand brief.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const media = defineMessages({
   what: 'these settings',

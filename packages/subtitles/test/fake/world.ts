@@ -2,7 +2,7 @@
 // What the three fake providers share: the clock, the subtitles added and made up (with their
 // ids, so a download finds what a search returned), the OpenSubtitles.com account's state, and
 // files a test serves in place of the fake's own.
-import type { Clock } from '@highsea/core'
+import type { Clock } from '@highsea-tv/core'
 import type { ProviderId } from '../../src/shared/types.ts'
 import { entryFor, type FakeEntry, type FakeSubtitle, generated, hash } from './fixtures.ts'
 

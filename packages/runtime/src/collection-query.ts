@@ -13,7 +13,7 @@
 //   seeded random (`random()` can't be seeded, https://sqlite.org/lang_corefunc.html#random), so
 //   the rowid is mixed with a seed from the day and the collection and multiplied by Knuth's
 //   golden-ratio constant modulo a prime (TAOCP vol. 3, 6.4), a stable order for the day.
-import { ROLE_JOBS, type RuleGroup } from '@highsea/api-contract'
+import { ROLE_JOBS, type RuleGroup } from '@highsea-tv/api-contract'
 import {
   type CollectionDef,
   type Condition,
@@ -21,7 +21,7 @@ import {
   listOf,
   NOT_RATED,
   resolutionOf,
-} from '@highsea/curation/collections'
+} from '@highsea-tv/curation/collections'
 import { type SQL, sql } from 'drizzle-orm'
 
 const DAY = 86_400_000

@@ -2,7 +2,7 @@
 // The add dialog (ADR 0021): the prototype's copy (docs/product/movies.md › Copy), with Search now
 // disabled while no indexer is enabled (checkpoint 4 plan, decision 2). Until downloads
 // (checkpoint 6) a search finds releases without grabbing, so its toast points at the Search tab.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const addDialog = defineMessages({
   'title.one': 'Add {title} ({year})',

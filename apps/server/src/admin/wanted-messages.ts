@@ -2,7 +2,7 @@
 // A14 Wanted (ADR 0021): the prototype's copy, with what real data changes: the cutoff list shows
 // the profile and the quality it wants, each calendar entry says which date it is, and the feed's
 // address is made, replaced and turned off here.
-import { defineMessages } from '@highsea/i18n'
+import { defineMessages } from '@highsea-tv/i18n'
 
 export const wanted = defineMessages({
   title: 'Wanted',

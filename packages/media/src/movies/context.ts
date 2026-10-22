@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// What the movie services share: the platform every media type gets (@highsea/media/shared), plus
+// What the movie services share: the platform every media type gets (@highsea-tv/media/shared), plus
 // the job queue, events, the metadata service the library reads TMDB's facts from, and search.
-import type { ClientSubtitle } from '@highsea/api-contract'
-import { AppError, type EventBus } from '@highsea/core'
-import type { JobQueue } from '@highsea/jobs'
-import type { Metadata } from '@highsea/metadata'
+import type { ClientSubtitle } from '@highsea-tv/api-contract'
+import { AppError, type EventBus } from '@highsea-tv/core'
+import type { JobQueue } from '@highsea-tv/jobs'
+import type { Metadata } from '@highsea-tv/metadata'
 import type { MediaDeps } from '../shared/context.ts'
 import type { ImportOptions } from './import.ts'
 
@@ -32,7 +32,7 @@ export type MoviesDeps = MediaDeps & {
 
 export type Ctx = MoviesDeps
 
-/** The library's topics (@highsea/api-contract's `MEDIA_TOPICS`; `history.updated` is checkpoint 6's). */
+/** The library's topics (@highsea-tv/api-contract's `MEDIA_TOPICS`; `history.updated` is checkpoint 6's). */
 export const TOPICS = {
   movies: 'movies.updated',
   item: 'item.updated',

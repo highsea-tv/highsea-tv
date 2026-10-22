@@ -60,8 +60,8 @@ The largest checkpoint of the phase: four new domains (automation, notifications
 | --- | --- | --- |
 | `media/movies` (grows, 8a) | The wanted queries (missing, cutoff unmet), the calendar's dates, the search scheduler, upgrades for movies that have a file | as today |
 | `indexers` (grows, 8a) | RSS sync: each indexer's feed read on a schedule, its releases parsed once and handed to every interested movie | as today |
-| `lists` (new, 8a) | Import lists, one subpath per source (`@highsea/lists/tmdb`, `/trakt`, `/generic`), each behind the fetch seam; a fake in `@highsea/lists/fake` | `core`, `db`, `metadata` |
-| `notifications` (new, 8b) | The event catalogue, the channel interface, one adapter per channel, the delivery job with retries, templates in i18n, and fakes on loopback in `@highsea/notifications/fake` | `core`, `db`, `jobs`, `i18n` |
+| `lists` (new, 8a) | Import lists, one subpath per source (`@highsea-tv/lists/tmdb`, `/trakt`, `/generic`), each behind the fetch seam; a fake in `@highsea-tv/lists/fake` | `core`, `db`, `metadata` |
+| `notifications` (new, 8b) | The event catalogue, the channel interface, one adapter per channel, the delivery job with retries, templates in i18n, and fakes on loopback in `@highsea-tv/notifications/fake` | `core`, `db`, `jobs`, `i18n` |
 | `curation` (new, 8c) | Announcements, featured sections, rules, the resolver per person and client type, reach | `core`, `db`, `auth`, `media/movies`, `personalization` |
 | `runtime` (grows, 8b) | Backups and restore, the metrics registry, crash reports, the event fan-out to `notifications` | as today |
 
@@ -169,7 +169,7 @@ The events a connection can choose, from the prototype's five (grab, import, upg
 
 ### Observability
 
-- **Logs** are already structured (`@highsea/core`'s logger, JSON lines). 8b adds the file sink with daily rotation and the level setting.
+- **Logs** are already structured (`@highsea-tv/core`'s logger, JSON lines). 8b adds the file sink with daily rotation and the level setting.
 - **`/metrics`** in Prometheus's text exposition format ([Prometheus: Exposition formats](https://prometheus.io/docs/instrumenting/exposition_formats/)), written by a small registry in `runtime` rather than a dependency: process (CPU, memory, event-loop lag), HTTP requests by route and status, jobs by type and outcome, queue length, downloads (count, rates, bytes), indexers (queries, failures), the library (movies, files, size). It's off until the owner turns it on, and then needs a read-scoped API key as a bearer token, which Prometheus's `authorization` setting sends ([Prometheus: Configuration](https://prometheus.io/docs/prometheus/latest/configuration/configuration/)).
 - **Crash reports** ([question 12](#open-questions-for-the-owner)).
 
@@ -414,7 +414,7 @@ Made while building 8b (2026-10-21):
 47. **Status refetches every 10 seconds,** because CPU and memory have no event.
 48. **Network's Check from outside is removed** (the owner's call after the 8b report): highsea has no outside service to check from. Choosing a certificate for built-in TLS has no API yet and is left out, as is Hand the server over.
 49. **Prometheus is switched on under Diagnostics,** which shows the `/metrics` address and the note that it needs a read-scoped API key.
-50. **Emails compile from MJML when they're sent** (`mjml` 5.4.1), not at build: it costs milliseconds next to SMTP, and the templates stay plain functions the prototype shares (`@highsea/notifications/mail`).
+50. **Emails compile from MJML when they're sent** (`mjml` 5.4.1), not at build: it costs milliseconds next to SMTP, and the templates stay plain functions the prototype shares (`@highsea-tv/notifications/mail`).
 51. **Images travel by Content-ID,** attached to each message, never as remote URLs, so an email needs neither the reader's permission nor an external URL to show them.
 52. **The logo falls back to highsea's app icon** when the server's mark is SVG or unset: most clients don't show SVG, and rasterising it would take a native renderer.
 53. **The poster comes from the image cache at `w185`,** about twice its 96px; a movie with none leaves the poster's column out, and a list's run shows its first movie's.
@@ -456,7 +456,7 @@ Made while building 8c, tags and root-folder defaults (2026-10-21):
 75. **A label is unique ignoring case,** at most 40 characters, with spaces tidied; an object carries at most 50 tags.
 76. **An unknown tag id is refused** (400 `unknown-tag`), not dropped, so a stale screen can't save half its choice.
 77. **Removing a tag takes it off everything** that carries it, in one transaction; an indexer or connection left with none serves every movie again, which the confirmation says.
-78. **Indexers, lists and connections keep tags as a JSON array** on their own rows; `@highsea/media/shared`'s tags count and strip them with SQLite's `json_each`, so those packages never import media (ADR 0036). Notifications learn a movie's tags through a `movieTags` dependency the runtime hands them.
+78. **Indexers, lists and connections keep tags as a JSON array** on their own rows; `@highsea-tv/media/shared`'s tags count and strip them with SQLite's `json_each`, so those packages never import media (ADR 0036). Notifications learn a movie's tags through a `movieTags` dependency the runtime hands them.
 79. **A list run's one message is filtered by the movies it names** (the first three), which all carry the list's tags.
 80. **Bulk edit adds or removes one tag at a time** (the API also takes Radarr's replace); a movie's own Edit dialog sets them all.
 81. **The library's tag filter** is one tag, kept in the address, and shown only once a tag exists.

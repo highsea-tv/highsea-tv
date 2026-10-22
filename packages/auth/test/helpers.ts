@@ -6,8 +6,8 @@ import {
   generateSecretKey,
   type ServerEvent,
   silentLogger,
-} from '@highsea/core'
-import { migrate, openDatabase, writeSetting } from '@highsea/db'
+} from '@highsea-tv/core'
+import { migrate, openDatabase, writeSetting } from '@highsea-tv/db'
 import {
   type AuthDeps,
   createAuth,
