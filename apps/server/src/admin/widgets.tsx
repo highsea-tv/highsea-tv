@@ -11,6 +11,7 @@
 // its source.
 
 import {
+  CURATION_TOPICS,
   DOWNLOAD_TOPICS,
   INDEXER_TOPICS,
   MEDIA_TOPICS,
@@ -29,7 +30,12 @@ import {
   shortDate,
 } from '@highsea/core/format'
 import { useLocale, useT } from '@highsea/i18n/react'
-import { type WidgetKind, widgetDefinition, widgetMessages } from '@highsea/personalization/widgets'
+import {
+  type WidgetKind,
+  type WidgetSource,
+  widgetDefinition,
+  widgetMessages,
+} from '@highsea/personalization/widgets'
 import { type Query, useQuery } from '@highsea/sdk/react'
 import {
   Badge,
@@ -85,7 +91,7 @@ const MOVIE_TOPICS = [MEDIA_TOPICS.movies, MEDIA_TOPICS.item]
  * Whether this server has a source yet: `undefined` until public info answers. Every widget asks
  * under one key; the SDK keeps each answer per widget, and it's a small public call.
  */
-function useSource(source: 'movies' | 'indexers' | 'downloads' | 'subtitles'): boolean | undefined {
+function useSource(source: WidgetSource): boolean | undefined {
   const info = useQuery('public-info', (c) => c.system.publicInfo())
   return info.status === 'success' ? info.data.sources.includes(source) : undefined
 }
@@ -642,22 +648,81 @@ function UpcomingMovies(props: WidgetProps) {
 
 // ---------------------------------------------------------------- announcement
 
+// two rows hold the title and details; taller widgets show the message too
+const bodyLines: Record<number, string | undefined> = { 3: 'line-clamp-3', 4: 'line-clamp-7' }
+
+/** The first live announcement, as the prototype shows it (checkpoint 8c): what it says and where. */
 function Announcement(props: WidgetProps) {
+  const source = useSource('curation')
+  if (source) return <LiveAnnouncement {...props} />
+  return (
+    <Static {...props} kind="announcement">
+      {source === undefined ? <SkeletonText lines={2} /> : <NoAnnouncement />}
+    </Static>
+  )
+}
+
+function NoAnnouncement() {
   const t = useT(messages)
   const router = useRouter()
   return (
-    <Static {...props} kind="announcement">
-      <EmptyState
-        size="sm"
-        icon="announcement"
-        title={t('announcement.none')}
-        action={
-          <Button size="sm" onClick={() => router.push('/curation')}>
-            {t('announcement.write')}
-          </Button>
-        }
-      />
-    </Static>
+    <EmptyState
+      size="sm"
+      icon="announcement"
+      title={t('announcement.none')}
+      action={
+        <Button size="sm" onClick={() => router.push('/curation')}>
+          {t('announcement.write')}
+        </Button>
+      }
+    />
+  )
+}
+
+function LiveAnnouncement(props: WidgetProps) {
+  const t = useT(messages)
+  const locale = useLocale()
+  const body = bodyLines[props.frame.rows ?? 2]
+  const query = useQuery(
+    'widget:announcement',
+    async (c) => (await c.curation.announcements()).filter((a) => a.status === 'live'),
+    [CURATION_TOPICS.curation],
+  )
+  const until = new Intl.DateTimeFormat(locale, {
+    weekday: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+  return (
+    <Widget
+      {...props}
+      kind="announcement"
+      query={query}
+      meta={(xs) => (xs.length ? <Badge tone="success">{t('announcement.live')}</Badge> : null)}
+    >
+      {(xs) => {
+        const a = xs[0]
+        if (!a) return <NoAnnouncement />
+        const audience =
+          a.audience.kind === 'everyone' ? t('announcement.everyone') : t('announcement.some')
+        return (
+          <div className="grid content-start gap-1">
+            <p className="font-semibold text-text text-ui">{a.title}</p>
+            <p className="text-caption text-text-3">
+              {audience} · {a.placements.join(' + ')}
+              {a.schedule.end
+                ? ` · ${t('announcement.until', { when: until.format(new Date(a.schedule.end)) })}`
+                : ''}
+            </p>
+            {body && (
+              <p className={cn('mt-1 text-caption text-text-2', body)}>
+                {a.body.replaceAll('**', '')}
+              </p>
+            )}
+          </div>
+        )
+      }}
+    </Widget>
   )
 }
 

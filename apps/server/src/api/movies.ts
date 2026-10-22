@@ -113,6 +113,16 @@ export function registerMovies(app: OpenAPIHono<Env>) {
     return c.json(folder, 201)
   })
 
+  app.openapi(routes.rootFolders.update, (c) => {
+    const { id } = c.req.valid('param')
+    const folder = c
+      .get('runtime')
+      .media.rootFolders.setLanguageProfile(id, c.req.valid('json').languageProfileId)
+    audit(c, 'rootfolder.updated', { type: 'rootfolder', id })
+    c.get('runtime').events.emit({ topic: 'settings.updated' })
+    return c.json(folder, 200)
+  })
+
   app.openapi(routes.rootFolders.remove, (c) => {
     const { id } = c.req.valid('param')
     c.get('runtime').media.rootFolders.remove(id)

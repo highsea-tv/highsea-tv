@@ -152,6 +152,7 @@ describe('contract', () => {
     addedAt: '2026-10-20T08:00:00.000Z',
     versions: [{ id: 'v1', label: '1080p', qualityProfileId: 'qp-hd', fileId: null }],
     gone: false,
+    tags: [],
   }
 
   test('the media shapes take what the server sends', () => {
@@ -282,6 +283,8 @@ describe('contract', () => {
         minUpgradeFormatScore: 1,
         formats: [{ formatId: 'cf-x265', score: 100 }],
         language: 'original',
+        waitMinutes: 0,
+        builtIn: false,
       }).success,
     ).toBe(true)
     const condition = { name: 'c', negate: false, required: true }
@@ -298,6 +301,7 @@ describe('contract', () => {
           { ...condition, kind: 'indexerFlag', value: 'freeleech' },
         ],
         trashId: null,
+        edited: false,
       }).success,
     ).toBe(true)
     expect(

@@ -52,6 +52,12 @@ export type SearchInput = {
   sizes: readonly QualitySize[]
   existing?: ExistingFile | null
   locale?: string
+  /**
+   * The movie's tag ids (checkpoint 8c). An indexer with tags is asked only for movies sharing one,
+   * as Radarr's are: "Only use this indexer for movies with at least one matching tag. Leave blank
+   * to use with all movies." (wiki.servarr.com/radarr/settings#indexers).
+   */
+  tags?: readonly string[]
   /** Whether the movie's blocklist has the release (checkpoint 6's downloads); it's rejected. */
   blocked?: (release: {
     indexerId: string
@@ -121,7 +127,11 @@ const chunk = <T>(xs: readonly T[], size = 500): T[][] => {
 }
 
 type Candidate<R> = { row: R; definition: Definition; blocked: boolean }
-type IndexerRow = { id: string; name: string; priority: number }
+type IndexerRow = { id: string; name: string; priority: number; tags: string[] }
+
+/** Whether an indexer may be used for a movie: it has no tags, or shares one with the movie. */
+export const servesMovie = (indexer: Pick<IndexerRow, 'tags'>, movieTags: readonly string[] = []) =>
+  indexer.tags.length === 0 || indexer.tags.some((t) => movieTags.includes(t))
 
 /**
  * Indexer flags from Torznab's volume factors: what share of the download counts against the
@@ -312,7 +322,7 @@ export function createSearch<R extends IndexerRow>(deps: {
     count: () => deps.candidates().length,
 
     async search(input: SearchInput): Promise<SearchResult> {
-      const candidates = deps.candidates()
+      const candidates = deps.candidates().filter((c) => servesMovie(c.row, input.tags))
       const query: SearchQuery = {
         title: input.title,
         year: input.year,
@@ -401,7 +411,9 @@ export function createSearch<R extends IndexerRow>(deps: {
           if (!target) continue
           if (!inputs.has(target.tmdbId)) inputs.set(target.tmdbId, inputFor(target.tmdbId))
           const input = inputs.get(target.tmdbId)
-          if (!input) continue
+          // an indexer's tags scope RSS too: Radarr rejects a release from an indexer whose tags
+          // the movie doesn't share (its IndexerTagSpecification)
+          if (!input || !servesMovie(c.row, input.tags)) continue
           const j = judge(input, c, r, now, parsed)
           if (j) byMovie.set(target.tmdbId, [...(byMovie.get(target.tmdbId) ?? []), j])
         }

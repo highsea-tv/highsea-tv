@@ -421,3 +421,65 @@ Made while building 8b (2026-10-21):
 54. **An email's details are only what its payload carries:** release, indexer and size for Grabbed; quality, size and what it replaced for Imported and Upgraded. The prototype's samples derive theirs the same way, so Imported no longer shows a release name it doesn't have.
 55. **Not minified:** a compiled email is about 15 kB, far under Gmail's 102 kB clipping.
 56. **A test from an unsaved connection** names "this connection" in its footer.
+
+Made while building 8c, curation (2026-10-21):
+
+57. **"Playable" is a version with a file** until streaming (Phase 4). Sections, the picker and the rules show only those titles.
+58. **Titles are TMDB ids in the API** and `media_items` ids in the database. The runtime's `CurationLibrary` maps between them, so curation never imports media (ADR 0036, 0048).
+59. **The filter rule's grammar** is `year` and `rating` comparisons joined by `and`, with rating out of 5. It is the hint's own example, and milestone 1 has no saved filters to name.
+60. **Rule orders:**
+    - recently added: newest first;
+    - a genre and a filter: best rated first;
+    - a collection: release order.
+61. **`curation.updated` is staff only** (`STAFF_TOPICS`). `announcements.updated` and `home.updated` are personal, sent only to the people whose result changed. The fingerprint is per person and kind of app, and someone who joined since the last run starts from an empty one. `/me/home`'s own `home.updated` is personal too.
+62. **`curation.schedule` runs hourly** as a safety net, and once more at the next start or end. A second run sends nothing (ADR 0022).
+63. **A draft needs only its title.** Publishing checks the placements, the audience and the button, as the composer does.
+64. **A `POST` to the list creates; a `PUT` to the item updates.** Deleting is `removeAnnouncement` and `removeSection`.
+65. **The apps' reads are their own SDK groups,** `home` and `announcements`. The client defaults to `web`.
+66. **A preview without an id** puts the draft at `draft`, which the section composer scrolls to.
+67. **Ending a scheduled announcement** sets its start to now as well, so it reads as ended.
+68. **The preview is the server's own drawing** of a home screen in an inert, same-origin frame (`/curation-frame`, staff only), because the client screens arrive in Phase 4. **Preview as** lists every accepted person.
+69. **The dashboard's Announcement widget reads the staff list** (the first live announcement), not what is aimed at the admin. The admin's own announcements are banners above every page.
+70. **The first hero leads wherever it sits** in the order. A later hero is one of the rows a person can arrange on their own home screen.
+71. **What the prototype changed for real data:**
+    - the preview frame;
+    - Preview as listing everyone;
+    - the picker searching the library by title;
+    - a collection's summary naming it from the rule options;
+    - the admin banners reading the person's own announcements.
+
+Made while building 8c, tags and root-folder defaults (2026-10-21):
+
+72. **Tags are scoped as Radarr's are** ([wiki.servarr.com/radarr/settings#tags](https://wiki.servarr.com/radarr/settings#tags)): an indexer with tags is used only for movies sharing one, in a search and in RSS ("A Movie will use both indexers that have matching tags and indexers that have no tags"; RSS as Radarr's `IndexerTagSpecification` rejects); a list's tags go on the movies it adds (`ListTagsHelpText`: "Tags list items will be added with"); a connection with tags hears a movie's events only for movies sharing one (`NotificationsTagsMovieHelpText`), and events about no movie (health, updates) as before.
+73. **No tags on wait before grabbing.** Delay profiles became one setting on each quality profile (answer 14), so the profile already scopes it; Radarr's delay-profile tags have nothing left to choose between.
+74. **Tags are managed in Settings › Media management** (a Tags group under Root folders), not in an area of their own; every picker's menu links there.
+75. **A label is unique ignoring case,** at most 40 characters, with spaces tidied; an object carries at most 50 tags.
+76. **An unknown tag id is refused** (400 `unknown-tag`), not dropped, so a stale screen can't save half its choice.
+77. **Removing a tag takes it off everything** that carries it, in one transaction; an indexer or connection left with none serves every movie again, which the confirmation says.
+78. **Indexers, lists and connections keep tags as a JSON array** on their own rows; `@highsea/media/shared`'s tags count and strip them with SQLite's `json_each`, so those packages never import media (ADR 0036). Notifications learn a movie's tags through a `movieTags` dependency the runtime hands them.
+79. **A list run's one message is filtered by the movies it names** (the first three), which all carry the list's tags.
+80. **Bulk edit adds or removes one tag at a time** (the API also takes Radarr's replace); a movie's own Edit dialog sets them all.
+81. **The library's tag filter** is one tag, kept in the address, and shown only once a tag exists.
+82. **Tags are staff-only** like the rest of the admin's settings.
+83. **A root folder's default language profile** saves at once from its row. An add that leaves `languageProfileId` out takes the folder's default; an explicit null still means none. The add dialog starts on the default folder's profile and follows a change of folder.
+84. **A list's "no language profile" now means the root folder's default** (the Select reads "The root folder's default"), since that is what nothing chosen means everywhere else; a folder without one still adds the movie with none. Migration adds through the same path, so Radarr's movies take their folder's default too, and its tags (brought across by label since 6b) now match an existing tag ignoring case and keep to 40 characters.
+85. **Removing a language profile clears it as a folder's default,** in the same transaction.
+86. **The `tags.updated` topic is declared beside the tags routes** (`TAG_TOPICS`), not in the shared events list, to keep the parallel 8c work's edits apart.
+
+Made while building 8c, the quality editors (2026-10-21):
+
+87. **The wait counts from the release's upload,** not from when highsea first sees it, as the Servarr wiki says Radarr's delay profiles do ([how delay profiles work](https://wiki.servarr.com/radarr/settings#how-delay-profiles-work)). A release with no upload time isn't held.
+88. **A release at the profile's most preferred quality goes at once** (Radarr's Bypass if Highest Quality, always on): waiting could only find the same quality.
+89. **Only RSS and the backlog sweep wait.** Search, Search all, Search now, a manual grab and a failed download's replacement never do (the wiki: manual searches ignore delay profiles).
+90. **While the best release is held, nothing lesser is grabbed.** When the hold ends, `movies.held` searches the movie again and grabs the best then (the wiki's "single release which best matches"); there is one held job per movie and version, and a movie no longer wanted is skipped.
+91. **The longest wait is a week** (10,080 minutes), and the field is in minutes as answer 14 has it.
+92. **Seeded profiles are marked built in and are edited and deleted like any other.** Deleting is refused while a movie uses the profile (409 `in-use`, with the count) and for the last one (409 `last-profile`).
+93. **Profile and format names are unique ignoring case** (409 `name-taken`), shown under the Name field.
+94. **Saving a profile drops scores of 0 and scores for formats that are gone;** deleting a format takes its scores from every profile in the same transaction.
+95. **A changed preset stays a preset, marked `edited`,** and reads as Yours. Seeded presets nobody changed are refreshed from the bundled presets at boot, so TRaSH fixes reach them.
+96. **Reordering profiles is an API route only** (`PUT /qualityprofiles/order`); the prototype has no control for it.
+97. **The catalog's profile presets stay inert,** with a tooltip saying the catalog has none yet; New profile starts from HD Bluray + WEB, as the prototype's blank does.
+98. **The size table saves whole,** every quality present and each row checked; Reset to TRaSH's sizes is a draft until saved.
+99. **Radarr migration can bring a profile across as it is.** "Bring it across as it is" is the last choice for each Radarr profile that converts. The copy's id is `qp-radarr-{id}`, so a retried job finds it, and its name gets " (Radarr)" when another profile has it. A profile that can't be converted falls back to the nearest and is listed as a failure. Format scores carry over by format name; Radarr's own formats still don't come across (ADR 0041).
+100. **The editors reload after a save** rather than waiting for `settings.updated`, so the save bar never lingers on a slow event stream.
+101. **What the prototype changed for real data:** Wait before grabbing in the Profile group, and the list's "waits N minutes" line; the format editor's note for a changed preset; a missing profile or format shows an empty state linking back to Profiles and formats; Migration's profile select gains "Bring it across as it is"; and the prototype's own blank profile gained `waitMinutes: 0` so it typechecks against the new schema (no visible change).

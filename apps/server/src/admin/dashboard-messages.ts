@@ -99,6 +99,10 @@ export const widgets = defineMessages({
 
   'announcement.none': 'No announcement is live',
   'announcement.write': 'Write one',
+  'announcement.live': 'Live',
+  'announcement.everyone': 'Everyone',
+  'announcement.some': 'Some people',
+  'announcement.until': 'until {when}',
 
   'activity.none': 'The queue is empty',
   'activity.noneBody': 'Movies you add show here while they download and import.',

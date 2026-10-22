@@ -39,6 +39,9 @@ import { type ReactNode, useState } from 'react'
 import { migration as messages } from './migration-messages.ts'
 import { AreaPage, Group } from './settings.tsx'
 
+/** The preview's option that brings a Radarr profile across as it is (the importer's COPY_PROFILE). */
+const COPY_PROFILE = 'copy'
+
 const TOPICS = [MIGRATION_TOPIC]
 
 /** The field an error names, so its message sits under that field. */
@@ -232,7 +235,10 @@ function RadarrCard() {
   }
   const onRun = () => run.run().then(() => toast.success(t('radarr.started')), fail(t('fail.run')))
 
-  const name = (id: string) => ours.data?.find((p) => p.id === id)?.name ?? id
+  const name = (id: string) =>
+    id === COPY_PROFILE
+      ? t('radarr.profile.copy')
+      : (ours.data?.find((p) => p.id === id)?.name ?? id)
 
   return (
     <Group title={t('radarr.title')} description={t('radarr.description')}>

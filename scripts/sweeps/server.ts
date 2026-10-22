@@ -352,6 +352,10 @@ try {
   ])
   for (const id of [10378, 133701, 9761, 653, 832, 1117898]) await add(id)
   await api('PATCH', '/movies/832', { monitored: false }, token)
+  // 8c: tags, one on Sintel, for the library's filter, the movie's Tags and Settings › Tags
+  const kids = await api<{ id: string }>('POST', '/tags', { label: 'Kids' }, token)
+  await api('POST', '/tags', { label: 'Anime' }, token)
+  await api('PATCH', '/movies/45745', { tags: [kids.id] }, token)
 
   // indexers: the public one in a click, the private one with its settings; both are tested first
   await api('POST', '/indexers', { definitionId: 'internet-archive' }, token)
@@ -494,6 +498,41 @@ try {
   }
   await api('PATCH', '/settings/subtitles', { minConfidence: settings.minConfidence }, token)
 
+  // 8c: an announcement (its banner shows on every admin page too) and a hand-picked section
+  const curated = {
+    audience: { kind: 'everyone' },
+    schedule: { start: new Date().toISOString(), end: null },
+  }
+  const notice = await api<{ id: string }>(
+    'POST',
+    '/curation/announcements',
+    {
+      ...curated,
+      title: 'Movie night is Friday',
+      body: 'We’re watching **Sintel** in the living room at 8 pm.',
+      image: null,
+      cta: null,
+      severity: 'notice',
+      placements: ['banner', 'card'],
+      acknowledgement: 'dismiss',
+      draft: false,
+    },
+    token,
+  )
+  const picks = await api<{ id: string }>(
+    'POST',
+    '/curation/sections',
+    {
+      ...curated,
+      title: 'Staff picks',
+      tagline: 'by Ines',
+      layout: 'row',
+      source: { kind: 'manual', itemIds: [45745, 653] },
+      overrides: [],
+    },
+    token,
+  )
+
   // signed out
   await sweep(
     [
@@ -559,8 +598,40 @@ try {
       { name: 'settings', path: '/settings' },
       { name: 'settings:general', path: '/settings/general' },
       { name: 'settings:media', path: '/settings/media' },
+      // 8c: Settings › Media management's Tags, with its Rename and Remove dialogs
+      {
+        name: 'settings:media:tag-rename',
+        path: '/settings/media',
+        act: (p) => p.getByRole('button', { name: 'Rename Kids' }).click(),
+      },
+      {
+        name: 'settings:media:tag-remove',
+        path: '/settings/media',
+        act: (p) => p.getByRole('button', { name: 'Remove Kids' }).click(),
+      },
       { name: 'settings:profiles', path: '/settings/profiles' },
       { name: 'settings:quality', path: '/settings/quality' },
+      // 8c: the profile, format and size editors (the seeded HD 1080p and x265 presets)
+      { name: 'settings:profiles:edit', path: '/settings/profiles/qp-hd' },
+      {
+        // A row grouped through its menu, as the Torznab entry does: an open Radix menu hides the
+        // page behind it with aria-hidden, which axe reads as hidden focusable content
+        name: 'settings:profiles:edit:grouped',
+        path: '/settings/profiles/qp-hd',
+        act: async (p) => {
+          await p.getByRole('button', { name: 'More for WEB 1080p' }).click()
+          await p.getByRole('menuitem', { name: 'Group with the one below' }).click()
+        },
+      },
+      { name: 'settings:profiles:new', path: '/settings/profiles/new' },
+      {
+        name: 'settings:profiles:delete',
+        path: '/settings/profiles/qp-hd',
+        act: (p) => p.getByRole('button', { name: 'Delete' }).click(),
+      },
+      { name: 'settings:formats:edit', path: '/settings/profiles/formats/cf-x265' },
+      { name: 'settings:formats:new', path: '/settings/profiles/formats/new' },
+      { name: 'settings:quality:sizes', path: '/settings/quality/sizes' },
       { name: 'settings:vpn', path: '/settings/vpn' },
       {
         name: 'settings:vpn:container',
@@ -597,6 +668,13 @@ try {
       { name: 'wanted', path: '/wanted' },
       { name: 'wanted:cutoff', path: '/wanted/cutoff' },
       { name: 'wanted:calendar', path: '/wanted/calendar' },
+      // 8c: A11 Curation, both composers new and saved
+      { name: 'curation', path: '/curation' },
+      { name: 'curation:featured', path: '/curation/featured' },
+      { name: 'curation:announcement:new', path: '/curation/announcements/new' },
+      { name: 'curation:announcement:edit', path: `/curation/announcements/${notice.id}` },
+      { name: 'curation:section:new', path: '/curation/featured/new' },
+      { name: 'curation:section:edit', path: `/curation/featured/${picks.id}` },
       {
         name: 'import:library',
         path: `/activity/import?mode=library&root=${encodeURIComponent(join(dataDir, 'films'))}`,

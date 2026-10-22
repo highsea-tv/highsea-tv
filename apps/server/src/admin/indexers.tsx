@@ -61,6 +61,8 @@ import { hoursText, minutesOf, ratioOf, ratioText } from './download-client-seed
 import { indexers as messages } from './indexers-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { AdminPage } from './shell.tsx'
+import { TagPicker } from './tag-picker.tsx'
+import { tagsMessages } from './tags-messages.ts'
 import { useRelative } from './time.ts'
 
 type Health = Indexer['health']
@@ -669,11 +671,13 @@ function SettingsForm({
   onClose: () => void
 }) {
   const t = useT(messages)
+  const tt = useT(tagsMessages)
   const fields = d?.settings ?? []
   const [initial] = useState(() => initialValues(fields, indexer))
   const [values, setValues] = useState<Record<string, Value>>(initial)
   const [name, setName] = useState(indexer?.name ?? '')
   const [priority, setPriority] = useState(String(indexer?.priority ?? 25))
+  const [tags, setTags] = useState<string[]>(indexer?.tags ?? [])
   const [seeding, setSeeding] = useState(() => seedingText(indexer))
   const [touched, setTouched] = useState(false)
   const [failure, setFailure] = useState<string | null>(null)
@@ -694,6 +698,7 @@ function SettingsForm({
       body: {
         name: name.trim(),
         priority: Number(priority),
+        tags,
         ...(changed ? { settings } : {}),
         ...(seedingChanged && rule ? { seeding: rule } : {}),
       },
@@ -783,6 +788,9 @@ function SettingsForm({
                 onChange={(e) => setPriority(e.target.value)}
                 className="w-28"
               />
+            </Field>
+            <Field label={tt('label')} hint={tt('hint.indexer')}>
+              <TagPicker value={tags} onChange={setTags} />
             </Field>
             <fieldset className="grid gap-3">
               <legend className="mb-1 font-medium text-text text-ui">{t('form.seeding')}</legend>

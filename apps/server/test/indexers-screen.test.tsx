@@ -256,6 +256,7 @@ describe('A9 Indexers', () => {
     expect(requested('PATCH', '/api/v1/indexers/ix_1')[0]?.body).toEqual({
       name: 'Fake Torznab',
       priority: 10,
+      tags: [],
     })
   })
 
@@ -283,6 +284,7 @@ describe('A9 Indexers', () => {
     expect(requested('PATCH', '/api/v1/indexers/ix_1')[0]?.body).toEqual({
       name: 'Fake Torznab',
       priority: 25,
+      tags: [],
       seeding: { ratio: null, minutes: 90, minMinutes: 4320 },
     })
   })

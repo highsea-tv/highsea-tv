@@ -160,6 +160,7 @@ const blankProfile = (): QualityProfile => ({
   minUpgradeFormatScore: 1,
   formats: [],
   language: 'any',
+  waitMinutes: 0,
 })
 
 /** The editor's address: `/settings/profiles/{id}`, or `/settings/profiles/new`. */

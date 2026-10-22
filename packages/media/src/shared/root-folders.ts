@@ -11,7 +11,7 @@ import type { MediaType } from '@highsea/db/schema'
 import { asc, eq, sql } from 'drizzle-orm'
 import { invalid, type MediaDeps } from './context.ts'
 
-const { rootFolders, mediaItems } = schema
+const { rootFolders, mediaItems, languageProfiles } = schema
 
 /** How a refusal names each type: one, then many. A new media type adds its nouns here. */
 const NOUNS: Record<MediaType, [string, string]> = { movie: ['movie', 'movies'] }
@@ -86,6 +86,7 @@ export function createRootFolders({ db, clock }: MediaDeps) {
     path: row.path,
     ...probe(row.path),
     movies: filedIn(row.path).movie ?? 0,
+    languageProfileId: row.languageProfileId,
   })
 
   const rows = () => db.select().from(rootFolders).orderBy(asc(rootFolders.path)).all()
@@ -125,9 +126,36 @@ export function createRootFolders({ db, clock }: MediaDeps) {
             reason: 'overlaps',
           })
       }
-      const row = { id: newId('rf'), path: normalized, createdAt: clock.now() }
+      const row = {
+        id: newId('rf'),
+        path: normalized,
+        languageProfileId: null,
+        createdAt: clock.now(),
+      }
       db.insert(rootFolders).values(row).run()
       return view(row)
+    },
+
+    /**
+     * The subtitle language profile a title added here takes when none is chosen (checkpoint 8c);
+     * null for none. Titles already filed here keep theirs.
+     */
+    setLanguageProfile(id: string, languageProfileId: string | null): RootFolder {
+      const row = db.select().from(rootFolders).where(eq(rootFolders.id, id)).get()
+      if (!row) throw new AppError('not-found', 'That root folder doesn’t exist.')
+      if (
+        languageProfileId !== null &&
+        !db
+          .select({ id: languageProfiles.id })
+          .from(languageProfiles)
+          .where(eq(languageProfiles.id, languageProfileId))
+          .get()
+      )
+        throw new AppError('not-found', 'That language profile doesn’t exist.', {
+          reason: 'unknown-language-profile',
+        })
+      db.update(rootFolders).set({ languageProfileId }).where(eq(rootFolders.id, id)).run()
+      return view({ ...row, languageProfileId })
     },
 
     /** Nothing on disk changes. Refused while titles of any type are filed under it. */

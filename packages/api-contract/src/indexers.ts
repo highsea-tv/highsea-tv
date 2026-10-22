@@ -16,6 +16,7 @@ import {
   noContent,
   TmdbIdParam,
 } from './common.ts'
+import { TagIds } from './tags.ts'
 
 // ---------------------------------------------------------------- vocabulary
 
@@ -152,6 +153,11 @@ export const Indexer = z
     stats: IndexerStats,
     /** Its seeding rules (A9); a null field uses Settings › Download client's. */
     seeding: IndexerSeeding,
+    /**
+     * Tag ids (checkpoint 8c): when set, it's used only for movies with at least one of them, in
+     * searches and RSS; with none, for every movie.
+     */
+    tags: z.array(z.string()),
     addedAt: IsoDate,
   })
   .openapi('Indexer')
@@ -169,6 +175,7 @@ export const AddIndexerInput = z
     settings: Settings.optional(),
     name: z.string().max(60).optional(),
     priority: z.number().int().min(INDEXER_PRIORITY.min).max(INDEXER_PRIORITY.max).optional(),
+    tags: TagIds.optional(),
   })
   .openapi('AddIndexerInput')
 
@@ -188,6 +195,7 @@ export const IndexerPatch = z
     priority: z.number().int().min(INDEXER_PRIORITY.min).max(INDEXER_PRIORITY.max).optional(),
     settings: Settings.optional(),
     seeding: IndexerSeeding.optional(),
+    tags: TagIds.optional(),
   })
   .openapi('IndexerPatch')
 

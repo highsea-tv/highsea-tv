@@ -8,6 +8,7 @@ import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
 import { registerAccounts } from './accounts.ts'
 import { registerConnections } from './connections.ts'
+import { registerCuration } from './curation.ts'
 import { registerDownloads } from './downloads.ts'
 import { events } from './events.ts'
 import { type Env, guard, routeFor } from './guard.ts'
@@ -23,6 +24,7 @@ import { registerPersonalization } from './personalization.ts'
 import { registerQuality } from './quality.ts'
 import { registerSubtitles } from './subtitles.ts'
 import { registerSystem } from './system.ts'
+import { registerTags } from './tags.ts'
 import { registerWanted } from './wanted.ts'
 
 export type { Env }
@@ -100,6 +102,8 @@ export function createApi(runtime: Runtime) {
   registerWanted(app)
   registerLists(app)
   registerConnections(app)
+  registerCuration(app)
+  registerTags(app)
 
   app.doc31(`${API_PREFIX}/openapi.json`, {
     openapi: '3.1.0',

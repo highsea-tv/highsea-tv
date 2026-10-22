@@ -41,6 +41,7 @@ import {
   AVAILABILITY,
   addInput,
   defaultsOf,
+  folderLanguageOf,
   initialForm,
   isNoMetadataKey,
   MEDIA_SETTINGS,
@@ -207,7 +208,17 @@ export function AddMovieDialog({
                       <Select
                         value={form.rootFolder || undefined}
                         disabled={noFolders}
-                        onValueChange={(rootFolder) => set({ rootFolder })}
+                        onValueChange={(rootFolder) => {
+                          // a folder with its own default language brings it along (checkpoint 8c)
+                          const languageProfileId = folderLanguageOf(
+                            o.folders,
+                            o.language,
+                            rootFolder,
+                          )
+                          set(
+                            languageProfileId ? { rootFolder, languageProfileId } : { rootFolder },
+                          )
+                        }}
                         options={o.folders.map((f) => ({ value: f.path, label: f.path }))}
                         className="font-mono"
                       />

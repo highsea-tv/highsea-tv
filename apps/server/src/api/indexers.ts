@@ -63,7 +63,9 @@ export function registerIndexers(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.indexers.add, async (c) => {
     const { definitionId, ...input } = c.req.valid('json')
-    const added = await runtime(c).indexers.add(definitionId, input)
+    // tags must exist (checkpoint 8c): the library's, which indexers don't import
+    const tags = runtime(c).media.tags.check(input.tags)
+    const added = await runtime(c).indexers.add(definitionId, { ...input, tags })
     audit(c, 'indexer.added', indexer(added.indexer.id))
     return c.json(added, 201)
   })
@@ -75,7 +77,13 @@ export function registerIndexers(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.indexers.update, (c) => {
     const { id } = c.req.valid('param')
-    const saved = runtime(c).indexers.update(id, c.req.valid('json'))
+    const patch = c.req.valid('json')
+    const saved = runtime(c).indexers.update(
+      id,
+      patch.tags === undefined
+        ? patch
+        : { ...patch, tags: runtime(c).media.tags.check(patch.tags) },
+    )
     audit(c, 'indexer.updated', indexer(id))
     return c.json(saved, 200)
   })

@@ -157,4 +157,136 @@ describe('profiles, formats, sizes and language profiles', () => {
     })
     expect(after.find((s) => s.quality === 'Remux-2160p')?.min).toBe(187.4)
   })
+
+  test('seeded profiles are built in; the owner’s aren’t', async () => {
+    const { media } = await start()
+    expect(media.profiles.list().map((p) => p.builtIn)).toEqual([true, true, true])
+    const hd = media.profiles.get('qp-hd')
+    const { id: _, builtIn: __, ...input } = hd
+    const mine = media.profiles.add({ ...input, name: 'Mine', waitMinutes: 60 })
+    expect(mine.builtIn).toBe(false)
+    expect(mine.waitMinutes).toBe(60)
+    expect(media.profiles.list().map((p) => p.id)).toEqual(['qp-uhd', 'qp-hd', 'qp-any', mine.id])
+  })
+
+  test('saving a profile checks it, names it once, and drops scores for formats that are gone', async () => {
+    const { media } = await start()
+    const { id: _, builtIn: __, ...hd } = media.profiles.get('qp-hd')
+    expect(await reason(() => media.profiles.save('qp-hd', { ...hd, cutoff: 'Remux-2160p' }))).toBe(
+      'invalid:invalid',
+    )
+    expect(await reason(() => media.profiles.save('qp-hd', { ...hd, name: ' ultra hd ' }))).toBe(
+      'conflict:name-taken',
+    )
+    expect(await reason(() => media.profiles.save('qp-nope', hd))).toBe(
+      'not-found:unknown-quality-profile',
+    )
+    const saved = media.profiles.save('qp-hd', {
+      ...hd,
+      // a short list comes back with every other quality, not allowed
+      items: [{ name: 'Bluray-1080p', allowed: true, qualities: ['Bluray-1080p'] }],
+      formats: [
+        { formatId: 'cf-x265', score: 50 },
+        { formatId: 'cf-gone', score: 10 },
+        { formatId: 'cf-lq', score: 0 },
+      ],
+    })
+    expect(saved.builtIn).toBe(true)
+    expect(saved.items[0]).toEqual({
+      name: 'Bluray-1080p',
+      allowed: true,
+      qualities: ['Bluray-1080p'],
+    })
+    expect(saved.items.flatMap((i) => i.qualities)).toHaveLength(30)
+    expect(saved.formats).toEqual([{ formatId: 'cf-x265', score: 50 }])
+  })
+
+  test('a profile a movie uses, or the last one, can’t be deleted', async () => {
+    const { media, movies, input } = await start()
+    await movies.add(input(SINTEL))
+    expect(await reason(() => media.profiles.remove('qp-hd'))).toBe('conflict:in-use')
+    media.profiles.remove('qp-any')
+    media.profiles.remove('qp-uhd')
+    expect(media.profiles.list().map((p) => p.id)).toEqual(['qp-hd'])
+  })
+
+  test('the last profile left can’t be deleted', async () => {
+    const { media } = await start()
+    media.profiles.remove('qp-any')
+    media.profiles.remove('qp-uhd')
+    expect(await reason(() => media.profiles.remove('qp-hd'))).toBe('conflict:last-profile')
+  })
+
+  test('the order is saved whole', async () => {
+    const { media } = await start()
+    expect(await reason(() => media.profiles.order(['qp-hd']))).toBe('invalid:invalid')
+    expect(media.profiles.order(['qp-any', 'qp-hd', 'qp-uhd']).map((p) => p.id)).toEqual([
+      'qp-any',
+      'qp-hd',
+      'qp-uhd',
+    ])
+  })
+
+  test('saving a preset makes it the owner’s, and the presets’ updates leave it alone', async () => {
+    const { media, db } = await start()
+    // a release that brings a newer preset: the seeded rows that aren't edited follow it
+    for (const id of ['cf-dv', 'cf-hdr10'])
+      db.update(schema.customFormats)
+        .set({ conditions: [] })
+        .where(eq(schema.customFormats.id, id))
+        .run()
+    const dv = media.customFormats.get('cf-dv')
+    media.customFormats.save('cf-hdr10', {
+      name: 'HDR, mine',
+      conditions: [
+        { kind: 'title', name: 'HDR', value: '\\bHDR\\b', negate: false, required: false },
+      ],
+    })
+    media.seed()
+    expect(media.customFormats.get('cf-dv').conditions.length).toBeGreaterThan(0)
+    expect(media.customFormats.get('cf-dv').edited).toBe(false)
+    expect(dv.source).toBe('preset')
+    const mine = media.customFormats.get('cf-hdr10')
+    expect(mine).toMatchObject({ name: 'HDR, mine', source: 'preset', edited: true })
+    expect(mine.conditions).toHaveLength(1)
+  })
+
+  test('a format is checked, named once, and its scores go with it', async () => {
+    const { media } = await start()
+    const title = (value: string) =>
+      ({ kind: 'title', name: 'x', value, negate: false, required: false }) as const
+    expect(
+      await reason(() => media.customFormats.add({ name: 'Broken', conditions: [title('(')] })),
+    ).toBe('invalid:invalid')
+    expect(
+      await reason(() => media.customFormats.add({ name: 'x265', conditions: [title('x')] })),
+    ).toBe('conflict:name-taken')
+    const added = media.customFormats.add({ name: 'IMAX', conditions: [title('\\bIMAX\\b')] })
+    expect(added).toMatchObject({ source: 'custom', trashId: null, edited: false })
+    media.customFormats.remove('cf-x265')
+    expect(media.profiles.list().some((p) => p.formats.some((f) => f.formatId === 'cf-x265'))).toBe(
+      false,
+    )
+    expect(await reason(() => media.customFormats.remove('cf-x265'))).toBe(
+      'not-found:unknown-custom-format',
+    )
+  })
+
+  test('sizes are saved whole and checked', async () => {
+    const { media } = await start()
+    const sizes = media.qualitySizes()
+    expect(await reason(() => media.qualitySizes.save(sizes.slice(1)))).toBe('invalid:invalid')
+    const bad = sizes.map((s) => (s.quality === 'Bluray-1080p' ? { ...s, min: 10, max: 5 } : s))
+    expect(await reason(() => media.qualitySizes.save(bad))).toBe('invalid:invalid')
+    const good = sizes.map((s) =>
+      s.quality === 'Bluray-1080p' ? { ...s, min: 10, preferred: null, max: null } : s,
+    )
+    media.qualitySizes.save(good)
+    expect(media.qualitySizes().find((s) => s.quality === 'Bluray-1080p')).toEqual({
+      quality: 'Bluray-1080p',
+      min: 10,
+      preferred: null,
+      max: null,
+    })
+  })
 })

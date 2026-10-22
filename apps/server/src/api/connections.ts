@@ -51,10 +51,16 @@ export function registerConnections(app: OpenAPIHono<Env>) {
       : input
   }
 
+  /** Tags must exist (checkpoint 8c): the library's tags, which notifications don't import. */
+  const withTags = <I extends { tags?: string[] }>(c: Context<Env>, input: I): I => ({
+    ...input,
+    tags: c.get('runtime').media.tags.check(input.tags),
+  })
+
   app.openapi(routes.connections.list, (c) => c.json(notifications(c).list().map(view), 200))
 
   app.openapi(routes.connections.add, (c) => {
-    const added = notifications(c).add(withPeople(c, c.req.valid('json')))
+    const added = notifications(c).add(withTags(c, withPeople(c, c.req.valid('json'))))
     audit(c, 'connection.added', added.id)
     return c.json(view(added), 201)
   })
@@ -70,7 +76,7 @@ export function registerConnections(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.connections.update, (c) => {
     const { id } = c.req.valid('param')
-    const saved = notifications(c).update(id, withPeople(c, c.req.valid('json')))
+    const saved = notifications(c).update(id, withTags(c, withPeople(c, c.req.valid('json'))))
     audit(c, 'connection.updated', id)
     return c.json(view(saved), 200)
   })

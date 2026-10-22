@@ -28,6 +28,7 @@ const folder = (path: string): RootFolder => ({
   device: null,
   accessible: true,
   movies: 0,
+  languageProfileId: null,
 })
 const profile = (id: string, name: string) => ({ id, name }) as QualityProfile
 const languages = (id: string) => ({ id, name: id }) as LanguageProfile

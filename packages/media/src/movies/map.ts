@@ -38,6 +38,7 @@ export function toApiMovie(
   row: ItemRow,
   versions: VersionRow[],
   meta: MovieMetadata | null,
+  tags: string[] = [],
 ): Movie {
   return {
     id: row.tmdbId,
@@ -70,6 +71,7 @@ export function toApiMovie(
         fileId: v.fileId,
       })),
     gone: meta?.goneAt != null,
+    tags,
   }
 }
 

@@ -51,9 +51,16 @@ export type ListLibrary = {
     monitored: boolean
     minimumAvailability: ImportListInput['minimumAvailability']
     searchNow: boolean
+    /** The list's tags, given to the movie (checkpoint 8c). */
+    tags: string[]
   }): Promise<void>
-  /** Throws an `invalid` AppError naming the field when a folder or profile doesn't exist. */
-  check(input: Pick<ImportListInput, 'rootFolder' | 'qualityProfileId' | 'languageProfileId'>): void
+  /**
+   * Throws an `invalid` AppError naming the field when a folder, profile or tag doesn't exist.
+   * Returns the tag ids, without repeats.
+   */
+  check(
+    input: Pick<ImportListInput, 'rootFolder' | 'qualityProfileId' | 'languageProfileId' | 'tags'>,
+  ): string[] | undefined
   /** Whether a search can run: an indexer is on. */
   canSearch(): boolean
 }
@@ -102,6 +109,7 @@ export function createLists(deps: {
       monitored: row.monitored,
       minimumAvailability: row.minimumAvailability,
       searchOnAdd: row.searchOnAdd,
+      tags: row.tags,
       lastSync: row.lastSyncAt ? new Date(row.lastSyncAt).toISOString() : null,
       lastResult: (row.lastResult as ImportListResult | null) ?? null,
       items,
@@ -224,6 +232,8 @@ export function createLists(deps: {
             monitored: row.monitored,
             minimumAvailability: row.minimumAvailability,
             searchNow,
+            // Radarr's list tags: "Tags list items will be added with" (its ListTagsHelpText)
+            tags: row.tags,
           })
           added.push(tmdbId)
         } catch (err) {
@@ -302,6 +312,7 @@ export function createLists(deps: {
       monitored: input.monitored,
       minimumAvailability: input.minimumAvailability,
       searchOnAdd: input.searchOnAdd,
+      tags: [...new Set(input.tags ?? [])],
     }
   }
 

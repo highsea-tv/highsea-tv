@@ -9,6 +9,8 @@
 // - the library is paged on the server (cursor paging, phase-3-server.md › Paging and sorting):
 //   the tab counts come with each page, and Show more under the frame loads the next 60;
 // - the status tab, title filter and sort live in the address, so Back keeps them;
+// - checkpoint 8c adds a tag filter (in the address too, shown once a tag exists) and Add a tag
+//   and Remove a tag to bulk edit (Radarr's Movie Editor tags: wiki.servarr.com/radarr/movies);
 // - the statuses are the server's (available, wanted, downloading, not released, not monitored);
 // - the grid has no quality tags on the art until files exist (checkpoint 6);
 // - bulk Search is shown but disabled while no indexer is enabled (checkpoint 4 plan, decision 2);
@@ -57,7 +59,7 @@ import {
   toast,
 } from '@highsea/ui-web'
 import { useRouter } from 'next/navigation'
-import { useDeferredValue, useRef, useState, useSyncExternalStore } from 'react'
+import { Fragment, useDeferredValue, useRef, useState, useSyncExternalStore } from 'react'
 import { useAddressParam } from './address.ts'
 import { useSearchable } from './indexer-state.ts'
 import { library as messages } from './library-messages.ts'
@@ -65,6 +67,7 @@ import { Loadable, PosterSkeletons } from './loadable.tsx'
 import { moviePath, movieStatus } from './media-links.ts'
 import { type LibraryFilters, loadMovies, PAGE } from './movie-data.ts'
 import { AdminPage } from './shell.tsx'
+import { useTags } from './tag-picker.tsx'
 
 /** The tabs movies.md lists. Not monitored movies show under All. */
 const TABS = ['all', 'available', 'wanted', 'downloading', 'not-released'] as const satisfies (
@@ -73,6 +76,8 @@ const TABS = ['all', 'available', 'wanted', 'downloading', 'not-released'] as co
 )[]
 type Tab = (typeof TABS)[number]
 type Sort = (typeof MOVIE_SORTS)[number]
+/** The tag filter's "any" choice: Select needs a value that isn't empty. */
+const ANY_TAG = 'any'
 
 /** Grid or table, remembered per browser (movies.md › Library). */
 const VIEW_KEY = 'highsea:movies-view'
@@ -122,13 +127,16 @@ export function MoviesLibrary() {
   const [tab, setTab] = useAddressParam<Tab>('status', 'all', TABS)
   const [sort, setSort] = useAddressParam<Sort>('sort', 'title', MOVIE_SORTS)
   const [text, setText] = useAddressParam<string>('title', '')
+  const [tag, setTag] = useAddressParam<string>('tag', '')
+  const tags = useTags()
   const title = useDeferredValue(text.trim())
   const filters: LibraryFilters = {
     status: tab === 'all' ? undefined : (tab as MovieStatus),
     title: title || undefined,
+    tag: tag || undefined,
     sort,
   }
-  const filterKey = `${tab}:${sort}:${title}`
+  const filterKey = `${tab}:${sort}:${title}:${tag}`
   const [more, setMore] = useState({ filterKey, count: PAGE })
   const count = more.filterKey === filterKey ? more.count : PAGE
   const movies = useQuery(`movies:${filterKey}:${count}`, (c) => loadMovies(c, filters, count), [
@@ -239,6 +247,18 @@ export function MoviesLibrary() {
                         aria-label={t('filter')}
                         className="w-48"
                       />
+                      {(tags.data?.length ?? 0) > 0 && (
+                        <Select
+                          value={tag || ANY_TAG}
+                          onValueChange={(v) => setTag(v === ANY_TAG ? '' : v)}
+                          aria-label={t('tag')}
+                          options={[
+                            { value: ANY_TAG, label: t('tag.all') },
+                            ...(tags.data ?? []).map((g) => ({ value: g.id, label: g.label })),
+                          ]}
+                          className="w-36"
+                        />
+                      )}
                       <Select
                         value={sort}
                         onValueChange={(v) => setSort(v as Sort)}
@@ -345,6 +365,30 @@ export function MoviesLibrary() {
                               {p.name}
                             </MenuItem>
                           ))}
+                          {(tags.data?.length ?? 0) > 0 &&
+                            (['add', 'remove'] as const).map((mode) => (
+                              <Fragment key={mode}>
+                                <MenuSeparator />
+                                <MenuLabel>{t(mode === 'add' ? 'addTag' : 'removeTag')}</MenuLabel>
+                                {(tags.data ?? []).map((g) => (
+                                  <MenuItem
+                                    key={g.id}
+                                    onSelect={() =>
+                                      bulk(
+                                        (count) =>
+                                          t(mode === 'add' ? 'done.tagAdded' : 'done.tagRemoved', {
+                                            count,
+                                            tag: g.label,
+                                          }),
+                                        { action: 'setTags', ids, tagIds: [g.id], mode },
+                                      )
+                                    }
+                                  >
+                                    {g.label}
+                                  </MenuItem>
+                                ))}
+                              </Fragment>
+                            ))}
                         </MenuContent>
                       </Menu>
                       <Button

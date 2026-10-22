@@ -27,8 +27,15 @@ describe('the contract and the domain packages agree', () => {
   test('custom formats, profiles and sizes (@highsea/quality)', () => {
     expect([...Api.CONDITION_KINDS]).toEqual([...Q.CONDITION_KINDS])
     expect([...Api.INDEXER_FLAGS]).toEqual([...Q.INDEXER_FLAGS])
-    for (const f of Q.seedFormats()) expect(Api.CustomFormat.parse(f)).toEqual(f)
-    for (const p of Q.seedProfiles()) expect(Api.QualityProfile.parse(p)).toEqual(p)
+    // as the API serves them: a format says whether it was edited, a profile whether it's seeded
+    for (const f of Q.seedFormats()) {
+      const served = { ...f, edited: false }
+      expect(Api.CustomFormat.parse(served)).toEqual(served)
+    }
+    for (const p of Q.seedProfiles()) {
+      const served = { ...p, builtIn: true }
+      expect(Api.QualityProfile.parse(served)).toEqual(served)
+    }
     for (const s of Q.defaultQualitySizes()) expect(Api.QualitySize.parse(s)).toEqual(s)
     same<Same<Api.FormatCondition, Q.Condition>>(true)
   })

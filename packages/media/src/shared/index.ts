@@ -7,9 +7,12 @@
 //
 //   const media = createMedia({ db, clock, logger })
 //   media.seed()                           first boot: profiles, formats, quality sizes; idempotent
-//   media.profiles.list / get, customFormats(), qualitySizes()
+//   media.profiles.list / get / add / save / remove / order       the editors (8c)
+//   media.customFormats() / .get / .add / .save / .remove
+//   media.qualitySizes() / .save
 //   (language profiles are @highsea/subtitles/shared's, since checkpoint 7)
-//   media.rootFolders.list / find / add / remove
+//   media.rootFolders.list / find / add / setLanguageProfile / remove
+//   media.tags.list / add / rename / remove, check, ofItems, apply   tags (checkpoint 8c)
 //   media.mediaManagement.get / save       the `mediaManagement` settings row: naming and importing
 //   media.history.write / forItem / list   what happened to each title, cursor-paged on (date, id)
 //   const movies = createMovies(deps, media)
@@ -32,6 +35,7 @@ import { createHistory } from './history.ts'
 import { createProfiles } from './profiles.ts'
 import { createRootFolders } from './root-folders.ts'
 import { createMediaManagement } from './settings.ts'
+import { createTags } from './tags.ts'
 
 export function createMedia(deps: MediaDeps) {
   const profiles = createProfiles(deps)
@@ -44,6 +48,7 @@ export function createMedia(deps: MediaDeps) {
     rootFolders,
     mediaManagement: createMediaManagement(deps),
     history: createHistory(deps),
+    tags: createTags(deps),
   }
 }
 
@@ -135,7 +140,15 @@ export {
   type VideoInfo,
   videoCodecName,
 } from './probe.ts'
-export { profileNotFound, QUALITY_SIZES_KEY } from './profiles.ts'
+export {
+  type CustomFormatInput,
+  formatNotFound,
+  type ProfileInput,
+  profileNotFound,
+  QUALITY_SIZES_KEY,
+  type StoredFormat,
+  type StoredProfile,
+} from './profiles.ts'
 export { type FiledCounts, normalizeFolder, type RootFolders } from './root-folders.ts'
 export { matchScore } from './search.ts'
 export {
@@ -148,6 +161,7 @@ export {
   mediaManagementSchema,
 } from './settings.ts'
 export { CHUNK, chunks, escapeLike } from './sql.ts'
+export { type TagMode, type Tags, tagsMatch } from './tags.ts'
 export {
   nodeFs,
   type TransferFs,

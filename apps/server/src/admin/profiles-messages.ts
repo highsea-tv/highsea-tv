@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Settings › Profiles and formats and › Quality sizes (ADR 0021): the prototype's copy. Both are
-// read-only until checkpoint 8 (decision 3); the controls that edit say so in a tooltip.
+// Settings › Profiles and formats and › Quality sizes (ADR 0021): the prototype's copy. The
+// editors' own copy is in quality-editors-messages.ts.
 import { defineMessages } from '@highsea/i18n'
 
 export const profiles = defineMessages({
-  later: 'Editing arrives in a later checkpoint of the server plan.',
+  later:
+    'The catalog has no profile presets yet. New profile starts from HD Bluray + WEB, which you can change.',
   newProfile: 'New profile',
+  newFormat: 'New format',
   edit: 'Edit',
   editLabel: 'Edit {name}',
   add: 'Add',
@@ -18,6 +20,8 @@ export const profiles = defineMessages({
   'profiles.noUpgrades': 'No upgrades',
   'profiles.scores': '{count, plural, one {# custom format score} other {# custom format scores}}',
   'profiles.cutoff': '{name}, the cutoff',
+  'profiles.wait':
+    '{minutes, plural, one {waits # minute} other {waits # minutes}} for a better release',
   'formats.title': 'Custom formats',
   'formats.description': 'Matches on a release name that add or take away score.',
   'formats.what': 'the custom formats',
@@ -39,6 +43,7 @@ export const profiles = defineMessages({
 })
 
 export const sizes = defineMessages({
+  edit: 'Edit sizes',
   what: 'the quality sizes',
   title: 'Sizes per minute of runtime',
   description: 'A release outside the range is rejected; the preferred size wins a tie.',

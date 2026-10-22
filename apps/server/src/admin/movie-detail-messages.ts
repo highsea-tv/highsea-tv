@@ -158,6 +158,7 @@ export const movieDetail = defineMessages({
   versions: 'Versions',
   version: '{label} ({profile})',
   subtitles: 'Subtitles',
+  tags: 'Tags',
   'subtitles.none': 'None',
   availability: 'Minimum availability',
   'availability.announced': 'Announced',

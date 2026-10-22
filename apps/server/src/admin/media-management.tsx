@@ -13,8 +13,14 @@
 // show and the API has, colon replacement, whether to set permissions at all and how long the
 // recycle bin keeps files, join the groups they belong to. A refused save names its field
 // (`details.reason`), and the server's sentence shows under it.
+//
+// Checkpoint 8c adds two things the prototype has no design for: each folder's default subtitle
+// languages, a select on its row that saves at once, as Remove does (the add dialog starts on it,
+// and lists, the library import and migration use it); and Tags, a group of their own below
+// (tag-settings.tsx).
 import {
   COLON_REPLACEMENTS,
+  type LanguageProfile,
   type MediaManagementSettings,
   type RootFolder,
 } from '@highsea/api-contract'
@@ -39,6 +45,7 @@ import { Loadable } from './loadable.tsx'
 import { media as messages } from './media-management-messages.ts'
 import { errorReason } from './metadata-locale.ts'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
+import { TagSettings } from './tag-settings.tsx'
 
 const TOPICS = ['settings.updated', 'movies.updated']
 
@@ -81,6 +88,7 @@ export function MediaManagement() {
           <Group title={t('importing.title')}>{folders}</Group>
         </>
       )}
+      <TagSettings />
     </AreaPage>
   )
 }
@@ -267,6 +275,9 @@ function Form({
 function RootFolders() {
   const t = useT(messages)
   const folders = useQuery('settings:root-folders', (c) => c.rootFolders.list(), TOPICS)
+  const languages = useQuery('language-profiles', (c) => c.subtitles.languageProfiles(), [
+    'subtitles.updated',
+  ])
   const [removing, setRemoving] = useState<RootFolder | null>(null)
   const remove = useAction((c, id: string) => c.rootFolders.remove({ params: { id } }))
   return (
@@ -284,7 +295,13 @@ function RootFolders() {
           ) : (
             <ul aria-label={t('folders.title')} className="grid gap-2">
               {fs.map((f) => (
-                <Folder key={f.id} folder={f} onRemove={() => setRemoving(f)} />
+                <Folder
+                  key={f.id}
+                  folder={f}
+                  languages={languages.data ?? []}
+                  onRemove={() => setRemoving(f)}
+                  onSaved={folders.refetch}
+                />
               ))}
             </ul>
           )
@@ -315,9 +332,32 @@ function RootFolders() {
   )
 }
 
-function Folder({ folder: f, onRemove }: { folder: RootFolder; onRemove: () => void }) {
+const NO_LANGUAGES = 'none'
+
+function Folder({
+  folder: f,
+  languages,
+  onRemove,
+  onSaved,
+}: {
+  folder: RootFolder
+  languages: LanguageProfile[]
+  onRemove: () => void
+  onSaved: () => void
+}) {
   const t = useT(messages)
   const inUse = f.movies > 0
+  const save = useAction((c, languageProfileId: string | null) =>
+    c.rootFolders.update({ params: { id: f.id }, body: { languageProfileId } }),
+  )
+  const setLanguages = (v: string) =>
+    save.run(v === NO_LANGUAGES ? null : v).then(
+      () => {
+        toast.success(t('folders.languagesSaved', { path: f.path }))
+        onSaved()
+      },
+      (e: Error) => toast.error(t('folders.languagesFailed'), { description: e.message }),
+    )
   return (
     <li className="grid gap-2 rounded-md border border-line bg-s2 p-3 medium:grid-cols-[minmax(0,1fr)_auto] medium:items-center">
       <div className="grid min-w-0 gap-1">
@@ -343,6 +383,20 @@ function Folder({ folder: f, onRemove }: { folder: RootFolder; onRemove: () => v
             {t('folders.inUse', { count: f.movies })}
           </p>
         )}
+        <div className="flex flex-wrap items-center gap-2 text-caption text-text-3">
+          <span aria-hidden>{t('folders.languages')}</span>
+          <Select
+            aria-label={t('folders.languagesLabel', { path: f.path })}
+            value={f.languageProfileId ?? NO_LANGUAGES}
+            disabled={save.pending}
+            onValueChange={setLanguages}
+            options={[
+              { value: NO_LANGUAGES, label: t('folders.languagesNone') },
+              ...languages.map((p) => ({ value: p.id, label: p.name })),
+            ]}
+            className="w-full medium:w-56"
+          />
+        </div>
       </div>
       <div className="flex flex-wrap gap-2 justify-self-start medium:justify-self-end">
         <Button size="sm" variant="ghost" icon="import" asChild>

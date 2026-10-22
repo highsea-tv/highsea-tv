@@ -7,6 +7,7 @@
 // push: each person's browsers, and the server's VAPID key they subscribe with (RFC 8292).
 import { createRoute, z } from '@hono/zod-openapi'
 import { API_PREFIX, access, body, errors, IdParam, IsoDate, json, noContent } from './common.ts'
+import { TagIds } from './tags.ts'
 
 // ---------------------------------------------------------------- shapes
 
@@ -56,6 +57,11 @@ export const Connection = z
     settings: ConnectionSettings,
     /** Email only: it sends the server's mail (invites and password resets). */
     serverMail: z.boolean(),
+    /**
+     * Tag ids (checkpoint 8c): when set, a movie's events reach it only for movies with at least one
+     * of them; events about no movie reach it as before.
+     */
+    tags: z.array(z.string()),
     createdAt: IsoDate,
     updatedAt: IsoDate,
     lastSentAt: IsoDate.nullable(),
@@ -72,6 +78,7 @@ export const ConnectionInput = z
     events: z.array(NotificationEvent),
     settings: ConnectionSettings,
     serverMail: z.boolean().optional(),
+    tags: TagIds.optional(),
   })
   .openapi('ConnectionInput')
 

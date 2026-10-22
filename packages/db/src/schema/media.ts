@@ -287,6 +287,8 @@ export const qualityProfiles = sqliteTable('quality_profiles', {
   name: text('name').notNull().unique(),
   data: text('data', { mode: 'json' }).notNull(),
   position: integer('position').notNull(),
+  /** One of the profiles highsea seeds (checkpoint 8c): editable, but marked as such. */
+  builtIn: integer('built_in', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 })
@@ -298,6 +300,8 @@ export const customFormats = sqliteTable('custom_formats', {
   source: text('source', { enum: ['preset', 'custom'] }).notNull(),
   /** The TRaSH Guides format it was imported from, so a later import updates it in place. */
   trashId: text('trash_id'),
+  /** A preset the owner changed (checkpoint 8c): "Yours", left alone by later imports. */
+  edited: integer('edited', { mode: 'boolean' }).notNull().default(false),
   conditions: text('conditions', { mode: 'json' }).notNull(),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
@@ -307,6 +311,8 @@ export const customFormats = sqliteTable('custom_formats', {
 export const rootFolders = sqliteTable('root_folders', {
   id: text('id').primaryKey(),
   path: text('path').notNull().unique(),
+  /** The language profile a movie added here takes when nothing else is chosen (checkpoint 8c). */
+  languageProfileId: text('language_profile_id'),
   createdAt: integer('created_at').notNull(),
 })
 

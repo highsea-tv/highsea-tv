@@ -10,7 +10,7 @@
 // no foreign key (the schema's subtitles.ts says why), so this module is what checks it.
 import { AppError, type Clock, newId } from '@highsea/core'
 import type { Db } from '@highsea/db'
-import { languageProfiles, mediaItems } from '@highsea/db/schema'
+import { languageProfiles, mediaItems, rootFolders } from '@highsea/db/schema'
 import { asc, count, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { isLanguageCode, languageName, satisfies } from './languages.ts'
@@ -164,7 +164,14 @@ export function createProfiles({ db, clock }: { db: Db; clock: Clock }) {
       throw new AppError('conflict', 'Keep at least one language profile.', {
         reason: 'last-profile',
       })
-    db.delete(languageProfiles).where(eq(languageProfiles.id, id)).run()
+    db.transaction((tx) => {
+      // a root folder's default (checkpoint 8c) goes back to none
+      tx.update(rootFolders)
+        .set({ languageProfileId: null })
+        .where(eq(rootFolders.languageProfileId, id))
+        .run()
+      tx.delete(languageProfiles).where(eq(languageProfiles.id, id)).run()
+    })
   }
 
   /** First boot: `lp-en`. Idempotent; an owner's edits stay. */

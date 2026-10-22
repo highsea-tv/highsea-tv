@@ -2,7 +2,8 @@
 // The Radarr importer against the fake Radarr: connecting (and a wrong key), the preview with its
 // profile mapping nearest first, root folders and what can't come across; the run adding movies
 // where they are, the file probed again, tags, naming and the blocklist; a second run skipping
-// everything. The profile mapping and path mappings on their own too.
+// everything. The profile mapping and path mappings on their own too, and a Radarr profile brought
+// across as it is (8c).
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
 import { copyFileSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -10,7 +11,13 @@ import { join } from 'node:path'
 import { schema } from '@highsea/db'
 import { type Clips, hasFfmpeg, makeClips } from '@highsea/media/testing'
 import { seedProfiles } from '@highsea/quality'
-import { mapPath, nearestProfiles, radarrCutoff } from '../src/radarr/index.ts'
+import {
+  COPY_PROFILE,
+  mapPath,
+  nearestProfiles,
+  profileFromRadarr,
+  radarrCutoff,
+} from '../src/radarr/index.ts'
 import { FAKE_RADARR_KEY, radarrLibrary, SINTEL_HASH, startFakeRadarr } from './fake/index.ts'
 import { reason, setup } from './helpers.ts'
 
@@ -76,6 +83,53 @@ describe('the profile mapping', () => {
       items: (hd as never as { items: [] }).items,
     }
     expect(radarrCutoff(grouped as never).name).toBe('WEB 1080p')
+  })
+})
+
+describe('a Radarr profile as it is', () => {
+  const library = radarrLibrary('/movies', '/movies-4k')
+  const [any, hd] = library.profiles as unknown as Parameters<typeof profileFromRadarr>[0][]
+
+  test('highest first, groups kept, the cutoff, scores by format name, the language', () => {
+    const p = profileFromRadarr(
+      {
+        ...(hd as Parameters<typeof profileFromRadarr>[0]),
+        minFormatScore: 10,
+        formatItems: [
+          { format: 7, name: 'x265 (HD)', score: -1000 },
+          { format: 8, name: 'Theirs only', score: 50 },
+          { format: 9, name: 'Remux tier', score: 0 },
+        ],
+        language: { id: 1, name: 'English' },
+      },
+      [{ id: 'cf-x265', name: 'X265 (HD)' }],
+    )
+    expect(p).not.toBeNull()
+    const wanted = p?.items.filter((i) => i.allowed)
+    expect(wanted).toEqual([
+      { name: 'Bluray-1080p', allowed: true, qualities: ['Bluray-1080p'] },
+      { name: 'WEB 1080p', allowed: true, qualities: ['WEBDL-1080p', 'WEBRip-1080p'] },
+    ])
+    // Bluray-720p is listed, not wanted, as in Radarr; every other quality is there, not wanted
+    expect(p?.items.find((i) => i.name === 'Bluray-720p')?.allowed).toBe(false)
+    expect(p?.cutoff).toBe('Bluray-1080p')
+    expect(p).toMatchObject({
+      name: 'HD-1080p',
+      upgradeAllowed: true,
+      minFormatScore: 10,
+      formats: [{ formatId: 'cf-x265', score: -1000 }],
+      language: 'en',
+      waitMinutes: 0,
+    })
+  })
+
+  test('nothing highsea knows wanted: it can’t come across', () => {
+    const base = any as Parameters<typeof profileFromRadarr>[0]
+    const none = {
+      ...base,
+      items: base.items.map((i) => ({ ...i, allowed: false })),
+    }
+    expect(profileFromRadarr(none, [])).toBeNull()
   })
 })
 
@@ -231,6 +285,37 @@ describe('the Radarr importer', () => {
     expect(s.movies.inLibrary([133701]).size).toBe(0)
     // settings off: highsea's naming stays its own
     expect(s.media.mediaManagement.get().folderFormat).toBe('{Movie Title} ({Release Year})')
+  })
+
+  test('copy: the preview offers it last; the run makes the profile once and uses it', async () => {
+    const s = await start()
+    const p = await s.radarr.preview(s.conn, s.pathMappings)
+    expect(p.profiles.every((x) => x.options.at(-1) === COPY_PROFILE)).toBe(true)
+
+    const run = () =>
+      s.radarr.run(s.conn, {
+        pathMappings: s.pathMappings,
+        profiles: { '1': COPY_PROFILE, '4': COPY_PROFILE },
+        settings: false,
+      })
+    run()
+    await s.runJobs()
+    expect(s.media.profiles.get('qp-radarr-4')).toMatchObject({
+      name: 'HD-1080p',
+      builtIn: false,
+      cutoff: 'Bluray-1080p',
+    })
+    // highsea has a profile called Any already, so the copy says where it came from
+    expect(s.media.profiles.get('qp-radarr-1').name).toBe('Any (Radarr)')
+    expect(s.movies.get(45745)).toMatchObject({ qualityProfileId: 'qp-radarr-4' })
+    expect(s.movies.get(133701)).toMatchObject({ qualityProfileId: 'qp-radarr-1' })
+    // Ultra-HD wasn't copied: its movie takes the nearest
+    expect(s.movies.get(10378)).toMatchObject({ qualityProfileId: 'qp-uhd' })
+
+    // a second run finds the copies, and makes no others
+    run()
+    await s.runJobs()
+    expect(s.media.profiles.list().filter((x) => x.id.startsWith('qp-radarr-'))).toHaveLength(2)
   })
 
   test('a profile that doesn’t exist is refused before the job starts', async () => {

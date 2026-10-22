@@ -210,6 +210,7 @@ describe('Settings › Connections', () => {
       enabled: true,
       events: ['grabbed', 'imported', 'upgraded', 'download-failed', 'health'],
       settings: { webhookUrl: 'https://discord.com/api/webhooks/1/abcwxyz' },
+      tags: [],
     })
     expect(page.queryByRole('dialog')).toBeNull()
   })

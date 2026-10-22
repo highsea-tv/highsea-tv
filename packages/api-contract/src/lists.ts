@@ -8,6 +8,7 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import { API_PREFIX, access, body, errors, IdParam, IsoDate, json, noContent } from './common.ts'
 import { MinimumAvailability } from './movies.ts'
+import { TagIds } from './tags.ts'
 
 // ---------------------------------------------------------------- shapes
 
@@ -59,11 +60,14 @@ export const ImportListInput = z
     settings: ImportListSettings,
     rootFolder: z.string().max(4096),
     qualityProfileId: z.string().max(64),
+    /** Null: the root folder's default (checkpoint 8c), or none when it has no default. */
     languageProfileId: z.string().max(64).nullable(),
     monitored: z.boolean(),
     minimumAvailability: MinimumAvailability,
     /** Search for each movie the list adds. */
     searchOnAdd: z.boolean(),
+    /** Tag ids given to each movie the list adds (checkpoint 8c). */
+    tags: TagIds.optional(),
   })
   .openapi('ImportListInput')
 
@@ -83,6 +87,7 @@ export const ImportListResult = z
 
 export const ImportList = ImportListInput.extend({
   id: z.string(),
+  tags: z.array(z.string()),
   kind: z.enum(IMPORT_LIST_KINDS),
   lastSync: IsoDate.nullable(),
   lastResult: ImportListResult.nullable(),

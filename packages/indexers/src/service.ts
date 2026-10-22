@@ -84,6 +84,8 @@ export type IndexerView = {
   stats: IndexerStats
   /** Seeding rules from this indexer; null fields use the global default. */
   seeding: { ratio: number | null; minutes: number | null; minMinutes: number | null }
+  /** Tag ids (checkpoint 8c): used only for movies sharing one; empty for every movie. */
+  tags: string[]
   addedAt: string
 }
 
@@ -127,6 +129,8 @@ export type IndexerPatch = {
   settings?: Record<string, unknown>
   /** Its own seeding rules; a null field falls back to Settings › Download client's. */
   seeding?: { ratio: number | null; minutes: number | null; minMinutes: number | null }
+  /** Tag ids (checkpoint 8c), checked by the caller: empty serves every movie. */
+  tags?: string[]
 }
 
 type Row = typeof indexers.$inferSelect
@@ -195,6 +199,7 @@ export function createIndexers(deps: IndexersDeps) {
       settings: viewSettings(def, r.settings as StoredSettings),
       stats: summarize(stats.get(r.id)),
       seeding: { ratio: r.seedRatio, minutes: r.seedMinutes, minMinutes: r.minSeedMinutes },
+      tags: r.tags,
       addedAt: iso(r.addedAt),
     }
   }
@@ -470,7 +475,12 @@ export function createIndexers(deps: IndexersDeps) {
     /** Tests the settings, then adds the indexer only if the test passed. */
     async add(
       definitionId: string,
-      input: { settings?: Record<string, unknown>; name?: string; priority?: number } = {},
+      input: {
+        settings?: Record<string, unknown>
+        name?: string
+        priority?: number
+        tags?: string[]
+      } = {},
     ): Promise<{ indexer: IndexerView; test: TestResult }> {
       const loaded = source.definition(definitionId)
       if (!loaded) throw new AppError('not-found', 'That indexer isn’t in the catalog.')
@@ -495,6 +505,7 @@ export function createIndexers(deps: IndexersDeps) {
           priority,
           settings,
           needsAttention: false,
+          tags: [...new Set(input.tags ?? [])],
           addedAt: now,
           updatedAt: now,
         })
@@ -562,6 +573,7 @@ export function createIndexers(deps: IndexersDeps) {
         set.seedMinutes = patch.seeding.minutes
         set.minSeedMinutes = patch.seeding.minMinutes
       }
+      if (patch.tags !== undefined) set.tags = [...new Set(patch.tags)]
       db.update(indexers).set(set).where(eq(indexers.id, id)).run()
       emit([id], healthChanged)
       return view(required(id))

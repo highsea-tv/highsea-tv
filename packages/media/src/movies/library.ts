@@ -39,7 +39,7 @@ import { announce, type Ctx, notInLibrary, TOPICS } from './context.ts'
 import { toApiMovie } from './map.ts'
 import { isAvailable, moviePath, regionalReleaseDate, statusOf } from './titles.ts'
 
-const { mediaItems, versions, mediaFiles, movieMetadata, languageProfiles } = schema
+const { mediaItems, versions, mediaFiles, movieMetadata, languageProfiles, mediaItemTags } = schema
 
 const DAY = 24 * 60 * 60 * 1000
 const MAX_VERSIONS = 10
@@ -51,6 +51,8 @@ export type ListQuery = {
   status?: MovieStatus
   title?: string
   qualityProfileId?: string
+  /** Titles carrying this tag (checkpoint 8c). */
+  tag?: string
   /** The contract's query string (`'true'`/`'false'`) or a boolean. */
   monitored?: boolean | 'true' | 'false'
   /** Wanted › Cutoff unmet (checkpoint 8a): a version's file is under its profile's cutoff. */
@@ -123,8 +125,12 @@ export function createLibrary(ctx: Ctx, media: Media) {
   }
 
   function toMovies(rows: ItemRow[]): Movie[] {
-    const vs = versionsOf(rows.map((r) => r.id))
-    return rows.map((r) => toApiMovie(r, vs.get(r.id) ?? [], cached(r.tmdbId)))
+    const ids = rows.map((r) => r.id)
+    const vs = versionsOf(ids)
+    const tagged = media.tags.ofItems(ids)
+    return rows.map((r) =>
+      toApiMovie(r, vs.get(r.id) ?? [], cached(r.tmdbId), tagged.get(r.id) ?? []),
+    )
   }
 
   const view = (row: ItemRow) => toMovies([row])[0] as Movie
@@ -280,6 +286,10 @@ export function createLibrary(ctx: Ctx, media: Media) {
     const where: (SQL | undefined)[] = [eq(mediaItems.type, 'movie')]
     if (withStatus && query.status) where.push(eq(mediaItems.status, query.status))
     if (query.qualityProfileId) where.push(eq(mediaItems.qualityProfileId, query.qualityProfileId))
+    if (query.tag)
+      where.push(
+        sql`${mediaItems.id} IN (SELECT ${mediaItemTags.itemId} FROM ${mediaItemTags} WHERE ${mediaItemTags.tagId} = ${query.tag})`,
+      )
     if (query.monitored !== undefined)
       where.push(eq(mediaItems.monitored, query.monitored === true || query.monitored === 'true'))
     if (query.cutoffUnmet !== undefined) where.push(eq(mediaItems.cutoffUnmet, query.cutoffUnmet))
@@ -418,7 +428,13 @@ export function createLibrary(ctx: Ctx, media: Media) {
     if (input.versions.length === 0 || input.versions.length > MAX_VERSIONS)
       throw invalid('A movie has one to ten versions.', 'versions')
     for (const v of input.versions) media.profiles.get(v.qualityProfileId)
-    checkLanguageProfile(input.languageProfileId ?? null)
+    // left out, the folder's default (checkpoint 8c); null is a choice of none
+    const languageProfileId =
+      input.languageProfileId === undefined
+        ? (media.rootFolders.find(rootFolder)?.languageProfileId ?? null)
+        : input.languageProfileId
+    checkLanguageProfile(languageProfileId)
+    const tagIds = media.tags.check(input.tags)
     checkLabels(input.versions.map((v) => v.label))
 
     const meta = await metadata.movie(input.tmdbId)
@@ -439,7 +455,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
           monitored: input.monitored,
           minimumAvailability: input.minimumAvailability,
           qualityProfileId: first.qualityProfileId,
-          languageProfileId: input.languageProfileId ?? null,
+          languageProfileId,
           rootFolder,
           path: moviePath(rootFolder, meta.title, meta.year),
           addedAt: now,
@@ -463,6 +479,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
           })),
         )
         .run()
+      for (const tagId of tagIds) tx.insert(mediaItemTags).values({ itemId, tagId }).run()
       return true
     })
     const row = requireRow(input.tmdbId)
@@ -535,6 +552,8 @@ export function createLibrary(ctx: Ctx, media: Media) {
       sizes: media.qualitySizes(),
       existing: version ? existingOf(version, profile, meta) : null,
       versionId: version?.id ?? null,
+      // an indexer with tags serves only movies sharing one (checkpoint 8c)
+      tags: media.tags.ofItems([row.id]).get(row.id) ?? [],
     }
   }
 
@@ -599,6 +618,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
       checkLanguageProfile(patch.languageProfileId)
       set.languageProfileId = patch.languageProfileId
     }
+    if (patch.tags !== undefined) media.tags.apply([row.id], patch.tags, 'replace')
     const next = { ...row, ...set }
     if (!keepStatus(row.status))
       set.status = statusOf(
@@ -679,6 +699,7 @@ export function createLibrary(ctx: Ctx, media: Media) {
     }
     if (input.action === 'setQualityProfile') media.profiles.get(input.qualityProfileId)
     if (input.action === 'setLanguageProfile') checkLanguageProfile(input.languageProfileId)
+    if (input.action === 'setTags') media.tags.check(input.tagIds)
     const { rows, missing } = resolve(input.ids)
     const itemIds = rows.map((r) => r.id)
     const tmdbIds = rows.map((r) => r.tmdbId)
@@ -716,10 +737,13 @@ export function createLibrary(ctx: Ctx, media: Media) {
           for (const part of chunks(itemIds))
             tx.delete(mediaItems).where(inArray(mediaItems.id, part)).run()
           break
+        case 'setTags':
         case 'refresh':
           break
       }
     })
+    // tags write in their own transaction (`apply`), after the ids were checked above
+    if (input.action === 'setTags') media.tags.apply(itemIds, input.tagIds, input.mode)
     if (input.action === 'refresh') for (const id of tmdbIds) metadata.refresh(id)
     else announce(events, tmdbIds, { many: tmdbIds.length > 1 })
     return { ids: tmdbIds, missing }

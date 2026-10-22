@@ -2,14 +2,15 @@
 // Automation (checkpoint 8a) in the booted runtime, against the fake indexer and TMDB's recordings:
 // RSS grabs a release once across two runs and only what's new, a blocklisted release is refused,
 // a file under the cutoff is upgraded by a search, the sweep searches what's due, and a movie
-// deleted with "Don't add it again" is excluded from lists.
+// deleted with "Don't add it again" is excluded from lists; and a profile's Wait before grabbing
+// (8c) holds RSS's find back until its wait is up.
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import type { Fetch } from '@highsea/core'
+import { createFakeClock, type FakeClock, type Fetch } from '@highsea/core'
 import { schema } from '@highsea/db'
-import { createFakeIndexer, FAKE_CREDENTIALS, FAKE_ORIGIN } from '@highsea/indexers/fake'
+import { createFakeIndexer, FAKE_CREDENTIALS, FAKE_NOW, FAKE_ORIGIN } from '@highsea/indexers/fake'
 import { createReplayFetch } from '@highsea/metadata/replay'
 import { eq } from 'drizzle-orm'
 import { boot, getRuntime, hasRuntime, loadConfig } from '../src/index.ts'
@@ -24,7 +25,7 @@ afterEach(async () => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true })
 })
 
-async function start() {
+async function start({ clock }: { clock?: FakeClock } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'highsea-rt-automation-'))
   dirs.push(dir)
   const fake = createFakeIndexer()
@@ -45,6 +46,7 @@ async function start() {
     indexerTimeoutMs: 2000,
     torrent: { offline: true },
     fetch,
+    clock,
   })
   await rt.metadata.settings.setKey('test-tmdb-key')
   rt.metadata.settings.update({ region: 'US' })
@@ -125,6 +127,55 @@ describe('RSS', () => {
       kind: 'rejected',
       message: 'On this movie’s blocklist',
     })
+  })
+})
+
+describe('wait before grabbing', () => {
+  test('RSS holds a new release back, and the held job grabs it once the wait is up', async () => {
+    // the fake indexer's uploads are dated from its fixed now, so the server's clock is too
+    const clock = createFakeClock(FAKE_NOW)
+    const { rt, fake, add, grabs } = await start({ clock })
+    // a first run reads the feed, so only what's published after it is new
+    await add(SINTEL)
+    await rt.automation.rss()
+    expect(grabs()).toEqual(['Sintel.2010.1080p.BluRay.x264-GRP'])
+    const { id: _, builtIn: __, ...hd } = rt.media.profiles.get('qp-hd')
+    rt.media.profiles.save('qp-hd', { ...hd, waitMinutes: 120 })
+    await add(BIG_BUCK_BUNNY)
+    const release = (id: number, name: string) =>
+      fake.publish({
+        id,
+        name,
+        size: 3 * GB,
+        seeders: 40,
+        leechers: 1,
+        category: 2040,
+        tmdbId: BIG_BUCK_BUNNY,
+        imdbId: 'tt1254207',
+        ageMinutes: 1,
+        freeleech: false,
+        grabs: 0,
+      })
+    // a WEB-DL, below HD 1080p's most preferred Bluray-1080p, uploaded a minute ago
+    release(901, 'Big.Buck.Bunny.2008.1080p.WEB-DL.DDP5.1.H.264-NEW')
+    expect((await rt.automation.rss()).matched).toEqual([BIG_BUCK_BUNNY])
+    expect(grabs()).toEqual(['Sintel.2010.1080p.BluRay.x264-GRP'])
+    const heldJobs = () =>
+      rt.db.select().from(schema.jobs).where(eq(schema.jobs.type, 'movies.held')).all()
+    // two hours from the upload, not from now
+    expect(heldJobs().map((j) => j.runAt)).toEqual([FAKE_NOW + 119 * 60_000])
+
+    // another upload for it: still held, under the same job
+    release(902, 'Big.Buck.Bunny.2008.720p.WEB-DL.DDP5.1.H.264-NEW')
+    await rt.automation.rss()
+    expect(heldJobs()).toHaveLength(1)
+    expect(grabs()).toHaveLength(1)
+
+    // the wait is up: the job grabs the best release found
+    clock.advance(120 * 60_000)
+    await rt.jobs.tick()
+    await rt.jobs.idle()
+    expect(grabs()).toContain('Big.Buck.Bunny.2008.1080p.WEB-DL.DDP5.1.H.264-NEW')
   })
 })
 

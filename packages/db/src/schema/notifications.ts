@@ -3,6 +3,7 @@
 // (Discord, ntfy, email and the rest), each choosing the events it hears; a log of what was sent,
 // kept 30 days; and the browsers that asked for web push. A connection's secrets (tokens,
 // passwords, webhook addresses) are sealed inside `settings` with the server's key.
+import { sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 import { users } from './auth.ts'
 
@@ -44,6 +45,8 @@ export const connections = sqliteTable('connections', {
   settings: text('settings', { mode: 'json' }).notNull(),
   /** Email only: this connection sends the server's mail (invites and password resets). */
   serverMail: integer('server_mail', { mode: 'boolean' }).notNull().default(false),
+  /** Tags (checkpoint 8c): when set, a movie's events reach it only for movies carrying one of them. Ids from `tags`. */
+  tags: text('tags', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
   createdAt: integer('created_at').notNull(),
   updatedAt: integer('updated_at').notNull(),
 })

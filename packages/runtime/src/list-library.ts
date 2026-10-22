@@ -49,7 +49,9 @@ export function createListLibrary(deps: {
         rootFolder: input.rootFolder,
         monitored: input.monitored,
         minimumAvailability: input.minimumAvailability,
-        languageProfileId: input.languageProfileId,
+        // a list without its own language profile takes the folder's default (checkpoint 8c)
+        ...(input.languageProfileId === null ? {} : { languageProfileId: input.languageProfileId }),
+        tags: input.tags,
         versions: [{ label: profile.name.slice(0, 40), qualityProfileId: profile.id }],
         searchNow: input.searchNow,
       })
@@ -71,6 +73,7 @@ export function createListLibrary(deps: {
           .get()
       )
         throw invalid('Pick one of the language profiles.', 'languageProfileId')
+      return input.tags && media.tags.check(input.tags)
     },
     canSearch: deps.canSearch,
     /** Library movies' titles and years, for exclusions. */

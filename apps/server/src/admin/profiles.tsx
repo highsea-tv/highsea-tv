@@ -1,9 +1,10 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Profiles and formats and › Quality sizes (settings.md), ported from the prototype's
-// reference areas with real data and read-only until checkpoint 8 (decision 3): the controls that
-// edit stay in place, inert, with a tooltip saying editing comes later. A format's conditions read
-// as @highsea/quality describes them.
+// reference areas with real data. A format's conditions read as @highsea/quality describes them.
+// Since checkpoint 8c, Edit, New profile, New format and Edit sizes open the editors
+// (quality-editors.tsx), and a preset someone changed reads as theirs. The catalog's profile
+// presets stay inert, with a tooltip: the catalog has none to add yet.
 import type { QualitySize } from '@highsea/api-contract'
 import { bytes } from '@highsea/core/format'
 import { useLocale, useT } from '@highsea/i18n/react'
@@ -28,7 +29,7 @@ import { Loadable } from './loadable.tsx'
 import { profiles as messages, sizes as sizeMessages } from './profiles-messages.ts'
 import { AreaPage, Group } from './settings.tsx'
 
-/** An editing control that comes in checkpoint 8: focusable, so its tooltip is reachable. */
+/** A preset the catalog doesn't have yet: focusable, so its tooltip is reachable. */
 function Later({ children, className, ...props }: Omit<ButtonProps, 'onClick' | 'disabled'>) {
   const t = useT(messages)
   return (
@@ -54,7 +55,14 @@ export function Profiles() {
     'settings.updated',
   ])
   return (
-    <AreaPage id="profiles" actions={<Later icon="add">{t('newProfile')}</Later>}>
+    <AreaPage
+      id="profiles"
+      actions={
+        <Button icon="add" asChild>
+          <a href="/settings/profiles/new">{t('newProfile')}</a>
+        </Button>
+      }
+    >
       <Group title={t('profiles.title')} description={t('profiles.description')}>
         <Loadable query={profiles} what={t('profiles.what')}>
           {(ps) =>
@@ -92,11 +100,19 @@ export function Profiles() {
                           ? t('profiles.upgrades', { cutoff: p.cutoff })
                           : t('profiles.noUpgrades')}{' '}
                         · {t('profiles.scores', { count: p.formats.length })}
+                        {p.waitMinutes > 0 && (
+                          <> · {t('profiles.wait', { minutes: p.waitMinutes })}</>
+                        )}
                       </p>
                     </div>
-                    <Later size="sm" icon="edit" aria-label={t('editLabel', { name: p.name })}>
-                      {t('edit')}
-                    </Later>
+                    <Button size="sm" icon="edit" asChild>
+                      <a
+                        href={`/settings/profiles/${p.id}`}
+                        aria-label={t('editLabel', { name: p.name })}
+                      >
+                        {t('edit')}
+                      </a>
+                    </Button>
                   </li>
                 ))}
               </ul>
@@ -122,14 +138,23 @@ export function Profiles() {
                   <TableBody>
                     {fs.map((f) => (
                       <TableRow key={f.id}>
-                        <TableCell className="text-text">{f.name}</TableCell>
+                        <TableCell className="text-text">
+                          <a
+                            href={`/settings/profiles/formats/${f.id}`}
+                            className="rounded-sm outline-none hover:underline focus-visible:ring-focus"
+                          >
+                            {f.name}
+                          </a>
+                        </TableCell>
                         <TableCell className="whitespace-normal break-words font-mono text-figure text-text-2">
                           {describeFormat(f, locale).join(' · ')}
                         </TableCell>
                         <TableCell>
-                          <Badge tone={f.source === 'preset' ? 'info' : 'neutral'}>
-                            {f.source === 'preset' ? t('formats.preset') : t('formats.custom')}
-                          </Badge>
+                          {f.source === 'preset' && !f.edited ? (
+                            <Badge tone="info">{t('formats.preset')}</Badge>
+                          ) : (
+                            <Badge tone="neutral">{t('formats.custom')}</Badge>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
@@ -139,6 +164,9 @@ export function Profiles() {
             )
           }
         </Loadable>
+        <Button size="sm" variant="secondary" icon="add" className="justify-self-start" asChild>
+          <a href="/settings/profiles/formats/new">{t('newFormat')}</a>
+        </Button>
       </Group>
       <Group title={t('presets.title')} description={t('presets.description')}>
         <ul className="grid gap-2 medium:grid-cols-3">
@@ -179,7 +207,14 @@ export function QualitySizes() {
     'settings.updated',
   ])
   return (
-    <AreaPage id="quality">
+    <AreaPage
+      id="quality"
+      actions={
+        <Button icon="edit" asChild>
+          <a href="/settings/quality/sizes">{t('edit')}</a>
+        </Button>
+      }
+    >
       <Group title={t('title')} description={t('description')}>
         <Loadable query={data} what={t('what')}>
           {(rows) =>

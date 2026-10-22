@@ -51,5 +51,6 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0045](0045-automation.md) | Automation: RSS, the backlog sweep, upgrades, import lists and the calendar feed | Accepted |
 | [0046](0046-notifications.md) | Notifications: the event catalogue, channels as code, delivery, email and web push | Accepted |
 | [0047](0047-operations.md) | The owner's tools: backups and restore, the log, crash reports, updates and /metrics | Accepted |
+| [0048](0048-curation.md) | Curation: announcements and featured sections, resolved per person and app | Accepted |
 
 Template: copy [`template.md`](template.md).

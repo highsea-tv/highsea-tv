@@ -35,6 +35,8 @@ const expected: Record<Access, Record<Caller, 200 | 401 | 403>> = {
 
 /** The client API and each person's own account: everything signed-in users may call. */
 const USER_ROUTES = [
+  'announcements.active',
+  'announcements.seen',
   'appearance.get',
   'appearance.soundPack',
   'auth.approvePairing',
@@ -45,6 +47,7 @@ const USER_ROUTES = [
   'devices.revoke',
   'home.layout',
   'home.saveLayout',
+  'home.sections',
   'library.item',
   'library.list',
   'library.search',

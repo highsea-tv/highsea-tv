@@ -11,17 +11,27 @@
 //   pushed back 1, 3, 7, then 14 days (the owner's answer 3).
 // Every search judges releases with the movie's blocklist and its version's file, so a release
 // that's blocklisted or isn't an upgrade is never grabbed.
+//
+// Wait before grabbing (checkpoint 8c): RSS and the sweep hold a release back while its profile's
+// wait runs, counted from its upload, as Radarr's delay profiles are
+// (https://wiki.servarr.com/radarr/settings#how-delay-profiles-work: "any manual searches for
+// content (non-RSS feed searches) will ignore delay profile settings", so Search, Search all and
+// Search now never wait). A held movie is looked at again when the wait is up, by
+// `movies.held`, which grabs the best release found by then.
 import { AppError, type EventBus, type Logger } from '@highsea/core'
 import type { Downloads } from '@highsea/downloads'
 import type { Indexers, SearchInput } from '@highsea/indexers'
 import type { JobQueue } from '@highsea/jobs'
 import { type Movies, WANTED_TOPIC } from '@highsea/media/movies'
+import { holdUntil } from '@highsea/quality'
 import { z } from 'zod'
 
 /** Searches indexers for a movie in the background: Search, Search all and Search now queue it. */
 export const MOVIE_SEARCH_JOB = 'movies.search'
 export const RSS_JOB = 'indexers.rss'
 export const WANTED_JOB = 'movies.wanted'
+/** A movie whose best release was held back, looked at again once the wait is up. */
+export const HELD_JOB = 'movies.held'
 
 const MINUTE = 60_000
 export const RSS_EVERY_MS = 15 * MINUTE
@@ -36,6 +46,7 @@ export function createAutomation(deps: {
   downloads: Downloads
   /** A library movie's row id, or null when it isn't in the library. */
   itemId: (tmdbId: number) => string | null
+  now: () => number
 }) {
   const { jobs, events, movies, indexers, downloads } = deps
   const log = deps.logger.child('automation')
@@ -58,12 +69,35 @@ export function createAutomation(deps: {
   }
 
   /**
+   * Grabs the best release for a version on its own: RSS, the sweep and `movies.held`. The
+   * version's profile may hold the best one back; then `movies.held` is queued for when its wait
+   * is up (one per version: a second hold keeps the first's time).
+   */
+  function grabAutomatically(itemId: string, tmdbId: number, versionId: string | null) {
+    const profile = inputFor(tmdbId, versionId)?.profile
+    return downloads.grabBest(itemId, versionId, {
+      hold: (r) => (profile ? holdUntil(profile, r, deps.now()) : null),
+      onHold: (until) =>
+        jobs.enqueue(
+          HELD_JOB,
+          { tmdbId, versionId },
+          { runAt: until, dedupeKey: `held:${tmdbId}:${versionId ?? ''}` },
+        ),
+    })
+  }
+
+  /**
    * Searches for a movie and grabs for each version that wants something: a file, or (cutoff
    * unmet) a better one. Without a version, the first's search is shown in the movie's Search tab.
    * Returns whether anything was grabbed. Safe to repeat: `grabBest` skips a version already
-   * downloading and releases tried before.
+   * downloading and releases tried before. `automatic` (the sweep) lets a profile's wait hold a
+   * release back; a search someone asked for never waits.
    */
-  async function searchMovie(tmdbId: number, versionId?: string | null): Promise<boolean> {
+  async function searchMovie(
+    tmdbId: number,
+    versionId?: string | null,
+    { automatic = false } = {},
+  ): Promise<boolean> {
     const itemId = deps.itemId(tmdbId)
     if (!itemId) return false
     const wants = movies.wanted.wants(tmdbId).filter((w) => !versionId || w.versionId === versionId)
@@ -81,7 +115,10 @@ export function createAutomation(deps: {
         searched: result.searched,
       })
       if (!wants.length || !result.releases.some((r) => r.approved)) continue
-      if (await downloads.grabBest(itemId, version)) grabbed = true
+      const got = automatic
+        ? await grabAutomatically(itemId, tmdbId, version)
+        : await downloads.grabBest(itemId, version)
+      if (got) grabbed = true
     }
     return grabbed
   }
@@ -113,7 +150,7 @@ export function createAutomation(deps: {
       const itemId = deps.itemId(tmdbId)
       if (!itemId) continue
       for (const want of movies.wanted.wants(tmdbId).slice(0, 1))
-        if (await downloads.grabBest(itemId, want.versionId)) {
+        if (await grabAutomatically(itemId, tmdbId, want.versionId)) {
           grabbed++
           movies.wanted.found(tmdbId)
         }
@@ -145,7 +182,7 @@ export function createAutomation(deps: {
     const due = movies.wanted.takeDue()
     for (const tmdbId of due)
       try {
-        if (await searchMovie(tmdbId)) movies.wanted.found(tmdbId)
+        if (await searchMovie(tmdbId, null, { automatic: true })) movies.wanted.found(tmdbId)
       } catch (e) {
         log.warn('a sweep search failed', { tmdbId, error: (e as Error).message })
       }
@@ -163,6 +200,23 @@ export function createAutomation(deps: {
     timeoutMs: 60 * MINUTE,
     async run() {
       await sweep()
+    },
+  })
+
+  jobs.define({
+    type: HELD_JOB,
+    payload: z.object({ tmdbId: z.number().int(), versionId: z.string().nullable() }),
+    attempts: 2,
+    // safe to repeat: a version that's downloading by then is skipped, and a release still held
+    // (a better one turned up meanwhile) queues the job again for its own time
+    async run({ tmdbId, versionId }) {
+      const itemId = deps.itemId(tmdbId)
+      if (!itemId) return
+      if (!movies.wanted.wants(tmdbId).some((w) => w.versionId === versionId)) return
+      if (await grabAutomatically(itemId, tmdbId, versionId)) {
+        movies.wanted.found(tmdbId)
+        events.emit({ topic: WANTED_TOPIC })
+      }
     },
   })
 

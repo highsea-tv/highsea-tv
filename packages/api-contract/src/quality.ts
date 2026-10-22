@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Quality (checkpoint 4, ADR 0031): profiles, custom formats and sizes, read-only until their
-// editors come with checkpoint 8 (decision 3); the parser, for checking a release name by hand; and
+// Quality (checkpoint 4, ADR 0031): profiles, custom formats and sizes, written by their editors
+// since checkpoint 8c; the parser, for checking a release name by hand; and
 // the language profiles the add dialog offers (seeded and edited in checkpoint 7). The shapes mirror
 // @highsea/parser's `ParsedRelease` and @highsea/quality's types.
 import { createRoute, z } from '@hono/zod-openapi'
-import { API_PREFIX, access, errors, IdParam, json } from './common.ts'
+import { API_PREFIX, access, body, errors, IdParam, json, noContent } from './common.ts'
 
 // ---------------------------------------------------------------- vocabulary (@highsea/parser)
 
@@ -84,8 +84,21 @@ export const QualityProfile = z
       .string()
       .regex(/^([a-z]{2}|original|any)$/)
       .openapi({ example: 'original' }),
+    /**
+     * Minutes RSS and the backlog sweep wait from a release's upload for a better one (Radarr's
+     * delay profile). A release in the most preferred item goes at once; searches someone asks
+     * for never wait. 0: no wait.
+     */
+    waitMinutes: z.number().int().min(0).max(10080),
+    /** One of the profiles highsea starts with. Editable all the same. */
+    builtIn: z.boolean(),
   })
   .openapi('QualityProfile')
+
+/** A profile as the editor saves it: highsea gives a new one its id. */
+export const QualityProfileInput = QualityProfile.omit({ id: true, builtIn: true })
+  .extend({ waitMinutes: z.number().int().min(0).max(10080).optional() })
+  .openapi('QualityProfileInput')
 
 // ---------------------------------------------------------------- custom formats
 
@@ -175,8 +188,18 @@ export const CustomFormat = z
     source: z.enum(['preset', 'custom']),
     /** The TRaSH Guides' id, for presets; null for the owner's own. */
     trashId: z.string().nullable(),
+    /**
+     * A preset the owner has changed: "Yours". highsea's updates to the bundled presets leave it
+     * alone from then on.
+     */
+    edited: z.boolean(),
   })
   .openapi('CustomFormat')
+
+/** A format as the editor saves it: its name and conditions. */
+export const CustomFormatInput = CustomFormat.pick({ name: true, conditions: true }).openapi(
+  'CustomFormatInput',
+)
 
 // ---------------------------------------------------------------- sizes
 
@@ -281,8 +304,7 @@ export const quality = {
     path: `${API_PREFIX}/qualityprofiles`,
     tags: ['Quality'],
     summary: 'Quality profiles',
-    description:
-      'Read-only until checkpoint 8. Everyone signed in reads them: a movie’s versions name theirs.',
+    description: 'In the owner’s order: the add dialog suggests the first.',
     ...access('staff'),
     responses: { 200: json(z.array(QualityProfile), 'Profiles'), ...errors('unauthorized') },
   }),
@@ -298,17 +320,105 @@ export const quality = {
       ...errors('unauthorized', 'not-found'),
     },
   }),
+  addProfile: createRoute({
+    method: 'post',
+    path: `${API_PREFIX}/qualityprofiles`,
+    tags: ['Quality'],
+    summary: 'Add a quality profile',
+    description:
+      'It goes last in the order. 400 when the profile doesn’t hold together (the cutoff must be a quality it wants); 409 `name-taken` when another profile has the name.',
+    ...access('staff'),
+    request: { ...body(QualityProfileInput) },
+    responses: {
+      201: json(QualityProfile, 'Added'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'conflict'),
+    },
+  }),
+  orderProfiles: createRoute({
+    method: 'put',
+    path: `${API_PREFIX}/qualityprofiles/order`,
+    tags: ['Quality'],
+    summary: 'Put the quality profiles in order',
+    description: 'Every profile’s id, once, first to last.',
+    ...access('staff'),
+    request: { ...body(z.object({ ids: z.array(z.string()).min(1) })) },
+    responses: {
+      200: json(z.array(QualityProfile), 'The profiles, in the new order'),
+      ...errors('invalid', 'unauthorized', 'forbidden'),
+    },
+  }),
+  saveProfile: createRoute({
+    method: 'put',
+    path: `${API_PREFIX}/qualityprofiles/{id}`,
+    tags: ['Quality'],
+    summary: 'Save a quality profile',
+    description:
+      'Movies using it are judged by it from the next search on. Scores for formats that don’t exist are dropped.',
+    ...access('staff'),
+    request: { params: IdParam, ...body(QualityProfileInput) },
+    responses: {
+      200: json(QualityProfile, 'Saved'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found', 'conflict'),
+    },
+  }),
+  removeProfile: createRoute({
+    method: 'delete',
+    path: `${API_PREFIX}/qualityprofiles/{id}`,
+    tags: ['Quality'],
+    summary: 'Delete a quality profile',
+    description:
+      '409 `in-use` while a movie uses it, with `details.movies`, as Radarr refuses; 409 `last-profile` for the only one left.',
+    ...access('staff'),
+    request: { params: IdParam },
+    responses: { ...noContent, ...errors('unauthorized', 'forbidden', 'not-found', 'conflict') },
+  }),
   customFormats: createRoute({
     method: 'get',
     path: `${API_PREFIX}/customformats`,
     tags: ['Quality'],
     summary: 'Custom formats',
-    description: 'Read-only until checkpoint 8.',
     ...access('staff'),
     responses: {
       200: json(z.array(CustomFormat), 'Formats'),
       ...errors('unauthorized', 'forbidden'),
     },
+  }),
+  addFormat: createRoute({
+    method: 'post',
+    path: `${API_PREFIX}/customformats`,
+    tags: ['Quality'],
+    summary: 'Add a custom format',
+    description:
+      'It scores 0 in every profile until one scores it. 400 with the first problem when a condition doesn’t hold together (a pattern that isn’t a regular expression, a range the wrong way round).',
+    ...access('staff'),
+    request: { ...body(CustomFormatInput) },
+    responses: {
+      201: json(CustomFormat, 'Added'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'conflict'),
+    },
+  }),
+  saveFormat: createRoute({
+    method: 'put',
+    path: `${API_PREFIX}/customformats/{id}`,
+    tags: ['Quality'],
+    summary: 'Save a custom format',
+    description: 'Saving a preset marks it `edited`, so highsea’s preset updates leave it alone.',
+    ...access('staff'),
+    request: { params: IdParam, ...body(CustomFormatInput) },
+    responses: {
+      200: json(CustomFormat, 'Saved'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found', 'conflict'),
+    },
+  }),
+  removeFormat: createRoute({
+    method: 'delete',
+    path: `${API_PREFIX}/customformats/{id}`,
+    tags: ['Quality'],
+    summary: 'Delete a custom format',
+    description: 'Its scores go from every profile, as Radarr removes them.',
+    ...access('staff'),
+    request: { params: IdParam },
+    responses: { ...noContent, ...errors('unauthorized', 'forbidden', 'not-found') },
   }),
   parse: createRoute({
     method: 'get',
@@ -326,8 +436,10 @@ export const quality = {
 
 export type QualityProfileItem = z.infer<typeof QualityProfileItem>
 export type QualityProfile = z.infer<typeof QualityProfile>
+export type QualityProfileInput = z.input<typeof QualityProfileInput>
 export type FormatCondition = z.infer<typeof FormatCondition>
 export type CustomFormat = z.infer<typeof CustomFormat>
+export type CustomFormatInput = z.infer<typeof CustomFormatInput>
 export type QualitySize = z.infer<typeof QualitySize>
 export type LanguageProfile = z.infer<typeof LanguageProfile>
 export type ParsedRelease = z.infer<typeof ParsedRelease>

@@ -70,6 +70,28 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
     return { items: items(rows, userId), next, total: library.internal.countOf(filters) }
   }
 
+  /**
+   * Titles by TMDB id, in the order given, with this person's watch state; ids not in the library
+   * are left out. Curation's sections and the home's rows read them (checkpoint 8c).
+   */
+  function byIds(tmdbIds: number[], userId: string): ClientItem[] {
+    if (!tmdbIds.length) return []
+    const rows = new Map<number, ItemRow>()
+    for (let i = 0; i < tmdbIds.length; i += 500)
+      for (const r of db
+        .select()
+        .from(mediaItems)
+        .where(
+          and(eq(mediaItems.type, 'movie'), inArray(mediaItems.tmdbId, tmdbIds.slice(i, i + 500))),
+        )
+        .all())
+        rows.set(r.tmdbId, r)
+    return items(
+      tmdbIds.flatMap((id) => rows.get(id) ?? []),
+      userId,
+    )
+  }
+
   /** A title's page and the player. 404 when it isn't in the library. */
   async function item(type: 'movie', tmdbId: number, userId: string): Promise<ClientDetail> {
     if (type !== 'movie') throw notInLibrary()
@@ -302,7 +324,7 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
     return { sections }
   }
 
-  return { list, item, search }
+  return { list, item, search, byIds }
 }
 
 export type Client = ReturnType<typeof createClient>

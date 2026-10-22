@@ -4,6 +4,7 @@
 // and hourly stats (ADR 0035); `releases` caches interactive search results so a grab can take one
 // by its guid without searching again. The catalog's installed version, channel and extra URLs are
 // the `catalog` settings row.
+import { sql } from 'drizzle-orm'
 import { index, integer, primaryKey, real, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 /**
@@ -52,6 +53,8 @@ export const indexers = sqliteTable(
     seedMinutes: integer('seed_minutes'),
     /** Private trackers' minimum seed time: never removed before it (hit-and-run). */
     minSeedMinutes: integer('min_seed_minutes'),
+    /** Tags (checkpoint 8c): when set, the indexer is used only for movies carrying one of them, as in Radarr. Ids from `tags`. */
+    tags: text('tags', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
     addedAt: integer('added_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },

@@ -156,11 +156,25 @@ export const settings = {
     path: `${SETTINGS}/qualitySizes`,
     tags: ['Settings'],
     summary: 'Quality sizes: MB per minute for each quality',
-    description: 'Read-only until checkpoint 8. The megabytes are MiB.',
+    description: 'The megabytes are MiB.',
     ...access('staff'),
     responses: {
       200: json(z.array(QualitySize), 'The sizes, lowest quality first'),
       ...errors('unauthorized', 'forbidden'),
+    },
+  }),
+  saveQualitySizes: createRoute({
+    method: 'put',
+    path: `${SETTINGS}/qualitySizes`,
+    tags: ['Settings'],
+    summary: 'Save the quality sizes',
+    description:
+      'Every quality once. 400 when a row’s preferred size or maximum is below its minimum, or the preferred size above the maximum.',
+    ...access('staff'),
+    request: { ...body(z.array(QualitySize)) },
+    responses: {
+      200: json(z.array(QualitySize), 'Saved, lowest quality first'),
+      ...errors('invalid', 'unauthorized', 'forbidden'),
     },
   }),
   metadata: createRoute({

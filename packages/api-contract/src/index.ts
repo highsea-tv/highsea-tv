@@ -6,6 +6,7 @@
 export * from './accounts.ts'
 export * from './common.ts'
 export * from './connections.ts'
+export * from './curation.ts'
 export * from './downloads.ts'
 export * from './events.ts'
 export * from './importers.ts'
@@ -22,11 +23,13 @@ export * from './settings.ts'
 export * from './setup.ts'
 export * from './subtitles.ts'
 export * from './system.ts'
+export * from './tags.ts'
 export * from './vpn.ts'
 export * from './wanted.ts'
 
 import { apiKeys, audit, auth, devices, links, me, users } from './accounts.ts'
 import { connections, pushSubscriptions } from './connections.ts'
+import { announcements, clientHome, curation } from './curation.ts'
 import {
   blocklist,
   downloadSettingsRoutes,
@@ -52,6 +55,7 @@ import { settings } from './settings.ts'
 import { setup } from './setup.ts'
 import { subtitles } from './subtitles.ts'
 import { system } from './system.ts'
+import { tags } from './tags.ts'
 import { vpn } from './vpn.ts'
 import { wanted } from './wanted.ts'
 
@@ -69,7 +73,7 @@ export const routes = {
   audit,
   dashboard,
   preferences,
-  home,
+  home: { ...home, ...clientHome },
   appearance,
   movies: { ...movies, ...releaseRoutes, ...movieDownloadRoutes },
   metadata,
@@ -92,4 +96,7 @@ export const routes = {
   importLists,
   connections,
   pushSubscriptions,
+  curation,
+  announcements,
+  tags,
 } as const

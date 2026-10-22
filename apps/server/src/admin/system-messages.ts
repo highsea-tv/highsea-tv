@@ -67,6 +67,7 @@ export const system = defineMessages({
   'task.catalog.check': 'Check the indexer catalog',
   'task.catalog.check.vpn-providers': 'Check the VPN providers',
   'task.downloads.ip-blocklist': 'Update the IP blocklist',
+  'task.curation.schedule': 'Start and end announcements and featured sections',
   'task.downloads.stall': 'Check for stalled downloads',
   'task.indexers.prune': 'Clear old indexer results',
   'task.indexers.rss': 'RSS sync',

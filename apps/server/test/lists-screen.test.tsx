@@ -201,6 +201,7 @@ describe('Settings › Import lists', () => {
       monitored: true,
       minimumAvailability: 'released',
       searchOnAdd: false,
+      tags: [],
     })
     expect(page.queryByRole('dialog')).toBeNull()
   })

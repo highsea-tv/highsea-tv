@@ -32,7 +32,7 @@ export const RadarrPreviewInput = RadarrConnection.extend({ pathMappings: PathMa
 )
 
 export const RadarrRunInput = RadarrPreviewInput.extend({
-  /** Radarr's profile id → highsea's; one left out takes the nearest. */
+  /** Radarr's profile id → highsea's, or `copy` to bring it across as it is; one left out takes the nearest. */
   profiles: z.record(z.string(), z.string().min(1).max(64)).optional(),
   /** Bring Radarr's naming format and file settings across. On when left out. */
   settings: z.boolean().optional(),
@@ -58,7 +58,10 @@ export const RadarrPreview = z
         name: z.string(),
         cutoff: z.string(),
         movies: z.number().int(),
-        /** highsea's profile ids, nearest by cutoff first; the first is the suggestion. */
+        /**
+         * highsea's profile ids, nearest by cutoff first; the first is the suggestion. `copy`, last,
+         * brings Radarr's profile across as it is, when it can be.
+         */
         options: z.array(z.string()),
       }),
     ),

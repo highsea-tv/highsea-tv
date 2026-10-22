@@ -14,12 +14,12 @@ export type HomeLayout = { order: string[]; hidden: string[] }
  */
 export type HomeRow = { id: string; title: string | null }
 
-/** The rows every server has. Curated rows join them when curation is built. */
+/** The rows every server has. The runtime adds the person's live featured rows (checkpoint 8c). */
 export const BUILT_IN_ROWS: HomeRow[] = [{ id: 'continue', title: null }]
 
 export const HOME_IDS_MAX = 200
 
-export function createHome(ctx: Ctx, offered: () => HomeRow[] = () => BUILT_IN_ROWS) {
+export function createHome(ctx: Ctx, offered: (userId: string) => HomeRow[] = () => BUILT_IN_ROWS) {
   const { db, clock, events } = ctx
 
   const mine = (userId: string): HomeLayout => {
@@ -35,7 +35,7 @@ export function createHome(ctx: Ctx, offered: () => HomeRow[] = () => BUILT_IN_R
 
   const layout = (userId: string): HomeLayout & { rows: HomeRow[] } => {
     const own = mine(userId)
-    const rows = offered()
+    const rows = offered(userId)
     const pos = (id: string) => {
       const i = own.order.indexOf(id)
       return i < 0 ? HOME_IDS_MAX + rows.findIndex((r) => r.id === id) : i
@@ -56,7 +56,7 @@ export function createHome(ctx: Ctx, offered: () => HomeRow[] = () => BUILT_IN_R
         .values({ userId, ...values })
         .onConflictDoUpdate({ target: schema.homeLayouts.userId, set: values })
         .run()
-      events.emit({ topic: 'home.updated', ids: [userId] })
+      events.emit({ topic: 'home.updated', ids: [userId], to: [userId] })
       return layout(userId)
     },
   }

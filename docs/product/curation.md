@@ -105,6 +105,32 @@ Two columns from expanded (the form at 22–28rem, the preview beside it and sti
 - **"Reach" counts people, not devices,** and only accepted accounts: invites don't count until they join.
 - **Rules, not just picks.** A rule section (recently added, a genre, a collection, a filter) keeps itself fresh; a section whose rule matches nothing hides rather than showing an empty row.
 
+## As built (8c)
+
+Built in checkpoint 8c, on 2026-10-21: `/curation`, `/curation/featured`, and the composers at `/curation/announcements/{id|new}` and `/curation/featured/{id|new}`, in `apps/server` (`src/admin/curation*.tsx`). The server side is `@highsea/curation/service` ([ADR 0048](../adr/0048-curation.md)). What real data changed from the prototype:
+
+- **The preview is the server's own drawing** of a home screen, at `/curation-frame`. The prototype framed the real client screens, and those arrive in Phase 4. The frame is the device's size: TV at 1600 × 900, the web at 1280 × 800, a phone at 390 × 844. It is scaled to fit and inert, as specified, and the admin posts it the result of `POST /curation/preview`. It follows the draft about 150 ms after typing stops.
+- **Preview as** lists every accepted person, not the prototype's Ines and Ruth, and starts on you.
+- **Only titles with a file** show: in a section, in the picker and in what a rule picks. This is the prototype's "playable" until streaming arrives. The picker searches the library by title.
+- **A collection rule** stores the collection's TMDB id. The list's summary names the collection from the rule options.
+- **The filter rule** takes `year` and `rating` comparisons (`<`, `<=`, `=`, `>=`, `>`), joined by `and`, with rating out of 5. Anything else is refused with the hint's own words.
+- **Rule orders:**
+  - recently added: newest first;
+  - a genre and a filter: best rated first;
+  - a collection: release order.
+- **The first hero leads** wherever it sits in the order. Another hero shows as a row, and a person can arrange it on their own home screen.
+- **The sections' order saves whole** (`PUT /api/v1/curation/sections/order`), not `moveSection(id, by)`. Deleting is `removeAnnouncement` and `removeSection`, and creating is a `POST` to the list.
+- **The apps' side is its own SDK group:**
+  - `home.sections({ query: { client } })` → `GET /api/v1/home`;
+  - `announcements.active({ query: { client } })` → `GET /api/v1/announcements`;
+  - `announcements.seen({ params: { id } })` → `POST /api/v1/announcements/{id}/seen`.
+- **Events:**
+  - `announcements.updated` and `home.updated` are personal. Each reaches only the people whose announcements or home screen changed.
+  - `curation.updated` is the admin's lists, and goes to staff only.
+  - The `curation.schedule` job runs every hour, and once more at each start and end.
+- **The admin's own announcements** show as banners above every admin page, as in the prototype's shell. Dismissing or acknowledging one counts toward its reach.
+- **Ending a scheduled announcement** marks it ended from now, so it never goes out.
+
 ## Open questions
 
 - **Per-title artwork overrides:** the data model has them; should the composer let the owner pick a still or upload art for the hero?

@@ -82,6 +82,8 @@ export type ConnectionInput = {
   settings: Record<string, unknown>
   /** Email only: this connection sends the server's mail. */
   serverMail?: boolean
+  /** Tag ids (checkpoint 8c), checked by the caller. */
+  tags?: string[]
 }
 
 /** A connection as the API shows it: secrets masked, with how its last message went. */
@@ -93,6 +95,7 @@ export type ConnectionView = {
   events: NotificationEvent[]
   settings: Record<string, unknown>
   serverMail: boolean
+  tags: string[]
   createdAt: number
   updatedAt: number
   lastSentAt: number | null
@@ -188,6 +191,11 @@ export function createNotifications(deps: {
   vapidSubject?: () => string | null
   /** Who the emails are from: the server's name, external URL, language, logo and posters. */
   mail?: () => MailBrand
+  /**
+   * A library movie's tag ids (checkpoint 8c), for connections with tags. The runtime hands it
+   * over, so notifications never import media (ADR 0036).
+   */
+  movieTags?: (tmdbId: number) => readonly string[]
 }) {
   const { db, clock, events, jobs, sealer } = deps
   const log = deps.logger.child('notifications')
@@ -196,6 +204,20 @@ export function createNotifications(deps: {
   const t = () => serviceMessages(locale())
 
   const channel = (kind: ConnectionKind): Channel<Record<string, unknown>> => CHANNELS[kind]
+
+  /**
+   * Whether a connection with tags hears an event (checkpoint 8c), as Radarr's do: "Only send
+   * notifications for movies with at least one matching tag" (its NotificationsTagsMovieHelpText).
+   * An event about no movie (health, updates, the test) reaches it as before; one about several
+   * (a list's additions) reaches it when any of them matches.
+   */
+  function hearsMovies(tags: readonly string[], payload: unknown): boolean {
+    if (!tags.length || !deps.movieTags) return true
+    const p = payload as { movie?: { tmdbId: number }; movies?: { tmdbId: number }[] }
+    const movies = p.movie ? [p.movie] : (p.movies ?? [])
+    if (!movies.length) return true
+    return movies.some((m) => deps.movieTags?.(m.tmdbId).some((t) => tags.includes(t)))
+  }
 
   type Row = typeof connections.$inferSelect
 
@@ -261,6 +283,7 @@ export function createNotifications(deps: {
       events: r.events,
       settings,
       serverMail: r.serverMail,
+      tags: r.tags,
       createdAt: r.createdAt,
       updatedAt: r.updatedAt,
       lastSentAt: lastSent?.at ?? null,
@@ -280,7 +303,7 @@ export function createNotifications(deps: {
       throw new AppError('invalid', 'Only an email connection can send the server’s mail.', {
         field: 'serverMail',
       })
-    return { name, events, serverMail: !!input.serverMail }
+    return { name, events, serverMail: !!input.serverMail, tags: [...new Set(input.tags ?? [])] }
   }
 
   /** Only one connection sends the server's mail. */
@@ -465,7 +488,7 @@ export function createNotifications(deps: {
     get: (id: string): ConnectionView => view(row(id)),
 
     add(input: ConnectionInput): ConnectionView {
-      const { name, events: heard, serverMail } = checkInput(input)
+      const { name, events: heard, serverMail, tags } = checkInput(input)
       const settings = resolve(input.kind, input.settings, null)
       const now = clock.now()
       const id = newId('con')
@@ -478,6 +501,7 @@ export function createNotifications(deps: {
           events: heard,
           settings: seal(input.kind, settings),
           serverMail: false,
+          tags,
           createdAt: now,
           updatedAt: now,
         })
@@ -491,7 +515,7 @@ export function createNotifications(deps: {
       const current = row(id)
       if (input.kind !== current.kind)
         throw new AppError('invalid', 'A connection’s kind can’t change.', { field: 'kind' })
-      const { name, events: heard, serverMail } = checkInput(input)
+      const { name, events: heard, serverMail, tags } = checkInput(input)
       const settings = resolve(current.kind, input.settings, open(current))
       db.update(connections)
         .set({
@@ -500,6 +524,7 @@ export function createNotifications(deps: {
           events: heard,
           settings: seal(current.kind, settings),
           serverMail: serverMail && current.serverMail,
+          tags,
           updatedAt: clock.now(),
         })
         .where(eq(connections.id, id))
@@ -554,7 +579,7 @@ export function createNotifications(deps: {
         .from(connections)
         .where(eq(connections.enabled, true))
         .all()
-        .filter((c) => c.events.includes(event))
+        .filter((c) => c.events.includes(event) && hearsMovies(c.tags, payload))
       const now = clock.now()
       let queued = 0
       for (const c of heard) {

@@ -52,7 +52,8 @@ export const migration = defineMessages({
   'radarr.root.movies': '{count, plural, one {# movie} other {# movies}}',
   'radarr.profiles': 'Quality profiles',
   'radarr.profiles.description':
-    'Each of Radarr’s profiles becomes the nearest of yours by its cutoff. Change any of them here.',
+    'Each of Radarr’s profiles becomes the nearest of yours by its cutoff. Change any of them here, or bring one across as it is.',
+  'radarr.profile.copy': 'Bring it across as it is',
   'radarr.profile.radarr': 'Radarr’s profile',
   'radarr.profile.cutoff': 'Cutoff',
   'radarr.profile.movies': 'Movies',

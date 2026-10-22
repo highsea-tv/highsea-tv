@@ -84,4 +84,6 @@ export const STAFF_TOPICS: readonly string[] = [
   OPERATIONS_TOPICS.logs,
   // connections are staff's (settings.md › Connections); the topic is CONNECTIONS_TOPICS's
   'connections.updated',
+  // the admin's curation lists (checkpoint 8c); the apps get CURATION_TOPICS's personal ones
+  'curation.updated',
 ]

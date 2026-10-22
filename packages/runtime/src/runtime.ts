@@ -33,6 +33,7 @@ import {
   type Sealer,
   systemClock,
 } from '@highsea/core'
+import { type Curation, createCuration } from '@highsea/curation/service'
 import {
   type Database,
   type Db,
@@ -103,6 +104,7 @@ import {
 } from './backups.ts'
 import { type BrowseListing, browse } from './browse.ts'
 import type { Config } from './config.ts'
+import { createCurationLibrary } from './curation-library.ts'
 import { homeRows } from './home-rows.ts'
 import { createListLibrary } from './list-library.ts'
 import { createLogFiles } from './logs.ts'
@@ -135,7 +137,14 @@ import {
 import { createWorkerPool, type WorkerPool } from './workers.ts'
 
 /** Milestone 1 has the server, the movie library, indexers, downloads and subtitles; later checkpoints add theirs. */
-const SOURCES: WidgetSource[] = ['system', 'movies', 'indexers', 'downloads', 'subtitles']
+const SOURCES: WidgetSource[] = [
+  'system',
+  'movies',
+  'indexers',
+  'downloads',
+  'subtitles',
+  'curation',
+]
 
 /** A provider's credit, in the wording its terms ask for. */
 export type Attribution = { name: string; notice: string; url: string }
@@ -250,6 +259,8 @@ export type Runtime = {
   automation: Automation
   /** Import lists (checkpoint 8a): TMDB, Trakt and generic lists adding movies. */
   lists: Lists
+  /** Curation (checkpoint 8c): announcements, featured sections and the apps' home. */
+  curation: Curation
   /** "Don't add it again from lists": library movies excluded, before they're deleted. */
   excludeFromLists(tmdbIds: number[]): void
   /** The BitTorrent engine (ADR 0037). */
@@ -797,6 +808,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     indexers,
     downloads,
     itemId: (tmdbId) => movieRow(tmdbId)?.id ?? null,
+    now: () => clock.now(),
   })
   automation.schedule(clock.now())
   // import lists (checkpoint 8a): through the fetch seam, Trakt's account sealed in a setting
@@ -927,8 +939,22 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       serverName: () => identity().name,
       rename,
     },
-    { homeRows: () => homeRows(db) },
+    // the person's live featured rows (checkpoint 8c), then the built-in ones
+    { homeRows: (userId) => [...curation.rows(userId), ...homeRows(db)] },
   )
+
+  // curation (8c): announcements and featured sections, resolved per person and app
+  const curation = createCuration({
+    db,
+    clock,
+    events,
+    jobs,
+    logger,
+    library: createCurationLibrary({ db, clock, movies }),
+    arrangement: (userId) => personalization.home.layout(userId),
+  })
+  curation.defineJobs()
+  curation.schedule(clock.now())
 
   // the owner's tools (8b): settings, logs, crash reports, backups, updates and /metrics
   const operations = createOperations({
@@ -980,6 +1006,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       poster: (tmdbId) => metadata.cachedMovie(tmdbId)?.art.poster ?? null,
       image: (parts) => metadata.images.get(parts),
     }),
+    // a connection with tags hears only movies sharing one (checkpoint 8c)
+    movieTags: (tmdbId) => media.tags.ofMovie(tmdbId),
     vapidSubject: () => {
       if (options.notifications?.vapidSubject !== undefined)
         return options.notifications.vapidSubject
@@ -1045,6 +1073,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     indexers,
     automation,
     lists,
+    curation,
     excludeFromLists: (tmdbIds) => lists.exclude(listLibrary.titles(tmdbIds)),
     engine,
     downloads,

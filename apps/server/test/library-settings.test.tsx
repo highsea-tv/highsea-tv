@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Checkpoint 4's settings and the widgets the library switches on, rendered against a fake of the
 // API: setup's TMDB key step (checked on Continue, skippable, sent with Finish), Settings › General
-// › Metadata, Media management's root folders, Profiles and formats and Quality sizes (read-only),
+// › Metadata, Media management's root folders, Profiles and formats and Quality sizes (their
+// editors are quality-editors-screen.test.tsx),
 // System › About with TMDB's notice, and the Upcoming, Calendar, Recently added and Storage widgets
 // with and without the `movies` source. Checkpoint 5 adds setup's indexer step, Settings › General
 // › Catalog, the catalog's version in About, and the Indexers widget; checkpoint 6a, Media
@@ -111,6 +112,7 @@ const folder = (id: string, path: string, total: number | null, movies: number) 
   device: total === null ? null : 'sda1',
   accessible: total !== null,
   movies,
+  languageProfileId: null as string | null,
 })
 
 type Request = { method: string; path: string; body: unknown }
@@ -257,6 +259,8 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
           minUpgradeFormatScore: 1,
           formats: [{ formatId: 'cf-x265', score: -100 }],
           language: 'original',
+          waitMinutes: 0,
+          builtIn: true,
         },
       ])
     case 'GET /api/v1/customformats':
@@ -266,6 +270,7 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
           name: 'x265',
           source: 'preset',
           trashId: null,
+          edited: false,
           conditions: [
             {
               kind: 'title',
@@ -800,7 +805,7 @@ describe('Settings › Media management › naming and importing', () => {
 })
 
 describe('Settings › Profiles and formats, Quality sizes', () => {
-  test('profiles list their allowed qualities with the cutoff; editing is inert', async () => {
+  test('profiles list their allowed qualities with the cutoff; Edit opens the editor', async () => {
     const { page } = await open(<Profiles />)
     const profile = page.getByText('HD 1080p').closest('li') as HTMLElement
     expect(within(profile).queryByText('Remux-1080p')).toBeNull()
@@ -808,16 +813,24 @@ describe('Settings › Profiles and formats, Quality sizes', () => {
     expect(
       within(profile).getByText(/Upgrades until Bluray-1080p · 1 custom format score/),
     ).toBeTruthy()
-    expect(
-      within(profile).getByRole('button', { name: 'Edit HD 1080p' }).getAttribute('aria-disabled'),
-    ).toBe('true')
+    expect(within(profile).getByRole('link', { name: 'Edit HD 1080p' }).getAttribute('href')).toBe(
+      '/settings/profiles/qp-hd',
+    )
+    expect(page.getByRole('link', { name: 'New profile' }).getAttribute('href')).toBe(
+      '/settings/profiles/new',
+    )
     const formats = page.getByRole('table', { name: 'Custom formats' })
-    expect(within(formats).getByText('x265')).toBeTruthy()
+    expect(within(formats).getByRole('link', { name: 'x265' }).getAttribute('href')).toBe(
+      '/settings/profiles/formats/cf-x265',
+    )
     expect(within(formats).getByText('Preset')).toBeTruthy()
   })
 
-  test('sizes are read-only, in MiB, with what a 2-hour film comes to', async () => {
+  test('sizes read in MiB, with what a 2-hour film comes to; Edit sizes opens the editor', async () => {
     const { page } = await open(<QualitySizes />)
+    expect(page.getByRole('link', { name: 'Edit sizes' }).getAttribute('href')).toBe(
+      '/settings/quality/sizes',
+    )
     const table = page.getByRole('table', { name: 'Sizes per minute of runtime' })
     expect(within(table).queryByRole('spinbutton')).toBeNull()
     expect(within(table).getByText('6.3 GB–50.3 GB')).toBeTruthy()

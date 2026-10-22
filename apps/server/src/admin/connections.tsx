@@ -38,6 +38,8 @@ import { useEffect, useState } from 'react'
 import { connections as messages } from './connections-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { AreaPage, Group } from './settings.tsx'
+import { TagPicker } from './tag-picker.tsx'
+import { tagsMessages } from './tags-messages.ts'
 import { useRelative } from './time.ts'
 
 type T = Translate<typeof messages>
@@ -187,6 +189,7 @@ const inputOf = (c: Connection): ConnectionInput => ({
   events: c.events,
   settings: c.settings,
   serverMail: c.serverMail,
+  tags: c.tags,
 })
 
 // ---------------------------------------------------------------- the page
@@ -424,10 +427,12 @@ function ConnectionForm({
   onSaved: () => void
 }) {
   const t = useT(messages)
+  const tt = useT(tagsMessages)
   const [name, setName] = useState(connection?.name ?? t(`kind.${kind}`))
   const [enabled, setEnabled] = useState(connection?.enabled ?? true)
   const [events, setEvents] = useState<Event[]>(connection?.events ?? DEFAULT_EVENTS)
   const [serverMail, setServerMail] = useState(connection?.serverMail ?? false)
+  const [tags, setTags] = useState<string[]>(connection?.tags ?? [])
   const [values, setValues] = useState(() => valuesOf(kind, connection))
   const [people, setPeople] = useState<string[]>(() => {
     const ids = connection?.settings.userIds
@@ -472,6 +477,7 @@ function ConnectionForm({
         name: name.trim(),
         enabled,
         events,
+        tags,
         settings: settingsOf(kind, values, people),
         ...(kind === 'email' ? { serverMail } : {}),
       })
@@ -588,6 +594,9 @@ function ConnectionForm({
             <Switch checked={serverMail} onCheckedChange={setServerMail} />
           </Field>
         )}
+        <Field label={tt('label')} hint={tt('hint.connection')} className="medium:col-span-2">
+          <TagPicker value={tags} onChange={setTags} />
+        </Field>
         <Field inline label={t('form.enabled')} className="medium:col-span-2">
           <Switch checked={enabled} onCheckedChange={setEnabled} />
         </Field>

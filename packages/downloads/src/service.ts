@@ -127,6 +127,12 @@ export type BlocklistEntry = {
   date: string
 }
 
+export type GrabBestOptions = {
+  /** When a release must wait until, or null when it may go now. */
+  hold?: (release: ReleaseView) => number | null
+  onHold?: (until: number, release: ReleaseView) => void
+}
+
 /** What downloads records in an item's history; the runtime writes it with the media package. */
 export type HistoryEntry = {
   itemId: string
@@ -446,8 +452,18 @@ export function createDownloads(deps: DownloadsDeps) {
     return queueItem(required(id))
   }
 
-  /** Grabs the best approved release left for a version: from the last search, else a new one. */
-  async function grabBest(itemId: string, versionId: string | null): Promise<QueueItem | null> {
+  /**
+   * Grabs the best approved release left for a version: from the last search, else a new one.
+   * With `hold` (8c's Wait before grabbing, for RSS and the sweep), the best release may be held
+   * back until a time: then nothing is grabbed, not even a lesser release, and `onHold` hears when
+   * to look again, as Radarr grabs "the single release which best matches" once the delay is up
+   * (https://wiki.servarr.com/radarr/settings#how-delay-profiles-work).
+   */
+  async function grabBest(
+    itemId: string,
+    versionId: string | null,
+    options: GrabBestOptions = {},
+  ): Promise<QueueItem | null> {
     const movie = deps.movie(itemId)
     if (!movie) return null
     // one download per version at a time: a search job that finds something while one runs waits
@@ -472,6 +488,13 @@ export function createDownloads(deps: DownloadsDeps) {
       r.approved && !tried.has(`${r.indexerId}|${r.guid}`) && !isBlocked(itemId, r)
     let candidates = deps.indexers.releases(movie.tmdbId).filter(usable)
     if (!candidates.length) candidates = (await deps.search(itemId, versionId)).filter(usable)
+    const best = candidates[0]
+    const until = best && options.hold ? options.hold(best) : null
+    if (best && until) {
+      logger.info('holding a release back', { release: best.title, until })
+      options.onHold?.(until, best)
+      return null
+    }
     for (const c of candidates) {
       try {
         return await grab({ itemId, versionId, indexerId: c.indexerId, guid: c.guid })

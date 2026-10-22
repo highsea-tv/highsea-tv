@@ -52,3 +52,19 @@ Radarr is GPL-3.0. GPL-3.0 code may be combined with AGPL-3.0 code, but copying 
 - With TRaSH's unlimited maximum, "Too large" only appears once an owner sets a maximum. Custom formats do the choosing, as TRaSH recommends.
 - Where the documentation is silent, highsea decides for itself, and its tests record the call. A Radarr user may then see a different result, for example from BR-DISK's rank.
 - Updating the presets means copying newer TRaSH JSON and recording the commit. Nothing is fetched at runtime.
+
+## 8c: the editors and the wait before grabbing (2026-10-21)
+
+Checkpoint 8c makes profiles, formats and sizes editable ([phase-3-checkpoint-8.md](../plans/phase-3-checkpoint-8.md), the owner's answers 9 and 14), over migration 0011's `quality_profiles.built_in` and `custom_formats.edited`.
+
+- **Writes go through `@highsea/media/shared`'s profiles service,** which checks a profile with `qualityProfileSchema` after `completeItems` (every quality listed once), a format with `customFormatSchema` and `validateFormat`, and the size table with `qualitySizesSchema`. Names are unique ignoring case. A profile in use, or the last one, can't be deleted; deleting a format takes its scores from every profile in one transaction.
+- **Seeded rows stay and are marked.** A seeded profile is `built_in` and as editable as any other. A preset format the owner saves keeps `source: 'preset'` and becomes `edited`; the bundled presets refresh, at boot, only the seeded ones that aren't, so a TRaSH fix reaches an untouched format and never overwrites the owner's.
+- **Wait before grabbing is Radarr's delay profile, reduced to what torrents need** (the owner's answer 14): `waitMinutes` on each profile, 0 to 10,080, kept in the profile's JSON. It follows the Servarr wiki's description of delay profiles ([wiki.servarr.com/radarr/settings#how-delay-profiles-work](https://wiki.servarr.com/radarr/settings#how-delay-profiles-work)):
+  - "The clock starts from the releases uploaded time and not from the time Radarr sees it", so the hold is the release's `publishedAt` plus the wait; a release with no upload time isn't held;
+  - "any manual searches for content (non-RSS feed searches) will ignore delay profile settings", so Search, Search all, Search now, a manual grab and a failed download's replacement never wait; RSS and the backlog sweep do;
+  - Bypass if Highest Quality is always on: a release in the profile's most preferred allowed item goes at once;
+  - when the time is up Radarr downloads "the single release which best matches", so the hold enqueues `movies.held` at that moment, one per movie and version, which searches again and grabs the best then. While the best release is held, nothing lesser is grabbed.
+
+  `holdUntil` in `@highsea/quality` is the rule; `grabBest` in `@highsea/downloads` takes it as an option, and the runtime's automation passes it for the automatic paths only.
+- **The Radarr importer can bring a custom profile across as it is** (`profileFromRadarr`): Radarr's items reversed (it lists lowest first), qualities highsea doesn't know dropped, a group's name kept, the cutoff found by rank, Any and Original mapped and other languages by name, and the scores of highsea's formats with the same name. Radarr's own custom formats still don't come across ([ADR 0041](0041-migration-importers.md)).
+

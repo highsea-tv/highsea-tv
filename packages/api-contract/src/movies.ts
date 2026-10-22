@@ -20,6 +20,7 @@ import {
   TmdbIdParam,
 } from './common.ts'
 import { Art, DISCOVER_LISTS, DiscoverPage } from './metadata.ts'
+import { TagIds } from './tags.ts'
 
 // ---------------------------------------------------------------- shapes
 
@@ -86,6 +87,8 @@ export const Movie = z
     versions: z.array(MovieVersion).min(1),
     /** TMDB removed or merged this id: "TMDB no longer has this movie". The library keeps it. */
     gone: z.boolean(),
+    /** Its tags' ids (checkpoint 8c), A to Z by label. */
+    tags: z.array(z.string()),
   })
   .openapi('Movie')
 
@@ -103,7 +106,13 @@ export const AddMovieInput = z
     rootFolder: z.string().min(1).max(4096),
     monitored: z.boolean(),
     minimumAvailability: MinimumAvailability,
+    /**
+     * The subtitle language profile; null for none. Left out, the root folder's default
+     * (checkpoint 8c), or none when the folder has no default.
+     */
     languageProfileId: z.string().max(64).nullable().optional(),
+    /** Tag ids (checkpoint 8c). */
+    tags: TagIds.optional(),
     /** The movie's versions; the add dialog sends one. */
     versions: z.array(VersionInput).min(1).max(10),
     /** Refused (409, `no-indexers`) until an indexer is set up. */
@@ -118,6 +127,8 @@ export const MovieUpdate = z
     languageProfileId: z.string().max(64).nullable(),
     /** Another root folder, by path. Nothing moves on disk until there are files (checkpoint 6). */
     rootFolder: z.string().min(1).max(4096),
+    /** Its tags, all of them (checkpoint 8c). */
+    tags: TagIds,
   })
   .partial()
   .openapi('MovieUpdate')
@@ -150,6 +161,16 @@ export const BulkInput = z
     }),
     z.object({ action: z.literal('search'), ids: Ids }),
     z.object({ action: z.literal('refresh'), ids: Ids }),
+    /**
+     * Tags (checkpoint 8c), as Radarr's movie editor applies them: `add` puts them on, `remove`
+     * takes them off, `replace` leaves each movie with exactly these.
+     */
+    z.object({
+      action: z.literal('setTags'),
+      ids: Ids,
+      tagIds: TagIds,
+      mode: z.enum(['add', 'remove', 'replace']),
+    }),
     /** `exclude`: import lists don't add them again (checkpoint 8a). */
     z.object({
       action: z.literal('delete'),
@@ -181,6 +202,8 @@ export const MovieListQuery = z.object({
   /** Movies whose first version uses this profile. */
   qualityProfileId: z.string().max(64).optional(),
   monitored: Bool.optional(),
+  /** Movies carrying this tag (checkpoint 8c). */
+  tag: z.string().max(64).optional(),
   sort: z.enum(MOVIE_SORTS).optional().openapi({ description: 'Title when absent' }),
   dir: z.enum(['asc', 'desc']).optional().openapi({
     description: 'A to Z for title; newest or highest first for the others, when absent',
@@ -229,6 +252,11 @@ export const RootFolder = z
     accessible: z.boolean(),
     /** Library movies filed under it. */
     movies: z.number().int(),
+    /**
+     * The subtitle language profile a movie added here takes when none is chosen (checkpoint
+     * 8c): the add dialog starts on it, and import lists, the library import and migration use it.
+     */
+    languageProfileId: z.string().nullable(),
   })
   .openapi('RootFolder')
 
@@ -454,6 +482,23 @@ export const rootFolders = {
     responses: {
       201: json(RootFolder, 'Added'),
       ...errors('invalid', 'unauthorized', 'forbidden', 'conflict'),
+    },
+  }),
+  update: createRoute({
+    method: 'patch',
+    path: `${ROOT_FOLDERS}/{id}`,
+    tags: ['Root folders'],
+    summary: 'Set a root folder’s default subtitle language profile',
+    description:
+      'Null for none. Movies already filed there keep theirs. 404 (`unknown-language-profile`) for a profile that doesn’t exist.',
+    ...access('staff'),
+    request: {
+      params: IdParam,
+      ...body(z.object({ languageProfileId: z.string().min(1).max(64).nullable() })),
+    },
+    responses: {
+      200: json(RootFolder, 'Saved'),
+      ...errors('invalid', 'unauthorized', 'forbidden', 'not-found'),
     },
   }),
   remove: createRoute({

@@ -11,7 +11,7 @@ import { promises as fsp } from 'node:fs'
 import { basename, extname } from 'node:path'
 import { newId } from '@highsea/core'
 import { schema } from '@highsea/db'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import type { Media } from '../shared/index.ts'
 import { checkPath } from '../shared/paths.ts'
 import type { Ctx } from './context.ts'
@@ -55,13 +55,22 @@ export function createMigrate(
   function tagIds(labels: readonly string[]): string[] {
     const out: string[] = []
     for (const raw of labels) {
-      const label = raw.trim().slice(0, 100)
+      // as Settings › Tags keeps them (checkpoint 8c): tidied, 40 characters, one per label
+      // ignoring case, so Radarr's "kids" finds a "Kids" made here
+      const label = raw.trim().replace(/\s+/g, ' ').slice(0, 40)
       if (!label) continue
-      db.insert(tags)
-        .values({ id: newId('tag'), label, createdAt: clock.now() })
-        .onConflictDoNothing({ target: tags.label })
-        .run()
-      const row = db.select({ id: tags.id }).from(tags).where(eq(tags.label, label)).get()
+      const same = () =>
+        db
+          .select({ id: tags.id })
+          .from(tags)
+          .where(sql`${tags.label} = ${label} COLLATE NOCASE`)
+          .get()
+      if (!same())
+        db.insert(tags)
+          .values({ id: newId('tag'), label, createdAt: clock.now() })
+          .onConflictDoNothing({ target: tags.label })
+          .run()
+      const row = same()
       if (row) out.push(row.id)
     }
     return out

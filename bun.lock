@@ -210,6 +210,22 @@
         "@highsea/config": "workspace:*",
       },
     },
+    "packages/curation": {
+      "name": "@highsea/curation",
+      "version": "0.0.0",
+      "dependencies": {
+        "@highsea/api-contract": "workspace:*",
+        "@highsea/core": "workspace:*",
+        "@highsea/db": "workspace:*",
+        "@highsea/jobs": "workspace:*",
+        "drizzle-orm": "0.45.3",
+        "zod": "4.6.7",
+      },
+      "devDependencies": {
+        "@highsea/config": "workspace:*",
+        "@types/node": "25.9.9",
+      },
+    },
     "packages/db": {
       "name": "@highsea/db",
       "version": "0.0.0",
@@ -275,6 +291,7 @@
         "@highsea/downloads": "workspace:*",
         "@highsea/jobs": "workspace:*",
         "@highsea/media": "workspace:*",
+        "@highsea/parser": "workspace:*",
         "@highsea/quality": "workspace:*",
         "@highsea/torrent": "workspace:*",
         "drizzle-orm": "0.45.3",
@@ -453,6 +470,7 @@
         "@highsea/auth": "workspace:*",
         "@highsea/catalog": "workspace:*",
         "@highsea/core": "workspace:*",
+        "@highsea/curation": "workspace:*",
         "@highsea/db": "workspace:*",
         "@highsea/downloads": "workspace:*",
         "@highsea/importers": "workspace:*",
@@ -464,6 +482,7 @@
         "@highsea/network": "workspace:*",
         "@highsea/notifications": "workspace:*",
         "@highsea/personalization": "workspace:*",
+        "@highsea/quality": "workspace:*",
         "@highsea/subtitles": "workspace:*",
         "@highsea/torrent": "workspace:*",
         "@highsea/vpn": "workspace:*",
@@ -798,6 +817,8 @@
     "@highsea/config": ["@highsea/config@workspace:packages/config"],
 
     "@highsea/core": ["@highsea/core@workspace:packages/core"],
+
+    "@highsea/curation": ["@highsea/curation@workspace:packages/curation"],
 
     "@highsea/db": ["@highsea/db@workspace:packages/db"],
 

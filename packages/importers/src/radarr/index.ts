@@ -44,13 +44,19 @@ import {
   type RadarrMovie,
   readRadarr,
 } from './client.ts'
-import { nearestProfiles, radarrCutoff } from './profiles.ts'
+import { COPY_PROFILE, nearestProfiles, profileFromRadarr, radarrCutoff } from './profiles.ts'
 
 export { mapPath, type PathMapping, pathMappingSchema } from '../shared/paths.ts'
 export { MIGRATION_TOPIC, type MigrationState } from '../shared/state.ts'
 export type { RadarrConnection } from './client.ts'
 export { createRadarrClient } from './client.ts'
-export { highseaCutoff, nearestProfiles, radarrCutoff } from './profiles.ts'
+export {
+  COPY_PROFILE,
+  highseaCutoff,
+  nearestProfiles,
+  profileFromRadarr,
+  radarrCutoff,
+} from './profiles.ts'
 
 export const RADARR_IMPORT_JOB = 'importers.radarr'
 export const RADARR_IMPORT_KEY = 'radarrImport'
@@ -66,7 +72,7 @@ export type RadarrDeps = {
   /** Radarr is reached through the fetch seam (ADR 0029). */
   fetch: Fetch
   sealer: Sealer
-  media: Pick<Media, 'profiles' | 'rootFolders' | 'mediaManagement'>
+  media: Pick<Media, 'profiles' | 'customFormats' | 'rootFolders' | 'mediaManagement'>
   movies: Pick<Movies, 'migrate' | 'inLibrary'>
   downloads: Pick<Downloads, 'importBlock'>
   /** Folders a root folder may be added in: the data root. */
@@ -91,7 +97,10 @@ export type RadarrPreview = {
     name: string
     cutoff: string
     movies: number
-    /** highsea's profiles, nearest first; the first is the suggestion. */
+    /**
+     * highsea's profiles, nearest first; the first is the suggestion. `copy` (COPY_PROFILE), last,
+     * brings Radarr's across as it is, when it can be.
+     */
     options: string[]
   }[]
   rootFolders: RootFolderPlan[]
@@ -106,7 +115,7 @@ export type RadarrPreview = {
 
 export type RadarrRunOptions = {
   pathMappings: PathMapping[]
-  /** Radarr's profile id → highsea's; one left out takes the nearest. */
+  /** Radarr's profile id → highsea's, or `copy`; one left out takes the nearest. */
   profiles?: Record<string, string>
   /** Bring the naming format and file settings across. On by default. */
   settings?: boolean
@@ -275,7 +284,10 @@ export function createRadarrImporter(deps: RadarrDeps) {
         name: p.name,
         cutoff: radarrCutoff(p).name,
         movies: data.movies.filter((m) => m.qualityProfileId === p.id).length,
-        options: nearestProfiles(p, ours),
+        options: [
+          ...nearestProfiles(p, ours),
+          ...(profileFromRadarr(p, deps.media.customFormats()) ? [COPY_PROFILE] : []),
+        ],
       })),
       rootFolders: [...roots.values()].sort((a, b) => a.radarr.localeCompare(b.radarr)),
       tags: data.tags.length,
@@ -296,7 +308,7 @@ export function createRadarrImporter(deps: RadarrDeps) {
     createRadarrClient(deps.fetch, conn)
     const ids = new Set(deps.media.profiles.list().map((p) => p.id))
     for (const id of Object.values(options.profiles ?? {}))
-      if (!ids.has(id))
+      if (id !== COPY_PROFILE && !ids.has(id))
         throw new AppError('not-found', 'One of those quality profiles doesn’t exist.', {
           reason: 'unknown-quality-profile',
         })
@@ -392,6 +404,48 @@ export function createRadarrImporter(deps: RadarrDeps) {
     return 'imported'
   }
 
+  /**
+   * Each Radarr profile the owner chose to bring across as it is, as a highsea profile: its id is
+   * `qp-radarr-{id}`, so a second run (the job's retry) finds the first copy. A name another
+   * profile has gets " (Radarr)". One that can't be made falls back to the nearest, and says so.
+   */
+  function copyProfiles(
+    data: RadarrData,
+    choices: Record<string, string>,
+    failed: (name: string, message: string) => void,
+  ): Record<string, string> {
+    const out: Record<string, string> = {}
+    for (const [radarrId, choice] of Object.entries(choices)) {
+      if (choice !== COPY_PROFILE) continue
+      const radarr = data.profiles.find((x) => String(x.id) === radarrId)
+      const id = `qp-radarr-${radarrId}`
+      const ours = deps.media.profiles.list()
+      if (ours.some((x) => x.id === id)) {
+        out[radarrId] = id
+        continue
+      }
+      const input = radarr ? profileFromRadarr(radarr, deps.media.customFormats()) : null
+      const fallback = radarr ? nearestProfiles(radarr, ours)[0] : ours[0]?.id
+      const fall = (message: string) => {
+        failed(`Quality profile ${radarr?.name ?? radarrId}`, message)
+        if (fallback) out[radarrId] = fallback
+      }
+      if (!input) {
+        fall('It wants no quality highsea knows, so its movies use the nearest profile.')
+        continue
+      }
+      const taken = (n: string) => ours.some((x) => x.name.toLowerCase() === n.toLowerCase())
+      let name = taken(input.name) ? `${input.name} (Radarr)` : input.name
+      for (let n = 2; taken(name); n++) name = `${input.name} (Radarr ${n})`
+      try {
+        out[radarrId] = deps.media.profiles.add({ ...input, name }, { id }).id
+      } catch (e) {
+        fall(`${(e as Error).message} Its movies use the nearest profile.`)
+      }
+    }
+    return out
+  }
+
   /** Radarr's blocklist, for the movies now in the library. Safe to repeat. */
   async function importBlocklist(client: ReturnType<typeof clientFor>, data: RadarrData) {
     const byId = new Map(data.movies.map((m) => [m.id, m.tmdbId]))
@@ -466,12 +520,18 @@ export function createRadarrImporter(deps: RadarrDeps) {
         if (problem) failed(`${problem} highsea kept its own naming format.`)
       }
 
+      // the Radarr profiles brought across as they are, once; a movie mapped to one uses the copy
+      const copied = copyProfiles(data, p.profiles, (name, message) => {
+        state = { ...state, failures: [...state.failures, { name, message }] }
+      })
+      const mapped = { ...p, profiles: { ...p.profiles, ...copied } }
+
       for (let i = state.done; i < data.movies.length; i++) {
         if (jobCtx.signal.aborted) throw new Error('The Radarr import was stopped.')
         const m = data.movies[i] as RadarrMovie
         let outcome: Awaited<ReturnType<typeof importMovie>>
         try {
-          outcome = await importMovie(m, p, data, client)
+          outcome = await importMovie(m, mapped, data, client)
         } catch (e) {
           outcome = { name: m.title, message: (e as Error).message }
         }

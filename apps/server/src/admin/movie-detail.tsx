@@ -115,6 +115,8 @@ import { shell } from './messages.ts'
 import { AVAILABILITY, loadHistory } from './movie-data.ts'
 import { movieDetail as messages, torrentState } from './movie-detail-messages.ts'
 import { AdminPage } from './shell.tsx'
+import { TagBadges, TagPicker, useTags } from './tag-picker.tsx'
+import { tagsMessages } from './tags-messages.ts'
 import { useRelative } from './time.ts'
 
 type Tab = 'overview' | 'cast' | 'files' | 'history' | 'search' | 'subtitles'
@@ -630,6 +632,7 @@ function InTheLibrary({
     m.languageProfileId === null
       ? t('subtitles.none')
       : (options?.language.find((p) => p.id === m.languageProfileId)?.name ?? m.languageProfileId)
+  const tags = useTags()
   return (
     <section aria-labelledby="in-the-library" className="grid grid-cols-1 content-start gap-3">
       <h2 id="in-the-library" className="text-title text-text">
@@ -648,6 +651,7 @@ function InTheLibrary({
             />,
           ],
           [t('subtitles'), language],
+          [t('tags'), <TagBadges key="tags" tags={tags.data} ids={m.tags} />],
           [t('availability'), t(`availability.${m.minimumAvailability}`)],
           [
             t('rootFolder'),
@@ -876,11 +880,13 @@ function EditDialog({
   onSaved: (movie: Movie) => void
 }) {
   const t = useT(messages)
+  const tt = useT(tagsMessages)
   const initial = () => ({
     rootFolder: m.rootFolder,
     languageProfileId: m.languageProfileId,
     minimumAvailability: m.minimumAvailability,
     monitored: m.monitored,
+    tags: m.tags,
   })
   const [form, setForm] = useState(initial)
   // biome-ignore lint/correctness/useExhaustiveDependencies: each opening starts from the movie
@@ -958,6 +964,9 @@ function EditDialog({
                   }
                   options={AVAILABILITY.map((a) => ({ value: a, label: t(`availability.${a}`) }))}
                 />
+              </Field>
+              <Field label={t('tags')} hint={tt('hint.movie')} className="medium:col-span-2">
+                <TagPicker value={form.tags} onChange={(tags) => setForm({ ...form, tags })} />
               </Field>
               <Field
                 inline

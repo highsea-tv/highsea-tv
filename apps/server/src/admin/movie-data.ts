@@ -40,6 +40,16 @@ export type AddOptions = {
   canSearch?: boolean
 }
 
+/** A root folder's default language profile while it still exists (checkpoint 8c), else undefined. */
+export function folderLanguageOf(
+  folders: RootFolder[],
+  language: LanguageProfile[],
+  path: string,
+): string | undefined {
+  const id = folders.find((f) => f.path === path)?.languageProfileId
+  return id && language.some((l) => l.id === id) ? id : undefined
+}
+
 /** The remembered values while they still name a folder and profiles that exist, else the first. */
 export function initialForm({
   folders,
@@ -50,15 +60,19 @@ export function initialForm({
 }: AddOptions): AddForm {
   const has = <T extends { id: string }>(list: T[], id: string | null | undefined) =>
     id != null && list.some((x) => x.id === id)
+  const rootFolder =
+    d && folders.some((f) => f.path === d.rootFolder) ? d.rootFolder : (folders[0]?.path ?? '')
+  // the folder's own default comes first (checkpoint 8c), then the remembered choice
+  const folderLanguage = folderLanguageOf(folders, language, rootFolder)
   return {
-    rootFolder:
-      d && folders.some((f) => f.path === d.rootFolder) ? d.rootFolder : (folders[0]?.path ?? ''),
+    rootFolder,
     qualityProfileId:
       d && has(quality, d.qualityProfileId) ? d.qualityProfileId : (quality[0]?.id ?? ''),
     languageProfileId:
-      d && has(language, d.languageProfileId)
+      folderLanguage ??
+      (d && has(language, d.languageProfileId)
         ? (d.languageProfileId ?? null)
-        : (language[0]?.id ?? null),
+        : (language[0]?.id ?? null)),
     minimumAvailability: d?.minimumAvailability ?? 'released',
     // decision 2: off while no indexer is enabled; with one, the remembered choice, else on
     // (movies.md: adding usually means "get it")
@@ -102,6 +116,8 @@ const MAX_LIMIT = 200
 export type LibraryFilters = {
   status?: MovieStatus
   title?: string
+  /** A tag's id (checkpoint 8c). */
+  tag?: string
   sort: 'title' | 'added' | 'year' | 'rating'
 }
 

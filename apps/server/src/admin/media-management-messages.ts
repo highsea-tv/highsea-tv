@@ -63,6 +63,11 @@ export const media = defineMessages({
   'folders.keep': 'Keep it',
   'folders.removed': '{path} removed',
   'folders.removeFailed': 'Couldn’t remove the folder',
+  'folders.languages': 'Subtitle languages for movies added here',
+  'folders.languagesLabel': 'Subtitle languages for movies added to {path}',
+  'folders.languagesNone': 'None',
+  'folders.languagesSaved': 'Subtitle languages saved for {path}',
+  'folders.languagesFailed': 'Couldn’t save the subtitle languages',
   'add.label': 'Add a root folder',
   'add.hint':
     'A folder on the server, not on this device. highsea checks it exists and can write to it.',

@@ -5,11 +5,16 @@
 // - the cutoff ("Upgrade Until"), a quality or group in that list, and whether upgrades are allowed;
 // - format scores: a minimum to grab, a score to stop upgrading at, and the least gain that counts
 //   as an upgrade (TRaSH's `minUpgradeFormatScore`);
-// - the language: any, the movie's original language, or one language.
+// - the language: any, the movie's original language, or one language;
+// - "Wait before grabbing" (checkpoint 8c): Radarr's delay profile as one setting per profile, in
+//   minutes, since with torrents only its torrent delay applies (`holdUntil` below).
 // The shape follows TRaSH's profile JSON (`items` with `name`, `allowed` and the qualities).
 import { z } from 'zod'
 import { languageCodeSchema } from './formats.ts'
 import { QUALITY_NAMES, type QualityName, qualityRank, WEB_GROUPS } from './qualities.ts'
+
+/** A week: longer than any release takes to be bettered, and still a whole number of minutes. */
+export const MAX_WAIT_MINUTES = 7 * 24 * 60
 
 export const profileItemSchema = z.object({
   /** A quality's own name, or the group's ("WEB 1080p"). */
@@ -35,6 +40,8 @@ export const qualityProfileSchema = z
     formats: z.array(z.object({ formatId: z.string().min(1), score: z.number().int() })),
     /** `any`, `original` (the movie's) or an ISO 639-1 code. */
     language: z.union([z.literal('any'), languageCodeSchema]).default('any'),
+    /** Minutes an automatic grab waits from a release's upload, for something better. 0: none. */
+    waitMinutes: z.number().int().min(0).max(MAX_WAIT_MINUTES).default(0),
   })
   .superRefine((p, ctx) => {
     const seen = new Set<string>()
@@ -99,6 +106,34 @@ export function meetsCutoff(
   return cutoff >= 0 && at !== null && at.index <= cutoff
 }
 
+/**
+ * Until when an automatic grab holds a release back, as Radarr's delay profiles do
+ * (https://wiki.servarr.com/radarr/settings#how-delay-profiles-work): "The clock starts from the
+ * releases uploaded time and not from the time Radarr sees it", so a release older than the wait
+ * isn't held at all; and a release in the profile's most preferred allowed item goes at once
+ * ("Bypass if Highest Quality"). Null: no hold. A release whose upload time the indexer doesn't
+ * give isn't held, since its age can't be known. Searches someone asks for ignore the hold, as the
+ * wiki says manual searches do; the caller decides that.
+ */
+export function holdUntil(
+  profile: Pick<QualityProfile, 'items' | 'waitMinutes'>,
+  release: { quality: string; publishedAt: string | number | null },
+  now: number,
+): number | null {
+  if (!profile.waitMinutes) return null
+  const top = profile.items.find((i) => i.allowed)
+  if (top?.qualities.includes(release.quality as QualityName)) return null
+  const uploaded =
+    typeof release.publishedAt === 'number'
+      ? release.publishedAt
+      : release.publishedAt
+        ? Date.parse(release.publishedAt)
+        : Number.NaN
+  if (!Number.isFinite(uploaded)) return null
+  const until = uploaded + profile.waitMinutes * 60_000
+  return until > now ? until : null
+}
+
 /** A single quality, or a WEB group, as an item. */
 export function item(name: QualityName | keyof typeof WEB_GROUPS, allowed: boolean): ProfileItem {
   const qualities = name in WEB_GROUPS ? [...WEB_GROUPS[name as keyof typeof WEB_GROUPS]] : [name]
@@ -157,6 +192,7 @@ export const seedProfiles = (): QualityProfile[] => [
       { formatId: 'cf-lq', score: -10000 },
     ],
     language: 'any',
+    waitMinutes: 0,
   },
   {
     id: 'qp-hd',
@@ -177,6 +213,7 @@ export const seedProfiles = (): QualityProfile[] => [
       { formatId: 'cf-lq', score: -10000 },
     ],
     language: 'any',
+    waitMinutes: 0,
   },
   {
     id: 'qp-any',
@@ -189,5 +226,6 @@ export const seedProfiles = (): QualityProfile[] => [
     minUpgradeFormatScore: 1,
     formats: [{ formatId: 'cf-lq', score: -10000 }],
     language: 'any',
+    waitMinutes: 0,
   },
 ]

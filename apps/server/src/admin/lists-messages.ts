@@ -71,7 +71,7 @@ export const lists = defineMessages({
   'form.noFolders': 'Add a root folder in Media management first.',
   'form.qualityProfile': 'Quality profile',
   'form.languageProfile': 'Subtitle languages',
-  'form.languageNone': 'None',
+  'form.languageNone': 'The root folder’s default',
   'form.availability': 'Minimum availability',
   'availability.announced': 'Announced',
   'availability.in-cinemas': 'In cinemas',

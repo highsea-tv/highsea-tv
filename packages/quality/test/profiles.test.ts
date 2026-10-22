@@ -3,10 +3,12 @@ import { describe, expect, test } from 'bun:test'
 import { seedFormats } from '../src/presets.ts'
 import {
   completeItems,
+  holdUntil,
   isAllowed,
   item,
   meetsCutoff,
   preference,
+  type QualityProfile,
   qualityProfileSchema,
   seedProfiles,
 } from '../src/profiles.ts'
@@ -138,5 +140,45 @@ describe('sizes', () => {
     ).toBe(false)
     const row = { quality: 'DVD', min: 1, preferred: null, max: null }
     expect(qualitySizesSchema.safeParse([row, row]).success).toBe(false)
+  })
+})
+
+describe('wait before grabbing (Radarr’s delay profiles)', () => {
+  const now = Date.UTC(2026, 9, 21, 12)
+  const hour = 3_600_000
+  const base = seedProfiles()[1] as QualityProfile
+  const waiting = { ...base, waitMinutes: 120 }
+  const at = (ms: number) => new Date(ms).toISOString()
+
+  test('defaults to no wait', () => {
+    const { waitMinutes: _, ...rest } = base
+    expect(qualityProfileSchema.parse(rest).waitMinutes).toBe(0)
+    expect(holdUntil(base, { quality: 'WEBDL-1080p', publishedAt: at(now) }, now)).toBeNull()
+  })
+
+  test('holds a release until its upload time plus the wait', () => {
+    expect(holdUntil(waiting, { quality: 'WEBDL-1080p', publishedAt: at(now - hour) }, now)).toBe(
+      now + hour,
+    )
+  })
+
+  test('the clock runs from the upload, so an older release goes at once', () => {
+    expect(
+      holdUntil(waiting, { quality: 'WEBDL-1080p', publishedAt: at(now - 3 * hour) }, now),
+    ).toBeNull()
+  })
+
+  test('the most preferred allowed quality bypasses the wait', () => {
+    expect(holdUntil(waiting, { quality: 'Bluray-1080p', publishedAt: now }, now)).toBeNull()
+  })
+
+  test('a release with no upload time isn’t held', () => {
+    expect(holdUntil(waiting, { quality: 'WEBDL-1080p', publishedAt: null }, now)).toBeNull()
+  })
+
+  test('is at most a week', () => {
+    expect(qualityProfileSchema.safeParse({ ...base, waitMinutes: 7 * 24 * 60 + 1 }).success).toBe(
+      false,
+    )
   })
 })

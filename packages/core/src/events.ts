@@ -10,9 +10,14 @@ export type ServerEvent = {
   /** The ids that changed, when it's narrower than "everything on this topic". */
   ids?: string[]
   at: number
+  /**
+   * The people it's for (user ids), when it's personal (curation's `home.updated`, checkpoint 8c):
+   * the event stream sends it to them alone and never sends the field itself.
+   */
+  to?: string[]
 }
 
-export type EventInput = { topic: string; ids?: string[] }
+export type EventInput = { topic: string; ids?: string[]; to?: string[] }
 
 export type EventBus = {
   emit(event: EventInput): ServerEvent
@@ -36,6 +41,7 @@ export function createEventBus({
     emit(input) {
       const event: ServerEvent = { id: next++, topic: input.topic, at: now() }
       if (input.ids?.length) event.ids = input.ids
+      if (input.to) event.to = input.to
       recent.push(event)
       if (recent.length > buffer) recent.shift()
       for (const l of listeners) {

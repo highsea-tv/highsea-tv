@@ -2,7 +2,8 @@
 // GET /api/v1/events: server events as SSE. A reconnecting client sends Last-Event-ID and gets what
 // it missed, or a `reset` when that's no longer in the buffer. A comment every 25s keeps proxies
 // from closing an idle stream. The guard has already checked the caller is signed in; the log's
-// topic goes to the owner and admins only (STAFF_TOPICS, checkpoint 8b).
+// topic goes to the owner and admins only (STAFF_TOPICS, checkpoint 8b), and a personal event (`to`,
+// checkpoint 8c's curation) only to the people it names, without the list.
 import { RESET_TOPIC, type ServerEvent, STAFF_TOPICS } from '@highsea/api-contract'
 import { isStaff, type Principal } from '@highsea/auth'
 import type { Runtime } from '@highsea/runtime'
@@ -13,9 +14,11 @@ export const KEEPALIVE_MS = 25_000
 
 export const events = (runtime: Runtime) => (c: Context) => {
   const topics = c.req.query('topics')?.split(',').filter(Boolean)
-  const staff = isStaff((c.get('principal') as Principal | null)?.user.role ?? 'user')
-  const wanted = (e: ServerEvent) =>
+  const user = (c.get('principal') as Principal | null)?.user
+  const staff = isStaff(user?.role ?? 'user')
+  const wanted = (e: ServerEvent & { to?: string[] }) =>
     (staff || !STAFF_TOPICS.includes(e.topic)) &&
+    (!e.to || (!!user && e.to.includes(user.id))) &&
     (!topics?.length || topics.includes(e.topic) || e.topic === RESET_TOPIC)
   const last = Number(c.req.header('last-event-id'))
 
@@ -46,7 +49,7 @@ export const events = (runtime: Runtime) => (c: Context) => {
 
     while (!stream.aborted) {
       while (queue.length) {
-        const e = queue.shift() as ServerEvent
+        const { to: _, ...e } = queue.shift() as ServerEvent & { to?: string[] }
         await stream.writeSSE({ id: String(e.id), data: JSON.stringify(e) })
       }
       const timer = new Promise<'keepalive'>((r) => {

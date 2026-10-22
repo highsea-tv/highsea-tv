@@ -3,6 +3,7 @@
 // adding its movies to the library with its own folder and profiles. What each list held at its last
 // check is kept, so a run adds only what's new; exclusions stop a movie the owner deleted from coming
 // back. A list's secrets (a Trakt account's tokens) are sealed inside `settings`.
+import { sql } from 'drizzle-orm'
 import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { MINIMUM_AVAILABILITY } from './media.ts'
 
@@ -22,6 +23,8 @@ export const importLists = sqliteTable('import_lists', {
   monitored: integer('monitored', { mode: 'boolean' }).notNull(),
   minimumAvailability: text('minimum_availability', { enum: MINIMUM_AVAILABILITY }).notNull(),
   searchOnAdd: integer('search_on_add', { mode: 'boolean' }).notNull(),
+  /** Tags (checkpoint 8c): given to every movie the list adds. Ids from `tags`. */
+  tags: text('tags', { mode: 'json' }).$type<string[]>().notNull().default(sql`'[]'`),
   lastSyncAt: integer('last_sync_at'),
   /** The last check: how many it found, added and couldn't match, or why it failed. */
   lastResult: text('last_result', { mode: 'json' }),

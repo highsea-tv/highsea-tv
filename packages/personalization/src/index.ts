@@ -11,7 +11,7 @@ import { createPreferences } from './preferences.ts'
 
 export function createPersonalization(
   deps: PersonalizationDeps,
-  opts: { homeRows?: () => HomeRow[] } = {},
+  opts: { homeRows?: (userId: string) => HomeRow[] } = {},
 ) {
   const appearance = createAppearance(deps)
   return {

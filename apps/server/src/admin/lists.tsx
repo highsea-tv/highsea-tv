@@ -43,6 +43,8 @@ import { lists as messages } from './lists-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { AVAILABILITY } from './movie-data.ts'
 import { AreaPage, Group } from './settings.tsx'
+import { TagPicker } from './tag-picker.tsx'
+import { tagsMessages } from './tags-messages.ts'
 import { useRelative } from './time.ts'
 
 type T = Translate<typeof messages>
@@ -88,6 +90,7 @@ const inputOf = (l: ImportList): ImportListInput => ({
   monitored: l.monitored,
   minimumAvailability: l.minimumAvailability,
   searchOnAdd: l.searchOnAdd,
+  tags: l.tags,
 })
 
 /** "Trakt · Your watchlist", "TMDB · Popular", "Generic list". */
@@ -313,6 +316,7 @@ function draftOf(list: ImportList | null, o: Options): Draft {
           monitored: true,
           minimumAvailability: 'released',
           searchOnAdd: false,
+          tags: [],
         },
   }
 }
@@ -349,6 +353,7 @@ function ListForm({
   onSaved: () => void
 }) {
   const t = useT(messages)
+  const tt = useT(tagsMessages)
   const [d, setD] = useState(() => draftOf(list, o))
   const [touched, setTouched] = useState(false)
   const [failure, setFailure] = useState<{ field?: string; message: string } | null>(null)
@@ -604,6 +609,9 @@ function ListForm({
               ...o.language.map((p) => ({ value: p.id, label: p.name })),
             ]}
           />
+        </Field>
+        <Field label={tt('label')} hint={tt('hint.list')} className="medium:col-span-2">
+          <TagPicker value={d.rest.tags ?? []} onChange={(tags) => setRest({ tags })} />
         </Field>
         <Field label={t('form.availability')} className="medium:col-span-2">
           <Select

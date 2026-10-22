@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A1, the admin shell (admin.md), ported from the prototype: the sidebar (full at expanded and up,
 // a rail at medium, a menu sheet at compact), the ⌘K palette, toasts and the status bar. Pages
-// render inside through `AdminPage`. What later checkpoints bring is left out until then:
-// announcement banners (curation), the queue's sidebar count, the palette's download actions and
-// import toasts.
+// render inside through `AdminPage`. Announcement banners sit above the page (checkpoint 8c). What
+// later checkpoints bring is left out until then: the queue's sidebar count, the palette's
+// download actions and import toasts.
 
 import { bytes } from '@highsea/core/format'
 import { useT } from '@highsea/i18n/react'
@@ -43,6 +43,7 @@ import {
   useState,
 } from 'react'
 import { AccountSheet } from './account.tsx'
+import { AnnouncementBanners } from './announcement-banners.tsx'
 import { moviePath } from './media-links.ts'
 import { shell as messages } from './messages.ts'
 import { type Page, pageAt, pageGroups, type Role } from './nav.ts'
@@ -441,6 +442,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
               tabIndex={-1}
               className="grid grid-cols-1 content-start gap-5 p-4 outline-none medium:px-6.5 medium:py-5.5"
             >
+              <AnnouncementBanners />
               {children}
             </main>
           </div>

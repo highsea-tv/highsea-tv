@@ -50,6 +50,14 @@ export type RadarrProfile = {
   name: string
   cutoff: number
   items: RadarrProfileItem[]
+  upgradeAllowed?: boolean
+  minFormatScore?: number
+  cutoffFormatScore?: number
+  minUpgradeFormatScore?: number
+  /** Each custom format's score here, by Radarr's format id and name. */
+  formatItems?: { format: number; name: string; score: number }[]
+  /** Radarr's `Language`: id -1 is Any, -2 Original. */
+  language?: { id: number; name: string }
 }
 
 export type RadarrRootFolder = { id: number; path: string; accessible?: boolean }

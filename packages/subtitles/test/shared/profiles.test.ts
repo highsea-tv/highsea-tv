@@ -173,6 +173,16 @@ describe('the profiles table', () => {
     expect(await reason(() => profiles.remove(p.id))).toBe('conflict:last-profile')
   })
 
+  test('a profile removed stops being a root folder’s default (checkpoint 8c)', () => {
+    const { db, profiles } = setup()
+    const p = profiles.save(input())
+    db.insert(schema.rootFolders)
+      .values({ id: 'rf1', path: '/m', languageProfileId: p.id, createdAt: 0 })
+      .run()
+    profiles.remove(p.id)
+    expect(db.select().from(schema.rootFolders).get()?.languageProfileId).toBeNull()
+  })
+
   test('setup’s languages go into lp-en, named after them', () => {
     const { profiles } = setup()
     const p = profiles.fromSetup(['en', 'pt'])

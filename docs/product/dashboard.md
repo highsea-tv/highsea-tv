@@ -145,7 +145,7 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `dashboard` gr
 - `dashboard.saveRoleDefault({ params: { role }, body: { widgets } })` → `PUT /api/v1/dashboard/defaults/{role}`. Owner only. Widgets the role can't see are dropped and listed in `dropped`.
 - Event `layout.updated` on the event stream.
 - **The widget registry** is `@highsea/personalization/widgets`: each widget's id, title, description, width and height ranges, default size, the roles that may add it, its data source and a zod settings schema with defaults (Network: 10 minutes; Upcoming: 14 days; Queue: the All filter). The settings are stored with each placement; there's no UI to edit them yet.
-- **Data sources:** the server's public info lists the sources it has (`sources`). A widget whose source isn't there shows its empty state and calls nothing. In checkpoint 3 the server has `system`, which feeds Storage (`system.status`) and System health (`system.healthChecks`). Checkpoints 4 and 5 add `movies` and `indexers`; checkpoint 6a adds `downloads`, which feeds Network (`system.speeds`, `downloads.list`, `vpn.status`) and Queue (`queue.list`); checkpoint 7a adds `subtitles`, which feeds Subtitles (`subtitles.stats`, `subtitles.wanted`). Since checkpoint 7b its sync figures are live: synced since midnight UTC, the tracks waiting, and today's average correction. The curation source arrives with its checkpoint.
+- **Data sources:** the server's public info lists the sources it has (`sources`). A widget whose source isn't there shows its empty state and calls nothing. In checkpoint 3 the server has `system`, which feeds Storage (`system.status`) and System health (`system.healthChecks`). Checkpoints 4 and 5 add `movies` and `indexers`; checkpoint 6a adds `downloads`, which feeds Network (`system.speeds`, `downloads.list`, `vpn.status`) and Queue (`queue.list`); checkpoint 7a adds `subtitles`, which feeds Subtitles (`subtitles.stats`, `subtitles.wanted`). Since checkpoint 7b its sync figures are live: synced since midnight UTC, the tracks waiting, and today's average correction. Checkpoint 8c adds `curation`, which feeds Announcement (`curation.announcements`).
 
 ## Decisions
 
@@ -161,6 +161,11 @@ Through `@highsea/sdk` (the contract is `@highsea/api-contract`'s `dashboard` gr
 - **The editor is ui-web's `WidgetEditor`,** shared by the admin and the prototype; the registry is `@highsea/personalization`'s.
 - **Per-widget settings are stored, not yet edited** (owner's decision, 2026-10-20). Each widget shows its defaults.
 - **Columns come from the main area's width, not the viewport's.** At 1024 with the 216px sidebar, a 1-column widget is about 175px: tight for Indexers and Storage. The grid chooses 4, 3 or 2 columns from the main area's width (a container query). *Approved by the owner on 2026-10-20; built with the [dashboard follow-up](#follow-up-customization-on-homarrs-level).*
+
+## As built (8c)
+
+- **Announcement** reads the admin's list (`curation.announcements()`, on `curation.updated`) and shows its first live announcement. It shows the title with a **Live** badge, then "Everyone" or "Some people", the placements, and the end time when there is one. At 3 rows the message shows three lines; at 4 rows it shows seven. With nothing live, it shows "No announcement is live" with **Write one**.
+- **It shows the staff list, not the announcements aimed at the admin:** a staff member wants to know what is live, whoever it is for. The admin's own announcements are banners at the top of every admin page (`GET /announcements?client=admin`). Dismissing or acknowledging one there counts toward its reach.
 
 ## Open questions
 
