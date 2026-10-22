@@ -61,11 +61,7 @@ function fakeLibrary() {
       const ids = [...titles]
         .filter(([id]) => files.has(id))
         .filter(([, t]) =>
-          pick.rule === 'genre'
-            ? t.genre === pick.genre
-            : pick.rule === 'filter'
-              ? pick.terms.every((term) => (term.op === '<' ? t.year < term.value : true))
-              : pick.rule === 'recently-added',
+          pick.rule === 'genre' ? t.genre === pick.genre : pick.rule === 'recently-added',
         )
         .map(([id]) => id)
       return { tmdbIds: ids.slice(0, limit), total: ids.length }
@@ -187,7 +183,7 @@ describe('rules', () => {
     expect(statusOf({ startAt: 0, endAt: 6 }, 5)).toBe('live')
   })
 
-  test('filters read as the library’s filter bar writes them', () => {
+  test('8c’s saved filters still read, to become collections', () => {
     expect(parseFilter('year < 1930 and rating >= 4')).toEqual([
       { field: 'year', op: '<', value: 1930 },
       { field: 'rating', op: '>=', value: 4 },
@@ -197,6 +193,10 @@ describe('rules', () => {
     expect(rulePick({ kind: 'rule', rule: 'collection', value: '87' })).toEqual({
       rule: 'collection',
       collectionId: 87,
+    })
+    expect(rulePick({ kind: 'rule', rule: 'collection', value: 'sc-abc' })).toEqual({
+      rule: 'smart',
+      collectionId: 'sc-abc',
     })
   })
 })
@@ -311,10 +311,18 @@ describe('featured sections', () => {
     expect(
       refused(() =>
         curation.addSection(
-          section(clock, { source: { kind: 'rule', rule: 'filter', value: 'runtime < 90' } }),
+          section(clock, { source: { kind: 'rule', rule: 'recently-added', value: '14d' } }),
         ),
       ),
-    ).toContain('filter bar')
+    ).toBe('Choose 7, 30 or 90 days.')
+    // one of the server's collections that isn't there
+    expect(
+      refused(() =>
+        curation.addSection(
+          section(clock, { source: { kind: 'rule', rule: 'collection', value: 'sc-gone' } }),
+        ),
+      ),
+    ).toBe('Choose a collection.')
   })
 
   test('a rule with no matches hides its section', () => {

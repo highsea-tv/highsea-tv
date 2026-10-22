@@ -533,6 +533,80 @@ try {
     token,
   )
 
+  // 8d: a smart collection with a group, one picked by hand that a section draws on, and one
+  // whose rules match nothing yet
+  const collection = (name: string, rules: unknown, include: number[] = []) => ({
+    name,
+    summary: '',
+    artwork: null,
+    rules,
+    include,
+    exclude: [],
+    sort: rules ? 'rating' : 'manual',
+    descending: true,
+    limit: null,
+    audience: { kind: 'everyone' },
+  })
+  const condition = (id: string, field: string, op: string, value: unknown) => ({
+    kind: 'condition',
+    id,
+    field,
+    op,
+    value,
+  })
+  const decade = await api<{ id: string }>(
+    'POST',
+    '/curation/collections',
+    collection('Open movies of the 2010s', {
+      kind: 'group',
+      id: 'g-1',
+      match: 'all',
+      rules: [
+        condition('c-1', 'year', 'between', [2010, 2020]),
+        {
+          kind: 'group',
+          id: 'g-2',
+          match: 'any',
+          rules: [
+            condition('c-2', 'rating', 'atLeast', 3),
+            condition('c-3', 'runtime', 'atMost', 20),
+          ],
+        },
+      ],
+    }),
+    token,
+  )
+  const handPicked = await api<{ id: string }>(
+    'POST',
+    '/curation/collections',
+    collection('Blender picks', null, [45745, 653]),
+    token,
+  )
+  const nothingYet = await api<{ id: string }>(
+    'POST',
+    '/curation/collections',
+    collection('Nothing yet', {
+      kind: 'group',
+      id: 'g-1',
+      match: 'all',
+      rules: [condition('c-1', 'title', 'contains', 'No such film')],
+    }),
+    token,
+  )
+  const drawsOn = await api<{ id: string }>(
+    'POST',
+    '/curation/sections',
+    {
+      ...curated,
+      title: 'Blender night',
+      tagline: null,
+      layout: 'row',
+      source: { kind: 'rule', rule: 'collection', value: handPicked.id },
+      overrides: [],
+    },
+    token,
+  )
+
   // signed out
   await sweep(
     [
@@ -675,6 +749,37 @@ try {
       { name: 'curation:announcement:edit', path: `/curation/announcements/${notice.id}` },
       { name: 'curation:section:new', path: '/curation/featured/new' },
       { name: 'curation:section:edit', path: `/curation/featured/${picks.id}` },
+      { name: 'curation:section:collection', path: `/curation/featured/${drawsOn.id}` },
+      // 8d: A19 Collections, the editor with rules and a group, picked by hand, and empty
+      { name: 'collections', path: '/collections' },
+      { name: 'collections:new', path: '/collections/new' },
+      { name: 'collections:edit', path: `/collections/${decade.id}` },
+      { name: 'collections:edit:picked', path: `/collections/${handPicked.id}` },
+      { name: 'collections:edit:empty', path: `/collections/${nothingYet.id}` },
+      {
+        // the field menu's groups, through a choice rather than left open (see above)
+        name: 'collections:edit:composer',
+        path: `/collections/${decade.id}`,
+        act: async (p) => {
+          await p.getByRole('combobox', { name: 'Condition 1: field' }).click()
+          await p.getByRole('option', { name: 'Composer' }).click()
+        },
+      },
+      {
+        name: 'collections:delete',
+        path: '/collections',
+        act: (p) => p.getByRole('button', { name: 'Delete Blender picks' }).click(),
+      },
+      {
+        // a section draws on it, so the server refuses and the toast says which
+        name: 'collections:delete:in-use',
+        path: '/collections',
+        act: async (p) => {
+          await p.getByRole('button', { name: 'Delete Blender picks' }).click()
+          await p.getByRole('alertdialog').getByRole('button', { name: 'Delete' }).click()
+          await p.getByText('Couldn’t delete the collection').first().waitFor()
+        },
+      },
       {
         name: 'import:library',
         path: `/activity/import?mode=library&root=${encodeURIComponent(join(dataDir, 'films'))}`,

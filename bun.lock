@@ -217,6 +217,7 @@
         "@highsea/api-contract": "workspace:*",
         "@highsea/core": "workspace:*",
         "@highsea/db": "workspace:*",
+        "@highsea/i18n": "workspace:*",
         "@highsea/jobs": "workspace:*",
         "drizzle-orm": "0.45.3",
         "zod": "4.6.7",
@@ -467,6 +468,7 @@
       "name": "@highsea/runtime",
       "version": "0.0.0",
       "dependencies": {
+        "@highsea/api-contract": "workspace:*",
         "@highsea/auth": "workspace:*",
         "@highsea/catalog": "workspace:*",
         "@highsea/core": "workspace:*",

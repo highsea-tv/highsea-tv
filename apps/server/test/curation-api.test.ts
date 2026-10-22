@@ -178,7 +178,7 @@ describe('featured sections and the home screen', () => {
     const empty = await api.curation.addSection({
       body: section({
         title: 'Silent era',
-        source: { kind: 'rule', rule: 'filter', value: 'year < 1930' },
+        source: { kind: 'rule', rule: 'genre', value: 'Western' },
       }),
     })
     const home = await memberApi.home.sections({ query: { client: 'web' } })

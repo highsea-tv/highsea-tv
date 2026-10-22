@@ -3,9 +3,13 @@
 // - `metadata.refresh` refreshes one movie, person or collection by TMDB id;
 // - `metadata.changes`, daily, refreshes what TMDB's change lists name;
 // - `metadata.sweep`, daily, spreads a full refresh of what the library refers to over 30 days;
-// - `metadata.purge`, daily, removes what's past TMDB's six-month limit and the library doesn't use.
+// - `metadata.purge`, daily, removes what's past TMDB's six-month limit and the library doesn't use;
+// - `metadata.facts` derives collection rules' facts again from the stored responses (checkpoint 8d):
+//   queued at boot when they were derived for another region or version, and when the region changes.
+import type { Db } from '@highsea/db'
 import type { JobQueue } from '@highsea/jobs'
 import { z } from 'zod'
+import { deriveAllFacts, factsCurrent } from './facts.ts'
 import type { createMetadataCore } from './service.ts'
 import { JOB_TYPES } from './service.ts'
 
@@ -19,7 +23,22 @@ export const RefreshPayload = z.object({
 /** Scheduled jobs are queued with `{}`. */
 const Scheduled = z.object({})
 
-export function defineMetadataJobs(jobs: JobQueue, core: ReturnType<typeof createMetadataCore>) {
+export function defineMetadataJobs(
+  jobs: JobQueue,
+  core: ReturnType<typeof createMetadataCore>,
+  db: Db,
+  now: () => number,
+) {
+  jobs.define({
+    type: JOB_TYPES.facts,
+    payload: Scheduled,
+    attempts: 3,
+    timeoutMs: 30 * 60_000,
+    async run() {
+      // the region read when it runs, so a second change while it waited is the one that counts
+      await deriveAllFacts(db, core.settings.region(), now())
+    },
+  })
   jobs.define({
     type: JOB_TYPES.refresh,
     payload: RefreshPayload,
@@ -55,6 +74,11 @@ export function defineMetadataJobs(jobs: JobQueue, core: ReturnType<typeof creat
       core.runPurge()
     },
   })
+}
+
+/** Queues `metadata.facts` unless the stored facts follow this region already. */
+export function queueFacts(jobs: JobQueue, db: Db, region: string) {
+  if (!factsCurrent(db, region)) jobs.enqueue(JOB_TYPES.facts, {}, { dedupeKey: 'facts' })
 }
 
 /** Daily, staggered so the three don't start together. The runtime calls this once at boot. */

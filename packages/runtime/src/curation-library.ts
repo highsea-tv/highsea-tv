@@ -7,7 +7,7 @@
 // will narrow to what can actually be played. The rules read TMDB's own JSON in the metadata cache
 // with SQLite's json_each and json_extract (https://sqlite.org/json1.html), as the genre rows do.
 import type { Clock } from '@highsea/core'
-import type { BuiltInRow, CurationLibrary, FilterTerm, RulePick } from '@highsea/curation/service'
+import type { BuiltInRow, CurationLibrary, LibraryPick } from '@highsea/curation/service'
 import { type Db, schema } from '@highsea/db'
 import type { Movies } from '@highsea/media/movies'
 import { and, eq, inArray, type SQL, sql } from 'drizzle-orm'
@@ -23,22 +23,8 @@ const DAY = 86_400_000
 const HAS_FILE = sql`mi.type = 'movie' AND mi.parent_id IS NULL AND EXISTS (
   SELECT 1 FROM versions v WHERE v.item_id = mi.id AND v.file_id IS NOT NULL)`
 
-const OPS: Record<FilterTerm['op'], SQL> = {
-  '<': sql`<`,
-  '<=': sql`<=`,
-  '>': sql`>`,
-  '>=': sql`>=`,
-  '=': sql`=`,
-}
-
-/** The ratings are out of 5 in the API, TMDB's 0–10 halved, as the client sees them. */
-const termSql = (t: FilterTerm): SQL =>
-  t.field === 'year'
-    ? sql`mi.year ${OPS[t.op]} ${t.value}`
-    : sql`round(mi.rating / 2.0, 1) ${OPS[t.op]} ${t.value}`
-
 /** Where a rule looks and in what order: newest first, best rated first, or the films' order. */
-function ruleSql(pick: RulePick, now: number): { where: SQL; order: SQL } {
+function ruleSql(pick: LibraryPick, now: number): { where: SQL; order: SQL } {
   switch (pick.rule) {
     case 'recently-added':
       return {
@@ -56,11 +42,6 @@ function ruleSql(pick: RulePick, now: number): { where: SQL; order: SQL } {
         where: sql`EXISTS (SELECT 1 FROM movie_metadata mm
           WHERE mm.tmdb_id = mi.tmdb_id AND mm.collection_id = ${pick.collectionId})`,
         order: sql`mi.release_date, mi.year, mi.id`,
-      }
-    case 'filter':
-      return {
-        where: sql.join(pick.terms.map(termSql), sql` AND `),
-        order: sql`mi.rating DESC, mi.sort_title, mi.id`,
       }
   }
 }

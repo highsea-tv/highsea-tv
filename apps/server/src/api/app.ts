@@ -7,6 +7,7 @@ import type { Runtime } from '@highsea/runtime'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
 import { registerAccounts } from './accounts.ts'
+import { registerCollections } from './collections.ts'
 import { registerConnections } from './connections.ts'
 import { registerCuration } from './curation.ts'
 import { registerDownloads } from './downloads.ts'
@@ -103,6 +104,7 @@ export function createApi(runtime: Runtime) {
   registerLists(app)
   registerConnections(app)
   registerCuration(app)
+  registerCollections(app)
   registerTags(app)
 
   app.doc31(`${API_PREFIX}/openapi.json`, {

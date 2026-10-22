@@ -55,6 +55,12 @@ export const movieMetadata = sqliteTable(
     voteCount: integer('vote_count').notNull().default(0),
     popularity: real('popularity').notNull().default(0),
     collectionId: integer('collection_id'),
+    /** ISO 639-1, TMDB's `original_language` (checkpoint 8d, for collection rules). */
+    originalLanguage: text('original_language'),
+    /** Minutes. */
+    runtime: integer('runtime'),
+    /** The theatrical certification in the server's region (`PG-13`), from `release_dates`. */
+    certification: text('certification'),
     /** The metadata language it was fetched in (`en-US`). */
     language: text('language').notNull(),
     data: text('data', { mode: 'json' }).notNull(),
@@ -65,6 +71,31 @@ export const movieMetadata = sqliteTable(
   (t) => [
     index('movie_metadata_fetched').on(t.fetchedAt),
     index('movie_metadata_collection').on(t.collectionId),
+    index('movie_metadata_language').on(t.originalLanguage),
+  ],
+)
+
+export const MOVIE_TERM_KINDS = ['genre', 'keyword', 'studio', 'country'] as const
+
+/**
+ * A cached movie's genres, keywords, production companies and countries, one row each, so
+ * collection rules can ask for them with an index (checkpoint 8d). `value` is TMDB's id (the ISO
+ * 3166-1 code for a country); `label` its name in the metadata language. Replaced whole when the
+ * movie is refreshed, like its credits.
+ */
+export const movieTerms = sqliteTable(
+  'movie_terms',
+  {
+    movieId: integer('movie_id')
+      .notNull()
+      .references(() => movieMetadata.tmdbId, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: MOVIE_TERM_KINDS }).notNull(),
+    value: text('value').notNull(),
+    label: text('label').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.movieId, t.kind, t.value] }),
+    index('movie_terms_value').on(t.kind, t.value),
   ],
 )
 
@@ -336,9 +367,32 @@ export const mediaFiles = sqliteTable(
     mediaInfo: text('media_info', { mode: 'json' }),
     /** How it reached the library: hardlink, reflink or copy, or a move. */
     transfer: text('transfer'),
+    /** From the probe, for collection rules (checkpoint 8d): lines (`2160`), the HDR format, the codec. */
+    resolution: integer('resolution'),
+    hdr: text('hdr'),
+    videoCodec: text('video_codec'),
     addedAt: integer('added_at').notNull(),
   },
   (t) => [index('media_files_item').on(t.itemId), index('media_files_version').on(t.versionId)],
+)
+
+/**
+ * A file's audio and embedded subtitle languages from the probe, ISO 639-1, one row each
+ * (checkpoint 8d). Sidecar subtitles are `subtitle_files`.
+ */
+export const mediaFileLanguages = sqliteTable(
+  'media_file_languages',
+  {
+    fileId: text('file_id')
+      .notNull()
+      .references(() => mediaFiles.id, { onDelete: 'cascade' }),
+    kind: text('kind', { enum: ['audio', 'subtitle'] }).notNull(),
+    language: text('language').notNull(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.fileId, t.kind, t.language] }),
+    index('media_file_languages_language').on(t.kind, t.language),
+  ],
 )
 
 export const HISTORY_TYPES = [

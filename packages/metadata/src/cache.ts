@@ -4,6 +4,7 @@
 // nothing (ADR 0022).
 import { type Db, schema } from '@highsea/db'
 import { eq } from 'drizzle-orm'
+import { movieColumns, replaceTerms } from './facts.ts'
 import { departmentOf } from './map.ts'
 import type {
   TmdbCollection,
@@ -28,8 +29,11 @@ export function createCache(db: Db) {
     collection: (id: number) =>
       db.select().from(collections).where(eq(collections.tmdbId, id)).get(),
 
-    /** Writes a movie and replaces its cast and crew rows, in one transaction. */
-    putMovie(movie: TmdbMovie, language: string, now: number) {
+    /**
+     * Writes a movie and replaces its cast and crew rows and its terms, in one transaction. The
+     * certification follows `region`, the server's.
+     */
+    putMovie(movie: TmdbMovie, language: string, now: number, region: string) {
       const row = {
         tmdbId: movie.id,
         title: movie.title,
@@ -40,6 +44,7 @@ export function createCache(db: Db) {
         voteCount: movie.vote_count ?? 0,
         popularity: movie.popularity ?? 0,
         collectionId: movie.belongs_to_collection?.id ?? null,
+        ...movieColumns(movie, region),
         language,
         data: movie,
         fetchedAt: now,
@@ -79,6 +84,7 @@ export function createCache(db: Db) {
             .values(unique.slice(i, i + 200))
             .onConflictDoNothing()
             .run()
+        replaceTerms(tx, movie)
       })
     },
 

@@ -54,12 +54,20 @@ export const JOB_TYPES = {
   changes: 'metadata.changes',
   sweep: 'metadata.sweep',
   purge: 'metadata.purge',
+  /** Derives collection rules' facts again (checkpoint 8d): after a region change, or once for rows from before. */
+  facts: 'metadata.facts',
 } as const
 
 /** The settings row the changes job keeps its last run in. */
 export const CHANGES_STATE_KEY = 'metadata.changes'
 /** TMDB's `/3/configuration`, kept so image URLs follow it. */
 export const CONFIGURATION_KEY = 'metadata.tmdb'
+/** TMDB's `/3/certification/movie/list`, by country: what a region's ratings are, in order. */
+export const CERTIFICATIONS_KEY = 'metadata.certifications'
+
+/** A region's film certification and its place from mildest (TMDB's `order`). */
+export type Certification = { certification: string; order: number }
+type StoredCertifications = { regions: Record<string, Certification[]>; fetchedAt: number }
 
 const utcDate = (ms: number) => new Date(ms).toISOString().slice(0, 10)
 
@@ -103,6 +111,39 @@ export function createMetadataCore(deps: MetadataDeps) {
     }
   }
 
+  /**
+   * Reads TMDB's certification lists once a week, as the configuration is read: they change when a
+   * country's ratings board does, which is rare. A failure keeps what's stored.
+   */
+  async function refreshCertifications(credential: Credential) {
+    const stored = readSetting<StoredCertifications>(db, CERTIFICATIONS_KEY, {
+      regions: {},
+      fetchedAt: 0,
+    })
+    if (clock.now() - stored.fetchedAt < 7 * DAY) return
+    try {
+      const list = await api.certifications(credential)
+      const regions: Record<string, Certification[]> = {}
+      for (const [region, certs] of Object.entries(list.certifications ?? {}))
+        regions[region] = certs
+          .filter((c) => c.certification.trim())
+          .map((c) => ({ certification: c.certification.trim(), order: c.order }))
+          .sort((a, b) => a.order - b.order)
+      writeSetting(db, CERTIFICATIONS_KEY, { regions, fetchedAt: clock.now() }, clock.now())
+    } catch (e) {
+      logger.warn('couldn’t read TMDB’s certifications', { error: (e as Error).message })
+    }
+  }
+
+  /** The region's certifications from mildest, as TMDB lists them; null until they've been read. */
+  function certifications(region = settings.region()): Certification[] | null {
+    const stored = readSetting<StoredCertifications>(db, CERTIFICATIONS_KEY, {
+      regions: {},
+      fetchedAt: 0,
+    })
+    return stored.fetchedAt ? (stored.regions[region] ?? []) : null
+  }
+
   // ------------------------------------------------------------ fetching into the cache
 
   /** Fetches one cached kind from TMDB and writes it. Returns false when TMDB has no such id. */
@@ -110,7 +151,8 @@ export function createMetadataCore(deps: MetadataDeps) {
     const language = settings.language()
     const now = clock.now()
     try {
-      if (kind === 'movie') cache.putMovie(await api.movie(credential, id, language), language, now)
+      if (kind === 'movie')
+        cache.putMovie(await api.movie(credential, id, language), language, now, settings.region())
       else if (kind === 'person')
         cache.putPerson(await api.person(credential, id, language), language, now)
       else cache.putCollection(await api.collection(credential, id, language), language, now)
@@ -323,6 +365,7 @@ export function createMetadataCore(deps: MetadataDeps) {
     const credential = settings.credential()
     if (!credential) return { mode: 'skipped' as const, queued: 0 }
     await refreshConfiguration(credential)
+    await refreshCertifications(credential)
     const now = clock.now()
     const state = readSetting(db, CHANGES_STATE_KEY, { lastRunAt: null as number | null })
     let queued = 0
@@ -499,6 +542,8 @@ export function createMetadataCore(deps: MetadataDeps) {
     api,
     requireKey,
     refreshConfiguration,
+    refreshCertifications,
+    certifications,
     movie,
     cachedMovie,
     recommendations,

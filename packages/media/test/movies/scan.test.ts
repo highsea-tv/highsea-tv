@@ -112,9 +112,21 @@ describe.skipIf(!hasFfmpeg)('the library scan', () => {
     copyFileSync(clips.main, path)
     await s.movies.libraryScan.scan()
 
+    // recorded in place with its facts (checkpoint 8d); cleared here, a changed file sets them again
+    const facts = () =>
+      s.db
+        .select({ resolution: schema.mediaFiles.resolution, codec: schema.mediaFiles.videoCodec })
+        .from(schema.mediaFiles)
+        .get()
+    expect(facts()).toEqual({ resolution: 1080, codec: 'h264' })
+    s.db.update(schema.mediaFiles).set({ resolution: null, videoCodec: null }).run()
+    s.db.delete(schema.mediaFileLanguages).run()
+
     const later = new Date(Date.now() + 60 * MINUTE)
     utimesSync(path, later, later)
     expect((await s.movies.libraryScan.scan()).changed).toBe(1)
+    expect(facts()).toEqual({ resolution: 1080, codec: 'h264' })
+    expect(s.db.select().from(schema.mediaFileLanguages).all()).toHaveLength(3)
     appendFileSync(path, Buffer.alloc(1024))
     expect((await s.movies.libraryScan.scan()).changed).toBe(1)
     expect(s.movies.files(SINTEL)[0]?.size).toBe(statSync(path).size)

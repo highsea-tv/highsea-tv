@@ -62,6 +62,7 @@ export const CLIENTS: ClientType[] = [
 /** Recently added's windows, in days. */
 export const RECENT_WINDOWS: Record<string, number> = { '7d': 7, '30d': 30, '90d': 90 }
 
+/** 8c's free-text filter, kept to turn saved ones into collections (8d). */
 export type FilterTerm = {
   field: 'year' | 'rating'
   op: '<' | '<=' | '>' | '>=' | '='
@@ -90,11 +91,13 @@ export function parseFilter(value: string): FilterTerm[] | null {
 }
 
 /** What a rule source asks the library for, checked. */
-export type RulePick =
+export type LibraryPick =
   | { rule: 'recently-added'; days: number }
   | { rule: 'genre'; genre: string }
   | { rule: 'collection'; collectionId: number }
-  | { rule: 'filter'; terms: FilterTerm[] }
+
+/** A library pick, or one of the server's own collections (8d), which collections answer. */
+export type RulePick = LibraryPick | { rule: 'smart'; collectionId: string }
 
 /** A rule source's value as the library takes it; null when it doesn't make sense. */
 export function rulePick(source: Extract<FeaturedSource, { kind: 'rule' }>): RulePick | null {
@@ -107,12 +110,9 @@ export function rulePick(source: Extract<FeaturedSource, { kind: 'rule' }>): Rul
     case 'genre':
       return value ? { rule: 'genre', genre: value } : null
     case 'collection': {
+      if (value.startsWith('sc-')) return { rule: 'smart', collectionId: value }
       const id = Number(value)
       return Number.isInteger(id) && id > 0 ? { rule: 'collection', collectionId: id } : null
-    }
-    case 'filter': {
-      const terms = parseFilter(value)
-      return terms ? { rule: 'filter', terms } : null
     }
   }
 }
@@ -122,6 +122,4 @@ export const RULE_ERRORS: Record<FeaturedRule, string> = {
   'recently-added': 'Choose 7, 30 or 90 days.',
   genre: 'Choose a genre.',
   collection: 'Choose a collection.',
-  filter:
-    'Write the filter as the library’s filter bar does: year < 1930, rating >= 4, or both with and.',
 }

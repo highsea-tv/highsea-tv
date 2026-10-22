@@ -56,3 +56,7 @@ Both are read by apps that don't exist yet (Phase 4), so the server has to answe
 - **Has a file is too loose.** It lets in a title that can't be streamed yet. Phase 4 narrows it in the seam, without changing curation.
 - **Fingerprints are kept in memory.** After a restart, the first run sets them without sending anything. A change missed while the server was down reaches the apps the next time they load.
 - **Section rules are a small grammar.** The rules are recently added (7, 30 or 90 days), a genre, a collection, or a filter of `year` and `rating` comparisons joined by `and`. A richer filter would mean the library's saved filters, which milestone 1 doesn't have.
+
+## 2026-10-22: smart collections (checkpoint 8d)
+
+The `filter` rule is replaced by smart collections (ADR 0049). A section's `collection` rule takes a smart collection's `sc-` id as well as TMDB's, and sections stored with `filter` become smart collections at boot.

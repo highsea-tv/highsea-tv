@@ -32,6 +32,7 @@ import {
   removeUnpacked,
 } from '../shared/extract.ts'
 import { createProbe } from '../shared/ffprobe.ts'
+import { writeFileFacts } from '../shared/file-facts.ts'
 import {
   blockedMessage,
   type FoundFile,
@@ -573,6 +574,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
         tx.insert(mediaFiles)
           .values({ id, ...values, addedAt: now })
           .run()
+      writeFileFacts(tx, id, fileInfo.probe)
       if (existing && existing.id !== id) {
         hooks.replacing?.(tx, existing.id, id)
         tx.delete(mediaFiles).where(eq(mediaFiles.id, existing.id)).run()
@@ -858,6 +860,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
         tx.insert(mediaFiles)
           .values({ id, ...values, addedAt: now })
           .run()
+      writeFileFacts(tx, id, fileInfo.probe)
       return id
     })
     await afterImport({ fileId, itemId: row.id, path, sourceFolder: dirname(path), inPlace: true })

@@ -77,7 +77,7 @@ export const ClientAnnouncement = Announcement.omit({ status: true })
   })
   .openapi('ClientAnnouncement')
 
-export const FEATURED_RULES = ['recently-added', 'genre', 'collection', 'filter'] as const
+export const FEATURED_RULES = ['recently-added', 'genre', 'collection'] as const
 export const FeaturedRule = z.enum(FEATURED_RULES).openapi('FeaturedRule')
 
 export const FeaturedSource = z
@@ -91,8 +91,8 @@ export const FeaturedSource = z
       kind: z.literal('rule'),
       rule: FeaturedRule,
       /**
-       * `recently-added`: `7d`, `30d` or `90d`; `genre`: its name; `collection`: its TMDB id; `filter`:
-       * `year < 1930`, `rating >= 4`, joined by `and`.
+       * `recently-added`: `7d`, `30d` or `90d`; `genre`: its name; `collection`: one of the
+       * server's own (`sc-…`, checkpoint 8d) or TMDB's id. 8c's `filter` became collections.
        */
       value: z.string().trim().min(1).max(200),
     }),
@@ -169,8 +169,10 @@ export const RuleOptions = z
   .object({
     /** The library's genres, in the metadata language. */
     genres: z.array(z.string()),
-    /** Collections with a title here. */
+    /** TMDB's collections with a title here. */
     collections: z.array(z.object({ id: z.number().int(), name: z.string() })),
+    /** The server's own collections (checkpoint 8d), in the admin's order. */
+    smart: z.array(z.object({ id: z.string(), name: z.string() })),
   })
   .openapi('RuleOptions')
 

@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "url": "https://api.themoviedb.org/3/movie/969681?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations&language=en-US",
+    "url": "https://api.themoviedb.org/3/movie/969681?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations%2Ckeywords&language=en-US",
     "credential": "valid"
   },
   "response": {
@@ -205,7 +205,7 @@
             "known_for_department": "Acting",
             "name": "Marisa Tomei",
             "original_name": "Marisa Tomei",
-            "popularity": 15.0,
+            "popularity": 15,
             "profile_path": "/vAQ10fvGfVyuJdMNKVMA4ZkacWL.jpg",
             "cast_id": 10,
             "character": "May Parker",
@@ -541,7 +541,7 @@
             "known_for_department": "Acting",
             "name": "Camila López",
             "original_name": "Camila López",
-            "popularity": 29.0,
+            "popularity": 29,
             "profile_path": null,
             "cast_id": 34,
             "character": "Bodega Clerk",
@@ -639,7 +639,7 @@
             "known_for_department": "Acting",
             "name": "Benedict Cezair-Thompson",
             "original_name": "Benedict Cezair-Thompson",
-            "popularity": 8.0,
+            "popularity": 8,
             "profile_path": "/3QQRJIn43weIE91q1vgNJs7hV9.jpg",
             "cast_id": 41,
             "character": "DODC Substation Guard",
@@ -765,7 +765,7 @@
             "known_for_department": "Acting",
             "name": "Nezar Alderazi",
             "original_name": "Nezar Alderazi",
-            "popularity": 10.0,
+            "popularity": 10,
             "profile_path": "/940awVhZvZO9ANqj3TE9ExcSB88.jpg",
             "cast_id": 50,
             "character": "John (Groom)",
@@ -946,7 +946,7 @@
             "known_for_department": "Art",
             "name": "Luke Whitelock",
             "original_name": "Luke Whitelock",
-            "popularity": 25.0,
+            "popularity": 25,
             "profile_path": null,
             "credit_id": "20b195114b7a096bf6ad5f38",
             "department": "Art",
@@ -3235,6 +3235,15 @@
         ],
         "total_pages": 1,
         "total_results": 8
+      },
+      "production_countries": [
+        {
+          "iso_3166_1": "US",
+          "name": "United States of America"
+        }
+      ],
+      "keywords": {
+        "keywords": []
       }
     }
   }

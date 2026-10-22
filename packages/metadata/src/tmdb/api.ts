@@ -4,6 +4,7 @@
 // included), so a request has one recording key.
 import type { Credential, TmdbClient } from './client.ts'
 import type {
+  TmdbCertifications,
   TmdbChanges,
   TmdbCollection,
   TmdbConfiguration,
@@ -15,9 +16,11 @@ import type {
 
 /**
  * One movie request is the whole movie: `append_to_response` takes up to 20 sub-requests
- * ([Append to response](https://developer.themoviedb.org/docs/append-to-response)).
+ * ([Append to response](https://developer.themoviedb.org/docs/append-to-response)). `keywords`
+ * ([Movie keywords](https://developer.themoviedb.org/reference/movie-keywords)) came with smart
+ * collections' keyword rules (checkpoint 8d).
  */
-export const MOVIE_APPEND = 'credits,videos,release_dates,external_ids,recommendations'
+export const MOVIE_APPEND = 'credits,videos,release_dates,external_ids,recommendations,keywords'
 export const PERSON_APPEND = 'movie_credits,external_ids'
 
 /** Discover's lists and their endpoints. Trending takes no region. */
@@ -36,6 +39,9 @@ export function tmdbApi(client: TmdbClient) {
     authentication: (c: Credential) =>
       client.json<{ success: boolean; status_code?: number }>(c, '/3/authentication'),
     configuration: (c: Credential) => client.json<TmdbConfiguration>(c, '/3/configuration'),
+    /** Every country's film certifications, in order (smart collections' rating rule, 8d). */
+    certifications: (c: Credential) =>
+      client.json<TmdbCertifications>(c, '/3/certification/movie/list'),
     movie: (c: Credential, id: number, language: string) =>
       client.json<TmdbMovie>(c, `/3/movie/${id}`, { append_to_response: MOVIE_APPEND, language }),
     similar: (c: Credential, id: number, language: string) =>

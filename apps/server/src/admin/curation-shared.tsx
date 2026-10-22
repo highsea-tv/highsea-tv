@@ -118,10 +118,16 @@ export function useAudienceSummary() {
   }
 }
 
-/** "Picked by hand", "Genre: Comedy". A collection shows its name, from the rule options. */
+/**
+ * "Picked by hand", "Genre: Comedy". A collection shows its name: the server's own (`sc-…`, 8d)
+ * from the collections list, TMDB's from the rule options.
+ */
 export function useSourceSummary() {
   const t = useCurationT()
-  return (source: FeaturedSource, collections: { id: number; name: string }[] = []): string => {
+  return (
+    source: FeaturedSource,
+    collections: { id: number | string; name: string }[] = [],
+  ): string => {
     if (source.kind === 'manual') return t('source.manual')
     const { rule, value } = source
     if (rule === 'recently-added')

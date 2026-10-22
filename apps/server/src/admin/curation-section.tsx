@@ -45,12 +45,11 @@ import { useNow } from './time.ts'
 const LAYOUTS: FeaturedLayout[] = ['hero', 'row', 'spotlight']
 const WINDOWS = ['7d', '30d', '90d'] as const
 
-/** A rule's first value: the library's first genre or collection, when it has one. */
+/** A rule's first value: the library's first genre or collection (yours first), when it has one. */
 function ruleDefault(rule: FeaturedRule, options: RuleOptions | undefined): string {
   if (rule === 'recently-added') return '30d'
   if (rule === 'genre') return options?.genres[0] ?? ''
-  if (rule === 'collection') return String(options?.collections[0]?.id ?? '')
-  return 'year < 1930'
+  return options?.smart[0]?.id ?? String(options?.collections[0]?.id ?? '')
 }
 
 function blank(now: number): FeaturedSectionInput {
@@ -352,24 +351,26 @@ function Source({
           {s.rule === 'collection' && (
             <Field
               label={t('collection')}
-              hint={options.data?.collections.length ? undefined : t('noCollections')}
+              hint={
+                options.data?.collections.length || options.data?.smart.length
+                  ? t('collectionHint')
+                  : t('noCollections')
+              }
             >
               <Select
                 value={s.value}
                 onValueChange={(value) => set({ source: { ...s, value } })}
-                options={(options.data?.collections ?? []).map((c) => ({
-                  value: String(c.id),
-                  label: c.name,
-                }))}
-              />
-            </Field>
-          )}
-          {s.rule === 'filter' && (
-            <Field label={t('filter')} hint={t('filterHint')}>
-              <Input
-                value={s.value}
-                onChange={(e) => set({ source: { ...s, value: e.target.value } })}
-                className="font-mono"
+                options={[
+                  // yours first, then TMDB's (checkpoint 8d)
+                  ...(options.data?.smart ?? []).map((c) => ({
+                    value: c.id,
+                    label: t('collectionYours', { name: c.name }),
+                  })),
+                  ...(options.data?.collections ?? []).map((c) => ({
+                    value: String(c.id),
+                    label: c.name,
+                  })),
+                ]}
               />
             </Field>
           )}

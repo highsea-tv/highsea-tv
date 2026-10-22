@@ -86,4 +86,6 @@ export const STAFF_TOPICS: readonly string[] = [
   'connections.updated',
   // the admin's curation lists (checkpoint 8c); the apps get CURATION_TOPICS's personal ones
   'curation.updated',
+  // smart collections (checkpoint 8d); the apps hear `home.updated`
+  'collections.updated',
 ]

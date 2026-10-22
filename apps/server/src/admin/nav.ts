@@ -8,6 +8,7 @@ type Id =
   | 'dashboard'
   | 'discover'
   | 'movies'
+  | 'collections'
   | 'wanted'
   | 'activity'
   | 'downloads'
@@ -38,6 +39,7 @@ export const pageGroups: Page[][] = [
     page('dashboard', 'dashboard', '/'),
     page('discover', 'discover', '/discover'),
     page('movies', 'movie', '/movies'),
+    page('collections', 'library', '/collections'),
     page('wanted', 'calendar', '/wanted'),
     page('activity', 'activity', '/activity'),
     page('downloads', 'downloads', '/downloads'),

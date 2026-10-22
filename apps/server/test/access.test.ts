@@ -48,6 +48,8 @@ const USER_ROUTES = [
   'home.layout',
   'home.saveLayout',
   'home.sections',
+  'library.collection',
+  'library.collections',
   'library.item',
   'library.list',
   'library.search',

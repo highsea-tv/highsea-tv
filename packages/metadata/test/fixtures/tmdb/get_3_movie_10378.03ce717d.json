@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "url": "https://api.themoviedb.org/3/movie/10378?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations&language=en-US",
+    "url": "https://api.themoviedb.org/3/movie/10378?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations%2Ckeywords&language=en-US",
     "credential": "valid"
   },
   "response": {
@@ -558,6 +558,15 @@
         ],
         "total_pages": 1,
         "total_results": 8
+      },
+      "production_countries": [
+        {
+          "iso_3166_1": "NL",
+          "name": "Netherlands"
+        }
+      ],
+      "keywords": {
+        "keywords": []
       }
     }
   }

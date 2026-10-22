@@ -13,6 +13,7 @@
 //   and Remove a tag to bulk edit (Radarr's Movie Editor tags: wiki.servarr.com/radarr/movies);
 // - the statuses are the server's (available, wanted, downloading, not released, not monitored);
 // - the grid has no quality tags on the art until files exist (checkpoint 6);
+// - Save as smart collection (checkpoint 8d) carries the tag filter into the rules too;
 // - bulk Search is shown but disabled while no indexer is enabled (checkpoint 4 plan, decision 2);
 //   with one, it queues a search for each movie (checkpoint 5).
 import {
@@ -21,6 +22,7 @@ import {
   MOVIE_SORTS,
   type MoviePage,
   type MovieStatus,
+  type RuleCondition,
 } from '@highsea/api-contract'
 import { shortDate } from '@highsea/core/format'
 import { useLocale, useT } from '@highsea/i18n/react'
@@ -61,6 +63,8 @@ import {
 import { useRouter } from 'next/navigation'
 import { Fragment, useDeferredValue, useRef, useState, useSyncExternalStore } from 'react'
 import { useAddressParam } from './address.ts'
+import { handoff } from './collections-editor.tsx'
+import { ruleId } from './collections-rules.tsx'
 import { useSearchable } from './indexer-state.ts'
 import { library as messages } from './library-messages.ts'
 import { Loadable, PosterSkeletons } from './loadable.tsx'
@@ -185,6 +189,35 @@ export function MoviesLibrary() {
     }
   }
 
+  /** A new smart collection that starts from this tab, text, tag and sort (checkpoint 8d). */
+  const saveAsCollection = () => {
+    const when = (
+      field: RuleCondition['field'],
+      op: RuleCondition['op'],
+      value: RuleCondition['value'],
+    ): RuleCondition => ({ kind: 'condition', id: ruleId('c'), field, op, value })
+    const q = text.trim()
+    handoff.draft = {
+      rules: {
+        kind: 'group',
+        id: ruleId('g'),
+        match: 'all',
+        rules: [
+          ...(tab === 'all' ? [] : [when('status', 'is', tab)]),
+          ...(!q
+            ? []
+            : /^\d{4}$/.test(q)
+              ? [when('year', 'is', Number(q))]
+              : [when('title', 'contains', q)]),
+          ...(tag ? [when('tag', 'anyOf', [tag])] : []),
+        ],
+      },
+      sort,
+      descending: sort !== 'title',
+    }
+    router.push('/collections/new')
+  }
+
   const actions = (
     <>
       <SegmentedControl
@@ -266,6 +299,9 @@ export function MoviesLibrary() {
                         options={MOVIE_SORTS.map((k) => ({ value: k, label: t(`sort.${k}`) }))}
                         className="w-36"
                       />
+                      <Button size="sm" icon="library" onClick={saveAsCollection}>
+                        {t('saveAsCollection')}
+                      </Button>
                     </div>
                   </TableToolbar>
                   {ids.length > 0 && (

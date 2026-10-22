@@ -16,6 +16,7 @@ import { promises as fsp } from 'node:fs'
 import { basename, dirname, extname } from 'node:path'
 import { schema } from '@highsea/db'
 import { eq } from 'drizzle-orm'
+import { writeFileFacts } from '../shared/file-facts.ts'
 import { type FoundFile, isVideo, listFiles } from '../shared/files.ts'
 import type { Media } from '../shared/index.ts'
 import type { ItemRow } from '../shared/map.ts'
@@ -101,10 +102,13 @@ export function createLibraryScan(
       formatScore: stored?.formatScore ?? 0,
       mtimeMs: found.mtimeMs,
     }
-    db.update(mediaFiles)
-      .set({ size: found.size, mediaInfo: next })
-      .where(eq(mediaFiles.id, file.id))
-      .run()
+    db.transaction((tx) => {
+      tx.update(mediaFiles)
+        .set({ size: found.size, mediaInfo: next })
+        .where(eq(mediaFiles.id, file.id))
+        .run()
+      writeFileFacts(tx, file.id, next.probe)
+    })
     if (row) announce(events, [row.tmdbId])
   }
 

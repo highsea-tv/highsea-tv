@@ -110,6 +110,31 @@ describe.skipIf(!hasFfmpeg)('importing a download', () => {
       quality: { name: 'Bluray-1080p', resolution: '1080p', codec: 'h264' },
     })
     expect(file?.streams.map((x) => x.type)).toEqual(['video', 'audio', 'audio', 'subtitle'])
+    // collection rules' facts (checkpoint 8d): from the probe, languages as ISO 639-1
+    expect(
+      s.db
+        .select({
+          resolution: schema.mediaFiles.resolution,
+          hdr: schema.mediaFiles.hdr,
+          videoCodec: schema.mediaFiles.videoCodec,
+        })
+        .from(schema.mediaFiles)
+        .all(),
+    ).toEqual([{ resolution: 1080, hdr: 'none', videoCodec: 'h264' }])
+    expect(
+      s.db
+        .select({
+          kind: schema.mediaFileLanguages.kind,
+          language: schema.mediaFileLanguages.language,
+        })
+        .from(schema.mediaFileLanguages)
+        .orderBy(schema.mediaFileLanguages.kind, schema.mediaFileLanguages.language)
+        .all(),
+    ).toEqual([
+      { kind: 'audio', language: 'en' },
+      { kind: 'audio', language: 'fr' },
+      { kind: 'subtitle', language: 'en' },
+    ])
 
     const again = await s.movies.importDownload(input)
     expect(again).toMatchObject({ status: 'imported', path: dest, already: true })

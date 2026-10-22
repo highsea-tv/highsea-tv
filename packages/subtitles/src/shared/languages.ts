@@ -1,39 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Profile languages (judgement call 5): ISO 639-1 codes, plus `pt-BR`, `zh-Hans` and `zh-Hant`,
 // which OpenSubtitles.com also tells apart. ffprobe reports a stream's language as Matroska stores
-// it, ISO 639-2 (`eng`, and `fre` or `fra`), so each code carries its 639-2 bibliographic and
-// terminology forms from the Library of Congress list
-// (https://www.loc.gov/standards/iso639-2/php/code_list.php). Names come from `Intl.DisplayNames`.
-import { languageCode } from '@highsea/parser'
-
-/** `639-1:639-2/B[/639-2/T]`, from the Library of Congress list; `bh` is withdrawn and left out. */
-const TABLE =
-  'aa:aar ab:abk ae:ave af:afr ak:aka am:amh an:arg ar:ara as:asm av:ava ay:aym az:aze ba:bak ' +
-  'be:bel bg:bul bi:bis bm:bam bn:ben bo:tib/bod br:bre bs:bos ca:cat ce:che ch:cha co:cos cr:cre ' +
-  'cs:cze/ces cu:chu cv:chv cy:wel/cym da:dan de:ger/deu dv:div dz:dzo ee:ewe el:gre/ell en:eng ' +
-  'eo:epo es:spa et:est eu:baq/eus fa:per/fas ff:ful fi:fin fj:fij fo:fao fr:fre/fra fy:fry ga:gle ' +
-  'gd:gla gl:glg gn:grn gu:guj gv:glv ha:hau he:heb hi:hin ho:hmo hr:hrv ht:hat hu:hun hy:arm/hye ' +
-  'hz:her ia:ina id:ind ie:ile ig:ibo ii:iii ik:ipk io:ido is:ice/isl it:ita iu:iku ja:jpn jv:jav ' +
-  'ka:geo/kat kg:kon ki:kik kj:kua kk:kaz kl:kal km:khm kn:kan ko:kor kr:kau ks:kas ku:kur kv:kom ' +
-  'kw:cor ky:kir la:lat lb:ltz lg:lug li:lim ln:lin lo:lao lt:lit lu:lub lv:lav mg:mlg mh:mah ' +
-  'mi:mao/mri mk:mac/mkd ml:mal mn:mon mr:mar ms:may/msa mt:mlt my:bur/mya na:nau nb:nob nd:nde ' +
-  'ne:nep ng:ndo nl:dut/nld nn:nno no:nor nr:nbl nv:nav ny:nya oc:oci oj:oji om:orm or:ori os:oss ' +
-  'pa:pan pi:pli pl:pol ps:pus pt:por qu:que rm:roh rn:run ro:rum/ron ru:rus rw:kin sa:san sc:srd ' +
-  'sd:snd se:sme sg:sag si:sin sk:slo/slk sl:slv sm:smo sn:sna so:som sq:alb/sqi sr:srp ss:ssw ' +
-  'st:sot su:sun sv:swe sw:swa ta:tam te:tel tg:tgk th:tha ti:tir tk:tuk tl:tgl tn:tsn to:ton ' +
-  'tr:tur ts:tso tt:tat tw:twi ty:tah ug:uig uk:ukr ur:urd uz:uzb ve:ven vi:vie vo:vol wa:wln ' +
-  'wo:wol xh:xho yi:yid yo:yor za:zha zh:chi/zho zu:zul'
+// it, ISO 639-2 (`eng`, and `fre` or `fra`), read through @highsea/parser's table of the Library of
+// Congress list (https://www.loc.gov/standards/iso639-2/php/code_list.php). Names come from
+// `Intl.DisplayNames`.
+import { iso6391Of, languageCode, ISO_639_1 as ONE } from '@highsea/parser'
 
 /** The regional codes a profile may use, beside ISO 639-1, and the base language each refines. */
 export const REGIONAL: Record<string, string> = { 'pt-BR': 'pt', 'zh-Hans': 'zh', 'zh-Hant': 'zh' }
 
-const BY_THREE = new Map<string, string>()
-const ONE = new Set<string>()
-for (const entry of TABLE.split(' ')) {
-  const [one, three] = entry.split(':') as [string, string]
-  ONE.add(one)
-  for (const code of three.split('/')) BY_THREE.set(code, one)
-}
 // Older and provider-specific tags for the regional codes, and 639-2's `fil` for Filipino.
 const EXTRA: Record<string, string> = {
   pob: 'pt-BR',
@@ -69,7 +44,7 @@ export function toLanguageCode(tag: string | null | undefined): string | null {
   if (lower in EXTRA) return EXTRA[lower] ?? null
   for (const [code] of Object.entries(REGIONAL)) if (code.toLowerCase() === lower) return code
   if (lower.length === 2 && ONE.has(lower)) return lower
-  if (lower.length === 3) return BY_THREE.get(lower) ?? null
+  if (lower.length === 3) return iso6391Of(lower) ?? null
   // An IETF tag such as `en-US`: its language, unless it's one of the regional codes above.
   const ietf = /^([a-z]{2,3})-[a-z0-9]{2,8}$/.exec(lower)
   if (ietf) return toLanguageCode(ietf[1])

@@ -71,6 +71,17 @@ export {
 } from './extract.ts'
 export { createProbe, ffprobeBinary, PROBE_ARGS } from './ffprobe.ts'
 export {
+  deriveAllFileFacts,
+  FILE_FACTS_STATE_KEY,
+  FILE_FACTS_VERSION,
+  type FileHdr,
+  fileColumns,
+  fileFactsCurrent,
+  fileLanguages,
+  probeOf,
+  writeFileFacts,
+} from './file-facts.ts'
+export {
   blockedMessage,
   DANGEROUS_EXTENSIONS,
   EXECUTABLE_EXTENSIONS,

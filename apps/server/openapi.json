@@ -10728,8 +10728,7 @@
         "enum": [
           "recently-added",
           "genre",
-          "collection",
-          "filter"
+          "collection"
         ]
       },
       "FeaturedOverride": {
@@ -10905,11 +10904,30 @@
                 "name"
               ]
             }
+          },
+          "smart": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string"
+                },
+                "name": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "id",
+                "name"
+              ]
+            }
           }
         },
         "required": [
           "genres",
-          "collections"
+          "collections",
+          "smart"
         ]
       },
       "CurationPreview": {
@@ -11132,6 +11150,652 @@
           "client",
           "userId",
           "draft"
+        ]
+      },
+      "CollectionSummary": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/SmartCollection"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "matched": {
+                "type": "integer"
+              },
+              "playable": {
+                "type": "integer"
+              },
+              "mosaic": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "words": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "usedBy": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "title": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "title"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "matched",
+              "playable",
+              "mosaic",
+              "words",
+              "usedBy"
+            ]
+          }
+        ]
+      },
+      "RuleGroup": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "group"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "match": {
+            "type": "string",
+            "enum": [
+              "all",
+              "any"
+            ]
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "anyOf": [
+                {
+                  "$ref": "#/components/schemas/RuleCondition"
+                },
+                {
+                  "$ref": "#/components/schemas/RuleSubgroup"
+                }
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 30
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "match",
+          "rules"
+        ]
+      },
+      "RuleCondition": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "condition"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "field": {
+            "$ref": "#/components/schemas/RuleField"
+          },
+          "op": {
+            "$ref": "#/components/schemas/RuleOp"
+          },
+          "value": {
+            "$ref": "#/components/schemas/RuleValue"
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "field",
+          "op",
+          "value"
+        ]
+      },
+      "RuleField": {
+        "type": "string",
+        "enum": [
+          "title",
+          "year",
+          "releaseDate",
+          "decade",
+          "rating",
+          "votes",
+          "certification",
+          "originalLanguage",
+          "audioLanguage",
+          "subtitleLanguage",
+          "genre",
+          "runtime",
+          "keyword",
+          "studio",
+          "country",
+          "actor",
+          "director",
+          "writer",
+          "composer",
+          "producer",
+          "cinematographer",
+          "editor",
+          "person",
+          "collection",
+          "added",
+          "status",
+          "tag",
+          "rootFolder",
+          "qualityProfile",
+          "resolution",
+          "hdr",
+          "videoCodec",
+          "edition",
+          "size",
+          "watched",
+          "lastPlayed"
+        ]
+      },
+      "RuleOp": {
+        "type": "string",
+        "enum": [
+          "contains",
+          "is",
+          "isNot",
+          "between",
+          "before",
+          "after",
+          "inLast",
+          "atLeast",
+          "atMost",
+          "oneOf",
+          "notOneOf",
+          "includes",
+          "excludes",
+          "only",
+          "anyOf",
+          "allOf",
+          "noneOf"
+        ]
+      },
+      "RuleValue": {
+        "anyOf": [
+          {
+            "type": "number"
+          },
+          {
+            "type": "string",
+            "maxLength": 200
+          },
+          {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "minItems": 1,
+            "maxItems": 100
+          },
+          {
+            "type": "array",
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ]
+          }
+        ],
+        "description": "A number, a pair for `between`, a date or a choice, or several choices; the field and comparison fix which"
+      },
+      "RuleSubgroup": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "group"
+            ]
+          },
+          "id": {
+            "type": "string",
+            "maxLength": 40
+          },
+          "match": {
+            "type": "string",
+            "enum": [
+              "all",
+              "any"
+            ]
+          },
+          "rules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuleCondition"
+            },
+            "minItems": 1,
+            "maxItems": 20
+          }
+        },
+        "required": [
+          "kind",
+          "id",
+          "match",
+          "rules"
+        ]
+      },
+      "CollectionSort": {
+        "type": "string",
+        "enum": [
+          "manual",
+          "rating",
+          "release",
+          "year",
+          "added",
+          "title",
+          "runtime",
+          "popularity",
+          "random"
+        ],
+        "description": "`manual` is the order of `include`, for a collection without rules; `random` changes once a day"
+      },
+      "SmartCollection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "artwork": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "rules": {
+            "$ref": "#/components/schemas/RuleGroup"
+          },
+          "include": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "maxItems": 500
+          },
+          "exclude": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "maxItems": 500
+          },
+          "sort": {
+            "$ref": "#/components/schemas/CollectionSort"
+          },
+          "descending": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 500
+          },
+          "audience": {
+            "$ref": "#/components/schemas/Audience"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "summary",
+          "artwork",
+          "rules",
+          "include",
+          "exclude",
+          "sort",
+          "descending",
+          "limit",
+          "audience",
+          "updatedAt"
+        ]
+      },
+      "SmartCollectionInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 80
+          },
+          "summary": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "artwork": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 2000
+          },
+          "rules": {
+            "$ref": "#/components/schemas/RuleGroup"
+          },
+          "include": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "maxItems": 500
+          },
+          "exclude": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "maxItems": 500
+          },
+          "sort": {
+            "$ref": "#/components/schemas/CollectionSort"
+          },
+          "descending": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 1,
+            "maximum": 500
+          },
+          "audience": {
+            "$ref": "#/components/schemas/Audience"
+          }
+        },
+        "required": [
+          "name",
+          "summary",
+          "artwork",
+          "rules",
+          "include",
+          "exclude",
+          "sort",
+          "descending",
+          "limit",
+          "audience"
+        ]
+      },
+      "CollectionPreview": {
+        "type": "object",
+        "properties": {
+          "matched": {
+            "type": "integer"
+          },
+          "playable": {
+            "type": "integer"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CollectionPreviewItem"
+            }
+          },
+          "words": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "matched",
+          "playable",
+          "items",
+          "words"
+        ]
+      },
+      "CollectionPreviewItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "poster": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "playable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "year",
+          "poster",
+          "playable"
+        ]
+      },
+      "RuleFieldInfo": {
+        "type": "object",
+        "properties": {
+          "field": {
+            "$ref": "#/components/schemas/RuleField"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "number",
+              "date",
+              "choice",
+              "list",
+              "person",
+              "text"
+            ]
+          },
+          "ops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RuleOp"
+            }
+          },
+          "options": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "value": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "value",
+                "label"
+              ]
+            }
+          },
+          "disabled": {
+            "type": "string",
+            "enum": [
+              "playback"
+            ]
+          }
+        },
+        "required": [
+          "field",
+          "type",
+          "ops"
+        ]
+      },
+      "RulePerson": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "photo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "titles": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "photo",
+          "titles"
+        ]
+      },
+      "LibraryCollection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "overview": {
+            "type": "string"
+          },
+          "art": {
+            "$ref": "#/components/schemas/Art"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "years": {
+            "type": "string"
+          },
+          "smart": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "rules": {
+                "type": "boolean"
+              },
+              "words": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "mosaic": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "rules",
+              "words",
+              "mosaic"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "overview",
+          "art",
+          "count",
+          "years",
+          "smart"
+        ]
+      },
+      "LibraryCollectionPage": {
+        "type": "object",
+        "properties": {
+          "collection": {
+            "$ref": "#/components/schemas/LibraryCollection"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientItem"
+            }
+          }
+        },
+        "required": [
+          "collection",
+          "items"
         ]
       },
       "Tag": {
@@ -29633,6 +30297,718 @@
         "responses": {
           "204": {
             "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/curation/collections": {
+      "get": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Every collection, with what it holds now",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collections, in the admin’s order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CollectionSummary"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Add a collection",
+        "description": "400 `invalid` names the rule at fault: a field and comparison that don’t go together, a value of the wrong shape, a field that comes with playback, or a collection that names itself.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmartCollectionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmartCollection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/curation/collections/preview": {
+      "post": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "What a draft collection holds right now",
+        "description": "The editor’s live result. Nothing is saved; `id` is the collection being edited, if any.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "maxLength": 64
+                  },
+                  "collection": {
+                    "$ref": "#/components/schemas/SmartCollectionInput"
+                  }
+                },
+                "required": [
+                  "collection"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "What it holds",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionPreview"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/curation/collections/fields": {
+      "get": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "The fields the rule builder offers, with the library’s choices",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 64,
+              "description": "The collection being edited, left out of its own choices"
+            },
+            "required": false,
+            "description": "The collection being edited, left out of its own choices",
+            "name": "except",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fields, in the contract’s order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RuleFieldInfo"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/curation/collections/people": {
+      "get": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "People credited on titles here, by name",
+        "description": "For a role field, only people credited in that role.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            },
+            "required": true,
+            "name": "q",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "$ref": "#/components/schemas/RuleField"
+            },
+            "required": false,
+            "name": "field",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "At most 20, most titles first",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RulePerson"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/curation/collections/{id}": {
+      "get": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "A collection",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The collection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CollectionSummary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Save a collection",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SmartCollectionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SmartCollection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Collections"
+        ],
+        "summary": "Delete a collection; its titles stay in the library",
+        "description": "409 `in-use` while a featured section draws on it, with `details.sections`.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/library/collections": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "summary": "Library › Collections: the server’s, then TMDB’s with titles here",
+        "description": "A collection with nothing this person can play is left out.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/ClientType"
+                },
+                {
+                  "description": "The kind of app; `web` when absent"
+                }
+              ]
+            },
+            "required": false,
+            "description": "The kind of app; `web` when absent",
+            "name": "client",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Collections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LibraryCollection"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/library/collections/{id}": {
+      "get": {
+        "tags": [
+          "Library"
+        ],
+        "summary": "A collection’s page: the server’s (`sc-…`) or TMDB’s (its id)",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/ClientType"
+                },
+                {
+                  "description": "The kind of app; `web` when absent"
+                }
+              ]
+            },
+            "required": false,
+            "description": "The kind of app; `web` when absent",
+            "name": "client",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The collection and its titles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LibraryCollectionPage"
+                }
+              }
+            }
           },
           "401": {
             "description": "unauthorized",

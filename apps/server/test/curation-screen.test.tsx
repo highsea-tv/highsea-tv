@@ -135,7 +135,7 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'POST /api/v1/curation/sections/resolve':
       return json({ items: [], total: 4 })
     case 'GET /api/v1/curation/rule-options':
-      return json({ genres: ['Animation', 'Fantasy'], collections: [] })
+      return json({ genres: ['Animation', 'Fantasy'], collections: [], smart: [] })
     case 'POST /api/v1/curation/preview':
       return json({ sections: [], announcements: [], reaches: true })
     case 'GET /api/v1/announcements':

@@ -33,6 +33,7 @@ import {
   type Sealer,
   systemClock,
 } from '@highsea/core'
+import { type Collections, createCollections } from '@highsea/curation/collections'
 import { type Curation, createCuration } from '@highsea/curation/service'
 import {
   type Database,
@@ -103,8 +104,10 @@ import {
   takeRestoreFailure,
 } from './backups.ts'
 import { type BrowseListing, browse } from './browse.ts'
+import { createCollectionLibrary } from './collection-library.ts'
 import type { Config } from './config.ts'
 import { createCurationLibrary } from './curation-library.ts'
+import { scheduleFileFacts } from './file-facts.ts'
 import { homeRows } from './home-rows.ts'
 import { createListLibrary } from './list-library.ts'
 import { createLogFiles } from './logs.ts'
@@ -261,6 +264,8 @@ export type Runtime = {
   lists: Lists
   /** Curation (checkpoint 8c): announcements, featured sections and the apps' home. */
   curation: Curation
+  /** Smart collections (checkpoint 8d): the admin's, and the apps' Library › Collections. */
+  collections: Collections
   /** "Don't add it again from lists": library movies excluded, before they're deleted. */
   excludeFromLists(tmdbIds: number[]): void
   /** The BitTorrent engine (ADR 0037). */
@@ -702,6 +707,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     media,
   )
   movies.jobs.schedule(clock.now())
+  scheduleFileFacts({ db, jobs, clock })
 
   // watching only speeds the library scan up: a change asks for its title folder's scan
   const watch = createLibraryWatch({
@@ -944,6 +950,23 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   )
 
   // curation (8c): announcements and featured sections, resolved per person and app
+  // smart collections (8d): answered in SQL when read; a change tells curation, whose sections
+  // may draw on one
+  const collections = createCollections({
+    db,
+    clock,
+    events,
+    logger,
+    library: createCollectionLibrary({
+      db,
+      clock,
+      movies,
+      certifications: () => metadata.certifications()?.map((c) => c.certification) ?? null,
+    }),
+    changed: () => curation.refresh(),
+  })
+  collections.adoptFilterSections()
+
   const curation = createCuration({
     db,
     clock,
@@ -951,6 +974,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     jobs,
     logger,
     library: createCurationLibrary({ db, clock, movies }),
+    smart: collections,
     arrangement: (userId) => personalization.home.layout(userId),
   })
   curation.defineJobs()
@@ -1074,6 +1098,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     automation,
     lists,
     curation,
+    collections,
     excludeFromLists: (tmdbIds) => lists.exclude(listLibrary.titles(tmdbIds)),
     engine,
     downloads,

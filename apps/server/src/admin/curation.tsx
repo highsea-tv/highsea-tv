@@ -7,6 +7,7 @@
 // names the collection from the rule options, since the source keeps its TMDB id.
 import {
   type AnnouncementSummary,
+  COLLECTION_TOPICS,
   CURATION_TOPICS,
   type Placement,
   type SectionSummary,
@@ -58,7 +59,10 @@ export const announcementPath = (id: string) => `/curation/announcements/${id}`
 export const sectionPath = (id: string) => `/curation/featured/${id}`
 
 export const useRuleOptions = () =>
-  useQuery('curation:rule-options', (c) => c.curation.ruleOptions(), ['movies.updated'])
+  useQuery('curation:rule-options', (c) => c.curation.ruleOptions(), [
+    'movies.updated',
+    COLLECTION_TOPICS.collections,
+  ])
 
 export function Curation({ tab = 'announcements' }: { tab?: 'announcements' | 'featured' }) {
   const t = useCurationT()
@@ -324,7 +328,8 @@ function SectionRow({ f, handle }: { f: SectionSummary; handle: ReactNode }) {
           {f.status !== 'live' && <StatusBadge status={f.status} />}
         </p>
         <p className="text-caption text-text-3">
-          {source(f.source, options.data?.collections)} ·{' '}
+          {source(f.source, [...(options.data?.smart ?? []), ...(options.data?.collections ?? [])])}{' '}
+          ·{' '}
           <span className="font-mono text-figure">
             {t('featured.count', { count: f.itemCount })}
           </span>{' '}

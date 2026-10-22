@@ -26,6 +26,8 @@ What they hold is real, read from TMDB's public web pages (no key needed) on 202
 - ***Caminandes: Llamigos*** (406956) has its recommendations emptied, so the "similar" fallback (owner's decision 6) has a case; its `similar` list is chosen by hand from the Blender films here.
 - **The change lists** (`/3/movie/changes`, `/3/person/changes`) for 2026-10-16 to 2026-10-17 are made up for the changes job's test.
 - **Import lists' recordings (checkpoint 8a)** are put together from the movies above: *Top rated* holds the silent films here, ranked by their recorded ratings; the public list **8512345** (*Blender open films*) is made up, with the Blender films and one TV show, so the TV-skipping has a case; and the two IMDb lookups (`/3/find/tt1727587`, Sintel, and `tt0000000`, nothing) follow TMDB's documented [Find by ID](https://developer.themoviedb.org/reference/find-by-id) answer.
+- **Keywords and production countries (checkpoint 8d):** the movie requests gained `keywords` in `append_to_response` for smart collections' keyword rules, so the movie files were renamed for their new URL and given the two fields by hand. `keywords` is empty everywhere, since TMDB's keyword ids aren't shown on its web pages; `production_countries` follows the production companies above (Germany for the silent German films, France for *A Trip to the Moon*, the United States for *Nanook of the North* and the two Sony titles, the Netherlands for the Blender Institute's films) and is empty for the three *Caminandes* shorts. `bun run record:tmdb` replaces both with TMDB's answer.
+- **Certifications (checkpoint 8d):** `/3/certification/movie/list` keeps three countries, the United States, the United Kingdom and Germany, in TMDB's documented shape ([Movie certifications](https://developer.themoviedb.org/reference/certification-movie-list)). The ratings and their order are each board's published scale (MPA, BBFC, FSK); the `meaning` texts are short paraphrases. `bun run record:tmdb` replaces them with TMDB's full list.
 - **The 404** (`/3/movie/999999999`) and the bad-key **401** use TMDB's documented error bodies ([Errors](https://developer.themoviedb.org/docs/errors)).
 
 ## The catalogue
@@ -38,5 +40,6 @@ What they hold is real, read from TMDB's public web pages (no key needed) on 202
 | Search | `sintel`, `metropolis`, `nanook`, `caminandes`, `nosferatu` |
 | Lists | Trending (week), Popular, Now playing, Upcoming and Top rated, page 1, region US; the public list 8512345 |
 | Find | `tt1727587` (Sintel), `tt0000000` (no match) |
+| Certifications | Movies, for US, GB and DE |
 
 A test fails if any file here holds something shaped like a key or a token, or isn't named for its request.

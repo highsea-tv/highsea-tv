@@ -37,9 +37,9 @@ import { and, asc, eq, inArray, isNotNull } from 'drizzle-orm'
 import { z } from 'zod'
 import {
   CLIENTS,
+  type LibraryPick,
   mayReach,
   RULE_ERRORS,
-  type RulePick,
   reaches,
   rulePick,
   statusOf,
@@ -73,12 +73,22 @@ export type CurationLibrary = {
   /** Which of these titles have a file to play. */
   withFile(tmdbIds: number[]): Set<number>
   /** What a rule picks now: titles with a file, best first, at most `limit`, and how many in all. */
-  pick(pick: RulePick, limit: number): { tmdbIds: number[]; total: number }
+  pick(pick: LibraryPick, limit: number): { tmdbIds: number[]; total: number }
   /** Titles as the apps see them, with this person's watch state, in this order. */
   items(tmdbIds: number[], userId: string): ClientItem[]
   /** The rows under the featured ones: Continue watching, then Recently added and genres. */
   builtIn(userId: string): BuiltInRow[]
-  ruleOptions(): RuleOptions
+  ruleOptions(): Omit<RuleOptions, 'smart'>
+}
+
+/** The server's own collections (checkpoint 8d), which a `collection` rule can draw on. */
+export type SmartSource = {
+  /** What can be played, in the collection's order, at most `limit`, and how many in all. */
+  playable(id: string, limit: number): { tmdbIds: number[]; total: number }
+  exists(id: string): boolean
+  names(): { id: string; name: string }[]
+  /** Changes whenever any collection does. */
+  version(): number
 }
 
 type AnnouncementRow = typeof announcements.$inferSelect
@@ -103,6 +113,8 @@ export function createCuration(deps: {
   library: CurationLibrary
   /** A person's own order and hidden rows (`/me/home`). */
   arrangement(userId: string): { order: string[]; hidden: string[] }
+  /** The server's own collections; without them a collection rule names TMDB's only. */
+  smart?: SmartSource
 }) {
   const { db, clock, events, jobs, library } = deps
   const log = deps.logger.child('curation')
@@ -216,7 +228,10 @@ export function createCuration(deps: {
       return { tmdbIds: ids.slice(0, limit), total: ids.length }
     }
     const pick = rulePick(source)
-    return pick ? library.pick(pick, limit) : { tmdbIds: [], total: 0 }
+    if (!pick) return { tmdbIds: [], total: 0 }
+    if (pick.rule === 'smart')
+      return deps.smart?.playable(pick.collectionId, limit) ?? { tmdbIds: [], total: 0 }
+    return library.pick(pick, limit)
   }
 
   function homeItems(tmdbIds: number[], overrides: FeaturedOverride[], userId: string): HomeItem[] {
@@ -323,6 +338,10 @@ export function createCuration(deps: {
   function fingerprints(now: number) {
     const anns = allAnnouncements(now)
     const secs = allSections()
+    // a section drawing on one of the server's collections changes when any collection does
+    const smart = deps.smart?.version() ?? 0
+    const drawsOnSmart = (s: Section) =>
+      s.source.kind === 'rule' && s.source.rule === 'collection' && s.source.value.startsWith('sc-')
     const out = new Map<string, { announcements: string; home: string }>()
     for (const v of people()) {
       const a: string[] = []
@@ -336,7 +355,7 @@ export function createCuration(deps: {
         )
         h.push(
           visibleSections(secs, v, client, now)
-            .map((s) => `${s.id}@${s.updatedAt}#${s.order}`)
+            .map((s) => `${s.id}@${s.updatedAt}#${s.order}${drawsOnSmart(s) ? `~${smart}` : ''}`)
             .join(','),
         )
       }
@@ -436,7 +455,11 @@ export function createCuration(deps: {
       const here = library.itemIds(s.itemIds)
       if (s.itemIds.some((id) => !here.has(id)))
         throw invalid('One of the titles isn’t in the library.', 'source', 'unknown')
-    } else if (!rulePick(s)) throw invalid(RULE_ERRORS[s.rule], 'source.value')
+    } else {
+      const pick = rulePick(s)
+      if (!pick || (pick.rule === 'smart' && !deps.smart?.exists(pick.collectionId)))
+        throw invalid(RULE_ERRORS[s.rule], 'source.value')
+    }
     checkAudience(input.audience)
     checkSchedule(input.schedule)
   }
@@ -727,7 +750,10 @@ export function createCuration(deps: {
       return { items: homeItems(tmdbIds, [], userId), total }
     },
 
-    ruleOptions: (): RuleOptions => library.ruleOptions(),
+    ruleOptions: (): RuleOptions => ({
+      ...library.ruleOptions(),
+      smart: deps.smart?.names() ?? [],
+    }),
 
     // ---------------------------------------------------------- the apps
 

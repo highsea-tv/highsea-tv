@@ -79,7 +79,7 @@ export type TmdbExternalIds = {
   wikidata_id?: string | null
 }
 
-/** `/3/movie/{id}` with `append_to_response=credits,videos,release_dates,external_ids,recommendations`. */
+/** `/3/movie/{id}` with `append_to_response=credits,videos,release_dates,external_ids,recommendations,keywords`. */
 export type TmdbMovie = {
   id: number
   title: string
@@ -106,9 +106,13 @@ export type TmdbMovie = {
     backdrop_path?: string | null
   } | null
   production_companies?: { id: number; name: string }[]
+  /** ISO 3166-1 and TMDB's English name. */
+  production_countries?: { iso_3166_1: string; name: string }[]
   credits?: { cast: TmdbCast[]; crew: TmdbCrew[] }
   videos?: { results: TmdbVideo[] }
   release_dates?: TmdbReleaseDates
+  /** `/3/movie/{id}/keywords`, appended (checkpoint 8d); rows cached before it have none. */
+  keywords?: { keywords: { id: number; name: string }[] }
   external_ids?: TmdbExternalIds
   recommendations?: TmdbPage<TmdbMovieItem>
   /**
@@ -143,6 +147,14 @@ export type TmdbPerson = {
   imdb_id?: string | null
   movie_credits?: { cast: TmdbPersonCast[]; crew: TmdbPersonCrew[] }
   external_ids?: TmdbExternalIds
+}
+
+/**
+ * `GET /3/certification/movie/list`: each country's film certifications, with `order` from
+ * mildest up ([Movie certifications](https://developer.themoviedb.org/reference/certification-movie-list)).
+ */
+export type TmdbCertifications = {
+  certifications: Record<string, { certification: string; meaning: string; order: number }[]>
 }
 
 export type TmdbConfiguration = {

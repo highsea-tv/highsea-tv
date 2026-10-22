@@ -11,6 +11,7 @@
     "typecheck": "tsc -p tsconfig.json"
   },
   "dependencies": {
+    "@highsea/api-contract": "workspace:*",
     "@highsea/auth": "workspace:*",
     "@highsea/catalog": "workspace:*",
     "@highsea/core": "workspace:*",

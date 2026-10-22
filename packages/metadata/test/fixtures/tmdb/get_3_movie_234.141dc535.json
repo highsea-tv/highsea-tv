@@ -1,7 +1,7 @@
 {
   "request": {
     "method": "GET",
-    "url": "https://api.themoviedb.org/3/movie/234?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations&language=en-US",
+    "url": "https://api.themoviedb.org/3/movie/234?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations%2Ckeywords&language=en-US",
     "credential": "valid"
   },
   "response": {
@@ -886,7 +886,7 @@
             "release_date": "1965-10-07",
             "title": "The Nanny",
             "video": false,
-            "vote_average": 7.0,
+            "vote_average": 7,
             "vote_count": 113,
             "media_type": "movie"
           },
@@ -910,6 +910,15 @@
         ],
         "total_pages": 1,
         "total_results": 8
+      },
+      "production_countries": [
+        {
+          "iso_3166_1": "DE",
+          "name": "Germany"
+        }
+      ],
+      "keywords": {
+        "keywords": []
       }
     }
   }

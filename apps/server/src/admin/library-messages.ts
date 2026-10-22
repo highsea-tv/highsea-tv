@@ -28,6 +28,7 @@ export const library = defineMessages({
   tabs: 'Filter by status',
   filter: 'Filter by title',
   sortBy: 'Sort by',
+  saveAsCollection: 'Save as smart collection',
   tag: 'Filter by tag',
   'tag.all': 'Any tag',
   addTag: 'Add a tag',

@@ -20,7 +20,8 @@ export type AudienceRow =
 
 export type FeaturedSourceRow =
   | { kind: 'manual'; itemIds: string[] }
-  | { kind: 'rule'; rule: 'recently-added' | 'genre' | 'collection' | 'filter'; value: string }
+  // 8c's `filter` rule became a collection at 8d's first boot (`adoptFilterSections`)
+  | { kind: 'rule'; rule: 'recently-added' | 'genre' | 'collection'; value: string }
 
 export const announcements = sqliteTable(
   'announcements',

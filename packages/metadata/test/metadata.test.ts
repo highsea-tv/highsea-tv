@@ -158,6 +158,40 @@ describe('the key', () => {
     expect(JSON.stringify(view)).not.toContain(TEST_KEY)
   })
 
+  test('with the key, each region’s certifications from mildest; none known before', async () => {
+    const { metadata } = await open({ key: false })
+    expect(metadata.certifications('US')).toBeNull()
+    await metadata.settings.setKey(TEST_KEY)
+    expect(metadata.certifications('US')?.map((c) => c.certification)).toEqual([
+      'NR',
+      'G',
+      'PG',
+      'PG-13',
+      'R',
+      'NC-17',
+    ])
+    expect(metadata.certifications('GB')?.map((c) => c.certification)).toEqual([
+      'U',
+      'PG',
+      '12A',
+      '12',
+      '15',
+      '18',
+      'R18',
+    ])
+    expect(metadata.certifications('DE')?.[0]).toEqual({ certification: '0', order: 1 })
+    // a country TMDB lists nothing for
+    expect(metadata.certifications('AQ')).toEqual([])
+    metadata.settings.update({ region: 'DE' })
+    expect(metadata.certifications()?.map((c) => c.certification)).toEqual([
+      '0',
+      '6',
+      '12',
+      '16',
+      '18',
+    ])
+  })
+
   test('a key TMDB refuses is the owner’s to fix', async () => {
     const { metadata } = await open({ key: false })
     const e = (await rejects(metadata.settings.setKey('invalid-key-0000'))) as AppError
