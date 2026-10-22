@@ -1,6 +1,13 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Every push and pull request: lint, types, tests (Bun), the platform under Node, the license
-# audit, the admin's build, the Docker image booting healthy, and highsea connects' leak test.
+# audit, the dependency check, the admin's build, highsea connects' leak test, and the image on
+# both platforms: built, booted healthy, inside its size budget, with its labels and attestations.
+# Nothing is pushed (phase-3-checkpoint-9.md › Images: "CI builds both platforms … and pushes
+# nothing").
+#
+# Each action is pinned to a full commit SHA, with its version beside it, as GitHub's security
+# guidance advises: a tag can be moved, a commit can't
+# (https://docs.github.com/en/actions/reference/security/secure-use#using-third-party-actions).
 name: CI
 
 on:
@@ -12,15 +19,18 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   check:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
         with:
           node-version-file: .nvmrc
       - run: bun install --frozen-lockfile
@@ -37,6 +47,10 @@ jobs:
         run: bun run smoke
       - name: License audit
         run: bun run licenses
+      # the exit criteria's dependency check: npm's advisories, high and critical, production
+      # packages only; exceptions with reasons and dates in scripts/audit-exceptions.json
+      - name: Dependency check
+        run: bun run audit
       - name: Build the admin
         run: bun run --filter @highsea-tv/server build
         env:
@@ -47,8 +61,8 @@ jobs:
   leak:
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v4
-      - uses: oven-sh/setup-bun@v2
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.2
       - run: bun install --frozen-lockfile
@@ -57,19 +71,51 @@ jobs:
       - name: The leak test
         run: sudo env "PATH=$PATH" HIGHSEA_LEAK_TEST=1 "$(command -v bun)" test packages/vpn/test/leak.test.ts
 
-  docker:
-    runs-on: ubuntu-24.04
+  # Each platform on its own runner, as Docker documents for multi-platform builds: native, so
+  # better-sqlite3 compiles without QEMU (https://docs.docker.com/build/ci/github-actions/multi-platform/).
+  # Its cache has a scope per platform, so the two don't overwrite each other
+  # (https://docs.docker.com/build/cache/backends/gha/#scope).
+  image:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    env:
+      # set from the first slim builds (2026-10-22: amd64 1907 MB, arm64 1836 MB), about 5% above the
+      # larger; raising it needs a reason here
+      IMAGE_BUDGET_MB: 2000
     steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - name: The image's version and dates
+        id: meta
+        run: |
+          echo "version=sha-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
       - name: Build the image
-        uses: docker/build-push-action@v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
         with:
           context: .
+          platforms: ${{ matrix.platform }}
           load: true
+          # the docker exporter can't keep attestations; the OCI export below checks them
+          provenance: false
           tags: highsea:ci
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
+          build-args: VERSION=${{ steps.meta.outputs.version }}
+          # the rest of the OCI labels are in the Dockerfile
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.created }}
+          cache-from: type=gha,scope=image-${{ matrix.platform }}
+          cache-to: type=gha,scope=image-${{ matrix.platform }},mode=max
       - name: It boots and reports healthy
         run: |
           docker run -d --name highsea -p 3000:3000 highsea:ci
@@ -83,3 +129,24 @@ jobs:
           curl -fsS -o /dev/null http://127.0.0.1:3000/
           docker stop highsea
           test "$(docker inspect --format '{{.State.ExitCode}}' highsea)" = 0
+      - name: Its size and largest folders
+        run: bun scripts/image.ts size highsea:ci "$IMAGE_BUDGET_MB"
+      # The same build again from the cache, exported as an OCI layout with what a release pushes:
+      # BuildKit's provenance (mode=min, its default) and the SBOM, which is opt-in
+      # (https://docs.docker.com/build/metadata/attestations/). `tar=false` writes a folder
+      # (https://docs.docker.com/build/exporters/oci-docker/).
+      - name: Export it with its attestations
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          provenance: mode=min
+          sbom: true
+          build-args: VERSION=${{ steps.meta.outputs.version }}
+          labels: |
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.created }}
+          outputs: type=oci,dest=${{ runner.temp }}/highsea-oci,tar=false
+          cache-from: type=gha,scope=image-${{ matrix.platform }}
+      - name: Its labels, provenance and SBOM
+        run: bun scripts/image.ts attestations "$RUNNER_TEMP/highsea-oci"

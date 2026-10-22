@@ -217,6 +217,7 @@ export async function setup(
 
   return {
     db,
+    raw: database.raw,
     clock,
     events,
     seen,

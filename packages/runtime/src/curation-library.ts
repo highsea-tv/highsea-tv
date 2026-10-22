@@ -4,8 +4,10 @@
 // rule can name. Curation doesn't import `@highsea-tv/media`; the runtime hands it this.
 //
 // A title counts once a version has a file: the prototype's "playable", which streaming (Phase 4)
-// will narrow to what can actually be played. The rules read TMDB's own JSON in the metadata cache
-// with SQLite's json_each and json_extract (https://sqlite.org/json1.html), as the genre rows do.
+// will narrow to what can actually be played. Genres, in rules and the built-in rows, come from the
+// facts 8d keeps beside the cache (`movie_terms`), through their index; the rest of what the
+// composer offers is read from TMDB's own JSON with SQLite's json_each and json_extract
+// (https://sqlite.org/json1.html).
 import type { Clock } from '@highsea-tv/core'
 import type { BuiltInRow, CurationLibrary, LibraryPick } from '@highsea-tv/curation/service'
 import { type Db, schema } from '@highsea-tv/db'
@@ -32,9 +34,12 @@ function ruleSql(pick: LibraryPick, now: number): { where: SQL; order: SQL } {
         order: sql`mi.added_at DESC, mi.id`,
       }
     case 'genre':
+      // by the genres' facts (`movie_terms`, 8d) rather than each movie's JSON: the name picks
+      // TMDB's id once, through `movie_terms_label`, then `movie_terms_value` finds its movies
       return {
-        where: sql`EXISTS (SELECT 1 FROM movie_metadata mm, json_each(mm.data, '$.genres') g
-          WHERE mm.tmdb_id = mi.tmdb_id AND lower(json_extract(g.value, '$.name')) = lower(${pick.genre}))`,
+        where: sql`mi.tmdb_id IN (SELECT t.movie_id FROM movie_terms t WHERE t.kind = 'genre'
+          AND t.value = (SELECT g.value FROM movie_terms g
+            WHERE g.kind = 'genre' AND lower(g.label) = lower(${pick.genre}) LIMIT 1))`,
         order: sql`mi.rating DESC, mi.sort_title, mi.id`,
       }
     case 'collection':
@@ -147,8 +152,8 @@ export function createCurationLibrary(deps: {
           })
         else if (r.id.startsWith('genre:')) {
           const genreId = Number(r.id.slice('genre:'.length))
-          const where = sql`EXISTS (SELECT 1 FROM movie_metadata mm, json_each(mm.data, '$.genres') g
-            WHERE mm.tmdb_id = mi.tmdb_id AND json_extract(g.value, '$.id') = ${genreId})`
+          const where = sql`mi.tmdb_id IN (SELECT t.movie_id FROM movie_terms t
+            WHERE t.kind = 'genre' AND t.value = ${String(genreId)})`
           rows.push({
             id: r.id,
             title: r.title,

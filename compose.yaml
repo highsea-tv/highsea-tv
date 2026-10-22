@@ -1,28 +1,32 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# highsea on one machine. Host networking lets clients find the server on the LAN (ADR 0020);
-# without it, publish the ports below instead and LAN discovery is limited to the UDP broadcast.
-# Torrents behind a VPN container: compose.gluetun.yaml (ADR 0042).
-# highsea running its own WireGuard tunnel: compose.connects.yaml (ADR 0042).
+# highsea on one Linux machine: the recommended setup.
+#   docker compose up -d
+# Then open http://<this machine>:3000 and follow the setup.
+#
+# Host networking lets the apps find the server on your network by itself, through UDP 7368 and
+# mDNS (ADR 0020), and lets the torrent engine take incoming peers on 6881 (ADR 0037). Docker
+# Desktop, and NAS boxes that don't offer host networking, use compose.bridge.yaml instead.
+# Torrents behind a VPN container: compose.gluetun.yaml. highsea's own WireGuard tunnel:
+# compose.connects.yaml (ADR 0042). Building from a checkout: compose.dev.yaml.
 services:
   highsea:
-    build: .
-    image: highsea:dev
+    # `latest` is the newest stable release; pin a version (0.1.0) to choose when you move
+    image: ghcr.io/highsea-tv/highsea:latest
     container_name: highsea
     network_mode: host
     environment:
+      # the user and group that own your files (`id` on the host shows yours)
       PUID: "1000"
       PGID: "1000"
       TZ: Etc/UTC
+      # the address people use from outside, if you have one
       # HIGHSEA_PUBLIC_URL: https://highsea.example.net
     volumes:
-      - ./.dev/docker/config:/config
-      # one root for downloads and the library, so imports can hardlink
-      - ./.dev/docker/data:/data
+      # the database, settings, logs and backups
+      - ./config:/config
+      # one folder for downloads and the library, on one disk, so imports can hardlink instead of
+      # copying: change ./data to where your films live
+      - ./data:/data
+    # a restore in System › Backups restarts highsea by exiting with code 75; this brings it back
+    # (ADR 0047), and so does a reboot
     restart: unless-stopped
-    # without host networking:
-    # ports:
-    #   - "3000:3000"
-    #   - "8443:8443"   # built-in TLS, when it's on (ADR 0026)
-    #   - "6881:6881/tcp"
-    #   - "6881:6881/udp"
-    #   - "7368:7368/udp"

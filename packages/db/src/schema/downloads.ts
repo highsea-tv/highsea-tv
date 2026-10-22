@@ -2,6 +2,7 @@
 // Downloads (checkpoint 6): each grab of a release for a movie's version, and the blocklist search
 // and grab skip. A download points at its torrent while there is one; the torrent goes when it has
 // seeded, the download stays as the record of what was grabbed.
+import { sql } from 'drizzle-orm'
 import { index, integer, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 import { indexers } from './indexers.ts'
 import { mediaItems, versions } from './media.ts'
@@ -49,6 +50,13 @@ export const downloads = sqliteTable(
     index('downloads_item').on(t.itemId, t.grabbedAt),
     index('downloads_torrent').on(t.torrentId),
     index('downloads_hash').on(t.infoHash),
+    // Activity › Queue: only the rows still in it, so 100k imported downloads cost it nothing
+    // (https://sqlite.org/partialindex.html); the queue's query repeats this WHERE word for word
+    index('downloads_queue')
+      .on(t.grabbedAt)
+      .where(
+        sql`state IN ('downloading', 'importing', 'import-blocked') OR (state = 'completed' AND torrent_id IS NOT NULL)`,
+      ),
   ],
 )
 

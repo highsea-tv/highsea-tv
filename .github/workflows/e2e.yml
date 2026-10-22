@@ -1,0 +1,95 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The end-to-end run through the container (phase-3-checkpoint-9.md › Tests (9a)): the production
+# image beside the fixtures service on a network with no way out (compose.e2e.yaml), driven by
+# Playwright through setup, a one-click indexer, adding and grabbing Sintel, Activity, the import,
+# the synced subtitle, a theme and a layout across sessions, and an announcement for Admins.
+# On main and on pull requests that touch the server, amd64 only; arm64 boots healthy in ci.yml.
+name: End to end
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/server/**'
+      - 'packages/**'
+      - 'catalog/**'
+      - 'docker/**'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'compose.e2e.yaml'
+      - 'scripts/e2e/**'
+      - 'scripts/image.ts'
+      - 'package.json'
+      - 'bun.lock'
+      - '.nvmrc'
+      - '.github/workflows/e2e.yml'
+  pull_request:
+    paths:
+      - 'apps/server/**'
+      - 'packages/**'
+      - 'catalog/**'
+      - 'docker/**'
+      - 'Dockerfile'
+      - '.dockerignore'
+      - 'compose.e2e.yaml'
+      - 'scripts/e2e/**'
+      - 'scripts/image.ts'
+      - 'package.json'
+      - 'bun.lock'
+      - '.nvmrc'
+      - '.github/workflows/e2e.yml'
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - name: Chromium for Playwright
+        run: bunx playwright-core install --with-deps chromium
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      # from ci.yml's amd64 cache when it's there
+      - name: Build the image
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          platforms: linux/amd64
+          load: true
+          provenance: false
+          tags: highsea:ci
+          cache-from: type=gha,scope=image-linux/amd64
+      - name: Build the fixtures
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          target: e2e-fixtures
+          platforms: linux/amd64
+          load: true
+          provenance: false
+          tags: highsea-e2e-fixtures
+          cache-from: |
+            type=gha,scope=image-linux/amd64
+            type=gha,scope=e2e-fixtures
+          cache-to: type=gha,scope=e2e-fixtures,mode=max
+      - name: The run
+        run: bun scripts/e2e/run.ts
+        env:
+          HIGHSEA_IMAGE: highsea:ci
+          E2E_ARTIFACTS: ${{ runner.temp }}/e2e
+      - name: Screenshots and logs, when it fails
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e
+          path: ${{ runner.temp }}/e2e

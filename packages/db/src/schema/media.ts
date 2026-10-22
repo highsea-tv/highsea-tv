@@ -96,6 +96,9 @@ export const movieTerms = sqliteTable(
   (t) => [
     primaryKey({ columns: [t.movieId, t.kind, t.value] }),
     index('movie_terms_value').on(t.kind, t.value),
+    // a curation rule names its genre, in any case: an index on the expression the rule compares
+    // (https://sqlite.org/expridx.html), so finding the name's id doesn't read every movie's terms
+    index('movie_terms_label').on(t.kind, sql`lower(${t.label})`),
   ],
 )
 

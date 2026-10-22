@@ -37,6 +37,8 @@ if (process.env.HIGHSEA_TORRENT_OFFLINE === '1')
   log.warn('The torrent engine is offline: nothing downloads', { env: 'HIGHSEA_TORRENT_OFFLINE' })
 if (process.env.HIGHSEA_SUBTITLES_FAKE === '1')
   log.warn('Subtitle providers are fakes', { env: 'HIGHSEA_SUBTITLES_FAKE' })
+if (process.env.HIGHSEA_FIXTURES_URL)
+  log.warn('Every outside request goes to the fixtures service', { env: 'HIGHSEA_FIXTURES_URL' })
 
 const app = next({ dev: config.dev, dir: dirname(fileURLToPath(import.meta.url)) })
 await app.prepare()
@@ -85,6 +87,8 @@ process.on('SIGINT', () => void stop('SIGINT'))
  * (single sign-on's provider) still go out.
  */
 async function outsideFetch(): Promise<Fetch | undefined> {
+  const fixtures = process.env.HIGHSEA_FIXTURES_URL
+  if (fixtures) return forwardTo(new URL(fixtures).origin)
   if (process.env.HIGHSEA_TMDB_REPLAY !== '1') return undefined
   const { createReplayFetch } = await import('@highsea-tv/metadata/replay')
   const replay = createReplayFetch()
@@ -92,6 +96,25 @@ async function outsideFetch(): Promise<Fetch | undefined> {
   return (input, init) => {
     const url = new URL(input instanceof Request ? input.url : input.toString())
     return tmdb.has(url.hostname) ? replay(input, init) : fetch(input, init)
+  }
+}
+
+/**
+ * `HIGHSEA_FIXTURES_URL` is for the end-to-end run against the image (scripts/e2e): every request
+ * the server makes goes to the fixtures service at that address, which answers TMDB and the
+ * subtitle providers in their place. A request for another host carries its address in
+ * `x-highsea-forwarded-url`; one for the fixtures service itself (its catalog, its indexer) goes
+ * as it is. The torrent engine's peers and trackers don't use fetch, and reach the fixtures on
+ * the run's closed network.
+ */
+function forwardTo(origin: string): Fetch {
+  return (input, init) => {
+    const original = new Request(input, init)
+    const url = new URL(original.url)
+    if (url.origin === origin) return fetch(original)
+    const forwarded = new Request(`${origin}${url.pathname}${url.search}`, original)
+    forwarded.headers.set('x-highsea-forwarded-url', url.href)
+    return fetch(forwarded)
   }
 }
 

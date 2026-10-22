@@ -1,6 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # highsea running its own WireGuard tunnel (docs/product/vpn.md › highsea connects, ADR 0042).
-#   docker compose -f compose.connects.yaml up --build
+#   docker compose -f compose.connects.yaml up -d
 # Then in Settings › VPN choose "highsea connects", pick your provider and add its configuration.
 #
 # - NET_ADMIN lets highsea make its interface (hswg0), its routes and its rule. The entrypoint keeps
@@ -12,23 +12,28 @@
 #   falls back to wireguard-go, which needs the TUN device: uncomment `devices`.
 services:
   highsea:
-    build: .
-    image: highsea:dev
+    # `latest` is the newest stable release; pin a version (0.1.0) to choose when you move
+    image: ghcr.io/highsea-tv/highsea:latest
     container_name: highsea
     cap_add: [NET_ADMIN]
     # devices: [/dev/net/tun:/dev/net/tun]
     environment:
+      # the user and group that own your files (`id` on the host shows yours)
       PUID: "1000"
       PGID: "1000"
       TZ: Etc/UTC
     volumes:
-      - ./.dev/docker/config:/config
-      # one root for downloads and the library, so imports can hardlink
-      - ./.dev/docker/data:/data
+      # the database, settings, logs and backups
+      - ./config:/config
+      # one folder for downloads and the library, on one disk, so imports can hardlink instead of
+      # copying: change ./data to where your films live
+      - ./data:/data
     ports:
       - "3000:3000"
-      - "8443:8443"   # built-in TLS, when it's on (ADR 0026)
+      # - "8443:8443"   # built-in TLS, when it's on (ADR 0026)
       - "6881:6881/tcp"
       - "6881:6881/udp"
       - "7368:7368/udp"
+    # a restore in System › Backups restarts highsea by exiting with code 75; this brings it back
+    # (ADR 0047), and so does a reboot
     restart: unless-stopped

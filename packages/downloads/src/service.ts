@@ -32,7 +32,7 @@ import type {
   TorrentSnapshot,
   TrackerStatus,
 } from '@highsea-tv/torrent'
-import { and, desc, eq, inArray, isNotNull, isNull, lt, or } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNotNull, isNull, lt, or, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import { categoryFolder, createCategories, MANUAL_CATEGORY, MOVIES_CATEGORY } from './categories.ts'
 import {
@@ -246,6 +246,13 @@ export type ImportedBlock = {
 type Row = typeof downloads.$inferSelect
 
 const ACTIVE = ['downloading', 'importing', 'import-blocked'] as const
+/**
+ * What's in Activity › Queue: the active states, and completed downloads still seeding. Written as
+ * the partial index `downloads_queue` is, constants and all, so SQLite can use it
+ * (https://sqlite.org/partialindex.html#queries_using_partial_indexes); with bound parameters it
+ * can't, and the queue would scan every download there has ever been.
+ */
+const IN_QUEUE = sql`state IN ('downloading', 'importing', 'import-blocked') OR (state = 'completed' AND torrent_id IS NOT NULL)`
 
 export function createDownloads(deps: DownloadsDeps) {
   const { db, clock, events, engine } = deps
@@ -895,12 +902,7 @@ export function createDownloads(deps: DownloadsDeps) {
       return db
         .select()
         .from(downloads)
-        .where(
-          or(
-            inArray(downloads.state, [...ACTIVE]),
-            and(eq(downloads.state, 'completed'), isNotNull(downloads.torrentId)),
-          ),
-        )
+        .where(IN_QUEUE)
         .orderBy(desc(downloads.grabbedAt))
         .all()
         .map(queueItem)

@@ -10,3 +10,8 @@ graft
 design/explorations
 **/*.log
 .playwright-mcp
+# secrets stay out of the build context, as they stay out of git (.gitignore); the release's keys
+# come in as build secrets (Dockerfile, https://docs.docker.com/build/building/secrets/)
+**/.env
+**/.env.*
+!**/.env.example

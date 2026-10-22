@@ -275,6 +275,19 @@ describe('Toast', () => {
     expect(onClick).toHaveBeenCalled()
   })
 
+  test('names the region with its hotkey, and announces each toast as a notification', async () => {
+    const { findByText, getByRole } = render(<Toaster />)
+    act(() => {
+      toast({ title: 'Added Sintel' })
+    })
+    await findByText('Added Sintel', { selector: 'div' })
+    expect(getByRole('region').getAttribute('aria-label')).toBe('Notifications (F8)')
+    // Radix reads the provider's label before each toast, two frames after it opens; it fills in
+    // {hotkey} only for the region
+    const announced = await findByText(/^Notification Added Sintel/)
+    expect(announced.textContent).not.toContain('{hotkey}')
+  })
+
   test('keeps at most three on screen', async () => {
     const { findAllByRole } = render(<Toaster />)
     act(() => {

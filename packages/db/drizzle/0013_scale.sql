@@ -1,0 +1,2 @@
+CREATE INDEX `downloads_queue` ON `downloads` (`grabbed_at`) WHERE state IN ('downloading', 'importing', 'import-blocked') OR (state = 'completed' AND torrent_id IS NOT NULL);--> statement-breakpoint
+CREATE INDEX `movie_terms_label` ON `movie_terms` (`kind`,lower("label"));

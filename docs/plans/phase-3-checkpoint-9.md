@@ -177,7 +177,34 @@ A survey of the repository on 2026-10-22.
     - The fake enforces all three, and a test covers an application with only a Client ID (ADR 0045's dated section).
     - Not yet confirmed against the real Trakt: connecting an account by hand with `bun run server` does that.
   - **Domains.** See the table below.
-- **Next:** the rest of 9a, from [Docker](#docker-9a) on.
+- **2026-10-22, the rest of 9a, built, and signed off by the owner the same day** (with the toast-label fix in ui-web):
+  - **The slim image** (ADR 0003's 9a amendment). `scripts/image.ts production` installs the server's production dependencies into a clean folder and fails on any package nothing asks for, a workspace left without its install, or a `.env` file in the context. It then copies only what `node server.ts` loads. Packages built for musl are pruned, since Bun installs them beside the glibc ones (147 MB on arm64). Sizes: **amd64 1,907 MB, arm64 1,836 MB**, with 30 workspaces as source. CI's budget is 2,000 MB, about 5% above amd64.
+  - **Labels and attestations.** The Dockerfile sets the OCI labels GitHub reads: source, description (under 512 characters) and licenses, plus title, documentation, vendor and version. CI adds revision and created. CI also exports each platform as an OCI layout with provenance (`mode=min`) and an SPDX SBOM, and `scripts/image.ts attestations` checks both and the labels. Nothing is pushed.
+  - **Both platforms in CI on native runners:** `ubuntu-24.04` and `ubuntu-24.04-arm`, each with its own cache. Each must boot healthy, stay within the budget and pass the attestation check. Every action in `ci.yml`, `e2e.yml` and `catalog.yml` is pinned to a full commit SHA, with its version named in a comment.
+  - **Compose:**
+    - `compose.yaml` (host networking), `compose.bridge.yaml` (new), `compose.gluetun.yaml` and `compose.connects.yaml`, all on `ghcr.io/highsea-tv/highsea:latest`;
+    - a checkout's build in `compose.dev.yaml`;
+    - the NAS templates in `templates/` (Unraid's XML, and compose files for TrueNAS's "Install via YAML" and Synology's Container Manager), written in 9a with the compose files. Their guides stay in 9b.
+  - **The end-to-end run through the container** (`scripts/e2e/run.ts`, `compose.e2e.yaml`, `.github/workflows/e2e.yml`). Playwright drives the production image through:
+    - setup, with the fixtures' catalog and its test indexer ticked in one click;
+    - adding Sintel from Discover and grabbing it from Interactive search;
+    - Activity until seeding, the hardlinked file and History;
+    - the `.en.srt` marked Synced;
+    - a custom theme and a dashboard layout surviving sign-out and a second browser;
+    - an announcement for Admins that an Admin sees and a User doesn't.
+
+    The server is on an `internal` network, and the run checks it can't reach out. The fixtures service holds the fake indexer, the tracker and its seeder, the signed catalog, TMDB's recordings and the subtitle fakes. The image ships without fakes, so `HIGHSEA_FIXTURES_URL` sends the server's outside requests to the fixtures (ADR 0003's amendment). It passed against both images on 2026-10-22, amd64 under emulation and arm64 natively. Apart from waiting about 58 s for the catalog's first check after boot, the steps took 47 s on amd64 and 36 s on arm64.
+  - **The dependency check.** `bun run audit` (`scripts/audit.ts`) runs `bun audit` on production dependencies and fails on high or critical advisories, with dated exceptions in `scripts/audit-exceptions.json`. It found three advisories in Next 16.3.8, excepted until 2026-10-28, when 16.4.1 is two weeks old.
+  - **100k:** queue and history, Wanted's missing and cutoff lists, the calendar and its iCal feed, home for 50 people, a list sync against the full library, and a backup that's verified. Every case is inside its budget (the gate report has the numbers). Two queries that scanned now use indexes (migration 0013): the queue's partial index, and `movie_terms` on `lower(label)` for the home rows and curation.
+  - **Found and fixed along the way:**
+    - `.env*` files were missing from `.dockerignore`, so a local build's context could carry `.env.local` into the build cache. Nothing was pushed, and the local cache was cleared.
+    - ui-web's `Toaster` gave Radix's provider the region's label, so every toast was announced as "Notifications ({hotkey}) …". The provider now has its own label, "Notification", and the region keeps the one with the hotkey.
+- **Left open at 9a's sign-off:**
+  - Next's three advisories: the exceptions run out on 2026-10-28, when 16.4.1 can be pinned;
+  - the dashboard showing its default layout while the saved one loads (`dashboard.tsx`), in the locked admin;
+  - home at about 515 ms a person at 100k, inside its budget, with caching the shared genre rows as an option;
+  - the Unraid template's icon and template links, which work once the repository is public.
+- **Next:** 9b, from [Release](#release-9b) on.
 
 ## highsea's domains
 

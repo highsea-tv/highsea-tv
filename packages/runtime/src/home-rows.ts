@@ -12,13 +12,14 @@ import { sql } from 'drizzle-orm'
 export const GENRE_ROWS_MAX = 8
 
 export function homeRows(db: Db): HomeRow[] {
-  // SQLite's json_each over the cached TMDB movie's `genres` (https://sqlite.org/json1.html#jeach)
+  // the genres' facts (`movie_terms`, checkpoint 8d), read through their index, so a home screen
+  // doesn't parse every cached movie's TMDB response: at 100k movies that took seconds (9a)
   const genres = db.all<{ genreId: number; name: string }>(sql`
-    SELECT json_extract(g.value, '$.id') AS genreId, json_extract(g.value, '$.name') AS name
-    FROM media_items mi
-    JOIN movie_metadata mm ON mm.tmdb_id = mi.tmdb_id, json_each(mm.data, '$.genres') g
-    WHERE mi.type = 'movie' AND mi.parent_id IS NULL
-    GROUP BY genreId
+    SELECT CAST(t.value AS INTEGER) AS genreId, min(t.label) AS name
+    FROM movie_terms t
+    JOIN media_items mi ON mi.type = 'movie' AND mi.tmdb_id = t.movie_id
+    WHERE t.kind = 'genre' AND mi.parent_id IS NULL
+    GROUP BY t.value
     ORDER BY count(*) DESC, name
     LIMIT ${GENRE_ROWS_MAX}
   `)
