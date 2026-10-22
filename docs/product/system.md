@@ -35,6 +35,25 @@ Page header "System", "What the server is doing, and how it's holding up." Line 
     - A task that's switched off says "Off" under Next run.
     - A failed task shows its last error under the badge.
     - Run now is disabled while the task is queued as well as running.
+- **The rest of the tabs, as built in 8b** (2026-10-21): all seven tabs are shown. **Status** is the first, at `/system`; Health moves to `/system/health`.
+  - **Status:** the prototype's stat strip, Resources, Addresses and Disks.
+    - CPU reads "across every core", because the status doesn't give a core count, and a caption gives highsea's own share of CPU and memory.
+    - A disk with no root folder on it shows an empty "used by" line.
+    - The tab refetches every 10 seconds, because CPU and memory have no event.
+    - **About** and its Indexer catalog move to the bottom of Status, so TMDB's notice stays on System's first page.
+  - **Health:** the list as before, without **Check now**: the checks run on their own, and there's no health job to run.
+  - **Logs:**
+    - Show filters by level on the server, and the search filters the 1,000 lines that come back.
+    - **Download logs** has every day still on disk, and a caption says so.
+    - **Crash reports** are listed below the log, each with **Download report**. When they're off, a line links to General › Diagnostics.
+  - **Events:** each event's topic and ids with a clock time, newest first, because the stream carries nothing else.
+  - **Backups** (the owner's):
+    - The table gains a Version column and **Delete**.
+    - A backup that can't be read, or comes from a newer highsea, says why, and its **Restore** is disabled.
+    - A caption gives the next scheduled run.
+    - The restore dialog adds that the current state is backed up first. After **Restore and restart**, the tab shows that the server is restarting, checks `/api/health` every 1.5 seconds and reloads once it answers again.
+  - **Updates:** the current and latest version, the release date, a link to the notes and when highsea last checked. The Docker note replaces **Update and restart**, and **Check now** runs the catalog's check, since releases come with the catalog.
+  - **An admin at `/system/backups`** gets not found from the server, as Settings' owner-only areas do. The screen falls back to Status, as the prototype does.
 
 ## States
 
@@ -56,7 +75,13 @@ Page header "System", "What the server is doing, and how it's holding up." Line 
 - `system.status()`, `system.server()`, `system.health()`, `system.jobs()`, `system.runJob(id)` → `POST /api/v1/system/tasks/{id}/run`.
 - `system.logs()` → `GET /api/v1/system/logs` (`LogEntry[]`); the product streams new lines.
 - The Events tab is the client's own event subscription (SSE, `/api/v1/events`).
-- `system.backups()`, `system.backupNow()`, `system.restore(id)`; `system.updates()`.
+- **Backups** (8b, the owner's; [ADR 0047](../adr/0047-operations.md)): `system.backups()` → `GET /api/v1/system/backups`, each backup's id, kind (`scheduled`, `manual`, `before-update`, `before-restore`), size in bytes, the highsea version that made it, its newest migration (`schema`), when, and a `problem` when it can't be restored. `system.backupNow()` → `POST`. `system.downloadBackup(id)` → `GET …/{id}/download`, `system.deleteBackup(id)` → `DELETE …/{id}`, `system.restore(id)` → `POST …/{id}/restore`, which answers 202, or 409 for a newer schema or an unreadable file. Event: `backups.updated`.
+- **Logs** (8b, staff): `system.logs({ level, search, limit })` → `GET /api/v1/system/logs`, the newest lines from the in-memory buffer; `system.downloadLogs()` → `GET /api/v1/system/logs/download`, every line in the files on disk as JSON lines, oldest first. New lines arrive on `logs.appended` (owner and admins only, at most once a second). Log files are in `/config/logs/`, a file a day, kept 14 days (`logs.prune`).
+- **Crash reports** (8b, staff): `system.crashes()` → `GET /api/v1/system/crashes`, and `system.crash(id)` → `GET …/crashes/{id}`, a report's JSON. They're written to the config folder when General › Diagnostics turns them on, and never sent anywhere.
+- **Updates** (8b, staff): `system.updates()` → `GET /api/v1/system/updates`, the current and latest release on the update channel from the signed catalog's `releases` list, with its notes; event `updates.available`.
+- **Status** (8b) grows uptime, apps connected, the catalog version, the addresses, CPU and memory (the server's and highsea's), and each disk's `usedBy`.
+- **`/metrics`** (8b): Prometheus's text format, 404 while it's off in General › Diagnostics, then a staff member's read-scoped API key as a bearer token.
+- Tasks from checkpoint 8b: `backups.scheduled` (the owner's schedule), `logs.prune` and `notifications.prune` (daily).
 - `catalog.status()` and `catalog.check()` for About's Indexer catalog (checkpoint 5); `system.server().catalogVersion` for the Status strip.
 - Health checks from checkpoint 5: source **Catalog** (a failed check, keeping the installed version) and **Indexers** (none enabled, a warning; failing, an error; needs attention or a definition gone, a warning). Backing off isn't a health issue; A9 shows it.
 - Health checks from checkpoint 6a: source **Downloads** ("The torrent client can't accept connections: {problem}", an error; "{release} couldn't be imported: {reason}" for each blocked import, a warning) and **VPN** ("The VPN is down. Torrents are stopped until it's back.", an error; "The VPN couldn't connect: {reason}", an error; "VPN: {title}. Open Settings › VPN to see why." for each failing check). `system.healthChecks()` → `GET /api/v1/system/health` lists them.
@@ -75,5 +100,5 @@ Page header "System", "What the server is doing, and how it's holding up." Line 
 
 ## Open questions
 
-- **Log retention and export:** how many days, and a support bundle (logs, versions, settings without secrets) in one download?
+- ~~**Log retention and export:**~~ answered in checkpoint 8: 14 days, a file a day, and Download logs gives every line on disk. A support bundle is left for later.
 - **Resource history:** sparklines for CPU, memory and disk over a day, or leave that to Prometheus?

@@ -46,6 +46,17 @@ describe('logger', () => {
     ])
   })
 
+  test('a level getter changes the level while it runs, children included', () => {
+    const sink = memorySink(10)
+    let level: 'debug' | 'warn' = 'warn'
+    const log = createLogger({ level: () => level, sinks: [sink] })
+    const child = log.child('jobs')
+    child.info('hidden')
+    level = 'debug'
+    child.debug('shown')
+    expect(sink.entries().map((e) => e.message)).toEqual(['shown'])
+  })
+
   test('the memory sink keeps the newest entries', () => {
     const sink = memorySink(2)
     const log = createLogger({ sinks: [sink] })

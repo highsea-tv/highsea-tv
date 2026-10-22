@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // GET /api/v1/events: server events as SSE. A reconnecting client sends Last-Event-ID and gets what
 // it missed, or a `reset` when that's no longer in the buffer. A comment every 25s keeps proxies
-// from closing an idle stream. The guard has already checked the caller is signed in.
-import { RESET_TOPIC, type ServerEvent } from '@highsea/api-contract'
+// from closing an idle stream. The guard has already checked the caller is signed in; the log's
+// topic goes to the owner and admins only (STAFF_TOPICS, checkpoint 8b).
+import { RESET_TOPIC, type ServerEvent, STAFF_TOPICS } from '@highsea/api-contract'
+import { isStaff, type Principal } from '@highsea/auth'
 import type { Runtime } from '@highsea/runtime'
 import type { Context } from 'hono'
 import { streamSSE } from 'hono/streaming'
@@ -11,8 +13,10 @@ export const KEEPALIVE_MS = 25_000
 
 export const events = (runtime: Runtime) => (c: Context) => {
   const topics = c.req.query('topics')?.split(',').filter(Boolean)
+  const staff = isStaff((c.get('principal') as Principal | null)?.user.role ?? 'user')
   const wanted = (e: ServerEvent) =>
-    !topics?.length || topics.includes(e.topic) || e.topic === RESET_TOPIC
+    (staff || !STAFF_TOPICS.includes(e.topic)) &&
+    (!topics?.length || topics.includes(e.topic) || e.topic === RESET_TOPIC)
   const last = Number(c.req.header('last-event-id'))
 
   return streamSSE(c, async (stream) => {

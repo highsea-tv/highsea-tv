@@ -7,6 +7,7 @@ import { defaultSecuritySettings, issueDevice, SECURITY_KEY } from '@highsea/aut
 import type { Fetch } from '@highsea/core'
 import { writeSetting } from '@highsea/db'
 import { createReplayFetch, type ReplayFetch } from '@highsea/metadata/replay'
+import { createFakeNotifications } from '@highsea/notifications/fake'
 import {
   type BootOptions,
   boot,
@@ -32,7 +33,8 @@ export async function cleanup() {
 /**
  * A booted runtime whose outside requests go to TMDB's recordings (ADR 0029): no test reaches the
  * network, and one with no recording fails. Pass `fetch` to count or fail requests, `importing`
- * for the import pipeline's options, and `subtitles` for the subtitle providers' fakes.
+ * for the import pipeline's options, and `subtitles` for the subtitle providers' fakes. The
+ * notification channels answer from `@highsea/notifications/fake` unless `notifications` says.
  */
 export async function bootRuntime(
   options: {
@@ -40,6 +42,8 @@ export async function bootRuntime(
     importing?: BootOptions['importing']
     subtitles?: BootOptions['subtitles']
     lists?: BootOptions['lists']
+    notifications?: BootOptions['notifications']
+    restart?: BootOptions['restart']
   } = {},
 ): Promise<Runtime> {
   const dir = mkdtempSync(join(tmpdir(), 'highsea-api-'))
@@ -60,6 +64,9 @@ export async function bootRuntime(
     importing: options.importing,
     subtitles: options.subtitles,
     lists: options.lists,
+    notifications: options.notifications ?? { fetch: createFakeNotifications().fetch },
+    // a restore's restart never ends the test process
+    restart: options.restart ?? (() => {}),
   })
 }
 

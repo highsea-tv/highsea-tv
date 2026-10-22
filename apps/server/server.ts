@@ -1,12 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The server's one entry (ADR 0003): boot the runtime, then serve `/api` with Hono and everything
 // else with Next, on one port, and on a second HTTPS port when built-in TLS is on (ADR 0026).
-// SIGTERM shuts down in order: stop listening, then the runtime.
+// SIGTERM shuts down in order: stop listening, then the runtime. A restore restarts the same way,
+// exiting with RESTART_EXIT_CODE for Docker's restart policy (ADR 0047).
 import { dirname } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Fetch } from '@highsea/core'
 import { loadCertificate } from '@highsea/network'
-import { boot, loadConfig } from '@highsea/runtime'
+import { boot, loadConfig, RESTART_EXIT_CODE } from '@highsea/runtime'
 import next from 'next'
 import pkg from './package.json' with { type: 'json' }
 import { createApi } from './src/api/app.ts'
@@ -22,7 +23,13 @@ const runtime = await boot({
   torrent: process.env.HIGHSEA_TORRENT_OFFLINE === '1' ? { offline: true } : undefined,
   subtitles: await fakeSubtitles(),
   lists: await fakeLists(),
+  restart: () => void stop('restart', RESTART_EXIT_CODE),
 })
+// a crash report, when General › Diagnostics' switch is on; Node's default handling still runs
+// after a monitor (Node's docs, 'uncaughtExceptionMonitor')
+process.on('uncaughtExceptionMonitor', (error, origin) =>
+  runtime.operations.crashes.record(error, origin),
+)
 const log = runtime.logger.child('http')
 if (process.env.HIGHSEA_TMDB_REPLAY === '1')
   log.warn('TMDB answers come from recordings', { env: 'HIGHSEA_TMDB_REPLAY' })
@@ -56,7 +63,7 @@ if (network.tls === 'built-in') {
 }
 
 let stopping = false
-async function stop(signal: string) {
+async function stop(signal: string, code = 0) {
   if (stopping) return
   stopping = true
   log.info('stopping', { signal })
@@ -66,7 +73,7 @@ async function stop(signal: string) {
   }
   await runtime.shutdown()
   await app.close()
-  process.exit(0)
+  process.exit(code)
 }
 process.on('SIGTERM', () => void stop('SIGTERM'))
 process.on('SIGINT', () => void stop('SIGINT'))

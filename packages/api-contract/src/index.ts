@@ -5,6 +5,7 @@
 // (design/prototypes/src/mock/types.ts) move here a route group at a time.
 export * from './accounts.ts'
 export * from './common.ts'
+export * from './connections.ts'
 export * from './downloads.ts'
 export * from './events.ts'
 export * from './importers.ts'
@@ -14,6 +15,7 @@ export * from './library-import.ts'
 export * from './lists.ts'
 export * from './metadata.ts'
 export * from './movies.ts'
+export * from './operations.ts'
 export * from './personalization.ts'
 export * from './quality.ts'
 export * from './settings.ts'
@@ -24,6 +26,7 @@ export * from './vpn.ts'
 export * from './wanted.ts'
 
 import { apiKeys, audit, auth, devices, links, me, users } from './accounts.ts'
+import { connections, pushSubscriptions } from './connections.ts'
 import {
   blocklist,
   downloadSettingsRoutes,
@@ -42,6 +45,7 @@ import { libraryImport } from './library-import.ts'
 import { importLists } from './lists.ts'
 import { metadata } from './metadata.ts'
 import { movies, rootFolders } from './movies.ts'
+import { operationsSettings } from './operations.ts'
 import { appearance, dashboard, home, preferences } from './personalization.ts'
 import { quality } from './quality.ts'
 import { settings } from './settings.ts'
@@ -61,7 +65,7 @@ export const routes = {
   users,
   devices,
   apiKeys,
-  settings: { ...settings, ...downloadSettingsRoutes },
+  settings: { ...settings, ...downloadSettingsRoutes, ...operationsSettings },
   audit,
   dashboard,
   preferences,
@@ -86,4 +90,6 @@ export const routes = {
   subtitles,
   wanted,
   importLists,
+  connections,
+  pushSubscriptions,
 } as const

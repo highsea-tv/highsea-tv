@@ -23,10 +23,15 @@ export function collect() {
 /**
  * axe violations, minus contrast: happy-dom has no layout to compute it (the token tests do).
  * While a modal is open, pass it: Radix hides the rest of the page with `aria-hidden` and traps
- * focus, which axe reads as focusable content inside hidden content.
+ * focus, which axe reads as focusable content inside hidden content. `iframes: false` leaves a
+ * frame's document alone: axe can't reach into happy-dom's frames.
  */
-export async function violations(context: Element = document.body): Promise<string[]> {
+export async function violations(
+  context: Element = document.body,
+  { iframes = true }: { iframes?: boolean } = {},
+): Promise<string[]> {
   const result = await axe.run(context, {
+    iframes,
     runOnly: { type: 'tag', values: ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'] },
     rules: { 'color-contrast': { enabled: false } },
   })

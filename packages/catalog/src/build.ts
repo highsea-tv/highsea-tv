@@ -4,7 +4,7 @@
 // give the same bytes (ed25519 signatures are deterministic, RFC 8032 § 5.1.6), so a test can tell
 // when the committed seed snapshot is stale. Publishing is a separate step that stays off until the
 // owner says so (decision 5).
-import { mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { extname, join } from 'node:path'
 import { compareVersions, type Definition } from '@highsea/schemas/indexers'
 import {
@@ -20,8 +20,10 @@ import {
   type CatalogKind,
   CHANNELS,
   type Channel,
+  type HighseaRelease,
   isCatalogVersion,
   type Manifest,
+  releaseSchema,
 } from './format.ts'
 import { type BrokenFile, type LoadedFile, loadDefinitionFiles, loadEntryFiles } from './load.ts'
 import { sha256, signManifest } from './signing.ts'
@@ -94,6 +96,19 @@ export type BuiltChannel<T = Definition> = {
   definitions: T[]
 }
 
+/** `releases.json`'s entries, checked; null when there's no file. */
+function releasesOf(root: string): HighseaRelease[] | null {
+  const file = join(root, 'releases.json')
+  if (!existsSync(file)) return null
+  const parsed = releaseSchema
+    .array()
+    .max(20)
+    .safeParse(JSON.parse(readFileSync(file, 'utf8')))
+  if (!parsed.success)
+    throw new BuildError(`releases.json doesn’t validate: ${parsed.error.issues[0]?.message}`)
+  return parsed.data
+}
+
 /** What the build needs to know about a kind's entries. */
 type KindRules<T extends { id: string; minEngineVersion: string; logo?: string }> = {
   kind: CatalogKind
@@ -113,6 +128,8 @@ function buildKind<T extends { id: string; minEngineVersion: string; logo?: stri
   const changes = parseChanges(readFileSync(join(sources.root, 'CHANGES.md'), 'utf8'))
   const version = (changes[0] as CatalogChange).version
   const logos = logosOf(join(sources.root, 'logos'))
+  // highsea's releases ride the main catalog (8b): an optional `releases.json`, newest first
+  const releases = rules.kind === 'indexers' ? releasesOf(sources.root) : null
 
   return CHANNELS.map((channel) => {
     const byId = new Map(stable.loaded.map((f) => [f.definition.id, f]))
@@ -149,6 +166,8 @@ function buildKind<T extends { id: string; minEngineVersion: string; logo?: stri
         size: Buffer.byteLength(bundle),
       },
       changes: changes.slice(0, CHANGES_KEPT),
+      // left out when there are none, so a manifest without them is byte for byte what it was
+      ...(releases ? { releases } : {}),
     }
     const envelope = `${JSON.stringify(signManifest(JSON.stringify(manifest, null, 2), key.privateKey, key.keyId), null, 2)}\n`
     return { channel, manifest, envelope, bundle, definitions: chosen.map((f) => f.definition) }

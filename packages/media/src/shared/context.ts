@@ -3,11 +3,17 @@
 // media type adds what it needs on top (movies: the job queue, events, TMDB's metadata, search).
 import { AppError, type Clock, type Logger } from '@highsea/core'
 import type { Db } from '@highsea/db'
+import type { HistoryInput } from './history.ts'
 
 export type MediaDeps = {
   db: Db
   clock: Clock
   logger: Logger
+  /**
+   * Hears each history entry as it's written (8b): the runtime turns grabs, imports and subtitles
+   * into notifications. Called after the row is in; whatever it throws is logged, never raised.
+   */
+  onHistory?(id: string, entry: HistoryInput): void
 }
 
 export const invalid = (message: string, reason: string) =>

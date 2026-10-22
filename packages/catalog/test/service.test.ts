@@ -3,7 +3,8 @@ import { describe, expect, test } from 'bun:test'
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
 import { stringify } from 'yaml'
-import { definition, keyPair, publish, setup, tmp } from './helpers.ts'
+import { BuildError, buildCatalog, writeCatalog } from '../src/build.ts'
+import { definition, keyPair, publish, setup, sources, tmp } from './helpers.ts'
 
 const ids = (c: ReturnType<typeof setup>['catalog']) =>
   c
@@ -184,6 +185,33 @@ describe('Ask first', () => {
     expect(status.available).toBeNull()
     expect(status.version).toBe('2026.10.21')
     expect(ids(s.catalog)).toEqual(['alpha@1.0.0:main'])
+  })
+})
+
+describe('highsea’s releases', () => {
+  test('come with a signed manifest, even while its definitions wait', async () => {
+    const key = keyPair()
+    const s = setup({ trusted: [key.trusted] })
+    s.catalog.start()
+    s.catalog.updateSettings({ autoUpdate: false })
+    expect(s.catalog.releases()).toEqual([])
+    const root = sources([definition('alpha')], ['2026.10.21'])
+    const release = {
+      version: '0.2.0',
+      channel: 'stable' as const,
+      date: '2026-10-21',
+      notes: ['Backups.'],
+    }
+    writeFileSync(join(root, 'releases.json'), JSON.stringify([release]))
+    writeCatalog(buildCatalog({ root }, key), s.hostDir)
+    await s.catalog.check()
+    expect(s.catalog.releases()).toEqual([release])
+  })
+
+  test('a broken releases.json fails the build', () => {
+    const root = sources([definition('alpha')], ['2026.10.21'])
+    writeFileSync(join(root, 'releases.json'), JSON.stringify([{ version: 'soon' }]))
+    expect(() => buildCatalog({ root }, keyPair())).toThrow(BuildError)
   })
 })
 

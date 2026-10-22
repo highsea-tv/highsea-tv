@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › General (ADR 0021): the Metadata group (checkpoint 4, decision 1) and the Catalog
 // group (checkpoint 5, answer 7). The prototype shows neither, so their copy follows the plans
-// (TMDB › The key; checkpoint 5 › The catalog service) and the brand brief.
+// (TMDB › The key; checkpoint 5 › The catalog service) and the brand brief. Region, Updates and
+// Diagnostics (checkpoint 8b) take the prototype's copy, with the Docker note for updates and
+// /metrics in Diagnostics.
 import { defineMessages } from '@highsea/i18n'
 
 export const general = defineMessages({
@@ -34,8 +36,7 @@ export const general = defineMessages({
   languageHint: 'Titles, overviews and taglines, where TMDB has them in this language.',
   region: 'Region',
   regionHint: 'For certifications, release dates and Discover’s lists.',
-  ownerOnly: 'Only the owner can change the TMDB key, the language and the region.',
-  later: 'Language, time zone, updates and diagnostics arrive in a later checkpoint.',
+  ownerOnly: 'Only the owner can change these settings.',
   'catalog.title': 'Indexer catalog',
   'catalog.description':
     'Where indexer definitions come from, and how new versions of them arrive.',
@@ -68,6 +69,40 @@ export const general = defineMessages({
   'catalog.extraMissing': 'Fill in the address, the key ID and the public key.',
   'catalog.addButton': 'Add catalog',
   'catalog.added': 'Catalog added',
+  'region.title': 'Region',
+  'region.description': 'The server’s own language and time.',
+  'region.language': 'Language',
+  'region.languageHint':
+    'For the server’s messages: notifications and the calendar feed. More come with translations.',
+  'region.timeZone': 'Time zone',
+  'region.timeZoneHint': 'For schedules, such as when backups run.',
+  'updates.title': 'Updates',
+  'updates.description': 'highsea tells you when a new version is out. It never updates itself.',
+  'updates.channel': 'Update channel',
+  'updates.channelIs': '{channel} channel',
+  'updates.channelHint': 'Beta gets new versions first. Stable versions show on both.',
+  'updates.stable': 'Stable',
+  'updates.beta': 'Beta',
+  'updates.docker':
+    'To update, pull the new image and recreate the container. highsea backs up before it migrates.',
+  'diagnostics.title': 'Diagnostics',
+  'diagnostics.description': 'What the server writes down when something goes wrong.',
+  'diagnostics.logLevel': 'Log level',
+  'diagnostics.logLevelHint':
+    'Debug is chatty: use it while chasing a problem. It changes at once, without a restart.',
+  'diagnostics.level.debug': 'Debug',
+  'diagnostics.level.info': 'Info (default)',
+  'diagnostics.level.warn': 'Warnings and errors',
+  'diagnostics.level.error': 'Errors',
+  'diagnostics.crashes': 'Write crash reports',
+  'diagnostics.crashesHint':
+    'To the config folder, to attach to an issue. Nothing is sent anywhere. Find them in System, under Logs.',
+  'diagnostics.metrics': 'Metrics for Prometheus',
+  'diagnostics.metricsHint':
+    'Requests, downloads, indexers and the server’s resources, at /metrics.',
+  'diagnostics.metricsKey':
+    'Prometheus signs in with an API key held by the owner or an admin, as a bearer token. A read-only key is enough.',
+  'diagnostics.keys': 'API keys are in Users and devices.',
   saved: 'Settings saved',
   saveError: 'Couldn’t save',
 })

@@ -3,5 +3,6 @@
 // `better-sqlite3` under Node (the server), on one schema (ADR 0019).
 export * from './database.ts'
 export * from './migrate.ts'
+export { type Migration, migrations } from './migrations.ts'
 export * as schema from './schema/index.ts'
 export * from './settings.ts'

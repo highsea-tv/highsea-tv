@@ -174,6 +174,11 @@ export type DownloadsDeps = {
   /** The setup's downloads folder. */
   downloadsFolder(): string
   history(entry: HistoryEntry): void
+  /**
+   * A download was blocklisted and given up on (8b's "download failed" notification): stalled, or
+   * refused by the import. Not called for a person's own Find another.
+   */
+  failed?(failure: DownloadFailure): void
   importer(input: ImportInput): Promise<ImportOutcome>
   /**
    * A folder the owner typed (a category's, the watch folder), absolute and inside the folders
@@ -181,6 +186,15 @@ export type DownloadsDeps = {
    * and the downloads folder; without it, any absolute path passes.
    */
   checkFolder?(path: string): string
+}
+
+export type DownloadFailure = {
+  downloadId: string
+  itemId: string
+  releaseTitle: string
+  reason: string
+  /** Another release was grabbed in its place. */
+  replaced: boolean
 }
 
 export type GrabInput = {
@@ -472,7 +486,11 @@ export function createDownloads(deps: DownloadsDeps) {
   }
 
   /** Blocklists a download's release, drops its torrent and data, and grabs another. */
-  async function replace(d: Row, reason: string): Promise<QueueItem | null> {
+  async function replace(
+    d: Row,
+    reason: string,
+    { byPerson = false } = {},
+  ): Promise<QueueItem | null> {
     if (d.state === 'failed' || d.state === 'completed') return null
     addToBlocklist(d, reason)
     const torrentId = d.torrentId
@@ -490,6 +508,18 @@ export function createDownloads(deps: DownloadsDeps) {
         message: 'No other approved release was found. highsea will try again on the next search.',
         downloadId: d.id,
       })
+    if (!byPerson)
+      try {
+        deps.failed?.({
+          downloadId: d.id,
+          itemId: d.itemId,
+          releaseTitle: d.releaseTitle,
+          reason,
+          replaced: next !== null,
+        })
+      } catch (e) {
+        logger.warn('a failure listener failed', { download: d.id, error: (e as Error).message })
+      }
     return next
   }
 
@@ -912,7 +942,7 @@ export function createDownloads(deps: DownloadsDeps) {
       if (d.state === 'completed' || d.state === 'failed')
         throw new AppError('conflict', 'That download has already finished.')
       const reason = given?.trim() || d.stateReason || 'Replaced from Activity.'
-      return { replaced: await replace(d, reason) }
+      return { replaced: await replace(d, reason, { byPerson: true }) }
     },
 
     // -------------------------------------------------------------- Downloads (A8)

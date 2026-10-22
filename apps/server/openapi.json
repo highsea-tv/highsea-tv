@@ -317,6 +317,39 @@
             "format": "date-time",
             "example": "2026-10-17T20:15:00.000Z"
           },
+          "uptime": {
+            "type": "integer"
+          },
+          "clientsConnected": {
+            "type": "integer"
+          },
+          "catalogVersion": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "addresses": {
+            "type": "object",
+            "properties": {
+              "local": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "public": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "local",
+              "public"
+            ]
+          },
           "cpu": {
             "type": "number"
           },
@@ -335,6 +368,21 @@
               "total"
             ]
           },
+          "process": {
+            "type": "object",
+            "properties": {
+              "cpu": {
+                "type": "number"
+              },
+              "memory": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "cpu",
+              "memory"
+            ]
+          },
           "disks": {
             "type": "array",
             "items": {
@@ -345,8 +393,13 @@
         "required": [
           "version",
           "startedAt",
+          "uptime",
+          "clientsConnected",
+          "catalogVersion",
+          "addresses",
           "cpu",
           "memory",
+          "process",
           "disks"
         ]
       },
@@ -364,13 +417,33 @@
           },
           "total": {
             "type": "number"
+          },
+          "usedBy": {
+            "type": "object",
+            "properties": {
+              "movies": {
+                "type": "number"
+              },
+              "downloads": {
+                "type": "number"
+              },
+              "other": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "movies",
+              "downloads",
+              "other"
+            ]
           }
         },
         "required": [
           "path",
           "label",
           "free",
-          "total"
+          "total",
+          "usedBy"
         ]
       },
       "JobInfo": {
@@ -1178,6 +1251,356 @@
           "discovery"
         ]
       },
+      "BackupList": {
+        "type": "object",
+        "properties": {
+          "backups": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Backup"
+            }
+          },
+          "nextRun": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "backups",
+          "nextRun"
+        ]
+      },
+      "Backup": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "example": "highsea-2026-10-21T03-30-00Z-scheduled"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "scheduled",
+              "manual",
+              "before-update",
+              "before-restore"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "size": {
+            "type": "integer"
+          },
+          "version": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "schema": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "problem": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "createdAt",
+          "size",
+          "version",
+          "schema",
+          "problem"
+        ]
+      },
+      "Logs": {
+        "type": "object",
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LogEntry"
+            }
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/LogFile"
+            }
+          }
+        },
+        "required": [
+          "entries",
+          "files"
+        ]
+      },
+      "LogEntry": {
+        "type": "object",
+        "properties": {
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "level": {
+            "type": "string",
+            "enum": [
+              "debug",
+              "info",
+              "warn",
+              "error"
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "fields": {
+            "type": "object",
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "at",
+          "level",
+          "source",
+          "message"
+        ]
+      },
+      "LogFile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "size": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "name",
+          "date",
+          "size"
+        ]
+      },
+      "CrashReport": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "at": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "origin": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "size": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "at",
+          "origin",
+          "message",
+          "size"
+        ]
+      },
+      "Updates": {
+        "type": "object",
+        "properties": {
+          "current": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "stable",
+              "beta"
+            ]
+          },
+          "latest": {
+            "$ref": "#/components/schemas/AppRelease"
+          },
+          "available": {
+            "type": "boolean"
+          },
+          "checkedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "current",
+          "channel",
+          "latest",
+          "available",
+          "checkedAt"
+        ]
+      },
+      "AppRelease": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "version": {
+            "type": "string",
+            "example": "0.3.0"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "stable",
+              "beta"
+            ]
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "channel",
+          "date",
+          "notes"
+        ]
+      },
+      "GeneralSettings": {
+        "type": "object",
+        "properties": {
+          "language": {
+            "type": "string",
+            "pattern": "^[a-z]{2,3}(-[A-Z]{2})?$",
+            "example": "en"
+          },
+          "timeZone": {
+            "type": "string",
+            "maxLength": 100,
+            "example": "Europe/Lisbon"
+          },
+          "updateChannel": {
+            "type": "string",
+            "enum": [
+              "stable",
+              "beta"
+            ]
+          },
+          "logLevel": {
+            "type": "string",
+            "enum": [
+              "debug",
+              "info",
+              "warn",
+              "error"
+            ]
+          },
+          "crashReports": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "language",
+          "timeZone",
+          "updateChannel",
+          "logLevel",
+          "crashReports"
+        ]
+      },
+      "BackupSettings": {
+        "type": "object",
+        "properties": {
+          "schedule": {
+            "type": "string",
+            "enum": [
+              "daily",
+              "weekly",
+              "off"
+            ]
+          },
+          "time": {
+            "type": "string",
+            "pattern": "^([01]\\d|2[0-3]):[0-5]\\d$",
+            "example": "03:30"
+          },
+          "weekday": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 6
+          },
+          "keep": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365
+          },
+          "folder": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000,
+            "example": "/config/backups"
+          }
+        },
+        "required": [
+          "schedule",
+          "time",
+          "weekday",
+          "keep",
+          "folder"
+        ]
+      },
+      "MetricsSettings": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ]
+      },
       "SignInResult": {
         "oneOf": [
           {
@@ -1603,6 +2026,12 @@
             "type": "string",
             "format": "date-time",
             "example": "2026-10-17T20:15:00.000Z"
+          },
+          "emailedTo": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -1678,6 +2107,12 @@
             "type": "string",
             "format": "date-time",
             "example": "2026-10-17T20:15:00.000Z"
+          },
+          "emailedTo": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         },
         "required": [
@@ -9363,6 +9798,310 @@
         "required": [
           "state"
         ]
+      },
+      "Connection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ConnectionKind"
+          },
+          "name": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationEvent"
+            }
+          },
+          "settings": {
+            "type": "object",
+            "additionalProperties": {},
+            "example": {
+              "webhookUrl": "••••abcd",
+              "username": "highsea"
+            }
+          },
+          "serverMail": {
+            "type": "boolean"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "lastSentAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "lastError": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "kind",
+          "name",
+          "enabled",
+          "events",
+          "settings",
+          "serverMail",
+          "createdAt",
+          "updatedAt",
+          "lastSentAt",
+          "lastError"
+        ]
+      },
+      "ConnectionKind": {
+        "type": "string",
+        "enum": [
+          "discord",
+          "slack",
+          "telegram",
+          "ntfy",
+          "gotify",
+          "pushover",
+          "matrix",
+          "email",
+          "webhook",
+          "apprise",
+          "browser"
+        ]
+      },
+      "NotificationEvent": {
+        "type": "string",
+        "enum": [
+          "grabbed",
+          "imported",
+          "upgraded",
+          "download-failed",
+          "subtitle-added",
+          "health",
+          "update",
+          "movie-added"
+        ]
+      },
+      "ConnectionInput": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "$ref": "#/components/schemas/ConnectionKind"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NotificationEvent"
+            }
+          },
+          "settings": {
+            "type": "object",
+            "additionalProperties": {},
+            "example": {
+              "webhookUrl": "••••abcd",
+              "username": "highsea"
+            }
+          },
+          "serverMail": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "kind",
+          "name",
+          "enabled",
+          "events",
+          "settings"
+        ]
+      },
+      "ConnectionTest": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "message": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "ok",
+          "message"
+        ]
+      },
+      "ConnectionDraft": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/ConnectionKind"
+          },
+          "settings": {
+            "type": "object",
+            "additionalProperties": {},
+            "example": {
+              "webhookUrl": "••••abcd",
+              "username": "highsea"
+            }
+          }
+        },
+        "required": [
+          "kind",
+          "settings"
+        ]
+      },
+      "PushKey": {
+        "type": "object",
+        "properties": {
+          "publicKey": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "publicKey"
+        ]
+      },
+      "NotificationLogEntry": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "event": {
+            "$ref": "#/components/schemas/NotificationEvent"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "sent",
+              "failed",
+              "dropped"
+            ]
+          },
+          "attempts": {
+            "type": "integer"
+          },
+          "lastError": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "sentAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "event",
+          "status",
+          "attempts",
+          "lastError",
+          "createdAt",
+          "sentAt"
+        ]
+      },
+      "PushSubscription": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "service": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "label",
+          "service",
+          "createdAt"
+        ]
+      },
+      "PushSubscriptionInput": {
+        "type": "object",
+        "properties": {
+          "endpoint": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "keys": {
+            "type": "object",
+            "properties": {
+              "p256dh": {
+                "type": "string",
+                "maxLength": 200
+              },
+              "auth": {
+                "type": "string",
+                "maxLength": 100
+              }
+            },
+            "required": [
+              "p256dh",
+              "auth"
+            ]
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "endpoint",
+          "keys",
+          "label"
+        ]
       }
     },
     "parameters": {}
@@ -10124,6 +10863,1038 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NetworkStatus"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/backups": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "The backups in the backup folder, newest first",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Backups",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupList"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Back up now",
+        "description": "A copy of the database and a manifest in a zip. The secret key is never in it.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "The backup",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Backup"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/backups/{id}/download": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Download a backup",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The zip",
+            "content": {
+              "application/zip": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/backups/{id}": {
+      "delete": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Delete a backup",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/backups/{id}/restore": {
+      "post": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Restore a backup: the server restarts",
+        "description": "What is there now is backed up first. The server restarts and puts the backup’s database in place, then migrates it; if that fails, the database before goes back and System › Health says why. 409 with `details.reason` `newer-schema` for a backup from a newer highsea, `unreadable` for a damaged one.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "202": {
+            "description": "The server is restarting"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/logs": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "The log: recent lines, by level and search, and the files on disk",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "debug",
+                "info",
+                "warn",
+                "error"
+              ]
+            },
+            "required": false,
+            "name": "level",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 200
+            },
+            "required": false,
+            "name": "search",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000
+            },
+            "required": false,
+            "name": "limit",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The log",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Logs"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/logs/download": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Download the log files, JSON lines, oldest first",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Every line in the files on disk",
+            "content": {
+              "application/x-ndjson": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/crashes": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Crash reports, newest first",
+        "description": "Written when General › Diagnostics’ switch is on. Nothing is sent anywhere.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Reports",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CrashReport"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/crashes/{id}": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Download a crash report, to attach to an issue",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The report",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/system/updates": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "This version and the newest on the update channel",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Updates",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Updates"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/metrics": {
+      "get": {
+        "tags": [
+          "System"
+        ],
+        "summary": "Metrics for Prometheus (text format 0.0.4)",
+        "description": "Off until Settings › General turns it on (404 until then). Takes an API key held by the owner or an admin as a bearer token; a read-only key is enough.",
+        "x-highsea-access": "public",
+        "responses": {
+          "200": {
+            "description": "The metrics",
+            "content": {
+              "text/plain; version=0.0.4": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/general": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "General: language, time zone, update channel, log level and crash reports",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Save General",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/GeneralSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GeneralSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/backups": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Backups: the schedule, how many to keep and the folder",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Save Backups",
+        "description": "The folder is checked first: 400 when it isn’t a full path highsea can write. Scheduled backups beyond the number kept are deleted.",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BackupSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BackupSettings"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/settings/metrics": {
+      "get": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Whether /metrics answers",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The settings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsSettings"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Settings"
+        ],
+        "summary": "Turn /metrics on or off",
+        "x-highsea-access": "owner",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MetricsSettings"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MetricsSettings"
                 }
               }
             }
@@ -24142,6 +25913,684 @@
           },
           "403": {
             "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/connections": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "The connections, secrets masked",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Connections",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Connection"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Add a connection",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Added",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/connections/test": {
+      "post": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Send the test message with these settings, without saving them",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectionDraft"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "How it went",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionTest"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/connections/push-key": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "The key browsers subscribe to web push with",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushKey"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/connections/{id}": {
+      "put": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Change a connection; a masked secret keeps its value",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConnectionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Connection"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Remove a connection and its log",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/connections/{id}/test": {
+      "post": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Send the test message to a saved connection",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "How it went",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConnectionTest"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/connections/{id}/log": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "What was sent to a connection in the last 30 days, newest first",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The log",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/NotificationLogEntry"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/push-subscriptions": {
+      "get": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Your browsers that get notifications",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Browsers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PushSubscription"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Get notifications in this browser; the same endpoint again replaces it",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PushSubscriptionInput"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Subscribed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PushSubscription"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/push-subscriptions/{id}": {
+      "delete": {
+        "tags": [
+          "Connections"
+        ],
+        "summary": "Stop notifications in one of your browsers",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
             "content": {
               "application/json": {
                 "schema": {

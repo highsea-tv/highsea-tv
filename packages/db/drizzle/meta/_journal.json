@@ -71,6 +71,13 @@
       "when": 1792624004998,
       "tag": "0009_automation",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1792630341526,
+      "tag": "0010_notifications",
+      "breakpoints": true
     }
   ]
 }

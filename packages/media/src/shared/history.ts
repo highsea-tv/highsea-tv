@@ -64,7 +64,12 @@ function decode(cursor: string): Cursor {
   throw badCursor()
 }
 
-export function createHistory({ db, clock }: Pick<MediaDeps, 'db' | 'clock'>) {
+export function createHistory({
+  db,
+  clock,
+  logger,
+  onHistory,
+}: Pick<MediaDeps, 'db' | 'clock' | 'logger' | 'onHistory'>) {
   function write(entry: HistoryInput): string {
     const id = newId('his')
     db.insert(history)
@@ -81,6 +86,11 @@ export function createHistory({ db, clock }: Pick<MediaDeps, 'db' | 'clock'>) {
         data: entry.data ?? null,
       })
       .run()
+    try {
+      onHistory?.(id, entry)
+    } catch (e) {
+      logger.warn('a history listener failed', { type: entry.type, error: (e as Error).message })
+    }
     return id
   }
 

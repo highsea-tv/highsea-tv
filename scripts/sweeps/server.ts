@@ -557,7 +557,6 @@ try {
         },
       },
       { name: 'settings', path: '/settings' },
-      { name: 'settings:later', path: '/settings/backups' },
       { name: 'settings:general', path: '/settings/general' },
       { name: 'settings:media', path: '/settings/media' },
       { name: 'settings:profiles', path: '/settings/profiles' },
@@ -582,6 +581,18 @@ try {
         name: 'settings:lists:add',
         path: '/settings/lists',
         act: (p) => p.getByRole('button', { name: 'Add a list' }).click(),
+      },
+      // 8b: Network and remote access, and Security
+      { name: 'settings:network', path: '/settings/network' },
+      { name: 'settings:security', path: '/settings/security' },
+      // 8b: General's Region, Updates and Diagnostics, and Backups
+      { name: 'settings:backups', path: '/settings/backups' },
+      // 8b: Connections, and its Add a connection dialog
+      { name: 'settings:connections', path: '/settings/connections' },
+      {
+        name: 'settings:connections:add',
+        path: '/settings/connections',
+        act: (p) => p.getByRole('button', { name: 'Discord', exact: true }).click(),
       },
       { name: 'wanted', path: '/wanted' },
       { name: 'wanted:cutoff', path: '/wanted/cutoff' },
@@ -616,7 +627,27 @@ try {
         act: (p) => p.getByRole('button', { name: 'Limits' }).click(),
       },
       { name: 'system', path: '/system' },
+      { name: 'system:health', path: '/system/health' },
       { name: 'system:tasks', path: '/system/tasks' },
+      // 8b: Status (above), Logs, Events, Backups and Updates
+      { name: 'system:logs', path: '/system/logs' },
+      { name: 'system:events', path: '/system/events' },
+      { name: 'system:backups', path: '/system/backups' },
+      {
+        name: 'system:backups:restore',
+        path: '/system/backups',
+        act: async (p) => {
+          // a backup to restore, then the dialog that explains the restart
+          await p.getByRole('button', { name: 'Back up now' }).click()
+          // the "Backup made" toast would sit under the dialog's overlay, which axe misreads
+          await p.getByRole('button', { name: 'Dismiss' }).click()
+          await p
+            .getByRole('button', { name: /^Restore the backup from/ })
+            .first()
+            .click()
+        },
+      },
+      { name: 'system:updates', path: '/system/updates' },
       // A10, with OpenSubtitles.com and Subdl signed in against their fakes
       { name: 'subtitles', path: '/subtitles' },
       { name: 'subtitles:providers', path: '/subtitles', act: tab('Providers') },
@@ -759,6 +790,10 @@ try {
       { name: 'admin:general', path: '/settings/general' },
       // Security and Backups are the owner's: not there for an admin
       { name: 'admin:security', path: '/settings/security' },
+      { name: 'admin:backups', path: '/settings/backups' },
+      // System without its Backups tab, which is not found
+      { name: 'admin:system', path: '/system' },
+      { name: 'admin:system:backups', path: '/system/backups' },
       // Migration is the owner's too (6b)
       { name: 'admin:migration', path: '/settings/migration' },
       { name: 'admin:users', path: '/settings/users' },

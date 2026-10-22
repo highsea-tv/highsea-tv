@@ -136,7 +136,7 @@ The events a connection can choose, from the prototype's five (grab, import, upg
 
 ### Email for people
 
-- With an SMTP connection set as **the server's mail**, invites and password resets on A13 send an email as well as showing the link, which they keep doing for an owner without email (users-devices.md). The emails are plain text with an HTML part, in the recipient's language when it's set.
+- With an SMTP connection set as **the server's mail**, invites and password resets on A13 send an email as well as showing the link, which they keep doing for an owner without email (users-devices.md). The emails are plain text with an HTML part, in the recipient's language when it's set, from the templates the owner approved during 8b ([emails.md](../product/emails.md)).
 
 ## The owner's tools (8b)
 
@@ -145,7 +145,7 @@ The events a connection can choose, from the prototype's five (grab, import, upg
 | Area | What's built |
 | --- | --- |
 | **General** | Region (language, time zone); Updates (the channel, Stable or Beta; "install on their own" is replaced by the Docker note, [question 11](#open-questions-for-the-owner)); Diagnostics (the log level, and crash reports, [question 12](#open-questions-for-the-owner)). The prototype's "anonymous usage counts" are left out: highsea collects nothing about its owners |
-| **Network and remote access** | The API exists (checkpoint 2); the page is built over it: external URL with **Check from outside**, TLS, trusted proxies, X-Forwarded headers, LAN discovery |
+| **Network and remote access** | The API exists (checkpoint 2); the page is built over it: external URL, TLS, trusted proxies, X-Forwarded headers, LAN discovery |
 | **Security** | Owner only. Require two-step, passkeys, session length and OIDC are built (checkpoint 2) and get their page; **Hand the server over** is left out until the owner asks (it's "Not in the prototype") |
 | **Backups** | Owner only. The schedule (daily, weekly, off), the time, how many to keep, the folder |
 | **Import lists** | The lists (8a) |
@@ -210,7 +210,7 @@ Every handler is safe to repeat (ADR 0022).
 As migration **0009** (`0009_automation.sql`, 8a), **0010** (`0010_notifications.sql`, 8b) and **0011** (`0011_curation.sql`, 8c); the last is `0008_subtitle_sync.sql`:
 
 - **8a:** `rss_seen` (indexer, guid, seen at); `media_items` gains `next_search_at` and `searches` (for the sweep); `import_lists` (id, kind, name, settings and sealed credentials as JSON, root folder, profiles, monitored, minimum availability, search on add, enabled, last sync and its result); `import_list_items` (list, TMDB id, last seen); `import_list_exclusions` (TMDB id, title, year, when); `api_keys.scope` gains `calendar`.
-- **8b:** `connections` (id, kind, name, enabled, events as JSON, settings as JSON with sealed secrets); `notification_log` (connection, event, status, attempts, last error, sent at; kept 30 days); `web_push_subscriptions` (user, device, endpoint, keys); `backups` (file, kind, size, schema version, created). Settings rows `general`, `backups` and `metrics`.
+- **8b:** `connections` (id, kind, name, enabled, events as JSON, settings as JSON with sealed secrets); `notification_log` (connection, event, status, attempts, last error, sent at; kept 30 days); `web_push_subscriptions` (user, endpoint, keys, label). Settings rows `general`, `backups` and `metrics`. As built there is no `backups` table: the backups folder and each zip's manifest are the record ([judgement call 22](#judgement-calls)).
 - **8c:** `announcements`, `announcement_seen` (announcement, user, seen at, acknowledged at), `featured_sections`, `featured_overrides`, as the parent plan names them; `tags` and `item_tags`, `delay_profiles`; `root_folders.language_profile_id`; editable `quality_profiles` and `custom_formats` (the seeded rows stay and are marked as such).
 - **A test seeds 100k movies** and checks Wanted's lists, the calendar's month and the RSS match stay on an index, as checkpoints 4, 6 and 7 did.
 
@@ -262,7 +262,7 @@ Listed here so the owner can see them before they happen; each part's report lis
 ## Docker and licences
 
 - **No new system packages.**
-- **New dependencies:** `nodemailer` (MIT-0) and `web-push` (checked by `bun run licenses`; an exception needs its reason). Everything else (Trakt, TMDB lists, every channel, metrics) is written against documented HTTP APIs with `fetch`.
+- **New dependencies:** `nodemailer` (MIT-0), `web-push` (checked by `bun run licenses`; an exception needs its reason) and, with the approved email templates, `mjml` (MIT). Everything else (Trakt, TMDB lists, every channel, metrics) is written against documented HTTP APIs with `fetch`.
 - **Application secrets:** Trakt's Client ID (and its secret for the device flow) as `HIGHSEA_TRAKT_CLIENT_ID` and `HIGHSEA_TRAKT_CLIENT_SECRET`, like `HIGHSEA_OPENSUBTITLES_KEY`: CI secrets and the gitignored `.env.local`, never the repository. A source build without them offers Trakt disabled with a line saying why.
 - **The VAPID key pair** is generated on first boot and kept sealed in the database, so each server has its own.
 
@@ -383,3 +383,41 @@ Made while building 8a (2026-10-21):
 19. **List changes save at once,** as Download client's categories do.
 20. **Wanted's Cutoff unmet column is "Profile · wants",** since a movie's shape doesn't carry its file's quality.
 21. **The editors' prototype** draws full pages with the save bar, not dialogs, and marks an edited TRaSH format "Yours" so catalog updates leave it alone (the last is the prototype's own idea, for the owner's review).
+
+Made while building 8b (2026-10-21):
+
+22. **No `backups` table.** The backups folder and each zip's manifest are the record, so a backup copied in by hand is listed and a deleted file never leaves a stale row.
+23. **highsea writes and reads its own zips** (stored and deflated entries through `node:zlib`), because Node has no zip module and one format needs no dependency.
+24. **Restore exits with code 75** (`EX_TEMPFAIL`) after writing its marker, so Docker's restart policy brings the server back and the boot swaps the database.
+25. **A fourth kind, Before a restore:** the current database is backed up before a restore replaces it.
+26. **A weekly schedule takes a weekday** as well as the time.
+27. **A message held back by `Retry-After` re-queues its job** for that moment, rather than holding a worker.
+28. **The message's payload travels in its job,** so a send never reads the library again and a retry sends what the event said.
+29. **`notifications.prune` runs daily** and deletes log rows older than 30 days.
+30. **A Browser connection names the people it reaches** (`userIds`); one saved without anyone goes to whoever made it.
+31. **The webhook's body** is JSON, `{ event, level, title, body, text, url, image, at, payload }`, as ADR 0046 documents.
+32. **Posters in messages are signed links** (an HMAC with a key sealed in settings), which the image route accepts without signing in; posters and links appear only when the external URL is set.
+33. **Imported and Upgraded share an event id,** so a connection that hears both gets one message for an upgrade.
+34. **Health announcements are kept in a setting,** so a restart doesn't announce the same issues again; the check runs every minute.
+35. **Some events are left out on purpose:** files the scan or the existing-library import finds in place, a person's own Find another, and subtitles that came with the release. A subtitle is announced once its sync finishes, or at once when Sync to the audio is off.
+36. **Messages and emails use the server's language and time zone,** because people have no language of their own yet.
+37. **The VAPID subject** is the external URL when it's https, and the package's fallback otherwise.
+38. **A new connection hears** Imported, Upgraded, Download failed, Health and Update until the owner changes it.
+39. **Add a connection** is one button per kind, each opening its own dialog, in place of the prototype's grid of Soon chips; Matrix and Browser join the kinds.
+40. **Status is System's first tab,** with About at its bottom so TMDB's notice stays on the first page; Health moves to its own address.
+41. **Health has no Check now,** because there is no health job to run; the checks run on their own.
+42. **Logs filter by level on the server** and search the 1,000 lines that come back; Download logs has every day on disk.
+43. **Events shows each event's topic and ids** with a clock time, because the stream carries nothing else.
+44. **General's Region, Metadata, Updates and Diagnostics share one Save bar,** which saves only the parts that changed; admins see them read only.
+45. **An admin at `/system/backups` gets not found,** as Settings' owner-only areas do.
+46. **After a restore** the tab polls `/api/health` every 1.5 seconds and reloads once the server answers again.
+47. **Status refetches every 10 seconds,** because CPU and memory have no event.
+48. **Network's Check from outside is removed** (the owner's call after the 8b report): highsea has no outside service to check from. Choosing a certificate for built-in TLS has no API yet and is left out, as is Hand the server over.
+49. **Prometheus is switched on under Diagnostics,** which shows the `/metrics` address and the note that it needs a read-scoped API key.
+50. **Emails compile from MJML when they're sent** (`mjml` 5.4.1), not at build: it costs milliseconds next to SMTP, and the templates stay plain functions the prototype shares (`@highsea/notifications/mail`).
+51. **Images travel by Content-ID,** attached to each message, never as remote URLs, so an email needs neither the reader's permission nor an external URL to show them.
+52. **The logo falls back to highsea's app icon** when the server's mark is SVG or unset: most clients don't show SVG, and rasterising it would take a native renderer.
+53. **The poster comes from the image cache at `w185`,** about twice its 96px; a movie with none leaves the poster's column out, and a list's run shows its first movie's.
+54. **An email's details are only what its payload carries:** release, indexer and size for Grabbed; quality, size and what it replaced for Imported and Upgraded. The prototype's samples derive theirs the same way, so Imported no longer shows a release name it doesn't have.
+55. **Not minified:** a compiled email is about 15 kB, far under Gmail's 102 kB clipping.
+56. **A test from an unsaved connection** names "this connection" in its footer.

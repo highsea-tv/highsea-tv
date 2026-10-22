@@ -25,10 +25,11 @@ import {
 } from '../src/index.ts'
 
 describe('contract', () => {
-  test('every route has a method, a path under /api (or the calendar feed’s) and a summary', () => {
+  test('every route has a method, a path under /api (or the calendar feed’s, or /metrics) and a summary', () => {
     for (const [group, rs] of Object.entries(routes))
       for (const [name, r] of Object.entries(rs)) {
-        expect(r.path, `${group}.${name}`).toMatch(/^\/(api|feed)\//)
+        // /metrics is where Prometheus looks by default (ADR 0047)
+        expect(r.path, `${group}.${name}`).toMatch(/^\/((api|feed)\/|metrics$)/)
         expect(r.summary, `${group}.${name}`).toBeTruthy()
       }
   })

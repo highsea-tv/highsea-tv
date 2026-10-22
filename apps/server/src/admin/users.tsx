@@ -3,8 +3,8 @@
 // A13 Users and devices (docs/product/users-devices.md), ported from the prototype: who can sign
 // in and what they can do (role, and a user's permissions and libraries), invites by link, every
 // signed-in device with sign-out, and API keys for scripts, shown once. Managing people is the
-// owner's; admins see people and devices read-only (ADR 0032). Until the server can send email
-// (checkpoint 8), invite and reset links are shown to copy rather than sent.
+// owner's; admins see people and devices read-only (ADR 0032). Invite and reset links are always
+// shown to copy, and also emailed when the server's mail is set up in Connections (checkpoint 8b).
 import type { ApiKey, Device, User } from '@highsea/api-contract'
 import { useT } from '@highsea/i18n/react'
 import { useAction, useQuery } from '@highsea/sdk/react'
@@ -54,7 +54,7 @@ type ClientType = Device['client']
 type Invitable = Exclude<Role, 'owner'>
 type InviteInput = Pick<User, 'displayName' | 'email' | 'libraries'> & { role: Invitable }
 type CreatedKey = ApiKey & { secret: string }
-type Link = { link: string; expiresAt: string }
+type Link = { link: string; expiresAt: string; emailedTo?: string | null }
 
 const roleTone: Record<Role, BadgeTone> = {
   owner: 'accent',
@@ -198,7 +198,14 @@ function LinkDialog({
             </Button>
           }
         >
-          <Secret value={shown.link.link} label={t('link.copy')} copied={t('link.copied')} />
+          <div className="grid gap-3">
+            <Secret value={shown.link.link} label={t('link.copy')} copied={t('link.copied')} />
+            {shown.link.emailedTo && (
+              <p className="text-caption text-text-2">
+                {t('link.emailed', { email: shown.link.emailedTo })}
+              </p>
+            )}
+          </div>
         </DialogContent>
       )}
     </Dialog>
@@ -548,7 +555,11 @@ function InviteDialog({
   const t = useT(messages)
   const blank: InviteInput = { displayName: '', email: null, role: 'user', libraries: 'all' }
   const [draft, setDraft] = useState(blank)
-  const [sent, setSent] = useState<{ name: string; link: string } | null>(null)
+  const [sent, setSent] = useState<{
+    name: string
+    link: string
+    emailedTo?: string | null
+  } | null>(null)
   const [tried, setTried] = useState(false)
   const invite = useAction((c, d: InviteInput) => c.users.invite({ body: d }))
   const close = (o: boolean) => {
@@ -583,7 +594,12 @@ function InviteDialog({
                   setTried(true)
                   if (!draft.displayName.trim()) return
                   invite.run({ ...draft, displayName: draft.displayName.trim() }).then(
-                    (out) => setSent({ name: out.user.displayName, link: out.link }),
+                    (out) =>
+                      setSent({
+                        name: out.user.displayName,
+                        link: out.link,
+                        emailedTo: out.emailedTo,
+                      }),
                     (e: Error) => toast.error(t('invite.failed'), { description: e.message }),
                   )
                 }}
@@ -595,7 +611,14 @@ function InviteDialog({
         }
       >
         {sent ? (
-          <Secret value={sent.link} label={t('link.copy')} copied={t('link.copied')} />
+          <div className="grid gap-3">
+            <Secret value={sent.link} label={t('link.copy')} copied={t('link.copied')} />
+            {sent.emailedTo && (
+              <p className="text-caption text-text-2">
+                {t('link.emailed', { email: sent.emailedTo })}
+              </p>
+            )}
+          </div>
         ) : (
           <div className="grid gap-4">
             <Field label={t('invite.name')} hint={t('invite.nameHint')} error={nameError}>

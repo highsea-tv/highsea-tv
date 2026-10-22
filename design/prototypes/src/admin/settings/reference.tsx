@@ -195,21 +195,6 @@ export function Network() {
                   className="font-mono"
                 />
               </Field>
-              <Button
-                icon="globe"
-                className="justify-self-start"
-                onClick={() =>
-                  toast.success(
-                    `${v.externalUrl.replace(/^https?:\/\//, '')} answered from outside`,
-                    {
-                      description:
-                        'In 84 ms, with a valid certificate. The apps can reach Harbor away from home.',
-                    },
-                  )
-                }
-              >
-                Check from outside
-              </Button>
             </Group>
             <Group title="Reverse proxy and TLS">
               <SegmentedControl

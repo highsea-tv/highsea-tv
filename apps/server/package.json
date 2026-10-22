@@ -28,6 +28,7 @@
     "@highsea/media": "workspace:*",
     "@highsea/metadata": "workspace:*",
     "@highsea/network": "workspace:*",
+    "@highsea/notifications": "workspace:*",
     "@highsea/parser": "workspace:*",
     "@highsea/personalization": "workspace:*",
     "@highsea/quality": "workspace:*",

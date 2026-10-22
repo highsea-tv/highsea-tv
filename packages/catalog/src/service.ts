@@ -29,6 +29,7 @@ import {
   CHANNELS,
   type Channel,
   compareCatalogVersions,
+  type HighseaRelease,
   type Manifest,
   manifestSchema,
 } from './format.ts'
@@ -95,6 +96,8 @@ type CatalogState = {
   installed: Record<string, Installed>
   pending: Record<string, Pending>
   lastCheck: { at: number; ok: boolean; message: string | null } | null
+  /** highsea's releases from the newest verified main manifest, installed or waiting (8b). */
+  releases?: HighseaRelease[]
 }
 
 const emptyState: CatalogState = { installed: {}, pending: {}, lastCheck: null }
@@ -262,6 +265,7 @@ export function createCatalog(deps: CatalogDeps) {
       channel: manifest.channel,
     })
     const s = state()
+    if (origin === 'main' && manifest.releases) s.releases = manifest.releases
     s.installed[origin] = {
       version: manifest.version,
       channel: manifest.channel,
@@ -378,6 +382,8 @@ export function createCatalog(deps: CatalogDeps) {
       )
       const s = state()
       s.pending[origin] = { manifest: verified.manifest, bundleFile }
+      // what highsea itself has released doesn't wait for the definitions to be installed
+      if (origin === 'main' && verified.manifest.releases) s.releases = verified.manifest.releases
       saveState(s)
       return 'pending' as const
     }
@@ -584,6 +590,9 @@ export function createCatalog(deps: CatalogDeps) {
 
     /** The main catalog's installed version, for System › About and A9's header. */
     version: () => state().installed.main?.version ?? null,
+
+    /** highsea's releases, newest first, from the main catalog's signed manifest (8b). */
+    releases: (): HighseaRelease[] => state().releases ?? [],
 
     /** Reloads `/config/definitions`. */
     reloadLocal() {

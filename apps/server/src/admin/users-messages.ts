@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A13 Users and devices (ADR 0021): the prototype's copy, with links shown instead of sent until
-// the server can send email (checkpoint 8).
+// A13 Users and devices (ADR 0021): the prototype's copy. Links are shown to copy, and emailed as
+// well when the server's mail is set up (checkpoint 8b).
 import { defineMessages } from '@highsea/i18n'
 
 export const users = defineMessages({
@@ -84,6 +84,7 @@ export const users = defineMessages({
     'Send them this link. It works once and expires {when}. Their apps and TVs stay signed in.',
   'link.copy': 'Copy link',
   'link.copied': 'Link copied',
+  'link.emailed': 'We also emailed it to {email}.',
   // edit
   'edit.role': 'Role',
   'edit.can': 'What they can do',
@@ -108,7 +109,8 @@ export const users = defineMessages({
   'invite.nameHint': 'As the household knows them.',
   'invite.nameMissing': 'Give them a name.',
   'invite.email': 'Email',
-  'invite.emailHint': 'Optional. For now you share the link yourself; email comes later.',
+  'invite.emailHint':
+    'Optional. With the server’s mail set up in Connections, the link is emailed to them too.',
   'invite.create': 'Create invite link',
   'invite.failed': 'Couldn’t invite them',
   // devices

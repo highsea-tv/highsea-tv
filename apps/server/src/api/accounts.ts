@@ -243,13 +243,23 @@ export function registerAccounts(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.users.list, (c) => c.json(auth(c).users.list().map(userView), 200))
 
-  app.openapi(routes.users.invite, (c) => {
-    const invite = auth(c).users.invite(c.req.valid('json'), actor(me(c)), c.get('meta'))
+  app.openapi(routes.users.invite, async (c) => {
+    const p = me(c)
+    const invite = auth(c).users.invite(c.req.valid('json'), actor(p), c.get('meta'))
+    // with the server's mail set, the link is emailed too; the link still comes back (A13)
+    const emailed = await c.get('runtime').notifications.mailLink({
+      kind: 'invite',
+      userId: invite.user.id,
+      link: invite.link,
+      expiresAt: invite.expiresAt,
+      inviter: p.user.displayName,
+    })
     return c.json(
       {
         user: userView(invite.user),
         link: invite.link,
         expiresAt: new Date(invite.expiresAt).toISOString(),
+        emailedTo: emailed ? invite.user.email : null,
       },
       200,
     )
@@ -274,9 +284,23 @@ export function registerAccounts(app: OpenAPIHono<Env>) {
     return c.body(null, 204)
   })
 
-  app.openapi(routes.users.resetPassword, (c) => {
-    const out = auth(c).users.resetLink(c.req.valid('param').id, actor(me(c)), c.get('meta'))
-    return c.json({ link: out.link, expiresAt: new Date(out.expiresAt).toISOString() }, 200)
+  app.openapi(routes.users.resetPassword, async (c) => {
+    const { id } = c.req.valid('param')
+    const out = auth(c).users.resetLink(id, actor(me(c)), c.get('meta'))
+    const emailed = await c.get('runtime').notifications.mailLink({
+      kind: 'reset',
+      userId: id,
+      link: out.link,
+      expiresAt: out.expiresAt,
+    })
+    return c.json(
+      {
+        link: out.link,
+        expiresAt: new Date(out.expiresAt).toISOString(),
+        emailedTo: emailed ? (auth(c).users.get(id).email ?? null) : null,
+      },
+      200,
+    )
   })
 
   app.openapi(routes.users.resetTwoFactor, (c) => {

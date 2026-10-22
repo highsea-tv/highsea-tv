@@ -48,6 +48,25 @@ export const changeSchema = z.object({
 })
 export type CatalogChange = z.infer<typeof changeSchema>
 
+/** highsea's own versions: `1.0.1`, or `1.1.0-beta.2` on the beta channel. */
+const APP_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
+
+/**
+ * A highsea release, for System › Updates (checkpoint 8b, the owner's answer 11): the server learns
+ * of new versions from the catalog it already checks, so nothing else is fetched. Checkpoint 9
+ * publishes the entries.
+ */
+export const releaseSchema = z.object({
+  version: z.string().regex(APP_VERSION),
+  /** Stable releases reach both channels; beta ones only servers on Beta. */
+  channel: z.enum(CHANNELS),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  notes: z.array(z.string().min(1).max(300)).max(50),
+  /** The release's page, for the full notes. */
+  url: z.url({ protocol: /^https$/ }).optional(),
+})
+export type HighseaRelease = z.infer<typeof releaseSchema>
+
 export const manifestSchema = z.object({
   format: z.literal(CATALOG_FORMAT),
   kind: z.enum(CATALOG_KINDS),
@@ -62,6 +81,8 @@ export const manifestSchema = z.object({
   }),
   /** The most recent versions' notes, newest first, for What changed. */
   changes: z.array(changeSchema).max(20),
+  /** highsea's newest releases, newest first. Optional, so older manifests still verify. */
+  releases: z.array(releaseSchema).max(20).optional(),
 })
 export type Manifest = z.infer<typeof manifestSchema>
 

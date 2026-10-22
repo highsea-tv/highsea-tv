@@ -211,6 +211,17 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'DELETE /api/v1/settings/metadata':
       state.metadata = { ...state.metadata, key: { set: false, last4: null } }
       return json(state.metadata)
+    // 8b's groups on the same page: Region, Updates and Diagnostics
+    case 'GET /api/v1/settings/general':
+      return json({
+        language: 'en',
+        timeZone: 'Europe/London',
+        updateChannel: 'stable',
+        logLevel: 'info',
+        crashReports: false,
+      })
+    case 'GET /api/v1/settings/metrics':
+      return json({ enabled: false })
     case 'GET /api/v1/settings/mediaManagement':
       return json(state.media)
     case 'PUT /api/v1/settings/mediaManagement':
@@ -299,12 +310,26 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'GET /api/v1/movies/recent':
       return json(state.recent)
     case 'GET /api/v1/system/status':
+      // the whole of 8b's status, since System opens on it
       return json({
         version: '0.4.0',
         startedAt: '2026-10-20T00:00:00.000Z',
+        uptime: 3600,
+        clientsConnected: 1,
+        catalogVersion: '2026.10.20',
+        addresses: { local: ['http://192.168.1.20:3000'], public: null },
         cpu: 3,
         memory: { used: 1, total: 2 },
-        disks: [{ path: '/data', label: 'Media', free: 1e12, total: 2e12 }],
+        process: { cpu: 1, memory: 1 },
+        disks: [
+          {
+            path: '/data',
+            label: 'Media',
+            free: 1e12,
+            total: 2e12,
+            usedBy: { movies: 9e11, downloads: 0, other: 1e11 },
+          },
+        ],
       })
   }
   if (method === 'DELETE' && path.startsWith('/api/v1/rootfolders/')) {
@@ -621,7 +646,7 @@ describe('Settings › General › Metadata', () => {
     const group = page.getByRole('region', { name: 'Metadata' })
     expect(within(group).getByText('Set')).toBeTruthy()
     expect(within(group).getByText(maskedKey('ab12'))).toBeTruthy()
-    expect(page.getByText(/Language, time zone, updates and diagnostics arrive/)).toBeTruthy()
+    expect(page.getByRole('region', { name: 'Region' })).toBeTruthy()
 
     await user.click(within(group).getByRole('button', { name: 'Replace' }))
     await user.type(within(group).getByLabelText('New TMDB key'), 'wrong')
@@ -1008,7 +1033,13 @@ describe('figures', () => {
   })
 
   test('a folder is on a disk by its filesystem’s size, or by path when it can’t be read', () => {
-    const disk = { path: '/data', label: 'Media', free: 1, total: 2e12 }
+    const disk = {
+      path: '/data',
+      label: 'Media',
+      free: 1,
+      total: 2e12,
+      usedBy: { movies: 0, downloads: 0, other: 0 },
+    }
     const folders = [
       folder('a', '/data/media/movies', 2e12, 0),
       folder('b', '/data/other-mount', 5e12, 0),

@@ -20,6 +20,20 @@ const config: NextConfig = {
   poweredByHeader: false,
   devIndicators: false,
   reactStrictMode: true,
+  // the service worker is always fetched fresh, and loads nothing but itself (Next's PWA guide:
+  // https://nextjs.org/docs/app/guides/progressive-web-apps#8-securing-your-application)
+  async headers() {
+    return [
+      {
+        source: '/sw.js',
+        headers: [
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Security-Policy', value: "default-src 'self'; script-src 'self'" },
+        ],
+      },
+    ]
+  },
 }
 
 export default config

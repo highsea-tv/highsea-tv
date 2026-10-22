@@ -62,3 +62,26 @@ export const DOWNLOAD_TOPICS = {
   history: 'history.updated',
   vpn: 'vpn.updated',
 } as const
+
+/**
+ * The owner's tools (checkpoint 8b, ADR 0047):
+ * - `backups.updated`: a backup was made, deleted or pruned;
+ * - `updates.available`: a newer highsea is out on the update channel; ids are its version;
+ * - `settings.updated`: General, Backups or Metrics changed; ids are `general`, `backups` or
+ *   `metrics`;
+ * - `logs.appended`: the log has new lines, at most once a second. Staff only: the stream holds it
+ *   back from everyone else.
+ */
+export const OPERATIONS_TOPICS = {
+  backups: 'backups.updated',
+  updates: 'updates.available',
+  settings: 'settings.updated',
+  logs: 'logs.appended',
+} as const
+
+/** Topics the event stream sends only to the owner and admins. */
+export const STAFF_TOPICS: readonly string[] = [
+  OPERATIONS_TOPICS.logs,
+  // connections are staff's (settings.md › Connections); the topic is CONNECTIONS_TOPICS's
+  'connections.updated',
+]

@@ -46,6 +46,7 @@ import { AccountSheet } from './account.tsx'
 import { moviePath } from './media-links.ts'
 import { shell as messages } from './messages.ts'
 import { type Page, pageAt, pageGroups, type Role } from './nav.ts'
+import { system as systemMessages } from './system-messages.ts'
 import { useRelative } from './time.ts'
 
 type Shell = {
@@ -278,6 +279,7 @@ const STATUS_INTERVAL = 5000
 
 function AdminStatusBar() {
   const t = useT(messages)
+  const ts = useT(systemMessages)
   const { relative } = useRelative()
   const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
   const status = useQuery('status', (c) => c.system.status(), [], { interval: STATUS_INTERVAL })
@@ -329,7 +331,11 @@ function AdminStatusBar() {
         {nextJob?.nextRun
           ? t('status.next', {
               jobs: running_,
-              name: nextJob.name,
+              // the task's name from System › Tasks; a type without one shows as it is
+              name:
+                `task.${nextJob.name}` in systemMessages
+                  ? ts(`task.${nextJob.name}` as keyof typeof systemMessages & `task.${string}`)
+                  : nextJob.name,
               when: relative(nextJob.nextRun),
             })
           : running_}

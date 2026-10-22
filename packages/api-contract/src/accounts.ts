@@ -109,12 +109,15 @@ export const InviteInput = z
   })
   .openapi('InviteInput')
 
+/** Where the server's mail sent the link (8b); null when it wasn't emailed. */
+const EmailedTo = z.string().nullable().optional()
+
 export const AccountLink = z
-  .object({ link: z.string(), expiresAt: IsoDate })
+  .object({ link: z.string(), expiresAt: IsoDate, emailedTo: EmailedTo })
   .openapi('AccountLink', { description: 'A single-use link: an invite or a password reset' })
 
 export const Invite = z
-  .object({ user: User, link: z.string(), expiresAt: IsoDate })
+  .object({ user: User, link: z.string(), expiresAt: IsoDate, emailedTo: EmailedTo })
   .openapi('Invite')
 
 export const UserPatch = z

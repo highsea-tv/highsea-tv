@@ -2,7 +2,9 @@
 // Checkpoint 6's live states outside the movie page, rendered against a fake of the API: System's
 // Health list, where the torrent client's and imports' problems show, and the dashboard's Network
 // and Queue widgets, which come alive with the `downloads` source; and checkpoint 7a's Subtitles
-// widget, alive with the `subtitles` source. The shell and Next's router are stood in for.
+// widget, alive with the `subtitles` source; and checkpoint 8b's tabs: Status, Logs with crash
+// reports, Events, Backups (the owner's, with a restore that waits out the restart) and Updates.
+// The shell and Next's router are stood in for.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ReactNode } from 'react'
@@ -12,8 +14,9 @@ mock.module('next/navigation', () => ({
   usePathname: () => '/',
   useSearchParams: () => new URLSearchParams(),
 }))
+let role: 'owner' | 'admin' = 'owner'
 mock.module('../src/admin/shell.tsx', () => ({
-  useShell: () => ({ role: 'owner' }),
+  useShell: () => ({ role }),
   AdminPage: ({ title, children }: { title: ReactNode; children?: ReactNode }) => (
     <main>
       <h1>{title}</h1>
@@ -51,6 +54,53 @@ const queueItem = (n: number, state: string, extra: Record<string, unknown> = {}
   ...extra,
 })
 
+const backup = (id: string, kind: string, createdAt: string) => ({
+  id,
+  kind,
+  createdAt,
+  size: 3_200_000,
+  version: '0.6.0',
+  schema: '0010_notifications',
+  problem: null as string | null,
+})
+
+const STATUS = {
+  version: '0.6.0',
+  startedAt: new Date(Date.now() - 2 * 3_600_000).toISOString(),
+  uptime: 7200,
+  clientsConnected: 3,
+  catalogVersion: '2026.10.20',
+  addresses: { local: ['http://192.168.1.20:3000'], public: 'https://harbor.example.net' },
+  cpu: 12,
+  memory: { used: 4e9, total: 16e9 },
+  process: { cpu: 2, memory: 300e6 },
+  disks: [
+    {
+      path: '/data',
+      label: 'Media',
+      free: 1e11,
+      total: 2e12,
+      usedBy: { movies: 1.5e12, downloads: 3e11, other: 0 },
+    },
+  ],
+}
+
+const LOG = [
+  {
+    at: '2026-10-21T12:00:03.000Z',
+    level: 'error',
+    source: 'downloads',
+    message: 'Tracker refused',
+  },
+  {
+    at: '2026-10-21T12:00:02.000Z',
+    level: 'info',
+    source: 'indexers',
+    message: 'RSS sync found 3',
+  },
+  { at: '2026-10-21T12:00:01.000Z', level: 'debug', source: 'jobs', message: 'Tick' },
+]
+
 type State = {
   sources: string[]
   health: { id: string; source: string; level: string; message: string; since: string }[]
@@ -65,8 +115,11 @@ type State = {
     avgOffsetMs: number
     avgConfidence: number
   }
+  backups: Record<string, unknown>[]
+  /** Whether /api/health answers: off while the server restarts. */
+  up: boolean
   requests: { method: string; path: string }[]
-  push: ((topic: string) => void) | null
+  push: ((topic: string, ids?: string[]) => void) | null
 }
 let state: State
 
@@ -81,9 +134,11 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
       new ReadableStream({
         start(c) {
           let id = 0
-          state.push = (topic) =>
+          state.push = (topic, ids) =>
             c.enqueue(
-              new TextEncoder().encode(`data: ${JSON.stringify({ id: ++id, topic, at: 0 })}\n\n`),
+              new TextEncoder().encode(
+                `data: ${JSON.stringify({ id: ++id, topic, ids, at: Date.parse('2026-10-21T12:34:56Z') })}\n\n`,
+              ),
             )
         },
       }),
@@ -101,6 +156,71 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         sources: state.sources,
         attributions: [],
       })
+    case 'GET /api/health':
+      if (!state.up) throw new TypeError('fetch failed')
+      return json({ status: 'ok', checks: [] })
+    case 'GET /api/v1/system/status':
+      return json(STATUS)
+    case 'GET /api/v1/system/logs': {
+      const level = u.searchParams.get('level') ?? 'debug'
+      const rank = ['debug', 'info', 'warn', 'error']
+      return json({
+        entries: LOG.filter((e) => rank.indexOf(e.level) >= rank.indexOf(level)),
+        files: [
+          { name: 'highsea-2026-10-20.log', date: '2026-10-20', size: 2048 },
+          { name: 'highsea-2026-10-21.log', date: '2026-10-21', size: 2048 },
+        ],
+      })
+    }
+    case 'GET /api/v1/system/crashes':
+      return json([
+        {
+          id: 'crash-1',
+          at: '2026-10-21T09:00:00.000Z',
+          origin: 'api',
+          message: 'TypeError: Cannot read properties of undefined',
+          size: 1200,
+        },
+      ])
+    case 'GET /api/v1/settings/general':
+      return json({
+        language: 'en',
+        timeZone: 'Europe/London',
+        updateChannel: 'stable',
+        logLevel: 'info',
+        crashReports: false,
+      })
+    case 'GET /api/v1/system/backups':
+      return json({
+        backups: state.backups,
+        nextRun: new Date(Date.now() + 3_600_000).toISOString(),
+      })
+    case 'POST /api/v1/system/backups': {
+      const made = backup('highsea-manual', 'manual', '2026-10-21T12:00:00.000Z')
+      state.backups.unshift(made)
+      return json(made, 201)
+    }
+    case 'POST /api/v1/system/backups/highsea-scheduled/restore':
+      state.up = false
+      return new Response(null, { status: 202 })
+    case 'DELETE /api/v1/system/backups/highsea-scheduled':
+      state.backups = state.backups.filter((b) => b.id !== 'highsea-scheduled')
+      return new Response(null, { status: 204 })
+    case 'GET /api/v1/system/updates':
+      return json({
+        current: '0.6.0',
+        channel: 'stable',
+        latest: {
+          version: '0.7.0',
+          channel: 'stable',
+          date: '2026-10-19',
+          notes: ['Notifications', 'Backups and restore'],
+        },
+        available: true,
+        checkedAt: new Date(Date.now() - 3_600_000).toISOString(),
+      })
+    case 'POST /api/v1/catalog/check':
+      return json({ version: null, lastCheck: null, available: null })
     case 'GET /api/v1/catalog/status':
       return json({ version: null, lastCheck: null, available: null })
     case 'GET /api/v1/system/health':
@@ -144,9 +264,18 @@ beforeEach(() => {
     speeds: [],
     vpn: 'off',
     subtitleStats: { syncedToday: 0, waiting: 0, avgOffsetMs: 0, avgConfidence: 0 },
+    backups: [
+      backup('highsea-scheduled', 'scheduled', '2026-10-20T03:30:00.000Z'),
+      {
+        ...backup('highsea-newer', 'manual', '2026-10-19T03:30:00.000Z'),
+        problem: 'From a newer highsea',
+      },
+    ],
+    up: true,
     requests: [],
     push: null,
   }
+  role = 'owner'
 })
 afterEach(() => cleanup())
 
@@ -227,7 +356,7 @@ describe('System › Tasks', () => {
 
 describe('System › Health', () => {
   test('says everything’s healthy when nothing needs attention', async () => {
-    const { page } = await open(<System />)
+    const { page } = await open(<System tab="health" />)
     expect(page.getByText('Everything’s healthy')).toBeTruthy()
   })
 
@@ -242,7 +371,7 @@ describe('System › Health', () => {
         since,
       },
     ]
-    const { page } = await open(<System />)
+    const { page } = await open(<System tab="health" />)
     const list = page.getByRole('list', { name: 'Health checks' })
     expect(within(list).getByText('Error')).toBeTruthy()
     expect(within(list).getByText('Downloads')).toBeTruthy()
@@ -261,6 +390,134 @@ describe('System › Health', () => {
     expect(
       within(page.getByRole('list', { name: 'Health checks' })).getByText('Warning'),
     ).toBeTruthy()
+  })
+})
+
+describe('System › Status', () => {
+  test('opens the page: the figures, resources, addresses and what uses each disk', async () => {
+    const { page } = await open(<System />)
+    expect(page.getByRole('tab', { name: 'Status' }).getAttribute('aria-selected')).toBe('true')
+    expect(page.getByText('apps connected')).toBeTruthy()
+    expect(page.getByText('3')).toBeTruthy()
+    const resources = page.getByRole('region', { name: 'Resources' })
+    expect(within(resources).getByText('Memory: 4.0 GB of 16.0 GB')).toBeTruthy()
+    const addresses = page.getByRole('region', { name: 'Addresses' })
+    expect(within(addresses).getByText('https://harbor.example.net')).toBeTruthy()
+    const disks = page.getByRole('region', { name: 'Disks' })
+    expect(within(disks).getByText('Movies 1.5 TB · Downloads 300 GB')).toBeTruthy()
+    expect(within(disks).getByRole('progressbar', { name: 'Media: 95% used' })).toBeTruthy()
+    // About comes with Status
+    expect(page.getByRole('region', { name: 'About' })).toBeTruthy()
+  })
+})
+
+describe('System › Logs', () => {
+  test('asks for a level, searches what came back, and lists crash reports', async () => {
+    const { page, user } = await open(<System tab="logs" />)
+    const log = page.getByRole('list', { name: 'Log' })
+    expect(within(log).getByText('Tracker refused')).toBeTruthy()
+    expect(within(log).getByText('RSS sync found 3')).toBeTruthy()
+    // Info and up, by default: the debug line stays out
+    expect(within(log).queryByText('Tick')).toBeNull()
+    expect(state.requests.some((r) => r.path === '/api/v1/system/logs')).toBe(true)
+    await user.type(page.getByRole('searchbox', { name: 'Search the log' }), 'tracker')
+    expect(
+      within(page.getByRole('list', { name: 'Log' })).queryByText('RSS sync found 3'),
+    ).toBeNull()
+    expect(page.getByRole('link', { name: 'Download logs' }).getAttribute('href')).toBe(
+      '/api/v1/system/logs/download',
+    )
+    expect(page.getByText(/every line from the last 2 days, 4.1 kB/)).toBeTruthy()
+    const crashes = page.getByRole('list', { name: 'Crash reports' })
+    expect(within(crashes).getByText(/Cannot read properties/)).toBeTruthy()
+    expect(within(crashes).getByRole('link').getAttribute('href')).toBe(
+      '/api/v1/system/crashes/crash-1',
+    )
+    // they're off in General, so the group says where to turn them on
+    expect(page.getByRole('link', { name: /Crash reports are off/ })).toBeTruthy()
+  })
+})
+
+describe('System › Events', () => {
+  test('shows each event as it arrives', async () => {
+    const { page } = await open(<System tab="events" />)
+    expect(page.getByText(/Listening/)).toBeTruthy()
+    await act(async () => state.push?.('movies.updated', ['45745']))
+    await settle()
+    const events = page.getByRole('list', { name: 'Events' })
+    expect(within(events).getByText('movies.updated')).toBeTruthy()
+    expect(within(events).getByText('45745')).toBeTruthy()
+  })
+})
+
+describe('System › Backups', () => {
+  test('backs up now, refuses a backup it can’t restore, and deletes after asking', async () => {
+    const { page, user } = await open(<System tab="backups" />)
+    const table = page.getByRole('table', { name: 'Backups' })
+    expect(within(table).getByText('Scheduled')).toBeTruthy()
+    expect(within(table).getByText('From a newer highsea')).toBeTruthy()
+    const restores = within(table).getAllByRole('button', { name: /^Restore the backup from/ })
+    expect(restores.map((b) => (b as HTMLButtonElement).disabled)).toEqual([false, true])
+    expect(
+      within(table)
+        .getAllByRole('link', { name: /^Download the backup from/ })[0]
+        ?.getAttribute('href'),
+    ).toBe('/api/v1/system/backups/highsea-scheduled/download')
+
+    await user.click(page.getByRole('button', { name: 'Back up now' }))
+    await settle()
+    expect(
+      within(page.getByRole('table', { name: 'Backups' })).getAllByText('Made by hand'),
+    ).toHaveLength(2)
+
+    await user.click(
+      within(page.getByRole('table', { name: 'Backups' })).getAllByRole('button', {
+        name: /^Delete the backup from/,
+      })[1] as HTMLElement,
+    )
+    const dialog = page.getByRole('alertdialog')
+    await user.click(within(dialog).getByRole('button', { name: 'Delete backup' }))
+    await settle()
+    expect(
+      state.requests.some(
+        (r) => r.method === 'DELETE' && r.path === '/api/v1/system/backups/highsea-scheduled',
+      ),
+    ).toBe(true)
+  })
+
+  test('a restore asks first, then waits for the server to come back', async () => {
+    const { page, user } = await open(<System tab="backups" />)
+    await user.click(
+      page.getAllByRole('button', { name: /^Restore the backup from/ })[0] as HTMLElement,
+    )
+    const dialog = page.getByRole('alertdialog')
+    expect(within(dialog).getByText(/anything since is lost/)).toBeTruthy()
+    await user.click(within(dialog).getByRole('button', { name: 'Restore and restart' }))
+    await settle()
+    expect(page.getByRole('region', { name: 'Restoring' })).toBeTruthy()
+    expect(page.getByText(/This page reloads when it’s back/)).toBeTruthy()
+  })
+
+  test('an admin doesn’t see the tab, and its address opens Status', async () => {
+    role = 'admin'
+    const { page } = await open(<System tab="backups" />)
+    expect(page.queryByRole('tab', { name: 'Backups' })).toBeNull()
+    expect(page.getByRole('tab', { name: 'Status' }).getAttribute('aria-selected')).toBe('true')
+    expect(state.requests.some((r) => r.path === '/api/v1/system/backups')).toBe(false)
+  })
+})
+
+describe('System › Updates', () => {
+  test('the newer version with its notes, the Docker note, and Check now', async () => {
+    const { page, user } = await open(<System tab="updates" />)
+    const update = page.getByRole('region', { name: 'Update' })
+    expect(within(update).getByText('highsea 0.7.0 is out. You have 0.6.0.')).toBeTruthy()
+    expect(within(update).getByText('Backups and restore')).toBeTruthy()
+    expect(within(update).getByText(/pull the new image/)).toBeTruthy()
+    expect(within(update).queryByRole('button', { name: /Update and restart/ })).toBeNull()
+    await user.click(within(update).getByRole('button', { name: 'Check now' }))
+    await settle()
+    expect(state.requests.some((r) => r.path === '/api/v1/catalog/check')).toBe(true)
   })
 })
 

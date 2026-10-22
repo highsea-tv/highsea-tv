@@ -260,7 +260,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
 3. `MovieSearch` job: indexers → `parser` → map → decision engine (profile, size, seeders, custom-format score, upgrades, blocklist, queued) → grab via `downloads` → torrent engine.
 4. Monitor progress over SSE. On completion: import (ffprobe, quality, rename template, hardlink or copy), `media_files`, history, then **trigger the subtitle pipeline**. Seed to the limit, then remove the torrent.
 5. Automation: RSS sync every 15 min, missing and cutoff-unmet searches, upgrades, blocklist + re-search. Built in checkpoint 8a, with a 6-hourly backlog sweep that backs off per movie ([ADR 0045](adr/0045-automation.md)).
-6. Notifications: every channel, webhooks included. No Jellyfin, Plex or Emby refresh: highsea replaces them rather than feeding them (decided 2026-10-21).
+6. Notifications: every channel, webhooks included. No Jellyfin, Plex or Emby refresh: highsea replaces them rather than feeding them (decided 2026-10-21). Built in checkpoint 8b ([ADR 0046](adr/0046-notifications.md)).
 7. Existing-library import for users migrating from Radarr.
 
 ### Subtitles, first class (`@highsea/subtitles`)
@@ -410,6 +410,7 @@ Tags: **[M1]** pull into server milestone 1 · **[Arch]** affects architecture n
   Built in checkpoint 6a: a release whose file list carries an executable or dangerous extension (Radarr's lists) is refused before a byte downloads, blocklisted and replaced; a download with no seeds for 3 hours is blocklisted and replaced; samples and extras are skipped at import. Password-protected archives are caught at extraction (6b).
 - **[M1] Health checks** (*arr "Health"): paths, permissions, disk space, indexer status, catalog status, VPN (down, the exit address your own, port forwarding). Downloads and the VPN joined System's health list in checkpoint 6a.
 - **[M1] Backups and restore**: scheduled DB + config backups, plus a backup before every migration.
+  - *As built (checkpoint 8b, [ADR 0047](adr/0047-operations.md)):* a zip of the database and a manifest, made daily, weekly or by hand, before an update and before a restore; never `secret.key`, which is copied by hand to restore on another machine. Restore restarts the server on the backup.
 - **[M1] Manual / interactive import**: file browser, rename preview, mass rename, multiple root folders and disks. Manual import (A17) built in checkpoint 6a.
 - **[M1] Media management extras**: NFO and artwork writing (Kodi), permissions (chmod/chown), editions, alternative titles, delay profiles, tags for scoping rules.
 - **[M1] Torrent engine production features**:
@@ -490,8 +491,10 @@ Tags: **[M1]** pull into server milestone 1 · **[Arch]** affects architecture n
   - OIDC/SSO (Authentik/Authelia) and trusted reverse-proxy auth headers;
   - login rate limiting, audit log, scoped API keys.
 - **[M1] Notifications breadth**: Discord, Telegram, ntfy, Gotify, Pushover, email/SMTP, Apprise, Matrix, Slack, webhooks, browser web-push.
+  - *As built (checkpoint 8b, [ADR 0046](adr/0046-notifications.md)):* every one of them, Apprise through the owner's Apprise API server. An SMTP connection can also send invites and password resets.
 - **[M1] i18n**: localizable UI strings from day one, plus metadata language/region settings.
 - **[M1] Observability**: structured logs viewer, Prometheus `/metrics`, opt-in crash reporting.
+  - *As built (checkpoint 8b, [ADR 0047](adr/0047-operations.md)):* log files a day, kept 14 days; `/metrics` written without a dependency, off until the owner turns it on; crash reports kept in the config folder and never sent. Update notifications come from the signed catalog.
 - **[M1] Release engineering**:
   - CI on GitHub Actions;
   - multi-arch Docker images (amd64 + **arm64** for Pi/NAS) published to GHCR;

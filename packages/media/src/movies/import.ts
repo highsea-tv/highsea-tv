@@ -446,6 +446,8 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
           quality,
           args,
           existing.transfer,
+          undefined,
+          { size: existing.size },
         )
         return {
           status: 'imported',
@@ -595,7 +597,10 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
     })
 
     // Step 9, announce.
-    settle(row, version, fileId, dest, sourceTitle, quality, args, method, message)
+    settle(row, version, fileId, dest, sourceTitle, quality, args, method, message, {
+      size: stats.size,
+      upgradedFrom: existing?.quality ?? null,
+    })
     log.info('imported', { tmdbId: row.tmdbId, path: dest, transfer: method })
     return {
       status: 'imported',
@@ -627,6 +632,8 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
     args: { indexer?: string | null; downloadId?: string | null },
     method: string | null,
     message?: string,
+    /** More for the history entry: the file's size, the quality it replaced, adopted in place. */
+    extra?: { size: number; upgradedFrom?: string | null; inPlace?: boolean },
   ) {
     db.transaction((tx) => {
       tx.update(versions).set({ fileId }).where(eq(versions.id, version.id)).run()
@@ -649,7 +656,7 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
           message ??
           transferMessage({ method: (method ?? 'copy') as TransferMethod, fallback: null }),
         downloadId: args.downloadId ?? null,
-        data: { key, fileId, path, versionId: version.id, transfer: method },
+        data: { key, fileId, path, versionId: version.id, transfer: method, ...extra },
       })
     announceItem(row)
   }
@@ -854,7 +861,10 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
       return id
     })
     await afterImport({ fileId, itemId: row.id, path, sourceFolder: dirname(path), inPlace: true })
-    settle(row, version, fileId, path, sourceTitle, quality, {}, null, args.message)
+    settle(row, version, fileId, path, sourceTitle, quality, {}, null, args.message, {
+      size: stats.size,
+      inPlace: true,
+    })
     log.info('recorded a file in place', { tmdbId: row.tmdbId, path })
     return { fileId, path }
   }

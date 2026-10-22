@@ -63,7 +63,8 @@ As built in Phase 3 (ADR 0023); each route's access is in the OpenAPI document.
 - `users.inviteLink(id)` → `POST /api/v1/users/{id}/invite-link`: a pending invite's link, to copy again.
 - `users.update(id, patch)` → `PATCH /api/v1/users/{id}`: role, permissions, libraries. Permissions and libraries are a user's; making an admin a User ends their admin sessions and API keys.
 - `users.remove(id)` → `DELETE /api/v1/users/{id}`, which also cancels an invite.
-- `users.resetPassword(id)` → `POST /api/v1/users/{id}/password-reset`: a link to pass on. Email arrives in checkpoint 8.
+- `users.resetPassword(id)` → `POST /api/v1/users/{id}/password-reset`: a link to pass on.
+- **Email for invites and resets** (8b, [ADR 0046](../adr/0046-notifications.md)): when an Email connection is set as **the server's mail** (Settings › Connections), an invite with an email address and a password reset also send an email, plain text with an HTML part from the approved templates ([emails.md](emails.md)), in the server's language (people have no language of their own yet). The link is still returned and shown, so an owner without email passes it on as before. `Invite` and `AccountLink` gain `emailedTo`, the address it went to, or null when it wasn't emailed. A failed send doesn't fail the invite: the link is there to share. The link dialog adds "We also emailed it to {email}." when it went.
 - `users.resetTwoFactor(id)` → `DELETE /api/v1/users/{id}/two-factor`: turns someone else's two-step off (ADR 0024). The owner's alone, so nobody can for the owner.
 - `links.get(token)` → `GET /api/v1/links/{token}` and `links.accept(token, { password, username? })` → `POST /api/v1/links/{token}/accept`, for the invite and reset pages. Links work once, for 7 days.
 - `devices.list({ userId? })` → `GET /api/v1/devices` (staff); `me.devices()` → `GET /api/v1/me/devices`; `devices.revoke(id)` → `DELETE /api/v1/devices/{id}`: your own, or anyone's for the owner.

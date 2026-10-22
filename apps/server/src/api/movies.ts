@@ -30,6 +30,7 @@ export function registerMovies(app: OpenAPIHono<Env>) {
     const { movie: added, created } = await movies(c).add(c.req.valid('json'))
     if (!created) return c.json(added, 200)
     audit(c, 'movie.added', movie(added.id))
+    c.get('runtime').notifications.movieAdded(added.id, me(c).user.displayName)
     return c.json(added, 201)
   })
 

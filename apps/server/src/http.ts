@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The one HTTP server (ADR 0003): `/api` and the calendar feed (`/feed/`) to Hono, `/stream` and `/ws` reserved for playback, and
+// The one HTTP server (ADR 0003): `/api`, the calendar feed (`/feed/`) and Prometheus's `/metrics`
+// (ADR 0047) to Hono, `/stream` and `/ws` reserved for playback, and
 // everything else to Next's handler. The same handler serves HTTPS when built-in TLS is on.
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { createServer as createHttpsServer } from 'node:https'
@@ -16,7 +17,12 @@ function handler({ api, next }: Handlers) {
   const toApi = getRequestListener(api.fetch)
   return (req: IncomingMessage, res: ServerResponse) => {
     const path = (req.url ?? '/').split('?')[0] ?? '/'
-    if (path === '/api' || path.startsWith('/api/') || path.startsWith('/feed/'))
+    if (
+      path === '/api' ||
+      path.startsWith('/api/') ||
+      path.startsWith('/feed/') ||
+      path === '/metrics'
+    )
       return void toApi(req, res)
     if (path.startsWith('/stream/') || path === '/ws') {
       res.writeHead(501, { 'content-type': 'application/json' })

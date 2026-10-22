@@ -23,6 +23,7 @@ import {
   type Fetch,
   generateSecretKey,
   jsonSink,
+  type Level,
   type Logger,
   type LogSink,
   type MemorySink,
@@ -32,7 +33,15 @@ import {
   type Sealer,
   systemClock,
 } from '@highsea/core'
-import { type Database, type Db, migrate, openDatabase, readSetting, schema } from '@highsea/db'
+import {
+  type Database,
+  type Db,
+  migrate,
+  openDatabase,
+  readSetting,
+  schema,
+  writeSetting,
+} from '@highsea/db'
 import {
   createDownloads,
   createIpBlocklist,
@@ -63,6 +72,7 @@ import {
 } from '@highsea/media/shared'
 import { createMetadata, type Metadata, TMDB_ATTRIBUTION } from '@highsea/metadata'
 import type { MdnsResponder } from '@highsea/network'
+import { createNotifications, type Notifications } from '@highsea/notifications/service'
 import {
   type Branding,
   createPersonalization,
@@ -82,11 +92,30 @@ import { createTorrentEngine, HASH_WORKER, type TorrentEngine } from '@highsea/t
 import { CommandFailed, createVpn, type Vpn } from '@highsea/vpn'
 import { and, eq } from 'drizzle-orm'
 import { type Automation, createAutomation } from './automation.ts'
+import {
+  appliedMigrations,
+  BACKUPS_KEY,
+  type BackupSettings,
+  beginRestore,
+  defaultBackupSettings,
+  packBackup,
+  takeRestoreFailure,
+} from './backups.ts'
 import { type BrowseListing, browse } from './browse.ts'
 import type { Config } from './config.ts'
 import { homeRows } from './home-rows.ts'
 import { createListLibrary } from './list-library.ts'
+import { createLogFiles } from './logs.ts'
+import { createMailBrand } from './mail-brand.ts'
 import { createNetworkService, type NetworkService } from './network.ts'
+import { createNotify, HEALTH_EVERY_MS, type Notify } from './notify.ts'
+import {
+  createOperations,
+  GENERAL_KEY,
+  type GeneralSettings,
+  type Operations,
+  UPDATES_TOPIC,
+} from './operations.ts'
 import {
   checkSetup,
   FOLDERS_KEY,
@@ -96,7 +125,13 @@ import {
   saveSetup,
   setupDefaults,
 } from './setup.ts'
-import { createCpuMeter, type Disk, disks, type HealthIssue, memory } from './system.ts'
+import {
+  createResourceMonitor,
+  type Disk,
+  disks,
+  type HealthIssue,
+  type Resources,
+} from './system.ts'
 import { createWorkerPool, type WorkerPool } from './workers.ts'
 
 /** Milestone 1 has the server, the movie library, indexers, downloads and subtitles; later checkpoints add theirs. */
@@ -155,10 +190,13 @@ export type ServerView = {
 export type SystemStatus = {
   version: string
   startedAt: number
-  cpu: number
-  memory: { used: number; total: number }
+  /** Seconds since the server started. */
+  uptime: number
+  clientsConnected: number
+  catalogVersion: string | null
+  addresses: { local: string[]; public: string | null }
   disks: Disk[]
-}
+} & Resources
 
 export type SetupInput = {
   serverName: string
@@ -250,6 +288,19 @@ export type Runtime = {
   /** What needs attention, for the server card and System › Health. */
   issues(): HealthIssue[]
   health(): HealthReport
+  /**
+   * The owner's tools (8b, ADR 0047): General's settings, the log and its level, crash reports,
+   * backups and restore, updates and `/metrics`.
+   */
+  operations: Operations
+  /**
+   * Notifications (8b, ADR 0046): the connections and their messages, and what the runtime hears
+   * for them: `checkHealth` compares the issues with the last ones seen (every minute; tests call
+   * it), `movieAdded` is a person's add, `verifyImage` checks a poster's signed address, and
+   * `mailLink` emails an invite or reset link through the server's mail.
+   */
+  notifications: Notifications &
+    Pick<Notify, 'checkHealth' | 'movieAdded' | 'verifyImage' | 'mailLink'>
   /** Runs `fn` on shutdown, before the database closes (last registered, first run). */
   onShutdown(fn: () => Promise<void> | void): void
   shutdown(): Promise<void>
@@ -310,6 +361,16 @@ export type BootOptions = {
    * configured Client ID and secret; tests and the sweeps pass `@highsea/lists/fake`.
    */
   lists?: { fetch?: Fetch; traktClientId?: string | null; traktClientSecret?: string | null }
+  /**
+   * The notification channels' fetch and the VAPID contact. By default the outside fetch; tests
+   * and the sweeps pass `@highsea/notifications/fake`'s.
+   */
+  notifications?: { fetch?: Fetch; vapidSubject?: string | null }
+  /**
+   * Restarts the server after a restore's marker is written (8b). The server entry stops and exits
+   * so Docker's restart policy brings it back; tests pass their own.
+   */
+  restart?: () => void
 }
 
 const g = globalThis as typeof globalThis & { __highsea?: Runtime }
@@ -323,30 +384,86 @@ export function getRuntime(): Runtime {
 export const hasRuntime = () => g.__highsea !== undefined
 
 /**
+ * Boots, after putting a backup in place when a restore asked for one (8b): if that boot fails, the
+ * database it replaced goes back, and the next boot says why in System › Health.
+ */
+export async function boot(options: BootOptions): Promise<Runtime> {
+  const restore = options.memory
+    ? null
+    : await beginRestore(
+        options.config.configDir,
+        createLogger({ sinks: options.quiet ? [] : [jsonSink()], clock: options.clock }),
+      )
+  try {
+    const runtime = await bootServer(options)
+    restore?.finish()
+    return runtime
+  } catch (e) {
+    restore?.undo(e)
+    throw e
+  }
+}
+
+/**
  * Boots in order: folders and the secret key, the database (backed up, then migrated), events,
  * jobs (recovering interrupted ones), workers. Later checkpoints add the torrent engine, the
  * download monitor, catalog sync, discovery and the filesystem watcher.
  */
-export async function boot(options: BootOptions): Promise<Runtime> {
+async function bootServer(options: BootOptions): Promise<Runtime> {
   const { config, version, clock = systemClock } = options
   const logs = memorySink()
   const sinks = [logs, ...(options.sinks ?? [])]
   if (!options.quiet) sinks.push(jsonSink())
-  const logger = createLogger({ level: config.logLevel, sinks, clock })
+  // the log on disk (8b), a file a day; the level is General's once the database says it
+  const logFiles = createLogFiles(join(config.configDir, 'logs'))
+  sinks.push(logFiles.sink)
+  let logLevel: Level = config.logLevel
+  const logger = createLogger({ level: () => logLevel, sinks, clock })
   const log = logger.child('runtime')
 
-  for (const dir of [config.configDir, join(config.configDir, 'backups')])
-    mkdirSync(dir, { recursive: true })
+  mkdirSync(config.configDir, { recursive: true })
+  const restoreFailure = takeRestoreFailure(config.configDir)
 
   const sealer = createSealer(loadSecretKey(join(config.configDir, 'secret.key')))
 
   const database = openDatabase(options.memory ? ':memory:' : join(config.configDir, 'highsea.db'))
+  // before an update: the database as it was, zipped as a backup of that kind (8b)
+  const previous = {
+    migrations: appliedMigrations(database.raw),
+    version: readSettingSafely(database.db, VERSION_KEY, { version: null as string | null })
+      .version,
+    folder: readSettingSafely<BackupSettings>(
+      database.db,
+      BACKUPS_KEY,
+      defaultBackupSettings(config.configDir),
+    ).folder,
+  }
+  mkdirSync(previous.folder, { recursive: true })
   const { applied, backup } = migrate(database.raw, {
-    backupDir: join(config.configDir, 'backups'),
+    backupDir: previous.folder,
     now: clock.now(),
   })
-  if (applied.length) log.info('migrated the database', { applied, backup })
+  if (applied.length) log.info('migrated the database', { applied })
+  if (backup)
+    try {
+      const id = await packBackup({
+        folder: previous.folder,
+        database: backup,
+        at: clock.now(),
+        kind: 'before-update',
+        version: previous.version,
+        migrations: previous.migrations,
+      })
+      log.info('backed up the database before migrating it', { id })
+    } catch (e) {
+      log.warn('couldn’t zip the backup made before migrating', {
+        file: backup,
+        error: (e as Error).message,
+      })
+    }
   const db = database.db
+  writeSetting(db, VERSION_KEY, { version }, clock.now())
+  logLevel = readSetting<Pick<GeneralSettings, 'logLevel'>>(db, GENERAL_KEY, { logLevel }).logLevel
 
   const events = createEventBus({ now: () => clock.now() })
   const jobs = createJobQueue({ db, clock, logger, events })
@@ -513,7 +630,14 @@ export async function boot(options: BootOptions): Promise<Runtime> {
   }
 
   // what every media type shares: profiles, formats, sizes and root folders
-  const media = createMedia({ db, clock, logger })
+  // notifications are made last; what happens before then has nothing to tell yet
+  let notify: Notify | null = null
+  const media = createMedia({
+    db,
+    clock,
+    logger,
+    onHistory: (id, entry) => notify?.onHistory(id, entry),
+  })
   media.seed()
   // subtitles before the library: the import's hooks keep a release's subtitles and the hash
   const subtitles = createSubtitles({
@@ -643,6 +767,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     history: (entry) => {
       media.history.write(entry)
     },
+    failed: (failure) => notify?.onFailed(failure),
     async importer(input) {
       const result = await movies.importDownload({
         itemId: input.itemId,
@@ -702,6 +827,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       userAgent: `highsea/${version}`,
     }),
     library: listLibrary,
+    onAdded: (run) => notify?.onListAdded(run),
   })
   lists.schedule(clock.now())
   downloads.defineJobs()
@@ -804,7 +930,96 @@ export async function boot(options: BootOptions): Promise<Runtime> {
     { homeRows: () => homeRows(db) },
   )
 
-  const cpu = createCpuMeter()
+  // the owner's tools (8b): settings, logs, crash reports, backups, updates and /metrics
+  const operations = createOperations({
+    db,
+    raw: database.raw,
+    jobs,
+    clock,
+    logger,
+    events,
+    configDir: config.configDir,
+    version,
+    startedAt,
+    defaultLogLevel: config.logLevel,
+    setLogLevel: (level) => {
+      logLevel = level
+    },
+    logs,
+    logFiles,
+    catalog,
+    restart: () => {
+      const restart =
+        options.restart ??
+        (() => void runtime.shutdown().finally(() => process.exit(RESTART_EXIT_CODE)))
+      // after the response that asked for it has gone
+      setTimeout(restart, 250).unref?.()
+    },
+    sources: {
+      clientsConnected: () => network.clientsConnected(),
+      engine: () => engine.status(),
+    },
+  })
+  sinks.push(operations.logs.announce)
+
+  // notifications (8b): the connections, and the runtime's ears for them
+  const notifications = createNotifications({
+    db,
+    clock,
+    events,
+    jobs,
+    logger,
+    sealer,
+    fetch: options.notifications?.fetch ?? outside,
+    locale: () => operations.general.get().language,
+    mail: createMailBrand({
+      serverName: () => identity().name,
+      externalUrl: () => network.externalUrl(),
+      general: () => operations.general.get(),
+      mark: () => personalization.appearance.mark(),
+      poster: (tmdbId) => metadata.cachedMovie(tmdbId)?.art.poster ?? null,
+      image: (parts) => metadata.images.get(parts),
+    }),
+    vapidSubject: () => {
+      if (options.notifications?.vapidSubject !== undefined)
+        return options.notifications.vapidSubject
+      // RFC 8292 § 2.1: an https URL the push service can reach the operator at
+      const url = network.externalUrl()
+      return url?.startsWith('https:') ? url : null
+    },
+  })
+  notifications.schedule(clock.now())
+  notify = createNotify({
+    db,
+    clock,
+    logger,
+    sealer,
+    notifications,
+    poster: (tmdbId) => metadata.cachedMovie(tmdbId)?.art.poster ?? null,
+    externalUrl: () => network.externalUrl(),
+    issues: () => runtime.issues(),
+    general: () => operations.general.get(),
+  })
+  const notifyRef = notify
+  // before operations start: they announce an update the catalog already knows
+  const stopUpdateNotes = events.subscribe((e) => {
+    const version = e.topic === UPDATES_TOPIC ? e.ids?.[0] : undefined
+    if (version) notifyRef.updateAvailable(version)
+  })
+  const healthTimer = options.manualTicks
+    ? null
+    : setInterval(() => {
+        try {
+          notifyRef.checkHealth()
+        } catch (e) {
+          log.warn('couldn’t compare the health issues', { error: (e as Error).message })
+        }
+      }, HEALTH_EVERY_MS)
+  healthTimer?.unref?.()
+
+  const stopOperations = operations.start(clock.now())
+  const resources = createResourceMonitor()
+  if (!options.manualTicks) resources.start()
 
   const runtime: Runtime = {
     config,
@@ -930,12 +1145,30 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       }
     },
     status() {
+      const movies = new Map(
+        database.raw
+          .all(
+            `SELECT i.root_folder AS root, coalesce(sum(f.size), 0) AS n FROM media_files f
+             JOIN media_items i ON i.id = f.item_id GROUP BY i.root_folder`,
+          )
+          .map((r) => [String(r.root), Number(r.n)]),
+      )
+      const downloaded = Number(
+        database.raw.all('SELECT coalesce(sum(downloaded), 0) AS n FROM torrents')[0]?.n ?? 0,
+      )
       return {
         version,
         startedAt,
-        cpu: cpu(),
-        memory: memory(),
+        uptime: Math.max(0, Math.floor((clock.now() - startedAt) / 1000)),
+        clientsConnected: network.clientsConnected(),
+        catalogVersion: catalog.version(),
+        addresses: { local: localAddresses(config.port), public: network.externalUrl() },
+        ...resources.now(),
         disks: disks([
+          ...media.rootFolders
+            .list()
+            .map((f) => ({ label: 'Movies', path: f.path, movies: movies.get(f.path) ?? 0 })),
+          { label: 'Downloads', path: folders().downloads, downloads: downloaded },
           { label: 'Media', path: config.dataDir },
           { label: 'Config', path: config.configDir },
         ]),
@@ -981,6 +1214,7 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       for (const i of ipBlocklist.issues()) out.push({ ...i, source: 'Downloads' })
       for (const i of vpn.issues()) out.push({ ...i, source: 'VPN' })
       for (const i of subtitles.issues()) out.push({ ...i, source: 'Subtitles' })
+      for (const i of notifications.issues()) out.push({ ...i, source: 'Connections' })
       if (ffmpegMissing)
         out.push({
           id: 'ffmpeg-missing',
@@ -998,6 +1232,14 @@ export async function boot(options: BootOptions): Promise<Runtime> {
           message:
             'unar isn’t installed, so downloads that come as archives can’t be imported. Install unar, or set HIGHSEA_UNAR to its path.',
           since: startedAt,
+        })
+      if (restoreFailure)
+        out.push({
+          id: 'restore-failed',
+          source: 'Backups',
+          level: 'error',
+          message: `The restore from ${restoreFailure.id} didn’t work, so the server went back to the database it had: ${restoreFailure.message}`,
+          since: restoreFailure.at,
         })
       for (const p of watch.problems())
         out.push({
@@ -1019,6 +1261,13 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       }
       return { status: checks.every((c) => c.ok) ? 'ok' : 'degraded', checks }
     },
+    operations,
+    notifications: Object.assign(notifications, {
+      checkHealth: notifyRef.checkHealth,
+      movieAdded: notifyRef.movieAdded,
+      verifyImage: notifyRef.verifyImage,
+      mailLink: notifyRef.mailLink,
+    }),
     onShutdown(fn) {
       shutdownHooks.push(fn)
     },
@@ -1044,7 +1293,13 @@ export async function boot(options: BootOptions): Promise<Runtime> {
       await network.stopDiscovery()
       await jobs.drain()
       await workers.close()
+      stopOperations()
+      operations.stop()
+      stopUpdateNotes()
+      if (healthTimer) clearInterval(healthTimer)
+      resources.stop()
       database.raw.close()
+      logFiles.close()
       if (g.__highsea === runtime) g.__highsea = undefined
     },
   }
@@ -1052,6 +1307,25 @@ export async function boot(options: BootOptions): Promise<Runtime> {
   await network.startDiscovery()
   log.info('booted', { version, database: database.driver, configDir: config.configDir })
   return runtime
+}
+
+/** Where the version that last ran is kept, for the manifest of a backup made before an update. */
+const VERSION_KEY = 'runtime.version'
+
+/**
+ * EX_TEMPFAIL from sysexits(3): a temporary failure, to be retried. Docker's `unless-stopped` and
+ * `on-failure` restart policies both bring the container back on it (Docker's docs, "Start
+ * containers automatically").
+ */
+export const RESTART_EXIT_CODE = 75
+
+/** A setting, or its defaults when the database is new and has no settings table yet. */
+function readSettingSafely<T extends object>(db: Db, key: string, defaults: T): T {
+  try {
+    return readSetting(db, key, defaults)
+  } catch {
+    return defaults
+  }
 }
 
 /** Reads `/config/secret.key`, creating it (readable by this user only) on first boot. */

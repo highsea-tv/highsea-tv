@@ -49,5 +49,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0043](0043-subtitles.md) | Subtitles: providers in code, Bazarr's scoring, originals kept | Accepted |
 | [0044](0044-subtitle-sync.md) | The subtitle sync engine: speech, correlation, splits and a confidence that can veto | Accepted |
 | [0045](0045-automation.md) | Automation: RSS, the backlog sweep, upgrades, import lists and the calendar feed | Accepted |
+| [0046](0046-notifications.md) | Notifications: the event catalogue, channels as code, delivery, email and web push | Accepted |
+| [0047](0047-operations.md) | The owner's tools: backups and restore, the log, crash reports, updates and /metrics | Accepted |
 
 Template: copy [`template.md`](template.md).

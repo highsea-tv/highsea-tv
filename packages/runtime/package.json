@@ -23,6 +23,7 @@
     "@highsea/media": "workspace:*",
     "@highsea/metadata": "workspace:*",
     "@highsea/network": "workspace:*",
+    "@highsea/notifications": "workspace:*",
     "@highsea/personalization": "workspace:*",
     "@highsea/subtitles": "workspace:*",
     "@highsea/torrent": "workspace:*",

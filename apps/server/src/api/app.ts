@@ -7,9 +7,10 @@ import type { Runtime } from '@highsea/runtime'
 import { OpenAPIHono } from '@hono/zod-openapi'
 import { Scalar } from '@scalar/hono-api-reference'
 import { registerAccounts } from './accounts.ts'
+import { registerConnections } from './connections.ts'
 import { registerDownloads } from './downloads.ts'
 import { events } from './events.ts'
-import { type Env, guard } from './guard.ts'
+import { type Env, guard, routeFor } from './guard.ts'
 import { registerImporters } from './importers.ts'
 import { registerIndexers } from './indexers.ts'
 import { registerLibrary } from './library.ts'
@@ -17,6 +18,7 @@ import { registerLibraryImport } from './library-import.ts'
 import { registerLists } from './lists.ts'
 import { registerMetadata } from './metadata.ts'
 import { registerMovies } from './movies.ts'
+import { registerOperations } from './operations.ts'
 import { registerPersonalization } from './personalization.ts'
 import { registerQuality } from './quality.ts'
 import { registerSubtitles } from './subtitles.ts'
@@ -36,6 +38,19 @@ export function createApi(runtime: Runtime) {
       if (!result.success)
         return c.json(body('invalid', 'That request isn’t valid.', result.error.issues), 400)
     },
+  })
+
+  // /metrics' HTTP families (ADR 0047): every request, by the contract's route, timed to its end;
+  // an error has been answered by onError by then, so its status counts too
+  app.use(async (c, next) => {
+    const started = performance.now()
+    await next()
+    runtime.operations.metrics.observe({
+      method: c.req.method,
+      route: routeFor(c.req.method, c.req.path),
+      status: c.res.status,
+      seconds: (performance.now() - started) / 1000,
+    })
   })
 
   app.use(guard(runtime))
@@ -69,6 +84,7 @@ export function createApi(runtime: Runtime) {
   app.openAPIRegistry.registerPath(routes.system.events)
 
   registerSystem(app)
+  registerOperations(app)
   registerAccounts(app)
   registerPersonalization(app)
   // Discover's static path and the movie pages' metadata come before `/movies/{id}`
@@ -83,6 +99,7 @@ export function createApi(runtime: Runtime) {
   registerSubtitles(app)
   registerWanted(app)
   registerLists(app)
+  registerConnections(app)
 
   app.doc31(`${API_PREFIX}/openapi.json`, {
     openapi: '3.1.0',
@@ -113,6 +130,8 @@ export function createApi(runtime: Runtime) {
       )
     }
     runtime.logger.child('api').error('unhandled error', { path: c.req.path, error: err })
+    // with General › Diagnostics' switch on, a crash report the owner can attach to an issue
+    runtime.operations.crashes.record(err, 'api')
     return c.json(body('internal', 'Something went wrong on the server. It’s in the logs.'), 500)
   })
 

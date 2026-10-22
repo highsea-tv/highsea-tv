@@ -41,6 +41,7 @@ const USER_ROUTES = [
   'auth.pairingRequest',
   'auth.session',
   'auth.signOut',
+  'connections.pushKey',
   'devices.revoke',
   'home.layout',
   'home.saveLayout',
@@ -69,6 +70,9 @@ const USER_ROUTES = [
   'movies.upcoming',
   'preferences.get',
   'preferences.save',
+  'pushSubscriptions.add',
+  'pushSubscriptions.list',
+  'pushSubscriptions.remove',
   'system.events',
   'system.server',
 ]

@@ -40,12 +40,26 @@ const matchers = Object.values(routes).flatMap((group) =>
     method: r.method.toUpperCase(),
     pattern: new RegExp(`^${r.path.replace(/\{\w+\}/g, '[^/]+')}$`),
     access: (r as Record<string, unknown>)[ACCESS_KEY] as Access,
+    path: r.path,
   })),
 )
 
-export function accessFor(method: string, path: string): Access | null {
+const matcherFor = (method: string, path: string) => {
   const m = method === 'HEAD' ? 'GET' : method
-  return matchers.find((r) => r.method === m && r.pattern.test(path))?.access ?? null
+  return matchers.find((r) => r.method === m && r.pattern.test(path))
+}
+
+export function accessFor(method: string, path: string): Access | null {
+  return matcherFor(method, path)?.access ?? null
+}
+
+/**
+ * The contract's path for a request, `/api/v1/movies/{id}`, for /metrics' `route` label: ids in a
+ * label would make a series per movie (Prometheus's naming practice warns against unbounded label
+ * values). Anything outside the contract is `other`.
+ */
+export function routeFor(method: string, path: string): string {
+  return matcherFor(method, path)?.path ?? 'other'
 }
 
 /** The connection's own address and whether it's TLS, from Node's socket. */
@@ -117,7 +131,11 @@ export function guard(runtime: Runtime): MiddlewareHandler<Env> {
       })
 
     const access = accessFor(c.req.method, c.req.path)
-    if (access && access !== 'public') {
+    // a poster in a notification: its address is signed, so Discord or Slack can show it (8b)
+    const signedImage =
+      SAFE.has(c.req.method) &&
+      runtime.notifications.verifyImage(c.req.path, c.req.query('sig') ?? null)
+    if (access && access !== 'public' && !signedImage) {
       if (!principal) throw new AppError('unauthorized', 'Sign in first.', { reason: 'signed-out' })
       if (principal.scope === 'read' && !SAFE.has(c.req.method))
         throw new AppError('forbidden', 'This key is read-only.', { reason: 'read-only-key' })

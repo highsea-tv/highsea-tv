@@ -70,6 +70,8 @@ export function createLists(deps: {
   metadata: Metadata
   trakt: Trakt
   library: ListLibrary
+  /** A run added movies (8b's "movie added" notification): once per run, with what it added. */
+  onAdded?(run: { listId: string; name: string; at: number; tmdbIds: number[] }): void
 }) {
   const { db, clock, events, jobs, metadata, trakt, library } = deps
   const log = deps.logger.child('lists')
@@ -206,7 +208,7 @@ export function createLists(deps: {
           excluded.add(r.tmdbId)
       const present = library.has(ids)
       const searchNow = row.searchOnAdd && library.canSearch()
-      let added = 0
+      const added: number[] = []
       let skipped = 0
       for (const tmdbId of ids) {
         if (excluded.has(tmdbId) || present.has(tmdbId)) {
@@ -223,7 +225,7 @@ export function createLists(deps: {
             minimumAvailability: row.minimumAvailability,
             searchNow,
           })
-          added++
+          added.push(tmdbId)
         } catch (err) {
           if (!(err instanceof AppError) || err.code === 'unavailable') throw err
           log.warn('couldn’t add a movie from a list', {
@@ -236,12 +238,23 @@ export function createLists(deps: {
       }
       result = {
         found: entries.length,
-        added,
+        added: added.length,
         skipped,
         unresolved: unresolved.slice(0, UNRESOLVED_MAX),
         error: null,
       }
-      log.info('checked a list', { list: row.name, found: entries.length, added, skipped })
+      log.info('checked a list', {
+        list: row.name,
+        found: entries.length,
+        added: added.length,
+        skipped,
+      })
+      if (added.length)
+        try {
+          deps.onAdded?.({ listId: id, name: row.name, at: now, tmdbIds: added })
+        } catch (e) {
+          log.warn('a list listener failed', { list: row.name, error: (e as Error).message })
+        }
     } catch (err) {
       if (!(err instanceof AppError)) throw err
       // the list couldn't be read: what it held last time stays
