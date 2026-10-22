@@ -3,10 +3,12 @@
 // and year, with an alphabet
 // rail on the left. The rail is isolated: Left from the grid's first column enters it, Up and Down
 // run through the letters (only the ones with titles), and OK jumps the grid to that letter.
-// Sort is a row of choices above the grid.
+// Sort is a row of choices above the grid, beside Movies and Collections; Up from the grid reaches
+// those, Right from them the sort.
 import { useState } from 'react'
 import { useLibrary } from '../client/data.ts'
 import { arrange, type Sort } from '../web/library.tsx'
+import { LibraryKind } from './collections.tsx'
 import {
   GlobalNav,
   ServerIdentity,
@@ -56,7 +58,7 @@ export function TvLibrary() {
   }
   return (
     <>
-      <GlobalNav down="sort" />
+      <GlobalNav down="kind" />
       {sort === 'title' && (
         <nav
           aria-label="Jump to a letter"
@@ -89,9 +91,11 @@ export function TvLibrary() {
           <ServerIdentity />
           <div className="flex items-end gap-[2cqw]">
             <h1 className="font-semibold text-[2.6cqw] leading-none tracking-display">Movies</h1>
+            <LibraryKind current="movies" down="grid" right="sort" />
             <div
               data-group="sort"
               data-go-up="nav"
+              data-go-left="kind"
               data-go-down="grid"
               className="ms-auto flex gap-[0.8cqw]"
             >
@@ -112,7 +116,7 @@ export function TvLibrary() {
           <ul
             data-group="grid"
             data-go-left={sort === 'title' ? 'alpha' : undefined}
-            data-go-up="sort"
+            data-go-up="kind"
             className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]"
           >
             {items.map((m, i) => {

@@ -7,6 +7,7 @@ import { ConnectFlow } from '../client/connect-flow.tsx'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { MobileScreen } from '../kit/mobile/device.tsx'
 import { MobileCollection } from './collection.tsx'
+import { MobileCollections } from './collections.tsx'
 import { MobileDetail } from './detail.tsx'
 import { MobileHome } from './home.tsx'
 import { MobileLibrary } from './library.tsx'
@@ -47,6 +48,11 @@ function Routes() {
       <Route path="/">
         <MobileShell>
           <MobileHome />
+        </MobileShell>
+      </Route>
+      <Route path="/library/collections">
+        <MobileShell>
+          <MobileCollections />
         </MobileShell>
       </Route>
       <Route path="/library">

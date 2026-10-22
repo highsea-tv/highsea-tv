@@ -7,6 +7,8 @@ import type { ReactNode } from 'react'
 import { Route, Switch, useLocation } from 'wouter'
 import { Activity } from './activity/activity.tsx'
 import { ManualImport } from './activity/import.tsx'
+import { Collections } from './collections/collections.tsx'
+import { CollectionEditor } from './collections/editor.tsx'
 import { AnnouncementEditor } from './curation/announcement-editor.tsx'
 import { Curation } from './curation/curation.tsx'
 import { SectionEditor } from './curation/section-editor.tsx'
@@ -72,6 +74,7 @@ function NotFound() {
 const built: Record<string, () => ReactNode> = {
   discover: Discover,
   movies: MoviesLibrary,
+  collections: Collections,
   activity: Activity,
   downloads: Downloads,
   indexers: Indexers,
@@ -121,6 +124,9 @@ export function AdminApp() {
             </Route>
             <Route path="/people/:id">
               <PersonPage />
+            </Route>
+            <Route path="/collections/:id">
+              <CollectionEditor />
             </Route>
             <Route path="/curation/featured">
               <Curation tab="featured" />

@@ -448,7 +448,14 @@ function About({ meta: m }: { meta: MovieMetadata }) {
 
 // ---------------------------------------------------------------- cast and crew
 
-const departments: Department[] = ['Directing', 'Writing', 'Production', 'Camera', 'Sound']
+const departments: Department[] = [
+  'Directing',
+  'Writing',
+  'Production',
+  'Camera',
+  'Editing',
+  'Sound',
+]
 
 export function CastAndCrew({ meta }: { meta: ReturnType<typeof useMovieMetadata> }) {
   return (

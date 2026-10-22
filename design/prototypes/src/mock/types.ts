@@ -247,7 +247,14 @@ export type DiscoverMovie = {
 
 // ---------------------------------------------------------------- metadata (media pages, ADR 0014)
 
-export type Department = 'Acting' | 'Directing' | 'Writing' | 'Production' | 'Sound' | 'Camera'
+export type Department =
+  | 'Acting'
+  | 'Directing'
+  | 'Writing'
+  | 'Production'
+  | 'Sound'
+  | 'Camera'
+  | 'Editing'
 
 /** A person's part in a title: a character (cast) or a job (crew). */
 export type Credit = {
@@ -663,7 +670,8 @@ export type FeaturedSection = {
   layout: 'hero' | 'row' | 'spotlight'
   source:
     | { kind: 'manual'; itemIds: string[] }
-    | { kind: 'rule'; rule: 'recently-added' | 'genre' | 'collection' | 'filter'; value: string }
+    /** `collection`: a TMDB collection's id or a smart collection's (`sc-…`). */
+    | { kind: 'rule'; rule: 'recently-added' | 'genre' | 'collection'; value: string }
   overrides: { itemId: string; artwork: string | null; tagline: string | null }[]
   audience: Audience
   schedule: { start: ISODate; end: ISODate | null }
@@ -684,7 +692,164 @@ export type SectionSummary = FeaturedSection & {
 }
 
 /** The curation a client preview renders: the saved lists with the draft merged in. */
-export type CurationPreview = { announcements: Announcement[]; featured: FeaturedSection[] }
+export type CurationPreview = {
+  announcements: Announcement[]
+  featured: FeaturedSection[]
+  /** The saved collections, for sections that draw on one. */
+  collections?: SmartCollection[]
+}
+
+// ---------------------------------------------------------------- collections (docs/product/collections.md)
+
+/** What a condition looks at. Grouped in the editor as the plan's table is. */
+export type RuleField =
+  | 'title'
+  | 'year'
+  | 'releaseDate'
+  | 'decade'
+  | 'rating'
+  | 'votes'
+  | 'certification'
+  | 'originalLanguage'
+  | 'audioLanguage'
+  | 'subtitleLanguage'
+  | 'genre'
+  | 'runtime'
+  | 'keyword'
+  | 'studio'
+  | 'country'
+  | 'actor'
+  | 'director'
+  | 'writer'
+  | 'composer'
+  | 'producer'
+  | 'cinematographer'
+  | 'editor'
+  | 'person'
+  | 'collection'
+  | 'added'
+  | 'status'
+  | 'tag'
+  | 'rootFolder'
+  | 'qualityProfile'
+  | 'resolution'
+  | 'hdr'
+  | 'videoCodec'
+  | 'edition'
+  | 'size'
+  | 'watched'
+  | 'lastPlayed'
+
+export type RuleOp =
+  | 'contains'
+  | 'is'
+  | 'isNot'
+  | 'between'
+  | 'before'
+  | 'after'
+  | 'inLast'
+  | 'atLeast'
+  | 'atMost'
+  | 'oneOf'
+  | 'notOneOf'
+  | 'includes'
+  | 'excludes'
+  | 'only'
+  | 'anyOf'
+  | 'allOf'
+  | 'noneOf'
+
+/**
+ * A condition's value, by its comparison: a number (at least, in the last N), a pair (between), a
+ * date (before, after), one choice (is), or several (one of, any of, includes).
+ */
+export type RuleValue = number | string | string[] | [number, number]
+
+export type RuleCondition = {
+  kind: 'condition'
+  id: string
+  field: RuleField
+  op: RuleOp
+  value: RuleValue
+}
+
+/** All or any of its rules. The top level may hold groups; a group holds conditions only. */
+export type RuleGroup = {
+  kind: 'group'
+  id: string
+  match: 'all' | 'any'
+  rules: (RuleCondition | RuleGroup)[]
+}
+
+export type CollectionSort =
+  | 'manual'
+  | 'rating'
+  | 'release'
+  | 'year'
+  | 'added'
+  | 'title'
+  | 'runtime'
+  | 'popularity'
+  | 'random'
+
+/**
+ * One kind of collection: rules are optional. Without them it holds what's picked (`include`, in
+ * its order); with them, what matches, plus `include`, less `exclude`.
+ */
+export type SmartCollection = {
+  id: string
+  name: string
+  summary: string
+  /** An uploaded poster; null draws a mosaic of the first four. */
+  artwork: string | null
+  rules: RuleGroup | null
+  /** Always include: the picks, for a collection without rules. */
+  include: string[]
+  /** Never include. */
+  exclude: string[]
+  sort: CollectionSort
+  /** Highest, newest, longest or Z first. */
+  descending: boolean
+  limit: number | null
+  audience: Audience
+  updatedAt: ISODate
+}
+
+/** A field as the editor offers it: its comparisons, its choices, and whether it works yet. */
+export type RuleFieldInfo = {
+  field: RuleField
+  label: string
+  group: 'Release' | 'Ratings' | 'Language' | 'Content' | 'People' | 'Library' | 'File' | 'Playback'
+  type: 'number' | 'date' | 'choice' | 'list' | 'person' | 'text'
+  ops: RuleOp[]
+  /** For choice and list fields: value and label. People are searched instead. */
+  options?: { value: string; label: string }[]
+  /** "2010", "4.5", "GB": what the number means. */
+  unit?: string
+  /** Shown but not offered yet: "Comes with playback". */
+  disabled?: string
+}
+
+/** What a draft collection holds right now (the editor's live result). */
+export type CollectionPreview = {
+  /** Films that match, files or not. */
+  matched: number
+  /** Of those, the ones with a file: what the apps show. */
+  playable: number
+  /** In the collection's order, after its limit. */
+  items: { id: string; title: string; year: number; poster: string; playable: boolean }[]
+  /** The rules in words: "Released 2010–2020, rated 4.5 or more, in English". */
+  words: string | null
+}
+
+/** A collection in the admin's list. */
+export type CollectionSummary = SmartCollection & {
+  matched: number
+  playable: number
+  /** Up to four posters for the mosaic. */
+  mosaic: string[]
+  words: string | null
+}
 
 // ---------------------------------------------------------------- appearance (A12)
 
@@ -833,6 +998,7 @@ export type ServerEvent =
   | { type: 'subtitles.updated'; itemId?: string }
   | { type: 'announcements.updated' }
   | { type: 'curation.updated' }
+  | { type: 'collections.updated' }
   | { type: 'users.updated' }
   | { type: 'settings.updated' }
   | { type: 'vpn.updated' }
@@ -894,6 +1060,8 @@ export type ClientCollection = {
   count: number
   /** "2010–2016", or one year. */
   years: string
+  /** A smart collection (`sc-…`): its rules in words, and up to four posters for its mosaic. */
+  smart?: { words: string | null; mosaic: string[] }
 }
 
 /**

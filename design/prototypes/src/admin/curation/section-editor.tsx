@@ -34,14 +34,12 @@ const ruleLabels: Record<Rule, string> = {
   'recently-added': 'Recently added',
   genre: 'A genre',
   collection: 'A collection',
-  filter: 'A saved filter',
 }
 
 const ruleDefaults: Record<Rule, string> = {
   'recently-added': '30d',
   genre: 'Comedy',
   collection: 'caminandes',
-  filter: 'year < 1930',
 }
 
 function blank(now: number): FeaturedSection {
@@ -131,6 +129,7 @@ function Composer({ initial }: { initial: FeaturedSection | null }) {
       // the home screen alone: announcements would sit over the sections being previewed
       announcements: [],
       featured: [...saved.featured.filter((f) => f.id !== draft.id), live],
+      collections: saved.collections,
     }
   }, [draft, snapshot.data])
 
@@ -338,23 +337,20 @@ function Source({
             </Field>
           )}
           {s.rule === 'collection' && (
-            <Field label="Collection">
+            <Field label="Collection" hint="Yours first, then TMDB’s. Make one in Collections.">
               <Select
                 value={s.value}
                 onValueChange={(value) => set({ source: { ...s, value } })}
-                options={(options.data?.collections ?? []).map((c) => ({
-                  value: c.id,
-                  label: c.name,
-                }))}
-              />
-            </Field>
-          )}
-          {s.rule === 'filter' && (
-            <Field label="Filter" hint="As in the library’s filter bar: year < 1930.">
-              <Input
-                value={s.value}
-                onChange={(e) => set({ source: { ...s, value: e.target.value } })}
-                className="font-mono"
+                options={[
+                  ...(options.data?.smart ?? []).map((c) => ({
+                    value: c.id,
+                    label: `${c.name} · yours`,
+                  })),
+                  ...(options.data?.collections ?? []).map((c) => ({
+                    value: c.id,
+                    label: c.name,
+                  })),
+                ]}
               />
             </Field>
           )}

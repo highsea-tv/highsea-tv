@@ -6,6 +6,7 @@ import { Button, cn, EmptyState, Poster, Select, Skeleton } from '@highsea/ui-we
 import { useState } from 'react'
 import { left, useLibrary } from '../client/data.ts'
 import type { ClientItem } from '../mock/types.ts'
+import { LibraryNav } from './collections.tsx'
 import { gutter, webHref } from './shell.tsx'
 
 export type Sort = 'title' | 'added' | 'year' | 'rating'
@@ -43,6 +44,7 @@ export function WebLibrary() {
   const shown = arrange(items, genre, sort)
   return (
     <main className={cn('mx-auto grid max-w-[1680px] gap-6 pt-6 pb-16', gutter)}>
+      <LibraryNav current="movies" />
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
           <h1 className="text-heading">Movies</h1>

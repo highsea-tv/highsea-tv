@@ -33,7 +33,10 @@ import type {
   MediaStatus,
   PlaybackPrefs,
   QualityProfile,
+  RuleCondition,
+  RuleGroup,
   Server,
+  SmartCollection,
   SpeedSample,
   Stream,
   SubtitleProvider,
@@ -85,6 +88,8 @@ export type ServerState = {
   torrentLimits: TorrentLimits
   announcements: Announcement[]
   featured: FeaturedSection[]
+  /** Collections the owner and admins made (docs/product/collections.md). */
+  collections: SmartCollection[]
   jobs: Job[]
   health: HealthCheck[]
   status: SystemStatus
@@ -109,6 +114,114 @@ export type ServerState = {
   backups: Backup[]
   /** Per user: their own order and hidden rows on Home (C7). */
   homeLayouts: Record<string, HomeLayout>
+}
+
+// ---------------------------------------------------------------- collections
+
+const when = (
+  id: string,
+  field: RuleCondition['field'],
+  op: RuleCondition['op'],
+  value: RuleCondition['value'],
+): RuleCondition => ({ kind: 'condition', id, field, op, value })
+
+const all = (id: string, ...rules: RuleGroup['rules']): RuleGroup => ({
+  kind: 'group',
+  id,
+  match: 'all',
+  rules,
+})
+
+/**
+ * The owner's example, a hand-picked one, one with exceptions, a composer's, the silent era (the
+ * featured section's source) and one that matches nothing yet.
+ */
+function seedCollections(now: number): SmartCollection[] {
+  const base = {
+    summary: '',
+    artwork: null,
+    include: [],
+    exclude: [],
+    sort: 'rating',
+    descending: true,
+    limit: null,
+    audience: { kind: 'everyone' },
+    updatedAt: iso(now - 3 * DAY),
+  } satisfies Partial<SmartCollection>
+  return [
+    {
+      ...base,
+      id: 'sc-2010s',
+      name: '2010s, 4.5 stars and up, in English',
+      summary: 'The best of the decade, in English.',
+      rules: all(
+        'g-2010s',
+        when('c-year', 'year', 'between', [2010, 2020]),
+        when('c-rating', 'rating', 'atLeast', 4.5),
+        when('c-lang', 'originalLanguage', 'is', 'en'),
+      ),
+    },
+    {
+      ...base,
+      id: 'sc-staff',
+      name: 'Staff picks',
+      summary: 'Ines’s favourites, in her order.',
+      rules: null,
+      include: ['metropolis', 'sintel', 'his-girl-friday', 'the-general', 'charade', 'spring'],
+      sort: 'manual',
+      updatedAt: iso(now - 9 * DAY),
+    },
+    {
+      ...base,
+      id: 'sc-dead',
+      name: 'Zombie night',
+      summary: 'Romero’s dead, and the films they walked out of.',
+      rules: {
+        kind: 'group',
+        id: 'g-dead',
+        match: 'any',
+        rules: [
+          when('c-kw', 'keyword', 'anyOf', ['zombie']),
+          all(
+            'g-vamp',
+            when('c-vamp', 'keyword', 'anyOf', ['vampire']),
+            when('c-before', 'year', 'before', 1970),
+          ),
+        ],
+      },
+      include: ['carnival-of-souls'],
+      exclude: ['nosferatu'],
+      sort: 'release',
+      descending: false,
+      audience: { kind: 'roles', roles: ['owner', 'admin'] },
+    },
+    {
+      ...base,
+      id: 'sc-morgenstern',
+      name: 'Scored by Jan Morgenstern',
+      summary: 'Blender’s composer, from Elephants Dream on.',
+      rules: all('g-jan', when('c-jan', 'composer', 'includes', ['jan-morgenstern'])),
+      sort: 'release',
+      descending: false,
+    },
+    {
+      ...base,
+      id: 'sc-silent',
+      name: 'The silent era',
+      summary: 'Restored and scored.',
+      rules: all('g-silent', when('c-silent', 'year', 'before', 1930)),
+      sort: 'release',
+      descending: false,
+    },
+    {
+      ...base,
+      id: 'sc-dolby',
+      name: 'In Dolby Vision',
+      summary: 'For the big screen, once the first Dolby Vision files arrive.',
+      rules: all('g-dolby', when('c-dolby', 'hdr', 'is', 'dolby-vision')),
+      updatedAt: iso(now - DAY),
+    },
+  ]
 }
 
 // ---------------------------------------------------------------- shared by both servers
@@ -957,6 +1070,10 @@ export function seed(kind: 'populated' | 'empty', now: number): ServerState {
     }
   }
   renumber(state)
+  for (const c of state.collections) {
+    c.include = c.include.map((x) => ids.get(x) ?? x)
+    c.exclude = c.exclude.map((x) => ids.get(x) ?? x)
+  }
   for (const m of state.items) m.id = ids.get(m.id) ?? m.id
   // the metadata cache's titles continue the sequence, in both servers alike
   state.discoverCatalog = state.discoverCatalog.map((d, n) => ({ ...d, id: String(101 + n) }))
@@ -1069,6 +1186,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
       subtitles: [],
       announcements: [],
       featured: [],
+      collections: [],
       health: [
         {
           id: 'h-indexers',
@@ -1082,6 +1200,10 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
     }
 
   const items = library.map((t, i) => item(t, i, now))
+  // a few more of the 2010s at 4.5, so the owner's example collection has something to show
+  for (const m of items)
+    if (['cosmos-laundromat', 'caminandes-llamigos', 'hero', 'coffee-run'].includes(m.id))
+      m.rating = 4.5
   for (const u of upcoming)
     items.push({
       ...item(
@@ -1345,7 +1467,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
       title: 'The silent era',
       tagline: 'Restored and scored',
       layout: 'spotlight',
-      source: { kind: 'rule', rule: 'filter', value: 'year < 1930' },
+      source: { kind: 'rule', rule: 'collection', value: 'sc-silent' },
       overrides: [],
       audience: { kind: 'everyone' },
       schedule: { start: iso(now - 14 * DAY), end: null },
@@ -1363,6 +1485,8 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
       order: 3,
     },
   ]
+
+  const collections = seedCollections(now)
 
   const health: HealthCheck[] = [
     {
@@ -1436,6 +1560,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
     subtitles,
     announcements,
     featured,
+    collections,
     watch: watch(items, now),
     health,
     speeds: samples(now, (k) => ({

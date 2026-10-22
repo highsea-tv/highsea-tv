@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A collection on the TV (reference, docs/product/client-search.md#collections): the ambient
-// backdrop, the name, years and overview, then its titles here as a row, oldest first. Focus
+// backdrop, the name, years and overview, then its titles here as a row, oldest first; a smart one says so and gives its rules in words. Focus
 // starts on the first title; Back goes back to wherever it was opened from.
 import { Icon } from '@highsea/ui-web'
 import { useParams } from 'wouter'
@@ -17,7 +17,7 @@ import {
 
 export function TvCollection() {
   const { id } = useParams<{ id: string }>()
-  const found = useCollection(id)
+  const found = useCollection(id, 'tv')
   useInitialFocus(found.status === 'success', id, '[data-group="parts"] [data-focusable]')
   if (found.status === 'loading')
     return (
@@ -50,13 +50,18 @@ export function TvCollection() {
       <main className="absolute inset-0 grid content-start gap-[2.4cqw] overflow-hidden pt-[8cqw]">
         <ServerIdentity />
         <section aria-labelledby="title" className="grid max-w-[60cqw] gap-[1cqw] px-(--tv-safe-x)">
-          <p className="text-(length:--tv-text-meta) text-text-3">Collection</p>
+          <p className="text-(length:--tv-text-meta) text-text-3">
+            {c.smart?.words ? 'Smart collection' : 'Collection'}
+          </p>
           <h1 id="title" className="font-semibold text-[3.6cqw] leading-[0.95] tracking-display">
             {c.name}
           </h1>
           <p className="text-(length:--tv-text-meta) text-text-2">
             {c.count} {c.count === 1 ? 'movie' : 'movies'} here · {c.years}
           </p>
+          {c.smart?.words && (
+            <p className="text-(length:--tv-text-pill) text-text-3">{c.smart.words}</p>
+          )}
           {c.overview && (
             <p className="line-clamp-3 max-w-[44cqw] text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
               {c.overview}

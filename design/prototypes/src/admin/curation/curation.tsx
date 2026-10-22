@@ -49,13 +49,15 @@ export const layoutLabels: Record<SectionSummary['layout'], string> = {
   spotlight: 'Spotlight',
 }
 
-export function sourceSummary(f: Pick<SectionSummary, 'source'>): string {
+export function sourceSummary(
+  f: Pick<SectionSummary, 'source'>,
+  names: Record<string, string> = {},
+): string {
   if (f.source.kind === 'manual') return 'Picked by hand'
   const { rule, value } = f.source
   if (rule === 'recently-added') return `Recently added, last ${value.replace('d', ' days')}`
   if (rule === 'genre') return `Genre: ${value}`
-  if (rule === 'collection') return `Collection: ${value.replace(/-/g, ' ')}`
-  return `Saved filter: ${value}`
+  return `Collection: ${names[value] ?? value.replace(/-/g, ' ')}`
 }
 
 export function Curation({ tab = 'announcements' }: { tab?: 'announcements' | 'featured' }) {
@@ -283,6 +285,15 @@ function Sections() {
 
 function SectionRow({ f, handle }: { f: SectionSummary; handle: ReactNode }) {
   const users = useUsers()
+  const options = useQuery('curation:rule-options', (c) => c.curation.ruleOptions(), [
+    'collections.updated',
+  ])
+  const names = Object.fromEntries(
+    [...(options.data?.collections ?? []), ...(options.data?.smart ?? [])].map((c) => [
+      c.id,
+      c.name,
+    ]),
+  )
   const remove = useAction((c) => c.curation.deleteSection(f.id))
   const [confirm, setConfirm] = useState(false)
   return (
@@ -301,7 +312,7 @@ function SectionRow({ f, handle }: { f: SectionSummary; handle: ReactNode }) {
           {f.status !== 'live' && <StatusBadge status={f.status} />}
         </p>
         <p className="text-caption text-text-3">
-          {sourceSummary(f)} · <span className="font-mono text-figure">{f.itemCount}</span>{' '}
+          {sourceSummary(f, names)} · <span className="font-mono text-figure">{f.itemCount}</span>{' '}
           {f.itemCount === 1 ? 'title' : 'titles'} · {audienceSummary(f.audience, users.data)}
         </p>
       </div>

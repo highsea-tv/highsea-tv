@@ -24,7 +24,7 @@ What the household sees first, decided by the owner: announcements (movie night,
   - a line: where it shows ("Banner, Home card"), the audience ("Everyone", "Owners and admins", "Every app but the admin") and the schedule ("Since Thu 15 Oct, 20:15 · until Fri 23 Oct");
   - the reach: "Seen by 2 of 5" ("Acknowledged by" when required) with a bar, or "Not shown yet";
   - **Edit**, and a More menu: **End now** (live or scheduled), **Delete**.
-- **Featured sections:** in home-screen order, with "In home-screen order. Continue watching always comes right after the hero."; each card has a drag handle, the title and its suffix, the layout (Hero, Row, Spotlight), the status when not live, the source and its count ("Saved filter: year < 1930 · 10 titles · Everyone"), a strip of the first six posters, then **Edit** and **Delete**.
+- **Featured sections:** in home-screen order, with "In home-screen order. Continue watching always comes right after the hero."; each card has a drag handle, the title and its suffix, the layout (Hero, Row, Spotlight), the status when not live, the source and its count ("Collection: The silent era · 10 titles · Everyone"), a strip of the first six posters, then **Edit** and **Delete**.
 
 ### The composers
 
@@ -42,7 +42,7 @@ Two columns from expanded (the form at 22–28rem, the preview beside it and sti
 - **Featured section:**
   - **Title** and **After the title** (the lighter suffix: "by Ines", "Restored and scored");
   - **Layout**: Hero, Row, Spotlight, with what each means;
-  - **Titles**: **Pick them** (search the playable library, add, reorder by the drag handle, remove) or **Use a rule**: Recently added (7, 30 or 90 days), a genre, a collection, or a saved filter ("year < 1930"). A rule shows what it picks now: "Right now this picks 10 titles, and keeps up as the library changes", with their posters;
+  - **Titles**: **Pick them** (search the playable library, add, reorder by the drag handle, remove) or **Use a rule**: Recently added (7, 30 or 90 days), a genre, or **a collection**: the server's own collections first ([collections.md](collections.md)), then TMDB's. It replaces the free-text saved filter. A rule shows what it picks now: "Right now this picks 10 titles, and keeps up as the library changes", with their posters;
   - **Taglines on the hero** (hero only): a line per title in place of its synopsis;
   - **Who sees it** and **When**, as above;
   - **Add to home** or **Save changes**, **Cancel**, and **Delete** when editing.

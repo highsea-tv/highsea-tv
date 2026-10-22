@@ -23,6 +23,7 @@ type Entry = {
   producers?: string[]
   music?: string[]
   camera?: string[]
+  editors?: string[]
   /** [name, character], in billing order. */
   cast?: [string, string][]
   studios: string[]
@@ -33,6 +34,55 @@ type Entry = {
   budget?: number
   revenue?: number
   collection?: string
+}
+
+/**
+ * Composers, cinematographers and editors, the films' real ones, kept apart from `entries` so each
+ * entry stays short. Merged into the entry's own lists.
+ */
+const moreCrew: Record<string, Pick<Entry, 'music' | 'camera' | 'editors'>> = {
+  Spring: { music: ['Dan Levy'] },
+  'Tears of Steel': { music: ['Joram Letwory'] },
+  'Caminandes: Llama Drama': { music: ['Jan Morgenstern'] },
+  'Caminandes: Gran Dillama': { music: ['Jan Morgenstern'] },
+  'Caminandes: Llamigos': { music: ['Jan Morgenstern'] },
+  Nosferatu: { music: ['Hans Erdmann'] },
+  'The Cabinet of Dr. Caligari': { camera: ['Willy Hameister'] },
+  'The General': { camera: ['Dev Jennings', 'Bert Haines'] },
+  'Sherlock Jr.': { camera: ['Elgin Lessley', 'Byron Houck'] },
+  'The Kid': { music: ['Charlie Chaplin'], camera: ['Roland Totheroh'] },
+  'The Gold Rush': { music: ['Charlie Chaplin'], camera: ['Roland Totheroh'] },
+  Metropolis: { music: ['Gottfried Huppertz'], camera: ['Karl Freund', 'Günther Rittau'] },
+  'Battleship Potemkin': {
+    music: ['Edmund Meisel'],
+    camera: ['Eduard Tisse'],
+    editors: ['Sergei Eisenstein'],
+  },
+  'Night of the Living Dead': { camera: ['George A. Romero'], editors: ['George A. Romero'] },
+  'Dawn of the Dead': {
+    music: ['Goblin'],
+    camera: ['Michael Gornick'],
+    editors: ['George A. Romero'],
+  },
+  'Day of the Dead': {
+    music: ['John Harrison'],
+    camera: ['Michael Gornick'],
+    editors: ['Pasquale Buba'],
+  },
+  'His Girl Friday': { camera: ['Joseph Walker'], editors: ['Gene Havlick'] },
+  Charade: { camera: ['Charles Lang'], editors: ['James B. Clark'] },
+  Detour: { music: ['Leo Erdody'], editors: ['George McGuire'] },
+  'D.O.A.': { music: ['Dimitri Tiomkin'], camera: ['Ernest Laszlo'] },
+  'Carnival of Souls': { music: ['Gene Moore'] },
+  'The Little Shop of Horrors': { music: ['Fred Katz'] },
+  'Plan 9 from Outer Space': { editors: ['Ed Wood'] },
+  'The Last Man on Earth': { music: ['Paul Sawtell', 'Bert Shefter'] },
+  'Royal Wedding': { camera: ['Robert Planck'] },
+  'The Hitch-Hiker': { music: ['Leith Stevens'], camera: ['Nicholas Musuraca'] },
+  'Dementia 13': { music: ['Ronald Stein'] },
+  'Meet John Doe': { music: ['Dimitri Tiomkin'], camera: ['George Barnes'] },
+  'Scarlet Street': { music: ['Hans J. Salter'], camera: ['Milton Krasner'] },
+  'The Stranger': { music: ['Bronislau Kaper'], camera: ['Russell Metty'] },
 }
 
 const blender = ['Blender Studio']
@@ -119,6 +169,8 @@ const entries: Record<string, Entry> = {
   'Caminandes: Llamigos': {
     directors: ['Pablo Vazquez'],
     studios: blender,
+    // a llama and a penguin, and no words: TMDB's "no linguistic content"
+    original: ['Caminandes: Llamigos', 'zxx'],
     collection: 'caminandes',
   },
   'Glass Half': { directors: ['Beorn Leonard'], studios: blender },
@@ -574,12 +626,17 @@ function credit(
 function creditsFor(title: string): { cast: Credit[]; crew: Credit[] } {
   const e = entryFor(title)
   if (!e) return { cast: [], crew: [] }
+  const more = moreCrew[aliases[title] ?? title] ?? {}
+  const merged = (a: string[] = [], b: string[] = []) => [...new Set([...a, ...b])]
   const crew = [
     ...e.directors.map((n) => credit(n, 'Directing', null, 'Director')),
     ...(e.writers ?? []).map((n) => credit(n, 'Writing', null, 'Screenplay')),
     ...(e.producers ?? []).map((n) => credit(n, 'Production', null, 'Producer')),
-    ...(e.camera ?? []).map((n) => credit(n, 'Camera', null, 'Director of Photography')),
-    ...(e.music ?? []).map((n) => credit(n, 'Sound', null, 'Original Music Composer')),
+    ...merged(e.camera, more.camera).map((n) =>
+      credit(n, 'Camera', null, 'Director of Photography'),
+    ),
+    ...merged(e.music, more.music).map((n) => credit(n, 'Sound', null, 'Original Music Composer')),
+    ...merged(e.editors, more.editors).map((n) => credit(n, 'Editing', null, 'Editor')),
   ]
   const cast = (e.cast ?? []).map(([n, character]) => credit(n, 'Acting', character, null))
   return { cast, crew }

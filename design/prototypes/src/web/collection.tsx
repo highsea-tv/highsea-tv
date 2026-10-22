@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A collection on the web and desktop (reference, docs/product/client-search.md#collections): its
 // name, years and overview over the first part's backdrop, then its titles on this server, oldest
-// first. Reached from search.
+// first. Reached from search and Library › Collections; a smart one (docs/product/collections.md)
+// says so and gives its rules in words.
 import { Button, cn, EmptyState, Poster, Skeleton, SkeletonText } from '@highsea/ui-web'
 import { useParams } from 'wouter'
 import { left, useCollection } from '../client/data.ts'
@@ -9,7 +10,7 @@ import { gutter, webHref } from './shell.tsx'
 
 export function WebCollection() {
   const { id } = useParams<{ id: string }>()
-  const found = useCollection(id)
+  const found = useCollection(id, 'web')
   if (found.status === 'loading')
     return (
       <main aria-busy className={cn('mx-auto grid max-w-[1680px] gap-4 pt-8', gutter)}>
@@ -26,7 +27,7 @@ export function WebCollection() {
           title={found.error.message}
           action={
             <Button variant="primary" asChild>
-              <a href={webHref('/search')}>Search</a>
+              <a href={webHref('/library/collections')}>Collections</a>
             </Button>
           }
         >
@@ -45,11 +46,14 @@ export function WebCollection() {
         />
         <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg),transparent)]" />
         <div className={cn('relative mx-auto grid max-w-[1680px] gap-2 pt-24 pb-6', gutter)}>
-          <p className="font-mono text-label text-text-3 uppercase">Collection</p>
+          <p className="font-mono text-label text-text-3 uppercase">
+            {c.smart?.words ? 'Smart collection' : 'Collection'}
+          </p>
           <h1 className="text-display">{c.name}</h1>
           <p className="text-text-2 text-ui">
             {c.count} {c.count === 1 ? 'movie' : 'movies'} here · {c.years}
           </p>
+          {c.smart?.words && <p className="text-caption text-text-3">{c.smart.words}</p>}
           {c.overview && <p className="max-w-[60ch] text-body text-text-2">{c.overview}</p>}
         </div>
       </header>

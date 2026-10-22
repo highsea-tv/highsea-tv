@@ -9,6 +9,7 @@ import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { TvRoot } from '../kit/tv/tv-root.tsx'
 import { BackContext, type BackRegistry, useBack } from './back.ts'
 import { TvCollection } from './collection.tsx'
+import { TvCollections } from './collections.tsx'
 import { TvConnect } from './connect.tsx'
 import { TvDetail } from './detail.tsx'
 import { TvHome } from './home.tsx'
@@ -94,6 +95,9 @@ function Screens() {
       </Route>
       <Route path="/">
         <TvHome />
+      </Route>
+      <Route path="/library/collections">
+        <TvCollections />
       </Route>
       <Route path="/library">
         <TvLibrary />

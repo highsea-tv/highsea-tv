@@ -336,6 +336,22 @@ export const flows: Flow[] = [
       hints: ['The home video matched nothing: choose a movie for it, or leave it.'],
     },
   ),
+  admin(
+    'A19',
+    'Collections',
+    '/collections',
+    4,
+    'Smart collections: rules that keep a collection up to date, exceptions, and the live result.',
+    {
+      ready: true,
+      spec: 'docs/product/collections.md',
+      hints: [
+        'Edit “2010s, 4.5 stars and up, in English”: change the rating to 4 and watch the count.',
+        'Add a condition › Composer › search Morgenstern: the posters follow.',
+        'Movies › Wanted › Save as smart collection starts a collection from that filter.',
+      ],
+    },
+  ),
   client(
     'C1',
     'Connect to a server',
@@ -458,6 +474,22 @@ export const flows: Flow[] = [
       routes: { mobile: '/mobile/you', web: '/web/profile' },
       ready: true,
       spec: 'docs/product/client-settings.md',
+    },
+  ),
+  client(
+    'C9',
+    'Collections',
+    '/library/collections',
+    ['web', 'mobile', 'tv'],
+    4,
+    'Library › Collections: the owner’s smart collections beside TMDB’s, and each one’s page.',
+    {
+      ready: true,
+      spec: 'docs/product/collections.md',
+      hints: [
+        'Open “2010s, 4.5 stars and up, in English”: its rules read in words under the name.',
+        'Sign in as Ruth: Zombie night is for owners and admins, so it isn’t there.',
+      ],
     },
   ),
 ]

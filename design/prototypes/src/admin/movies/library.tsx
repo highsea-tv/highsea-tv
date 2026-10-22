@@ -40,7 +40,9 @@ import {
 import { useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { MediaItem, MediaStatus } from '../../mock/types.ts'
+import type { MediaItem, MediaStatus, RuleCondition } from '../../mock/types.ts'
+import { handoff } from '../collections/editor.tsx'
+import { ruleId } from '../collections/rules.tsx'
 import { Loadable, PosterSkeletons } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 
@@ -153,6 +155,34 @@ export function MoviesLibrary() {
   }
   const plural = (n: number) => `${n} ${n === 1 ? 'movie' : 'movies'}`
 
+  /** A new smart collection that starts from this filter, text and sort. */
+  const saveAsCollection = () => {
+    const when = (
+      field: RuleCondition['field'],
+      op: RuleCondition['op'],
+      value: RuleCondition['value'],
+    ) => ({ kind: 'condition', id: ruleId('c'), field, op, value }) satisfies RuleCondition
+    const q = text.trim()
+    handoff.draft = {
+      rules: {
+        kind: 'group',
+        id: ruleId('g'),
+        match: 'all',
+        rules: [
+          ...(filter === 'all' ? [] : [when('status', 'is', filter)]),
+          ...(!q
+            ? []
+            : /^\d{4}$/.test(q)
+              ? [when('year', 'is', Number(q))]
+              : [when('title', 'contains', q)]),
+        ],
+      },
+      sort,
+      descending: sort !== 'title',
+    }
+    navigate('/collections/new')
+  }
+
   const actions = (
     <>
       <SegmentedControl
@@ -222,6 +252,9 @@ export function MoviesLibrary() {
                       }))}
                       className="w-36"
                     />
+                    <Button size="sm" icon="library" onClick={saveAsCollection}>
+                      Save as smart collection
+                    </Button>
                   </div>
                 </TableToolbar>
                 {ids.length > 0 && (

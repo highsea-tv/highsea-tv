@@ -6,6 +6,7 @@ import { Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { WebCollection } from './collection.tsx'
+import { WebCollections } from './collections.tsx'
 import { WebDetail } from './detail.tsx'
 import { WebHome } from './home.tsx'
 import { WebLibrary } from './library.tsx'
@@ -43,6 +44,11 @@ function Routes() {
       <Route path="/">
         <WebShell overHero>
           <WebHome />
+        </WebShell>
+      </Route>
+      <Route path="/library/collections">
+        <WebShell>
+          <WebCollections />
         </WebShell>
       </Route>
       <Route path="/library">

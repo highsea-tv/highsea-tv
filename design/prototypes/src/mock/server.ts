@@ -10,6 +10,7 @@ import {
   qualityProfileSchema,
 } from '@highsea/quality'
 import { type Clock, createEmitter, createRandom, type Emitter, iso } from './clock.ts'
+import { describe, evaluate, type Facts, fields, preview } from './collections.ts'
 import {
   collection,
   collectionRefs,
@@ -35,7 +36,9 @@ import type {
   ClientTrack,
   ClientType,
   ClientVersion,
+  CollectionPreview,
   CollectionRef,
+  CollectionSummary,
   CreatedApiKey,
   CurationPreview,
   CurationStatus,
@@ -57,6 +60,8 @@ import type {
   ProbeResult,
   QueueItem,
   Release,
+  RuleFieldInfo,
+  RuleGroup,
   SearchPerson,
   SearchResults,
   SearchSection,
@@ -64,6 +69,7 @@ import type {
   Server,
   SetupInput,
   SignInResult,
+  SmartCollection,
   StaffRole,
   SubtitleSearchResult,
   SubtitleSettings,
@@ -243,6 +249,7 @@ export function curationStatus(
 export function applyPreview(srv: MockServer, preview: CurationPreview, draftId?: string): void {
   srv.state.announcements = structuredClone(preview.announcements)
   srv.state.featured = structuredClone(preview.featured)
+  if (preview.collections) srv.state.collections = structuredClone(preview.collections)
   if (draftId)
     for (const [u, ids] of Object.entries(srv.state.seen))
       srv.state.seen[u] = ids.filter((id) => id !== draftId)
@@ -752,8 +759,60 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     }
   }
   const watchable = () => state.items.filter(playable)
-  /** Collections with at least one title here, each with those titles, oldest first. */
-  const clientCollections = () => {
+  // ---- smart collections (docs/product/collections.md)
+
+  const smartFacts = (c: SmartCollection): Facts[] => evaluate(state, c, now(), state.collections)
+  const smartFields = (except?: string): RuleFieldInfo[] =>
+    fields(
+      state,
+      now(),
+      state.collections.filter((x) => x.id !== except).map((x) => ({ id: x.id, name: x.name })),
+    )
+  /** A smart collection as the apps see it: playable titles only, in its own order. */
+  const clientSmart = (c: SmartCollection) => {
+    const items = smartFacts(c)
+      .filter((f) => playable(f.item))
+      .map((f) => f.item)
+    const first = items[0]
+    if (!first) return null
+    const years = items.map((m) => m.year)
+    const lo = Math.min(...years)
+    const hi = Math.max(...years)
+    const collection: ClientCollection = {
+      id: c.id,
+      name: c.name,
+      overview: c.summary,
+      art: { poster: c.artwork ?? first.art.poster, backdrop: first.art.backdrop },
+      count: items.length,
+      years: lo === hi ? String(lo) : `${lo}–${hi}`,
+      smart: {
+        words: describe(c.rules, smartFields()),
+        mosaic: c.artwork ? [] : items.slice(0, 4).map((m) => m.art.poster),
+      },
+    }
+    return { collection, items: items.map((m) => clientItem(m)) }
+  }
+  /** Does a collection's rule tree name the collection itself? */
+  const namesItself = (g: RuleGroup, id: string): boolean =>
+    g.rules.some((r) =>
+      r.kind === 'group'
+        ? namesItself(r, id)
+        : r.field === 'collection' && [r.value].flat().map(String).includes(id),
+    )
+
+  /**
+   * Collections with at least one title here: the smart ones this person and app are in the
+   * audience for, in the owner's order, then TMDB's, each with its titles oldest first.
+   */
+  const clientCollections = (client: ClientType = 'web') => [
+    ...state.collections.flatMap((c) => {
+      if (!visible(c, client)) return []
+      const found = clientSmart(c)
+      return found ? [found] : []
+    }),
+    ...tmdbCollections(),
+  ]
+  const tmdbCollections = () => {
     const groups = new Map<string, { ref: CollectionRef; items: MediaItem[] }>()
     for (const m of watchable()) {
       const ref = movieMetadata(state, m.id, now())?.collection
@@ -792,16 +851,16 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     const picked =
       rule === 'recently-added'
         ? [...all].sort((a, b) => Date.parse(b.addedAt) - Date.parse(a.addedAt)).slice(0, 12)
-        : rule === 'filter'
-          ? all.filter((m) => {
-              const year = /year\s*<\s*(\d+)/.exec(value)
-              return year ? m.year < Number(year[1]) : true
-            })
-          : rule === 'genre'
-            ? all.filter((m) => m.genres.some((g) => g.toLowerCase() === value.toLowerCase()))
-            : rule === 'collection'
-              ? all.filter((m) => movieMetadata(state, m.id, now())?.collection?.id === value)
-              : all
+        : rule === 'genre'
+          ? all.filter((m) => m.genres.some((g) => g.toLowerCase() === value.toLowerCase()))
+          : rule === 'collection'
+            ? value.startsWith('sc-')
+              ? (() => {
+                  const c = state.collections.find((x) => x.id === value)
+                  return c ? smartFacts(c).flatMap((f) => (playable(f.item) ? [f.item] : [])) : []
+                })()
+              : all.filter((m) => movieMetadata(state, m.id, now())?.collection?.id === value)
+            : all
     return picked.map((m) => clientItem(m, tagline(m.id)))
   }
 
@@ -2164,6 +2223,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         return {
           genres: [...new Set(watchable().flatMap((m) => m.genres))].sort(),
           collections: collectionRefs(),
+          smart: state.collections.map((c) => ({ id: c.id, name: c.name })),
         }
       },
       /** The titles a source picks right now (the composer's list). */
@@ -2205,7 +2265,82 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       /** The saved curation, for a preview to merge a draft into. */
       snapshot: (): CurationPreview => {
         requireStaff()
-        return { announcements: state.announcements, featured: state.featured }
+        return {
+          announcements: state.announcements,
+          featured: state.featured,
+          collections: state.collections,
+        }
+      },
+    },
+
+    collections: {
+      /** Every collection, in the owner's order, with what it holds now. */
+      list: (): CollectionSummary[] => {
+        requireStaff()
+        const infos = smartFields()
+        return state.collections.map((c) => {
+          const facts = smartFacts(c)
+          return {
+            ...c,
+            matched: facts.length,
+            playable: facts.filter((f) => f.playable).length,
+            mosaic: facts.slice(0, 4).map((f) => f.item.art.poster),
+            words: describe(c.rules, infos),
+          }
+        })
+      },
+      get: (id: string): SmartCollection => {
+        requireStaff()
+        const c = state.collections.find((x) => x.id === id)
+        if (!c) throw new ApiError(404, 'not-found', 'There’s no collection with that id.')
+        return c
+      },
+      /** The fields the rule builder offers; `except` leaves a collection out of its own list. */
+      fields: (except?: string): RuleFieldInfo[] => {
+        requireStaff()
+        return smartFields(except)
+      },
+      /** What a draft holds right now: both counts, its titles in order, its rules in words. */
+      preview: (c: SmartCollection): CollectionPreview => {
+        requireStaff()
+        return preview(state, c, now(), [...state.collections.filter((x) => x.id !== c.id), c])
+      },
+      save: (c: SmartCollection): SmartCollection => {
+        requireStaff()
+        if (!c.name.trim()) throw new ApiError(400, 'invalid', 'Give the collection a name.')
+        if (!c.rules && !c.include.length)
+          throw new ApiError(400, 'invalid', 'Add a rule, or pick at least one film.')
+        if (c.rules && namesItself(c.rules, c.id))
+          throw new ApiError(400, 'invalid', 'A collection can’t be one of its own rules.')
+        if (
+          c.rules?.rules.some((r) => r.kind === 'group' && r.rules.some((x) => x.kind === 'group'))
+        )
+          throw new ApiError(400, 'invalid', 'Groups go one level deep.')
+        const saved = { ...c, name: c.name.trim(), updatedAt: iso(now()) }
+        const i = state.collections.findIndex((x) => x.id === c.id)
+        if (i >= 0) state.collections[i] = saved
+        else state.collections.push(saved)
+        srv.events.emit({ type: 'collections.updated' })
+        // a featured section may draw on it
+        srv.events.emit({ type: 'curation.updated' })
+        return saved
+      },
+      remove: (id: string) => {
+        requireStaff()
+        const c = state.collections.find((x) => x.id === id)
+        if (!c) return
+        const feeds = state.featured.find(
+          (f) =>
+            f.source.kind === 'rule' && f.source.rule === 'collection' && f.source.value === id,
+        )
+        if (feeds)
+          throw new ApiError(
+            409,
+            'in-use',
+            `The featured section “${feeds.title}” draws on it. Choose another source for the section first.`,
+          )
+        state.collections = state.collections.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'collections.updated' })
       },
     },
 
@@ -2405,9 +2540,12 @@ export function createApi(srv: MockServer, ctx: Ctx) {
             .map(({ x }) => x),
         }
       },
-      /** A collection's titles on this server, oldest first. */
-      collection: (id: string) => {
-        const found = clientCollections().find((c) => c.collection.id === id)
+      /** Collections on this server for this app: smart ones first, then TMDB's. */
+      collections: (client: ClientType = 'web'): ClientCollection[] =>
+        clientCollections(client).map((c) => c.collection),
+      /** A collection's titles on this server: a smart one's in its order, TMDB's oldest first. */
+      collection: (id: string, client: ClientType = 'web') => {
+        const found = clientCollections(client).find((c) => c.collection.id === id)
         if (!found) throw new ApiError(404, 'not-found', 'That collection isn’t on this server.')
         return found
       },

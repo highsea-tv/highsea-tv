@@ -37,6 +37,7 @@ const departmentLabel = {
   Production: 'Production',
   Sound: 'Music',
   Camera: 'Cinematography',
+  Editing: 'Editing',
 } as const
 
 export function PersonPage() {

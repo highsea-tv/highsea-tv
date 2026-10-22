@@ -5,6 +5,7 @@ import { Button, cn, EmptyState, Poster, Sheet, SheetContent, Skeleton } from '@
 import { useState } from 'react'
 import { left, useLibrary } from '../client/data.ts'
 import { ALL, arrange, genresOf, type Sort, sorts } from '../web/library.tsx'
+import { LibraryNav } from './collections.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
 
 const chip =
@@ -21,6 +22,7 @@ export function MobileLibrary() {
   return (
     <div className="grid gap-4 pt-1">
       <Header title="Library" />
+      <LibraryNav current="movies" />
       <div className={cn('flex items-center gap-2', gutter)}>
         <p className="text-[13px] text-text-3">
           {library.status === 'success' ? `${shown.length} of ${items.length} movies` : ' '}

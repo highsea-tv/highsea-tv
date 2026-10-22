@@ -86,11 +86,23 @@ export const searchKinds: Record<SearchKind, { title: string; one: string; many:
   people: { title: 'People', one: 'person', many: 'people' },
 }
 
-export const useCollection = (id: string) =>
-  useQuery(`client:collection:${id}`, (c) => c.library.collection(id), [
+/** Library › Collections: the owner's collections this person and app see, then TMDB's. */
+export const useCollections = (platform: ClientPlatform) =>
+  useQuery(`client:collections:${platform}`, (c) => c.library.collections(clientType[platform]), [
     'movies.updated',
-    'watch.updated',
+    'collections.updated',
   ])
+
+export const useCollection = (id: string, platform: ClientPlatform = 'web') =>
+  useQuery(
+    `client:collection:${platform}:${id}`,
+    (c) => c.library.collection(id, clientType[platform]),
+    ['movies.updated', 'watch.updated', 'collections.updated'],
+  )
+
+/** "6 movies · 2010–2020". */
+export const collectionCaption = (c: { count: number; years: string }) =>
+  `${c.count} ${c.count === 1 ? 'movie' : 'movies'} · ${c.years}`
 
 /** Quick picks for an empty search. */
 export const searchSuggestions = ['Comedy', 'Horror', 'Animation', 'Science fiction', 'Fritz Lang']
