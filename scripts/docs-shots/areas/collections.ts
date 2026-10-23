@@ -6,6 +6,8 @@ import type { Area } from '../shot.ts'
 export default {
   shots: [
     { name: 'list', path: '/collections' },
+    // a new one: nothing yet, and Right now says so
+    { name: 'new', path: '/collections/new', height: 1000 },
     { name: 'rules', path: (c) => `/collections/${c.seeded.decade.id}`, height: 1400 },
     { name: 'picked', path: (c) => `/collections/${c.seeded.handPicked.id}`, height: 1040 },
     {

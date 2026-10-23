@@ -261,7 +261,7 @@ A survey of the repository on 2026-10-22.
   - **Not shown, because the seeded server can't produce them offline:** a stalled, blocked or failed download, a connected VPN, Trakt's device sign-in and Discover's TMDB rows with posters.
   - **Found in the admin while taking them:**
     - **Fixed:** a draft announcement whose start had passed was shown as live, since `announcementsFor` (`packages/curation/src/service/index.ts`) worked its status out again without the draft flag; it now uses the status worked out from the row. The Email connection dialog failed with `INVALID_TAG`, since the hint `highsea <media@example.org>` reads as a FormatJS tag; it's quoted now, and `apps/server/test/messages.test.ts` parses every catalog the server shows, through i18n's new `unparsable`.
-    - **Not fixed:** a new collection's Right now says "That request isn't valid." before anything is entered.
+    - **Fixed:** a new collection's Right now said "That request isn't valid." before anything was entered, and a rule collection with no conditions couldn't be saved. The contract's `RuleGroup` wanted at least one rule, while the spec (collections.md › The editor: "No conditions yet, so every film is in it"), the prototype and the service (an empty group compiles to every film) all allow none; the top-level group now may be empty, and subgroups still need a condition. Picked by hand with nothing picked, Right now says no films match without asking, since the server refuses that draft.
   - **Still to come:** the guides name `ghcr.io/highsea-tv/highsea`, which holds no image until the first release.
 - **Next:** 9b's review by the owner, including the docs site's design from screenshots.
 

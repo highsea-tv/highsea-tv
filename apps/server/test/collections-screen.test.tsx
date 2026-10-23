@@ -38,7 +38,7 @@ const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
 const { TooltipProvider } = await import('@highsea-tv/ui-web')
-const { RULE_FIELDS } = await import('@highsea-tv/api-contract')
+const { RULE_FIELDS, SmartCollectionInput } = await import('@highsea-tv/api-contract')
 const { Collections } = await import('../src/admin/collections.tsx')
 const { CollectionEditor, handoff } = await import('../src/admin/collections-editor.tsx')
 
@@ -157,7 +157,10 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
     case 'GET /api/v1/curation/collections/fields':
       return json(FIELDS)
     case 'POST /api/v1/curation/collections/preview':
-      return json(PREVIEW)
+      // checked against the contract, as the server's validator does before the service sees it
+      return SmartCollectionInput.safeParse((body as { collection: unknown }).collection).success
+        ? json(PREVIEW)
+        : json({ error: { code: 'invalid', message: 'That request isn’t valid.' } }, 400)
     case 'GET /api/v1/curation/collections/people':
       return json([{ id: 1245, name: 'Jan Morgenstern', photo: null, titles: 3 }])
     case 'DELETE /api/v1/curation/collections/sc-2':
@@ -262,6 +265,38 @@ describe('the editor', () => {
       audience: { kind: 'everyone' },
     })
     expect(pushed).toEqual(['/collections'])
+  })
+
+  test('a new collection, with no conditions yet, previews every film', async () => {
+    const { page } = await open(<CollectionEditor id="new" />)
+    await debounce()
+    await settle()
+    expect(requested('POST', '/api/v1/curation/collections/preview').at(-1)?.body).toMatchObject({
+      collection: { rules: { kind: 'group', rules: [] } },
+    })
+    const result = within(page.getByRole('region', { name: 'What it holds now' }))
+    expect(result.getByText(/films match/)).toBeTruthy()
+  })
+
+  test('picked by hand with none picked, it holds nothing, without asking', async () => {
+    const { user, page } = await open(<CollectionEditor id="new" />)
+    const form = within(page.getByRole('form', { name: 'Collection' }))
+    await debounce()
+    await settle()
+    // it starts from what the rules picked, every film; take them out
+    await user.click(form.getByRole('radio', { name: 'Pick them' }))
+    const picked = within(form.getByRole('list', { name: 'Picked films' }))
+    for (const title of ['Sintel', 'Tears of Steel'])
+      await user.click(picked.getByRole('button', { name: new RegExp(`^Remove ${title}`) }))
+    await debounce()
+    await settle()
+    const result = within(page.getByRole('region', { name: 'What it holds now' }))
+    expect(result.getByText(/No films match yet/)).toBeTruthy()
+    expect(
+      requested('POST', '/api/v1/curation/collections/preview').filter(
+        (r) => (r.body as { collection: { rules: unknown } }).collection.rules === null,
+      ),
+    ).toHaveLength(0)
   })
 
   test('the live result leaves out a condition still being filled in', async () => {
