@@ -7,6 +7,8 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-10-23
+
 ### Added
 
 - The first release of highsea: one server for finding, downloading and organising films, with their subtitles, in place of Radarr, Prowlarr, qBittorrent and Bazarr.
@@ -27,3 +29,6 @@ While highsea is at 0.x, any release may change how something works. When one do
 - Personal dashboards, themes, branding and sound packs.
 - A one-time migration from Radarr and qBittorrent in Settings › Migration.
 - Images for amd64 and arm64 at `ghcr.io/highsea-tv/highsea`, with compose files and templates for Unraid, TrueNAS and Synology.
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/highsea-tv/highsea-tv/releases/tag/v0.1.0

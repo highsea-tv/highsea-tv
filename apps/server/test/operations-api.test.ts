@@ -133,7 +133,8 @@ describe('updates and settings', () => {
     expect(await admin.system.updates()).toMatchObject({
       current: '0.1.0',
       channel: 'stable',
-      latest: null,
+      // the seed's releases.json lists the version being released, so it's the latest and no update
+      latest: { version: '0.1.0' },
       available: false,
     })
     const general = await admin.settings.general()

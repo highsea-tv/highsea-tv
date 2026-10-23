@@ -5,10 +5,13 @@
 import type { TrustedKey } from './signing.ts'
 
 /**
- * The release keys. None yet: the owner creates the first when publishing begins, and its public
- * half goes here (catalog/keys/README.md).
+ * The release keys: the public halves of the keys the owner made (catalog/keys/README.md). The
+ * private half of each is a secret of the `release` environment and kept offline, never here.
  */
-export const RELEASE_KEYS: readonly TrustedKey[] = []
+export const RELEASE_KEYS: readonly TrustedKey[] = [
+  // made by the owner on 2026-10-23, before 0.1.0
+  { id: 'release-2027', publicKey: 'MCowBQYDK2VwAyEAj0e3wp7jslmW/ijPC7WxFWOT5ymxhAwEb1nnh0CLnBo=' },
+]
 
 /**
  * The development key: signs the seed snapshot until publishing begins. Its private half is in
