@@ -9,6 +9,10 @@
 
   The paths follow the TRaSH Guides' one-share layout on Unraid, so downloads and the library are
   on one share and imports hardlink. 99:100 is Unraid's nobody:users, which owns its shares.
+
+  There's no TZ: Unraid passes the server's own time zone to every container it runs
+  (xmlToCommand in https://github.com/unraid/webgui/blob/master/emhttp/plugins/dynamix.docker.manager/include/Helpers.php),
+  and a TZ here would come later in docker run and override it.
 -->
 <Container version="2">
   <Name>highsea</Name>
@@ -36,6 +40,5 @@ Put downloads and the library on one share (the data path), so imports hardlink 
   <Config Name="Data" Target="/data" Default="/mnt/user/data" Mode="rw" Description="One share for downloads and the library, so imports hardlink. Setup suggests /data/downloads and /data/media/movies." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/data</Config>
   <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="The user that owns your files." Type="Variable" Display="advanced" Required="true" Mask="false">99</Config>
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="The group that owns your files." Type="Variable" Display="advanced" Required="true" Mask="false">100</Config>
-  <Config Name="TZ" Target="TZ" Default="Etc/UTC" Mode="" Description="Your time zone, for schedules and the calendar, such as Europe/London." Type="Variable" Display="advanced" Required="false" Mask="false">Etc/UTC</Config>
   <Config Name="Public address" Target="HIGHSEA_PUBLIC_URL" Default="" Mode="" Description="Optional. The https:// address you reach highsea at from outside, if you serve it through a reverse proxy." Type="Variable" Display="advanced" Required="false" Mask="false"/>
 </Container>

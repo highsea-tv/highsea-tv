@@ -227,15 +227,27 @@ A survey of the repository on 2026-10-22.
     - Each says the highsea version it was written for and cites its sources in a comment.
     - `test/content.test.ts` checks the frontmatter, every link and anchor inside the site, the sidebar and the copy rule.
     - Install with Docker was followed against the slim image, through setup to the Dashboard. Its step names were corrected from what that run showed.
-    - The Unraid and TrueNAS guides follow the vendors' documentation but haven't been tried on the hardware.
-  - **Four screenshots to come,** marked in the guides: Unraid (2) and TrueNAS (2). Upgrade also has one, of System › Updates, once a release exists. Setup's first step is a real screenshot.
+    - Synology, TrueNAS and Unraid were each followed (below).
+  - **Two screenshots to come:** Migration's, of the Radarr card's preview, and Upgrade's, of System › Updates once a release exists. Setup's first step is a real screenshot.
+  - **Wired in:** `bun run docs`; CI builds the site; the README's Install section links the guides; `scripts/pin.ts` skips deprecated versions (it offered Fumadocs 17.0.0, which its authors deprecated).
+  - **Going back to an older version isn't supported yet,** and Upgrade says so: an older highsea doesn't know a newer one's database changes. The "Before an update" backup keeps the database safe meanwhile.
 - **2026-10-22, the Synology guide followed on the owner's DS1520+** (DSM 7.4.1, Container Manager on Docker 24.0.2). The image was built from this checkout and loaded onto the NAS, and nothing was pulled or pushed. The project used a test folder in place of the live `data` share:
   - The wizard matched the guide's steps. Its Create Project page is now the guide's screenshot.
   - Container Manager doesn't create a missing bind-mount folder: the first start stopped with "Bind mount failed: '/volume1/docker/highsea/config' does not exist". The guide and `templates/synology/compose.yaml` now say to make `config` first.
   - Once that folder was made, highsea started, port 3000 redirected to `/setup`, and its files were owned by 1026:100 as `PUID`/`PGID` asked. The guide now says it was checked on DSM 7.4.1.
   - Afterwards the project, its image and the test folder were deleted. The owner's own project and shares weren't touched.
-  - **Wired in:** `bun run docs`; CI builds the site; the README's Install section links the guides; `scripts/pin.ts` skips deprecated versions (it offered Fumadocs 17.0.0, which its authors deprecated).
-  - **Going back to an older version isn't supported yet,** and Upgrade says so: an older highsea doesn't know a newer one's database changes. The "Before an update" backup keeps the database safe meanwhile.
+- **2026-10-22, the TrueNAS guide followed in a virtual machine** (TrueNAS Community Edition 25.10.7, x86-64 emulated in UTM on the owner's Mac). The amd64 image was built from this checkout and loaded onto it, and nothing was pulled or pushed:
+  - Install via YAML matched the guide: it sits in the ⋮ menu (More Options) beside Custom App on Discover Apps. `templates/truenas/compose.yaml` said "Custom App › Install via YAML", and now says ⋮. The filled-in screen and the Apps page with highsea running are the guide's two screenshots.
+  - The app shows **Deploying** and then **Running**; the guide says so. highsea's container was healthy, port 3000 redirected to `/setup`, and its files in `tank/apps/highsea` were owned by 568:568.
+  - `tank/apps/highsea` needs its parent `tank/apps` first, and the guide didn't say how to make the `downloads` and `media/movies` folders. The guide now says to add `apps` first and to make the folders in System › Shell. Folders made there by `truenas_admin` inherit the Apps preset's NFSv4 entry for `apps`, and highsea wrote to them as 568.
+  - The guide now says 25.04 or later, checked on 25.10.7, and cites TrueNAS's 25.10 documentation.
+- **2026-10-22, the Unraid guide followed in a virtual machine** (Unraid 7.3.4 booted from the owner's own flash drive, passed through to a UTM virtual machine, on a 30-day trial the owner started). A virtual flash drive boots too, but its device ID is QEMU's, so it can't take a licence. The amd64 image was built from this checkout and loaded onto it, and nothing was pulled or pushed:
+  - On a new server `/boot/config/plugins/dockerMan/templates-user` doesn't exist until the first container is added, so the guide's `wget` failed. The guide now makes the folder first. The template's address on `main` returns 404 until this branch is merged; the run used the branch's.
+  - Add Container showed the template's fields as the guide lists them; that page, with Show more settings open, is the guide's first screenshot. Apply ran `docker run` and said "The command finished successfully", and the guide now says so.
+  - Unraid passes the server's time zone to every container as `TZ` (`xmlToCommand` in the webgui's `Helpers.php`). The template's own `TZ`, set to `Etc/UTC`, came later in `docker run` and overrode it, so the container ran in UTC. `templates/unraid/highsea.xml` no longer has `TZ`, and the guide points to Settings › Date and Time instead.
+  - highsea's files in `appdata/highsea` were owned by 99:100, port 3000 redirected to `/setup`, and the Docker page's WebUI menu opened setup; that menu is the guide's second screenshot. A file in `/data/downloads` hardlinked into `/data/media/movies` inside the container.
+  - Docker called the container unhealthy: the health check starts `node`, which took longer than its 5-second timeout under emulation. highsea itself answered throughout. On real hardware `node` starts well within it, so the Dockerfile is unchanged.
+  - The guide now says it was checked on 7.3.4, and that the array must be started before Docker.
 - **Next:** 9b's review by the owner, including the docs site's design from screenshots.
 
 ## highsea's domains

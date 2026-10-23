@@ -1,7 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # highsea on TrueNAS (24.10 and later, where apps run on Docker), through Apps › Discover Apps ›
-# Custom App › Install via YAML, which takes a Compose file
-# (https://www.truenas.com/docs/scale/25.04/scaleuireference/apps/installcustomappscreens/).
+# ⋮ › Install via YAML, which takes a Compose file
+# (https://www.truenas.com/docs/scale/25.10/scaleuireference/apps/installcustomappscreens/).
 #
 # Change before installing:
 # - the two host paths, to datasets on your pool: one for highsea's config, one for downloads and

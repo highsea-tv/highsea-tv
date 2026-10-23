@@ -1,19 +1,20 @@
 ---
 title: Install on TrueNAS
-description: Install highsea as a custom app from YAML on TrueNAS 25.04.
+description: Install highsea as a custom app from YAML on TrueNAS 25.04 or later.
 ---
 
 {/* SPDX-License-Identifier: AGPL-3.0-only */}
 {/*
   Sources:
   - Install via YAML (Apps › Discover › ⋮, Name, Custom Config, Save):
-    https://www.truenas.com/docs/scale/25.04/scaleuireference/apps/installcustomappscreens/
+    https://www.truenas.com/docs/scale/25.10/scaleuireference/apps/installcustomappscreens/
   - Datasets, and the Apps preset's modify entry for group 568:
-    https://www.truenas.com/docs/scale/25.04/scaletutorials/datasets/datasetsscale/
+    https://www.truenas.com/docs/scale/25.10/scaletutorials/datasets/datasetsscale/
+  - System › Shell: https://www.truenas.com/docs/scale/25.10/scaletutorials/systemsettings/usescaleshell/
   - The compose file is templates/truenas/compose.yaml in the repository.
 */}
 
-Written for highsea 0.1.0 on TrueNAS Community Edition 25.04.
+Written for highsea 0.1.0 on TrueNAS Community Edition 25.04 or later, and checked on 25.10.7.
 
 Since 24.10, TrueNAS runs apps on Docker and can install one straight from a compose file. highsea uses that.
 
@@ -21,13 +22,14 @@ Since 24.10, TrueNAS runs apps on Docker and can install one straight from a com
 
 - Apps are set up, with a pool chosen, under **Apps**.
 - Make two datasets on your pool, in **Datasets**. These steps use a pool called `tank`:
-  - `tank/apps/highsea`, for highsea's database, settings and backups;
-  - `tank/data`, for downloads and films, with `downloads` and `media/movies` folders inside. Keeping both in one dataset is what lets highsea hardlink finished downloads into the library instead of copying them.
+  - `tank/apps/highsea`, for highsea's database, settings and backups. Add `apps` to the pool first, then `highsea` inside it;
+  - `tank/data`, for downloads and films. Keeping both in one dataset is what lets highsea hardlink finished downloads into the library instead of copying them.
 - When you add each dataset, set **Dataset Preset** to **Apps**. That gives the `apps` group (568) modify permission, and highsea runs as that user and group, as TrueNAS's own apps do.
+- Make the `downloads` and `media/movies` folders inside `tank/data`. In **System › Shell**, run `mkdir -p /mnt/tank/data/downloads /mnt/tank/data/media/movies`. New folders inherit the dataset's permissions, so highsea can write to them.
 
 ## Install the app
 
-1. Go to **Apps**, then **Discover Apps**.
+1. Go to **Apps** and choose **Discover Apps**.
 2. Open the **⋮** menu at the top right and choose **Install via YAML**.
 3. **Name**: `highsea`. TrueNAS accepts lowercase letters, numbers and dashes, starting with a letter.
 4. **Custom Config**: paste the file below.
@@ -52,12 +54,12 @@ Change `tank` to your pool's name, and `TZ` to your time zone. TrueNAS checks on
 
 Host networking lets apps on your network find highsea by themselves. If something else on the NAS already uses port 3000 or 6881, stop it first.
 
-<ScreenshotToCome shows="TrueNAS's Install via YAML screen with the name and custom config filled in." />
+![TrueNAS's Install via YAML screen, with the name and custom config filled in](/images/truenas-install-via-yaml.png)
 
 ## Run setup
 
-When the app shows as running on the **Apps** page, open `http://<your NAS's address>:3000`. highsea opens its setup; [Install with Docker › Run setup](/install-docker/#run-setup) walks through each step.
+TrueNAS shows the app as **Deploying** while it starts. When it shows **Running** on the **Apps** page, open `http://<your NAS's address>:3000`. highsea opens its setup; [Install with Docker › Run setup](/install-docker/#run-setup) walks through each step.
 
 When setup asks for your folders, use the paths inside the container: `/data/media/movies` and `/data/downloads`.
 
-<ScreenshotToCome shows="The Apps page with highsea running." />
+![The Apps page, with highsea running](/images/truenas-apps-running.png)

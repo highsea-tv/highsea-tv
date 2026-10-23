@@ -10,16 +10,18 @@ description: Add highsea to Unraid's Docker page from its template, with downloa
     https://docs.unraid.net/unraid-os/using-unraid-to/run-docker-containers/managing-and-customizing-containers/
   - Community Applications' template format: https://ca.unraid.net/submit/help/repository-xml
   - Shares: https://docs.unraid.net/unraid-os/using-unraid-to/manage-storage/shares/
+  - The server's time zone, which Unraid passes to every container as TZ (xmlToCommand):
+    https://github.com/unraid/webgui/blob/master/emhttp/plugins/dynamix.docker.manager/include/Helpers.php
   - The template itself is templates/unraid/highsea.xml in the repository.
 */}
 
-Written for highsea 0.1.0 on Unraid 7.
+Written for highsea 0.1.0 on Unraid 7, and checked on 7.3.4.
 
 highsea isn't listed in Community Applications yet, so you add its template by hand once. After that, Unraid treats it like any other container.
 
 ## Before you start
 
-- Docker is enabled, under **Settings › Docker**.
+- The array is started, and Docker is enabled under **Settings › Docker**.
 - You have a share for your media. These steps use one called `data`, holding `downloads` and `media/movies`. Keeping both in one share is what lets highsea hardlink finished downloads into the library instead of copying them.
 
 ## Add the template
@@ -27,11 +29,12 @@ highsea isn't listed in Community Applications yet, so you add its template by h
 Open the terminal from the top-right of Unraid's web interface, and run:
 
 ```sh
+mkdir -p /boot/config/plugins/dockerMan/templates-user
 wget -O /boot/config/plugins/dockerMan/templates-user/my-highsea.xml \
   https://raw.githubusercontent.com/highsea-tv/highsea-tv/main/templates/unraid/highsea.xml
 ```
 
-This saves the template on the flash drive, where Unraid keeps the templates for your own containers.
+This saves the template on the flash drive, where Unraid keeps the templates for your own containers. Unraid makes that folder when you add your first container, so on a new server the first command makes it.
 
 ## Create the container
 
@@ -42,10 +45,11 @@ This saves the template on the flash drive, where Unraid keeps the templates for
    - **Data**: `/mnt/user/data`, your media share.
    - **Web UI**: `3000`. Change it only if another container uses port 3000.
    - **PUID** and **PGID**, under **Show more settings**: `99` and `100`, Unraid's `nobody` and `users`, which own your shares.
-   - **TZ**: your time zone, such as `Europe/London`.
-4. Choose **Apply**. Unraid downloads the image and starts the container. Wait until it says it's finished, then choose **Done**.
+4. Choose **Apply**. Unraid downloads the image and starts the container. Wait until it says the command finished, then choose **Done**.
 
-<ScreenshotToCome shows="Unraid's Add Container page with the highsea template's fields filled in." />
+![Unraid's Add Container page with the highsea template's fields filled in](/images/unraid-add-container.png)
+
+highsea uses the time zone in **Settings › Date and Time**, which Unraid passes to every container.
 
 The template uses bridge networking, Unraid's default. Apps on your network find highsea by its broadcast on port 7368. If you'd like them to find it by mDNS too, set **Network Type** to **Host**; the ports then can't be changed, so check nothing else uses 3000 and 6881.
 
@@ -55,7 +59,7 @@ On the **Docker** page, select highsea's icon and choose **WebUI**. highsea open
 
 When setup asks for your folders, use the paths inside the container: `/data/media/movies` and `/data/downloads`. highsea says "Hardlinks will work" when both are on the `data` share.
 
-<ScreenshotToCome shows="The Docker page's menu for highsea, with WebUI highlighted." />
+![The Docker page's menu for highsea, with WebUI highlighted](/images/unraid-webui-menu.png)
 
 ## Start with the array
 
