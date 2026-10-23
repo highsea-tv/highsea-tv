@@ -263,7 +263,24 @@ A survey of the repository on 2026-10-22.
     - **Fixed:** a draft announcement whose start had passed was shown as live, since `announcementsFor` (`packages/curation/src/service/index.ts`) worked its status out again without the draft flag; it now uses the status worked out from the row. The Email connection dialog failed with `INVALID_TAG`, since the hint `highsea <media@example.org>` reads as a FormatJS tag; it's quoted now, and `apps/server/test/messages.test.ts` parses every catalog the server shows, through i18n's new `unparsable`.
     - **Fixed:** a new collection's Right now said "That request isn't valid." before anything was entered, and a rule collection with no conditions couldn't be saved. The contract's `RuleGroup` wanted at least one rule, while the spec (collections.md › The editor: "No conditions yet, so every film is in it"), the prototype and the service (an empty group compiles to every film) all allow none; the top-level group now may be empty, and subgroups still need a condition. Picked by hand with nothing picked, Right now says no films match without asking, since the server refuses that draft.
   - **Still to come:** the guides name `ghcr.io/highsea-tv/highsea`, which holds no image until the first release.
-- **Next:** 9b's review by the owner, including the docs site's design from screenshots.
+- **2026-10-23, 9b signed off by the owner.** 9c began the same day.
+- **2026-10-23, 9c under way:**
+  - **`LaterArea` is gone.** Every Settings area has its own page, so the catch-all `settings/[area]` page and its two strings are removed. `/settings/subtitles` redirects to `/subtitles`, where Settings' nav already sends it, and any other unknown area is the admin's not-found page.
+  - **The sweeps run against the production build.** `scripts/sweeps/server.ts` runs `next build` and starts the server with `NODE_ENV=production`, as the image does; `SWEEP_DEV=1` keeps the dev server for quick runs. A production server checks `catalog.highsea.tv` and trusts only the release key, so the sweep's server sets `HIGHSEA_CATALOG_URL=off` and `HIGHSEA_CATALOG_DEV_KEY=1` for the seed it serves. It runs the checkout's build rather than the image itself: the image ships without the fakes the seeded admin needs (ADR 0003's amendment), the build is the same `.next` and `server.ts` the image copies, and the image is already driven through a browser by the end-to-end run.
+  - **`scripts/sweeps/compare.ts`** boots the same seeded server from the production build and captures each pair in the matrix below at 1440 and 390 in the default theme: setup's steps before an owner exists, then sign-in, then every screen as the owner, with tabs and dialogs opened the same way on both sides. It writes the PNGs, `index.html` (prototype left, server right) and `checklist.md` (the same order, one box a pair, with known differences noted) to a folder outside the repository. A screen with no prototype, such as Migration or the invite page, is shown alone with the checkpoint that built it.
+  - **Health checks that checkpoint 6 planned and nobody built.** Going through the roadmap's [M1] items found that checkpoint 6's plan (System) lists checks for disk space, folders highsea can't write to and imports falling back to copies, and System › Health had none. 9c adds them:
+    - `folderIssues` (`packages/runtime/src/system.ts`) checks each root folder and the downloads folder once setup is done. A folder that's missing or can't be written to is an error, as in Radarr's RootFolderCheck and MountCheck. Each disk is checked once, by device: under 1 GiB free is an error, and under a tenth free *and* under 100 GiB is a warning.
+    - The import (`packages/media/src/movies/import.ts`) remembers each root folder whose hardlink fell back to a copy, across disks or on a filesystem without hardlinks. Health shows a warning until a hardlink into that folder works again.
+    - Tests: `packages/runtime/test/system.test.ts` (8, against a fake filesystem) and one in `packages/media/test/movies/import.test.ts`, where `link` fails with `EXDEV`. The Health guide lists the new messages. Its screenshot is unchanged, because the seeded server's disk has room.
+    - **Judgement calls:**
+      - The thresholds. Radarr has no disk-space check, and no official default turned up (Unraid's disk warnings are its own settings, not documented defaults). A share alone misreads large disks, where 10% is still terabytes, so the warning needs both.
+      - The copy fallback is kept in memory only, so a restart clears it until the next import shows it again.
+  - **The roadmap's [M1] items** each have an "As built" line now. Four parts of them were never built, nor recorded as left out: a chown setting (`PUID` and `PGID` set the owner instead), choosing a film's edition, alternative titles, and renaming the films already in the library all at once. On 2026-10-23 the owner left them for later, on the recommendation that the import and the library import cover the everyday cases; they're listed under "What Phase 3 leaves behind".
+  - **Copy that promised a missing feature.** Handing the server to another owner wasn't built (the People guide says so), yet refusing to change the owner's role said "Hand ownership over in Security first", and the Owner role's hint said "including handing the server over". Both now describe what is there: "The owner stays the owner: their role can’t be changed." and "Everything, including people, security and backups." The prototype and users-devices.md keep the old words, since the prototype is locked; this is a difference that real data forces.
+  - **The review:** `compare.ts` captured all 89 pairs (344 PNGs) for the owner, outside the repository.
+  - **Checks, under Node 24.21:** lint (1,241 files); typecheck; 11,403 tests pass (6 skipped, 0 failing) across 187 files; smoke; licences (863 packages); audit (718 packages, three Next advisories excepted until 2026-10-28); the docs build; the sweeps clean against the production build (1,472 prototype pages, 158 keyboard walks, the D-pad, and the server's admin pages).
+  - **2026-10-23, the owner's answers at 9c's gate:** the four unbuilt parts of [M1] items are left for later, and the list of what Phase 3 leaves behind stands as written (both as recommended).
+- **2026-10-23, 9c and Phase 3 signed off by the owner.** The first publish waits for the owner's word.
 
 ## highsea's domains
 
@@ -541,7 +558,7 @@ Exit criterion 6 asks for every admin screen to match its prototype, with real d
 - **The roadmap:** Phase 3 marked signed off with its date, as for Phases 1 and 2. Each [M1] item gets its "As built" line where it doesn't have one.
 - **The READMEs:** the root README's status, install section and layout. `docs/adr/README.md`'s index gets 0049 and 0050.
 - **The leftover `LaterArea`** and its strings go; `/settings/subtitles` redirects to `/subtitles`.
-- **What Phase 3 leaves behind**, for the owner to confirm at sign-off. Each was decided at its checkpoint; this gathers them in one place:
+- **What Phase 3 leaves behind**, confirmed by the owner on 2026-10-23. Each was decided at its checkpoint or at 9c's gate; this gathers them in one place:
   - **Phase 4, by design:**
     - clients, playback, transcoding, and "playable" meaning more than "has a file" (ADR 0048, 0049);
     - Continue watching filled from watch positions;
@@ -563,6 +580,12 @@ Exit criterion 6 asks for every admin screen to match its prototype, with real d
     - content rating limits per user (admin access);
     - Letterboxd and IMDb only through tools that publish the generic list format (8a);
     - caching the apps' collection list if it grows slow (8d).
+  - **Parts of [M1] items that weren't built, left for later by the owner (found in 9c, 2026-10-23):**
+    - a chown setting: the container's `PUID` and `PGID` own what highsea writes;
+    - choosing a film's edition: editions are parsed, kept, named and matched by custom formats, but not chosen per film;
+    - alternative titles, for searching and matching under another name;
+    - renaming every film already in the library at once (the import renames new files, and the library import offers Rename to my format).
+  - **Left out by an ADR:** ACME certificates (ADR 0026: owner-supplied certificates only); per-resource API key scopes (ADR 0023: read-only or full); handing the server to another owner, and recovering the owner from the command line (checkpoint 2); other UI languages (ADR 0021: the catalogs are ready, English only).
   - **[Later] in the roadmap:** requests, Usenet, TV series and other media types, and a plugin system.
   - **Scheduled after Phase 3:** dashboard customization (prototype first), and the local AI research.
 - **The sign-off:** recorded in the roadmap, the parent plan and CLAUDE.md. Then the first publish, if the owner says so.

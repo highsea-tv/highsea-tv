@@ -15,7 +15,7 @@ export const users = defineMessages({
   done: 'Done',
   keep: 'Keep',
   'role.owner': 'Owner',
-  'role.owner.hint': 'Everything, including handing the server over.',
+  'role.owner.hint': 'Everything, including people, security and backups.',
   'role.admin': 'Admin',
   'role.admin.hint': 'Runs the server: the library, downloads, indexers and settings.',
   'role.user': 'User',

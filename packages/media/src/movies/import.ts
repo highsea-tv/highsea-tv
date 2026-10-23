@@ -241,6 +241,12 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
     }
   }
 
+  /**
+   * Root folders whose latest import asked for a hardlink and got a copy, with why and since when,
+   * for System › Health (checkpoint 6's plan, System). Kept in memory: the next import says again.
+   */
+  const copying = new Map<string, { fallback: 'cross-device' | 'not-supported'; since: number }>()
+
   const roots = () => [
     ...media.rootFolders.list().map((r) => r.path),
     ...(options.downloadDirs?.() ?? []),
@@ -533,6 +539,11 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
       const moved = await transfer(source.path, dest, mode, fs)
       method = moved.method
       message = transferMessage(moved)
+      if (mode === 'hardlink' && !moved.already) {
+        if (!moved.fallback) copying.delete(row.rootFolder)
+        else if (!copying.has(row.rootFolder))
+          copying.set(row.rootFolder, { fallback: moved.fallback, since: clock.now() })
+      }
       if (existing && existing.path !== dest)
         await recycle(existing.path, settings.recycleBin, clock.now(), fs)
     } catch (e) {
@@ -1104,6 +1115,8 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
     files,
     history,
     adopt,
+    /** Root folders where imports copy because hardlinks can't be made, and why. */
+    copying: () => [...copying].map(([root, c]) => ({ root, ...c })),
     internal: { roots, probed, qualityFor, pickVersion, versionRows, namingMovie },
   }
 }

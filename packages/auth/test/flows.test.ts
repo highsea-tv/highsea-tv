@@ -454,7 +454,7 @@ describe('people', () => {
     expect(
       (await failure(() => env.auth.users.update(env.owner.id, { role: 'admin' }, env.actor, meta)))
         .message,
-    ).toBe('The owner stays the owner. Hand ownership over in Security first.')
+    ).toBe('The owner stays the owner: their role can’t be changed.')
     expect((await failure(() => env.auth.users.remove(env.owner.id, actor, meta))).message).toBe(
       'The owner can’t be removed.',
     )

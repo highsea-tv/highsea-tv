@@ -1,6 +1,6 @@
 # Phase 4 plan: playback and the client apps
 
-- **Status:** Scoped on 2026-10-23. The owner answered every [open question](#open-questions-for-the-owner) the same day ([The owner's answers](#the-owners-answers)), and the plan below follows them. Nothing is built until Phase 3 is signed off.
+- **Status:** Scoped on 2026-10-23. The owner answered every [open question](#open-questions-for-the-owner) the same day ([The owner's answers](#the-owners-answers)), and the plan below follows them. Phase 3 was signed off on 2026-10-23, so its checkpoints can begin.
 - **Gate:** Phase 4 starts only after Phase 3 is signed off. That needs 9b's review and 9c, the full review and the sign-off ([phase-3-checkpoint-9.md](phase-3-checkpoint-9.md)). The first publish of 0.1.0 is not a prerequisite. It happens when the owner says so, and it can come before or during Phase 4.
 - **Within Phase 4:** stop at each checkpoint below, report, and ask for review, as in Phase 3.
 - **Source:**

@@ -1,10 +1,9 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings (A12; docs/product/settings.md), ported from the prototype: an index of every area in
-// four groups, and each area's page with the areas beside it from expanded widths. Users and
-// devices is the area this checkpoint builds; the others say they come later.
+// five groups, and each area's page with the areas beside it from expanded widths.
 import { useT } from '@highsea-tv/i18n/react'
-import { Button, cn, EmptyState, Icon } from '@highsea-tv/ui-web'
+import { Button, cn, Icon } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import { type Area, type AreaId, areaGroupsFor } from './settings-areas.ts'
 import { settings as messages } from './settings-messages.ts'
@@ -103,18 +102,6 @@ export function AreaPage({
         </div>
       </div>
     </AdminPage>
-  )
-}
-
-/** `/settings/{area}` for the areas later checkpoints build. */
-export function LaterArea({ id }: { id: AreaId }) {
-  const t = useT(messages)
-  return (
-    <AreaPage id={id}>
-      <EmptyState icon="settings" title={t('later.title')}>
-        {t('later.body')}
-      </EmptyState>
-    </AreaPage>
   )
 }
 

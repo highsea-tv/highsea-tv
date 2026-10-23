@@ -133,6 +133,8 @@ export function createMovies(deps: MoviesDeps, media: Media) {
     },
     /** A17: what a folder holds, and importing the files the owner picks. */
     manualImport: imports.manualImport,
+    /** Root folders where imports copy because hardlinks can't be made (System › Health). */
+    copying: imports.copying,
     /** A movie's files with their streams, in its versions' order. */
     files: imports.files,
     /** A movie's history, newest first, cursor-paged. */
