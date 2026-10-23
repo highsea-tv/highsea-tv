@@ -178,6 +178,14 @@ describe('Settings › Connections', () => {
     expect(put?.body).toMatchObject({ serverMail: true, kind: 'email' })
   })
 
+  test('Add a connection: Email opens, with its sender shown as an example address', async () => {
+    const { user, page } = await open()
+    await user.click(page.getByRole('button', { name: 'Email' }))
+    await settle()
+    const dialog = within(page.getByRole('dialog'))
+    expect(dialog.getByText('highsea <media@example.org>')).toBeTruthy()
+  })
+
   test('Add a connection: Discord, tested, then saved with its events', async () => {
     const { user, page } = await open()
     await user.click(page.getByRole('button', { name: 'Discord' }))

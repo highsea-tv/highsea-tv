@@ -261,6 +261,16 @@ describe('announcements', () => {
     ).toBe('The end has to come after the start.')
   })
 
+  test('a draft stays off every screen once its start has passed, until it is published', () => {
+    const { curation, clock } = setup()
+    const draft = curation.addAnnouncement(announcement(clock, { draft: true }), 'ines')
+    clock.advance(60_000)
+    expect(curation.announcement(draft.id).status).toBe('draft')
+    expect(curation.activeAnnouncements('ruth', 'web')).toEqual([])
+    curation.saveAnnouncement(draft.id, announcement(clock, { draft: false }))
+    expect(curation.activeAnnouncements('ruth', 'web').map((x) => x.id)).toEqual([draft.id])
+  })
+
   test('a required acknowledgement is a dialog, and reach counts acknowledgements', () => {
     const { curation, clock } = setup()
     const a = curation.addAnnouncement(announcement(clock, { acknowledgement: 'require' }), 'ines')

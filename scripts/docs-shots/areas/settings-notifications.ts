@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The Notifications guide's screenshots (apps/docs/content/settings/notifications/): Settings ›
 // Connections with a few connections added through the API (nothing is sent: the server is
-// offline), the add and edit dialogs. The Email connection's dialog isn't shot: its From hint,
-// `highsea <media@example.org>`, isn't valid ICU (a tag), so the dialog fails to render.
+// offline), the add and edit dialogs.
 import type { Page } from 'playwright-core'
 import type { Area } from '../shot.ts'
 
@@ -63,6 +62,13 @@ export default {
       act: (p) => p.getByRole('button', { name: 'Edit Kids’ films on my phone' }).click(),
       crop: dialog,
       height: 1200,
+    },
+    {
+      name: 'edit-email',
+      path: '/settings/connections',
+      act: (p) => p.getByRole('button', { name: 'Edit Household mail' }).click(),
+      crop: dialog,
+      height: 1600,
     },
     {
       // the Email connection's row, with its Server's mail switch

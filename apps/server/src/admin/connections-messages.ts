@@ -117,7 +117,8 @@ export const connections = defineMessages({
   'hint.webhook.url': 'highsea sends each event as JSON.',
   'hint.apprise.key': 'A configuration saved on the Apprise server, or URLs below.',
   'hint.email.to': 'Where notifications go.',
-  'hint.email.from': 'highsea <media@example.org>',
+  // quoted, or ICU reads the address as a tag (packages/i18n's unparsable)
+  'hint.email.from': "highsea '<media@example.org>'",
 
   'push.title': 'This browser',
   'push.label': '{browser} on {os}',
