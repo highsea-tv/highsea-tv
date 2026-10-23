@@ -163,6 +163,8 @@ describe('the guides', () => {
       test('shows only images that exist, each described', () => {
         for (const m of page.body.matchAll(/!\[([^\]]*)\]\((\/[^)\s]*)\)/g)) {
           expect(m[1]?.length, m[2]).toBeGreaterThan(10)
+          // MDX reads a < or { in the text as JSX or an expression, and the build fails
+          expect(m[1], m[2]).not.toMatch(/[<{]/)
           expect(existsSync(join(publicDir, m[2] ?? '')), m[2]).toBe(true)
         }
       })

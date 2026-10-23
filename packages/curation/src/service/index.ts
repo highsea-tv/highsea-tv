@@ -310,16 +310,18 @@ export function createCuration(deps: {
         .map((r) => r.id),
     )
 
-  /** The live announcements for a person on one kind of app, newest first. */
+  /**
+   * The live announcements for a person on one kind of app, newest first. Each one's status was
+   * worked out from its row, draft included, so it isn't worked out again here.
+   */
   function announcementsFor(
     v: Viewer,
     client: ClientType,
     all: Live[],
-    now: number,
     seen = seenBy(v.id),
   ): ClientAnnouncement[] {
     return all
-      .filter((a) => statusOf(a, now) === 'live' && reaches(a.audience, v, client))
+      .filter((a) => a.status === 'live' && reaches(a.audience, v, client))
       .sort((a, b) => b.startAt - a.startAt || b.updatedAt - a.updatedAt)
       .map(({ status: _, startAt: _s, endAt: _e, updatedAt: _u, ...a }) => ({
         ...a,
@@ -762,7 +764,7 @@ export function createCuration(deps: {
     },
 
     activeAnnouncements(userId: string, client: ClientType): ClientAnnouncement[] {
-      return announcementsFor(viewer(userId), client, allAnnouncements(), clock.now())
+      return announcementsFor(viewer(userId), client, allAnnouncements())
     },
 
     /** Dismissed or acknowledged: once per person, so a second time changes nothing. */
@@ -837,7 +839,7 @@ export function createCuration(deps: {
         }
         return {
           sections: homeFor(v, input.client, allSections(), now),
-          announcements: announcementsFor(v, input.client, [draft], now, new Set()),
+          announcements: announcementsFor(v, input.client, [draft], new Set()),
           reaches: reaches(a.audience, v, input.client),
         }
       }

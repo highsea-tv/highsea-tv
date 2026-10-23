@@ -62,6 +62,22 @@ export function createT<M extends Messages>(
   }
 }
 
+/**
+ * Ids whose message isn't valid ICU, with why: showing one throws. A literal `<` starts a tag
+ * (FormatJS's rich text), so `<`, `{` and `}` meant as text are quoted with apostrophes
+ * (https://formatjs.github.io/docs/core-concepts/icu-syntax/#quoting--escaping).
+ */
+export function unparsable(messages: Messages, locale = 'en'): [id: string, error: string][] {
+  return Object.entries(messages).flatMap(([id, message]): [string, string][] => {
+    try {
+      new IntlMessageFormat(message, locale)
+      return []
+    } catch (e) {
+      return [[id, (e as Error).message]]
+    }
+  })
+}
+
 /** Ids a translation has that the source doesn't: they'd never be shown, so they're mistakes. */
 export const unknownIds = (source: Messages, translation: Record<string, string>) =>
   Object.keys(translation).filter((id) => !(id in source))
