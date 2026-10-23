@@ -36,7 +36,7 @@ Setup tells you which you have: "Hardlinks will work" or "Imports will be copied
 
 ## Quality
 
-**Settings › Profiles and formats** has three profiles to start with: **Ultra HD**, **HD 1080p** and **Any**. Pick the one that suits the screens you watch on when you add a film; HD 1080p is a good default. Presets from the catalog add ready-made profiles and custom formats.
+**Settings › Profiles and formats** has three profiles to start with: **Ultra HD**, **HD 1080p** and **Any**. Pick the one that suits the screens you watch on when you add a film; HD 1080p is a good default. [Quality and profiles](/settings/quality/) explains how to change them or make your own.
 
 highsea gives the reason for every release it takes or turns down.
 
@@ -55,11 +55,11 @@ On the **Subtitles** page, add a provider: OpenSubtitles.com, Subdl or SubSource
   ```
 
   Pick your provider and add its WireGuard configuration. highsea uses your provider's port forwarding where it has one.
-- **A VPN container**: highsea shares a gluetun container's network and reads its status and forwarded port. `compose.gluetun.yaml` sets this up; in Settings › VPN, give the address `http://127.0.0.1:8000` and the API key from gluetun's control server. This suits providers that only offer OpenVPN.
+- **A VPN container**: highsea shares a gluetun container's network and reads its status and forwarded port. All of highsea's traffic goes through the container, not only torrents. `compose.gluetun.yaml` sets this up; in Settings › VPN, give the address `http://127.0.0.1:8000` and the API key from gluetun's control server. This suits providers that only offer OpenVPN.
 - **An interface on this machine**: torrents are bound to a tunnel you run yourself.
 - **Off**: torrents use your own connection, and anyone in the swarm can see your address.
 
-Keep **Stop torrents when the VPN is down** on. Torrents then stop until the tunnel is back, and nothing leaks onto your own connection.
+**Stop torrents when the VPN is down** is always on, in every mode with a VPN. Torrents stop until the tunnel is back, and nothing leaks onto your own connection. [VPN](/settings/vpn/) covers each mode in full.
 
 ## Watching away from home
 

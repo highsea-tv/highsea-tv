@@ -1,0 +1,167 @@
+---
+title: Quality and profiles
+description: Quality profiles, custom formats and scores, release sizes, and how highsea decides which release to take.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The screens and their copy: apps/server/src/admin/profiles.tsx, profiles-messages.ts,
+    quality-editors.tsx and quality-editors-messages.ts.
+  - The qualities, seeded profiles and formats, sizes and the decision: packages/quality/src
+    (qualities.ts, profiles.ts, presets.ts, sizes.ts, decision.ts, ranking.ts, messages.ts) and
+    packages/media/src/shared/profiles.ts (seeding); packages/indexers/src/search.ts (minimum seeders).
+  - The Servarr wiki's quality, profile and custom format pages, which highsea follows:
+    https://wiki.servarr.com/radarr/settings#quality-profiles and https://wiki.servarr.com/radarr/settings#quality
+  - TRaSH Guides, where the starting sizes and formats come from: https://trash-guides.info/Radarr/
+*/}
+
+Written for highsea 0.1.0.
+
+Every film in your library has a quality profile: what to download for it, and when to stop looking for something better. A film you keep in more than one version, such as 4K HDR beside 1080p, has a profile for each. Two areas of Settings shape that decision:
+
+- **Settings › Profiles and formats**: quality profiles and custom formats.
+- **Settings › Quality sizes**: how big a release may be for each quality.
+
+The Owner and Admins can change both. You pick a film's profile when you add it, and can give a version another profile later from the film's page.
+
+## Qualities
+
+A quality is a source and a resolution together, such as **Bluray-1080p**, **WEBDL-2160p** or **Remux-1080p**. highsea reads it from the release's name. The qualities run from **Unknown**, **CAM** and **TELESYNC** at the bottom, through DVD, HDTV, WEB and Blu-ray at 480p to 2160p, up to **Remux-2160p** at the top.
+
+Inside a profile, qualities can be grouped, so they count as equal. The starting profiles group WEBRip and WEB-DL at each resolution as **WEB 1080p**, **WEB 2160p** and so on.
+
+## Quality profiles
+
+**Settings › Profiles and formats** lists each profile with the qualities it downloads, its cutoff, whether it upgrades, how many custom formats it scores, and how long it waits for a better release. **Edit** opens a profile; **New profile** starts one.
+
+### The starting profiles
+
+A new server has three. They're yours to change or delete.
+
+| Profile | Downloads, most preferred first | Upgrades until | Custom format scores |
+| --- | --- | --- | --- |
+| **Ultra HD** | Remux-2160p, Bluray-2160p, WEB 2160p | WEB 2160p, and a format score of 1500 | Dolby Vision +1500, HDR10 +1000, x265 +100, Low-quality groups −10000 |
+| **HD 1080p** | Bluray-1080p, WEB 1080p, HDTV-1080p | Bluray-1080p, and a format score of 100 | x265 +100, Low-quality groups −10000 |
+| **Any** | WEB 1080p, WEB 720p, DVD | Doesn't upgrade | Low-quality groups −10000 |
+
+HD 1080p suits most screens and disks. Ultra HD wants a 4K screen and plenty of space.
+
+A new profile starts with Bluray-1080p and WEB 1080p ticked, every other quality listed but not wanted, and no format scores.
+
+### Profile settings
+
+| Setting | What it does | Default for a new profile |
+| --- | --- | --- |
+| **Name** | The name you pick from when adding a film. | Empty |
+| **Language** | Releases in another language are rejected. **Any language**, **The movie's original language**, or one language. A MULTi release counts as the film's original language too. | Any language |
+| **Wait before grabbing** | Minutes after a release was uploaded that automatic searches wait for a better one, up to 7 days. A release at the most preferred quality goes at once, and searches you start yourself never wait. 0 grabs at once. | 0 |
+
+### Qualities
+
+The list holds every quality. Tick the ones to download. Higher in the list is preferred. **Group with the one below** makes two qualities equal, and **Ungroup** splits them again; both are in each row's **More** menu.
+
+### Upgrades
+
+When a film has a file, highsea keeps looking for a better one until it reaches the cutoff.
+
+| Setting | What it does | Default for a new profile |
+| --- | --- | --- |
+| **Upgrade files** | Off, the first file that fits is kept, whatever turns up later. | On |
+| **Upgrade until** | The cutoff. A file at this quality or higher in the list isn't upgraded for quality. It has to be a quality the profile downloads. | Bluray-1080p |
+| **Upgrade until format score** | Once a file's format score reaches this, upgrades for score stop. | 10000 |
+| **Minimum format score** | A release scoring less is rejected. | 0 |
+| **Least score gain for an upgrade** | A release has to beat the file's score by at least this much to replace it. | 1 |
+
+A file meets the cutoff when both its quality and its format score have reached theirs. Until then, the film shows as cutoff unmet on [Wanted](/wanted/), and searches look for an upgrade.
+
+### Custom format scores
+
+A release's score is the sum of the scores of the custom formats it matches. Each profile gives each format a score; formats it doesn't score count 0. Positive scores make a release more wanted, negative ones less, and a large negative score, such as −10000 with a minimum of 0, keeps a kind of release out entirely.
+
+Deleting a profile asks first. A profile a film still uses can't be deleted.
+
+## Custom formats
+
+A custom format is a set of conditions a release matches or doesn't, such as "is HDR" or "comes from a low-quality group". Profiles then score it.
+
+The list shows each format, what it matches, and where it came from: **Preset** for one that came with highsea, **Yours** for one you made or changed. **New format** starts one.
+
+### The starting formats
+
+| Format | Matches |
+| --- | --- |
+| **Dolby Vision** | Releases in Dolby Vision |
+| **HDR10** | Releases marked HDR or HDR10 |
+| **x265** | Releases encoded with x265 or HEVC |
+| **Low-quality groups** | Releases from groups known for poor encodes |
+
+They come from the TRaSH Guides. highsea keeps a preset up to date with each new version until you change it. Saving a change makes it yours, and updates leave it alone from then on.
+
+### Conditions
+
+Each condition has a kind:
+
+| Kind | Matches when |
+| --- | --- |
+| **Release title** | The release's name matches a regular expression |
+| **Edition** | The edition matches a regular expression |
+| **Release group** | The group matches a regular expression |
+| **Language** | The release is in a language, or the film's original language |
+| **Indexer flag** | The indexer flags it, such as Freeleech, Internal or Scene |
+| **Source** | The source is one of CAM, TELESYNC, DVD, WEB-DL, WEBRip, Blu-ray and the rest |
+| **Resolution** | The resolution is one you pick |
+| **Modifier** | Remux, BR-DISK, Raw HD, Screener or Regional |
+| **Size** | The size is between two figures, in GB |
+| **Year** | The year in the release's name is between two years |
+
+Regular expressions ignore case. Any condition can be marked:
+
+- **Not**: it matches when the condition doesn't.
+- **Required**: it has to match, whatever the others of its kind do.
+
+How conditions add up: conditions of the same kind are alternatives, so one of them has to match. Conditions of different kinds all have to match.
+
+### Try a release name
+
+Under the conditions, **Try a release name** runs a name, and a size if you like, through the format as it stands, saved or not. It shows whether the format matches, how highsea reads the name (quality, group, edition, languages), and each condition's answer. Use it before you save.
+
+Deleting a format removes its scores from every profile, so releases that matched it may rank differently.
+
+## Presets from the catalog
+
+**Presets from the catalog** lists ready-made profiles: HD Bluray + WEB, UHD Bluray + WEB, and Remux + WEB 2160p. In 0.1.0 the catalog has none to add yet, so their **Add** buttons don't do anything. Build the profile you need with **New profile** for now.
+
+## Quality sizes
+
+**Settings › Quality sizes** sets how large a release may be for its quality, in MB per minute of the film's runtime. A release outside the range is rejected.
+
+| Column | What it means |
+| --- | --- |
+| **Min** | The smallest a release may be. |
+| **Preferred** | Between two otherwise equal releases, the one nearer this size wins. Empty, no preference. |
+| **Max** | The largest a release may be. Empty, no limit. |
+| **A 2-hour film** | What the range means for a two-hour film. |
+
+MB here is a mebibyte (1,048,576 bytes), as in Radarr, so its numbers carry over. A film whose runtime isn't known is taken as 110 minutes.
+
+**Edit sizes** opens the editor. **Show sizes for a film of** changes the film length the last column uses, which helps when you think in sizes for a whole film. **Reset to TRaSH's sizes** puts the starting sizes back; save to keep them.
+
+The starting sizes come from the TRaSH Guides: a minimum for the HD and UHD qualities, and no preferred size or maximum, leaving custom formats to choose between releases. Set a maximum if your disks are small.
+
+## How highsea decides
+
+For each release a search finds, highsea checks these in order and gives the reason for each. A release is taken only when nothing rejects it.
+
+1. **Quality**: is it a quality the profile downloads?
+2. **Size**: is it inside the range for its quality and the film's runtime?
+3. **Format score**: is its score at least the profile's minimum?
+4. **Language**: is it in the language the profile wants?
+5. **Upgrades**, when the film has a file already: does the profile allow upgrades, has the file met the cutoff, and is this release better? A release is better when it's higher in the profile's list, a newer revision (Proper or Repack) of the same quality, or raises the format score by at least the least gain.
+6. **Seeders**: does it have at least one seeder? A release from an indexer that doesn't report seeders isn't held to this.
+7. **The indexer**: an indexer that's failing can't be grabbed from until it recovers.
+8. **The blocklist**: a release on the film's blocklist is never taken again.
+
+Of the releases that pass, highsea takes the best: higher in the profile's list first, then the newer revision, then the higher format score. If those tie, the indexer's priority, then more seeders, then the size nearer the preferred size.
+
+You see these reasons when you search for a film by hand: releases your profile accepts come first, and **Show rejected** lists the rest with their reasons. **Grab anyway** overrides your profile for one release. "Bluray-1080p isn't allowed in HD 1080p" means the quality isn't ticked; "Too large" and "Too small" give the size and the limit for the film's runtime. [Movies](/movies/) and [Activity](/activity/) have more on searching and grabbing, and [Indexers](/indexers/) has indexer priority.

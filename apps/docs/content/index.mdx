@@ -1,6 +1,6 @@
 ---
-title: highsea
-description: Run highsea on your own machine or NAS, bring your library across, and keep it up to date.
+title: Introduction
+description: Run highsea on your own machine or NAS, bring your library across, and use every part of it.
 ---
 
 {/* SPDX-License-Identifier: AGPL-3.0-only */}
@@ -11,13 +11,13 @@ These guides are for the person who runs the server. They were written against h
 
 ## Install
 
-Pick the guide for where highsea will run. Each one ends at the setup screen, which takes about five minutes.
+[Installation](/install/) compares the ways to run highsea, and [Prerequisites](/install/prerequisites/) lists what it needs: a 64-bit machine with Docker, room for your films, a few ports and a free TMDB account. Then pick the guide for where highsea will run. Each one ends at the setup screen, which takes about five minutes.
 
 <Cards>
-  <Card title="Docker on Linux, macOS or Windows" href="/install-docker/" description="Docker Compose on any machine. The other guides build on this one." />
-  <Card title="Unraid" href="/install-unraid/" description="A template for the Docker page, with Unraid's shares." />
-  <Card title="Synology" href="/install-synology/" description="A Container Manager project on DSM 7.2 or later." />
-  <Card title="TrueNAS" href="/install-truenas/" description="A custom app from YAML on TrueNAS 25.04 or later." />
+  <Card title="Docker on Linux, macOS or Windows" href="/install/docker/" description="Docker Compose on any machine. The other guides build on this one." />
+  <Card title="Unraid" href="/install/unraid/" description="A template for the Docker page, with Unraid's shares." />
+  <Card title="Synology" href="/install/synology/" description="A Container Manager project on DSM 7.2 or later." />
+  <Card title="TrueNAS" href="/install/truenas/" description="A custom app from YAML on TrueNAS 25.04 or later." />
 </Cards>
 
 ## After installing
@@ -28,8 +28,21 @@ Pick the guide for where highsea will run. Each one ends at the setup screen, wh
   <Card title="Upgrade" href="/upgrade/" description="Move to a new release when you're ready, with a backup made for you." />
 </Cards>
 
-## What you need
+## Using highsea
 
-- A machine that stays on, with Docker. highsea's image is built for 64-bit Intel and AMD (amd64) and 64-bit ARM (arm64).
-- About 2 GB of disk for the image, plus room for your films.
-- A free TMDB account, for film details and artwork. Setup asks for its key, and you can add it later.
+A guide for each page of the admin: what it's for, and how to do the everyday things on it.
+
+<Cards>
+  <Card title="Discover and Movies" href="/movies/" description="Find films, add them, and look after your library." />
+  <Card title="Wanted" href="/wanted/" description="What's missing or due an upgrade, the calendar, and how highsea finds releases." />
+  <Card title="Activity" href="/activity/" description="The queue, history, the blocklist and importing by hand." />
+  <Card title="Indexers" href="/indexers/" description="Where highsea searches, and why it takes or turns down a release." />
+  <Card title="Subtitles" href="/subtitles/" description="Providers, languages, and subtitles synced to the film's speech." />
+  <Card title="System" href="/system/" description="Health checks and what to do about them, tasks, logs and updates." />
+</Cards>
+
+The sidebar has the rest: the [Dashboard](/dashboard/), [Collections](/collections/), [Downloads](/downloads/) and [Curation](/curation/).
+
+## Settings
+
+Each area of **Settings** has its own guide: [General](/settings/general/), [Media management](/settings/media-management/), [Quality and profiles](/settings/quality/), [Download client](/settings/downloads/), [VPN](/settings/vpn/), [Network and remote access](/settings/network/), [Import lists](/settings/lists/), [Notifications](/settings/notifications/), [Users and security](/settings/users-and-security/), [Backups](/settings/backups/) and [Appearance](/settings/appearance/).

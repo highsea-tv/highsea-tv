@@ -19,8 +19,9 @@ Dedicated clients for web, desktop, mobile and TV connect to your server at home
 
 highsea runs as one Docker container, for amd64 and arm64, from `ghcr.io/highsea-tv/highsea`. The guides at [docs.highsea.tv](https://docs.highsea.tv/) take you from nothing to the setup screen:
 
-- [Install with Docker](https://docs.highsea.tv/install-docker/): Docker Compose on Linux, macOS or Windows. Start here.
-- [Install on Unraid](https://docs.highsea.tv/install-unraid/), [on Synology](https://docs.highsea.tv/install-synology/) or [on TrueNAS](https://docs.highsea.tv/install-truenas/).
+- [Prerequisites](https://docs.highsea.tv/install/prerequisites/): what highsea needs, from the machine to its ports and accounts.
+- [Install with Docker](https://docs.highsea.tv/install/docker/): Docker Compose on Linux, macOS or Windows. Start here.
+- [Install on Unraid](https://docs.highsea.tv/install/unraid/), [on Synology](https://docs.highsea.tv/install/synology/) or [on TrueNAS](https://docs.highsea.tv/install/truenas/).
 
 Once highsea is running:
 

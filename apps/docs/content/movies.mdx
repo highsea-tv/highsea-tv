@@ -1,0 +1,182 @@
+---
+title: Discover and Movies
+description: Find a film, add it, and look after it in the library, on its own page and on people's pages.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the admin's Discover (apps/server/src/admin/discover.tsx), the add dialog
+    (add-dialog.tsx), the Movies library (library.tsx), a film's page (movie-detail.tsx,
+    media-sections.tsx), a person's page (person.tsx), a TMDB collection's page (collection.tsx),
+    and their strings (the matching *-messages.ts files); the command palette (shell.tsx); bulk
+    quality profiles (packages/api-contract/src/movies.ts).
+  - The product specs docs/product/movies.md and media-pages.md, for intent.
+*/}
+
+Written for highsea 0.1.0.
+
+Two pages in the admin's sidebar handle films. **Discover** finds a film and adds it. **Movies** is your library: what's here, what's still wanted, and the place to change many films at once. Every film, in the library or not, has its own page.
+
+highsea reads titles, people and collections from TMDB. If Discover says "Add a TMDB key to find movies.", add one in **Settings › General**, under Metadata. See [General settings](/settings/general/).
+
+## Find a film
+
+Open **Discover**. Before you type, it shows four lists from TMDB as tabs: **Trending**, **Popular**, **Now playing** and **Upcoming**. Type in **Title, year or genre** and the results replace them as you type. **Show more** under the grid loads the next page.
+
+Each result shows its poster, title, year and rating, then either **Add** or an **In library** badge. The poster and title open the film's page.
+
+If nothing matches, try the original title, or just the year.
+
+You can also open the command palette with ⌘K (Ctrl+K on Windows and Linux): **Add a movie** goes to Discover, and typing a title finds films already in the library.
+
+## Add a film
+
+Press **Add** on a result, or **Add movie** on a film's page. The dialog asks for:
+
+- **Folder**: the root folder the film is filed under. If there's none yet, add one in **Settings › Media management** first. See [Media management](/settings/media-management/).
+- **Quality profile**: which releases are good enough, and which to upgrade to. See [Quality](/settings/quality/).
+- **Subtitle languages**: the languages to fetch subtitles in, or **None**. A folder with its own default languages fills this in when you choose it.
+- **Minimum availability**: **Announced**, **In cinemas** or **Released**. highsea doesn't grab a release before then. **Released** avoids cam copies.
+- **Monitored**: grab it when a release turns up, and upgrade it until the profile's cutoff. Turn it off to add the film without downloading anything.
+- **Search now**: search your indexers straight away. Otherwise the next RSS sync picks it up. This needs at least one indexer; see [Indexers](/indexers/).
+
+The button reads **Add and search** with **Search now** ticked, and **Add movie** without. highsea remembers your choices for the next film you add.
+
+Everything here can be changed later on the film's page.
+
+## The library
+
+**Movies** lists every film in the library, in a **Grid** of posters or a **Table**. The switch at the top of the page changes the view, and your browser remembers it.
+
+### Find films in the library
+
+- **Status tabs**, each with a count: **All**, **Available**, **Wanted**, **Downloading** and **Not released**.
+- **Filter by title**: narrows the list as you type.
+- **Filter by tag**: shows films with one tag. It appears once you have tags, which are made in **Settings › Media management**.
+- **Sort by**: **Title**, **Date added**, **Year** or **Rating**.
+
+The list loads in pages; **Show more** at the bottom loads the next. Your status, filter and sort stay in the page's address, so Back returns to them.
+
+A film's status is one of **Available**, **Wanted**, **Downloading**, **Not released** or **Not monitored**. In the grid, a film shows its status on the poster unless it's simply available.
+
+### Turn a filter into a collection
+
+**Save as smart collection** opens a new collection with the current status, title filter, tag and sort as its first rules. See [Collections](/collections/).
+
+### Change many films at once
+
+Switch to **Table** and tick the films, or tick the box in the header to select every film shown. A bar appears with:
+
+- **Search**: search your indexers for each selected film.
+- **Edit**, a menu with:
+  - **Monitor** and **Stop monitoring**;
+  - **Quality profile**: moves each film's first version to the profile you choose; any extra versions keep theirs;
+  - **Subtitle languages**;
+  - **Add a tag** and **Remove a tag**, once you have tags.
+- **Remove**: takes the films out of the library and stops monitoring them. Their files stay on disk. If you have import lists, you can also tick **Don't add them again from lists**.
+- **Clear**: deselects everything.
+
+## A film's page
+
+A film's page is the same page whether the film is in the library or not. Not added, it shows what the film is, with **Add movie**:
+
+- the summary: poster, runtime, genres, rating, tagline and who directed it;
+- **Overview**: the cast, trailers, the collection it belongs to, **More like this**, and **About** (original title and language, certification, budget, box office, studios and links);
+- **Cast and crew**: everyone credited, by department.
+
+Once added, the page gains the library's side: the status and a tag for each version under the title, a **Monitored** switch, **Search** and **Interactive search** at the top, and the **Files**, **History**, **Search** and **Subtitles** tabs.
+
+### What's in the library, and what's downloading
+
+On the **Overview** tab:
+
+- **In the queue** appears while the film is downloading, with a card for each download: its release, state, progress, speed and time left, and the reason when one is stalled or blocked. [Activity](/activity/) has the whole queue.
+- **In the library** lists its versions with their quality profiles, its subtitle languages, tags, minimum availability and root folder.
+
+### Search for the film now
+
+Press **Search**. highsea searches your indexers in the background and grabs the best release your quality profile accepts, for each version that still wants a file or an upgrade. Follow it in [Activity](/activity/). With no indexer enabled, **Search** is unavailable and says why.
+
+### Choose a release yourself
+
+Press **Interactive search**, or open the **Search** tab. It lists every release your indexers offer, with its quality, score, size, peers and age, and whether your profile **Accepted** or **Rejected** it.
+
+- Opening the tab again soon after shows the last results rather than asking every indexer again. **Search again** always searches.
+- A rejected release shows how many reasons it has; select the badge to read them.
+- **Show rejected** hides or shows the releases your profile turned down.
+- The download button grabs a release. On a rejected one it's **Grab anyway**, which overrides your profile.
+- If an indexer didn't answer, the tab says which and why.
+
+### Files
+
+The **Files** tab has a card for each version: its file's size and path, each video, audio and subtitle stream on its own line, and the release name. A version without a file says **No file yet**, or **Downloading**.
+
+### History
+
+The **History** tab lists what happened to the film, newest first: grabs, imports, failed downloads and imports, renames, deletions, blocklistings, and subtitles downloaded, synced, upgraded or deleted. **Show more** loads older events.
+
+### Subtitles
+
+The **Subtitles** tab lists the film's subtitle tracks, files beside the film and streams inside it, with their language, where each came from, its score, whether it's synced and its offset.
+
+- **Offset**: the − and + buttons show a track 50 ms earlier or later.
+- **Sync to the audio again** re-syncs a track to the film's speech.
+- **Delete** removes a track.
+- **Search for subtitles**: choose a language and press **Search providers**, then **Use** on a result to download it. It's synced in the background.
+
+Tracks stored as pictures have nothing to move, so they have no offset or re-sync. Searching needs the film's file, and a subtitle provider turned on. See [Subtitles](/subtitles/).
+
+### Change a film's options
+
+Open the More menu (the button beside **Interactive search**) and choose **Edit**. You can change:
+
+- **Root folder**;
+- **Subtitle languages**;
+- **Minimum availability**;
+- **Tags**: indexers, lists and connections with a tag work only for films that share it;
+- **Monitored**.
+
+The **Monitored** switch under the title changes monitoring straight away too.
+
+### Change a film's quality profile
+
+Quality profiles belong to a film's versions. On the **Overview** tab, under **In the library**, press the edit button beside a version, choose another **Quality profile**, and save. To change many films at once, use bulk edit in the library's table.
+
+### Keep two versions of a film
+
+A film can have more than one version, such as 1080p beside 4K HDR, each with its own quality profile and its own file. Under **In the library**:
+
+- **Add version** asks for a **Name** (what the library's tags show, such as 4K HDR) and a **Quality profile**. highsea then looks for a release for it as well.
+- The edit button renames a version or gives it another profile.
+- The remove button removes a version, and highsea stops looking for a release for it. A film keeps at least one version.
+
+### Refresh a film's details
+
+**Refresh metadata** in the More menu reads the film's details from TMDB again. The page updates when TMDB answers.
+
+### Remove a film
+
+Choose **Remove from library** in the More menu. The film leaves the library and stops being monitored. In the dialog you can also tick:
+
+- **Also delete its files from disk**;
+- **Don't add it again from lists**, if you have import lists. See [Import lists](/settings/lists/).
+
+The page stays open, showing the film as one that isn't in the library.
+
+### When TMDB no longer has a film
+
+TMDB sometimes merges or removes an entry. The film stays in your library as it is, and its page says "TMDB no longer has this movie". To move it to its new entry, find it on Discover, add it, then remove the old one.
+
+## People
+
+Select anyone in a film's cast or its **Cast and crew** tab to open their page: their portrait, when and where they were born, their biography, **Known for** (their best-known titles), then their **Filmography**.
+
+- Filter the filmography by **All**, **In the library** or **Not in the library**, and by department.
+- A title in the library shows **In library**; others have **Add**, which opens the same add dialog.
+
+## A film's collection
+
+When a film belongs to a series on TMDB, its **Overview** has a row for the collection: how many of its films are in the library, and a button such as **Add 3 missing** to add the rest in one go, with the same options for each. The collection's name opens its own page, with its overview and every film in it.
+
+These are TMDB's collections. To group films your own way, see [Collections](/collections/).

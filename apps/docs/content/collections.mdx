@@ -1,0 +1,122 @@
+---
+title: Collections
+description: Group films by rules that keep themselves up to date, or pick them by hand.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the admin's Collections list, editor and rule builder
+    (apps/server/src/admin/collections.tsx, collections-editor.tsx, collections-rules.tsx) and
+    their strings (collections-messages.ts); the audience field (curation-shared.tsx,
+    curation-messages.ts); Save as smart collection (library.tsx); the fields, comparisons, sorts
+    and limits (packages/api-contract/src/collections.ts).
+  - The product spec docs/product/collections.md, for intent.
+*/}
+
+Written for highsea 0.1.0.
+
+A collection groups films your way. Its films come from **rules** that keep themselves up to date, such as "from the 2010s, rated 4.5 or more, in English", or from films you **pick by hand**, such as "Staff picks". Collections are made for the people who watch, and a collection can also feed a featured section on the home screen; see [Curation](/curation/).
+
+**Collections** is in the admin's sidebar, below Movies, for Owners and Admins.
+
+## The list of collections
+
+Each collection has a card with:
+
+- its artwork and name;
+- **Smart** if it has rules, or **Picked** if its films were chosen by hand;
+- its rules in words, such as "Released 2010–2020, rated 4.5 or more, in English";
+- what it holds and who sees it, such as "4 films, 3 in the apps", or "Nothing matches yet";
+- **Edit** and **Delete**.
+
+Only films with a file show in the apps. A collection whose films match but none has a file yet is marked **Hidden in the apps**.
+
+## Make a collection
+
+Press **New collection**. On the left is the form; beside it, **Right now** shows what the collection holds as you change it: how many films match, how many have a file and show in the apps, and their posters in the collection's order. A film without a file is dimmed.
+
+1. Give it a **Name**. The apps show it.
+2. Add a **Summary** if you like, shown under the name.
+3. Under **Artwork**, keep **The mosaic** of the first four posters, or choose one film's poster.
+4. Under **How films get in**, choose **Use rules** or **Pick them**.
+5. Set the **Order** and **Who sees it**.
+6. Press **Save collection**.
+
+You can also start from the library: on **Movies**, filter and sort the list, then press **Save as smart collection**. The new collection starts with the status, title filter, tag and sort you had as its rules. See [Discover and Movies](/movies/).
+
+## Use rules
+
+A rule is a condition: a field, a comparison and a value, such as **Year** **between** 2010 and 2020, or **Genre** **includes any of** Animation.
+
+- Choose **Match all of these conditions** or **Match any of these conditions** at the top.
+- **Add a condition** adds another row. The remove button beside a row takes it away.
+- **Add a group** adds a group of conditions with its own all or any, for rules like "all of these, and any of those". Groups go one level deep.
+- With no conditions, every film is in it: "No conditions yet, so every film is in it. Add one to narrow it down."
+
+If a condition isn't finished when you save, it's marked and the form says "Finish the conditions marked below."
+
+### The fields
+
+The fields come in groups. The choices offered, such as genres, languages, studios, tags and people, are the ones your library has, so every choice can match something.
+
+| Group | Fields |
+| --- | --- |
+| Release | Year, Release date, Decade |
+| Ratings | Rating (out of 5 stars), Votes, Certification |
+| Language | Original language, Audio language, Subtitle language |
+| Content | Title, Genre, Runtime, Keyword, Studio, Country, In a collection |
+| People | Actor, Director, Writer, Composer, Producer, Cinematographer, Editor, Anyone in the cast and crew |
+| Library | Date added, Status, Tag, Root folder, Quality profile |
+| File | Resolution, HDR, Video codec, Edition, Size |
+
+**Watched** and **Last played** are listed but can't be used yet; they're marked "comes with playback".
+
+A few things worth knowing:
+
+- **In the last** keeps a rule current: "Year in the last 2 years" or "Date added in the last 30 days" moves forward with the calendar.
+- **People fields match one role.** "Composer includes" matches only films that person scored, not ones they act in. **Anyone in the cast and crew** matches any role. Choosing several people matches a film with any of them.
+- **In a collection** matches films in one of TMDB's collections, or in another of your own.
+
+## Pick films by hand
+
+Choose **Pick them**, then **Search the library** and **Add** each film. Drag the handles to put them in order. A picked collection needs at least one film.
+
+Switching from **Use rules** to **Pick them** starts the picks with the films the rules found, in their order. Switch back before saving and your rules return.
+
+## Exceptions
+
+With **Use rules**, two lists adjust what the rules find:
+
+- **Always include**: in it whatever the rules say.
+- **Never include**: left out whatever the rules say.
+
+A film can be in only one of the two.
+
+## Order and how many
+
+- **Sort by**: **Rating**, **Release date**, **Year**, **Date added**, **Title**, **Runtime**, **Popularity** or **Shuffled, once a day**. A picked collection can also keep **In your order**.
+- **Direction**, in the field's own words: **Highest first**, **Newest first**, **A to Z** and so on.
+- **How many**: leave it empty for every film, or enter a number to keep only the first ones in that order.
+
+**Shuffled, once a day** gives a new order each day, and the same order all day, so a row doesn't reshuffle on every visit.
+
+## Who sees it
+
+**Who sees it** sets the collection's audience: **Everyone**, or only some **Roles**, some **People** or some kinds of **Apps**.
+
+## How collections keep up
+
+A smart collection isn't a saved list of films. highsea works out what it holds each time it's shown, so it follows the library as films arrive, leave or change: a new film that matches is in it at once, and a film you remove is gone.
+
+A collection with nothing to show isn't shown in the apps until a film in it has a file.
+
+## Change or delete a collection
+
+Press **Edit** on its card, change what you need, and press **Save changes**.
+
+**Delete**, on the card or in the editor, asks first. The collection leaves every app's library; the films in it stay in your library. A collection that a featured section draws on can't be deleted until you choose another source for that section in [Curation](/curation/).
+
+## TMDB's collections
+
+A film that belongs to a series on TMDB, such as a trilogy, shows that collection on its page, with a button to add the films you're missing. Those come from TMDB and can't be edited here. See [Discover and Movies](/movies/).

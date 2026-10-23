@@ -1,0 +1,114 @@
+---
+title: General
+description: The server's language and time zone, where film details come from, the indexer catalog, updates and diagnostics.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The screen and its copy: apps/server/src/admin/general.tsx and general-messages.ts.
+  - Defaults: packages/runtime/src/operations.ts (language, time zone, update channel, crash
+    reports, metrics), packages/runtime/src/config.ts (HIGHSEA_LOG_LEVEL), packages/metadata/src/settings.ts
+    and apps/server/src/admin/setup.tsx (metadata language and region from the browser), packages/catalog/src/service.ts (catalog channel and automatic updates).
+  - TMDB's API settings: https://www.themoviedb.org/settings/api
+  - Prometheus: https://prometheus.io/docs/prometheus/latest/configuration/configuration/#scrape_config
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings › General** holds the settings that shape the whole server: its language and time, where film details come from, the indexer catalog, updates and diagnostics.
+
+Only the Owner can change these settings. Admins can open the page and read them, and see a line saying so. The indexer catalog's settings are the Owner's alone, to read as well as to change.
+
+Changes to Region, Metadata, Updates and Diagnostics wait in a bar at the bottom of the page until you choose **Save** or **Discard**. The indexer catalog's settings save as soon as you change them.
+
+## Region
+
+The server's own language and time.
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Language** | The language of the server's own messages: notifications and the calendar feed. English is the only one for now; more come with translations. | English |
+| **Time zone** | Used for schedules, such as when backups run. | The time zone of the machine or container highsea runs in, or UTC when it has none |
+
+In Docker, the container's time zone usually comes from the `TZ` variable in your compose file. Setting **Time zone** here is the simpler way to correct it.
+
+## Metadata
+
+Where film details come from, and the language and region they're in. highsea gets titles, posters, cast and release dates from TMDB, which needs a key of your own.
+
+### The TMDB key
+
+The key shows as **Set**, with its last four characters, or **Not set**. Without a key, Discover, adding films and refreshing their details stop working; the library and its pages keep working.
+
+To add or change it:
+
+1. Copy your key from [TMDB's API settings](https://www.themoviedb.org/settings/api). Either the **API Key** or the **API Read Access Token** works.
+2. With no key set, paste it into **New TMDB key**. With one set, choose **Replace** first.
+3. Choose **Save**. highsea checks the key with TMDB before it keeps it. If TMDB refuses it, copy it again; if TMDB can't be reached, nothing is saved, so check the server's internet connection and try again.
+
+**Remove** takes the key away after you confirm.
+
+### Language and region
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Metadata language** | The language of titles, overviews and taglines, where TMDB has them in it. | Your browser's language when you ran setup |
+| **Region** | Used for certifications, release dates and Discover's lists. | Your browser's region when you ran setup |
+
+## Indexer catalog
+
+Where indexer definitions come from, and how new versions arrive. The catalog is the list of public indexers you can add in one click on [Indexers](/indexers/). Every version is signed, and highsea checks the signature before it uses one.
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Channel** | **Stable** or **Beta**. Beta gets new and changed definitions first. | Stable |
+| **Install new versions automatically** | Off, a new version waits on Indexers until you install it. | On |
+| **Extra catalogs** | Catalogs someone else publishes and signs, used beside highsea's own. | None |
+
+To add an extra catalog, open **Add a catalog** and fill in all three fields the publisher gives you:
+
+- **Manifest address**: an `https://` address that publishes a signed catalog manifest.
+- **Key ID**: the ID of the publisher's signing key, as they publish it.
+- **Public key**: the publisher's ed25519 public key, in base64.
+
+Only add catalogs from people you trust. Removing one takes its definitions with it, and indexers that use them stop working until you add it again.
+
+## Updates
+
+highsea tells you when a new version is out. It never updates itself.
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Update channel** | **Stable** or **Beta**. Beta hears about new versions first; stable versions show on both. | Stable |
+
+To update, pull the new image and recreate the container. highsea backs up its database before it changes it. [Upgrading](/upgrade/) has the steps, and [choosing how you follow releases](/upgrade/#choose-how-you-follow-releases) explains the channels and image tags.
+
+## Diagnostics
+
+What the server writes down when something goes wrong.
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Log level** | How much goes into the logs: **Debug**, **Info**, **Warnings and errors** or **Errors**. The change takes effect at once, without a restart. | Info, unless the `HIGHSEA_LOG_LEVEL` variable sets another |
+| **Write crash reports** | Writes a report to the config folder when the server crashes, for you to attach to an issue. Nothing is sent anywhere. The reports are listed in System, under Logs. | Off |
+| **Metrics for Prometheus** | Serves the server's requests, downloads, indexers and resources at `/metrics`. | Off |
+
+Debug is chatty. Turn it on while you chase a problem, then set it back to Info.
+
+### Prometheus
+
+With metrics on, the page shows the address to scrape: your public address, or the server's address on your network, followed by `/metrics`. Prometheus signs in with an API key held by the Owner or an Admin, sent as a bearer token. A read-only key is enough; make one in **Settings › Users and devices**. See [Users and security](/settings/users-and-security/).
+
+```yaml
+scrape_configs:
+  - job_name: highsea
+    scheme: http
+    static_configs:
+      - targets: ['192.168.1.20:3000']
+    authorization:
+      type: Bearer
+      credentials: your-api-key
+```
+
+Replace the address and the key with yours. [System](/system/) has the logs and the server's health.

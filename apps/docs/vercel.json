@@ -1,0 +1,13 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    { "source": "/install-docker/", "destination": "/install/docker/", "permanent": true },
+    { "source": "/install-unraid/", "destination": "/install/unraid/", "permanent": true },
+    { "source": "/install-synology/", "destination": "/install/synology/", "permanent": true },
+    { "source": "/install-truenas/", "destination": "/install/truenas/", "permanent": true },
+    { "source": "/install-docker", "destination": "/install/docker/", "permanent": true },
+    { "source": "/install-unraid", "destination": "/install/unraid/", "permanent": true },
+    { "source": "/install-synology", "destination": "/install/synology/", "permanent": true },
+    { "source": "/install-truenas", "destination": "/install/truenas/", "permanent": true }
+  ]
+}

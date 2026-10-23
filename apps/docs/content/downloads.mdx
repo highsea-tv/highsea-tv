@@ -1,0 +1,149 @@
+---
+title: Downloads
+description: Every torrent in highsea's built-in client, with its files, trackers and seeding rule; add torrents by hand, set speed limits, and import a finished torrent into the library.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The screen and its copy: apps/server/src/admin/downloads.tsx, downloads-messages.ts and
+    downloads-status.ts; the sidebar in apps/server/src/admin/nav.ts.
+  - The API: apps/server/src/api/downloads.ts and packages/api-contract/src/downloads.ts.
+  - Behaviour: packages/downloads/src/service.ts (add, categories, remove, pause all and resume all,
+    file priorities, limits, the seeding rule a torrent gets, states and reasons).
+  - The engine: packages/torrent/src/engine.ts (remove with or without data) and picker.ts
+    (high-priority files first, skipped files not fetched).
+  - Intent: docs/product/activity-downloads.md (A8; global limits only in milestone 1).
+*/}
+
+Written for highsea 0.1.0.
+
+**Downloads** is highsea's built-in torrent client, seen as a torrent client: every torrent it has, whether highsea grabbed it for the library or you added it yourself, with its peers, files, trackers and seeding rule. It's also where you add torrents by hand and set speed limits.
+
+Owners and Admins use it. Users never open the admin.
+
+[Activity](/activity/) is the library's view of the same downloads: it speaks in films, and is where you fix stalled downloads and blocked imports, read the history and manage the blocklist. Downloads speaks in torrents, and lists the ones that have nothing to do with the library too. How the client connects, when it stops seeding and which categories there are, is set in **Settings › Download client**; see [Download client](/settings/downloads/).
+
+## The VPN line
+
+The page opens with one line about the VPN, so you always know where your torrents' traffic goes:
+
+- **Through** your provider, with the exit address and country, and the forwarded port if there is one. Until the first check it says **Exit address not checked yet**.
+- **Connecting to** your provider: torrents wait until the tunnel is up.
+- Your provider **is down**, or **The VPN couldn’t connect**: torrents are stopped until the tunnel is back, and nothing leaks onto your own connection.
+- **No VPN**: torrents use your own connection, and anyone in the swarm can see your address. **Set up a VPN** opens **Settings › VPN**.
+
+The end of the line shows the speed limits in force, or **unlimited**. See [VPN](/settings/vpn/) to set a VPN up.
+
+## The list
+
+The list shows every torrent, and refreshes on its own. Each row has:
+
+- **Name**, and under it the category and the indexer it came from, or **Added by hand** for a torrent you added yourself or that came in through the watch folder;
+- **Size** and **Progress**;
+- **↓** and **↑**: the download and upload speed right now;
+- **Peers**: the seeds it's connected to, then the peers;
+- **Ratio**: uploaded against the torrent's size;
+- **Status**.
+
+A torrent's status is one of:
+
+- **Queued**, **Checking** and **Downloading**: on its way. Only so many download at once; the rest wait as **Queued**.
+- **Paused**: stopped by someone, or by **Pause all**.
+- **Stalled**: a library download with no data and no seeds for 2 hours.
+- **Importing** and **Import blocked**: a library download that's finished, being imported or stopped short of it. Fix a blocked import in [Activity](/activity/#blocked-imports).
+- **Seeding** and **Completed**: finished; seeding, or done seeding.
+- **Error**: something went wrong. Open the torrent to see why.
+
+The total speed of every torrent together is at the right of the toolbar.
+
+### Filter the list
+
+The tabs above the list narrow it, each with its count:
+
+- **All**;
+- **Active**: queued, checking and downloading;
+- **Seeding**: seeding and completed;
+- **Paused**;
+- **Needs attention**: stalled, import blocked and errors.
+
+Beside them, the category menu shows **Every category** or just one. It lists the categories the torrents use: **movies** for the library's grabs, **manual**, and any of your own.
+
+## Add a torrent by hand
+
+1. Select **Add torrent**.
+2. Give it one of these:
+   - in **Magnet link or .torrent URL**, a magnet link (starting `magnet:?xt=urn:btih:`) or the address of a `.torrent` file; or
+   - under **Or a .torrent file**, pick a file, or drop it on the dialog. A file is used instead of the link; **Use the link instead** clears it.
+3. In **Category**, choose where it saves: **manual**, or one of the categories you've added in **Settings › Download client**. The library's **movies** category isn't offered.
+4. Leave **Start right away** ticked to start it now, or clear it to add it paused.
+5. Select **Add**.
+
+highsea fetches a `.torrent` address itself. If the torrent is already in Downloads, it says so and adds nothing.
+
+A torrent you add by hand isn't imported into the library on its own. To add a film, use [Discover](/movies/#find-a-film); to bring a finished torrent's files in afterwards, see [Import a finished torrent](#import-a-finished-torrent).
+
+Torrents dropped into the watch folder arrive here too, in the watch folder's category; see [Download client](/settings/downloads/#watch-folder).
+
+## A torrent's details
+
+Select a torrent's name to open its details. The top shows its status and size, the buttons for it, and, when there is one, the reason for its state, such as why it stalled or failed.
+
+### General
+
+- **Progress**, **Speed** and **Time left**.
+- **Seeds** and **Peers**: how many it's connected to, of how many it knows about.
+- **Uploaded**, with the ratio.
+- **Added**: when.
+- **Swarm**: **Public**, or **Private: trackers only, no DHT or peer exchange** for a torrent from a private tracker.
+- **Saved to**: the folder its files are in.
+- **Info hash**.
+
+### Files
+
+Each file shows its size, its progress and its priority:
+
+- **High**: downloaded before the files at Normal.
+- **Normal**.
+- **Don’t download**: left out.
+
+Changing a priority takes effect at once. Use **Don’t download** to skip the extras or samples in a torrent you added by hand.
+
+A torrent added from a magnet link has no file list until its details arrive from the swarm, and the tab says so.
+
+### Trackers
+
+Each tracker shows its address, how many peers it gave, any message it sent, and its state: **Working**, **Updating**, **Not contacted yet** or **Not responding**. A torrent with no trackers finds peers through the DHT and from other peers.
+
+### Seeding
+
+The rule the torrent seeds by: a ratio or a time, whichever comes first. Then it stops, and a film already in the library stays. Some private trackers also ask for a minimum time, and the tab says when the torrent will never stop before it.
+
+A library download takes its rule from its indexer when the indexer has one, set on [Indexers](/indexers/); otherwise, and for every torrent you add by hand, the rule in **Settings › Download client** applies. See [Download client](/settings/downloads/#seeding).
+
+## Pause, resume and remove
+
+- **Pause** and **Resume**, in a torrent's details, stop and start that one torrent. You can pause one that's seeding too.
+- **Pause all**, at the top of the page, pauses every torrent that's queued, checking or downloading. Torrents that are seeding go on seeding.
+- **Resume all** starts every paused torrent again, including ones you paused one at a time.
+
+**Remove**, in a torrent's details, takes it out of the client after you confirm. It stops seeding, and a film already imported stays in the library.
+
+- Leave **Also delete the downloaded data** clear to keep the torrent's files where they are.
+- Tick it to delete the files in the torrent's folder as well. The library's copy of an imported film is a hardlink or a copy, so it stays.
+
+Removing a library download that hasn't been imported yet ends it, and it leaves Activity's queue. To have highsea grab another release instead, use **Blocklist and search again** in [Activity](/activity/#blocklist-and-search-again).
+
+For a library download, **Open the movie** goes to the film's page.
+
+## Import a finished torrent
+
+A torrent you added by hand has a **More** menu in its details, with **Import into the library**. It opens Manual import on the torrent's folder, or its one file, so you can match the files to films in the library and bring them in. While the torrent is still downloading, the item reads **Import into the library when it finishes** and can't be chosen yet.
+
+The film must be in the library already. Manual import, and choosing between a hardlink and a move, are described in [Activity](/activity/#import-files-by-hand). With a hardlink, the torrent goes on seeding.
+
+## Speed limits
+
+**Limits** sets a download and an upload limit, in MB/s, for every torrent together. 0 means no limit. Select **Save**, and the new limits apply straight away; they're kept when highsea restarts.
+
+There's one pair of limits in highsea 0.1.0: no limits for a single torrent, and no alternative limits on a schedule.

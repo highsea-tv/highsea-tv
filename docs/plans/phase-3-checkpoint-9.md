@@ -248,6 +248,15 @@ A survey of the repository on 2026-10-22.
   - highsea's files in `appdata/highsea` were owned by 99:100, port 3000 redirected to `/setup`, and the Docker page's WebUI menu opened setup; that menu is the guide's second screenshot. A file in `/data/downloads` hardlinked into `/data/media/movies` inside the container.
   - Docker called the container unhealthy: the health check starts `node`, which took longer than its 5-second timeout under emulation. highsea itself answered throughout. On real hardware `node` starts well within it, so the Dockerfile is unchanged.
   - The guide now says it was checked on 7.3.4, and that the array must be started before Docker.
+- **2026-10-23, the docs published, on the owner's word:**
+  - **Vercel:** the `highsea-docs` project (root `apps/docs`, the Next.js preset, Node 24) is linked to `highsea-tv/highsea-tv` once the owner installed Vercel's GitHub app on the organisation. Production is `main`; every push deploys, and pull requests get previews behind Vercel's sign-in. The first build, of `569d8c6`, installed with Bun and took 22 seconds.
+  - **The domain:** `highsea.tv` is registered with Vercel, but its DNS is on Cloudflare. A DNS-only CNAME, `docs` to the target Vercel gave, overrides the zone's proxied wildcard for that name alone, as Vercel requires for its certificate ([Vercel: domains](https://vercel.com/docs/domains)). Vercel issued a Let's Encrypt certificate, and every guide, the screenshots and the search index answer on `https://docs.highsea.tv`.
+  - **The guides:** the overview is now **Introduction**, so its tab no longer reads "highsea · highsea docs". A new **Prerequisites** page gathers what the guides already establish: a 64-bit machine with Docker or a supported NAS, the image's size, the config and data folders, the four ports, and the accounts (TMDB, indexers, and optionally subtitle and VPN providers). It replaces the overview's "What you need", and the overview, Install with Docker and the README link to it.
+  - **`wiki.highsea.tv`:** a redirect domain on the same Vercel project, 308 to `docs.highsea.tv` with the path kept, behind its own DNS-only CNAME in Cloudflare.
+  - **Installation, in one section** (the owner's request): `/install/` compares the four routes (how each installs, its networking and the version it was checked on), with Prerequisites and the Docker, Unraid, Synology and TrueNAS guides beneath it at `/install/<name>/`. `apps/docs/vercel.json` sends the old `/install-<name>/` addresses there permanently.
+  - **A guide for every part of the server** (the owner's request): ten for the admin's pages (Dashboard, Discover and Movies, Collections, Wanted, Activity, Downloads, Indexers, Subtitles, Curation, System) and eleven for Settings at `/settings/<area>/`. Each was written from the server's own screens and message catalogs, with the specs only for intent. They describe what 0.1.0 does, and say so where something waits for the apps, such as announcements other than banners, featured sections, and the Watched rules. Every default and interval they give was checked in code. The content test now reads folders, and checks that a folder's address reaches its index page.
+  - **Corrections found on the way:** Recommended setup said the VPN's "Stop torrents when the VPN is down" could be turned off (it's always on), that only torrents use a VPN container (all of highsea's traffic does), and that presets from the catalog add profiles (the catalog has none yet). Upgrade said a backup restored without `secret.key` asks for the secrets again (sign-ins and connections stop working). All four are fixed.
+  - **Still to come:** the guides have no screenshots of the admin yet. The guides name `ghcr.io/highsea-tv/highsea`, which holds no image until the first release.
 - **Next:** 9b's review by the owner, including the docs site's design from screenshots.
 
 ## highsea's domains
@@ -257,7 +266,7 @@ From the owner's decision of 2026-10-22. The owner owns `highsea.tv`. Its root i
 | Address | What | When |
 | --- | --- | --- |
 | `highsea.tv` | The marketing page | Later; not part of milestone 1 |
-| `docs.highsea.tv` | The public documentation site (`apps/docs`), on Vercel; `wiki.highsea.tv` redirects to it | 9b; deployed at the first publish |
+| `docs.highsea.tv` | The public documentation site (`apps/docs`), on Vercel; `wiki.highsea.tv` redirects to it | Live since 2026-10-23, deployed from every push to `main`, with the redirect |
 | `catalog.highsea.tv` | The signed catalog's `stable` and `beta` channels, on GitHub Pages | 9b; deployed at the first publish |
 | `api.highsea.tv` | Machine-facing services. Today it holds only Trakt's registered redirect, `https://api.highsea.tv/oauth/trakt`, which the device flow never visits. Later it holds the relay, push and the metadata proxy | Registered with Trakt on 2026-10-22; nothing is served yet |
 | `app.highsea.tv` | Kept free for a hosted web client and accounts | Phase 4 |
@@ -452,6 +461,7 @@ The dry run uploads everything as workflow artifacts instead.
 - **Publishing:** deploying to Vercel, and pointing `docs.highsea.tv` at it, is part of the first publish ([question 2](#open-questions-for-the-owner)). Until then the site builds in CI and runs locally (`bun run docs`), with no project on Vercel.
   - When the owner gives the word, the owner (or Claude, with the owner's go-ahead) creates the Vercel project under the owner's team, linked to the `highsea-tv` repository with `apps/docs` as the root directory ([Vercel: monorepos](https://vercel.com/docs/monorepos)), and adds the domain ([Vercel: domains](https://vercel.com/docs/domains)).
   - Preview deployments for pull requests are Vercel's default. Whether they stay on is [question 13](#open-questions-for-the-owner).
+  - **Done on 2026-10-23, ahead of the first release, on the owner's word:** the project exists, is linked to the repository and deploys every push to `main` to `docs.highsea.tv` ([Progress](#progress)).
 
 The guides are written for owners, not developers. They're written for owners, not developers: plain, calm and specific, as the brand brief says. Each one is checked by following it on a clean machine, or on the NAS at build where one is to hand.
 
