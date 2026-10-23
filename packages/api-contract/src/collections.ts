@@ -140,16 +140,16 @@ export const RuleSubgroup = z
   })
   .openapi('RuleSubgroup')
 
-/** All or any of its rules: conditions, and groups of conditions. */
+/**
+ * All or any of its rules: conditions, and groups of conditions. With none, every film is in it
+ * (collections.md › The editor), as a new collection starts.
+ */
 export const RuleGroup = z
   .object({
     kind: z.literal('group'),
     id: z.string().max(40),
     match: z.enum(['all', 'any']),
-    rules: z
-      .array(z.union([RuleCondition, RuleSubgroup]))
-      .min(1)
-      .max(30),
+    rules: z.array(z.union([RuleCondition, RuleSubgroup])).max(30),
   })
   .openapi('RuleGroup')
 export type RuleGroup = z.infer<typeof RuleGroup>

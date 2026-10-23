@@ -80,6 +80,16 @@ const collection = (patch: Partial<SmartCollectionInput> = {}): SmartCollectionI
 })
 
 describe('the admin', () => {
+  test('with no conditions, every film is in it, previewed and saved', async () => {
+    const { api } = await started()
+    const none = collection({ rules: { kind: 'group', id: 'root', match: 'all', rules: [] } })
+    const preview = await api.collections.preview({ body: { collection: none } })
+    expect(preview).toMatchObject({ matched: 2, words: null })
+    const made = await api.collections.add({ body: none })
+    const [summary] = await api.collections.list()
+    expect(summary).toMatchObject({ id: made.id, matched: 2 })
+  })
+
   test('made, previewed, saved and removed by staff; a member is refused', async () => {
     const { api, adminApi, memberApi } = await started()
     const preview = await adminApi.collections.preview({ body: { collection: collection() } })

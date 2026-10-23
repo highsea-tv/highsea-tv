@@ -105,6 +105,8 @@ export function CollectionEditor({ id }: { id: string }) {
   )
 }
 
+const NOTHING: CollectionPreview = { matched: 0, playable: 0, items: [], words: null }
+
 /** What the draft holds right now, asked for as it settles. */
 function usePreview(id: string | undefined, draft: SmartCollectionInput) {
   const t = useT(messages)
@@ -115,10 +117,16 @@ function usePreview(id: string | undefined, draft: SmartCollectionInput) {
     name: name.trim() || t('form'),
     rules: settled.rules && completeRules(settled.rules, t),
   }
+  // picked by hand with none picked yet, it holds nothing; the server would refuse it as a save
+  // ("Add a rule, or pick at least one film."), so it isn't asked
+  const empty = !collection.rules && !collection.include.length
   return useKept(
     useQuery(
       `collections:preview:${id ?? 'new'}:${JSON.stringify({ ...holds, rules: collection.rules })}`,
-      (c) => c.collections.preview({ body: { ...(id ? { id } : {}), collection } }),
+      (c) =>
+        empty
+          ? Promise.resolve(NOTHING)
+          : c.collections.preview({ body: { ...(id ? { id } : {}), collection } }),
       ['movies.updated'],
     ),
   )
