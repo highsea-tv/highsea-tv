@@ -6,8 +6,12 @@
 // processes with an argument array, never through a shell (Node: child_process.spawn with
 // `shell: false`, https://nodejs.org/docs/latest-v24.x/api/child_process.html#child_processspawncommand-args-options).
 // Keys never reach an argument list, which any process can read in /proc/{pid}/cmdline: wg(8)'s
-// `private-key` and `preshared-key` take a file path, so highsea passes /dev/stdin and writes the
-// key to the program's standard input.
+// `private-key` and `preshared-key` take a file path. A command names it /dev/stdin and carries the
+// key in `stdin`; `spawnRunner` writes the key to a file only highsea can read and passes that path
+// instead. /dev/stdin itself can't work: Node's stdio pipes are socketpairs (libuv's
+// uv__process_init_stdio calls uv_socketpair), and opening a socket through /dev/stdin fails with
+// ENXIO (open(2): "The file is a UNIX domain socket"). wg-quick hands wg a real pipe, `<(echo …)`,
+// which Node can't make.
 //
 // The commands, from the manual pages:
 // - ip-link(8): `ip link add dev hswg0 type wireguard`, `ip link set dev hswg0 mtu N up`,
@@ -23,7 +27,10 @@
 // - wireguard-go: `wireguard-go hswg0`, which creates the interface on /dev/net/tun and runs in the
 //   background (https://git.zx2c4.com/wireguard-go/about/).
 import { spawn } from 'node:child_process'
+import { existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { isIP } from 'node:net'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { isWireGuardKey } from './wireguard.ts'
 
 /** highsea's own interface: under IFNAMSIZ, and named apart from wg-quick's `wg0`. */
@@ -43,7 +50,7 @@ export type Family = 4 | 6
 export type Command = {
   program: Program
   args: string[]
-  /** Written to the program's standard input: a key, never an argument. */
+  /** A key for the argument /dev/stdin, which the runner hands over in a private file. */
   stdin?: string
   /** What it does, for the log. Never carries a key. */
   op: string
@@ -282,18 +289,32 @@ export const ops = {
  * Spawns each command without a shell. Only on Linux: anywhere else highsea connects isn't
  * available, and nothing is run (so a Mac's Homebrew `ip` is never touched).
  */
+/**
+ * Writes a key where only highsea can read it, for the moment one command runs: a folder made by
+ * mkdtemp (mode 0700) on tmpfs when there is one (/dev/shm), so the key stays in memory, and a file
+ * of mode 0600 inside it. The returned function removes both.
+ */
+function keyFile(key: string): { path: string; remove: () => void } {
+  const dir = mkdtempSync(join(existsSync('/dev/shm') ? '/dev/shm' : tmpdir(), 'highsea-wg-'))
+  const path = join(dir, 'key')
+  writeFileSync(path, key, { mode: 0o600, flag: 'wx' })
+  return { path, remove: () => rmSync(dir, { recursive: true, force: true }) }
+}
+
 export function spawnRunner(timeoutMs = 15_000): Runner {
   return (cmd) =>
     new Promise((resolve, reject) => {
       if (process.platform !== 'linux')
         return reject(new CommandFailed(cmd.op, 'platform', 'highsea connects runs on Linux.'))
+      const key = cmd.stdin === undefined ? null : keyFile(cmd.stdin)
+      const args = key ? cmd.args.map((a) => (a === '/dev/stdin' ? key.path : a)) : cmd.args
       // a clean environment: only PATH, and the C locale so stderr is the English we match on.
       // Partial, because Next's types make NODE_ENV a required key of ProcessEnv
       const env: Partial<NodeJS.ProcessEnv> = {
         PATH: process.env.PATH ?? '/usr/sbin:/usr/bin:/sbin:/bin',
         LC_ALL: 'C',
       }
-      const child = spawn(cmd.program, cmd.args, {
+      const child = spawn(cmd.program, args, {
         shell: false,
         stdio: ['pipe', 'pipe', 'pipe'],
         timeout: timeoutMs,
@@ -307,13 +328,17 @@ export function spawnRunner(timeoutMs = 15_000): Runner {
       child.stderr.on('data', (c: Buffer) => {
         stderr += c.toString('utf8')
       })
-      child.on('error', (e: NodeJS.ErrnoException) =>
+      child.on('error', (e: NodeJS.ErrnoException) => {
+        key?.remove()
         reject(
           new CommandFailed(cmd.op, e.code === 'ENOENT' ? 'not-installed' : 'other', e.message),
-        ),
-      )
-      child.on('close', (code) => resolve({ code: code ?? 1, stdout, stderr }))
-      child.stdin.end(cmd.stdin ?? '')
+        )
+      })
+      child.on('close', (code) => {
+        key?.remove()
+        resolve({ code: code ?? 1, stdout, stderr })
+      })
+      child.stdin.end()
     })
 }
 
