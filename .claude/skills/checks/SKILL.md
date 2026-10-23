@@ -20,6 +20,7 @@ If `better-sqlite3` fails to load after a Node switch, reinstall: `rm -rf node_m
 ```sh
 bun run lint && bun run typecheck && bun run test
 bun run --filter @highsea-tv/docs build        # when apps/docs or anything it imports changed
+actionlint                                     # when .github/workflows changed (brew install actionlint; shellcheck checks the run: steps)
 ```
 
 Use `bun run test`, never a bare `bun test`: it passes `--isolate`, and without it a DOM test's `fetch` leaks into the server tests.
