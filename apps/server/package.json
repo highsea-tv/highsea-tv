@@ -9,7 +9,7 @@
     "build": "next build",
     "start": "NODE_ENV=production node server.ts",
     "openapi": "bun scripts/openapi.ts",
-    "typecheck": "tsc -p tsconfig.json"
+    "typecheck": "next typegen && tsc -p tsconfig.json"
   },
   "dependencies": {
     "@highsea-tv/api-contract": "workspace:*",
