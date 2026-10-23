@@ -70,6 +70,7 @@ bun run record:tmdb     # in packages/metadata: refresh the TMDB recordings with
 bun scripts/calibrate-sync.ts <library> --cache <dir>   # the sync's confidence on real films: reads them, never writes (never in CI)
 docker compose -f compose.dev.yaml up --build   # the image from this checkout (compose.yaml runs the published one)
 bun run audit           # the dependency check: npm's advisories, exceptions in scripts/audit-exceptions.json
+actionlint              # the workflows in .github/workflows, before a push that changes them (brew install actionlint)
 HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts   # the end-to-end run through the image (compose.e2e.yaml)
 bun scripts/image.ts size highsea:dev 2000          # the image's largest folders, against a budget
 bun run docs            # the guides (apps/docs), http://localhost:3100

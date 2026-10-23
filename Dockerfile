@@ -4,11 +4,21 @@
 # iproute2 and wireguard-go, and keeps CAP_NET_ADMIN for the PUID user when the container has it (ADR 0042).
 # Checkpoint 9a slims it (phase-3-checkpoint-9.md › Docker), from Docker's multi-stage builds
 # (https://docs.docker.com/build/building/multi-stage/):
+#   manifests   the workspace's package.json files and bun.lock, and nothing else
 #   build       the whole workspace installed, and the admin built
 #   production  only what `node server.ts` loads (scripts/image.ts): production dependencies, the
 #               server's workspace packages as source without their tests, and Next's build
 #   runtime     the slim image, from `production` alone
 # CI builds it natively for linux/amd64 and linux/arm64 (.github/workflows/ci.yml).
+
+# ---- manifests: what `bun install` reads, so the install is its own layer and a commit that leaves
+# the dependencies alone reuses it from the cache: dependencies before sources, as Docker's
+# "Order your layers" advises (https://docs.docker.com/build/cache/optimize/#order-your-layers).
+# Copying a stage's files is cached by their contents, so this stage's output only changes with them
+FROM node:24.21.0-bookworm-slim AS manifests
+WORKDIR /app
+COPY . .
+RUN find . -type f ! -name package.json ! -name bun.lock -delete
 
 # ---- build: Bun installs and builds; Node 24.21.0 (.nvmrc) is here too, so native modules (better-sqlite3)
 # are built for the Node that runs them
@@ -18,12 +28,13 @@ RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
   && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
-COPY . .
+COPY --from=manifests /app .
 # behind a TLS-inspecting proxy, pass its CA: `docker build --secret id=ca,src=/path/ca.crt .`
 # (a secret, so it never lands in a layer)
 RUN --mount=type=secret,id=ca,required=false \
   if [ -f /run/secrets/ca ]; then export NODE_EXTRA_CA_CERTS=/run/secrets/ca; fi \
   && bun install --frozen-lockfile
+COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN cd apps/server && bun run build
 
