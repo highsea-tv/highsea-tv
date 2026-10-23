@@ -1,0 +1,31 @@
+{
+  "name": "@highsea-tv/lists",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    "./fake": "./test/fake/index.ts",
+    "./generic": "./src/generic/index.ts",
+    "./service": "./src/service/index.ts",
+    "./shared": "./src/shared/index.ts",
+    "./tmdb": "./src/tmdb/index.ts",
+    "./trakt": "./src/trakt/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea-tv/api-contract": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/db": "workspace:*",
+    "@highsea-tv/jobs": "workspace:*",
+    "@highsea-tv/metadata": "workspace:*",
+    "drizzle-orm": "0.45.3",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@highsea-tv/config": "workspace:*",
+    "@types/node": "25.9.9"
+  }
+}

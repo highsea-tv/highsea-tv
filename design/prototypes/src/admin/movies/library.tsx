@@ -2,6 +2,8 @@
 // A5 Movies library (docs/product/movies.md#library). Grid or table, a filter by status, a text
 // filter and a sort. The table selects rows for bulk edit: monitor, quality profile, search and
 // remove. An item with two versions (1080p beside 4K HDR) is one row with both.
+
+import { shortDate } from '@highsea-tv/core/format'
 import {
   Badge,
   type BadgeTone,
@@ -34,15 +36,15 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { MediaItem, MediaStatus } from '../../mock/types.ts'
-import { shortDate } from '../format.ts'
+import type { MediaItem, MediaStatus, RuleCondition } from '../../mock/types.ts'
+import { handoff } from '../collections/editor.tsx'
+import { ruleId } from '../collections/rules.tsx'
 import { Loadable, PosterSkeletons } from '../loadable.tsx'
-import { isStaff } from '../nav.ts'
-import { AdminPage, adminHref, useShell } from '../shell.tsx'
+import { AdminPage, adminHref } from '../shell.tsx'
 
 export const movieStatus: Record<MediaStatus, { label: string; tone: BadgeTone }> = {
   available: { label: 'Available', tone: 'success' },
@@ -102,8 +104,6 @@ function useStored<T extends string>(key: string, initial: T): [T, (v: T) => voi
 }
 
 export function MoviesLibrary() {
-  const { role } = useShell()
-  const staff = isStaff(role)
   const [, navigate] = useLocation()
   const movies = useQuery('movies', (c) => c.movies.list(), ['item.updated', 'movies.updated'])
   const profiles = useQuery('quality-profiles', (c) => c.movies.qualityProfiles())
@@ -155,6 +155,34 @@ export function MoviesLibrary() {
   }
   const plural = (n: number) => `${n} ${n === 1 ? 'movie' : 'movies'}`
 
+  /** A new smart collection that starts from this filter, text and sort. */
+  const saveAsCollection = () => {
+    const when = (
+      field: RuleCondition['field'],
+      op: RuleCondition['op'],
+      value: RuleCondition['value'],
+    ) => ({ kind: 'condition', id: ruleId('c'), field, op, value }) satisfies RuleCondition
+    const q = text.trim()
+    handoff.draft = {
+      rules: {
+        kind: 'group',
+        id: ruleId('g'),
+        match: 'all',
+        rules: [
+          ...(filter === 'all' ? [] : [when('status', 'is', filter)]),
+          ...(!q
+            ? []
+            : /^\d{4}$/.test(q)
+              ? [when('year', 'is', Number(q))]
+              : [when('title', 'contains', q)]),
+        ],
+      },
+      sort,
+      descending: sort !== 'title',
+    }
+    navigate('/collections/new')
+  }
+
   const actions = (
     <>
       <SegmentedControl
@@ -167,11 +195,9 @@ export function MoviesLibrary() {
           { value: 'table', label: 'Table', icon: 'list' },
         ]}
       />
-      {staff && (
-        <Button variant="primary" icon="add" onClick={() => navigate('/discover')}>
-          Add movie
-        </Button>
-      )}
+      <Button variant="primary" icon="add" onClick={() => navigate('/discover')}>
+        Add movie
+      </Button>
     </>
   )
 
@@ -188,16 +214,12 @@ export function MoviesLibrary() {
               icon="movie"
               title="No movies yet"
               action={
-                staff ? (
-                  <Button variant="primary" icon="discover" onClick={() => navigate('/discover')}>
-                    Discover movies
-                  </Button>
-                ) : undefined
+                <Button variant="primary" icon="discover" onClick={() => navigate('/discover')}>
+                  Discover movies
+                </Button>
               }
             >
-              {staff
-                ? 'Add a movie and highsea finds a release, downloads it and files it here.'
-                : 'The server’s owner hasn’t added any movies yet.'}
+              Add a movie and highsea finds a release, downloads it and files it here.
             </EmptyState>
           ) : (
             <TableFrame>
@@ -230,9 +252,12 @@ export function MoviesLibrary() {
                       }))}
                       className="w-36"
                     />
+                    <Button size="sm" icon="library" onClick={saveAsCollection}>
+                      Save as smart collection
+                    </Button>
                   </div>
                 </TableToolbar>
-                {staff && ids.length > 0 && (
+                {ids.length > 0 && (
                   <div
                     role="toolbar"
                     aria-label="Bulk edit"
@@ -342,19 +367,17 @@ export function MoviesLibrary() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          {staff && (
-                            <TableHead className="w-10">
-                              <Checkbox
-                                aria-label="Select every movie shown"
-                                checked={everyShown}
-                                onCheckedChange={(v) =>
-                                  setSelected(
-                                    v === true ? new Set(shown.map((m) => m.id)) : new Set(),
-                                  )
-                                }
-                              />
-                            </TableHead>
-                          )}
+                          <TableHead className="w-10">
+                            <Checkbox
+                              aria-label="Select every movie shown"
+                              checked={everyShown}
+                              onCheckedChange={(v) =>
+                                setSelected(
+                                  v === true ? new Set(shown.map((m) => m.id)) : new Set(),
+                                )
+                              }
+                            />
+                          </TableHead>
                           <TableHead>Title</TableHead>
                           <TableHead numeric>Year</TableHead>
                           <TableHead>Versions</TableHead>
@@ -369,15 +392,13 @@ export function MoviesLibrary() {
                             key={m.id}
                             data-state={selected.has(m.id) ? 'selected' : undefined}
                           >
-                            {staff && (
-                              <TableCell>
-                                <Checkbox
-                                  aria-label={`Select ${m.title}`}
-                                  checked={selected.has(m.id)}
-                                  onCheckedChange={(v) => toggle(m.id, v === true)}
-                                />
-                              </TableCell>
-                            )}
+                            <TableCell>
+                              <Checkbox
+                                aria-label={`Select ${m.title}`}
+                                checked={selected.has(m.id)}
+                                onCheckedChange={(v) => toggle(m.id, v === true)}
+                              />
+                            </TableCell>
                             <TitleCell
                               title={
                                 <a href={adminHref(`/movies/${m.id}`)} className="hover:underline">

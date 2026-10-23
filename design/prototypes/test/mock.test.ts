@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The mock server's simulation and API semantics: what the screens rely on to show live states.
 import { describe, expect, test } from 'bun:test'
+import { ownerDefault } from '@highsea-tv/personalization/widgets'
 import { ApiError, createClient, createMock, type Mock } from '../src/mock/client.ts'
 import type { MockServer } from '../src/mock/server.ts'
 import type { WidgetPlacement } from '../src/mock/types.ts'
-import { memberDefault, ownerDefault } from '../src/mock/widgets.ts'
 
 // Media ids in the populated seed (database ids, ADR 0014): 1 Sintel, 8 Charge, 19 Nosferatu.
 
@@ -36,7 +36,7 @@ describe('simulation', () => {
 
     until(mock, () => t.state === 'importing')
     expect(t.progress).toBe(1)
-    expect(events).toContain('queue.changed')
+    expect(events).toContain('queue.updated')
 
     until(mock, () => t.state === 'seeding')
     const sintel = srv.state.items.find((m) => m.id === '1')
@@ -46,7 +46,7 @@ describe('simulation', () => {
 
     const track = () =>
       srv.state.subtitles.find(
-        (s) => s.itemId === '1' && s.provider === 'OpenSubtitles' && s.kind === 'external',
+        (s) => s.itemId === '1' && s.provider === 'OpenSubtitles.com' && s.kind === 'external',
       )
     until(mock, () => track()?.sync.status === 'syncing')
     until(mock, () => track()?.sync.status === 'synced')
@@ -140,11 +140,58 @@ describe('client', () => {
     expect(mock.servers.populated.state.items[0]?.title).not.toBe('Changed')
   })
 
-  test('members are kept out of staff-only calls', async () => {
-    const client = createClient(createMock(), { data: 'populated', role: 'member', latency: 0 })
+  test('users are kept out of the admin’s calls', async () => {
+    const client = createClient(createMock(), { data: 'populated', role: 'user', latency: 0 })
     expect(await client.downloads.list().catch((e) => e.status)).toBe(403)
     expect(await client.indexers.list().catch((e) => e.status)).toBe(403)
-    expect((await client.queue.list()).length).toBeGreaterThan(0)
+    expect(await client.dashboard.layout().catch((e) => e.status)).toBe(403)
+  })
+
+  test('admins run the server; people, security and backups stay the owner’s', async () => {
+    const mock = createMock()
+    const admin = createClient(mock, { data: 'populated', role: 'admin', latency: 0 })
+    expect((await admin.indexers.list()).length).toBeGreaterThan(0)
+    // people and devices read-only
+    expect((await admin.users.list()).length).toBeGreaterThan(0)
+    expect((await admin.devices.list()).length).toBeGreaterThan(0)
+    const forbidden = (p: Promise<unknown>) => p.then(() => 200).catch((e) => e.status)
+    const owner = () => createClient(mock, { data: 'populated', role: 'owner', latency: 0 })
+    expect(
+      await forbidden(
+        admin.users.invite({ displayName: 'Mara', email: null, role: 'user', libraries: 'all' }),
+      ),
+    ).toBe(403)
+    expect(await forbidden(admin.users.update('u-ruth', { permissions: [] }))).toBe(403)
+    expect(await forbidden(admin.users.remove('u-ruth'))).toBe(403)
+    expect(await forbidden(admin.users.resetPassword('u-ruth'))).toBe(403)
+    const ruths = mock.servers.populated.state.devices.find((d) => d.userId === 'u-ruth')
+    expect(await forbidden(admin.devices.revoke(ruths?.id ?? ''))).toBe(403)
+    expect(await forbidden(admin.system.backupNow())).toBe(403)
+    expect(await forbidden(admin.system.backups())).toBe(403)
+    // security and backups are left out for admins, reads included
+    for (const section of ['security', 'backups'] as const) {
+      expect(await forbidden(admin.settings.get(section))).toBe(403)
+      const value = await owner().settings.get(section)
+      expect(await forbidden(admin.settings.save(section, value))).toBe(403)
+    }
+    // an admin's API keys are their own; the owner sees everyone's
+    const all = await owner().apiKeys.list()
+    const theirs = await admin.apiKeys.list()
+    expect(theirs.every((k) => k.userId === 'u-theo')).toBe(true)
+    expect(all.length).toBeGreaterThan(theirs.length)
+    const ines = all.find((k) => k.userId === 'u-ines')
+    expect(await forbidden(admin.apiKeys.revoke(ines?.id ?? ''))).toBe(403)
+  })
+
+  test('demoting an admin ends their admin sessions and API keys', async () => {
+    const mock = createMock()
+    const owner = createClient(mock, { data: 'populated', role: 'owner', latency: 0 })
+    const state = mock.servers.populated.state
+    expect(state.apiKeys.some((k) => k.userId === 'u-theo')).toBe(true)
+    const theo = await owner.users.update('u-theo', { role: 'user' })
+    expect(theo.permissions).toEqual(['request'])
+    expect(state.apiKeys.some((k) => k.userId === 'u-theo')).toBe(false)
+    expect(state.devices.some((d) => d.userId === 'u-theo' && d.client === 'admin')).toBe(false)
   })
 
   test('sign-in: wrong password, rate limit, two-factor', async () => {
@@ -173,21 +220,22 @@ describe('dashboard layouts', () => {
   test('each role starts from its default', async () => {
     const mock = createMock()
     const owner = createClient(mock, { data: 'populated', role: 'owner', latency: 0 })
-    const member = createClient(mock, { data: 'populated', role: 'member', latency: 0 })
+    const admin = createClient(mock, { data: 'populated', role: 'admin', latency: 0 })
     const o = await owner.dashboard.layout()
     expect(o.inherited).toBe(true)
     expect(kinds(o.widgets)).toEqual(kinds(ownerDefault))
-    expect(kinds((await member.dashboard.layout()).widgets)).toEqual(kinds(memberDefault))
+    expect(kinds((await admin.dashboard.layout()).widgets)).toEqual(kinds(ownerDefault))
   })
 
   test('a saved layout is the user’s own until reset', async () => {
     const mock = createMock()
     const owner = createClient(mock, { data: 'populated', role: 'owner', latency: 0 })
-    const mine = [{ id: 'w-activity', kind: 'activity' as const, span: 2 as const, rows: 3 }]
-    await owner.dashboard.saveLayout(mine)
+    const activity = { id: 'w-activity', kind: 'activity' as const, span: 2 as const, rows: 3 }
+    await owner.dashboard.saveLayout([activity])
     const saved = await owner.dashboard.layout()
     expect(saved.inherited).toBe(false)
-    expect(saved.widgets).toEqual(mine)
+    // the mock fills each widget's settings from the registry, as the server does
+    expect(saved.widgets).toEqual([{ ...activity, settings: { filter: 'all' } }])
     await owner.dashboard.resetLayout()
     expect((await owner.dashboard.layout()).inherited).toBe(true)
   })
@@ -200,23 +248,25 @@ describe('dashboard layouts', () => {
       { id: 'w-network', kind: 'network', span: 4, rows: 12 },
     ])
     expect((await owner.dashboard.layout()).widgets).toEqual([
-      { id: 'w-storage', kind: 'storage', span: 1, rows: 2 },
-      { id: 'w-network', kind: 'network', span: 2, rows: 4 },
+      { id: 'w-storage', kind: 'storage', span: 1, rows: 2, settings: {} },
+      { id: 'w-network', kind: 'network', span: 2, rows: 4, settings: { minutes: 10 } },
     ])
   })
 
-  test('members can’t add staff widgets; only owners set role defaults', async () => {
+  test('only the owner sets the admins’ default; users have no dashboard', async () => {
     const mock = createMock()
     const owner = createClient(mock, { data: 'populated', role: 'owner', latency: 0 })
-    const member = createClient(mock, { data: 'populated', role: 'member', latency: 0 })
-    const network = [{ id: 'w-network', kind: 'network' as const, span: 2 as const, rows: 3 }]
-    expect(await member.dashboard.saveLayout(network).catch((e) => e.status)).toBe(403)
-    expect(await member.dashboard.saveRoleDefault('member', []).catch((e) => e.status)).toBe(403)
+    const admin = createClient(mock, { data: 'populated', role: 'admin', latency: 0 })
+    const user = createClient(mock, { data: 'populated', role: 'user', latency: 0 })
+    const widget = { id: 'w-network', kind: 'network' as const, span: 2 as const, rows: 3 }
+    const network = [widget]
+    expect(await user.dashboard.saveLayout(network).catch((e) => e.status)).toBe(403)
+    expect(await admin.dashboard.saveRoleDefault('admin', []).catch((e) => e.status)).toBe(403)
 
-    const calendar = [{ id: 'w-calendar', kind: 'calendar' as const, span: 4 as const, rows: 3 }]
-    await owner.dashboard.saveRoleDefault('member', [...calendar, ...network])
-    // staff-only widgets are dropped from a member default
-    expect((await member.dashboard.layout()).widgets).toEqual(calendar)
+    await owner.dashboard.saveRoleDefault('admin', network)
+    expect((await admin.dashboard.layout()).widgets).toEqual([
+      { ...widget, settings: { minutes: 10 } },
+    ])
   })
 })
 

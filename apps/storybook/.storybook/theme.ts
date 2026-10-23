@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default theme's values, hardcoded because Storybook's chrome is themed before any CSS loads.
-// test/storybook.test.ts keeps them in step with @highsea/tokens.
+// test/storybook.test.ts keeps them in step with @highsea-tv/tokens.
 import { create } from 'storybook/theming'
 
 export const chrome = {

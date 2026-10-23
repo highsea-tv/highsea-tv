@@ -1,11 +1,11 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
 /*
- * @highsea/ui-web: the Tailwind entry for apps. Import this one file; add `@source` lines for the
- * app's own files. Values come from @highsea/tokens; rules from docs/design-language/.
+ * @highsea-tv/ui-web: the Tailwind entry for apps. Import this one file; add `@source` lines for the
+ * app's own files. Values come from @highsea-tv/tokens; rules from docs/design-language/.
  */
 @import "tailwindcss";
-@import "@highsea/tokens/tailwind.css";
-@import "@highsea/brand/fonts.css";
+@import "@highsea-tv/tokens/tailwind.css";
+@import "@highsea-tv/brand/fonts.css";
 
 @source "./";
 
@@ -161,7 +161,7 @@
 
 :root {
   /* hover and keyboard focus scale for posters and tiles; TV builds use the TV scale */
-  --scale-poster: 1.04;
+  --scale-poster: 1.02;
   --scale-button: 1;
 }
 
@@ -216,4 +216,18 @@
 @utility ring-focus {
   outline: var(--focus-ring-width) solid var(--color-focus);
   outline-offset: var(--focus-ring-offset);
+}
+
+/*
+ * The widget editor (components/widget-editor.tsx). While a widget is dragged, dnd-kit leaves a
+ * copy in the grid to hold its place; it shows as an empty dashed slot where the widget will land.
+ */
+:root [data-widget-id][data-dnd-placeholder][data-dnd-placeholder] {
+  visibility: visible;
+  border: 1px dashed var(--color-accent);
+  background: var(--color-accent-soft);
+  box-shadow: none;
+}
+:root [data-widget-id][data-dnd-placeholder] > * {
+  visibility: hidden;
 }

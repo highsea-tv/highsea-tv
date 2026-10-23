@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Lockup, Mark } from '@highsea/ui-web'
+import { Lockup, Mark } from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Page, Section } from './page.tsx'
 

@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // The admin sidebar: docs/design-language/platforms/admin.md#sidebar. Full at expanded and wide,
 // a 64px icon rail with tooltips at medium, and a menu sheet behind a top-bar button at compact.

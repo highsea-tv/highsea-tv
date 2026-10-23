@@ -27,8 +27,9 @@ Movies are built in the prototype. Shows, music, books, podcasts and online vide
 | Book | `/books/{id}` | |
 | Podcast, channel | `/podcasts/{id}`, `/channels/{id}` | |
 | Person | `/people/{id}` | Cast, crew, authors and artists' members. One person, one page, across types. |
+| Collection | `/collections/{id}` | The summary card (backdrop, poster, overview), then the Collection row its parts show. Not in the prototype, which shows a collection only on its parts' pages (checkpoint 4). |
 
-`{id}` is always the title's **media id**: its database id, never a slug or a provider id. The server creates a title's row the first time it sees it (in search results, trending, a filmography, a collection, a recommendation), so every title shown anywhere already has an id and its page resolves, in the library or not. Adding a title marks its row as in the library; the id and the address stay the same, and the page gains its library layer in place. Every way to a title (Discover, the library, the dashboard, people, collections, ⌘K) links to that one address, and two titles with the same name never compete for it.
+`{id}` is the title's **id at its metadata provider**, within its type: the TMDB id for movies, shows, collections and people (`/movies/969681` is TMDB's `movie/969681`), never a slug ([ADR 0014, amended 2026-10-20](../adr/0014-universal-media-pages.md#amendment-2026-10-20-addresses-use-the-providers-id)). Any title the provider knows opens at its address, whether the server has seen it before or not, in the library or not. Adding a title creates its library layer; the address stays the same, and the page gains that layer in place. Every way to a title (Discover, the library, the dashboard, people, collections, ⌘K) links to that one address, and two titles with the same name never compete for it.
 
 ## Layout
 
@@ -40,27 +41,27 @@ The anatomy every media page shares.
   - **Overview:** always.
   - **Cast and crew:** always.
   - The type's own sections (Seasons for shows; Albums for artists; Tracks for albums; Editions for books).
-  - **Files**, **History**, **Search** (staff), **Subtitles:** once added.
+  - **Files**, **History**, **Search**, **Subtitles:** once added.
 - **Overview:** two columns from expanded, a main column and a 20rem aside.
   - Main:
     - **In the queue** while it downloads;
     - **Cast**: the top-billed ten as a row of portraits, with **All cast and crew**;
-    - **Trailers**: stills with their kind and length;
+    - **Trailers**: stills (the movie's backdrop) with their kind and date. TMDB gives no length, so there's none (checkpoint 4);
     - **Collection**: its name, how many parts are here, the parts as posters in release order with **Add {n} missing**;
     - **More like this**: recommendations as posters, each marked if it's in the library.
   - Aside:
     - **In the library** (once added): versions with their profiles, subtitle profile, minimum availability, root folder;
-    - **About**: release status and date, original title (when it differs), original language, certification, runtime, budget and box office (when known), studios, and links to TMDB, IMDb and Wikidata.
-- **Cast and crew tab:** cast as a grid of portraits (name, then character), in billing order; then crew grouped by department (Directing, Writing, Production, Camera, Editing, Sound, Art), each person with their jobs.
+    - **About**: release status and date, original title (when it differs), original language, certification (for the server's region), runtime, budget and box office (when known), studios, and links to TMDB, IMDb and Wikidata.
+- **Cast and crew tab:** cast as a grid of portraits (name, then character), in billing order; then crew grouped by TMDB's departments, in its order (Directing, Writing, Production, Sound, Camera, Editing, Art, Costume and make-up, Visual effects, Crew, Lighting; Acting is the cast), each person with their jobs. TMDB has 12 departments, where the prototype had 7 (checkpoint 4).
 - **Trailer dialog** (`lg`): a 16:9 player; the video's name, kind and date under it.
 - **Rows** are `CarouselRow`s with `flush`, so they line up with the column: one tab stop each, arrows move between items, and paging arrows show on hover. Titles in rows carry an **In library** overlay badge when they're here.
 
 ### Person page
 
 - **Page header:** the name.
-- **Summary card:** the portrait; known for (Acting, Directing, Writing…); born and died with places, when known; the biography (65ch), or "TMDB has no biography for {name} yet."
-- **Known for:** their most-rated titles as a poster row, once they have three or more.
-- **Filmography:** a `TableFrame` with tabs (All, In the library, Not in the library) and a count. Columns: title (thumbnail and year), role (the character, or the jobs), and library state: **In library** (links to the page) or **Add** (staff). Newest first.
+- **Summary card:** the portrait; known for (Acting, Directing, Writing…); born (date and place) and died (the date: TMDB has no place of death), when known; the biography (65ch), or "TMDB has no biography for {name} yet."
+- **Known for:** their best-known titles, by TMDB vote count, as a poster row, once they have three or more (owner's decision, 2026-10-20). By vote count, not rating: a film with three 10/10 votes would otherwise lead.
+- **Filmography:** a `TableFrame` with tabs (All, In the library, Not in the library) and a count, and a department filter over the departments they have credits in, of TMDB's 12 (checkpoint 4). One row per title, with every role they had in it. Columns: title (thumbnail and year), role (the character, or the jobs), and library state: **In library** (links to the page) or **Add**. Newest first.
 
 ## By media type
 
@@ -79,10 +80,9 @@ Each type keeps the anatomy above and adds its own sections. Only movies are bui
 ## States
 
 - **Not in the library:**
-  - Header: **Add movie** (staff), which opens the add dialog; once added, the same page at the same address gains the library layer.
+  - Header: **Add movie**, which opens the add dialog; once added, the same page at the same address gains the library layer.
   - Summary: a "Not in the library" badge; the release date ("Released 1 June 1922" or "Releases 6 November 2026") in place of the library line.
   - Tabs: Overview and Cast and crew only.
-  - Members: no header action; the summary says "Only owners and admins can add movies. Ask the server's owner for this one."
 - **In the library:** as [movies.md › Movie detail](movies.md#movie-detail-a6), plus the metadata layer: Search, Interactive search and More in the header; the status badge and quality tags; every tab.
 - **Not released:** the release line says "Releases {date}"; Trailers usually has a teaser only.
 - **Loading:** a poster and text skeleton for the summary; each row shows poster skeletons; the filmography shows row skeletons.
@@ -105,11 +105,10 @@ Each type keeps the anatomy above and adds its own sections. Only movies are bui
 | Where | Text |
 | --- | --- |
 | Not in the library badge | Not in the library |
-| Member note | Only owners and admins can add movies. Ask the server's owner for this one. |
 | Collection | {Name} · {n} of {total} in the library |
 | Collection action | Add {n} missing |
 | Add missing dialog | Add {n} movies · They're added with the same options. You can change each one later. |
-| Trailer card | {Kind} · {m:ss}, with a play mark on the still |
+| Trailer card | {Kind} · {date}, with a play mark on the still |
 | Trailer player (prototype) | In highsea this plays from youtube-nocookie.com, and only after you click. The prototype doesn't load YouTube. |
 | No biography | TMDB has no biography for {name} yet. |
 | No cast | TMDB doesn't list a cast for this title. |
@@ -117,29 +116,40 @@ Each type keeps the anatomy above and adds its own sections. Only movies are bui
 
 ## Data
 
-- `metadata.movie(id)` → `GET /api/v1/movies/{id}/metadata`, by media id in any state: `MovieMetadata` (title, original title and language, tagline, certification, runtime, genres, rating, release date, budget, revenue, studios, external ids, art) with `cast`, `crew`, `videos`, `collection` and `inLibrary`.
-- `metadata.recommendations(id)` → `GET /api/v1/movies/{id}/recommendations`: `DiscoverMovie[]`, each with its media `id` and `inLibrary`.
-- Every `DiscoverMovie` (Discover, filmographies, collections) carries its media `id`, so links need nothing else.
-- `metadata.collection(id)` → `GET /api/v1/metadata/collections/{id}`: `Collection` with its parts as `DiscoverMovie[]`.
-- `metadata.person(id)` → `GET /api/v1/metadata/people/{id}`: `Person` with `credits` (each a `DiscoverMovie` with the role).
+Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `metadata` group). Every id is TMDB's; everyone signed in may read them, and nothing here adds to the library.
+
+- `metadata.movie({ params: { id } })` → `GET /api/v1/movies/{id}/metadata`, for any movie on TMDB, from the cache or from TMDB: `MovieMetadata`, a `DiscoverMovie` (title, year, runtime, genres, synopsis, `rating` out of 5, `voteCount`, release date, `art`, `inLibrary`) with the original title and language, tagline, `certification`, budget, revenue, studios, `imdbId` and `wikidataId` (either may be null), `cast`, `crew`, `videos`, `collection` (`{ id, name }`), `gone` and `fetchedAt`.
+  - **Certification by region:** the server's region (Settings › General › Metadata), from the theatrical release first, then digital, then any release there; null when there's none.
+  - `Credit` is `personId`, `name`, `photo`, `department` (one of TMDB's 12), `character` (cast) or `job` (crew), and an `id` that's only a key within the list.
+  - `Video` is `name`, `kind` (Trailer, Teaser, Clip, Featurette, Behind the Scenes, Bloopers, Opening Credits), `site` and `key`, `official`, `publishedAt`, and `still`, the movie's backdrop. No length.
+- `metadata.recommendations({ params: { id } })` → `GET /api/v1/movies/{id}/recommendations`: up to 20 `DiscoverMovie`s, each with `inLibrary`. TMDB's recommendations, or its "similar" list when those are empty.
+- `metadata.collection({ params: { id } })` → `GET /api/v1/collections/{id}`: `Collection` (`name`, `overview`, `art`) with its `parts` as `DiscoverMovie`s, oldest first.
+- `metadata.person({ params: { id } })` → `GET /api/v1/people/{id}`: `Person` (`name`, `photo`, `knownFor` as a department, `bio`, `born` as `{ date, place }` with either missing, `died` as `{ date }`, `imdbId`, `wikidataId`) with `credits`: a `DiscoverMovie` per title and department, with the `role` (the character, or the jobs) and the `department`, newest first.
+- Collection and person routes have no `/metadata/` in their path: a collection and a person are media pages like a movie.
+- Every `DiscoverMovie` carries its TMDB `id`, so links need nothing else.
+- **Images** are cached by the server and served at `GET /api/v1/images/{owner}/{ownerId}/{kind}/{size}/{file}` (`movie`, `person` or `collection`; `poster`, `backdrop`, `profile`, `still` or `logo`), with long cache headers. Every art URL in a response points there; clients treat it as opaque, but may swap the size.
+- **The cache:** the server keeps what TMDB said, with when it fetched it, so pages open fast and TMDB is asked sparingly. A library movie is refreshed in full every 30 days and when TMDB's daily change list names it; anything else is dropped once it's older than six months, unless something in the library refers to it, as TMDB's terms ask ([ADR 0030](../adr/0030-metadata-cache.md)).
+- **When TMDB can't answer** and the cache doesn't have the title: 503 with `details.reason` `no-tmdb-key` or `tmdb-unreachable`, or 429 with `tmdb-rate-limited`. An id TMDB doesn't know is a 404.
 - `movies.get(id)` and the rest of the library layer: [movies.md › Data](movies.md#data).
-- The server caches metadata (per title, refreshed with the library's metadata refresh) so pages open fast and TMDB is asked sparingly.
-- Events: `movies.updated` (library state changes).
+- Events: `movies.updated` and `item.updated` (library state changes), `metadata.updated` (after a refresh; ids `movie:{id}`, `person:{id}`, `collection:{id}`).
 
 ## Decisions
 
+- **No member states** (owner's decision, 2026-10-20). Only the owner and admins open the admin ([ADR 0032](../adr/0032-administrative-and-normal-access.md)), and every one of them can add titles, so **Add** shows wherever a title isn't in the library.
 - **One page, two layers** ([ADR 0014](../adr/0014-universal-media-pages.md)). Discover and the library open the same page; adding a title adds a layer instead of moving you somewhere else.
-- **Addresses are media ids, not slugs or provider ids.** A title has its id before it's added and keeps it after, so a link shared before adding still works with no redirect, and two films called *The Stranger* never fight over `/movies/the-stranger`.
+- **Addresses are the provider's ids, not slugs** (owner's decision, 2026-10-20, as Seerr does). A title has its address before it's added and keeps it after, so a link shared before adding still works with no redirect, any title on Discover opens with its information straight away, and two films called *The Stranger* never fight over `/movies/the-stranger`.
 - **Trailers embed on click,** from `youtube-nocookie.com`. Nothing loads from Google until someone asks for a video.
 - **Not added means no Files, History, Search or Subtitles tabs,** rather than empty ones. Interactive search before adding was considered and left out: adding is one dialog, and searching a title highsea isn't tracking would grab outside any profile.
 - **Collections add their missing parts in one dialog,** with one set of options, since parts of a collection are usually wanted the same way.
 - **Person pages are shared across types,** so an actor in movies and shows, or an author who also narrates, is one page.
 - **Sections that would be empty are left out,** except Cast and crew, which says so: an empty tab is more confusing than a missing row.
 
+- **Recommendations come from TMDB,** its recommendations first and its "similar" list when those are empty. highsea's own, from what people watch, can come once there's watch history (owner's decisions, 2026-10-20: [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#owners-decisions)).
+- **Certification follows the server's region** (Settings › General), from the theatrical release first, then digital, then any. The prototype shows the US rating (owner's decisions, 2026-10-20: [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#owners-decisions)).
+- **Images are cached by the server,** at the sizes the screens use, so clients never contact TMDB (owner's decisions, 2026-10-20: [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#owners-decisions)).
+
 ## Open questions
 
-- **Recommendations source.** TMDB's recommendations, its "similar" list, or highsea's own from what the library and its people watch?
 - **Person pages beyond credits.** Should a person be followable ("add new films by Fritz Lang"), as Radarr does with lists?
-- **Certification country.** The prototype shows the US rating. Follow the server's region setting?
 - **Shows: episode page or sheet?** The spec opens an episode in a sheet over the season; a full page would make episodes linkable on their own.
 - **Images.** TMDB has many posters, backdrops and logos per title. Should the owner be able to pick, per title?

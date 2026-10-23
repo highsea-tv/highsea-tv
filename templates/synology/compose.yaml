@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# highsea on Synology (DSM 7.2 and later), as a Container Manager Project: put this file in a
+# folder on the NAS (for example /volume1/docker/highsea), then Container Manager › Project ›
+# Create, with that folder as the path and this file as its Compose file
+# (https://www.synology.com/en-us/dsm/feature/docker).
+#
+# Change before creating the project:
+# - /volume1/data, to the shared folder that holds downloads and the library together, so imports
+#   hardlink instead of copying;
+# - PUID and PGID, to your DSM user and its group (`id` over SSH shows them; 100 is `users`).
+#
+# Published ports, as in compose.bridge.yaml: apps on your network find highsea by its broadcast on
+# 7368/udp, but not by mDNS, which needs the host's network (ADR 0020). An app that doesn't find it
+# can be given its address.
+services:
+  highsea:
+    image: ghcr.io/highsea-tv/highsea:latest
+    container_name: highsea
+    environment:
+      PUID: "1026"
+      PGID: "100"
+      TZ: Etc/UTC
+    volumes:
+      # highsea's config, in this project's folder. Make the folder first: Container Manager
+      # doesn't make a missing one, and the project stops with "Bind mount failed"
+      - ./config:/config
+      - /volume1/data:/data
+    ports:
+      - "3000:3000"
+      - "6881:6881/tcp"
+      - "6881:6881/udp"
+      - "7368:7368/udp"
+    # a restore in System › Backups restarts highsea by exiting with code 75 (ADR 0047)
+    restart: unless-stopped

@@ -12,6 +12,7 @@ storybook-static/
 # runtime data (local dev)
 /config-dev/
 /data-dev/
+/.dev/
 *.db
 *.db-shm
 *.db-wal
@@ -41,3 +42,10 @@ test-results/
 
 # local browser-automation output
 .playwright-mcp/
+next-env.d.ts
+
+# fumadocs-mdx output (apps/docs)
+.source/
+
+# the local link to the Vercel project for docs.highsea.tv (vercel link)
+.vercel

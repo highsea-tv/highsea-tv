@@ -1,0 +1,384 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/45745?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations%2Ckeywords&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "adult": false,
+      "backdrop_path": "/msqeiEyIRpPAtrCeRGFNZQ9tkJL.jpg",
+      "belongs_to_collection": null,
+      "budget": 450000,
+      "genres": [
+        {
+          "id": 16,
+          "name": "Animation"
+        },
+        {
+          "id": 14,
+          "name": "Fantasy"
+        }
+      ],
+      "homepage": "",
+      "id": 45745,
+      "imdb_id": "tt1727587",
+      "original_language": "en",
+      "original_title": "Sintel",
+      "overview": "A wandering warrior finds an unlikely friend in the form of a young dragon. The two develop a close bond, until one day the dragon is snatched away. She then sets out on a relentless quest to reclaim her friend, finding in the end that her quest exacts a far greater price than she had ever imagined.",
+      "popularity": 16.37,
+      "poster_path": "/l98Zns4oQe1BSvbF4hJ8oL6VSf0.jpg",
+      "production_companies": [
+        {
+          "id": 6908,
+          "logo_path": null,
+          "name": "Blender Foundation",
+          "origin_country": ""
+        }
+      ],
+      "release_date": "2010-09-30",
+      "revenue": 0,
+      "runtime": 14,
+      "status": "Released",
+      "tagline": "",
+      "title": "Sintel",
+      "video": false,
+      "vote_average": 7.333,
+      "vote_count": 180,
+      "credits": {
+        "cast": [
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 39847,
+            "known_for_department": "Acting",
+            "name": "Halina Reijn",
+            "original_name": "Halina Reijn",
+            "popularity": 29.89,
+            "profile_path": "/su9FMcM5wKfZiSNs35OLlot4hLd.jpg",
+            "cast_id": 1,
+            "character": "Sintel (voice)",
+            "credit_id": "52fe46d1c3a36847f8113e3f",
+            "order": 0
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 7572,
+            "known_for_department": "Acting",
+            "name": "Thom Hoffman",
+            "original_name": "Thom Hoffman",
+            "popularity": 20.85,
+            "profile_path": "/9idfzAANRjFDPnPHsRVVBb2LbNR.jpg",
+            "cast_id": 2,
+            "character": "Shaman (voice)",
+            "credit_id": "52fe46d1c3a36847f8113e43",
+            "order": 1
+          }
+        ],
+        "crew": [
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1097826,
+            "known_for_department": "Art",
+            "name": "David Revoy",
+            "original_name": "David Revoy",
+            "popularity": 36.36,
+            "profile_path": null,
+            "credit_id": "68d73e68afbad531865ac443",
+            "department": "Art",
+            "job": "Art Direction"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 133631,
+            "known_for_department": "Directing",
+            "name": "Colin Levy",
+            "original_name": "Colin Levy",
+            "popularity": 2.46,
+            "profile_path": "/aGFVsKopffZafgZjeF7GLlUvxO7.jpg",
+            "credit_id": "937948cd54523013efc7131f",
+            "department": "Directing",
+            "job": "Director"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 133632,
+            "known_for_department": "Production",
+            "name": "Ton Roosendaal",
+            "original_name": "Ton Roosendaal",
+            "popularity": 27.16,
+            "profile_path": "/2iRRkA2oCsPLSSLz1HKDhwJZlgy.jpg",
+            "credit_id": "5f26f02e9237dce76e919b68",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 133634,
+            "known_for_department": "Sound",
+            "name": "Jan Morgenstern",
+            "original_name": "Jan Morgenstern",
+            "popularity": 2.44,
+            "profile_path": null,
+            "credit_id": "a9ec7c23e4c075fcf65497cb",
+            "department": "Sound",
+            "job": "Music"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 133633,
+            "known_for_department": "Writing",
+            "name": "Esther Wouda",
+            "original_name": "Esther Wouda",
+            "popularity": 7.94,
+            "profile_path": null,
+            "credit_id": "3e74c0aabb697fad27f6aea4",
+            "department": "Writing",
+            "job": "Writer"
+          }
+        ]
+      },
+      "videos": {
+        "results": [
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Trailer",
+            "key": "HOfdboHvshg",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": false,
+            "published_at": "2010-05-13T00:00:00.000Z",
+            "id": "6326a15c21118f007bc14918"
+          }
+        ]
+      },
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "US",
+            "release_dates": [
+              {
+                "certification": "PG",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2010-09-30T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "AU",
+            "release_dates": [
+              {
+                "certification": "PG",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2010-09-30T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FI",
+            "release_dates": [
+              {
+                "certification": "K-12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2010-09-30T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "NL",
+            "release_dates": [
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2010-09-30T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          }
+        ]
+      },
+      "external_ids": {
+        "imdb_id": "tt1727587",
+        "wikidata_id": "Q925587",
+        "facebook_id": null,
+        "instagram_id": null,
+        "twitter_id": null
+      },
+      "recommendations": {
+        "page": 1,
+        "results": [
+          {
+            "adult": false,
+            "backdrop_path": "/vkBMhUSaDUk3JUCS2VUk160IXMM.jpg",
+            "genre_ids": [16, 14, 10751, 12, 35],
+            "id": 47626,
+            "original_language": "en",
+            "original_title": "Legend of the BoneKnapper Dragon",
+            "overview": "Hiccup and friends accompany their mentor, Gobber, on a quest to kill the legendary Boneknapper Dragon.",
+            "popularity": 38.16,
+            "poster_path": "/74OqO31AaubZGgreiHIomFyOXUx.jpg",
+            "release_date": "2010-10-14",
+            "title": "Legend of the BoneKnapper Dragon",
+            "video": false,
+            "vote_average": 7.074,
+            "vote_count": 298,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/lYasFduyooJu9Ebi9w8TpLaJT8y.jpg",
+            "genre_ids": [14, 16, 28, 10751],
+            "id": 50337,
+            "original_language": "en",
+            "original_title": "Firebreather",
+            "overview": "It's not easy being a teen like Duncan. His mom wants him to pay more attention to his homework, while his dad - a 120-foot-tall monster known as a Kaiju - wants him to become the next King of All Monsters. When these worlds collide, Duncan must use his human wits and his Kaiju powers - including super strength, agility and the ability to breathe fire - to protect his family and friends from a giant monster rampage.",
+            "popularity": 37.25,
+            "poster_path": "/mTPC0ysx6pa91BK6dnnKvoynjb3.jpg",
+            "release_date": "2010-11-24",
+            "title": "Firebreather",
+            "video": false,
+            "vote_average": 7.374,
+            "vote_count": 242,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/mUhPYDfXm8F6wdFifDLl8E2jUpu.jpg",
+            "genre_ids": [14, 28, 12],
+            "id": 666750,
+            "original_language": "en",
+            "original_title": "Dragonheart: Vengeance",
+            "overview": "Lukas, a young farmer whose family is killed by savage raiders in the countryside, sets out on an epic quest for revenge, forming an unlikely trio with a majestic dragon and a swashbuckling, sword-fighting mercenary, Darius.",
+            "popularity": 34.5,
+            "poster_path": "/qs6gz6atyQcAvqC6qZaslOjliUG.jpg",
+            "release_date": "2021-03-01",
+            "title": "Dragonheart: Vengeance",
+            "video": false,
+            "vote_average": 6.8,
+            "vote_count": 151,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/83QeqJ5QPljmAxPdgLv6BMzgo3u.jpg",
+            "genre_ids": [14, 12],
+            "id": 451644,
+            "original_language": "en",
+            "original_title": "Dragonheart: Battle for the Heartfire",
+            "overview": "When the King Gareth dies, his potential heirs, twin grandchildren who possess the dragon’s unique strengths, use their inherited powers against each other to vie for the throne. When Drago’s source of power – known as the Heartfire – is stolen, more than the throne is at stake; the siblings must end their rivalry with swords and sorcery or the kingdom may fall.",
+            "popularity": 40.78,
+            "poster_path": "/21awrY48uEiDOyLYALcuMgE5G7W.jpg",
+            "release_date": "2017-07-09",
+            "title": "Dragonheart: Battle for the Heartfire",
+            "video": false,
+            "vote_average": 5.996,
+            "vote_count": 253,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/c2zMjEvxLdmkLrWt2V0aTlc1HmF.jpg",
+            "genre_ids": [12, 14, 10770],
+            "id": 431742,
+            "original_language": "en",
+            "original_title": "The Last Dragonslayer",
+            "overview": "In a fantasy world where magic is being superceded by technology, an orphaned teen discovers her destiny to become a dragonslayer.",
+            "popularity": 36.58,
+            "poster_path": "/1aqqYXoLTER1N2mR9MD5CNGqxhA.jpg",
+            "release_date": "2016-12-25",
+            "title": "The Last Dragonslayer",
+            "video": false,
+            "vote_average": 5.873,
+            "vote_count": 59,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/lDQ7Dh3dEL46K3B7RB6hFoOHXc5.jpg",
+            "genre_ids": [12, 16, 18, 14],
+            "id": 21290,
+            "original_language": "en",
+            "original_title": "Strings",
+            "overview": "The story of Prince Hal who sets out to avenge his dead father against the city's rivals, the Zeriths, little knowing it was his wicked uncle Nezo who is the real killer, with his own designs on the throne.",
+            "popularity": 15.96,
+            "poster_path": "/lJJ5ePSlmx3BZ8jFPndboIA60iH.jpg",
+            "release_date": "2004-10-24",
+            "title": "Strings",
+            "video": false,
+            "vote_average": 6.637,
+            "vote_count": 91,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/v57iMzSzzM8NsyMqrSmKGToHoCe.jpg",
+            "genre_ids": [16, 12, 35, 10751],
+            "id": 1029119,
+            "original_language": "en",
+            "original_title": "Minions & More Volume 1",
+            "overview": "This collection of 10 short films produced by Illumination includes: From the \"Despicable Me\" franchise: Puppy (2013); Minion Scouts (2019); Training Wheels (2013); The Secret Life of Kyle (2017); Santa's Little Helpers (2019).  From the \"Grinch\" franchise: The Dog Days of Winter (2019).  From the \"Secret Life of Pets\" franchise: Norman Television (2016); Weenie (2016).  From the \"Sing\" franchise: Love at First Sight (2017).  From the \"Lorax\" franchise: Forces of Nature (2012).",
+            "popularity": 35.48,
+            "poster_path": "/hjVIpMS8gOEaLB87kpgEOqdDCrk.jpg",
+            "release_date": "2022-09-27",
+            "title": "Minions & More Volume 1",
+            "video": false,
+            "vote_average": 7,
+            "vote_count": 336,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/yoigAFjhEhJM6O6hQT9TiKH6EL7.jpg",
+            "genre_ids": [28, 35, 14],
+            "id": 253980,
+            "original_language": "en",
+            "original_title": "Marvel One-Shot: All Hail the King",
+            "overview": "A documentary filmmaker interviews the now-famous Trevor Slattery from behind bars.",
+            "popularity": 27.27,
+            "poster_path": "/y0QYZPWgeGKOvyrzi6Oz3aJPxJa.jpg",
+            "release_date": "2014-02-04",
+            "title": "Marvel One-Shot: All Hail the King",
+            "video": false,
+            "vote_average": 6.751,
+            "vote_count": 660,
+            "media_type": "movie"
+          }
+        ],
+        "total_pages": 1,
+        "total_results": 8
+      },
+      "production_countries": [
+        {
+          "iso_3166_1": "NL",
+          "name": "Netherlands"
+        }
+      ],
+      "keywords": {
+        "keywords": []
+      }
+    }
+  }
+}

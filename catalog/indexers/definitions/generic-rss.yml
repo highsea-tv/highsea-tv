@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from the RSS 2.0 and Torznab specifications; no definition was copied.
+id: generic-rss
+version: 1.0.0
+minEngineVersion: 1.0.0
+name: Torrent feed
+description: A torrent RSS feed you have the address of. highsea reads new releases from it; a feed can't be searched.
+kind: rss
+privacy: private
+language: en
+baseUrl: '{{ .Config.url }}'
+categories:
+  - { id: movies, standard: 2000 }
+settings:
+  - key: url
+    label: Feed address
+    type: url
+    required: true
+    secret: true
+    help: The feed's full address. Private feeds often carry your passkey in it, so highsea keeps it encrypted.
+search:
+  request: { path: '' }
+rateLimit: { requests: 10, seconds: 60 }
+source:
+  author: highsea
+  documentation: https://www.rssboard.org/rss-specification
+license: CC0-1.0

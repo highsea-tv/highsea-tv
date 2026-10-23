@@ -2,9 +2,12 @@
 // The phone screen: a 390 × 844 pt viewport with the status bar and home indicator drawn in (the
 // safe areas), and a momentum-scrolling content area between them. React Native comes in Phase 4;
 // these approximate it with web primitives (pt ≈ px).
-import { Icon } from '@highsea/ui-web'
+import { Icon } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import { useNow } from '../../mock/hooks.tsx'
+
+/** The phone's screen, in pt. */
+export const PHONE = { w: 390, h: 844 }
 
 /** Safe-area insets of a current notched phone, in pt. */
 export const safeArea = { top: 54, bottom: 34 }

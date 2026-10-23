@@ -78,7 +78,7 @@ describe('stylesheet', async () => {
     expect(utilities.filter((c) => !text.includes(c))).toEqual([])
   })
 
-  test('fonts resolve to the files @highsea/brand ships', () => {
+  test('fonts resolve to the files @highsea-tv/brand ships', () => {
     const out = compiler.build([])
     const urls = [...out.matchAll(/url\('?([^')]+)'?\)/g)].map((m) => m[1] as string)
     expect(urls.length).toBeGreaterThan(0)

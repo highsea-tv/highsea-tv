@@ -1,0 +1,1 @@
+ALTER TABLE `subtitle_files` ADD `hi_removed` integer DEFAULT false NOT NULL;

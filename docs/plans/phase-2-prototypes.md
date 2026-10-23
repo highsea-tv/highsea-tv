@@ -1,6 +1,6 @@
 # Phase 2 plan: design prototypes
 
-- **Status:** Ready to start. Phase 1 (design system v1.0) was signed off on 2026-10-16 (commit 943c1f5).
+- **Status:** Done. Signed off by the owner on 2026-10-19; the web home is option A ([ADR 0017](../adr/0017-web-home-full-bleed-hero.md)). Phase 1 (design system v1.0) was signed off on 2026-10-16 (commit 943c1f5).
 - **Gate:** the owner signs off on the prototypes. They then become the build reference for Phase 3 (server) and Phase 4 (clients).
 - **Source:** the Phase 2 section of the [roadmap](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off). This plan turns that section into steps.
 
@@ -34,7 +34,7 @@ These come from the owner and apply to every step:
 
 ## Goal
 
-A clickable prototype app at `design/prototypes`, built on the **real** `@highsea/tokens` and `@highsea/ui-web` with SDK-shaped mock data, covering:
+A clickable prototype app at `design/prototypes`, built on the **real** `@highsea-tv/tokens` and `@highsea-tv/ui-web` with SDK-shaped mock data, covering:
 
 - every server admin screen that milestone 1 ships;
 - the client flows on desktop/web, mobile and TV.
@@ -45,7 +45,7 @@ A prototype is a **reference**, not product code. Hold it to the design bar (rea
 
 ## Exit criteria
 
-1. `bun run prototypes` starts the app. `bun run --filter @highsea/prototypes build` produces a static build.
+1. `bun run prototypes` starts the app. `bun run --filter @highsea-tv/prototypes build` produces a static build.
 2. Every flow listed below is clickable end to end on its platforms. Each one covers these states:
    - empty;
    - loading (skeletons);
@@ -70,12 +70,12 @@ A prototype is a **reference**, not product code. Hold it to the design bar (rea
 | Item | Decision |
 | --- | --- |
 | Location | `design/prototypes` |
-| Package | `@highsea/prototypes`, private. The root workspaces already include `design/*` |
+| Package | `@highsea-tv/prototypes`, private. The root workspaces already include `design/*` |
 | Stack | Vite 8 + React 19 + `@tailwindcss/vite` 4.3 + `motion`. Pin the same exact versions as `apps/storybook` (vite 8.3.4, react 19.3.1, @vitejs/plugin-react 6.1.2, tailwindcss 4.3.3, motion 14.3.0) |
-| Styles | `src/prototypes.css` imports `@highsea/ui-web/styles.css`. Add `@source` for local folders only if Tailwind misses them |
+| Styles | `src/prototypes.css` imports `@highsea-tv/ui-web/styles.css`. Add `@source` for local folders only if Tailwind misses them |
 | Router | Hash routing, so the static build opens from disk. Recommended: `wouter` with its hash location; it is small. Pin an exact version at least two weeks old (check with `npm view wouter time`). A ~50-line in-house hash router is an acceptable alternative if you prefer no dependency |
-| Root script | Add `"prototypes": "bun run --filter @highsea/prototypes dev"` to the root `package.json` |
-| tsconfig | Extend `@highsea/config`, as `apps/storybook/tsconfig.json` does, and add a `typecheck` script so the root `bun run typecheck` covers the app |
+| Root script | Add `"prototypes": "bun run --filter @highsea-tv/prototypes dev"` to the root `package.json` |
+| tsconfig | Extend `@highsea-tv/config`, as `apps/storybook/tsconfig.json` does, and add a `typecheck` script so the root `bun run typecheck` covers the app |
 
 **Route paths mirror the products.** Phase 3 builds from these, so the paths should match what will ship:
 
@@ -115,7 +115,7 @@ Persist the toolbar state in `localStorage`, wrapped in `try/catch`.
 
 ### Mock server (SDK-shaped)
 
-The mock lives at `src/mock/`. It is an in-memory "server" behind an async client whose method names and shapes look like the future `@highsea/sdk`. Screens call the client only and never import fixtures directly. This way:
+The mock lives at `src/mock/`. It is an in-memory "server" behind an async client whose method names and shapes look like the future `@highsea-tv/sdk`. Screens call the client only and never import fixtures directly. This way:
 
 - the data-state toggle works everywhere;
 - Phase 3 has a first draft of the API shapes.
@@ -142,7 +142,7 @@ Model what M1 needs:
 
 An event emitter stands in for SSE, so live screens update in place, as [admin › status and live data](../design-language/platforms/admin.md#status-and-live-data) requires.
 
-**Fixtures** reuse `apps/storybook/src/fixtures/` (Blender open movies, generated art). Move those two files to a place both apps import, rather than copying them. A `@highsea/fixtures` package under `packages/`, or a `design/fixtures` workspace, both work; pick one and update Storybook's imports. Add enough items for density, about 40 movies with varied states, and keep the art generated, so the repo carries no third-party images.
+**Fixtures** reuse `apps/storybook/src/fixtures/` (Blender open movies, generated art). Move those two files to a place both apps import, rather than copying them. A `@highsea-tv/fixtures` package under `packages/`, or a `design/fixtures` workspace, both work; pick one and update Storybook's imports. Add enough items for density, about 40 movies with varied states, and keep the art generated, so the repo carries no third-party images.
 
 ### Components
 
@@ -179,7 +179,7 @@ Likely new pieces, roughly in the order the flows need them:
    - web top bar (translucent over the hero);
    - server switcher;
    - TV top tab row ([tv.md › global navigation](../design-language/platforms/tv.md#layout));
-   - poster hover quick-actions (web: scale 1.04 plus an overlay);
+   - poster hover quick-actions (web: scale 1.02 plus an overlay);
    - row paging arrows;
    - mobile tab bar and featured carousel;
    - an announcement modal and card;

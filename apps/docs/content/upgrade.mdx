@@ -1,0 +1,109 @@
+---
+title: Upgrade
+description: Move highsea to a new release, and what to do if one goes wrong.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - docker compose pull and up: https://docs.docker.com/reference/cli/docker/compose/pull/ and
+    https://docs.docker.com/reference/cli/docker/compose/up/
+  - TrueNAS, Pull Image under Manage Container Images:
+    https://apps.truenas.com/managing-apps/managing-installed-apps/
+  - Synology, a project's actions (Stop, Build, Start):
+    https://kb.synology.com/en-global/DSM/help/ContainerManager/docker_project?version=7
+  - Unraid's Docker page (container menu, Auto-Start):
+    https://docs.unraid.net/unraid-os/using-unraid-to/run-docker-containers/managing-and-customizing-containers/
+  - In highsea: System › Updates, the automatic "Before an update" backup made before a migration
+    (packages/runtime/src/runtime.ts), and the restore that restarts with exit code 75
+    (packages/runtime/src/backups.ts).
+*/}
+
+Written for highsea 0.1.0.
+
+highsea doesn't update itself. A new release is a new Docker image: you pull it and recreate the container, and highsea does the rest when it starts.
+
+## Know when there's a release
+
+**System › Updates** shows the version you have and the newest one on your channel, with its release notes. highsea checks on its own, and **Check now** checks straight away. Nothing is downloaded until you pull the image.
+
+The owner chooses the channel, in **Settings › General › Updates**. Stable shows stable releases only. Beta gets new versions first, and stable versions show on both.
+
+## Choose how you follow releases
+
+The compose files use the `latest` tag, which always points at the newest stable release. Pulling it moves you to whatever is newest.
+
+If you'd rather choose each move yourself, use a version instead:
+
+```yaml
+image: ghcr.io/highsea-tv/highsea:0.1.0
+```
+
+and change the number when you're ready. Either way, read the release notes first. While highsea is at 0.x, a release can change how something works, and its notes say what to do.
+
+## What happens when highsea starts on a new version
+
+If the new version changes the database, highsea first makes a backup of it, marked **Before an update** in **System › Backups**, then updates the database. Your films, downloads and subtitles aren't touched. You don't need to make a backup by hand, though you can with **Back up now**.
+
+## Upgrade
+
+<Tabs items={['Docker Compose', 'Unraid', 'Synology', 'TrueNAS']}>
+<Tab value="Docker Compose">
+
+From the folder with `compose.yaml`:
+
+```sh
+docker compose pull
+docker compose up -d
+```
+
+`pull` downloads the new image and `up -d` recreates the container from it, keeping your folders. Old images stay on disk until you remove them with `docker image prune`.
+
+</Tab>
+<Tab value="Unraid">
+
+1. On the **Docker** page, choose **Check for Updates** below the list.
+2. When highsea shows an update, choose **apply update** next to it.
+
+Unraid pulls the image and recreates the container with the same settings.
+
+</Tab>
+<Tab value="Synology">
+
+Container Manager's project actions don't pull a newer image by themselves, so use SSH, signed in as an administrator:
+
+```sh
+cd /volume1/docker/highsea
+sudo docker compose pull
+sudo docker compose up -d
+```
+
+Use the folder you gave as the project's path. The project shows as running in Container Manager afterwards.
+
+</Tab>
+<Tab value="TrueNAS">
+
+1. Go to **Apps**, open **Configuration**, and choose **Manage Container Images**.
+2. Choose **Pull Image**, enter `ghcr.io/highsea-tv/highsea` and the tag you use, such as `latest`, and pull it.
+3. Back on the **Apps** page, stop highsea, then start it again.
+
+</Tab>
+</Tabs>
+
+<ScreenshotToCome shows="System › Updates with a new release available." />
+
+## If an update goes wrong
+
+The **Before an update** backup holds your database exactly as it was, so nothing is lost while you sort it out.
+
+Going back to an older version of highsea isn't supported yet. An older version doesn't know the changes a newer one made to the database, so pinning the old image on its own isn't safe. If a release misbehaves, stay on it and [open an issue](https://github.com/highsea-tv/highsea-tv/issues) with what you see in **System › Logs**.
+
+To undo a change you made yourself, such as a setting, restore any backup from **System › Backups** with **Restore**, then **Restore and restart**. highsea keeps what's there now as a backup of its own, puts the older database in place and restarts on the version you're running. Settings, people and history go back to that moment; anything since is lost. Media files aren't touched, and apps reconnect on their own.
+
+The restart works by highsea stopping itself on purpose, so the container needs a restart policy, as every compose file and template in these guides has: `restart: unless-stopped`.
+
+## Move highsea to another machine
+
+Backups hold the database, but never `secret.key`, the file in the config folder that seals your passwords and keys. A backup restored on another machine works, but asks you to enter those secrets again.
+
+To move everything at once, stop highsea, copy the whole config folder to the new machine, and start highsea there with the same compose file. Keep the data folder at the same path inside the container, `/data`, so the library's paths still match.

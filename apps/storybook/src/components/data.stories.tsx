@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { posterArt } from '@highsea/fixtures'
+import { posterArt } from '@highsea-tv/fixtures'
 import {
   Badge,
   Button,
@@ -22,7 +22,7 @@ import {
   TabsList,
   TabsTrigger,
   TitleCell,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 const meta = { title: 'Components/Data display' } satisfies Meta

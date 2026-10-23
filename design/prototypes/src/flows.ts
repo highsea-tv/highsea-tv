@@ -77,7 +77,7 @@ export const flows: Flow[] = [
       hints: [
         'Press ⌘K (Ctrl K) for the palette: pages, actions and every title.',
         'Set Width to 768 for the icon rail, 390 for the menu sheet.',
-        'Switch Server to Member to see what members don’t.',
+        'Switch Server to User to see the page a user gets instead of the admin.',
       ],
     },
   ),
@@ -241,6 +241,15 @@ export const flows: Flow[] = [
     '/curation',
     4,
     'Announcement and featured-section composers with a live preview on TV, web and mobile.',
+    {
+      ready: true,
+      spec: 'docs/product/curation.md',
+      hints: [
+        'New announcement: the preview updates as you type. Switch TV, Web and Mobile above it.',
+        'Audience → Roles, then Preview as Ruth: the preview says she isn’t in the audience.',
+        'Featured sections: Edit Staff picks; the preview scrolls to it on every platform.',
+      ],
+    },
   ),
   admin(
     'A12',
@@ -248,6 +257,14 @@ export const flows: Flow[] = [
     '/settings/appearance',
     4,
     'The theme editor, the server’s default theme and branding, sound settings.',
+    {
+      ready: true,
+      spec: 'docs/product/appearance.md',
+      hints: [
+        'Rename the server and Save: the clients’ switcher and TV pick it up.',
+        'New theme: drag Quiet text dark and watch the contrast audit catch it; Fix repairs it.',
+      ],
+    },
   ),
   admin(
     'A13',
@@ -255,6 +272,14 @@ export const flows: Flow[] = [
     '/settings/users',
     4,
     'Users, roles and permissions, library access, invites; devices with revoke; API keys.',
+    {
+      ready: true,
+      spec: 'docs/product/users-devices.md',
+      hints: [
+        'Invite someone: the link shows once the invite exists.',
+        'API keys → New API key: the secret shows once, then only its prefix.',
+      ],
+    },
   ),
   admin(
     'A14',
@@ -262,7 +287,12 @@ export const flows: Flow[] = [
     '/wanted',
     4,
     'Missing and cutoff unmet; the calendar and its iCal link.',
-    { fidelity: 'reference' },
+    {
+      fidelity: 'reference',
+      ready: true,
+      spec: 'docs/product/wanted.md',
+      hints: ['Search all sends the missing movies to Activity.'],
+    },
   ),
   admin(
     'A15',
@@ -270,7 +300,15 @@ export const flows: Flow[] = [
     '/settings',
     4,
     'One page per settings area, from media management to backups.',
-    { fidelity: 'reference' },
+    {
+      fidelity: 'reference',
+      ready: true,
+      spec: 'docs/product/settings.md',
+      hints: [
+        'Change anything: a save bar appears. Media management previews file names live.',
+        'VPN: Reconnect plays connecting; a PIA password or gluetun key of “wrong” plays a failure; Drop the tunnel plays the down state. The empty server lacks NET_ADMIN.',
+      ],
+    },
   ),
   admin(
     'A16',
@@ -278,7 +316,12 @@ export const flows: Flow[] = [
     '/system',
     4,
     'Status, health, tasks, logs, events, backups, catalog version and updates.',
-    { fidelity: 'reference' },
+    {
+      fidelity: 'reference',
+      ready: true,
+      spec: 'docs/product/system.md',
+      hints: ['Tasks → Run now, then watch Events and Logs follow it.'],
+    },
   ),
   admin(
     'A17',
@@ -286,7 +329,28 @@ export const flows: Flow[] = [
     '/activity/import',
     4,
     'A file browser, matched items, the rename preview and import.',
-    { fidelity: 'reference' },
+    {
+      fidelity: 'reference',
+      ready: true,
+      spec: 'docs/product/manual-import.md',
+      hints: ['The home video matched nothing: choose a movie for it, or leave it.'],
+    },
+  ),
+  admin(
+    'A19',
+    'Collections',
+    '/collections',
+    4,
+    'Smart collections: rules that keep a collection up to date, exceptions, and the live result.',
+    {
+      ready: true,
+      spec: 'docs/product/collections.md',
+      hints: [
+        'Edit “2010s, 4.5 stars and up, in English”: change the rating to 4 and watch the count.',
+        'Add a condition › Composer › search Morgenstern: the posters follow.',
+        'Movies › Wanted › Save as smart collection starts a collection from that filter.',
+      ],
+    },
   ),
   client(
     'C1',
@@ -296,7 +360,14 @@ export const flows: Flow[] = [
     3,
     'LAN discovery, add by URL, sign in (by code on TV), the server switcher and failover.',
     {
-      ready: false,
+      ready: true,
+      spec: 'docs/product/connectivity.md',
+      hints: [
+        'Servers answer discovery over two seconds; type harbor.example.net to connect remotely.',
+        'Sign in as ines with any password for the two-step code (any six digits but 000000).',
+        'TV: wait eight seconds and the phone “approves” the code; or press OK on Use a password.',
+        'Toolbar › Connection: Remote shows the failover; Unreachable shows what to do.',
+      ],
     },
   ),
   client(
@@ -305,7 +376,16 @@ export const flows: Flow[] = [
     '',
     ['web', 'mobile', 'tv'],
     3,
-    'Featured sections and announcements. Two web options to choose between.',
+    'Featured sections and announcements. The web home is a full-bleed hero (ADR 0017).',
+    {
+      ready: true,
+      spec: 'docs/product/client-home.md',
+      hints: [
+        'Web: the hero’s pager picks a featured title; the hero never changes on hover.',
+        'An announcement asks to be acknowledged first; Movie night is a dismissible banner or card.',
+        'TV: Up from Play opens the global navigation.',
+      ],
+    },
   ),
   client(
     'C3',
@@ -314,22 +394,42 @@ export const flows: Flow[] = [
     ['web', 'mobile', 'tv'],
     3,
     'The movies grid with sort and filter; alphabet jump on TV.',
+    {
+      ready: true,
+      spec: 'docs/product/client-library.md',
+      hints: ['TV: Left from the first column enters the alphabet rail.'],
+    },
   ),
   client(
     'C4',
     'Item detail',
-    '/movies/1',
+    '/movies/4',
     ['web', 'mobile', 'tv'],
     3,
     'Hero, play or resume, versions, cast, related, subtitle and audio defaults.',
+    {
+      ready: true,
+      spec: 'docs/product/client-detail.md',
+      hints: [
+        'Tears of Steel is a third watched: Resume, or Play from the start. Picks are remembered.',
+      ],
+    },
   ),
   client(
     'C5',
     'Player chrome',
-    '/play/1',
+    '/play/4',
     ['web', 'mobile', 'tv'],
     3,
     'Scrubber, track and subtitle pickers, the subtitle offset nudge, the remote mapping.',
+    {
+      ready: true,
+      spec: 'docs/product/player.md',
+      hints: [
+        'Turn English subtitles on, then nudge the timing in 50 ms steps and watch the preview.',
+        'Web: Space, ← →, M and F. TV: OK, ← → on the scrubber, ↓ for tracks, Back.',
+      ],
+    },
   ),
   client(
     'C6',
@@ -338,7 +438,12 @@ export const flows: Flow[] = [
     ['web', 'mobile', 'tv'],
     4,
     'Instant results; an on-screen keyboard on TV.',
-    { fidelity: 'reference' },
+    {
+      fidelity: 'reference',
+      ready: true,
+      spec: 'docs/product/client-search.md',
+      hints: ['Try “lang”: Fritz Lang’s films, and him under People.'],
+    },
   ),
   client(
     'C7',
@@ -347,6 +452,15 @@ export const flows: Flow[] = [
     ['web', 'mobile', 'tv'],
     4,
     'Themes, sounds, home layout, servers, devices, about.',
+    {
+      routes: { web: '/web/settings', mobile: '/mobile/you/appearance', tv: '/tv/settings' },
+      ready: true,
+      spec: 'docs/product/client-settings.md',
+      hints: [
+        'Pick a theme: only this device changes.',
+        'Home screen: hide or move a row, then go Home on another platform. It follows you.',
+      ],
+    },
   ),
   client(
     'C8',
@@ -355,7 +469,28 @@ export const flows: Flow[] = [
     ['mobile', 'web'],
     4,
     'Account, servers, offline downloads, the way into settings.',
-    { fidelity: 'reference' },
+    {
+      fidelity: 'reference',
+      routes: { mobile: '/mobile/you', web: '/web/profile' },
+      ready: true,
+      spec: 'docs/product/client-settings.md',
+    },
+  ),
+  client(
+    'C9',
+    'Collections',
+    '/library/collections',
+    ['web', 'mobile', 'tv'],
+    4,
+    'Library › Collections: the owner’s smart collections beside TMDB’s, and each one’s page.',
+    {
+      ready: true,
+      spec: 'docs/product/collections.md',
+      hints: [
+        'Open “2010s, 4.5 stars and up, in English”: its rules read in words under the name.',
+        'Sign in as Ruth: Zombie night is for owners and admins, so it isn’t there.',
+      ],
+    },
   ),
 ]
 

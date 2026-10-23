@@ -1,6 +1,6 @@
 # 0005. In-process TypeScript torrent engine
 
-- **Status:** Accepted
+- **Status:** Accepted; amended 2026-10-20 (the engine as built; see ADR 0037)
 - **Date:** 2026-10-16
 
 ## Context

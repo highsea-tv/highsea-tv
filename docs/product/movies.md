@@ -22,8 +22,8 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 ### Discover (A4)
 
 - `PageHeader`: "Discover", a one-line description.
-- A search field (max 36rem). Empty, the page shows **Trending this week**; typing shows **Results for "…"**. Results are instant (deferred input, no submit button).
-- A poster grid (`auto-fill, minmax(8.5rem, 1fr)`): poster, title (two lines), year and rating, then **Add** or an **In library** badge that links to the movie. The poster and title are one link to the movie's page, `/movies/{id}` by media id: the same address the library and everything else use, in the library or not.
+- A search field (max 36rem). Empty, the page shows four tabs above the grid: **Trending** (this week), **Popular**, **Now playing** and **Upcoming**, each from TMDB for the server's region; typing replaces them with **Results for "…"**. Results are instant (deferred input, no submit button). The tabs are approved by the owner on 2026-10-20; the prototype shows Trending only.
+- A poster grid (`auto-fill, minmax(8.5rem, 1fr)`): poster, title (two lines), year and rating, then **Add** or an **In library** badge that links to the movie. The poster and title are one link to the movie's page, `/movies/{id}` by TMDB id: the same address the library and everything else use, in the library or not.
 - **Add dialog** (`md`), shared by Discover, the movie page, person pages and collections: the synopsis (or, for several movies, their titles), then Folder (full width), Quality profile and Subtitle languages (two columns from medium), Minimum availability, **Monitored** (switch) and **Search now** (checkbox, on). The primary button reads **Add and search** or **Add movie** to match.
 
 ### Library (A5)
@@ -31,8 +31,9 @@ The front of the pipeline. **Discover** finds a movie and adds it with everythin
 - `PageHeader`: "Movies", a **Grid / Table** segmented control (remembered per browser), **Add movie**.
 - One `TableFrame` holds both views. Its toolbar: status tabs with counts (All, Available, Wanted, Downloading, Not released), a title filter, and Sort (Title, Date added, Year, Rating).
 - **Grid:** posters with quality tags on the art (top left), the status on the art (bottom left, an overlay badge: glass with a tinted dot) unless the movie is simply available, then the title and year. The caption is always one line, so cards don't change height with the status or its length.
-- **Table:** a select column (staff), title with a poster thumbnail (28px wide, 2:3) before it and its path under it, year, versions (a quality tag per version: "1080p", "4K HDR"), status, monitored, date added.
+- **Table:** a select column, title with a poster thumbnail (28px wide, 2:3) before it and its path under it, year, versions (a quality tag per version: "1080p", "4K HDR"), status, monitored, date added.
 - **Bulk bar:** appears under the toolbar once a row is selected, tinted `accent-soft`: "3 movies selected", **Search**, **Edit** (Monitor, Stop monitoring, then each quality profile), **Remove**, **Clear**.
+- *As built (8c), not in the prototype:* once a tag exists, the toolbar gains a tag filter ("Any tag" or one tag, kept in the address as `tag`) before Sort, and bulk Edit gains **Add a tag** and **Remove a tag** sections, one item per tag (`POST /movies/bulk`, `setTags`, which also takes `replace`).
 
 ### Movie detail (A6)
 
@@ -41,11 +42,14 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
 - `PageHeader`: the title; **Search**, **Interactive search**, and a More menu (Refresh metadata, Remove from library).
 - **Summary card:** the media page's, plus status and a quality tag per version, the path and the **Monitored** switch.
 - **Tabs** (line variant): Overview and Cast and crew, then:
-  - **Overview** gains **In the queue** while it's downloading (live progress), and **In the library** in the aside: versions with their profiles, subtitle profile, minimum availability, root folder.
+  - **Overview** gains **In the queue** while it's downloading (live progress), and **In the library** in the aside: versions with their profiles, subtitle profile, minimum availability, root folder. *As built (8c):* a **Tags** row after the subtitle profile ("None" without), and the Edit dialog's **Tags** picker, set together on save. Tags scope indexers and connections to the movies sharing one ([settings.md › Media management](settings.md)). The add dialog starts on its folder's default subtitle languages, when the folder has one, and follows a change of folder.
+    - *As built (checkpoint 6a, 2026-10-20):* a card for each of the movie's downloads, where the prototype shows its first, since a movie with two versions can have two. Each moves live over `queue.updated`, with the state, progress, rate and ETA, and a stalled or blocked download's reason.
   - **Files:** one card per version: its size, path, each stream on one line (video: codec, resolution, HDR, bitrate; audio: codec, channels, language, default; subtitles: codec, language, forced, SDH), and the release name. A version without a file says "No file yet" or "Downloading".
+    - *As built:* the streams come from ffprobe at import (`MediaFile.streams`); a file without a scene name leaves out the Release line.
   - **History:** this movie's events, newest first.
-  - **Search** (staff): interactive search. See Interactions.
-  - **Subtitles:** a tracks table (external, then embedded), then **Search for subtitles** (staff).
+    - *As built:* 50 at a time, with **Show more**; grabs, imports, failed downloads and imports, renames and blocklistings.
+  - **Search:** interactive search. See Interactions.
+  - **Subtitles:** a tracks table (external, then embedded), then **Search for subtitles**. As built in 7a: the columns are Language, Source, Score, Sync and Actions; a track the release carried reads "From the release", one picked with **Use** "Added by hand", and an embedded stream "Stream {index} in {file}" (its language named by `Intl.DisplayNames`, `und` as "Unknown language"). An embedded stream's forced and SDH flags follow its language, as a sidecar's do. Sync reads "Matches the video" for a release's own sidecar and for embedded streams (the prototype's "Embedded" fit only the streams). Since 7b the Offset column sits between Sync and Actions: − and + around the offset, and, under it, "Framerate corrected (25 → 23.976)" or "2 sections moved" when the sync's correction isn't one offset. A track the release carried as pictures (PGS, VobSub) has no text to move, so its offset reads "—" and it has no **Re-sync**; embedded streams read "—" too. The buttons wait while the track is Waiting to sync or Syncing. The search panel shows only when the movie has a file, and "Subtitles provided by OpenSubtitles.com" sits under its results.
 - **Responsive:** tables scroll sideways inside their frame below their natural width; the page never does. Header actions wrap below the title on compact.
 
 ## States
@@ -53,14 +57,16 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
 - **Loading:** Discover and the library grid show poster skeletons; tables show row skeletons; the movie page shows a poster and text skeleton. Interactive search says "Searching 5 indexers…" above row skeletons.
 - **Empty:**
   - Discover, no results: "Nothing matches "…"" · Try the original title, or just the year.
-  - Library: "No movies yet" · Add a movie and highsea finds a release, downloads it and files it here. · **Discover movies**. Members read "The server's owner hasn't added any movies yet."
+  - Library: "No movies yet" · Add a movie and highsea finds a release, downloads it and files it here. · **Discover movies**.
   - A filter with no matches: "No movies match. Try another filter."
   - History: "Nothing has happened yet".
   - Subtitles, no file: "No file to find subtitles for yet".
   - Interactive search, nothing back: "No indexer returned a release. Check Indexers, or try again later."
-- **Error:** each section shows "Couldn't load {section}" with the server's message and **Try again**. An unknown movie id shows "That movie isn't in the library." with **Go to Movies**.
+- **Error:** each section shows "Couldn't load {section}" with the server's message and **Try again**. An id TMDB doesn't know shows "TMDB has no movie with that id." with **Go to Discover**.
+- **No indexers yet:** the add dialog's Search now is disabled and off, with the hint "Add an indexer to search for releases.", and the button reads **Add movie**. The Search tab shows the same sentence with a link to **Indexers**.
+- **No TMDB key:** Discover and Add say "Add a TMDB key to find movies." with a link to Settings › General › Metadata. The library and its pages still work from the cache.
 - **Live:** the In the queue card, the status badge and the library update in place as the clock runs: a movie added with Search now goes Downloading → Available, and its Subtitles tab fills in.
-- **Permission-limited (members):** Discover shows **Add** disabled with "Only owners and admins can add movies. Ask the server's owner for one you want." The library has no select column, bulk bar or Add movie. The movie page has no actions, no Search tab, a read-only Monitored line, and subtitles without the offset buttons, re-sync, delete or search.
+- **No reduced states.** Only the owner and admins open the admin ([ADR 0032](../adr/0032-administrative-and-normal-access.md); owner's decision, 2026-10-20), and every admin can add, edit and remove movies. The members' states (Add disabled, no bulk bar, a read-only Monitored line) are gone.
 
 ## Interactions
 
@@ -74,8 +80,12 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
   - each row: indexer with the release name under it, quality and up to two custom formats as tags, format score, size, seeders/leechers, age, the decision, and a grab button;
   - the decision badge ("Accepted", or "Rejected (2)") is a button that expands a row of reasons, each marked ✓ accepted, ! warning or × rejected;
   - **Grab** (primary) on accepted releases; **Grab anyway** (ghost, with a tooltip "overrides your profile") on rejected ones. A grabbed row shows a **Grabbed** badge, and the toast points to Activity.
-- **Subtitle tracks:** − and + move a track 50 ms earlier or later and save at once; the offset reads "+250 ms" / "−120 ms". **Re-sync** runs the audio sync and toasts the result ("Offset −350 ms, 98% confidence"). Delete removes an external track.
-- **Subtitle search:** pick a language, **Search providers**, then **Use** on a result: it downloads, syncs and joins the tracks.
+  - **Grab** sends the release's indexer and fills the movie's first version; **Grab anyway** sends `force`, which also takes a blocklisted release. A refusal (already downloading, on the blocklist, the results expired) is the server's message in a toast, "Couldn't grab it". (Built in checkpoint 6a; until then Grab was disabled with "Grabbing comes with downloads.", checkpoint 5's answer 6.)
+  - releases are judged by the movie's **first version's** profile, since the tab has no version picker;
+  - the tab opens on the last search's results while they're fresh (30 minutes), and searches when there are none; indexers that didn't answer are listed under the table.
+- **Subtitle tracks:** − and + move a track 50 ms earlier or later and save at once; the offset reads "+250 ms" / "−120 ms". The offset shown is the sync's correction at the first cue plus the owner's nudge. **Re-sync** queues the sync in the background and toasts "Syncing English to the audio"; the badge follows, and while the tab is open a second toast gives the result: "Synced English to the audio · Offset −350 ms, 98% confidence.", "Kept the original English timing · The sync was 52% sure, under the minimum confidence." or "Couldn’t sync English". Re-sync puts the nudge back to zero (checkpoint 7b). Delete removes an external track and toasts "Subtitles deleted".
+- **Subtitle search:** pick a language (the movie's profile's first, else English), **Search providers**, then **Use** on a result: it downloads and joins the tracks (and, unless Sync to the audio is off, syncs in the background). No provider on reads "Turn on a subtitle provider in Subtitles to search."; none answering reads "No subtitle provider answered. Try again in a few minutes."; nothing found reads "No provider has subtitles in that language."
+- **Subtitle languages (bulk):** the library's bulk bar sets a profile on every selected movie and toasts "Subtitle languages set to {profile} for 3 movies".
 - **Keyboard:** every control is a native button, link, switch or Radix control in reading order; the reasons toggle has `aria-expanded`. No custom shortcuts.
 - **Sound:** none; admin sound is off by default.
 
@@ -93,21 +103,44 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
 | Remove (bulk) | Remove 3 movies? · They leave the library and stop being monitored. Their files stay on disk. |
 | Remove (one) | Remove {Title}? · It leaves the library and stops being monitored. ☐ Also delete its files from disk |
 | Grab toast | Grabbed · {release} is downloading. Follow it in Activity. |
-| Subtitle download toast | Subtitles downloaded · Synced to the audio and ready on every client. |
+| Subtitle download toast | Subtitles downloaded · Syncing to the audio in the background. With Sync to the audio off: Subtitles downloaded. (The prototype's "Synced to the audio and ready on every client." was true only after the sync.) |
+| Subtitle delete toast | Subtitles deleted |
 
 ## Data
 
-- `movies.discover(query)` → `GET /api/v1/discover/movies?query=` (TMDB-backed). `DiscoverMovie` carries `inLibrary`; library movies come back as themselves, once.
-- `movies.add(AddMovieInput)` → `POST /api/v1/movies`. With `searchNow`, the server searches and grabs the best accepted release in the same request.
-- `movies.rootFolders()`, `movies.qualityProfiles()`, `movies.languageProfiles()` → `GET /api/v1/rootfolders`, `/qualityprofiles`, `/languageprofiles`.
-- `movies.list()`, `movies.get(id)`, `movies.update(id, patch)`, `movies.delete(id, { deleteFiles })` → `/api/v1/movies[/{id}]`.
-- `movies.bulkUpdate(ids, patch)`, `movies.bulkSetQualityProfile(ids, profileId)`, `movies.bulkSearch(ids)`, `movies.bulkDelete(ids)` → `POST /api/v1/movies/bulk` with an `action`. The profile change moves each movie's **first** version; extra versions keep their own.
-- `movies.files(id)` → `GET /api/v1/movies/{id}/files` (`MediaFile` with ffprobe `streams`).
-- `movies.history(id)` → `GET /api/v1/movies/{id}/history`.
-- `movies.interactiveSearch(id)` → `GET /api/v1/movies/{id}/releases`: `Release[]`, each with `approved` and `reasons: { kind: 'accepted' | 'rejected' | 'warning'; message }[]`.
-- `movies.grabRelease(id, guid)` → `POST /api/v1/movies/{id}/releases/{guid}/grab`.
-- `subtitles.forItem(id)`, `subtitles.search(id, language)`, `subtitles.download(id, result)`, `subtitles.sync(trackId)`, `subtitles.setOffset(trackId, ms)`, `subtitles.delete(trackId)` → `/api/v1/movies/{id}/subtitles…` and `/api/v1/subtitles/{trackId}…`.
-- Events: `movies.updated`, `item.updated`, `history.updated`, `queue.changed`, `subtitles.updated`.
+Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `movies`, `rootFolders` and `quality` groups). A movie's `id` is its TMDB id, in the library or not; versions and root folders have the server's own ids. Everything here is staff's unless it says otherwise ([ADR 0032](../adr/0032-administrative-and-normal-access.md)).
+
+- **Discover:** `movies.discover({ query: { query?, list?, page? } })` → `GET /api/v1/discover/movies`. Staff. A `DiscoverPage` (`items`, `page`, `totalPages`, `totalResults`): TMDB's pages, 20 a page, at most 500, which **Show more** walks. Each `DiscoverMovie` carries `inLibrary`.
+  - With a query: TMDB's movie search (`/3/search/movie`, adult titles left out).
+  - Without one, `list` picks the tab: `trending` (TMDB's trending this week, the default; TMDB's trending takes no region), `popular`, `now-playing` or `upcoming` (TMDB's lists for the server's region).
+- **Adding:** `movies.add({ body })` → `POST /api/v1/movies`. Staff. `AddMovieInput` is `tmdbId`, `rootFolder` (a root folder's path), `monitored`, `minimumAvailability`, `languageProfileId`, `versions` (the dialog sends one: the quality profile, labelled with its name) and `searchNow`. 201 with the `Movie`; a movie already in the library comes back unchanged with 200. `searchNow` answers 409 (`no-indexers`) while no indexer is enabled; with one, the movie is added and a search is queued.
+- **The add dialog's values** are remembered per person: after each add it saves the preference `admin.addMovie.defaults` (folder, quality profile, subtitle languages, minimum availability, Search now) on the person's layer ([ADR 0027](../adr/0027-preferences-in-layers.md)) through `preferences.save`. Until the first add the dialog starts from the first folder and profiles and Released. Search now is remembered, but stays off while no indexer is enabled.
+- **The library:** `movies.list({ query })` → `GET /api/v1/movies`. Staff: the apps read the library through `/items` ([client-search.md](client-search.md#data)). Filters `status`, `title` (anywhere in the title or original title, ignoring case and accents), `qualityProfileId` (the first version's), `monitored`; `sort` is `title` (the default), `added`, `year` or `rating`, with `dir`. A `MoviePage`, paged by cursor: `items` (60 by default, `limit` up to 200), `next` (pass it back as `cursor`; null on the last page), `total`, and `counts` for the status tabs (every filter but `status`). The admin keeps sort and filters in the address, so Back keeps them.
+- `Movie` is the TMDB facts the lists need (title, original and sort title, year, runtime, genres, synopsis, `rating` out of 5, `voteCount`, release date, `art`), and the library's own: `status` (`available`, `wanted`, `downloading`, `not-released`, `unmonitored`), `monitored`, `minimumAvailability`, `languageProfileId`, `qualityProfileId` (the first version's), `rootFolder`, `path`, `addedAt`, `versions` and `gone` (TMDB removed or merged the id).
+- **One movie:** `movies.get({ params: { id } })` → `GET /api/v1/movies/{id}`, staff; 404 when it isn't in the library, and its page shows the metadata alone. `movies.update({ params, body })` → `PATCH`: monitored, minimum availability, subtitle languages, root folder. `movies.delete({ params, query: { deleteFiles? } })` → `DELETE`; its metadata stays cached.
+- **Versions** ([ADR 0012](../adr/0012-unified-media-item-model.md)): `movies.addVersion` → `POST /api/v1/movies/{id}/versions`, `movies.updateVersion` → `PATCH …/versions/{versionId}` (rename, or change the profile), `movies.removeVersion` → `DELETE …/versions/{versionId}`. Staff. Each answers with the whole `Movie`. A movie keeps at least one version: removing the last answers 409 (`last-version`).
+- **Refresh:** `movies.refresh({ params: { id } })` → `POST /api/v1/movies/{id}/refresh`. Staff. 202: it queues the refresh job, and `metadata.updated` follows when it's done.
+- **Bulk:** `movies.bulk({ body })` → `POST /api/v1/movies/bulk`, with an `action`: `monitor`, `unmonitor`, `setQualityProfile` (the **first** version's; extra versions keep their own), `search` (queues a search per movie; 409 `no-indexers` while no indexer is enabled), `refresh` or `delete` (with `deleteFiles`). Staff. `BulkResult` lists the `ids` it applied to and those `missing` from the library.
+- **The dashboard's movie sources:** `movies.upcoming({ query: { days? } })` → `GET /api/v1/movies/upcoming`: monitored movies released in the next 14 days (or `days`, up to 366), soonest first, by the region's release dates, for Upcoming and Calendar. `movies.recent({ query: { limit? } })` → `GET /api/v1/movies/recent`: the 8 (or `limit`, up to 50) added last, for Recently added. Everyone signed in: the apps' home shows Recently added too.
+- **Root folders:** `rootFolders.list()` → `GET /api/v1/rootfolders`: `RootFolder` with `path`, `free`, `total` and `device` (null when unreadable), `accessible` and the count of `movies` filed under it. `rootFolders.add({ body: { path } })` → `POST` and `rootFolders.remove` → `DELETE /api/v1/rootfolders/{id}`, staff. Adding checks the path is absolute, exists and is writable (400 `not-absolute`, `not-found` or `not-writable`; 409 inside or around another); removing one in use answers 409 (`in-use`, with `details.counts` of the titles filed under it by type, such as `{ movie: 2 }`). Root folders, profiles, formats and sizes are `@highsea-tv/media/shared`'s, one set for every media type (ADR 0036). Managed in Settings › Media management.
+- **Profiles:** `quality.profiles()` → `GET /api/v1/qualityprofiles[/{id}]` and `quality.languageProfiles()` → `GET /api/v1/languageprofiles`; seeded and read-only until checkpoint 8.
+- **Without a TMDB key,** Discover and adding answer 503 with `details.reason` `no-tmdb-key`; `tmdb-unreachable` (503) and `tmdb-rate-limited` (429) when TMDB doesn't answer. The library and its pages read the cache.
+- **Release search** (checkpoint 5), staff:
+  - `movies.interactiveSearch(id)` → `POST /api/v1/movies/{id}/search` (a `POST`, because it costs every indexer a query): `{ releases, searched, failed }`. Each `Release` has `approved`, `reasons: { kind: 'accepted' | 'rejected' | 'warning'; message }[]`, `protocol`, nullable `size`, `seeders`, `leechers`, `ageHours` and `publishedAt`, and indexer `flags`. 409 `no-indexers` while no indexer is enabled;
+  - `movies.releases(id)` → `GET /api/v1/movies/{id}/releases`: the last search's `Release[]` from the last 30 minutes, best first.
+- **Search now and bulk Search** queue a background search once an indexer is enabled, and since checkpoint 6a the search grabs the best approved release. With no enabled indexer they still answer 409 `no-indexers`.
+- **Downloads** (checkpoint 6a), staff:
+  - `movies.grabRelease({ params: { id, guid }, body })` → `POST /api/v1/movies/{id}/releases/{guid}/grab`, a release from the last search. `GrabReleaseInput` is `indexerId`, `versionId` (the first version by default) and `force` (Grab anyway). 409 when it's rejected or blocklisted without `force`, already downloading, or already in Downloads;
+  - `movies.files({ params: { id } })` → `GET /api/v1/movies/{id}/files`: `MediaFile[]` with ffprobe `streams`, the version, quality, release group, scene name, edition and how it arrived (`hardlink`, `copy` or `move`);
+  - `movies.history({ params: { id }, query: { cursor? } })` → `GET /api/v1/movies/{id}/history`: a `HistoryPage` of 50.
+- Subtitles (checkpoints 7a and 7b), staff:
+  - `subtitles.forItem({ params: { id } })` → `GET /api/v1/movies/{id}/subtitles`: the tracks, external then embedded.
+  - `subtitles.search({ params: { id }, body: { language, fileId? } })` → `POST /api/v1/movies/{id}/subtitles/search`: every ready provider at once; the results are kept 30 minutes. 409 `no-providers` when none is on, 503 `providers-failed` when none answers.
+  - `subtitles.download({ params: { id }, body: { resultId } })` → `POST /api/v1/movies/{id}/subtitles`: **Use**; it sends a result's id, never a link.
+  - `subtitles.delete({ params: { id } })` → `DELETE /api/v1/subtitles/{id}`: an external track and its sidecar.
+  - `subtitles.sync({ params: { id } })` → `POST /api/v1/subtitles/{id}/sync`: **Re-sync**; answers at once with the track Waiting to sync.
+  - `subtitles.setOffset({ params: { id }, body: { ms } })` → `PUT /api/v1/subtitles/{id}/offset`: − and +; `ms` is the offset A6 shows.
+- Events: `movies.updated` (the library changed; ids are TMDB ids), `item.updated` (one title's library layer; ids `movie:{id}`), `metadata.updated` (after a refresh; ids `movie:{id}`, `person:{id}`, `collection:{id}`). Since checkpoint 6a: `queue.updated` (the In the queue card), `history.updated`, `torrents.updated`; an import announces `item.updated`. Since checkpoint 7a: `subtitles.updated`.
 
 ## Decisions
 
@@ -115,18 +148,22 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
 - **Details on the movie's page, not in a dialog** (replaces checkpoint 2's details dialog). Cast, crew, trailers, collections and recommendations need the room, and one page for every state means one place to learn a title ([ADR 0014](../adr/0014-universal-media-pages.md)). Discover keeps its search in the history entry (`/discover?q=nanook` in the product), so Back returns to the same results.
 - **Status on the art, not under it.** A status chip in the caption wrapped or overflowed depending on the title and label lengths, and appeared and disappeared live, so cards jumped. On the art it takes no layout space; the quality tags already set that pattern.
 - **Every media table leads with a thumbnail.** `TitleCell` takes `art`, so series, music and books tables get the same row shape. The thumbnail is decorative (empty alt): the title beside it names the row.
-- **One dialog, defaults filled.** The prototype starts from the first folder, HD 1080p and English; the product should remember the last-used values. Search now is on, because the usual intent of adding is "get it".
+- **One dialog, defaults filled.** The prototype starts from the first folder, HD 1080p and English; the product remembers the last-used folder, profiles, availability and Search now per person, as the preference `admin.addMovie.defaults` (checkpoint 4). Search now is on, because the usual intent of adding is "get it".
 - **Grid and table share one frame,** filters and sort, so switching views keeps your place. Selection and bulk edit live in the table only: posters are for browsing.
 - **Bulk quality profile changes the first version.** A 4K version added beside a 1080p one is a deliberate second profile; a bulk edit shouldn't flatten it.
 - **Two versions are one item** with a tag per version, never two rows (ADR 0012).
 - **Rejected releases are shown by default,** with the reasons one click away. The point of interactive search is usually "why didn't it grab this?".
 - **Grab anyway exists,** but is a ghost button with a warning tooltip, never the primary.
+- **Grab fills the first version** in 6a, since the Search tab has no version picker; the API takes `versionId` (see Per-version actions below).
 - **The offset nudge is 50 ms,** matching the player's nudge (C5), and saves on each step rather than through a form.
 - **Embedded subtitle streams appear in the tracks table** as read-only rows, so the tab answers "what can people watch with" in one place.
 
+- **Discover's lists are tabs:** Trending, Popular, Now playing and Upcoming, for the server's region (owner's decisions, 2026-10-20: [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#owners-decisions)).
+- **Before indexers exist, search is shown but disabled,** with the reason and a link, rather than hidden: the owner learns where it will be (owner's decisions, 2026-10-20: [checkpoint 4 plan](../plans/phase-3-checkpoint-4.md#owners-decisions)).
+
 ## Open questions
 
-- **Discover sources.** TMDB trending only, or also lists (popular, upcoming, by genre) and the owner's import lists?
+- **Discover by genre and import lists.** Genre browsing, and the owner's import lists as Discover sources, are still open.
 - **Library columns.** Should the table's columns be choosable (size, quality profile, path, rating), as in Radarr?
 - **Per-version actions.** Searching or upgrading one version (just the 4K) needs a version picker on Search; the prototype searches the movie.
 - **Release details.** Should a release row open the indexer's page, and show its file list before grabbing?

@@ -1,0 +1,63 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The end-to-end run against the image (phase-3-checkpoint-9.md › Tests (9a)), driven by
+# scripts/e2e/run.ts, which starts and stops this file:
+#   HIGHSEA_IMAGE=highsea:ci bun scripts/e2e/run.ts
+#
+# The server runs the production image as it ships, on a network with no way out (`internal`,
+# https://docs.docker.com/reference/compose-file/networks/#internal). Everything it would reach on
+# the internet, it reaches at the fixtures service (scripts/e2e/fixtures.ts): the catalog, the
+# indexer, the tracker and a seeder, TMDB's recordings and the subtitle providers' fakes. A port
+# on an internal network can't be published, so the fixtures service, on both networks, is also
+# the browser's way in, at localhost:3000.
+name: highsea-e2e
+services:
+  highsea:
+    image: ${HIGHSEA_IMAGE:-highsea:ci}
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Etc/UTC
+      HIGHSEA_FIXTURES_URL: http://fixtures:4000
+      HIGHSEA_CATALOG_URL: http://fixtures:4000/catalog
+      # the fixtures' catalog is signed with the development key, which production builds don't
+      # trust unless told to (ADR 0034)
+      HIGHSEA_CATALOG_DEV_KEY: "1"
+    tmpfs:
+      - /config
+      # one filesystem for downloads and the library, so the import hardlinks, as a real setup does
+      - /data
+    networks: [closed]
+    depends_on:
+      fixtures:
+        condition: service_healthy
+
+  fixtures:
+    build:
+      context: .
+      target: e2e-fixtures
+    image: highsea-e2e-fixtures
+    environment:
+      # where peers reach the seeder: its address on the closed network, so the tracker hands
+      # highsea that one and not the edge network's, which highsea can't reach
+      FIXTURES_ADDRESS: 10.213.79.10
+    networks:
+      closed:
+        ipv4_address: 10.213.79.10
+      edge: {}
+    ports:
+      - "127.0.0.1:3000:3000"
+    healthcheck:
+      test: ["CMD", "bun", "-e", "fetch('http://127.0.0.1:4000/ready').then(r=>process.exit(r.ok?0:1),()=>process.exit(1))"]
+      interval: 2s
+      timeout: 5s
+      retries: 60
+
+networks:
+  closed:
+    internal: true
+    # a fixed subnet, for the fixtures' fixed address
+    # (https://docs.docker.com/reference/compose-file/services/#ipv4_address-ipv6_address)
+    ipam:
+      config:
+        - subnet: 10.213.79.0/24
+  edge: {}

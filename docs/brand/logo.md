@@ -91,5 +91,5 @@ PNGs that platforms require to be opaque (the App Store icon and the full-bleed 
 
 The same package ships the fonts and the default sounds:
 
-- **Fonts:** Geist and Geist Mono under the SIL OFL 1.1, as variable `woff2` for the web (`@highsea/brand/fonts.css`) and static TTFs (400/500/600) for React Native.
+- **Fonts:** Geist and Geist Mono under the SIL OFL 1.1, as variable `woff2` for the web (`@highsea-tv/brand/fonts.css`) and static TTFs (400/500/600) for React Native.
 - **Sounds:** the default sound pack rendered to WAV for native clients. See [`design/assets/sounds`](../../design/assets/sounds/README.md).

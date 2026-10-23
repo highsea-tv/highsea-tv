@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A page section's data states in one place: skeleton while loading, an error with Try again, and
 // the content once it's in. Each page passes its own skeleton so the layout doesn't jump.
-import { Button, EmptyState, Skeleton } from '@highsea/ui-web'
+import { Button, EmptyState, Skeleton } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import type { Query } from '../mock/hooks.tsx'
 

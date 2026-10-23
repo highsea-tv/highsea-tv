@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+highsea's Docker image: programs from Debian
+============================================
+
+The image is built on Debian 12 (bookworm) and installs these Debian packages unmodified, from
+Debian's own archive, with apt. highsea runs them as separate programs; it doesn't link them.
+
+  Package          License        What highsea uses it for
+  wireguard-tools  GPL-2.0        `wg`: sets the WireGuard keys and peer of highsea connects
+  iproute2         GPL-2.0        `ip`: the interface, address, routes and rule of highsea connects
+  wireguard-go     MIT            WireGuard in user space, where the kernel has none
+
+Each package's copyright and full license text are in the image, at
+/usr/share/doc/<package>/copyright. The exact version of each is what `dpkg -s <package>` reports
+inside the image.
+
+Source code offer
+-----------------
+
+The complete corresponding source code of every Debian package in the image, at the exact version
+the image carries, is available from Debian:
+
+  - https://sources.debian.org/src/<package>/<version>/
+  - https://snapshot.debian.org/package/<package>/<version>/ (every version Debian has published)
+  - or `apt-get source <package>` with a deb-src line for bookworm.
+
+For three years from the date an image is published, the highsea project will also provide that
+source on request, for no more than the cost of providing it. Ask through the project's issue
+tracker, naming the image's tag and the package.
+
+highsea's own source is under AGPL-3.0-only, in the repository the image was built from.

@@ -1,0 +1,21 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from Surfshark's own support pages; nothing was copied.
+id: surfshark
+version: 1.0.0
+minEngineVersion: 1.0.0
+name: Surfshark
+connect: config
+steps:
+  - Sign in at my.surfshark.com and open VPN › Manual setup › Desktop or mobile › WireGuard.
+  - Generate a key pair (save it, Surfshark won’t show it again), choose a location, and download the file.
+  - Upload it here.
+links:
+  - label: Surfshark’s manual WireGuard setup
+    url: https://support.surfshark.com/hc/en-us/articles/19262406140306
+portForwarding:
+  # Surfshark doesn't support port forwarding (its own blog, "What is VPN port forwarding?")
+  method: none
+ipv6: false
+sources:
+  - https://support.surfshark.com/hc/en-us/articles/19262406140306
+  - https://surfshark.com/blog/vpn-port-forwarding

@@ -1,0 +1,39 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The catalog pipeline (ADR 0007, ADR 0034) on every change to catalog/**: validate each definition,
+# check every definition's licence, build and sign both channels, and check that the server's seed
+# snapshot is up to date. A release publishes the catalog, signed with the release key
+# (release.yml, ADR 0050).
+name: Catalog
+
+on:
+  push:
+    branches: [main]
+    paths: ['catalog/**', 'packages/schemas/**', 'packages/catalog/**', 'scripts/catalog.ts']
+  pull_request:
+    paths: ['catalog/**', 'packages/schemas/**', 'packages/catalog/**', 'scripts/catalog.ts']
+
+concurrency:
+  group: catalog-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - name: Every definition validates, and runs against the fake indexer
+        run: bun test --isolate packages/schemas packages/catalog packages/indexers
+      - name: Every definition is CC0-1.0 or MIT
+        run: bun run licenses
+      # signed with the development key: the release key is in the release environment, which only
+      # release.yml names
+      - name: Build and sign both channels
+        run: bun run catalog:build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: catalog
+          path: dist/catalog/

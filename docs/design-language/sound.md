@@ -62,7 +62,7 @@ These are measured by rendering the sound offline through the same synthesis gra
 
 ## Recipe format
 
-A pack is data, not audio files. The web synthesizes it with Web Audio at runtime. Native clients play it rendered to audio by the offline renderer in `@highsea/tokens`; the default pack ships pre-rendered in `@highsea/brand` ([sources](../../design/assets/sounds/README.md)). A pack is:
+A pack is data, not audio files. The web synthesizes it with Web Audio at runtime. Native clients play it rendered to audio by the offline renderer in `@highsea-tv/tokens`; the default pack ships pre-rendered in `@highsea-tv/brand` ([sources](../../design/assets/sounds/README.md)). A pack is:
 
 ```ts
 type SoundPack = {
@@ -87,7 +87,7 @@ type Voice = {
 ```
 
 - **Master chain:** pack gain → compressor (threshold −14 dB, ratio 3) → output.
-- **Field names:** the reference board uses short keys for the same fields (`w, f, f2, t, a, d, g, lp, hp, bp, q, echo, p`). `@highsea/tokens` uses the long names above.
+- **Field names:** the reference board uses short keys for the same fields (`w, f, f2, t, a, d, g, lp, hp, bp, q, echo, p`). `@highsea-tv/tokens` uses the long names above.
 
 ## Sound packs
 

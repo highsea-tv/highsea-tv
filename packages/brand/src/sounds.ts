@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The default sound pack as audio files, for players without Web Audio (React Native).
-// The recipes in @highsea/tokens are the source; these files are rendered from them.
-import { defaultSoundPack, renderEvent, SOUND_EVENTS, type SoundEvent } from '@highsea/tokens'
+// The recipes in @highsea-tv/tokens are the source; these files are rendered from them.
+import { defaultSoundPack, renderEvent, SOUND_EVENTS, type SoundEvent } from '@highsea-tv/tokens'
 
 export const SOUND_SAMPLE_RATE = 48000
 

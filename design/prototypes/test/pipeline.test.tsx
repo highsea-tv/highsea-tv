@@ -98,11 +98,11 @@ describe('A4 discover → add', () => {
       expect(page().getByRole('link', { name }).getAttribute('href')).toBe('#/admin/movies/1')
   })
 
-  test('members can look but not add', async () => {
-    await open('/admin/discover', 'member')
+  test('admins add as the owner does', async () => {
+    await open('/admin/discover', 'admin')
+    await settle()
     const add = page().getAllByRole('button', { name: /^Add / })[0] as HTMLButtonElement
-    expect(add.disabled).toBe(true)
-    expect(page().getByText(/Only owners and admins can add movies/)).toBeTruthy()
+    expect(add.disabled).toBe(false)
   })
 })
 
@@ -201,10 +201,10 @@ describe('A6 media pages', () => {
     expect(page().getByRole('dialog', { name: /Add Scarlet Street/ })).toBeTruthy()
   })
 
-  test('members can read a page but not add', async () => {
-    await open('/admin/movies/107', 'member')
+  test('a user gets the refusal page, not the movie', async () => {
+    await open('/admin/movies/107', 'user')
     expect(page().queryByRole('button', { name: 'Add movie' })).toBeNull()
-    expect(page().getByText(/Only owners and admins can add movies/)).toBeTruthy()
+    expect(page().getByText('This is where the server’s owner and admins run it')).toBeTruthy()
     await clean()
   })
 })
@@ -262,9 +262,13 @@ describe('A6 movie detail', () => {
     const after = (await client(mock).subtitles.forItem('4'))[0]
     expect(after?.sync.offsetMs).toBe((before?.sync.offsetMs ?? 0) + 50)
 
+    // Re-sync runs in the background, as the server's job does
     await user.click(page().getByRole('button', { name: 'Re-sync English' }))
     await settle()
-    expect((await client(mock).subtitles.forItem('4'))[0]?.sync.status).toBe('synced')
+    expect(page().getByText('Syncing English to the audio')).toBeTruthy()
+    const track = () => mock.servers.populated.state.subtitles.find((s) => s.itemId === '4')
+    expect(track()?.sync.status).toBe('syncing')
+    await run(mock, () => track()?.sync.status === 'synced')
 
     await user.click(page().getByRole('button', { name: 'Search providers' }))
     await settle()
@@ -305,7 +309,7 @@ describe('A7 activity', () => {
 describe('A8 downloads', () => {
   test('open a torrent, skip a file, add a magnet', async () => {
     const { mock, user } = await open('/admin/downloads')
-    expect(page().getByText('Bound to wg0')).toBeTruthy()
+    expect(page().getByText('Through Proton VPN')).toBeTruthy()
     await clean()
     await user.click(page().getByRole('button', { name: /^Sintel\.2010/ }))
     const sheet = page().getByRole('dialog', { name: /^Sintel\.2010/ })
@@ -361,9 +365,9 @@ describe('A9 indexers', () => {
     expect((await client(mock).indexers.list()).some((i) => i.definitionId === 'bosun')).toBe(true)
   })
 
-  test('members are turned away', async () => {
-    await open('/admin/indexers', 'member')
-    expect(page().getByText('Only owners and admins can open Indexers')).toBeTruthy()
+  test('users are turned away', async () => {
+    await open('/admin/indexers', 'user')
+    expect(page().getByText('This is where the server’s owner and admins run it')).toBeTruthy()
   })
 })
 
@@ -380,7 +384,9 @@ describe('A10 subtitles', () => {
     await user.click(page().getByRole('tab', { name: 'Languages' }))
     await user.click(page().getByRole('button', { name: 'Edit English and Spanish' }))
     await clean()
-    await user.click(page().getByRole('button', { name: 'Move Spanish up' }))
+    // the drag handle's keyboard model: Space picks it up, Up moves it, Space drops it
+    act(() => page().getByRole('button', { name: 'Move Spanish' }).focus())
+    await user.keyboard(' {ArrowUp} ')
     await user.click(page().getByRole('button', { name: 'Save profile' }))
     await settle()
     const profile = (await client(mock).subtitles.languageProfiles()).find(

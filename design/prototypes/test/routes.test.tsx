@@ -23,14 +23,14 @@ const settle = () =>
   })
 
 const dataStates: DataState[] = ['populated', 'empty', 'loading', 'error']
-const rolesFor = (p: Platform): Role[] => (p === 'admin' ? ['owner', 'member'] : ['owner'])
+const rolesFor = (p: Platform): Role[] => (p === 'admin' ? ['owner', 'admin', 'user'] : ['owner'])
 
 for (const [platform, routes] of Object.entries(screenRoutes) as [Platform, string[]][]) {
   describe(platform, () => {
     for (const path of routes)
       for (const role of rolesFor(platform))
         for (const data of dataStates)
-          test(`${path} · ${data}${role === 'member' ? ' · member' : ''}`, async () => {
+          test(`${path} · ${data}${role === 'owner' ? '' : ` · ${role}`}`, async () => {
             const { hook } = memoryLocation({ path })
             const state = { ...defaultState, data, role, time: 'pause' as const }
             let container: HTMLElement | undefined
@@ -42,7 +42,10 @@ for (const [platform, routes] of Object.entries(screenRoutes) as [Platform, stri
             await settle()
             expect(container?.childElementCount).toBeGreaterThan(0)
             collect()
-            expect(await violations()).toEqual([])
+            // an acknowledge-required announcement opens over the clients' home: behind a modal
+            // dialog the page is hidden, so the dialog is what's checked
+            const modal = document.querySelector('[role="dialog"]') ?? undefined
+            expect(await violations(modal)).toEqual([])
           })
   })
 }

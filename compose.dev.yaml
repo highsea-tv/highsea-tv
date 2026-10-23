@@ -1,0 +1,19 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# highsea built from this checkout, for development: compose.yaml's setup on the image you build.
+#   docker compose -f compose.dev.yaml up --build
+# Its folders are under .dev/docker (gitignored). The other compose files run the published image.
+services:
+  highsea:
+    build: .
+    image: highsea:dev
+    container_name: highsea
+    network_mode: host
+    environment:
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Etc/UTC
+    volumes:
+      - ./.dev/docker/config:/config
+      # one root for downloads and the library, so imports can hardlink
+      - ./.dev/docker/data:/data
+    restart: unless-stopped

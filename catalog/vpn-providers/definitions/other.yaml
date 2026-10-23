@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: CC0-1.0
+# Any WireGuard configuration file, in the format wg(8) and wg-quick(8) document.
+id: other
+version: 1.0.0
+minEngineVersion: 1.0.0
+name: Another WireGuard provider
+connect: config
+steps:
+  - Download a WireGuard configuration file from your provider. It needs a DNS line in its [Interface] section.
+  - Upload it here. If they reserved a port for you, type it below.
+portForwarding:
+  method: static
+ipv6: false
+sources:
+  - https://git.zx2c4.com/wireguard-tools/about/src/man/wg-quick.8

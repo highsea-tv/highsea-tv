@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 import { RadioGroup } from 'radix-ui'
 import { useState } from 'react'

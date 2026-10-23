@@ -74,6 +74,33 @@ export function Launcher({ onOpen }: { onOpen: (path: string) => void }) {
             </ul>
           </section>
         ))}
+        <section className="grid gap-3" aria-labelledby="launcher-email">
+          <h2 id="launcher-email" className="text-title">
+            Email
+          </h2>
+          <ul className="grid grid-cols-1 gap-3 medium:grid-cols-2 expanded:grid-cols-3">
+            <li className="grid content-start gap-2 rounded-md border border-line bg-s1 p-3.5">
+              <div className="flex items-baseline gap-2">
+                <span className="font-mono text-[11px] text-text-3">E1</span>
+                <h3 className="min-w-0 flex-1 text-text text-widget-title">Emails</h3>
+              </div>
+              <p className="text-caption text-text-2">
+                Every email highsea sends, compiled from MJML: invites and password resets, and an
+                Email connection's notifications. At a phone's and a desktop's width, as plain text,
+                and in clients that invert colours.
+              </p>
+              <div className="flex flex-wrap items-center gap-1.5">
+                <a
+                  href="?emails"
+                  className="rounded-[6px] border border-line-strong bg-s2 px-2 py-1 font-mono text-[11px] text-text transition-tint hover:bg-s3"
+                >
+                  Open the emails
+                </a>
+              </div>
+              <p className="font-mono text-[11px] text-text-3">Spec: emails.md</p>
+            </li>
+          </ul>
+        </section>
       </div>
     </main>
   )

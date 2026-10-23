@@ -1,0 +1,70 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// A14 Wanted (ADR 0021): the prototype's copy, with what real data changes: the cutoff list shows
+// the profile and the quality it wants, each calendar entry says which date it is, and the feed's
+// address is made, replaced and turned off here.
+import { defineMessages } from '@highsea-tv/i18n'
+
+export const wanted = defineMessages({
+  title: 'Wanted',
+  description: 'Monitored movies highsea is still looking for, and what’s coming out.',
+  sections: 'Wanted sections',
+  'tab.missing': 'Missing',
+  'tab.cutoff': 'Cutoff unmet',
+  'tab.calendar': 'Calendar',
+
+  'list.what': 'the wanted list',
+  'missing.empty': 'Nothing missing',
+  'missing.emptyBody': 'Every released, monitored movie has a file.',
+  'missing.hint': 'highsea checks RSS every 15 minutes. Search now to look through every indexer.',
+  'cutoff.empty': 'Everything meets its cutoff',
+  'cutoff.emptyBody': 'Every movie is at the quality its profile asks for.',
+  'cutoff.hint': 'highsea upgrades these when a better release turns up. Search now to look today.',
+  searchAll: 'Search all {count}',
+  'col.movie': 'Movie',
+  'col.released': 'Released',
+  'col.profile': 'Profile',
+  'col.wants': 'Profile · wants',
+  'col.actions': 'Actions',
+  search: 'Search',
+  searchFor: 'Search for {title}',
+  unknown: '—',
+  more: 'Show more',
+  'searching.one': 'Searching for {title}',
+  'searching.all': '{count, plural, one {Searching for # movie} other {Searching for # movies}}',
+  'searching.body': 'Results land in Activity.',
+  'searching.failed': 'Couldn’t search',
+
+  'calendar.what': 'the calendar',
+  'calendar.previous': 'Previous month',
+  'calendar.next': 'Next month',
+  'calendar.thisMonth': 'This month',
+  'calendar.library': 'In the library',
+  'calendar.downloading': 'Downloading',
+  'calendar.wanted': 'Wanted',
+  'calendar.dayWith': '{date}: {titles}',
+  'calendar.releases': 'Releases in {month}',
+  'calendar.none': 'Nothing monitored comes out this month.',
+  'kind.cinema': 'In cinemas',
+  'kind.digital': 'Digital',
+  'kind.physical': 'Physical',
+  'entry.label': '{title}, {kind}',
+
+  'feed.label': 'Subscribe in your calendar app',
+  'feed.hint':
+    'An iCal feed of monitored releases. Its address carries a key that opens the feed and nothing else. Turn it off here.',
+  'feed.what': 'the calendar feed',
+  'feed.none': 'There’s no feed address yet.',
+  'feed.make': 'Make a feed address',
+  'feed.copy': 'Copy',
+  'feed.copied': 'Feed address copied',
+  'feed.renew': 'Make a new address',
+  'feed.off': 'Turn off',
+  'feed.renewTitle': 'Make a new feed address?',
+  'feed.renewBody':
+    'The current address stops working. Calendar apps subscribed to it need the new one.',
+  'feed.renewConfirm': 'Make a new address',
+  'feed.offTitle': 'Turn off the calendar feed?',
+  'feed.offBody': 'Calendar apps subscribed to it stop getting updates.',
+  'feed.offConfirm': 'Turn off',
+  'feed.failed': 'Couldn’t change the feed',
+})

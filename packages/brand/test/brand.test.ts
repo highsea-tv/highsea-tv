@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { defaultSoundPack, measure, renderEvent, SOUND_EVENTS } from '@highsea/tokens'
+import { defaultSoundPack, measure, renderEvent, SOUND_EVENTS } from '@highsea-tv/tokens'
 import { Resvg } from '@resvg/resvg-js'
 import { binaryOutputs, textOutputs } from '../scripts/build.ts'
 import {

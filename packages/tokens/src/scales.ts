@@ -85,7 +85,7 @@ export const focus = {
   tv: {
     width: 0.2,
     shadow: { x: 0, y: 0.8, blur: 2, spread: -0.6, opacity: 0.75 },
-    scalePoster: 1.09,
+    scalePoster: 1.05,
     scaleButton: 1.07,
     /** The edge-of-list nudge distance. */
     nudge: 0.2,

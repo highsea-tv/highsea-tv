@@ -1,0 +1,7 @@
+{
+  "extends": "@highsea-tv/config/tsconfig/library.json",
+  "compilerOptions": {
+    "types": ["bun", "node"]
+  },
+  "include": ["src", "test", "scripts", "drizzle.config.ts"]
+}

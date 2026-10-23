@@ -1,4 +1,4 @@
-# @highsea/fixtures
+# @highsea-tv/fixtures
 
 Sample titles and generated placeholder art, shared by [Storybook](../../apps/storybook/README.md) and the [Phase 2 prototypes](../../design/prototypes/README.md). Nothing here loads from the network, and the repo carries no third-party images.
 

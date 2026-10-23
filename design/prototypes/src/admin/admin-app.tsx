@@ -2,10 +2,16 @@
 // The server admin (A1–A18). Sign-in and first-run setup stand alone; everything else sits in the
 // shell. Pages a later checkpoint builds show a placeholder in the real page frame, so the shell
 // can be walked end to end.
-import { Button, EmptyState } from '@highsea/ui-web'
+import { Button, EmptyState } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import { Route, Switch, useLocation } from 'wouter'
 import { Activity } from './activity/activity.tsx'
+import { ManualImport } from './activity/import.tsx'
+import { Collections } from './collections/collections.tsx'
+import { CollectionEditor } from './collections/editor.tsx'
+import { AnnouncementEditor } from './curation/announcement-editor.tsx'
+import { Curation } from './curation/curation.tsx'
+import { SectionEditor } from './curation/section-editor.tsx'
 import { Dashboard } from './dashboard/dashboard.tsx'
 import { Discover } from './discover/discover.tsx'
 import { Downloads } from './downloads/downloads.tsx'
@@ -14,29 +20,29 @@ import { Login } from './login.tsx'
 import { PersonPage } from './media/person.tsx'
 import { MovieDetail } from './movies/detail.tsx'
 import { MoviesLibrary } from './movies/library.tsx'
-import { isStaff, type Page, pageGroups } from './nav.ts'
+import { type Page, pageGroups } from './nav.ts'
+import { Appearance } from './settings/appearance.tsx'
+import { FormatEditor, ProfileEditor, SizeEditor } from './settings/editors.tsx'
+import {
+  Backups,
+  Connections,
+  DownloadClient,
+  General,
+  ImportLists,
+  MediaManagement,
+  Network,
+  Profiles,
+  QualitySizes,
+  Security,
+} from './settings/reference.tsx'
+import { SettingsArea, SettingsIndex } from './settings/settings.tsx'
+import { UsersDevices } from './settings/users.tsx'
+import { Vpn } from './settings/vpn.tsx'
 import { Setup } from './setup/setup.tsx'
-import { AdminPage, AdminShell, useShell } from './shell.tsx'
+import { AdminPage, AdminShell } from './shell.tsx'
 import { Subtitles } from './subtitles/subtitles.tsx'
-
-/** Owners and admins only: anyone else sees why, and the way back. */
-function Staff({ page, children }: { page: Page; children: ReactNode }) {
-  const { role } = useShell()
-  const [, navigate] = useLocation()
-  if (page.staff && !isStaff(role))
-    return (
-      <AdminPage title={page.label}>
-        <EmptyState
-          icon="lock"
-          title={`Only owners and admins can open ${page.label}`}
-          action={<Button onClick={() => navigate('/')}>Go to the dashboard</Button>}
-        >
-          Ask the server’s owner if you need access.
-        </EmptyState>
-      </AdminPage>
-    )
-  return <>{children}</>
-}
+import { System, type SystemTab } from './system/system.tsx'
+import { Wanted, type WantedTab } from './wanted/wanted.tsx'
 
 /** A page a later checkpoint builds. */
 function Placeholder({ page }: { page: Page }) {
@@ -68,10 +74,32 @@ function NotFound() {
 const built: Record<string, () => ReactNode> = {
   discover: Discover,
   movies: MoviesLibrary,
+  collections: Collections,
   activity: Activity,
   downloads: Downloads,
   indexers: Indexers,
   subtitles: Subtitles,
+  curation: () => <Curation />,
+  settings: SettingsIndex,
+  system: () => <System />,
+  wanted: () => <Wanted />,
+}
+
+/** `/settings/{area}`: A12 and A13 are core; the rest are reference pages (A15). */
+const settingsAreas: Record<string, () => ReactNode> = {
+  general: General,
+  appearance: Appearance,
+  network: Network,
+  security: Security,
+  backups: Backups,
+  users: UsersDevices,
+  media: MediaManagement,
+  profiles: Profiles,
+  quality: QualitySizes,
+  lists: ImportLists,
+  vpn: Vpn,
+  downloads: DownloadClient,
+  connections: Connections,
 }
 
 const pages = pageGroups.flat().filter((p) => p.path !== '/')
@@ -97,11 +125,36 @@ export function AdminApp() {
             <Route path="/people/:id">
               <PersonPage />
             </Route>
+            <Route path="/collections/:id">
+              <CollectionEditor />
+            </Route>
+            <Route path="/curation/featured">
+              <Curation tab="featured" />
+            </Route>
+            <Route path="/curation/featured/:id">
+              <SectionEditor />
+            </Route>
+            <Route path="/wanted/:tab">{(p) => <Wanted tab={p.tab as WantedTab} />}</Route>
+            <Route path="/system/:tab">{(p) => <System tab={p.tab as SystemTab} />}</Route>
+            <Route path="/activity/import">
+              <ManualImport />
+            </Route>
+            <Route path="/settings/profiles/formats/:id">{(p) => <FormatEditor id={p.id} />}</Route>
+            <Route path="/settings/profiles/:id">{(p) => <ProfileEditor id={p.id} />}</Route>
+            <Route path="/settings/quality/sizes">
+              <SizeEditor />
+            </Route>
+            <Route path="/settings/:area">
+              <SettingsArea pages={settingsAreas} />
+            </Route>
+            <Route path="/curation/announcements/:id">
+              <AnnouncementEditor />
+            </Route>
             {pages.map((p) => {
               const Page = built[p.id]
               return (
                 <Route key={p.id} path={p.path}>
-                  <Staff page={p}>{Page ? <Page /> : <Placeholder page={p} />}</Staff>
+                  {Page ? <Page /> : <Placeholder page={p} />}
                 </Route>
               )
             })}

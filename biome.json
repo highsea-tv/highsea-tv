@@ -11,7 +11,13 @@
       "!packages/brand/assets",
       "!packages/brand/fonts",
       "!packages/brand/src/wordmark-data.ts",
-      "!packages/ui-web/src/icons/glyphs.ts"
+      "!packages/ui-web/src/icons/glyphs.ts",
+      "!packages/db/src/migrations.ts",
+      "!packages/db/drizzle",
+      "!apps/server/public",
+      "!apps/docs/public",
+      "!apps/server/openapi.json",
+      "!packages/catalog/seed"
     ]
   },
   "formatter": {

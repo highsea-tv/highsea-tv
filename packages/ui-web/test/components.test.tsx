@@ -4,6 +4,8 @@ import { afterEach, describe, expect, mock, test } from 'bun:test'
 import { act, cleanup, fireEvent, render, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
+import { hydrateRoot } from 'react-dom/client'
+import { renderToString } from 'react-dom/server'
 import {
   BackdropHero,
   Badge,
@@ -92,6 +94,17 @@ describe('Button', () => {
     )
     const link = getByRole('link', { name: 'Go' })
     expect(link.className).toContain('bg-accent-fill')
+  })
+
+  test('asChild keeps the icon, inside the link', () => {
+    const { getByRole } = render(
+      <Button asChild icon="play">
+        <a href="/x">Play</a>
+      </Button>,
+    )
+    const link = getByRole('link', { name: 'Play' })
+    expect(link.querySelector('svg')).not.toBeNull()
+    expect(link.textContent).toBe('Play')
   })
 })
 
@@ -264,6 +277,19 @@ describe('Toast', () => {
     expect(onClick).toHaveBeenCalled()
   })
 
+  test('names the region with its hotkey, and announces each toast as a notification', async () => {
+    const { findByText, getByRole } = render(<Toaster />)
+    act(() => {
+      toast({ title: 'Added Sintel' })
+    })
+    await findByText('Added Sintel', { selector: 'div' })
+    expect(getByRole('region').getAttribute('aria-label')).toBe('Notifications (F8)')
+    // Radix reads the provider's label before each toast, two frames after it opens; it fills in
+    // {hotkey} only for the region
+    const announced = await findByText(/^Notification Added Sintel/)
+    expect(announced.textContent).not.toContain('{hotkey}')
+  })
+
   test('keeps at most three on screen', async () => {
     const { findAllByRole } = render(<Toaster />)
     act(() => {
@@ -345,6 +371,44 @@ describe('Poster', () => {
   test('continue-watching progress is exposed', () => {
     const { getByRole } = render(<Poster title="Sintel" aspect="still" progress={40} />)
     expect(getByRole('progressbar', { name: 'Watched' }).getAttribute('aria-valuenow')).toBe('40')
+  })
+})
+
+describe('Table', () => {
+  test('a table wider than its frame scrolls by keyboard too: a named, focusable region', () => {
+    const box = (prop: 'scrollWidth' | 'clientWidth', value: number) =>
+      Object.defineProperty(HTMLElement.prototype, prop, { configurable: true, get: () => value })
+    box('scrollWidth', 600)
+    box('clientWidth', 320)
+    try {
+      const { getByRole } = render(
+        <Table aria-label="Custom formats">
+          <TableBody>
+            <TableRow>
+              <td>x265</td>
+            </TableRow>
+          </TableBody>
+        </Table>,
+      )
+      expect(getByRole('region', { name: 'Custom formats' }).tabIndex).toBe(0)
+    } finally {
+      // restore happy-dom's own getters (they live on Element)
+      Reflect.deleteProperty(HTMLElement.prototype, 'scrollWidth')
+      Reflect.deleteProperty(HTMLElement.prototype, 'clientWidth')
+    }
+  })
+
+  test('a table that fits adds no tab stop', () => {
+    const { container } = render(
+      <Table aria-label="Fits">
+        <TableBody>
+          <TableRow>
+            <td>x265</td>
+          </TableRow>
+        </TableBody>
+      </Table>,
+    )
+    expect(container.querySelector('[tabindex]')).toBeNull()
   })
 })
 
@@ -476,6 +540,21 @@ describe('CommandPalette', () => {
     expect(onMovies).toHaveBeenCalledTimes(1)
     expect(queryByRole('dialog')).toBeNull()
   })
+
+  test('tells the caller what’s typed, for results it looks up itself', async () => {
+    const user = userEvent.setup()
+    const typed: string[] = []
+    render(
+      <CommandPalette
+        open
+        onOpenChange={() => {}}
+        groups={[]}
+        onSearchChange={(s) => typed.push(s)}
+      />,
+    )
+    await user.keyboard('mat')
+    expect(typed.at(-1)).toBe('mat')
+  })
 })
 
 describe('Banner', () => {
@@ -538,6 +617,37 @@ describe('page furniture', () => {
     expect(trigger.getAttribute('aria-keyshortcuts')).toBe('Meta+K Control+K')
     fireEvent.click(trigger)
     expect(onClick).toHaveBeenCalled()
+  })
+
+  test('SearchTrigger hydrates on a Mac from a server on Linux, then shows ⌘K', async () => {
+    // Node has a navigator too, so the server once rendered its own platform's key and a Mac
+    // threw React's error #418 while hydrating (mod-key.tsx)
+    const platform = (value: string) =>
+      Object.defineProperty(navigator, 'platform', { value, configurable: true })
+    const before = Object.getOwnPropertyDescriptor(navigator, 'platform')
+    try {
+      platform('Linux x86_64')
+      const html = renderToString(<SearchTrigger onClick={() => {}} />)
+      expect(html).toContain('Ctrl')
+      platform('MacIntel')
+      const container = document.createElement('div')
+      container.innerHTML = html
+      document.body.append(container)
+      const errors: unknown[] = []
+      let root: ReturnType<typeof hydrateRoot> | undefined
+      await act(async () => {
+        root = hydrateRoot(container, <SearchTrigger onClick={() => {}} />, {
+          onRecoverableError: (e) => void errors.push(e),
+        })
+      })
+      expect(errors).toEqual([])
+      expect(container.querySelector('kbd')?.textContent).toBe('⌘K')
+      act(() => root?.unmount())
+      container.remove()
+    } finally {
+      if (before) Object.defineProperty(navigator, 'platform', before)
+      else delete (navigator as { platform?: string }).platform
+    }
   })
 
   test('PageHeader gives the page its one h1, with search and actions beside it', () => {

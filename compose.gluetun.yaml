@@ -1,0 +1,50 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# highsea behind a VPN container (docs/product/vpn.md › A VPN container, ADR 0042): highsea shares
+# gluetun's network, whose only way out is the tunnel, so gluetun is the guarantee. Settings › VPN ›
+# Compose for your provider writes the gluetun block for yours; this one is Proton VPN's.
+#   docker compose -f compose.gluetun.yaml up -d
+# Then in Settings › VPN choose "A VPN container", address http://127.0.0.1:8000 and the API key below.
+# LAN discovery needs host networking (ADR 0020), so here the apps find the server by its address.
+services:
+  gluetun:
+    # a gluetun release (https://github.com/qdm12/gluetun/releases); move it on when you choose
+    image: qmcgaw/gluetun:v3.41.3
+    container_name: gluetun
+    # gluetun makes the tunnel, so it needs these; highsea itself needs neither
+    cap_add: [NET_ADMIN]
+    devices: [/dev/net/tun:/dev/net/tun]
+    ports:
+      # highsea's ports are published here, since highsea has no network of its own
+      - "3000:3000"
+      # - "8443:8443"   # built-in TLS, when it's on (ADR 0026)
+    environment:
+      VPN_SERVICE_PROVIDER: protonvpn
+      VPN_TYPE: wireguard
+      WIREGUARD_PRIVATE_KEY: <from your Proton configuration>
+      SERVER_COUNTRIES: Netherlands
+      VPN_PORT_FORWARDING: "on"
+      # the control server highsea reads; make a key with `docker run --rm qmcgaw/gluetun genkey`
+      HTTP_CONTROL_SERVER_AUTH_DEFAULT_ROLE: '{"auth":"apikey","apikey":"<the API key>"}'
+      TZ: Etc/UTC
+    restart: unless-stopped
+
+  highsea:
+    # `latest` is the newest stable release; pin a version (0.1.0) to choose when you move
+    image: ghcr.io/highsea-tv/highsea:latest
+    container_name: highsea
+    network_mode: "service:gluetun"
+    depends_on: [gluetun]
+    environment:
+      # the user and group that own your files (`id` on the host shows yours)
+      PUID: "1000"
+      PGID: "1000"
+      TZ: Etc/UTC
+    volumes:
+      # the database, settings, logs and backups
+      - ./config:/config
+      # one folder for downloads and the library, on one disk, so imports can hardlink instead of
+      # copying: change ./data to where your films live
+      - ./data:/data
+    # a restore in System › Backups restarts highsea by exiting with code 75; this brings it back
+    # (ADR 0047), and so does a reboot
+    restart: unless-stopped

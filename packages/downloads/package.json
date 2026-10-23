@@ -1,0 +1,28 @@
+{
+  "name": "@highsea-tv/downloads",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/db": "workspace:*",
+    "@highsea-tv/indexers": "workspace:*",
+    "@highsea-tv/jobs": "workspace:*",
+    "@highsea-tv/torrent": "workspace:*",
+    "drizzle-orm": "0.45.3",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@highsea-tv/config": "workspace:*",
+    "@highsea-tv/quality": "workspace:*",
+    "@highsea-tv/schemas": "workspace:*",
+    "@types/node": "25.9.9"
+  }
+}

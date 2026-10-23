@@ -1,7 +1,7 @@
 # highsea.tv — Official Brand Direction: Abyss Neutral (Bone)
 
 - **Status:** Locked, v1.0, signed off by the owner on 2026-10-16. Recorded in [ADR 0013](../adr/0013-brand-direction-abyss-neutral.md).
-- **Reference board:** [`design/explorations/a2-abyss-neutral.html`](../../design/explorations/a2-abyss-neutral.html). It was the visual source of truth until [`@highsea/tokens`](../../packages/tokens/README.md) existed. The tokens package is now the source, and this document describes it.
+- **Reference board:** [`design/explorations/a2-abyss-neutral.html`](../../design/explorations/a2-abyss-neutral.html). It was the visual source of truth until [`@highsea-tv/tokens`](../../packages/tokens/README.md) existed. The tokens package is now the source, and this document describes it.
 - **Scope:** identity, color, type, shape, focus, layouts, motion and sound. The full design-language docs (`docs/design-language/`) expand on this and must not contradict it. Any change to what is listed here needs a new owner sign-off.
 
 ## Summary
@@ -90,7 +90,7 @@ The TV uses the same styles scaled for 10-foot viewing. The design-language docs
 
 ## Focus
 
-- **TV focus** is a `--text` ring (`#ededee`), 0.2u wide on TV (≈ 4px at 1080p; 3px on the board's web samples), with a soft dark drop shadow, and buttons scale to 1.07 and posters to 1.09. There is no colored halo.
+- **TV focus** is a `--text` ring (`#ededee`), 0.2u wide on TV (≈ 4px at 1080p; 3px on the board's web samples), with a soft dark drop shadow, and buttons scale to 1.07 and posters to 1.05 ([ADR 0016](../adr/0016-gentler-poster-lift.md); 1.09 before). There is no colored halo.
 - **Keyboard focus** on web and desktop uses the same ring language.
 - Focus is carried by ring, scale and motion, never by color alone.
 
@@ -98,7 +98,7 @@ The TV uses the same styles scaled for 10-foot viewing. The design-language docs
 
 | Surface | Layout | Description |
 | --- | --- | --- |
-| TV home | **Hero + rows** | A full-bleed hero for the focused title that crossfades as focus moves, then horizontal rows. Spatial D-pad focus with per-row memory. |
+| TV home | **Hero + rows** | A full-bleed hero for the focused featured title that crossfades as focus moves through the featured row, then horizontal rows; below the featured row the page lifts past the hero ([ADR 0015](../adr/0015-tv-hero-binds-featured-row.md)). Spatial D-pad focus with per-row memory. |
 | Phone home | **Tabs + carousel** | A bottom tab bar, the owner's announcement card, a featured carousel and poster rows. The accent marks only the active tab. |
 | Admin dashboard | **Sidebar + widgets** | Sidebar navigation and a free-form widget grid above the queue. Every card is a widget the owner can rearrange, resize or remove. |
 
@@ -124,7 +124,7 @@ The TV uses the same styles scaled for 10-foot viewing. The design-language docs
 | Notify | Soft two-note chime (E5 → B5) in a small room | 356 ms |
 | Arrival (app launch) | Warm low swell, then C–E–G felt notes | 1.0 s |
 
-Audible length is measured offline to −40 dB below the sound's peak. The exact synthesis parameters live in the reference board and move into `@highsea/tokens` as sound tokens.
+Audible length is measured offline to −40 dB below the sound's peak. The exact synthesis parameters live in the reference board and move into `@highsea-tv/tokens` as sound tokens.
 
 ## Considered and not chosen
 

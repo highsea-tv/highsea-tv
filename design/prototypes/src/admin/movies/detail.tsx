@@ -5,6 +5,8 @@
 // actions and tabs: Files (each version with its streams), History, Search (interactive: every
 // release with the decision engine's verdict and reasons) and Subtitles (tracks with sync status,
 // confidence and offset; manual search and pick; re-sync).
+
+import { bytes, duration, percent, rate, relative } from '@highsea-tv/core/format'
 import {
   Badge,
   Button,
@@ -37,7 +39,7 @@ import {
   TitleCell,
   Tooltip,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { Fragment, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
@@ -52,7 +54,6 @@ import type {
   SubtitleTrack,
   SyncStatus,
 } from '../../mock/types.ts'
-import { bytes, duration, percent, rate, relative } from '../format.ts'
 import { Loadable } from '../loadable.tsx'
 import {
   CastAndCrew,
@@ -63,8 +64,7 @@ import {
   SummarySkeleton,
   useMovieMetadata,
 } from '../media/sections.tsx'
-import { isStaff } from '../nav.ts'
-import { AdminPage, useShell } from '../shell.tsx'
+import { AdminPage } from '../shell.tsx'
 import { torrentStatus } from '../status.ts'
 import { AddMovieDialog } from './add-dialog.tsx'
 import { movieStatus } from './library.tsx'
@@ -107,8 +107,6 @@ export function MovieDetail() {
 // ---------------------------------------------------------------- not in the library
 
 function MetadataMovie({ meta }: { meta: Metadata }) {
-  const { role } = useShell()
-  const staff = isStaff(role)
   const [tab, setTab] = useState<Tab>('overview')
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
   const m = meta.data
@@ -117,8 +115,7 @@ function MetadataMovie({ meta }: { meta: Metadata }) {
     <AdminPage
       title={m?.title ?? 'Movie'}
       actions={
-        m &&
-        staff && (
+        m && (
           <Button variant="primary" icon="add" onClick={() => setAdding([m])}>
             Add movie
           </Button>
@@ -129,11 +126,6 @@ function MetadataMovie({ meta }: { meta: Metadata }) {
         <>
           <MediaSummary item={m} meta={m} badges={<Badge tone="neutral">Not in the library</Badge>}>
             <ReleaseLine date={m.releaseDate} />
-            {!staff && (
-              <p className="text-caption text-text-3">
-                Only owners and admins can add movies. Ask the server’s owner for this one.
-              </p>
-            )}
           </MediaSummary>
           <Tabs value={tab} onValueChange={(v) => setTab(v as Tab)} variant="line">
             <TabsList aria-label="Movie sections">
@@ -141,12 +133,7 @@ function MetadataMovie({ meta }: { meta: Metadata }) {
               <TabsTrigger value="cast">Cast and crew</TabsTrigger>
             </TabsList>
             <TabsContent value="overview" className="pt-5">
-              <MediaOverview
-                meta={meta}
-                staff={staff}
-                onAllCast={() => setTab('cast')}
-                onAdd={setAdding}
-              />
+              <MediaOverview meta={meta} onAllCast={() => setTab('cast')} onAdd={setAdding} />
             </TabsContent>
             <TabsContent value="cast" className="pt-5">
               <CastAndCrew meta={meta} />
@@ -167,8 +154,6 @@ function MetadataMovie({ meta }: { meta: Metadata }) {
 // ---------------------------------------------------------------- in the library
 
 function LibraryMovie({ id, meta }: { id: string; meta: Metadata }) {
-  const { role } = useShell()
-  const staff = isStaff(role)
   const [, navigate] = useLocation()
   const movie = useQuery(`movie:${id}`, (c) => c.movies.get(id), ['item.updated', 'movies.updated'])
   const [tab, setTab] = useState<Tab>('overview')
@@ -180,41 +165,40 @@ function LibraryMovie({ id, meta }: { id: string; meta: Metadata }) {
   const remove = useAction((c) => c.movies.delete(id, { deleteFiles }))
 
   const m = movie.data
-  const actions =
-    m && staff ? (
-      <>
-        <Button
-          icon="search"
-          loading={search.pending}
-          disabled={m.status === 'available' || m.status === 'downloading'}
-          onClick={() =>
-            search.run().then(
-              () =>
-                toast({ title: `Searching for ${m.title}`, description: 'Follow it in Activity.' }),
-              (e: Error) => toast.error('Search failed', { description: e.message }),
-            )
-          }
-        >
-          Search
-        </Button>
-        <Button variant="primary" icon="list" onClick={() => setTab('search')}>
-          Interactive search
-        </Button>
-        <Menu>
-          <MenuTrigger asChild>
-            <Button variant="ghost" iconOnly icon="more" aria-label="More actions" />
-          </MenuTrigger>
-          <MenuContent>
-            <MenuItem icon="refresh" onSelect={() => toast({ title: 'Metadata refreshed' })}>
-              Refresh metadata
-            </MenuItem>
-            <MenuItem icon="delete" danger onSelect={() => setRemoving(true)}>
-              Remove from library
-            </MenuItem>
-          </MenuContent>
-        </Menu>
-      </>
-    ) : undefined
+  const actions = m ? (
+    <>
+      <Button
+        icon="search"
+        loading={search.pending}
+        disabled={m.status === 'available' || m.status === 'downloading'}
+        onClick={() =>
+          search.run().then(
+            () =>
+              toast({ title: `Searching for ${m.title}`, description: 'Follow it in Activity.' }),
+            (e: Error) => toast.error('Search failed', { description: e.message }),
+          )
+        }
+      >
+        Search
+      </Button>
+      <Button variant="primary" icon="list" onClick={() => setTab('search')}>
+        Interactive search
+      </Button>
+      <Menu>
+        <MenuTrigger asChild>
+          <Button variant="ghost" iconOnly icon="more" aria-label="More actions" />
+        </MenuTrigger>
+        <MenuContent>
+          <MenuItem icon="refresh" onSelect={() => toast({ title: 'Metadata refreshed' })}>
+            Refresh metadata
+          </MenuItem>
+          <MenuItem icon="delete" danger onSelect={() => setRemoving(true)}>
+            Remove from library
+          </MenuItem>
+        </MenuContent>
+      </Menu>
+    </>
+  ) : undefined
 
   return (
     <AdminPage title={m?.title ?? 'Movie'} actions={actions}>
@@ -233,7 +217,6 @@ function LibraryMovie({ id, meta }: { id: string; meta: Metadata }) {
         <LibraryBody
           movie={m}
           meta={meta}
-          staff={staff}
           tab={tab}
           onTab={setTab}
           onMonitor={(monitored) => update.run({ monitored })}
@@ -277,7 +260,6 @@ function LibraryMovie({ id, meta }: { id: string; meta: Metadata }) {
 function LibraryBody({
   movie: m,
   meta,
-  staff,
   tab,
   onTab,
   onMonitor,
@@ -285,7 +267,6 @@ function LibraryBody({
 }: {
   movie: MediaItem
   meta: Metadata
-  staff: boolean
   tab: Tab
   onTab: (tab: Tab) => void
   onMonitor: (on: boolean) => void
@@ -308,24 +289,20 @@ function LibraryBody({
       >
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-caption text-text-3">
           <span className="font-mono">{m.path}</span>
-          {staff ? (
-            <span className="flex items-center gap-2">
-              <Switch
-                id="monitored"
-                checked={m.monitored}
-                onCheckedChange={onMonitor}
-                aria-describedby="monitored-hint"
-              />
-              <label htmlFor="monitored" className="text-text-2">
-                Monitored
-              </label>
-              <span id="monitored-hint" className="sr-only">
-                Grab and upgrade releases automatically
-              </span>
+          <span className="flex items-center gap-2">
+            <Switch
+              id="monitored"
+              checked={m.monitored}
+              onCheckedChange={onMonitor}
+              aria-describedby="monitored-hint"
+            />
+            <label htmlFor="monitored" className="text-text-2">
+              Monitored
+            </label>
+            <span id="monitored-hint" className="sr-only">
+              Grab and upgrade releases automatically
             </span>
-          ) : (
-            <span>{m.monitored ? 'Monitored' : 'Not monitored'}</span>
-          )}
+          </span>
         </div>
       </MediaSummary>
       <Tabs value={tab} onValueChange={(v) => onTab(v as Tab)} variant="line">
@@ -334,13 +311,12 @@ function LibraryBody({
           <TabsTrigger value="cast">Cast and crew</TabsTrigger>
           <TabsTrigger value="files">Files</TabsTrigger>
           <TabsTrigger value="history">History</TabsTrigger>
-          {staff && <TabsTrigger value="search">Search</TabsTrigger>}
+          <TabsTrigger value="search">Search</TabsTrigger>
           <TabsTrigger value="subtitles">Subtitles</TabsTrigger>
         </TabsList>
         <TabsContent value="overview" className="pt-5">
           <MediaOverview
             meta={meta}
-            staff={staff}
             onAllCast={() => onTab('cast')}
             onAdd={onAdd}
             main={<InTheQueue movie={m} />}
@@ -356,13 +332,11 @@ function LibraryBody({
         <TabsContent value="history" className="pt-5">
           <History id={m.id} />
         </TabsContent>
-        {staff && (
-          <TabsContent value="search" className="pt-5">
-            <InteractiveSearch movie={m} />
-          </TabsContent>
-        )}
+        <TabsContent value="search" className="pt-5">
+          <InteractiveSearch movie={m} />
+        </TabsContent>
         <TabsContent value="subtitles" className="pt-5">
-          <Subtitles movie={m} staff={staff} />
+          <Subtitles movie={m} />
         </TabsContent>
       </Tabs>
     </>
@@ -415,7 +389,7 @@ function InTheLibrary({ movie: m }: { movie: MediaItem }) {
 }
 
 function InTheQueue({ movie: m }: { movie: MediaItem }) {
-  const queue = useQuery('queue', (c) => c.queue.list(), ['queue.changed', 'torrents.updated'])
+  const queue = useQuery('queue', (c) => c.queue.list(), ['queue.updated', 'torrents.updated'])
   const live = queue.data?.find((q) => q.itemId === m.id)
   if (!live) return null
   return (
@@ -796,7 +770,7 @@ export const syncStatus: Record<
 
 const offsetLabel = (ms: number) => `${ms > 0 ? '+' : ms < 0 ? '−' : ''}${Math.abs(ms)} ms`
 
-function Subtitles({ movie: m, staff }: { movie: MediaItem; staff: boolean }) {
+function Subtitles({ movie: m }: { movie: MediaItem }) {
   const data = useQuery(
     `subtitles:${m.id}`,
     async (c) => {
@@ -837,7 +811,7 @@ function Subtitles({ movie: m, staff }: { movie: MediaItem; staff: boolean }) {
               </TableToolbar>
               {tracks.length + embedded.length === 0 ? (
                 <p className="px-3.5 py-8 text-center text-caption text-text-3">
-                  No subtitles yet. {staff ? 'Search below to pick some.' : ''}
+                  No subtitles yet. Search below to pick some.
                 </p>
               ) : (
                 <Table>
@@ -848,11 +822,9 @@ function Subtitles({ movie: m, staff }: { movie: MediaItem; staff: boolean }) {
                       <TableHead numeric>Score</TableHead>
                       <TableHead>Sync</TableHead>
                       <TableHead numeric>Offset</TableHead>
-                      {staff && (
-                        <TableHead>
-                          <span className="sr-only">Actions</span>
-                        </TableHead>
-                      )}
+                      <TableHead>
+                        <span className="sr-only">Actions</span>
+                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -861,14 +833,10 @@ function Subtitles({ movie: m, staff }: { movie: MediaItem; staff: boolean }) {
                         key={t.id}
                         track={t}
                         language={name(t.language)}
-                        staff={staff}
                         busy={sync.pending || offset.pending}
                         onSync={() =>
                           sync.run(t.id).then(
-                            (r) =>
-                              toast.success('Synced to the audio', {
-                                description: `Offset ${offsetLabel(r.sync.offsetMs)}, ${percent(r.sync.confidence ?? 0)} confidence.`,
-                              }),
+                            () => toast({ title: `Syncing ${name(t.language)} to the audio` }),
                             (e: Error) => toast.error('Sync failed', { description: e.message }),
                           )
                         }
@@ -890,14 +858,14 @@ function Subtitles({ movie: m, staff }: { movie: MediaItem; staff: boolean }) {
                           <Badge tone="neutral">Matches the video</Badge>
                         </TableCell>
                         <TableCell numeric>—</TableCell>
-                        {staff && <TableCell />}
+                        <TableCell />
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               )}
             </TableFrame>
-            {staff && <SubtitleSearch movie={m} languages={languages} />}
+            <SubtitleSearch movie={m} languages={languages} />
           </div>
         )
       }}
@@ -908,7 +876,6 @@ function Subtitles({ movie: m, staff }: { movie: MediaItem; staff: boolean }) {
 function TrackRow({
   track: t,
   language,
-  staff,
   busy,
   onSync,
   onOffset,
@@ -916,7 +883,6 @@ function TrackRow({
 }: {
   track: SubtitleTrack
   language: string
-  staff: boolean
   busy: boolean
   onSync: () => void
   onOffset: (ms: number) => void
@@ -941,61 +907,55 @@ function TrackRow({
         </span>
       </TableCell>
       <TableCell numeric>
-        {staff ? (
-          <span className="inline-flex items-center gap-1">
-            <Button
-              size="sm"
-              variant="ghost"
-              iconOnly
-              icon="remove"
-              aria-label={`Show ${language} subtitles 50 ms earlier`}
-              onClick={() => onOffset(t.sync.offsetMs - 50)}
-              disabled={busy}
-            />
-            <output aria-label={`${language} offset`} className="w-16 text-center">
-              {offsetLabel(t.sync.offsetMs)}
-            </output>
-            <Button
-              size="sm"
-              variant="ghost"
-              iconOnly
-              icon="add"
-              aria-label={`Show ${language} subtitles 50 ms later`}
-              onClick={() => onOffset(t.sync.offsetMs + 50)}
-              disabled={busy}
-            />
-          </span>
-        ) : (
-          offsetLabel(t.sync.offsetMs)
-        )}
+        <span className="inline-flex items-center gap-1">
+          <Button
+            size="sm"
+            variant="ghost"
+            iconOnly
+            icon="remove"
+            aria-label={`Show ${language} subtitles 50 ms earlier`}
+            onClick={() => onOffset(t.sync.offsetMs - 50)}
+            disabled={busy}
+          />
+          <output aria-label={`${language} offset`} className="w-16 text-center">
+            {offsetLabel(t.sync.offsetMs)}
+          </output>
+          <Button
+            size="sm"
+            variant="ghost"
+            iconOnly
+            icon="add"
+            aria-label={`Show ${language} subtitles 50 ms later`}
+            onClick={() => onOffset(t.sync.offsetMs + 50)}
+            disabled={busy}
+          />
+        </span>
       </TableCell>
-      {staff && (
-        <TableCell className="text-end">
-          <span className="inline-flex gap-1">
-            <Tooltip content="Sync to the audio again">
-              <Button
-                size="sm"
-                variant="ghost"
-                iconOnly
-                icon="subtitle-sync"
-                aria-label={`Re-sync ${language}`}
-                onClick={onSync}
-                disabled={busy}
-              />
-            </Tooltip>
-            <Tooltip content="Delete">
-              <Button
-                size="sm"
-                variant="ghost"
-                iconOnly
-                icon="delete"
-                aria-label={`Delete ${language} subtitles`}
-                onClick={onRemove}
-              />
-            </Tooltip>
-          </span>
-        </TableCell>
-      )}
+      <TableCell className="text-end">
+        <span className="inline-flex gap-1">
+          <Tooltip content="Sync to the audio again">
+            <Button
+              size="sm"
+              variant="ghost"
+              iconOnly
+              icon="subtitle-sync"
+              aria-label={`Re-sync ${language}`}
+              onClick={onSync}
+              disabled={busy}
+            />
+          </Tooltip>
+          <Tooltip content="Delete">
+            <Button
+              size="sm"
+              variant="ghost"
+              iconOnly
+              icon="delete"
+              aria-label={`Delete ${language} subtitles`}
+              onClick={onRemove}
+            />
+          </Tooltip>
+        </span>
+      </TableCell>
     </TableRow>
   )
 }
@@ -1069,7 +1029,7 @@ function SubtitleSearch({
                               download.run(r).then(
                                 () =>
                                   toast.success('Subtitles downloaded', {
-                                    description: 'Synced to the audio and ready on every client.',
+                                    description: 'Syncing to the audio in the background.',
                                   }),
                                 (e: Error) =>
                                   toast.error('Couldn’t download them', { description: e.message }),

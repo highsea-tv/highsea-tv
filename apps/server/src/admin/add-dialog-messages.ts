@@ -1,0 +1,45 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// The add dialog (ADR 0021): the prototype's copy (docs/product/movies.md › Copy), with Search now
+// disabled while no indexer is enabled (checkpoint 4 plan, decision 2). Until downloads
+// (checkpoint 6) a search finds releases without grabbing, so its toast points at the Search tab.
+import { defineMessages } from '@highsea-tv/i18n'
+
+export const addDialog = defineMessages({
+  'title.one': 'Add {title} ({year})',
+  'title.oneNoYear': 'Add {title}',
+  'title.many': 'Add {count} movies',
+  'title.none': 'Add a movie',
+  'description.one': 'You can change all of this later on the movie’s page.',
+  'description.many': 'They’re added with the same options. You can change each one later.',
+  what: 'the profiles',
+  folder: 'Folder',
+  'folder.none': 'There’s no folder to file movies under yet.',
+  'folder.add': 'Add one in Settings › Media management',
+  qualityProfile: 'Quality profile',
+  languageProfile: 'Subtitle languages',
+  'languageProfile.none': 'None',
+  availability: 'Minimum availability',
+  'availability.hint': 'Don’t grab before this. Released avoids cam copies.',
+  'availability.announced': 'Announced',
+  'availability.in-cinemas': 'In cinemas',
+  'availability.released': 'Released',
+  monitored: 'Monitored',
+  'monitored.hint': 'Grab it when a release turns up, and upgrade it until the profile’s cutoff.',
+  searchNow: 'Search now',
+  'searchNow.noIndexers': 'Add an indexer to search for releases.',
+  'searchNow.hint': 'Otherwise the next RSS sync picks it up.',
+  cancel: 'Cancel',
+  'add.one': 'Add movie',
+  'add.many': 'Add movies',
+  'add.search': 'Add and search',
+  'toast.one': '{title} added',
+  'toast.many': '{count} movies added',
+  'toast.searching': 'Searching your indexers now. Its Search tab shows what they find.',
+  'toast.monitored.one': 'It’s monitored. highsea grabs it when a release turns up.',
+  'toast.monitored.many': 'They’re monitored. highsea grabs each one when a release turns up.',
+  'toast.unmonitored.one': 'It isn’t monitored, so nothing is grabbed until you turn that on.',
+  'toast.unmonitored.many': 'They aren’t monitored, so nothing is grabbed until you turn that on.',
+  'toast.open': 'Open',
+  noKey: 'Add a TMDB key to find movies.',
+  'noKey.link': 'Settings › General › Metadata',
+})

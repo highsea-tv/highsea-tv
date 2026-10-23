@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The admin's pages, in the sidebar's groups (admin.md#sidebar). Paths mirror the server's routes.
-import type { IconName } from '@highsea/ui-web'
-import type { UserRole } from '../mock/types.ts'
+// Only the owner and admins open the admin (ADR 0032), so every page is theirs.
+import type { IconName } from '@highsea-tv/ui-web'
 
 export type Page = {
   id: string
@@ -9,8 +9,6 @@ export type Page = {
   icon: IconName
   /** Relative to `#/admin`. */
   path: string
-  /** Owners and admins only. Members manage the library, not the server. */
-  staff?: boolean
   keywords?: string[]
   /** The checkpoint that builds it, while it's a placeholder. */
   checkpoint?: number
@@ -34,18 +32,31 @@ export const pageGroups: Page[][] = [
       keywords: ['library'],
     },
     {
+      id: 'collections',
+      label: 'Collections',
+      icon: 'library',
+      path: '/collections',
+      keywords: ['smart collections', 'rules', 'lists', 'picks'],
+    },
+    {
+      id: 'wanted',
+      label: 'Wanted',
+      icon: 'calendar',
+      path: '/wanted',
+      keywords: ['missing', 'cutoff', 'calendar', 'upcoming', 'ical'],
+    },
+    {
       id: 'activity',
       label: 'Activity',
       icon: 'activity',
       path: '/activity',
-      keywords: ['queue', 'history', 'blocklist'],
+      keywords: ['queue', 'history', 'blocklist', 'manual import'],
     },
     {
       id: 'downloads',
       label: 'Downloads',
       icon: 'downloads',
       path: '/downloads',
-      staff: true,
       keywords: ['torrents', 'client', 'seeding'],
     },
   ],
@@ -55,7 +66,6 @@ export const pageGroups: Page[][] = [
       label: 'Indexers',
       icon: 'indexer',
       path: '/indexers',
-      staff: true,
       keywords: ['trackers', 'catalog'],
     },
     {
@@ -63,7 +73,6 @@ export const pageGroups: Page[][] = [
       label: 'Subtitles',
       icon: 'subtitles',
       path: '/subtitles',
-      staff: true,
       keywords: ['captions', 'sync'],
     },
     {
@@ -71,9 +80,7 @@ export const pageGroups: Page[][] = [
       label: 'Curation',
       icon: 'curation',
       path: '/curation',
-      staff: true,
-      keywords: ['announcements', 'featured'],
-      checkpoint: 4,
+      keywords: ['announcements', 'featured', 'hero', 'home screen'],
     },
   ],
   [
@@ -82,27 +89,17 @@ export const pageGroups: Page[][] = [
       label: 'Settings',
       icon: 'settings',
       path: '/settings',
-      staff: true,
-      keywords: ['preferences', 'appearance', 'users'],
-      checkpoint: 4,
+      keywords: ['preferences', 'appearance', 'users', 'devices', 'themes', 'api keys', 'security'],
     },
     {
       id: 'system',
       label: 'System',
       icon: 'system',
       path: '/system',
-      staff: true,
-      keywords: ['logs', 'health', 'backups', 'tasks'],
-      checkpoint: 4,
+      keywords: ['logs', 'health', 'backups', 'tasks', 'events', 'updates', 'restore'],
     },
   ],
 ]
-
-export const isStaff = (role: UserRole | undefined) => role === 'owner' || role === 'admin'
-
-/** The groups this role sees; empty groups drop out. */
-export const pagesFor = (role: UserRole | undefined): Page[][] =>
-  pageGroups.map((g) => g.filter((p) => !p.staff || isStaff(role))).filter((g) => g.length)
 
 /** The page a location belongs to: `/movies/1` is under Movies. */
 export function pageAt(location: string): Page | undefined {

@@ -2,6 +2,7 @@
 
 - **Platforms:** Admin (`apps/server`), every breakpoint.
 - **Prototype:** `#/admin/activity` (A7), `#/admin/downloads` (A8).
+- **Built:** checkpoint 6a, 2026-10-20: `/activity` and `/downloads` in `apps/server` (`src/admin/activity.tsx`, `downloads.tsx`), on `@highsea-tv/downloads` and `@highsea-tv/torrent` ([ADR 0037](../adr/0037-the-torrent-engine-as-built.md), [ADR 0038](../adr/0038-downloads.md)). What real data changed from the prototype is marked *As built* below. Checkpoint 6b added the categories, the watch folder ([settings.md](settings.md)) and the sheet's **Import into the library**.
 - **Roadmap:** [Phase 2 › A7, A8](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), [Built-in torrent engine](../roadmap.md#built-in-torrent-engine-highseatorrent), [Movie pipeline](../roadmap.md#movie-pipeline), [Admin UI routes](../roadmap.md#admin-ui-routes-built-to-match-the-phase-2-prototypes) (`/activity`, `/downloads`). Engine: [ADR 0005](../adr/0005-in-process-torrent-engine.md).
 
 ## Purpose
@@ -24,19 +25,26 @@ Two views of the same downloads, for two jobs. **Activity** is the library's vie
 - Tabs (line): **Queue** (count), **History**, **Blocklist** (count).
 - **Queue:** a `TableFrame`. Toolbar: filter tabs with counts (All, Downloading, Importing and seeding, Needs attention) and the total download rate. Columns: movie (title and year, release name under it), quality, size, progress, ↓, ETA, status, actions (staff). A row that needs attention (stalled, import blocked, error) shows its reason in plain words under the badge, and its fix as a button in the row.
 - **History:** every event across the library: event (icon and label), movie, what happened (the release name under it), source (indexer or provider), when.
+  - *As built:* history comes 50 events at a time, with **Show more** under the table; a failed download is an event of its own; each row carries the movie's title and year from the server. The prototype's **Clear** button is left out (the route exists, `DELETE /api/v1/history`).
 - **Blocklist:** movie (release name under it), indexer, reason, when, **Unblock** (staff).
+  - *As built:* an entry whose movie has left the library shows the release alone.
 
 ### Downloads (A8)
 
 - `PageHeader`: "Downloads"; **Limits**, **Pause all**, **Resume all**, **Add torrent**.
 - **VPN line**, always first: a shield and "Bound to wg0", the exit address, and the current limits. When the tunnel is down it turns to a warning: "wg0 is down · Torrents are stopped until the tunnel is back."
+  - *As built* (from `vpn.status()`, [vpn.md](vpn.md)): "Through {provider} · {ip} ({country}) · Port {port}" when connected, "Exit address not checked yet" until the first check; "Connecting to {provider}…"; "{provider} is down" or "The VPN couldn't connect", with "Torrents are stopped until the tunnel is back. Nothing leaks onto your own connection."; and with the VPN off, "No VPN · Torrents use your own connection. Anyone in the swarm can see your address." and **Set up a VPN**. The limits sit at the line's end.
 - A `TableFrame`. Toolbar: state tabs with counts (All, Active, Seeding, Paused, Needs attention), a category select, and total ↓ and ↑. Columns: name (category and source under it), size, progress, ↓, ↑, seeds/peers, ratio, status.
+  - *As built* (6b, answer 5): the category select lists **Every category** and the categories the torrents use, as the prototype's does. Library grabs are `movies`; torrents added by hand go in `manual` or one of the owner's categories.
 - **Torrent sheet** (right, 40rem): the name and state; Pause or Resume, **Open the movie** (library torrents), **Remove**; the state reason if any; tabs:
   - **General:** progress, speed, time left, seeds, peers, uploaded and ratio, added, save path, info hash (mono, wraps);
   - **Files:** each file with size, a priority select (High, Normal, Don't download) and its own progress;
   - **Trackers:** URL, status (Working, Updating, Not responding), peers, message;
   - **Seeding:** the rule in a sentence ("Seeds until it reaches a ratio of 2 or has seeded for 7d, whichever comes first").
+  - *As built:* a torrent added by hand has a **More** menu beside Remove, with **Import into the library**: it opens A17 on the torrent's folder (or its one file) and looks inside. Until the torrent finishes, the item reads "Import into the library when it finishes" and is disabled. Library grabs have no More menu, since the pipeline imports them (6b, answer 7).
+  - *As built:* General adds a **Swarm** row (Public, or "Private: trackers only, no DHT or peer exchange"); a tracker can be **Not contacted yet**; the seeding sentence carries a private tracker's minimum seed time; Files waits for the torrent's details from the swarm and says so.
 - **Add torrent** dialog: magnet or .torrent URL (mono), category, **Start right away**.
+  - *As built:* a link, or a `.torrent` file picked or dropped (sent as base64). The category select offers `manual` (the default) and the owner's categories, not `movies`, which is the library's; its hint says "Sets the folder it saves to. Add categories in Settings › Download client." (6b).
 - **Limits** dialog (`sm`): download and upload in MB/s; 0 is no limit.
 
 ## States
@@ -50,10 +58,11 @@ Two views of the same downloads, for two jobs. **Activity** is the library's vie
   - A filter with no rows: "Nothing here right now." / "No torrents match."
 - **Error:** "Couldn't load {the queue | the history | the blocklist | the torrent client}" with the server's message and **Try again**.
 - **Live:** progress, rates, ETAs, seeds and peers tick in place; a torrent moves Queued → Downloading → Importing → Seeding; at most three download at once.
+  - *As built:* state changes arrive over `queue.updated` and `torrents.updated`, at most once a second per torrent; A8's rates refresh every 2 seconds, since no event carries them. A torrent waiting for the VPN's binding (or the engine started offline) reads as **Queued**. At most three download at once by default (Settings › Download client).
 - **Needs attention:**
-  - **Stalled:** "No seeds for 2 hours. highsea will search for another release at 3 hours." · **Replace** now.
-  - **Import blocked:** "The release contains an executable file (Nosferatu.exe). It wasn't imported, and it has been blocklisted." · **Find another**; the row menu also offers **Import without the blocked file**.
-- **Permission-limited:** members see the queue, history and blocklist, without actions or Unblock. Downloads is staff-only: members get "Only owners and admins can open Downloads" with **Go to the dashboard**.
+  - **Stalled:** "No seeds for 2 hours. highsea will search for another release at 3 hours." · **Replace** now. At 3 hours highsea blocklists it and grabs the best other approved release on its own.
+  - **Import blocked:** "The release contains an executable file (Nosferatu.exe). It wasn't downloaded, and it has been blocklisted." · **Find another**; the row menu also offers **Import without the blocked file**. *As built:* the engine checks a release's file list before anything downloads ([ADR 0038](../adr/0038-downloads.md)), so the copy says "wasn't downloaded"; the import checks again.
+- **No reduced states.** Only the owner and admins open the admin ([ADR 0032](../adr/0032-administrative-and-normal-access.md)); users get the refusal page.
 
 ## Interactions
 
@@ -77,36 +86,57 @@ Two views of the same downloads, for two jobs. **Activity** is the library's vie
 | Force import toast | Imported without the blocked file · {Title} |
 | Remove from queue | Remove {Title}? · The download stops and its data is deleted. The movie stays in the library, still monitored. |
 | Unblock toast | Removed from the blocklist · highsea may grab that release again. |
-| VPN up | Bound to {interface} · All torrent traffic leaves through {ip}. If the tunnel drops, torrents stop. |
-| VPN down | {interface} is down · Torrents are stopped until the tunnel is back. Nothing leaks onto your own connection. |
+| VPN up | Through {provider} · {ip} ({country}) · Port {port} |
+| VPN not checked yet | Through {provider} · Exit address not checked yet |
+| VPN connecting | Connecting to {provider}… · Torrents wait until the tunnel is up. |
+| VPN down | {provider} is down · Torrents are stopped until the tunnel is back. Nothing leaks onto your own connection. |
+| VPN failed | The VPN couldn't connect · Torrents are stopped until the tunnel is back. Nothing leaks onto your own connection. |
+| VPN off | No VPN · Torrents use your own connection. Anyone in the swarm can see your address. · Set up a VPN |
 | Add dialog | Add a torrent · Manual torrents aren't imported into the library. Use Discover for movies. |
-| Add error | That isn't a magnet link or a .torrent URL. |
+| Add error | That isn't a magnet link or a .torrent URL. (*As built:* any `http(s)` address passes the dialog, since an indexer's download link rarely ends in `.torrent`; the server has the last word.) |
 | Limits dialog | Speed limits · For every torrent together. 0 means no limit. |
 | Remove torrent | Remove this torrent? · It stops seeding. A movie already imported stays in the library. ☐ Also delete the downloaded data |
 | Seeding tab | Seeds until it reaches a ratio of {r} or has seeded for {t}, whichever comes first. Then it stops; the library's copy stays. |
 
 ## Data
 
-- `queue.list()` → `GET /api/v1/queue`: `QueueItem[]`, a torrent seen from its movie, with `stateReason` in plain words.
-- `queue.pause|resume|remove(torrentId)`, `queue.forceImport(torrentId)`, `queue.searchAlternative(torrentId)` → `POST /api/v1/queue/{id}/{action}`, `DELETE /api/v1/queue/{id}`.
-- `history.list()` → `GET /api/v1/history`; `blocklist.list()`, `blocklist.remove(id)` → `/api/v1/blocklist`.
-- `downloads.list()`, `downloads.get(id)` → `GET /api/v1/torrents[/{id}]` (staff): `Torrent` with `files`, `trackers`, `seedingRule`.
-- `downloads.add(AddTorrentInput)`, `downloads.delete(id, deleteData)`, `downloads.pause|resume(id)`, `downloads.pauseAll()`, `downloads.resumeAll()`, `downloads.setFilePriority(id, path, priority)` → `/api/v1/torrents…`.
-- `downloads.limits()`, `downloads.setLimits(patch)` → `GET|PATCH /api/v1/torrents/limits`: `TorrentLimits` includes the VPN binding (`vpnConnected`, `vpnInterface`, `vpnIp`).
-- Events: `queue.changed`, `torrents.updated`, `history.updated`, and `tick` for rates.
+As built in 6a and 6b (`packages/api-contract/src/downloads.ts`). Every route is staff except saving and removing a category; the admin calls them through `@highsea-tv/sdk`.
+
+| Call | Route | What |
+| --- | --- | --- |
+| `queue.list()` | `GET /api/v1/queue` | `QueueItem[]`, newest first: a download seen from its movie, with `stateReason` in plain words |
+| `queue.pause\|resume\|forceImport(id)` | `POST /api/v1/queue/{id}/{action}` | `id` is the queue row's (a download), which outlives its torrent |
+| `queue.searchAlternative(id, { reason? })` | `POST /api/v1/queue/{id}/searchAlternative` | Blocklist the release and grab the best other approved one; history says so when there's none |
+| `queue.remove(id, { deleteData, blocklist })` | `DELETE /api/v1/queue/{id}` | Remove a download, optionally with its data and onto the blocklist |
+| `history.list({ cursor? })` | `GET /api/v1/history` | `HistoryPage`: 50 events with the movie's `title` and `year`, and `next` |
+| `history.clear()` | `DELETE /api/v1/history` | Not offered in the admin yet |
+| `blocklist.list()`, `blocklist.remove(id)` | `GET /api/v1/blocklist`, `DELETE /api/v1/blocklist/{id}` | `BlocklistEntry`, with the movie's `title` (null once it's left the library) and `year` |
+| `downloads.list()`, `downloads.get(id)` | `GET /api/v1/torrents[/{id}]` | `Torrent` with `files`, `trackers`, `seedingRule` (`ratio`, `minutes`, `minMinutes`), `private` and `manual` (6b: added by hand or from the watch folder) |
+| `downloads.add(AddTorrentInput)` | `POST /api/v1/torrents` | `urlOrMagnet` or `torrent` (base64), `paused`, and `category` (6b): `manual` when left out, never `movies`; saved to the category's folder |
+| `downloads.categories()` | `GET /api/v1/torrents/categories` | `TorrentCategory[]` (6b): `name`, `folder`, `fixed` and how many `torrents` use it; `movies` and `manual` first |
+| `downloads.saveCategory({ name, folder? })`, `removeCategory(name)` | `POST /api/v1/torrents/categories`, `DELETE /api/v1/torrents/categories/{name}` | **Owner only**, from Settings › Download client. Removing is refused while a torrent or the watch folder uses it |
+| `downloads.delete(id, { deleteData })` | `DELETE /api/v1/torrents/{id}` | |
+| `downloads.pause\|resume(id)`, `pauseAll()`, `resumeAll()` | `POST /api/v1/torrents[/{id}]/{action}` | Pause all pauses downloads; seeding continues |
+| `downloads.setFilePriority(id, { path, priority })` | `PATCH /api/v1/torrents/{id}/files` | `skip`, `normal` or `high` |
+| `downloads.limits()`, `downloads.setLimits(patch)` | `GET\|PATCH /api/v1/torrents/limits` | `TorrentLimits`, bytes per second, 0 for none. The VPN line reads `vpn.status()` instead of fields here |
+| `system.speeds()` | `GET /api/v1/system/speeds` | The last 10 minutes of rates, a sample a second (the Network widget) |
+
+- **Events:** `queue.updated` (queue ids), `torrents.updated` (torrent ids), `history.updated` (history and the blocklist), `vpn.updated`; an import announces `item.updated`. `queue.updated`, not the prototype's `queue.changed`, like every other topic.
 
 ## Decisions
 
-- **Two pages, one engine.** Activity speaks in movies and fixes; Downloads speaks in torrents. Members need the first, not the second.
+- **Two pages, one engine.** Activity speaks in movies and fixes; Downloads speaks in torrents.
 - **The fix sits in the row.** A stalled or blocked row says why and offers the one action that resolves it; everything else stays in the menu.
 - **Find another is one step:** blocklist and search together. Blocklisting without searching would leave the movie stuck.
 - **The VPN line is always visible** on Downloads, not buried in settings, because a leak is the failure that matters most here. When the tunnel drops, the engine stops rather than falling back.
 - **Seeding rules are read-only here.** They come from the indexer's settings (private trackers ask for more); editing them per torrent is left out.
 - **The torrent detail is a sheet,** so the list stays in view and live.
+- **Answered by the owner on 2026-10-20** ([checkpoint 6 › questions](../plans/phase-3-checkpoint-6.md#checkpoint-questions)):
+  - **Categories:** `movies` is fixed for library grabs (later `shows`, `music`); the owner adds their own for manual torrents, each with a folder. Built in 6b: the owner manages them in Settings › Download client (answer 5).
+  - **Limits:** global only in milestone 1; per-torrent limits and a scheduled alternative speed later (answer 6).
+  - **Import into the library:** a finished manual torrent offers it in the sheet's More menu, opening A17 on its folder (answer 7). Built in 6b.
+- **Download client settings are the owner's** (the checkpoint's judgement call 13); A7 and A8 stay staff.
 
 ## Open questions
 
 - **Peers tab.** The roadmap lists peers in the torrent detail; the mock has counts only. Is a peer list (address, client, flags, rates) worth showing?
-- **Categories.** Are categories user-defined (qBittorrent-style) or fixed per media type?
-- **Per-torrent limits** and a scheduled "alternative speed" (night-time limits): in M1 or later?
-- **Manual import (A17)** will hang off Activity; does a finished manual torrent offer "Import into the library" from its sheet?

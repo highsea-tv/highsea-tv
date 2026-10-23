@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 
-import { art, titles } from '@highsea/fixtures'
+import { art, titles } from '@highsea-tv/fixtures'
 import {
   choreography,
   durations,
@@ -9,7 +9,7 @@ import {
   springMetrics,
   springPosition,
   springs,
-} from '@highsea/tokens'
+} from '@highsea-tv/tokens'
 import {
   Button,
   Poster,
@@ -17,7 +17,7 @@ import {
   springQuick,
   staggerDelay,
   usePrefersReducedMotion,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { AnimatePresence, motion } from 'motion/react'
 import { useState } from 'react'
@@ -197,7 +197,7 @@ export const Springs: StoryObj = {
         </Section>
         <Section
           title="Press and focus"
-          note="Buttons press to 0.97 on spring.quick. Posters lift to 1.04 on hover and keyboard focus (1.09 on TV)."
+          note="Buttons press to 0.97 on spring.quick. Posters lift to 1.02 on hover and keyboard focus (1.05 on TV)."
         >
           <div className="flex flex-wrap items-center gap-6">
             <Button variant="primary">Press me</Button>

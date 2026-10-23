@@ -1,0 +1,35 @@
+{
+  "name": "@highsea-tv/subtitles",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    "./fake": "./test/fake/index.ts",
+    "./movies": "./src/movies/index.ts",
+    "./providers": "./src/providers/index.ts",
+    "./shared": "./src/shared/index.ts",
+    "./sync": "./src/sync/index.ts",
+    "./testing": "./test/testing/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@echogarden/fvad-wasm": "0.2.0",
+    "@highsea-tv/api-contract": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/db": "workspace:*",
+    "@highsea-tv/jobs": "workspace:*",
+    "@highsea-tv/media": "workspace:*",
+    "@highsea-tv/parser": "workspace:*",
+    "chardet": "2.2.0",
+    "drizzle-orm": "0.45.3",
+    "fft.js": "4.0.4",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@highsea-tv/config": "workspace:*",
+    "@types/node": "25.9.9"
+  }
+}

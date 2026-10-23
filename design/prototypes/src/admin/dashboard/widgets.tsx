@@ -4,15 +4,28 @@
 // fills the size it's given: lists show the rows that fit and say how many more there are, graphs
 // and calendars stretch. The definitions (title, sizes, roles) are the server's:
 // src/mock/widgets.ts.
+
+import {
+  bytes,
+  bytesParts,
+  duration,
+  percent,
+  rate,
+  rateParts,
+  shortDate,
+} from '@highsea-tv/core/format'
+import { widgetDefinition } from '@highsea-tv/personalization/widgets'
 import {
   Badge,
   Button,
   cn,
   EmptyState,
+  type FrameProps,
   Poster,
   Progress,
   Skeleton,
   SkeletonText,
+  Sparkline,
   Stat,
   Table,
   TableBody,
@@ -25,19 +38,15 @@ import {
   TabsList,
   TabsTrigger,
   TitleCell,
+  useClip,
+  useWidth,
   WidgetFrame,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
-import { Sparkline } from '../../kit/sparkline.tsx'
-import { useClip } from '../../kit/use-clip.ts'
-import { useWidth } from '../../kit/use-width.ts'
-import type { FrameProps } from '../../kit/widget-editor.tsx'
 import type { HighseaClient } from '../../mock/client.ts'
 import { type Query, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { EventTopic, QueueItem, WidgetKind } from '../../mock/types.ts'
-import { widgetDefinition } from '../../mock/widgets.ts'
-import { bytes, bytesParts, duration, percent, rate, rateParts, shortDate } from '../format.ts'
 import { adminHref } from '../shell.tsx'
 import { indexerStatus, queueFilters, torrentStatus } from '../status.ts'
 
@@ -543,7 +552,7 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
 
 function Queue(props: WidgetProps) {
   const query = useWidgetQuery('activity', (c) => c.queue.list(), [
-    'queue.changed',
+    'queue.updated',
     'torrents.updated',
   ])
   const [filter, setFilter] = useState<keyof typeof queueFilters>('all')

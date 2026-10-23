@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { blur, breakpoints, density, elevation, radius, shadowCss, space } from '@highsea/tokens'
+import { blur, breakpoints, density, elevation, radius, shadowCss, space } from '@highsea-tv/tokens'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { Page, Section } from './page.tsx'
 

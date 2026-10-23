@@ -6,7 +6,7 @@
 
 ## Purpose
 
-The first page after sign-in. It answers "is everything working, and what's happening right now?" at a glance: network and disk, indexer health, the subtitle backlog, what's coming out, and the live queue. Each person arranges it for themselves. Owners choose the starting layout for admins and members.
+The first page after sign-in. It answers "is everything working, and what's happening right now?" at a glance: network and disk, indexer health, the subtitle backlog, what's coming out, and the live queue. Each person arranges it for themselves. Only the owner and admins open the admin ([ADR 0032](../adr/0032-administrative-and-normal-access.md)), so only they have a dashboard. The owner chooses the starting layout for owners and admins.
 
 ## Entry points
 
@@ -17,25 +17,28 @@ The first page after sign-in. It answers "is everything working, and what's happ
 ## Layout
 
 - **Top row** (`PageHeader`): the title "Dashboard", the search trigger (opens ⌘K), and **Customize**. In Customize mode the actions become **Add widget**, a **More layout options** menu, **Cancel** and **Done**, and a one-line description appears under the title.
-- **Widget grid** (`WidgetGrid`): 4 columns at expanded and wide, 2 at medium, 1 at compact, with a 12px gap. Widgets flow in order; each one spans the columns it's sized to (clamped to the columns available). Height follows content. There's no dense packing, so a short row can leave a gap: the visual order always matches the DOM and keyboard order.
-- **Widgets** and their allowed widths, in columns:
+- **Widget grid** (`WidgetEditor` from ui-web): 4 columns at expanded and wide, 2 at medium, 1 at compact, in rows of 84px with a 12px gap. Widgets flow in order; each one spans the columns and rows it's sized to (columns clamped to the columns available). There's no dense packing, so a short row can leave a gap: the visual order always matches the DOM and keyboard order.
+- **Widgets** and their sizes: widths in columns and heights in rows, each a range the resize snaps within. The default size is width × height.
 
-  | Widget | Sizes | Who sees it | Content |
-  | --- | --- | --- | --- |
-  | Network | 1, 2, 4 | Owners, admins | Down and up speeds, torrent rates, a sparkline of the last minutes |
-  | Storage | 1, 2 | Owners, admins | Free of total, and a stacked bar of what uses the disk, with a legend |
-  | Indexers | 1, 2 | Owners, admins | "N of M healthy"; each row shows response time, or "retry in 4m" while backing off |
-  | Subtitles | 1, 2 | Owners, admins | Synced today and still waiting, a progress bar, and the average offset corrected |
-  | Upcoming | 2, 4 | Everyone | Monitored movies releasing in the next 14 days, with date badges, linked to the movie |
-  | Announcement | 1, 2 | Everyone | The live announcement, its audience, placements and end date |
-  | Queue | 2, 4 | Everyone | Filter tabs with counts (All, Downloading, Seeding, Issues) and the queue |
-  | Recently added | 2, 4 | Everyone | Posters of the newest imports; the count fits the width |
-  | Calendar | 2, 4 | Everyone | This month as a table, with release days marked and today highlighted |
-  | System health | 1, 2 | Owners, admins | Health checks with a badge per level |
+  | Widget | Width | Height | Default | Who sees it | Content |
+  | --- | --- | --- | --- | --- | --- |
+  | Network | 1–2 | 2–4 | 2 × 2 | Owners, admins | Down and up speeds, torrent rates, a sparkline of the last 10 minutes |
+  | Storage | 1–4 | 2–4 | 1 × 2 | Owners, admins | Free of total, and a stacked bar of what uses the disk, with a legend |
+  | Indexers | 1–4 | 2–6 | 1 × 2 | Owners, admins | "N of M healthy"; each row shows response time, or "retry in 4m" while backing off |
+  | Subtitles | 1–4 | 2–3 | 1 × 2 | Owners, admins | Synced today and still waiting, a progress bar, and the average offset corrected |
+  | Upcoming | 1–4 | 2–6 | 2 × 2 | Owners, admins | Monitored movies releasing in the next 14 days, with date badges, linked to the movie |
+  | Announcement | 1–4 | 2–4 | 1 × 2 | Owners, admins | The live announcement, its audience, placements and end date |
+  | Queue | 1–4 | 3–8 | 4 × 5 | Owners, admins | Filter tabs with counts (All, Downloading, Seeding, Issues) and the queue |
+  | Recently added | 1–4 | 3–6 | 2 × 3 | Owners, admins | Posters of the newest imports; the count fits the width |
+  | Calendar | 1–4 | 3–5 | 2 × 3 | Owners, admins | This month as a table, with release days marked and today highlighted |
+  | System health | 1–4 | 2–4 | 1 × 2 | Owners, admins | Health checks with a badge per level |
 
-- **Role defaults:**
-  - owners and admins: Network (2), Storage, Indexers, Subtitles, Upcoming (2), Announcement, then the Queue (4);
-  - members: Recently added (2), Upcoming (2), Queue (4).
+- **Role defaults:** owners and admins start from Network (2 × 2), Storage, Indexers, Subtitles, Upcoming (2 × 2), Announcement, then the Queue (4 × 5). Each role's default can be saved apart.
+- **Content that doesn't fit** the widget's height is cut at a whole row, with "{count} more in {page}" linking to the page with the rest.
+- **Live since checkpoint 6a** (2026-10-20), with the `downloads` source:
+  - **Network:** the download and upload rates now, over a sparkline of the last 10 minutes from `system.speeds()`, asked again every 2 seconds, since the rates have no event (the plan's `tick`). The ↓ caption counts active downloads ("2 downloads", "Nothing downloading"); while the VPN is down or failed it reads "Stopped while the VPN is down" (not in the prototype). The ↑ caption reads "seeding".
+  - **Queue:** `queue.list()`, moving over `queue.updated` and `torrents.updated`; the filter tabs count with the same rules as Activity's.
+  - **System health** listens to `queue.updated` and `vpn.updated` too, for the downloads' and the VPN's health checks ([system.md](system.md)).
 - **Queue widget** chooses its layout from its own width, not the viewport's: a full table from 760px, a table with fewer columns from 520px, and stacked rows below that.
 - **Responsive:**
 
@@ -61,7 +64,7 @@ The first page after sign-in. It answers "is everything working, and what's happ
 - **Error:**
   - a widget that fails shows "Couldn't load {widget}" inside its frame with the server's message and **Try again**; the rest of the grid keeps working;
   - if the layout itself fails: "Couldn't load your dashboard" with the server's message and **Try again**.
-- **Permission-limited:** members never see staff widgets: the server filters them out of every layout, and **Add widget** doesn't offer them. They don't get the **Default layout** menu items either.
+- **Admins** don't get the **Default layout** menu items: role defaults are the owner's.
 - **Customizing:**
   - each widget gets a drag handle (top left), a remove button (top right) and a resize corner (bottom right);
   - widget meta (for example, "updated 2s ago") hides while customizing, so the header has room for the controls in a 1-column widget;
@@ -71,22 +74,23 @@ The first page after sign-in. It answers "is everything working, and what's happ
 
 - **Enter Customize:** the **Customize** button, or the palette action.
 - **Move, by pointer:** drag a widget's handle over another widget to take its place. Neighbors glide aside (layout animation; instant under reduced motion).
-- **Resize, by pointer:** drag the corner sideways. The span snaps to the widget's allowed sizes; there's no free-form width.
+- **Resize, by pointer:** drag the corner sideways or down. The size snaps to whole columns and rows within the widget's ranges; there's no free-form size.
 - **Move and resize, by keyboard:** focus a handle (Tab), then:
 
   | Key | Action |
   | --- | --- |
   | Space or Enter | Pick up the widget, or drop it |
   | Arrow keys | Move it one position: Left and Up earlier, Right and Down later |
-  | Shift + Left or Right | Make it narrower or wider, to the next allowed size |
+  | Shift + Left or Right | Make it narrower or wider by a column |
+  | Shift + Up or Down | Make it shorter or taller by a row |
   | Escape | Put it back where it was picked up |
 
-  Focus stays on the handle after each move. A polite live region announces each step: "Network picked up, position 1 of 7.", "Network is now 4 columns wide.", "Network dropped at position 2 of 7."
+  Focus stays on the handle after each move. A polite live region announces each step: "Network picked up, position 1 of 7.", "Network is now 2 columns wide and 3 rows tall.", "Network dropped at position 2 of 7."
 - **Remove:** the × button (labelled "Remove Network"). It's undoable until Done, through Cancel.
 - **Add widget:** opens a right-hand sheet, "Add a widget", listing the allowed widgets not already on the grid, each with a one-line description. Picking one adds it at the end at its default size, closes the sheet, and toasts "Calendar added at the end".
 - **More layout options:**
   - **Reset to default** replaces the draft with the role's default. Done then forgets the person's own layout, so later changes to the role default reach them.
-  - **Make this the default for admins / members** (owners only) saves the current draft as that role's default, without the widgets the role can't see. The toast says which were left out.
+  - **Make this the default for admins** (the owner only) saves the current draft as that role's default, without any widgets the role can't see. The toast says which were left out.
 - **Cancel** drops the draft. Navigating away also drops it.
 - **Done** saves and leaves Customize mode with a "Dashboard saved" toast. If nothing changed it just leaves.
 - **Live updates:** a layout saved in another tab or on another device arrives over the event stream (`layout.updated`) and redraws the grid. Once this tab has a draft, the draft wins until Done or Cancel.
@@ -97,63 +101,85 @@ The first page after sign-in. It answers "is everything working, and what's happ
 
 | Where | Text |
 | --- | --- |
-| Customize description | Drag a widget by its handle to move it, or by its corner to resize it. Nothing is saved until you press Done. |
+| Customize description | Drag a widget by its handle to move it, or by its corner to make it wider or taller. Nothing is saved until you press Done. |
 | Add sheet | **Add a widget** · Widgets go at the end of the grid. Move them once they're in. |
 | Add toast | {Widget} added at the end · Move it where you want it. |
 | Save toast | Dashboard saved |
 | Save error | Couldn't save the dashboard · {server message} |
 | Reset error | Couldn't load the default layout |
-| Role default toast | New members start from this layout · People who haven't customized their dashboard see it now. |
-| Role default, with drops | New members start from this layout · Network, Storage are left out: members can't see them. |
+| Role default toast | New admins start from this layout · Admins who haven't customized their dashboard see it now. |
 | Layout error | Couldn't load your dashboard · {server message} · Try again |
 | No widgets | Your dashboard is empty · Add the widgets you want to see first. · Add widget |
 | Widget error | Couldn't load {widget} · {server message} · Try again |
 | Indexers empty | No indexers yet · Searches need at least one. The catalog adds public ones in a click. · Add indexers |
+| Network, no downloads | No downloads yet, with the speeds at zero |
 | Queue empty | The queue is empty · Movies you add show here while they download and import. |
 | Recently added empty | Nothing added yet · New movies show here once they're imported. |
 
 ## Data
 
-Mock client calls, with the draft API shapes behind them (see `design/prototypes/src/mock/types.ts`):
+Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `dashboard` group):
 
-- `dashboard.layout()` → `GET /api/v1/me/dashboard`
+- `dashboard.layout()` → `GET /api/v1/me/dashboard`. Staff, as are saving and resetting it.
 
   ```ts
-  type WidgetPlacement = { id: string; kind: WidgetKind; span: 1 | 2 | 3 | 4 }
+  type WidgetPlacement = {
+    id: string
+    kind: WidgetKind
+    span: 1 | 2 | 3 | 4 // columns
+    rows: number // 84px rows
+    settings?: Record<string, unknown> // filled from the widget's defaults on read
+  }
   type WidgetLayout = {
-    scope: { kind: 'user'; userId: string } | { kind: 'role'; role: UserRole }
+    scope: { kind: 'user'; userId: string } | { kind: 'role'; role: 'owner' | 'admin' }
     widgets: WidgetPlacement[]
-    updatedAt: ISODate
-    inherited: boolean // true while the user sees their role's default
+    updatedAt: number | null // null while nobody has saved it: the built-in default
+    inherited: boolean // true while the person sees their role's default
   }
   ```
 
-  The server filters out widgets the user's role can't see.
-- `dashboard.saveLayout(widgets)` → `PUT /api/v1/me/dashboard`. Rejects (403) a widget the role can't see.
-- `dashboard.resetLayout()` → `DELETE /api/v1/me/dashboard`. The user inherits their role's default again.
-- `dashboard.roleDefault(role)` → `GET /api/v1/dashboard/defaults/{role}`.
-- `dashboard.saveRoleDefault(role, widgets)` → `PUT /api/v1/dashboard/defaults/{role}`. Owner only; staff-only widgets are dropped for member defaults.
-- Event `layout.updated` on the SSE stream.
-- The widgets read: `system.speeds()` and `system.health()` (staff only), `downloads.list()`, `system.status()` (disks), `indexers.list()`, `subtitles.stats()`, `movies.upcoming(days)`, `movies.recent(n)`, `announcements.active()` and `queue.list()`. Each one refetches on its own events (`torrents.updated`, `indexers.updated`, `item.updated` and so on).
-- The widget registry (`src/mock/widgets.ts`) mirrors the roadmap's: id, title, description, allowed sizes, default size, and who can see it. Settings schemas per widget are left to Phase 3.
+  The server filters out widgets the person's role can't see, and kinds it doesn't know (a widget removed in a later version), which it keeps in storage so a downgrade doesn't lose them.
+- `dashboard.saveLayout({ body: { widgets } })` → `PUT /api/v1/me/dashboard`. Refuses (403, `widget-not-allowed`) a widget the role can't see.
+- `dashboard.resetLayout()` → `DELETE /api/v1/me/dashboard`. The person inherits their role's default again.
+- `dashboard.roleDefault({ params: { role } })` → `GET /api/v1/dashboard/defaults/{role}`. Staff.
+- `dashboard.saveRoleDefault({ params: { role }, body: { widgets } })` → `PUT /api/v1/dashboard/defaults/{role}`. Owner only. Widgets the role can't see are dropped and listed in `dropped`.
+- Event `layout.updated` on the event stream.
+- **The widget registry** is `@highsea-tv/personalization/widgets`: each widget's id, title, description, width and height ranges, default size, the roles that may add it, its data source and a zod settings schema with defaults (Network: 10 minutes; Upcoming: 14 days; Queue: the All filter). The settings are stored with each placement; there's no UI to edit them yet.
+- **Data sources:** the server's public info lists the sources it has (`sources`). A widget whose source isn't there shows its empty state and calls nothing. In checkpoint 3 the server has `system`, which feeds Storage (`system.status`) and System health (`system.healthChecks`). Checkpoints 4 and 5 add `movies` and `indexers`; checkpoint 6a adds `downloads`, which feeds Network (`system.speeds`, `downloads.list`, `vpn.status`) and Queue (`queue.list`); checkpoint 7a adds `subtitles`, which feeds Subtitles (`subtitles.stats`, `subtitles.wanted`). Since checkpoint 7b its sync figures are live: synced since midnight UTC, the tracks waiting, and today's average correction. Checkpoint 8c adds `curation`, which feeds Announcement (`curation.announcements`).
 
 ## Decisions
 
-- **The queue is a widget** (Queue, 4 wide by default), not a fixed card below the grid as [admin.md](../design-language/platforms/admin.md#main-area) describes. That lets members and owners move or remove it like anything else. *Locked layout: needs the owner's approval.*
-- **Network can be 4 wide.** admin.md says widgets span 1 or 2 columns. The queue, calendar, upcoming and recently added need the width, and a full-width network graph reads well above the queue. *Locked layout: needs the owner's approval.*
+- **The queue is a widget** (Queue, 4 wide by default), not a fixed card below the grid as [admin.md](../design-language/platforms/admin.md#main-area) describes. That lets owners and admins move or remove it like anything else. *Approved by the owner on 2026-10-20.*
+- **Widgets can be up to 4 wide.** admin.md says widgets span 1 or 2 columns. The queue, calendar, upcoming and recently added need the width. Network stays at 1 or 2, as the signed-off prototype has it. *Approved by the owner on 2026-10-20.*
 - **Order is the layout.** Widgets flow through the grid; resize changes the span only, snapped to allowed sizes. No free x/y placement and no dense packing, so the visual, DOM and keyboard orders always agree, and the same layout works at 4, 2 and 1 columns.
-- **Height follows content.** No row-span resize; widgets size to what they show.
+- **Widgets resize in height too,** in 84px rows, as the signed-off prototype does. A widget's content is cut at a whole row with a link to the rest, so the grid stays even.
 - **Draft until Done.** Every change is local until Done, so Cancel is a full undo and nothing half-arranged reaches other devices.
 - **Reset forgets rather than copies.** A reset layout is the role default by reference, so an owner's later change to the default still reaches that person.
 - **Widget meta hides while customizing,** so the handle, title and remove button fit in a 1-column widget at 1024 (about 175px wide).
 - **The queue lays out by its own width** (container measurement), not the viewport, because the same widget can be 2 or 4 columns wide.
-- **Members' staff widgets are filtered on the server,** not just hidden in the UI, so a role default or a saved layout can't leak them.
-- **The editor lives in the prototype kit** (`src/kit/widget-editor.tsx`) for now. It moves into ui-web once the server's widget registry exists in Phase 3.
+- **The members' dashboard is gone** (owner's decision, 2026-10-20). Migration `0004_roles` deletes their saved role layouts. The registry still filters widgets by role on the server, so an owner-only widget could be added later without leaking.
+- **The editor is ui-web's `WidgetEditor`,** shared by the admin and the prototype; the registry is `@highsea-tv/personalization`'s.
+- **Per-widget settings are stored, not yet edited** (owner's decision, 2026-10-20). Each widget shows its defaults.
+- **Columns come from the main area's width, not the viewport's.** At 1024 with the 216px sidebar, a 1-column widget is about 175px: tight for Indexers and Storage. The grid chooses 4, 3 or 2 columns from the main area's width (a container query). *Approved by the owner on 2026-10-20; built with the [dashboard follow-up](#follow-up-customization-on-homarrs-level).*
+
+## As built (8c)
+
+- **Announcement** reads the admin's list (`curation.announcements()`, on `curation.updated`) and shows its first live announcement. It shows the title with a **Live** badge, then "Everyone" or "Some people", the placements, and the end time when there is one. At 3 rows the message shows three lines; at 4 rows it shows seven. With nothing live, it shows "No announcement is live" with **Write one**.
+- **It shows the staff list, not the announcements aimed at the admin:** a staff member wants to know what is live, whoever it is for. The admin's own announcements are banners at the top of every admin page (`GET /announcements?client=admin`). Dismissing or acknowledging one there counts toward its reach.
 
 ## Open questions
 
-- **Columns from the main area's width.** At 1024 with the 216px sidebar, a 1-column widget is about 175px: tight for Indexers and Storage. Proposal: choose 4, 3 or 2 columns from the main area's width (a container query) instead of the viewport's breakpoint. *Locked layout: needs approval.*
 - **Sounds for Customize.** Should picking up and dropping a widget play `select` and `back` when admin sound is on?
-- **Per-widget settings.** The roadmap gives each widget a settings schema (for example, Upcoming's day range, the queue's default filter). Where should they open: a menu on the widget in Customize mode, or a settings sheet?
-- **Multiple instances.** Should a widget be addable twice with different settings (two calendars, say)? The prototype allows one of each.
-- **Admins and defaults.** Only owners set role defaults. Should admins be able to set the member default?
+- **Per-widget settings** and **multiple instances:** answered by the follow-up below (a settings dialog per widget; any widget more than once).
+
+## Follow-up: customization on Homarr's level
+
+The owner asked on 2026-10-20 for the dashboard to become as customizable as [Homarr](https://github.com/homarr-labs/homarr)'s boards, with a visible grid while customizing. It comes after Phase 3, and its plan is [plans/dashboard-customization.md](../plans/dashboard-customization.md):
+- free placement on a grid, with resizing on both axes;
+- layouts per breakpoint, with columns from the main area's width;
+- containers;
+- a settings dialog per widget;
+- any widget more than once;
+- the grid's cells drawn while customizing.
+
+Until then, the decisions above stand.

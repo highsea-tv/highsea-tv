@@ -1,0 +1,21 @@
+{
+  "name": "@highsea-tv/network",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea-tv/core": "workspace:*",
+    "@homebridge/ciao": "1.3.12"
+  },
+  "devDependencies": {
+    "@highsea-tv/config": "workspace:*",
+    "@types/node": "25.9.9"
+  }
+}

@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Labels, hints and errors wired to their control: accessibility.md#understandable
 import { Label as LabelPrimitive } from 'radix-ui'

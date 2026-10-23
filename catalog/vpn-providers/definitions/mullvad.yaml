@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from Mullvad's own help pages; nothing was copied.
+id: mullvad
+version: 1.0.0
+minEngineVersion: 1.0.0
+name: Mullvad
+connect: config
+steps:
+  - Sign in at mullvad.net and open WireGuard configuration.
+  - Generate a key for this server, pick a country and server, and download the file.
+  - Upload it here.
+links:
+  - label: Mullvad’s WireGuard configuration
+    url: https://mullvad.net/en/account/wireguard-config
+portForwarding:
+  # removed on 2023-07-01
+  method: none
+ipv6: true
+# Mullvad's connection check answers mullvad_exit_ip: true through its tunnel
+check:
+  url: https://am.i.mullvad.net/json
+  field: mullvad_exit_ip
+sources:
+  - https://mullvad.net/en/help/easy-wireguard-mullvad-setup-linux
+  - https://mullvad.net/en/blog/removing-the-support-for-forwarded-ports

@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Announcements from the server owner, as a full-width banner or a home card. Dismissible unless
 // the owner requires acknowledgement. Color is never the only signal: each tone has an icon.

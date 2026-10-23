@@ -2,15 +2,15 @@
 // A18 Login (docs/product/login.md). Username and password, then a 6-digit code
 // when the account has two-factor on, or the server's single sign-on provider. The OIDC redirect
 // is simulated: a short wait stands in for the round trip to the provider.
-import { Button, EmptyState, Field, Icon, Input, Lockup, Skeleton } from '@highsea/ui-web'
+import { Button, EmptyState, Field, Icon, Input, Lockup, Skeleton } from '@highsea-tv/ui-web'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../mock/hooks.tsx'
 import type { ApiError } from '../mock/server.ts'
 
-function Card({ children }: { children: ReactNode }) {
+export function Card({ children }: { children: ReactNode }) {
   return (
-    <main className="grid min-h-screen place-items-center bg-bg p-4 text-text">
+    <main className="grid min-h-screen grid-cols-[minmax(0,1fr)] place-items-center bg-bg p-4 text-text">
       <div className="grid w-full max-w-[24rem] gap-6">
         <Lockup size={20} className="justify-self-center" />
         <section className="grid gap-5 rounded-lg border border-line bg-s1 p-6 shadow-2">
@@ -21,7 +21,7 @@ function Card({ children }: { children: ReactNode }) {
   )
 }
 
-function Heading({ title, detail }: { title: string; detail?: ReactNode }) {
+export function Heading({ title, detail }: { title: string; detail?: ReactNode }) {
   return (
     <div className="grid gap-1">
       <h1 className="text-title">{title}</h1>
@@ -235,7 +235,12 @@ export function Login() {
             or
             <span className="h-px flex-1 bg-line" />
           </div>
-          <Button icon="shield" onClick={() => setSso(true)}>
+          {/* it wraps rather than widening a phone at 200% text */}
+          <Button
+            icon="shield"
+            className="h-auto min-h-9 whitespace-normal py-1.5"
+            onClick={() => setSso(true)}
+          >
             Sign in with {server.auth.oidc.name}
           </Button>
         </>

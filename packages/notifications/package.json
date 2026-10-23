@@ -1,0 +1,35 @@
+{
+  "name": "@highsea-tv/notifications",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    "./channels": "./src/channels/index.ts",
+    "./fake": "./test/fake/index.ts",
+    "./mail": "./src/mail/index.ts",
+    "./service": "./src/service/index.ts",
+    "./shared": "./src/shared/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea-tv/brand": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/db": "workspace:*",
+    "@highsea-tv/i18n": "workspace:*",
+    "@highsea-tv/jobs": "workspace:*",
+    "@highsea-tv/tokens": "workspace:*",
+    "drizzle-orm": "0.45.3",
+    "mjml": "5.4.1",
+    "nodemailer": "10.0.16",
+    "web-push": "3.6.7",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@highsea-tv/config": "workspace:*",
+    "@types/node": "25.9.9",
+    "@types/web-push": "3.6.4"
+  }
+}

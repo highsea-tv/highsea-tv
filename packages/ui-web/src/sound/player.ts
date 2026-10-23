@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Plays sound packs with Web Audio. The graph matches the offline renderer in @highsea/tokens, so
+// Plays sound packs with Web Audio. The graph matches the offline renderer in @highsea-tv/tokens, so
 // what the pack rules measure is what users hear: docs/design-language/sound.md
 import {
   COMPRESSOR,
@@ -9,7 +9,7 @@ import {
   type SoundEvent,
   type SoundPack,
   type Voice,
-} from '@highsea/tokens'
+} from '@highsea-tv/tokens'
 
 const FLOOR = 0.0001
 const TAIL = 0.05

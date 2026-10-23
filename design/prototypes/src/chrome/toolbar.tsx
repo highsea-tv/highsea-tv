@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
 import { flowFor, flows } from '../flows.ts'
 import {
+  connections,
   dataStates,
   type Platform,
   type ProtoState,
@@ -220,6 +221,25 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
           </select>
         )}
       </Group>
+
+      {platform !== 'admin' && (
+        <Group label="Connection">
+          {(id) => (
+            <select
+              id={id}
+              className={control}
+              value={state.connection}
+              onChange={(e) => update('connection', e.target.value as ProtoState['connection'])}
+            >
+              {connections.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </Group>
+      )}
 
       <div className="flex items-center gap-1.5">
         <Toggle

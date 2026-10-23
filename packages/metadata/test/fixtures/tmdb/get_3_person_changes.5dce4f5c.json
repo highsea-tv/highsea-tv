@@ -1,0 +1,28 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/person/changes?end_date=2026-10-17&page=1&start_date=2026-10-16",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "results": [
+        {
+          "id": 68,
+          "adult": false
+        },
+        {
+          "id": 4495,
+          "adult": false
+        }
+      ],
+      "page": 1,
+      "total_pages": 1,
+      "total_results": 2
+    }
+  }
+}

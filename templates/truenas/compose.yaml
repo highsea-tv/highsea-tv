@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# highsea on TrueNAS (24.10 and later, where apps run on Docker), through Apps › Discover Apps ›
+# ⋮ › Install via YAML, which takes a Compose file
+# (https://www.truenas.com/docs/scale/25.10/scaleuireference/apps/installcustomappscreens/).
+#
+# Change before installing:
+# - the two host paths, to datasets on your pool: one for highsea's config, one for downloads and
+#   the library together, so imports hardlink instead of copying;
+# - PUID and PGID, to the user and group that own those datasets. 568 is TrueNAS's `apps` user and
+#   group, which its own apps run as.
+#
+# Host networking lets apps on your network find highsea by broadcast and mDNS (ADR 0020).
+services:
+  highsea:
+    # `latest` is the newest stable release; pin a version (0.1.0) to choose when you move
+    image: ghcr.io/highsea-tv/highsea:latest
+    network_mode: host
+    environment:
+      PUID: "568"
+      PGID: "568"
+      TZ: Etc/UTC
+    volumes:
+      - /mnt/tank/apps/highsea:/config
+      - /mnt/tank/data:/data
+    # a restore in System › Backups restarts highsea by exiting with code 75 (ADR 0047)
+    restart: unless-stopped

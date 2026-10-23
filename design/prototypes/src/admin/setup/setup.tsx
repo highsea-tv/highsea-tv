@@ -17,12 +17,13 @@ import {
   Input,
   Lockup,
   Skeleton,
+  type Step,
+  Stepper,
   Switch,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
-import { type Step, Stepper } from '../../kit/stepper.tsx'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { RemoteAccess, SetupInput } from '../../mock/types.ts'
 

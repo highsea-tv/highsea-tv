@@ -1,0 +1,31 @@
+{
+  "name": "@highsea-tv/docs",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "dev": "next dev --port 3100",
+    "build": "next build",
+    "typecheck": "fumadocs-mdx && tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea-tv/brand": "workspace:*",
+    "@highsea-tv/tokens": "workspace:*",
+    "@highsea-tv/ui-web": "workspace:*",
+    "fumadocs-core": "16.16.2",
+    "fumadocs-mdx": "15.4.6",
+    "fumadocs-ui": "16.16.2",
+    "next": "16.3.8",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@highsea-tv/config": "workspace:*",
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/mdx": "2.0.14",
+    "@types/node": "25.9.9",
+    "@types/react": "19.3.0",
+    "tailwindcss": "4.3.3"
+  }
+}

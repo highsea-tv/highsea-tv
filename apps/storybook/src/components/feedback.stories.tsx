@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-import { Banner, Button, toast } from '@highsea/ui-web'
+import { Banner, Button, toast } from '@highsea-tv/ui-web'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 

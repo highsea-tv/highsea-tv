@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: AGPL-3.0-only */
-@import "@highsea/ui-web/styles.css";
+@import "@highsea-tv/ui-web/styles.css";
 
 @source "./";
 
@@ -26,6 +26,12 @@
   font-size: 200%;
 }
 
+/* A heading wider than its column (a long word at display size, at 200% on a phone) breaks
+   rather than widening the page. */
+:where(h1, h2, h3) {
+  overflow-wrap: anywhere;
+}
+
 /* A screen fills its frame; the frame, not the page, scrolls the document. */
 html[data-screen],
 html[data-screen] body,
@@ -45,18 +51,4 @@ html[data-chrome] #root {
 }
 html[data-chrome] body {
   margin: 0;
-}
-
-/*
- * Customize mode (src/kit/widget-editor.tsx). While a widget is dragged, dnd-kit leaves a copy
- * in the grid to hold its place; it shows as an empty dashed slot where the widget will land.
- */
-:root [data-widget-id][data-dnd-placeholder][data-dnd-placeholder] {
-  visibility: visible;
-  border: 1px dashed var(--color-accent);
-  background: var(--color-accent-soft);
-  box-shadow: none;
-}
-:root [data-widget-id][data-dnd-placeholder] > * {
-  visibility: hidden;
 }

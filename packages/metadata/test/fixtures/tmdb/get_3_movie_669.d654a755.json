@@ -1,0 +1,516 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/669?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations%2Ckeywords&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "adult": false,
+      "backdrop_path": "/1Zgfk1raynguQf9Pvcmx9M5dyDN.jpg",
+      "belongs_to_collection": null,
+      "budget": 53000,
+      "genres": [
+        {
+          "id": 99,
+          "name": "Documentary"
+        },
+        {
+          "id": 18,
+          "name": "Drama"
+        }
+      ],
+      "homepage": "",
+      "id": 669,
+      "imdb_id": "tt0013427",
+      "original_language": "en",
+      "original_title": "Nanook of the North",
+      "overview": "This pioneering documentary film depicts the lives of the indigenous Inuit people of Canada's northern Quebec region. Although the production contains some fictional elements, it vividly shows how its resourceful subjects survive in such a harsh climate, revealing how they construct their igloo homes and find food by hunting and fishing. The film also captures the beautiful, if unforgiving, frozen landscape of the Great White North, far removed from conventional civilization.",
+      "popularity": 36.47,
+      "poster_path": "/9WAboi1QbKu41WkyGxQVNpXwwxx.jpg",
+      "production_companies": [
+        {
+          "id": 235762,
+          "logo_path": null,
+          "name": "Pathé Exchange",
+          "origin_country": ""
+        },
+        {
+          "id": 397,
+          "logo_path": null,
+          "name": "Les Frères Revillon",
+          "origin_country": ""
+        }
+      ],
+      "release_date": "1922-06-11",
+      "revenue": 0,
+      "runtime": 79,
+      "status": "Released",
+      "tagline": "A story of life and love in the actual Arctic.",
+      "title": "Nanook of the North",
+      "video": false,
+      "vote_average": 7.1,
+      "vote_count": 335,
+      "credits": {
+        "cast": [
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 10094,
+            "known_for_department": "Acting",
+            "name": "Allakariallak",
+            "original_name": "Allakariallak",
+            "popularity": 37.91,
+            "profile_path": "/otpUuIEyiVPs0xxnqDCClcxWFIx.jpg",
+            "cast_id": 1,
+            "character": "Nanook",
+            "credit_id": "52fe4267c3a36847f801bcf1",
+            "order": 0
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 10095,
+            "known_for_department": "Acting",
+            "name": "Alice Nevalinga",
+            "original_name": "Alice Nevalinga",
+            "popularity": 15.87,
+            "profile_path": null,
+            "cast_id": 2,
+            "character": "Nanook's Wife - the Smiling One",
+            "credit_id": "52fe4267c3a36847f801bcf5",
+            "order": 1
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 10096,
+            "known_for_department": "Acting",
+            "name": "Cunayou",
+            "original_name": "Cunayou",
+            "popularity": 4.8,
+            "profile_path": null,
+            "cast_id": 3,
+            "character": "Cunayou - Nanook's Daughter",
+            "credit_id": "52fe4267c3a36847f801bcf9",
+            "order": 2
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 10098,
+            "known_for_department": "Acting",
+            "name": "Allegoo",
+            "original_name": "Allegoo",
+            "popularity": 7.38,
+            "profile_path": null,
+            "cast_id": 4,
+            "character": "Allegoo - Nanook's Son",
+            "credit_id": "52fe4267c3a36847f801bd01",
+            "order": 3
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 10097,
+            "known_for_department": "Acting",
+            "name": "Allee",
+            "original_name": "Allee",
+            "popularity": 1.94,
+            "profile_path": null,
+            "cast_id": 5,
+            "character": "Allee - Nanook's Son",
+            "credit_id": "52fe4267c3a36847f801bcfd",
+            "order": 4
+          }
+        ],
+        "crew": [
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 10092,
+            "known_for_department": "Camera",
+            "name": "Robert Flaherty",
+            "original_name": "Robert Flaherty",
+            "popularity": 8.63,
+            "profile_path": "/xbQPv5sgBA72gKb57YGpjE1RKfW.jpg",
+            "credit_id": "13bbb2a2f4148098c06c9ed9",
+            "department": "Camera",
+            "job": "Director of Photography"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 10092,
+            "known_for_department": "Directing",
+            "name": "Robert Flaherty",
+            "original_name": "Robert Flaherty",
+            "popularity": 8.63,
+            "profile_path": "/xbQPv5sgBA72gKb57YGpjE1RKfW.jpg",
+            "credit_id": "d210521c205d79cd56f1d84d",
+            "department": "Directing",
+            "job": "Director"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 10093,
+            "known_for_department": "Editing",
+            "name": "Charles Gelb",
+            "original_name": "Charles Gelb",
+            "popularity": 20.53,
+            "profile_path": null,
+            "credit_id": "ba341b82b594655e445a40ff",
+            "department": "Editing",
+            "job": "Editor"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 10092,
+            "known_for_department": "Editing",
+            "name": "Robert Flaherty",
+            "original_name": "Robert Flaherty",
+            "popularity": 8.63,
+            "profile_path": "/xbQPv5sgBA72gKb57YGpjE1RKfW.jpg",
+            "credit_id": "a033d623613a58669f5a6ec6",
+            "department": "Editing",
+            "job": "Editor"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3596833,
+            "known_for_department": "Production",
+            "name": "John Révillon",
+            "original_name": "John Révillon",
+            "popularity": 16.59,
+            "profile_path": null,
+            "credit_id": "89c1d2be824db8aef9aa468a",
+            "department": "Production",
+            "job": "Executive Producer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 3596832,
+            "known_for_department": "Production",
+            "name": "Thierry Mallett",
+            "original_name": "Thierry Mallett",
+            "popularity": 21.03,
+            "profile_path": null,
+            "credit_id": "75ab83aacb55c19698bd7c7b",
+            "department": "Production",
+            "job": "Executive Producer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 10092,
+            "known_for_department": "Production",
+            "name": "Robert Flaherty",
+            "original_name": "Robert Flaherty",
+            "popularity": 8.63,
+            "profile_path": "/xbQPv5sgBA72gKb57YGpjE1RKfW.jpg",
+            "credit_id": "2acb8669f48039d30f5c7234",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1840038,
+            "known_for_department": "Writing",
+            "name": "Frances H. Flaherty",
+            "original_name": "Frances H. Flaherty",
+            "popularity": 13.37,
+            "profile_path": null,
+            "credit_id": "252c15293cda95b7b94d0caa",
+            "department": "Writing",
+            "job": "Idea"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 10092,
+            "known_for_department": "Writing",
+            "name": "Robert Flaherty",
+            "original_name": "Robert Flaherty",
+            "popularity": 8.63,
+            "profile_path": "/xbQPv5sgBA72gKb57YGpjE1RKfW.jpg",
+            "credit_id": "f9479cd4563f92a90a45f357",
+            "department": "Writing",
+            "job": "Writer"
+          }
+        ]
+      },
+      "videos": {
+        "results": [
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Nanook of The North - Faclan Festival 2016 Trailer",
+            "key": "bkilXJiCfng",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": false,
+            "published_at": "2016-10-24T00:00:00.000Z",
+            "id": "5d8d0c45abf8e2001979dd90"
+          }
+        ]
+      },
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "US",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1922-06-11T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Museum of Modern Art, New York",
+                "release_date": "1973-05-21T00:00:00.000Z",
+                "type": 2
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "San Francisco Silent Film Festival",
+                "release_date": "2016-06-05T00:00:00.000Z",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FR",
+            "release_dates": [
+              {
+                "certification": "U",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1922-10-27T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "U",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Re-release",
+                "release_date": "1996-04-10T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "NL",
+            "release_dates": [
+              {
+                "certification": "AL",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD",
+                "release_date": "2008-08-01T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "SE",
+            "release_dates": [
+              {
+                "certification": "Btl",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1922-12-26T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "Btl",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Re-release (Sound Version)",
+                "release_date": "1947-12-26T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          }
+        ]
+      },
+      "external_ids": {
+        "imdb_id": "tt0013427",
+        "wikidata_id": "Q918401",
+        "facebook_id": null,
+        "instagram_id": null,
+        "twitter_id": null
+      },
+      "recommendations": {
+        "page": 1,
+        "results": [
+          {
+            "adult": false,
+            "backdrop_path": "/wwuSr3VboAqEqKMNWVUU6x75P1w.jpg",
+            "genre_ids": [99],
+            "id": 413580,
+            "original_language": "en",
+            "original_title": "Dawson City: Frozen Time",
+            "overview": "The true history of a collection of some 500 films dating from 1910s to 1920s, which were lost for over 50 years until being discovered buried in a sub-arctic swimming pool deep in the Yukon Territory, in Dawson City, located about 350 miles south of the Arctic Circle.",
+            "popularity": 9.55,
+            "poster_path": "/6acUjFJzv6J7IE2h75zVMCkJr4k.jpg",
+            "release_date": "2017-06-09",
+            "title": "Dawson City: Frozen Time",
+            "video": false,
+            "vote_average": 6.8,
+            "vote_count": 71,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/4ADZ2iiATjoKxZwjJRiEo1x6Fk0.jpg",
+            "genre_ids": [99],
+            "id": 10946,
+            "original_language": "en",
+            "original_title": "Earth",
+            "overview": "An epic story of adventure, starring some of the most magnificent and courageous creatures alive, awaits you in EARTH. Disneynature brings you a remarkable story of three animal families on a journey across our planet – polar bears, elephants and humpback whales.",
+            "popularity": 18.73,
+            "poster_path": "/xybnXW6E28W9agiwUeGLbTYS454.jpg",
+            "release_date": "2007-10-10",
+            "title": "Earth",
+            "video": false,
+            "vote_average": 7.666,
+            "vote_count": 386,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/aVSSuDNzgqHVCdAcSSAA1kdhrkK.jpg",
+            "genre_ids": [99, 10751],
+            "id": 927070,
+            "original_language": "en",
+            "original_title": "Polar Bear",
+            "overview": "A new mother’s memories of her own youth prepare her to navigate motherhood in the increasingly challenging world that polar bears face today.",
+            "popularity": 14.85,
+            "poster_path": "/nCRUQcbBs6Ix6YaBeCgC9OwE0mt.jpg",
+            "release_date": "2022-04-22",
+            "title": "Polar Bear",
+            "video": false,
+            "vote_average": 7.2,
+            "vote_count": 65,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/j2V5P9I56CMrhB7KRGk6J1bPvly.jpg",
+            "genre_ids": [99, 18],
+            "id": 913838,
+            "original_language": "en",
+            "original_title": "All That Breathes",
+            "overview": "Against the darkening backdrop of New Delhi's apocalyptic air and escalating violence, two brothers devote their lives to protecting one casualty of the turbulent times: the bird known as the black kite.",
+            "popularity": 12.65,
+            "poster_path": "/xgTyGlmOYnDwUugITwd8MY5AQ5F.jpg",
+            "release_date": "2022-10-21",
+            "title": "All That Breathes",
+            "video": false,
+            "vote_average": 6.9,
+            "vote_count": 88,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/l1C0dtWshyoIdEeUbNQyX2B9GUG.jpg",
+            "genre_ids": [99],
+            "id": 39333,
+            "original_language": "en",
+            "original_title": "180° South",
+            "overview": "The film follows adventurer Jeff Johnson as he retraces the epic 1968 journey of his heroes Yvon Chouinard and Doug Tompkins to Patagonia.",
+            "popularity": 1.23,
+            "poster_path": "/jLvxcvpEbQ1bRETJZ3NlKpjQuLC.jpg",
+            "release_date": "2010-02-10",
+            "title": "180° South",
+            "video": false,
+            "vote_average": 7.2,
+            "vote_count": 58,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/oQR4TXfmbOBdHGyOAaN3vXjeygJ.jpg",
+            "genre_ids": [99],
+            "id": 890601,
+            "original_language": "en",
+            "original_title": "Puff: Wonders of the Reef",
+            "overview": "A baby pufferfish travels through a wondrous microworld full of fantastical creatures as he searches for a home on the Great Barrier Reef.",
+            "popularity": 19.09,
+            "poster_path": "/3jW7VXaI955lIfegDlB0F5OShbP.jpg",
+            "release_date": "2021-10-01",
+            "title": "Puff: Wonders of the Reef",
+            "video": false,
+            "vote_average": 7.65,
+            "vote_count": 107,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/5taScILscWm17F3ndboj3FnMCZK.jpg",
+            "genre_ids": [10402, 99],
+            "id": 617773,
+            "original_language": "en",
+            "original_title": "Western Stars",
+            "overview": "The incomparable Bruce Springsteen performs his critically acclaimed latest album and muses on life, rock, and the American dream, in this intimate and personal concert film co-directed by Thom Zimny and Springsteen himself.",
+            "popularity": 35.6,
+            "poster_path": "/aT5lsPynkYhDgFZH48jdNLobnZY.jpg",
+            "release_date": "2019-10-25",
+            "title": "Western Stars",
+            "video": false,
+            "vote_average": 7,
+            "vote_count": 49,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/tIiPFKY7HynPQDyLYhG4CSbJNVM.jpg",
+            "genre_ids": [99, 36, 10770],
+            "id": 14463,
+            "original_language": "en",
+            "original_title": "Alone in the Wilderness",
+            "overview": "Dick Proenneke retired at age 50 in 1967 and decided to build his own cabin in the wilderness at the base of the Aleutian Peninsula, in what is now Lake Clark National Park. Using color footage he shot himself, Proenneke traces how he came to this remote area, selected a homestead site and built his log cabin completely by himself. The documentary covers his first year in-country, showing his day-to-day activities and the passing of the seasons as he sought to scratch out a living alone in the wilderness.",
+            "popularity": 3.96,
+            "poster_path": "/fOzc4vwTG9d9tlhX6EyPHu3cuiq.jpg",
+            "release_date": "2004-10-08",
+            "title": "Alone in the Wilderness",
+            "video": false,
+            "vote_average": 7.9,
+            "vote_count": 86,
+            "media_type": "movie"
+          }
+        ],
+        "total_pages": 1,
+        "total_results": 8
+      },
+      "production_countries": [
+        {
+          "iso_3166_1": "US",
+          "name": "United States of America"
+        }
+      ],
+      "keywords": {
+        "keywords": []
+      }
+    }
+  }
+}

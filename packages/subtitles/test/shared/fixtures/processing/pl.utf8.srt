@@ -1,0 +1,29 @@
+1
+00:00:04,000 --> 00:00:07,500
+Dzień dobry, czy mogę zamówić kawę z mlekiem?
+Oczywiście. Czy życzy pan sobie również ciastko?
+
+2
+00:00:08,000 --> 00:00:11,500
+Poproszę szarlotkę. Słyszałem, że jest najlepsza w mieście.
+To prawda, piekarz przygotowuje ją każdego ranka.
+
+3
+00:00:12,000 --> 00:00:15,500
+Właśnie wróciłem z podróży po południowej Hiszpanii.
+Jak było? Pogoda była ładna przez cały tydzień?
+
+4
+00:00:16,000 --> 00:00:19,500
+Gorąco jak w piecu, ale morze było przepiękne.
+Zazdroszczę. U nas padał deszcz przez dziesięć dni.
+
+5
+00:00:20,000 --> 00:00:23,500
+Następnym razem pojedziemy razem, obiecuję.
+Trzymam pana za słowo. Proszę, oto pańska kawa.
+
+6
+00:00:24,000 --> 00:00:27,500
+Dziękuję bardzo. Ile płacę?
+Dwanaście złotych. Smacznego.

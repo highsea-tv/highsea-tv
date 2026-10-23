@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The mock server's entities: a first draft of the shapes @highsea/sdk will return in Phase 3.
+// The mock server's entities: a first draft of the shapes @highsea-tv/sdk will return in Phase 3.
 // Names follow the roadmap (docs/roadmap.md, Phase 3) and ADR 0012 (the unified media item tree).
 // Times are ISO 8601 strings; sizes are bytes; rates are bytes per second; durations are seconds
 // unless a name says otherwise.
@@ -46,16 +46,11 @@ export type DiscoveredServer = {
 
 // ---------------------------------------------------------------- users and devices
 
-export type UserRole = 'owner' | 'admin' | 'member' | 'restricted'
+/** The owner and admins run the server; users watch (ADR 0032). */
+export type UserRole = 'owner' | 'admin' | 'user'
 
-/** Fine-grained permissions beyond the role (roadmap › gap analysis › permissions model). */
-export type Permission =
-  | 'request'
-  | 'autoApprove'
-  | 'download'
-  | 'manageLibrary'
-  | 'manageUsers'
-  | 'admin'
+/** A user's, set per person: ask for titles, download for offline. Staff hold every power by role. */
+export type Permission = 'request' | 'download'
 
 export type User = {
   id: string
@@ -94,6 +89,32 @@ export type Device = {
 }
 
 export type Session = { user: User; deviceId: string; expiresAt: ISODate }
+
+export type InviteInput = {
+  displayName: string
+  /** Optional: the invite can go by email, or as a link the owner shares. */
+  email: string | null
+  role: Exclude<UserRole, 'owner'>
+  libraries: 'all' | string[]
+}
+
+/** A pending user and the single-use link that finishes their account. */
+export type Invite = { user: User; link: string; expiresAt: ISODate }
+
+/** For scripts and other apps (Home Assistant, a backup job). The secret shows once. */
+export type ApiKey = {
+  id: string
+  name: string
+  /** The first characters, to tell keys apart: `hs_7Kq2…`. */
+  prefix: string
+  scope: 'read' | 'full'
+  /** Who made it: the key acts for them, never beyond an admin. */
+  userId: string
+  createdAt: ISODate
+  lastUsed: ISODate | null
+}
+
+export type CreatedApiKey = ApiKey & { secret: string }
 
 export type SignInResult =
   | { status: 'signed-in'; session: Session }
@@ -201,25 +222,10 @@ export type MediaFile = {
 
 // ---------------------------------------------------------------- acquisition
 
-export type QualityProfile = {
-  id: string
-  name: string
-  cutoff: string
-  qualities: { name: string; allowed: boolean }[]
-  upgradeAllowed: boolean
-  minFormatScore: number
-  cutoffFormatScore: number
-  formats: { formatId: string; score: number }[]
-}
+// Profiles, custom formats and the decision engine's reasons are @highsea-tv/quality's (ADR 0031).
+import type { CustomFormat, DecisionReason, QualityProfile } from '@highsea-tv/quality'
 
-export type CustomFormat = {
-  id: string
-  name: string
-  conditions: string[]
-  source: 'preset' | 'custom'
-}
-
-export type DecisionReason = { kind: 'accepted' | 'rejected' | 'warning'; message: string }
+export type { CustomFormat, DecisionReason, QualityProfile }
 
 /**
  * A title the metadata source knows (TMDB simulation). `id` is its media id: the same before and
@@ -241,7 +247,14 @@ export type DiscoverMovie = {
 
 // ---------------------------------------------------------------- metadata (media pages, ADR 0014)
 
-export type Department = 'Acting' | 'Directing' | 'Writing' | 'Production' | 'Sound' | 'Camera'
+export type Department =
+  | 'Acting'
+  | 'Directing'
+  | 'Writing'
+  | 'Production'
+  | 'Sound'
+  | 'Camera'
+  | 'Editing'
 
 /** A person's part in a title: a character (cast) or a job (crew). */
 export type Credit = {
@@ -337,6 +350,8 @@ export type SubtitleProvider = {
   rateLimitMax: number
   requiresAuth: boolean
   username?: string
+  /** The line the provider's terms ask for where its subtitles are picked. */
+  attribution?: string
 }
 
 export type TorrentLimits = {
@@ -488,6 +503,21 @@ export type ImportList = {
   enabled: boolean
   lastSync: ISODate | null
   items: number
+  /** Adds what it finds as monitored, and searches for it. */
+  search: boolean
+  profileId: string
+}
+
+/** A file manual import (A17) found, and what highsea thinks it is. */
+export type ImportCandidate = {
+  path: string
+  size: number
+  quality: string
+  language: string
+  /** The movie it matched, by name; null when nothing did. */
+  itemId: string | null
+  /** Why it would be skipped, when it would. */
+  skip: string | null
 }
 
 /** Root folders and the hardlink check (roadmap › Docker: a single `/data` root). */
@@ -640,33 +670,226 @@ export type FeaturedSection = {
   layout: 'hero' | 'row' | 'spotlight'
   source:
     | { kind: 'manual'; itemIds: string[] }
-    | { kind: 'rule'; rule: 'recently-added' | 'genre' | 'collection' | 'filter'; value: string }
+    /** `collection`: a TMDB collection's id or a smart collection's (`sc-…`). */
+    | { kind: 'rule'; rule: 'recently-added' | 'genre' | 'collection'; value: string }
   overrides: { itemId: string; artwork: string | null; tagline: string | null }[]
   audience: Audience
   schedule: { start: ISODate; end: ISODate | null }
   order: number
 }
 
+export type CurationStatus = 'draft' | 'scheduled' | 'live' | 'ended'
+
+/** An announcement in the admin's list: how many of its audience have seen it. */
+export type AnnouncementSummary = Announcement & { seenBy: number; audienceSize: number }
+
+/** A featured section in the admin's list: what its source resolves to right now. */
+export type SectionSummary = FeaturedSection & {
+  status: Exclude<CurationStatus, 'draft'>
+  itemCount: number
+  /** The first few titles, for the list's art strip. */
+  sample: { id: string; title: string; poster: string }[]
+}
+
+/** The curation a client preview renders: the saved lists with the draft merged in. */
+export type CurationPreview = {
+  announcements: Announcement[]
+  featured: FeaturedSection[]
+  /** The saved collections, for sections that draw on one. */
+  collections?: SmartCollection[]
+}
+
+// ---------------------------------------------------------------- collections (docs/product/collections.md)
+
+/** What a condition looks at. Grouped in the editor as the plan's table is. */
+export type RuleField =
+  | 'title'
+  | 'year'
+  | 'releaseDate'
+  | 'decade'
+  | 'rating'
+  | 'votes'
+  | 'certification'
+  | 'originalLanguage'
+  | 'audioLanguage'
+  | 'subtitleLanguage'
+  | 'genre'
+  | 'runtime'
+  | 'keyword'
+  | 'studio'
+  | 'country'
+  | 'actor'
+  | 'director'
+  | 'writer'
+  | 'composer'
+  | 'producer'
+  | 'cinematographer'
+  | 'editor'
+  | 'person'
+  | 'collection'
+  | 'added'
+  | 'status'
+  | 'tag'
+  | 'rootFolder'
+  | 'qualityProfile'
+  | 'resolution'
+  | 'hdr'
+  | 'videoCodec'
+  | 'edition'
+  | 'size'
+  | 'watched'
+  | 'lastPlayed'
+
+export type RuleOp =
+  | 'contains'
+  | 'is'
+  | 'isNot'
+  | 'between'
+  | 'before'
+  | 'after'
+  | 'inLast'
+  | 'atLeast'
+  | 'atMost'
+  | 'oneOf'
+  | 'notOneOf'
+  | 'includes'
+  | 'excludes'
+  | 'only'
+  | 'anyOf'
+  | 'allOf'
+  | 'noneOf'
+
+/**
+ * A condition's value, by its comparison: a number (at least, in the last N), a pair (between), a
+ * date (before, after), one choice (is), or several (one of, any of, includes).
+ */
+export type RuleValue = number | string | string[] | [number, number]
+
+export type RuleCondition = {
+  kind: 'condition'
+  id: string
+  field: RuleField
+  op: RuleOp
+  value: RuleValue
+}
+
+/** All or any of its rules. The top level may hold groups; a group holds conditions only. */
+export type RuleGroup = {
+  kind: 'group'
+  id: string
+  match: 'all' | 'any'
+  rules: (RuleCondition | RuleGroup)[]
+}
+
+export type CollectionSort =
+  | 'manual'
+  | 'rating'
+  | 'release'
+  | 'year'
+  | 'added'
+  | 'title'
+  | 'runtime'
+  | 'popularity'
+  | 'random'
+
+/**
+ * One kind of collection: rules are optional. Without them it holds what's picked (`include`, in
+ * its order); with them, what matches, plus `include`, less `exclude`.
+ */
+export type SmartCollection = {
+  id: string
+  name: string
+  summary: string
+  /** An uploaded poster; null draws a mosaic of the first four. */
+  artwork: string | null
+  rules: RuleGroup | null
+  /** Always include: the picks, for a collection without rules. */
+  include: string[]
+  /** Never include. */
+  exclude: string[]
+  sort: CollectionSort
+  /** Highest, newest, longest or Z first. */
+  descending: boolean
+  limit: number | null
+  audience: Audience
+  updatedAt: ISODate
+}
+
+/** A field as the editor offers it: its comparisons, its choices, and whether it works yet. */
+export type RuleFieldInfo = {
+  field: RuleField
+  label: string
+  group: 'Release' | 'Ratings' | 'Language' | 'Content' | 'People' | 'Library' | 'File' | 'Playback'
+  type: 'number' | 'date' | 'choice' | 'list' | 'person' | 'text'
+  ops: RuleOp[]
+  /** For choice and list fields: value and label. People are searched instead. */
+  options?: { value: string; label: string }[]
+  /** "2010", "4.5", "GB": what the number means. */
+  unit?: string
+  /** Shown but not offered yet: "Comes with playback". */
+  disabled?: string
+}
+
+/** What a draft collection holds right now (the editor's live result). */
+export type CollectionPreview = {
+  /** Films that match, files or not. */
+  matched: number
+  /** Of those, the ones with a file: what the apps show. */
+  playable: number
+  /** In the collection's order, after its limit. */
+  items: { id: string; title: string; year: number; poster: string; playable: boolean }[]
+  /** The rules in words: "Released 2010–2020, rated 4.5 or more, in English". */
+  words: string | null
+}
+
+/** A collection in the admin's list. */
+export type CollectionSummary = SmartCollection & {
+  matched: number
+  playable: number
+  /** Up to four posters for the mosaic. */
+  mosaic: string[]
+  words: string | null
+}
+
+// ---------------------------------------------------------------- appearance (A12)
+
+/** A custom theme: a partial override of a built-in one (the theme engine's `ThemeInput`). */
+export type CustomTheme = {
+  id: string
+  name: string
+  base: 'default' | 'oled' | 'high-contrast'
+  accent: string
+  colors?: Record<string, string>
+}
+
+/** What clients play until someone changes it on their own device. */
+export type SoundDefaults = {
+  tv: boolean
+  phone: boolean
+  web: boolean
+  /** 0–1. */
+  volume: number
+  pack: string
+}
+
+export type Appearance = {
+  /** A built-in theme id or a custom theme's. Clients use it until someone picks their own. */
+  defaultTheme: string
+  themes: CustomTheme[]
+  sound: SoundDefaults
+}
+
 // ---------------------------------------------------------------- personalization
 
-export type WidgetKind =
-  | 'network'
-  | 'storage'
-  | 'indexers'
-  | 'subtitles'
-  | 'upcoming'
-  | 'announcement'
-  | 'activity'
-  | 'recently-added'
-  | 'calendar'
-  | 'system-health'
+// the registry's types, from the package the server uses
+import type { WidgetPlacement } from '@highsea-tv/personalization/widgets'
 
-export type WidgetSpan = 1 | 2 | 3 | 4
+export type { WidgetKind, WidgetPlacement, WidgetSpan } from '@highsea-tv/personalization/widgets'
 
-/** Where a widget sits: its place in the order, its width in columns and its height in rows. */
-export type WidgetPlacement = { id: string; kind: WidgetKind; span: WidgetSpan; rows: number }
+/** Only staff have a dashboard: it's the admin's. */
+export type StaffRole = Exclude<UserRole, 'user'>
 
-export type LayoutScope = { kind: 'user'; userId: string } | { kind: 'role'; role: UserRole }
+export type LayoutScope = { kind: 'user'; userId: string } | { kind: 'role'; role: StaffRole }
 
 export type WidgetLayout = {
   scope: LayoutScope
@@ -765,7 +988,7 @@ export type SetupInput = {
 export type ServerEvent =
   | { type: 'tick'; now: number }
   | { type: 'torrents.updated' }
-  | { type: 'queue.changed' }
+  | { type: 'queue.updated' }
   | { type: 'item.updated'; id: string }
   | { type: 'movies.updated' }
   | { type: 'history.updated' }
@@ -774,7 +997,125 @@ export type ServerEvent =
   | { type: 'health.updated' }
   | { type: 'subtitles.updated'; itemId?: string }
   | { type: 'announcements.updated' }
+  | { type: 'curation.updated' }
+  | { type: 'collections.updated' }
+  | { type: 'users.updated' }
+  | { type: 'settings.updated' }
+  | { type: 'vpn.updated' }
   | { type: 'layout.updated' }
   | { type: 'server.updated' }
+  | { type: 'watch.updated' }
 
 export type EventTopic = ServerEvent['type']
+
+// ---------------------------------------------------------------- clients (C1–C5)
+
+/** A server this device has signed in to before (the multi-server switcher). */
+export type KnownServer = {
+  id: string
+  name: string
+  owner: string
+  /** The LAN address, then the remote one the client fails over to. */
+  addresses: { local: string; remote: string | null }
+  signedIn: boolean
+  lastSeen: ISODate
+}
+
+/** `POST /api/v1/connect/probe`: what an address answered, before signing in. */
+export type ProbeResult = PublicServerInfo & { address: string; reachability: Reachability }
+
+/** Sign-in by code (TV): the code a phone or computer approves at `url`. */
+export type Pairing = { code: string; url: string; expiresAt: ISODate }
+
+/** A title as the clients see it: the library item plus this user's watch state. */
+export type ClientItem = MediaItem & {
+  /** 0–1 through the movie, or null if not started (or finished). */
+  progress: number | null
+  /** Seconds in, for Resume. */
+  position: number
+  /** A featured section's override, if any. */
+  tagline: string | null
+}
+
+export type HomeSection = {
+  id: string
+  title: string
+  /** A curated-by suffix ("by Ines") or a tagline. */
+  suffix: string | null
+  layout: 'hero' | 'row' | 'spotlight' | 'continue'
+  items: ClientItem[]
+}
+
+/** A person in search results, with how many titles here they're in. */
+export type SearchPerson = { id: string; name: string; photo: string; titles: number }
+
+/** A collection as clients see it: only its parts on this server count. */
+export type ClientCollection = {
+  id: string
+  name: string
+  overview: string
+  /** The first part's art. */
+  art: { poster: string; backdrop: string }
+  /** How many of its titles are here. */
+  count: number
+  /** "2010–2016", or one year. */
+  years: string
+  /** A smart collection (`sc-…`): its rules in words, and up to four posters for its mosaic. */
+  smart?: { words: string | null; mosaic: string[] }
+}
+
+/**
+ * One kind of result. New media types (shows, episodes, music) join as new kinds; clients show
+ * the sections in the order the server ranks them, and skip kinds they don't know yet.
+ */
+export type SearchSection =
+  | { kind: 'movies'; items: ClientItem[] }
+  | { kind: 'collections'; items: ClientCollection[] }
+  | { kind: 'people'; items: SearchPerson[] }
+
+export type SearchKind = SearchSection['kind']
+
+/** Search (C6): results grouped by kind, the best-matching kind first. Empty kinds are left out. */
+export type SearchResults = { sections: SearchSection[] }
+
+/** A person's own home screen order (C7): ids of featured sections and `continue`. */
+export type HomeLayout = { order: string[]; hidden: string[] }
+
+export type ClientTrack = {
+  id: string
+  kind: 'audio' | 'subtitle'
+  label: string
+  language: string
+  /** Subtitles: forced, SDH; audio: channels. */
+  detail: string | null
+  default: boolean
+}
+
+export type ClientVersion = {
+  id: string
+  label: string
+  /** "4K · HDR10 · HEVC · 18.2 GB". */
+  detail: string
+  audio: ClientTrack[]
+  subtitles: ClientTrack[]
+}
+
+/** `GET /api/v1/items/{id}` for clients: the page and the player read the same shape. */
+export type ClientDetail = {
+  item: ClientItem
+  versions: ClientVersion[]
+  cast: Credit[]
+  directors: Credit[]
+  related: ClientItem[]
+  /** This user's remembered picks for the title, or the server's defaults. */
+  defaults: { versionId: string; audioId: string | null; subtitleId: string | null }
+}
+
+/** This user's per-title player settings, saved as they change. */
+export type PlaybackPrefs = {
+  versionId?: string
+  audioId?: string | null
+  subtitleId?: string | null
+  /** Subtitle timing nudge for this title, in ms (±50 steps). */
+  subtitleOffsetMs?: number
+}

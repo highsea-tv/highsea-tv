@@ -2,6 +2,8 @@
 // The media page's shared anatomy (docs/product/media-pages.md#layout), used by every state of a
 // movie's page and, later, by the other media types: the summary card, the Overview's rows (cast,
 // trailers, collection, More like this) and its About aside, and the Cast and crew tab.
+
+import { duration } from '@highsea-tv/core/format'
 import {
   Badge,
   Button,
@@ -15,11 +17,10 @@ import {
   Rating,
   Skeleton,
   SkeletonText,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { Fragment, type ReactNode, useState } from 'react'
 import { useNow, useQuery } from '../../mock/hooks.tsx'
 import type { Credit, Department, DiscoverMovie, MovieMetadata, Video } from '../../mock/types.ts'
-import { duration } from '../format.ts'
 import { Loadable } from '../loadable.tsx'
 import { movieHref, personHref } from './links.ts'
 
@@ -143,14 +144,12 @@ export function MediaOverview({
   meta,
   main,
   aside,
-  staff,
   onAllCast,
   onAdd,
 }: {
   meta: ReturnType<typeof useMovieMetadata>
   main?: ReactNode
   aside?: ReactNode
-  staff: boolean
   onAllCast: () => void
   /** Add these movies (a collection's missing parts). */
   onAdd: (movies: DiscoverMovie[]) => void
@@ -165,7 +164,7 @@ export function MediaOverview({
               {md.cast.length > 0 && <CastRow cast={md.cast} onAll={onAllCast} />}
               {md.videos.length > 0 && <TrailersRow videos={md.videos} />}
               {md.collection && (
-                <CollectionRow id={md.collection.id} current={md.id} staff={staff} onAdd={onAdd} />
+                <CollectionRow id={md.collection.id} current={md.id} onAdd={onAdd} />
               )}
               <MoreLikeThis id={md.id} />
             </>
@@ -305,12 +304,10 @@ function TitlePoster({ t }: { t: DiscoverMovie }) {
 function CollectionRow({
   id,
   current,
-  staff,
   onAdd,
 }: {
   id: string
   current: string
-  staff: boolean
   onAdd: (movies: DiscoverMovie[]) => void
 }) {
   const collection = useQuery(`collection:${id}`, (c) => c.metadata.collection(id), [
@@ -327,7 +324,6 @@ function CollectionRow({
       itemClassName={titleItem}
       suffix={`${here} of ${c.parts.length} in the library`}
       action={
-        staff &&
         missing.length > 0 && (
           <Button size="sm" icon="add" onClick={() => onAdd(missing)}>
             Add {missing.length} missing
@@ -452,7 +448,14 @@ function About({ meta: m }: { meta: MovieMetadata }) {
 
 // ---------------------------------------------------------------- cast and crew
 
-const departments: Department[] = ['Directing', 'Writing', 'Production', 'Camera', 'Sound']
+const departments: Department[] = [
+  'Directing',
+  'Writing',
+  'Production',
+  'Camera',
+  'Editing',
+  'Sound',
+]
 
 export function CastAndCrew({ meta }: { meta: ReturnType<typeof useMovieMetadata> }) {
   return (

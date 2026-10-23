@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Toasts: level 3 (elevation.md), announced politely, paused on hover and focus. Toasts with an
 // action stay at least 10s (accessibility.md#operable). Toasts never play sounds themselves.
@@ -114,8 +115,18 @@ function ToastItem({ entry }: { entry: Entry }) {
   )
 }
 
-/** Renders the toast stack, bottom-right (bottom-center on compact screens). */
-export function Toaster({ label = 'Notifications ({hotkey})' }: { label?: string }) {
+/**
+ * Renders the toast stack, bottom-right (bottom-center on compact screens). Radix keeps two labels:
+ * `label` is read before each toast as it's announced, and `regionLabel` names the region, where
+ * Radix fills in `{hotkey}` (https://www.radix-ui.com/primitives/docs/components/toast#api-reference).
+ */
+export function Toaster({
+  label = 'Notification',
+  regionLabel = 'Notifications ({hotkey})',
+}: {
+  label?: string
+  regionLabel?: string
+}) {
   const list = useSyncExternalStore(
     (l) => {
       listeners.add(l)
@@ -129,7 +140,10 @@ export function Toaster({ label = 'Notifications ({hotkey})' }: { label?: string
       {list.slice(-MAX_VISIBLE).map((e) => (
         <ToastItem key={e.id} entry={e} />
       ))}
-      <ToastPrimitive.Viewport className="fixed inset-x-0 bottom-0 z-[60] m-0 flex list-none flex-col gap-2 p-4 outline-none medium:start-auto medium:w-[26.25rem] medium:p-6" />
+      <ToastPrimitive.Viewport
+        label={regionLabel}
+        className="fixed inset-x-0 bottom-0 z-[60] m-0 flex list-none flex-col gap-2 p-4 outline-none medium:start-auto medium:w-[26.25rem] medium:p-6"
+      />
     </ToastPrimitive.Provider>
   )
 }

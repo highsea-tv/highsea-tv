@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: CC0-1.0
+# Written for highsea from AirVPN's own pages; nothing was copied.
+id: airvpn
+version: 1.0.0
+minEngineVersion: 1.0.0
+name: AirVPN
+connect: config
+steps:
+  - Sign in at airvpn.org and open Client Area › Config Generator.
+  - Choose Linux and WireGuard, pick a country or server, and generate the file.
+  - Upload it here. To forward a port, reserve one under Client Area › Forwarded ports and type it below.
+links:
+  - label: AirVPN’s Config Generator
+    url: https://airvpn.org/generator/
+  - label: Remote port forwarding
+    url: https://airvpn.org/faq/port_forwarding/
+portForwarding:
+  method: static
+ipv6: true
+sources:
+  - https://airvpn.org/faq/port_forwarding/
+  - https://github.com/qdm12/gluetun-wiki/blob/main/setup/providers/airvpn.md

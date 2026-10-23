@@ -1,0 +1,29 @@
+1
+00:00:04,000 --> 00:00:07,500
+Dzieñ dobry, czy mogê zamówiæ kawê z mlekiem?
+Oczywiœcie. Czy ¿yczy pan sobie równie¿ ciastko?
+
+2
+00:00:08,000 --> 00:00:11,500
+Poproszê szarlotkê. S³ysza³em, ¿e jest najlepsza w mieœcie.
+To prawda, piekarz przygotowuje j¹ ka¿dego ranka.
+
+3
+00:00:12,000 --> 00:00:15,500
+W³aœnie wróci³em z podró¿y po po³udniowej Hiszpanii.
+Jak by³o? Pogoda by³a ³adna przez ca³y tydzieñ?
+
+4
+00:00:16,000 --> 00:00:19,500
+Gor¹co jak w piecu, ale morze by³o przepiêkne.
+Zazdroszczê. U nas pada³ deszcz przez dziesiêæ dni.
+
+5
+00:00:20,000 --> 00:00:23,500
+Nastêpnym razem pojedziemy razem, obiecujê.
+Trzymam pana za s³owo. Proszê, oto pañska kawa.
+
+6
+00:00:24,000 --> 00:00:27,500
+Dziêkujê bardzo. Ile p³acê?
+Dwanaœcie z³otych. Smacznego.

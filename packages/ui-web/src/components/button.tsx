@@ -1,3 +1,4 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 import { Slot } from 'radix-ui'
 import type { ComponentProps } from 'react'
@@ -61,10 +62,13 @@ export function Button({
     <Icon name={icon} size={s.glyph} />
   ) : null
   const classes = cn(base, buttonVariants[variant], s.box, iconOnly && s.icon, className)
+  // the icons go inside the child (a link), around its own content
   if (asChild)
     return (
       <Slot.Root className={classes} {...props}>
-        {children}
+        {lead}
+        <Slot.Slottable>{children}</Slot.Slottable>
+        {iconEnd && <Icon name={iconEnd} size={s.glyph} />}
       </Slot.Root>
     )
   return (

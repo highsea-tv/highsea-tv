@@ -3,10 +3,15 @@
 // movies in varied states, a live queue, five indexers (one backing off), synced subtitles and a
 // live announcement. "empty" is the same server just after setup: profiles and the catalog exist,
 // nothing else does.
-import { art, backdropArt, library, posterArt, stillArt, type Title } from '@highsea/fixtures'
+import { art, backdropArt, library, posterArt, stillArt, type Title } from '@highsea-tv/fixtures'
+import { seedFormats, seedProfiles } from '@highsea-tv/quality'
 import { iso } from './clock.ts'
+import { defaultSettings, type Settings } from './settings.ts'
 import type {
   Announcement,
+  ApiKey,
+  Appearance,
+  Backup,
   BlocklistEntry,
   CatalogDefinition,
   CustomFormat,
@@ -16,15 +21,22 @@ import type {
   FeaturedSection,
   HealthCheck,
   HistoryEvent,
+  HomeLayout,
   Indexer,
+  ISODate,
   Job,
+  KnownServer,
   Language,
   LanguageProfile,
   MediaFile,
   MediaItem,
   MediaStatus,
+  PlaybackPrefs,
   QualityProfile,
+  RuleCondition,
+  RuleGroup,
   Server,
+  SmartCollection,
   SpeedSample,
   Stream,
   SubtitleProvider,
@@ -36,6 +48,7 @@ import type {
   TorrentState,
   User,
 } from './types.ts'
+import type { VpnRuntime } from './vpn.ts'
 
 export const GB = 1e9
 export const MB = 1e6
@@ -75,6 +88,8 @@ export type ServerState = {
   torrentLimits: TorrentLimits
   announcements: Announcement[]
   featured: FeaturedSection[]
+  /** Collections the owner and admins made (docs/product/collections.md). */
+  collections: SmartCollection[]
   jobs: Job[]
   health: HealthCheck[]
   status: SystemStatus
@@ -82,9 +97,131 @@ export type ServerState = {
   fs: Record<string, FsNode>
   discovered: DiscoveredServer[]
   discoverCatalog: DiscoverMovie[]
+  /** Servers this device has signed in to (the clients' switcher). */
+  known: KnownServer[]
+  /** Where each user is in each title (Continue watching, Resume). */
+  watch: { userId: string; itemId: string; position: number; updatedAt: ISODate }[]
+  /** Per user and title: the player's remembered picks, keyed `${userId}:${itemId}`. */
+  prefs: Record<string, PlaybackPrefs>
   pipeline: PipelineStep[]
   /** Announcement ids the signed-in user dismissed or acknowledged. */
   seen: Record<string, string[]>
+  appearance: Appearance
+  apiKeys: ApiKey[]
+  settings: Settings
+  /** The tunnel's state apart from its settings (docs/product/vpn.md). */
+  vpn: VpnRuntime
+  backups: Backup[]
+  /** Per user: their own order and hidden rows on Home (C7). */
+  homeLayouts: Record<string, HomeLayout>
+}
+
+// ---------------------------------------------------------------- collections
+
+const when = (
+  id: string,
+  field: RuleCondition['field'],
+  op: RuleCondition['op'],
+  value: RuleCondition['value'],
+): RuleCondition => ({ kind: 'condition', id, field, op, value })
+
+const all = (id: string, ...rules: RuleGroup['rules']): RuleGroup => ({
+  kind: 'group',
+  id,
+  match: 'all',
+  rules,
+})
+
+/**
+ * The owner's example, a hand-picked one, one with exceptions, a composer's, the silent era (the
+ * featured section's source) and one that matches nothing yet.
+ */
+function seedCollections(now: number): SmartCollection[] {
+  const base = {
+    summary: '',
+    artwork: null,
+    include: [],
+    exclude: [],
+    sort: 'rating',
+    descending: true,
+    limit: null,
+    audience: { kind: 'everyone' },
+    updatedAt: iso(now - 3 * DAY),
+  } satisfies Partial<SmartCollection>
+  return [
+    {
+      ...base,
+      id: 'sc-2010s',
+      name: '2010s, 4.5 stars and up, in English',
+      summary: 'The best of the decade, in English.',
+      rules: all(
+        'g-2010s',
+        when('c-year', 'year', 'between', [2010, 2020]),
+        when('c-rating', 'rating', 'atLeast', 4.5),
+        when('c-lang', 'originalLanguage', 'is', 'en'),
+      ),
+    },
+    {
+      ...base,
+      id: 'sc-staff',
+      name: 'Staff picks',
+      summary: 'Ines’s favourites, in her order.',
+      rules: null,
+      include: ['metropolis', 'sintel', 'his-girl-friday', 'the-general', 'charade', 'spring'],
+      sort: 'manual',
+      updatedAt: iso(now - 9 * DAY),
+    },
+    {
+      ...base,
+      id: 'sc-dead',
+      name: 'Zombie night',
+      summary: 'Romero’s dead, and the films they walked out of.',
+      rules: {
+        kind: 'group',
+        id: 'g-dead',
+        match: 'any',
+        rules: [
+          when('c-kw', 'keyword', 'anyOf', ['zombie']),
+          all(
+            'g-vamp',
+            when('c-vamp', 'keyword', 'anyOf', ['vampire']),
+            when('c-before', 'year', 'before', 1970),
+          ),
+        ],
+      },
+      include: ['carnival-of-souls'],
+      exclude: ['nosferatu'],
+      sort: 'release',
+      descending: false,
+      audience: { kind: 'roles', roles: ['owner', 'admin'] },
+    },
+    {
+      ...base,
+      id: 'sc-morgenstern',
+      name: 'Scored by Jan Morgenstern',
+      summary: 'Blender’s composer, from Elephants Dream on.',
+      rules: all('g-jan', when('c-jan', 'composer', 'includes', ['jan-morgenstern'])),
+      sort: 'release',
+      descending: false,
+    },
+    {
+      ...base,
+      id: 'sc-silent',
+      name: 'The silent era',
+      summary: 'Restored and scored.',
+      rules: all('g-silent', when('c-silent', 'year', 'before', 1930)),
+      sort: 'release',
+      descending: false,
+    },
+    {
+      ...base,
+      id: 'sc-dolby',
+      name: 'In Dolby Vision',
+      summary: 'For the big screen, once the first Dolby Vision files arrive.',
+      rules: all('g-dolby', when('c-dolby', 'hdr', 'is', 'dolby-vision')),
+      updatedAt: iso(now - DAY),
+    },
+  ]
 }
 
 // ---------------------------------------------------------------- shared by both servers
@@ -95,7 +232,7 @@ const users = (now: number): User[] => [
     username: 'ines',
     displayName: 'Ines',
     role: 'owner',
-    permissions: ['request', 'autoApprove', 'download', 'manageLibrary', 'manageUsers', 'admin'],
+    permissions: [],
     libraries: 'all',
     twoFactor: true,
     lastSeen: iso(now),
@@ -106,7 +243,7 @@ const users = (now: number): User[] => [
     username: 'theo',
     displayName: 'Theo',
     role: 'admin',
-    permissions: ['request', 'autoApprove', 'download', 'manageLibrary'],
+    permissions: [],
     libraries: 'all',
     twoFactor: false,
     lastSeen: iso(now - 3 * HOUR),
@@ -116,8 +253,8 @@ const users = (now: number): User[] => [
     id: 'u-ruth',
     username: 'ruth',
     displayName: 'Ruth',
-    role: 'member',
-    permissions: ['request', 'manageLibrary'],
+    role: 'user',
+    permissions: ['request', 'download'],
     libraries: 'all',
     twoFactor: false,
     lastSeen: iso(now - 26 * HOUR),
@@ -127,7 +264,7 @@ const users = (now: number): User[] => [
     id: 'u-sam',
     username: 'sam',
     displayName: 'Sam',
-    role: 'member',
+    role: 'user',
     permissions: ['request'],
     libraries: 'all',
     twoFactor: false,
@@ -138,7 +275,7 @@ const users = (now: number): User[] => [
     id: 'u-kids',
     username: 'kids',
     displayName: 'Kids',
-    role: 'restricted',
+    role: 'user',
     permissions: [],
     libraries: ['movies'],
     twoFactor: false,
@@ -149,7 +286,7 @@ const users = (now: number): User[] => [
     id: 'u-noor',
     username: 'noor',
     displayName: 'Noor',
-    role: 'member',
+    role: 'user',
     permissions: ['request'],
     libraries: 'all',
     twoFactor: false,
@@ -158,77 +295,9 @@ const users = (now: number): User[] => [
   },
 ]
 
-const qualityProfiles: QualityProfile[] = [
-  {
-    id: 'qp-uhd',
-    name: 'Ultra HD',
-    cutoff: 'WEB 2160p',
-    qualities: [
-      { name: 'Remux 2160p', allowed: true },
-      { name: 'Bluray 2160p', allowed: true },
-      { name: 'WEB 2160p', allowed: true },
-      { name: 'Bluray 1080p', allowed: false },
-    ],
-    upgradeAllowed: true,
-    minFormatScore: 0,
-    cutoffFormatScore: 1500,
-    formats: [
-      { formatId: 'cf-dv', score: 1500 },
-      { formatId: 'cf-hdr10', score: 1000 },
-      { formatId: 'cf-x265', score: 100 },
-      { formatId: 'cf-lq', score: -10000 },
-    ],
-  },
-  {
-    id: 'qp-hd',
-    name: 'HD 1080p',
-    cutoff: 'Bluray 1080p',
-    qualities: [
-      { name: 'Bluray 1080p', allowed: true },
-      { name: 'WEB 1080p', allowed: true },
-      { name: 'HDTV 1080p', allowed: true },
-      { name: 'WEB 720p', allowed: false },
-    ],
-    upgradeAllowed: true,
-    minFormatScore: 0,
-    cutoffFormatScore: 100,
-    formats: [
-      { formatId: 'cf-x265', score: 100 },
-      { formatId: 'cf-lq', score: -10000 },
-    ],
-  },
-  {
-    id: 'qp-any',
-    name: 'Any',
-    cutoff: 'WEB 1080p',
-    qualities: [
-      { name: 'WEB 1080p', allowed: true },
-      { name: 'WEB 720p', allowed: true },
-      { name: 'DVD', allowed: true },
-    ],
-    upgradeAllowed: false,
-    minFormatScore: -100,
-    cutoffFormatScore: 0,
-    formats: [{ formatId: 'cf-lq', score: -10000 }],
-  },
-]
-
-const customFormats: CustomFormat[] = [
-  {
-    id: 'cf-dv',
-    name: 'Dolby Vision',
-    conditions: ['Title contains DV or DoVi'],
-    source: 'preset',
-  },
-  { id: 'cf-hdr10', name: 'HDR10', conditions: ['Title contains HDR10 or HDR'], source: 'preset' },
-  { id: 'cf-x265', name: 'x265', conditions: ['Codec is HEVC'], source: 'preset' },
-  {
-    id: 'cf-lq',
-    name: 'Low-quality groups',
-    conditions: ['Release group is on the low-quality list'],
-    source: 'preset',
-  },
-]
+// The profiles and formats a new server starts with, from @highsea-tv/quality.
+const qualityProfiles: QualityProfile[] = seedProfiles()
+const customFormats: CustomFormat[] = seedFormats()
 
 const catalog: CatalogDefinition[] = [
   def(
@@ -425,6 +494,26 @@ function server(): Server {
   }
 }
 
+/** The clients' remembered servers: Harbor, and Attic, a friend's server signed out of. */
+const known = (now: number): KnownServer[] => [
+  {
+    id: 'srv-harbor',
+    name: 'Harbor',
+    owner: 'Ines',
+    addresses: { local: '192.168.1.20:3000', remote: 'harbor.example.net' },
+    signedIn: true,
+    lastSeen: iso(now),
+  },
+  {
+    id: 'srv-attic',
+    name: 'Attic',
+    owner: 'Theo',
+    addresses: { local: '192.168.1.31:3000', remote: null },
+    signedIn: false,
+    lastSeen: iso(now - 9 * DAY),
+  },
+]
+
 const discovered = (now: number): DiscoveredServer[] => [
   {
     id: 'srv-harbor',
@@ -442,6 +531,15 @@ const discovered = (now: number): DiscoveredServer[] => [
     address: '192.168.1.31:3000',
     latencyMs: 6,
     owner: 'Theo',
+    discoveredAt: iso(now),
+  },
+  {
+    id: 'srv-den',
+    name: 'Den',
+    version: '1.0.0',
+    address: '192.168.1.44:3000',
+    latencyMs: 9,
+    owner: 'Sam',
     discoveredAt: iso(now),
   },
 ]
@@ -603,7 +701,7 @@ function track(m: MediaItem, f: MediaFile, n: number): SubtitleTrack {
     format: 'srt',
     forced: false,
     hi: false,
-    provider: n % 3 === 0 ? 'Podnapisi' : 'OpenSubtitles',
+    provider: n % 3 === 0 ? 'Subdl' : 'OpenSubtitles.com',
     score: 92 - (n % 9),
     sync,
     path: f.path.replace(/\.mkv$/, '.en.srt'),
@@ -695,47 +793,35 @@ function torrent(
   }
 }
 
+// the three providers highsea ships (checkpoint 7's answer 2); Podnapisi closed, Addic7ed is TV
+// only, YIFY Subtitles has no API
 const defaultProviders: SubtitleProvider[] = [
   {
-    id: 'prov-opensubtitles',
+    id: 'opensubtitles',
     name: 'OpenSubtitles.com',
     enabled: true,
-    rateLimitRemaining: 184,
-    rateLimitMax: 200,
+    rateLimitRemaining: 17,
+    rateLimitMax: 20,
     requiresAuth: true,
     username: 'harbor_admin',
+    attribution: 'Subtitles provided by OpenSubtitles.com',
   },
   {
-    id: 'prov-subsource',
+    id: 'subdl',
+    name: 'Subdl',
+    enabled: true,
+    rateLimitRemaining: 1840,
+    rateLimitMax: 2000,
+    requiresAuth: true,
+    username: '••••8f2c',
+  },
+  {
+    id: 'subsource',
     name: 'SubSource',
-    enabled: true,
-    rateLimitRemaining: 95,
-    rateLimitMax: 100,
-    requiresAuth: false,
-  },
-  {
-    id: 'prov-podnapisi',
-    name: 'Podnapisi',
-    enabled: true,
-    rateLimitRemaining: 49,
-    rateLimitMax: 50,
-    requiresAuth: false,
-  },
-  {
-    id: 'prov-addic7ed',
-    name: 'Addic7ed',
     enabled: false,
     rateLimitRemaining: 0,
-    rateLimitMax: 100,
+    rateLimitMax: 7200,
     requiresAuth: true,
-  },
-  {
-    id: 'prov-yify',
-    name: 'YIFY Subtitles',
-    enabled: true,
-    rateLimitRemaining: 480,
-    rateLimitMax: 500,
-    requiresAuth: false,
   },
 ]
 
@@ -984,6 +1070,10 @@ export function seed(kind: 'populated' | 'empty', now: number): ServerState {
     }
   }
   renumber(state)
+  for (const c of state.collections) {
+    c.include = c.include.map((x) => ids.get(x) ?? x)
+    c.exclude = c.exclude.map((x) => ids.get(x) ?? x)
+  }
   for (const m of state.items) m.id = ids.get(m.id) ?? m.id
   // the metadata cache's titles continue the sequence, in both servers alike
   state.discoverCatalog = state.discoverCatalog.map((d, n) => ({ ...d, id: String(101 + n) }))
@@ -993,10 +1083,10 @@ export function seed(kind: 'populated' | 'empty', now: number): ServerState {
 function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
   const base = {
     server: server(),
-    // a fresh server: the owner, and one member so the toolbar's Member role still applies
+    // a fresh server: the owner, plus an admin and a user so every toolbar role still applies
     users:
       kind === 'empty'
-        ? users(now).filter((u) => u.id === 'u-ines' || u.id === 'u-ruth')
+        ? users(now).filter((u) => ['u-ines', 'u-theo', 'u-ruth'].includes(u.id))
         : users(now),
     qualityProfiles,
     customFormats,
@@ -1017,8 +1107,70 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
     status: status(now, kind === 'empty'),
     fs: structuredClone(fs),
     discovered: discovered(now),
+    known: known(now),
+    watch: [],
+    prefs: {},
     pipeline: [],
     seen: {},
+    appearance: {
+      defaultTheme: 'default',
+      // what an owner might build: OLED black with a sea-glass accent (the toolbar's Harbor)
+      themes: [{ id: 'harbor', name: 'Harbor', base: 'oled', accent: '#8fbfb7' }],
+      sound: { tv: true, phone: false, web: false, volume: 0.8, pack: 'felt' },
+    } satisfies Appearance,
+    apiKeys: (kind === 'empty'
+      ? []
+      : [
+          {
+            id: 'k-ha',
+            name: 'Home Assistant',
+            prefix: 'hs_7Kq2',
+            scope: 'read',
+            userId: 'u-ines',
+            createdAt: iso(now - 40 * DAY),
+            lastUsed: iso(now - 5 * MIN),
+          },
+          {
+            id: 'k-backup',
+            name: 'Nightly backup script',
+            prefix: 'hs_Rm9x',
+            scope: 'full',
+            userId: 'u-theo',
+            createdAt: iso(now - 120 * DAY),
+            lastUsed: iso(now - 20 * HOUR),
+          },
+        ]) satisfies ApiKey[],
+    settings: defaultSettings(kind),
+    vpn: {
+      capability: kind === 'populated',
+      phase: 'connected',
+      failure: null,
+      until: 0,
+      connectedAt: now - 3 * HOUR,
+      checkedAt: now - 4 * 60_000,
+    } satisfies VpnRuntime,
+    homeLayouts: {},
+    backups: [
+      ...Array.from(
+        { length: kind === 'empty' ? 0 : 7 },
+        (_, i): Backup => ({
+          id: `b-${i}`,
+          createdAt: iso(now - (17 * HOUR + i * DAY)),
+          size: 48_200_000 - i * 310_000,
+          kind: 'scheduled',
+        }),
+      ),
+      ...(kind === 'empty'
+        ? []
+        : [
+            {
+              id: 'b-migration',
+              createdAt: iso(now - 9 * DAY - 4 * HOUR),
+              size: 44_900_000,
+              kind: 'pre-migration',
+            } satisfies Backup,
+          ]),
+    ],
   }
   if (kind === 'empty')
     return {
@@ -1034,6 +1186,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
       subtitles: [],
       announcements: [],
       featured: [],
+      collections: [],
       health: [
         {
           id: 'h-indexers',
@@ -1047,6 +1200,10 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
     }
 
   const items = library.map((t, i) => item(t, i, now))
+  // a few more of the 2010s at 4.5, so the owner's example collection has something to show
+  for (const m of items)
+    if (['cosmos-laundromat', 'caminandes-llamigos', 'hero', 'coffee-run'].includes(m.id))
+      m.rating = 4.5
   for (const u of upcoming)
     items.push({
       ...item(
@@ -1262,6 +1419,24 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
       status: 'scheduled',
       seen: false,
     },
+    {
+      id: 'an-new-address',
+      title: 'Harbor has a new remote address',
+      body: 'Away from home, the apps now connect through **harbor.example.net**. Nothing to change: they switch on their own.',
+      image: null,
+      cta: null,
+      severity: 'notice',
+      placements: ['modal', 'banner', 'card'],
+      // the household's apps only: the admin doesn't need it
+      audience: {
+        kind: 'clients',
+        clients: ['web', 'desktop', 'ios', 'android', 'tvos', 'androidtv', 'webos', 'tizen'],
+      },
+      schedule: { start: iso(now - 1 * DAY), end: iso(now + 13 * DAY) },
+      acknowledgement: 'require',
+      status: 'live',
+      seen: false,
+    },
   ]
 
   const featured: FeaturedSection[] = [
@@ -1292,7 +1467,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
       title: 'The silent era',
       tagline: 'Restored and scored',
       layout: 'spotlight',
-      source: { kind: 'rule', rule: 'filter', value: 'year < 1930' },
+      source: { kind: 'rule', rule: 'collection', value: 'sc-silent' },
       overrides: [],
       audience: { kind: 'everyone' },
       schedule: { start: iso(now - 14 * DAY), end: null },
@@ -1310,6 +1485,8 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
       order: 3,
     },
   ]
+
+  const collections = seedCollections(now)
 
   const health: HealthCheck[] = [
     {
@@ -1346,6 +1523,8 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
   })()
   return {
     ...base,
+    // two of the household have already seen Friday's movie night
+    seen: { 'u-theo': ['an-movie-night'], 'u-sam': ['an-movie-night'] },
     devices,
     items,
     files,
@@ -1381,6 +1560,8 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
     subtitles,
     announcements,
     featured,
+    collections,
+    watch: watch(items, now),
     health,
     speeds: samples(now, (k) => ({
       down: Math.max(0, (16 + Math.sin(k / 9) * 4 + (rng() - 0.5) * 5) * MB),
@@ -1434,4 +1615,28 @@ function device(
 /** Ten minutes of speed history, one sample every 10 simulated seconds. */
 function samples(now: number, f: (k: number) => { down: number; up: number }): SpeedSample[] {
   return Array.from({ length: 60 }, (_, k) => ({ t: now - (59 - k) * 10_000, ...f(k) }))
+}
+
+/** Continue watching: Ines is partway through four films, Ruth through two. */
+function watch(items: MediaItem[], now: number): ServerState['watch'] {
+  const at = (userId: string, slug: string, fraction: number, hoursAgo: number) => {
+    const m = items.find((x) => x.id === slug)
+    if (!m) return []
+    return [
+      {
+        userId,
+        itemId: m.id,
+        position: Math.round(m.runtimeMinutes * 60 * fraction),
+        updatedAt: iso(now - hoursAgo * HOUR),
+      },
+    ]
+  }
+  return [
+    ...at('u-ines', 'tears-of-steel', 0.35, 2),
+    ...at('u-ines', 'charade', 0.74, 20),
+    ...at('u-ines', 'elephants-dream', 0.62, 30),
+    ...at('u-ines', 'the-general', 0.18, 50),
+    ...at('u-ruth', 'metropolis', 0.4, 5),
+    ...at('u-ruth', 'his-girl-friday', 0.12, 26),
+  ]
 }

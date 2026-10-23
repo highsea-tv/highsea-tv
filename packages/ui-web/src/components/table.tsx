@@ -1,6 +1,7 @@
+'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 // Dense data tables for admin: docs/design-language/platforms/admin.md#tables
-import type { ComponentProps, ReactNode } from 'react'
+import { type ComponentProps, type ReactNode, useLayoutEffect, useRef, useState } from 'react'
 import { cn } from '../lib/cn.ts'
 
 /** The card a table sits in: `s1`, a `line` border, scrolling sideways when it must. */
@@ -26,10 +27,37 @@ export function TableToolbar({ className, ...props }: ComponentProps<'div'>) {
   )
 }
 
+/**
+ * When the table is wider than its frame (a phone, or 200% text) it scrolls sideways, and the
+ * scroller becomes a tab stop (a region named by the table, when it has a name), so a keyboard can scroll it too (WCAG 2.1.1).
+ */
 export function Table({ className, ...props }: ComponentProps<'table'>) {
+  const ref = useRef<HTMLDivElement>(null)
+  const [scrolls, setScrolls] = useState(false)
+  useLayoutEffect(() => {
+    const el = ref.current
+    if (!el || typeof ResizeObserver === 'undefined') return
+    const check = () => setScrolls(el.scrollWidth > el.clientWidth + 1)
+    check()
+    const observer = new ResizeObserver(check)
+    observer.observe(el)
+    if (el.firstElementChild) observer.observe(el.firstElementChild)
+    return () => observer.disconnect()
+  }, [])
   return (
     // relative: absolutely positioned content (sr-only text) stays inside the scroller
-    <div className="relative overflow-x-auto">
+    <div
+      ref={ref}
+      className="relative overflow-x-auto outline-none focus-visible:ring-focus"
+      {...(scrolls ? { tabIndex: 0 } : {})}
+      {...(scrolls && (props['aria-label'] || props['aria-labelledby'])
+        ? {
+            role: 'region',
+            'aria-label': props['aria-label'],
+            'aria-labelledby': props['aria-labelledby'],
+          }
+        : {})}
+    >
       <table className={cn('w-full border-collapse text-ui', className)} {...props} />
     </div>
   )

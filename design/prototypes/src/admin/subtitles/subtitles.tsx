@@ -2,6 +2,8 @@
 // A10 Subtitles (docs/product/subtitles.md). The wanted list (movies missing a language their
 // profile asks for) with search for one or all; then the settings: providers with their rate
 // limits, language profiles (ordered, forced and SDH, cutoff), scoring and the automatic sync.
+
+import { percent } from '@highsea-tv/core/format'
 import {
   Badge,
   Button,
@@ -10,6 +12,7 @@ import {
   Input,
   Progress,
   Select,
+  SortableList,
   Stat,
   Switch,
   Table,
@@ -26,11 +29,10 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useEffect, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { Language, LanguageProfile, LanguageRule, SubtitleSettings } from '../../mock/types.ts'
-import { percent } from '../format.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 
@@ -391,12 +393,6 @@ function ProfileEditor({
       ...draft,
       languages: draft.languages.map((l, j) => (j === i ? { ...l, ...patch } : l)),
     })
-  const move = (i: number, by: -1 | 1) => {
-    const next = [...draft.languages]
-    const [rule] = next.splice(i, 1)
-    if (rule) next.splice(i + by, 0, rule)
-    setDraft({ ...draft, languages: next })
-  }
   const error = !draft.name.trim()
     ? 'Give the profile a name.'
     : !draft.languages.length
@@ -416,45 +412,36 @@ function ProfileEditor({
       </Field>
       <div className="grid gap-2">
         <h3 className="font-medium text-text text-ui">Languages, in order of preference</h3>
-        <ol className="grid gap-2">
-          {draft.languages.map((l, i) => (
-            <li
-              key={l.code}
-              className="grid grid-cols-1 items-center gap-2 rounded-md border border-line bg-s2 p-2.5 medium:grid-cols-[1fr_12rem_12rem_auto]"
-            >
-              <span className="text-text text-ui">
-                <span className="font-mono text-text-3">{i + 1}.</span> {name(l.code)}
-              </span>
-              <Select
-                value={l.forced}
-                onValueChange={(v) => setRule(i, { forced: v as LanguageRule['forced'] })}
-                options={forcedOptions}
-                aria-label={`${name(l.code)}: forced subtitles`}
-              />
-              <Select
-                value={l.hi}
-                onValueChange={(v) => setRule(i, { hi: v as LanguageRule['hi'] })}
-                options={hiOptions}
-                aria-label={`${name(l.code)}: SDH`}
-              />
-              <span className="flex gap-1">
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  iconOnly
-                  icon="chevron-up"
-                  aria-label={`Move ${name(l.code)} up`}
-                  disabled={i === 0}
-                  onClick={() => move(i, -1)}
+        <SortableList
+          aria-label="Languages, in order of preference"
+          items={draft.languages}
+          id={(l) => l.code}
+          label={(l) => name(l.code)}
+          onChange={(languages) => setDraft({ ...draft, languages })}
+          className="gap-2"
+          itemClassName="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-2 rounded-md border border-line bg-s2 p-2.5 medium:grid-cols-[auto_minmax(0,1fr)_12rem_12rem_auto]"
+        >
+          {(l, handle) => {
+            const i = draft.languages.findIndex((x) => x.code === l.code)
+            return (
+              <>
+                {handle}
+                <span className="text-text text-ui">
+                  <span className="font-mono text-text-3">{i + 1}.</span> {name(l.code)}
+                </span>
+                <Select
+                  value={l.forced}
+                  onValueChange={(v) => setRule(i, { forced: v as LanguageRule['forced'] })}
+                  options={forcedOptions}
+                  aria-label={`${name(l.code)}: forced subtitles`}
+                  className="col-span-3 medium:col-span-1"
                 />
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  iconOnly
-                  icon="chevron-down"
-                  aria-label={`Move ${name(l.code)} down`}
-                  disabled={i === draft.languages.length - 1}
-                  onClick={() => move(i, 1)}
+                <Select
+                  value={l.hi}
+                  onValueChange={(v) => setRule(i, { hi: v as LanguageRule['hi'] })}
+                  options={hiOptions}
+                  aria-label={`${name(l.code)}: SDH`}
+                  className="col-span-3 medium:col-span-1"
                 />
                 <Button
                   size="sm"
@@ -462,18 +449,19 @@ function ProfileEditor({
                   iconOnly
                   icon="close"
                   aria-label={`Remove ${name(l.code)}`}
+                  className="col-start-3 row-start-1 medium:col-start-auto medium:row-start-auto"
                   onClick={() =>
                     setDraft({
                       ...draft,
-                      languages: draft.languages.filter((_, j) => j !== i),
+                      languages: draft.languages.filter((x) => x.code !== l.code),
                       cutoff: draft.cutoff === l.code ? null : draft.cutoff,
                     })
                   }
                 />
-              </span>
-            </li>
-          ))}
-        </ol>
+              </>
+            )
+          }}
+        </SortableList>
         {unused.length > 0 && (
           <Select
             value=""

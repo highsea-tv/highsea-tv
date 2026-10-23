@@ -3,7 +3,7 @@
 // `--check` fails instead of writing when text outputs are stale or a binary is missing (CI).
 import { readFileSync } from 'node:fs'
 import { createRequire } from 'node:module'
-import { SOUND_EVENTS } from '@highsea/tokens'
+import { SOUND_EVENTS } from '@highsea-tv/tokens'
 import { Resvg } from '@resvg/resvg-js'
 import { appleTextFiles, TVOS_IMAGES } from '../src/apple.ts'
 import { FONT_FILES, fontsCss } from '../src/fonts.ts'

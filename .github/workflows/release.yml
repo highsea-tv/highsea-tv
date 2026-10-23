@@ -1,0 +1,334 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# A highsea release (ADR 0050), run by hand with a version and a dry-run switch that's on by default.
+#
+#   1. prepare: the version is SemVer and newer than every tag, and CHANGELOG.md, apps/server,
+#      releases.json and the catalog's CHANGES.md agree (scripts/release.ts check). A real release
+#      must be prepared in a commit on main first; a dry run prepares it in the runner when it isn't.
+#   2. checks: the whole of CI (lint, types, tests, the smoke test, licences, the dependency check,
+#      both platforms' images) and the end-to-end run, as reusable workflows from this commit.
+#   3. image: each platform on its own runner, with highsea's keys as build secrets, labels,
+#      provenance and an SBOM. A dry run keeps each as an OCI layout and uploads it; a real one also
+#      pushes it by digest, the way Docker's GitHub Builder distributes a build
+#      (https://docs.docker.com/build/ci/github-actions/multi-platform/,
+#      https://docs.docker.com/build/exporters/image-registry/).
+#   4. catalog: built and signed with the release key, with the release's entry in it.
+#   5. publish, only when it isn't a dry run: the platforms merged under their tags
+#      (`docker buildx imagetools create`), the catalog deployed to GitHub Pages, and the GitHub
+#      release created with the changelog's section, which makes the tag.
+#
+# Jobs that read highsea's keys or the catalog key use the `release` environment, whose required
+# reviewer is the owner, so nothing signed or keyed runs without their approval; its secrets reach
+# only jobs that name it (https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments).
+# Each action is pinned to a full commit SHA, with its version beside it.
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version to release, as SemVer (0.1.0, or 0.2.0-beta.1)
+        required: true
+        type: string
+      dry-run:
+        description: Build and check everything, and publish nothing
+        required: true
+        type: boolean
+        default: true
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+env:
+  VERSION: ${{ inputs.version }}
+  IMAGE: ghcr.io/highsea-tv/highsea
+
+jobs:
+  prepare:
+    runs-on: ubuntu-24.04
+    outputs:
+      tags: ${{ steps.tags.outputs.tags }}
+      prerelease: ${{ steps.tags.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          # every tag, so the version is checked against them
+          fetch-depth: 0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - name: A real release comes from main
+        if: ${{ !inputs.dry-run && github.ref != 'refs/heads/main' }}
+        run: |
+          echo "A release is published from main, not ${GITHUB_REF}." >&2
+          exit 1
+      - name: Prepare it here, for a dry run of a version not yet prepared
+        if: ${{ inputs.dry-run }}
+        run: |
+          if ! bun scripts/release.ts check "$VERSION"; then
+            bun scripts/release.ts prepare "$VERSION"
+            git diff --stat
+          fi
+      - name: The release is prepared and agrees with itself
+        run: bun scripts/release.ts check "$VERSION"
+      - name: Tags and notes
+        id: tags
+        run: |
+          {
+            echo 'tags<<EOF'
+            bun scripts/release.ts tags "$VERSION"
+            echo 'EOF'
+            case "$VERSION" in *-*) echo 'prerelease=true' ;; *) echo 'prerelease=false' ;; esac
+          } >> "$GITHUB_OUTPUT"
+          {
+            echo "## highsea $VERSION"
+            echo
+            echo "Image tags: $(bun scripts/release.ts tags "$VERSION" | paste -sd ' ')"
+            echo
+            bun scripts/release.ts notes "$VERSION"
+          } >> "$GITHUB_STEP_SUMMARY"
+      # what prepare wrote, at its paths, so the image and the catalog build from it in a dry run too
+      - name: The prepared files
+        run: |
+          mkdir -p "$RUNNER_TEMP/release-files"
+          cp --parents CHANGELOG.md apps/server/package.json catalog/indexers/releases.json \
+            catalog/indexers/CHANGES.md "$RUNNER_TEMP/release-files/"
+          cp -r --parents packages/catalog/seed "$RUNNER_TEMP/release-files/"
+          bun scripts/release.ts notes "$VERSION" > "$RUNNER_TEMP/release-notes.md"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-files
+          path: ${{ runner.temp }}/release-files/
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}/release-notes.md
+
+  ci:
+    needs: prepare
+    uses: ./.github/workflows/ci.yml
+
+  e2e:
+    needs: prepare
+    uses: ./.github/workflows/e2e.yml
+
+  image:
+    needs: [prepare, ci, e2e]
+    environment: release
+    strategy:
+      matrix:
+        include:
+          - platform: linux/amd64
+            runner: ubuntu-24.04
+            name: amd64
+          - platform: linux/arm64
+            runner: ubuntu-24.04-arm
+            name: arm64
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-files
+          path: ${{ github.workspace }}
+      - name: highsea's keys are there
+        run: |
+          if [ -z "$OPENSUBTITLES" ] || [ -z "$TRAKT_ID" ]; then
+            if [ "$DRY_RUN" = true ]; then
+              echo "::warning::The release environment has no OpenSubtitles.com key or Trakt Client ID; a real release would stop here."
+            else
+              echo "The release environment needs HIGHSEA_OPENSUBTITLES_KEY and HIGHSEA_TRAKT_CLIENT_ID." >&2
+              exit 1
+            fi
+          fi
+        env:
+          OPENSUBTITLES: ${{ secrets.HIGHSEA_OPENSUBTITLES_KEY }}
+          TRAKT_ID: ${{ secrets.HIGHSEA_TRAKT_CLIENT_ID }}
+          DRY_RUN: ${{ inputs.dry-run }}
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      # the image's seed signed with the release key, which production servers trust (ADR 0034);
+      # a dry run without the key signs it with the development key, as the repository's is
+      - name: The seed, signed for the release
+        run: bun scripts/catalog.ts build --seed
+        env:
+          HIGHSEA_CATALOG_KEY: ${{ secrets.HIGHSEA_CATALOG_KEY }}
+          HIGHSEA_CATALOG_KEY_ID: ${{ secrets.HIGHSEA_CATALOG_KEY_ID }}
+          HIGHSEA_CATALOG_SEED_RELEASE: '1'
+      - name: Production servers will trust it
+        run: bun scripts/release.ts trust || { [ "$DRY_RUN" = true ] && echo "::warning::A real release would stop here."; }
+        env:
+          HIGHSEA_CATALOG_KEY_ID: ${{ secrets.HIGHSEA_CATALOG_KEY_ID }}
+          DRY_RUN: ${{ inputs.dry-run }}
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - name: Sign in to GHCR
+        if: ${{ !inputs.dry-run }}
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      - name: Labels
+        id: meta
+        run: echo "created=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+      - name: Build
+        id: build
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6.19.2
+        with:
+          context: .
+          platforms: ${{ matrix.platform }}
+          build-args: VERSION=${{ inputs.version }}
+          labels: |
+            org.opencontainers.image.version=${{ inputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.created=${{ steps.meta.outputs.created }}
+          # BuildKit leaves a secret's contents out of the cache key, so a cached layer from CI,
+          # built without the keys, would be reused here; a release builds without the cache
+          # (https://docs.docker.com/build/building/secrets/)
+          no-cache: true
+          secrets: |
+            opensubtitles=${{ secrets.HIGHSEA_OPENSUBTITLES_KEY }}
+            trakt_id=${{ secrets.HIGHSEA_TRAKT_CLIENT_ID }}
+            trakt_secret=${{ secrets.HIGHSEA_TRAKT_CLIENT_SECRET }}
+          provenance: mode=min
+          sbom: true
+          # an OCI layout to check and keep, and, for a real release, the image pushed by digest
+          outputs: |
+            type=oci,dest=${{ runner.temp }}/highsea-oci,tar=false
+            ${{ !inputs.dry-run && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.IMAGE) || '' }}
+      - name: Labels and attestations are there
+        run: bun scripts/image.ts attestations "$RUNNER_TEMP/highsea-oci"
+      - name: The digest, for the merge
+        if: ${{ !inputs.dry-run }}
+        run: |
+          mkdir -p "$RUNNER_TEMP/digests"
+          touch "$RUNNER_TEMP/digests/${DIGEST#sha256:}"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
+      - if: ${{ !inputs.dry-run }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: digest-${{ matrix.name }}
+          path: ${{ runner.temp }}/digests/*
+      - name: The image, for a dry run's review
+        if: ${{ inputs.dry-run }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: image-${{ matrix.name }}
+          path: ${{ runner.temp }}/highsea-oci
+          retention-days: 7
+
+  catalog:
+    needs: [prepare, ci, e2e]
+    runs-on: ubuntu-24.04
+    environment: release
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-files
+          path: ${{ github.workspace }}
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      # production servers trust release keys only (ADR 0034): a real release stops here without
+      # one; a dry run says so and signs with the development key
+      - name: Production servers will trust it
+        run: bun scripts/release.ts trust || { [ "$DRY_RUN" = true ] && echo "::warning::A real release would stop here."; }
+        env:
+          HIGHSEA_CATALOG_KEY_ID: ${{ secrets.HIGHSEA_CATALOG_KEY_ID }}
+          DRY_RUN: ${{ inputs.dry-run }}
+      - name: Build and sign both channels
+        run: bun run catalog:build
+        env:
+          HIGHSEA_CATALOG_KEY: ${{ secrets.HIGHSEA_CATALOG_KEY }}
+          HIGHSEA_CATALOG_KEY_ID: ${{ secrets.HIGHSEA_CATALOG_KEY_ID }}
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: catalog
+          path: dist/catalog/
+      - if: ${{ !inputs.dry-run }}
+        uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
+        with:
+          path: dist/catalog/
+
+  merge:
+    if: ${{ !inputs.dry-run }}
+    needs: [prepare, image, catalog]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: digest-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/digests
+      - uses: docker/setup-buildx-action@8d2750c68a42422c14e847fe6c8ac0403b4cbd6f # v3.12.0
+      - name: Sign in to GHCR
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+      # GitHub shows a multi-arch image's description from the index's annotations
+      # (https://docs.github.com/en/packages/working-with-a-github-packages-registry/working-with-the-container-registry)
+      - name: Both platforms, under every tag
+        working-directory: ${{ runner.temp }}/digests
+        run: |
+          tags=()
+          while read -r tag; do [ -n "$tag" ] && tags+=(--tag "$IMAGE:$tag"); done <<< "$IMAGE_TAGS"
+          sources=()
+          for digest in *; do sources+=("$IMAGE@sha256:$digest"); done
+          docker buildx imagetools create "${tags[@]}" \
+            --annotation "index:org.opencontainers.image.description=Find, download and organise your films, with their subtitles, and serve them to your own apps. One self-hosted server in place of Radarr, Prowlarr, qBittorrent and Bazarr." \
+            --annotation "index:org.opencontainers.image.source=https://github.com/highsea-tv/highsea-tv" \
+            --annotation "index:org.opencontainers.image.licenses=AGPL-3.0-only" \
+            --annotation "index:org.opencontainers.image.version=$VERSION" \
+            "${sources[@]}"
+          docker buildx imagetools inspect "$IMAGE:$VERSION"
+        env:
+          IMAGE_TAGS: ${{ needs.prepare.outputs.tags }}
+
+  pages:
+    if: ${{ !inputs.dry-run }}
+    needs: [merge, catalog]
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
+
+  github-release:
+    if: ${{ !inputs.dry-run }}
+    needs: [prepare, merge, pages]
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-notes
+          path: ${{ runner.temp }}
+      # creating the release makes the tag on this commit
+      # (https://cli.github.com/manual/gh_release_create)
+      - name: The release and its tag
+        run: |
+          kind=()
+          if [ "$PRERELEASE" = true ]; then kind+=(--prerelease); fi
+          # GitHub's Latest follows the image's `latest`, so a fix to an older line doesn't take it
+          if grep -qx latest <<< "$TAGS"; then kind+=(--latest); else kind+=(--latest=false); fi
+          gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+            --title "highsea $VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" "${kind[@]}"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PRERELEASE: ${{ needs.prepare.outputs.prerelease }}
+          TAGS: ${{ needs.prepare.outputs.tags }}

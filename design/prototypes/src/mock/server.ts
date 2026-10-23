@@ -1,23 +1,76 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // An in-memory highsea server: state, the handlers behind each API call, and a simulation driven by
 // the clock. Screens never touch this directly; they go through the client (client.ts).
-import { backdropArt, posterArt, stillArt } from '@highsea/fixtures'
+import { backdropArt, posterArt, stillArt } from '@highsea-tv/fixtures'
+import { allowed, normalize, roleDefault } from '@highsea-tv/personalization/widgets'
+import {
+  type CustomFormat,
+  customFormatSchema,
+  type QualityProfile,
+  qualityProfileSchema,
+} from '@highsea-tv/quality'
 import { type Clock, createEmitter, createRandom, type Emitter, iso } from './clock.ts'
-import { collection, knownTitles, movieMetadata, person, recommendations } from './metadata.ts'
+import { describe, evaluate, type Facts, fields, preview } from './collections.ts'
+import {
+  collection,
+  collectionRefs,
+  knownTitles,
+  movieMetadata,
+  person,
+  recommendations,
+} from './metadata.ts'
 import { GB, MB, type ServerState, seed } from './seed.ts'
+import type { Settings, SettingsSection } from './settings.ts'
 import type {
   AddMovieInput,
   AddTorrentInput,
   Announcement,
+  AnnouncementSummary,
+  ApiKey,
+  Appearance,
+  Audience,
+  Backup,
+  ClientCollection,
+  ClientDetail,
+  ClientItem,
+  ClientTrack,
+  ClientType,
+  ClientVersion,
+  CollectionPreview,
+  CollectionRef,
+  CollectionSummary,
+  CreatedApiKey,
+  CurationPreview,
+  CurationStatus,
+  CustomTheme,
+  FeaturedSection,
   HardlinkCheck,
+  HomeLayout,
+  HomeSection,
+  ImportCandidate,
   Indexer,
+  Invite,
+  InviteInput,
   LanguageProfile,
+  LogEntry,
   MediaFile,
   MediaItem,
+  Pairing,
+  PlaybackPrefs,
+  ProbeResult,
   QueueItem,
   Release,
+  RuleFieldInfo,
+  RuleGroup,
+  SearchPerson,
+  SearchResults,
+  SearchSection,
+  SectionSummary,
+  Server,
   SetupInput,
   SignInResult,
+  SmartCollection,
+  StaffRole,
   SubtitleSearchResult,
   SubtitleSettings,
   SubtitleStats,
@@ -25,20 +78,19 @@ import type {
   Torrent,
   TorrentLimits,
   User,
-  UserRole,
   WidgetLayout,
   WidgetPlacement,
 } from './types.ts'
-import { allowed, normalize, roleDefault } from './widgets.ts'
+import { connectionFailure, type VpnSettings, vpnProviders, vpnStatus } from './vpn.ts'
 
 export class ApiError extends Error {
-  constructor(
-    readonly status: number,
-    readonly code: string,
-    message: string,
-  ) {
+  readonly status: number
+  readonly code: string
+  constructor(status: number, code: string, message: string) {
     super(message)
     this.name = 'ApiError'
+    this.status = status
+    this.code = code
   }
 }
 
@@ -177,6 +229,34 @@ function addHistory(
   })
 }
 
+/** A draft stays a draft; otherwise the schedule decides. */
+export function curationStatus(
+  schedule: { start: string; end: string | null },
+  now: number,
+  draft = false,
+): CurationStatus {
+  if (draft) return 'draft'
+  if (Date.parse(schedule.start) > now) return 'scheduled'
+  if (schedule.end && Date.parse(schedule.end) <= now) return 'ended'
+  return 'live'
+}
+
+/**
+ * A client preview (A11): this server shows the curation it's given, as if it were saved. The
+ * admin's composer runs the clients' home screens in a frame against their own copy of the server,
+ * so the draft never reaches the real one. The draft shows even if it was seen before.
+ */
+export function applyPreview(srv: MockServer, preview: CurationPreview, draftId?: string): void {
+  srv.state.announcements = structuredClone(preview.announcements)
+  srv.state.featured = structuredClone(preview.featured)
+  if (preview.collections) srv.state.collections = structuredClone(preview.collections)
+  if (draftId)
+    for (const [u, ids] of Object.entries(srv.state.seen))
+      srv.state.seen[u] = ids.filter((id) => id !== draftId)
+  srv.events.emit({ type: 'announcements.updated' })
+  srv.events.emit({ type: 'curation.updated' })
+}
+
 export function createServer(
   kind: 'populated' | 'empty',
   clock: Clock,
@@ -258,8 +338,9 @@ export function createServer(
       state.pipeline.splice(state.pipeline.indexOf(p), 1)
       const t = state.torrents.find((x) => x.id === p.torrentId)
       const m = state.items.find((x) => x.id === p.itemId)
-      if (!t || !m) continue
-      if (p.stage === 'importing') {
+      // a Re-sync's step has no torrent
+      if (!m || (!t && p.stage !== 'subtitle-sync')) continue
+      if (p.stage === 'importing' && t) {
         importTorrent(state, clock, t, m, now)
         state.pipeline.push({
           ...p,
@@ -280,7 +361,7 @@ export function createServer(
             format: 'srt',
             forced: false,
             hi: false,
-            provider: 'OpenSubtitles',
+            provider: 'OpenSubtitles.com',
             score: 96,
             sync: { status: 'syncing', confidence: null, offsetMs: 0 },
             path: f.path.replace(/\.mkv$/, '.en.srt'),
@@ -377,9 +458,24 @@ export function createServer(
     }
     state.status.cpu = Math.round((active > 0 ? 10 : 3) + random() * 6)
 
+    // the VPN: a connection takes a few seconds; a dropped tunnel reconnects on its own
+    const vpn = state.vpn
+    if ((vpn.phase === 'connecting' || vpn.phase === 'down') && now >= vpn.until) {
+      if (vpn.phase === 'down') {
+        vpn.phase = 'connecting'
+        vpn.until = now + 4_000
+      } else {
+        vpn.phase = 'connected'
+        vpn.connectedAt = now
+        vpn.checkedAt = now
+      }
+      events.emit({ type: 'vpn.updated' })
+      events.emit({ type: 'health.updated' })
+    }
+
     events.emit({ type: 'tick', now })
     if (torrentsChanged) events.emit({ type: 'torrents.updated' })
-    if (queueChanged) events.emit({ type: 'queue.changed' })
+    if (queueChanged) events.emit({ type: 'queue.updated' })
     if (jobsChanged) events.emit({ type: 'jobs.updated' })
     if (indexersChanged) {
       events.emit({ type: 'indexers.updated' })
@@ -396,7 +492,7 @@ export function createServer(
 export type Ctx = { userId: string; storage?: Storage }
 
 /**
- * The handlers behind each API call, grouped as @highsea/sdk will group them. Each returns plain
+ * The handlers behind each API call, grouped as @highsea-tv/sdk will group them. Each returns plain
  * data; the client makes them async and applies the toolbar's data state.
  */
 function generateReleases(m: MediaItem, state: ServerState): Release[] {
@@ -528,7 +624,7 @@ function generateSubtitleResults(m: MediaItem, lang = 'en'): SubtitleSearchResul
       id: `sub-res-${m.id}-3`,
       language: lang,
       releaseName: `${cleanTitle}.${m.year}.Forced.Foreign.Parts.Only`,
-      provider: 'YIFY Subtitles',
+      provider: 'Subdl',
       score: 85,
       forced: true,
       hi: false,
@@ -538,7 +634,7 @@ function generateSubtitleResults(m: MediaItem, lang = 'en'): SubtitleSearchResul
       id: `sub-res-${m.id}-4`,
       language: lang,
       releaseName: `${cleanTitle}.${m.year}.Hearing.Impaired.CC`,
-      provider: 'Podnapisi',
+      provider: 'OpenSubtitles.com',
       score: 79,
       forced: false,
       hi: true,
@@ -560,7 +656,46 @@ export function createApi(srv: MockServer, ctx: Ctx) {
   const requireStaff = () => {
     if (!staff()) throw forbidden()
   }
+  /** Inviting and managing people, security and backups are the owner's alone (ADR 0032). */
+  const requireOwner = () => {
+    if (me().role !== 'owner') throw forbidden()
+  }
+  /** The signed-in person's role, when they open the admin: a user never does. */
+  const staffRole = (): StaffRole => {
+    const { role } = me()
+    if (role === 'user') throw forbidden()
+    return role
+  }
   const layoutKey = (scope: string) => `layout:${srv.kind}:${scope}`
+  const currentVpn = () =>
+    vpnStatus(state.settings.vpn, state.vpn, srv.clock.now(), state.settings.downloadClient.port)
+  /**
+   * New VPN settings: write-only secrets are taken in and dropped, then highsea connects again,
+   * or fails with the step's copy.
+   */
+  const saveVpn = (value: VpnSettings): VpnSettings => {
+    const failure = connectionFailure(value)
+    const { config, piaPassword, containerKey, ...rest } = value
+    const saved: VpnSettings = {
+      ...rest,
+      piaPasswordSet: rest.piaPasswordSet || (!!piaPassword && !failure),
+      containerKeySet: rest.containerKeySet || (!!containerKey && !failure),
+    }
+    if (failure) {
+      state.vpn.phase = 'failed'
+      state.vpn.failure = failure
+    } else if (saved.mode !== 'off') {
+      state.vpn.phase = 'connecting'
+      state.vpn.failure = null
+      state.vpn.until = srv.clock.now() + 4_000
+    }
+    // a failed configuration isn't kept, so the last good one stays on file
+    if (failure && config !== undefined) saved.configName = state.settings.vpn.configName
+    state.settings.vpn = saved
+    srv.events.emit({ type: 'settings.updated' })
+    srv.events.emit({ type: 'vpn.updated' })
+    return saved
+  }
 
   const queueItem = (t: Torrent): QueueItem => {
     const m = state.items.find((x) => x.id === t.itemId)
@@ -583,14 +718,220 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     }
   }
 
-  const visible = (a: Announcement) => {
-    const u = me()
-    if (a.audience.kind === 'roles') return a.audience.roles.includes(u.role)
-    if (a.audience.kind === 'users') return a.audience.userIds.includes(u.id)
+  const inAudience = (audience: Audience, u: User, client: ClientType) => {
+    if (audience.kind === 'roles') return audience.roles.includes(u.role)
+    if (audience.kind === 'users') return audience.userIds.includes(u.id)
+    if (audience.kind === 'clients') return audience.clients.includes(client)
     return true
   }
+  const visible = (a: { audience: Audience }, client: ClientType) =>
+    inAudience(a.audience, me(), client)
+  /** The people an audience reaches, on any app (invites not yet accepted don't count). */
+  const audienceOf = (audience: Audience) =>
+    state.users.filter(
+      (u) =>
+        !u.invited &&
+        (audience.kind === 'roles'
+          ? audience.roles.includes(u.role)
+          : audience.kind === 'users'
+            ? audience.userIds.includes(u.id)
+            : true),
+    )
+  const announcementStatus = (a: Announcement) =>
+    curationStatus(a.schedule, now(), a.status === 'draft')
 
-  const layoutFor = (role: UserRole): WidgetPlacement[] => {
+  // ---- the clients' view of the library (C2–C5)
+
+  /** A title the household can watch: some version has a file. */
+  const playable = (m: MediaItem) => m.type === 'movie' && m.versions.some((v) => v.fileId)
+  const languageName = (code: string) =>
+    code === 'zxx' ? 'No dialogue' : (state.languages.find((l) => l.code === code)?.name ?? code)
+  const clientItem = (m: MediaItem, tagline: string | null = null): ClientItem => {
+    const w = state.watch.find((x) => x.userId === me().id && x.itemId === m.id)
+    const length = m.runtimeMinutes * 60
+    const progress = w && length ? w.position / length : null
+    return {
+      ...m,
+      position: w?.position ?? 0,
+      // nearly at the end counts as watched, not as something to resume
+      progress: progress !== null && progress < 0.95 ? progress : null,
+      tagline,
+    }
+  }
+  const watchable = () => state.items.filter(playable)
+  // ---- smart collections (docs/product/collections.md)
+
+  const smartFacts = (c: SmartCollection): Facts[] => evaluate(state, c, now(), state.collections)
+  const smartFields = (except?: string): RuleFieldInfo[] =>
+    fields(
+      state,
+      now(),
+      state.collections.filter((x) => x.id !== except).map((x) => ({ id: x.id, name: x.name })),
+    )
+  /** A smart collection as the apps see it: playable titles only, in its own order. */
+  const clientSmart = (c: SmartCollection) => {
+    const items = smartFacts(c)
+      .filter((f) => playable(f.item))
+      .map((f) => f.item)
+    const first = items[0]
+    if (!first) return null
+    const years = items.map((m) => m.year)
+    const lo = Math.min(...years)
+    const hi = Math.max(...years)
+    const collection: ClientCollection = {
+      id: c.id,
+      name: c.name,
+      overview: c.summary,
+      art: { poster: c.artwork ?? first.art.poster, backdrop: first.art.backdrop },
+      count: items.length,
+      years: lo === hi ? String(lo) : `${lo}–${hi}`,
+      smart: {
+        words: describe(c.rules, smartFields()),
+        mosaic: c.artwork ? [] : items.slice(0, 4).map((m) => m.art.poster),
+      },
+    }
+    return { collection, items: items.map((m) => clientItem(m)) }
+  }
+  /** Does a collection's rule tree name the collection itself? */
+  const namesItself = (g: RuleGroup, id: string): boolean =>
+    g.rules.some((r) =>
+      r.kind === 'group'
+        ? namesItself(r, id)
+        : r.field === 'collection' && [r.value].flat().map(String).includes(id),
+    )
+
+  /**
+   * Collections with at least one title here: the smart ones this person and app are in the
+   * audience for, in the owner's order, then TMDB's, each with its titles oldest first.
+   */
+  const clientCollections = (client: ClientType = 'web') => [
+    ...state.collections.flatMap((c) => {
+      if (!visible(c, client)) return []
+      const found = clientSmart(c)
+      return found ? [found] : []
+    }),
+    ...tmdbCollections(),
+  ]
+  const tmdbCollections = () => {
+    const groups = new Map<string, { ref: CollectionRef; items: MediaItem[] }>()
+    for (const m of watchable()) {
+      const ref = movieMetadata(state, m.id, now())?.collection
+      if (!ref) continue
+      const g = groups.get(ref.id) ?? { ref, items: [] }
+      g.items.push(m)
+      groups.set(ref.id, g)
+    }
+    return [...groups.values()].map(({ ref, items }) => {
+      const sorted = [...items].sort((a, b) => a.year - b.year)
+      const first = sorted[0] as MediaItem
+      const last = sorted[sorted.length - 1] as MediaItem
+      const c: ClientCollection = {
+        id: ref.id,
+        name: ref.name,
+        overview: collection(state, ref.id)?.overview ?? '',
+        art: { poster: first.art.poster, backdrop: first.art.backdrop },
+        count: sorted.length,
+        years: first.year === last.year ? String(first.year) : `${first.year}–${last.year}`,
+      }
+      return { collection: c, items: sorted.map((m) => clientItem(m)) }
+    })
+  }
+
+  const sectionItems = (f: FeaturedSection): ClientItem[] => {
+    const tagline = (id: string) => f.overrides.find((o) => o.itemId === id)?.tagline ?? null
+    if (f.source.kind === 'manual') {
+      const ids = f.source.itemIds
+      return ids.flatMap((id) => {
+        const m = state.items.find((x) => x.id === id)
+        return m && playable(m) ? [clientItem(m, tagline(m.id))] : []
+      })
+    }
+    const { rule, value } = f.source
+    const all = watchable()
+    const picked =
+      rule === 'recently-added'
+        ? [...all].sort((a, b) => Date.parse(b.addedAt) - Date.parse(a.addedAt)).slice(0, 12)
+        : rule === 'genre'
+          ? all.filter((m) => m.genres.some((g) => g.toLowerCase() === value.toLowerCase()))
+          : rule === 'collection'
+            ? value.startsWith('sc-')
+              ? (() => {
+                  const c = state.collections.find((x) => x.id === value)
+                  return c ? smartFacts(c).flatMap((f) => (playable(f.item) ? [f.item] : [])) : []
+                })()
+              : all.filter((m) => movieMetadata(state, m.id, now())?.collection?.id === value)
+            : all
+    return picked.map((m) => clientItem(m, tagline(m.id)))
+  }
+
+  const track = (
+    kind: ClientTrack['kind'],
+    id: string,
+    language: string,
+    detail: string | null,
+    isDefault: boolean,
+  ): ClientTrack => ({
+    id,
+    kind,
+    label: detail ? `${languageName(language)} · ${detail}` : languageName(language),
+    language,
+    detail,
+    default: isDefault,
+  })
+
+  const versionsOf = (m: MediaItem): ClientVersion[] =>
+    m.versions.flatMap((v) => {
+      const f = state.files.find((x) => x.id === v.fileId)
+      if (!f) return []
+      const video = f.streams.find((x) => x.type === 'video')
+      const audio = f.streams.flatMap((x) =>
+        x.type === 'audio'
+          ? [track('audio', `a${x.index}`, x.language, x.title ?? x.channels, x.default)]
+          : [],
+      )
+      const embedded = f.streams.flatMap((x) =>
+        x.type === 'subtitle'
+          ? [
+              track(
+                'subtitle',
+                `s${x.index}`,
+                x.language,
+                [x.forced && 'Forced', x.hi && 'SDH'].filter(Boolean).join(', ') || null,
+                x.default,
+              ),
+            ]
+          : [],
+      )
+      const external = state.subtitles
+        .filter((t) => t.fileId === f.id && t.kind === 'external')
+        .map((t) =>
+          track(
+            'subtitle',
+            t.id,
+            t.language,
+            [t.forced && 'Forced', t.hi && 'SDH'].filter(Boolean).join(', ') || null,
+            false,
+          ),
+        )
+      const hdr = video && video.type === 'video' && video.hdr !== 'none' ? ' · HDR10' : ''
+      const res =
+        video && video.type === 'video' ? (video.height >= 2160 ? '4K' : `${video.height}p`) : ''
+      return [
+        {
+          id: v.id,
+          label: v.label,
+          detail: `${res}${hdr} · ${(video?.type === 'video' ? video.codec : '').toUpperCase()} · ${(f.size / 1e9).toFixed(1)} GB`,
+          audio,
+          // embedded first, then each language once
+          subtitles: [...embedded, ...external].filter(
+            (t, i, all) =>
+              all.findIndex((x) => x.language === t.language && x.detail === t.detail) === i,
+          ),
+        },
+      ]
+    })
+
+  const layoutFor = (role: StaffRole): WidgetPlacement[] => {
     const saved = storage.load(layoutKey(`role:${role}`)) as WidgetPlacement[] | undefined
     return (saved ?? roleDefault(role)).filter((w) => allowed(w.kind, role)).map(normalize)
   }
@@ -636,6 +977,96 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         requireStaff()
         return state.speeds
       },
+      /** Starts a scheduled job now; it runs on the next tick. */
+      runJob: (id: string) => {
+        requireStaff()
+        const j = state.jobs.find((x) => x.id === id)
+        if (!j || j.state === 'running') return
+        j.nextRun = iso(now())
+        srv.events.emit({ type: 'jobs.updated' })
+      },
+      /** The server's log, newest first: imports, grabs, jobs, health and the odd error. */
+      logs: (): LogEntry[] => {
+        requireStaff()
+        const title = (id: string) => state.items.find((m) => m.id === id)?.title ?? 'A movie'
+        const fromHistory = state.history.map(
+          (h): LogEntry => ({
+            time: h.date,
+            level:
+              h.type === 'import-failed' ? 'error' : h.type === 'blocklisted' ? 'warn' : 'info',
+            logger:
+              h.type === 'grabbed' ? 'Download' : h.type === 'imported' ? 'Import' : 'History',
+            message:
+              h.type === 'grabbed'
+                ? `Grabbed ${h.sourceTitle} from ${h.indexer ?? 'an indexer'}`
+                : h.type === 'imported'
+                  ? `Imported ${title(h.itemId)} (${h.quality ?? 'unknown quality'})`
+                  : `${title(h.itemId)}: ${h.message ?? h.type}`,
+          }),
+        )
+        const fromHealth = state.health.map(
+          (c): LogEntry => ({
+            time: c.since,
+            level: c.level === 'error' ? 'error' : c.level === 'ok' ? 'info' : 'warn',
+            logger: c.source,
+            message: c.message,
+          }),
+        )
+        const fromJobs = state.jobs.flatMap((j): LogEntry[] =>
+          j.lastRun
+            ? [{ time: j.lastRun, level: 'info', logger: 'Jobs', message: `${j.name} finished` }]
+            : [],
+        )
+        const debug: LogEntry[] = [
+          {
+            time: iso(now() - 90_000),
+            level: 'debug',
+            logger: 'Discovery',
+            message: 'Answered a discovery broadcast from 192.168.1.44',
+          },
+          {
+            time: iso(now() - 260_000),
+            level: 'debug',
+            logger: 'Http',
+            message: 'GET /api/v1/home 200 in 14 ms (Living room Apple TV)',
+          },
+        ]
+        return [...fromHistory, ...fromHealth, ...fromJobs, ...debug].sort(
+          (a, b) => Date.parse(b.time) - Date.parse(a.time),
+        )
+      },
+      backups: () => {
+        requireOwner()
+        return [...state.backups].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+      },
+      backupNow: (): Backup => {
+        requireOwner()
+        const b: Backup = {
+          id: `b-${now().toString(36)}`,
+          createdAt: iso(now()),
+          size: 48_400_000,
+          kind: 'manual',
+        }
+        state.backups.unshift(b)
+        srv.events.emit({ type: 'jobs.updated' })
+        return b
+      },
+      /** Restores a backup: the server restarts on it. Media files aren't touched. */
+      restore: (id: string) => {
+        requireOwner()
+        if (!state.backups.some((b) => b.id === id))
+          throw new ApiError(404, 'not-found', 'That backup is gone.')
+      },
+      updates: () => ({
+        current: state.server.version,
+        latest: '1.0.1',
+        channel: state.settings.general.updateChannel,
+        notes: [
+          'Subtitle sync handles films with long silent openings.',
+          'The TV app remembers your place in long rows.',
+          'Fixes a crash when an indexer returns an empty page.',
+        ],
+      }),
     },
 
     auth: {
@@ -970,7 +1401,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
               message: `Grabbed from ${chosen.indexer} (format score ${chosen.formatScore})`,
             })
             srv.events.emit({ type: 'torrents.updated' })
-            srv.events.emit({ type: 'queue.changed' })
+            srv.events.emit({ type: 'queue.updated' })
             srv.events.emit({ type: 'history.updated' })
           }
         }
@@ -1012,7 +1443,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         })
         srv.events.emit({ type: 'movies.updated' })
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         srv.events.emit({ type: 'history.updated' })
       },
       bulkUpdate: (ids: string[], patch: Partial<MediaItem>) => {
@@ -1046,7 +1477,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         }
         srv.events.emit({ type: 'movies.updated' })
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
       },
       bulkSearch: (ids: string[]) => {
         requireStaff()
@@ -1104,7 +1535,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         }
         srv.events.emit({ type: 'movies.updated' })
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
       },
       files: (id: string) => {
         return state.files.filter((f) => f.itemId === id)
@@ -1180,12 +1611,68 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           message: `Manually grabbed from ${chosen.indexer}`,
         })
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         srv.events.emit({ type: 'movies.updated' })
         srv.events.emit({ type: 'history.updated' })
         return newTorrent
       },
       qualityProfiles: () => state.qualityProfiles,
+      customFormats: () => state.customFormats,
+      // The editors (checkpoint 8a's prototype for 8c): save checks the profile or format as
+      // @highsea-tv/quality's schema does, and the first issue comes back as the server's would.
+      saveQualityProfile: (input: QualityProfile) => {
+        requireStaff()
+        const parsed = qualityProfileSchema.safeParse(input)
+        if (!parsed.success)
+          throw new ApiError(
+            400,
+            'invalid',
+            parsed.error.issues[0]?.message ?? 'Check the profile.',
+          )
+        const p = parsed.data
+        if (state.qualityProfiles.some((x) => x.id !== p.id && x.name === p.name))
+          throw new ApiError(409, 'conflict', `There’s a profile called ${p.name} already.`)
+        const i = state.qualityProfiles.findIndex((x) => x.id === p.id)
+        if (i >= 0) state.qualityProfiles[i] = p
+        else state.qualityProfiles.push(p)
+        srv.events.emit({ type: 'settings.updated' })
+        return p
+      },
+      deleteQualityProfile: (id: string) => {
+        requireStaff()
+        // as Radarr: a profile a movie uses can't be deleted
+        const using = state.items.filter((m) => m.versions.some((v) => v.qualityProfileId === id))
+        if (using.length > 0)
+          throw new ApiError(
+            409,
+            'in-use',
+            `${using.length === 1 ? '1 movie uses' : `${using.length} movies use`} this profile. Move ${using.length === 1 ? 'it' : 'them'} to another first.`,
+          )
+        state.qualityProfiles = state.qualityProfiles.filter((p) => p.id !== id)
+        srv.events.emit({ type: 'settings.updated' })
+      },
+      saveCustomFormat: (input: CustomFormat) => {
+        requireStaff()
+        const parsed = customFormatSchema.safeParse(input)
+        if (!parsed.success)
+          throw new ApiError(400, 'invalid', parsed.error.issues[0]?.message ?? 'Check the format.')
+        const f = parsed.data
+        const i = state.customFormats.findIndex((x) => x.id === f.id)
+        // editing a preset makes it yours: the catalog's updates leave it alone from then on
+        const saved = i >= 0 ? { ...f, source: 'custom' as const } : f
+        if (i >= 0) state.customFormats[i] = saved
+        else state.customFormats.push(saved)
+        srv.events.emit({ type: 'settings.updated' })
+        return saved
+      },
+      deleteCustomFormat: (id: string) => {
+        requireStaff()
+        // and its scores go from every profile, as Radarr removes them
+        state.customFormats = state.customFormats.filter((f) => f.id !== id)
+        for (const p of state.qualityProfiles)
+          p.formats = p.formats.filter((s) => s.formatId !== id)
+        srv.events.emit({ type: 'settings.updated' })
+      },
       languageProfiles: () => state.languageProfiles,
       rootFolders: () => ['/data/media/movies', '/data/media/movies-4k'],
     },
@@ -1200,7 +1687,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           t.downRate = 0
           t.eta = null
           srv.events.emit({ type: 'torrents.updated' })
-          srv.events.emit({ type: 'queue.changed' })
+          srv.events.emit({ type: 'queue.updated' })
         }
       },
       resume: (torrentId: string) => {
@@ -1210,7 +1697,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           t.state = 'downloading'
           t.downRate = 12 * MB
           srv.events.emit({ type: 'torrents.updated' })
-          srv.events.emit({ type: 'queue.changed' })
+          srv.events.emit({ type: 'queue.updated' })
         }
       },
       remove: (torrentId: string, _deleteData = false) => {
@@ -1224,7 +1711,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         }
         state.torrents = state.torrents.filter((x) => x.id !== torrentId)
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         srv.events.emit({ type: 'movies.updated' })
       },
       forceImport: (torrentId: string) => {
@@ -1239,7 +1726,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         t.stateReason = null
         importTorrent(state, srv.clock, t, m, now())
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         srv.events.emit({ type: 'movies.updated' })
         srv.events.emit({ type: 'history.updated' })
       },
@@ -1306,7 +1793,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           state.torrents.unshift(newTorrent)
         }
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         srv.events.emit({ type: 'history.updated' })
       },
     },
@@ -1390,7 +1877,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         }
         state.torrents.unshift(newTorrent)
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         return newTorrent
       },
       delete: (id: string, _deleteFiles = false) => {
@@ -1404,7 +1891,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         }
         state.torrents = state.torrents.filter((x) => x.id !== id)
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
         srv.events.emit({ type: 'movies.updated' })
       },
       pause: (id: string) => {
@@ -1415,7 +1902,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           t.downRate = 0
           t.eta = null
           srv.events.emit({ type: 'torrents.updated' })
-          srv.events.emit({ type: 'queue.changed' })
+          srv.events.emit({ type: 'queue.updated' })
         }
       },
       resume: (id: string) => {
@@ -1425,7 +1912,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           t.state = 'downloading'
           t.downRate = 14 * MB
           srv.events.emit({ type: 'torrents.updated' })
-          srv.events.emit({ type: 'queue.changed' })
+          srv.events.emit({ type: 'queue.updated' })
         }
       },
       pauseAll: () => {
@@ -1437,13 +1924,13 @@ export function createApi(srv: MockServer, ctx: Ctx) {
             t.eta = null
           }
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
       },
       resumeAll: () => {
         requireStaff()
         for (const t of state.torrents) if (t.state === 'paused') t.state = 'queued'
         srv.events.emit({ type: 'torrents.updated' })
-        srv.events.emit({ type: 'queue.changed' })
+        srv.events.emit({ type: 'queue.updated' })
       },
       setFilePriority: (
         torrentId: string,
@@ -1460,7 +1947,14 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
       limits: () => {
         requireStaff()
-        return state.torrentLimits
+        const v = currentVpn()
+        // the VPN line on Downloads reads the VPN's status (docs/product/vpn.md)
+        return {
+          ...state.torrentLimits,
+          vpnConnected: v.state === 'connected',
+          vpnInterface: v.provider ?? 'No VPN',
+          vpnIp: v.exitIp ?? '',
+        }
       },
       setLimits: (patch: Partial<TorrentLimits>) => {
         requireStaff()
@@ -1536,30 +2030,19 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         srv.events.emit({ type: 'history.updated' })
         return newTrack
       },
+      /** Re-sync runs in the background, as the server's job does: Syncing, then the result. */
       sync: (trackId: string) => {
         requireStaff()
         const track = state.subtitles.find((s) => s.id === trackId)
         if (!track) throw new ApiError(404, 'not-found', 'Subtitle track not found.')
-        track.sync = {
-          status: 'synced',
-          confidence: 0.98,
-          offsetMs: -350,
-        }
-        const m = state.items.find((x) => x.id === track.itemId)
-        if (m) {
-          state.history.unshift({
-            id: `h-sync-${trackId}-${now()}`,
-            itemId: track.itemId,
-            type: 'subtitle-synced',
-            date: iso(now()),
-            sourceTitle: m.title,
-            quality: null,
-            indexer: null,
-            message: `Audio sync completed: offset -350 ms, confidence 98%`,
-          })
-        }
+        track.sync = { status: 'syncing', confidence: null, offsetMs: 0 }
+        state.pipeline.push({
+          itemId: track.itemId,
+          torrentId: '',
+          stage: 'subtitle-sync',
+          until: now() + SUBTITLE_SYNC_SECONDS * 1000,
+        })
         srv.events.emit({ type: 'subtitles.updated', itemId: track.itemId })
-        srv.events.emit({ type: 'history.updated' })
         return track
       },
       setOffset: (trackId: string, offsetMs: number) => {
@@ -1642,10 +2125,11 @@ export function createApi(srv: MockServer, ctx: Ctx) {
 
     announcements: {
       /** The live announcements this user should see, not yet dismissed or acknowledged. */
-      active: () => {
+      /** For one client app; the admin by default. */
+      active: (client: ClientType = 'admin') => {
         const seen = state.seen[me().id] ?? []
         return state.announcements
-          .filter((a) => a.status === 'live' && visible(a))
+          .filter((a) => announcementStatus(a) === 'live' && visible(a, client))
           .map((a) => ({ ...a, seen: seen.includes(a.id) }))
       },
       dismiss: (id: string) => {
@@ -1655,31 +2139,504 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
     },
 
+    curation: {
+      /** Every announcement, newest first within live, scheduled, drafts, then ended. */
+      announcements: (): AnnouncementSummary[] => {
+        requireStaff()
+        const order: CurationStatus[] = ['live', 'scheduled', 'draft', 'ended']
+        return state.announcements
+          .map((a) => {
+            const audience = audienceOf(a.audience)
+            return {
+              ...a,
+              status: announcementStatus(a),
+              audienceSize: audience.length,
+              seenBy: audience.filter((u) => state.seen[u.id]?.includes(a.id)).length,
+            }
+          })
+          .sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status))
+      },
+      announcement: (id: string): Announcement => {
+        requireStaff()
+        const a = state.announcements.find((x) => x.id === id)
+        if (!a) throw new ApiError(404, 'not-found', 'There’s no announcement with that id.')
+        return { ...a, status: announcementStatus(a) }
+      },
+      /** Saves a new or edited announcement. `status: 'draft'` keeps it off every screen. */
+      saveAnnouncement: (a: Announcement): Announcement => {
+        requireStaff()
+        if (!a.title.trim()) throw new ApiError(400, 'invalid', 'Give the announcement a title.')
+        if (!a.placements.length)
+          throw new ApiError(400, 'invalid', 'Choose at least one place to show it.')
+        if (a.schedule.end && Date.parse(a.schedule.end) <= Date.parse(a.schedule.start))
+          throw new ApiError(400, 'invalid', 'The end has to come after the start.')
+        const saved = { ...a, seen: false, status: announcementStatus(a) }
+        const i = state.announcements.findIndex((x) => x.id === a.id)
+        if (i >= 0) state.announcements[i] = saved
+        else state.announcements.unshift(saved)
+        srv.events.emit({ type: 'announcements.updated' })
+        return saved
+      },
+      /** Ends it now: it leaves every screen, and stays in the list as ended. */
+      endAnnouncement: (id: string) => {
+        requireStaff()
+        const a = state.announcements.find((x) => x.id === id)
+        if (!a) return
+        a.schedule = { ...a.schedule, end: iso(now()) }
+        a.status = 'ended'
+        srv.events.emit({ type: 'announcements.updated' })
+      },
+      deleteAnnouncement: (id: string) => {
+        requireStaff()
+        state.announcements = state.announcements.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'announcements.updated' })
+      },
+
+      /** The featured sections in the home screen's order, with what each resolves to now. */
+      sections: (): SectionSummary[] => {
+        requireStaff()
+        return [...state.featured]
+          .sort((a, b) => a.order - b.order)
+          .map((f) => {
+            const items = sectionItems(f)
+            return {
+              ...f,
+              status: curationStatus(f.schedule, now()) as SectionSummary['status'],
+              itemCount: items.length,
+              sample: items.slice(0, 6).map((m) => ({
+                id: m.id,
+                title: m.title,
+                poster: m.art.poster,
+              })),
+            }
+          })
+      },
+      section: (id: string): FeaturedSection => {
+        requireStaff()
+        const f = state.featured.find((x) => x.id === id)
+        if (!f) throw new ApiError(404, 'not-found', 'There’s no featured section with that id.')
+        return f
+      },
+      /** What rule sources can pick from: the library's genres and the known collections. */
+      ruleOptions: () => {
+        requireStaff()
+        return {
+          genres: [...new Set(watchable().flatMap((m) => m.genres))].sort(),
+          collections: collectionRefs(),
+          smart: state.collections.map((c) => ({ id: c.id, name: c.name })),
+        }
+      },
+      /** The titles a source picks right now (the composer's list). */
+      resolve: (f: FeaturedSection): ClientItem[] => {
+        requireStaff()
+        return sectionItems(f)
+      },
+      saveSection: (f: FeaturedSection): FeaturedSection => {
+        requireStaff()
+        if (!f.title.trim()) throw new ApiError(400, 'invalid', 'Give the section a title.')
+        if (f.source.kind === 'manual' && !f.source.itemIds.length)
+          throw new ApiError(400, 'invalid', 'Add at least one title.')
+        const i = state.featured.findIndex((x) => x.id === f.id)
+        if (i >= 0) state.featured[i] = f
+        else state.featured.push({ ...f, order: state.featured.length })
+        srv.events.emit({ type: 'curation.updated' })
+        return f
+      },
+      deleteSection: (id: string) => {
+        requireStaff()
+        state.featured = state.featured
+          .filter((x) => x.id !== id)
+          .sort((a, b) => a.order - b.order)
+          .map((f, order) => ({ ...f, order }))
+        srv.events.emit({ type: 'curation.updated' })
+      },
+      /** Puts the sections in this order (ids); any left out keep their place after them. */
+      reorderSections: (ids: string[]) => {
+        requireStaff()
+        const rank = (id: string) => {
+          const i = ids.indexOf(id)
+          return i < 0 ? ids.length + 1 : i
+        }
+        state.featured = [...state.featured]
+          .sort((a, b) => rank(a.id) - rank(b.id) || a.order - b.order)
+          .map((x, order) => ({ ...x, order }))
+        srv.events.emit({ type: 'curation.updated' })
+      },
+      /** The saved curation, for a preview to merge a draft into. */
+      snapshot: (): CurationPreview => {
+        requireStaff()
+        return {
+          announcements: state.announcements,
+          featured: state.featured,
+          collections: state.collections,
+        }
+      },
+    },
+
+    collections: {
+      /** Every collection, in the owner's order, with what it holds now. */
+      list: (): CollectionSummary[] => {
+        requireStaff()
+        const infos = smartFields()
+        return state.collections.map((c) => {
+          const facts = smartFacts(c)
+          return {
+            ...c,
+            matched: facts.length,
+            playable: facts.filter((f) => f.playable).length,
+            mosaic: facts.slice(0, 4).map((f) => f.item.art.poster),
+            words: describe(c.rules, infos),
+          }
+        })
+      },
+      get: (id: string): SmartCollection => {
+        requireStaff()
+        const c = state.collections.find((x) => x.id === id)
+        if (!c) throw new ApiError(404, 'not-found', 'There’s no collection with that id.')
+        return c
+      },
+      /** The fields the rule builder offers; `except` leaves a collection out of its own list. */
+      fields: (except?: string): RuleFieldInfo[] => {
+        requireStaff()
+        return smartFields(except)
+      },
+      /** What a draft holds right now: both counts, its titles in order, its rules in words. */
+      preview: (c: SmartCollection): CollectionPreview => {
+        requireStaff()
+        return preview(state, c, now(), [...state.collections.filter((x) => x.id !== c.id), c])
+      },
+      save: (c: SmartCollection): SmartCollection => {
+        requireStaff()
+        if (!c.name.trim()) throw new ApiError(400, 'invalid', 'Give the collection a name.')
+        if (!c.rules && !c.include.length)
+          throw new ApiError(400, 'invalid', 'Add a rule, or pick at least one film.')
+        if (c.rules && namesItself(c.rules, c.id))
+          throw new ApiError(400, 'invalid', 'A collection can’t be one of its own rules.')
+        if (
+          c.rules?.rules.some((r) => r.kind === 'group' && r.rules.some((x) => x.kind === 'group'))
+        )
+          throw new ApiError(400, 'invalid', 'Groups go one level deep.')
+        const saved = { ...c, name: c.name.trim(), updatedAt: iso(now()) }
+        const i = state.collections.findIndex((x) => x.id === c.id)
+        if (i >= 0) state.collections[i] = saved
+        else state.collections.push(saved)
+        srv.events.emit({ type: 'collections.updated' })
+        // a featured section may draw on it
+        srv.events.emit({ type: 'curation.updated' })
+        return saved
+      },
+      remove: (id: string) => {
+        requireStaff()
+        const c = state.collections.find((x) => x.id === id)
+        if (!c) return
+        const feeds = state.featured.find(
+          (f) =>
+            f.source.kind === 'rule' && f.source.rule === 'collection' && f.source.value === id,
+        )
+        if (feeds)
+          throw new ApiError(
+            409,
+            'in-use',
+            `The featured section “${feeds.title}” draws on it. Choose another source for the section first.`,
+          )
+        state.collections = state.collections.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'collections.updated' })
+      },
+    },
+
+    connect: {
+      /** Servers this device has signed in to, for the switcher. */
+      known: () => state.known,
+      /** LAN discovery (UDP broadcast and mDNS); answers arrive over a second or two. */
+      discover: () => state.discovered,
+      /** What an address answers before signing in. */
+      probe: (address: string): ProbeResult => {
+        const a = address
+          .trim()
+          .toLowerCase()
+          .replace(/^https?:\/\//, '')
+          .replace(/\/$/, '')
+        if (!a || !/^[\w.-]+(:\d+)?$/.test(a))
+          throw new ApiError(
+            400,
+            'invalid-address',
+            'That doesn’t look like an address. Try harbor.example.net or 192.168.1.20.',
+          )
+        const harbor = state.known.find((k) => k.id === 'srv-harbor')
+        const local = state.discovered.find((d) => d.address === a || d.address.split(':')[0] === a)
+        if (local)
+          return {
+            id: local.id,
+            name: local.name,
+            version: local.version,
+            setupComplete: true,
+            auth: { local: true, oidc: null },
+            address: local.address,
+            reachability: 'local',
+          }
+        if (a.includes('harbor') && harbor)
+          return {
+            id: harbor.id,
+            name: harbor.name,
+            version: state.server.version,
+            setupComplete: true,
+            auth: { local: true, oidc: { name: 'Authentik' } },
+            address: a,
+            reachability: 'remote',
+          }
+        throw new ApiError(
+          504,
+          'unreachable',
+          `Nothing answered at ${a}. Check the address, and that the server is running and reachable from here.`,
+        )
+      },
+      /** Sign-in by code: the TV shows it, a signed-in phone or computer approves it. */
+      startPairing: (): Pairing => ({
+        code: 'KQ7-4PM',
+        url: 'harbor.example.net/link',
+        expiresAt: iso(now() + 10 * 60_000),
+      }),
+      forget: (id: string) => {
+        state.known = state.known.filter((k) => k.id !== id)
+      },
+    },
+
+    home: {
+      /** The home screen: featured sections in order, with Continue watching after the hero. */
+      sections: (client: ClientType = 'web'): HomeSection[] => {
+        const live = state.featured
+          .filter((f) => curationStatus(f.schedule, now()) === 'live' && visible(f, client))
+          .sort((a, b) => a.order - b.order)
+          .map(
+            (f): HomeSection => ({
+              id: f.id,
+              title: f.title,
+              suffix: f.tagline,
+              layout: f.layout,
+              items: sectionItems(f),
+            }),
+          )
+          .filter((x) => x.items.length > 0)
+        const continuing = state.watch
+          .filter((w) => w.userId === me().id)
+          .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
+          .flatMap((w) => {
+            const m = state.items.find((x) => x.id === w.itemId)
+            return m && playable(m) ? [clientItem(m)] : []
+          })
+          .filter((m) => m.progress !== null)
+        const resume: HomeSection[] = continuing.length
+          ? [
+              {
+                id: 'continue',
+                title: 'Continue watching',
+                suffix: null,
+                layout: 'continue',
+                items: continuing,
+              },
+            ]
+          : []
+        const [first, ...rest] = live
+        const all = first?.layout === 'hero' ? [first, ...resume, ...rest] : [...resume, ...live]
+        // the person's own order and hidden rows; the hero stays on top
+        const mine = state.homeLayouts[me().id]
+        if (!mine) return all
+        const shown = all.filter((s) => !mine.hidden.includes(s.id))
+        const pinned = shown.filter((s) => s.layout === 'hero')
+        const rows = shown
+          .filter((s) => s.layout !== 'hero')
+          .sort((a, b) => {
+            const i = mine.order.indexOf(a.id)
+            const j = mine.order.indexOf(b.id)
+            return (i < 0 ? 999 : i) - (j < 0 ? 999 : j)
+          })
+        return [...pinned, ...rows]
+      },
+      /** The rows this person can arrange: everything below the hero, in their order. */
+      layout: (): HomeLayout & { rows: { id: string; title: string }[] } => {
+        const mine = state.homeLayouts[me().id] ?? { order: [], hidden: [] }
+        const rows = [
+          { id: 'continue', title: 'Continue watching' },
+          ...[...state.featured]
+            .filter((f) => f.layout !== 'hero' && curationStatus(f.schedule, now()) === 'live')
+            .sort((a, b) => a.order - b.order)
+            .map((f) => ({ id: f.id, title: f.title })),
+        ]
+        const pos = (id: string) => {
+          const i = mine.order.indexOf(id)
+          return i < 0 ? 999 + rows.findIndex((r) => r.id === id) : i
+        }
+        return { ...mine, rows: rows.sort((a, b) => pos(a.id) - pos(b.id)) }
+      },
+      saveLayout: (layout: HomeLayout) => {
+        state.homeLayouts[me().id] = layout
+        srv.events.emit({ type: 'curation.updated' })
+        return layout
+      },
+    },
+
+    library: {
+      /** Everything the household can watch. */
+      list: () => watchable().map((m) => clientItem(m)),
+      /**
+       * Movies by name, genre or person; collections by name or a part's name; the people whose
+       * names match. A kind whose names start with the query (at a word) ranks first, then one
+       * whose names contain it, then the rest, in the order below.
+       */
+      search: (query: string): SearchResults => {
+        const q = query.trim().toLowerCase()
+        if (!q) return { sections: [] }
+        const people = new Map<string, SearchPerson>()
+        const titles = watchable().filter((m) => {
+          const meta = movieMetadata(state, m.id, now())
+          const credits = [...(meta?.cast ?? []), ...(meta?.crew ?? [])]
+          for (const c of credits)
+            if (c.name.toLowerCase().includes(q)) {
+              const p = people.get(c.personId)
+              people.set(c.personId, {
+                id: c.personId,
+                name: c.name,
+                photo: c.photo,
+                titles: (p?.titles ?? 0) + 1,
+              })
+            }
+          return (
+            m.title.toLowerCase().includes(q) ||
+            m.genres.some((g) => g.toLowerCase().startsWith(q)) ||
+            credits.some((c) => c.name.toLowerCase().includes(q))
+          )
+        })
+        // titles whose name matches come first
+        const named = (m: MediaItem) => (m.title.toLowerCase().includes(q) ? 0 : 1)
+        const collections = clientCollections().filter(
+          ({ collection: c, items }) =>
+            c.name.toLowerCase().includes(q) ||
+            items.some((m) => m.title.toLowerCase().includes(q)),
+        )
+        const sections: SearchSection[] = [
+          {
+            kind: 'movies',
+            items: titles.sort((a, b) => named(a) - named(b)).map((m) => clientItem(m)),
+          },
+          { kind: 'collections', items: collections.map((c) => c.collection) },
+          {
+            kind: 'people',
+            items: [...people.values()].sort((a, b) => b.titles - a.titles).slice(0, 8),
+          },
+        ]
+        const nameOf = (x: { title: string } | { name: string }) =>
+          ('title' in x ? x.title : x.name).toLowerCase()
+        const rank = (section: SearchSection) => {
+          const names = (section.items as ({ title: string } | { name: string })[]).map(nameOf)
+          if (names.some((n) => n.split(/[\s:–-]+/).some((w) => w.startsWith(q)))) return 0
+          if (names.some((n) => n.includes(q))) return 1
+          return 2
+        }
+        return {
+          sections: sections
+            .filter((x) => x.items.length > 0)
+            .map((x, i) => ({ x, i, r: rank(x) }))
+            .sort((a, b) => a.r - b.r || a.i - b.i)
+            .map(({ x }) => x),
+        }
+      },
+      /** Collections on this server for this app: smart ones first, then TMDB's. */
+      collections: (client: ClientType = 'web'): ClientCollection[] =>
+        clientCollections(client).map((c) => c.collection),
+      /** A collection's titles on this server: a smart one's in its order, TMDB's oldest first. */
+      collection: (id: string, client: ClientType = 'web') => {
+        const found = clientCollections(client).find((c) => c.collection.id === id)
+        if (!found) throw new ApiError(404, 'not-found', 'That collection isn’t on this server.')
+        return found
+      },
+      item: (id: string): ClientDetail => {
+        const m = state.items.find((x) => x.id === id)
+        if (!m || !playable(m))
+          throw new ApiError(404, 'not-found', 'That title isn’t on this server.')
+        const meta = movieMetadata(state, id, now())
+        const versions = versionsOf(m)
+        const prefs = state.prefs[`${me().id}:${id}`] ?? {}
+        const version = versions.find((v) => v.id === prefs.versionId) ?? versions[0]
+        const related = recommendations(state, id, 24)
+          .flatMap((t) => {
+            const x = state.items.find((i) => i.id === t.id)
+            return x && playable(x) ? [clientItem(x)] : []
+          })
+          .slice(0, 12)
+        return {
+          item: clientItem(m),
+          versions,
+          cast: meta?.cast ?? [],
+          directors: meta?.crew.filter((c) => c.job === 'Director') ?? [],
+          related,
+          defaults: {
+            versionId: version?.id ?? '',
+            audioId:
+              prefs.audioId ??
+              version?.audio.find((a) => a.default)?.id ??
+              version?.audio[0]?.id ??
+              null,
+            subtitleId:
+              prefs.subtitleId !== undefined
+                ? prefs.subtitleId
+                : (version?.subtitles.find((t) => t.default)?.id ?? null),
+          },
+        }
+      },
+    },
+
+    playback: {
+      prefs: (id: string): PlaybackPrefs => state.prefs[`${me().id}:${id}`] ?? {},
+      /** Remembers the picks for this title, for this user. */
+      setPrefs: (id: string, patch: PlaybackPrefs) => {
+        const key = `${me().id}:${id}`
+        state.prefs[key] = { ...state.prefs[key], ...patch }
+        srv.events.emit({ type: 'watch.updated' })
+        return state.prefs[key]
+      },
+      /** Reports the position (every few seconds while playing, and on pause or exit). */
+      progress: (id: string, position: number) => {
+        const u = me().id
+        const w = state.watch.find((x) => x.userId === u && x.itemId === id)
+        if (w) {
+          w.position = position
+          w.updatedAt = iso(now())
+        } else state.watch.push({ userId: u, itemId: id, position, updatedAt: iso(now()) })
+        srv.events.emit({ type: 'watch.updated' })
+      },
+    },
+
     dashboard: {
       layout: (): WidgetLayout => {
         const u = me()
+        const role = staffRole()
         const own = storage.load(layoutKey(`user:${u.id}`)) as WidgetPlacement[] | undefined
         return {
           scope: { kind: 'user', userId: u.id },
-          widgets: (own ?? layoutFor(u.role)).filter((w) => allowed(w.kind, u.role)).map(normalize),
+          widgets: (own ?? layoutFor(role)).filter((w) => allowed(w.kind, role)).map(normalize),
           updatedAt: iso(now()),
           inherited: !own,
         }
       },
       saveLayout: (widgets: WidgetPlacement[]) => {
         const u = me()
-        for (const w of widgets) if (!allowed(w.kind, u.role)) throw forbidden()
+        const role = staffRole()
+        for (const w of widgets) if (!allowed(w.kind, role)) throw forbidden()
         storage.save(layoutKey(`user:${u.id}`), widgets)
         srv.events.emit({ type: 'layout.updated' })
       },
       /** Forgets the user's own layout, so they see their role's default again. */
       resetLayout: () => {
+        staffRole()
         storage.save(layoutKey(`user:${me().id}`), undefined)
         srv.events.emit({ type: 'layout.updated' })
       },
-      roleDefault: (role: UserRole) => layoutFor(role),
-      saveRoleDefault: (role: UserRole, widgets: WidgetPlacement[]) => {
-        if (me().role !== 'owner') throw forbidden()
+      roleDefault: (role: StaffRole) => {
+        requireStaff()
+        return layoutFor(role)
+      },
+      saveRoleDefault: (role: StaffRole, widgets: WidgetPlacement[]) => {
+        requireOwner()
         storage.save(
           layoutKey(`role:${role}`),
           widgets.filter((w) => allowed(w.kind, role)),
@@ -1693,12 +2650,294 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         requireStaff()
         return state.users
       },
+      /** A pending account and the single-use link that finishes it (valid for a week). */
+      invite: (input: InviteInput): Invite => {
+        requireOwner()
+        const name = input.displayName.trim()
+        if (!name)
+          throw new ApiError(400, 'invalid', 'Give them a name, as the household knows them.')
+        const username = name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+        if (state.users.some((u) => u.username === username))
+          throw new ApiError(409, 'taken', `There’s already someone called ${name}.`)
+        const user: User = {
+          id: `u-${username}`,
+          username,
+          displayName: name,
+          role: input.role,
+          // staff hold every power by their role and see every library
+          permissions: input.role === 'admin' ? [] : ['request'],
+          libraries: input.role === 'admin' ? 'all' : input.libraries,
+          twoFactor: false,
+          lastSeen: null,
+          invited: true,
+        }
+        state.users.push(user)
+        srv.events.emit({ type: 'users.updated' })
+        return {
+          user,
+          link: `https://harbor.example.net/invite/${username.slice(0, 3).toUpperCase()}-${(now() % 9000) + 1000}`,
+          expiresAt: iso(now() + 7 * 86_400_000),
+        }
+      },
+      /**
+       * Role, permissions, libraries. Staff hold no permissions and see every library; making an
+       * admin a user ends their admin sessions and API keys at once.
+       */
+      update: (id: string, patch: Partial<Pick<User, 'role' | 'permissions' | 'libraries'>>) => {
+        requireOwner()
+        const u = state.users.find((x) => x.id === id)
+        if (!u) throw new ApiError(404, 'not-found', 'There’s no one with that id.')
+        if (u.role === 'owner' && patch.role && patch.role !== 'owner')
+          throw new ApiError(
+            400,
+            'owner',
+            'The owner stays the owner. Hand ownership over in Security first.',
+          )
+        if (patch.role === 'owner')
+          throw new ApiError(400, 'owner', 'There’s one owner. Hand ownership over in Security.')
+        const demoted = u.role === 'admin' && patch.role === 'user'
+        Object.assign(u, patch)
+        if (u.role === 'admin') Object.assign(u, { permissions: [], libraries: 'all' })
+        else if (demoted && !patch.permissions) u.permissions = ['request']
+        if (demoted) {
+          state.devices = state.devices.filter((d) => d.userId !== id || d.client !== 'admin')
+          state.apiKeys = state.apiKeys.filter((k) => k.userId !== id)
+        }
+        srv.events.emit({ type: 'users.updated' })
+        return u
+      },
+      remove: (id: string) => {
+        requireOwner()
+        const u = state.users.find((x) => x.id === id)
+        if (!u) return
+        if (u.role === 'owner') throw new ApiError(400, 'owner', 'The owner can’t be removed.')
+        if (u.id === me().id) throw new ApiError(400, 'self', 'You can’t remove yourself.')
+        state.users = state.users.filter((x) => x.id !== id)
+        state.devices = state.devices.filter((d) => d.userId !== id)
+        state.apiKeys = state.apiKeys.filter((k) => k.userId !== id)
+        srv.events.emit({ type: 'users.updated' })
+      },
+      /** Emails a link to choose a new password; their devices stay signed in. */
+      resetPassword: (id: string) => {
+        requireOwner()
+        return state.users.find((x) => x.id === id)?.displayName ?? ''
+      },
     },
 
     devices: {
       list: () => {
         requireStaff()
         return state.devices
+      },
+      /** The signed-in person's own devices, for the clients' settings. */
+      mine: () => state.devices.filter((d) => d.userId === me().id),
+      /** Signs a device out: its token stops working at once. */
+      revoke: (id: string) => {
+        const d = state.devices.find((x) => x.id === id)
+        if (!d) return
+        // someone else's device: managing people, the owner's alone
+        if (d.userId !== me().id) requireOwner()
+        if (id === 'd-admin')
+          throw new ApiError(400, 'self', 'That’s the browser you’re using. Sign out instead.')
+        state.devices = state.devices.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'users.updated' })
+      },
+    },
+
+    apiKeys: {
+      /** The owner sees everyone's keys; an admin their own. */
+      list: () => {
+        requireStaff()
+        return me().role === 'owner'
+          ? state.apiKeys
+          : state.apiKeys.filter((k) => k.userId === me().id)
+      },
+      create: (name: string, scope: ApiKey['scope']): CreatedApiKey => {
+        requireStaff()
+        if (!name.trim()) throw new ApiError(400, 'invalid', 'Name the key after what will use it.')
+        const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
+        const pick = createRandom(now())
+        let secret = 'hs_'
+        for (let i = 0; i < 40; i++) secret += alphabet[Math.floor(pick() * alphabet.length)]
+        const key: ApiKey = {
+          id: `k-${now().toString(36)}`,
+          name: name.trim(),
+          prefix: secret.slice(0, 7),
+          scope,
+          userId: me().id,
+          createdAt: iso(now()),
+          lastUsed: null,
+        }
+        state.apiKeys.unshift(key)
+        srv.events.emit({ type: 'users.updated' })
+        return { ...key, secret }
+      },
+      revoke: (id: string) => {
+        requireStaff()
+        const k = state.apiKeys.find((x) => x.id === id)
+        if (k && k.userId !== me().id) requireOwner()
+        state.apiKeys = state.apiKeys.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'users.updated' })
+      },
+    },
+
+    manualImport: {
+      /** What's in a folder that could be imported, matched to the library by name. */
+      scan: (path: string): ImportCandidate[] => {
+        requireStaff()
+        if (!state.fs[path])
+          throw new ApiError(404, 'not-found', `${path} doesn’t exist on the server.`)
+        if (path !== '/data/downloads/complete') return []
+        const find = (title: string) => state.items.find((m) => m.title === title)?.id ?? null
+        return [
+          {
+            path: `${path}/The.Last.Man.on.Earth.1964.720p.WEB-DL.AAC.x264-OLDIES/The.Last.Man.on.Earth.1964.720p.WEB-DL.mkv`,
+            size: 1.9 * GB,
+            quality: 'WEB 720p',
+            language: 'English',
+            itemId: find('The Last Man on Earth'),
+            skip: null,
+          },
+          {
+            path: `${path}/Royal Wedding (1951) [1080p]/Royal.Wedding.1951.1080p.BluRay.mkv`,
+            size: 6.4 * GB,
+            quality: 'Bluray 1080p',
+            language: 'English',
+            itemId: find('Royal Wedding'),
+            skip: null,
+          },
+          {
+            path: `${path}/Royal Wedding (1951) [1080p]/sample.mkv`,
+            size: 18 * MB,
+            quality: 'Bluray 1080p',
+            language: 'English',
+            itemId: find('Royal Wedding'),
+            skip: 'A sample (18 MB). Skipped.',
+          },
+          {
+            path: `${path}/home-movies/Lisbon 2019.mp4`,
+            size: 2.2 * GB,
+            quality: 'Unknown',
+            language: 'Unknown',
+            itemId: null,
+            skip: null,
+          },
+        ]
+      },
+      /** Imports the files into their movies: hardlinked (or copied, or moved) and renamed. */
+      run: (files: { path: string; itemId: string }[], mode: 'hardlink' | 'move') => {
+        requireStaff()
+        for (const f of files) {
+          const m = state.items.find((x) => x.id === f.itemId)
+          if (!m) continue
+          m.status = 'available'
+          state.history.unshift({
+            id: `h-${now().toString(36)}-${m.id}`,
+            itemId: m.id,
+            type: 'imported',
+            date: iso(now()),
+            sourceTitle: f.path.split('/').pop() ?? f.path,
+            quality: null,
+            indexer: null,
+            message: mode === 'move' ? 'Moved by manual import' : 'Hardlinked by manual import',
+          })
+        }
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'history.updated' })
+        return files.length
+      },
+    },
+
+    appearance: {
+      /** Everyone reads it: clients take the default theme and sounds from here. */
+      get: (): Appearance & { branding: Server['branding'] } => ({
+        ...state.appearance,
+        branding: state.server.branding,
+      }),
+      save: (patch: Partial<Appearance> & { name?: string; accent?: string | null }) => {
+        requireStaff()
+        const { name, accent, ...rest } = patch
+        if (name !== undefined) {
+          if (!name.trim()) throw new ApiError(400, 'invalid', 'The server needs a name.')
+          state.server.name = name.trim()
+          state.server.branding.name = name.trim()
+          storage.save(`server:${srv.kind}:name`, name.trim())
+        }
+        if (accent !== undefined) state.server.branding.accent = accent
+        Object.assign(state.appearance, rest)
+        srv.events.emit({ type: 'server.updated' })
+        return state.appearance
+      },
+      saveTheme: (theme: CustomTheme) => {
+        requireStaff()
+        const i = state.appearance.themes.findIndex((t) => t.id === theme.id)
+        if (i >= 0) state.appearance.themes[i] = theme
+        else state.appearance.themes.push(theme)
+        srv.events.emit({ type: 'server.updated' })
+        return theme
+      },
+      deleteTheme: (id: string) => {
+        requireStaff()
+        state.appearance.themes = state.appearance.themes.filter((t) => t.id !== id)
+        if (state.appearance.defaultTheme === id) state.appearance.defaultTheme = 'default'
+        srv.events.emit({ type: 'server.updated' })
+      },
+    },
+
+    vpn: {
+      /** Staff: Downloads shows the VPN line. */
+      status: () => {
+        requireStaff()
+        return currentVpn()
+      },
+      providers: () => {
+        requireOwner()
+        return vpnProviders
+      },
+      check: () => {
+        requireOwner()
+        state.vpn.checkedAt = srv.clock.now()
+        srv.events.emit({ type: 'vpn.updated' })
+        return currentVpn()
+      },
+      reconnect: () => {
+        requireOwner()
+        if (state.settings.vpn.mode === 'off') return currentVpn()
+        state.vpn.phase = 'connecting'
+        state.vpn.until = srv.clock.now() + 4_000
+        srv.events.emit({ type: 'vpn.updated' })
+        return currentVpn()
+      },
+      /** The prototype's own control, to review the tunnel dropping; not in the API. */
+      simulateDrop: () => {
+        requireOwner()
+        if (state.vpn.phase !== 'connected') return currentVpn()
+        state.vpn.phase = 'down'
+        state.vpn.until = srv.clock.now() + 20_000
+        srv.events.emit({ type: 'vpn.updated' })
+        srv.events.emit({ type: 'health.updated' })
+        return currentVpn()
+      },
+    },
+
+    settings: {
+      get: <K extends SettingsSection>(section: K): Settings[K] => {
+        requireStaff()
+        // security, backups and the VPN are the owner's alone, even to read (ADR 0032)
+        if (section === 'security' || section === 'backups' || section === 'vpn') requireOwner()
+        return state.settings[section]
+      },
+      save: <K extends SettingsSection>(section: K, value: Settings[K]): Settings[K] => {
+        requireStaff()
+        // security, backups and the VPN are the owner's alone (ADR 0032)
+        if (section === 'security' || section === 'backups' || section === 'vpn') requireOwner()
+        if (section === 'vpn') return saveVpn(value as VpnSettings) as Settings[K]
+        state.settings[section] = value
+        srv.events.emit({ type: 'settings.updated' })
+        return value
       },
     },
   }

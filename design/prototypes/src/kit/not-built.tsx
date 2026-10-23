@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A placeholder for screens a later checkpoint builds. Prototype meta, styled like the toolbar.
-import { cn } from '@highsea/ui-web'
+import { cn } from '@highsea-tv/ui-web'
 
 export function NotBuilt({
   what,

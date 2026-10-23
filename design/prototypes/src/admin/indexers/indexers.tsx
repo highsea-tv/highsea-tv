@@ -3,6 +3,8 @@
 // catalog to add more. Public indexers are one click: add, then an automatic test. Private ones
 // open a form generated from the definition, with "where to find this" under each field, and are
 // tested before they're saved. The catalog's version and changelog sit in the page header.
+
+import { percent, relative } from '@highsea-tv/core/format'
 import {
   Badge,
   Button,
@@ -31,11 +33,10 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea/ui-web'
+} from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { CatalogDefinition, Indexer, IndexerPrivacy } from '../../mock/types.ts'
-import { percent, relative } from '../format.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage } from '../shell.tsx'
 import { indexerStatus } from '../status.ts'

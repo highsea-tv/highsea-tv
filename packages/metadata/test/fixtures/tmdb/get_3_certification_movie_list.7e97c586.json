@@ -1,0 +1,113 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/certification/movie/list",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "certifications": {
+        "US": [
+          {
+            "certification": "NR",
+            "meaning": "No rating information.",
+            "order": 0
+          },
+          {
+            "certification": "G",
+            "meaning": "All ages admitted.",
+            "order": 1
+          },
+          {
+            "certification": "PG",
+            "meaning": "Some material may not be suitable for children.",
+            "order": 2
+          },
+          {
+            "certification": "PG-13",
+            "meaning": "Some material may be inappropriate for children under 13.",
+            "order": 3
+          },
+          {
+            "certification": "R",
+            "meaning": "Under 17 requires accompanying parent or adult guardian.",
+            "order": 4
+          },
+          {
+            "certification": "NC-17",
+            "meaning": "No one 17 and under admitted.",
+            "order": 5
+          }
+        ],
+        "GB": [
+          {
+            "certification": "U",
+            "meaning": "Universal: suitable for all.",
+            "order": 1
+          },
+          {
+            "certification": "PG",
+            "meaning": "Parental guidance.",
+            "order": 2
+          },
+          {
+            "certification": "12A",
+            "meaning": "Suitable for 12 years and over; under 12s accompanied by an adult.",
+            "order": 3
+          },
+          {
+            "certification": "12",
+            "meaning": "Suitable for 12 years and over.",
+            "order": 4
+          },
+          {
+            "certification": "15",
+            "meaning": "Suitable only for 15 years and over.",
+            "order": 5
+          },
+          {
+            "certification": "18",
+            "meaning": "Suitable only for adults.",
+            "order": 6
+          },
+          {
+            "certification": "R18",
+            "meaning": "Adults only, in licensed cinemas.",
+            "order": 7
+          }
+        ],
+        "DE": [
+          {
+            "certification": "0",
+            "meaning": "No age restriction.",
+            "order": 1
+          },
+          {
+            "certification": "6",
+            "meaning": "Ages 6 and older.",
+            "order": 2
+          },
+          {
+            "certification": "12",
+            "meaning": "Ages 12 and older; 6 and older with a parent.",
+            "order": 3
+          },
+          {
+            "certification": "16",
+            "meaning": "Ages 16 and older.",
+            "order": 4
+          },
+          {
+            "certification": "18",
+            "meaning": "Adults only.",
+            "order": 5
+          }
+        ]
+      }
+    }
+  }
+}

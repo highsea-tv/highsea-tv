@@ -1,0 +1,44 @@
+<?xml version="1.0"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!--
+  highsea's Unraid template (phase-3-checkpoint-9.md › NAS templates). Its fields follow Community
+  Applications' template documentation (https://ca.unraid.net/submit/help/repository-xml):
+  Repository, Name, Overview, Network, WebUI, Category and TemplateURL, then one Config element per
+  port, path and variable. Until it's listed in Community Applications, copy this file into
+  /boot/config/plugins/dockerMan/templates-user/ and add the container from Docker › Add Container.
+
+  The paths follow the TRaSH Guides' one-share layout on Unraid, so downloads and the library are
+  on one share and imports hardlink. 99:100 is Unraid's nobody:users, which owns its shares.
+
+  There's no TZ: Unraid passes the server's own time zone to every container it runs
+  (xmlToCommand in https://github.com/unraid/webgui/blob/master/emhttp/plugins/dynamix.docker.manager/include/Helpers.php),
+  and a TZ here would come later in docker run and override it.
+-->
+<Container version="2">
+  <Name>highsea</Name>
+  <Repository>ghcr.io/highsea-tv/highsea:latest</Repository>
+  <Registry>https://github.com/highsea-tv/highsea-tv/pkgs/container/highsea</Registry>
+  <Network>bridge</Network>
+  <Privileged>false</Privileged>
+  <Support>https://github.com/highsea-tv/highsea-tv/issues</Support>
+  <Project>https://github.com/highsea-tv/highsea-tv</Project>
+  <ReadMe>https://docs.highsea.tv</ReadMe>
+  <Overview>highsea finds, downloads and organises your films, with their subtitles, and serves them to your own apps. One self-hosted server in place of Radarr, Prowlarr, qBittorrent and Bazarr.&#xD;
+&#xD;
+Put downloads and the library on one share (the data path), so imports hardlink instead of copying. In bridge mode, apps on your network find highsea by its broadcast on 7368/udp, but not by mDNS; set Network to host for both.</Overview>
+  <Category>Downloaders: MediaApp:Video MediaServer:Video</Category>
+  <WebUI>http://[IP]:[PORT:3000]/</WebUI>
+  <TemplateURL>https://raw.githubusercontent.com/highsea-tv/highsea-tv/main/templates/unraid/highsea.xml</TemplateURL>
+  <Icon>https://raw.githubusercontent.com/highsea-tv/highsea-tv/main/packages/brand/assets/icons/web/icon-512.png</Icon>
+  <ExtraParams/>
+  <PostArgs/>
+  <Config Name="Web UI" Target="3000" Default="3000" Mode="tcp" Description="The admin, the API and the apps' address." Type="Port" Display="always" Required="true" Mask="false">3000</Config>
+  <Config Name="Torrents (TCP)" Target="6881" Default="6881" Mode="tcp" Description="The torrent engine's listening port. Change both sides together, and forward it on your router for incoming peers." Type="Port" Display="always" Required="true" Mask="false">6881</Config>
+  <Config Name="Torrents (UDP)" Target="6881" Default="6881" Mode="udp" Description="The same port, for uTP and the DHT." Type="Port" Display="always" Required="true" Mask="false">6881</Config>
+  <Config Name="Discovery" Target="7368" Default="7368" Mode="udp" Description="Apps on your network find the server by this broadcast." Type="Port" Display="always" Required="false" Mask="false">7368</Config>
+  <Config Name="Config" Target="/config" Default="/mnt/user/appdata/highsea" Mode="rw" Description="The database, settings, logs and backups." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/highsea</Config>
+  <Config Name="Data" Target="/data" Default="/mnt/user/data" Mode="rw" Description="One share for downloads and the library, so imports hardlink. Setup suggests /data/downloads and /data/media/movies." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/data</Config>
+  <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="The user that owns your files." Type="Variable" Display="advanced" Required="true" Mask="false">99</Config>
+  <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="The group that owns your files." Type="Variable" Display="advanced" Required="true" Mask="false">100</Config>
+  <Config Name="Public address" Target="HIGHSEA_PUBLIC_URL" Default="" Mode="" Description="Optional. The https:// address you reach highsea at from outside, if you serve it through a reverse proxy." Type="Variable" Display="advanced" Required="false" Mask="false"/>
+</Container>

@@ -1,0 +1,14 @@
+[
+  {
+    "package": "geist",
+    "reason": "The brand's typeface (Phase 1). SIL Open Font License 1.1: fonts may be bundled with any software, AGPL included; the font stays under the OFL. Its package.json names the license in prose, not SPDX."
+  },
+  {
+    "package": "compact2string",
+    "reason": "Through ut_pex (the torrent engine's peer exchange, ADR 0037). Its package.json says \"BSD\" without a variant and its README's Licence section says MIT (github.com/bencevans/node-compact2string); either is permissive and compatible with AGPL-3.0."
+  },
+  {
+    "package": "slick",
+    "reason": "Through juice, which mjml-core uses to inline the emails' CSS (checkpoint 8b, docs/product/emails.md). Its package.json says \"MIT (http://mootools.net/license.txt)\": MIT, written with the MooTools license's address rather than as an SPDX id. MIT is compatible with AGPL-3.0."
+  }
+]

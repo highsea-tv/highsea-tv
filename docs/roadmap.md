@@ -41,9 +41,9 @@ It is a **Bun monorepo with several apps**:
   - a metadata proxy, so users need no TMDB/TVDB keys;
   - the catalog CDN.
 - **Media scope**: movies, TV (+ anime), music, **online video** (YouTube and other channels via yt-dlp) and **books, audiobooks and podcasts**. Out of scope: Live TV/DVR, comics/manga, photos.
-- **License: AGPL-3.0.** Every source file gets an SPDX header. GPL-3.0 content (e.g. Prowlarr indexer definitions) is compatible. GPL-2.0-only sources (e.g. Jackett definitions, parts of Jellyfin) are **not** compatible, so check each source before reusing it. GPL ffmpeg builds (x264/x265) are fine.
+- **License: AGPL-3.0.** Every source file gets an SPDX header. GPL-3.0 content is compatible. GPL-2.0-only sources (e.g. Jackett definitions, parts of Jellyfin) are **not** compatible, and content with no licence (e.g. Prowlarr's indexer definitions, checked 2026-10-20) can't be reused at all, so check each source before reusing it. GPL ffmpeg builds (x264/x265) are fine.
 
-The repo directory is currently empty and not a git repo. Toolchain: Bun 1.4.3, Node 26 locally, Docker 29.
+The repo directory is currently empty and not a git repo. Toolchain: Bun 1.4.3, Node 24.21.0 (`.nvmrc`; the one version used locally, in CI and in the image), Docker 29.
 
 ## Monorepo layout
 
@@ -65,10 +65,10 @@ highsea.tv/
 │  └─ web/ desktop/ mobile/ tv/                                       [later]
 ├─ packages/
 │  ├─ tokens/  ui-web/  brand/          (ui-native/ later)            design system
-│  ├─ core/  api-contract/  sdk/  indexer-schema/                     contracts & shared
+│  ├─ core/  api-contract/  sdk/  schemas/ (indexers, …)             contracts & shared
 │  ├─ db/ runtime/ jobs/ auth/ network/                               server platform
 │  ├─ parser/ quality/ metadata/ indexers/ torrent/ downloads/
-│  │  library/ media-movies/ subtitles/ notifications/                server domain
+│  │  library/ media/ (movies, …) subtitles/ notifications/           server domain
 │  ├─ personalization/ curation/                                      differentiators
 │  └─ config/                                                         tsconfig + Biome
 ├─ catalog/                  signed catalogs, released independently of apps
@@ -76,7 +76,7 @@ highsea.tv/
 │  └─ presets/  themes/  sounds/  device-profiles/   (TRaSH-style quality/CF presets, naming, theme & sound packs, client profiles)
 └─ cloud/                    optional highsea cloud services [later]: accounts/server registry, relay (self-hostable), push relay, metadata proxy
 ```
-Reserved for later: `media-tv`, `media-music`, `media-video` (yt-dlp channels), `media-books` (ebooks/audiobooks/podcasts), `usenet`, `requests`, `stream`, `stats`, `ui-native`.
+Reserved for later: `@highsea-tv/media`'s `shows`, `music`, `video` (yt-dlp channels), and perhaps `books` (ebooks/audiobooks/podcasts) and `games` exports beside `movies` and `shared` ([ADR 0036](adr/0036-domain-packages-with-subpath-exports.md)), `usenet`, `requests`, `stream`, `stats`, `ui-native`.
 
 Internal packages export raw TS (`"exports": {".": "./src/index.ts"}`) and only apps build. Domain packages are framework-free.
 
@@ -112,19 +112,19 @@ Everything later depends on this, so it comes first and is finalized before any 
    - **sound** (event taxonomy, character, loudness rules);
    - **platform guides**: 10-foot TV focus model, mobile, desktop/web, admin density;
    - accessibility standard (WCAG 2.2 AA, full keyboard and D-pad).
-4. **`@highsea/tokens`**:
+4. **`@highsea-tv/tokens`**:
    - a platform-agnostic token source (color roles, type, space, radius, elevation, blur, density, breakpoints, focus rings, **motion tokens** shared by Motion and Reanimated, **sound tokens**);
    - build outputs: CSS vars + Tailwind v4 `@theme` preset, and a typed RN object;
    - the **theme engine**: a theme is a validated partial override with contrast checks. It ships built-in themes (default dark, OLED black, high contrast) and supports custom themes with share codes.
 
    **✅ Done (2026-10-16).** See [`packages/tokens`](../packages/tokens/README.md).
-5. **`@highsea/brand`**:
+5. **`@highsea-tv/brand`**:
    - final logo, wordmark, app icons (all platform sizes), favicon;
    - fonts;
    - **default sound pack**: short UI sounds, procedurally synthesized or CC0, with sources in `design/assets/sounds`.
 
    **✅ Done (2026-10-16).** See [`packages/brand`](../packages/brand/README.md) and [logo and app icons](brand/logo.md). The custom icon glyphs moved to `ui-web` (step 6).
-6. **`@highsea/ui-web` core** on Radix + Tailwind v4 + `motion/react`:
+6. **`@highsea-tv/ui-web` core** on Radix + Tailwind v4 + `motion/react`:
    - primitives: Button, Input, Select, Dialog, Sheet, Popover, Tabs, Table, Badge, Toast, Tooltip, Skeleton, Progress;
    - media components: Poster, Backdrop hero, Carousel row, Rating;
    - shell components: Sidebar, CommandPalette, WidgetFrame, Banner;
@@ -166,21 +166,25 @@ Exit: user sign-off on the prototypes, which then serve as the build reference.
 
 The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`](plans/phase-2-prototypes.md).
 
+**✅ Phase 2 signed off (2026-10-19): the design prototypes.** Every flow above is in [`design/prototypes`](../design/prototypes/README.md) with a spec in [`docs/product/`](product/), and the checkpoint 5 sweeps are clean on every route (axe in three themes, overflow, keyboard, D-pad, reduced motion, 200% text). The web home is the full-bleed hero ([ADR 0017](adr/0017-web-home-full-bleed-hero.md)). The prototypes are now the build reference for Phase 3 and Phase 4.
+
 ## Phase 3: Server milestone 1 (implementation)
 
+The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](plans/phase-3-server.md) (a draft for the owner's review).
+
 ### Runtime and platform
-- **Process model**: Bun handles packages, scripts and tests. **Node 24 LTS** runs the Next server.
-  - A **custom entry `apps/server/server.ts`** (a Node `http` server) calls `@highsea/runtime.boot()`, which starts migrations, jobs, the torrent engine, the download monitor, catalog sync, the discovery responder and the event bus.
+- **Process model**: Bun handles packages, scripts and tests. **Node 24 LTS**, pinned to 24.21.0 in `.nvmrc`, runs the Next server, locally, in CI and in the image alike.
+  - A **custom entry `apps/server/server.ts`** (a Node `http` server) calls `@highsea-tv/runtime.boot()`, which starts migrations, jobs, the torrent engine, the download monitor, catalog sync, the discovery responder and the event bus.
   - The entry then routes `/api/*`, `/stream/*` (reserved) and `/ws` (reserved) to Hono, and everything else to Next's request handler.
   - The singleton lives on `globalThis.__highsea`, so Next-rendered code shares it; routes and actions use `getRuntime()`.
   - CPU-heavy work runs in `worker_threads`, and ffmpeg runs as child processes.
   - SIGTERM: save resume data, drain jobs, close the DB.
-  - `next.config.ts`: `output: 'standalone'`, `transpilePackages`, and `serverExternalPackages` (better-sqlite3, sharp, BitTorrent libs).
+  - `next.config.ts`: `transpilePackages` and `serverExternalPackages` (better-sqlite3, sharp, BitTorrent libs). No `output: 'standalone'`: Next documents it as incompatible with a custom server ([ADR 0003](adr/0003-server-runtime-custom-entry.md#amendment-2026-10-20-no-standalone-output)).
 - **API**:
-  - Hono + `@hono/zod-openapi`, mounted by the custom server entry and defined in `@highsea/api-contract`;
+  - Hono + `@hono/zod-openapi`, mounted by the custom server entry and defined in `@highsea-tv/api-contract`;
   - `/api/v1/openapi.json` and `/api/docs`;
   - SSE `/api/v1/events` (WebSockets come later with playback);
-  - `@highsea/sdk` is the typed client for all apps.
+  - `@highsea-tv/sdk` is the typed client for all apps.
 
   Domain services hold the logic. API handlers and admin Server Actions are thin adapters, and every admin capability is reachable via the API with admin scope.
 - **Data**: SQLite (WAL) + Drizzle at `/config/highsea.db`.
@@ -196,13 +200,13 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`]
 
   Pairing codes come later; the model supports them.
 
-### Connectivity, local and remote (`@highsea/network` + `sdk`)
+### Connectivity, local and remote (`@highsea-tv/network` + `sdk`)
 **Server side**
 - A stable `serverId`, plus an unauthenticated `GET /api/v1/system/info/public` returning id, name, version, local addresses and the configured public URL.
 - **LAN discovery**: a UDP broadcast responder plus **mDNS** `_highsea._tcp` advertisement.
 - Remote access: a configurable external URL, trusted reverse-proxy headers, optional built-in TLS, and docs for port-forward, reverse-proxy and Tailscale setups.
 
-**Client side** (`@highsea/sdk` `ServerConnection`)
+**Client side** (`@highsea-tv/sdk` `ServerConnection`)
 - Keeps a list of known servers (discovered and saved).
 - Probes candidate addresses (LAN first, then remote) by latency, keeps the winner and fails over automatically.
 - Stores tokens per server and supports multi-server switching.
@@ -212,7 +216,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`]
 **Docker**: discovery needs `network_mode: host` or the discovery UDP port published. The port is decided in an ADR.
 
 ### Indexers and the independent catalog
-- **`@highsea/indexer-schema`**: definitions are **declarative only, with no code**, so remote updates are safe.
+- **`@highsea-tv/schemas/indexers`**: definitions are **declarative only, with no code**, so remote updates are safe.
   - Kinds: torznab, newznab, json-api, html (selectors), rss.
   - Each definition carries: id, version, `minEngineVersion`, logo, privacy, language, categories, settings fields (with "where to find this" help), login flow, request templates, field mappings, rate-limit hints, test query.
 - **`catalog/indexers` pipeline** (its own CI on `catalog/**`):
@@ -232,9 +236,9 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`]
   - private indexers: a form generated from the definition, with inline help and test-on-save;
   - a setup-wizard starter pack;
   - health, backoff and stats per indexer.
-- **Licensing**: highsea is AGPL-3.0, so GPL-3.0 definitions (e.g. Prowlarr's) can be adapted with attribution. GPL-2.0-only sources (e.g. Jackett's) cannot. Every definition records its source and license.
+- **Licensing**: checked at Phase 3 checkpoint 5 (2026-10-20): Prowlarr's definitions repository has no licence, so they can't be copied, and Jackett's are GPL-2.0, which AGPL-3.0 can't take. highsea writes its own definitions in its own format, from each site's documentation, under CC0-1.0 (contributions may be MIT), and every definition records its source and licence ([ADR 0033](adr/0033-indexer-definitions.md)). The generic Torznab definition lets an owner use an existing Prowlarr or Jackett as one indexer.
 
-### Built-in torrent engine (`@highsea/torrent`)
+### Built-in torrent engine (`@highsea-tv/torrent`)
 - **Our code**:
   - session manager and state machine;
   - piece picker: rarest-first, plus a **sequential/priority mode** for future streaming;
@@ -242,19 +246,24 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`]
   - file storage with piece↔file mapping and per-file priority;
   - verification and **fast resume** in the DB;
   - rate, queue, ratio and seed-time limits; move-on-complete.
-- **Primitives**: `bittorrent-protocol`, `ut_metadata`, `ut_pex`, `bittorrent-dht`, `bittorrent-tracker`, `parse-torrent`, `magnet-uri`.
+- **Primitives**: `bittorrent-protocol`, `ut_metadata`, `ut_pex`, `bittorrent-dht`, `magnet-uri`, `bencode`.
 - It sits behind a `TorrentEngine` interface, with a configurable port (6881 TCP/UDP) and bind interface for VPN routing.
+- **Found while building it (checkpoint 6, [ADR 0037](adr/0037-the-torrent-engine-as-built.md)):**
+  - Node can bind a socket to an address but not to a device ([nodejs/node#35769](https://github.com/nodejs/node/issues/35769)), so "bind to `wg0`" means binding every socket to the interface's address, from one socket factory, and closing them all when it goes. What guarantees the path is the VPN mode's ([ADR 0042](adr/0042-vpn-connections.md)): a VPN container, or highsea's own WireGuard tunnel with routing by source address (6b).
+  - The `webtorrent` client can't bind its sockets, and `bittorrent-tracker`'s client opens unbound sockets and uses the system's resolver, so highsea writes its own tracker client (HTTP and UDP) and resolves tracker names through a resolver bound to the tunnel.
+  - No maintained pure-JS uTP or protocol encryption exists: highsea writes its own uTP (BEP 29 with LEDBAT) and Message Stream Encryption in 6b, with TCP as the fallback and encryption defaulting to Prefer.
+  - Built in 6a: the session layer, the picker (with the sequential mode for streaming), choking, storage, SHA-1 checks in the worker pool, fast resume, global limits, seeding rules with a minimum time, private torrents, trackers and the DHT. 6b: uTP, IPv6, encryption, IP blocklists, UPnP and NAT-PMP.
 
 ### Movie pipeline
 1. Discover (TMDB) → Add (root folder, quality profile, subtitle language profile, monitored, minimum availability, search now).
 2. `RefreshMovie` job: details and cached images.
 3. `MovieSearch` job: indexers → `parser` → map → decision engine (profile, size, seeders, custom-format score, upgrades, blocklist, queued) → grab via `downloads` → torrent engine.
 4. Monitor progress over SSE. On completion: import (ffprobe, quality, rename template, hardlink or copy), `media_files`, history, then **trigger the subtitle pipeline**. Seed to the limit, then remove the torrent.
-5. Automation: RSS sync every 15 min, missing and cutoff-unmet searches, upgrades, blocklist + re-search.
-6. Notifications: Jellyfin/Plex/Emby refresh and webhooks.
+5. Automation: RSS sync every 15 min, missing and cutoff-unmet searches, upgrades, blocklist + re-search. Built in checkpoint 8a, with a 6-hourly backlog sweep that backs off per movie ([ADR 0045](adr/0045-automation.md)).
+6. Notifications: every channel, webhooks included. No Jellyfin, Plex or Emby refresh: highsea replaces them rather than feeding them (decided 2026-10-21). Built in checkpoint 8b ([ADR 0046](adr/0046-notifications.md)).
 7. Existing-library import for users migrating from Radarr.
 
-### Subtitles, first class (`@highsea/subtitles`)
+### Subtitles, first class (`@highsea-tv/subtitles`)
 - **Providers** (interface + implementations):
   - OpenSubtitles.com (REST, user API key), Podnapisi, Subdl, Gestdown/Addic7ed (TV-ready);
   - **embedded tracks**: detected via ffprobe, extractable via ffmpeg;
@@ -285,8 +294,16 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`]
   - movie detail Subtitles tab: tracks, embedded, manual search/pick, sync status and confidence, offset;
   - `/wanted/subtitles`;
   - `/settings/subtitles`: providers, language profiles, sync options.
+- **As built (checkpoint 7a, [ADR 0043](adr/0043-subtitles.md)):** the providers are OpenSubtitles.com, Subdl and SubSource. OpenSubtitles.com uses highsea's own consumer key, kept out of the repository and built into release images, with each owner's own account. Podnapisi closed in 2026, Gestdown and Addic7ed come back with shows (they're TV only), and YIFY Subtitles has no API. Embedded streams count toward the profile and aren't extracted. Scores are Bazarr's movie weights scaled to 100. Ads are always removed, and SDH text only for the Without SDH fallback, with no cleanup switches. Sidecars use `.sdh`, not `.hi`, after the video file's name. Defaults per root folder wait for checkpoint 8. The wanted list and the settings share A10 (`/subtitles`). The sync engine is 7b, as designed in the checkpoint's plan.
+- **As built (checkpoint 7b, [ADR 0044](adr/0044-subtitle-sync.md)):**
+  - **The reference:** a non-forced embedded text track, else an image track's display times, else the default audio through ffmpeg in a pool worker and WebRTC's VAD in WebAssembly.
+  - **Alignment:** FFT correlation over ffsubsync's framerates within ±60 s, and splits from alass's problem statement, written fresh, within ±10 s. Each section has to stand clear on its own.
+  - **Confidence:** the minimum of overlap, clarity and coverage. The overlap is measured as significance against the same cues placed elsewhere in the film, since how much speech the VAD hears depends on the mix. It was calibrated on 24 real films with `scripts/calibrate-sync.ts`: 56 of 58 right placements were kept and none of 72 wrong subtitles. Below the minimum, the original timing stays.
+  - **On A6:** the manual nudge sits apart from the correction, and Re-sync runs as a job.
+  - **Replaced files** re-sync their tracks.
+  - **The ±100 ms test** measures against the engine's own placement of the official cues, which sit 240–420 ms off the speech.
 
-### Personalization (`@highsea/personalization`)
+### Personalization (`@highsea-tv/personalization`)
 - **Preferences** are stored server-side with layers: user → client type → device. They sync to every client.
 - **Widgets**:
   - a registry: id, sizes, zod settings schema, data dependency, per-platform renderer;
@@ -295,7 +312,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`]
 - **Themes**: built-in and custom themes from the theme engine. The owner sets the server default theme and branding (name, logo, accent) that clients inherit.
 - **Sound**: a Web Audio engine with an event map, sound packs (built-in or uploaded), volume and a toggle. Off by default in admin; on by default in TV clients.
 
-### Curation (`@highsea/curation`)
+### Curation (`@highsea-tv/curation`)
 - **Announcements**:
   - markdown body, image, CTA;
   - severity;
@@ -313,7 +330,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`]
 - Setup and access: `/setup`, `/login`.
 - Dashboard: `/` widget dashboard.
 - Library and activity:
-  - `/discover`, `/movies`, `/movies/[id]` (`[id]` is the media id, the same before and after adding: one page and one address in every state, [ADR 0014](adr/0014-universal-media-pages.md));
+  - `/discover`, `/movies`, `/movies/[id]` (`[id]` is the provider's id, TMDB's for movies, the same before and after adding: one page and one address in every state, [ADR 0014](adr/0014-universal-media-pages.md));
   - `/people/[id]` (cast, crew and authors, with their filmography);
   - `/activity` (queue / history / blocklist);
   - `/wanted` (movies, subtitles);
@@ -324,7 +341,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`]
   - `/system`: status, tasks, logs, events, catalog version.
 
 ### Docker
-- Multi-stage build: `oven/bun` build → `node:24-bookworm-slim` + ffmpeg/ffprobe + tini, using PUID/PGID.
+- Multi-stage build: `oven/bun` build → `node:24.21.0-bookworm-slim` + ffmpeg/ffprobe + tini, using PUID/PGID.
 - Volumes: `/config`, and a single `/data` root so hardlinks work.
 - Ports: 3000, 6881 TCP/UDP, and the discovery UDP port.
 - Healthcheck: `/api/health`.
@@ -335,14 +352,24 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`]
 2. `auth`, `network` (public info, discovery), setup wizard, app shell, command palette.
 3. `personalization`: theme switching and editor, widget dashboard, sound.
 4. `parser` (large fixture suite) + `quality` (decision engine).
-5. `metadata` + `media-movies` + Discover/Movies UI.
-6. `indexer-schema` + `indexers` + `catalog/indexers` pipeline + `CatalogService` + one-click UI.
+5. `metadata` + `media/movies` + Discover/Movies UI.
+6. `schemas/indexers` + `indexers` + `catalog/indexers` pipeline + `CatalogService` + one-click UI.
 7. `torrent` + `/downloads`.
-8. `downloads` + `library` (import, rename, existing-library import).
+8. `downloads` + importing in `media/shared` and `media/movies` (import, rename, existing-library import; [ADR 0036](adr/0036-domain-packages-with-subpath-exports.md) replaced the `library` package).
 9. `subtitles`: providers, profiles, scoring, sync engine, UI.
 10. Automation + `notifications`.
 11. `curation`.
 12. Docker hardening + end-to-end tests.
+
+## Follow-up: dashboard customization (after Phase 3)
+The owner asked on 2026-10-20 for the admin dashboard to be as customizable as [Homarr](https://github.com/homarr-labs/homarr)'s boards, with a visible grid while customizing:
+- free placement and resizing on both axes;
+- layouts per breakpoint;
+- containers;
+- a settings dialog per widget;
+- many instances of a widget.
+
+It follows Phase 3's sign-off, with its new customize mode prototyped and approved first. The plan is [plans/dashboard-customization.md](plans/dashboard-customization.md).
 
 ## Phase 4 (later): clients
 `ui-native`, then `apps/web` → `apps/desktop` (Tauri) → `apps/mobile` + `apps/tv` (Expo / react-native-tvos), built from the Phase 2 prototypes. Alongside them: `stream` (playback/transcode, WebSockets), TV/music/books domains, Usenet, requests, and the optional Connect relay.
@@ -374,23 +401,29 @@ Tags: **[M1]** pull into server milestone 1 · **[Arch]** affects architecture n
   Every cloud feature has a self-hosted fallback (own TMDB key, port-forward/reverse proxy, self-hosted relay, ntfy/web-push). Cloud services live in `cloud/` and are built after server M1. Server and SDK auth must allow cloud-account sign-in alongside local users from the start.
 
 ### Acquisition (*ARR / download-stack parity)
-- **[M1] Archive extraction** (Unpackerr): RAR/7z/zip, multi-part, password detection.
+- **[M1] Archive extraction** (Unpackerr): RAR/7z/zip, multi-part, password detection. Checkpoint 6b, with `unar` from Debian's main archive (LGPL-2.1, RAR5 and multi-volume sets included). Not unRAR or anything built from it: its licence forbids recreating the RAR algorithm and Debian ships it in non-free, so it can't sit in an AGPL work.
 - **[M1] Malicious/fake release protection** (Cleanuparr/Decluttarr):
   - reject torrents containing `.exe`, `.lnk`, `.scr`, `.zipx` or password-protected archives;
   - stalled/slow-download detection, removal and re-search;
   - sample-file filtering.
-- **[M1] Health checks** (*arr "Health"): paths, permissions, disk space, indexer status, catalog status, VPN binding.
+
+  Built in checkpoint 6a: a release whose file list carries an executable or dangerous extension (Radarr's lists) is refused before a byte downloads, blocklisted and replaced; a download with no seeds for 3 hours is blocklisted and replaced; samples and extras are skipped at import. Password-protected archives are caught at extraction (6b).
+- **[M1] Health checks** (*arr "Health"): paths, permissions, disk space, indexer status, catalog status, VPN (down, the exit address your own, port forwarding). Downloads and the VPN joined System's health list in checkpoint 6a.
 - **[M1] Backups and restore**: scheduled DB + config backups, plus a backup before every migration.
-- **[M1] Manual / interactive import**: file browser, rename preview, mass rename, multiple root folders and disks.
+  - *As built (checkpoint 8b, [ADR 0047](adr/0047-operations.md)):* a zip of the database and a manifest, made daily, weekly or by hand, before an update and before a restore; never `secret.key`, which is copied by hand to restore on another machine. Restore restarts the server on the backup.
+- **[M1] Manual / interactive import**: file browser, rename preview, mass rename, multiple root folders and disks. Manual import (A17) built in checkpoint 6a.
 - **[M1] Media management extras**: NFO and artwork writing (Kodi), permissions (chmod/chown), editions, alternative titles, delay profiles, tags for scoping rules.
 - **[M1] Torrent engine production features**:
   - IP blocklists; UPnP/NAT-PMP and VPN port-forwarding;
   - interface-binding kill-switch; uTP, IPv6;
+  - **VPN connections as a first-class feature** (added 2026-10-20): Settings › VPN connects to the owner's provider (highsea runs WireGuard itself, or reads a gluetun container), checks the tunnel, exit address and port forwarding, and supports common providers through the signed catalog ([vpn.md](product/vpn.md)). Checkpoint 6a built the VPN container and interface modes and their checks; 6b adds highsea connects, the providers and port forwarding ([ADR 0042](adr/0042-vpn-connections.md));
   - watch folder; manual (non-managed) torrent adds and generic RSS auto-download;
   - categories.
-- **[M1] Per-tracker seeding rules** (qbit_manage): min seed time/ratio per tracker, hit-and-run protection for private trackers.
+- **[M1] Per-tracker seeding rules** (qbit_manage): min seed time/ratio per tracker, hit-and-run protection for private trackers. Built per indexer in checkpoint 6a (A9's Edit dialog), over a default rule in Settings › Download client.
 - **[M1] Import lists** (Radarr lists): Trakt, IMDb, Letterboxd, TMDB lists; auto-add + sync.
+  - *As built (checkpoint 8a, [ADR 0045](adr/0045-automation.md)):* TMDB lists and charts, Trakt (charts, public lists, and the watchlist through the device flow), and a generic JSON list (StevenLu or MDBList), through which IMDb and Letterboxd lists come, since neither has an open list API. Checked every 6 hours; a list never removes a movie, and exclusions keep a deleted one away.
 - **[M1] Calendar** plus an iCal feed.
+  - *As built (checkpoint 8a):* each of a movie's dates (in cinemas, digital, physical) is its own entry; the feed is RFC 5545 at `/feed/v1/calendar.ics`, with a `calendar` key that opens only the feed.
 - **[Later] Cloudflare challenge solving** (FlareSolverr/Byparr): optional headless-browser component, needed by some public indexers.
 - **[Later] TV series** (Sonarr): seasons/episodes, season packs, multi-episode files, daily shows, specials, scene numbering (TheXEM). Metadata from TVDB/TMDB/TVmaze.
 - **[Later] Anime**: absolute numbering, AniDB/AniList mappings, dual-audio, fansub groups.
@@ -403,7 +436,7 @@ Tags: **[M1]** pull into server milestone 1 · **[Arch]** affects architecture n
   - qBittorrent torrents with resume data;
   - Plex/Jellyfin/Emby users, watch history, collections, playlists.
 
-  This is critical for "drop-in"; at minimum the Radarr + qBittorrent importers belong with M1.
+  This is critical for "drop-in"; at minimum the Radarr + qBittorrent importers belong with M1. They come with checkpoint 6b, and have known limits: Radarr's API returns indexer and download-client credentials as `********`, so those are entered again; qBittorrent's API doesn't expose fast-resume data, so each imported torrent is checked once before it seeds; and its `.torrent` export needs qBittorrent 4.5.0 or later.
 
 ### Streaming server (Plex / Jellyfin / Emby parity)
 - **[Later, Arch now] Playback engine**:
@@ -458,8 +491,10 @@ Tags: **[M1]** pull into server milestone 1 · **[Arch]** affects architecture n
   - OIDC/SSO (Authentik/Authelia) and trusted reverse-proxy auth headers;
   - login rate limiting, audit log, scoped API keys.
 - **[M1] Notifications breadth**: Discord, Telegram, ntfy, Gotify, Pushover, email/SMTP, Apprise, Matrix, Slack, webhooks, browser web-push.
+  - *As built (checkpoint 8b, [ADR 0046](adr/0046-notifications.md)):* every one of them, Apprise through the owner's Apprise API server. An SMTP connection can also send invites and password resets.
 - **[M1] i18n**: localizable UI strings from day one, plus metadata language/region settings.
 - **[M1] Observability**: structured logs viewer, Prometheus `/metrics`, opt-in crash reporting.
+  - *As built (checkpoint 8b, [ADR 0047](adr/0047-operations.md)):* log files a day, kept 14 days; `/metrics` written without a dependency, off until the owner turns it on; crash reports kept in the config folder and never sent. Update notifications come from the signed catalog.
 - **[M1] Release engineering**:
   - CI on GitHub Actions;
   - multi-arch Docker images (amd64 + **arm64** for Pi/NAS) published to GHCR;

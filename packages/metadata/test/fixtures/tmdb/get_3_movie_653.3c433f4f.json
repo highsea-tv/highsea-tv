@@ -1,0 +1,1361 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/653?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations%2Ckeywords&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "adult": false,
+      "backdrop_path": "/cA9iGtvjRGJHzDBfrq48l0eyCvA.jpg",
+      "belongs_to_collection": null,
+      "budget": 0,
+      "genres": [
+        {
+          "id": 27,
+          "name": "Horror"
+        },
+        {
+          "id": 14,
+          "name": "Fantasy"
+        }
+      ],
+      "homepage": "",
+      "id": 653,
+      "imdb_id": "tt0013442",
+      "original_language": "de",
+      "original_title": "Nosferatu, eine Symphonie des Grauens",
+      "overview": "The mysterious Count Orlok summons a happily married real estate agent to his castle, located up in the Transylvanian mountains, to finalise a terrifying deal.",
+      "popularity": 29.13,
+      "poster_path": "/zv7J85D8CC9qYagAEhPM63CIG6j.jpg",
+      "production_companies": [
+        {
+          "id": 1960,
+          "logo_path": null,
+          "name": "Prana Film",
+          "origin_country": ""
+        }
+      ],
+      "release_date": "1922-02-16",
+      "revenue": 27964,
+      "runtime": 94,
+      "status": "Released",
+      "tagline": "A symphony of horror.",
+      "title": "Nosferatu",
+      "video": false,
+      "vote_average": 7.651,
+      "vote_count": 2558,
+      "credits": {
+        "cast": [
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9839,
+            "known_for_department": "Acting",
+            "name": "Max Schreck",
+            "original_name": "Max Schreck",
+            "popularity": 29.94,
+            "profile_path": "/uKVNFFt6VA8R7pp7HIPJF4e5PfX.jpg",
+            "cast_id": 1,
+            "character": "Count Orlok",
+            "credit_id": "52fe4265c3a36847f801b133",
+            "order": 0
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9840,
+            "known_for_department": "Acting",
+            "name": "Gustav von Wangenheim",
+            "original_name": "Gustav von Wangenheim",
+            "popularity": 18.45,
+            "profile_path": "/5BQ07rsNY9z3IoN6sdwipoFoNWV.jpg",
+            "cast_id": 2,
+            "character": "Hutter",
+            "credit_id": "52fe4265c3a36847f801b137",
+            "order": 1
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9841,
+            "known_for_department": "Acting",
+            "name": "Greta Schröder",
+            "original_name": "Greta Schröder",
+            "popularity": 15.85,
+            "profile_path": "/vkwD2LVM2QRD2a6auvq1K6Zpwd0.jpg",
+            "cast_id": 3,
+            "character": "Ellen",
+            "credit_id": "52fe4265c3a36847f801b13b",
+            "order": 2
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9843,
+            "known_for_department": "Acting",
+            "name": "Georg H. Schnell",
+            "original_name": "Georg H. Schnell",
+            "popularity": 24.68,
+            "profile_path": "/1uTps71tiRThDbvNqnyrCcH7IfM.jpg",
+            "cast_id": 4,
+            "character": "Harding",
+            "credit_id": "52fe4265c3a36847f801b143",
+            "order": 3
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9844,
+            "known_for_department": "Acting",
+            "name": "Ruth Landshoff",
+            "original_name": "Ruth Landshoff",
+            "popularity": 9.6,
+            "profile_path": "/C0i7fUARc4OZxYbNetwEJ9rhp0.jpg",
+            "cast_id": 5,
+            "character": "Ruth",
+            "credit_id": "52fe4265c3a36847f801b147",
+            "order": 4
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9846,
+            "known_for_department": "Acting",
+            "name": "Gustav Botz",
+            "original_name": "Gustav Botz",
+            "popularity": 18.99,
+            "profile_path": "/jxML1wkjdTqZo2rKPLFcItlVn8B.jpg",
+            "cast_id": 6,
+            "character": "Professor Sievers",
+            "credit_id": "52fe4265c3a36847f801b14f",
+            "order": 5
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9842,
+            "known_for_department": "Acting",
+            "name": "Alexander Granach",
+            "original_name": "Alexander Granach",
+            "popularity": 1.45,
+            "profile_path": "/6oeYojEL9uLSJezeChUNFiRJohs.jpg",
+            "cast_id": 7,
+            "character": "Knock",
+            "credit_id": "52fe4265c3a36847f801b13f",
+            "order": 6
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9845,
+            "known_for_department": "Acting",
+            "name": "John Gottowt",
+            "original_name": "John Gottowt",
+            "popularity": 36.62,
+            "profile_path": "/eFdamjvO75jaUxO29gPesnfBtsP.jpg",
+            "cast_id": 8,
+            "character": "Professor Bulwer",
+            "credit_id": "52fe4265c3a36847f801b14b",
+            "order": 7
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9847,
+            "known_for_department": "Acting",
+            "name": "Max Nemetz",
+            "original_name": "Max Nemetz",
+            "popularity": 34.88,
+            "profile_path": null,
+            "cast_id": 9,
+            "character": "A Ship Captain",
+            "credit_id": "52fe4265c3a36847f801b153",
+            "order": 8
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9848,
+            "known_for_department": "Acting",
+            "name": "Wolfgang Heinz",
+            "original_name": "Wolfgang Heinz",
+            "popularity": 39.65,
+            "profile_path": "/cmhcVJorJTRmvDMww1fpgBMGGTZ.jpg",
+            "cast_id": 10,
+            "character": "Sailor 1",
+            "credit_id": "52fe4265c3a36847f801b157",
+            "order": 9
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9849,
+            "known_for_department": "Acting",
+            "name": "Albert Venohr",
+            "original_name": "Albert Venohr",
+            "popularity": 36.64,
+            "profile_path": null,
+            "cast_id": 11,
+            "character": "Sailor 2",
+            "credit_id": "52fe4265c3a36847f801b15b",
+            "order": 10
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 46739,
+            "known_for_department": "Acting",
+            "name": "Eric van Viele",
+            "original_name": "Eric van Viele",
+            "popularity": 38.02,
+            "profile_path": null,
+            "cast_id": 12,
+            "character": "Sailor (uncredited)",
+            "credit_id": "52fe4265c3a36847f801b16f",
+            "order": 11
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 46736,
+            "known_for_department": "Acting",
+            "name": "Karl Etlinger",
+            "original_name": "Karl Etlinger",
+            "popularity": 2.05,
+            "profile_path": "/5qWC7oJCHp7mk9RmlDdccwg81vP.jpg",
+            "cast_id": 13,
+            "character": "Sailor / Inspector at the Quay (uncredited)",
+            "credit_id": "52fe4265c3a36847f801b167",
+            "order": 12
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 46735,
+            "known_for_department": "Acting",
+            "name": "Guido Herzfeld",
+            "original_name": "Guido Herzfeld",
+            "popularity": 20.21,
+            "profile_path": null,
+            "cast_id": 14,
+            "character": "Host (uncredited)",
+            "credit_id": "52fe4265c3a36847f801b15f",
+            "order": 13
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 29568,
+            "known_for_department": "Acting",
+            "name": "Hans Lanser-Rudolf",
+            "original_name": "Hans Lanser-Rudolf",
+            "popularity": 22.93,
+            "profile_path": null,
+            "cast_id": 15,
+            "character": "Magistrate (uncredited)",
+            "credit_id": "5d29380dbe4b36756a9f31f6",
+            "order": 14
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 29183,
+            "known_for_department": "Acting",
+            "name": "Loni Nest",
+            "original_name": "Loni Nest",
+            "popularity": 6.47,
+            "profile_path": "/qZS3qAKfqcVADqSdq9x0kLC1isH.jpg",
+            "cast_id": 16,
+            "character": "Child at Window (uncredited)",
+            "credit_id": "5d29383ba294f000102ae035",
+            "order": 15
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2360597,
+            "known_for_department": "Acting",
+            "name": "Josef Sareny",
+            "original_name": "Josef Sareny",
+            "popularity": 35.27,
+            "profile_path": null,
+            "cast_id": 17,
+            "character": "Head Coachman (uncredited)",
+            "credit_id": "5d293868dc1cb400124b792b",
+            "order": 16
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 46740,
+            "known_for_department": "Acting",
+            "name": "Fanny Schreck",
+            "original_name": "Fanny Schreck",
+            "popularity": 5.98,
+            "profile_path": null,
+            "cast_id": 18,
+            "character": "Hospital Nurse (uncredited)",
+            "credit_id": "52fe4265c3a36847f801b173",
+            "order": 17
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 46738,
+            "known_for_department": "Acting",
+            "name": "Hardy von Francois",
+            "original_name": "Hardy von Francois",
+            "popularity": 27.52,
+            "profile_path": null,
+            "cast_id": 19,
+            "character": "Doctor in the Hospital (uncredited)",
+            "credit_id": "52fe4265c3a36847f801b163",
+            "order": 18
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 46737,
+            "known_for_department": "Acting",
+            "name": "Heinrich Witte",
+            "original_name": "Heinrich Witte",
+            "popularity": 21.77,
+            "profile_path": null,
+            "cast_id": 20,
+            "character": "Sailor / Warden in the Madhouse (uncredited)",
+            "credit_id": "52fe4265c3a36847f801b16b",
+            "order": 19
+          }
+        ],
+        "crew": [
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9834,
+            "known_for_department": "Art",
+            "name": "Albin Grau",
+            "original_name": "Albin Grau",
+            "popularity": 39.02,
+            "profile_path": null,
+            "credit_id": "fb53783a1a17fea27ab376f2",
+            "department": "Art",
+            "job": "Art Direction"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9836,
+            "known_for_department": "Camera",
+            "name": "Fritz Arno Wagner",
+            "original_name": "Fritz Arno Wagner",
+            "popularity": 14.9,
+            "profile_path": null,
+            "credit_id": "976f097ab01f7e4a25eae1bc",
+            "department": "Camera",
+            "job": "Camera Operator"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9836,
+            "known_for_department": "Camera",
+            "name": "Fritz Arno Wagner",
+            "original_name": "Fritz Arno Wagner",
+            "popularity": 14.9,
+            "profile_path": null,
+            "credit_id": "345487b4dce18c339f7fa8d6",
+            "department": "Camera",
+            "job": "Director of Photography"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9837,
+            "known_for_department": "Camera",
+            "name": "Günther Krampf",
+            "original_name": "Günther Krampf",
+            "popularity": 23.95,
+            "profile_path": null,
+            "credit_id": "17596de051ecb4f2c966d95e",
+            "department": "Camera",
+            "job": "Director of Photography"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9834,
+            "known_for_department": "Costume & Makeup",
+            "name": "Albin Grau",
+            "original_name": "Albin Grau",
+            "popularity": 39.02,
+            "profile_path": null,
+            "credit_id": "14052879743e52d218f8eea0",
+            "department": "Costume & Makeup",
+            "job": "Costume Design"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9076,
+            "known_for_department": "Directing",
+            "name": "F. W. Murnau",
+            "original_name": "F. W. Murnau",
+            "popularity": 28.4,
+            "profile_path": "/keLp43iiIkkllroUwExIJITeR7a.jpg",
+            "credit_id": "257a1658060266efa0a2dae1",
+            "department": "Directing",
+            "job": "Director"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9834,
+            "known_for_department": "Production",
+            "name": "Albin Grau",
+            "original_name": "Albin Grau",
+            "popularity": 39.02,
+            "profile_path": null,
+            "credit_id": "10f689d9b284cb8b54fef51e",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9835,
+            "known_for_department": "Production",
+            "name": "Enrico Dieckmann",
+            "original_name": "Enrico Dieckmann",
+            "popularity": 35.21,
+            "profile_path": null,
+            "credit_id": "0fdd18c62eec1acff217c439",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9838,
+            "known_for_department": "Sound",
+            "name": "Hans Erdmann",
+            "original_name": "Hans Erdmann",
+            "popularity": 28.66,
+            "profile_path": null,
+            "credit_id": "ad00877094c3af8a884f2489",
+            "department": "Sound",
+            "job": "Original Music Composer"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1544,
+            "known_for_department": "Writing",
+            "name": "Bram Stoker",
+            "original_name": "Bram Stoker",
+            "popularity": 7.38,
+            "profile_path": "/qJR6jc8hSFZyyZbthfZPi2QU40U.jpg",
+            "credit_id": "4994534906af3907b5e218a2",
+            "department": "Writing",
+            "job": "Novel"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 9833,
+            "known_for_department": "Writing",
+            "name": "Henrik Galeen",
+            "original_name": "Henrik Galeen",
+            "popularity": 17.11,
+            "profile_path": "/7aRqWyGEMkU66AHeLKB2ltpxy9p.jpg",
+            "credit_id": "b668fe93bfae756e3c3551f5",
+            "department": "Writing",
+            "job": "Screenplay"
+          }
+        ]
+      },
+      "videos": {
+        "results": [
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "\"Thomas accidentally cuts his thumb\" Clip",
+            "key": "9goNMDYdyY0",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Clip",
+            "official": true,
+            "published_at": "2022-03-20T00:00:00.000Z",
+            "id": "62e1927d25a536004c4eac57"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "\"Count Orlok awakens from a coffin on the journey to Wisborg\" Clip",
+            "key": "4MfFWfAn54g",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Clip",
+            "official": true,
+            "published_at": "2022-04-04T00:00:00.000Z",
+            "id": "62e1926be18e3f0060dc2fec"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "\"Ellen sends Thomas to fetch Professor Bulwer\" Clip",
+            "key": "rg6FJfhy6GM",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Clip",
+            "official": true,
+            "published_at": "2022-04-26T00:00:00.000Z",
+            "id": "62e192c7aa659e0050fcd156"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Masters of Cinema Trailer with Original Score",
+            "key": "34J6KiA_HNo",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": true,
+            "published_at": "2007-10-15T00:00:00.000Z",
+            "id": "62e1930348138212c9ec41b6"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "2013 Theatrical Trailer",
+            "key": "0LOOhc2eML4",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": true,
+            "published_at": "2013-10-02T00:00:00.000Z",
+            "id": "62e193375ca704261af016f1"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Trailer",
+            "key": "tyE0dNqgDHQ",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": false,
+            "published_at": "2014-10-02T00:00:00.000Z",
+            "id": "5fdcf9a535d1bc003e76c3c7"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Official Trailer",
+            "key": "kD73Zz7yaec",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": true,
+            "published_at": "2021-12-23T00:00:00.000Z",
+            "id": "62cfd62d238513004d8e4115"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "100th Anniversary Trailer",
+            "key": "npxhdRMYHy0",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": true,
+            "published_at": "2022-02-22T00:00:00.000Z",
+            "id": "62e1944a77070000500d9c7f"
+          }
+        ]
+      },
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "US",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "New York City, New York",
+                "release_date": "1929-06-01T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "VHS",
+                "release_date": "1995-08-12T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD",
+                "release_date": "1997-10-22T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD",
+                "release_date": "2001-01-02T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD",
+                "release_date": "2002-09-24T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2007-04-25T00:00:00.000Z",
+                "type": 4
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD",
+                "release_date": "2007-11-20T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2008-07-29T00:00:00.000Z",
+                "type": 4
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "New York City Horror Film Festival",
+                "release_date": "2009-11-21T00:00:00.000Z",
+                "type": 2
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Blu-ray+DVD",
+                "release_date": "2013-11-12T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2014-10-23T00:00:00.000Z",
+                "type": 4
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "iTunes",
+                "release_date": "2014-10-24T00:00:00.000Z",
+                "type": 4
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Savannah Film and Video Festival",
+                "release_date": "2014-10-31T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2022-02-22T00:00:00.000Z",
+                "type": 4
+              },
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Blu-ray",
+                "release_date": "2022-10-11T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "AU",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Melbourne International Film Festival",
+                "release_date": "2023-08-11T00:00:00.000Z",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "BR",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1922-03-15T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD",
+                "release_date": "2020-01-31T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "CA",
+            "release_dates": [
+              {
+                "certification": "14A",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Blu-ray",
+                "release_date": "2013-11-19T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "CN",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "bilibili",
+                "release_date": "2019-06-21T00:00:00.000Z",
+                "type": 4
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "CZ",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2009-01-15T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "DK",
+            "release_dates": [
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1922-02-16T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "EE",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1922-05-18T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FI",
+            "release_dates": [
+              {
+                "certification": "K-18",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Helsinki Festival",
+                "release_date": "1987-09-11T00:00:00.000Z",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FR",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "L'Étrange Festival",
+                "release_date": "2009-09-10T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Re-release",
+                "release_date": "2013-12-11T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "DE",
+            "release_dates": [
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Gala",
+                "release_date": "1922-03-04T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1922-03-04T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "1965 Atlas Film Version",
+                "release_date": "1969-06-23T00:00:00.000Z",
+                "type": 6
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Blu-ray",
+                "release_date": "2014-06-27T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "GR",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2012-11-22T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "HU",
+            "release_dates": [
+              {
+                "certification": "16",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1923-05-10T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "IE",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Re-release",
+                "release_date": "2022-05-05T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "IL",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Blu-ray",
+                "release_date": "2022-12-06T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "IT",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1962-09-24T00:00:00.000Z",
+                "type": 6
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2016-02-08T00:00:00.000Z",
+                "type": 2
+              },
+              {
+                "certification": "T",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Re-release",
+                "release_date": "2016-02-08T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "JP",
+            "release_dates": [
+              {
+                "certification": "G",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Film Retrospective Fritz Lang and Friedrich Wilhelm Murnau",
+                "release_date": "2005-09-10T00:00:00.000Z",
+                "type": 2
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "MX",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1980-01-20T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "B",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Festival Internacional de Cine Contemporáneo de la Ciudad de México",
+                "release_date": "2006-02-27T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "B",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Blu-ray",
+                "release_date": "2015-12-08T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "NL",
+            "release_dates": [
+              {
+                "certification": "16",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "The Hague",
+                "release_date": "1922-02-16T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Blu-ray",
+                "release_date": "2013-11-18T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD",
+                "release_date": "2015-02-01T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "NO",
+            "release_dates": [
+              {
+                "certification": "18",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2008-01-17T00:00:00.000Z",
+                "type": 6
+              },
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2008-02-17T00:00:00.000Z",
+                "type": 6
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "PL",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2022-08-06T00:00:00.000Z",
+                "type": 6
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "PT",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Porto",
+                "release_date": "1975-05-16T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Calouste Gulbenkian Foundation",
+                "release_date": "1981-02-18T00:00:00.000Z",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "ES",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Barcelona",
+                "release_date": "1931-02-08T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Madrid",
+                "release_date": "1931-11-23T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Sombra - Festival de Cine Fantástico Europeo",
+                "release_date": "2026-03-07T00:00:00.000Z",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "SE",
+            "release_dates": [
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1970-07-30T00:00:00.000Z",
+                "type": 6
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "TW",
+            "release_dates": [
+              {
+                "certification": "6+",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "HamiVideo",
+                "release_date": "2020-11-01T00:00:00.000Z",
+                "type": 4
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "AE",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Blu-ray",
+                "release_date": "2013-11-26T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "GB",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "London, rated A",
+                "release_date": "1928-12-16T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Rated A",
+                "release_date": "1973-10-10T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "PG",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Re-release",
+                "release_date": "2013-10-25T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "PG",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Blu-ray",
+                "release_date": "2013-11-18T00:00:00.000Z",
+                "type": 5
+              },
+              {
+                "certification": "PG",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Blu-ray",
+                "release_date": "2015-11-23T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          }
+        ]
+      },
+      "external_ids": {
+        "imdb_id": "tt0013442",
+        "wikidata_id": "Q151895",
+        "facebook_id": null,
+        "instagram_id": null,
+        "twitter_id": null
+      },
+      "recommendations": {
+        "page": 1,
+        "results": [
+          {
+            "adult": false,
+            "backdrop_path": "/d72ROyJqXQtw2OupW0l15eicRAF.jpg",
+            "genre_ids": [27, 12, 28],
+            "id": 7131,
+            "original_language": "en",
+            "original_title": "Van Helsing",
+            "overview": "Famed monster slayer Gabriel Van Helsing is dispatched to Transylvania to assist the last of the Valerious bloodline in defeating Count Dracula. Anna Valerious reveals that Dracula has formed an unholy alliance with Dr. Frankenstein's monster and is hell-bent on exacting a centuries-old curse on her family.",
+            "popularity": 22.13,
+            "poster_path": "/gsFun8nATm52aGHeT8ueAel98nE.jpg",
+            "release_date": "2004-05-03",
+            "title": "Van Helsing",
+            "video": false,
+            "vote_average": 6.432,
+            "vote_count": 6907,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/cemjdP7HrUyJAry85vRT19Hidbi.jpg",
+            "genre_ids": [27],
+            "id": 138,
+            "original_language": "en",
+            "original_title": "Dracula",
+            "overview": "A British estate agent travels to Transylvania to meet with the mysterious Count Dracula, who is interested in leasing a London castle. After Dracula enslaves and drives the agent to insanity, the pair return to London together, where Dracula, a secret bloodsucker, begins preying on socialites.",
+            "popularity": 5.61,
+            "poster_path": "/ueVSPt7vAba0XScHWTDWS5tNxYX.jpg",
+            "release_date": "1931-02-12",
+            "title": "Dracula",
+            "video": false,
+            "vote_average": 7.166,
+            "vote_count": 1428,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/lKYBCsT3rEqXiQMhnqoAUxSW9Qn.jpg",
+            "genre_ids": [27],
+            "id": 5620,
+            "original_language": "de",
+            "original_title": "Nachts, wenn Dracula erwacht",
+            "overview": "A faithful adaptation of the classic tale portrays Dracula as an old man who grows younger whenever he dines on the blood of young maidens.",
+            "popularity": 26.5,
+            "poster_path": "/hilXfuoYRwDfpzzh8xWZPtXnNbj.jpg",
+            "release_date": "1970-04-03",
+            "title": "Count Dracula",
+            "video": false,
+            "vote_average": 5.9,
+            "vote_count": 128,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/coZolPUocZJG3Qgd1g4cyI2Qm6L.jpg",
+            "genre_ids": [27],
+            "id": 22440,
+            "original_language": "en",
+            "original_title": "Dracula's Daughter",
+            "overview": "A countess from Transylvania seeks a psychiatrist’s help to cure her vampiric cravings.",
+            "popularity": 38.32,
+            "poster_path": "/y7xBkkRLcg1I0fXHO4yYC5SwBCX.jpg",
+            "release_date": "1936-05-11",
+            "title": "Dracula's Daughter",
+            "video": false,
+            "vote_average": 6,
+            "vote_count": 232,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/3qouPzs9cD5VqYp3rH9B9Owdpdc.jpg",
+            "genre_ids": [27],
+            "id": 29778,
+            "original_language": "en",
+            "original_title": "Dracula Has Risen from the Grave",
+            "overview": "In the shadow of Castle Dracula, the Prince of Darkness is revived by blood trickling from the head-wound of an unconscious priest attempting exorcism. And once more fear and terror strikes Transylvania as the undead Prince of Darkness stalks the village of Keineneburg to ensnare victims and satisfy his evil thirst.",
+            "popularity": 35.45,
+            "poster_path": "/yo7FPlWRAevH0Pz60MHwGodg1NG.jpg",
+            "release_date": "1968-11-07",
+            "title": "Dracula Has Risen from the Grave",
+            "video": false,
+            "vote_average": 6.677,
+            "vote_count": 226,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/m4E4HqHUjr6GXYyeWPVhAOcce2X.jpg",
+            "genre_ids": [27, 9648],
+            "id": 758724,
+            "original_language": "en",
+            "original_title": "The Cellar",
+            "overview": "When Keira Woods' daughter mysteriously vanishes in the cellar of their new house in the country, she soon discovers there is an ancient and powerful entity controlling their home that she will have to face or risk losing her family's souls forever.",
+            "popularity": 3.78,
+            "poster_path": "/2DFkiExCtXcmpepQiLgkSQhxZu8.jpg",
+            "release_date": "2022-03-25",
+            "title": "The Cellar",
+            "video": false,
+            "vote_average": 6.4,
+            "vote_count": 527,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/ww1gZ8vVCjmtyO2zkhcsRB7v6Tf.jpg",
+            "genre_ids": [27, 53],
+            "id": 24106,
+            "original_language": "en",
+            "original_title": "The Black Cat",
+            "overview": "After a road accident in Hungary, the American honeymooners Joan and Peter and the enigmatic Dr. Werdegast find refuge in the house of the famed architect Hjalmar Poelzig, who shares a dark past with the doctor.",
+            "popularity": 18.81,
+            "poster_path": "/QTH3dkeDGTBRBmsY0A7STpsNN4.jpg",
+            "release_date": "1934-05-07",
+            "title": "The Black Cat",
+            "video": false,
+            "vote_average": 6.723,
+            "vote_count": 316,
+            "media_type": "movie"
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/ijbBzlKSKwWNRpebLUGfmXhBrvg.jpg",
+            "genre_ids": [27],
+            "id": 11868,
+            "original_language": "en",
+            "original_title": "Dracula",
+            "overview": "After Jonathan Harker attacks Dracula at his castle, the vampire travels to a nearby city, where he preys on the family of Harker's fiancée. The only one who may be able to protect them is Dr. van Helsing, Harker's friend and fellow-student of vampires, who is determined to destroy Dracula, whatever the cost.",
+            "popularity": 34.38,
+            "poster_path": "/9UHOATvzXQWbElSGygOY1ar3vpp.jpg",
+            "release_date": "1958-04-21",
+            "title": "Dracula",
+            "video": false,
+            "vote_average": 7.234,
+            "vote_count": 740,
+            "media_type": "movie"
+          }
+        ],
+        "total_pages": 1,
+        "total_results": 8
+      },
+      "production_countries": [
+        {
+          "iso_3166_1": "DE",
+          "name": "Germany"
+        }
+      ],
+      "keywords": {
+        "keywords": []
+      }
+    }
+  }
+}
