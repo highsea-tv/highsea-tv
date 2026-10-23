@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The parser runs on every indexer result, so it has to be cheap: a mean under 0.25 ms a name,
-// measured over the whole corpus after a warm-up pass.
+// measured over the whole corpus after a warm-up pass. Six passes at that budget take about 12 s,
+// more than Bun's default 5 s a test, so the test's own timeout allows twice the budget.
 import { expect, test } from 'bun:test'
 import { readdirSync, readFileSync } from 'node:fs'
 import { parse } from '../src/index.ts'
@@ -20,4 +21,4 @@ test('a mean under 0.25 ms a name', () => {
   const mean = (performance.now() - start) / (rounds * names.length)
   console.log(`parse: ${(mean * 1000).toFixed(1)} µs a name over ${names.length} names`)
   expect(mean).toBeLessThan(0.25)
-})
+}, 30_000)
