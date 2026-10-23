@@ -1,0 +1,142 @@
+---
+title: Network and remote access
+description: How apps find the server at home, the address they use away from it, reverse proxies and HTTPS.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: apps/server/src/admin/network.tsx and network-messages.ts (the screen and its
+    words), packages/network/src (settings.ts for defaults, tls.ts for the certificate files,
+    discovery.ts and mdns.ts, proxies.ts for trusted proxies), packages/runtime/src/network.ts (the
+    checks on save), packages/runtime/src/setup.ts (what setup's remote-access choices set),
+    packages/runtime/src/runtime.ts (System › Health's network warnings), apps/server/server.ts
+    (HTTPS starts with the server), packages/auth/src (what uses the external URL),
+    compose.yaml, compose.bridge.yaml and compose.connects.yaml at the repository's root.
+  - Caddy's reverse_proxy and the X-Forwarded headers it sets:
+    https://caddyserver.com/docs/caddyfile/directives/reverse_proxy
+  - Certificates: certbot, https://certbot.eff.org/ ; tailscale cert,
+    https://tailscale.com/kb/1153/enabling-https
+  - Passkeys need a secure context: https://www.w3.org/TR/webauthn-3/
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings › Network and remote access** covers how highsea is reached: the address apps use away from home, a reverse proxy in front of it, HTTPS, and how apps find it on your own network.
+
+Admins can read this area, but only the Owner can change it. For anyone else the fields are greyed out, with the line "Only the owner can change how the server is reached."
+
+[Recommended setup](/recommended-setup/) has the short version. This page goes through each setting.
+
+## How highsea is reached
+
+highsea always serves plain HTTP on port 3000, for your own network and the apps on it. For access from outside, choose one of these:
+
+| Approach | Set **TLS** to | Set **External URL** to |
+| --- | --- | --- |
+| A reverse proxy you already run, such as Caddy, nginx or Traefik, handles HTTPS | **My proxy handles it** | The proxy's `https://` address |
+| highsea serves HTTPS itself, and you forward its port on your router | **Built in** | The `https://` address that reaches that port |
+| No access from outside | **Off (LAN only)** | Leave it empty |
+
+Setup asked which of these you wanted and filled in the settings to match. You can change them here at any time.
+
+## Remote access
+
+**External URL** is the address the apps use away from home. On your own network they find the server on their own.
+
+Use the full address, starting with `https://`, such as `https://harbor.example.net`. highsea refuses an address with a query or `#` part, and drops a trailing slash.
+
+highsea also uses this address for:
+
+- the links in invites and password resets;
+- the links in notification emails;
+- passkeys, which only work on the `https://` address entered here (and on `localhost`);
+- single sign-on, which needs it so your identity provider can send people back.
+
+An `http://` address works, but if remote access is on, **System › Health** warns that passwords cross the internet unencrypted and passkeys can't work there.
+
+## Reverse proxy and TLS
+
+**TLS** has three choices:
+
+- **My proxy handles it**: a reverse proxy in front of highsea serves HTTPS, and passes requests to highsea on port 3000.
+- **Built in**: highsea serves HTTPS itself, on its own port.
+- **Off (LAN only)**: no HTTPS. Without TLS, passwords cross the network in the clear, so keep it to the LAN.
+
+A change to TLS or the HTTPS port takes effect the next time highsea starts. Restart the container after saving.
+
+### Through a reverse proxy
+
+Point your proxy at port 3000 on highsea's host. With Caddy, for example:
+
+```txt title="Caddyfile"
+harbor.example.net {
+	reverse_proxy 192.168.1.20:3000
+}
+```
+
+Caddy gets a certificate for the name itself and passes on the visitor's address in the `X-Forwarded-For` and `X-Forwarded-Proto` headers. Other proxies need those headers set; their documentation shows how.
+
+Then, in highsea:
+
+1. Choose **My proxy handles it**.
+2. Enter the proxy's address as the **External URL**.
+3. Under **Trusted proxies**, enter the proxy's address, or a range that holds it.
+4. Turn on **Use X-Forwarded-For and X-Forwarded-Proto**.
+
+### Trusted proxies
+
+highsea believes the forwarded headers only from the addresses listed under **Trusted proxies**. Anyone can send those headers, so from any other address highsea ignores them and sees the connection as it is. With the right proxy trusted, highsea knows each visitor's real address, and whether they came over HTTPS.
+
+Separate addresses with commas. Ranges work too, like `172.16.0.0/12` for Docker's networks. If you chose a reverse proxy during setup, highsea filled in the private ranges (`127.0.0.0/8`, `::1/128`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` and `fc00::/7`), which suit a proxy on the same machine or network. Narrow them to your proxy's own address if you can.
+
+**Use X-Forwarded-For and X-Forwarded-Proto** turns the headers on. They're read only from the trusted proxies above, and it's off on a new server.
+
+### Built-in TLS
+
+highsea serves HTTPS with a certificate you provide. It doesn't fetch certificates itself yet; a tool such as [certbot](https://certbot.eff.org/) or [`tailscale cert`](https://tailscale.com/kb/1153/enabling-https) can.
+
+1. Put the certificate's full chain in `/config/tls/cert.pem` and its private key in `/config/tls/key.pem`, both in PEM format. `/config` is highsea's config folder, so on the host that's the `tls` folder inside the folder you mounted there.
+2. Choose **Built in**. The **HTTPS port** is 8443 unless you change it; any port from 1024 to 65535 works.
+3. If your compose file publishes ports rather than using host networking, publish the HTTPS port too. The compose files have the line ready to uncomment:
+
+   ```yaml
+   ports:
+     - "8443:8443"
+   ```
+
+4. Save, and restart highsea.
+
+If the files are missing or can't be used, highsea keeps serving plain HTTP, and both this page and **System › Health** say why: "Built-in TLS needs a certificate", or that the certificate can't be used, with the reason. A key that doesn't match its certificate is the usual cause.
+
+When you renew the certificate, replace both files and restart highsea.
+
+### Forwarding a port
+
+To reach highsea from outside without a reverse proxy, forward a port on your router to highsea's HTTPS port on the server, and use built-in TLS so passwords never cross the internet in the clear. Your router's manual shows how to forward a port. Enter the address that reaches it, such as `https://harbor.example.net:8443`, as the **External URL**.
+
+## Discovery
+
+**Let apps on this network find** the server answers the apps on your own network when they look for servers, so nobody needs to type an address at home. It's on by default. It works two ways:
+
+- **UDP broadcast** on port 7368. In Docker, this needs host networking or the published UDP port, which `compose.bridge.yaml` and `compose.connects.yaml` publish.
+- **mDNS**, which needs host networking in Docker.
+
+Turn it off if you'd rather the server stayed quiet on the network; apps then need its address.
+
+If highsea can't listen on the discovery port, **System › Health** warns, usually because something else on the machine uses it.
+
+**On this network** lists the addresses highsea answers on, which you can type into an app that can't find the server.
+
+## Settings at a glance
+
+| Setting | Default | Who can change it |
+| --- | --- | --- |
+| **External URL** | Empty | Owner |
+| **TLS** | **Off (LAN only)**, unless setup chose otherwise | Owner |
+| **HTTPS port** | 8443 | Owner |
+| **Trusted proxies** | Empty, unless setup chose a reverse proxy | Owner |
+| **Use X-Forwarded-For and X-Forwarded-Proto** | Off, unless setup chose a reverse proxy | Owner |
+| **Let apps on this network find** the server | On | Owner |
+
+For the torrent port, see [Downloads](/settings/downloads/). For running highsea behind a VPN, which changes how its ports are published, see [VPN](/settings/vpn/).

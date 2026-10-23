@@ -1,0 +1,111 @@
+---
+title: Wanted
+description: The films highsea is still looking for, the release calendar and its feed, and how highsea finds releases on its own.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The admin's Wanted page: apps/server/src/admin/wanted.tsx and wanted-messages.ts, with the
+    routes in apps/server/app/(admin)/wanted.
+  - What each list holds, the sweep's size and backoff, and the calendar's dates:
+    packages/media/src/movies/wanted.ts.
+  - RSS every 15 minutes, the sweep every 6 hours and the wait before grabbing:
+    packages/runtime/src/automation.ts.
+  - The feed: apps/server/src/api/wanted.ts and ics.ts (30 days back, a year ahead).
+  - Profile settings named here: apps/server/src/admin/quality-editors-messages.ts; Minimum
+    availability: add-dialog-messages.ts.
+  - Radarr's RSS sync and delay profiles, which highsea follows: https://wiki.servarr.com/radarr/settings
+  - iCalendar: https://www.rfc-editor.org/rfc/rfc5545
+*/}
+
+Written for highsea 0.1.0.
+
+**Wanted** shows what the library is still waiting for: monitored films with no file yet, films whose file is below their profile's cutoff, and what's coming out when. It has three tabs, **Missing**, **Cutoff unmet** and **Calendar**, and each has its own address.
+
+Owners and Admins use it. Users never open the admin.
+
+## Missing
+
+**Missing** lists the monitored films that have reached their **Minimum availability** and have no file yet. A film that isn't out yet by that measure stays off the list until it is. Minimum availability is set for each film when you add it (**Announced**, **In cinemas** or **Released**), and can be changed later from the film's page. **Released** avoids cam copies.
+
+Each row shows the poster and title (which opens the film's page), the release date and the quality profile. The tab shows how many films are on the list. The list loads 50 films at a time; **Show more** loads the next 50.
+
+When nothing is missing, the tab says "Nothing missing".
+
+## Cutoff unmet
+
+**Cutoff unmet** lists monitored films that have a file, but one below the cutoff their quality profile asks for. The **Profile · wants** column shows the profile and its cutoff, for example "HD 1080p · Bluray-1080p".
+
+highsea keeps looking for a better release for these films and replaces the file when one turns up. That only happens when the profile has **Upgrade files** turned on; with it off, the first file that fits is kept and the film never appears here. Profiles are in **Settings › Profiles and formats**; see [Quality](/settings/quality/).
+
+## Search from Wanted
+
+You don't need to search by hand: highsea looks for every film on both lists on its own (see [How highsea finds releases](#how-highsea-finds-releases)). To look now:
+
+- **Search** on a row searches every indexer for that film.
+- **Search all** above the list searches for every film on it. The button shows how many that is.
+
+Searches run in the background. A notice says how many films are being searched, and whatever highsea grabs shows up in [Activity](/activity/). A film that's grabbed leaves the list while it downloads.
+
+Searching needs at least one enabled indexer. Without one, highsea says so and searches nothing. See [Indexers](/indexers/).
+
+To pick a release yourself instead, open the film and use **Interactive search**. [Movies](/movies/) covers the film's page.
+
+## The calendar
+
+**Calendar** shows a month at a time, with the release dates of every monitored film. Each film can appear up to three times, once for each date it has: **In cinemas**, **Digital** and **Physical**.
+
+- **Previous month** and **Next month** move through the months; **This month** brings you back.
+- Today is marked in the accent colour.
+- Each entry's outline shows where the film stands: **In the library**, **Downloading** or **Wanted**. The key is above the calendar.
+- Select an entry to open the film's page.
+
+On a phone the calendar becomes a list of the month's release days.
+
+## Subscribe in a calendar app
+
+Under the calendar, **Subscribe in your calendar app** gives an iCal feed of the same releases, for Apple Calendar, Google Calendar, Outlook or any app that can subscribe to a calendar by its address. The feed covers 30 days back and a year ahead.
+
+1. Select **Make a feed address**.
+2. Select **Copy**.
+3. In your calendar app, add a calendar by its address (often called "subscribe" or "from URL") and paste it.
+
+The address carries a key that opens the feed and nothing else, but anyone with the address can read the feed, so treat it like a password. Each person who opens the admin has their own feed address.
+
+The address starts with the server's public address when one is set in **Settings › Network and remote access**, so a calendar app away from home can reach it. See [Network and remote access](/settings/network/).
+
+- **Make a new address** replaces the address. The old one stops working, so calendar apps subscribed to it need the new one.
+- **Turn off** removes the address. Calendar apps subscribed to it stop getting updates.
+
+Both ask you to confirm first.
+
+## How highsea finds releases
+
+highsea searches for wanted films on its own, in three ways. Each judges releases by the film's quality profile, skips releases on the film's blocklist, and only grabs a release that's an improvement on the file the film already has.
+
+### RSS sync
+
+Every 15 minutes, highsea reads the newest releases from each enabled indexer and matches them against every film on **Missing** and **Cutoff unmet**. This catches new releases soon after they're posted, without searching for each film. The first RSS sync runs a few minutes after the server starts.
+
+### The backlog sweep
+
+RSS only sees what's new, so every 6 hours highsea also searches for films that are still wanted, 20 at a time: first those never searched, then those searched longest ago. One film is searched at a time, so indexers aren't flooded.
+
+When a film's search finds nothing to grab, highsea waits before searching for it again: 1 day, then 3, then 7, then 14 days, and 14 days after that. When a search does grab something, the wait starts again from 1 day.
+
+**Search** and **Search all** on Wanted don't wait for the sweep; they search at once.
+
+### Upgrades
+
+Films on **Cutoff unmet** are in both RSS and the sweep. When a release turns up that's better than the file (a higher quality, a newer revision of the same quality, or a higher custom format score), highsea grabs it. When it's imported, it replaces the old file. Once a film's file reaches the cutoff, it leaves the list and highsea stops looking.
+
+### Wait before grabbing
+
+A quality profile can hold releases back for a while, in case a better one turns up soon after. **Wait before grabbing** sets the minutes after a release was uploaded that RSS and the sweep wait; when the wait is up, highsea takes the best release found by then. A release at the profile's most preferred quality goes at once, and searches you start yourself never wait. With 0, highsea grabs at once.
+
+It's set for each profile in **Settings › Profiles and formats**.
+
+### Indexer tags
+
+An indexer with tags is used only for films that share one of its tags, in searches and in RSS. An indexer with no tags is used for every film. See [Indexers](/indexers/).

@@ -1,0 +1,129 @@
+---
+title: Download client
+description: How highsea's built-in torrent client is set up, with its port, encryption and connections, seeding, categories, the watch folder, and what happens when a download stalls or finishes.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The screen and its copy: apps/server/src/admin/download-client.tsx, download-client-messages.ts,
+    download-client-seeding.ts, download-categories.tsx and download-categories-messages.ts.
+  - Defaults and limits: packages/downloads/src/settings.ts; categories.ts; watch.ts; ip-blocklist.ts;
+    stalls in packages/downloads/src/service.ts.
+  - The engine: packages/torrent/src (mse.ts for encryption, portmap.ts for NAT-PMP and UPnP,
+    engine.ts for IPv4 and IPv6).
+  - Message Stream Encryption: https://wiki.vuze.com/w/Message_Stream_Encryption
+  - uTP: https://www.bittorrent.org/beps/bep_0029.html
+  - NAT-PMP: https://www.rfc-editor.org/rfc/rfc6886
+  - The published ports: compose.bridge.yaml and compose.connects.yaml at the repository's root.
+*/}
+
+Written for highsea 0.1.0.
+
+highsea has its own torrent client built in, so there's no qBittorrent or Transmission to run beside it. **Settings › Download client** sets how it connects to other peers, when it stops seeding, and where torrents you add by hand go.
+
+These settings are the Owner's alone: Admins don't see this area. Changes wait in a bar at the bottom of the page until you choose **Save** or **Discard**; categories save as soon as you change them.
+
+The torrents themselves, with their speed limits, are on the [Downloads](/downloads/) page.
+
+## VPN
+
+The page opens with the state of the VPN in one line, and **VPN settings** to change it. Torrents follow the VPN chosen in **Settings › VPN**; see [VPN](/settings/vpn/).
+
+## Connections
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Listening port** | The port other peers connect to, for TCP and UDP. From 1024 to 65535. | 6881 |
+| **Encryption** | Whether connections to peers are encrypted: **Require**, **Prefer** or **Allow**. | Prefer |
+| **Downloading at once** | How many torrents download at the same time, from 1 to 20. The rest wait in the queue. Seeding torrents don't count. | 3 |
+| **Open the port with UPnP** | Asks your router to forward the listening port. | Off |
+| **Connect to peers over uTP** | Connects to peers over uTP as well as TCP. | On |
+| **IP blocklist** | A list of addresses highsea never connects to. | Empty (off) |
+
+### Listening port
+
+Peers find you on this port. If you publish ports rather than use host networking, the compose file publishes 6881 for TCP and UDP. When you change the port here, change both sides of those lines too, such as `"6882:6882/tcp"` and `"6882:6882/udp"`, then recreate the container.
+
+With a VPN that forwards a port, highsea uses the forwarded port; see [VPN](/settings/vpn/).
+
+### Encryption
+
+Encryption hides the BitTorrent traffic from anything watching the connection, such as an internet provider that slows torrents down. It doesn't hide who you are; a VPN does that.
+
+- **Require**: every connection is encrypted. Peers that can't encrypt are left out, so you may find fewer.
+- **Prefer**: highsea tries encryption first, and falls back to a plain connection when a peer doesn't support it.
+- **Allow**: highsea connects without encryption first, and tries encryption with a peer that refuses that.
+
+Prefer suits most people.
+
+### UPnP and NAT-PMP
+
+With **Open the port with UPnP** on, highsea asks your router to forward the listening port, so peers can reach you. It tries NAT-PMP first, then UPnP. Your router needs one of them turned on.
+
+It does nothing while a VPN is in use: forwarding a port on your home router doesn't help a tunnel. Forward the port with your VPN provider instead. Leave it off if you've forwarded the port on your router by hand.
+
+### uTP
+
+uTP is a way of talking to peers over UDP that gives way to other traffic on your connection, so torrents slow your browsing and calls less. highsea uses TCP with peers that don't support it. Leave it on unless you're chasing a connection problem.
+
+### IPv6
+
+highsea connects to peers over IPv6 as well as IPv4 wherever the network, and the VPN, allow it. There's no setting for it.
+
+### IP blocklist
+
+Enter either:
+
+- an `http://` or `https://` address of a list, which highsea downloads once a day; or
+- the name of a file in the config folder.
+
+The list can be in P2P, DAT or P2B format, and gzipped. highsea keeps the last good copy in the config folder, so it applies straight away after a restart. If a new copy can't be downloaded or read, the one in use stays, and System's health list says why. Leave the field empty to turn the blocklist off.
+
+## Seeding
+
+When a torrent stops seeding: at the ratio or the time, whichever comes first. When it stops, the film in your library stays.
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Ratio** | Stops at this ratio of uploaded to size, from 0 to 100. Empty, no limit. | 2 |
+| **Time, in hours** | Stops after seeding this long, up to a year. Empty, no limit. | 168 (7 days) |
+
+This is the rule for every torrent whose indexer has none of its own. An indexer's own rule comes before this one, which matters for private trackers that ask you to seed for a minimum time. Set those on [Indexers](/indexers/).
+
+With hardlinks, seeding takes no extra space, since the library's file and the torrent's are the same file. See [Media management](/settings/media-management/).
+
+## Categories
+
+Torrents you add by hand go in a category, which sets the folder they save to. Two are built in:
+
+- **movies** holds the library's grabs.
+- **manual** is for torrents added without a category.
+
+To add a category, give it a **Name** (letters, digits, spaces, dots, dashes and underscores) and, if you like, a **Folder**, then choose **Save the category**. With the folder empty, it's a folder of that name in the downloads folder. Saving a name that's already there changes its folder; torrents already in it stay where they are.
+
+Each category shows how many torrents use it. **Remove** deletes nothing on disk, but a category with torrents can't be removed until they're removed from Downloads.
+
+## Watch folder
+
+Drop a `.torrent` file into the watch folder and highsea adds it to Downloads, then renames the file `.torrent.added`. A file that isn't a torrent is renamed `.torrent.invalid`.
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Folder** | The folder to watch, inside the data folder or the downloads folder. Empty, off. | Empty (off) |
+| **Category** | The category its torrents go in. They aren't imported into the library. | manual |
+
+## When a download stalls
+
+A download with no data and no seeds for 2 hours shows as stalled in Activity. After 3 hours, highsea blocklists that release for the film and grabs another release the profile accepts. When there isn't one, it tries again on the next search. A torrent that's paused, queued or checking, or that can't reach the network, isn't counted as stalled.
+
+## When a download finishes
+
+You don't need to set anything for completed downloads. When a film's torrent finishes, highsea:
+
+1. extracts it, if it came as an archive;
+2. names the file and its folder with your naming formats, when **Rename movies** is on;
+3. puts it in the film's root folder, as a hardlink where it can, or a copy;
+4. keeps seeding the original until the seeding rule is met.
+
+If a download can't be imported, Activity shows it as needing attention, with the reason and the fix. [Media management](/settings/media-management/) has the naming, hardlink and archive settings, and [Activity](/activity/) has the queue and manual import.

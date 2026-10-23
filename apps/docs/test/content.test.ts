@@ -8,7 +8,7 @@ import { join } from 'node:path'
 
 const dir = join(import.meta.dir, '..', 'content')
 const publicDir = join(import.meta.dir, '..', 'public')
-const pages = readdirSync(dir)
+const pages = readdirSync(dir, { recursive: true, encoding: 'utf8' })
   .filter((f) => f.endsWith('.mdx'))
   .map((f) => {
     const raw = readFileSync(join(dir, f), 'utf8')
@@ -46,14 +46,37 @@ function anchors(body: string) {
 describe('the guides', () => {
   test('are all there', () => {
     expect(pages.map((p) => p.slug).sort()).toEqual([
+      'activity',
+      'collections',
+      'curation',
+      'dashboard',
+      'downloads',
       'index',
-      'install-docker',
-      'install-synology',
-      'install-truenas',
-      'install-unraid',
+      'indexers',
+      'install/docker',
+      'install/index',
+      'install/prerequisites',
+      'install/synology',
+      'install/truenas',
+      'install/unraid',
       'migrate-from-radarr-and-qbittorrent',
+      'movies',
       'recommended-setup',
+      'settings/appearance',
+      'settings/backups',
+      'settings/downloads',
+      'settings/general',
+      'settings/lists',
+      'settings/media-management',
+      'settings/network',
+      'settings/notifications',
+      'settings/quality',
+      'settings/users-and-security',
+      'settings/vpn',
+      'subtitles',
+      'system',
       'upgrade',
+      'wanted',
     ])
   })
 
@@ -62,6 +85,11 @@ describe('the guides', () => {
       test('has a title and a description', () => {
         expect(page.front.title?.length).toBeGreaterThan(0)
         expect(page.front.description?.length).toBeGreaterThan(20)
+      })
+
+      test('keeps its frontmatter plain YAML', () => {
+        // a bare ': ' in an unquoted value is a nested mapping, which the build's YAML parser rejects
+        for (const value of Object.values(page.front)) expect(value).not.toContain(': ')
       })
 
       test('carries the licence comment', () => {
@@ -91,7 +119,8 @@ describe('the guides', () => {
         for (const link of links) {
           const [path = '', hash] = link.split('#')
           const slug = path.replace(/^\/|\/$/g, '') || 'index'
-          const target = pages.find((p) => p.slug === slug)
+          // a folder's address is its index page
+          const target = pages.find((p) => p.slug === slug || p.slug === `${slug}/index`)
           expect(target, `${link} in ${page.slug}`).toBeDefined()
           if (hash && target) expect([...anchors(target.body)], link).toContain(hash)
         }
@@ -105,8 +134,23 @@ describe('the guides', () => {
   }
 
   test('the sidebar lists every page once', () => {
-    const meta = JSON.parse(readFileSync(join(dir, 'meta.json'), 'utf8')) as { pages: string[] }
-    const listed = meta.pages.filter((p) => !p.startsWith('---'))
-    expect(listed.sort()).toEqual(pages.map((p) => p.slug).sort())
+    // `...folder` puts a folder's pages in the parent's list (https://fumadocs.dev/docs/page-conventions);
+    // a plain folder is a group of its own, led by its index page
+    const listed = (folder: string): string[] => {
+      const meta = JSON.parse(readFileSync(join(dir, folder, 'meta.json'), 'utf8')) as {
+        pages: string[]
+      }
+      return meta.pages
+        .filter((p) => !p.startsWith('---'))
+        .flatMap((p) => {
+          if (p.startsWith('...')) return listed(join(folder, p.slice(3)))
+          if (!existsSync(join(dir, folder, p, 'meta.json'))) return [join(folder, p)]
+          const index = existsSync(join(dir, folder, p, 'index.mdx'))
+            ? [join(folder, p, 'index')]
+            : []
+          return [...index, ...listed(join(folder, p))]
+        })
+    }
+    expect(listed('').sort()).toEqual(pages.map((p) => p.slug).sort())
   })
 })

@@ -1,0 +1,16 @@
+{
+  "title": "Settings",
+  "pages": [
+    "general",
+    "media-management",
+    "quality",
+    "downloads",
+    "vpn",
+    "network",
+    "lists",
+    "notifications",
+    "users-and-security",
+    "backups",
+    "appearance"
+  ]
+}

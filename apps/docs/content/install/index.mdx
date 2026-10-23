@@ -1,0 +1,39 @@
+---
+title: Installation
+description: Install highsea with Docker, or on Unraid, Synology or TrueNAS, and get to its setup screen.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The compose files at the repository's root, and the NAS templates in templates/.
+  - The install guides beside this page, each followed on the version it names.
+*/}
+
+Written for highsea 0.1.0. highsea runs as one Docker container, wherever you run it. Each guide below ends at highsea's setup screen, which takes about five minutes.
+
+## Before you start
+
+Check the [prerequisites](/install/prerequisites/): a 64-bit machine with Docker or a supported NAS, a folder for your downloads and films on one disk, a few ports and a free TMDB account.
+
+## Choose where highsea runs
+
+| Where | How you install it | Network | Checked on |
+| --- | --- | --- | --- |
+| [Linux, macOS or Windows](/install/docker/) | A compose file and `docker compose up` | The host's own network on Linux, published ports on macOS and Windows | Docker Engine 29.8 |
+| [Unraid](/install/unraid/) | highsea's template on the **Docker** page | Published ports | Unraid 7.3.4 |
+| [Synology](/install/synology/) | A project in Container Manager | Published ports | DSM 7.4.1 |
+| [TrueNAS](/install/truenas/) | **Install via YAML** under **Apps** | The host's own network | TrueNAS 25.10.7 |
+
+On the host's own network, apps find the server by themselves. With published ports they still find it on most networks, and when one doesn't, you give it the server's address.
+
+<Cards>
+  <Card title="Docker on Linux, macOS or Windows" href="/install/docker/" description="Docker Compose on any machine. The other guides build on this one." />
+  <Card title="Unraid" href="/install/unraid/" description="A template for the Docker page, with Unraid's shares." />
+  <Card title="Synology" href="/install/synology/" description="A Container Manager project on DSM 7.2 or later." />
+  <Card title="TrueNAS" href="/install/truenas/" description="A custom app from YAML on TrueNAS 25.04 or later." />
+</Cards>
+
+## After installing
+
+[Recommended setup](/recommended-setup/) covers what to set up next: folders, indexers, quality, subtitles, a VPN, remote access and backups. Coming from Radarr and qBittorrent, [bring your library across](/migrate-from-radarr-and-qbittorrent/).

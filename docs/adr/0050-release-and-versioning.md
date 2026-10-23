@@ -115,3 +115,7 @@ Each one happens only when the owner says so: a real run of `release.yml` from m
 - **A release image is built from scratch each time,** which is slower than CI's cached build. That's the price of keeping keys out of shared cache layers.
 - **Before the first publish, a production image checks `catalog.highsea.tv` and finds nothing.** The catalog reports the failure, and the seed keeps working.
 - **A fix to an older line moves only its own tags,** so `latest`, `beta` and GitHub's Latest never go backwards.
+
+## 2026-10-23: the docs deploy from `main`
+
+On the owner's word, `docs.highsea.tv` went live ahead of the first release, and it stays out of the release. Vercel's `highsea-docs` project deploys every push to `main` from Vercel's GitHub integration, so a merged change to `apps/docs/content/` is the owner's word for that change ([Vercel: Git deployments](https://vercel.com/docs/deployments/git)). Pull requests get previews behind Vercel's sign-in. The other four kinds of publishing above are unchanged.

@@ -1,14 +1,23 @@
 {
   "pages": [
     "index",
-    "---Install---",
-    "install-docker",
-    "install-unraid",
-    "install-synology",
-    "install-truenas",
+    "install",
     "---After installing---",
     "recommended-setup",
     "migrate-from-radarr-and-qbittorrent",
-    "upgrade"
+    "upgrade",
+    "---Using highsea---",
+    "dashboard",
+    "movies",
+    "collections",
+    "wanted",
+    "activity",
+    "downloads",
+    "indexers",
+    "subtitles",
+    "curation",
+    "system",
+    "---Settings---",
+    "...settings"
   ]
 }

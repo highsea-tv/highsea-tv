@@ -7,7 +7,7 @@ import type { NextConfig } from 'next'
 
 const config: NextConfig = {
   output: 'export',
-  // `/install-docker/index.html`, so any static host serves the folder as it is
+  // `/install/docker/index.html`, so any static host serves the folder as it is
   trailingSlash: true,
   // workspace packages export raw TypeScript (ADR 0002)
   transpilePackages: ['@highsea-tv/brand', '@highsea-tv/tokens', '@highsea-tv/ui-web'],

@@ -1,0 +1,75 @@
+---
+title: Prerequisites
+description: What highsea needs before you install it, from the machine and its folders to its ports and the accounts it uses.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - Installing Docker Engine on Linux: https://docs.docker.com/engine/install/
+  - Docker Desktop: https://docs.docker.com/desktop/
+  - Container Manager's models: https://www.synology.com/en-global/dsm/packages/ContainerManager
+  - TMDB's API: https://developer.themoviedb.org/docs/getting-started
+  - Hardlinks across one filesystem: https://man7.org/linux/man-pages/man2/link.2.html (EXDEV)
+  - The image's platforms, tools and ports: the Dockerfile, compose.yaml and compose.bridge.yaml at the repository's root.
+*/}
+
+Written for highsea 0.1.0. Check these before you pick an install guide.
+
+## A machine that stays on
+
+highsea checks for new releases, downloads and imports around the clock, so run it on a machine that stays on, such as a home server, a NAS or a computer you leave running.
+
+- **A 64-bit processor.** highsea's image is built for Intel and AMD (amd64) and for ARM (arm64). 32-bit systems can't run it.
+- **Docker with the Compose plugin.** On Linux, install [Docker Engine](https://docs.docker.com/engine/install/). On macOS and Windows, install [Docker Desktop](https://docs.docker.com/desktop/).
+
+On a NAS, its own container app takes Docker's place. These have guides:
+
+| NAS | Version | Guide |
+| --- | --- | --- |
+| Unraid | 7 or later | [Install on Unraid](/install/unraid/) |
+| Synology DSM | 7.2 or later, with Container Manager | [Install on Synology](/install/synology/) |
+| TrueNAS Community Edition | 25.04 or later | [Install on TrueNAS](/install/truenas/) |
+
+Container Manager runs only on some Synology models. Synology lists them on [its page](https://www.synology.com/en-global/dsm/packages/ContainerManager).
+
+Everything else highsea uses, such as ffmpeg for syncing subtitles and unar for archived releases, is inside its image, so there's nothing more to install.
+
+## Storage
+
+- **The image** takes about 2 GB once it's downloaded.
+- **A config folder** holds highsea's database, settings, logs and backups. Keep it on fast, reliable storage, such as an SSD.
+- **A data folder** holds your downloads and your films together, with room for both. Keep them in one folder on one disk, or one share or dataset on a NAS, so highsea can hardlink a finished download into the library instead of copying it. [Folders and hardlinks](/recommended-setup/#folders-and-hardlinks) explains why.
+
+highsea runs as the user and group that own these folders. The install guides show how to find their numbers.
+
+## Network
+
+highsea uses these ports on the machine it runs on:
+
+| Port | Protocol | What uses it |
+| --- | --- | --- |
+| 3000 | TCP | The admin in your browser, and highsea's apps |
+| 6881 | TCP and UDP | The torrent engine, for peers and the DHT |
+| 7368 | UDP | Apps finding the server on your network |
+| 8443 | TCP | Built-in HTTPS, only when you turn it on |
+
+Nothing needs to be open to the internet to install highsea. To watch away from home later, see [Watching away from home](/recommended-setup/#watching-away-from-home).
+
+## Accounts
+
+- **TMDB**, needed. Film details, artwork and Discover come from TMDB. Make a free account, then copy the API key or the Read Access Token from [TMDB's API page](https://www.themoviedb.org/settings/api). Setup asks for it, and you can add it later in Settings.
+- **Indexers**, needed to find releases. The public indexers in highsea's catalog need no account. A private tracker needs your own account with it.
+- **Subtitle providers**, optional. OpenSubtitles.com, Subdl and SubSource. Some need an account of your own, and highsea says which.
+- **A VPN provider**, optional, and recommended for torrents. highsea's own tunnel needs a provider that offers WireGuard, and Linux. Providers that offer only OpenVPN work through a gluetun container. [A VPN for torrents](/recommended-setup/#a-vpn-for-torrents) has the details.
+
+## Next
+
+When you have these, pick the guide for where highsea will run:
+
+<Cards>
+  <Card title="Docker on Linux, macOS or Windows" href="/install/docker/" description="Docker Compose on any machine. The other guides build on this one." />
+  <Card title="Unraid" href="/install/unraid/" description="A template for the Docker page, with Unraid's shares." />
+  <Card title="Synology" href="/install/synology/" description="A Container Manager project on DSM 7.2 or later." />
+  <Card title="TrueNAS" href="/install/truenas/" description="A custom app from YAML on TrueNAS 25.04 or later." />
+</Cards>

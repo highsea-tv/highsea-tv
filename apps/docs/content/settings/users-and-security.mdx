@@ -1,0 +1,154 @@
+---
+title: Users and security
+description: Invite people, choose what they can do, sign devices out, and protect how everyone signs in.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: Settings › Users and devices (apps/server/src/admin/users.tsx, users-messages.ts),
+    Settings › Security (security.tsx, security-messages.ts), Your account (account.tsx,
+    account-messages.ts), sign-in and the invite and reset pages (login.tsx, login-messages.ts),
+    the areas only the owner sees (settings-areas.ts).
+  - Defaults and limits: packages/auth/src/settings.ts (two-step and passkeys on, 30 days),
+    accounts.ts (links last 7 days), rate-limit.ts (10 failures per account and 50 per address in
+    15 minutes, then 5 minutes), sign-in.ts (5 tries at a code), challenges.ts (5 minutes per step),
+    two-factor.ts (10 recovery codes), roles.ts, oidc.ts, proxy-auth.ts.
+  - Authenticator apps use time-based one-time passwords: https://www.rfc-editor.org/rfc/rfc6238
+  - Passkeys: https://passkeys.dev/docs/intro/what-are-passkeys/
+  - OpenID Connect: https://openid.net/specs/openid-connect-core-1_0.html
+*/}
+
+Written for highsea 0.1.0.
+
+Three places decide who gets in and how:
+
+- **Settings › Users and devices**: the people on the server, their roles, the browsers they're signed in on, and API keys.
+- **Settings › Security**: the rules for signing in, such as two-step verification, passkeys and single sign-on. Only the Owner sees it.
+- **Your account**: your own name, password, two-step verification and passkeys. Everyone has one; open it from the sidebar.
+
+## Roles
+
+Everyone on the server has one of three roles.
+
+| Role | What they can do |
+| --- | --- |
+| **Owner** | Everything, including Security, Backups, VPN, Download client and Migration. The person who ran setup. There is one Owner. |
+| **Admin** | Runs the server: the library, downloads, indexers and settings. Sees people and devices, but can't invite or change anyone. |
+| **User** | Watches in highsea's apps. Never opens the admin. |
+
+Only the Owner invites people, changes their roles and removes them. An Admin opening **Settings › Users and devices** sees the same lists with the note "Only the owner can invite or change people."
+
+## Invite someone
+
+1. Go to **Settings › Users and devices** and choose **Invite someone**.
+2. Enter their **Name**, as the household knows them.
+3. Optionally enter their **Email**. If the server's mail is set up in [Connections](/settings/notifications/), the link is emailed to them as well.
+4. Choose a **Role**: Admin or User. For a User, choose their **Libraries**: **All, now and later**, or pick from the list.
+5. Choose **Create invite link**, then **Copy link** and send it to them.
+
+The link works once, for 7 days. Opening it, they choose a username and a password of at least 10 characters, then **Finish my account**. If single sign-on is on, they can choose **Join with** your provider instead, which links their account to it.
+
+Until they finish, they show as **Invited** in the list, with "Hasn't joined yet". From the **⋯** menu beside them:
+
+- **Copy the invite link** shows the link again, or a fresh one if the old one has expired.
+- **Cancel the invite** stops the link working. You can invite them again later.
+
+## Change what someone can do
+
+Choose **Edit** beside a person to change their **Role**.
+
+- Admins see every library and need nothing ticked.
+- A User also has **Libraries** and **What they can do**: **Ask for titles** and **Download for offline**, which apply in highsea's apps rather than the admin. Changing the role resets these to the role's defaults.
+
+Making an Admin a User signs them out of the admin, and their API keys stop working.
+
+The Owner's role can't be changed, and there's no way to hand the server to someone else in highsea 0.1.0.
+
+## Reset a password
+
+Anyone who has forgotten their password asks the Owner. In **Settings › Users and devices**, open the **⋯** menu beside them and choose **Make a password reset link**. Send them the link: it works once, for 7 days, and lets them choose a new password. It's emailed too when the server's mail is set up and they have an email address.
+
+The Owner's own password can only be changed by the Owner, in **Your account**. Nobody else can reset it, so keep it somewhere safe, along with your recovery codes.
+
+To change your own password, open **Your account**, enter your **Current password** and the new one, and choose **Change password**. Your other browsers are signed out.
+
+## Remove someone
+
+From the **⋯** menu, choose **Remove**. They're signed out everywhere and can't sign back in, and their watch history goes with them. This can't be undone; invite them again if you change your mind.
+
+## Devices
+
+The **Devices** tab lists every browser signed in to the server: the device, whose it is, the app and its version, the address it last came from, and when it was last seen. **Whose devices** narrows the list to one person.
+
+**Sign out** ends a device's session at once; the person signs in again with their password. The Owner can sign out anyone's devices, an Admin only their own. The browser you're using is marked **This browser**; sign it out from **Your account** instead.
+
+## API keys
+
+Scripts and other programs that talk to highsea, such as Home Assistant or a backup script, use an API key rather than a password.
+
+1. On the **API keys** tab, choose **New API key**.
+2. Give it a **Name** after what will use it.
+3. Choose its **Access**: **Read only** sees the library, queue and status; **Full access** can do everything an Admin can.
+4. Choose **Make key**, copy it, and store it where the script can read it. It shows only this once.
+
+Give each script its own key, so you can **Revoke** one alone. Revoking can't be undone: anything using the key stops working at once.
+
+Admins see and make their own keys. The Owner sees everyone's, and can revoke any of them.
+
+## Two-step verification
+
+Two-step verification asks for a 6-digit code from an authenticator app after your password. It's only asked for in the admin; apps never ask for it.
+
+To turn it on for your account:
+
+1. Open **Your account** and choose **Set up** under **Two-step verification**.
+2. Enter your password.
+3. Scan the QR code with your authenticator app, or enter the key shown below it.
+4. Enter the code the app shows and choose **Turn on**.
+5. Save the 10 recovery codes. Each signs you in once if you lose your authenticator, and they show only now.
+
+**Your account** shows how many recovery codes you have left. **New recovery codes** replaces them all. At sign-in, **Use a recovery code** takes one instead of a code from the app.
+
+When someone has lost both their authenticator and their recovery codes, the Owner can choose **Turn off two-step** from the **⋯** menu beside them. Make sure it's really them asking.
+
+## Passkeys
+
+A passkey signs you in with your fingerprint, face or device PIN, with no password to type. In **Your account**, choose **Add a passkey** and follow your browser. Each one shows whether it's **Synced** across your devices or kept **On one device**, and can be renamed or removed.
+
+Passkeys work only when the admin is opened at its HTTPS address or at `localhost`. [Settings › Network and remote access](/settings/network/) covers HTTPS. At sign-in, choose **Sign in with a passkey**.
+
+## Settings › Security
+
+Only the Owner sees this area. Changes take effect when you choose **Save**.
+
+### Signing in
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Require two-step for the owner and admins** | Owners and Admins must use two-step verification to open the admin. Anyone who hasn't set it up is asked to at their next sign-in, and **Turn off** disappears from their account. | On |
+| **Allow passkeys** | Offers **Sign in with a passkey**, and lets people add passkeys in **Your account**. | On |
+| **Stay signed in for** | How long a sign-in to the admin lasts: 1, 7, 30 or 90 days. | 30 days |
+| **Trust a sign-in header from my proxy** | For Authelia, Authentik and other forward-auth proxies. The proxy signs people in and passes their username in a **Header**, `Remote-User` unless you change it. It only signs in existing accounts, and highsea believes it only from the trusted proxies listed in [Settings › Network and remote access](/settings/network/). | Off |
+
+### Single sign-on (OIDC)
+
+Lets people sign in with Authentik, Authelia, Keycloak or another OpenID Connect provider. It needs the server's external address, set in [Settings › Network and remote access](/settings/network/), so the provider can send people back.
+
+1. In your provider, create a client for highsea.
+2. In highsea, turn on **Offer single sign-on**.
+3. Enter a **Button label**: the sign-in page shows "Sign in with" and this name.
+4. Enter the **Client ID**, the **Issuer URL** (the provider's `https://` address) and, if your provider gives one, the **Client secret**. The secret is stored encrypted; leave the field blank to keep the stored one.
+5. Copy the **Redirect URL** highsea shows into your provider, then **Save**.
+
+Single sign-on doesn't create accounts. Each person joins through their invite link with **Join with** your provider, and from then on that provider account signs them in. Someone the server doesn't know is told to ask the Owner for an invite.
+
+## Sign-in protections
+
+highsea slows down anyone guessing passwords:
+
+- After 10 failed attempts at one account within 15 minutes, passwords for that account are refused for 5 minutes.
+- After 50 failed attempts from one address within 15 minutes, that address is refused for 5 minutes.
+- Each sign-in allows 5 tries at a two-step code, and the code step expires after 5 minutes.
+
+Passkeys and single sign-on keep working during a pause, so someone guessing can't lock you out. Restarting highsea clears the counts.

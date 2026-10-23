@@ -60,7 +60,7 @@ jobs:
         run: bun run --filter @highsea-tv/server build
         env:
           NEXT_TELEMETRY_DISABLED: 1
-      # the guides as static files, as docs.highsea.tv serves them; deploying is the owner's (ADR 0050)
+      # the guides as static files, as docs.highsea.tv serves them; Vercel deploys them from main (ADR 0050's 2026-10-23 section)
       - name: Build the docs site
         run: bun run --filter @highsea-tv/docs build
         env:

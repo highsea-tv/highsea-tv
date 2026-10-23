@@ -104,6 +104,6 @@ The restart works by highsea stopping itself on purpose, so the container needs 
 
 ## Move highsea to another machine
 
-Backups hold the database, but never `secret.key`, the file in the config folder that seals your passwords and keys. A backup restored on another machine works, but asks you to enter those secrets again.
+Backups hold the database, but never `secret.key`, the file in the config folder that seals your passwords and keys. A backup restored on another machine without it can't open them, so sign-ins and connections stop working. [Backups](/settings/backups/#move-to-another-machine) explains how to move with a backup and your `secret.key`.
 
 To move everything at once, stop highsea, copy the whole config folder to the new machine, and start highsea there with the same compose file. Keep the data folder at the same path inside the container, `/data`, so the library's paths still match.

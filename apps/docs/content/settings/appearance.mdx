@@ -1,0 +1,79 @@
+---
+title: Appearance
+description: The server's name, mark and accent, its themes, and where interface sounds play.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: Settings › Appearance (apps/server/src/admin/appearance.tsx,
+    appearance-messages.ts), who sees it (settings-areas.ts), where the server's name shows (the
+    sidebar in shell.tsx, sign-in and the invite page in login.tsx), and the defaults and rules in
+    packages/personalization/src/appearance.ts (sounds on for TVs only, 80% volume, the built-in
+    "Felt and wood" pack, a deleted default theme falling back to the built-in default) and
+    packages/tokens/src/themes.ts (the three built-in themes).
+  - Contrast: https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings › Appearance** sets how the server presents itself to everyone who connects: its name, mark and accent, the theme the apps start in, and where interface sounds play. The Owner and Admins can change it.
+
+Most of what's here is a default for highsea's apps, which each person can change on their own device. The admin itself keeps highsea's own look; it shows the server's name in the sidebar, on the sign-in page and on invite links.
+
+The identity, the default theme and the sounds save together with **Save**, and every app picks them up the next time it checks in. Custom themes save on their own.
+
+## Server identity
+
+| Setting | What it does |
+| --- | --- |
+| **Name** | The server's name, up to 40 characters. Shown in the sidebar, on the sign-in page ("Sign in to" and the name) and to people following an invite ("Welcome to" and the name). It can't be empty. |
+| **Mark** | A square SVG or PNG, at least 256 px and at most 1 MB, that apps show beside the name. **Use the highsea mark** goes back to highsea's own. |
+| **Use a brand accent** | One accent colour for every theme. Off, each theme keeps its own. |
+
+**In the apps** shows the name and mark as the apps' server switcher will show them.
+
+When you pick an accent, highsea checks its contrast. **Passes contrast** means it's used as it is; **Adjusted for contrast** means highsea adjusts its shades so text on it stays readable. **Not a color** means the value isn't one highsea can read: use a hex value such as `#8fbfb7`.
+
+## Themes
+
+The apps start in the **default theme**, and anyone can pick another on their own device. Choose the default from the cards: each shows the theme's colours and whether it's **Built in** or **Custom**.
+
+There are three built-in themes:
+
+| Theme | What it is |
+| --- | --- |
+| **Abyss Neutral** | highsea's own dark theme, and the default. |
+| **OLED black** | True black backgrounds, for OLED screens. |
+| **High contrast** | Stronger text and borders, and wider focus rings. |
+
+### Make your own theme
+
+1. Under **Themes**, choose **New theme**.
+2. Give it a **Name**, and choose the built-in theme it's **Based on**.
+3. Pick an **Accent**. highsea makes the rest of the accent's shades from it, each readable against the background.
+4. Optionally change **Quiet text**, the colour of captions and timestamps. **Reset** puts it back.
+5. Check **Contrast**. Each pairing that's too faint is listed, with **Fix** where a lighter or darker shade solves it. A theme that fails can't be saved: someone would struggle to read it.
+6. Choose **Add theme**.
+
+The preview beside the editor shows posters, a title and buttons in the theme as you change it.
+
+Each custom theme has **Edit**, **Copy share code** and delete. A share code is a short line of text that anyone can paste into **Load a share code** in their own editor to get the same theme. Deleting the default theme makes Abyss Neutral the default again.
+
+## Sounds
+
+Where the apps play their interface sounds until someone changes it on their device. Sounds never play over a film.
+
+| Setting | Default |
+| --- | --- |
+| **TVs** | On: sound confirms each press of the remote. |
+| **Phones and tablets** | Off: phones have haptics. |
+| **Web and desktop** | Off. |
+| **Volume** | 80% |
+| **Sound pack** | Felt and wood. More packs come with the catalog. |
+
+**Listen** has a button for each sound (Move, Select, Back, Done, Error, Notice, Arrival). Each plays at the chosen volume, even where sounds are off.
+
+## Your own dashboard
+
+Each person arranges their own dashboard in the admin with **Customize**, and the Owner sets the layout Admins start from. [Dashboard](/dashboard/) explains how.

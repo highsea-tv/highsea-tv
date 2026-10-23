@@ -1,0 +1,130 @@
+---
+title: Notifications
+description: Send what happens on the server to Discord, Slack, Telegram, ntfy, email, the browser and more.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: apps/server/src/admin/connections.tsx and connections-messages.ts (the screen, each
+    kind's fields and the default events), tags-messages.ts, users-messages.ts (invite and reset
+    links), packages/notifications/src (service: retries, the day's limit, the server's mail;
+    shared: what each event says; channels: what each service is sent).
+  - Discord webhooks: https://support.discord.com/hc/en-us/articles/228383668-Intro-to-Webhooks and
+    https://discord.com/developers/docs/resources/webhook#execute-webhook
+  - Slack incoming webhooks: https://api.slack.com/messaging/webhooks
+  - Telegram bots: https://core.telegram.org/bots/features#botfather and
+    https://core.telegram.org/bots/api#sendmessage
+  - ntfy: https://docs.ntfy.sh/publish/ and https://docs.ntfy.sh/publish/#authentication
+  - Gotify: https://gotify.net/docs/ and https://gotify.net/api-docs
+  - Pushover: https://pushover.net/api
+  - Matrix: https://spec.matrix.org/latest/client-server-api/
+  - Email over SMTP, through Nodemailer: https://nodemailer.com/smtp/
+  - Apprise API: https://github.com/caronc/apprise-api
+  - Web push: https://developer.mozilla.org/en-US/docs/Web/API/Push_API
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings › Connections** sends what happens on the server to the places you already look: a chat, a phone app, an inbox or a browser. Each service you add is a connection, and each connection hears the events you choose.
+
+The Owner and Admins can both manage connections.
+
+## Adding a connection
+
+1. Under **Add a connection**, press the service: **Discord**, **Slack**, **Telegram**, **ntfy**, **Gotify**, **Pushover**, **Matrix**, **Email**, **Webhook**, **Apprise** or **Browser**.
+2. Give it a **Name**, and fill in the service's fields. The table below says where to find each one.
+3. Choose its **Events**.
+4. Press **Test**. highsea sends a test message with these settings before you save, and says whether it arrived.
+5. Press **Save**.
+
+Passwords, tokens and webhook addresses are kept sealed on the server. When you edit a connection they show as dots; leave them as they are to keep them, or type a new one to change it.
+
+## Events
+
+| Event | Sent when |
+| --- | --- |
+| **Grabbed** | highsea picks a release and starts downloading it. |
+| **Imported** | A film is in the library. |
+| **Upgraded** | A better release replaces the one in the library. |
+| **Download failed** | A download fails. |
+| **Subtitle added** | A subtitle is downloaded for a film, saying whether it was synced to the audio. |
+| **Health** | Something in **System › Health** needs attention, and again when it has cleared. |
+| **Update** | A new version of highsea is available. |
+| **Movie added** | Films are added to the library, by a person or by an [import list](/settings/lists/). |
+
+A new connection hears **Imported**, **Upgraded**, **Download failed**, **Health** and **Update** until you change it. A connection with no events shows "Hears nothing yet".
+
+### Tags
+
+Give a connection **Tags** to hear about some films only. A film's messages then come to it only for films with one of those tags. With no tags, it hears about every film. Messages that aren't about a film, such as Health and Update, aren't affected.
+
+## Each service
+
+| Service | Fields | Where to get them |
+| --- | --- | --- |
+| **Discord** | **Webhook address** (needed), **User name** | In the channel's settings: Integrations, Webhooks. Make a webhook there and copy its URL. **User name** changes the name messages are posted under. |
+| **Slack** | **Webhook address** (needed) | An incoming webhook from your Slack app. The address starts with `https://hooks.slack.com/`. |
+| **Telegram** | **Bot token** (needed), **Chat** (needed), **Send silently** | Make a bot with @BotFather, which gives you the token. **Chat** is a chat id, or `@channelname` for a public channel. A bot can't start a conversation, so message it first, or add it to the group or channel. |
+| **ntfy** | **Server address** (needed), **Topic** (needed), **Access token**, **User name**, **Password**, **Priority** | `https://ntfy.sh`, or your own ntfy server. Subscribe to the same topic in the ntfy app. On a server with access control, give an access token or a user name and password. Priority runs from 1, the lowest, to 5, the highest; 3 to start with. |
+| **Gotify** | **Server address** (needed), **Application token** (needed), **Priority** | Make an application in your Gotify server's web interface; it gives you the token. Priority runs from 0 to 10; 5 to start with. |
+| **Pushover** | **Application token** (needed), **User key** (needed), **Device**, **Priority** | Register an application on pushover.net for its token; your user key is on your Pushover dashboard. Leave **Device** empty for all your devices. Priority runs from −2, the quietest, to 1, the most urgent; 0 to start with. |
+| **Matrix** | **Homeserver** (needed), **Access token** (needed), **Room** (needed) | The homeserver's address, and the access token of the account that posts, which has to be in the room. **Room** is a room id like `!abc:example.org`, or an alias. A separate account for highsea keeps things tidy. |
+| **Email** | **SMTP server** (needed), **Port**, **Security**, **User name**, **Password**, **From** (needed), **To** (needed) | Your mail provider's SMTP settings. **Security** is **STARTTLS** (usually port 587, the default), **TLS** (usually port 465) or **None**, for a relay on your own network. **From** looks like `highsea <media@example.org>`; **To** is where notifications go. |
+| **Webhook** | **Address** (needed), **Method**, **Access token**, **User name**, **Password** | Any address that takes JSON. **Method** is POST or PUT. An access token is sent as a Bearer token; otherwise a user name and password are sent as basic authentication. |
+| **Apprise** | **Server address** (needed), **Configuration key**, **Apprise URLs**, **Tag** | The address of an Apprise API server you run. Give the key of a configuration saved on it, or Apprise URLs to send to directly. |
+| **Browser** | **People** | See [Browser notifications](#browser-notifications). |
+
+### The webhook's message
+
+A webhook gets one JSON body per message, with these fields:
+
+```json
+{
+  "event": "imported",
+  "level": "success",
+  "title": "Sintel (2010) is in the library",
+  "body": "…",
+  "text": "Sintel (2010) is in the library. …",
+  "url": "https://harbor.example.net/…",
+  "image": "…",
+  "at": "2026-10-23T09:30:00.000Z",
+  "payload": { }
+}
+```
+
+`text` is the title and body in one line. `url` and `image` can be `null`. `payload` holds the event's own details.
+
+## Browser notifications
+
+A **Browser** connection shows its messages as notifications in the browsers people have turned on.
+
+1. Add a **Browser** connection. Under **People**, choose whose browsers it reaches. Nobody chosen means just you.
+2. In each browser that should get notifications, open **Settings › Connections** and, under **This browser**, press **Get notifications in this browser**. The browser asks for permission.
+
+**Your browsers** lists the ones you've turned on, and you can stop each one. Each person manages only their own.
+
+Browsers allow this only when the admin is open over HTTPS, or on the computer highsea runs on. If the page says notifications are blocked, allow them for highsea's address in the browser's settings. See [Network and remote access](/settings/network/) for HTTPS.
+
+## The server's mail
+
+An **Email** connection can also send the server's own mail: invites and password resets, to each person's own address. Turn on **Send the server's mail** in the connection. Only one connection sends it; turning it on for one turns it off for the others. That connection shows **Server's mail** in the list.
+
+Without one, invites and resets still work: **Settings › Users and devices** shows each link to copy and send yourself. With one, the link is shown and emailed. Set the **External URL** in [Network and remote access](/settings/network/) so links in emails reach the server from anywhere.
+
+## When a message doesn't arrive
+
+Each connection's row shows when it last sent a message, or, if the last one didn't arrive, why.
+
+highsea tries again when a service is busy or doesn't answer: after the wait the service asks for, if it says, or after 30 seconds, doubling each time, up to an hour between tries. Other refusals, such as a wrong token or a webhook that no longer exists, fail at once. A message still unsent a day after its event is dropped.
+
+While messages to a connection aren't arriving, **System › Health** says so, until one gets through. Fix the setting it names, then use **Test** to check.
+
+## Managing connections
+
+Each connection's row has:
+
+- a switch to turn it on or off without losing its settings;
+- **Test**, which sends a test message now;
+- **Edit**;
+- **Remove**. It stops getting notifications, and what was sent to it is forgotten.
