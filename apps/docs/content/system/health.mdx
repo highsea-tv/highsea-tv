@@ -11,7 +11,8 @@ description: What System › Health lists, and what to do about each message, by
     messages (packages/indexers/src/service.ts, packages/catalog/src/service.ts,
     packages/downloads/src/service.ts, ip-blocklist.ts, packages/vpn/src/copy.ts,
     packages/subtitles/src/movies/accounts.ts, packages/notifications/src/service/messages.ts,
-    packages/network/src/tls.ts).
+    packages/network/src/tls.ts), the folders' checks (packages/runtime/src/system.ts) and imports
+    that copy (packages/media/src/movies/import.ts).
 */}
 
 Written for highsea 0.1.0.
@@ -62,9 +63,15 @@ What each message means, and what to do, by source:
 ## Import
 
 - **unar isn't installed, so downloads that come as archives can't be imported.** The official image includes it. Otherwise install unar, or set `HIGHSEA_UNAR` to its path.
+- **Imports into … are copied, not hardlinked, because the downloads folder is on another disk.** A warning. Each film takes its space twice while it seeds. Put downloads and movies under one `/data` folder on one disk, and give the container that one folder, as [Recommended setup](/recommended-setup/) shows. The warning clears after the next import that hardlinks, or a restart.
+- **Imports into … are copied, not hardlinked, because the disk doesn't support hardlinks.** The same, on a filesystem without hardlinks. Move the library to one that has them, or turn off **Use hardlinks** in [Importing](/settings/media-management/importing/#hardlinks-and-copies) if copies are what you want.
 
 ## Library
 
+- **The … folder … isn't there.** An error. A root folder or the downloads folder is missing, usually a drive or share that isn't mounted, or a volume left out of the container. Mount it where the container expects it, or, for a root folder, change its path in [Root folders](/settings/media-management/root-folders/).
+- **highsea can't write to the … folder …** An error. The folder is read-only to highsea: a read-only mount, or a folder owned by another user than the one in `PUID` and `PGID`. See [Find your user and group](/install/docker/#find-your-user-and-group).
+- **The disk that holds … has only … free.** An error, under 1 GB. Downloads and imports stop when the disk is full; free some space.
+- **The disk that holds … is …% full.** A warning, when less than a tenth of the disk is free and that is under 100 GB. Each disk is listed once.
 - **… isn't watched for changes.** A notice. highsea can't watch that folder for files you add or remove, so the library scan finds changes every 12 hours instead.
 
 ## Connections

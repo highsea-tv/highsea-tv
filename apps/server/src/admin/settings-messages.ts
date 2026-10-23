@@ -45,8 +45,6 @@ export const settings = defineMessages({
   'area.migration': 'Migration',
   'area.migration.description':
     'Bring your library across from Radarr and your torrents from qBittorrent, once.',
-  'later.title': 'This area comes later',
-  'later.body': 'It’s built in a later checkpoint of the server plan.',
   'unsaved.label': 'Unsaved changes',
   'unsaved.body': 'You have unsaved changes.',
   discard: 'Discard',

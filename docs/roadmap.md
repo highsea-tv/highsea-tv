@@ -170,7 +170,7 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-2-prototypes.md`]
 
 ## Phase 3: Server milestone 1 (implementation)
 
-The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](plans/phase-3-server.md) (a draft for the owner's review).
+The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](plans/phase-3-server.md), approved by the owner on 2026-10-19.
 
 ### Runtime and platform
 - **Process model**: Bun handles packages, scripts and tests. **Node 24 LTS**, pinned to 24.21.0 in `.nvmrc`, runs the Next server, locally, in CI and in the image alike.
@@ -361,6 +361,8 @@ The step-by-step plan, with checkpoints, is [`docs/plans/phase-3-server.md`](pla
 11. `curation`.
 12. Docker hardening + end-to-end tests.
 
+**✅ Phase 3 signed off (2026-10-23): server milestone 1.** Checkpoints 1 to 9 are built and signed off, with smart collections (8d) and the release work (9a to 9c). The server finds, downloads, imports and subtitles movies, with indexers from the signed catalog, its own torrent engine and VPN connections, automation, notifications, curation and the admin, every screen reviewed beside its prototype. Each [M1] item above has its "As built" line, and what Phase 3 leaves behind is listed in [phase-3-checkpoint-9.md](plans/phase-3-checkpoint-9.md#wrap-up-9c). The image, the catalog and the first release, 0.1.0, wait for the owner's word. Phase 4 comes next.
+
 ## Follow-up: dashboard customization (after Phase 3)
 The owner asked on 2026-10-20 for the admin dashboard to be as customizable as [Homarr](https://github.com/homarr-labs/homarr)'s boards, with a visible grid while customizing:
 - free placement and resizing on both axes;
@@ -373,6 +375,8 @@ It follows Phase 3's sign-off, with its new customize mode prototyped and approv
 
 ## Phase 4 (later): clients
 `ui-native`, then `apps/web` → `apps/desktop` (Tauri) → `apps/mobile` + `apps/tv` (Expo / react-native-tvos), built from the Phase 2 prototypes. Alongside them: `stream` (playback/transcode, WebSockets), TV/music/books domains, Usenet, requests, and the optional Connect relay.
+
+The step-by-step plan, with checkpoints, is [`docs/plans/phase-4-clients.md`](plans/phase-4-clients.md) (the owner answered its questions on 2026-10-23). It covers playback and the four clients for movies; the other media types, requests, Usenet and the relay are later phases of their own. It starts only after Phase 3's sign-off.
 
 ---
 
@@ -409,10 +413,13 @@ Tags: **[M1]** pull into server milestone 1 · **[Arch]** affects architecture n
 
   Built in checkpoint 6a: a release whose file list carries an executable or dangerous extension (Radarr's lists) is refused before a byte downloads, blocklisted and replaced; a download with no seeds for 3 hours is blocklisted and replaced; samples and extras are skipped at import. Password-protected archives are caught at extraction (6b).
 - **[M1] Health checks** (*arr "Health"): paths, permissions, disk space, indexer status, catalog status, VPN (down, the exit address your own, port forwarding). Downloads and the VPN joined System's health list in checkpoint 6a.
+  - *As built (checkpoints 2 to 9c):* System › Health lists the database, TLS, discovery and the external URL, the catalog, indexers, the torrent client and imports, the IP blocklist, the VPN, subtitle accounts and ffmpeg, notification connections, `unar`, a failed restore and folders that aren't watched. 9c added the folders and disks: a root folder or the downloads folder that's missing or can't be written to is an error (Radarr's RootFolderCheck and MountCheck), a disk under 1 GiB free an error and one under a tenth free and under 100 GiB a warning, and imports that copy instead of hardlinking a warning.
 - **[M1] Backups and restore**: scheduled DB + config backups, plus a backup before every migration.
   - *As built (checkpoint 8b, [ADR 0047](adr/0047-operations.md)):* a zip of the database and a manifest, made daily, weekly or by hand, before an update and before a restore; never `secret.key`, which is copied by hand to restore on another machine. Restore restarts the server on the backup.
 - **[M1] Manual / interactive import**: file browser, rename preview, mass rename, multiple root folders and disks. Manual import (A17) built in checkpoint 6a.
+  - *As built (checkpoints 4 to 8b):* manual import with a folder browser and the rename preview in Naming (6a); the existing-library import with Rename to my format, the library scan and filesystem watching (6b); several root folders (4); each disk's space on System › Status (8b). Renaming films already in the library, all at once, is left for later (owner, 2026-10-23).
 - **[M1] Media management extras**: NFO and artwork writing (Kodi), permissions (chmod/chown), editions, alternative titles, delay profiles, tags for scoping rules.
+  - *As built (checkpoints 6a and 8c, [ADR 0039](adr/0039-importing.md), [ADR 0048](adr/0048-curation.md)):* NFO files with poster and fanart, off by default; folder and file modes (chmod), with the owner set by `PUID` and `PGID` rather than a chown setting; delay profiles as each quality profile's Wait before grabbing; tags that scope indexers, lists and connections. Editions are parsed, kept on each version, named by a token and matched by custom formats, but there's no edition to choose per film. That, alternative titles and a chown setting are left for later (owner, 2026-10-23).
 - **[M1] Torrent engine production features**:
   - IP blocklists; UPnP/NAT-PMP and VPN port-forwarding;
   - interface-binding kill-switch; uTP, IPv6;
@@ -490,9 +497,11 @@ Tags: **[M1]** pull into server milestone 1 · **[Arch]** affects architecture n
   - TOTP 2FA, passkeys;
   - OIDC/SSO (Authentik/Authelia) and trusted reverse-proxy auth headers;
   - login rate limiting, audit log, scoped API keys.
+  - *As built (checkpoint 2, [ADR 0023](adr/0023-accounts-sessions-devices.md) to [0025](adr/0025-single-sign-on-and-proxy-auth.md)):* TOTP with recovery codes, passkeys, OIDC with PKCE, trusted forward-auth headers, sign-in limits per username and per address, the audit log, and API keys that read only or do everything. Keys aren't scoped per resource.
 - **[M1] Notifications breadth**: Discord, Telegram, ntfy, Gotify, Pushover, email/SMTP, Apprise, Matrix, Slack, webhooks, browser web-push.
   - *As built (checkpoint 8b, [ADR 0046](adr/0046-notifications.md)):* every one of them, Apprise through the owner's Apprise API server. An SMTP connection can also send invites and password resets.
 - **[M1] i18n**: localizable UI strings from day one, plus metadata language/region settings.
+  - *As built (checkpoints 1, 4 and 8b, [ADR 0021](adr/0021-i18n-message-catalogs.md)):* every string in `@highsea-tv/i18n` catalogs, in English only so far; the metadata's language and region (4); the server's language and time zone (8b).
 - **[M1] Observability**: structured logs viewer, Prometheus `/metrics`, opt-in crash reporting.
   - *As built (checkpoint 8b, [ADR 0047](adr/0047-operations.md)):* log files a day, kept 14 days; `/metrics` written without a dependency, off until the owner turns it on; crash reports kept in the config folder and never sent. Update notifications come from the signed catalog.
 - **[M1] Release engineering**:
@@ -500,13 +509,16 @@ Tags: **[M1]** pull into server milestone 1 · **[Arch]** affects architecture n
   - multi-arch Docker images (amd64 + **arm64** for Pi/NAS) published to GHCR;
   - versioning and changelog; in-app update notifications;
   - templates for unRAID, TrueNAS and Synology.
+  - *As built (checkpoints 9a and 9b, [ADR 0050](adr/0050-release-and-versioning.md)):* CI on GitHub Actions; the slim image for amd64 and arm64 with OCI labels, provenance and an SBOM, built and checked in CI; one SemVer version with stable and beta channels, `CHANGELOG.md`, `scripts/release.ts` and a release workflow whose publishing jobs wait in an approval-gated environment; update notifications from the signed catalog (8b); templates for Unraid, TrueNAS and Synology in `templates/`. Nothing is published until the owner says so.
 - **[Arch] TLS**: built-in ACME/Let's Encrypt for remote access without a reverse proxy.
+  - *As built (checkpoint 2, [ADR 0026](adr/0026-network-tls.md)):* built-in HTTPS with the owner's own certificate in `/config/tls`. ACME comes later, as the ADR records.
 - **[Arch] Storage realities**: SMB/NFS mounts (no hardlinks, copy fallback), mergerfs, multiple disks, and large libraries (100k+ items) with indexes designed for them.
 - **[Arch] Extension points / plugin system**: providers, notification channels, widgets and metadata agents as registries now. A sandboxed plugin system can come later.
 - **[Arch] License: AGPL-3.0 (decided).**
   - Phase 0 adds `LICENSE`, SPDX headers, and a third-party license audit in CI (blocks GPL-2.0-only and other incompatible dependencies and content).
   - Catalog content records its license and source per definition.
 - **[M1] User-facing docs**: install guides (Docker, unRAID, Synology), migration guides, and a TRaSH-style "recommended setup", all in `docs/`.
+  - *As built (checkpoint 9b):* the guides live in `apps/docs`, not `docs/`, which stays internal (owner, 2026-10-22), and are served at `docs.highsea.tv` since 2026-10-23: installing with Docker, on Unraid, Synology and TrueNAS, the recommended setup, moving from Radarr and qBittorrent, upgrading, and a guide for every admin page and Settings area.
 
 ---
 

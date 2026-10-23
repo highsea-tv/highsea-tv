@@ -137,6 +137,7 @@ import {
   createResourceMonitor,
   type Disk,
   disks,
+  folderIssues,
   type HealthIssue,
   type Resources,
 } from './system.ts'
@@ -1297,6 +1298,25 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
           level: 'error',
           message: `The restore from ${restoreFailure.id} didn’t work, so the server went back to the database it had: ${restoreFailure.message}`,
           since: restoreFailure.at,
+        })
+      if (isSetupComplete(db)) {
+        const library = [
+          ...media.rootFolders.list().map((f) => ({ label: 'movies', path: f.path })),
+          { label: 'downloads', path: folders().downloads },
+        ]
+        for (const i of folderIssues(library))
+          out.push({ ...i, source: 'Library', since: startedAt })
+      }
+      for (const c of movies.copying())
+        out.push({
+          id: `copying:${c.root}`,
+          source: 'Import',
+          level: 'warning',
+          message:
+            c.fallback === 'cross-device'
+              ? `Imports into ${c.root} are copied, not hardlinked, because the downloads folder is on another disk. Each film takes its space twice while it seeds. Keep downloads and movies under one /data folder, on one disk.`
+              : `Imports into ${c.root} are copied, not hardlinked, because the disk doesn’t support hardlinks. Each film takes its space twice while it seeds.`,
+          since: c.since,
         })
       for (const p of watch.problems())
         out.push({

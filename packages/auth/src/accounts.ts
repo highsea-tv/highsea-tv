@@ -431,13 +431,9 @@ export function updateUser(
   if (!user) throw notFound('There’s no one with that id.')
   assertCanManage(ctx, actor)
   if (user.role === 'owner' && patch.role)
-    throw new AppError(
-      'forbidden',
-      'The owner stays the owner. Hand ownership over in Security first.',
-      {
-        reason: 'owner-role',
-      },
-    )
+    throw new AppError('forbidden', 'The owner stays the owner: their role can’t be changed.', {
+      reason: 'owner-role',
+    })
   if (patch.libraries) checkLibraries(patch.libraries)
   const changes: Partial<typeof schema.users.$inferInsert> = { updatedAt: ctx.now() }
   if (patch.displayName !== undefined) {

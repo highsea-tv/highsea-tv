@@ -25,8 +25,12 @@ const srtTime = (ms: number) => {
   return `${p(Math.floor(ms / 3_600_000))}:${p(Math.floor(ms / 60_000) % 60)}:${p(Math.floor(ms / 1000) % 60)},${p(ms % 1000, 3)}`
 }
 
-/** Starts the server on `port`, with discovery on the next port and the fake indexer on the one after. */
-export async function boot(port: number) {
+/**
+ * Starts the server on `port`, with discovery on the next port and the fake indexer on the one after.
+ * `production` runs the production build in apps/server/.next (`next build` first), as the image
+ * does; otherwise Next's dev server.
+ */
+export async function boot(port: number, { production = false } = {}) {
   // localhost: Next's dev server serves its dev resources to that origin only (allowedDevOrigins)
   const base = `http://localhost:${port}`
 
@@ -50,7 +54,10 @@ export async function boot(port: number) {
     cwd: join(ROOT, 'apps/server'),
     env: {
       ...process.env,
-      NODE_ENV: 'development',
+      NODE_ENV: production ? 'production' : 'development',
+      // production would check highsea's published catalog and trust only the release key; the
+      // seed here is signed with the development key, and nothing reaches the network
+      ...(production ? { HIGHSEA_CATALOG_URL: 'off', HIGHSEA_CATALOG_DEV_KEY: '1' } : {}),
       PORT: String(port),
       HOST: '127.0.0.1',
       HIGHSEA_CONFIG_DIR: join(dir, 'config'),

@@ -16,6 +16,7 @@ import {
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { schema } from '@highsea-tv/db'
+import { nodeFs, type TransferFs } from '@highsea-tv/media/shared'
 import { eq } from 'drizzle-orm'
 import { type Clips, hasFfmpeg, makeClips } from '../clips.ts'
 import { reason, SINTEL, setup } from './helpers.ts'
@@ -35,9 +36,9 @@ afterEach(() => {
 })
 
 /** A library at `<dir>/data/media/movies` and downloads at `<dir>/data/downloads`, Sintel added. */
-async function start() {
+async function start(fs?: TransferFs) {
   let downloads = ''
-  const s = await setup({ importing: { downloadDirs: () => [downloads], sampleSeconds: 2 } })
+  const s = await setup({ importing: { downloadDirs: () => [downloads], sampleSeconds: 2, fs } })
   cleanups.push(s.cleanup)
   const library = join(s.dir, 'data', 'media', 'movies')
   downloads = join(s.dir, 'data', 'downloads')
@@ -245,6 +246,33 @@ describe.skipIf(!hasFfmpeg)('importing a download', () => {
     expect(r.status).toBe('blocked')
     expect(r.status === 'blocked' && r.reason).toContain('isn’t inside a root folder')
     expect(await reason(() => s.movies.manualImport.scan(outside))).toBe('invalid:outside-roots')
+  })
+})
+
+describe.skipIf(!hasFfmpeg)('copies instead of hardlinks', () => {
+  test('a root folder whose imports copy is listed for System › Health, with why', async () => {
+    const crossDevice: TransferFs = {
+      ...nodeFs,
+      link: async () => {
+        throw Object.assign(new Error('cross-device link'), { code: 'EXDEV' })
+      },
+    }
+    const s = await start(crossDevice)
+    expect(s.movies.copying()).toEqual([])
+    const name = 'Sintel.2010.1080p.BluRay.x264-GRP'
+    const folder = s.download(name, { [`${name}.mkv`]: clips.main })
+    const result = await s.movies.importDownload({
+      itemId: s.row.id,
+      folder,
+      releaseTitle: name,
+      quality: 'Bluray-1080p',
+      indexer: 'Fake',
+      downloadId: 'dl-copy',
+    })
+    expect(result).toMatchObject({ status: 'imported', transfer: 'copy' })
+    expect(s.movies.copying()).toEqual([
+      { root: s.library, fallback: 'cross-device', since: expect.any(Number) },
+    ])
   })
 })
 

@@ -3,11 +3,13 @@
 // Boots a throwaway server (seeded.ts), sweeps setup, finishes it and seeds the admin through the
 // API, then visits every admin page signed out, as the owner and as an admin, and as a user, who
 // gets the refusal page at every address (ADR 0032): axe, overflow and page errors in three themes,
-// at 200% text and with reduced motion, then the keyboard walk.
+// at 200% text and with reduced motion, then the keyboard walk. It runs the production build, as the
+// image does (`next build` first); SWEEP_DEV=1 runs Next's dev server instead, without the build.
 // Usage: bun scripts/sweeps/server.ts [pages|keyboard]
+import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import type { BrowserContext, Page } from 'playwright-core'
-import { axe, heightFor, launch, overflow, pool, settleAnimations, walk } from './lib.ts'
+import { axe, heightFor, launch, overflow, pool, ROOT, settleAnimations, walk } from './lib.ts'
 import { boot, seed } from './seeded.ts'
 
 const only = process.argv[2] as 'pages' | 'keyboard' | undefined
@@ -26,7 +28,10 @@ const SHOTS = process.env.SWEEP_SHOTS
 
 // ---------------------------------------------------------------- the server
 
-const server = await boot(PORT)
+const production = process.env.SWEEP_DEV !== '1'
+if (production)
+  execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/server'), stdio: 'inherit' })
+const server = await boot(PORT, { production })
 const { base: BASE, dataDir, stop } = server
 const path = (link: string) => new URL(link).pathname
 
@@ -250,6 +255,8 @@ try {
       },
       { name: 'settings', path: '/settings' },
       { name: 'settings:general', path: '/settings/general' },
+      // 9c: Settings › Subtitles is the Subtitles page
+      { name: 'settings:subtitles', path: '/settings/subtitles' },
       { name: 'settings:media', path: '/settings/media' },
       // 8c: Settings › Media management's Tags, with its Rename and Remove dialogs
       {

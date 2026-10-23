@@ -13,7 +13,7 @@ highsea.tv is a self-hosted, all-in-one media platform. One server replaces the 
 
 Dedicated clients for web, desktop, mobile and TV connect to your server at home or remotely.
 
-> Status: **pre-alpha. Phase 2 (design prototypes) is signed off; Phase 3 (the server) is under way.** The design system is v1.0, and every admin and client flow is a clickable prototype; nothing here is usable as a product yet. See [docs/roadmap.md](docs/roadmap.md).
+> Status: **pre-alpha. The server's first milestone is done (signed off 2026-10-23), ahead of the first release, 0.1.0.** It finds, downloads and imports movies, with indexers, a built-in torrent client, subtitles that sync themselves, automation, notifications and an admin to run it all. Playback and the client apps come next, in Phase 4. See [docs/roadmap.md](docs/roadmap.md).
 
 ## Install
 
@@ -27,7 +27,8 @@ Once highsea is running:
 
 - [Recommended setup](https://docs.highsea.tv/recommended-setup/);
 - [Move from Radarr and qBittorrent](https://docs.highsea.tv/migrate-from-radarr-and-qbittorrent/);
-- [Upgrade](https://docs.highsea.tv/upgrade/), and [CHANGELOG.md](CHANGELOG.md) for what each release changes.
+- [Upgrade](https://docs.highsea.tv/upgrade/), and [CHANGELOG.md](CHANGELOG.md) for what each release changes;
+- a guide for every page of the admin and every Settings area, from the [Introduction](https://docs.highsea.tv/).
 
 The compose files are at the root (`compose.yaml`, and `compose.bridge.yaml` where host networking isn't available), and the NAS templates are in [`templates/`](templates/).
 
@@ -40,7 +41,9 @@ The compose files are at the root (`compose.yaml`, and `compose.bridge.yaml` whe
 | `catalog/` | Signed catalogs (indexers, presets, themes, sounds), released independently of the apps |
 | `design/` | Brand explorations, source assets, clickable prototypes |
 | `docs/` | How highsea is planned and built: roadmap, ADRs, brand, design language, product specs. The guides for running it are in `apps/docs` |
-| `cloud/` | Optional highsea cloud services (later) |
+| `templates/` | The NAS templates: Unraid's XML, and compose files for TrueNAS and Synology |
+| `docker/`, `compose*.yaml` | The image's entrypoint and notices, and the compose files |
+| `scripts/` | Checks, browser sweeps, the image's build steps, the end-to-end run and releases |
 
 ## Development
 
