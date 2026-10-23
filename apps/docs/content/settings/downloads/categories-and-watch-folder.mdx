@@ -1,0 +1,40 @@
+---
+title: Categories and the watch folder
+description: Categories set where torrents you add by hand save to, and the watch folder adds any .torrent file dropped into it.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The screen and its copy: apps/server/src/admin/download-categories.tsx and
+    download-categories-messages.ts; the watch folder's fields in download-client.tsx.
+  - Defaults and limits: packages/downloads/src/categories.ts and watch.ts.
+*/}
+
+Written for highsea 0.1.0.
+
+Every torrent goes in a category, which sets the folder it saves to: the library's grabs in **movies**, and torrents you add yourself, on the [Downloads](/downloads/) page or through the watch folder, in the category you choose. Both sections are at the bottom of **Settings › Download client**. Categories save as soon as you change them; the watch folder waits for **Save** with the rest of the page.
+
+## Categories
+
+![The Categories section: movies and manual, each marked Built in with its folder under /data/downloads and 1 torrent, a category named books with no torrents and a Remove button, and Name and Folder fields with Save the category](/images/admin/settings-downloads/categories.png)
+
+Torrents you add by hand go in a category, which sets the folder they save to. Two are built in:
+
+- **movies** holds the library's grabs.
+- **manual** is for torrents added without a category.
+
+To add a category, give it a **Name** (letters, digits, spaces, dots, dashes and underscores) and, if you like, a **Folder**, then choose **Save the category**. With the folder empty, it's a folder of that name in the downloads folder. Saving a name that's already there changes its folder; torrents already in it stay where they are.
+
+Each category shows how many torrents use it. **Remove** deletes nothing on disk, but a category with torrents can't be removed until they're removed from Downloads.
+
+## Watch folder
+
+![The Watch folder section: an empty Folder field and a Category list set to manual, with the line that torrents from the watch folder aren't imported into the library](/images/admin/settings-downloads/watch-folder.png)
+
+Drop a `.torrent` file into the watch folder and highsea adds it to Downloads, then renames the file `.torrent.added`. A file that isn't a torrent is renamed `.torrent.invalid`.
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Folder** | The folder to watch, inside the data folder or the downloads folder. Empty, off. | Empty (off) |
+| **Category** | The category its torrents go in. They aren't imported into the library. | manual |

@@ -1,0 +1,55 @@
+---
+title: Security
+description: The Owner's rules for signing in, single sign-on with an OpenID Connect provider, and how highsea slows down guessing.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: Settings › Security (apps/server/src/admin/security.tsx, security-messages.ts),
+    sign-in and the invite page (login.tsx, login-messages.ts), the areas only the owner sees
+    (settings-areas.ts).
+  - Defaults and limits: packages/auth/src/settings.ts (two-step and passkeys on, 30 days),
+    rate-limit.ts (10 failures per account and 50 per address in 15 minutes, then 5 minutes),
+    sign-in.ts (5 tries at a code), challenges.ts (5 minutes per step), oidc.ts, proxy-auth.ts.
+  - OpenID Connect: https://openid.net/specs/openid-connect-core-1_0.html
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings › Security** sets the rules for signing in to the server. Only the Owner sees this area. Changes take effect when you choose **Save**.
+
+![Settings › Security: Signing in, with Require two-step for the owner and admins and Allow passkeys on, Stay signed in for 30 days and Trust a sign-in header from my proxy off; below it Single sign-on (OIDC), off](/images/admin/settings-users-and-security/security.png)
+
+## Signing in
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Require two-step for the owner and admins** | Owners and Admins must use [two-step verification](/settings/users-and-security/your-account/#two-step-verification) to open the admin. Anyone who hasn't set it up is asked to at their next sign-in, and **Turn off** disappears from their account. | On |
+| **Allow passkeys** | Offers **Sign in with a passkey**, and lets people add [passkeys](/settings/users-and-security/your-account/#passkeys) in **Your account**. | On |
+| **Stay signed in for** | How long a sign-in to the admin lasts: 1, 7, 30 or 90 days. | 30 days |
+| **Trust a sign-in header from my proxy** | For Authelia, Authentik and other forward-auth proxies. The proxy signs people in and passes their username in a **Header**, `Remote-User` unless you change it. It only signs in existing accounts, and highsea believes it only from the trusted proxies listed in [Settings › Network and remote access](/settings/network/). | Off |
+
+## Single sign-on (OIDC)
+
+Lets people sign in with Authentik, Authelia, Keycloak or another OpenID Connect provider. It needs the server's external address, set in [Settings › Network and remote access](/settings/network/), so the provider can send people back.
+
+1. In your provider, create a client for highsea.
+2. In highsea, turn on **Offer single sign-on**.
+3. Enter a **Button label**: the sign-in page shows "Sign in with" and this name.
+4. Enter the **Client ID**, the **Issuer URL** (the provider's `https://` address) and, if your provider gives one, the **Client secret**. The secret is stored encrypted; leave the field blank to keep the stored one.
+5. Copy the **Redirect URL** highsea shows into your provider, then **Save**.
+
+![Single sign-on turned on: Button label, Client ID, Issuer URL and Client secret, and under Redirect URL a note that single sign-on needs the server's external URL, with Open Network](/images/admin/settings-users-and-security/single-sign-on.png)
+
+Single sign-on doesn't create accounts. Each person joins through their [invite link](/settings/users-and-security/people/#invite-someone) with **Join with** your provider, and from then on that provider account signs them in. Someone the server doesn't know is told to ask the Owner for an invite.
+
+## Sign-in protections
+
+highsea slows down anyone guessing passwords:
+
+- After 10 failed attempts at one account within 15 minutes, passwords for that account are refused for 5 minutes.
+- After 50 failed attempts from one address within 15 minutes, that address is refused for 5 minutes.
+- Each sign-in allows 5 tries at a two-step code, and the code step expires after 5 minutes.
+
+Passkeys and single sign-on keep working during a pause, so someone guessing can't lock you out. Restarting highsea clears the counts.

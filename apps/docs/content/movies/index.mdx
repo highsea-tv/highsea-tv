@@ -1,0 +1,27 @@
+---
+title: Discover and Movies
+description: Find a film, add it, and look after it in the library, on its own page and on people's pages.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the admin's Discover (apps/server/src/admin/discover.tsx), the Movies library
+    (library.tsx), a film's page (movie-detail.tsx), and their strings (the matching *-messages.ts
+    files); the TMDB key in Settings › General (general.tsx).
+  - The product specs docs/product/movies.md and media-pages.md, for intent.
+*/}
+
+Written for highsea 0.1.0.
+
+Two pages in the admin's sidebar handle films. **Discover** finds a film and adds it. **Movies** is your library: what's here, what's still wanted, and the place to change many films at once. Every film, in the library or not, has its own page. Like the rest of the admin, they're for the owner and admins.
+
+highsea reads titles, people and collections from TMDB. If Discover says "Add a TMDB key to find movies.", add one in **Settings › General**, under Metadata. See [General settings](/settings/general/).
+
+<Cards>
+  <Card title="Discover" href="/movies/discover/" description="Find a film on TMDB and add it to the library." />
+  <Card title="The library" href="/movies/library/" description="Find films in the library, save a filter as a collection, and change many films at once." />
+  <Card title="A film's page" href="/movies/film/" description="What's in the library and downloading, searching, files, history and subtitles." />
+  <Card title="Change or remove a film" href="/movies/manage-a-film/" description="A film's options, quality profile, versions, details from TMDB, and removing it." />
+  <Card title="People and collections" href="/movies/people-and-collections/" description="A person's filmography, and the series a film belongs to on TMDB." />
+</Cards>

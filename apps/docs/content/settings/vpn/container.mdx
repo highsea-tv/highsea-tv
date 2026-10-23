@@ -1,0 +1,44 @@
+---
+title: A VPN container
+description: Join highsea to a gluetun container's network, for providers that only offer OpenVPN or if you already run gluetun.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: apps/server/src/admin/vpn.tsx and vpn-messages.ts (the screen and its words),
+    packages/vpn/src (settings.ts for defaults, compose.ts for the gluetun block),
+    compose.gluetun.yaml at the repository's root.
+  - gluetun: https://github.com/qdm12/gluetun-wiki (providers, and the control server at
+    https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md)
+*/}
+
+Written for highsea 0.1.0.
+
+highsea joins the network of a [gluetun](https://github.com/qdm12/gluetun-wiki) container, whose only route out is the tunnel. gluetun makes the tunnel and supports many providers, including those that only offer OpenVPN; highsea reads gluetun's status and forwarded port from its control server.
+
+![Settings › VPN with A VPN container chosen: Control server set to http://127.0.0.1:8000, an empty API key, and Compose for your provider open with AirVPN chosen and the gluetun block it writes, with a Copy button](/images/admin/settings-vpn/container.png)
+
+## Set it up
+
+1. Make an API key for gluetun's control server:
+
+   ```sh
+   docker run --rm qmcgaw/gluetun genkey
+   ```
+
+2. Add a gluetun service to your compose file and join highsea to its network with `network_mode: "service:gluetun"`. highsea's ports move to the gluetun service, since highsea no longer has a network of its own. `compose.gluetun.yaml` at the root of highsea's repository is a complete example for Proton VPN.
+
+   For other providers, open **Compose for your provider** on the VPN page, pick your provider, and **Copy** the block it writes. Fill in what your provider gives you, and put your API key in `HTTP_CONTROL_SERVER_AUTH_DEFAULT_ROLE`. gluetun's wiki has a page for each provider with the settings it takes. highsea never gets access to Docker itself, so you run this step.
+
+3. Start both, then in **Settings › VPN** choose **A VPN container**.
+4. Leave **Control server** at `http://127.0.0.1:8000`. The two containers share a network, so gluetun is on highsea's own loopback address.
+5. Enter the **API key** and save. highsea asks gluetun before it saves, and says so if gluetun refuses the key or can't be reached.
+
+## Port forwarding
+
+For port forwarding through gluetun, turn it on in gluetun's settings (`VPN_PORT_FORWARDING: "on"` for providers gluetun supports it with) and keep **Use the forwarded port** on in highsea. highsea then uses the port gluetun reports. See [Port forwarding](/settings/vpn/port-forwarding/).
+
+## Apps on your network
+
+Apps can't find the server on their own in this setup, since discovery needs host networking or highsea's own published ports. Give them the server's address instead. See [Discovery](/settings/network/#discovery).

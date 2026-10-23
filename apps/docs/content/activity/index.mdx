@@ -1,0 +1,49 @@
+---
+title: Activity
+description: Follow what's downloading, fix stalled and blocked downloads, read the history, manage the blocklist and import files by hand.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The admin's Activity page: apps/server/src/admin/activity.tsx and activity-messages.ts.
+  - The import: packages/media/src/movies/import.ts, and its transfer messages in
+    packages/media/src/shared/transfer.ts.
+  - Seeding rules: apps/server/src/admin/download-client-messages.ts and indexers-messages.ts.
+  - Hardlinks across one filesystem: https://man7.org/linux/man-pages/man2/link.2.html (EXDEV)
+*/}
+
+Written for highsea 0.1.0.
+
+**Activity** is where you follow what highsea is downloading for the library, see what happened, and manage the releases it won't grab again. It has three tabs, **Queue**, **History** and **Blocklist**, and a **Manual import** button for files highsea didn't download or couldn't import on its own.
+
+Owners and Admins use it. Users never open the admin.
+
+Activity is about the library's downloads. The [Downloads](/downloads/) page shows the torrents themselves, including ones you add by hand, with their peers, trackers and files.
+
+<Cards>
+  <Card title="The queue" href="/activity/queue/" description="What's downloading and importing: pause, resume, remove, and fix stalled downloads and blocked imports." />
+  <Card title="History and the blocklist" href="/activity/history-and-blocklist/" description="Everything that happened to the library's films, and the releases highsea won't grab again." />
+  <Card title="Manual import" href="/activity/manual-import/" description="Import files by hand, or add a library that's already on disk." />
+</Cards>
+
+## What happens when a download finishes
+
+When a film's download completes, highsea imports it on its own:
+
+1. It finds the video file, skipping samples and extras, and extracts archives first if the release is packed.
+2. It reads the file to check its quality and length, and checks it against the film's quality profile.
+3. It names the file with your naming format and puts it in the film's folder.
+4. If the film already had a file, the new one replaces it. With a recycle bin set, the old file goes there first.
+5. It records the import in **History**, and looks for subtitles next.
+
+How the file gets into the library depends on **Use hardlinks** in **Settings › Media management**:
+
+- **Hardlinked**: when the downloads folder and the library are on the same disk, highsea makes a hardlink. The file appears in the library at once, takes no extra space, and the torrent keeps seeding from the original.
+- **Copied**: when they're on different disks, or the disk doesn't support hardlinks, or hardlinks are turned off, highsea copies the file. It takes as much space again, and the torrent keeps seeding from the download.
+
+The import's entry in **History** says which it was, and why when it had to copy. [Recommended setup](/recommended-setup/#folders-and-hardlinks) explains how to lay out folders so hardlinks work, and [Media management](/settings/media-management/importing/#hardlinks-and-copies) has the settings.
+
+After the import, the torrent seeds until it reaches its seeding rule: a ratio or a time, whichever comes first. The default rule is in **Settings › Download client** (Owner only), and an indexer can have its own. When seeding stops, the library's copy stays. See [Downloads](/settings/downloads/).
+
+When an import can't go ahead, the download stays in the queue as **Import blocked**; see [Blocked imports](/activity/queue/#blocked-imports).

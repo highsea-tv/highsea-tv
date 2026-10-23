@@ -1,0 +1,58 @@
+---
+title: A torrent's details
+description: A torrent's progress and swarm, its files and their priorities, its trackers, and the rule it seeds by before it stops.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The details sheet: apps/server/src/admin/downloads.tsx and downloads-messages.ts.
+  - Behaviour: packages/downloads/src/service.ts (file priorities, the seeding rule a torrent gets,
+    states and reasons).
+  - The engine: packages/torrent/src/picker.ts (high-priority files first, skipped files not
+    fetched).
+*/}
+
+Written for highsea 0.1.0.
+
+On [Downloads](/downloads/), select a torrent's name to open its details. The top shows its status and size, the buttons for it (**Pause** or **Resume**, **Open the movie** for a library download, **Remove**, and **More** for a torrent you added by hand), and, when there is one, the reason for its state, such as why it stalled or failed. [Pause, resume and remove](/downloads/#pause-resume-and-remove) covers the buttons.
+
+## General
+
+![A torrent's details on the General tab: Sintel's release, Queued, with Pause, Open the movie and Remove, then Progress, Speed, Time left, Seeds, Peers, Uploaded, Added, Swarm Public, Saved to /data/downloads/movies and the info hash](/images/admin/downloads/details-general.png)
+
+- **Progress**, **Speed** and **Time left**.
+- **Seeds** and **Peers**: how many it's connected to, of how many it knows about.
+- **Uploaded**, with the ratio.
+- **Added**: when.
+- **Swarm**: **Public**, or **Private: trackers only, no DHT or peer exchange** for a torrent from a private tracker.
+- **Saved to**: the folder its files are in.
+- **Info hash**.
+
+## Files
+
+![The Files tab, listing one file with its size and its priority menu set to Normal](/images/admin/downloads/details-files.png)
+
+Each file shows its size, its progress and its priority:
+
+- **High**: downloaded before the files at Normal.
+- **Normal**.
+- **Don’t download**: left out.
+
+Changing a priority takes effect at once. Use **Don’t download** to skip the extras or samples in a torrent you added by hand.
+
+A torrent added from a magnet link has no file list until its details arrive from the swarm, and the tab says so.
+
+## Trackers
+
+![The Trackers tab, with one tracker's address, 0 peers and the state Not contacted yet](/images/admin/downloads/details-trackers.png)
+
+Each tracker shows its address, how many peers it gave, any message it sent, and its state: **Working**, **Updating**, **Not contacted yet** or **Not responding**. A torrent with no trackers finds peers through the DHT and from other peers.
+
+## Seeding
+
+![The Seeding tab: seeds until it reaches a ratio of 2 or has seeded for 7d, whichever comes first, then stops and the library's copy stays](/images/admin/downloads/details-seeding.png)
+
+The rule the torrent seeds by: a ratio or a time, whichever comes first. Then it stops, and a film already in the library stays. Some private trackers also ask for a minimum time, and the tab says when the torrent will never stop before it.
+
+A library download takes its rule from its indexer when the indexer has one, set on [Indexers](/indexers/#seeding-rules); otherwise, and for every torrent you add by hand, the rule in **Settings › Download client** applies. See [Download client](/settings/downloads/#seeding).

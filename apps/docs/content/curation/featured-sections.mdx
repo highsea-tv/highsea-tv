@@ -1,0 +1,62 @@
+---
+title: Featured sections
+description: The hero, rows and spotlights that make up every home screen, picked by hand or kept fresh by a rule.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the Curation pages and composers (apps/server/src/admin/curation.tsx,
+    curation-announcement.tsx, curation-section.tsx, curation-shared.tsx, curation-preview.tsx,
+    curation-messages.ts), the admin's banners (apps/server/src/admin/announcement-banners.tsx,
+    shell.tsx), the audience rules (packages/curation/src/service/rules.ts), the rule choices
+    (packages/api-contract/src/curation.ts) and System's task names (system-messages.ts).
+*/}
+
+Written for highsea 0.1.0.
+
+Sections make up every home screen: a hero at the top, then rows and spotlights. The composer draws a [preview](/curation/#preview) of the home screen beside the form as you go.
+
+## Add a section
+
+1. Open **Curation**, then **Featured sections**, and choose **New section**.
+2. Give it a **Title**. It shows above its titles.
+3. Optionally, fill in **After the title**: a shorter line in a lighter weight, such as who picked it or what ties it together.
+4. Choose a **Layout**:
+   - **Hero**: the top of every home screen, with big artwork, the title and **Play**. The first hero in the order fills it; another hero shows as a row.
+   - **Row**: a row of posters.
+   - **Spotlight**: wider cards with a line of synopsis, for a theme. Phones show it as a row.
+5. Choose **Where the titles come from**: **Pick them** or **Use a rule** (see below).
+6. For a hero, you can write **Taglines on the hero**: a line of your own for each title in place of its synopsis. Leave one empty to use the synopsis.
+7. Choose **Who sees it** and **When**, as for an announcement (see [Who sees it](/curation/announcements/#who-sees-it) and [When](/curation/announcements/#when)).
+8. Choose **Add to home**.
+
+![The composer for Tonight, a hero picked by hand: Sintel in the list, its tagline under Taglines on the hero, and the TV preview with the hero at the top](/images/admin/curation/section-hero.png)
+
+## Pick titles by hand
+
+Under **Add titles**, search the library by title and choose **Add**. Only titles with a file show up, since they're the ones people can play. Reorder the picked titles by their drag handles, or remove any you no longer want.
+
+![The composer for Staff picks, a row picked by hand, with Sintel and Nosferatu in its list](/images/admin/curation/section-picked.png)
+
+## Use a rule
+
+A rule keeps a section fresh as the library changes:
+
+- **Recently added**, in the last 7, 30 or 90 days, newest first.
+- **A genre**, best rated first.
+- **A collection**: your own [collections](/collections/) first, then TMDB's, in release order.
+
+The composer shows what the rule picks right now. A rule that picks nothing hides the section until something matches.
+
+![The composer for Blender night, a row from the collection Blender picks: right now it picks 2 titles and keeps up as the library changes](/images/admin/curation/section-rule.png)
+
+## Order the sections
+
+![The Featured sections tab in home-screen order: Staff picks and Blender night as rows, and Tonight as a hero, each with a drag handle, Edit and Delete](/images/admin/curation/featured.png)
+
+The **Featured sections** tab lists sections in home-screen order. Drag a section by its handle to move it, or press Space on the handle, move it with the Up and Down arrows, and press Space again to drop it. The new order is saved as soon as you drop it. Continue watching always comes right after the hero.
+
+## Change or delete a section
+
+**Edit** opens the composer; **Save changes** applies it. **Delete**, on the card or in the composer, asks first, then removes the section from every home screen; the titles in it stay in the library.

@@ -1,0 +1,40 @@
+---
+title: Users and security
+description: Invite people, choose what they can do, sign devices out, and protect how everyone signs in.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: Settings › Users and devices (apps/server/src/admin/users.tsx, users-messages.ts),
+    Settings › Security (security.tsx, security-messages.ts), Your account (account.tsx,
+    account-messages.ts), the areas only the owner sees (settings-areas.ts).
+  - Roles: packages/auth/src/roles.ts.
+*/}
+
+Written for highsea 0.1.0.
+
+Three places decide who gets in and how:
+
+- **Settings › Users and devices**: the people on the server, their roles, the browsers they're signed in on, and API keys.
+- **Settings › Security**: the rules for signing in, such as two-step verification, passkeys and single sign-on. Only the Owner sees it.
+- **Your account**: your own name, password, two-step verification and passkeys. Everyone has one; open it from the sidebar.
+
+<Cards>
+  <Card title="People" href="/settings/users-and-security/people/" description="Invite someone, change what they can do, reset a password, or remove them." />
+  <Card title="Devices and API keys" href="/settings/users-and-security/devices-and-keys/" description="See where people are signed in, sign a device out, and make keys for scripts." />
+  <Card title="Your account" href="/settings/users-and-security/your-account/" description="Your password, two-step verification and passkeys." />
+  <Card title="Security" href="/settings/users-and-security/security/" description="The Owner's rules for signing in, single sign-on, and how highsea slows down guessing." />
+</Cards>
+
+## Roles
+
+Everyone on the server has one of three roles.
+
+| Role | What they can do |
+| --- | --- |
+| **Owner** | Everything, including Security, Backups, VPN, Download client and Migration. The person who ran setup. There is one Owner. |
+| **Admin** | Runs the server: the library, downloads, indexers and settings. Sees people and devices, but can't invite or change anyone. |
+| **User** | Watches in highsea's apps. Never opens the admin. |
+
+Only the Owner invites people, changes their roles and removes them. An Admin opening **Settings › Users and devices** sees the same lists with the note "Only the owner can invite or change people."

@@ -1,0 +1,71 @@
+---
+title: Backups
+description: When highsea backs itself up, what a backup holds, and how to download, restore or move one.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: Settings › Backups (apps/server/src/admin/backups.tsx, backups-messages.ts), the
+    Backups tab of System (system.tsx, system-messages.ts), and packages/runtime/src/backups.ts:
+    the defaults (every day at 03:30, 14 kept, /config/backups), the four kinds, and pruning only
+    scheduled backups.
+*/}
+
+Written for highsea 0.1.0.
+
+A backup is one zip file holding highsea's database: settings, people, history and the library's records. Your films, downloads and subtitles aren't in it; they live on their own disks.
+
+Two places look after backups, and only the Owner sees either:
+
+- **Settings › Backups** sets the schedule, how many to keep and where they go.
+- **System › Backups** lists them, makes one now, downloads, restores and deletes them.
+
+<Cards>
+  <Card title="Restore and move" href="/settings/backups/restore-and-move/" description="Restoring a backup, one from somewhere else, and moving to another machine." />
+</Cards>
+
+## The schedule
+
+![Settings › Backups: the Schedule group with Back up, At, Keep the last and Folder, and a note on the secret key.](/images/admin/settings-backups/overview.png)
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Back up** | **Every day**, **Every week** or **Never**. | Every day |
+| **On** | The day of the week, for a weekly backup. | Sunday |
+| **At** | The time, in the server's time zone from [Settings › General](/settings/general/). | 03:30 |
+| **Keep the last** | How many scheduled backups to keep, from 1 to 365. Older ones are deleted as new ones arrive. | 14 |
+| **Folder** | Where the zips go. | `/config/backups` |
+
+Choose **Save** to apply them. highsea checks that it can write to a new folder before it saves.
+
+With **Never**, nothing is backed up on its own, and a failed disk takes your settings, history and people with it.
+
+The default folder is inside the config folder, on the same disk as everything else. If you can, mount another disk into the container and point **Folder** at it, or copy the backups somewhere else from time to time.
+
+## Kinds of backup
+
+![System › Backups: a backup made by hand, with when it was made, its kind, version and size, and Download, Restore and delete.](/images/admin/system/backups.png)
+
+**System › Backups** marks each backup with how it was made:
+
+| Kind | Made | Removed |
+| --- | --- | --- |
+| **Scheduled** | On the schedule. | When there are more than **Keep the last**. |
+| **Made by hand** | With **Back up now**. | Only when you delete it. |
+| **Before an update** | When a new version of highsea changes the database, before it does. | Only when you delete it. |
+| **Before a restore** | Just before a restore, holding what was there. | Only when you delete it. |
+
+Each row also shows when it was made, the highsea version that made it, and its size.
+
+## Make a backup now
+
+In **System › Backups**, choose **Back up now**. It appears at the top of the list a moment later.
+
+## Download a backup
+
+Choose **Download** beside a backup to save its zip. Keep a copy off the server, on another disk, another machine or a cloud drive, so one failed disk can't take both.
+
+## The secret key
+
+Backups never hold `secret.key`, the file in the config folder that seals passwords and tokens, such as provider accounts and two-step verification. Copy it somewhere safe yourself, once: it doesn't change. To restore on another machine, put that file in its config folder first, or sign-ins and connections stop working.

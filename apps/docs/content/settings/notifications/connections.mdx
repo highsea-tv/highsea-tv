@@ -1,0 +1,47 @@
+---
+title: Connections
+description: Add a connection to a service, test it, manage it, and find out why a message didn't arrive.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: apps/server/src/admin/connections.tsx and connections-messages.ts (the screen and
+    its dialog), packages/notifications/src/service (retries, the day's limit), System › Health
+    (packages/runtime's health checks).
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings › Connections** lists your connections, each with the events it hears and when it last sent something, then **Add a connection** with a button for each service, and **This browser** for [browser notifications](/settings/notifications/services/#browser-notifications).
+
+![Settings › Connections with three connections: Family Discord, Kids' films on my phone on ntfy, and Household mail by email with Server's mail on; each lists its events and says Nothing sent yet. Below are buttons for each service and This browser](/images/admin/settings-notifications/connections.png)
+
+## Adding a connection
+
+1. Under **Add a connection**, press the service: **Discord**, **Slack**, **Telegram**, **ntfy**, **Gotify**, **Pushover**, **Matrix**, **Email**, **Webhook**, **Apprise** or **Browser**.
+2. Give it a **Name**, and fill in the service's fields. [Each service](/settings/notifications/services/#each-service) says where to find them.
+3. Choose its [**Events**](/settings/notifications/events/).
+4. Press **Test**. highsea sends a test message with these settings before you save, and says whether it arrived.
+5. Press **Save**.
+
+![The Add a Discord connection dialog: Name, Webhook address, User name, Test, the Events with Imported, Upgraded, Download failed, Health and Update ticked, Tags, On, and Save](/images/admin/settings-notifications/add-discord.png)
+
+Passwords, tokens and webhook addresses are kept sealed on the server. When you edit a connection they show as dots; leave them as they are to keep them, or type a new one to change it.
+
+## Managing connections
+
+Each connection's row has:
+
+- a switch to turn it on or off without losing its settings;
+- **Test**, which sends a test message now;
+- **Edit**;
+- **Remove**. It stops getting notifications, and what was sent to it is forgotten.
+
+## When a message doesn't arrive
+
+Each connection's row shows when it last sent a message, or, if the last one didn't arrive, why.
+
+highsea tries again when a service is busy or doesn't answer: after the wait the service asks for, if it says, or after 30 seconds, doubling each time, up to an hour between tries. Other refusals, such as a wrong token or a webhook that no longer exists, fail at once. A message still unsent a day after its event is dropped.
+
+While messages to a connection aren't arriving, **System › Health** says so, until one gets through. Fix the setting it names, then use **Test** to check.

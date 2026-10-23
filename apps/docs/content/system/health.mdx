@@ -1,0 +1,80 @@
+---
+title: Health
+description: What System › Health lists, and what to do about each message, by where it comes from.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the Health tab (apps/server/src/admin/system.tsx, system-messages.ts), the health
+    list as the server assembles it (packages/runtime/src/runtime.ts, network.ts) with each source's
+    messages (packages/indexers/src/service.ts, packages/catalog/src/service.ts,
+    packages/downloads/src/service.ts, ip-blocklist.ts, packages/vpn/src/copy.ts,
+    packages/subtitles/src/movies/accounts.ts, packages/notifications/src/service/messages.ts,
+    packages/network/src/tls.ts).
+*/}
+
+Written for highsea 0.1.0.
+
+**Health** lists what needs your attention, each with its level (**Notice**, **Warning** or **Error**), where it comes from, since when, and a message. The tab's count is the number of warnings and errors. The checks run on their own, and the list updates as things change. When there's nothing, it says "Everything's healthy".
+
+![System's Health tab with one warning from Network: the external URL isn't HTTPS.](/images/admin/system/health.png)
+
+What each message means, and what to do, by source:
+
+## Indexers
+
+- **No indexers are enabled, so searches find nothing.** Add one in [Indexers](/indexers/).
+- **… has been failing.** The indexer keeps erroring; the message gives its last error. Check it in Indexers, or turn it off.
+- **… needs a setting its new definition asks for.** The catalog changed the indexer. Open it in Indexers and fill in the new setting.
+- **…'s definition is gone from the catalog, so it can't search.** Remove it, or replace it with another indexer.
+
+## Catalog
+
+- **A failed catalog check**, with its reason. highsea keeps the catalog it has. Try **Check now** under **Status › About** later.
+- **The local definition … doesn't validate, so it's skipped.** A definition file you added has a mistake. The log says what.
+
+## Downloads
+
+- **The torrent client can't accept connections: …** Usually the torrent port is taken or blocked. The Owner can check the **Listening port** in [Downloads](/settings/downloads/); check your firewall too.
+- **… couldn't be imported: …** A finished download is blocked from import; the reason says why. Look at it in [Activity](/activity/).
+- **The IP blocklist couldn't be updated: …** The blocklist's address may be wrong or unreachable. The Owner can check it in Downloads; highsea tries again each day.
+
+## VPN
+
+- **The VPN is down. Torrents are stopped until it's back.** Torrents resume on their own when the tunnel returns.
+- **The VPN couldn't connect: …** Check your provider's settings in [VPN](/settings/vpn/).
+- **VPN: … Open Settings › VPN to see why.** One of the VPN's checks failed; the VPN page shows which.
+- **VPN: … didn't forward a port.** Downloads still work, but fewer peers can reach you.
+
+## Network
+
+- **The certificate in … can't be used: …** highsea's built-in HTTPS can't read the certificate or key in `/config/tls`. Replace them with a full chain and its key. See [Network](/settings/network/).
+- **Discovery couldn't listen on UDP …** Something else is using the port apps use to find the server at home. Apps can still connect by address.
+- **The external URL isn't HTTPS.** Passwords cross the internet unencrypted, and passkeys can't work. Set an `https://` address in Network.
+
+## Subtitles
+
+- **… refused the password** or **… refused the key.** Enter the provider's account again in [Subtitles](/subtitles/).
+- **… has no downloads left today.** A notice. The provider is skipped until the time shown.
+- **ffmpeg isn't installed, so subtitles can't be synced to the audio.** The official image includes FFmpeg. On your own install, install it, or set `HIGHSEA_FFMPEG` to its path.
+
+## Import
+
+- **unar isn't installed, so downloads that come as archives can't be imported.** The official image includes it. Otherwise install unar, or set `HIGHSEA_UNAR` to its path.
+
+## Library
+
+- **… isn't watched for changes.** A notice. highsea can't watch that folder for files you add or remove, so the library scan finds changes every 12 hours instead.
+
+## Connections
+
+- **Messages to … aren't arriving: …** or **A message to … was dropped after a day of trying: …** A notification connection is failing. Check it in [Notifications](/settings/notifications/connections/#when-a-message-doesnt-arrive).
+
+## Backups
+
+- **The restore from … didn't work, so the server went back to the database it had.** Nothing was lost; the message says why the restore failed. See [Restore and move](/settings/backups/restore-and-move/).
+
+## Database
+
+- An error from the source **database** means highsea couldn't read its own database. Check that the disk holding the config folder is mounted, writable and not full, then restart the container.

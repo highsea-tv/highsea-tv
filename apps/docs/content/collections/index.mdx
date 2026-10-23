@@ -1,0 +1,50 @@
+---
+title: Collections
+description: Group films by rules that keep themselves up to date, or pick them by hand.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the admin's Collections list, editor and rule builder
+    (apps/server/src/admin/collections.tsx, collections-editor.tsx, collections-rules.tsx) and
+    their strings (collections-messages.ts); the audience field (curation-shared.tsx,
+    curation-messages.ts); Save as smart collection (library.tsx); the fields, comparisons, sorts
+    and limits (packages/api-contract/src/collections.ts).
+  - The product spec docs/product/collections.md, for intent.
+*/}
+
+Written for highsea 0.1.0.
+
+A collection groups films your way. Its films come from **rules** that keep themselves up to date, such as "from the 2010s, rated 4.5 or more, in English", or from films you **pick by hand**, such as "Staff picks". Collections are made for the people who watch, and a collection can also feed a featured section on the home screen; see [Featured sections](/curation/featured-sections/).
+
+**Collections** is in the admin's sidebar, below Movies, for Owners and Admins.
+
+<Cards>
+  <Card title="Make a collection" href="/collections/make/" description="Name it, choose how films get in, set its order and who sees it, then change or delete it." />
+  <Card title="Use rules" href="/collections/rules/" description="Conditions and groups, and every field a rule can match on." />
+</Cards>
+
+## The list of collections
+
+![Collections with three cards: Open movies of the 2010s and Nothing yet marked Smart with their rules in words, and Blender picks marked Picked, each with Edit and Delete](/images/admin/collections/list.png)
+
+Each collection has a card with:
+
+- its artwork and name;
+- **Smart** if it has rules, or **Picked** if its films were chosen by hand;
+- its rules in words, such as "Released 2010–2020, rated 4.5 or more, in English";
+- what it holds and who sees it, such as "4 films, 3 in the apps", or "Nothing matches yet";
+- **Edit** and **Delete**.
+
+Only films with a file show in the apps. A collection whose films match but none has a file yet is marked **Hidden in the apps**.
+
+## How collections keep up
+
+A smart collection isn't a saved list of films. highsea works out what it holds each time it's shown, so it follows the library as films arrive, leave or change: a new film that matches is in it at once, and a film you remove is gone.
+
+A collection with nothing to show isn't shown in the apps until a film in it has a file.
+
+## TMDB's collections
+
+A film that belongs to a series on TMDB, such as a trilogy, shows that collection on its page, with a button to add the films you're missing. Those come from TMDB and can't be edited here. See [People and collections](/movies/people-and-collections/).

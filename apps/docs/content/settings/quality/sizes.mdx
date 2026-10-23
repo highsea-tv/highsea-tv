@@ -1,0 +1,37 @@
+---
+title: Quality sizes
+description: How large a release may be for its quality, in MB per minute of the film's runtime, and how to change it.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The screens and their copy: apps/server/src/admin/profiles.tsx, profiles-messages.ts,
+    quality-editors.tsx and quality-editors-messages.ts.
+  - The sizes and their defaults: packages/quality/src/sizes.ts and decision.ts.
+  - The Servarr wiki's quality page, which highsea follows: https://wiki.servarr.com/radarr/settings#quality
+  - TRaSH Guides, where the starting sizes come from: https://trash-guides.info/Radarr/
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings › Quality sizes** sets how large a release may be for its quality, in MB per minute of the film's runtime. A release outside the range is rejected.
+
+![Settings › Quality sizes, a table of each quality with its minimum, preferred and maximum size per minute and what that means for a 2-hour film](/images/admin/settings-quality/sizes.png)
+
+| Column | What it means |
+| --- | --- |
+| **Min** | The smallest a release may be. |
+| **Preferred** | Between two otherwise equal releases, the one nearer this size wins. Empty, no preference. |
+| **Max** | The largest a release may be. Empty, no limit. |
+| **A 2-hour film** | What the range means for a two-hour film. |
+
+MB here is a mebibyte (1,048,576 bytes), as in Radarr, so its numbers carry over. A film whose runtime isn't known is taken as 110 minutes.
+
+The starting sizes come from the TRaSH Guides: a minimum for the HD and UHD qualities, and no preferred size or maximum, leaving custom formats to choose between releases. Set a maximum if your disks are small.
+
+## Editing sizes
+
+**Edit sizes** opens the editor. **Show sizes for a film of** changes the film length the last column uses, which helps when you think in sizes for a whole film. **Reset to TRaSH's sizes** puts the starting sizes back; save to keep them.
+
+![The Edit sizes page, with Show sizes for a film of set to 120 minutes and a Min, Preferred and Max field for each quality](/images/admin/settings-quality/sizes-editor.png)

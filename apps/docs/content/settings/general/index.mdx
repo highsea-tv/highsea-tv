@@ -1,0 +1,68 @@
+---
+title: General
+description: The server's language and time zone, where film details come from, the indexer catalog, updates and diagnostics.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The screen and its copy: apps/server/src/admin/general.tsx and general-messages.ts.
+  - Defaults: packages/runtime/src/operations.ts (language, time zone, update channel),
+    packages/catalog/src/service.ts (catalog channel and automatic updates).
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings › General** holds the settings that shape the whole server: its language and time, where film details come from, the indexer catalog, updates and diagnostics.
+
+![Settings › General: the Region group with Language and Time zone, then Metadata with the TMDB key, and the start of Indexer catalog.](/images/admin/settings-general/overview.png)
+
+Only the Owner can change these settings. Admins can open the page and read them, and see a line saying so. The indexer catalog's settings are the Owner's alone, to read as well as to change.
+
+Changes to Region, Metadata, Updates and Diagnostics wait in a bar at the bottom of the page until you choose **Save** or **Discard**. The indexer catalog's settings save as soon as you change them.
+
+<Cards>
+  <Card title="Metadata" href="/settings/general/metadata/" description="The TMDB key, and the language and region film details come in." />
+  <Card title="Diagnostics" href="/settings/general/diagnostics/" description="The log level, crash reports, and metrics for Prometheus." />
+</Cards>
+
+## Region
+
+The server's own language and time.
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Language** | The language of the server's own messages: notifications and the calendar feed. English is the only one for now; more come with translations. | English |
+| **Time zone** | Used for schedules, such as when backups run. | The time zone of the machine or container highsea runs in, or UTC when it has none |
+
+In Docker, the container's time zone usually comes from the `TZ` variable in your compose file. Setting **Time zone** here is the simpler way to correct it.
+
+## Indexer catalog
+
+Where indexer definitions come from, and how new versions arrive. The catalog is the list of public indexers you can add in one click on [Indexers](/indexers/). Every version is signed, and highsea checks the signature before it uses one.
+
+![The Indexer catalog group: Channel, Install new versions automatically, and the form to add an extra catalog.](/images/admin/settings-general/catalog.png)
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Channel** | **Stable** or **Beta**. Beta gets new and changed definitions first. | Stable |
+| **Install new versions automatically** | Off, a new version waits on Indexers until you install it. | On |
+| **Extra catalogs** | Catalogs someone else publishes and signs, used beside highsea's own. | None |
+
+To add an extra catalog, fill in all three fields under **Add a catalog** with what the publisher gives you:
+
+- **Manifest address**: an `https://` address that publishes a signed catalog manifest.
+- **Key ID**: the ID of the publisher's signing key, as they publish it.
+- **Public key**: the publisher's ed25519 public key, in base64.
+
+Only add catalogs from people you trust. Removing one takes its definitions with it, and indexers that use them stop working until you add it again.
+
+## Updates
+
+highsea tells you when a new version is out, in [System › Updates](/system/#updates). It never updates itself.
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Update channel** | **Stable** or **Beta**. Beta hears about new versions first; stable versions show on both. | Stable |
+
+To update, pull the new image and recreate the container. highsea backs up its database before it changes it. [Upgrading](/upgrade/) has the steps, and [choosing how you follow releases](/upgrade/#choose-how-you-follow-releases) explains the channels and image tags.

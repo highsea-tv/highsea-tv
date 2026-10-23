@@ -1,0 +1,74 @@
+---
+title: Announcements
+description: Write announcements for the people on your server, choose where and when they show, and see who has read them.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the Curation pages and composers (apps/server/src/admin/curation.tsx,
+    curation-announcement.tsx, curation-section.tsx, curation-shared.tsx, curation-preview.tsx,
+    curation-messages.ts), the admin's banners (apps/server/src/admin/announcement-banners.tsx,
+    shell.tsx), the audience rules (packages/curation/src/service/rules.ts), the rule choices
+    (packages/api-contract/src/curation.ts) and System's task names (system-messages.ts).
+*/}
+
+Written for highsea 0.1.0.
+
+An announcement tells the people on your server something: movie night, a restart, a new address. The composer draws a [preview](/curation/#preview) beside the form as you go.
+
+## Write an announcement
+
+1. Open **Curation** and choose **New announcement**.
+2. Write a **Title**, up to 80 characters. It's the first thing people read.
+3. Write the **Message**. `**bold**`, `_italic_` and `[links](https://…)` work here.
+4. Optionally, choose an **Image**: a backdrop from your library, shown with the dialog and on a TV's screen.
+5. Optionally, turn on **Add a button** and give it a **Button label** and a **Link** starting with `https://`.
+6. Choose **How important**: **Info**, **Notice**, **Warning** or **Critical**. Warnings and critical ones take their colour in banners, so they stand out.
+7. Choose **Where it shows** (see below).
+8. Choose **Who sees it** and **When** (see below).
+9. Choose **Publish**, or **Schedule** when it starts later. **Save as draft** keeps it without showing it to anyone.
+
+![The announcement composer for a warning that everyone has to acknowledge, shown as a banner and a home card to Users, ending the next morning, with the preview beside it](/images/admin/curation/announcement-edit.png)
+
+A draft needs only a title. Anything missing for publishing is pointed out beside its field.
+
+## Where it shows
+
+- **Banner**: above the page on the web, desktop and the admin.
+- **Home card**: a card under the header on phones.
+- **Toast**: a short notice on the web and desktop, shown once.
+
+On TV, the newest announcement shows as a pill at the top of Home, whatever you choose here.
+
+Turn on **Everyone has to acknowledge it** for things people must not miss. The announcement then opens as a dialog with only **Got it**, and on TV as a screen of its own before Home. In the admin, its banner has **Got it** instead of a close button.
+
+## Who sees it
+
+- **Everyone**.
+- **Roles**: any of **Owners**, **Admins** and **Users**.
+- **People**: the people you tick.
+- **Apps**: any of **TVs**, **Phones and tablets**, **Web and desktop** and **The admin**.
+
+## When
+
+- **Start now**, or **Start later** at a date and time.
+- **No end**, or **End at** a date and time. The end has to come after the start.
+
+A scheduled announcement goes out on its own at the start time and comes down at the end. highsea checks every hour, and once more at each start and end; it's the **Start and end announcements and featured sections** task under [System](/system/).
+
+## The list
+
+![Curation's Announcements tab with three cards: a live one that must be acknowledged, acknowledged by 0 of 1, a scheduled one and a draft, each not shown yet](/images/admin/curation/announcements.png)
+
+Each announcement is a card, live ones first, then scheduled, drafts and ended. It shows its status (**Live**, **Scheduled**, **Draft** or **Ended**), **Must acknowledge** when that's required, where it shows, its audience and its schedule.
+
+The card also shows its reach: **Seen by** 2 of 5, or **Acknowledged by** when it must be acknowledged, or **Not shown yet**. Reach counts people, not devices, and updates as people close or acknowledge it.
+
+## Change, end or delete an announcement
+
+- **Edit** opens the composer. **Save changes** applies them at once to a live announcement.
+- **End now**, in the card's menu, takes it off every screen and keeps it, with its reach, as **Ended**. Ending a scheduled one means it never goes out.
+![An announcement card's menu open, with End now and Delete](/images/admin/curation/announcement-menu.png)
+
+- **Delete**, in the card's menu, removes it from every screen along with the record of who saw it. To keep the record, end it instead.

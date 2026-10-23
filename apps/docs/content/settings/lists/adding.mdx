@@ -1,0 +1,84 @@
+---
+title: Adding a list
+description: Add a TMDB list or chart, a Trakt list, chart or watchlist, or a generic JSON list, and connect a Trakt account.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: apps/server/src/admin/lists.tsx and lists-messages.ts (the dialog and its words),
+    tags-messages.ts, packages/api-contract/src/lists.ts (the sources), packages/lists/src (trakt:
+    the device sign-in; generic: the JSON format).
+  - Trakt's API and device authentication: https://trakt.docs.apiary.io/ and
+    https://developer.trakt.tv/docs/authentication-oauth
+  - TMDB lists: https://www.themoviedb.org/
+  - The StevenLu Custom format, as Radarr names it: https://wiki.servarr.com/radarr/supported
+  - MDBList: https://mdblist.com/
+*/}
+
+Written for highsea 0.1.0.
+
+On **Settings › Import lists**, press **Add a list** and choose **Where the list lives**: **TMDB**, **Trakt** or **Generic list**. The rest of the dialog sets [what the films it adds get](#what-added-films-get).
+
+## TMDB
+
+![The Add a list dialog with TMDB chosen, A list under List, the TMDB list field, Test, and the settings for the films it adds](/images/admin/settings-lists/add-tmdb.png)
+
+Under **List**, choose:
+
+- **A list**: a public list on themoviedb.org. Enter its number, or its address.
+- **Popular**, **Top rated**, **Upcoming** or **Now playing**: TMDB's charts for the server's region. highsea takes the top 20.
+
+## Trakt
+
+![The Add a list dialog with Trakt chosen and its List menu open on A list, Trending, Popular, Anticipated and Your watchlist](/images/admin/settings-lists/add-trakt.png)
+
+Under **List**, choose:
+
+- **A list**: a list on trakt.tv. Enter its address, such as `trakt.tv/users/sean/lists/blender`. Public lists work without signing in; your own private lists work once your Trakt account is connected.
+- **Trending**, **Popular** or **Anticipated**: Trakt's charts. highsea takes the top 20.
+- **Your watchlist**: the watchlist of the Trakt account connected on this page. Connect one first; see [Connecting Trakt](#connecting-trakt).
+
+## Generic list
+
+![The Add a list dialog with Generic list chosen, its Address field and a note on the StevenLu Custom format](/images/admin/settings-lists/add-generic.png)
+
+Enter the list's **Address**. It has to answer with a JSON list of films, each with its IMDb or TMDB id, in the format Radarr calls StevenLu Custom:
+
+```json
+[
+  { "title": "Sintel", "imdb_id": "tt1727587" }
+]
+```
+
+[MDBList](https://mdblist.com/) publishes lists this way, including lists drawn from IMDb and Letterboxd: use the list's JSON address there. highsea reads up to 5,000 entries from a generic list.
+
+## What added films get
+
+| Setting | What it does |
+| --- | --- |
+| **Name** | What the list is called in highsea. |
+| **Root folder** | Where its films go. Add one in [Media management](/settings/media-management/root-folders/) first. |
+| **Quality profile** | The profile its films use. **HD 1080p** to start with. |
+| **Subtitle languages** | The subtitle languages its films use, or **The root folder's default**. |
+| **Tags** | Given to every film this list adds. |
+| **Minimum availability** | **Announced**, **In cinemas** or **Released**: how far along a film must be before highsea looks for it. **Released** to start with. |
+| **Monitored** | highsea looks for the films it adds. On to start with. |
+| **Search when added** | Search every indexer for each new film at once, rather than waiting for new releases to turn up. Off to start with. |
+| **Check this list** | Turn it off to keep the list without checking it. |
+
+**Test** reads the list with these settings before you save, and says how many titles it found. **Save** adds the list and checks it at once.
+
+## Connecting Trakt
+
+Your Trakt watchlist and private lists need highsea to be connected to your Trakt account. Public lists and charts don't.
+
+1. Under **Trakt account**, press **Connect**.
+2. highsea shows a code and an address on trakt.tv. Open the address on any device, sign in to Trakt, and enter the code.
+3. Approve highsea on Trakt. The page shows **Connected as** your account once you have.
+
+The code works for a limited time, which the page shows. If it runs out first, press **Connect** again for a new one.
+
+One Trakt account is connected per server. **Disconnect** makes highsea forget it; lists that need it stop being checked until you connect again.
+
+If the page says this build of highsea has no Trakt application, Trakt lists aren't available in it. highsea's published images include one; a build of your own may not.

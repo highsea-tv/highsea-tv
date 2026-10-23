@@ -1,0 +1,92 @@
+---
+title: VPN
+description: Send torrents through your VPN provider, check that nothing leaks, and use a forwarded port.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: apps/server/src/admin/vpn.tsx and vpn-messages.ts (the screen and its words),
+    apps/server/src/admin/settings-areas.ts (owner only), packages/vpn/src (settings.ts for defaults
+    and refusals, copy.ts for the checks, vpn.ts for timings).
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings › VPN** decides how torrents reach the internet. With a VPN, peers in a swarm see your provider's address instead of yours, and highsea checks that it stays that way. With highsea connects or an interface, only torrents use the VPN, and indexer searches if you choose. With a VPN container, everything highsea does goes through it, since highsea shares the container's network.
+
+Only the Owner sees this area. Admins don't find it in Settings.
+
+[Recommended setup](/recommended-setup/) has the short version. This page covers choosing a mode, what highsea does with the tunnel, and the status and checks; the pages below cover each mode, port forwarding and what to do when something goes wrong.
+
+<Cards>
+  <Card title="highsea connects" href="/settings/vpn/connects/" description="highsea's own WireGuard tunnel to your provider: what it needs, the providers and their files." />
+  <Card title="A VPN container" href="/settings/vpn/container/" description="Join highsea to a gluetun container, for OpenVPN providers or if you already run gluetun." />
+  <Card title="An interface on this machine" href="/settings/vpn/interface/" description="Bind torrents to a tunnel you already run on the host." />
+  <Card title="Port forwarding" href="/settings/vpn/port-forwarding/" description="Which providers forward a port, and how highsea uses it." />
+  <Card title="Troubleshooting" href="/settings/vpn/troubleshooting/" description="What each problem the page reports means, and how to fix it." />
+</Cards>
+
+## The page
+
+![Settings › VPN on a new server: Status says No VPN, and Connection offers highsea connects, A VPN container, An interface on this machine and Off, with Off chosen](/images/admin/settings-vpn/overview.png)
+
+The page has three parts:
+
+- **Status**: what the VPN is doing now, the checks that prove it, and **Check now** and **Reconnect**.
+- **Connection**: the mode, and what that mode needs.
+- **Behaviour**: what highsea does with the tunnel. It's hidden while the mode is **Off**.
+
+Changes take effect when you press **Save**.
+
+## Choosing a mode
+
+| Mode | What it does | Suits |
+| --- | --- | --- |
+| [**highsea connects**](/settings/vpn/connects/) (Recommended) | highsea runs its own WireGuard tunnel to your provider. Only torrents use it, and they can't leave outside it. | Linux, with a provider that offers WireGuard |
+| [**A VPN container**](/settings/vpn/container/) | highsea shares a gluetun container's network and reads its status and forwarded port. | Providers that only offer OpenVPN, or if you already run gluetun |
+| [**An interface on this machine**](/settings/vpn/interface/) | Torrents are bound to a tunnel you run yourself. Your system's routing decides the path. | A VPN you already run on the host |
+| **Off** | Torrents use your own connection. Anyone in the swarm can see your address. | Testing, or where a VPN isn't wanted |
+
+A new server starts with **Off**.
+
+## Behaviour
+
+![The Behaviour section with highsea connects chosen: Stop torrents when the VPN is down, always on; Use the forwarded port, on; Send indexer searches through the VPN too, off](/images/admin/settings-vpn/behaviour.png)
+
+| Setting | What it does |
+| --- | --- |
+| **Stop torrents when the VPN is down** | Always on, in every mode with a VPN. highsea connects: a packet from the tunnel's address can't leave any other way. A VPN container: it has no other route. An interface: torrents stop the moment the interface or its address goes. |
+| **Use the forwarded port** | Torrents listen on the port your provider forwards, and tell trackers when it changes. Shown for a VPN container, and for highsea connects with a provider that forwards ports. On by default. See [Port forwarding](/settings/vpn/port-forwarding/). |
+| **Send indexer searches through the VPN too** | Off by default. A private tracker's account is often tied to your own address, and searches would fail while the tunnel is down. Turn it on if you'd rather your indexers never see your own address. |
+
+## Status and checks
+
+The top of the page says what the VPN is doing:
+
+| Status | Meaning |
+| --- | --- |
+| **No VPN** | The mode is Off. Torrents use your own connection. |
+| **Connecting to** your provider | Torrents wait until the tunnel is up. |
+| **Connected through** your provider (or **Bound to** an interface) | Torrents leave through the tunnel, from the address shown. |
+| Your provider **is down** | Torrents are stopped until the tunnel is back. Nothing leaks onto your own connection. |
+| **Couldn't connect** | The reason is shown beneath, such as a refused password or a bad configuration. |
+
+When the tunnel drops, highsea reconnects on its own, waiting a little longer after each try, up to 5 minutes between tries. **Reconnect** tries at once.
+
+Below the status is a list of checks, each marked Passed, Warning, Failed, Note or Waiting:
+
+| Check | What it looks at |
+| --- | --- |
+| **Tunnel** | Whether the tunnel is up. For highsea connects, the time since the last WireGuard handshake; no handshake for 3 minutes counts as down. |
+| **Exit address** | The address torrents leave from, asked of an IP echo service through the tunnel, and compared with your own. |
+| **Names** | Whether tracker names are looked up through the tunnel. |
+| **Kill switch** | Whether anything could leave outside the tunnel. |
+| **Port forwarding** | The forwarded port and how many peers have connected in, or why there isn't one. |
+| **IPv6** | Whether IPv6 goes through the tunnel, or torrents use IPv4 only. |
+
+The checks run when the tunnel connects, every 5 minutes after that, after each reconnect, and when you press **Check now**. Torrents only start once the first checks are done.
+
+With highsea connects, a check that finds a leak stops torrents: an exit address that's your own, names looked up outside the tunnel, or a missing routing rule (which highsea puts back first). In the other modes a failing check warns, since the container has no other route and the interface binding already holds.
+
+When the VPN is down or a check fails, **System › Health** says so too, and a connection that hears **Health** sends it to you. See [Notifications](/settings/notifications/events/). For what a failing status or check means, see [Troubleshooting](/settings/vpn/troubleshooting/).

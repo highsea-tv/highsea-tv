@@ -1,0 +1,23 @@
+---
+title: Notifications
+description: Send what happens on the server to Discord, Slack, Telegram, ntfy, email, the browser and more.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: apps/server/src/admin/connections.tsx and connections-messages.ts (the screen),
+    packages/api-contract/src/connections.ts (who may manage connections).
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings › Connections** sends what happens on the server to the places you already look: a chat, a phone app, an inbox or a browser. Each service you add is a connection, and each connection hears the events you choose.
+
+The Owner and Admins can both manage connections.
+
+<Cards>
+  <Card title="Connections" href="/settings/notifications/connections/" description="Add a connection, test it, turn it on or off, and find out why a message didn't arrive." />
+  <Card title="Events and tags" href="/settings/notifications/events/" description="What each event means, which a new connection hears, and tags for some films only." />
+  <Card title="Services" href="/settings/notifications/services/" description="Each service's fields and where to find them, the webhook's message, browser notifications and the server's mail." />
+</Cards>

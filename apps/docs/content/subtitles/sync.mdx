@@ -1,0 +1,49 @@
+---
+title: Syncing to the speech
+description: How highsea lines a subtitle up with the film's speech, syncing again, moving the offset by hand, and the scoring and sync settings.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: a movie's Subtitles tab (apps/server/src/admin/movie-detail.tsx,
+    movie-detail-messages.ts), the Subtitles page's Scoring and sync tab
+    (apps/server/src/admin/subtitles.tsx, subtitles-messages.ts), the settings' defaults
+    (packages/subtitles/src/shared/settings.ts) and System's health list
+    (packages/runtime/src/runtime.ts).
+*/}
+
+Written for highsea 0.1.0.
+
+A subtitle made for another release of the same film is often early or late by a second or more. highsea listens for speech in the film and lines the subtitle up with it, in the background, after each download.
+
+Each sync reports how sure it is, as a percentage:
+
+- At or above **Minimum confidence**, the new timing is used and the track reads **Synced**, with the correction in milliseconds and the confidence.
+- Below it, highsea keeps the subtitle's original timing and the track reads **Not synced**, with its confidence, so you can check it yourself.
+
+![Nosferatu's Subtitles tab: an English subtitle from OpenSubtitles.com with a score of 99, Not synced at 0%, and its offset at 0 ms with − and + beside it.](/images/admin/subtitles/film-not-synced.png)
+
+Syncing needs FFmpeg. If it's missing, every sync fails at once and **System › Health** warns: "ffmpeg isn't installed, so subtitles can't be synced to the audio." The official image includes it. Subtitles that are pictures rather than text can't be synced.
+
+## Sync again
+
+Choose **Sync to the audio again** on a track. It goes back to **Waiting to sync**, any offset you set is cleared, and the result arrives in a moment.
+
+## Adjust the offset by hand
+
+If a track is still a little early or late, use **−** and **+** beside its offset. Each press moves it by 50 ms: **−** shows the subtitles earlier, **+** later. The file is rewritten at once, so the change shows the next time the film is played.
+
+## Scoring and sync settings
+
+The **Scoring and sync** tab on the **Subtitles** page holds the settings for every film. Change them, then choose **Save**, or **Discard changes** to go back.
+
+![The Scoring and sync tab: Minimum score 80, Prefer release matches and Sync to the audio on, Minimum confidence 70%, and Keep upgrading for 14 days.](/images/admin/subtitles/scoring.png)
+
+| Setting | What it does | Starts at |
+| --- | --- | --- |
+| **Minimum score** | Subtitles below this score, from 0 to 100, are never downloaded. A profile can ask for more, not less. | 80 |
+| **Prefer release matches** | A subtitle made for this exact release beats one matched only on title and year. | On |
+| **Sync to the audio** | Every downloaded subtitle is lined up with the speech. Off, subtitles keep their original timing and read **Not synced**. | On |
+| **Minimum confidence** | Below this, highsea keeps the original timing. Choose from 50% to 90%. | 70% |
+| **Keep upgrading for** | How many days after import highsea keeps looking for a better match, up to 365. | 14 days |

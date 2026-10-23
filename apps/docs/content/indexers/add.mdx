@@ -1,0 +1,72 @@
+---
+title: Add an indexer
+description: Add indexers from highsea's signed catalog, set up private trackers, Prowlarr and Jackett through Torznab, and load your own local definitions.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The Catalog tab, What changed and the set-up form: apps/server/src/admin/indexers.tsx and
+    indexers-messages.ts.
+  - Testing before adding, and sealed secrets: packages/indexers/src/service.ts.
+  - The catalog's definitions, including Torznab and Torrent feed: catalog/indexers/definitions;
+    local definitions in /config/definitions: packages/catalog/src/service.ts; the catalog's
+    settings: apps/server/src/admin/general-messages.ts.
+  - Torznab: https://torznab.github.io/spec-1.3-draft/torznab/Specification-v1.3.html
+*/}
+
+Written for highsea 0.1.0.
+
+## The catalog
+
+highsea's catalog is a signed collection of indexer definitions: what each indexer is, how to search it, and which settings it needs. It's released on its own, separately from highsea, and the [Indexers](/indexers/) page's header shows the installed version. **What changed** lists the recent versions and their notes.
+
+![What changed in the catalog, with version 2026.10.21 and its notes: a Torznab definition, a torrent feed definition, and the Internet Archive's feature films](/images/admin/indexers/what-changed.png)
+
+By default, highsea installs new catalog versions on its own, checking each one before it's used. The Owner can change this in **Settings › General**, under **Indexer catalog**:
+
+- **Channel**: **Stable**, or **Beta** to get new and changed definitions first.
+- **Install new versions automatically**: with it off, a new version waits in **What changed**, with an **Install** button.
+- **Extra catalogs**: definitions someone else publishes and signs.
+
+See [General](/settings/general/).
+
+## Add an indexer
+
+Select **Add indexer**, or open the **Catalog** tab. Search by name, or narrow the list by privacy (**All**, **Public**, **Semi-private**, **Private**) and by language. Each card shows the indexer's name, privacy and description, then its language, definition version and licence. An indexer you've already added says **Installed**.
+
+![The Catalog tab: Search the catalog, the privacy filter and Every language, then cards for Internet Archive (Public, Local, Installed), Torrent feed (Private, with Set up) and Torznab (Private, Installed), each with its description, language, version and licence](/images/admin/indexers/catalog.png)
+
+### Public indexers
+
+A public indexer that needs nothing filled in has an **Add** button. highsea tests it first and adds it only if the test passes, then says "added and tested". If the test fails, nothing is added, and highsea says why.
+
+### Private and semi-private indexers
+
+These need your account details, so they have **Set up** instead. The form shows the fields that indexer needs, such as a username and password or an API key, each with a note on where to find it.
+
+1. Fill in each field.
+2. Select **Test and save**.
+
+highsea tests the indexer before saving anything. If the test fails, the form stays open with the indexer's own message, so you can correct the field and try again.
+
+Passwords and keys stay on your server, sealed with the server's own key. When you edit an indexer later, its secret fields show empty; leave them empty to keep what's saved.
+
+### Prowlarr, Jackett and other Torznab feeds
+
+If you already run Prowlarr or Jackett, add its indexers through **Torznab** in the catalog:
+
+1. Find **Torznab** and select **Set up**.
+2. For **Address**, copy the indexer's Torznab feed from Prowlarr or Jackett, without `/api` at the end.
+3. For **API key**, copy the key Prowlarr or Jackett shows in its settings.
+4. Select **Test and save**.
+
+Add each Prowlarr or Jackett indexer this way, one feed each.
+
+For a tracker that offers a plain RSS feed of torrents, use **Torrent feed** and paste the feed's full address. Private feeds often carry your passkey in the address, so highsea keeps it sealed like a password.
+
+![The Set up Torrent feed form, with one field, Feed address, its note about passkeys, Cancel and Test and save](/images/admin/indexers/set-up-feed.png)
+
+### Local definitions
+
+A definition file placed in the `definitions` folder inside highsea's config folder (`/config/definitions` in the container) is loaded alongside the catalog and carries a **Local** badge. A local definition takes the place of a catalog definition with the same id. highsea checks each file when it starts; one that isn't valid is skipped, with a warning under **System › Health** and the details in the log.

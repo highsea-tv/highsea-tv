@@ -1,0 +1,54 @@
+---
+title: Settings
+description: Every area of Settings in the admin, in the groups the Settings page shows, with a guide for each.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The areas, their groups and who sees them: apps/server/src/admin/settings-areas.ts and
+    settings-messages.ts.
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings**, in the admin's sidebar, opens a page of areas in five groups. Owners see every area. Admins see all but **Security**, **Backups**, **VPN**, **Download client** and **Migration**, which are the owner's alone.
+
+## Server
+
+<Cards>
+  <Card title="General" href="/settings/general/" description="Region, the TMDB key, the indexer catalog, updates and diagnostics." />
+  <Card title="Appearance" href="/settings/appearance/" description="The server's name and accent, themes, and sounds for every app." />
+  <Card title="Network and remote access" href="/settings/network/" description="The address apps use away from home, proxies, TLS and discovery." />
+  <Card title="Backups" href="/settings/backups/" description="The schedule, backing up now, restoring, and moving to another machine." />
+</Cards>
+
+**Security** (two-step verification, passkeys and single sign-on) is covered with the people who sign in, in [Users and security](/settings/users-and-security/).
+
+## People
+
+<Cards>
+  <Card title="Users and security" href="/settings/users-and-security/" description="Roles, invites, devices, API keys, and how people sign in." />
+</Cards>
+
+## Library
+
+<Cards>
+  <Card title="Media management" href="/settings/media-management/" description="Root folders, file and folder names, importing, and tags." />
+  <Card title="Quality and profiles" href="/settings/quality/" description="Quality profiles, custom formats, presets and quality sizes." />
+  <Card title="Import lists" href="/settings/lists/" description="TMDB, Trakt and other lists that add films on their own." />
+</Cards>
+
+## Downloads and alerts
+
+<Cards>
+  <Card title="VPN" href="/settings/vpn/" description="Keep torrent traffic behind a VPN, in one of three ways." />
+  <Card title="Download client" href="/settings/downloads/" description="The built-in torrent client's port, connections, seeding and categories." />
+  <Card title="Notifications" href="/settings/notifications/" description="Messages to Discord, ntfy, email and more when things happen." />
+</Cards>
+
+**Subtitles** has a page of its own in the sidebar; see [Subtitles](/subtitles/).
+
+## System
+
+**Migration** brings films, profiles and torrents across from Radarr and qBittorrent once; see [Move from Radarr and qBittorrent](/migrate-from-radarr-and-qbittorrent/).

@@ -1,0 +1,55 @@
+---
+title: Your account
+description: Change your own password, and protect your sign-in with two-step verification and passkeys.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: Your account (apps/server/src/admin/account.tsx, account-messages.ts,
+    two-factor.tsx), sign-in (login.tsx, login-messages.ts), Settings › Users and devices
+    (users.tsx, users-messages.ts).
+  - Limits: packages/auth/src/two-factor.ts (10 recovery codes).
+  - Authenticator apps use time-based one-time passwords: https://www.rfc-editor.org/rfc/rfc6238
+  - Passkeys: https://passkeys.dev/docs/intro/what-are-passkeys/
+*/}
+
+Written for highsea 0.1.0.
+
+Everyone who opens the admin has **Your account**, at the bottom of the sidebar. It holds your name and email, your password, two-step verification and passkeys.
+
+![Your account, open beside the admin: Profile with Name and an optional Email, and Password with Current password, New password of at least 10 characters, and Change password](/images/admin/settings-users-and-security/account.png)
+
+## Your password
+
+To change your password, open **Your account**, enter your **Current password** and the new one, and choose **Change password**. Your other browsers are signed out.
+
+If you've forgotten it, ask the Owner for a [reset link](/settings/users-and-security/people/#reset-a-password). The Owner's own password can't be reset by anyone else.
+
+## Two-step verification
+
+Two-step verification asks for a 6-digit code from an authenticator app after your password. It's only asked for in the admin; apps never ask for it.
+
+![Two-step verification in Your account: Off, signing in asks for your password only, the server's owner requires it, and Set up](/images/admin/settings-users-and-security/account-two-step.png)
+
+To turn it on for your account:
+
+1. Open **Your account** and choose **Set up** under **Two-step verification**.
+2. Enter your password.
+3. Scan the QR code with your authenticator app, or enter the key shown below it.
+4. Enter the code the app shows and choose **Turn on**.
+5. Save the 10 recovery codes. Each signs you in once if you lose your authenticator, and they show only now.
+
+![Setting up two-step verification: a QR code to scan, the key to type instead, a Code field and Turn on](/images/admin/settings-users-and-security/two-step-setup.png)
+
+**Your account** shows how many recovery codes you have left. **New recovery codes** replaces them all. At sign-in, **Use a recovery code** takes one instead of a code from the app.
+
+When someone has lost both their authenticator and their recovery codes, the Owner can choose **Turn off two-step** from the **⋯** menu beside them in **Settings › Users and devices**. Make sure it's really them asking.
+
+## Passkeys
+
+A passkey signs you in with your fingerprint, face or device PIN, with no password to type. In **Your account**, choose **Add a passkey** and follow your browser. Each one shows whether it's **Synced** across your devices or kept **On one device**, and can be renamed or removed.
+
+![Passkeys in Your account, with none yet and Add a passkey](/images/admin/settings-users-and-security/account-passkeys.png)
+
+Passkeys work only when the admin is opened at its HTTPS address or at `localhost`. [Settings › Network and remote access](/settings/network/) covers HTTPS. At sign-in, choose **Sign in with a passkey**.

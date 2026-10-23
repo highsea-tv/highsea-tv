@@ -1,0 +1,51 @@
+---
+title: Search results
+description: What your indexers return for a film, how highsea ranks the releases, why one was rejected, and grabbing a release yourself.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - A search's results and reasons: apps/server/src/admin/movie-detail.tsx and
+    movie-detail-messages.ts, packages/quality/src/messages.ts and ranking.ts.
+  - Which indexers a search asks: packages/indexers/src/service.ts and search.ts.
+  - Indexer priority as a tiebreaker, and minimum seeders: https://wiki.servarr.com/radarr/settings#indexers
+*/}
+
+Written for highsea 0.1.0.
+
+highsea searches on its own (see [Wanted](/wanted/)), but you can see what your indexers return for a film and choose a release yourself. Open the film and select **Interactive search**, which opens its **Search** tab. [A film's page](/movies/film/) covers the rest of the film's page.
+
+![A film's Search tab: 5 releases, 1 accepted by your profile, Show rejected switched on and Search again, then a table of releases with their indexer and name, quality, score, size, peers, age, and the decision, one Accepted and four Rejected, each with a download button](/images/admin/indexers/search-results.png)
+
+highsea asks every enabled indexer that serves the film, and lists what came back:
+
+- **Release**: the indexer it came from, with the release's name under it.
+- **Quality**, **Score** (the custom format score), **Size**, **Peers** (seeders and leechers) and **Age**.
+- **Decision**: **Accepted** by your quality profile, or **Rejected**, with the number of reasons.
+
+Accepted releases come first, best first: by the profile's quality order, then a newer revision, then the custom format score. Ties go to the indexer with the lower priority number, then more seeds, then the size nearest the quality's preferred size.
+
+## Why a release was rejected
+
+Every rejected release says why. Select its **Decision** to see the reasons, for example:
+
+![A rejected WEBDL-720p release opened under its row, with two reasons: WEBDL-720p isn't allowed in Ultra HD, and 0 seeders, the minimum is 1](/images/admin/indexers/search-reasons.png)
+
+- "Bluray-1080p isn’t allowed in HD 1080p": the profile doesn't include that quality.
+- "Too large" or "Too small", with the limit for the film's runtime, from **Settings › Quality sizes**.
+- The format score is below the profile's minimum.
+- It's in a language the profile doesn't want.
+- The film's file already meets the cutoff, or the release isn't an upgrade on it.
+- It has no seeders.
+- "On this movie’s blocklist".
+- The indexer is failing, so its releases can't be taken.
+
+An accepted release's **Decision** opens what it matched, such as the quality and each custom format's score. [Quality](/settings/quality/) explains profiles, custom formats and sizes.
+
+## Grab a release
+
+- The download button at the end of an accepted release's row, **Grab**, starts the download. Follow it in [Activity](/activity/).
+- On a rejected release the same button is **Grab anyway**, which overrides your profile for that release.
+
+**Show rejected** shows or hides the rejected releases. **Search again** asks the indexers again. When an indexer didn't answer, the results say which and why.

@@ -1,0 +1,37 @@
+---
+title: Events and tags
+description: The events a connection can hear, which a new one hears, and tags to hear about some films only.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: apps/server/src/admin/connections.tsx and connections-messages.ts (the events and
+    the defaults), tags-messages.ts, packages/notifications/src/shared (what each event says),
+    packages/api-contract/src/connections.ts (tags).
+*/}
+
+Written for highsea 0.1.0.
+
+Each connection hears the events ticked under **Events** in its dialog, and, if it has tags, only about films with one of them.
+
+## Events
+
+| Event | Sent when |
+| --- | --- |
+| **Grabbed** | highsea picks a release and starts downloading it. |
+| **Imported** | A film is in the library. |
+| **Upgraded** | A better release replaces the one in the library. |
+| **Download failed** | A download fails. |
+| **Subtitle added** | A subtitle is downloaded for a film, saying whether it was synced to the audio. |
+| **Health** | Something in **System › Health** needs attention, and again when it has cleared. |
+| **Update** | A new version of highsea is available. |
+| **Movie added** | Films are added to the library, by a person or by an [import list](/settings/lists/). |
+
+A new connection hears **Imported**, **Upgraded**, **Download failed**, **Health** and **Update** until you change it. A connection with no events shows "Hears nothing yet".
+
+## Tags
+
+Give a connection **Tags** to hear about some films only. A film's messages then come to it only for films with one of those tags. With no tags, it hears about every film. Messages that aren't about a film, such as Health and Update, aren't affected.
+
+![Editing an ntfy connection that hears Imported and Subtitle added, with the tag Kids under Tags: a movie's messages come here only for movies with one of these tags](/images/admin/settings-notifications/edit-tags.png)

@@ -1,0 +1,53 @@
+---
+title: Import lists
+description: Add films to the library on their own from TMDB, Trakt, StevenLu-style and MDBList lists.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: apps/server/src/admin/lists.tsx and lists-messages.ts (the screen and its words),
+    movie-detail-messages.ts and library-messages.ts (excluding a removed film),
+    packages/lists/src/service (the 6-hourly check, adding and exclusions).
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings › Import lists** adds films to the library on their own. Point highsea at a list, such as a TMDB chart, a friend's Trakt list or your Trakt watchlist, and every film on it that isn't in the library yet is added, with the folder and profiles you choose.
+
+The Owner and Admins can both manage import lists.
+
+![Settings › Import lists, with a TMDB list called Blender open films that found 8 titles and added 4, the Trakt account card with no account connected, and one film in Exclusions](/images/admin/settings-lists/page.png)
+
+<Cards>
+  <Card title="Adding a list" href="/settings/lists/adding/" description="TMDB lists and charts, Trakt, generic JSON lists and MDBList, what added films get, and connecting Trakt." />
+</Cards>
+
+## How lists work
+
+- highsea checks each list that's on every 6 hours, and at once when you save it or press **Check now**.
+- Each film on the list is matched on TMDB. A film the library already has, or one you've excluded, is skipped.
+- New films are added as monitored, unless you turn **Monitored** off, so highsea looks for them as it does for any other film.
+- A list only ever adds. Taking a film off the list, or removing the list, never removes anything from the library.
+
+Each list's row shows when it was last checked and what happened: how many titles it found, how many were added, and how many were already there or excluded. Titles highsea couldn't match on TMDB are named, and a check that failed says why.
+
+## Managing lists
+
+Each list's row has:
+
+- a switch to turn it on or off;
+- the quality profile the films it adds get, which you can change there;
+- **Check now**, which checks it at once. New titles appear in **Movies**;
+- **Edit**;
+- **Remove**. highsea stops checking it, and the films it added stay in the library.
+
+The check runs as **Import lists** in **System**'s tasks, too.
+
+## Exclusions
+
+When you remove a film from the library, you can tick **Don't add it again from lists** (or **Don't add them again from lists** when removing several). The film then goes into **Exclusions**, and no list adds it again.
+
+![The dialog for removing Nosferatu from the library, with Also delete its files from disk and Don't add it again from lists](/images/admin/settings-lists/remove-film.png)
+
+**Exclusions** lists them with when each was excluded. **Remove** one to let lists add it again.

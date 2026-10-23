@@ -1,0 +1,50 @@
+---
+title: Dashboard
+description: The first page after you sign in, and how to arrange its widgets for yourself.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the admin's Dashboard (apps/server/src/admin/dashboard.tsx, widgets.tsx) and its
+    strings (dashboard-messages.ts); the widget list, sizes and the starting layout
+    (packages/personalization/src/widgets.ts); the palette (apps/server/src/admin/shell.tsx).
+  - The product spec docs/product/dashboard.md, for intent.
+*/}
+
+Written for highsea 0.1.0.
+
+The **Dashboard** is the first page you see after signing in. It answers two questions at a glance: is everything working, and what's happening right now. It's made of widgets, and each person who opens the admin arranges their own.
+
+Only Owners and Admins open the admin, so only they have a dashboard. Users watch in the apps.
+
+![The Dashboard in its starting layout: Network, Storage, Indexers, Subtitles, Upcoming and Announcement in a grid, with the Queue across the full width below them](/images/admin/dashboard/overview.png)
+
+<Cards>
+  <Card title="Arrange your dashboard" href="/dashboard/customize/" description="Move, resize, add and remove widgets, go back to the starting layout, and set the layout new Admins start from." />
+</Cards>
+
+## What each widget shows
+
+| Widget | What it shows |
+| --- | --- |
+| **Network** | Download and upload speed now, over a line of the last 10 minutes, with how many films are downloading. While the VPN is down it says "Stopped while the VPN is down". |
+| **Storage** | Free space on the disk that holds your data, a bar of how much is used, and each root folder on it with how many films it holds. |
+| **Indexers** | How many of your indexers are healthy, and each one's state: Healthy, Backing off (with when it retries), Failing or Disabled. |
+| **Subtitles** | Subtitles synced today, how many are still waiting, and the average offset corrected. |
+| **Upcoming** | Monitored films released in the next 14 days, each linked to its page. |
+| **Announcement** | The announcement that's live now, who sees it and when it ends. With none, **Write one** opens [Curation](/curation/announcements/). |
+| **Queue** | Everything downloading, importing or waiting, live, with tabs for All, Downloading, Seeding and Issues. |
+| **Recently added** | Posters of the newest films in the library. |
+| **Calendar** | This month as a calendar, with release days marked. |
+| **System health** | Health checks that need attention, each marked OK, Notice, Warning or Error. "Everything looks healthy" when there are none. |
+
+When a widget has more than fits, its last line reads, for example, "3 more in Activity", and links to the page with the rest. A film's title in a widget opens the film's page.
+
+A widget that can't load says so inside its own frame, with **Try again**. The rest of the dashboard keeps working.
+
+## The starting layout
+
+Until you change it, your dashboard shows Network, Storage, Indexers, Subtitles, Upcoming and Announcement, with the Queue across the full width below them. Recently added, Calendar and System health are there to add.
+
+On a new server most widgets start empty, and say what fills them: "No indexers yet" with **Add indexers**, "The queue is empty", "Nothing added yet". They fill in as you add indexers and films. To change the layout, see [Arrange your dashboard](/dashboard/customize/).

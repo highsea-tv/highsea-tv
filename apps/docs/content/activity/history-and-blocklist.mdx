@@ -1,0 +1,33 @@
+---
+title: History and the blocklist
+description: Everything that happened to the library's films, newest first, and the releases highsea won't grab again.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The History and Blocklist tabs: apps/server/src/admin/activity.tsx and activity-messages.ts.
+  - Why releases are blocklisted: packages/downloads/src/service.ts.
+*/}
+
+Written for highsea 0.1.0.
+
+## History
+
+![Activity's History tab, listing events newest first: Subtitles synced, Subtitles not synced, Subtitles downloaded, two Imported entries that say Hardlinked, Blocklisted and Grabbed, each with the film, the release, the source and when](/images/admin/activity/history.png)
+
+**History** records everything that happened to the library's films, newest first: **Grabbed**, **Imported**, **Import failed**, **Download failed**, **Deleted**, **Renamed**, **Blocklisted**, and the subtitle events (**Subtitles downloaded**, **Subtitles synced**, **Subtitles upgraded**, **Subtitles deleted** and **Subtitles not synced**).
+
+Each entry shows the film, the release or what happened to it, the indexer it came from under **Source**, and when. **Show more** loads older entries.
+
+A film's own history is also on its page, under **History**.
+
+## The blocklist
+
+![Activity's Blocklist tab with one entry, a Sintel release from the Torznab indexer, the reason "Removed from the queue and blocklisted." and Unblock](/images/admin/activity/blocklist.png)
+
+**Blocklist** lists the releases highsea won't grab again: ones that failed, stalled, couldn't be imported, carried something unsafe, or that someone blocklisted. Each entry belongs to one film, so a blocklisted release can still be taken for another film. Each shows the film and release, the indexer and the reason.
+
+**Unblock** removes a release from the blocklist, and highsea may grab it again.
+
+To blocklist a release yourself, use **Blocklist and search again** in the queue; see [The queue](/activity/queue/#blocklist-and-search-again).
