@@ -237,6 +237,15 @@ jobs:
         with:
           bun-version: 1.4.2
       - run: bun install --frozen-lockfile
+      # signed first, then checked, as the image job does: the trust check reads the seed too, and
+      # the committed seed is signed with the development key until a release signs it. The seed
+      # written here isn't published; the catalog in dist/catalog is
+      - name: Build and sign both channels
+        run: bun scripts/catalog.ts build --seed
+        env:
+          HIGHSEA_CATALOG_KEY: ${{ secrets.HIGHSEA_CATALOG_KEY }}
+          HIGHSEA_CATALOG_KEY_ID: ${{ secrets.HIGHSEA_CATALOG_KEY_ID }}
+          HIGHSEA_CATALOG_SEED_RELEASE: '1'
       # production servers trust release keys only (ADR 0034): a real release stops here without
       # one; a dry run says so and signs with the development key
       - name: Production servers will trust it
@@ -244,11 +253,6 @@ jobs:
         env:
           HIGHSEA_CATALOG_KEY_ID: ${{ secrets.HIGHSEA_CATALOG_KEY_ID }}
           DRY_RUN: ${{ inputs.dry-run }}
-      - name: Build and sign both channels
-        run: bun run catalog:build
-        env:
-          HIGHSEA_CATALOG_KEY: ${{ secrets.HIGHSEA_CATALOG_KEY }}
-          HIGHSEA_CATALOG_KEY_ID: ${{ secrets.HIGHSEA_CATALOG_KEY_ID }}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: catalog
