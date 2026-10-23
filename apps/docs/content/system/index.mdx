@@ -1,0 +1,47 @@
+---
+title: System
+description: The server's status, its health checks and what to do about each, scheduled tasks, logs, live events and updates.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the System page and its tabs (apps/server/src/admin/system.tsx, system-messages.ts,
+    apps/server/app/(admin)/system): Status, Backups and Updates, and who sees each tab (ADR 0032).
+  - Settings › General's update channel (apps/server/src/admin/general-messages.ts), and how the
+    server learns of new versions (packages/runtime/src/operations.ts).
+*/}
+
+Written for highsea 0.1.0.
+
+**System** shows what the server is doing and how it's holding up. Owners and Admins can open it. It has seven tabs, each at its own address: **Status**, **Health**, **Tasks**, **Logs**, **Events**, **Backups** and **Updates**. **Backups** is for the Owner only; Admins don't see it.
+
+<Cards>
+  <Card title="Health" href="/system/health/" description="What needs your attention, and what to do about each message." />
+  <Card title="Tasks" href="/system/tasks/" description="The jobs highsea runs on a schedule, and running one now." />
+  <Card title="Logs and events" href="/system/logs-and-events/" description="The server's log, crash reports, and the live events apps refresh from." />
+</Cards>
+
+## Status
+
+![System's Status tab: the version, uptime, apps connected and catalog version across the top, then Resources, Addresses, Disks and About.](/images/admin/system/status.png)
+
+The first tab, at `/system`:
+
+- Across the top: the **version**, how long the server has been **up for**, how many **apps connected** there are, and the indexer **catalog** version.
+- **Resources**: CPU across every core and memory, as bars, with a line giving highsea's own share of each. The tab refreshes every 10 seconds.
+- **Addresses**: the address **On the LAN**, and the **Remote** address, or **Not set**. The link goes to [Network and remote access](/settings/network/).
+- **Disks**: each disk highsea uses, with how much is free and what's using it: movies, downloads and everything else. If none show, add a root folder in [Media management](/settings/media-management/root-folders/).
+- **About**: the server's name and version, where its film data comes from (TMDB), and the **Indexer catalog**: its version and when it was last checked, with **Check now**. A new catalog is installed from [Indexers](/indexers/).
+
+## Backups
+
+Owner only. **Backups** lists the server's backups with **Back up now**, **Download**, **Restore** and **Delete**. See [Backups](/settings/backups/) for how they work, and [Restore and move](/settings/backups/restore-and-move/) for how to restore one.
+
+## Updates
+
+![System's Updates tab with a new release available: the stable channel, "highsea 0.1.1 is out. You have 0.1.0.", its release date, notes and link, Check now and Update settings.](/images/admin/system/updates-available.png)
+
+**Updates** shows your version, the newest on your update channel (**Stable channel** or **Beta channel**), its release date and a link to its **Release notes**, and when highsea last checked. **Check now** checks again.
+
+highsea doesn't update itself. In Docker, pull the new image and recreate the container; highsea backs up before it changes its database. See [Upgrading](/upgrade/). **Update settings** opens [General](/settings/general/#updates), where the Owner chooses the update channel.

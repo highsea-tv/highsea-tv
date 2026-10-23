@@ -1,0 +1,43 @@
+---
+title: Languages and profiles
+description: Language profiles say which subtitles each film should have, with forced and SDH subtitles, a cutoff and a minimum score.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the Subtitles page's Languages tab (apps/server/src/admin/subtitles.tsx,
+    subtitles-messages.ts), the Subtitle languages fields (add-dialog-messages.ts,
+    library-messages.ts, media-management-messages.ts) and the profiles
+    (packages/subtitles/src/movies/index.ts).
+*/}
+
+Written for highsea 0.1.0.
+
+A language profile says which subtitles a film should have. highsea starts with one called **English**. Every film has a profile, chosen under **Subtitle languages**:
+
+- when you add a film;
+- in a film's **Edit** dialog;
+- for several films at once, from the **Subtitle languages** menu in the library's selection bar;
+- as a default for every film added to a root folder, in [Media management](/settings/media-management/root-folders/#subtitle-languages-for-films-added-here).
+
+![The Languages tab, with a card for each profile listing its languages, its cutoff and its minimum score, and New profile below.](/images/admin/subtitles/languages.png)
+
+## Make or change a profile
+
+1. Open **Subtitles**, then the **Languages** tab.
+2. Choose **New profile**, or **Edit** on an existing one. The card turns into a form.
+3. Give it a **Name**.
+4. Under **Languages, in order of preference**, choose **Add a language** for each one you want. Drag a language by its handle to reorder it, or press Space on the handle, move it with the Up and Down arrows, and press Space again to drop it.
+5. For each language, choose which kinds to fetch:
+   - **Regular only**, **Regular and forced** or **Forced only**. Forced subtitles cover only the lines in another language, such as a sign or a short scene. **Regular and forced** fetches both, as two tracks.
+   - **Without SDH**, **With or without SDH** or **SDH only**. SDH subtitles also describe sounds and name the speaker, for viewers who are deaf or hard of hearing. With **Without SDH**, highsea takes an SDH subtitle only when nothing else exists, and removes the descriptions from it.
+6. Set the **Cutoff**: once this language is found, highsea stops looking for better matches. **Keep looking** never stops.
+7. Set a **Minimum score** from 0 to 100. A match on the file itself scores about 99.
+8. Choose **Save profile**.
+
+![The English profile open for editing: its name, English as the first language with Regular and forced and Without SDH, Add a language, the cutoff, the minimum score of 80, and Save profile, Cancel and Delete.](/images/admin/subtitles/profile-edit.png)
+
+## Delete a profile
+
+**Delete** removes a profile. highsea refuses while films still use it, and always keeps at least one.

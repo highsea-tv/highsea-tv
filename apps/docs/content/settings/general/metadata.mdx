@@ -1,0 +1,38 @@
+---
+title: Metadata
+description: The TMDB key highsea gets film details with, and the language and region those details come in.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The screen and its copy: apps/server/src/admin/general.tsx and general-messages.ts.
+  - Defaults: packages/metadata/src/settings.ts and apps/server/src/admin/setup.tsx (metadata
+    language and region from the browser).
+  - TMDB's API settings: https://www.themoviedb.org/settings/api
+*/}
+
+Written for highsea 0.1.0.
+
+Where film details come from, and the language and region they're in. highsea gets titles, posters, cast and release dates from TMDB, which needs a key of your own. Only the Owner can change these.
+
+![The Metadata group in Settings › General: the TMDB key shown as Set with Replace and Remove, then Metadata language and Region.](/images/admin/settings-general/metadata.png)
+
+## The TMDB key
+
+The key shows as **Set**, with its last four characters, or **Not set**. Without a key, Discover, adding films and refreshing their details stop working; the library and its pages keep working.
+
+To add or change it:
+
+1. Copy your key from [TMDB's API settings](https://www.themoviedb.org/settings/api). Either the **API Key** or the **API Read Access Token** works.
+2. With no key set, paste it into **New TMDB key**. With one set, choose **Replace** first.
+3. Choose **Save**. highsea checks the key with TMDB before it keeps it. If TMDB refuses it, copy it again; if TMDB can't be reached, nothing is saved, so check the server's internet connection and try again.
+
+**Remove** takes the key away after you confirm.
+
+## Language and region
+
+| Setting | What it does | Default |
+| --- | --- | --- |
+| **Metadata language** | The language of titles, overviews and taglines, where TMDB has them in it. | Your browser's language when you ran setup |
+| **Region** | Used for certifications, release dates and Discover's lists. | Your browser's region when you ran setup |

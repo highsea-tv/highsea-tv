@@ -1,0 +1,56 @@
+---
+title: Wanted
+description: The films highsea is still looking for, the release calendar and its feed, and how highsea finds releases on its own.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The admin's Wanted page: apps/server/src/admin/wanted.tsx and wanted-messages.ts, with the
+    routes in apps/server/app/(admin)/wanted.
+  - What each list holds: packages/media/src/movies/wanted.ts.
+  - Profile settings named here: apps/server/src/admin/quality-editors-messages.ts; Minimum
+    availability: add-dialog-messages.ts.
+*/}
+
+Written for highsea 0.1.0.
+
+**Wanted** shows what the library is still waiting for: monitored films with no file yet, films whose file is below their profile's cutoff, and what's coming out when. It has three tabs, **Missing**, **Cutoff unmet** and **Calendar**, and each has its own address.
+
+Owners and Admins use it. Users never open the admin.
+
+<Cards>
+  <Card title="The calendar" href="/wanted/calendar/" description="Release dates by month, and a feed for your calendar app." />
+  <Card title="How highsea finds releases" href="/wanted/finding-releases/" description="RSS sync, the backlog sweep, upgrades, waiting before grabbing and indexer tags." />
+</Cards>
+
+## Missing
+
+![The Missing tab of Wanted, listing three films with their release date, quality profile and a Search button on each row, and Search all 3 above the list](/images/admin/wanted/missing.png)
+
+**Missing** lists the monitored films that have reached their **Minimum availability** and have no file yet. A film that isn't out yet by that measure stays off the list until it is. Minimum availability is set for each film when you add it (**Announced**, **In cinemas** or **Released**), and can be changed later from the film's page. **Released** avoids cam copies.
+
+Each row shows the poster and title (which opens the film's page), the release date and the quality profile. The tab shows how many films are on the list. The list loads 50 films at a time; **Show more** loads the next 50.
+
+When nothing is missing, the tab says "Nothing missing".
+
+## Cutoff unmet
+
+![The Cutoff unmet tab, listing Nosferatu and Sintel with their profile and the quality it wants, such as HD 1080p · Bluray-1080p](/images/admin/wanted/cutoff.png)
+
+**Cutoff unmet** lists monitored films that have a file, but one below the cutoff their quality profile asks for. The **Profile · wants** column shows the profile and its cutoff, for example "HD 1080p · Bluray-1080p".
+
+highsea keeps looking for a better release for these films and replaces the file when one turns up. That only happens when the profile has **Upgrade files** turned on; with it off, the first file that fits is kept and the film never appears here. Profiles are in **Settings › Profiles and formats**; see [Quality](/settings/quality/profiles/).
+
+## Search from Wanted
+
+You don't need to search by hand: highsea looks for every film on both lists on its own (see [How highsea finds releases](/wanted/finding-releases/)). To look now:
+
+- **Search** on a row searches every indexer for that film.
+- **Search all** above the list searches for every film on it. The button shows how many that is.
+
+Searches run in the background. A notice says how many films are being searched, and whatever highsea grabs shows up in [Activity](/activity/). A film that's grabbed leaves the list while it downloads.
+
+Searching needs at least one enabled indexer. Without one, highsea says so and searches nothing. See [Indexers](/indexers/).
+
+To pick a release yourself instead, open the film and use **Interactive search**. [Movies](/movies/) covers the film's page.

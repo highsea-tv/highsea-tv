@@ -1,0 +1,53 @@
+---
+title: Quality and profiles
+description: Quality profiles, custom formats and scores, release sizes, and how highsea decides which release to take.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The screens and their copy: apps/server/src/admin/profiles.tsx, profiles-messages.ts,
+    quality-editors.tsx and quality-editors-messages.ts.
+  - The qualities and the decision: packages/quality/src (qualities.ts, decision.ts, ranking.ts,
+    messages.ts); packages/indexers/src/search.ts (minimum seeders).
+  - The Servarr wiki's quality, profile and custom format pages, which highsea follows:
+    https://wiki.servarr.com/radarr/settings#quality-profiles and https://wiki.servarr.com/radarr/settings#quality
+*/}
+
+Written for highsea 0.1.0.
+
+Every film in your library has a quality profile: what to download for it, and when to stop looking for something better. A film you keep in more than one version, such as 4K HDR beside 1080p, has a profile for each. Two areas of Settings shape that decision:
+
+- **Settings › Profiles and formats**: quality profiles and custom formats.
+- **Settings › Quality sizes**: how big a release may be for each quality.
+
+The Owner and Admins can change both. You pick a film's profile when you add it, and can give a version another profile later from the film's page.
+
+<Cards>
+  <Card title="Quality profiles" href="/settings/quality/profiles/" description="The starting profiles, which qualities to download, upgrades and format scores." />
+  <Card title="Custom formats" href="/settings/quality/custom-formats/" description="Conditions a release matches, such as HDR or a low-quality group, and trying a release name." />
+  <Card title="Quality sizes" href="/settings/quality/sizes/" description="How large a release may be for its quality and the film's runtime." />
+</Cards>
+
+## Qualities
+
+A quality is a source and a resolution together, such as **Bluray-1080p**, **WEBDL-2160p** or **Remux-1080p**. highsea reads it from the release's name. The qualities run from **Unknown**, **CAM** and **TELESYNC** at the bottom, through DVD, HDTV, WEB and Blu-ray at 480p to 2160p, up to **Remux-2160p** at the top.
+
+Inside a profile, qualities can be grouped, so they count as equal. The starting profiles group WEBRip and WEB-DL at each resolution as **WEB 1080p**, **WEB 2160p** and so on.
+
+## How highsea decides
+
+For each release a search finds, highsea checks these in order and gives the reason for each. A release is taken only when nothing rejects it.
+
+1. **Quality**: is it a quality the profile downloads?
+2. **Size**: is it inside the range for its quality and the film's runtime?
+3. **Format score**: is its score at least the profile's minimum?
+4. **Language**: is it in the language the profile wants?
+5. **Upgrades**, when the film has a file already: does the profile allow upgrades, has the file met the cutoff, and is this release better? A release is better when it's higher in the profile's list, a newer revision (Proper or Repack) of the same quality, or raises the format score by at least the least gain.
+6. **Seeders**: does it have at least one seeder? A release from an indexer that doesn't report seeders isn't held to this.
+7. **The indexer**: an indexer that's failing can't be grabbed from until it recovers.
+8. **The blocklist**: a release on the film's blocklist is never taken again.
+
+Of the releases that pass, highsea takes the best: higher in the profile's list first, then the newer revision, then the higher format score. If those tie, the indexer's priority, then more seeders, then the size nearer the preferred size.
+
+You see these reasons when you search for a film by hand: releases your profile accepts come first, and **Show rejected** lists the rest with their reasons. **Grab anyway** overrides your profile for one release. "Bluray-1080p isn't allowed in HD 1080p" means the quality isn't ticked; "Too large" and "Too small" give the size and the limit for the film's runtime. [Movies](/movies/) and [Activity](/activity/) have more on searching and grabbing, and [Indexers](/indexers/) has indexer priority.

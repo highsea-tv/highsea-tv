@@ -1,0 +1,53 @@
+---
+title: VPN troubleshooting
+description: What each problem Settings › VPN reports means, from a missing capability to a refused API key, and how to fix it.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: apps/server/src/admin/vpn-messages.ts (the words), packages/vpn/src (copy.ts for the
+    checks and failures, settings.ts for refusals, vpn.ts for timings).
+  - Docker's capabilities and devices: https://docs.docker.com/reference/compose-file/services/#cap_add
+  - gluetun's control server: https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md
+*/}
+
+Written for highsea 0.1.0.
+
+The status at the top of **Settings › VPN**, and the checks beneath it, say what's wrong. Each heading below is a message you may see there.
+
+## highsea can't run the tunnel yet
+
+highsea's container is missing the NET_ADMIN capability. Add `cap_add: [NET_ADMIN]` to its service and recreate the container. See [What it needs](/settings/vpn/connects/#what-it-needs).
+
+## The kernel has no WireGuard, and /dev/net/tun isn't there
+
+Common on older NAS kernels. Add `devices: [/dev/net/tun:/dev/net/tun]` to highsea's service and recreate the container.
+
+## highsea connects runs on Linux
+
+highsea isn't running in its Docker image or on Linux. Use [a VPN container](/settings/vpn/container/) or [an interface on this machine](/settings/vpn/interface/) instead.
+
+## Names are being looked up outside the tunnel
+
+The WireGuard file has no `DNS` line. Download a new file from your provider, or add the DNS server your provider documents, and upload it again. See [What the configuration file needs](/settings/vpn/connects/#what-the-configuration-file-needs).
+
+## PIA didn't accept that username and password
+
+Use the username you sign in to PIA with, which starts with `p`, not your email address.
+
+## Couldn't reach the VPN container's control server
+
+Check that gluetun is running, that highsea uses `network_mode: "service:gluetun"`, and that the address is `http://127.0.0.1:8000`.
+
+## gluetun's control server refused that API key
+
+The key in Settings › VPN must match the one in gluetun's `HTTP_CONTROL_SERVER_AUTH_DEFAULT_ROLE`. Recreate the gluetun container after changing it.
+
+## Couldn't check the exit address
+
+The IP echo service didn't answer. This isn't a leak; highsea checks again in 5 minutes.
+
+## Your provider didn't forward a port
+
+Downloads still work, with fewer peers able to reach you. For Proton VPN, make sure the configuration is for a P2P server with NAT-PMP turned on. See [Port forwarding](/settings/vpn/port-forwarding/).

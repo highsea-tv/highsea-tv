@@ -32,6 +32,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.15",
     "@highsea-tv/catalog": "workspace:*",
+    "@highsea-tv/importers": "workspace:*",
     "@highsea-tv/indexers": "workspace:*",
     "@highsea-tv/media": "workspace:*",
     "@highsea-tv/metadata": "workspace:*",

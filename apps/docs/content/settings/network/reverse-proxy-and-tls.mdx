@@ -1,0 +1,80 @@
+---
+title: Reverse proxy and TLS
+description: Serve highsea over HTTPS through a reverse proxy you run or with its built-in TLS, and which proxies highsea trusts.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: apps/server/src/admin/network.tsx and network-messages.ts (the screen and its
+    words), packages/network/src (settings.ts for defaults, tls.ts for the certificate files,
+    proxies.ts for trusted proxies), packages/runtime/src/network.ts (the checks on save),
+    packages/runtime/src/setup.ts (what setup's remote-access choices set), apps/server/server.ts
+    (HTTPS starts with the server), compose.yaml at the repository's root.
+  - Caddy's reverse_proxy and the X-Forwarded headers it sets:
+    https://caddyserver.com/docs/caddyfile/directives/reverse_proxy
+  - Certificates: certbot, https://certbot.eff.org/ ; tailscale cert,
+    https://tailscale.com/kb/1153/enabling-https
+*/}
+
+Written for highsea 0.1.0.
+
+**TLS** has three choices:
+
+- **My proxy handles it**: a reverse proxy in front of highsea serves HTTPS, and passes requests to highsea on port 3000.
+- **Built in**: highsea serves HTTPS itself, on its own port.
+- **Off (LAN only)**: no HTTPS. Without TLS, passwords cross the network in the clear, so keep it to the LAN.
+
+A change to TLS or the HTTPS port takes effect the next time highsea starts. Restart the container after saving.
+
+## Through a reverse proxy
+
+![The Reverse proxy and TLS section with My proxy handles it chosen: a Trusted proxies field and the Use X-Forwarded-For and X-Forwarded-Proto switch, off](/images/admin/settings-network/proxy.png)
+
+Point your proxy at port 3000 on highsea's host. With Caddy, for example:
+
+```txt title="Caddyfile"
+harbor.example.net {
+	reverse_proxy 192.168.1.20:3000
+}
+```
+
+Caddy gets a certificate for the name itself and passes on the visitor's address in the `X-Forwarded-For` and `X-Forwarded-Proto` headers. Other proxies need those headers set; their documentation shows how.
+
+Then, in highsea:
+
+1. Choose **My proxy handles it**.
+2. Enter the proxy's address as the **External URL**.
+3. Under **Trusted proxies**, enter the proxy's address, or a range that holds it.
+4. Turn on **Use X-Forwarded-For and X-Forwarded-Proto**.
+
+## Trusted proxies
+
+highsea believes the forwarded headers only from the addresses listed under **Trusted proxies**. Anyone can send those headers, so from any other address highsea ignores them and sees the connection as it is. With the right proxy trusted, highsea knows each visitor's real address, and whether they came over HTTPS.
+
+Separate addresses with commas. Ranges work too, like `172.16.0.0/12` for Docker's networks. If you chose a reverse proxy during setup, highsea filled in the private ranges (`127.0.0.0/8`, `::1/128`, `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` and `fc00::/7`), which suit a proxy on the same machine or network. Narrow them to your proxy's own address if you can.
+
+**Use X-Forwarded-For and X-Forwarded-Proto** turns the headers on. They're read only from the trusted proxies above, and it's off on a new server.
+
+## Built-in TLS
+
+![The Reverse proxy and TLS section with Built in chosen: the line highsea serves HTTPS itself, on its own port, and an HTTPS port field set to 8443, above Trusted proxies](/images/admin/settings-network/built-in-tls.png)
+
+highsea serves HTTPS with a certificate you provide. It doesn't fetch certificates itself yet; a tool such as [certbot](https://certbot.eff.org/) or [`tailscale cert`](https://tailscale.com/kb/1153/enabling-https) can.
+
+1. Put the certificate's full chain in `/config/tls/cert.pem` and its private key in `/config/tls/key.pem`, both in PEM format. `/config` is highsea's config folder, so on the host that's the `tls` folder inside the folder you mounted there.
+2. Choose **Built in**. The **HTTPS port** is 8443 unless you change it; any port from 1024 to 65535 works.
+3. If your compose file publishes ports rather than using host networking, publish the HTTPS port too. The compose files have the line ready to uncomment:
+
+   ```yaml
+   ports:
+     - "8443:8443"
+   ```
+
+4. Save, and restart highsea.
+
+If the files are missing or can't be used, highsea keeps serving plain HTTP, and both this page and **System › Health** say why: "Built-in TLS needs a certificate", or that the certificate can't be used, with the reason. A key that doesn't match its certificate is the usual cause.
+
+When you renew the certificate, replace both files and restart highsea.
+
+To reach highsea this way from outside, forward the HTTPS port on your router; see [Forwarding a port](/settings/network/remote-access/#forwarding-a-port).

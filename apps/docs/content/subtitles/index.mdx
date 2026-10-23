@@ -1,0 +1,77 @@
+---
+title: Subtitles
+description: Subtitle providers and accounts, language profiles, the wanted list, and syncing subtitles to a film's speech.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the Subtitles page (apps/server/src/admin/subtitles.tsx, subtitles-messages.ts),
+    the settings' defaults (packages/subtitles/src/shared/settings.ts), sidecar names
+    (src/shared/naming.ts), cleanup (src/shared/processing/cleanup.ts), the release's own subtitles
+    (src/movies/bundled.ts) and the jobs (src/movies/jobs.ts).
+  - Sidecar flags: https://emby.media/support/articles/Subtitles.html
+*/}
+
+Written for highsea 0.1.0.
+
+highsea finds subtitles for every film it imports, scores them, and syncs them to the film's speech in the background. The **Subtitles** page shows how that's going, lists what's still missing, and holds the settings behind it. A film's own subtitles are on its page, under **Subtitles**.
+
+Owners and Admins can use everything here, except adding a provider's account, which is for the Owner only.
+
+<Cards>
+  <Card title="Providers and accounts" href="/subtitles/providers/" description="Sign in to OpenSubtitles.com, Subdl and SubSource, and see how many requests are left today." />
+  <Card title="Languages and profiles" href="/subtitles/languages/" description="Which languages each film should have, forced and SDH subtitles, and the cutoff." />
+  <Card title="A film's subtitles" href="/subtitles/a-films-subtitles/" description="A film's tracks, searching and choosing a subtitle yourself, and deleting one." />
+  <Card title="Syncing to the speech" href="/subtitles/sync/" description="How highsea lines subtitles up with the film, the offset by hand, and the scoring and sync settings." />
+  <Card title="When something goes wrong" href="/subtitles/troubleshooting/" description="What System › Health says about subtitles, and what to do about it." />
+</Cards>
+
+## The page at a glance
+
+![The Subtitles page, with today's figures across the top, the Wanted, Providers, Languages and Scoring and sync tabs, and Nosferatu on the wanted list, missing French.](/images/admin/subtitles/overview.png)
+
+Across the top, four figures:
+
+- **synced today**: subtitles lined up with the speech since midnight UTC.
+- **waiting to sync**: subtitles queued or being synced now.
+- **average correction**: how far today's syncs moved the timing, in milliseconds.
+- **average confidence**: how sure today's syncs were.
+
+Below them are four tabs: **Wanted**, **Providers**, **Languages** and **Scoring and sync**. The [Providers](/subtitles/providers/) and [Languages](/subtitles/languages/) tabs have pages of their own; **Scoring and sync** is covered with [syncing](/subtitles/sync/#scoring-and-sync-settings).
+
+## The wanted list
+
+The **Wanted** tab lists the films that are missing a language their profile asks for, with the missing languages beside each. Subtitles inside the video file count, so a film with built-in English isn't missing English. Films show 50 at a time; **Show more** loads the next.
+
+- **Search** on a row searches every provider for that film's missing languages and downloads the best match.
+- **Search all** does the same for every film on the list. What's found downloads and syncs in the background.
+
+When nothing is missing, the tab says "Every movie has its subtitles".
+
+## Automatic downloads
+
+You don't need to search by hand. highsea:
+
+- searches for a film's subtitles as soon as it's imported;
+- searches the wanted list again every 6 hours;
+- keeps looking for a better match for the number of days in **Keep upgrading for**, checking every 12 hours, and replaces a subtitle when it finds a better one.
+
+A subtitle that came with the release, beside the video or in a `Subs` folder, is kept and scores 100, since it was made for that release. Subtitles inside the video file are used as they are.
+
+Before saving a downloaded subtitle, highsea removes advertising lines, such as "Subtitles by …" or a site's address.
+
+Both searches are listed under **System › Tasks** as **Search for wanted subtitles** and **Upgrade subtitles**, with **Run now** to start one early. See [System](/system/).
+
+## Sidecar files
+
+highsea saves each subtitle as a file beside the video, named after it, so players such as Plex, Jellyfin and Kodi find it. The name carries the language and, when there is one, a flag:
+
+```txt
+Sintel (2010) Bluray-1080p.mkv
+Sintel (2010) Bluray-1080p.en.srt
+Sintel (2010) Bluray-1080p.en.forced.srt
+Sintel (2010) Bluray-1080p.en.sdh.srt
+```
+
+A second track with the same language and flag adds the provider's name, such as `….en.OpenSubtitles.srt`. When highsea renames a film, its subtitles are renamed with it.

@@ -1,0 +1,46 @@
+---
+title: Discover
+description: Find a film on TMDB, from its lists or by title, and add it to the library with the options you choose.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the admin's Discover (apps/server/src/admin/discover.tsx), the add dialog
+    (add-dialog.tsx), and their strings (discover-messages.ts, add-dialog-messages.ts); the command
+    palette (shell.tsx).
+  - The product spec docs/product/movies.md, for intent.
+*/}
+
+Written for highsea 0.1.0.
+
+![Discover with the Trending list from TMDB: a grid of films, each with its title, year, rating and an Add button](/images/admin/movies/discover.png)
+
+## Find a film
+
+Open **Discover**. Before you type, it shows four lists from TMDB as tabs: **Trending**, **Popular**, **Now playing** and **Upcoming**. Type in **Title, year or genre** and the results replace them as you type. **Show more** under the grid loads the next page.
+
+Each result shows its poster, title, year and rating, then either **Add** or an **In library** badge. The poster and title open the film's page.
+
+![Discover's results for "sintel": Sintel, already in the library, shows an In library badge](/images/admin/movies/discover-search.png)
+
+If nothing matches, try the original title, or just the year.
+
+You can also open the command palette with ⌘K (Ctrl+K on Windows and Linux): **Add a movie** goes to Discover, and typing a title finds films already in the library.
+
+## Add a film
+
+Press **Add** on a result, or **Add movie** on a film's page. The dialog asks for:
+
+- **Folder**: the root folder the film is filed under. If there's none yet, add one in **Settings › Media management** first. See [Media management](/settings/media-management/).
+- **Quality profile**: which releases are good enough, and which to upgrade to. See [Quality](/settings/quality/).
+- **Subtitle languages**: the languages to fetch subtitles in, or **None**. A folder with its own default languages fills this in when you choose it.
+- **Minimum availability**: **Announced**, **In cinemas** or **Released**. highsea doesn't grab a release before then. **Released** avoids cam copies.
+- **Monitored**: grab it when a release turns up, and upgrade it until the profile's cutoff. Turn it off to add the film without downloading anything.
+- **Search now**: search your indexers straight away. Otherwise the next RSS sync picks it up. This needs at least one indexer; see [Indexers](/indexers/).
+
+![The add dialog, with Folder, Quality profile, Subtitle languages, Minimum availability, Monitored and Search now](/images/admin/movies/add-dialog.png)
+
+The button reads **Add and search** with **Search now** ticked, and **Add movie** without. highsea remembers your choices for the next film you add.
+
+Everything here can be changed later on the film's page. See [Change or remove a film](/movies/manage-a-film/).

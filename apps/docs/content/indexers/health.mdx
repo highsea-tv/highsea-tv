@@ -1,0 +1,29 @@
+---
+title: Health and backoff
+description: How highsea watches each indexer, rests one that's failing so searches stay quick, and when it marks one as Failing.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - Health and backoff (5, 15 and 30 minutes, 1, 3, then 6 hours; failing after 6 hours or a refused
+    credential): packages/indexers/src/health.ts; which indexers a search and RSS skip:
+    packages/indexers/src/service.ts and search.ts.
+  - The badges, Retry now and the catalog-update reasons: apps/server/src/admin/indexers.tsx and
+    indexers-messages.ts.
+*/}
+
+Written for highsea 0.1.0.
+
+highsea watches each indexer and stops asking one that's having trouble, so a broken indexer doesn't slow every search down. Each indexer's health is in the **Health** column on [Indexers](/indexers/).
+
+![Two indexers on the Installed tab: Torznab Healthy, and Internet Archive Backing off, with the reason "The indexer answered with an error (HTTP 503). Trying again in 4m." under the badge and Retry now at the end of its row](/images/admin/indexers/backing-off.png)
+
+- **Healthy**: answering normally.
+- **Backing off**: it failed recently, so highsea is resting it. The reason and when highsea will try again are under the badge. Each failure in a row rests it longer: 5 minutes, then 15, 30, an hour, 3 hours, then 6 hours each time. If the indexer asks highsea to wait a particular time, highsea does, up to 6 hours. An indexer that's backing off is left out of searches and RSS.
+- **Failing**: it has failed for 6 hours, or it refused your credentials. highsea still shows its releases, but won't take them. A failing indexer also shows up under **System › Health**. If your credentials were refused, update them in **Edit**.
+- **Disabled**: switched off.
+
+One success makes an indexer healthy again at once. **Retry now**, shown while an indexer is backing off, ends the rest and puts it back in rotation.
+
+An indexer can also need your attention after a catalog update: "Needs a setting its new definition asks for", or "Its definition is gone from the catalog". highsea skips it until it's fixed; open **Edit** to fill in the new setting.

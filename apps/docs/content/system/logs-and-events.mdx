@@ -1,0 +1,36 @@
+---
+title: Logs and events
+description: The server's log and how to download it, crash reports, and the live events every connected app refreshes from.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the Logs and Events tabs (apps/server/src/admin/system.tsx, system-messages.ts),
+    Settings › General's Diagnostics (apps/server/src/admin/general-messages.ts), and the log files'
+    retention (packages/runtime/src/logs.ts).
+*/}
+
+Written for highsea 0.1.0.
+
+## Logs
+
+![System's Logs tab: the level filter, Search the log and Download logs above the newest lines, with Crash reports below.](/images/admin/system/logs.png)
+
+**Logs** shows the newest lines since the server started, each with its time, level, source and message.
+
+- **Show** filters by level: **Everything**, **Info and up**, **Warnings and errors** or **Errors**.
+- **Search the log** narrows the lines shown.
+- **Download logs** saves every line from the last 14 days, the files highsea keeps in the config folder's `logs` folder, one a day.
+
+How much the server writes down is the **Log level**, in [General](/settings/general/diagnostics/) under **Diagnostics**. Leave it at **Info (default)** unless you're chasing a problem.
+
+## Crash reports
+
+Below the log, **Crash reports** lists the reports highsea writes to the config folder when something fails, each with **Download report**, to attach to an issue. Nothing is sent anywhere. They're written only when **Write crash reports** is on, in **Settings › General** under **Diagnostics**.
+
+## Events
+
+![System's Events tab: each event's time and topic, with the items it's about, newest first.](/images/admin/system/events.png)
+
+**Events** shows what the server tells every connected app, live, newest first: each event's topic and the items it's about, with the time. Apps refresh what they show from these. It's useful when an app or a page didn't update and you want to see whether the server said anything. Events only appear while the tab is open.

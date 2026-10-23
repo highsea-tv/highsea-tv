@@ -1,0 +1,74 @@
+---
+title: A film's page
+description: What a film's page shows, in the library or not, and its Search, Files, History and Subtitles tabs.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: a film's page (apps/server/src/admin/movie-detail.tsx, media-sections.tsx) and their
+    strings (movie-detail-messages.ts, media-sections-messages.ts).
+  - The product specs docs/product/movies.md and media-pages.md, for intent.
+*/}
+
+Written for highsea 0.1.0.
+
+A film's page is the same page whether the film is in the library or not. Not added, it shows what the film is, with **Add movie**:
+
+- the summary: poster, runtime, genres, rating, tagline and who directed it;
+- **Overview**: the cast, trailers, the collection it belongs to, **More like this**, and **About** (original title and language, certification, budget, box office, studios and links);
+- **Cast and crew**: everyone credited, by department.
+
+![Metropolis, not in the library: its summary with Add movie, and the Overview tab with its cast](/images/admin/movies/film-not-added.png)
+
+Once added, the page gains the library's side: the status and a tag for each version under the title, a **Monitored** switch, **Search** and **Interactive search** at the top, and the **Files**, **History**, **Search** and **Subtitles** tabs.
+
+![Sintel in the library, with its two versions under the title, the Monitored switch, Search, Interactive search and the page's tabs](/images/admin/movies/film.png)
+
+## What's in the library, and what's downloading
+
+On the **Overview** tab:
+
+- **In the queue** appears while the film is downloading, with a card for each download: its release, state, progress, speed and time left, and the reason when one is stalled or blocked. [Activity](/activity/) has the whole queue.
+- **In the library** lists its versions with their quality profiles, its subtitle languages, tags, minimum availability and root folder.
+
+## Search for the film now
+
+Press **Search**. highsea searches your indexers in the background and grabs the best release your quality profile accepts, for each version that still wants a file or an upgrade. Follow it in [Activity](/activity/). With no indexer enabled, **Search** is unavailable and says why.
+
+## Choose a release yourself
+
+Press **Interactive search**, or open the **Search** tab. It lists every release your indexers offer, with its quality, score, size, peers and age, and whether your profile **Accepted** or **Rejected** it.
+
+![The Search tab: releases from the indexers with their quality, score, size, peers and age, and whether the profile accepted them](/images/admin/movies/film-search.png)
+
+- Opening the tab again soon after shows the last results rather than asking every indexer again. **Search again** always searches.
+- A rejected release shows how many reasons it has; select the badge to read them.
+- **Show rejected** hides or shows the releases your profile turned down.
+- The download button grabs a release. On a rejected one it's **Grab anyway**, which overrides your profile.
+- If an indexer didn't answer, the tab says which and why.
+
+## Files
+
+The **Files** tab has a card for each version: its file's size and path, each video, audio and subtitle stream on its own line, and the release name. A version without a file says **No file yet**, or **Downloading**.
+
+![The Files tab: a card for each of Sintel's versions, with the file's size and path and its streams](/images/admin/movies/film-files.png)
+
+## History
+
+The **History** tab lists what happened to the film, newest first: grabs, imports, failed downloads and imports, renames, deletions, blocklistings, and subtitles downloaded, synced, upgraded or deleted. **Show more** loads older events.
+
+![The History tab: Sintel's events, newest first](/images/admin/movies/film-history.png)
+
+## Subtitles
+
+The **Subtitles** tab lists the film's subtitle tracks, files beside the film and streams inside it, with their language, where each came from, its score, whether it's synced and its offset.
+
+- **Offset**: the − and + buttons show a track 50 ms earlier or later.
+- **Sync to the audio again** re-syncs a track to the film's speech.
+- **Delete** removes a track.
+- **Search for subtitles**: choose a language and press **Search providers**, then **Use** on a result to download it. It's synced in the background.
+
+![The Subtitles tab: Sintel's tracks with their language, source, score, sync state and offset, and Search for subtitles below](/images/admin/movies/film-subtitles.png)
+
+Tracks stored as pictures have nothing to move, so they have no offset or re-sync. Searching needs the film's file, and a subtitle provider turned on. See [Subtitles](/subtitles/).

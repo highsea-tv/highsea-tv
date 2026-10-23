@@ -1,0 +1,53 @@
+---
+title: Providers and accounts
+description: Sign in to OpenSubtitles.com, Subdl and SubSource with your own accounts, and see how many requests each has left today.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the Subtitles page's Providers tab (apps/server/src/admin/subtitles.tsx,
+    subtitles-messages.ts), the providers and accounts (packages/subtitles/src/providers/index.ts,
+    src/movies/accounts.ts).
+  - Daily limits for free keys: https://subdl.com/api-doc and https://subsource.net/api-docs
+*/}
+
+Written for highsea 0.1.0.
+
+highsea searches three providers together and ranks what they find by score:
+
+- **OpenSubtitles.com**, which signs in with a username and password.
+- **Subdl**, which uses an API key.
+- **SubSource**, which uses an API key.
+
+Each needs an account of your own, made on the provider's site. highsea signs in with it, and it stays on your server.
+
+![The Providers tab, with OpenSubtitles.com and Subdl signed in and switched on, and SubSource waiting for an account.](/images/admin/subtitles/providers.png)
+
+## Add an account
+
+Owner only.
+
+1. Open **Subtitles**, then the **Providers** tab.
+2. Choose **Edit** on the provider's row.
+3. Fill in the username and password, or the API key.
+4. Choose **Test**. highsea signs in without saving and says what happened.
+5. Choose **Save**.
+6. Turn on the provider's **Enabled** switch.
+
+![The Edit Subdl dialog, with an empty API key field that says "Saved. Leave it empty to keep it.", and Cancel, Test and Save.](/images/admin/subtitles/provider-edit.png)
+
+A provider without an account can't be switched on; its row says "Add your account first." Once a password or key is saved, its field stays empty in **Edit** and says "Saved. Leave it empty to keep it."
+
+## Requests left today
+
+Providers limit how much each account can do in a day. The **Requests left today** column shows what's left, as a bar and a count, or a dash when the provider doesn't say. A free Subdl key allows 2,000 requests a day and a free SubSource key 7,200, according to their documentation.
+
+When a provider has to wait, its bar empties and a line says why and when it's back:
+
+- **Too many requests. Resumes …**: highsea asked too often. It waits and carries on by itself.
+- **Out of downloads for today. Resumes …**: the account has used its downloads for the day.
+- **Refused the account. Check it in Edit.**: the password or key is wrong, or the account has changed. Fix it in **Edit**.
+- **Didn't answer. Tries again …**: the provider is down or unreachable for now.
+
+Searches skip a waiting provider until it's back.

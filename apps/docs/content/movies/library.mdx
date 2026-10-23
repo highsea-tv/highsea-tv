@@ -1,0 +1,50 @@
+---
+title: The library
+description: Find films in the library by status, title, tag and sort, save a filter as a collection, and change many films at once.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the Movies library (apps/server/src/admin/library.tsx) and its strings
+    (library-messages.ts); bulk quality profiles (packages/api-contract/src/movies.ts).
+  - The product spec docs/product/movies.md, for intent.
+*/}
+
+Written for highsea 0.1.0.
+
+**Movies** lists every film in the library, in a **Grid** of posters or a **Table**. The switch at the top of the page changes the view, and your browser remembers it.
+
+![The Movies library as a grid of posters, with status tabs, filters and sort above it](/images/admin/movies/library-grid.png)
+
+## Find films in the library
+
+- **Status tabs**, each with a count: **All**, **Available**, **Wanted**, **Downloading** and **Not released**.
+- **Filter by title**: narrows the list as you type.
+- **Filter by tag**: shows films with one tag. It appears once you have tags, which are made in **Settings › Media management**.
+- **Sort by**: **Title**, **Date added**, **Year** or **Rating**.
+
+The list loads in pages; **Show more** at the bottom loads the next. Your status, filter and sort stay in the page's address, so Back returns to them.
+
+A film's status is one of **Available**, **Wanted**, **Downloading**, **Not released** or **Not monitored**. In the grid, a film shows its status on the poster unless it's simply available.
+
+![The Movies library as a table, one film to a row with its status and details](/images/admin/movies/library-table.png)
+
+## Turn a filter into a collection
+
+**Save as smart collection** opens a new collection with the current status, title filter, tag and sort as its first rules. See [Start from the library](/collections/make/#start-from-the-library).
+
+## Change many films at once
+
+Switch to **Table** and tick the films, or tick the box in the header to select every film shown. A bar appears with:
+
+- **Search**: search your indexers for each selected film.
+- **Edit**, a menu with:
+  - **Monitor** and **Stop monitoring**;
+  - **Quality profile**: moves each film's first version to the profile you choose; any extra versions keep theirs;
+  - **Subtitle languages**;
+  - **Add a tag** and **Remove a tag**, once you have tags.
+- **Remove**: takes the films out of the library and stops monitoring them. Their files stay on disk. If you have import lists, you can also tick **Don't add them again from lists**.
+- **Clear**: deselects everything.
+
+![Two films ticked in the table, with the selection bar's Edit menu open](/images/admin/movies/library-selection.png)

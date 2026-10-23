@@ -1,0 +1,46 @@
+---
+title: How highsea finds releases
+description: RSS sync every 15 minutes, the backlog sweep every 6 hours, upgrades, waiting before grabbing, and indexer tags.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The sweep's size and backoff: packages/media/src/movies/wanted.ts.
+  - RSS every 15 minutes, the sweep every 6 hours and the wait before grabbing:
+    packages/runtime/src/automation.ts.
+  - Profile settings named here: apps/server/src/admin/quality-editors-messages.ts.
+  - Radarr's RSS sync and delay profiles, which highsea follows: https://wiki.servarr.com/radarr/settings
+*/}
+
+Written for highsea 0.1.0.
+
+highsea searches for wanted films on its own, in three ways. Each judges releases by the film's quality profile, skips releases on the film's blocklist, and only grabs a release that's an improvement on the file the film already has.
+
+Whatever it grabs shows up in [Activity](/activity/), and the films it's looking for are listed on [Wanted](/wanted/).
+
+## RSS sync
+
+Every 15 minutes, highsea reads the newest releases from each enabled indexer and matches them against every film on **Missing** and **Cutoff unmet**. This catches new releases soon after they're posted, without searching for each film. The first RSS sync runs a few minutes after the server starts.
+
+## The backlog sweep
+
+RSS only sees what's new, so every 6 hours highsea also searches for films that are still wanted, 20 at a time: first those never searched, then those searched longest ago. One film is searched at a time, so indexers aren't flooded.
+
+When a film's search finds nothing to grab, highsea waits before searching for it again: 1 day, then 3, then 7, then 14 days, and 14 days after that. When a search does grab something, the wait starts again from 1 day.
+
+**Search** and **Search all** on Wanted don't wait for the sweep; they search at once. See [Search from Wanted](/wanted/#search-from-wanted).
+
+## Upgrades
+
+Films on **Cutoff unmet** are in both RSS and the sweep. When a release turns up that's better than the file (a higher quality, a newer revision of the same quality, or a higher custom format score), highsea grabs it. When it's imported, it replaces the old file. Once a film's file reaches the cutoff, it leaves the list and highsea stops looking.
+
+## Wait before grabbing
+
+A quality profile can hold releases back for a while, in case a better one turns up soon after. **Wait before grabbing** sets the minutes after a release was uploaded that RSS and the sweep wait; when the wait is up, highsea takes the best release found by then. A release at the profile's most preferred quality goes at once, and searches you start yourself never wait. With 0, highsea grabs at once.
+
+It's set for each profile in **Settings › Profiles and formats**; see [Quality](/settings/quality/profiles/).
+
+## Indexer tags
+
+An indexer with tags is used only for films that share one of its tags, in searches and in RSS. An indexer with no tags is used for every film. See [Indexers](/indexers/).

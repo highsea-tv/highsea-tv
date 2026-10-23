@@ -1,0 +1,65 @@
+---
+title: Appearance
+description: The server's name, mark and accent, its themes, and where interface sounds play.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: Settings › Appearance (apps/server/src/admin/appearance.tsx,
+    appearance-messages.ts), who sees it (settings-areas.ts), where the server's name shows (the
+    sidebar in shell.tsx, sign-in and the invite page in login.tsx), and the defaults and rules in
+    packages/personalization/src/appearance.ts (sounds on for TVs only, 80% volume, the built-in
+    "Felt and wood" pack).
+  - Contrast: https://www.w3.org/WAI/WCAG22/Understanding/contrast-minimum.html
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings › Appearance** sets how the server presents itself to everyone who connects: its name, mark and accent, the theme the apps start in, and where interface sounds play. The Owner and Admins can change it.
+
+Most of what's here is a default for highsea's apps, which each person can change on their own device. The admin itself keeps highsea's own look; it shows the server's name in the sidebar, on the sign-in page and on invite links.
+
+The identity, the default theme and the sounds save together with **Save**, and every app picks them up the next time it checks in. Custom themes save on their own.
+
+![Settings › Appearance: the Server identity group with Name, Mark and Use a brand accent, and the preview of how the apps show it, then the Themes group.](/images/admin/settings-appearance/overview.png)
+
+<Cards>
+  <Card title="Themes" href="/settings/appearance/themes/" description="The default theme, the built-in ones, and making and sharing your own." />
+</Cards>
+
+## Server identity
+
+| Setting | What it does |
+| --- | --- |
+| **Name** | The server's name, up to 40 characters. Shown in the sidebar, on the sign-in page ("Sign in to" and the name) and to people following an invite ("Welcome to" and the name). It can't be empty. |
+| **Mark** | A square SVG or PNG, at least 256 px and at most 1 MB, that apps show beside the name. **Use the highsea mark** goes back to highsea's own. |
+| **Use a brand accent** | One accent colour for every theme. Off, each theme keeps its own. |
+
+**In the apps** shows the name and mark as the apps' server switcher will show them.
+
+When you pick an accent, highsea checks its contrast. **Passes contrast** means it's used as it is; **Adjusted for contrast** means highsea adjusts its shades so text on it stays readable. **Not a color** means the value isn't one highsea can read: use a hex value such as `#8fbfb7`.
+
+## Themes
+
+The apps start in the default theme, which you choose here, and anyone can pick another on their own device. [Themes](/settings/appearance/themes/) covers the built-in themes and making your own.
+
+## Sounds
+
+![The Sounds group: switches for TVs, Phones and tablets, and Web and desktop, then Volume, Sound pack and a Listen button for each sound.](/images/admin/settings-appearance/sounds.png)
+
+Where the apps play their interface sounds until someone changes it on their device. Sounds never play over a film.
+
+| Setting | Default |
+| --- | --- |
+| **TVs** | On: sound confirms each press of the remote. |
+| **Phones and tablets** | Off: phones have haptics. |
+| **Web and desktop** | Off. |
+| **Volume** | 80% |
+| **Sound pack** | Felt and wood. More packs come with the catalog. |
+
+**Listen** has a button for each sound (Move, Select, Back, Done, Error, Notice, Arrival). Each plays at the chosen volume, even where sounds are off.
+
+## Your own dashboard
+
+Each person arranges their own dashboard in the admin with **Customize**, and the Owner sets the layout Admins start from. [Dashboard](/dashboard/customize/) explains how.

@@ -1,0 +1,69 @@
+---
+title: Custom formats
+description: The starting custom formats, the conditions a format is made of, and trying a release name against one.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The screens and their copy: apps/server/src/admin/profiles.tsx, profiles-messages.ts,
+    quality-editors.tsx and quality-editors-messages.ts.
+  - The seeded formats and conditions: packages/quality/src (presets.ts, messages.ts) and
+    packages/media/src/shared/profiles.ts (seeding).
+  - The Servarr wiki's custom format page, which highsea follows:
+    https://wiki.servarr.com/radarr/settings#custom-formats
+  - TRaSH Guides, where the starting formats come from: https://trash-guides.info/Radarr/
+*/}
+
+Written for highsea 0.1.0.
+
+A custom format is a set of conditions a release matches or doesn't, such as "is HDR" or "comes from a low-quality group". [Quality profiles](/settings/quality/profiles/#custom-format-scores) then score it.
+
+The **Custom formats** list on **Settings › Profiles and formats** shows each format, what it matches, and where it came from: **Preset** for one that came with highsea, **Yours** for one you made or changed. **New format** starts one.
+
+![The Custom formats card, listing Dolby Vision, HDR10, Low-quality groups and x265, each with what it matches and marked Preset](/images/admin/settings-quality/formats.png)
+
+## The starting formats
+
+| Format | Matches |
+| --- | --- |
+| **Dolby Vision** | Releases in Dolby Vision |
+| **HDR10** | Releases marked HDR or HDR10 |
+| **x265** | Releases encoded with x265 or HEVC |
+| **Low-quality groups** | Releases from groups known for poor encodes |
+
+They come from the TRaSH Guides. highsea keeps a preset up to date with each new version until you change it. Saving a change makes it yours, and updates leave it alone from then on.
+
+## Conditions
+
+![The x265 format's editor, with its one Release title condition, and Try a release name reading Sintel.2010.1080p.BluRay.x265.DTS-HDX as Bluray-1080p from the group HDX, a match](/images/admin/settings-quality/format.png)
+
+Each condition has a kind:
+
+| Kind | Matches when |
+| --- | --- |
+| **Release title** | The release's name matches a regular expression |
+| **Edition** | The edition matches a regular expression |
+| **Release group** | The group matches a regular expression |
+| **Language** | The release is in a language, or the film's original language |
+| **Indexer flag** | The indexer flags it, such as Freeleech, Internal or Scene |
+| **Source** | The source is one of CAM, TELESYNC, DVD, WEB-DL, WEBRip, Blu-ray and the rest |
+| **Resolution** | The resolution is one you pick |
+| **Modifier** | Remux, BR-DISK, Raw HD, Screener or Regional |
+| **Size** | The size is between two figures, in GB |
+| **Year** | The year in the release's name is between two years |
+
+Regular expressions ignore case. Any condition can be marked:
+
+- **Not**: it matches when the condition doesn't.
+- **Required**: it has to match, whatever the others of its kind do.
+
+How conditions add up: conditions of the same kind are alternatives, so one of them has to match. Conditions of different kinds all have to match.
+
+## Try a release name
+
+Under the conditions, **Try a release name** runs a name, and a size if you like, through the format as it stands, saved or not. It shows whether the format matches, how highsea reads the name (quality, group, edition, languages), and each condition's answer. Use it before you save.
+
+## Deleting a format
+
+Deleting a format removes its scores from every profile, so releases that matched it may rank differently.

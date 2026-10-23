@@ -1,0 +1,47 @@
+---
+title: The calendar
+description: Wanted's calendar of release dates, a month at a time, and its iCal feed for your calendar app.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The Calendar tab and its feed: apps/server/src/admin/wanted.tsx and wanted-messages.ts.
+  - The calendar's dates: packages/media/src/movies/wanted.ts.
+  - The feed: apps/server/src/api/wanted.ts and ics.ts (30 days back, a year ahead).
+  - iCalendar: https://www.rfc-editor.org/rfc/rfc5545
+*/}
+
+Written for highsea 0.1.0.
+
+## The calendar
+
+![Wanted's Calendar tab showing November 2026 as a month grid, with The Cat in the Hat on the 6th, the key for In the library, Downloading and Wanted at the top right, and Subscribe in your calendar app below](/images/admin/wanted/calendar.png)
+
+**Calendar** shows a month at a time, with the release dates of every monitored film. Each film can appear up to three times, once for each date it has: **In cinemas**, **Digital** and **Physical**.
+
+- **Previous month** and **Next month** move through the months; **This month** brings you back.
+- Today is marked in the accent colour.
+- Each entry's outline shows where the film stands: **In the library**, **Downloading** or **Wanted**. The key is above the calendar.
+- Select an entry to open the film's page.
+
+On a phone the calendar becomes a list of the month's release days.
+
+## Subscribe in a calendar app
+
+Under the calendar, **Subscribe in your calendar app** gives an iCal feed of the same releases, for Apple Calendar, Google Calendar, Outlook or any app that can subscribe to a calendar by its address. The feed covers 30 days back and a year ahead.
+
+1. Select **Make a feed address**.
+2. Select **Copy**.
+3. In your calendar app, add a calendar by its address (often called "subscribe" or "from URL") and paste it.
+
+![The feed's address in a read-only field with Copy beside it, and Make a new address and Turn off below](/images/admin/wanted/feed.png)
+
+The address carries a key that opens the feed and nothing else, but anyone with the address can read the feed, so treat it like a password. Each person who opens the admin has their own feed address.
+
+The address starts with the server's public address when one is set in **Settings › Network and remote access**, so a calendar app away from home can reach it. See [Network and remote access](/settings/network/).
+
+- **Make a new address** replaces the address. The old one stops working, so calendar apps subscribed to it need the new one.
+- **Turn off** removes the address. Calendar apps subscribed to it stop getting updates.
+
+Both ask you to confirm first.

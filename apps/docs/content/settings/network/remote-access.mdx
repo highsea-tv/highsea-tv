@@ -1,0 +1,38 @@
+---
+title: Remote access
+description: The External URL the apps use away from home, what else highsea uses it for, and forwarding a port to reach highsea from outside.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: apps/server/src/admin/network.tsx and network-messages.ts (the screen and its
+    words), packages/network/src/settings.ts (the address's rules), packages/auth/src (what uses
+    the external URL), packages/runtime/src/runtime.ts (System › Health's network warnings).
+  - Passkeys need a secure context: https://www.w3.org/TR/webauthn-3/
+*/}
+
+Written for highsea 0.1.0.
+
+**External URL** is the address the apps use away from home. On your own network they find the server on their own; see [Discovery](/settings/network/#discovery).
+
+![The Remote access section of Settings › Network and remote access: an External URL field, empty, with https://harbor.example.net as its example](/images/admin/settings-network/remote-access.png)
+
+## The External URL
+
+Use the full address, starting with `https://`, such as `https://harbor.example.net`. highsea refuses an address with a query or `#` part, and drops a trailing slash.
+
+highsea also uses this address for:
+
+- the links in invites and password resets;
+- the links in notification emails;
+- passkeys, which only work on the `https://` address entered here (and on `localhost`);
+- single sign-on, which needs it so your identity provider can send people back.
+
+An `http://` address works, but if remote access is on, **System › Health** warns that passwords cross the internet unencrypted and passkeys can't work there.
+
+## Forwarding a port
+
+To reach highsea from outside without a reverse proxy, forward a port on your router to highsea's HTTPS port on the server, and use [built-in TLS](/settings/network/reverse-proxy-and-tls/#built-in-tls) so passwords never cross the internet in the clear. Your router's manual shows how to forward a port. Enter the address that reaches it, such as `https://harbor.example.net:8443`, as the **External URL**.
+
+With a reverse proxy instead, the External URL is the proxy's address; see [Through a reverse proxy](/settings/network/reverse-proxy-and-tls/#through-a-reverse-proxy).

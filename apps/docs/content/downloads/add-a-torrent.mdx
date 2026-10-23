@@ -1,0 +1,40 @@
+---
+title: Add a torrent
+description: Add a torrent to highsea's client by hand, from a magnet link, a .torrent address or a file, and bring a finished torrent's files into the library.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The dialog and the More menu: apps/server/src/admin/downloads.tsx and downloads-messages.ts.
+  - Behaviour: packages/downloads/src/service.ts (add, categories, duplicates, the watch folder).
+  - The API: packages/api-contract/src/downloads.ts.
+*/}
+
+Written for highsea 0.1.0.
+
+## Add a torrent by hand
+
+![The Add a torrent dialog: Magnet link or .torrent URL, Or a .torrent file with Choose File, Category set to manual, Start right away ticked, Cancel and Add](/images/admin/downloads/add.png)
+
+1. On [Downloads](/downloads/), select **Add torrent**.
+2. Give it one of these:
+   - in **Magnet link or .torrent URL**, a magnet link (starting `magnet:?xt=urn:btih:`) or the address of a `.torrent` file; or
+   - under **Or a .torrent file**, pick a file, or drop it on the dialog. A file is used instead of the link; **Use the link instead** clears it.
+3. In **Category**, choose where it saves: **manual**, or one of the categories you've added in **Settings › Download client**. The library's **movies** category isn't offered.
+4. Leave **Start right away** ticked to start it now, or clear it to add it paused.
+5. Select **Add**.
+
+highsea fetches a `.torrent` address itself. If the torrent is already in Downloads, it says so and adds nothing.
+
+A torrent you add by hand isn't imported into the library on its own. To add a film, use [Discover](/movies/discover/#find-a-film); to bring a finished torrent's files in afterwards, see [Import a finished torrent](#import-a-finished-torrent).
+
+Torrents dropped into the watch folder arrive here too, in the watch folder's category; see [Download client](/settings/downloads/categories-and-watch-folder/#watch-folder).
+
+## Import a finished torrent
+
+A torrent you added by hand has a **More** menu in its details, with **Import into the library**. It opens Manual import on the torrent's folder, or its one file, so you can match the files to films in the library and bring them in. While the torrent is still downloading, the item reads **Import into the library when it finishes** and can't be chosen yet.
+
+![The details of Home.Movies.2024, added by hand, with its More menu open beside Pause and Remove, showing the dimmed item Import into the library when it finishes](/images/admin/downloads/import-menu.png)
+
+The film must be in the library already. Manual import, and choosing between a hardlink and a move, are described in [Activity](/activity/manual-import/#import-files-by-hand). With a hardlink, the torrent goes on seeding.

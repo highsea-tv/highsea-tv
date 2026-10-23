@@ -1,0 +1,67 @@
+---
+title: Change or remove a film
+description: Change a film's options and quality profile, keep two versions of it, refresh its details from TMDB, or remove it.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: a film's page (apps/server/src/admin/movie-detail.tsx: the More menu, the edit,
+    version and remove dialogs) and its strings (movie-detail-messages.ts).
+  - The product specs docs/product/movies.md and media-pages.md, for intent.
+*/}
+
+Written for highsea 0.1.0.
+
+Everything here starts on the film's page. See [A film's page](/movies/film/).
+
+## Change a film's options
+
+Open the More menu (the button beside **Interactive search**) and choose **Edit**.
+
+![A film's More menu, open, with Edit, Refresh metadata and Remove from library](/images/admin/movies/film-more.png)
+
+You can change:
+
+- **Root folder**;
+- **Subtitle languages**;
+- **Minimum availability**;
+- **Tags**: indexers, lists and connections with a tag work only for films that share it;
+- **Monitored**.
+
+![The edit dialog, with Root folder, Subtitle languages, Minimum availability, Tags and Monitored](/images/admin/movies/film-edit.png)
+
+The **Monitored** switch under the title changes monitoring straight away too.
+
+## Change a film's quality profile
+
+Quality profiles belong to a film's versions. On the **Overview** tab, under **In the library**, press the edit button beside a version, choose another **Quality profile**, and save. To change many films at once, use bulk edit in the library's table; see [Change many films at once](/movies/library/#change-many-films-at-once).
+
+## Keep two versions of a film
+
+A film can have more than one version, such as 1080p beside 4K HDR, each with its own quality profile and its own file. Under **In the library**:
+
+![In the library on Sintel's page: two versions, 4K HDR and 1080p, each with its quality profile and edit and remove buttons, and Add version](/images/admin/movies/film-versions.png)
+
+- **Add version** asks for a **Name** (what the library's tags show, such as 4K HDR) and a **Quality profile**. highsea then looks for a release for it as well.
+- The edit button renames a version or gives it another profile.
+- The remove button removes a version, and highsea stops looking for a release for it. A film keeps at least one version.
+
+## Refresh a film's details
+
+**Refresh metadata** in the More menu reads the film's details from TMDB again. The page updates when TMDB answers.
+
+## Remove a film
+
+Choose **Remove from library** in the More menu. The film leaves the library and stops being monitored. In the dialog you can also tick:
+
+- **Also delete its files from disk**;
+- **Don't add it again from lists**, if you have import lists. See [Exclusions](/settings/lists/#exclusions).
+
+![The remove dialog, with Also delete its files from disk](/images/admin/movies/film-remove.png)
+
+The page stays open, showing the film as one that isn't in the library.
+
+## When TMDB no longer has a film
+
+TMDB sometimes merges or removes an entry. The film stays in your library as it is, and its page says "TMDB no longer has this movie". To move it to its new entry, find it on [Discover](/movies/discover/), add it, then remove the old one.

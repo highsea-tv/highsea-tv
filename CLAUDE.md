@@ -71,11 +71,12 @@ bun run audit           # the dependency check: npm's advisories, exceptions in 
 HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts   # the end-to-end run through the image (compose.e2e.yaml)
 bun scripts/image.ts size highsea:dev 2000          # the image's largest folders, against a budget
 bun run docs            # the guides (apps/docs), http://localhost:3100
+bun scripts/docs-shots/run.ts [area ...]   # the guides' screenshots of the admin, from the sweep's seeded server
 bun scripts/release.ts prepare 0.1.0   # a release's commit: changelog, version, releases.json, catalog version, seed
 bun scripts/release.ts check 0.1.0     # what the release workflow checks first (also notes, tags, trust)
 ```
 
-Browser sweeps are in [scripts/sweeps](scripts/sweeps/README.md): axe in three themes, overflow, 200% text, reduced motion, and the keyboard and D-pad walks. They cover the prototypes and, with `bun scripts/sweeps/server.ts`, the server's real admin pages. Run them before each checkpoint report.
+Browser sweeps are in [scripts/sweeps](scripts/sweeps/README.md) (the server they boot and seed is `scripts/sweeps/seeded.ts`, which the guides' screenshots share): axe in three themes, overflow, 200% text, reduced motion, and the keyboard and D-pad walks. They cover the prototypes and, with `bun scripts/sweeps/server.ts`, the server's real admin pages. Run them before each checkpoint report.
 
 Before reporting a checkpoint, run all of these:
 - `bun run lint && bun run typecheck && bun run test`;
@@ -87,7 +88,7 @@ Before reporting a checkpoint, run all of these:
 | Path | What |
 | --- | --- |
 | `apps/server` | The server: one Node process. `server.ts` boots `@highsea-tv/runtime`, then serves `/api` with Hono and everything else with Next (ADR 0003) |
-| `apps/docs` | The public guides at `docs.highsea.tv`: Fumadocs on Next, exported as static files, in the design system's tokens. Guides are MDX in `content/`, with `install/` and `settings/` as folders (sidebar order in each `meta.json`; redirects for moved pages in `vercel.json`). A change to what the admin does updates its guide in the same change; `test/content.test.ts` checks their links, frontmatter and copy. Vercel's `highsea-docs` project (root `apps/docs`) deploys every push to `main`; pull requests get previews behind Vercel's sign-in |
+| `apps/docs` | The public guides at `docs.highsea.tv`: Fumadocs on Next, exported as static files, in the design system's tokens. Guides are MDX in `content/`, with `install/` and `settings/` as folders (sidebar order in each `meta.json`; redirects for moved pages in `vercel.json`). A change to what the admin does updates its guide, and retakes its screenshots (`public/images/admin/<area>/`, listed in `scripts/docs-shots/areas/`), in the same change; `test/content.test.ts` checks their links, frontmatter and copy. Vercel's `highsea-docs` project (root `apps/docs`) deploys every push to `main`; pull requests get previews behind Vercel's sign-in |
 | `apps/storybook` | The design system's workbench |
 | `design/prototypes` | The signed-off prototypes, with an SDK-shaped mock server (`src/mock/`): the reference for every screen and the first draft of the API |
 | `packages/core`, `db`, `jobs`, `runtime`, `i18n` | The platform. Since 8b the runtime also holds the owner's tools (ADR 0047): backups and restore (`backups.ts`, with its own zip writer and reader in `zip.ts`; a restore exits with code 75 for Docker to restart it), the log files (`logs.ts`), crash reports, `/metrics` and Updates (`operations.ts`), and turns the domains' events into notifications (`notify.ts`) |

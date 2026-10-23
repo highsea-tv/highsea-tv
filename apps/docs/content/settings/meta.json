@@ -2,15 +2,15 @@
   "title": "Settings",
   "pages": [
     "general",
+    "appearance",
+    "network",
+    "backups",
+    "users-and-security",
     "media-management",
     "quality",
-    "downloads",
-    "vpn",
-    "network",
     "lists",
-    "notifications",
-    "users-and-security",
-    "backups",
-    "appearance"
+    "vpn",
+    "downloads",
+    "notifications"
   ]
 }

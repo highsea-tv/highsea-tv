@@ -1,0 +1,49 @@
+---
+title: Curation
+description: Announcements for the people on your server, and the featured sections that make up their home screens.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the Curation pages and composers (apps/server/src/admin/curation.tsx,
+    curation-announcement.tsx, curation-section.tsx, curation-shared.tsx, curation-preview.tsx,
+    curation-messages.ts), the admin's banners (apps/server/src/admin/announcement-banners.tsx,
+    shell.tsx), the audience rules (packages/curation/src/service/rules.ts), the rule choices
+    (packages/api-contract/src/curation.ts) and System's task names (system-messages.ts).
+*/}
+
+Written for highsea 0.1.0.
+
+**Curation** decides what people see first: announcements, such as movie night, a restart or a new address, and the featured sections that make up every home screen. Owners and Admins can use it.
+
+It has two tabs, **Announcements** and **Featured sections**, with **New announcement** or **New section** at the top.
+
+<Cards>
+  <Card title="Announcements" href="/curation/announcements/" description="Write one, choose where it shows, who sees it and when, and see who has read it." />
+  <Card title="Featured sections" href="/curation/featured-sections/" description="The hero, rows and spotlights on every home screen, picked by hand or by a rule." />
+</Cards>
+
+## Where they show today
+
+highsea 0.1.0 has no apps for watching yet; the web, desktop, phone and TV apps come later. Until then:
+
+- **Announcements** show in the admin, as a banner above every page, when they're placed as a **Banner** and their audience includes the admin. The other places are for highsea's apps and show once those arrive.
+- **Featured sections** show in the preview beside the composer. highsea's apps will read them for their home screens.
+
+The preview is the best way to see what you've made.
+
+## Preview
+
+Both composers have a **Preview** beside the form, or below it on a narrow screen. It draws a home screen as someone would see it, with your draft as it stands, and follows as you type.
+
+![The preview of a home screen on a TV: the hero Tonight with Sintel, its tagline and Play, then the Staff picks row](/images/admin/curation/preview-tv.png)
+
+- **Preview on**: **TV**, **Web** or **Mobile**.
+- **Preview as**: anyone with an account on your server, starting with you.
+
+The preview shows the draft as if it were live, whatever its schedule. The announcement preview leaves other announcements out, and the section preview leaves announcements out. If the person isn't in the audience on that kind of app, the preview says so.
+
+![An announcement previewed on a phone as Theo, a User: the restart notice as a card under the header and, since it must be acknowledged, as a dialog with only Got it](/images/admin/curation/preview-announcement.png)
+
+Nothing changes for anyone until you save.

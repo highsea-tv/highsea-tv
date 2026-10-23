@@ -1,0 +1,73 @@
+---
+title: Indexers
+description: The indexers highsea searches for releases, how much each is used, and the priority, tags and seeding rule each one has.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The admin's Indexers page: apps/server/src/admin/indexers.tsx and indexers-messages.ts; tags in
+    tags-messages.ts.
+  - Which indexers a search asks, torrents only, and tags: packages/indexers/src/service.ts and
+    search.ts.
+  - Who can do what: packages/api-contract/src/indexers.ts.
+  - Indexer priority as a tiebreaker, and minimum seeders: https://wiki.servarr.com/radarr/settings#indexers
+*/}
+
+Written for highsea 0.1.0.
+
+Indexers are where highsea looks for releases. The **Indexers** page lists the ones you've added, shows whether each is working and how much it's used, and adds new ones from highsea's catalog. highsea 0.1.0 searches torrent indexers.
+
+Owners and Admins manage indexers. The catalog's own settings, in **Settings › General**, are the Owner's alone. Users never open the admin.
+
+![The Indexers page on its Installed tab: the catalog's version with What changed under the title, Add indexer, and two indexers, Torznab (private, priority 10) and Internet Archive (Local, public, priority 25), both Healthy, with their queries, grabs, response time, success rate and an Enabled switch](/images/admin/indexers/overview.png)
+
+<Cards>
+  <Card title="Add an indexer" href="/indexers/add/" description="highsea's catalog, public indexers in a click, private trackers, Prowlarr and Jackett through Torznab, and local definitions." />
+  <Card title="Health and backoff" href="/indexers/health/" description="How highsea rests an indexer that's having trouble, and what Backing off and Failing mean." />
+  <Card title="Search results" href="/indexers/search-results/" description="What your indexers return for a film, why a release was rejected, and grabbing one yourself." />
+</Cards>
+
+## Your indexers
+
+The **Installed** tab lists your indexers. Under each name are its privacy and priority. The columns show:
+
+- **Health**: see [Health and backoff](/indexers/health/).
+- **Queries 24h** and **Grabs 24h**: how many searches highsea sent it, and how many of its releases highsea grabbed, in the last 24 hours.
+- **Response**: how long it takes to answer.
+- **Success**: the share of its queries that worked.
+- **Enabled**: switch it off to stop using it without removing it. The change saves at once.
+
+The menu at the end of each row has:
+
+- **Edit**: the indexer's settings, plus its name, priority, tags and seeding rule.
+- **Test**: checks it now, and says how long it took to answer.
+- **Remove**: removes it.
+
+![An indexer's menu open, with Edit, Test and Remove](/images/admin/indexers/row-menu.png)
+
+Until at least one indexer is enabled, highsea can't search, and the search buttons elsewhere in the admin are disabled with a note saying why.
+
+## Edit an indexer
+
+![The Edit Torznab dialog: Name, Priority 10, Tags with Choose tags, Seeding with Ratio, Time and Minimum, then the indexer's own settings, its Address and an empty API key that says it's saved, Cancel and Save](/images/admin/indexers/edit.png)
+
+**Edit** has the indexer's name, priority, tags and seeding rule, then the settings its definition asks for. Secret fields such as an API key or a password show empty; leave them empty to keep what's saved. highsea tests the indexer again before it saves.
+
+### Priority
+
+**Priority** runs from 1 to 50, and new indexers start at 25. Lower is asked first, and wins ties: when two releases are equally good by your quality profile, the one from the indexer with the lower number is chosen. Priority never makes a worse release win.
+
+### Tags
+
+An indexer with tags is used only for films that share one of its tags, in searches and in RSS. With no tags, it's used for every film. Use this to keep an indexer for some films only, for example a tracker that specialises in one language. Tags are managed in **Settings › Media management**; see [Media management](/settings/media-management/#tags).
+
+### Seeding rules
+
+Private trackers often ask you to seed for a while after downloading. Under **Seeding** in **Edit**:
+
+- **Ratio**: stop after uploading this much, divided by the size.
+- **Time, in hours**: stop after seeding this long.
+- **Minimum, in hours**: never stop before this, whatever the ratio. This is for trackers with hit-and-run rules.
+
+Seeding stops at the ratio or the time, whichever comes first. An empty ratio or time uses the default from **Settings › Download client**; see [Download client](/settings/downloads/). A torrent keeps the rule it was grabbed with, and shows it in [its details](/downloads/torrent-details/#seeding).

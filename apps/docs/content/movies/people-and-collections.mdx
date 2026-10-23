@@ -1,0 +1,36 @@
+---
+title: People and collections
+description: A person's page with their filmography, and the series a film belongs to on TMDB, with its missing films.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: a person's page (apps/server/src/admin/person.tsx), a TMDB collection's page
+    (collection.tsx), the collection row on a film's page (media-sections.tsx), and their strings
+    (the matching *-messages.ts files).
+  - The product spec docs/product/media-pages.md, for intent.
+*/}
+
+Written for highsea 0.1.0.
+
+## People
+
+Select anyone in a film's cast or its **Cast and crew** tab to open their page: their portrait, when and where they were born, their biography, **Known for** (their best-known titles), then their **Filmography**.
+
+![A person's page: their portrait, biography and Known for, then the Filmography with its filters](/images/admin/movies/person.png)
+
+- Filter the filmography by **All**, **In the library** or **Not in the library**, and by department.
+- A title in the library shows **In library**; others have **Add**, which opens the same add dialog. See [Add a film](/movies/discover/#add-a-film).
+
+## A film's collection
+
+When a film belongs to a series on TMDB, its **Overview** has a row for the collection: how many of its films are in the library, and a button such as **Add 3 missing** to add the rest in one go, with the same options for each.
+
+![A film's Overview with the row for its TMDB collection: how many of its films are in the library, and the button to add the missing ones](/images/admin/movies/film-collection.png)
+
+The collection's name opens its own page, with its overview and every film in it.
+
+![A TMDB collection's page: its overview and every film in it](/images/admin/movies/collection.png)
+
+These are TMDB's collections. To group films your own way, see [Collections](/collections/).

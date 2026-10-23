@@ -1,0 +1,41 @@
+---
+title: Devices and API keys
+description: See every browser signed in to the server, sign one out, and make API keys for scripts and other programs.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: Settings › Users and devices, its Devices and API keys tabs
+    (apps/server/src/admin/users.tsx, users-messages.ts).
+  - Who may do what: packages/auth/src/roles.ts.
+*/}
+
+Written for highsea 0.1.0.
+
+The **Devices** and **API keys** tabs of **Settings › Users and devices** list where people are signed in and which programs can talk to the server.
+
+## Devices
+
+The **Devices** tab lists every browser signed in to the server: the device, whose it is, the app and its version, the address it last came from, and when it was last seen. **Whose devices** narrows the list to one person.
+
+![The Devices tab showing Everyone's devices: Chrome on macOS marked This browser, browsers for Ruth, Theo and Ines, and Ines's MacBook Pro desktop app, each but the first with Sign out](/images/admin/settings-users-and-security/devices.png)
+
+**Sign out** ends a device's session at once; the person signs in again with their password. The Owner can sign out anyone's devices, an Admin only their own. The browser you're using is marked **This browser**; sign it out from [Your account](/settings/users-and-security/your-account/) instead.
+
+## API keys
+
+Scripts and other programs that talk to highsea, such as Home Assistant or a backup script, use an API key rather than a password.
+
+![The API keys tab with one key, Home Assistant, Read only, never used, with Revoke beside it and New API key at the top](/images/admin/settings-users-and-security/api-keys.png)
+
+1. On the **API keys** tab, choose **New API key**.
+2. Give it a **Name** after what will use it.
+3. Choose its **Access**: **Read only** sees the library, queue and status; **Full access** can do everything an Admin can.
+4. Choose **Make key**, copy it, and store it where the script can read it. It shows only this once.
+
+![The New API key dialog, with a Name and Access set to Read only: see the library, queue and status](/images/admin/settings-users-and-security/new-api-key.png)
+
+Give each script its own key, so you can **Revoke** one alone. Revoking can't be undone: anything using the key stops working at once.
+
+Admins see and make their own keys. The Owner sees everyone's, and can revoke any of them.

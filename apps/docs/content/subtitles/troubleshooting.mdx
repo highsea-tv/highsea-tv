@@ -1,0 +1,37 @@
+---
+title: When something goes wrong
+description: What System › Health says about subtitles, what a waiting provider or a Not synced track means, and what to do about each.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: System's health list (packages/runtime/src/runtime.ts), the providers and accounts
+    (packages/subtitles/src/movies/accounts.ts), the Subtitles page (apps/server/src/admin/subtitles.tsx,
+    subtitles-messages.ts) and a movie's Subtitles tab (apps/server/src/admin/movie-detail.tsx,
+    movie-detail-messages.ts).
+*/}
+
+Written for highsea 0.1.0.
+
+## What System › Health says
+
+**System › Health** lists subtitle problems under the source **Subtitles**:
+
+- **… refused the password. Sign in again in Subtitles.** or **… refused the key. Check it in Subtitles.**: open **Edit** on the provider and enter the account again. See [Add an account](/subtitles/providers/#add-an-account).
+- **… has no downloads left today.**: a notice. The provider is skipped until its downloads come back, at the time shown.
+- **ffmpeg isn't installed**: every sync fails at once until FFmpeg is there. The official image includes it. See [System](/system/).
+
+## A provider is waiting
+
+On the **Providers** tab, a provider whose bar has emptied is waiting, and its line says why and when it's back. Searches skip it until then. [Requests left today](/subtitles/providers/#requests-left-today) lists each reason.
+
+## A search finds nothing
+
+If no provider is switched on, a film's search says "Turn on a subtitle provider in Subtitles to search." A provider can only be switched on once its account is added, by the Owner. See [Providers and accounts](/subtitles/providers/).
+
+## A track reads Not synced or Sync failed
+
+**Not synced** means the sync was less sure than **Minimum confidence**, so highsea kept the subtitle's original timing. Play the film and check it. If it's off, [sync it again](/subtitles/sync/#sync-again), or [move the offset by hand](/subtitles/sync/#adjust-the-offset-by-hand).
+
+**Sync failed** on every track usually means FFmpeg is missing; **System › Health** says so. Subtitles that are pictures rather than text can't be synced.

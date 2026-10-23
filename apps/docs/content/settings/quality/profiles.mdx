@@ -1,0 +1,81 @@
+---
+title: Quality profiles
+description: The starting profiles, and a profile's language, qualities, upgrades and custom format scores.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The screens and their copy: apps/server/src/admin/profiles.tsx, profiles-messages.ts,
+    quality-editors.tsx and quality-editors-messages.ts.
+  - The seeded profiles and their defaults: packages/quality/src (profiles.ts, presets.ts, ranking.ts)
+    and packages/media/src/shared/profiles.ts (seeding).
+  - The Servarr wiki's profile page, which highsea follows:
+    https://wiki.servarr.com/radarr/settings#quality-profiles
+*/}
+
+Written for highsea 0.1.0.
+
+**Settings › Profiles and formats** lists each profile with the qualities it downloads, its cutoff, whether it upgrades, how many custom formats it scores, and how long it waits for a better release. **Edit** opens a profile; **New profile** starts one.
+
+![The Quality profiles card, listing Ultra HD, HD 1080p and Any with the qualities each downloads, its cutoff and how many format scores it has, each with an Edit button](/images/admin/settings-quality/profiles.png)
+
+## The starting profiles
+
+A new server has three. They're yours to change or delete.
+
+| Profile | Downloads, most preferred first | Upgrades until | Custom format scores |
+| --- | --- | --- | --- |
+| **Ultra HD** | Remux-2160p, Bluray-2160p, WEB 2160p | WEB 2160p, and a format score of 1500 | Dolby Vision +1500, HDR10 +1000, x265 +100, Low-quality groups −10000 |
+| **HD 1080p** | Bluray-1080p, WEB 1080p, HDTV-1080p | Bluray-1080p, and a format score of 100 | x265 +100, Low-quality groups −10000 |
+| **Any** | WEB 1080p, WEB 720p, DVD | Doesn't upgrade | Low-quality groups −10000 |
+
+HD 1080p suits most screens and disks. Ultra HD wants a 4K screen and plenty of space.
+
+A new profile starts with Bluray-1080p and WEB 1080p ticked, every other quality listed but not wanted, and no format scores.
+
+## Profile settings
+
+![The top of the HD 1080p profile's editor, with its Name, Language and Wait before grabbing fields](/images/admin/settings-quality/profile.png)
+
+| Setting | What it does | Default for a new profile |
+| --- | --- | --- |
+| **Name** | The name you pick from when adding a film. | Empty |
+| **Language** | Releases in another language are rejected. **Any language**, **The movie's original language**, or one language. A MULTi release counts as the film's original language too. | Any language |
+| **Wait before grabbing** | Minutes after a release was uploaded that automatic searches wait for a better one, up to 7 days. A release at the most preferred quality goes at once, and searches you start yourself never wait. 0 grabs at once. | 0 |
+
+## Qualities
+
+The list holds every quality. Tick the ones to download. Higher in the list is preferred. **Group with the one below** makes two qualities equal, and **Ungroup** splits them again; both are in each row's **More** menu.
+
+![The Qualities list in the HD 1080p profile, with Bluray-1080p marked as the cutoff and the More menu open on WEB 1080p](/images/admin/settings-quality/qualities.png)
+
+## Upgrades
+
+When a film has a file, highsea keeps looking for a better one until it reaches the cutoff.
+
+![The Upgrades card, with Upgrade files on, Upgrade until set to Bluray-1080p and the format score fields](/images/admin/settings-quality/upgrades.png)
+
+| Setting | What it does | Default for a new profile |
+| --- | --- | --- |
+| **Upgrade files** | Off, the first file that fits is kept, whatever turns up later. | On |
+| **Upgrade until** | The cutoff. A file at this quality or higher in the list isn't upgraded for quality. It has to be a quality the profile downloads. | Bluray-1080p |
+| **Upgrade until format score** | Once a file's format score reaches this, upgrades for score stop. | 10000 |
+| **Minimum format score** | A release scoring less is rejected. | 0 |
+| **Least score gain for an upgrade** | A release has to beat the file's score by at least this much to replace it. | 1 |
+
+A file meets the cutoff when both its quality and its format score have reached theirs. Until then, the film shows as cutoff unmet on [Wanted](/wanted/), and searches look for an upgrade.
+
+## Custom format scores
+
+A release's score is the sum of the scores of the [custom formats](/settings/quality/custom-formats/) it matches. Each profile gives each format a score; formats it doesn't score count 0. Positive scores make a release more wanted, negative ones less, and a large negative score, such as −10000 with a minimum of 0, keeps a kind of release out entirely.
+
+![The Custom format scores card in the HD 1080p profile, with a score for each format](/images/admin/settings-quality/scores.png)
+
+Deleting a profile asks first. A profile a film still uses can't be deleted.
+
+## Presets from the catalog
+
+**Presets from the catalog**, at the foot of Profiles and formats, lists ready-made profiles: HD Bluray + WEB, UHD Bluray + WEB, and Remux + WEB 2160p. In 0.1.0 the catalog has none to add yet, so their **Add** buttons don't do anything. Build the profile you need with **New profile** for now.
+
+![The Presets from the catalog card, with HD Bluray + WEB, UHD Bluray + WEB and Remux + WEB 2160p, each with an Add button](/images/admin/settings-quality/presets.png)

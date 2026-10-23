@@ -1,0 +1,73 @@
+---
+title: Make a collection
+description: Make a collection with rules or picked by hand, set its order and audience, and change or delete it.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: the admin's Collections list, editor and rule builder
+    (apps/server/src/admin/collections.tsx, collections-editor.tsx, collections-rules.tsx) and
+    their strings (collections-messages.ts); the audience field (curation-shared.tsx,
+    curation-messages.ts); Save as smart collection (library.tsx); the fields, comparisons, sorts
+    and limits (packages/api-contract/src/collections.ts).
+  - The product spec docs/product/collections.md, for intent.
+*/}
+
+Written for highsea 0.1.0.
+
+## The editor
+
+On **Collections**, press **New collection**. On the left is the form; beside it, **Right now** shows what the collection holds as you change it: how many films match, how many have a file and show in the apps, and their posters in the collection's order. A film without a file is dimmed.
+
+![The collection editor for Open movies of the 2010s: name, summary and artwork, its rules under Films, Exceptions, Order and Who sees it, with Right now beside them showing 2 films that match and 1 with a file](/images/admin/collections/rules.png)
+
+1. Give it a **Name**. The apps show it.
+2. Add a **Summary** if you like, shown under the name.
+3. Under **Artwork**, keep **The mosaic** of the first four posters, or choose one film's poster.
+4. Under **Films**, choose **Use rules** (see [Use rules](/collections/rules/)) or **Pick them** (see below).
+5. Set the **Order** and **Who sees it**.
+6. Press **Save collection**.
+
+## Start from the library
+
+On **Movies**, filter and sort the list, then press **Save as smart collection**. The new collection starts with the status, title filter, tag and sort you had as its rules. See [The library](/movies/library/#turn-a-filter-into-a-collection).
+
+## Pick films by hand
+
+Choose **Pick them**, then **Search the library** and **Add** each film. Drag the handles to put them in order. A picked collection needs at least one film.
+
+![Blender picks in the editor with Pick them chosen: Sintel and Nosferatu listed with drag handles, a search box above them, and the order set to In your order](/images/admin/collections/picked.png)
+
+Switching from **Use rules** to **Pick them** starts the picks with the films the rules found, in their order. Switch back before saving and your rules return.
+
+## Exceptions
+
+With **Use rules**, two lists adjust what the rules find:
+
+- **Always include**: in it whatever the rules say.
+- **Never include**: left out whatever the rules say.
+
+A film can be in only one of the two.
+
+## Order and how many
+
+- **Sort by**: **Rating**, **Release date**, **Year**, **Date added**, **Title**, **Runtime**, **Popularity** or **Shuffled, once a day**. A picked collection can also keep **In your order**.
+- **Direction**, in the field's own words: **Highest first**, **Newest first**, **A to Z** and so on.
+- **How many**: leave it empty for every film, or enter a number to keep only the first ones in that order.
+
+**Shuffled, once a day** gives a new order each day, and the same order all day, so a row doesn't reshuffle on every visit.
+
+## Who sees it
+
+**Who sees it** sets the collection's audience: **Everyone**, or only some **Roles**, some **People** or some kinds of **Apps**.
+
+## Change or delete a collection
+
+Press **Edit** on its card, change what you need, and press **Save changes**.
+
+**Delete**, on the card or in the editor, asks first.
+
+![The dialog that asks to delete Blender picks, saying it leaves every app's library and the films in it stay in the library](/images/admin/collections/delete.png)
+
+ The collection leaves every app's library; the films in it stay in your library. A collection that a featured section draws on can't be deleted until you choose another source for that section in [Featured sections](/curation/featured-sections/#change-or-delete-a-section).

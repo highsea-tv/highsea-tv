@@ -1,0 +1,38 @@
+---
+title: A film's subtitles
+description: The Subtitles tab on a film's page, with its tracks, searching the providers and choosing a subtitle yourself, and deleting one.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - In highsea: a movie's Subtitles tab (apps/server/src/admin/movie-detail.tsx,
+    movie-detail-messages.ts), the release's own subtitles (packages/subtitles/src/movies/bundled.ts).
+*/}
+
+Written for highsea 0.1.0.
+
+On a film's page, the **Subtitles** tab lists its tracks, with how many are external (files beside the video) and how many are embedded (inside it). Each track shows:
+
+- **Language**, and **Source**: the provider, **From the release**, **Added by hand** or **Embedded**.
+- **Score**: how well it matched.
+- **Sync**: one of **Waiting to sync**, **Syncing**, **Synced**, **Not synced**, **Sync failed** or **Matches the video**, with the sync's confidence beside it.
+- **Offset**: how far the timing has been moved.
+
+![Sintel's Subtitles tab: an English subtitle from the release, Synced at 100% with an offset of −2760 ms, and an embedded forced English track that matches the video. Search for subtitles is below.](/images/admin/subtitles/film-synced.png)
+
+**Matches the video** means the track needs no sync: it's embedded, or it came with the release. What **Synced** and **Not synced** mean, and the offset's **−** and **+**, are on [Syncing to the speech](/subtitles/sync/).
+
+## Search and choose a subtitle yourself
+
+1. On the film's **Subtitles** tab, under **Search for subtitles**, pick the **Language**.
+2. Choose **Search providers**. Results are listed best first, with the release they were made for, the provider and the score.
+3. Choose **Use** on the one you want. It downloads and syncs in the background, and highsea keeps it rather than replacing it with an upgrade.
+
+![Search results for English subtitles for Sintel, best first: each with the release it was made for, OpenSubtitles.com or Subdl, its score, and Use.](/images/admin/subtitles/film-search.png)
+
+If no provider is switched on, the search says "Turn on a subtitle provider in Subtitles to search." See [Providers and accounts](/subtitles/providers/).
+
+## Delete a subtitle
+
+Choose **Delete** on the track. The file beside the video is removed too.
