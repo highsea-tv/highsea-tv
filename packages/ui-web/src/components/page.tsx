@@ -4,7 +4,8 @@
 import type { ReactNode } from 'react'
 import { Icon, type IconName } from '../icons/icon.tsx'
 import { cn } from '../lib/cn.ts'
-import { Kbd, modKey } from './kbd.tsx'
+import { Kbd } from './kbd.tsx'
+import { ModKey } from './mod-key.tsx'
 
 export type SearchTriggerProps = {
   onClick: () => void
@@ -36,9 +37,12 @@ export function SearchTrigger({
     >
       <Icon name="search" size={16} className="shrink-0" />
       <span className="hidden min-w-0 flex-1 truncate medium:block">{label}</span>
-      {/* the shortcut is announced through aria-keyshortcuts; the hint is visual only */}
+      {/* the shortcut is announced through aria-keyshortcuts; the hint is visual only. ModKey
+          renders the same on the server and while hydrating, then the browser's own (mod-key.tsx) */}
       <span aria-hidden className="hidden medium:inline-flex">
-        <Kbd>{modKey()}K</Kbd>
+        <Kbd>
+          <ModKey />K
+        </Kbd>
       </span>
     </button>
   )

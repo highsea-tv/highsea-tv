@@ -15,7 +15,10 @@ export function Kbd({ className, ...props }: ComponentProps<'kbd'>) {
   )
 }
 
-/** `⌘` on Apple platforms, `Ctrl` elsewhere. */
+/**
+ * `⌘` on Apple platforms, `Ctrl` elsewhere. Reads the platform it runs on, so in a server-rendered
+ * component use `useModKey` or `<ModKey />` (mod-key.tsx), which hydrate without a mismatch.
+ */
 export function modKey(): string {
   if (typeof navigator === 'undefined') return 'Ctrl'
   return /Mac|iPhone|iPad/.test(navigator.platform || navigator.userAgent) ? '⌘' : 'Ctrl'

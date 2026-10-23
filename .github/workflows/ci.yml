@@ -14,9 +14,14 @@ on:
   push:
     branches: [main]
   pull_request:
+  # the release runs it whole before building anything (release.yml)
+  workflow_call:
 
+# a called workflow's `github` context is its caller's, so `github.workflow` keeps a release's run apart
+# from a push to main's, and neither cancels the other
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations)
 concurrency:
-  group: ci-${{ github.ref }}
+  group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:
@@ -53,6 +58,11 @@ jobs:
         run: bun run audit
       - name: Build the admin
         run: bun run --filter @highsea-tv/server build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+      # the guides as static files, as docs.highsea.tv serves them; deploying is the owner's (ADR 0050)
+      - name: Build the docs site
+        run: bun run --filter @highsea-tv/docs build
         env:
           NEXT_TELEMETRY_DISABLED: 1
 
@@ -119,7 +129,7 @@ jobs:
       - name: It boots and reports healthy
         run: |
           docker run -d --name highsea -p 3000:3000 highsea:ci
-          for i in $(seq 1 30); do
+          for _ in $(seq 1 30); do
             status=$(docker inspect --format '{{.State.Health.Status}}' highsea)
             [ "$status" = healthy ] && break
             sleep 2

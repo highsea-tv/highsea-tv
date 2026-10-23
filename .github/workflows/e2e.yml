@@ -38,9 +38,14 @@ on:
       - 'bun.lock'
       - '.nvmrc'
       - '.github/workflows/e2e.yml'
+  # the release runs it before building anything (release.yml)
+  workflow_call:
 
+# a called workflow's `github` context is its caller's, so `github.workflow` keeps a release's run apart
+# from a push to main's, and neither cancels the other
+# (https://docs.github.com/en/actions/reference/workflows-and-actions/reusing-workflow-configurations)
 concurrency:
-  group: e2e-${{ github.ref }}
+  group: e2e-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 permissions:

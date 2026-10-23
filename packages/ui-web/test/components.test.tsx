@@ -4,6 +4,8 @@ import { afterEach, describe, expect, mock, test } from 'bun:test'
 import { act, cleanup, fireEvent, render, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
+import { hydrateRoot } from 'react-dom/client'
+import { renderToString } from 'react-dom/server'
 import {
   BackdropHero,
   Badge,
@@ -615,6 +617,37 @@ describe('page furniture', () => {
     expect(trigger.getAttribute('aria-keyshortcuts')).toBe('Meta+K Control+K')
     fireEvent.click(trigger)
     expect(onClick).toHaveBeenCalled()
+  })
+
+  test('SearchTrigger hydrates on a Mac from a server on Linux, then shows ⌘K', async () => {
+    // Node has a navigator too, so the server once rendered its own platform's key and a Mac
+    // threw React's error #418 while hydrating (mod-key.tsx)
+    const platform = (value: string) =>
+      Object.defineProperty(navigator, 'platform', { value, configurable: true })
+    const before = Object.getOwnPropertyDescriptor(navigator, 'platform')
+    try {
+      platform('Linux x86_64')
+      const html = renderToString(<SearchTrigger onClick={() => {}} />)
+      expect(html).toContain('Ctrl')
+      platform('MacIntel')
+      const container = document.createElement('div')
+      container.innerHTML = html
+      document.body.append(container)
+      const errors: unknown[] = []
+      let root: ReturnType<typeof hydrateRoot> | undefined
+      await act(async () => {
+        root = hydrateRoot(container, <SearchTrigger onClick={() => {}} />, {
+          onRecoverableError: (e) => void errors.push(e),
+        })
+      })
+      expect(errors).toEqual([])
+      expect(container.querySelector('kbd')?.textContent).toBe('⌘K')
+      act(() => root?.unmount())
+      container.remove()
+    } finally {
+      if (before) Object.defineProperty(navigator, 'platform', before)
+      else delete (navigator as { platform?: string }).platform
+    }
   })
 
   test('PageHeader gives the page its one h1, with search and actions beside it', () => {

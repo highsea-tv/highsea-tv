@@ -1,0 +1,125 @@
+---
+title: Move from Radarr and qBittorrent
+description: Bring your films, profiles, tags and torrents into highsea, without moving a file.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - Radarr's API v3, and where its API key is (Settings › General › Security):
+    https://wiki.servarr.com/radarr/settings#security
+  - qBittorrent's WebUI API (v2, from 4.1; highsea needs 4.5.0 or later):
+    https://github.com/qbittorrent/qBittorrent/wiki/WebUI-API-(qBittorrent-4.1)
+  - In highsea: Settings › Migration (apps/server/src/admin/migration.tsx and its messages), and
+    the importers in packages/importers/src/radarr and qbittorrent.
+*/}
+
+Written for highsea 0.1.0, Radarr 3 or later (its API v3), and qBittorrent 4.5.0 or later.
+
+**Settings › Migration** reads Radarr and qBittorrent through their own APIs and changes nothing in either. Your films and downloads stay where they are on disk; highsea adopts them in place. Only the owner sees Migration.
+
+Do Radarr first, then qBittorrent. highsea uses Radarr's grab history to link each torrent to its film.
+
+## Before you start
+
+- **highsea can see your files.** The folders Radarr and qBittorrent use must be mounted into highsea's container, under `/data`. If Radarr sees your films at `/movies` and highsea sees them at `/data/media/movies`, that's fine: path mappings handle it.
+- **highsea's folders are set.** The films and downloads folders from setup should be the ones holding your existing films and downloads, or contain them.
+- **Keep both programs running** until the import has finished. You stop qBittorrent near the end.
+
+## Path mappings
+
+Each card on the Migration page has **Path mappings**. Add one when the other program sees a folder under a different path from highsea:
+
+| Their path | highsea's path |
+| --- | --- |
+| `/movies` | `/data/media/movies` |
+| `/downloads` | `/data/downloads` |
+
+When more than one mapping fits a path, the longest one wins. With no mappings, the paths are taken to be the same for both.
+
+## Bring Radarr across
+
+<Steps>
+<Step>
+
+### Connect
+
+In the **Radarr** card, enter:
+
+- **Address**: Radarr's address as highsea reaches it, with the port, such as `http://192.168.1.20:7878`. Inside Docker, `localhost` is highsea's own container, so use the machine's address or Radarr's container name.
+- **API key**: from Radarr's **Settings › General › Security**.
+
+Choose **Test**. highsea says which version of Radarr it reached and how many films it has.
+
+</Step>
+<Step>
+
+### Preview
+
+Choose **Preview** to see what would come across before anything does:
+
+- **Root folders**: each of Radarr's root folders, and whether highsea can use it. A root folder outside highsea's folders shows **Can't use**; mount it, or add a path mapping, and preview again.
+- **Quality profiles**: each of Radarr's profiles becomes the nearest of highsea's by its cutoff. Change any of them, or choose **Bring it across as it is** to make a copy in highsea.
+- **Bring the naming format and file settings across**: Radarr's folder and file formats, colon replacement, hardlinks and permissions. If highsea can't use Radarr's naming format, it says why and keeps its own.
+- **What can't come across**: indexers and download clients. Radarr's API never hands out their passwords and keys, so add your indexers again from **Go to Indexers**. You don't need a download client; highsea downloads by itself.
+
+Tags and Radarr's blocklist come across too.
+
+</Step>
+<Step>
+
+### Import
+
+Choose **Import**. You can leave the page; the import carries on, and the card shows its progress when you come back. Each film's files are checked again by highsea and kept where they are.
+
+If it stops, choose **Import again**. It carries on where it left off and skips what's already in highsea, so running it twice is safe.
+
+</Step>
+</Steps>
+
+<ScreenshotToCome shows="Settings › Migration, the Radarr card's preview with root folders and quality profiles." />
+
+## Bring qBittorrent across
+
+<Steps>
+<Step>
+
+### Connect
+
+In the **qBittorrent** card, enter its WebUI address, such as `http://192.168.1.20:8080`, and its username and password. Leave both empty if qBittorrent lets highsea's address in without signing in.
+
+Choose **Test**. highsea needs qBittorrent 4.5.0 or later.
+
+</Step>
+<Step>
+
+### Preview
+
+- **Save paths**: where qBittorrent keeps each torrent's data, and whether highsea can use it.
+- **Categories**: each category, and the folder its torrents go to in highsea.
+- How many torrents are ready, how many are already in highsea, how many are outside its folders, and how many are linked to films Radarr grabbed.
+
+</Step>
+<Step>
+
+### Import
+
+Choose **Import**. Each torrent comes across paused, with its category, limits and totals, pointing at the data already on disk. highsea checks each one's data once.
+
+</Step>
+<Step>
+
+### Stop qBittorrent, then resume
+
+When the checks are done, stop qBittorrent. Then choose **Resume torrents** and confirm with **qBittorrent is stopped, resume**.
+
+Two clients writing to the same files can damage them, which is why highsea waits for you.
+
+</Step>
+</Steps>
+
+## Afterwards
+
+- Add your indexers in **Indexers**, from the catalog or as Torznab feeds. Prowlarr's and Jackett's feeds work as they are.
+- Look through **Movies**. Any film that couldn't come across is listed in the Radarr card, with the reason.
+- When you're happy with highsea, stop Radarr too. Keep both programs' config folders for a while, in case you want to look something up.

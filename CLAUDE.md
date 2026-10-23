@@ -15,10 +15,10 @@ highsea is a self-hosted replacement for the *ARR suite (Radarr, Sonarr, Prowlar
   - **Checkpoint 9** (release and sign-off), scoped in [docs/plans/phase-3-checkpoint-9.md](docs/plans/phase-3-checkpoint-9.md) with the owner's answers of 2026-10-22: three gated parts, 9a (packaging and CI, starting with the move to the `highsea-tv` GitHub organisation and the `@highsea-tv/` package scope), 9b (releasing and the documentation site at `docs.highsea.tv`) and 9c (the full review and the Phase 3 sign-off). Nothing is published until the owner says so.
     - **Done in 9a (2026-10-22):** the repository moved to the `highsea-tv` organisation (`origin` is `https://github.com/highsea-tv/highsea-tv.git`); every package renamed to `@highsea-tv/` (ADR 0036's dated note; ADRs keep the old names as written); Trakt brought up to its new portal (sign-in on `auth.trakt.tv`, optional secret, the `api.highsea.tv` redirect). highsea's subdomains are set in the plan's [domains table](docs/plans/phase-3-checkpoint-9.md#highseas-domains).
     - **Also done in 9a, signed off on 2026-10-22:** the slim image for amd64 and arm64 (`scripts/image.ts`, ADR 0003's 9a amendment) with OCI labels, provenance and an SBOM, checked in CI and never pushed; the compose files on `ghcr.io/highsea-tv/highsea` and the NAS templates in `templates/`; the end-to-end run through the container (`scripts/e2e/`, `compose.e2e.yaml`, `e2e.yml`); the dependency check (`bun run audit`); and the missing 100k cases. The plan's Progress section has the details and what was left open.
-    - **Next: 9b**, releasing and the documentation site: the version scheme and ADR 0050, the changelog, the release workflow run dry, `releases.json` and the release key's handling, and every user guide in `apps/docs`. Nothing is published, tagged or deployed until the owner says so.
+    - **9b, built and waiting for the owner's review:** the version scheme and ADR 0050 (one SemVer version, `apps/server`'s; stable and beta channels), `CHANGELOG.md`, `scripts/release.ts` (a release is prepared in a commit) and `.github/workflows/release.yml` (dry unless switched off; the keyed jobs wait in the approval-gated `release` environment), the catalog's production address `https://catalog.highsea.tv`, and the guides in `apps/docs` (Fumadocs, a static export). The owner's steps before the first publish are in `catalog/keys/README.md`. Nothing is published, tagged or deployed until the owner says so.
 - **Follow-up after Phase 3:** dashboard customization on Homarr's level, with a visible grid ([docs/plans/dashboard-customization.md](docs/plans/dashboard-customization.md)). Not scheduled; a prototype is approved first.
 
-Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2, 0027–0028 with checkpoint 3, 0029–0031 with checkpoint 4, 0032 with the admin-access work, 0033–0035 with checkpoint 5, 0036 (domain packages with subpath exports) at its review, 0037–0040 and 0042 with checkpoint 6a, 0041 (the migration importers) with 6b, which also added dated 6b sections to 0037, 0039 and 0042, 0043 (subtitles) with 7a, 0044 (the subtitle sync engine) with 7b, which also amended 0040, 0045 (automation) with 8a, 0046 (notifications) and 0047 (operations) with 8b, 0048 (curation) with 8c, and 0049 (smart collections) with 8d.
+Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2, 0027–0028 with checkpoint 3, 0029–0031 with checkpoint 4, 0032 with the admin-access work, 0033–0035 with checkpoint 5, 0036 (domain packages with subpath exports) at its review, 0037–0040 and 0042 with checkpoint 6a, 0041 (the migration importers) with 6b, which also added dated 6b sections to 0037, 0039 and 0042, 0043 (subtitles) with 7a, 0044 (the subtitle sync engine) with 7b, which also amended 0040, 0045 (automation) with 8a, 0046 (notifications) and 0047 (operations) with 8b, 0048 (curation) with 8c, 0049 (smart collections) with 8d, and 0050 (release and versioning) with 9b, which also added a dated section to 0034.
 
 ## Rules from the owner
 
@@ -69,6 +69,9 @@ docker compose -f compose.dev.yaml up --build   # the image from this checkout (
 bun run audit           # the dependency check: npm's advisories, exceptions in scripts/audit-exceptions.json
 HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts   # the end-to-end run through the image (compose.e2e.yaml)
 bun scripts/image.ts size highsea:dev 2000          # the image's largest folders, against a budget
+bun run docs            # the guides (apps/docs), http://localhost:3100
+bun scripts/release.ts prepare 0.1.0   # a release's commit: changelog, version, releases.json, catalog version, seed
+bun scripts/release.ts check 0.1.0     # what the release workflow checks first (also notes, tags, trust)
 ```
 
 Browser sweeps are in [scripts/sweeps](scripts/sweeps/README.md): axe in three themes, overflow, 200% text, reduced motion, and the keyboard and D-pad walks. They cover the prototypes and, with `bun scripts/sweeps/server.ts`, the server's real admin pages. Run them before each checkpoint report.
@@ -83,6 +86,7 @@ Before reporting a checkpoint, run all of these:
 | Path | What |
 | --- | --- |
 | `apps/server` | The server: one Node process. `server.ts` boots `@highsea-tv/runtime`, then serves `/api` with Hono and everything else with Next (ADR 0003) |
+| `apps/docs` | The public guides at `docs.highsea.tv`: Fumadocs on Next, exported as static files, in the design system's tokens. Guides are MDX in `content/` (sidebar order in `meta.json`); `test/content.test.ts` checks their links, frontmatter and copy. Deployed only on the owner's word |
 | `apps/storybook` | The design system's workbench |
 | `design/prototypes` | The signed-off prototypes, with an SDK-shaped mock server (`src/mock/`): the reference for every screen and the first draft of the API |
 | `packages/core`, `db`, `jobs`, `runtime`, `i18n` | The platform. Since 8b the runtime also holds the owner's tools (ADR 0047): backups and restore (`backups.ts`, with its own zip writer and reader in `zip.ts`; a restore exits with code 75 for Docker to restart it), the log files (`logs.ts`), crash reports, `/metrics` and Updates (`operations.ts`), and turns the domains' events into notifications (`notify.ts`) |
@@ -105,7 +109,7 @@ Before reporting a checkpoint, run all of these:
 | `packages/tokens`, `ui-web`, `brand`, `fixtures` | The design system |
 | `docs/` | Roadmap, plans, ADRs, product specs, brand and design language |
 | `templates/` | The NAS templates: Unraid's XML, and compose files for TrueNAS and Synology |
-| `scripts/` | License audit, dependency check, version pinning, browser sweeps; `image.ts` (the slim image's production install, its size and attestation checks) and `e2e/` (the end-to-end run through the container and its fixtures service) |
+| `scripts/` | License audit, dependency check, version pinning, browser sweeps; `image.ts` (the slim image's production install, its size and attestation checks), `e2e/` (the end-to-end run through the container and its fixtures service) and `release.ts` (versions, image tags, the changelog's notes and preparing a release, ADR 0050) |
 
 Conventions:
 

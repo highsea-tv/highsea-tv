@@ -1,0 +1,90 @@
+---
+title: Recommended setup
+description: What to set up after installing highsea, and the choices that suit most servers.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - Hardlinks across one filesystem: https://man7.org/linux/man-pages/man2/link.2.html (EXDEV)
+  - gluetun's control server: https://github.com/qdm12/gluetun-wiki/blob/main/setup/advanced/control-server.md
+  - WireGuard: https://www.wireguard.com/
+  - In highsea: compose.gluetun.yaml and compose.connects.yaml at the repository's root, and the
+    admin's Settings areas (apps/server/src/admin).
+*/}
+
+Written for highsea 0.1.0.
+
+Setup gets highsea running. These are the next things to look at, roughly in order. Everything here is in the admin, and each choice can be changed later.
+
+## Folders and hardlinks
+
+Keep downloads and films in one folder on one disk, mounted as `/data`:
+
+```txt
+/data/downloads
+/data/media/movies
+```
+
+A hardlink is a second name for the same file, so a finished download appears in the library at once and takes no extra space, while the torrent keeps seeding from the original. Hardlinks can't cross from one disk or share to another, so with separate folders highsea has to copy every film.
+
+Setup tells you which you have: "Hardlinks will work" or "Imports will be copied". **Settings › Media management** has the file and folder names, hardlinks and permissions.
+
+## Indexers
+
+**Indexers** lists the public indexers in highsea's catalog, each added in one click, and highsea checks their health on its own. A private tracker or a Torznab feed from Prowlarr or Jackett can be added there too.
+
+## Quality
+
+**Settings › Profiles and formats** has three profiles to start with: **Ultra HD**, **HD 1080p** and **Any**. Pick the one that suits the screens you watch on when you add a film; HD 1080p is a good default. Presets from the catalog add ready-made profiles and custom formats.
+
+highsea gives the reason for every release it takes or turns down.
+
+## Subtitles
+
+On the **Subtitles** page, add a provider: OpenSubtitles.com, Subdl or SubSource. Some need an account of your own; highsea says which, and signs in with yours. Set your languages in order of preference. highsea syncs each subtitle to the film's speech after it downloads it.
+
+## A VPN for torrents
+
+**Settings › VPN** has four modes:
+
+- **highsea connects** (recommended): highsea runs its own WireGuard tunnel to your provider. Only torrents use it, and they can't leave outside it. It needs Linux and one extra permission, which `compose.connects.yaml` adds:
+
+  ```yaml
+  cap_add: [NET_ADMIN]
+  ```
+
+  Pick your provider and add its WireGuard configuration. highsea uses your provider's port forwarding where it has one.
+- **A VPN container**: highsea shares a gluetun container's network and reads its status and forwarded port. `compose.gluetun.yaml` sets this up; in Settings › VPN, give the address `http://127.0.0.1:8000` and the API key from gluetun's control server. This suits providers that only offer OpenVPN.
+- **An interface on this machine**: torrents are bound to a tunnel you run yourself.
+- **Off**: torrents use your own connection, and anyone in the swarm can see your address.
+
+Keep **Stop torrents when the VPN is down** on. Torrents then stop until the tunnel is back, and nothing leaks onto your own connection.
+
+## Watching away from home
+
+**Settings › Network and remote access** sets the address apps use away from home. At home, apps find the server on their own.
+
+- **Through a reverse proxy.** If you already run one, such as Caddy, nginx or Traefik, point it at port 3000 and enter its `https://` address as the public address. Choose **My proxy handles it** under **Reverse proxy and TLS**.
+- **Built in.** highsea serves HTTPS itself, on port 8443, with a certificate you provide. Put the full chain in `/config/tls/cert.pem` and its key in `/config/tls/key.pem`. highsea doesn't fetch certificates yet; a tool such as certbot or `tailscale cert` can.
+- **Forward a port.** Forward highsea's port on your router to the server. Use this with built-in TLS, so passwords never cross the internet in the clear.
+
+**Off (LAN only)** is fine at home, but passwords cross the network in the clear, so keep it to the LAN.
+
+If you publish ports rather than use host networking, uncomment `8443:8443` in the compose file before turning built-in TLS on.
+
+## Backups
+
+highsea backs up its database every day at 03:30 and keeps the last 14, in `/config/backups`. **Settings › Backups** changes the time and how many to keep, and **System › Backups** lists them, with **Back up now**.
+
+Backups made by hand are never removed on their own. highsea also backs up before each update that changes the database, and before each restore.
+
+The backups sit in the config folder, on the same machine. Copy that folder somewhere else from time to time too: another disk, another machine or a cloud drive. Backups never include `secret.key`, which seals your passwords and keys; copying the whole config folder carries it with them.
+
+## Notifications
+
+**Settings › Connections** sends what happens to Discord, Slack, Telegram, ntfy, Gotify, Pushover, Matrix, email, a webhook, Apprise, or the browser. Pick the events for each connection, such as a film imported, a download that failed, a health warning or a new release of highsea.
+
+## People
+
+**Settings › Users and devices** invites people. Admins run the server: the library, downloads, indexers and settings. Users watch in the apps and never open the admin. Turn on two-step verification or a passkey for your own account in **Your account**, and ask your Admins to as well.

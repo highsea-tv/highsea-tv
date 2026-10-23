@@ -204,7 +204,39 @@ A survey of the repository on 2026-10-22.
   - the dashboard showing its default layout while the saved one loads (`dashboard.tsx`), in the locked admin;
   - home at about 515 ms a person at 100k, inside its budget, with caching the shared genre rows as an option;
   - the Unraid template's icon and template links, which work once the repository is public.
-- **Next:** 9b, from [Release](#release-9b) on.
+- **2026-10-22, 9b's release half, built** (ADR 0050; ADR 0034's dated section):
+  - **Versions and tags.** `scripts/release.ts` holds the scheme: SemVer, one version in `apps/server`, betas as pre-releases. `compareAppVersions` moved into `@highsea-tv/catalog`, beside the release format, so the runtime and the script agree. `tags` works out a release's image tags from the tags already made, so a fix to an older line moves only that line, and `latest` and `beta` never go backwards.
+  - **`CHANGELOG.md`** in Keep a Changelog 1.1.0, with milestone 1 under Unreleased, written for owners.
+  - **Prepared in a commit, not written by the workflow.** `bun scripts/release.ts prepare 0.1.0` moves Unreleased under the version and date, and sets the server's version. It writes the `releases.json` entry from the section (plain text, within the schema's limits, with a last line pointing to the release's page when it's cut). It adds a catalog version to `CHANGES.md` and rebuilds the committed seed with the development key. `check` confirms they agree. A server keeps a manifest's releases only when the catalog's version is newer, so a release without a catalog version would never be seen.
+    - `releases.json` doesn't exist yet. `prepare 0.1.0` creates it with the first entry, on the date the owner picks at 9c's sign-off.
+  - **`release.yml`**, run by hand, a dry run unless that's switched off. It works in this order:
+    1. `check`, or in a dry run `prepare` in the runner;
+    2. CI and the end-to-end run, as reusable workflows;
+    3. both platforms built without the cache, with the keys as build secrets, the seed re-signed with the release key, and the attestations checked;
+    4. the catalog signed with the release key;
+    5. in a real run only: a push by digest, the merged multi-arch tags with index annotations, Pages, and the GitHub release with its tag.
+
+    The image and catalog jobs name the `release` environment, so they wait for the owner's approval. A dry run uploads the OCI layouts and the catalog and publishes nothing. actionlint is clean. `ci.yml` and `e2e.yml` gained `workflow_call`, and their concurrency groups carry the calling workflow's name.
+  - **`catalog.yml`** no longer has a switched-off publish job, and signs with the development key only. A release publishes the catalog.
+  - **The catalog's address.** Production servers check `https://catalog.highsea.tv` unless `HIGHSEA_CATALOG_URL` names another or is `off`. Development and tests have none.
+  - **The update notice:** a server on 0.1.0 learns of 0.1.1 from a locally signed catalog and announces it once (`packages/runtime/test/operations.test.ts`).
+  - **The steps for the first publish** are in `catalog/keys/README.md`, for the owner: the key, the `release` environment and its five secrets, Pages and the DNS record, and public packages.
+- **2026-10-22, 9b's docs half, built:**
+  - **`apps/docs`:** Fumadocs 16.16.2 (fumadocs-mdx 15.4.6) on the repo's Next, exported as static files for Vercel, with search built at build time. Fumadocs' styles need Tailwind's default theme, which highsea's `tailwind.css` clears. So the site imports the plain `tokens.css` and points Fumadocs' color variables at highsea's roles. No token value changed. Design system v1.0 has only dark themes, so the site is dark and has no theme switch. The title is ui-web's live lockup.
+  - **Eight guides:** an overview; Install with Docker; Unraid; Synology; TrueNAS; Recommended setup; Move from Radarr and qBittorrent; Upgrade.
+    - Each says the highsea version it was written for and cites its sources in a comment.
+    - `test/content.test.ts` checks the frontmatter, every link and anchor inside the site, the sidebar and the copy rule.
+    - Install with Docker was followed against the slim image, through setup to the Dashboard. Its step names were corrected from what that run showed.
+    - The Unraid and TrueNAS guides follow the vendors' documentation but haven't been tried on the hardware.
+  - **Four screenshots to come,** marked in the guides: Unraid (2) and TrueNAS (2). Upgrade also has one, of System › Updates, once a release exists. Setup's first step is a real screenshot.
+- **2026-10-22, the Synology guide followed on the owner's DS1520+** (DSM 7.4.1, Container Manager on Docker 24.0.2). The image was built from this checkout and loaded onto the NAS, and nothing was pulled or pushed. The project used a test folder in place of the live `data` share:
+  - The wizard matched the guide's steps. Its Create Project page is now the guide's screenshot.
+  - Container Manager doesn't create a missing bind-mount folder: the first start stopped with "Bind mount failed: '/volume1/docker/highsea/config' does not exist". The guide and `templates/synology/compose.yaml` now say to make `config` first.
+  - Once that folder was made, highsea started, port 3000 redirected to `/setup`, and its files were owned by 1026:100 as `PUID`/`PGID` asked. The guide now says it was checked on DSM 7.4.1.
+  - Afterwards the project, its image and the test folder were deleted. The owner's own project and shares weren't touched.
+  - **Wired in:** `bun run docs`; CI builds the site; the README's Install section links the guides; `scripts/pin.ts` skips deprecated versions (it offered Fumadocs 17.0.0, which its authors deprecated).
+  - **Going back to an older version isn't supported yet,** and Upgrade says so: an older highsea doesn't know a newer one's database changes. The "Before an update" backup keeps the database safe meanwhile.
+- **Next:** 9b's review by the owner, including the docs site's design from screenshots.
 
 ## highsea's domains
 
@@ -512,7 +544,7 @@ Exit criterion 6 asks for every admin screen to match its prototype, with real d
 - **0050, release and versioning** (9b): above.
 - **Dated sections where things change:**
   - ADR 0003 for the slim runtime stage, if its notes on the build need it;
-  - ADR 0034 for the release key and the publish step turned on.
+  - ADR 0034 for the release key and the publish step moved into the release (done in 9b).
 
 ## Risks
 

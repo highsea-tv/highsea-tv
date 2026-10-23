@@ -1,0 +1,80 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+/*
+ * Fumadocs' docs layout wearing design system v1.0 (phase-3-checkpoint-9.md, answer 12).
+ * Fumadocs' styles are built on Tailwind's default theme (`md:`, `text-sm`), which highsea's own
+ * tailwind.css clears, so this imports the tokens as plain custom properties and maps highsea's
+ * roles onto Fumadocs' color variables (https://fumadocs.dev/docs/ui/theme#colors). No token value
+ * is changed. tokens.css also sets `--font-sans`, `--font-mono` and `--radius-sm` to `--radius-xl`
+ * outside any layer, so Tailwind's utilities pick up Geist and highsea's radii.
+ */
+@import "tailwindcss";
+@import "fumadocs-ui/css/neutral.css";
+@import "fumadocs-ui/css/preset.css";
+@import "@highsea-tv/tokens/tokens.css";
+@import "@highsea-tv/brand/fonts.css";
+
+/* the lockup comes from ui-web, outside this app, so Tailwind is told to read it */
+@source "../../../packages/ui-web/src/components/brand.tsx";
+
+/* design system v1.0 has dark themes only, so the site is always in highsea's default theme */
+:root,
+.dark {
+  --color-fd-background: var(--color-bg);
+  --color-fd-foreground: var(--color-text);
+  --color-fd-muted: var(--color-s2);
+  --color-fd-muted-foreground: var(--color-text-3);
+  --color-fd-popover: var(--color-s3);
+  --color-fd-popover-foreground: var(--color-text);
+  --color-fd-card: var(--color-s1);
+  --color-fd-card-foreground: var(--color-text);
+  --color-fd-border: var(--color-line-strong);
+  --color-fd-primary: var(--color-accent-text);
+  --color-fd-primary-foreground: var(--color-on-accent);
+  --color-fd-secondary: var(--color-s2);
+  --color-fd-secondary-foreground: var(--color-text);
+  --color-fd-accent: var(--color-s3);
+  --color-fd-accent-foreground: var(--color-text);
+  --color-fd-ring: var(--color-focus);
+  --color-fd-info: var(--color-info);
+  --color-fd-warning: var(--color-warning);
+  --color-fd-error: var(--color-danger);
+  --color-fd-success: var(--color-success);
+  --color-fd-idea: var(--color-accent);
+}
+
+.dark #nd-sidebar {
+  --color-fd-muted: var(--color-s2);
+  --color-fd-secondary: var(--color-s3);
+  --color-fd-muted-foreground: var(--color-text-2);
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* the design language's focus ring (docs/design-language), in place of each component's own */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--color-focus);
+  outline-offset: var(--focus-ring-offset);
+}
+
+.prose {
+  --tw-prose-body: var(--color-text-2);
+  --tw-prose-headings: var(--color-text);
+  --tw-prose-links: var(--color-accent-text);
+  --tw-prose-bold: var(--color-text);
+  --tw-prose-code: var(--color-text);
+  font-size: var(--text-body);
+  line-height: var(--text-body--line-height);
+}
+
+/* the two highsea utilities the lockup uses, which Tailwind's default theme doesn't have */
+.tracking-wordmark {
+  letter-spacing: var(--tracking-wordmark);
+}
+
+.text-text-3 {
+  color: var(--color-text-3);
+}

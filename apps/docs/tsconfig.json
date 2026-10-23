@@ -1,0 +1,16 @@
+{
+  "extends": "@highsea-tv/config/tsconfig/nextjs.json",
+  "compilerOptions": {
+    "types": ["bun", "node"],
+    "paths": { "@/*": ["./*"] }
+  },
+  "include": [
+    "next-env.d.ts",
+    "app",
+    "lib",
+    "components",
+    "test",
+    "next.config.ts",
+    ".next/types/**/*.ts"
+  ]
+}

@@ -21,7 +21,8 @@ services:
       PGID: "100"
       TZ: Etc/UTC
     volumes:
-      # highsea's config, in this project's folder
+      # highsea's config, in this project's folder. Make the folder first: Container Manager
+      # doesn't make a missing one, and the project stops with "Bind mount failed"
       - ./config:/config
       - /volume1/data:/data
     ports:

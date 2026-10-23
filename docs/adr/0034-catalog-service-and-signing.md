@@ -56,3 +56,12 @@ The owner's answers shaped three parts of it:
 - Nothing unsigned or tampered with is ever loaded from a catalog. Only the owner's own files in `/config/definitions` are unsigned.
 - Until the release key exists, a production build (`NODE_ENV=production`, as the Docker image sets) trusts no key. It boots with no catalog, so A9's catalog is empty unless the owner sets `HIGHSEA_CATALOG_DEV_KEY=1` or adds local definitions. This is decision 3 working as intended, and it ends when the owner creates the release key.
 - Other content (presets, sound packs) can use the same manifest, signing and service with a new `kind` (answer 8).
+
+## 2026-10-22: the release key and publishing (checkpoint 9b)
+
+ADR 0050 sets out how highsea is released. Four things change here:
+
+- **Where the release key lives.** It's a secret of the repository's `release` environment, not a repository-wide secret, so it reaches only the jobs the owner approves. `catalog/keys/README.md` has the steps for the first publish.
+- **The image's seed.** A release re-signs the seed snapshot it ships with the release key (`HIGHSEA_CATALOG_SEED_RELEASE=1`), so production servers trust it from their first boot. The committed seed stays signed with the development key.
+- **Who publishes.** `release.yml` deploys the catalog's channels to Pages as part of a release. `catalog.yml` still builds and checks every change to `catalog/**`, and its switched-off publish step is gone, so the channels change only with a release.
+- **The address.** A production server checks `https://catalog.highsea.tv` unless `HIGHSEA_CATALOG_URL` names another address or is `off`. Development and tests have no default.

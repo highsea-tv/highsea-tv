@@ -48,6 +48,18 @@ describe('config', () => {
     expect(loadConfig({}).catalogUrl).toBeUndefined()
   })
 
+  test('checks highsea’s own catalog in production, unless told another or off', () => {
+    expect(loadConfig({ NODE_ENV: 'production' }).catalogUrl).toBe('https://catalog.highsea.tv')
+    expect(
+      loadConfig({ NODE_ENV: 'production', HIGHSEA_CATALOG_URL: 'http://fixtures:4000/catalog' })
+        .catalogUrl,
+    ).toBe('http://fixtures:4000/catalog')
+    expect(loadConfig({ NODE_ENV: 'production', HIGHSEA_CATALOG_URL: 'off' }).catalogUrl).toBe(
+      undefined,
+    )
+    expect(loadConfig({ NODE_ENV: 'development' }).catalogUrl).toBeUndefined()
+  })
+
   test('reads the OpenSubtitles.com key from the variable, or from its file', () => {
     const file = join(temp(), 'key')
     writeFileSync(file, 'from-file\n')

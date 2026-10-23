@@ -1,0 +1,87 @@
+---
+title: Install on Synology
+description: Run highsea as a Container Manager project on DSM 7.2 or later.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - Container Manager › Project (Create, Path, Source, the wizard's last steps):
+    https://kb.synology.com/en-global/DSM/help/ContainerManager/docker_project?version=7
+  - Container Manager: https://www.synology.com/en-us/dsm/feature/docker
+  - Shared folders: https://kb.synology.com/en-global/DSM/help/DSM/AdminCenter/file_share_create?version=7
+  - The compose file is templates/synology/compose.yaml in the repository.
+*/}
+
+Written for highsea 0.1.0 on DSM 7.2 or later with Container Manager, and checked on DSM 7.4.1.
+
+Container Manager runs highsea from a compose file, which it calls a project. Its containers use published ports rather than the NAS's own network, which highsea supports.
+
+## Before you start
+
+- Install **Container Manager** from Package Center.
+- In **Control Panel › Shared Folder**, make a shared folder called `data` on the volume with the most room. Inside it, in File Station, make `downloads` and `media/movies`. Keeping both in one shared folder is what lets highsea hardlink finished downloads into the library instead of copying them.
+- In File Station, make a folder for highsea's own files, such as `docker/highsea`, and a `config` folder inside it. Container Manager may have made the `docker` shared folder already. Container Manager doesn't make a missing folder for a container: without `config`, the project stops with "Bind mount failed" and the folder's name.
+
+## Find your user and group
+
+highsea runs as the user and group that own your files. Turn on SSH in **Control Panel › Terminal & SNMP**, sign in as your DSM user, and run:
+
+```sh
+id
+# uid=1026(alex) gid=100(users) …
+```
+
+The first user made on DSM is usually 1026, and `users` is 100. Make sure this user can read and write the `data` and `docker` shared folders, in **Control Panel › Shared Folder › Edit › Permissions**.
+
+## Create the project
+
+1. Open **Container Manager**, go to **Project**, and choose **Create**.
+2. Fill in the first page:
+   - **Project name**: `highsea`.
+   - **Path**: the `docker/highsea` folder you made.
+   - **Source**: **Create docker-compose.yml**, and paste the file below.
+3. Leave the web portal through Web Station off; highsea serves its own.
+4. Check the summary, choose **Done**, and let it start the project.
+
+```yaml title="docker-compose.yml"
+services:
+  highsea:
+    image: ghcr.io/highsea-tv/highsea:latest
+    container_name: highsea
+    environment:
+      PUID: "1026"
+      PGID: "100"
+      TZ: Etc/UTC
+    volumes:
+      - ./config:/config
+      - /volume1/data:/data
+    ports:
+      - "3000:3000"
+      - "6881:6881/tcp"
+      - "6881:6881/udp"
+      - "7368:7368/udp"
+    restart: unless-stopped
+```
+
+Before you paste it, change:
+
+- `PUID` and `PGID` to the numbers `id` showed.
+- `/volume1/data` if your `data` shared folder is on another volume.
+- `TZ` to your time zone, such as `Europe/Berlin`.
+
+`./config` is a folder inside the project's path, so highsea's database and backups sit next to its compose file.
+
+![Container Manager's Create Project page, with the name, path and compose file filled in](/images/synology-create-project.png)
+
+## Run setup
+
+Open `http://<your NAS's address>:3000`. highsea opens its setup; [Install with Docker › Run setup](/install-docker/#run-setup) walks through each step.
+
+When setup asks for your folders, use the paths inside the container: `/data/media/movies` and `/data/downloads`.
+
+Apps on your network find highsea by its broadcast on port 7368. If one doesn't, give it the NAS's address.
+
+## Firewall
+
+If DSM's firewall is on, allow TCP 3000, TCP and UDP 6881, and UDP 7368 from your network, in **Control Panel › Security › Firewall**.

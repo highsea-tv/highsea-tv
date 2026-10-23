@@ -1,0 +1,14 @@
+{
+  "pages": [
+    "index",
+    "---Install---",
+    "install-docker",
+    "install-unraid",
+    "install-synology",
+    "install-truenas",
+    "---After installing---",
+    "recommended-setup",
+    "migrate-from-radarr-and-qbittorrent",
+    "upgrade"
+  ]
+}

@@ -1,8 +1,8 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # The catalog pipeline (ADR 0007, ADR 0034) on every change to catalog/**: validate each definition,
 # check every definition's licence, build and sign both channels, and check that the server's seed
-# snapshot is up to date. Publishing is written but switched off until the owner creates the
-# release key and says to publish (checkpoint 5, answer 3).
+# snapshot is up to date. A release publishes the catalog, signed with the release key
+# (release.yml, ADR 0050).
 name: Catalog
 
 on:
@@ -29,33 +29,11 @@ jobs:
         run: bun test --isolate packages/schemas packages/catalog packages/indexers
       - name: Every definition is CC0-1.0 or MIT
         run: bun run licenses
-      # signed with the development key until the release key exists; then with the secret
+      # signed with the development key: the release key is in the release environment, which only
+      # release.yml names
       - name: Build and sign both channels
         run: bun run catalog:build
-        env:
-          HIGHSEA_CATALOG_KEY: ${{ secrets.HIGHSEA_CATALOG_KEY }}
-          HIGHSEA_CATALOG_KEY_ID: ${{ secrets.HIGHSEA_CATALOG_KEY_ID }}
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: catalog
           path: dist/catalog/
-
-  publish:
-    needs: build
-    # off until the owner says to publish (checkpoint 5, answer 3)
-    if: false
-    runs-on: ubuntu-24.04
-    permissions:
-      pages: write
-      id-token: write
-    environment:
-      name: github-pages
-    steps:
-      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
-        with:
-          name: catalog
-          path: dist/catalog/
-      - uses: actions/upload-pages-artifact@56afc609e74202658d3ffba0e8f6dda462b719fa # v3.0.1
-        with:
-          path: dist/catalog/
-      - uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5

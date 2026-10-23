@@ -3,7 +3,7 @@
 // the log on disk and its level, crash reports, backups, updates from the signed catalog, and
 // `/metrics`. The runtime joins them to the services they read.
 import { monitorEventLoopDelay } from 'node:perf_hooks'
-import type { Catalog, HighseaRelease } from '@highsea-tv/catalog'
+import { type Catalog, compareAppVersions, type HighseaRelease } from '@highsea-tv/catalog'
 import {
   AppError,
   type Clock,
@@ -95,34 +95,8 @@ const backupInput = z.object({
   folder: z.string().min(1).max(4000),
 })
 
-const APP_VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/
-
-/** SemVer 2.0.0 § 11's precedence, without build metadata. Negative when `a` is older. */
-export function compareAppVersions(a: string, b: string): number {
-  const pa = APP_VERSION.exec(a)
-  const pb = APP_VERSION.exec(b)
-  if (!pa || !pb) return 0
-  for (let i = 1; i <= 3; i++) {
-    const d = Number(pa[i]) - Number(pb[i])
-    if (d) return d
-  }
-  const [ra, rb] = [pa[4], pb[4]]
-  if (ra === rb) return 0
-  if (ra === undefined) return 1
-  if (rb === undefined) return -1
-  const xa = ra.split('.')
-  const xb = rb.split('.')
-  for (let i = 0; i < Math.max(xa.length, xb.length); i++) {
-    const [x, y] = [xa[i], xb[i]]
-    if (x === undefined) return -1
-    if (y === undefined) return 1
-    const [nx, ny] = [/^\d+$/.test(x), /^\d+$/.test(y)]
-    if (nx && ny && Number(x) !== Number(y)) return Number(x) - Number(y)
-    if (nx !== ny) return nx ? -1 : 1
-    if (x !== y) return x < y ? -1 : 1
-  }
-  return 0
-}
+// SemVer's precedence lives with the release format, so scripts/release.ts compares the same way
+export { compareAppVersions }
 
 /** What the HTTP layer hands the registry for each request. */
 export type HttpObservation = { method: string; route: string; status: number; seconds: number }

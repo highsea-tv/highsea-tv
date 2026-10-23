@@ -7,6 +7,9 @@ import { afterEach, describe, expect, test } from 'bun:test'
 import { existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { generateSigningKey } from '@highsea-tv/catalog'
+import { buildCatalog, writeCatalog } from '@highsea-tv/catalog/build'
+import { createStaticHost } from '@highsea-tv/catalog/static-host'
 import { createFakeClock, createLogger, type ServerEvent } from '@highsea-tv/core'
 import { migrate, migrations, openDatabase, readSetting, writeSetting } from '@highsea-tv/db'
 import {
@@ -53,6 +56,8 @@ async function start(
     memory: options.memory ?? true,
     manualTicks: true,
     torrent: { offline: true },
+    // no seed, so the releases a real seed carries don't decide what these tests see
+    catalog: { seedDir: null },
     clock: options.clock,
     restart: () => restarts.push(1),
   })
@@ -330,6 +335,70 @@ describe('updates', () => {
     ])
     rt.operations.general.update({ ...rt.operations.general.get(), updateChannel: 'beta' })
     expect(rt.operations.updates().latest?.version).toBe('0.3.0-beta.1')
+  })
+
+  test('a server on 0.1.0 learns of 0.1.1 from a signed catalog, and says so once', async () => {
+    // the catalog as checkpoint 9's release builds it: releases.json beside a new CHANGES.md entry
+    const key = generateSigningKey()
+    const published = (versions: string[], releases: object[]) => {
+      const root = temp()
+      mkdirSync(join(root, 'definitions'))
+      mkdirSync(join(root, 'beta'))
+      writeFileSync(
+        join(root, 'CHANGES.md'),
+        `# Changes\n\n${versions.map((v) => `## ${v}\n\n- Changes in ${v}.\n`).join('\n')}`,
+      )
+      writeFileSync(join(root, 'releases.json'), JSON.stringify(releases))
+      writeCatalog(buildCatalog({ root }, { privateKey: key.privateKey, keyId: 'release' }), host)
+    }
+    const host = temp()
+    const dir = temp()
+    const rt = await boot({
+      config: loadConfig({
+        HIGHSEA_CONFIG_DIR: join(dir, 'config'),
+        HIGHSEA_DATA_DIR: join(dir, 'data'),
+      }),
+      version: '0.1.0',
+      quiet: true,
+      memory: true,
+      manualTicks: true,
+      torrent: { offline: true },
+      fetch: createStaticHost(host),
+      catalog: {
+        seedDir: null,
+        mainUrl: 'https://catalog.test',
+        trustedKeys: [{ id: 'release', publicKey: key.publicKey }],
+      },
+    })
+    const seen: ServerEvent[] = []
+    rt.events.subscribe((e) => seen.push(e))
+    const announced = () =>
+      seen.filter((e) => e.topic === 'updates.available').map((e) => e.ids?.[0])
+
+    const first = { version: '0.1.0', channel: 'stable', date: '2026-11-02', notes: ['First.'] }
+    published(['2026.11.2'], [first])
+    await rt.catalog.check()
+    expect(rt.operations.updates()).toMatchObject({
+      latest: { version: '0.1.0' },
+      available: false,
+    })
+
+    const fix = {
+      version: '0.1.1',
+      channel: 'stable',
+      date: '2026-11-09',
+      notes: ['Fixes the calendar.'],
+      url: 'https://github.com/highsea-tv/highsea-tv/releases/tag/v0.1.1',
+    }
+    published(['2026.11.9', '2026.11.2'], [fix, first])
+    await rt.catalog.check()
+    await rt.catalog.check()
+    expect(rt.operations.updates()).toMatchObject({
+      current: '0.1.0',
+      available: true,
+      latest: { version: '0.1.1', notes: ['Fixes the calendar.'] },
+    })
+    expect(announced()).toEqual(['0.1.1'])
   })
 
   test('versions compare as SemVer says', () => {

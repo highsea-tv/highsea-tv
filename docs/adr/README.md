@@ -52,5 +52,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0046](0046-notifications.md) | Notifications: the event catalogue, channels as code, delivery, email and web push | Accepted |
 | [0047](0047-operations.md) | The owner's tools: backups and restore, the log, crash reports, updates and /metrics | Accepted |
 | [0048](0048-curation.md) | Curation: announcements and featured sections, resolved per person and app | Accepted |
+| [0049](0049-smart-collections.md) | Smart collections: rules compiled to SQL, evaluated when read | Accepted |
+| [0050](0050-release-and-versioning.md) | Release and versioning: one SemVer version, two channels, a prepared commit and a gated workflow | Accepted |
 
 Template: copy [`template.md`](template.md).

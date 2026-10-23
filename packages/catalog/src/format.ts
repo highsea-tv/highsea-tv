@@ -49,7 +49,7 @@ export const changeSchema = z.object({
 export type CatalogChange = z.infer<typeof changeSchema>
 
 /** highsea's own versions: `1.0.1`, or `1.1.0-beta.2` on the beta channel. */
-const APP_VERSION = /^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/
+const APP_VERSION = /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z.-]+))?$/
 
 /**
  * A highsea release, for System › Updates (checkpoint 8b, the owner's answer 11): the server learns
@@ -66,6 +66,33 @@ export const releaseSchema = z.object({
   url: z.url({ protocol: /^https$/ }).optional(),
 })
 export type HighseaRelease = z.infer<typeof releaseSchema>
+
+/** SemVer 2.0.0 § 11's precedence, without build metadata. Negative when `a` is older. */
+export function compareAppVersions(a: string, b: string): number {
+  const pa = APP_VERSION.exec(a)
+  const pb = APP_VERSION.exec(b)
+  if (!pa || !pb) return 0
+  for (let i = 1; i <= 3; i++) {
+    const d = Number(pa[i]) - Number(pb[i])
+    if (d) return d
+  }
+  const [ra, rb] = [pa[4], pb[4]]
+  if (ra === rb) return 0
+  if (ra === undefined) return 1
+  if (rb === undefined) return -1
+  const xa = ra.split('.')
+  const xb = rb.split('.')
+  for (let i = 0; i < Math.max(xa.length, xb.length); i++) {
+    const [x, y] = [xa[i], xb[i]]
+    if (x === undefined) return -1
+    if (y === undefined) return 1
+    const [nx, ny] = [/^\d+$/.test(x), /^\d+$/.test(y)]
+    if (nx && ny && Number(x) !== Number(y)) return Number(x) - Number(y)
+    if (nx !== ny) return nx ? -1 : 1
+    if (x !== y) return x < y ? -1 : 1
+  }
+  return 0
+}
 
 export const manifestSchema = z.object({
   format: z.literal(CATALOG_FORMAT),

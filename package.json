@@ -18,6 +18,7 @@
     "explorations": "bunx serve design/explorations -l 4400",
     "storybook": "bun run --filter @highsea-tv/storybook storybook",
     "prototypes": "bun run --filter @highsea-tv/prototypes dev",
+    "docs": "bun run --filter @highsea-tv/docs dev",
     "licenses": "bun scripts/license-audit.ts",
     "audit": "bun scripts/audit.ts",
     "server": "bun run --filter @highsea-tv/server dev",
