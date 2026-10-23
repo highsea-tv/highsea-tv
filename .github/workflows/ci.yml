@@ -75,6 +75,11 @@ jobs:
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
           bun-version: 1.4.2
+      # the test's connections run under Node, as highsea does: Bun reports a route's EHOSTUNREACH
+      # as ECONNREFUSED (packages/vpn/test/leak.test.ts)
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
       - run: bun install --frozen-lockfile
       - name: Install wireguard-tools and iproute2
         run: sudo apt-get update && sudo apt-get install -y --no-install-recommends wireguard-tools iproute2

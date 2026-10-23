@@ -10,13 +10,16 @@
 // 3. with the interface down, nothing from the tunnel's address leaves at all;
 // 4. a socket that isn't bound (the admin, TMDB) still uses the main table.
 //
+// The connections run under Node, as highsea does, not Bun's node:net: Bun 1.4 reports a connect
+// that the kernel refuses with EHOSTUNREACH as ECONNREFUSED (seen side by side on one unreachable
+// route), and ECONNREFUSED would also be what a packet that got out and met a closed port gives.
+//
 // It needs Linux, root (or NET_ADMIN), kernel WireGuard and wireguard-tools, so it runs only when
 // HIGHSEA_LEAK_TEST=1 says the machine is meant for it: CI's leak job, under sudo. Anywhere else it
 // skips and says why. It changes the host's network while it runs, and removes everything after.
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
 import { spawn, spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
-import net from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { createTunnel, generateWireGuardKeys, spawnRunner, type TunnelSpec } from '../src/index.ts'
@@ -48,17 +51,32 @@ function sh(program: string, args: string[], input?: string) {
 const inNs = (program: string, args: string[], input?: string) =>
   sh('ip', ['netns', 'exec', NS, program, ...args], input)
 
+/** The connection, run by Node: prints the peer's line, or the error's code. */
+const ASK = `
+const [host, port, localAddress] = process.argv.slice(1)
+const socket = require('node:net').connect({ host, port: Number(port), ...(localAddress ? { localAddress } : {}) })
+let data = ''
+socket.setTimeout(4000, () => socket.destroy(Object.assign(new Error('timed out'), { code: 'ETIMEDOUT' })))
+socket.on('data', (c) => { data += c })
+socket.on('end', () => console.log(JSON.stringify({ data: data.trim() })))
+socket.on('error', (e) => console.log(JSON.stringify({ code: e.code })))
+`
+
 /** Connects from `localAddress` (or none) and reads the line the peer's server answers. */
 function ask(host: string, localAddress?: string): Promise<string> {
   return new Promise((resolve, reject) => {
-    const socket = net.connect({ host, port: PORT, ...(localAddress ? { localAddress } : {}) })
-    let data = ''
-    socket.setTimeout(4_000, () => socket.destroy(new Error('ETIMEDOUT')))
-    socket.on('data', (c) => {
-      data += c.toString()
+    const args = ['-e', ASK, host, String(PORT), ...(localAddress ? [localAddress] : [])]
+    const node = spawn('node', args, { stdio: ['ignore', 'pipe', 'inherit'] })
+    let out = ''
+    node.stdout.on('data', (c: Buffer) => {
+      out += c.toString()
     })
-    socket.on('end', () => resolve(data.trim()))
-    socket.on('error', reject)
+    node.on('error', reject)
+    node.on('close', () => {
+      const r = JSON.parse(out || '{"code":"no answer"}') as { data?: string; code?: string }
+      if (r.data !== undefined) resolve(r.data)
+      else reject(Object.assign(new Error(`connect ${r.code}`), { code: r.code }))
+    })
   })
 }
 
