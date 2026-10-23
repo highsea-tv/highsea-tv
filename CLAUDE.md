@@ -17,6 +17,7 @@ highsea is a self-hosted replacement for the *ARR suite (Radarr, Sonarr, Prowlar
     - **Also done in 9a, signed off on 2026-10-22:** the slim image for amd64 and arm64 (`scripts/image.ts`, ADR 0003's 9a amendment) with OCI labels, provenance and an SBOM, checked in CI and never pushed; the compose files on `ghcr.io/highsea-tv/highsea` and the NAS templates in `templates/`; the end-to-end run through the container (`scripts/e2e/`, `compose.e2e.yaml`, `e2e.yml`); the dependency check (`bun run audit`); and the missing 100k cases. The plan's Progress section has the details and what was left open.
     - **9b, built and waiting for the owner's review:** the version scheme and ADR 0050 (one SemVer version, `apps/server`'s; stable and beta channels), `CHANGELOG.md`, `scripts/release.ts` (a release is prepared in a commit) and `.github/workflows/release.yml` (dry unless switched off; the keyed jobs wait in the approval-gated `release` environment), the catalog's production address `https://catalog.highsea.tv`, and the guides in `apps/docs` (Fumadocs, a static export). The owner's steps before the first publish are in `catalog/keys/README.md`. Nothing else is published, tagged or deployed until the owner says so.
     - **The docs are live (2026-10-23):** on the owner's word, `docs.highsea.tv` serves `apps/docs` from Vercel's `highsea-docs` project, which deploys every push to `main`. Its record is a DNS-only CNAME in Cloudflare, which holds `highsea.tv`'s DNS; `wiki.highsea.tv` redirects to it. The guides cover installing (under `/install/`) and every page and Settings area of the admin, as 0.1.0 has them. The image, the catalog, tags and releases are still unpublished, so the guides describe an image that isn't on GHCR yet.
+- **Phase 4** (playback and the client apps): scoped in [docs/plans/phase-4-clients.md](docs/plans/phase-4-clients.md), with the owner's answers of 2026-10-23: movies only; the web client at `/web` in Vite and React; checkpoints for server playback, web, hardware acceleration and sessions, desktop, TV, then mobile; 1.0.0 when all four apps are done. Nothing in it is built before Phase 3 is signed off (9b's review, then 9c).
 - **Follow-up after Phase 3:** dashboard customization on Homarr's level, with a visible grid ([docs/plans/dashboard-customization.md](docs/plans/dashboard-customization.md)). Not scheduled; a prototype is approved first.
 
 Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2, 0027–0028 with checkpoint 3, 0029–0031 with checkpoint 4, 0032 with the admin-access work, 0033–0035 with checkpoint 5, 0036 (domain packages with subpath exports) at its review, 0037–0040 and 0042 with checkpoint 6a, 0041 (the migration importers) with 6b, which also added dated 6b sections to 0037, 0039 and 0042, 0043 (subtitles) with 7a, 0044 (the subtitle sync engine) with 7b, which also amended 0040, 0045 (automation) with 8a, 0046 (notifications) and 0047 (operations) with 8b, 0048 (curation) with 8c, 0049 (smart collections) with 8d, and 0050 (release and versioning) with 9b, which also added a dated section to 0034.
@@ -77,6 +78,16 @@ bun scripts/release.ts check 0.1.0     # what the release workflow checks first 
 ```
 
 Browser sweeps are in [scripts/sweeps](scripts/sweeps/README.md) (the server they boot and seed is `scripts/sweeps/seeded.ts`, which the guides' screenshots share): axe in three themes, overflow, 200% text, reduced motion, and the keyboard and D-pad walks. They cover the prototypes and, with `bun scripts/sweeps/server.ts`, the server's real admin pages. Run them before each checkpoint report.
+
+## Skills
+
+The repeated workflows are project skills in `.claude/skills/`, which either of us can run:
+
+- the gate loop: `/scope`, `/questions`, `/checkpoint-report` and `/signoff` (owner-only: it commits and pushes);
+- `/checks` (quick or full, under Node 24.21);
+- `/guide`, `/adr`, `/add-dependency`, `/port-screen` and `/handoff`.
+
+When a rule here changes, update the skill that repeats it.
 
 Before reporting a checkpoint, run all of these:
 - `bun run lint && bun run typecheck && bun run test`;

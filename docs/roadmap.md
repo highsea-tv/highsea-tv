@@ -374,6 +374,8 @@ It follows Phase 3's sign-off, with its new customize mode prototyped and approv
 ## Phase 4 (later): clients
 `ui-native`, then `apps/web` → `apps/desktop` (Tauri) → `apps/mobile` + `apps/tv` (Expo / react-native-tvos), built from the Phase 2 prototypes. Alongside them: `stream` (playback/transcode, WebSockets), TV/music/books domains, Usenet, requests, and the optional Connect relay.
 
+The step-by-step plan, with checkpoints, is [`docs/plans/phase-4-clients.md`](plans/phase-4-clients.md) (the owner answered its questions on 2026-10-23). It covers playback and the four clients for movies; the other media types, requests, Usenet and the relay are later phases of their own. It starts only after Phase 3's sign-off.
+
 ---
 
 ## Gap analysis: what a true end-to-end replacement still needs

@@ -49,3 +49,8 @@ next-env.d.ts
 
 # the local link to the Vercel project for docs.highsea.tv (vercel link)
 .vercel
+
+# Claude Code: the skills are shared; local settings and worktrees are not
+.claude/settings.local.json
+.claude/worktrees/
+.claude/.cc-writes/
