@@ -12,7 +12,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { attestationProblems, pruneOtherLibc } from './image.ts'
+import { attestationProblems, type Inspect, pruneOtherLibc, publishedProblems } from './image.ts'
 
 const dirs: string[] = []
 const temp = () => {
@@ -166,6 +166,75 @@ describe('attestationProblems', () => {
     ).toEqual([
       "linux/arm64: the description is over GitHub's 512 characters",
       'linux/arm64: no SBOM',
+    ])
+  })
+})
+
+describe('publishedProblems', () => {
+  // what `docker buildx imagetools inspect` printed for an image pushed by digest to a local
+  // registry (buildx 0.37.2): the index, the attestation manifest, and the image's config
+  const IMAGE = 'sha256:b8359dbf4df354c005203fc301ec6496d7e52b92a73f671bdaf03be2da1dd6ed'
+  const ATTESTATION = 'sha256:ad8f30548cb88e63b932877f87f33ccc08fcd11dd634621bd1a7e893ff91aa50'
+  const INDEX = 'sha256:0e8da0c9f76b55144681b39f82a4027f122b14ac58ebb4236a058c82955214bb'
+  const index = {
+    manifests: [
+      {
+        mediaType: 'application/vnd.oci.image.manifest.v1+json',
+        digest: IMAGE,
+        platform: { architecture: 'arm64', os: 'linux' },
+      },
+      {
+        mediaType: 'application/vnd.oci.image.manifest.v1+json',
+        digest: ATTESTATION,
+        annotations: {
+          'vnd.docker.reference.digest': IMAGE,
+          'vnd.docker.reference.type': 'attestation-manifest',
+        },
+        platform: { architecture: 'unknown', os: 'unknown' },
+      },
+    ],
+  }
+  const attestation = {
+    layers: ['https://spdx.dev/Document', 'https://slsa.dev/provenance/v1'].map((p) => ({
+      annotations: { 'in-toto.io/predicate-type': p },
+    })),
+  }
+  function registry(labels: Record<string, string>): { inspect: Inspect; asked: string[] } {
+    const asked: string[] = []
+    const inspect: Inspect = (ref, args) => {
+      asked.push(`${ref} ${args.join(' ')}`)
+      if (args[0] === '--format') return JSON.stringify({ config: { Labels: labels } })
+      if (ref.endsWith(INDEX)) return JSON.stringify(index)
+      if (ref.endsWith(ATTESTATION)) return JSON.stringify(attestation)
+      throw new Error(`not in the registry: ${ref}`)
+    }
+    return { inspect, asked }
+  }
+
+  test('reads the pushed index, its attestations and the image’s labels from the registry', () => {
+    const { inspect, asked } = registry({
+      'org.opencontainers.image.source': 'https://github.com/highsea-tv/highsea-tv',
+      'org.opencontainers.image.description': 'highsea.',
+      'org.opencontainers.image.licenses': 'AGPL-3.0-only',
+    })
+    const result = publishedProblems(`ghcr.io/highsea-tv/highsea@${INDEX}`, inspect)
+    expect(result).toEqual({
+      problems: [],
+      found: ['linux/arm64: labels, https://spdx.dev/Document, https://slsa.dev/provenance/v1'],
+    })
+    expect(asked).toEqual([
+      `ghcr.io/highsea-tv/highsea@${INDEX} --raw`,
+      `ghcr.io/highsea-tv/highsea@${IMAGE} --format {{json .Image}}`,
+      `ghcr.io/highsea-tv/highsea@${ATTESTATION} --raw`,
+    ])
+  })
+
+  test('names the labels a pushed image lacks', () => {
+    const { inspect } = registry({})
+    expect(publishedProblems(`ghcr.io/highsea-tv/highsea@${INDEX}`, inspect).problems).toEqual([
+      'linux/arm64: no org.opencontainers.image.source label',
+      'linux/arm64: no org.opencontainers.image.description label',
+      'linux/arm64: no org.opencontainers.image.licenses label',
     ])
   })
 })

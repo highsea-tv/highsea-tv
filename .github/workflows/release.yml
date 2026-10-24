@@ -197,12 +197,20 @@ jobs:
             trakt_secret=${{ secrets.HIGHSEA_TRAKT_CLIENT_SECRET }}
           provenance: mode=min
           sbom: true
-          # an OCI layout to check and keep, and, for a real release, the image pushed by digest
-          outputs: |
-            type=oci,dest=${{ runner.temp }}/highsea-oci,tar=false
-            ${{ !inputs.dry-run && format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.IMAGE) || '' }}
+          # A dry run writes an OCI layout to check and keep; a real release pushes by digest, as
+          # Docker's multi-platform guide does, and nothing else. Both at once leave the layout's
+          # index.json naming the pushed manifest list, whose attestation manifest differs from the
+          # layout's and isn't in it (buildx 0.37.2, seen in 0.1.0's first run and again locally)
+          outputs: ${{ inputs.dry-run && format('type=oci,dest={0}/highsea-oci,tar=false', runner.temp) || format('type=image,name={0},push-by-digest=true,name-canonical=true,push=true', env.IMAGE) }}
       - name: Labels and attestations are there
+        if: ${{ inputs.dry-run }}
         run: bun scripts/image.ts attestations "$RUNNER_TEMP/highsea-oci"
+      # what was pushed, read back from GHCR
+      - name: Labels and attestations are there, in GHCR
+        if: ${{ !inputs.dry-run }}
+        run: bun scripts/image.ts published "$IMAGE@$DIGEST"
+        env:
+          DIGEST: ${{ steps.build.outputs.digest }}
       - name: The digest, for the merge
         if: ${{ !inputs.dry-run }}
         run: |
