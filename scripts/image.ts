@@ -28,7 +28,7 @@
 // fakes behind HIGHSEA_SUBTITLES_FAKE and HIGHSEA_LISTS_FAKE, and TMDB's recordings, are for a
 // checkout), and every dev dependency.
 //
-// Two checks CI runs on the built image (.github/workflows/ci.yml):
+// The checks CI and the release run on the built image (.github/workflows/ci.yml, release.yml):
 //
 //   bun scripts/image.ts size <image> <budget in MB>
 //     Lists the image's largest folders, and fails above the budget (the plan's size check).
@@ -38,6 +38,8 @@
 //     manifest beside the image's, marked `vnd.docker.reference.type: attestation-manifest`, each
 //     layer an in-toto statement named by `in-toto.io/predicate-type`
 //     (https://docs.docker.com/build/metadata/attestations/attestation-storage/).
+//   bun scripts/image.ts published <name@digest>
+//     The same check on an image a release pushed, read from the registry (release.yml).
 import { spawnSync } from 'node:child_process'
 import {
   cpSync,
@@ -291,15 +293,16 @@ const LABELS = [
 const PROVENANCE = /^https:\/\/slsa\.dev\/provenance\//
 const SBOM = 'https://spdx.dev/Document'
 
-/** What an OCI layout's image lacks, and what each platform has. */
-export function attestationProblems(layout: string): { problems: string[]; found: string[] } {
-  const blob = <T>(d: Descriptor) =>
-    JSON.parse(readFileSync(join(layout, 'blobs', ...d.digest.split(':')), 'utf8')) as T
-  const top = JSON.parse(readFileSync(join(layout, 'index.json'), 'utf8')) as Index
-  // the exporter's index points at the image's own index, which holds the image and its attestations
-  const manifests = top.manifests.flatMap((d) =>
-    d.mediaType.endsWith('image.index.v1+json') ? blob<Index>(d).manifests : [d],
-  )
+/** Where the check reads an image from: its index's entries, a manifest, and an image's labels. */
+type ImageReader = {
+  manifests: () => Descriptor[]
+  manifest: (d: Descriptor) => ImageManifest
+  labels: (d: Descriptor) => Record<string, string>
+}
+
+/** What an image lacks, and what each platform has. */
+function imageProblems(read: ImageReader): { problems: string[]; found: string[] } {
+  const manifests = read.manifests()
   const problems: string[] = []
   const found: string[] = []
   const images = manifests.filter(
@@ -311,10 +314,7 @@ export function attestationProblems(layout: string): { problems: string[]; found
   if (!images.length) problems.push('no image manifest')
   for (const d of images) {
     const platform = `${d.platform?.os}/${d.platform?.architecture}`
-    const config = blob<{ config?: { Labels?: Record<string, string> } }>(
-      blob<ImageManifest>(d).config,
-    )
-    const labels = config.config?.Labels ?? {}
+    const labels = read.labels(d)
     for (const l of LABELS) if (!labels[l]) problems.push(`${platform}: no ${l} label`)
     const description = labels['org.opencontainers.image.description'] ?? ''
     if (description.length > 512)
@@ -324,9 +324,9 @@ export function attestationProblems(layout: string): { problems: string[]; found
       problems.push(`${platform}: no attestations`)
       continue
     }
-    const kinds = blob<ImageManifest>(mine).layers.map(
-      (l) => l.annotations?.['in-toto.io/predicate-type'] ?? '',
-    )
+    const kinds = read
+      .manifest(mine)
+      .layers.map((l) => l.annotations?.['in-toto.io/predicate-type'] ?? '')
     if (!kinds.some((k) => PROVENANCE.test(k))) problems.push(`${platform}: no provenance`)
     if (!kinds.includes(SBOM)) problems.push(`${platform}: no SBOM`)
     found.push(`${platform}: labels, ${kinds.join(', ')}`)
@@ -334,8 +334,58 @@ export function attestationProblems(layout: string): { problems: string[]; found
   return { problems, found }
 }
 
-function attestations(layout: string) {
-  const { problems, found } = attestationProblems(layout)
+/** What an OCI layout's image lacks, and what each platform has. */
+export function attestationProblems(layout: string): { problems: string[]; found: string[] } {
+  const blob = <T>(d: Descriptor) =>
+    JSON.parse(readFileSync(join(layout, 'blobs', ...d.digest.split(':')), 'utf8')) as T
+  return imageProblems({
+    // the exporter's index points at the image's own index, which holds the image and its attestations
+    manifests: () =>
+      (JSON.parse(readFileSync(join(layout, 'index.json'), 'utf8')) as Index).manifests.flatMap(
+        (d) => (d.mediaType.endsWith('image.index.v1+json') ? blob<Index>(d).manifests : [d]),
+      ),
+    manifest: (d) => blob<ImageManifest>(d),
+    labels: (d) =>
+      blob<{ config?: { Labels?: Record<string, string> } }>(blob<ImageManifest>(d).config).config
+        ?.Labels ?? {},
+  })
+}
+
+/** `docker buildx imagetools inspect` on a reference, with its arguments: it reads the registry. */
+export type Inspect = (ref: string, args: string[]) => string
+
+const imagetools: Inspect = (ref, args) => {
+  const run = spawnSync('docker', ['buildx', 'imagetools', 'inspect', ref, ...args], {
+    encoding: 'utf8',
+  })
+  if (run.status !== 0) throw new Error(`Can't inspect ${ref}: ${run.stderr}`)
+  return run.stdout
+}
+
+/**
+ * The same check on an image pushed to a registry (`name@sha256:…`): its index and attestation
+ * manifests with `--raw`, and each image's config, labels and all, with `--format '{{json .Image}}'`
+ * (https://docs.docker.com/reference/cli/docker/buildx/imagetools/inspect/).
+ */
+export function publishedProblems(
+  ref: string,
+  inspect: Inspect = imagetools,
+): { problems: string[]; found: string[] } {
+  const name = ref.slice(0, ref.lastIndexOf('@'))
+  const at = (d: Descriptor) => `${name}@${d.digest}`
+  return imageProblems({
+    manifests: () => (JSON.parse(inspect(ref, ['--raw'])) as Index).manifests,
+    manifest: (d) => JSON.parse(inspect(at(d), ['--raw'])) as ImageManifest,
+    labels: (d) =>
+      (
+        JSON.parse(inspect(at(d), ['--format', '{{json .Image}}'])) as {
+          config?: { Labels?: Record<string, string> }
+        }
+      ).config?.Labels ?? {},
+  })
+}
+
+function attestations({ problems, found }: { problems: string[]; found: string[] }) {
   for (const line of found) console.log(line)
   if (problems.length) {
     console.error(`The image's metadata is incomplete:\n- ${problems.join('\n- ')}`)
@@ -348,10 +398,11 @@ if (import.meta.main) {
   const self = relative(process.cwd(), import.meta.path)
   if (command === 'production' && a && b) production(a, b)
   else if (command === 'size' && a && Number(b) > 0) size(a, Number(b))
-  else if (command === 'attestations' && a) attestations(a)
+  else if (command === 'attestations' && a) attestations(attestationProblems(a))
+  else if (command === 'published' && a) attestations(publishedProblems(a))
   else {
     console.error(
-      `Usage: bun ${self} production <from> <to>\n       bun ${self} size <image> <budget in MB>\n       bun ${self} attestations <OCI layout folder>`,
+      `Usage: bun ${self} production <from> <to>\n       bun ${self} size <image> <budget in MB>\n       bun ${self} attestations <OCI layout folder>\n       bun ${self} published <name@digest>`,
     )
     process.exit(1)
   }
