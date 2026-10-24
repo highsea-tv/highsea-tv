@@ -281,7 +281,7 @@ A survey of the repository on 2026-10-22.
   - **Checks, under Node 24.21:** lint (1,241 files); typecheck; 11,403 tests pass (6 skipped, 0 failing) across 187 files; smoke; licences (863 packages); audit (718 packages, three Next advisories excepted until 2026-10-28); the docs build; the sweeps clean against the production build (1,472 prototype pages, 158 keyboard walks, the D-pad, and the server's admin pages).
   - **2026-10-23, the owner's answers at 9c's gate:** the four unbuilt parts of [M1] items are left for later, and the list of what Phase 3 leaves behind stands as written (both as recommended).
 - **2026-10-23, 9c and Phase 3 signed off by the owner.** The first publish waits for the owner's word.
-- **2026-10-24, 0.1.0 published on the owner's word.** The release workflow's real run pushed `ghcr.io/highsea-tv/highsea` as `0.1.0`, `0.1` and `latest` for amd64 and arm64, deployed the catalog to `catalog.highsea.tv`, and tagged `v0.1.0` with its GitHub release. What the dry runs didn't catch:
+- **2026-10-23, 0.1.0 published on the owner's word.** The release workflow's real run pushed `ghcr.io/highsea-tv/highsea` as `0.1.0`, `0.1` and `latest` for amd64 and arm64, deployed the catalog to `catalog.highsea.tv`, and tagged `v0.1.0` with its GitHub release. What the dry runs didn't catch:
   - **The catalog job checked trust before signing,** so it read the committed seed, signed with the development key. It now signs first, then checks.
   - **Two outputs in one build.** With the OCI layout and the push in one build, the layout's `index.json` named the pushed manifest list, whose attestation manifest differs and isn't in the layout (buildx 0.37.2, reproduced locally). A dry run now writes the layout and checks it; a real release only pushes, and `scripts/image.ts published` checks the image read back from GHCR.
   - **HTTPS for the catalog.** The custom domain was set before its DNS record pointed at GitHub, and no certificate followed. Removing and re-adding it, as GitHub's troubleshooting page advises, brought a Let's Encrypt certificate; HTTPS is enforced.
@@ -296,7 +296,7 @@ From the owner's decision of 2026-10-22. The owner owns `highsea.tv`. Its root i
 | --- | --- | --- |
 | `highsea.tv` | The marketing page | Later; not part of milestone 1 |
 | `docs.highsea.tv` | The public documentation site (`apps/docs`), on Vercel; `wiki.highsea.tv` redirects to it | Live since 2026-10-23, deployed from every push to `main`, with the redirect |
-| `catalog.highsea.tv` | The signed catalog's `stable` and `beta` channels, on GitHub Pages | 9b; deployed at the first publish, 2026-10-24 |
+| `catalog.highsea.tv` | The signed catalog's `stable` and `beta` channels, on GitHub Pages | 9b; deployed at the first publish, 2026-10-23 |
 | `api.highsea.tv` | Machine-facing services. Today it holds only Trakt's registered redirect, `https://api.highsea.tv/oauth/trakt`, which the device flow never visits. Later it holds the relay, push and the metadata proxy | Registered with Trakt on 2026-10-22; nothing is served yet |
 | `app.highsea.tv` | Kept free for a hosted web client and accounts | Phase 4 |
 
