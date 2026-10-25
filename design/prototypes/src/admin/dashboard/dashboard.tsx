@@ -5,12 +5,6 @@
 // default for admins.
 
 import {
-  allowed,
-  roleDefault,
-  widgetDefinition,
-  widgetDefinitions,
-} from '@highsea-tv/personalization/widgets'
-import {
   Button,
   EmptyState,
   Icon,
@@ -28,6 +22,7 @@ import {
 import { useEffect, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { StaffRole, WidgetKind, WidgetPlacement } from '../../mock/types.ts'
+import { allowed, roleDefault, widgetDefinition, widgetDefinitions } from '../../mock/widgets.ts'
 import { AdminPage, useShell } from '../shell.tsx'
 import { widgetRenderers } from './widgets.tsx'
 

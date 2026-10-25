@@ -21,7 +21,7 @@
   "devDependencies": {
     "@highsea-tv/config": "workspace:*",
     "@types/better-sqlite3": "9.6.0",
-    "@types/node": "25.9.9",
+    "@types/node": "26.6.5",
     "drizzle-kit": "0.31.11"
   }
 }

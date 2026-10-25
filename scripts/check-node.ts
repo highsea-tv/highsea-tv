@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The one Node version highsea runs and is tested on: `.nvmrc`, which CI (`node-version-file`) and
-// the Docker image (`node:24.21.0-bookworm-slim`) match. better-sqlite3 is a native addon built for
+// the Docker image (`node:26.11.1-trixie-slim`) match. better-sqlite3 is a native addon built for
 // one Node, and the platform's behaviour is only checked on this one, so anything that runs the
 // server under Node checks first: `node scripts/check-node.ts`, or `assertNodeVersion()`.
 import { readFileSync } from 'node:fs'

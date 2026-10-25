@@ -18,6 +18,12 @@ import {
   trickplayAt,
   usePlayer,
 } from '../client/player.ts'
+import {
+  NextUp,
+  type StreamAction,
+  StreamMessage,
+  StreamWaiting,
+} from '../client/stream-states.tsx'
 import { webHref } from './shell.tsx'
 
 const glassButton =
@@ -247,6 +253,13 @@ export function Scrubber({ player }: { player: Player }) {
   )
 }
 
+/** The stream states' buttons on web and desktop. */
+export const webStreamAction: StreamAction = ({ primary, initial, onClick, children }) => (
+  <Button variant={primary ? 'primary' : 'secondary'} autoFocus={initial} onClick={onClick}>
+    {children}
+  </Button>
+)
+
 export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
   const { id } = useParams<{ id: string }>()
   const [, navigate] = useLocation()
@@ -308,7 +321,8 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
     )
 
   const d = player.detail.data
-  const chrome = shown || !player.playing || panel
+  const waiting = player.stream === 'preparing' || player.stream === 'buffering'
+  const chrome = shown || !player.playing || panel || waiting
   return (
     // biome-ignore lint/a11y/noStaticElementInteractions: the player takes its keyboard shortcuts here
     <div
@@ -431,6 +445,15 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
         </div>
       </div>
       {panel && <TracksPanel player={player} onClose={() => setPanel(false)} />}
+      <StreamWaiting player={player} size="web" />
+      <StreamMessage player={player} size="web" action={webStreamAction} onBack={exit} />
+      <NextUp
+        player={player}
+        next={d?.related[0]}
+        size="web"
+        action={webStreamAction}
+        onPlay={(next) => navigate(`/play/${next}`)}
+      />
     </div>
   )
 }

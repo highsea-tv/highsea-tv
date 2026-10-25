@@ -29,7 +29,7 @@
   },
   "devDependencies": {
     "@highsea-tv/config": "workspace:*",
-    "@types/node": "25.9.9",
+    "@types/node": "26.6.5",
     "@types/web-push": "3.6.4"
   }
 }

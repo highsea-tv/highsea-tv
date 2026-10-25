@@ -99,6 +99,17 @@ export const areaGroups: { title: string; areas: Area[] }[] = [
     ],
   },
   {
+    title: 'Playback',
+    areas: [
+      {
+        id: 'playback',
+        label: 'Playback',
+        icon: 'speed',
+        description: 'Hardware acceleration, transcoding, streams away from home, and the cache.',
+      },
+    ],
+  },
+  {
     title: 'Downloads and alerts',
     areas: [
       {

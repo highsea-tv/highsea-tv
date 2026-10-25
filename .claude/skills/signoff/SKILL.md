@@ -25,7 +25,7 @@ The rules (the plan's standing rules, and `CLAUDE.md`):
 - **Everything in the working tree.** Check `git status` and include untracked files, apart from what `.gitignore` keeps out. Never `.env.local`. The owner once found files left out of a sign-off commit.
 - **No attribution or co-author lines**, whatever the tooling suggests.
 - **Subject:** imperative, sentence case, no full stop, saying what the change does for highsea. For a whole checkpoint it's `Phase 3 checkpoint 9a: <its name>`; for a sign-off on its own, `Record checkpoint 8b's sign-off, and start 8c`.
-- **Body:** a blank line, then `- ` bullets, one per area of change, each a plain sentence or two naming files and ADRs. The last bullet is the checks line from `/checks`, for example `- Checks under Node 24.21: lint, typecheck, 11,394 tests pass (6 skipped), smoke, licences, audit, the docs build and the sweeps clean`.
+- **Body:** a blank line, then `- ` bullets, one per area of change, each a plain sentence or two naming files and ADRs. The last bullet is the checks line from `/checks`, for example `- Checks under Node 26.11: lint, typecheck, 11,394 tests pass (6 skipped), smoke, licences, audit, the docs build and the sweeps clean`.
 - Read `git log -5 --format=%B` and match it.
 
 Pass the message through a heredoc so the bullets survive:
@@ -35,7 +35,7 @@ git add -A && git commit -F - <<'EOF'
 Subject line
 
 - First bullet
-- Checks under Node 24.21: …
+- Checks under Node 26.11: …
 EOF
 ```
 

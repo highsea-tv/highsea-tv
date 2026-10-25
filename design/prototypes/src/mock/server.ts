@@ -2,7 +2,7 @@
 // An in-memory highsea server: state, the handlers behind each API call, and a simulation driven by
 // the clock. Screens never touch this directly; they go through the client (client.ts).
 import { backdropArt, posterArt, stillArt } from '@highsea-tv/fixtures'
-import { allowed, normalize, roleDefault } from '@highsea-tv/personalization/widgets'
+
 import {
   type CustomFormat,
   customFormatSchema,
@@ -19,7 +19,9 @@ import {
   person,
   recommendations,
 } from './metadata.ts'
+import { type AccelerationPath, finishCheck, playbackStatus } from './playback.ts'
 import { GB, MB, type ServerState, seed } from './seed.ts'
+import { advanceSessions, type NowPlaying, type SessionView, type WatchView } from './sessions.ts'
 import type { Settings, SettingsSection } from './settings.ts'
 import type {
   AddMovieInput,
@@ -82,6 +84,7 @@ import type {
   WidgetPlacement,
 } from './types.ts'
 import { connectionFailure, type VpnSettings, vpnProviders, vpnStatus } from './vpn.ts'
+import { allowed, normalize, roleDefault } from './widgets.ts'
 
 export class ApiError extends Error {
   readonly status: number
@@ -473,6 +476,17 @@ export function createServer(
       events.emit({ type: 'health.updated' })
     }
 
+    // Settings › Playback: a hardware check takes a few seconds
+    for (const p of state.playback.paths)
+      if (p.checkingUntil > 0 && now >= p.checkingUntil) {
+        p.checkingUntil = 0
+        p.check = finishCheck(p, state.playback, now)
+        events.emit({ type: 'playback.updated' })
+      }
+
+    // Now playing: streams move on with the clock; a finished download leaves the list
+    if (advanceSessions(state.sessions, dt / 1000, now)) events.emit({ type: 'sessions.updated' })
+
     events.emit({ type: 'tick', now })
     if (torrentsChanged) events.emit({ type: 'torrents.updated' })
     if (queueChanged) events.emit({ type: 'queue.updated' })
@@ -669,6 +683,33 @@ export function createApi(srv: MockServer, ctx: Ctx) {
   const layoutKey = (scope: string) => `layout:${srv.kind}:${scope}`
   const currentVpn = () =>
     vpnStatus(state.settings.vpn, state.vpn, srv.clock.now(), state.settings.downloadClient.port)
+  const currentPlayback = () =>
+    playbackStatus(state.settings.playback, state.playback, srv.clock.now())
+  const who = (userId: string) => {
+    const u = state.users.find((x) => x.id === userId)
+    return { id: userId, displayName: u?.displayName ?? 'Someone' }
+  }
+  const what = (itemId: string) => {
+    const m = state.items.find((x) => x.id === itemId)
+    return {
+      id: itemId,
+      title: m?.title ?? 'Unknown',
+      year: m?.year ?? null,
+      poster: m?.art.poster ?? '',
+    }
+  }
+  const nowPlaying = (): NowPlaying => {
+    const sessions = state.sessions.live.map(
+      (s): SessionView => ({ ...s, user: who(s.userId), item: what(s.itemId) }),
+    )
+    const sending = sessions.filter((s) => !s.stopped && s.state === 'playing')
+    return {
+      sessions,
+      totalMbps: sending.reduce((n, s) => n + s.mbps, 0),
+      remoteMbps: sending.filter((s) => s.network === 'remote').reduce((n, s) => n + s.mbps, 0),
+      transcodes: sessions.filter((s) => !s.stopped && s.method === 'transcode').length,
+    }
+  }
   /**
    * New VPN settings: write-only secrets are taken in and dropped, then highsea connects again,
    * or fails with the step's copy.
@@ -756,6 +797,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       // nearly at the end counts as watched, not as something to resume
       progress: progress !== null && progress < 0.95 ? progress : null,
       tagline,
+      watched: progress !== null && progress >= 0.95,
     }
   }
   const watchable = () => state.items.filter(playable)
@@ -2604,6 +2646,21 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         } else state.watch.push({ userId: u, itemId: id, position, updatedAt: iso(now()) })
         srv.events.emit({ type: 'watch.updated' })
       },
+      /** Mark as watched (to the end) or unwatched (from the start), for this user. */
+      setWatched: (id: string, watched: boolean) => {
+        const u = me().id
+        const m = state.items.find((x) => x.id === id)
+        if (!m) throw new ApiError(404, 'not-found', 'That movie is no longer here.')
+        state.watch = state.watch.filter((x) => !(x.userId === u && x.itemId === id))
+        if (watched)
+          state.watch.push({
+            userId: u,
+            itemId: id,
+            position: m.runtimeMinutes * 60,
+            updatedAt: iso(now()),
+          })
+        srv.events.emit({ type: 'watch.updated' })
+      },
     },
 
     dashboard: {
@@ -2923,6 +2980,81 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
     },
 
+    sessions: {
+      /** Staff: who's watching what now, and how each stream is sent (docs/product/now-playing.md). */
+      list: () => {
+        requireStaff()
+        return nowPlaying()
+      },
+      /** Staff: what was watched in the last 30 days, newest first. */
+      history: (q: { userId?: string } = {}) => {
+        requireStaff()
+        return state.sessions.history
+          .filter((w) => !q.userId || w.userId === q.userId)
+          .map((w): WatchView => ({ ...w, user: who(w.userId), item: what(w.itemId) }))
+      },
+      /**
+       * Staff: stops a stream, with a message the person sees in the player. Its row stays a
+       * moment to say so, then goes. Stopping a download cancels it; the device can start it again.
+       */
+      stop: (id: string, message: string) => {
+        requireStaff()
+        const s = state.sessions.live.find((x) => x.id === id)
+        if (!s) throw new ApiError(404, 'not_found', 'That stream has already ended.')
+        const now = srv.clock.now()
+        s.stopped = { by: me().displayName, message: message.trim(), at: now }
+        srv.events.emit({ type: 'sessions.updated' })
+        return nowPlaying()
+      },
+      /** The prototype's own control: a transcode that can't keep up, to review that state. */
+      simulateSlow: () => {
+        requireStaff()
+        const s = state.sessions.live.find((x) => x.method === 'transcode' && x.kind === 'stream')
+        if (s) {
+          s.speed = 0.7
+          s.hardware = null
+        }
+        srv.events.emit({ type: 'sessions.updated' })
+        return nowPlaying()
+      },
+    },
+
+    transcoding: {
+      /** Staff (answer 6): what highsea found, what it uses, and the caches. */
+      status: () => {
+        requireStaff()
+        return currentPlayback()
+      },
+      /** Transcodes a short clip on one path and reports its speed. */
+      check: (id: AccelerationPath) => {
+        requireStaff()
+        const p = state.playback.paths.find((x) => x.id === id)
+        if (p && p.id !== 'videotoolbox') p.checkingUntil = srv.clock.now() + 3_000
+        srv.events.emit({ type: 'playback.updated' })
+        return currentPlayback()
+      },
+      /** Empties the transcode cache; streams that are playing make their segments again. */
+      clearCache: () => {
+        requireStaff()
+        state.playback.transcodeBytes = 0
+        srv.events.emit({ type: 'playback.updated' })
+        return currentPlayback()
+      },
+      /** The prototype's own control, to review a failed check; not in the API. */
+      simulateFailure: () => {
+        requireStaff()
+        state.playback.failNext = true
+        return currentPlayback()
+      },
+      /** The prototype's own control, to review the cache over its limit; not in the API. */
+      simulateFull: () => {
+        requireStaff()
+        state.playback.transcodeBytes = (state.settings.playback.cacheLimitGb + 3.4) * 1e9
+        srv.events.emit({ type: 'playback.updated' })
+        return currentPlayback()
+      },
+    },
+
     settings: {
       get: <K extends SettingsSection>(section: K): Settings[K] => {
         requireStaff()
@@ -2937,6 +3069,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         if (section === 'vpn') return saveVpn(value as VpnSettings) as Settings[K]
         state.settings[section] = value
         srv.events.emit({ type: 'settings.updated' })
+        if (section === 'playback') srv.events.emit({ type: 'playback.updated' })
         return value
       },
     },

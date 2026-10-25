@@ -19,6 +19,6 @@
   "devDependencies": {
     "@highsea-tv/catalog": "workspace:*",
     "@highsea-tv/config": "workspace:*",
-    "@types/node": "25.9.9"
+    "@types/node": "26.6.5"
   }
 }

@@ -20,8 +20,17 @@ export const sorts: { value: Sort; label: string }[] = [
 
 export const ALL = 'all'
 
-export function arrange(items: ClientItem[], genre: string, sort: Sort) {
-  const shown = genre === ALL ? items : items.filter((m) => m.genres.includes(genre))
+export type Show = 'all' | 'unwatched'
+export const shows: { value: Show; label: string }[] = [
+  { value: 'all', label: 'All movies' },
+  { value: 'unwatched', label: 'Unwatched' },
+]
+
+/** The genre, then Unwatched (client-library.md#unwatched, checkpoint 4.0b), then the sort. */
+export function arrange(items: ClientItem[], genre: string, sort: Sort, unwatched = false) {
+  const shown = items.filter(
+    (m) => (genre === ALL || m.genres.includes(genre)) && !(unwatched && m.watched),
+  )
   return [...shown].sort((a, b) =>
     sort === 'added'
       ? Date.parse(b.addedAt) - Date.parse(a.addedAt)
@@ -40,8 +49,9 @@ export function WebLibrary() {
   const library = useLibrary()
   const [genre, setGenre] = useState(ALL)
   const [sort, setSort] = useState<Sort>('title')
+  const [show, setShow] = useState<Show>('all')
   const items = library.data ?? []
-  const shown = arrange(items, genre, sort)
+  const shown = arrange(items, genre, sort, show === 'unwatched')
   return (
     <main className={cn('mx-auto grid max-w-[1680px] gap-6 pt-6 pb-16', gutter)}>
       <LibraryNav current="movies" />
@@ -55,6 +65,13 @@ export function WebLibrary() {
           )}
         </div>
         <div className="ms-auto flex flex-wrap gap-2">
+          <Select
+            aria-label="Show"
+            value={show}
+            onValueChange={(v) => setShow(v as Show)}
+            options={shows}
+            className="w-40"
+          />
           <Select
             aria-label="Genre"
             value={genre}
@@ -99,7 +116,8 @@ export function WebLibrary() {
         </EmptyState>
       ) : shown.length === 0 ? (
         <EmptyState icon="filter" title="No movies match">
-          Try another genre.
+          {show === 'unwatched' ? 'You’ve watched everything here. ' : ''}Try another genre
+          {show === 'unwatched' ? ', or show all movies' : ''}.
         </EmptyState>
       ) : (
         <ul

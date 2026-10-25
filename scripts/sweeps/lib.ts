@@ -37,8 +37,12 @@ export const heightFor = (width: number) => (width === 390 ? 844 : 900)
 export const BASE = process.env.SWEEP_BASE ?? 'http://localhost:4500'
 
 /** A screen URL with toolbar state from the query (design/prototypes/README.md#url-parameters). */
-export const screenUrl = (route: string, query = '') =>
-  `${BASE}/index.html?screen&time=pause&sound=off${query ? `&${query}` : ''}#${route}`
+/** A route may carry the toolbar's state after `?` (`/web/downloads?app=desktop`): it joins the query. */
+export const screenUrl = (route: string, query = '') => {
+  const [path, own = ''] = route.split('?')
+  const q = [own, query].filter(Boolean).join('&')
+  return `${BASE}/index.html?screen&time=pause&sound=off${q ? `&${q}` : ''}#${path}`
+}
 
 /**
  * Chromium from Playwright's own download (`bunx playwright-core install chromium`), or the one at
@@ -88,9 +92,21 @@ export async function axe(page: Page): Promise<string[]> {
   })
 }
 
-/** How far the page is wider than the viewport, in px (0 is good). */
+/**
+ * How far the page is wider than the viewport, in px (0 is good). A screen that scrolls in its own
+ * frame (the phone's, the admin's main) counts too: `overflow-y: auto` makes `overflow-x` auto as
+ * well (CSS Overflow 3, § 3), so a too-wide screen scrolls sideways there and never reaches the
+ * document. Scrollers that declare their own `overflow-x` scroll sideways on purpose.
+ */
 export const overflow = (page: Page) =>
-  page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth)
+  page.evaluate(() =>
+    Math.max(
+      document.documentElement.scrollWidth - document.documentElement.clientWidth,
+      ...[...document.querySelectorAll<HTMLElement>('[class*="overflow-y-auto"]')]
+        .filter((e) => !/\boverflow-x-/.test(e.className))
+        .map((e) => e.scrollWidth - e.clientWidth),
+    ),
+  )
 
 /** Runs `jobs` with `n` at a time. */
 export async function pool<T>(jobs: T[], n: number, run: (job: T) => Promise<void>) {

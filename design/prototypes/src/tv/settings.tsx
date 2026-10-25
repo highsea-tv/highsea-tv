@@ -6,7 +6,7 @@ import { cn } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { useServer } from '../client/data.ts'
-import { useDevicePrefs } from '../client/prefs.tsx'
+import { useDevicePrefs, useThemeEverywhere } from '../client/prefs.tsx'
 import {
   APP_VERSION,
   type SettingsSectionId,
@@ -35,25 +35,42 @@ function Check({ on }: { on: boolean }) {
 
 function Theme() {
   const [prefs, set] = useDevicePrefs('tv')
+  const [everywhere, setEverywhere] = useThemeEverywhere()
   const choices = useThemeChoices()
+  const choose = (theme: string) => (everywhere === null ? set({ theme }) : setEverywhere(theme))
   return (
-    <div role="radiogroup" aria-label="Theme" className="grid gap-[0.4cqw]">
-      {choices.map((t) => (
-        // biome-ignore lint/a11y/useSemanticElements: a D-pad row, focused by the spatial navigator
-        <button
-          key={t.id}
-          type="button"
-          role="radio"
-          aria-checked={prefs.theme === t.id}
-          data-focusable=""
-          onClick={() => set({ theme: t.id })}
-          className={option}
+    <div className="grid gap-[1.2cqw]">
+      <div role="radiogroup" aria-label="Theme" className="grid gap-[0.4cqw]">
+        {choices.map((t) => (
+          // biome-ignore lint/a11y/useSemanticElements: a D-pad row, focused by the spatial navigator
+          <button
+            key={t.id}
+            type="button"
+            role="radio"
+            aria-checked={prefs.theme === t.id}
+            data-focusable=""
+            onClick={() => choose(t.id)}
+            className={option}
+          >
+            <Check on={prefs.theme === t.id} />
+            <span className="flex-1">{t.name}</span>
+            <span className="text-(length:--tv-text-pill) opacity-70">{t.detail}</span>
+          </button>
+        ))}
+      </div>
+      <div className="grid justify-items-start gap-[0.6cqw]">
+        <TvButton
+          primary={everywhere !== null}
+          onClick={() => setEverywhere(everywhere === null ? prefs.theme : null)}
         >
-          <Check on={prefs.theme === t.id} />
-          <span className="flex-1">{t.name}</span>
-          <span className="text-(length:--tv-text-pill) opacity-70">{t.detail}</span>
-        </button>
-      ))}
+          Use on all my devices: {everywhere === null ? 'Off' : 'On'}
+        </TvButton>
+        <p className="text-(length:--tv-text-meta) text-text-3">
+          {everywhere === null
+            ? 'Only this TV changes.'
+            : 'Your phone and computers use this theme too.'}
+        </p>
+      </div>
     </div>
   )
 }

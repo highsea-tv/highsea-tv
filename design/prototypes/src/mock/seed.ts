@@ -6,6 +6,8 @@
 import { art, backdropArt, library, posterArt, stillArt, type Title } from '@highsea-tv/fixtures'
 import { seedFormats, seedProfiles } from '@highsea-tv/quality'
 import { iso } from './clock.ts'
+import { type PlaybackRuntime, seedPlayback } from './playback.ts'
+import { type SessionsRuntime, seedSessions } from './sessions.ts'
 import { defaultSettings, type Settings } from './settings.ts'
 import type {
   Announcement,
@@ -111,6 +113,10 @@ export type ServerState = {
   settings: Settings
   /** The tunnel's state apart from its settings (docs/product/vpn.md). */
   vpn: VpnRuntime
+  /** The hardware highsea found for transcoding, and its caches (Settings › Playback). */
+  playback: PlaybackRuntime
+  /** Now playing: the streams and downloads under way, and 30 days of what was watched. */
+  sessions: SessionsRuntime
   backups: Backup[]
   /** Per user: their own order and hidden rows on Home (C7). */
   homeLayouts: Record<string, HomeLayout>
@@ -1109,6 +1115,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
     discovered: discovered(now),
     known: known(now),
     watch: [],
+    sessions: seedSessions('empty', [], now),
     prefs: {},
     pipeline: [],
     seen: {},
@@ -1149,6 +1156,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
       connectedAt: now - 3 * HOUR,
       checkedAt: now - 4 * 60_000,
     } satisfies VpnRuntime,
+    playback: seedPlayback(kind, now),
     homeLayouts: {},
     backups: [
       ...Array.from(
@@ -1562,6 +1570,7 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
     featured,
     collections,
     watch: watch(items, now),
+    sessions: seedSessions(kind, items, now),
     health,
     speeds: samples(now, (k) => ({
       down: Math.max(0, (16 + Math.sin(k / 9) * 4 + (rng() - 0.5) * 5) * MB),
@@ -1636,6 +1645,10 @@ function watch(items: MediaItem[], now: number): ServerState['watch'] {
     ...at('u-ines', 'charade', 0.74, 20),
     ...at('u-ines', 'elephants-dream', 0.62, 30),
     ...at('u-ines', 'the-general', 0.18, 50),
+    // played to the end, so they're watched (the Unwatched filter, checkpoint 4.0b)
+    ...at('u-ines', 'caminandes-llamigos', 1, 70),
+    ...at('u-ines', 'cosmos-laundromat', 1, 140),
+    ...at('u-ines', 'his-girl-friday', 1, 300),
     ...at('u-ruth', 'metropolis', 0.4, 5),
     ...at('u-ruth', 'his-girl-friday', 0.12, 26),
   ]

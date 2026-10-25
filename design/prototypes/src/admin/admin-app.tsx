@@ -21,8 +21,10 @@ import { PersonPage } from './media/person.tsx'
 import { MovieDetail } from './movies/detail.tsx'
 import { MoviesLibrary } from './movies/library.tsx'
 import { type Page, pageGroups } from './nav.ts'
+import { NowPlaying } from './now-playing/now-playing.tsx'
 import { Appearance } from './settings/appearance.tsx'
 import { FormatEditor, ProfileEditor, SizeEditor } from './settings/editors.tsx'
+import { Playback } from './settings/playback.tsx'
 import {
   Backups,
   Connections,
@@ -76,6 +78,7 @@ const built: Record<string, () => ReactNode> = {
   movies: MoviesLibrary,
   collections: Collections,
   activity: Activity,
+  'now-playing': NowPlaying,
   downloads: Downloads,
   indexers: Indexers,
   subtitles: Subtitles,
@@ -98,6 +101,7 @@ const settingsAreas: Record<string, () => ReactNode> = {
   quality: QualitySizes,
   lists: ImportLists,
   vpn: Vpn,
+  playback: Playback,
   downloads: DownloadClient,
   connections: Connections,
 }

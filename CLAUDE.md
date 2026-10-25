@@ -21,9 +21,11 @@ highsea is a self-hosted replacement for the *ARR suite (Radarr, Sonarr, Prowlar
     - **0.1.0 is published (2026-10-23),** on the owner's word: the image `ghcr.io/highsea-tv/highsea` (`0.1.0`, `0.1`, `latest`; amd64 and arm64, public, with provenance and an SBOM), the catalog at `https://catalog.highsea.tv` (GitHub Pages, signed with `release-2027`, HTTPS enforced), and tag `v0.1.0` with its GitHub release. A real release only pushes, and checks the image read back from GHCR (`scripts/image.ts published`). Not yet done: the Unraid template's submission to Community Applications.
 - **Phase 4** (playback and the client apps): scoped in [docs/plans/phase-4-clients.md](docs/plans/phase-4-clients.md), with the owner's answers of 2026-10-23: movies only; the web client at `/web` in Vite and React; checkpoints for server playback, web, hardware acceleration and sessions, desktop, TV, then mobile; 1.0.0 when all four apps are done. Phase 3 is signed off, so Phase 4 can begin.
   - **Checkpoint 4.0** (the start), scoped in [docs/plans/phase-4-checkpoint-0.md](docs/plans/phase-4-checkpoint-0.md) and approved with the owner's answers of 2026-10-23 (every recommendation): 4.0a, the platform (Node 26.11.1 and Debian trixie now, on the owner's word of 2026-10-23, and Next.js 16.4 on 2026-10-28, when the audit's three Next.js exceptions expire), and 4.0b, the new screens' prototypes and specs and ADR drafts 0051 to 0053. 0.1.1 follows 4.0a, on the owner's word.
+    - **4.0b, signed off on 2026-10-25:** Settings › Playback, Now playing and its widget, the player's states, Downloads (mobile and the desktop app), and the additions from answer 9 (the owner approved their changes to locked layouts), each with its spec; ADRs 0051 to 0053 drafted as Proposed. The prototypes' sweeps now measure screens that scroll in their own frame (`overflow()` in `scripts/sweeps/lib.ts`).
+    - **4.0a is built and waiting for the owner's review (2026-10-25),** reported without waiting for Next.js on the owner's word; Next.js 16.4.1 follows on 2026-10-28, when it's two weeks old and the audit's three exceptions expire. The server sweep's stricter overflow check finds 225 overflows in the admin as published, for the owner's decision.
 - **Follow-up after Phase 3:** dashboard customization on Homarr's level, with a visible grid ([docs/plans/dashboard-customization.md](docs/plans/dashboard-customization.md)). Not scheduled; a prototype is approved first.
 
-Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2, 0027–0028 with checkpoint 3, 0029–0031 with checkpoint 4, 0032 with the admin-access work, 0033–0035 with checkpoint 5, 0036 (domain packages with subpath exports) at its review, 0037–0040 and 0042 with checkpoint 6a, 0041 (the migration importers) with 6b, which also added dated 6b sections to 0037, 0039 and 0042, 0043 (subtitles) with 7a, 0044 (the subtitle sync engine) with 7b, which also amended 0040, 0045 (automation) with 8a, 0046 (notifications) and 0047 (operations) with 8b, 0048 (curation) with 8c, 0049 (smart collections) with 8d, and 0050 (release and versioning) with 9b, which also added a dated section to 0034.
+Read the Phase 3 plan before doing anything: its standing rules, architecture, checkpoints and decisions all apply. The ADRs in `docs/adr/` record every architectural decision; 0018–0022 came with checkpoint 1, 0023–0026 with checkpoint 2, 0027–0028 with checkpoint 3, 0029–0031 with checkpoint 4, 0032 with the admin-access work, 0033–0035 with checkpoint 5, 0036 (domain packages with subpath exports) at its review, 0037–0040 and 0042 with checkpoint 6a, 0041 (the migration importers) with 6b, which also added dated 6b sections to 0037, 0039 and 0042, 0043 (subtitles) with 7a, 0044 (the subtitle sync engine) with 7b, which also amended 0040, 0045 (automation) with 8a, 0046 (notifications) and 0047 (operations) with 8b, 0048 (curation) with 8c, 0049 (smart collections) with 8d, and 0050 (release and versioning) with 9b, which also added a dated section to 0034. Phase 4's 4.0a added a dated section to 0003 (Node 26 and Debian trixie), and 4.0b drafted 0051 (the playback engine), 0052 (device profiles) and 0053 (the clients' build and distribution) as Proposed.
 
 ## Rules from the owner
 
@@ -55,7 +57,7 @@ bun run lint            # Biome
 bun run typecheck       # every workspace, plus scripts/
 bun run test            # everything (Bun's runner, each file isolated)
 bun run smoke           # the platform under Node, as production runs it
-bun run check:node      # is `node` the version in .nvmrc (24.21.0)?
+bun run check:node      # is `node` the version in .nvmrc (26.11.1)?
 
 bun run server          # the server in development, http://localhost:3000 (data in .dev/)
 HIGHSEA_TMDB_REPLAY=1 bun run server   # the same, answering TMDB from the recordings: no key, no network
@@ -74,7 +76,7 @@ docker compose -f compose.dev.yaml up --build   # the image from this checkout (
 bun run audit           # the dependency check: npm's advisories, exceptions in scripts/audit-exceptions.json
 actionlint              # the workflows in .github/workflows, before a push that changes them (brew install actionlint)
 HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts   # the end-to-end run through the image (compose.e2e.yaml)
-bun scripts/image.ts size highsea:dev 2000          # the image's largest folders, against a budget
+bun scripts/image.ts size highsea:dev 2200          # the image's largest folders, against a budget
 bun run docs            # the guides (apps/docs), http://localhost:3100
 bun scripts/docs-shots/run.ts [area ...]   # the guides' screenshots of the admin, from the sweep's seeded server
 bun scripts/release.ts prepare 0.1.0   # a release's commit: changelog, version, releases.json, catalog version, seed
@@ -88,7 +90,7 @@ Browser sweeps are in [scripts/sweeps](scripts/sweeps/README.md) (the server the
 The repeated workflows are project skills in `.claude/skills/`, which either of us can run:
 
 - the gate loop: `/scope`, `/questions`, `/checkpoint-report` and `/signoff` (owner-only: it commits and pushes);
-- `/checks` (quick or full, under Node 24.21);
+- `/checks` (quick or full, under Node 26.11);
 - `/guide`, `/adr`, `/add-dependency`, `/port-screen` and `/handoff`.
 
 When a rule here changes, update the skill that repeats it.
@@ -145,8 +147,8 @@ Conventions:
 
 ## Things that are easy to trip on
 
-- **Node 24.21.0** (`.nvmrc`) is the one Node highsea runs and is tested on: locally, in CI (`node-version-file: .nvmrc`), in the Docker image and in `engines`. CI reads `.nvmrc`; change it, the Dockerfile's two `FROM` lines and `engines` together.
-  - `scripts/check-node.ts` enforces it: `bun run server`, `bun run smoke`, the server sweep and a runtime test all fail on another `node` (a Mac's Homebrew `node` may be newer; use `nvm use`).
+- **Node 26.11.1** (`.nvmrc`) is the one Node highsea runs and is tested on: locally, in CI (`node-version-file: .nvmrc`), in the Docker image and in `engines`. CI reads `.nvmrc`; change it, the Dockerfile's three `FROM` lines and `engines` together.
+  - `scripts/check-node.ts` enforces it: `bun run server`, `bun run smoke`, the server sweep and a runtime test all fail on another `node` (a Mac's Homebrew `node` may be another version; use `nvm use`).
   - `better-sqlite3` is a native addon built for one Node version, so reinstall after switching Node (`rm -rf node_modules && bun install`).
 - **The subtitle sync runs ffmpeg** from a pool worker (`HIGHSEA_FFMPEG` names another binary). Without it, each sync fails at once and System › Health warns; the tests that need it are skipped and say so.
 - **Bun's `worker_threads`** are documented as not battle-tested, so the worker pool is tested under Node (`packages/runtime/test/fixtures/pool-under-node.ts`).

@@ -8,8 +8,9 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock } from '../client/data.ts'
 import { HIDE_MS, SEEK_S, usePlayer } from '../client/player.ts'
+import { NextUp, StreamMessage, StreamWaiting } from '../client/stream-states.tsx'
 import { PHONE } from '../kit/mobile/device.tsx'
-import { CueLine, Scrubber, TracksPanel } from '../web/player.tsx'
+import { CueLine, Scrubber, TracksPanel, webStreamAction } from '../web/player.tsx'
 import { mobileHref } from './shell.tsx'
 
 const round =
@@ -52,7 +53,10 @@ export function MobilePlayer({ fromStart = false }: { fromStart?: boolean }) {
     )
 
   const d = player.detail.data
-  const chrome = shown || !player.playing || panel
+  const waiting = player.stream === 'preparing' || player.stream === 'buffering'
+  // a message over the frame has the screen to itself
+  const message = player.stream === 'failed' || player.stream === 'stopped'
+  const chrome = (shown || !player.playing || panel || waiting) && !message
   return (
     <div className="relative h-screen w-full overflow-hidden bg-[#000]">
       {/* landscape: the long side runs down the portrait frame */}
@@ -146,6 +150,20 @@ export function MobilePlayer({ fromStart = false }: { fromStart?: boolean }) {
           </div>
         )}
         {panel && <TracksPanel player={player} onClose={() => setPanel(false)} />}
+        <StreamWaiting player={player} size="mobile" />
+        <StreamMessage
+          player={player}
+          size="mobile"
+          action={webStreamAction}
+          onBack={() => navigate(`/movies/${id}`)}
+        />
+        <NextUp
+          player={player}
+          next={d?.related[0]}
+          size="mobile"
+          action={webStreamAction}
+          onPlay={(next) => navigate(`/play/${next}`)}
+        />
       </div>
     </div>
   )

@@ -7,7 +7,10 @@ import { MobileApp } from './mobile/mobile-app.tsx'
 import { TvApp } from './tv/tv-app.tsx'
 import { WebApp } from './web/web-app.tsx'
 
-/** Every route the routes test renders, per platform. Grows with each checkpoint. */
+/**
+ * Every route the routes test renders, per platform. Grows with each checkpoint. A route may carry
+ * the toolbar's state after `?` (`/web/downloads?app=desktop`), for the states a URL can open.
+ */
 export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> = {
   admin: [
     '/admin',
@@ -26,6 +29,7 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/admin/people/fritz-lang',
     '/admin/people/nobody',
     '/admin/activity',
+    '/admin/now-playing',
     '/admin/downloads',
     '/admin/indexers',
     '/admin/subtitles',
@@ -57,6 +61,7 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/admin/settings/lists',
     '/admin/settings/downloads',
     '/admin/settings/connections',
+    '/admin/settings/playback',
     '/admin/settings/nowhere',
     '/admin/system',
     '/admin/system/health',
@@ -83,6 +88,10 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/web/settings/devices',
     '/web/profile',
     '/web/downloads',
+    '/web/downloads?app=desktop',
+    '/web/movies/4?app=desktop',
+    '/web/play/4?stream=failed',
+    '/web/play/4?stream=next-up',
     '/web/nowhere',
   ],
   mobile: [
@@ -91,6 +100,7 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/mobile/library',
     '/mobile/movies/4',
     '/mobile/play/4',
+    '/mobile/play/4?stream=stopped',
     '/mobile/search',
     '/mobile/collections/caminandes',
     '/mobile/library/collections',
@@ -107,6 +117,8 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/tv/library',
     '/tv/movies/4',
     '/tv/play/4',
+    '/tv/play/4?stream=failed',
+    '/tv/play/4?stream=next-up',
     '/tv/search',
     '/tv/collections/caminandes',
     '/tv/library/collections',

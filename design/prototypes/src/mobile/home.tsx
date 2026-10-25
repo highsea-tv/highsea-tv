@@ -6,6 +6,7 @@ import { Button, cn, EmptyState, Poster, Skeleton } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import { left, useHome } from '../client/data.ts'
 import type { ClientItem, HomeSection } from '../mock/types.ts'
+import { PullToRefresh } from './pull.tsx'
 import { AnnouncementCard, gutter, Header, mobileHref } from './shell.tsx'
 
 /** A row that scrolls edge to edge, its first item on the gutter. */
@@ -58,7 +59,7 @@ export function PosterItems({ items }: { items: ClientItem[] }) {
 
 function Featured({ section }: { section: HomeSection }) {
   return (
-    <section aria-label={section.title}>
+    <section aria-label={section.title} className="min-w-0">
       <ul
         // biome-ignore lint/a11y/noNoninteractiveTabindex: a scrolling region must take focus to scroll by keyboard
         tabIndex={0}
@@ -97,68 +98,70 @@ function Featured({ section }: { section: HomeSection }) {
 export function MobileHome() {
   const home = useHome('mobile')
   return (
-    <div className="grid gap-6 pt-1">
-      <Header />
-      <AnnouncementCard />
-      {home.status === 'loading' ? (
-        <div aria-busy className="grid gap-6">
-          <div className="flex gap-3 overflow-hidden px-4">
-            <Skeleton className="aspect-[4/5] w-[78%] shrink-0 rounded-lg" />
-            <Skeleton className="aspect-[4/5] w-[78%] shrink-0 rounded-lg" />
-          </div>
-          <div className="flex gap-2 overflow-hidden px-4">
-            {[0, 1, 2, 3].map((i) => (
-              <Skeleton key={i} className="aspect-poster w-[30%] shrink-0 rounded-poster" />
-            ))}
-          </div>
-        </div>
-      ) : home.status === 'error' ? (
-        <div className={gutter}>
-          <EmptyState
-            tone="error"
-            icon="alert"
-            title="Couldn’t load the home screen"
-            action={<Button onClick={home.refetch}>Try again</Button>}
-          >
-            {home.error.message}
-          </EmptyState>
-        </div>
-      ) : home.data.length === 0 ? (
-        <div className={gutter}>
-          <EmptyState icon="movie" title="Nothing to watch yet">
-            When the server’s owner adds movies, they show up here.
-          </EmptyState>
-        </div>
-      ) : (
-        home.data.map((s) =>
-          s.layout === 'hero' ? (
-            <div key={s.id} data-section={s.id} className="grid">
-              <Featured section={s} />
+    <PullToRefresh onRefresh={home.refetch}>
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 pt-1">
+        <Header />
+        <AnnouncementCard />
+        {home.status === 'loading' ? (
+          <div aria-busy className="grid gap-6">
+            <div className="flex gap-3 overflow-hidden px-4">
+              <Skeleton className="aspect-[4/5] w-[78%] shrink-0 rounded-lg" />
+              <Skeleton className="aspect-[4/5] w-[78%] shrink-0 rounded-lg" />
             </div>
-          ) : s.layout === 'continue' ? (
-            <MobileRow key={s.id} title={s.title} section={s.id}>
-              {s.items.map((m) => (
-                <li key={m.id} className="w-[62%] shrink-0 snap-start">
-                  <Poster
-                    title={m.title}
-                    src={m.art.still}
-                    aspect="still"
-                    href={mobileHref(`/play/${m.id}`)}
-                    progress={(m.progress ?? 0) * 100}
-                    showTitle
-                    caption={left(m)}
-                  />
-                </li>
+            <div className="flex gap-2 overflow-hidden px-4">
+              {[0, 1, 2, 3].map((i) => (
+                <Skeleton key={i} className="aspect-poster w-[30%] shrink-0 rounded-poster" />
               ))}
-            </MobileRow>
-          ) : (
-            // spotlights read as rows on a phone: there's no room for a synopsis beside the art
-            <MobileRow key={s.id} title={s.title} suffix={s.suffix} section={s.id}>
-              <PosterItems items={s.items} />
-            </MobileRow>
-          ),
-        )
-      )}
-    </div>
+            </div>
+          </div>
+        ) : home.status === 'error' ? (
+          <div className={gutter}>
+            <EmptyState
+              tone="error"
+              icon="alert"
+              title="Couldn’t load the home screen"
+              action={<Button onClick={home.refetch}>Try again</Button>}
+            >
+              {home.error.message}
+            </EmptyState>
+          </div>
+        ) : home.data.length === 0 ? (
+          <div className={gutter}>
+            <EmptyState icon="movie" title="Nothing to watch yet">
+              When the server’s owner adds movies, they show up here.
+            </EmptyState>
+          </div>
+        ) : (
+          home.data.map((s) =>
+            s.layout === 'hero' ? (
+              <div key={s.id} data-section={s.id} className="grid">
+                <Featured section={s} />
+              </div>
+            ) : s.layout === 'continue' ? (
+              <MobileRow key={s.id} title={s.title} section={s.id}>
+                {s.items.map((m) => (
+                  <li key={m.id} className="w-[62%] shrink-0 snap-start">
+                    <Poster
+                      title={m.title}
+                      src={m.art.still}
+                      aspect="still"
+                      href={mobileHref(`/play/${m.id}`)}
+                      progress={(m.progress ?? 0) * 100}
+                      showTitle
+                      caption={left(m)}
+                    />
+                  </li>
+                ))}
+              </MobileRow>
+            ) : (
+              // spotlights read as rows on a phone: there's no room for a synopsis beside the art
+              <MobileRow key={s.id} title={s.title} suffix={s.suffix} section={s.id}>
+                <PosterItems items={s.items} />
+              </MobileRow>
+            ),
+          )
+        )}
+      </div>
+    </PullToRefresh>
   )
 }

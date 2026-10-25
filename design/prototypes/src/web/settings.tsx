@@ -2,9 +2,10 @@
 // C7 Settings and C8 Profile on the web and desktop (docs/product/client-settings.md): the
 // sections beside each other from medium widths, an index on a phone-width window; the account
 // page; and Downloads, which needs the desktop app.
-import { cn, EmptyState, Icon } from '@highsea-tv/ui-web'
+import { cn, EmptyState, Field, Icon } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
-import { useServer } from '../client/data.ts'
+import { useDesktopApp, useServer } from '../client/data.ts'
+import { OfflineList } from '../client/offline-list.tsx'
 import { type SettingsSectionId, settingsSections } from '../client/settings.ts'
 import { SettingsSectionBody } from '../client/settings-sections.tsx'
 import { Soon } from '../kit/soon.tsx'
@@ -148,6 +149,7 @@ export function WebProfile() {
 
 /** Downloads (C8): a browser can't keep films; the desktop app can. */
 export function WebDownloads() {
+  if (useDesktopApp()) return <DesktopDownloads />
   return (
     <main
       className={cn(
@@ -168,6 +170,34 @@ export function WebDownloads() {
         A browser can’t keep films for offline. The highsea app for macOS, Windows and Linux can,
         and they play on a plane, a train, or anywhere the server can’t be reached.
       </EmptyState>
+    </main>
+  )
+}
+
+/** The desktop app's Downloads: films kept on this computer, in a folder the person picks. */
+function DesktopDownloads() {
+  return (
+    <main
+      className={cn(
+        'mx-auto grid max-w-[1680px] grid-cols-[minmax(0,1fr)] gap-6 pt-6 pb-16',
+        gutter,
+      )}
+    >
+      <h1 className="text-display">Downloads</h1>
+      <OfflineList
+        app="desktop"
+        href={(id) => webHref(`/play/${id}`)}
+        settings={
+          <Field label="Kept in" hint="Moving them copies what’s already downloaded.">
+            <div className="flex flex-wrap items-center gap-2">
+              <code className="min-w-0 truncate font-mono text-figure text-text-2">
+                ~/Movies/highsea
+              </code>
+              <Soon size="sm">Change</Soon>
+            </div>
+          </Field>
+        }
+      />
     </main>
   )
 }

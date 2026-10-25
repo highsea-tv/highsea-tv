@@ -15,7 +15,9 @@ import {
   SkeletonText,
 } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
-import { left, runtime, useItem } from '../client/data.ts'
+import { left, runtime, useDesktopApp, useItem } from '../client/data.ts'
+import { DownloadButton } from '../client/download-button.tsx'
+import { ItemMore } from '../client/item-more.tsx'
 import { useAction } from '../mock/hooks.tsx'
 import type { ClientDetail, PlaybackPrefs } from '../mock/types.ts'
 import { PosterRow } from './home.tsx'
@@ -78,6 +80,7 @@ export function WatchWith({
 export function WebDetail() {
   const { id } = useParams<{ id: string }>()
   const detail = useItem(id)
+  const desktop = useDesktopApp()
 
   if (detail.status === 'loading')
     return (
@@ -154,6 +157,7 @@ export function WebDetail() {
                 <a href={webHref(`/play/${m.id}/start`)}>Play from the start</a>
               </Button>
             )}
+            <ItemMore item={m} />
             {resuming && <span className="text-caption text-text-2">{left(m)}</span>}
           </div>
           {resuming && (
@@ -171,6 +175,7 @@ export function WebDetail() {
               />
             </div>
           )}
+          {desktop && <DownloadButton item={m} app="desktop" className="mt-2 justify-self-start" />}
         </div>
       </section>
 

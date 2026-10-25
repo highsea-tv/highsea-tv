@@ -2,6 +2,7 @@
 // The server's settings pages (A15, `/settings/*`): what each holds, with Harbor's values. The
 // reference pages edit these as plain values; Phase 3 gives each section its own schema.
 import { defaultQualitySizes, type QualitySize } from '@highsea-tv/quality'
+import { defaultPlaybackSettings, type PlaybackSettings } from './playback.ts'
 import type { ImportList } from './types.ts'
 import { defaultVpnSettings, type VpnSettings } from './vpn.ts'
 
@@ -82,6 +83,7 @@ export type Settings = {
   media: MediaSettings
   downloadClient: DownloadClientSettings
   vpn: VpnSettings
+  playback: PlaybackSettings
   network: NetworkSettings
   security: SecuritySettings
   backups: BackupSettings
@@ -118,6 +120,7 @@ export const defaultSettings = (kind: 'populated' | 'empty' = 'populated'): Sett
     maxActive: 3,
   },
   vpn: defaultVpnSettings(kind),
+  playback: defaultPlaybackSettings(),
   network: {
     externalUrl: 'https://harbor.example.net',
     trustedProxies: '172.18.0.0/16',

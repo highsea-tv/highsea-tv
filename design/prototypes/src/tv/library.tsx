@@ -34,7 +34,12 @@ const sortChoices: { value: Sort; label: string }[] = [
 export function TvLibrary() {
   const library = useLibrary()
   const [sort, setSort] = useState<Sort>('title')
-  useInitialFocus(library.status === 'success', sort, '[data-group="grid"] [data-focusable]')
+  const [unwatched, setUnwatched] = useState(false)
+  useInitialFocus(
+    library.status === 'success',
+    `${sort}:${unwatched}`,
+    '[data-group="grid"] [data-focusable]',
+  )
   if (library.status === 'error')
     return (
       <TvMessage
@@ -48,7 +53,7 @@ export function TvLibrary() {
         {library.error.message}
       </TvMessage>
     )
-  const items = arrange(library.data ?? [], 'all', sort)
+  const items = arrange(library.data ?? [], 'all', sort, unwatched)
   const present = new Set(items.map((m) => letterOf(m.sortTitle)))
   const jump = (letter: string) => {
     const el = document.querySelector<HTMLElement>(
@@ -111,6 +116,16 @@ export function TvLibrary() {
                   {s.label}
                 </button>
               ))}
+              <span aria-hidden className="mx-[0.4cqw] w-px self-stretch bg-text/20" />
+              <button
+                type="button"
+                data-focusable=""
+                aria-pressed={unwatched}
+                onClick={() => setUnwatched((u) => !u)}
+                className="rounded-full px-[1.2cqw] py-[0.45cqw] font-semibold text-(length:--tv-text-pill) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:shadow-(--tv-focus-shadow) aria-pressed:bg-text/12 aria-pressed:text-text"
+              >
+                Unwatched
+              </button>
             </div>
           </div>
           <ul

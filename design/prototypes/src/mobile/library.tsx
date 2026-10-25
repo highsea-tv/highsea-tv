@@ -4,7 +4,7 @@
 import { Button, cn, EmptyState, Poster, Sheet, SheetContent, Skeleton } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { left, useLibrary } from '../client/data.ts'
-import { ALL, arrange, genresOf, type Sort, sorts } from '../web/library.tsx'
+import { ALL, arrange, genresOf, type Show, type Sort, shows, sorts } from '../web/library.tsx'
 import { LibraryNav } from './collections.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
 
@@ -15,10 +15,11 @@ export function MobileLibrary() {
   const library = useLibrary()
   const [genre, setGenre] = useState(ALL)
   const [sort, setSort] = useState<Sort>('title')
+  const [show, setShow] = useState<Show>('all')
   const [open, setOpen] = useState(false)
   const items = library.data ?? []
-  const shown = arrange(items, genre, sort)
-  const filtered = genre !== ALL || sort !== 'title'
+  const shown = arrange(items, genre, sort, show === 'unwatched')
+  const filtered = genre !== ALL || sort !== 'title' || show !== 'all'
   return (
     <div className="grid gap-4 pt-1">
       <Header title="Library" />
@@ -60,7 +61,8 @@ export function MobileLibrary() {
           </EmptyState>
         ) : shown.length === 0 ? (
           <EmptyState icon="filter" title="No movies match">
-            Try another genre.
+            {show === 'unwatched' ? 'You’ve watched everything here. ' : ''}Try another genre
+            {show === 'unwatched' ? ', or show all movies' : ''}.
           </EmptyState>
         ) : (
           <ul className="grid grid-cols-3 gap-x-2 gap-y-4">
@@ -89,6 +91,7 @@ export function MobileLibrary() {
                 onClick={() => {
                   setGenre(ALL)
                   setSort('title')
+                  setShow('all')
                 }}
               >
                 Reset
@@ -100,6 +103,22 @@ export function MobileLibrary() {
           }
         >
           <div className="grid gap-5">
+            <fieldset className="grid gap-2">
+              <legend className="mb-2 font-mono text-label text-text-3 uppercase">Show</legend>
+              <div className="flex flex-wrap gap-2">
+                {shows.map((x) => (
+                  <button
+                    key={x.value}
+                    type="button"
+                    aria-pressed={show === x.value}
+                    onClick={() => setShow(x.value)}
+                    className={chip}
+                  >
+                    {x.label}
+                  </button>
+                ))}
+              </div>
+            </fieldset>
             <fieldset className="grid gap-2">
               <legend className="mb-2 font-mono text-label text-text-3 uppercase">Sort by</legend>
               <div className="flex flex-wrap gap-2">

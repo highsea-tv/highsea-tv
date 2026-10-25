@@ -18,7 +18,7 @@ The owner reviews every checkpoint and part before the next starts. Make the rep
 
 ## 2. Run the full checks
 
-Use `/checks full`, under Node 24.21. Fix what fails, and find the documented cause before working around it.
+Use `/checks full`, under Node 26.11. Fix what fails, and find the documented cause before working around it.
 
 ## 3. Record it
 
@@ -33,7 +33,7 @@ Open with one sentence: the part is built, whether the checks pass, that you've 
 Then these sections, in this order:
 
 - **What was built**: grouped bullets in plain words, with file paths where the owner will look. Measurements against their budgets go in a table.
-- **Results**: a table, one row per check, with the numbers. Say they ran under Node 24.21.0.
+- **Results**: a table, one row per check, with the numbers. Say they ran under Node 26.11.0.
 - **Found and fixed along the way**: bugs found outside the scope, what caused each and how it was fixed. Flag any change to the locked design system, tokens or prototypes, since those need the owner's approval.
 - **Judgement calls**: every unknown you decided, so the owner can overturn it. Include where you departed from the plan and why, and any **change real data forced on a prototype screen** (the standing rules require these to be listed).
 - **Needs your decision**: a numbered list of what's blocked on the owner, with your recommendation for each.

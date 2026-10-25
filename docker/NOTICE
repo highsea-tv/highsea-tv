@@ -2,7 +2,7 @@
 highsea's Docker image: programs from Debian
 ============================================
 
-The image is built on Debian 12 (bookworm) and installs these Debian packages unmodified, from
+The image is built on Debian 13 (trixie) and installs these Debian packages unmodified, from
 Debian's own archive, with apt. highsea runs them as separate programs; it doesn't link them.
 
   Package          License        What highsea uses it for
@@ -22,7 +22,7 @@ the image carries, is available from Debian:
 
   - https://sources.debian.org/src/<package>/<version>/
   - https://snapshot.debian.org/package/<package>/<version>/ (every version Debian has published)
-  - or `apt-get source <package>` with a deb-src line for bookworm.
+  - or `apt-get source <package>` with a deb-src line for trixie.
 
 For three years from the date an image is published, the highsea project will also provide that
 source on request, for no more than the cost of providing it. Ask through the project's issue

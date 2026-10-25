@@ -23,6 +23,6 @@
     "@highsea-tv/config": "workspace:*",
     "@highsea-tv/quality": "workspace:*",
     "@highsea-tv/schemas": "workspace:*",
-    "@types/node": "25.9.9"
+    "@types/node": "26.6.5"
   }
 }

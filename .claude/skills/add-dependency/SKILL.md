@@ -10,7 +10,7 @@ The rules: exact versions, each released **at least two weeks ago**, licences **
 
 ## 1. Is it needed?
 
-Check whether the repo already has something that does the job: `graft grep "<what it does>"`, the root and workspace `package.json` files. Prefer the platform (Node 24, Bun, the web platform) and packages already in the lockfile.
+Check whether the repo already has something that does the job: `graft grep "<what it does>"`, the root and workspace `package.json` files. Prefer the platform (Node 26, Bun, the web platform) and packages already in the lockfile.
 
 ## 2. Pick the version
 
@@ -44,7 +44,7 @@ bun run audit      # npm's advisories for production dependencies; fails on high
 
 - Cite the docs the choice rests on in the ADR, a code comment or the checkpoint report, together with the alternatives you considered.
 - For Node itself: `.nvmrc`, the Dockerfile's two `FROM` lines and `engines` move together.
-- For a native addon (as with `better-sqlite3`), check it builds for Node 24.21 and in the image (`bun scripts/image.ts`).
+- For a native addon (as with `better-sqlite3`), check it builds for Node 26.11 and in the image (`bun scripts/image.ts`).
 
 ## GitHub Actions
 

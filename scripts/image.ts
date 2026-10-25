@@ -62,7 +62,7 @@ type Manifest = {
 }
 
 const SERVER = '@highsea-tv/server'
-// the runtime stage is node:…-bookworm-slim, Debian's glibc
+// the runtime stage is node:…-trixie-slim, Debian's glibc
 const LIBC = 'glibc'
 
 const read = (path: string) => JSON.parse(readFileSync(path, 'utf8')) as Manifest

@@ -43,3 +43,15 @@ The amendment above left the image carrying the whole workspace. Checkpoint 9a s
 
   The variable changes where requests go, not what the server trusts. The fixtures' catalog is accepted only because the run also sets `HIGHSEA_CATALOG_DEV_KEY=1` (ADR 0034).
 - **CI builds each platform natively.** amd64 builds on `ubuntu-24.04` and arm64 on `ubuntu-24.04-arm` ([Docker: multi-platform with GitHub Actions](https://docs.docker.com/build/ci/github-actions/multi-platform/)), each with its own cache scope. Each platform's build must boot healthy and stay inside a size budget. Each is also exported as an OCI layout with BuildKit's provenance (`mode=min`) and an SBOM ([build attestations](https://docs.docker.com/build/metadata/attestations/)), and a check reads the attestation manifests and the OCI labels GitHub shows. Nothing is pushed. Docker's GitHub Builder reusable workflow merges platforms only by pushing, so it waits for the release workflow in 9b.
+
+## 2026-10-23: Node 26 and Debian trixie (checkpoint 4.0a)
+
+Phase 4 moves the one Node from 24.21.0 to **26.11.1**, and the image from Debian 12 (bookworm) to **Debian 13 (trixie)**, as checkpoint 9's answer 10 planned and phase-4-checkpoint-0.md records. Everything else in this ADR stands: still one process, still `node apps/server/server.ts` with type stripping.
+
+- **Why now.** Node 24 entered maintenance on 2026-10-20, and Node 26 becomes Active LTS on 2026-10-28, with maintenance until 2029-04-30 ([nodejs/Release](https://github.com/nodejs/Release)). The owner chose to build Phase 4 on it from the start, five days before LTS. 26.11.1 (2026-10-07) is the newest 26.x two weeks old on 2026-10-23, the rule every dependency follows; it moves to the newest 26.x two weeks old once Node 26 is LTS, before 0.1.1.
+- **What changes for highsea** ([Node 26.0.0's notes](https://nodejs.org/en/blog/release/v26.0.0)):
+  - native addons are rebuilt for `NODE_MODULE_VERSION` 147. `better-sqlite3` is built on Node-API, which is stable across Node versions ([Node-API](https://nodejs.org/docs/latest-v26.x/api/n-api.html)), so it's rebuilt, not upgraded;
+  - `fetch` is Undici 8, which every outside service goes through;
+  - `module.register()` is deprecated and `--experimental-transform-types` removed. highsea uses neither: type stripping is all it needs (`erasableSyntaxOnly`).
+- **Moves together,** as before: `.nvmrc`, `engines`, the Dockerfile's three `FROM` lines (`node:26.11.1-trixie-slim`), CI through `node-version-file`, `scripts/check-node.ts` and `@types/node` 26.
+- **Why trixie.** Bookworm's regular security support ended on 2026-06-10 and it's in Debian LTS until 2028-06-30; trixie is stable, with regular support until 2028-08-08 ([Debian LTS](https://wiki.debian.org/LTS)). It carries ffmpeg 7.1 in place of 5.1, which Phase 4's transcoding is built and measured on, and GCC 14 for the build stage's addon compile. The packages the image installs keep their names; `docker/NOTICE` names trixie.
