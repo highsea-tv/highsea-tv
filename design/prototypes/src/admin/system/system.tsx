@@ -123,7 +123,7 @@ function Status() {
           <div className="grid gap-4 expanded:grid-cols-2">
             <section
               aria-label="Resources"
-              className="grid gap-3 rounded-lg border border-line bg-s1 p-4"
+              className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-lg border border-line bg-s1 p-4"
             >
               <h2 className="text-widget-title">Resources</h2>
               <p className="text-caption text-text-3">CPU, across 4 cores</p>
@@ -242,7 +242,7 @@ function Health() {
                 return (
                   <li key={c.id} className="flex gap-3 rounded-lg border border-line bg-s1 p-4">
                     <Icon name={l.icon} size={18} className="mt-0.5 shrink-0 text-text-2" />
-                    <div className="grid gap-1">
+                    <div className="grid min-w-0 gap-1">
                       <p className="flex flex-wrap items-center gap-2">
                         <Badge tone={l.tone}>{l.label}</Badge>
                         <span className="font-semibold text-text text-ui">{c.source}</span>
@@ -250,7 +250,7 @@ function Health() {
                           since {relative(c.since, now)}
                         </span>
                       </p>
-                      <p className="text-body text-text-2">{c.message}</p>
+                      <p className="text-body text-text-2 [overflow-wrap:anywhere]">{c.message}</p>
                     </div>
                   </li>
                 )

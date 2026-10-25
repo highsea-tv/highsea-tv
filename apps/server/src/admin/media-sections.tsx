@@ -544,11 +544,11 @@ function MoreLikeThis({ id }: { id: number }) {
 
 export function Definition({ items }: { items: [string, ReactNode][] }) {
   return (
-    <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-6 gap-y-2 text-ui">
+    <dl className="grid grid-cols-[fit-content(40%)_minmax(0,1fr)] gap-x-6 gap-y-2 text-ui">
       {items.map(([k, v]) => (
         <div key={k} className="contents">
           <dt className="text-text-3">{k}</dt>
-          <dd className="min-w-0 text-text">{v}</dd>
+          <dd className="min-w-0 text-text [overflow-wrap:anywhere]">{v}</dd>
         </div>
       ))}
     </dl>

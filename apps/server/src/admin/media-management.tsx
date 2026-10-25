@@ -463,14 +463,14 @@ function AddFolder({ onAdded }: { onAdded: () => void }) {
   return (
     <form onSubmit={submit} noValidate className="grid gap-2">
       <Field label={t('add.label')} hint={t('add.hint')} error={error ?? undefined}>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Input
             value={path}
             icon="folder"
             placeholder={t('add.placeholder')}
             spellCheck={false}
             autoCapitalize="none"
-            className="flex-1 font-mono"
+            className="min-w-0 flex-1 basis-48 font-mono"
             onChange={(e) => {
               setError(null)
               setPath(e.target.value)

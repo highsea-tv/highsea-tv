@@ -109,7 +109,10 @@ export function ClientPreview({
   )
 
   return (
-    <section aria-label="Client preview" className="grid content-start gap-3">
+    <section
+      aria-label="Client preview"
+      className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-3"
+    >
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="me-auto font-medium text-text text-ui">Preview</h2>
         <SegmentedControl

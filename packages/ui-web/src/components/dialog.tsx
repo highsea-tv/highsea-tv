@@ -35,9 +35,11 @@ function Header({ title, description, closable }: HeaderProps) {
   return (
     <div className="flex items-start gap-3">
       <div className="grid min-w-0 flex-1 gap-1">
-        <DialogPrimitive.Title className="text-title">{title}</DialogPrimitive.Title>
+        <DialogPrimitive.Title className="text-title [overflow-wrap:anywhere]">
+          {title}
+        </DialogPrimitive.Title>
         {description ? (
-          <DialogPrimitive.Description className="text-form text-text-2">
+          <DialogPrimitive.Description className="text-form text-text-2 [overflow-wrap:anywhere]">
             {description}
           </DialogPrimitive.Description>
         ) : null}
@@ -78,7 +80,7 @@ export function DialogContent({
         <DialogPrimitive.Content
           {...(description ? {} : { 'aria-describedby': undefined })}
           className={cn(
-            'relative grid w-full gap-5 rounded-lg bg-s3 p-6 text-text shadow-4 outline-none data-[state=closed]:animate-fade-out data-[state=open]:animate-dialog-in',
+            'relative grid w-full min-w-0 grid-cols-[minmax(0,1fr)] gap-5 rounded-lg bg-s3 p-6 text-text shadow-4 outline-none data-[state=closed]:animate-fade-out data-[state=open]:animate-dialog-in',
             widths[size],
             className,
           )}
@@ -205,7 +207,7 @@ export function SheetContent({
         ) : (
           <Header title={title} description={description} closable />
         )}
-        <div className="min-h-0 flex-1">{children}</div>
+        <div className="min-h-0 min-w-0 flex-1">{children}</div>
         {footer && <div className="flex flex-wrap justify-end gap-2">{footer}</div>}
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>

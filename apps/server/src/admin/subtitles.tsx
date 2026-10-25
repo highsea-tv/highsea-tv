@@ -651,7 +651,7 @@ function ProfileEditor({
   return (
     <section
       aria-label={draft.name || t('profile.newName')}
-      className="grid gap-4 rounded-lg border border-line-strong bg-s1 p-4"
+      className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-lg border border-line-strong bg-s1 p-4"
     >
       <Field
         label={t('profile.name')}
@@ -659,7 +659,7 @@ function ProfileEditor({
       >
         <Input value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
       </Field>
-      <div className="grid gap-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-2">
         <h3 className="font-medium text-text text-ui">{t('profile.languages')}</h3>
         <SortableList
           aria-label={t('profile.languages')}
@@ -875,7 +875,7 @@ function ScoringForm({ settings }: { settings: SubtitleSettings }) {
           className="w-32"
         />
       </Field>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           variant="primary"
           disabled={!dirty}

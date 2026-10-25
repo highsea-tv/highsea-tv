@@ -43,7 +43,8 @@ export function SegmentedControl({
       orientation="horizontal"
       ref={ref}
       className={cn(
-        'relative inline-flex rounded-full border border-line bg-s2 p-[3px]',
+        // wider than its column (200% text on a phone), it scrolls rather than pushing the page
+        'relative inline-flex max-w-full overflow-x-auto rounded-full border border-line bg-s2 p-[3px] [scrollbar-width:none]',
         className,
       )}
       {...aria}
@@ -54,7 +55,7 @@ export function SegmentedControl({
           key={o.value}
           value={o.value}
           className={cn(
-            'relative inline-flex cursor-pointer items-center gap-1.5 rounded-full text-text-3 transition-tint hover:text-text-2 data-[state=checked]:text-text',
+            'relative inline-flex shrink-0 cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-full text-text-3 transition-tint hover:text-text-2 data-[state=checked]:text-text',
             size === 'md' ? 'h-7.5 px-3.5 text-ui' : 'h-6 px-2.5 text-[12px]',
           )}
         >

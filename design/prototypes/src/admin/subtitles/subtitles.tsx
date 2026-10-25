@@ -402,7 +402,7 @@ function ProfileEditor({
   return (
     <section
       aria-label={draft.name || 'New profile'}
-      className="grid gap-4 rounded-lg border border-line-strong bg-s1 p-4"
+      className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-lg border border-line-strong bg-s1 p-4"
     >
       <Field
         label="Name"
@@ -621,7 +621,7 @@ function ScoringForm({ settings }: { settings: SubtitleSettings }) {
           className="w-32"
         />
       </Field>
-      <div className="flex gap-2">
+      <div className="flex flex-wrap gap-2">
         <Button
           variant="primary"
           disabled={!dirty}

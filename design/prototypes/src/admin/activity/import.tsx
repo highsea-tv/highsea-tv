@@ -90,7 +90,10 @@ export function ManualImport() {
       }
     >
       <div className="grid gap-5">
-        <section aria-label="Folder" className="grid gap-3 rounded-lg border border-line bg-s1 p-4">
+        <section
+          aria-label="Folder"
+          className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-lg border border-line bg-s1 p-4"
+        >
           <Field
             label="Folder"
             error={error ?? undefined}

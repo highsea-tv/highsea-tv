@@ -65,7 +65,9 @@ export function Field({ label, hint, error, id, inline, className, children }: F
         className={cn(
           'grid min-w-0',
           // inline: the control in the first column, aligned with the label; text in the second
-          inline ? 'grid-cols-[auto_1fr] items-center gap-x-2.5 gap-y-1' : 'gap-1.5',
+          inline
+            ? 'grid-cols-[auto_minmax(0,1fr)] items-center gap-x-2.5 gap-y-1'
+            : 'grid-cols-[minmax(0,1fr)] gap-1.5',
           className,
         )}
       >
@@ -95,7 +97,7 @@ export function Field({ label, hint, error, id, inline, className, children }: F
 }
 
 export const controlBase =
-  'w-full min-w-0 rounded-sm border border-line-strong bg-s1 text-form text-text outline-none transition-tint placeholder:text-text-3 focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_var(--color-accent-soft)] focus-visible:outline-none disabled:opacity-45 aria-[invalid=true]:border-danger'
+  'w-full min-w-0 max-w-full rounded-sm border border-line-strong bg-s1 text-form text-text outline-none transition-tint placeholder:text-text-3 focus-visible:border-accent focus-visible:shadow-[0_0_0_3px_var(--color-accent-soft)] focus-visible:outline-none disabled:opacity-45 aria-[invalid=true]:border-danger'
 
 export type InputProps = ComponentProps<'input'> & {
   /** An icon inside the start of the field. */

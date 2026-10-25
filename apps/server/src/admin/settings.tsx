@@ -88,9 +88,9 @@ export function AreaPage({
   const t = useT(messages)
   return (
     <AdminPage title={t(`area.${id}`)} description={t(`area.${id}.description`)} actions={actions}>
-      <div className="grid gap-6 expanded:grid-cols-[13rem_minmax(0,1fr)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-6 expanded:grid-cols-[13rem_minmax(0,1fr)]">
         <AreaNav current={id} />
-        <div className="grid min-w-0 content-start gap-6">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-6">
           <a
             href="/settings"
             className="flex items-center gap-1 justify-self-start rounded-sm text-text-2 text-ui outline-none hover:text-text focus-visible:ring-focus expanded:hidden"
@@ -120,7 +120,10 @@ export function Group({
   return (
     <section
       aria-label={title}
-      className={cn('grid gap-4 rounded-lg border border-line bg-s1 p-4 medium:p-5', className)}
+      className={cn(
+        'grid grid-cols-[minmax(0,1fr)] gap-4 rounded-lg border border-line bg-s1 p-4 medium:p-5',
+        className,
+      )}
     >
       <div className="grid gap-0.5">
         <h2 className="font-semibold text-text text-title">{title}</h2>

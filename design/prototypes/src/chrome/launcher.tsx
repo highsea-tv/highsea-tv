@@ -67,7 +67,7 @@ export function Launcher({ onOpen }: { onOpen: (path: string) => void }) {
             <h2 id={`launcher-${s.id}`} className="text-title">
               {s.title}
             </h2>
-            <ul className="grid grid-cols-1 gap-3 medium:grid-cols-2 expanded:grid-cols-3">
+            <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 medium:grid-cols-2 expanded:grid-cols-3">
               {s.items.map((f) => (
                 <FlowCard key={f.id} flow={f} onOpen={onOpen} />
               ))}
@@ -78,7 +78,7 @@ export function Launcher({ onOpen }: { onOpen: (path: string) => void }) {
           <h2 id="launcher-email" className="text-title">
             Email
           </h2>
-          <ul className="grid grid-cols-1 gap-3 medium:grid-cols-2 expanded:grid-cols-3">
+          <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 medium:grid-cols-2 expanded:grid-cols-3">
             <li className="grid content-start gap-2 rounded-md border border-line bg-s1 p-3.5">
               <div className="flex items-baseline gap-2">
                 <span className="font-mono text-[11px] text-text-3">E1</span>

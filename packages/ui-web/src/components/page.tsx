@@ -116,7 +116,7 @@ export function EmptyState({
     <div
       role={error ? 'alert' : undefined}
       className={cn(
-        'grid justify-items-center text-center',
+        'grid grid-cols-[minmax(0,1fr)] justify-items-center text-center',
         size === 'md' ? 'gap-3 px-6 py-12' : 'gap-2 px-3 py-5',
         className,
       )}
@@ -131,7 +131,7 @@ export function EmptyState({
       >
         <Icon name={icon ?? (error ? 'error' : 'inbox')} size={size === 'md' ? 20 : 16} />
       </span>
-      <div className="grid max-w-[44ch] gap-1">
+      <div className="grid max-w-[min(44ch,100%)] gap-1 [overflow-wrap:anywhere]">
         <p className={cn('text-text', size === 'md' ? 'text-title' : 'font-semibold text-ui')}>
           {title}
         </p>

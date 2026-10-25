@@ -475,7 +475,7 @@ function Catalog() {
             (!q || d.name.toLowerCase().includes(q) || d.description.toLowerCase().includes(q)),
         )
         return (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
             <div className="flex flex-wrap items-center gap-2">
               <Input
                 type="search"
@@ -514,7 +514,7 @@ function Catalog() {
                 {t('catalog.nothingBody')}
               </EmptyState>
             ) : (
-              <ul className="grid grid-cols-1 gap-3 medium:grid-cols-2 expanded:grid-cols-3">
+              <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 medium:grid-cols-2 expanded:grid-cols-3">
                 {shown.map((d) => (
                   <li
                     key={d.id}

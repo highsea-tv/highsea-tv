@@ -629,7 +629,7 @@ function TorrentSheet({
         className="w-[min(40rem,100vw-2rem)]"
       >
         {x && (
-          <div className="grid gap-5">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
             <div className="flex flex-wrap gap-2">
               {x.state === 'paused' ? (
                 <Button size="sm" icon="play" onClick={() => then(resume.run(x.id))}>
