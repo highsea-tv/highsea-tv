@@ -438,14 +438,14 @@ function Qualities({
           const at = p.items.indexOf(it)
           const group = isGroup(it)
           return (
-            <div className="flex min-w-0 items-center gap-3 px-2 py-1.5">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-1.5 px-2 py-1.5">
               {handle}
               <Checkbox
                 aria-label={`Download ${it.name}`}
                 checked={it.allowed}
                 onCheckedChange={(v) => replaceAt(at, [{ ...it, allowed: v === true }])}
               />
-              <div className="grid min-w-0 flex-1 gap-0.5">
+              <div className="grid min-w-0 flex-1 basis-24 gap-0.5">
                 {group ? (
                   <Input
                     aria-label={`Name of the group with ${it.qualities.join(', ')}`}
@@ -1026,8 +1026,8 @@ function FormatTest({ format }: { format: CustomFormat }) {
         </Field>
       </div>
       {release && input && (
-        <div className="grid gap-3" aria-live="polite">
-          <p className="flex flex-wrap items-center gap-2 text-ui">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-3" aria-live="polite">
+          <p className="flex flex-wrap items-center gap-2 text-ui [overflow-wrap:anywhere]">
             <Badge tone={matched ? 'success' : 'neutral'}>
               {matched ? 'Matches' : 'Doesn’t match'}
             </Badge>
@@ -1044,10 +1044,13 @@ function FormatTest({ format }: { format: CustomFormat }) {
             {format.conditions.map((c, i) => {
               const holds = conditionHolds(c, input)
               return (
-                // biome-ignore lint/suspicious/noArrayIndexKey: conditions have no ids
-                <li key={i} className="flex items-center gap-2 text-caption">
+                <li
+                  // biome-ignore lint/suspicious/noArrayIndexKey: conditions have no ids
+                  key={i}
+                  className="flex items-center gap-2 text-caption [overflow-wrap:anywhere]"
+                >
                   <Badge tone={holds ? 'success' : 'neutral'}>{holds ? 'Yes' : 'No'}</Badge>
-                  <span className="font-mono text-text-2">
+                  <span className="min-w-0 font-mono text-text-2">
                     {c.kind === 'title' && c.value === ''
                       ? KIND_LABELS.title
                       : describeCondition(c)}

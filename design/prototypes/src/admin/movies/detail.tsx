@@ -288,7 +288,7 @@ function LibraryBody({
         }
       >
         <div className="flex flex-wrap items-center gap-x-6 gap-y-2 text-caption text-text-3">
-          <span className="font-mono">{m.path}</span>
+          <span className="min-w-0 font-mono [overflow-wrap:anywhere]">{m.path}</span>
           <span className="flex items-center gap-2">
             <Switch
               id="monitored"
@@ -441,7 +441,7 @@ function Files({ movie: m }: { movie: MediaItem }) {
               <section
                 key={v.id}
                 aria-label={`${v.label} version`}
-                className="grid gap-3 rounded-lg border border-line bg-s1 p-4"
+                className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-lg border border-line bg-s1 p-4"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <QualityTag>{v.label}</QualityTag>
@@ -974,7 +974,7 @@ function SubtitleSearch({
   )
   const download = useAction((c, r: SubtitleSearchResult) => c.subtitles.download(m.id, r))
   return (
-    <section aria-labelledby="sub-search" className="grid gap-3">
+    <section aria-labelledby="sub-search" className="grid grid-cols-[minmax(0,1fr)] gap-3">
       <h2 id="sub-search" className="text-title text-text">
         Search for subtitles
       </h2>

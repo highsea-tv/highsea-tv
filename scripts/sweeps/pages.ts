@@ -5,6 +5,7 @@
 import {
   acknowledge,
   axe,
+  escapes,
   heightFor,
   launch,
   overflow,
@@ -52,7 +53,7 @@ await pool(jobs, 6, async ({ r, w, q }) => {
     const v = await axe(page)
     if (o > 0 || v.length || errors.length)
       problems.push(
-        `${r} ${w} ${q}: ${o > 0 ? `overflow=${o} ` : ''}${[...v, ...errors].join(' ; ')}`,
+        `${r} ${w} ${q}: ${o > 0 ? `overflow=${o} ${(await escapes(page)).join(' | ')} ` : ''}${[...v, ...errors].join(' ; ')}`,
       )
   } catch (e) {
     problems.push(`${r} ${w} ${q}: crashed: ${(e as Error).message.slice(0, 100)}`)

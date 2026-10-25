@@ -440,7 +440,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
             <main
               ref={main}
               tabIndex={-1}
-              className="grid grid-cols-1 content-start gap-5 p-4 outline-none medium:px-6.5 medium:py-5.5"
+              className="grid grid-cols-1 content-start gap-5 p-4 outline-none medium:px-6.5 medium:py-5.5 [&>*]:min-w-0"
             >
               <AnnouncementBanners />
               {children}

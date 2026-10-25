@@ -8,8 +8,10 @@ import { cn } from '../lib/cn.ts'
 export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
 export type ButtonSize = 'md' | 'sm'
 
+// A label wraps only when the button would be wider than its container (a phone at 200% text, WCAG
+// 1.4.4 and 1.4.10); otherwise it's one line at the control's height, as before.
 const base =
-  'inline-flex shrink-0 cursor-pointer select-none items-center justify-center gap-2 whitespace-nowrap rounded-sm border border-transparent font-medium transition-press focus-visible:scale-(--scale-button) motion-safe:active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 [&_svg]:shrink-0'
+  'inline-flex max-w-full shrink-0 cursor-pointer select-none items-center justify-center gap-2 text-balance text-center [overflow-wrap:anywhere] rounded-sm border border-transparent font-medium transition-press focus-visible:scale-(--scale-button) motion-safe:active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 [&_svg]:shrink-0'
 
 export const buttonVariants: Record<ButtonVariant, string> = {
   // one per view (color.md): the accent fill with a 600 label, no subpixel thinning
@@ -22,8 +24,16 @@ export const buttonVariants: Record<ButtonVariant, string> = {
 }
 
 export const buttonSizes: Record<ButtonSize, { box: string; icon: string; glyph: number }> = {
-  md: { box: 'h-(--size-control) px-4 text-form', icon: 'w-(--size-control) px-0', glyph: 16 },
-  sm: { box: 'h-(--size-control-sm) px-3 text-ui', icon: 'w-(--size-control-sm) px-0', glyph: 16 },
+  md: {
+    box: 'min-h-(--size-control) px-4 py-1 text-form',
+    icon: 'h-(--size-control) w-(--size-control) p-0',
+    glyph: 16,
+  },
+  sm: {
+    box: 'min-h-(--size-control-sm) px-3 py-0.5 text-ui',
+    icon: 'h-(--size-control-sm) w-(--size-control-sm) p-0',
+    glyph: 16,
+  },
 }
 
 export type ButtonProps = ComponentProps<'button'> & {

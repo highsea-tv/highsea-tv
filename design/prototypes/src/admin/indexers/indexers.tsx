@@ -344,7 +344,7 @@ function Catalog({ installed }: { installed: Indexer[] }) {
                 Try another filter. Missing one? Definitions are open source; anyone can add one.
               </EmptyState>
             ) : (
-              <ul className="grid grid-cols-1 gap-3 medium:grid-cols-2 expanded:grid-cols-3">
+              <ul className="grid grid-cols-[minmax(0,1fr)] gap-3 medium:grid-cols-2 expanded:grid-cols-3">
                 {shown.map((d) => {
                   const have = installed.some((i) => i.definitionId === d.id)
                   return (

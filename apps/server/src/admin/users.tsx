@@ -473,7 +473,7 @@ function EditSheet({ user, onClose }: { user: User; onClose: () => void }) {
   return (
     <Sheet open onOpenChange={(o) => !o && onClose()}>
       <SheetContent side="right" title={user.displayName} description={`@${user.username}`}>
-        <div className="grid gap-5">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
           <RoleField
             value={draft.role}
             onChange={(role) =>
@@ -516,7 +516,7 @@ function EditSheet({ user, onClose }: { user: User; onClose: () => void }) {
               onChange={(libraries) => setDraft({ ...draft, libraries })}
             />
           )}
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               variant="primary"
               loading={save.pending}

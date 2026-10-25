@@ -47,7 +47,7 @@ const TAGS = { tmdb: '{tmdb-…}', imdb: '{imdb-…}' }
 export function ImportModes({ mode }: { mode: 'files' | 'library' }) {
   const t = useT(messages)
   return (
-    <nav aria-label={t('modes')} className="flex gap-1.5">
+    <nav aria-label={t('modes')} className="flex flex-wrap gap-1.5">
       <Button
         size="sm"
         variant={mode === 'files' ? 'secondary' : 'ghost'}
@@ -152,7 +152,7 @@ export function LibraryImport({ root: initialRoot = '' }: { root?: string }) {
         <ImportModes mode="library" />
         <section
           aria-label={t('root')}
-          className="grid gap-3 rounded-lg border border-line bg-s1 p-4"
+          className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-lg border border-line bg-s1 p-4"
         >
           <Field
             label={t('root')}

@@ -530,7 +530,7 @@ function PathPicker({
               {list.error.message}
             </EmptyState>
           ) : (
-            <ul className="grid p-1">
+            <ul className="grid grid-cols-[minmax(0,1fr)] p-1">
               {up && (
                 <li>
                   <FolderRow icon="chevron-up" label="Up one level" onClick={() => setPath(up)} />

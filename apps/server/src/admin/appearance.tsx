@@ -184,8 +184,8 @@ function Identity({
 
   return (
     <Group title={t('identity.title')} description={t('identity.description')}>
-      <div className="grid gap-4 expanded:grid-cols-[minmax(0,1fr)_16rem]">
-        <div className="grid content-start gap-4">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 expanded:grid-cols-[minmax(0,1fr)_16rem]">
+        <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] content-start gap-4">
           <Field
             label={t('identity.name')}
             error={!draft.name.trim() ? t('identity.nameRequired') : undefined}
@@ -208,7 +208,7 @@ function Identity({
                 accept={MARK_TYPES.join(',')}
                 aria-label={t('identity.markUpload')}
                 onChange={(e) => choose(e.target.files?.[0])}
-                className="max-w-full text-caption text-text-2 file:me-3 file:cursor-pointer file:rounded-md file:border file:border-line-strong file:bg-s2 file:px-3 file:py-1.5 file:text-text file:text-ui"
+                className="min-w-0 max-w-full text-caption text-text-2 file:me-3 file:cursor-pointer file:rounded-md file:border file:border-line-strong file:bg-s2 file:px-3 file:py-1.5 file:text-text file:text-ui"
               />
               {shown && (
                 <Button
@@ -620,14 +620,14 @@ function ThemeSample() {
   const [lead] = titles
   return (
     <div data-theme="editor" className="rounded-md">
-      <div className="grid gap-4 rounded-md bg-bg p-4 text-text">
-        <div className="flex items-center gap-2">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-md bg-bg p-4 text-text">
+        <div className="flex flex-wrap items-center gap-2">
           <Mark size={22} />
           <span className="font-semibold text-ui">Harbor</span>
           <span className="flex-1" />
           <Badge tone="accent">{t('sample.badge')}</Badge>
         </div>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="grid grid-cols-[repeat(4,minmax(0,1fr))] gap-2">
           {titles.slice(0, 4).map((m) => (
             // biome-ignore lint/performance/noImgElement: generated SVG data URLs, nothing to optimize
             <img
@@ -639,7 +639,7 @@ function ThemeSample() {
           ))}
         </div>
         {lead && (
-          <div className="grid gap-1">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-1 [overflow-wrap:anywhere]">
             <p className="font-semibold text-title">{lead.title}</p>
             <p className="text-caption text-text-3">
               {lead.year} · {lead.runtime} · {lead.genre}

@@ -78,7 +78,7 @@ export function WidgetFrame({
   return (
     <section
       className={cn(
-        'relative grid min-w-0 gap-2.5 rounded-md border border-line bg-s1 p-(--size-widget-padding)',
+        'relative grid min-w-0 grid-cols-[minmax(0,1fr)] gap-2.5 rounded-md border border-line bg-s1 p-(--size-widget-padding)',
         spans[span],
         rows ? cn('grid-rows-[auto_minmax(0,1fr)]', rowSpans[rows]) : 'content-start',
         editing && 'border-line-strong border-dashed',
@@ -92,7 +92,11 @@ export function WidgetFrame({
             <Icon name="drag" size={16} className="-ms-1 shrink-0 cursor-grab text-text-3" />
           ))}
         <h3 className="min-w-0 flex-1 truncate text-text text-widget-title">{title}</h3>
-        {meta && <div className="shrink-0 text-[12px] text-text-3">{meta}</div>}
+        {meta && (
+          <div className="min-w-0 max-w-1/2 text-end text-[12px] text-text-3 [overflow-wrap:anywhere]">
+            {meta}
+          </div>
+        )}
         {actions}
       </header>
       {rows ? (

@@ -149,15 +149,19 @@ export function ManualImport({ initialPath }: { initialPath?: string } = {}) {
         </Button>
       }
     >
-      <div className="grid gap-5">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
         <ImportModes mode="files" />
         <section
           aria-label={t('folder')}
-          className="grid gap-3 rounded-lg border border-line bg-s1 p-4"
+          className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-lg border border-line bg-s1 p-4"
         >
           <Field label={t('folder')} error={error ?? undefined} hint={t('folderHint')}>
-            <div className="flex gap-2">
-              <Input value={path} onChange={(e) => setPath(e.target.value)} className="font-mono" />
+            <div className="flex flex-wrap gap-2">
+              <Input
+                value={path}
+                onChange={(e) => setPath(e.target.value)}
+                className="min-w-0 flex-1 basis-48 font-mono"
+              />
               <Button
                 variant="primary"
                 icon="search"

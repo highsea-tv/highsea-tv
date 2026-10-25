@@ -74,7 +74,7 @@ export function NavGroup({ className, ...props }: ComponentProps<'ul'>) {
   return (
     <ul
       className={cn(
-        'grid w-full gap-0.5 [&+&]:mt-2.5 [&+&]:border-line [&+&]:border-t [&+&]:pt-2.5',
+        'grid w-full grid-cols-[minmax(0,1fr)] gap-0.5 [&+&]:mt-2.5 [&+&]:border-line [&+&]:border-t [&+&]:pt-2.5',
         className,
       )}
       {...props}

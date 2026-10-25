@@ -852,7 +852,7 @@ function PathPicker({
           {crumbs.map((c, i) => {
             const last = i === crumbs.length - 1
             return (
-              <span key={c.to} className="flex items-center gap-1">
+              <span key={c.to} className="flex min-w-0 items-center gap-1 [overflow-wrap:anywhere]">
                 {i > 0 && <span className="text-text-3">/</span>}
                 {last ? (
                   <span aria-current="location" className="text-text">
@@ -883,7 +883,7 @@ function PathPicker({
               {list.error.message}
             </EmptyState>
           ) : (
-            <ul className="grid p-1">
+            <ul className="grid grid-cols-[minmax(0,1fr)] p-1">
               {up && (
                 <li>
                   <FolderRow icon="chevron-up" label={t('picker.up')} onClick={() => setPath(up)} />

@@ -108,6 +108,45 @@ export const overflow = (page: Page) =>
     ),
   )
 
+/**
+ * Where an overflow starts: the elements that run past their scroller's edge while their parent
+ * doesn't, as `tag.classes "text"` (at most three), so a finding says what to fix. Fixed elements
+ * and anything inside a box that clips or scrolls sideways itself are left out.
+ */
+export const escapes = (page: Page) =>
+  page.evaluate(() => {
+    const clips = (e: Element) => getComputedStyle(e).overflowX !== 'visible'
+    const scrollers = [
+      document.documentElement,
+      ...document.querySelectorAll<HTMLElement>('[class*="overflow-y-auto"]'),
+    ].filter(
+      (e) =>
+        (e === document.documentElement || !/\boverflow-x-/.test(e.className)) &&
+        e.scrollWidth > e.clientWidth + 1,
+    )
+    const found: string[] = []
+    for (const sc of scrollers) {
+      const edge =
+        (sc === document.documentElement ? 0 : sc.getBoundingClientRect().left) + sc.clientWidth + 1
+      const visit = (e: Element) => {
+        for (const c of e.children) {
+          if (getComputedStyle(c).position === 'fixed') continue
+          const box = c.getBoundingClientRect()
+          // text too long for its box spills out without widening it: count where the text ends
+          const right = clips(c) ? box.right : Math.max(box.right, box.left + c.scrollWidth)
+          if (right > edge && (e === sc || e.getBoundingClientRect().right <= edge)) {
+            const cls = (c.getAttribute('class') ?? '').slice(0, 70)
+            const text = (c.textContent ?? '').trim().slice(0, 30)
+            found.push(`${c.tagName.toLowerCase()}.${cls} "${text}" (+${Math.round(right - edge)})`)
+          }
+          if (!clips(c)) visit(c)
+        }
+      }
+      visit(sc)
+    }
+    return [...new Set(found)].slice(0, 3)
+  })
+
 /** Runs `jobs` with `n` at a time. */
 export async function pool<T>(jobs: T[], n: number, run: (job: T) => Promise<void>) {
   const queue = [...jobs]

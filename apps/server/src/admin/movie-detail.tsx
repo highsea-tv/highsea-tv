@@ -1016,7 +1016,7 @@ function Files({ movie: m }: { movie: Movie }) {
               <section
                 key={v.id}
                 aria-label={t('files.version', { label: v.label })}
-                className="grid gap-3 rounded-lg border border-line bg-s1 p-4"
+                className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-lg border border-line bg-s1 p-4"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <QualityTag>{v.label}</QualityTag>
@@ -1061,7 +1061,8 @@ function FileStreams({ file: f }: { file: MediaFile }) {
       </ul>
       {f.sceneName && (
         <p className="text-caption text-text-3">
-          {t('files.release')} <span className="font-mono">{f.sceneName}</span>
+          {t('files.release')}{' '}
+          <span className="font-mono [overflow-wrap:anywhere]">{f.sceneName}</span>
         </p>
       )}
     </>
@@ -1503,7 +1504,7 @@ function Subtitles({ movie: m }: { movie: Movie }) {
             </EmptyState>
           )
         return (
-          <div className="grid gap-6">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
             <TableFrame>
               <TableToolbar>
                 <span className="text-text">{t('subs.tracks')}</span>
@@ -1729,7 +1730,7 @@ function SubtitleSearch({
   )
   const refusal = results.status === 'error' ? searchRefusal(results.error) : null
   return (
-    <section aria-labelledby="sub-search" className="grid gap-3">
+    <section aria-labelledby="sub-search" className="grid grid-cols-[minmax(0,1fr)] gap-3">
       <h2 id="sub-search" className="text-title text-text">
         {t('subs.search')}
       </h2>

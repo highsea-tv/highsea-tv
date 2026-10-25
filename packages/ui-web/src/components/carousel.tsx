@@ -171,7 +171,7 @@ export function CarouselRow({
         className,
       )}
     >
-      <div className="flex items-baseline gap-3 px-(--row-gutter)">
+      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1 px-(--row-gutter)">
         <h2 id={headingId} className="text-title">
           {title}
           {suffix && <span className="font-normal text-text-2"> {suffix}</span>}

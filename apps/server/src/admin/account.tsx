@@ -36,7 +36,10 @@ const fail = (title: string) => (e: Error) => toast.error(title, { description: 
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
-    <section aria-label={title} className="grid gap-3 rounded-lg border border-line bg-s1 p-4">
+    <section
+      aria-label={title}
+      className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-lg border border-line bg-s1 p-4"
+    >
       <h2 className="font-semibold text-text text-title">{title}</h2>
       {children}
     </section>

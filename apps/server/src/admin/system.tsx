@@ -103,7 +103,7 @@ export function System({ tab: asked = 'status' }: { tab?: SystemTab }) {
           <Status />
         </TabsContent>
         <TabsContent value="health" className="pt-5">
-          <div className="grid max-w-200 gap-3">
+          <div className="grid max-w-200 grid-cols-[minmax(0,1fr)] gap-3">
             <p className="text-caption text-text-3">{t('health.description')}</p>
             <Health />
           </div>
@@ -405,7 +405,7 @@ function Health() {
               return (
                 <li key={c.id} className="flex gap-3 rounded-lg border border-line bg-s1 p-4">
                   <Icon name={l.icon} size={18} className="mt-0.5 shrink-0 text-text-2" />
-                  <div className="grid gap-1">
+                  <div className="grid min-w-0 gap-1">
                     <p className="flex flex-wrap items-center gap-2">
                       <Badge tone={l.tone}>{t(`health.${c.level}`)}</Badge>
                       <span className="font-semibold text-text text-ui">{c.source}</span>
@@ -413,7 +413,7 @@ function Health() {
                         {t('health.since', { ago: relative(c.since) })}
                       </span>
                     </p>
-                    <p className="text-body text-text-2">{c.message}</p>
+                    <p className="text-body text-text-2 [overflow-wrap:anywhere]">{c.message}</p>
                   </div>
                 </li>
               )
@@ -728,7 +728,7 @@ function Events() {
     second: '2-digit',
   })
   return (
-    <div className="grid max-w-200 gap-3">
+    <div className="grid max-w-200 grid-cols-[minmax(0,1fr)] gap-3">
       <p className="text-caption text-text-3">{t('events.intro')}</p>
       {seen.length === 0 ? (
         <p
@@ -747,10 +747,10 @@ function Events() {
             <li
               // biome-ignore lint/suspicious/noArrayIndexKey: a reset can repeat an id; the order is the identity
               key={i}
-              className="flex min-w-0 gap-3 px-3.5 py-2"
+              className="flex min-w-0 flex-wrap gap-x-3 px-3.5 py-2"
             >
               <span className="w-20 shrink-0 text-text-3">{clock.format(new Date(e.at))}</span>
-              <span className="shrink-0 text-text">{e.topic}</span>
+              <span className="min-w-0 text-text [overflow-wrap:anywhere]">{e.topic}</span>
               {e.ids && e.ids.length > 0 && (
                 <span className="min-w-0 truncate text-text-3" title={e.ids.join(', ')}>
                   {e.ids.join(', ')}

@@ -43,7 +43,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        'inline-flex h-(--size-badge) shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 font-semibold text-[12px]',
+        'inline-flex min-h-(--size-badge) max-w-full shrink-0 items-center gap-1.5 rounded-full px-2.5 font-semibold text-[12px]',
         overlay ? 'glass-badge text-text' : tones[tone],
         className,
       )}
@@ -52,7 +52,7 @@ export function Badge({
       {dot && (
         <span
           aria-hidden
-          className={cn('size-1.5 rounded-full', overlay ? dots[tone] : 'bg-current')}
+          className={cn('size-1.5 shrink-0 rounded-full', overlay ? dots[tone] : 'bg-current')}
         />
       )}
       {children}

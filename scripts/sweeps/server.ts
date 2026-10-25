@@ -9,7 +9,17 @@
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
 import type { BrowserContext, Page } from 'playwright-core'
-import { axe, heightFor, launch, overflow, pool, ROOT, settleAnimations, walk } from './lib.ts'
+import {
+  axe,
+  escapes,
+  heightFor,
+  launch,
+  overflow,
+  pool,
+  ROOT,
+  settleAnimations,
+  walk,
+} from './lib.ts'
 import { boot, seed } from './seeded.ts'
 
 const only = process.argv[2] as 'pages' | 'keyboard' | undefined
@@ -111,7 +121,7 @@ async function sweep(visits: Visit[], context: () => Promise<BrowserContext>) {
           const found = await axe(page)
           if (o > 0 || found.length || errors.length)
             problems.push(
-              `${v.name} ${w} ${q}: ${o > 0 ? `overflow=${o} ` : ''}${[...found, ...errors].join(' ; ')}`,
+              `${v.name} ${w} ${q}: ${o > 0 ? `overflow=${o} ${(await escapes(page)).join(' | ')} ` : ''}${[...found, ...errors].join(' ; ')}`,
             )
         } finally {
           await ctx.close()

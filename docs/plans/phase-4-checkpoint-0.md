@@ -124,6 +124,27 @@ Two gated parts ([answer 1](#the-owners-answers)), because the first has a date 
   - Checks under Node 26.11.1: lint (1,254 files), typecheck, 11,457 tests pass (6 skipped), smoke, licences (860 packages), audit, the docs build, and the prototypes' keyboard and D-pad sweeps clean. The image's end-to-end run and its size passed on 2026-10-23 and nothing in the image has changed since.
   - **The server sweep fails on overflow alone** (no axe violations, no page errors): 225 findings in the real admin, all from the stricter `overflow()` that 4.0b's review brought in. Nine pages overflow at 390 px at 100% text (Users and its edit, invite and devices pages, Devices, Import › Library, the setup's picker, System › Health); the rest are at 200% text, most of them the sidebar's nav at 1440 (36 px). They're in 0.1.0 as published, unseen until now. Left for the owner's decision.
   - **The owner's decisions at review, 2026-10-25:** the admin's overflows are fixed now, in the prototypes and `apps/server` together, and go out in 0.1.1 with Next.js, Node 26 and trixie (amending [answer 7](#the-owners-answers)); the dashboard's default stays as signed off, with Now playing added from Customize.
+  - **The overflows, fixed on 2026-10-25,** in the prototypes and `apps/server` together. Most share one cause: a grid with no column of its own gets an `auto` track that grows to its widest content, and a grid item's automatic minimum width stops it shrinking below that (CSS Grid 1, §7.6 for the implicit track and §6.6 for the automatic minimum). So the fix is `grid-cols-[minmax(0,1fr)]` and `min-w-0`, the pitfall CLAUDE.md already names, plus `overflow-wrap: anywhere` on paths, release names and regular expressions, which have no spaces to break at.
+    - **In ui-web (the locked design system; the owner approved these on 2026-10-25):**
+      - Button's label wraps when the button would be wider than its container: `max-w-full`, `min-h` in place of `h`, no `whitespace-nowrap`, and `overflow-wrap: anywhere` for a long name such as a folder's. At its usual width it's one line at the control's height, as before.
+      - Badge does the same (`min-h`, `max-w-full`).
+      - SegmentedControl scrolls sideways inside itself when it's wider than its column, as the line Tabs already do.
+      - Field, Dialog, Sheet, WidgetFrame, NavGroup and EmptyState get a `minmax(0,1fr)` column or `min-w-0`. Inputs are `max-w-full`. A widget's meta wraps, and a dialog's title and description break long words.
+    - **In the screens (both codebases where a screen is in both):**
+      - the admin shell's main and Settings' area grid and cards;
+      - Appearance's identity, file input and theme sample;
+      - Curation's preview;
+      - the format test, and the qualities list, whose rows wrap;
+      - the movie page's details, files, release name and subtitle search;
+      - Import and Library import (the tabs wrap; the folder row wraps);
+      - Indexers' catalog;
+      - the setup's folder picker;
+      - System's Health and Events;
+      - Users' edit sheet, the downloads sheet, Subtitles' profile and scoring, and Settings › Media's Add folder;
+      - a carousel's heading row, which wraps its action.
+    - **The sweep:** `escapes()` in `scripts/sweeps/lib.ts` names where each overflow starts. It now also counts text that runs out of its box without widening it, such as the folder buttons on Import.
+    - The guides' screenshots are taken at 1280 and 1440 px with 100% text, where none of these layouts change, so they aren't retaken.
+  - Checks after the fixes, under Node 26.11.1: lint (1,254 files), typecheck, 11,457 tests pass (6 skipped), smoke, and every sweep clean: pages (1,624 pages), keyboard (171), D-pad, and the server's admin pages from the production build.
 - **2026-10-24, 4.0b, signed off by the owner on 2026-10-25:**
   - The owner approved the changes to locked layouts from answer 9 (Mark as watched, the Unwatched filter, pull to refresh and Use on all my devices) and the fixes found at review. Their specs' decisions stand as amended. Two questions stay open, in 4.0a's report: whether Now playing leads the dashboard's default, and the 74 overflow findings in signed-off admin screens.
   - Every prototype in this part's scope is built, with its spec and routes, and the three ADR drafts are written. 4.0a's report waits for Next.js 16.4 on 2026-10-28.
