@@ -2,29 +2,17 @@
 // The mobile tabs after Library: Search (C6, reference), Offline (C8, reference), and You (C8),
 // which leads to the settings (C7). docs/product/client-search.md, client-settings.md.
 
-import { bytes } from '@highsea-tv/core/format'
-import {
-  Button,
-  cn,
-  EmptyState,
-  Field,
-  Icon,
-  Input,
-  Poster,
-  Select,
-  Switch,
-  toast,
-} from '@highsea-tv/ui-web'
+import { cn, EmptyState, Field, Icon, Input, Poster, Switch } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import {
   searchKinds,
   searchSuggestions,
-  useLibrary,
   useSearch,
   useSearchQuery,
   useServer,
 } from '../client/data.ts'
+import { OfflineList } from '../client/offline-list.tsx'
 import { type SettingsSectionId, settingsSections } from '../client/settings.ts'
 import { SettingsSectionBody } from '../client/settings-sections.tsx'
 import type { SearchSection } from '../mock/types.ts'
@@ -152,87 +140,22 @@ function MobileResults({
 
 // ---------------------------------------------------------------- offline
 
-const sizes = [3.1e9, 2.4e9, 1.9e9]
-
 export function MobileOffline() {
-  const library = useLibrary()
-  const [removed, setRemoved] = useState<string[]>([])
   const [wifi, setWifi] = useState(true)
-  const [quality, setQuality] = useState('high')
-  const kept = (library.data ?? []).slice(1, 4).filter((m) => !removed.includes(m.id))
-  const used = kept.reduce((s, _, i) => s + (sizes[i] ?? 2e9), 0)
   return (
     <div className="grid gap-5 pt-1">
       <Header title="Offline" />
-      <div className={cn('grid gap-1.5', gutter)}>
-        <div className="h-1.5 overflow-hidden rounded-full bg-text/12">
-          <div
-            className="h-full rounded-full bg-accent"
-            style={{ width: `${(used / 64e9) * 100}%` }}
-          />
-        </div>
-        <p className="text-[13px] text-text-3">
-          {kept.length} {kept.length === 1 ? 'movie' : 'movies'} · {bytes(used)} ·{' '}
-          {bytes(64e9 - used)} free on this phone
-        </p>
+      <div className={gutter}>
+        <OfflineList
+          app="mobile"
+          href={(id) => mobileHref(`/play/${id}`)}
+          settings={
+            <Field inline label="Download on Wi-Fi only">
+              <Switch checked={wifi} onCheckedChange={setWifi} />
+            </Field>
+          }
+        />
       </div>
-      {kept.length === 0 ? (
-        <div className={gutter}>
-          <EmptyState icon="download" title="Nothing downloaded">
-            Tap Download on a movie to keep it on this phone. It plays without the server.
-          </EmptyState>
-        </div>
-      ) : (
-        <ul aria-label="Downloads" className={cn('grid gap-3', gutter)}>
-          {kept.map((m, i) => (
-            <li key={m.id} className="grid grid-cols-[7rem_minmax(0,1fr)] items-center gap-3">
-              <Poster
-                title={m.title}
-                src={m.art.still}
-                aspect="still"
-                href={mobileHref(`/play/${m.id}`)}
-              />
-              <div className="grid gap-0.5">
-                <p className="truncate font-semibold text-[15px]">{m.title}</p>
-                <p className="text-[13px] text-text-3">
-                  {bytes(sizes[i] ?? 2e9)} · 1080p · plays offline for 26 more days
-                </p>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  icon="delete"
-                  className="-ms-2 justify-self-start"
-                  onClick={() => {
-                    setRemoved((r) => [...r, m.id])
-                    toast({
-                      title: `${m.title} removed`,
-                      description: 'It still plays from Harbor.',
-                    })
-                  }}
-                >
-                  Remove
-                </Button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-      <section aria-label="Download settings" className={cn('grid gap-4', gutter)}>
-        <Field label="Quality" hint="Higher looks better and takes more room.">
-          <Select
-            value={quality}
-            onValueChange={setQuality}
-            options={[
-              { value: 'original', label: 'Original (largest)' },
-              { value: 'high', label: 'High · 1080p' },
-              { value: 'saver', label: 'Data saver · 720p' },
-            ]}
-          />
-        </Field>
-        <Field inline label="Download on Wi-Fi only">
-          <Switch checked={wifi} onCheckedChange={setWifi} />
-        </Field>
-      </section>
     </div>
   )
 }

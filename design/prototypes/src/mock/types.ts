@@ -881,10 +881,10 @@ export type Appearance = {
 
 // ---------------------------------------------------------------- personalization
 
-// the registry's types, from the package the server uses
-import type { WidgetPlacement } from '@highsea-tv/personalization/widgets'
+// the registry's types, from the package the server uses, with the widgets proposed since
+import type { WidgetPlacement } from './widgets.ts'
 
-export type { WidgetKind, WidgetPlacement, WidgetSpan } from '@highsea-tv/personalization/widgets'
+export type { WidgetKind, WidgetPlacement, WidgetSpan } from './widgets.ts'
 
 /** Only staff have a dashboard: it's the admin's. */
 export type StaffRole = Exclude<UserRole, 'user'>
@@ -1002,6 +1002,8 @@ export type ServerEvent =
   | { type: 'users.updated' }
   | { type: 'settings.updated' }
   | { type: 'vpn.updated' }
+  | { type: 'playback.updated' }
+  | { type: 'sessions.updated' }
   | { type: 'layout.updated' }
   | { type: 'server.updated' }
   | { type: 'watch.updated' }
@@ -1035,6 +1037,8 @@ export type ClientItem = MediaItem & {
   position: number
   /** A featured section's override, if any. */
   tagline: string | null
+  /** Played to the end, or marked as watched (client-detail.md#mark-as-watched, checkpoint 4.0b). */
+  watched: boolean
 }
 
 export type HomeSection = {

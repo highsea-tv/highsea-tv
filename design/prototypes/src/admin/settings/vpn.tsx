@@ -225,7 +225,7 @@ function StatusGroup({ status: v }: { status: VpnStatus }) {
   )
 }
 
-function CopyBlock({ label, text }: { label: string; text: string }) {
+export function CopyBlock({ label, text }: { label: string; text: string }) {
   return (
     <figure aria-label={label} className="grid gap-2">
       <pre className="overflow-x-auto rounded-md border border-line bg-s2 p-3 font-mono text-figure text-text-2">

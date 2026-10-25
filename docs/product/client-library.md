@@ -20,6 +20,10 @@ Everything the household can watch on this server, to browse rather than search:
 - **Mobile:** the large title "Library"; the count ("34 of 34 movies") and **Sort and filter**, which opens a sheet: Sort by (chips), Genre (chips), **Reset**, **Show {n} movies**; three posters a row.
 - **TV:** the server identity, then "Movies" and the sort choices (A–Z, Recently added, Newest) at the top right; seven posters a row, each with its title and year under it (and the progress bar when started); the **alphabet rail** at the left edge (A–Z and #), letters without titles dimmed and skipped. The page scrolls by focus; the server identity scrolls away with it, and rows fade out under the top edge. Only the rail stays put, in the left margin.
 
+### Unwatched
+
+Phase 4's answer 9, prototyped at 4.0b: one filter that hides what this person has watched ([client-detail.md › Mark as watched](client-detail.md#mark-as-watched)). On the web, a **Show** select (All movies, Unwatched) before Genre; on mobile, a **Show** group of chips at the top of the sheet, which counts as filtered and which **Reset** clears; on TV, an **Unwatched** choice after the sorts, past a divider, that turns on and off. With nothing left to show: "No movies match" · You've watched everything here. Try another genre, or show all movies.
+
 ## States
 
 - **Loading:** poster skeletons in the grid's shape.
@@ -32,6 +36,7 @@ Everything the household can watch on this server, to browse rather than search:
 
 - **Sort:** Title (the sort title, so "The General" files under G), Recently added, Newest first, Highest rated (web and mobile).
 - **Genre:** one at a time; All by default.
+- **Unwatched:** off by default, and with the genre and sort as above.
 - **TV alphabet rail:** an isolated focus region. **Left** from the grid's first column enters it (a focus guide); **Up**/**Down** move between letters that have titles; **OK** moves focus to the first title for that letter; **Right** returns to the grid. The rail shows only while sorted A–Z.
 - **TV sort:** **Up** from the grid's top row reaches the sort choices; **Up** again opens the global navigation.
 - **Sound:** TV only: `navigate`, `select`.
@@ -41,7 +46,8 @@ Everything the household can watch on this server, to browse rather than search:
 | Where | Text |
 | --- | --- |
 | Count (mobile) | {shown} of {total} movies |
-| Sheet | Sort and filter · Sort by · Genre · Reset · Show {n} movies |
+| Sheet | Sort and filter · Show · Sort by · Genre · Reset · Show {n} movies |
+| Show | All movies · Unwatched |
 | Empty | No movies yet · When the server's owner adds movies, they show up here. |
 
 ## Data
@@ -56,6 +62,7 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `library
 - Until files arrive (checkpoint 6) no title is `playable`; until playback writes positions (Phase 4) none is started.
 - A title's page (`library.item`) lists its versions, and since checkpoint 7a each version's `subtitles`: `ClientSubtitle` (`id`, `language`, `label` such as "English (SDH)", `forced`, `hi`, `format`, and `kind`: `embedded` for a stream inside the file, `external` for one highsea downloaded, `bundled` for one the release carried). Embedded streams come first, as the file orders them.
 - **No route lists the genres yet** for the Genre select. `GET /api/v1/genres` comes with the first client (Phase 4), with a genres column that also takes the genre filter off the cached TMDB data (owner's decision, 2026-10-20).
+- The Unwatched filter (Phase 4): `watched=false` on `library.list`, from `ClientItem.watched`. The prototype filters on the client.
 - Events: `movies.updated`, `item.updated`. Later: `watch.updated`.
 
 ## Decisions
@@ -66,5 +73,5 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `library
 
 ## Open questions
 
-- **More filters:** unwatched, resolution (4K), decade? The owner-facing library has them; the household's may not need them.
+- ~~**More filters:** unwatched, resolution (4K), decade?~~ Unwatched only ([Phase 4's answer 9](../plans/phase-4-clients.md#the-owners-answers)), [above](#unwatched).
 - **Collections as a view** ("Night of the Living Dead Collection") once the server tracks them.

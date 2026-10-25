@@ -15,14 +15,14 @@
 # the dependencies alone reuses it from the cache: dependencies before sources, as Docker's
 # "Order your layers" advises (https://docs.docker.com/build/cache/optimize/#order-your-layers).
 # Copying a stage's files is cached by their contents, so this stage's output only changes with them
-FROM node:24.21.0-bookworm-slim AS manifests
+FROM node:26.11.1-trixie-slim AS manifests
 WORKDIR /app
 COPY . .
 RUN find . -type f ! -name package.json ! -name bun.lock -delete
 
-# ---- build: Bun installs and builds; Node 24.21.0 (.nvmrc) is here too, so native modules (better-sqlite3)
+# ---- build: Bun installs and builds; Node 26.11.1 (.nvmrc) is here too, so native modules (better-sqlite3)
 # are built for the Node that runs them
-FROM node:24.21.0-bookworm-slim AS build
+FROM node:26.11.1-trixie-slim AS build
 COPY --from=oven/bun:1.4.2 /usr/local/bin/bun /usr/local/bin/bun
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ ca-certificates \
@@ -54,7 +54,7 @@ RUN apt-get update \
 CMD ["bun", "scripts/e2e/fixtures.ts"]
 
 # ---- runtime
-FROM node:24.21.0-bookworm-slim AS runtime
+FROM node:26.11.1-trixie-slim AS runtime
 # unar (LGPL-2.1, Debian main) extracts archived releases (ADR 0039 › 6b); never unrar (non-free)
 RUN apt-get update \
   && apt-get install -y --no-install-recommends ffmpeg unar tini gosu ca-certificates \

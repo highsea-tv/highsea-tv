@@ -9,7 +9,13 @@ import { memoryLocation } from 'wouter/memory-location'
 import { Launcher } from '../src/chrome/launcher.tsx'
 import { Toolbar } from '../src/chrome/toolbar.tsx'
 import { createMock } from '../src/mock/client.ts'
-import { type DataState, defaultState, type Platform, type Role } from '../src/proto/state.ts'
+import {
+  type DataState,
+  defaultState,
+  type Platform,
+  type Role,
+  stateFromParams,
+} from '../src/proto/state.ts'
 import { screenRoutes } from '../src/routes.tsx'
 import { ScreenApp } from '../src/screen/screen.tsx'
 import { classes, collect, unknownClasses, violations } from './check.ts'
@@ -31,8 +37,15 @@ for (const [platform, routes] of Object.entries(screenRoutes) as [Platform, stri
       for (const role of rolesFor(platform))
         for (const data of dataStates)
           test(`${path} · ${data}${role === 'owner' ? '' : ` · ${role}`}`, async () => {
-            const { hook } = memoryLocation({ path })
-            const state = { ...defaultState, data, role, time: 'pause' as const }
+            // a route may carry the toolbar's state after `?`, as `/web/downloads?app=desktop`
+            const [route = path, query = ''] = path.split('?')
+            const { hook } = memoryLocation({ path: route })
+            const state = stateFromParams(new URLSearchParams(query), {
+              ...defaultState,
+              data,
+              role,
+              time: 'pause' as const,
+            })
             let container: HTMLElement | undefined
             await act(async () => {
               container = render(

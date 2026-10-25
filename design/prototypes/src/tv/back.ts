@@ -7,16 +7,20 @@ export type BackRegistry = { current: (() => void) | null }
 
 export const BackContext = createContext<BackRegistry>({ current: null })
 
-/** Registers this screen's Back. The latest render's handler wins. */
+/**
+ * Registers this screen's Back. The latest render's handler wins; when an overlay that registered
+ * its own unmounts, the one before it is back.
+ */
 export function useBack(handler: () => void) {
   const registry = useContext(BackContext)
   const ref = useRef(handler)
   ref.current = handler
   useEffect(() => {
     const call = () => ref.current()
+    const before = registry.current
     registry.current = call
     return () => {
-      if (registry.current === call) registry.current = null
+      if (registry.current === call) registry.current = before
     }
   }, [registry])
 }

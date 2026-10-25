@@ -75,6 +75,7 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 - **Keyboard (web):** Tab moves between regions; arrows move inside a row.
 - **D-pad (TV):** the spatial model ([tv.md](../design-language/platforms/tv.md#spatial-focus-model)); rows remember their last item; Up from any row goes to the hero actions; at the home root, Back returns to the top row's first item.
 - **Touch (mobile):** rows and the carousel scroll natively with snapping; press feedback is a 0.97 scale.
+- **Pull to refresh (mobile; Phase 4's answer 9, prototyped at 4.0b):** from the top of Home, pulling down moves the page at half the finger's distance and shows a turning arrow with "Pull to refresh"; past 72 px it says "Let go to refresh", and letting go shows "Refreshing" with a spinner while Home asks the server again (the sections and announcements). Let go sooner and it settles back. Screen readers hear the status. In the prototype a mouse drag does the same.
 - **Sound:** TV only by default: `navigate`, `select`, `back`.
 
 ## Copy
@@ -106,4 +107,4 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 ## Open questions
 
 - **Hero rotation on web:** never on its own (current), or slowly while the window is idle?
-- **Pull to refresh on mobile Home** (mobile.md): the live events make it mostly unnecessary. Keep it for habit?
+- ~~**Pull to refresh on mobile Home** (mobile.md): the live events make it mostly unnecessary. Keep it for habit?~~ Yes, by the owner's change ([Phase 4's answer 9](../plans/phase-4-clients.md#the-owners-answers)); [above](#interactions).

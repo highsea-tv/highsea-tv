@@ -21,7 +21,7 @@ Start your message with `Written for: …`, naming the reader (a fresh agent, wh
    - dependencies and actions pinned, two weeks old (`bun run pin`; actions to a commit SHA);
    - an SPDX header on every new file, in the right comment style;
    - no network in tests, and no secrets in fixtures; never open, read or print `.env.local`;
-   - Node 24.21.0 everywhere, with checks run under it;
+   - Node 26.11.1 everywhere, with checks run under it;
    - `/Volumes/data`, the owner's NAS, is read-only;
    - the prototypes and design system are locked;
    - internal docs stay in `docs/`, and public guides go only in `apps/docs/content/`;

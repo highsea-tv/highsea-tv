@@ -11,6 +11,13 @@ export type Role = 'owner' | 'admin' | 'user'
 export type TimeMode = 'play' | 'pause' | 'fast'
 /** How a client reaches its server (connectivity.md): on the LAN, failed over to remote, or not. */
 export type Connection = 'local' | 'remote' | 'offline'
+/**
+ * The player's stream (player.md#states, checkpoint 4.0b): as it should be, a first transcode
+ * getting ready, buffering, failed, stopped from Now playing, or at the film's end with Next up.
+ */
+/** The web platform as a browser, or inside the desktop app (Tauri), which keeps downloads (C8). */
+export type WebApp = 'browser' | 'desktop'
+export type StreamState = 'normal' | 'preparing' | 'buffering' | 'failed' | 'stopped' | 'next-up'
 
 export type ProtoState = {
   width: Width
@@ -24,6 +31,8 @@ export type ProtoState = {
   sound: Record<Platform, boolean>
   time: TimeMode
   connection: Connection
+  stream: StreamState
+  app: WebApp
   /** A client preview inside the admin (`?preview`): no prototype affordances. */
   preview: boolean
 }
@@ -38,6 +47,8 @@ export const defaultState: ProtoState = {
   sound: { admin: false, web: false, mobile: false, tv: true },
   time: 'play',
   connection: 'local',
+  stream: 'normal',
+  app: 'browser',
   preview: false,
 }
 
@@ -76,6 +87,20 @@ export const connections: { id: Connection; label: string }[] = [
   { id: 'offline', label: 'Unreachable' },
 ]
 
+export const webApps: { id: WebApp; label: string }[] = [
+  { id: 'browser', label: 'Browser' },
+  { id: 'desktop', label: 'Desktop app' },
+]
+
+export const streamStates: { id: StreamState; label: string }[] = [
+  { id: 'normal', label: 'Playing' },
+  { id: 'preparing', label: 'Getting it ready' },
+  { id: 'buffering', label: 'Buffering' },
+  { id: 'failed', label: 'Didn’t start' },
+  { id: 'stopped', label: 'Stopped by the server' },
+  { id: 'next-up', label: 'Next up' },
+]
+
 export const timeModes: { id: TimeMode; label: string }[] = [
   { id: 'play', label: 'Play' },
   { id: 'pause', label: 'Pause' },
@@ -112,7 +137,8 @@ export function saveState(state: ProtoState): void {
 
 /**
  * URL parameters override the state, so a screen can be opened on its own at a known state:
- * `?screen&data=empty&theme=oled&role=admin&motion=reduced&text=200&time=pause&connection=remote`;
+ * `?screen&data=empty&theme=oled&role=admin&motion=reduced&text=200&time=pause&connection=remote`
+ * (and `&stream=buffering` on a player, `&app=desktop` for the desktop app);
  * `&preview` marks a client preview inside the admin.
  */
 export function stateFromParams(params: URLSearchParams, base: ProtoState): ProtoState {
@@ -128,6 +154,16 @@ export function stateFromParams(params: URLSearchParams, base: ProtoState): Prot
     role: pick('role', ['owner', 'admin', 'user']) ?? base.role,
     time: pick('time', ['play', 'pause', 'fast']) ?? base.time,
     connection: pick('connection', ['local', 'remote', 'offline']) ?? base.connection,
+    stream:
+      pick(
+        'stream',
+        streamStates.map((x) => x.id),
+      ) ?? base.stream,
+    app:
+      pick(
+        'app',
+        webApps.map((x) => x.id),
+      ) ?? base.app,
     reducedMotion: params.has('motion') ? params.get('motion') === 'reduced' : base.reducedMotion,
     largeText: params.has('text') ? params.get('text') === '200' : base.largeText,
     preview: params.has('preview'),

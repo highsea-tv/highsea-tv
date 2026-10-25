@@ -14,6 +14,8 @@ import {
 } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
 import { left, runtime, useItem } from '../client/data.ts'
+import { DownloadButton } from '../client/download-button.tsx'
+import { ItemMore } from '../client/item-more.tsx'
 import { WatchWith } from '../web/detail.tsx'
 import { MobileRow, PosterItems } from './home.tsx'
 import { gutter, mobileHref } from './shell.tsx'
@@ -83,14 +85,23 @@ export function MobileDetail() {
           {m.year} · {runtime(m.runtimeMinutes)} · {m.genres[0]}
           {m.rating > 0 && <Rating value={m.rating} size={12} />}
         </p>
-        <Button variant="primary" icon="play" asChild className="h-12 w-full text-[16px]">
+        <Button
+          variant="primary"
+          icon="play"
+          asChild
+          className="h-auto min-h-12 w-full whitespace-normal py-2 text-[16px]"
+        >
           <a href={mobileHref(`/play/${m.id}`)}>{resuming ? `Resume · ${left(m)}` : 'Play'}</a>
         </Button>
         {resuming && (
-          <Button icon="replay" asChild className="h-11 w-full">
+          <Button icon="replay" asChild className="h-auto min-h-11 w-full whitespace-normal py-2">
             <a href={mobileHref(`/play/${m.id}/start`)}>Play from the start</a>
           </Button>
         )}
+        <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+          <DownloadButton item={m} app="mobile" wide />
+          <ItemMore item={m} className="size-11" />
+        </div>
         <p className="text-[15px] text-text-2 leading-[1.55]">{m.synopsis}</p>
         {d.directors.length > 0 && (
           <p className="text-[13px] text-text-3">

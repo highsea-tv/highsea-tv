@@ -296,8 +296,14 @@ try {
       await page.goto(`${BASE}/`)
       await loaded
       await page.getByRole('heading', { name: 'Storage' }).waitFor()
-      if (await page.getByRole('heading', { name: 'Network' }).count())
-        throw new Error(`${where}: the dashboard has Network again`)
+      // the layout renders after its response, so wait for Network to go rather than counting it
+      // at once: count() doesn't wait (https://playwright.dev/docs/api/class-locator#locator-count)
+      await page
+        .getByRole('heading', { name: 'Network' })
+        .waitFor({ state: 'detached', timeout: 5_000 })
+        .catch(() => {
+          throw new Error(`${where}: the dashboard has Network again`)
+        })
       await page.goto(`${BASE}/settings/appearance`)
       if (!(await page.getByRole('radio', { name: THEME }).isChecked()))
         throw new Error(`${where}: ${THEME} isn't the default theme`)

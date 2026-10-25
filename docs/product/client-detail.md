@@ -23,6 +23,25 @@ Decide to watch, and how: Play or Resume, with the version, audio and subtitles 
 - **TV:** the ambient backdrop (the artwork blurred 2.6u and dimmed); the poster (13u) beside the title (3.6u), meta, synopsis and "Directed by"; actions **Resume · 8 min left**, **From the start**, **Audio and subtitles**; the current picks in one line ("4K · English · 5.1 · Subtitles off"); Cast (the name and character under each portrait) and More like this (title and year under each poster) as rows below, scrolled into view by focus; the server identity scrolls away with the page.
 - **TV Audio and subtitles:** a panel from the right (32u): Version (when several), Audio, Subtitles, "Back closes. Saved for this movie." It's an isolated focus region; picking subtitles closes it.
 
+### Download
+
+Checkpoint 4.0b, on mobile and in the desktop app (not in a browser, which can't keep films; `?app=desktop` in the prototype). It sits under Play on mobile, across the width beside **More**, and under the actions on the desktop. One button that becomes where the download has got to:
+
+- **Download** ("Downloading {title} · To this phone." or "this computer"), at the Quality chosen in Offline;
+- **Waiting to download** (another is downloading) or **Waiting for Wi-Fi**, with **Cancel**;
+- the bar with its percentage, "Downloading · {speed}/s · {left} to go" and **Pause**; paused, "Paused · {done} of {size}" and **Resume**;
+- **The download stopped** with **Try again**;
+- "Downloaded · plays offline for {n} more days" with **Remove**; expired, "Downloaded · connect to Harbor to keep watching it".
+
+The list of every download is [client-settings.md › Offline](client-settings.md#offline).
+
+### Mark as watched
+
+Phase 4's answer 9. On web and mobile, **More** (an icon button after the play actions) opens a menu with **Mark as watched**, or **Mark as unwatched** once it's watched. On TV, holding OK on the actions for 0.6 s opens the same choice in a small dialog (Back closes it); a shorter press still plays. Under the picks, "Hold OK for more" (and "Watched ·" before it once it is).
+
+- Watched means played to the end, for this person only. Marking it watched removes it from Continue watching; marking it unwatched starts it from the beginning next time ("It plays from the start next time.").
+- The toast says "{title} marked as watched" or "marked as unwatched".
+
 ## States
 
 - **Loading:** web and mobile: skeletons for the title, buttons and text; TV: a spinner.
@@ -35,6 +54,7 @@ Decide to watch, and how: Play or Resume, with the version, audio and subtitles 
 
 - **Play / Resume** opens the player (C5); **Play from the start** opens it at 0.
 - **Watch with** saves as it changes, per person and title; the player starts with these picks.
+- **Download** and **More** as above.
 - **TV:** focus starts on Play; **Down** reaches Cast, then More like this; **Up** from a row returns to the actions; Back closes the panel, then goes back.
 - **Sound:** TV only.
 
@@ -57,6 +77,7 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `library
   - `versions`: each version's `id`, `label`, `detail` ("4K · HDR10 · HEVC · 18.2 GB" once it has a file, null until then) and `playable`;
   - `related`: TMDB's recommendations for the title that are in the library here, as `ClientItem`s.
 - Later: the versions' audio and subtitle tracks (embedded streams and external files, one per language and kind) and the defaults (this person's picks for the title, or the file's), with files (checkpoint 6); `playback.setPrefs(id, patch)` → `PUT /api/v1/items/{id}/prefs`, with playback (Phase 4).
+- Mark as watched (Phase 4): `playback.setWatched(id, watched)`, and `ClientItem.watched` (played to 95% or more, as Continue watching already counts it). In the prototype it moves the position to the end, or clears it.
 - Events: `movies.updated`, `item.updated`. Later: `watch.updated`.
 
 ## Decisions
@@ -69,4 +90,4 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `library
 
 - **Version per device:** should the version pick be per device class (TV prefers 4K, phone prefers 1080p) rather than per title?
 - **Trailers on the clients:** the admin embeds them on click; should clients too?
-- **Mark as watched / unwatched:** in a More menu (web, mobile) and a long-press of OK (TV)?
+- ~~**Mark as watched / unwatched:** in a More menu (web, mobile) and a long-press of OK (TV)?~~ Yes ([Phase 4's answer 9](../plans/phase-4-clients.md#the-owners-answers)); prototyped at 4.0b, [above](#mark-as-watched).

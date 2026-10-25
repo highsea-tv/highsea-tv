@@ -3,11 +3,13 @@
 // blurred 2.6u and dimmed: elevation.md#blur), the title and its actions, then the cast and More
 // like this as rows. Audio and subtitles opens the shared panel; Back closes it, then leaves.
 import { Icon, Poster, QualityTag, Rating } from '@highsea-tv/ui-web'
-import { useState } from 'react'
+import { type KeyboardEvent, useRef, useState } from 'react'
 import { useParams } from 'wouter'
 import { left, runtime, useItem } from '../client/data.ts'
+import { useMarkWatched } from '../client/item-more.tsx'
 import { useAction } from '../mock/hooks.tsx'
-import type { PlaybackPrefs } from '../mock/types.ts'
+import type { ClientItem, PlaybackPrefs } from '../mock/types.ts'
+import { useBack } from './back.ts'
 import {
   ServerIdentity,
   TvButton,
@@ -24,7 +26,9 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
   const detail = useItem(id)
   const save = useAction((c, patch: PlaybackPrefs) => c.playback.setPrefs(id, patch))
   const [focusKey, setFocusKey] = useState(0)
-  useInitialFocus(detail.status === 'success' && !panel, `${id}:${focusKey}`)
+  const [options, setOptions] = useState(false)
+  const hold = useHold(() => setOptions(true))
+  useInitialFocus(detail.status === 'success' && !panel && !options, `${id}:${focusKey}`)
 
   if (detail.status === 'loading')
     return (
@@ -63,7 +67,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
       />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,var(--color-bg)_10%,transparent_70%)]" />
       <div
-        {...(panel ? { 'data-isolate': '' } : {})}
+        {...(panel || options ? { 'data-isolate': '' } : {})}
         className="absolute inset-0 overflow-hidden [mask-image:linear-gradient(transparent,black_3.2cqw)]"
       >
         <div
@@ -105,7 +109,12 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
                   Directed by {d.directors.map((x) => x.name).join(' and ')}
                 </p>
               )}
-              <div data-group="actions" className="mt-[0.6cqw] flex gap-[1cqw]">
+              <div
+                data-group="actions"
+                className="mt-[0.6cqw] flex gap-[1cqw]"
+                onKeyDownCapture={hold.down}
+                onKeyUpCapture={hold.up}
+              >
                 <TvButton primary initial icon="play" href={tvHref(`/play/${m.id}`)}>
                   {resuming ? `Resume · ${left(m)}` : 'Play'}
                 </TvButton>
@@ -126,6 +135,9 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
                     'Subtitles off'}
                 </p>
               )}
+              <p className="text-(length:--tv-text-pill) text-text-3">
+                {m.watched ? 'Watched · ' : ''}Hold OK for more
+              </p>
             </div>
           </section>
           {d.cast.length > 0 && (
@@ -161,6 +173,15 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
           )}
         </div>
       </div>
+      {options && (
+        <TvOptions
+          item={m}
+          onClose={() => {
+            setOptions(false)
+            setFocusKey((k) => k + 1)
+          }}
+        />
+      )}
       {panel && v && (
         <TvTracksPanel
           versions={d.versions}
@@ -176,5 +197,65 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
         />
       )}
     </>
+  )
+}
+
+const HOLD_MS = 600
+
+/**
+ * A long press of OK (client-detail.md#mark-as-watched): a press shorter than HOLD_MS still
+ * selects what has focus when OK is let go; a longer one opens the options instead.
+ */
+function useHold(onHold: () => void) {
+  const timer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  return {
+    down: (e: KeyboardEvent) => {
+      if (e.key !== 'Enter') return
+      e.preventDefault()
+      if (e.repeat || timer.current) return
+      timer.current = setTimeout(() => {
+        // OK is let go in the options, outside this group, so the hold ends here
+        timer.current = null
+        onHold()
+      }, HOLD_MS)
+    },
+    up: (e: KeyboardEvent) => {
+      if (e.key !== 'Enter' || !timer.current) return
+      clearTimeout(timer.current)
+      timer.current = null
+      ;(e.target as HTMLElement).click()
+    },
+  }
+}
+
+/** What a long press of OK opens: Mark as watched or unwatched. Back closes it. */
+function TvOptions({ item, onClose }: { item: ClientItem; onClose: () => void }) {
+  const mark = useMarkWatched(item)
+  useBack(onClose)
+  useInitialFocus(true, item.id, '[data-options] [data-initial]')
+  return (
+    <div
+      data-isolate=""
+      data-options=""
+      role="dialog"
+      aria-label={item.title}
+      className="absolute inset-0 grid place-items-center bg-bg/70"
+    >
+      <div className="grid min-w-[28cqw] gap-[1cqw] rounded-(--tv-radius-poster) bg-s2 p-[2cqw] shadow-4">
+        <p className="font-semibold text-(length:--tv-text-button)">{item.title}</p>
+        <TvButton
+          primary
+          initial
+          icon={item.watched ? 'replay' : 'check'}
+          onClick={async () => {
+            await mark.run()
+            onClose()
+          }}
+        >
+          {mark.label}
+        </TvButton>
+        <TvButton onClick={onClose}>Cancel</TvButton>
+      </div>
+    </div>
   )
 }

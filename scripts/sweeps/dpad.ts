@@ -52,7 +52,10 @@ for (const r of [...prototypeRoutes().tv, '/tv/nowhere']) {
       [...document.querySelectorAll('[data-k]')]
         .filter(
           (e) =>
-            !seen.includes(e.getAttribute('data-k') ?? '') && e.getBoundingClientRect().width > 0,
+            !seen.includes(e.getAttribute('data-k') ?? '') &&
+            e.getBoundingClientRect().width > 0 &&
+            // behind a modal question, on purpose
+            !e.closest('[inert]'),
         )
         .map((e) => (e.getAttribute('aria-label') ?? e.textContent ?? '').trim().slice(0, 30)),
     [...seen],

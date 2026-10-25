@@ -47,7 +47,7 @@ Written for highsea 0.1.0.
 Screenshots come from a real seeded server, never from the prototypes:
 
 1. Add or change shots in `scripts/docs-shots/areas/<area>.ts` (`{ name, path, act?, crop?, height? }`). Crop to `main` or to the part the text is about.
-2. Run `bun scripts/docs-shots/run.ts <area>` under Node 24.21 (`/checks` has the PATH line). It boots `scripts/sweeps/seeded.ts`, signs in as its owner, and writes `apps/docs/public/images/admin/<area>/<name>.png` at 2× in the default theme. Install pngquant first if it isn't there, for smaller files.
+2. Run `bun scripts/docs-shots/run.ts <area>` under Node 26.11 (`/checks` has the PATH line). It boots `scripts/sweeps/seeded.ts`, signs in as its owner, and writes `apps/docs/public/images/admin/<area>/<name>.png` at 2× in the default theme. Install pngquant first if it isn't there, for smaller files.
 3. Look at every image before you use it.
 4. Reference it as `![description](/images/admin/<area>/<name>.png)`. The description is more than 10 characters and says what the image shows. It must contain no `<` or `{`, since MDX reads them as JSX and the build fails.
 5. When a shot can't be taken yet, use `<ScreenshotToCome shows="…at least 20 characters…" />`.

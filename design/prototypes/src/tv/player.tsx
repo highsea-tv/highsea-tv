@@ -10,10 +10,22 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock } from '../client/data.ts'
 import { HIDE_MS, SEEK_S, trickplayAt, usePlayer } from '../client/player.ts'
+import {
+  NextUp,
+  type StreamAction,
+  StreamMessage,
+  StreamWaiting,
+} from '../client/stream-states.tsx'
 import { CueLine } from '../web/player.tsx'
 import { useBack } from './back.ts'
 import { TvButton, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
 import { TvTracksPanel } from './tracks.tsx'
+
+const tvStreamAction: StreamAction = ({ primary, initial, onClick, children }) => (
+  <TvButton primary={primary} initial={initial} onClick={onClick}>
+    {children}
+  </TvButton>
+)
 
 export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
   const { id } = useParams<{ id: string }>()
@@ -25,7 +37,11 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const scrubber = useRef<HTMLDivElement>(null)
   const ready = player.detail.status === 'success'
-  useInitialFocus(ready && !panel, panel, '[data-player-scrubber]')
+  // a message or Next up takes the focus (its first button, inside its isolated region); the
+  // scrubber has it otherwise
+  const asking = ['failed', 'stopped', 'next-up'].includes(player.stream)
+  useInitialFocus(ready && !panel && !asking, `${panel}:${asking}`, '[data-player-scrubber]')
+  useInitialFocus(ready && asking, player.stream, '[data-isolate] [data-initial]')
 
   const wake = useCallback(() => {
     setShown(true)
@@ -91,7 +107,8 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
     )
 
   const d = player.detail.data
-  const chrome = shown || !player.playing || panel
+  const waiting = player.stream === 'preparing' || player.stream === 'buffering'
+  const chrome = shown || !player.playing || panel || waiting
   const fraction = player.position / Math.max(1, player.duration)
   return (
     <div className="absolute inset-0 bg-[#000]">
@@ -108,8 +125,11 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
         <CueLine player={player} className="text-[1.8cqw]" />
       </div>
 
+      {/* behind the tracks panel or a question, the controls are isolated: focus can't move back
+          in; a question is modal, so they're inert behind it too */}
       <div
-        {...(panel ? { 'data-isolate': '' } : {})}
+        {...(panel || asking ? { 'data-isolate': '' } : {})}
+        inert={asking}
         className={cn(
           'absolute inset-0 transition-opacity duration-200',
           chrome ? 'opacity-100' : 'opacity-0',
@@ -207,6 +227,20 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
           timing={{ offsetMs: player.offsetMs, nudge: player.nudge }}
         />
       )}
+      <StreamWaiting player={player} size="tv" />
+      <StreamMessage
+        player={player}
+        size="tv"
+        action={tvStreamAction}
+        onBack={() => navigate(`/movies/${id}`)}
+      />
+      <NextUp
+        player={player}
+        next={d?.related[0]}
+        size="tv"
+        action={tvStreamAction}
+        onPlay={(next) => navigate(`/play/${next}`)}
+      />
     </div>
   )
 }

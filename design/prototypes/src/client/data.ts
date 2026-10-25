@@ -136,6 +136,9 @@ export function useAnnouncements(platform: ClientPlatform) {
 
 /** The toolbar's Connection: how this app reaches its server right now. */
 export const useConnection = () => useProto().connection
+export const useStreamState = () => useProto().stream
+/** The web platform inside the desktop app, which keeps downloads. */
+export const useDesktopApp = () => useProto().app === 'desktop'
 
 // ---------------------------------------------------------------- formatting
 

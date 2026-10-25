@@ -52,6 +52,49 @@ export function useDevicePrefs(platform: ClientPlatform) {
   return [prefs, set] as const
 }
 
+const everywhereKey = 'highsea-proto:prefs:theme-everywhere'
+const platforms: ClientPlatform[] = ['web', 'mobile', 'tv']
+
+function loadEverywhere(): string | null {
+  try {
+    return localStorage.getItem(everywhereKey)
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Use on all my devices (client-settings.md#use-on-all-my-devices, checkpoint 4.0b): the person's own theme, which
+ * every device they're signed in on takes, saved to the account. Off by default, so devices
+ * differ. In the prototype the three platforms stand in for the person's devices.
+ */
+export function useThemeEverywhere() {
+  const [theme, setTheme] = useState(loadEverywhere)
+  useEffect(() => {
+    const on = () => setTheme(loadEverywhere())
+    listeners.add(on)
+    return () => {
+      listeners.delete(on)
+    }
+  }, [])
+  /** A theme id to use it everywhere, or null to let each device keep its own again. */
+  const set = (next: string | null) => {
+    try {
+      if (next === null) localStorage.removeItem(everywhereKey)
+      else {
+        localStorage.setItem(everywhereKey, next)
+        for (const p of platforms)
+          localStorage.setItem(key(p), JSON.stringify({ ...load(p), theme: next }))
+      }
+    } catch {
+      // still applies for this session
+    }
+    setTheme(next)
+    for (const l of listeners) l()
+  }
+  return [theme, set] as const
+}
+
 /** The server's appearance: the default theme, custom themes and sound defaults. */
 export const useAppearance = () =>
   useQuery('client:appearance', (c) => c.appearance.get(), ['server.updated'])

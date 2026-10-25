@@ -47,7 +47,7 @@ The compose files are at the root (`compose.yaml`, and `compose.bridge.yaml` whe
 
 ## Development
 
-Requires Bun 1.4 or later, and Node 24.21.0, the version in `.nvmrc`.
+Requires Bun 1.4 or later, and Node 26.11.1, the version in `.nvmrc`.
 
 ```sh
 bun install

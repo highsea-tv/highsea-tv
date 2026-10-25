@@ -46,6 +46,16 @@ Two bars on one time axis, speech above and the subtitle below, and the subtitle
 - **Not on this server:** "That title isn't on this server." with **Go home**.
 - **Remote:** the version's description shows what's being sent (in the product, the transcode, e.g. "1080p · 8 Mbps for your connection").
 
+### The stream's states (checkpoint 4.0b)
+
+Prototyped on all three platforms; the prototype's toolbar picks one under **Stream** on a player, or `?stream=` opens one (`preparing`, `buffering`, `failed`, `stopped`, `next-up`). They're drawn once, in `src/client/stream-states.tsx`, and each platform passes its own buttons, so TV's take the D-pad.
+
+- **Getting it ready:** the first play of a transcode, while its first segments are made. A glass card over the frame with a spinner, "Getting it ready" and "Making the first minute for your connection." The chrome stays and the position holds.
+- **Buffering:** the spinner alone, in a glass circle, with the chrome showing and the position held. In the product it shows only after the wait passes a short delay (1 s), so a brief stall shows nothing; screen readers hear "Buffering".
+- **Didn't start:** over a scrim, "This film didn't start", "highsea couldn't read the file. Try again, or choose another version in Audio and subtitles.", with **Try again** (focused) and **Back**. The owner sees why in System › Logs.
+- **Stopped by the server:** an owner or admin's **Stop** in Now playing ([now-playing.md](now-playing.md)). Over a scrim, "{name} stopped this stream", their message in quotes when they wrote one, "You can start it again from where you were.", with **Start again** (focused) and **Back**. On mobile the chrome steps aside, so the message has the screen.
+- **Next up:** in a film's last seconds, a glass card at the bottom right with the next film in its collection (the prototype uses the first related title), "Starts in 10 s" counting down, **Play now** and **Cancel**. At zero the next film plays. On TV, Play now takes the focus; on web and mobile it doesn't, so Space during the credits still pauses. Cancel lets the film end as before.
+
 ## Interactions
 
 | Input | Web | Mobile | TV |
@@ -69,6 +79,10 @@ Two bars on one time axis, speech above and the subtitle below, and the subtitle
 | Timing hint | Subtitles match the audio track's timing. · Subtitles appear {n} ms later. · Subtitles appear {n} ms earlier. |
 | Saved | Saved for this movie. |
 | TV legend | ◀ ▶ Seek 10 s · OK Pause · ▼ Audio and subtitles · Back Hide |
+| Getting it ready | Getting it ready · Making the first minute for your connection. |
+| Didn't start | This film didn't start · highsea couldn't read the file. Try again, or choose another version in Audio and subtitles. · Try again · Back |
+| Stopped | {name} stopped this stream · "{message}" · You can start it again from where you were. · Start again · Back |
+| Next up | Next up · {title} · Starts in {n} s · Play now · Cancel |
 
 ## Data
 
@@ -87,6 +101,6 @@ Two bars on one time axis, speech above and the subtitle below, and the subtitle
 
 ## Open questions
 
-- **Next up:** at the end of a film in a collection, offer the next part?
+- **Next up:** answered by the owner for Phase 4 ([answer 9](../plans/phase-4-clients.md#the-owners-answers)): yes, on every platform, with a 10 s countdown and Cancel. See the stream's states above.
 - **Audio description and commentary tracks:** they're audio tracks with titles; do they need their own labels in the panel?
 - **Picture-in-picture** on web and mobile: in M1 of the clients?

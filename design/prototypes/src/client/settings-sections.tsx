@@ -31,7 +31,7 @@ import {
   useKnownServers,
   useServer,
 } from './data.ts'
-import { useAppearance, useDevicePrefs } from './prefs.tsx'
+import { useAppearance, useDevicePrefs, useThemeEverywhere } from './prefs.tsx'
 import {
   APP_VERSION,
   type SettingsSectionId,
@@ -39,6 +39,9 @@ import {
   useMyDevices,
   useThemeChoices,
 } from './settings.ts'
+
+/** A button whose label wraps at 200% text rather than running off a phone (WCAG 1.4.4). */
+const wraps = 'h-auto min-h-(--size-control) max-w-full whitespace-normal py-2 text-start'
 
 const deviceIcon = (c: ClientType): IconName =>
   c === 'ios' || c === 'android'
@@ -71,43 +74,63 @@ export function CustomThemeStyles() {
 
 function ThemeSection({ platform }: { platform: ClientPlatform }) {
   const [prefs, set] = useDevicePrefs(platform)
+  const [everywhere, setEverywhere] = useThemeEverywhere()
   const choices = useThemeChoices()
+  const choose = (theme: string) => (everywhere === null ? set({ theme }) : setEverywhere(theme))
   return (
-    <fieldset className="grid gap-2">
-      <CustomThemeStyles />
-      <legend className="mb-1 text-caption text-text-3">
-        Only this device changes. Everyone else keeps their own.
-      </legend>
-      {choices.map((t) => (
-        <label
-          key={t.id}
-          className="flex min-h-14 cursor-pointer items-center gap-3 rounded-md border border-line bg-s1 px-3 py-2.5 has-checked:border-accent has-focus-visible:ring-focus"
-        >
-          <input
-            type="radio"
-            name={`theme-${platform}`}
-            checked={prefs.theme === t.id}
-            onChange={() => set({ theme: t.id })}
-            className="size-4 accent-accent-fill"
-          />
-          <span className="grid min-w-0 flex-1">
-            <span className="truncate text-text text-ui">{t.name}</span>
-            <span className="text-caption text-text-3">{t.detail}</span>
-          </span>
-          {t.id !== 'server' && (
-            <span className="flex gap-1" data-theme={t.id}>
-              {(['bg', 's2', 'accent'] as const).map((r) => (
-                <span
-                  key={r}
-                  className="size-4 rounded-full ring-1 ring-line-strong"
-                  style={{ background: `var(--color-${r})` }}
-                />
-              ))}
+    <div className="grid gap-4">
+      <fieldset className="grid gap-2">
+        <CustomThemeStyles />
+        <legend className="mb-1 text-caption text-text-3">
+          {everywhere === null
+            ? 'Only this device changes. Everyone else keeps their own.'
+            : 'All your devices change. Everyone else keeps their own.'}
+        </legend>
+        {choices.map((t) => (
+          <label
+            key={t.id}
+            className="flex min-h-14 cursor-pointer items-center gap-3 rounded-md border border-line bg-s1 px-3 py-2.5 has-checked:border-accent has-focus-visible:ring-focus"
+          >
+            <input
+              type="radio"
+              name={`theme-${platform}`}
+              checked={prefs.theme === t.id}
+              onChange={() => choose(t.id)}
+              className="size-4 accent-accent-fill"
+            />
+            <span className="grid min-w-0 flex-1">
+              <span className="truncate text-text text-ui">{t.name}</span>
+              <span className="text-caption text-text-3">{t.detail}</span>
             </span>
-          )}
-        </label>
-      ))}
-    </fieldset>
+            {t.id !== 'server' && (
+              <span className="flex gap-1" data-theme={t.id}>
+                {(['bg', 's2', 'accent'] as const).map((r) => (
+                  <span
+                    key={r}
+                    className="size-4 rounded-full ring-1 ring-line-strong"
+                    style={{ background: `var(--color-${r})` }}
+                  />
+                ))}
+              </span>
+            )}
+          </label>
+        ))}
+      </fieldset>
+      <Field
+        inline
+        label="Use on all my devices"
+        hint={
+          everywhere === null
+            ? 'Off: each device keeps its own theme.'
+            : 'Your phone, TV and computers use this theme too. Turn it off and each keeps it until you change it there.'
+        }
+      >
+        <Switch
+          checked={everywhere !== null}
+          onCheckedChange={(on) => setEverywhere(on ? prefs.theme : null)}
+        />
+      </Field>
+    </div>
   )
 }
 
@@ -249,12 +272,13 @@ function ServersSection({ platform }: { platform: ClientPlatform }) {
         })}
       </ul>
       <div className="flex flex-wrap gap-2">
-        <Button icon="add" onClick={() => navigate('/connect')}>
+        <Button icon="add" className={wraps} onClick={() => navigate('/connect')}>
           Add a server
         </Button>
         <Button
           variant="ghost"
           icon="sign-out"
+          className={wraps}
           onClick={() => {
             toast({
               title: 'Signed out of Harbor',

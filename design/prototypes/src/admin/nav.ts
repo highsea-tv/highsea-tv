@@ -53,6 +53,13 @@ export const pageGroups: Page[][] = [
       keywords: ['queue', 'history', 'blocklist', 'manual import'],
     },
     {
+      id: 'now-playing',
+      label: 'Now playing',
+      icon: 'play',
+      path: '/now-playing',
+      keywords: ['sessions', 'streams', 'watching', 'transcodes', 'stop'],
+    },
+    {
       id: 'downloads',
       label: 'Downloads',
       icon: 'downloads',

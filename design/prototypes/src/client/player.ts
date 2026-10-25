@@ -6,6 +6,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAction, useQuery } from '../mock/hooks.tsx'
 import type { ClientDetail, PlaybackPrefs } from '../mock/types.ts'
+import type { StreamState } from '../proto/state.ts'
+import { useStreamState } from './data.ts'
 
 /** One nudge of the subtitle timing, matching the admin's (movies.md#decisions). */
 export const NUDGE_MS = 50
@@ -28,15 +30,31 @@ export function usePlayer(id: string, fromStart: boolean) {
   const posRef = useRef(pos)
   posRef.current = pos
 
+  // the stream's state, from the prototype's toolbar (player.md#states); Try again, Cancel and
+  // Start again set it back to normal until the toolbar picks another
+  const picked = useStreamState()
+  const [cleared, setCleared] = useState<StreamState | null>(null)
+  const stream: StreamState = cleared === picked ? 'normal' : picked
+  // waiting for segments, or no stream at all: the position holds
+  const held =
+    stream === 'preparing' || stream === 'buffering' || stream === 'failed' || stream === 'stopped'
+  // Next up shows in a film's last seconds, so the review starts 20 s from the end
+  useEffect(() => {
+    if (picked === 'next-up' && duration) {
+      setPosition(duration - 20)
+      setPlaying(true)
+    }
+  }, [picked, duration])
+
   // the clock: one second a second while playing, stopping at the end
   useEffect(() => {
-    if (!playing || !duration) return
+    if (!playing || !duration || held) return
     const t = setInterval(
       () => setPosition((p) => Math.min(duration, (p ?? posRef.current) + 1)),
       1000,
     )
     return () => clearInterval(t)
-  }, [playing, duration])
+  }, [playing, duration, held])
   useEffect(() => {
     if (playing && duration && pos >= duration) setPlaying(false)
   }, [playing, duration, pos])
@@ -85,6 +103,12 @@ export function usePlayer(id: string, fromStart: boolean) {
     duration,
     position: pos,
     playing,
+    stream,
+    /** Back to a normal stream: Try again, Start again, or Cancel on Next up. */
+    clearStream: () => {
+      setCleared(picked)
+      if (picked !== 'next-up') setPlaying(true)
+    },
     version,
     audio: version?.audio.find((a) => a.id === audioId) ?? null,
     subtitle: version?.subtitles.find((t) => t.id === subtitleId) ?? null,

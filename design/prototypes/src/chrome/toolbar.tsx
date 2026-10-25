@@ -9,9 +9,11 @@ import {
   type ProtoState,
   platforms,
   roles,
+  streamStates,
   themes,
   timeModes,
   type Width,
+  webApps,
   widths,
 } from '../proto/state.ts'
 
@@ -234,6 +236,44 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
               {connections.map((c) => (
                 <option key={c.id} value={c.id}>
                   {c.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </Group>
+      )}
+
+      {platform === 'web' && (
+        <Group label="App">
+          {(id) => (
+            <select
+              id={id}
+              className={control}
+              value={state.app}
+              onChange={(e) => update('app', e.target.value as ProtoState['app'])}
+            >
+              {webApps.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </Group>
+      )}
+
+      {platform !== 'admin' && /\/play\//.test(path) && (
+        <Group label="Stream">
+          {(id) => (
+            <select
+              id={id}
+              className={control}
+              value={state.stream}
+              onChange={(e) => update('stream', e.target.value as ProtoState['stream'])}
+            >
+              {streamStates.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.label}
                 </option>
               ))}
             </select>
