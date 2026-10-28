@@ -11,6 +11,7 @@ type Id =
   | 'collections'
   | 'wanted'
   | 'activity'
+  | 'now-playing'
   | 'downloads'
   | 'indexers'
   | 'subtitles'
@@ -42,6 +43,7 @@ export const pageGroups: Page[][] = [
     page('collections', 'library', '/collections'),
     page('wanted', 'calendar', '/wanted'),
     page('activity', 'activity', '/activity'),
+    page('now-playing', 'play', '/now-playing'),
     page('downloads', 'downloads', '/downloads'),
   ],
   [

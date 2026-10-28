@@ -146,6 +146,7 @@ describe.skipIf(!hasFfmpeg)('HLS over HTTP', () => {
       {
         id: 'fil_sintel:2',
         url: expect.stringMatching(/^\/stream\/subtitles\/[\w.-]+\/fil_sintel%3A2\.vtt$/),
+        delivery: 'external',
       },
     ])
     const base = `${url}${(session.url as string).replace(/main\.m3u8$/, '')}`

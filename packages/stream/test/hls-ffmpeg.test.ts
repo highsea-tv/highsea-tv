@@ -5,7 +5,7 @@
 // it's far enough ahead, a transcode's keyframes every 6 s, WebVTT from an embedded track, a
 // failure's log, and trickplay's sheets.
 import { afterAll, beforeAll, describe, expect, test } from 'bun:test'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawn as nodeSpawn } from 'node:child_process'
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
@@ -13,11 +13,16 @@ import { hasFfmpeg } from '@highsea-tv/media/testing'
 import type { PlaybackDecision } from '../src/decision/index.ts'
 import {
   createTranscodes,
+  downmixFilter,
   type HlsSource,
+  type Limits,
   readKeyframes,
+  type Spawn,
   TranscodeError,
   type Transcodes,
+  type TranscodesOptions,
 } from '../src/hls/index.ts'
+import { pgsBox } from '../src/testing/index.ts'
 import { makeTrickplay } from '../src/trickplay/index.ts'
 
 const ffmpeg = process.env.HIGHSEA_FFMPEG || 'ffmpeg'
@@ -302,6 +307,136 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     await transcodes.end('broken')
   })
 
+  const transcode = decision({
+    action: 'transcode',
+    codec: 'h264',
+    height: 180,
+    bitrate: 500_000,
+    toSdr: false,
+  })
+  /**
+   * Runs read the clip at five times real time (`-readrate`, https://ffmpeg.org/ffmpeg.html#Advanced-options),
+   * so a run still holds its slot while a test looks: at full speed the clip is done at once.
+   */
+  const slowed: Spawn = (command, args) => {
+    const at = args.indexOf('-i')
+    return nodeSpawn(command, [...args.slice(0, at), '-readrate', '5', ...args.slice(at)], {
+      stdio: ['ignore', 'ignore', 'pipe'],
+    })
+  }
+  /** Another set of transcodes in the same cache, with Settings › Playback’s limits. */
+  const limited = (limits: Partial<Limits>, o: Partial<TranscodesOptions> = {}) =>
+    createTranscodes({
+      root: join(dir, 'limited'),
+      ffmpeg,
+      ffprobe,
+      spawn: slowed,
+      logger: { info: () => {}, warn: () => {}, error: () => {} },
+      aheadSeconds: 8,
+      farSeconds: 6,
+      limits: () => ({ maxTranscodes: 1, cacheBytes: null, preset: 'speed', ...limits }),
+      ...o,
+    })
+
+  test('past the transcode limit a transcode waits for a slot; a direct stream doesn’t count', async () => {
+    const set = limited({ maxTranscodes: 1 })
+    const a = set.open('a', source({ decision: transcode }))
+    await a.segment(0)
+    expect(set.running()).toBe(1)
+    // a direct stream plays beside it
+    const copy = set.open('copy', source({}))
+    expect((await copy.segment(0)).length).toBeGreaterThan(0)
+    const b = set.open('b', source({ decision: transcode }))
+    let made = false
+    const waited = b.segment(0).then(() => {
+      made = true
+    })
+    await Bun.sleep(300)
+    expect(made).toBe(false)
+    expect(b.waiting()).toBe(true)
+    await set.end('a')
+    await waited
+    expect(made).toBe(true)
+    expect(b.waiting()).toBe(false)
+    await set.close()
+  })
+
+  test('a transcode that waits too long gives up with the limit as its reason', async () => {
+    const set = limited({ maxTranscodes: 1 }, { waitMs: 200 })
+    await set.open('a', source({ decision: transcode })).segment(0)
+    const b = set.open('b', source({ decision: transcode }))
+    const error = (await b.segment(0).catch((e: unknown) => e)) as TranscodeError
+    expect(error).toBeInstanceOf(TranscodeError)
+    expect(error.reason).toBe('limit')
+    expect(b.failure()?.reason).toBe('limit')
+    await set.close()
+  })
+
+  test('raising the limit lets a waiting transcode start', async () => {
+    let max = 1
+    const set = limited(
+      {},
+      {
+        limits: () => ({ maxTranscodes: max, cacheBytes: null, preset: 'balanced' }),
+      },
+    )
+    await set.open('a', source({ decision: transcode })).segment(0)
+    const waited = set.open('b', source({ decision: transcode })).segment(0)
+    await Bun.sleep(100)
+    max = 2
+    set.limitsChanged()
+    expect(await waited).toHaveLength(1)
+    expect(set.running()).toBe(2)
+    await set.close()
+  })
+
+  test('past the cache’s limit, pieces furthest behind the player go, and are made again when asked', async () => {
+    const set = limited(
+      { maxTranscodes: 4, cacheBytes: 1 },
+      { keepBehindSeconds: 7, spawn: undefined },
+    )
+    const t = set.open('cache', source({ decision: transcode }))
+    for (const i of [0, 1, 2, 3]) await t.segment(i)
+    const before = await t.size()
+    expect(before).toBeGreaterThan(0)
+    const removed = await set.enforce()
+    // the player is at segment 3 (18 s): pieces 0 and 1 are more than 7 s behind it
+    expect(removed).toBe(2)
+    expect(existsSync(join(set.root(), 'cache', '0.m4s'))).toBe(false)
+    expect(existsSync(join(set.root(), 'cache', '2.m4s'))).toBe(true)
+    // seeking back makes it again
+    const files = await t.segment(0)
+    expect(existsSync(files[0] as string)).toBe(true)
+    await set.close()
+  })
+
+  test('Clear removes what the runs have passed, and stops nothing', async () => {
+    const set = limited({ maxTranscodes: 4 }, { spawn: undefined })
+    const t = set.open('clear', source({ decision: transcode }))
+    await t.segment(0)
+    await t.segment(1)
+    await set.empty()
+    expect(existsSync(join(set.root(), 'clear', '0.m4s'))).toBe(false)
+    expect(existsSync(join(set.root(), 'clear', 'header.mp4'))).toBe(true)
+    expect(await t.segment(2)).toHaveLength(1)
+    expect(await t.segment(0)).toHaveLength(1)
+    await set.close()
+  })
+
+  test('a moved cache is used by streams that start after it', async () => {
+    const set = limited({ maxTranscodes: 4 })
+    const old = set.open('old', source({}))
+    await old.segment(0)
+    await set.moveTo(join(dir, 'moved'))
+    const moved = set.open('new', source({}))
+    await moved.segment(0)
+    expect(old.dir.startsWith(join(dir, 'limited'))).toBe(true)
+    expect(moved.dir.startsWith(join(dir, 'moved'))).toBe(true)
+    await set.end('old')
+    expect(existsSync(old.dir)).toBe(false)
+    await set.close()
+  })
+
   test('trickplay: a sheet of previews every 10 s, moved into place when whole', async () => {
     const out = join(dir, 'trickplay', 'f1')
     const sheets = await makeTrickplay({ ffmpeg, input: clip, index: 0, dir: out })
@@ -314,5 +449,171 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
       .toString()
       .trim()
     expect(size).toBe('3200,1800')
+  })
+})
+
+const hasLibass =
+  hasFfmpeg &&
+  / subtitles +V->V/.test(execFileSync(ffmpeg, ['-hide_banner', '-filters']).toString())
+if (hasFfmpeg && !hasLibass)
+  console.warn('This ffmpeg has no libass, so the tests that burn in ASS are skipped.')
+
+/** The picture at `seconds` into the pieces, in grey, one byte a pixel. */
+function frameAt(dir: string, files: string[], seconds: number) {
+  const joined = join(dir, `frame-${Math.random().toString(36).slice(2)}.mp4`)
+  writeFileSync(
+    joined,
+    Buffer.concat([join(dir, 'header.mp4'), ...files].map((f) => readFileSync(f))),
+  )
+  return execFileSync(ffmpeg, [
+    ...['-v', 'error', '-ss', String(seconds), '-i', joined],
+    ...['-frames:v', '1', '-f', 'rawvideo', '-pix_fmt', 'gray', '-'],
+  ])
+}
+
+/** The mean brightness of a rectangle of a grey frame `width` wide. */
+function brightness(
+  frame: Buffer,
+  width: number,
+  r: { x: number; y: number; w: number; h: number },
+) {
+  let sum = 0
+  for (let y = r.y; y < r.y + r.h; y++)
+    for (let x = r.x; x < r.x + r.w; x++) sum += frame[y * width + x] ?? 0
+  return sum / (r.w * r.h)
+}
+
+describe.skipIf(!hasFfmpeg)('subtitles burned in, and the downmix, with ffmpeg (4.3)', () => {
+  let dir: string
+  let clip: string
+  let transcodes: Transcodes
+  const W = 640
+  const H = 360
+  const BOX = { x: 220, y: 280, w: 200, h: 40 }
+  const ass = [
+    '[Script Info]',
+    'ScriptType: v4.00+',
+    `PlayResX: ${W}`,
+    `PlayResY: ${H}`,
+    '',
+    '[V4+ Styles]',
+    'Format: Name, Fontname, Fontsize, PrimaryColour, BorderStyle, Outline, Shadow, Alignment, MarginV',
+    'Style: Default,DejaVu Sans,60,&H00FFFFFF,1,0,0,2,20',
+    '',
+    '[Events]',
+    'Format: Layer, Start, End, Style, Text',
+    'Dialogue: 0,0:00:00.50,0:00:04.00,Default,█████',
+    '',
+  ].join('\n')
+
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), 'highsea-burn-'))
+    clip = join(dir, 'clip.mkv')
+    const sup = join(dir, 'box.sup')
+    writeFileSync(sup, pgsBox({ width: W, height: H, ...BOX, from: 0.5, to: 4 }))
+    writeFileSync(join(dir, 'box.ass'), ass)
+    // black, so anything bright is the subtitle; the PGS track is stream 1, the ASS stream 2
+    execFileSync(ffmpeg, [
+      ...[
+        '-v',
+        'error',
+        '-y',
+        '-f',
+        'lavfi',
+        '-i',
+        `color=c=black:size=${W}x${H}:rate=24:duration=8`,
+      ],
+      ...['-i', sup, '-i', join(dir, 'box.ass')],
+      ...['-map', '0:v', '-map', '1:s', '-map', '2:s'],
+      ...['-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-c:s', 'copy', clip],
+    ])
+    transcodes = createTranscodes({
+      root: join(dir, 'transcodes'),
+      ffmpeg,
+      ffprobe,
+      logger: { info: () => {}, warn: () => {}, error: () => {} },
+    })
+  })
+  afterAll(async () => {
+    await transcodes.close()
+    rmSync(dir, { recursive: true, force: true })
+  })
+
+  const burning = (burnIn: HlsSource['burnIn']): HlsSource => ({
+    input: clip,
+    duration: 8,
+    decision: {
+      ...decision({
+        action: 'transcode',
+        codec: 'h264',
+        height: H,
+        bitrate: 2_000_000,
+        toSdr: false,
+      }),
+      audio: null,
+    },
+    video: { index: 0, codec: 'h264', width: W, height: H },
+    start: 0,
+    keyframes: () => readKeyframes(ffprobe, clip, 0),
+    burnIn,
+  })
+
+  test('a PGS track is laid over the picture while it shows, and gone after', async () => {
+    const t = transcodes.open('pgs', burning({ kind: 'picture', index: 1 }))
+    const files = await t.segment(0)
+    await t.init()
+    const shown = frameAt(t.dir, files, 1)
+    expect(brightness(shown, W, BOX)).toBeGreaterThan(200)
+    expect(brightness(shown, W, { x: 0, y: 0, w: W, h: 200 })).toBeLessThan(30)
+    expect(brightness(frameAt(t.dir, files, 5), W, BOX)).toBeLessThan(30)
+  })
+
+  test.skipIf(!hasLibass)('ASS from the film is taken out once and drawn by libass', async () => {
+    const t = transcodes.open('ass', burning({ kind: 'text', input: clip, index: 2 }))
+    const files = await t.segment(0)
+    await t.init()
+    expect(existsSync(join(t.dir, 'burn.ass'))).toBe(true)
+    const shown = frameAt(t.dir, files, 1)
+    expect(brightness(shown, W, { x: 0, y: 260, w: W, h: 100 })).toBeGreaterThan(40)
+    expect(brightness(shown, W, { x: 0, y: 0, w: W, h: 150 })).toBeLessThan(30)
+    expect(brightness(frameAt(t.dir, files, 5), W, { x: 0, y: 260, w: W, h: 100 })).toBeLessThan(30)
+  })
+
+  test('the downmix’s levels on a tone in each channel, against RFC 7845’s matrices', () => {
+    /** Each output channel's RMS level in dB, as `astats` measures it. */
+    const rms = (filters: string) => {
+      const r = Bun.spawnSync([
+        ffmpeg,
+        ...['-hide_banner', '-nostdin', '-f', 'lavfi', '-i', 'sine=frequency=1000:duration=1'],
+        ...['-af', `${filters},astats`, '-f', 'null', '-'],
+      ])
+      const text = r.stderr.toString()
+      const channels = text.split(/Channel: \d+/).slice(1)
+      return channels.map((c) => {
+        const m = /RMS level dB: (-?[\d.]+|-inf)/.exec(c)
+        return m?.[1] === '-inf' || !m ? Number.NEGATIVE_INFINITY : Number(m[1])
+      })
+    }
+    const [tone] = rms('anull')
+    const db = (coefficient: number) => (tone as number) + 20 * Math.log10(coefficient)
+    const expectLevels = (got: number[], want: (number | null)[]) => {
+      expect(got).toHaveLength(2)
+      want.forEach((w, i) => {
+        if (w === null) expect(got[i]).toBeLessThan(-90)
+        else expect(got[i]).toBeCloseTo(db(w), 1)
+      })
+    }
+    const five = downmixFilter(6, '5.1') as string
+    expectLevels(rms(`pan=5.1|FC=c0,${five}`), [0.374107, 0.374107])
+    expectLevels(rms(`pan=5.1|FL=c0,${five}`), [0.529067, null])
+    expectLevels(rms(`pan=5.1|BR=c0,${five}`), [0.264534, 0.458186])
+    expectLevels(rms(`pan=5.1|LFE=c0,${five}`), [0.374107, 0.374107])
+    const side = downmixFilter(6, '5.1(side)') as string
+    expectLevels(rms(`pan=5.1(side)|SL=c0,${side}`), [0.458186, 0.264534])
+    const seven = downmixFilter(8, '7.1') as string
+    expectLevels(rms(`pan=7.1|FC=c0,${seven}`), [0.274804, 0.274804])
+    expectLevels(rms(`pan=7.1|SR=c0,${seven}`), [0.194316, 0.336565])
+    expectLevels(rms(`pan=7.1|BL=c0,${seven}`), [0.336565, 0.194316])
+    expectLevels(rms(`pan=7.1|FR=c0,${seven}`), [null, 0.388631])
   })
 })

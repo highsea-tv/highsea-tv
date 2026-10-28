@@ -35,7 +35,7 @@ import { Button, cn, EmptyState, Icon, QualityTag } from '@highsea-tv/ui-web'
 import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { player as messages } from './messages.ts'
-import { type Playback, usePlayback } from './playback.ts'
+import { type Playback, TRANSCODE_LIMIT, usePlayback } from './playback.ts'
 import { href } from './shell.tsx'
 
 const { clock } = createFormat()
@@ -150,7 +150,8 @@ function TracksPanel({ p, onClose }: { p: Playback; onClose: () => void }) {
   const v = p.version
   const d = p.detail.data
   if (!v || !d) return null
-  const picture = !!p.subtitle && !!p.session && !p.subtitleUrl
+  // a track this device can't be sent at all; one the server burns in has its own line (4.3)
+  const picture = !!p.subtitle && !!p.session && !p.subtitleUrl && !p.burnt
   // a version waiting for its file has nothing to play yet
   const versions = d.versions.filter((x) => x.playable || x.id === v.id)
   return (
@@ -228,7 +229,15 @@ function TracksPanel({ p, onClose }: { p: Playback; onClose: () => void }) {
         </div>
         {picture && <p className="px-2.5 text-caption text-text-3">{t('pictureTrack')}</p>}
       </section>
-      {p.subtitle && !picture && (
+      {p.subtitle && p.burnt && (
+        <section aria-labelledby="p-timing" className="grid gap-2">
+          <h3 id="p-timing" className="font-mono text-label text-text-3 uppercase">
+            {t('timing')}
+          </h3>
+          <p className="text-caption text-text-3">{t('burntTiming')}</p>
+        </section>
+      )}
+      {p.subtitle && !picture && !p.burnt && (
         <section aria-labelledby="p-timing" className="grid gap-2">
           <h3 id="p-timing" className="font-mono text-label text-text-3 uppercase">
             {t('timing')}
@@ -395,7 +404,9 @@ function StreamMessage({ p, onBack }: { p: Playback; onBack: () => void }) {
           {failed ? t('failed') : t('stopped', { name: by?.name ?? '' })}
         </h2>
         {failed ? (
-          <p className="text-text-2 text-ui">{t('failedBody')}</p>
+          <p className="text-text-2 text-ui">
+            {p.state.error === TRANSCODE_LIMIT ? t('failedLimit') : t('failedBody')}
+          </p>
         ) : (
           <>
             {by?.message && (

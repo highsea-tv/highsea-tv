@@ -50,6 +50,7 @@ export type EventKind =
   | 'health'
   | 'update'
   | 'movie-added'
+  | 'playback-started'
   | 'test'
 
 export type Detail = {

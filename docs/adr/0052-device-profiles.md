@@ -45,3 +45,9 @@ Prior art: Jellyfin's `DeviceProfile` ([jellyfin/MediaBrowser.Model/Dlna/DeviceP
 - **The variant** comes from the profile's codecs and `maxBitrate` and the remote ceiling: one per session (the plan's answer 7).
 - **Subtitles:** the browsers' profiles draw WebVTT, so text tracks are sent as WebVTT and image tracks have no URL until 4.3.
 - The other platforms' profiles come with their apps (4.4 to 4.6), from their platforms' documentation.
+
+## 2026-10-28: burned-in subtitles in the decision (checkpoint 4.3a)
+
+- The decision takes what the server can do, `server: { burnIn, toneMapping }`, so a client's profile stays what the client plays and the server's abilities are said once. 4.3a sets `burnIn`; tone mapping is 4.3b's.
+- A subtitle's `delivery` is `external`, `embedded`, `burn-in` or `unavailable`. A picture track of the film's own, or ASS the client can't draw, is `burn-in` when the server can, which forces a transcode, and the reasons say so: "{client} can't draw {format} subtitles, so they're burned into the picture". Without burn-in, ASS is sent as WebVTT without its styling, and a picture track is unavailable, as in 4.1.
+- The play API gives each track's delivery, so a client lists a burned-in track as choosable, loads no `<track>` for it, and leaves out its timing with a line saying why (the plan's answer 6).

@@ -36,6 +36,7 @@ export const NOTIFICATION_EVENTS = [
   'health',
   'update',
   'movie-added',
+  'playback-started',
 ] as const
 
 export const ConnectionKind = z.enum(CONNECTION_KINDS).openapi('ConnectionKind')

@@ -4,16 +4,18 @@
 //
 // - A device's profile is the built-in one it names, with its latest report laid over it
 //   (`device_profiles`).
-// - At home, streams are never limited; away, the remote ceiling applies (playback-settings.md). Home
-//   is a private address (RFC 1918, RFC 4193 and loopback, `PRIVATE_RANGES`), as the client's
-//   address is resolved through trusted proxies. Until Settings › Playback (4.3), the ceiling is
-//   its default, 8 Mbps at 1080p.
+// - At home, streams are never limited; away, Settings › Playback's remote ceiling applies
+//   (playback-settings.md). Home is a private address (RFC 1918, RFC 4193 and loopback,
+//   `PRIVATE_RANGES`), as the client's address is resolved through trusted proxies.
 // - A library the person can't see answers 404, as the reads do, and taking it away, or signing
 //   the device out, ends their sessions at once (`users.updated`).
 // - A direct stream or a transcode is HLS made on demand (4.1b, ADR 0051): each session has a
 //   folder in the data folder's `transcodes/`, which goes when the session ends. A direct stream's
 //   segments follow the file's keyframes, read once by ffprobe and kept (`file_keyframes`).
 // - Text subtitles are sent as WebVTT, converted once a session; picture subtitles aren't sent.
+// - Now playing (4.3a) hears each session start, report and end through `hooks`, and staff stop a
+//   session with `stopFor`: its player's next report gets a 404 saying who stopped it and why,
+//   and the person hears `playback.stopped` so it asks at once.
 import type {
   PlaybackDecision as ApiDecision,
   PlaySession as ApiSession,
@@ -21,17 +23,20 @@ import type {
   DeviceReport,
   PlayRequest,
 } from '@highsea-tv/api-contract'
+import { SESSIONS_TOPICS } from '@highsea-tv/api-contract'
 import { AppError, type Clock, type EventBus, type Logger } from '@highsea-tv/core'
 import { type Db, schema } from '@highsea-tv/db'
 import type { Movies } from '@highsea-tv/media/movies'
-import { trackIndex } from '@highsea-tv/media/shared'
+import { type MediaInfo, trackIndex } from '@highsea-tv/media/shared'
 import { PRIVATE_RANGES, parseTrustedProxies } from '@highsea-tv/network'
 import {
   type Ceiling,
+  type DecisionInput,
   decide,
   isTextSubtitle,
   type PlaybackDecision,
   type SubtitlePick,
+  type SubtitlePlan,
 } from '@highsea-tv/stream/decision'
 import {
   type HlsSource,
@@ -51,18 +56,19 @@ import {
   ReportedProfile,
   withReport,
 } from '@highsea-tv/stream/profiles'
-import { createSessions, type PlaySession } from '@highsea-tv/stream/sessions'
+import { createSessions, type EndReason, type PlaySession } from '@highsea-tv/stream/sessions'
 import type { TrickplayManifest } from '@highsea-tv/stream/trickplay'
 import { and, eq } from 'drizzle-orm'
+import type { NowPlayingService } from './now-playing.ts'
 import type { Trickplay } from './trickplay.ts'
 
 const { deviceProfiles, fileKeyframes, subtitleFiles } = schema
 
-/** Settings › Playback's default remote ceiling (playback-settings.md), until 4.3 makes it a setting. */
-export const REMOTE_CEILING: Ceiling = { bitrate: 8_000_000, height: 1080 }
 /** The profile for a device that names none and never reported one. */
 const DEFAULT_PROFILE = 'web-chromium'
 const SWEEP_MS = 60_000
+/** How long a stopped session's player can still learn who stopped it. */
+const NOTICE_MS = 10 * 60_000
 
 /** The MIME types of the containers a browser plays as they are (RFC 6381; MDN's container guide). */
 const TYPES: Record<string, string> = {
@@ -99,21 +105,32 @@ export function createPlayback(deps: {
   deviceExists(deviceId: string): boolean
   /** The sessions' folders and their ffmpeg runs (`@highsea-tv/stream/hls`). */
   transcodes: Transcodes
+  /** Settings › Playback's remote ceiling, or null for none (4.3a). */
+  ceiling(): Ceiling | null
   /** ffprobe's binary, for keyframes. */
   ffprobe: string
   /** A file's subtitle tracks, as the client API lists them. */
   subtitles(fileId: string): ClientSubtitle[]
   /** The scrubber's previews, by file. */
   trickplay: Pick<Trickplay, 'manifest' | 'sheet'>
+  /** Now playing (4.3a): hears sessions start, move and end. */
+  hooks?: NowPlayingService['hooks']
 }) {
   const { db, clock, events, movies, transcodes } = deps
   const log = deps.logger.child('playback')
   const home = parseTrustedProxies(PRIVATE_RANGES.join(',')).trusted
+  /** Sessions staff stopped: who and why, for the player's next report. */
+  const notices = new Map<
+    string,
+    { userId: string; by: string; message: string | null; at: number }
+  >()
   const sessions = createSessions({
     now: () => clock.now(),
-    onEnd: (s, why) => {
+    onEnd: (s, why: EndReason) => {
       log.debug('play session ended', { session: s.id, why })
       void transcodes.end(s.id)
+      const notice = notices.get(s.id)
+      deps.hooks?.ended(s, why, notice && { name: notice.by, message: notice.message })
     },
   })
 
@@ -134,6 +151,8 @@ export function createPlayback(deps: {
   const timer = setInterval(() => {
     sessions.sweep()
     transcodes.sweep()
+    const t = clock.now()
+    for (const [id, n] of notices) if (t - n.at >= NOTICE_MS) notices.delete(id)
   }, SWEEP_MS)
   timer.unref?.()
 
@@ -196,6 +215,30 @@ export function createPlayback(deps: {
     return { kind: 'sidecar', id: row.id, format: row.format }
   }
 
+  /** What a run burns in (4.3): the film's picture track, or ASS from the film or a sidecar. */
+  function burnInOf(
+    file: { path: string },
+    info: MediaInfo,
+    d: PlaybackDecision,
+  ): HlsSource['burnIn'] {
+    const pick = d.subtitle?.delivery === 'burn-in' ? d.subtitle.pick : null
+    if (!pick) return null
+    if (pick.kind === 'sidecar') {
+      const row = db
+        .select({ path: subtitleFiles.path })
+        .from(subtitleFiles)
+        .where(eq(subtitleFiles.id, pick.id))
+        .get()
+      return row ? { kind: 'text', input: row.path, index: null } : null
+    }
+    const codec = info.subtitles.find((s) => s.index === pick.index)?.codec
+    return isTextSubtitle(codec ?? '')
+      ? { kind: 'text', input: file.path, index: pick.index }
+      : { kind: 'picture', index: pick.index }
+  }
+
+  type SubtitleDelivery = SubtitlePlan['delivery']
+
   /** The decision in the API's shape: tracks by their ids rather than stream indexes. */
   function toApi(d: PlaybackDecision, fileId: string, subtitleId: string | null): ApiDecision {
     return {
@@ -224,7 +267,12 @@ export function createPlayback(deps: {
     return isHls(s.decision) ? `/stream/hls/${sessions.token(s)}/main.m3u8` : null
   }
 
-  const toApiSession = (s: PlaySession, decision: ApiDecision, start: number): ApiSession => ({
+  const toApiSession = (
+    s: PlaySession,
+    decision: ApiDecision,
+    start: number,
+    delivery: (trackId: string) => SubtitleDelivery,
+  ): ApiSession => ({
     id: s.id,
     decision,
     url: urlOf(s),
@@ -233,6 +281,7 @@ export function createPlayback(deps: {
       url: isTextSubtitle(t.format)
         ? `/stream/subtitles/${sessions.token(s)}/${encodeURIComponent(t.id)}.vtt`
         : null,
+      delivery: delivery(t.id),
     })),
     start,
     duration: s.duration,
@@ -298,15 +347,16 @@ export function createPlayback(deps: {
       subtitleId = null
     }
     const profile = profileFor(viewer.deviceId, request.profile)
-    const decision = decide({
+    const input: DecisionInput = {
       file: { path: src.file.path, size: src.file.size, info },
       profile,
       audio,
       subtitle,
-      ceiling: home.has(address) ? null : REMOTE_CEILING,
-      server: { burnIn: false, toneMapping: false },
+      ceiling: home.has(address) ? null : deps.ceiling(),
+      server: { burnIn: true, toneMapping: false },
       locale,
-    })
+    }
+    const decision = decide(input)
     if (isHls(decision) && !src.duration)
       throw new AppError('conflict', 'That file’s length isn’t known, so it can’t be streamed.', {
         reason: 'no-duration',
@@ -324,9 +374,13 @@ export function createPlayback(deps: {
       decision,
       position: start,
       duration: src.duration,
+      address,
+      away: !home.has(address),
     })
+    deps.hooks?.started(session, { info, year: src.item.year })
     // the session's folder; a stream's first run starts now, where the player will
     const video = info.video
+    const sound = info.audio.find((a) => a.index === decision.audio?.index)
     const source: HlsSource = {
       input: src.file.path,
       duration: src.duration ?? 0,
@@ -336,6 +390,8 @@ export function createPlayback(deps: {
         : null,
       start,
       keyframes: () => (video ? keyframes(src.file, video.index) : Promise.resolve([])),
+      audio: sound ? { channels: sound.channels, layout: sound.layout } : null,
+      burnIn: burnInOf(src.file, info, decision),
     }
     const transcode = transcodes.open(session.id, source)
     if (isHls(decision)) transcode.prepare()
@@ -345,27 +401,63 @@ export function createPlayback(deps: {
       method: decision.method,
       profile: profile.id,
     })
-    return toApiSession(session, toApi(decision, src.file.id, subtitleId), start)
+    // how each track would be sent on this device, so the player knows which start a new stream:
+    // the decision's own, made with that track picked
+    const delivery = (trackId: string): SubtitleDelivery => {
+      if (trackId === subtitleId && decision.subtitle) return decision.subtitle.delivery
+      const pick = subtitlePick(src.file.id, trackId)
+      return decide({ ...input, subtitle: pick }).subtitle?.delivery ?? 'unavailable'
+    }
+    return toApiSession(session, toApi(decision, src.file.id, subtitleId), start, delivery)
   }
 
   /** A report from the player: saves the place every few seconds, and renews the URL. */
   function progress(userId: string, id: string, report: { position: number; paused: boolean }) {
     const s = sessions.get(id, userId)
-    if (!s) throw noSession()
+    if (!s) throw ended(userId, id)
+    const was = s.paused
     const { save } = sessions.heard(s, report)
     const watched = save
       ? movies.playback.position(userId, s.tmdbId, report.position, s.duration).watched
       : false
+    if (watched) s.finished = true
+    deps.hooks?.heard(s.paused, was)
     return { watched, expiresAt: new Date(s.expiresAt).toISOString() }
   }
 
   /** Leaving the player: saves the place last reported, then ends the session and its URL. */
   function stop(userId: string, id: string) {
     const s = sessions.get(id, userId)
-    if (!s) throw noSession()
+    if (!s) throw ended(userId, id)
     if (s.heardAt > s.startedAt && s.savedAt < s.heardAt)
       movies.playback.position(userId, s.tmdbId, s.position, s.duration)
     sessions.end(id)
+  }
+
+  /** A session that's gone: a 404 that says who stopped it, when someone did (`StoppedDetails`). */
+  function ended(userId: string, id: string): AppError {
+    const n = notices.get(id)
+    if (!n || n.userId !== userId) return noSession()
+    return new AppError('not-found', `${n.by} stopped this stream.`, {
+      reason: 'stopped',
+      by: n.by,
+      message: n.message,
+    })
+  }
+
+  /**
+   * Now playing's Stop: ends someone's session and its URL at once, keeps who stopped it and why
+   * for their player, and tells them over the event stream.
+   */
+  function stopFor(id: string, by: { name: string }, message: string) {
+    const s = sessions.list().find((x) => x.id === id)
+    if (!s) throw new AppError('not-found', 'That stream has already ended.')
+    notices.set(id, { userId: s.userId, by: by.name, message: message || null, at: clock.now() })
+    if (s.heardAt > s.startedAt && s.savedAt < s.heardAt)
+      movies.playback.position(s.userId, s.tmdbId, s.position, s.duration)
+    sessions.end(id, 'staff')
+    events.emit({ topic: SESSIONS_TOPICS.stopped, ids: [id], to: [s.userId] })
+    log.info('play session stopped from Now playing', { session: id })
   }
 
   /**
@@ -516,6 +608,7 @@ export function createPlayback(deps: {
     trickplaySheet,
     progress,
     stop,
+    stopFor,
     report,
     profileFor,
     open,

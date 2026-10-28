@@ -2,9 +2,10 @@
 // Playback (Phase 4, checkpoint 4.1a): each person's watched state per title (ADR 0054), the
 // player's picks per person and title (player.md › Data), and what each device reported it plays
 // (ADR 0052). Where a person stopped is `watch_positions`, in media.ts since checkpoint 4.
-// Checkpoint 4.1b adds what HLS and the scrubber read of each file: its keyframes and its trickplay.
+// Checkpoint 4.1b adds what HLS and the scrubber read of each file: its keyframes and its trickplay;
+// 4.3a, Now playing's 30 days of what was watched.
 import { index, integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
-import { devices, users } from './auth.ts'
+import { CLIENT_TYPES, devices, users } from './auth.ts'
 import { mediaFiles, mediaItems } from './media.ts'
 
 /** Played or not, how often, and when last; smart collections' watch rules read it (ADR 0049). */
@@ -90,3 +91,39 @@ export const trickplay = sqliteTable('trickplay', {
   error: text('error'),
   madeAt: integer('made_at').notNull(),
 })
+
+/**
+ * Now playing's last 30 days (checkpoint 4.3a, answer 10): a row per play session that ended. No
+ * addresses are kept, only whether it was away from home. The title and version are kept as words,
+ * so a row reads the same after the film leaves the library; the user's rows go with the user. A
+ * daily job removes rows older than 30 days.
+ */
+export const playbackHistory = sqliteTable(
+  'playback_history',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    deviceName: text('device_name').notNull(),
+    client: text('client', { enum: CLIENT_TYPES }).notNull(),
+    /** Null once the title has left the library. */
+    itemId: text('item_id').references(() => mediaItems.id, { onDelete: 'set null' }),
+    tmdbId: integer('tmdb_id').notNull(),
+    title: text('title').notNull(),
+    year: integer('year'),
+    /** "4K · HDR10 · HEVC · 18.2 GB". */
+    version: text('version').notNull(),
+    method: text('method', { enum: ['direct-play', 'direct-stream', 'transcode'] }).notNull(),
+    away: integer('away', { mode: 'boolean' }).notNull(),
+    /** Seconds watched. */
+    watched: integer('watched').notNull(),
+    finished: integer('finished', { mode: 'boolean' }).notNull(),
+    startedAt: integer('started_at').notNull(),
+    endedAt: integer('ended_at').notNull(),
+  },
+  (t) => [
+    index('playback_history_ended').on(t.endedAt),
+    index('playback_history_user').on(t.userId, t.endedAt),
+  ],
+)

@@ -2,13 +2,14 @@
 // Playback (checkpoint 4.1a): playing a title on a device, its session's reports, the device's
 // reported profile, and each person's watch state per title (ADR 0054). Thin handlers over the
 // runtime's playback and @highsea-tv/media/movies. A library the person can't see answers 404, as
-// the library's reads do. 4.1b adds the scrubber's previews (trickplay).
+// the library's reads do. 4.1b adds the scrubber's previews (trickplay), and 4.3a Settings › Playback
+// with its status and Clear, for the owner and admins.
 import { readFile } from 'node:fs/promises'
 import { routes } from '@highsea-tv/api-contract'
 import { AppError } from '@highsea-tv/core'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
-import { type Env, me } from './guard.ts'
+import { actor, type Env, me } from './guard.ts'
 
 /** The person, with the movie library checked: 404 when it isn't theirs. */
 export function viewer(c: Context<Env>) {
@@ -110,4 +111,26 @@ export function registerPlayback(app: OpenAPIHono<Env>) {
     })
   })
   app.openAPIRegistry.registerPath(routes.playback.trickplaySheet)
+
+  // ---------------------------------------------------------------- Settings › Playback (4.3a)
+
+  const settings = (c: Context<Env>) => c.get('runtime').playbackSettings
+  const audit = (c: Context<Env>, action: string) =>
+    c.get('runtime').auth.ctx.audit({ action, actor: actor(me(c)), address: c.get('meta').address })
+
+  app.openapi(routes.settings.playback, (c) => c.json(settings(c).get(), 200))
+
+  app.openapi(routes.settings.savePlayback, (c) => {
+    const saved = settings(c).update(c.req.valid('json'))
+    audit(c, 'settings.playback')
+    return c.json(saved, 200)
+  })
+
+  app.openapi(routes.playback.status, async (c) => c.json(await settings(c).status(), 200))
+
+  app.openapi(routes.playback.clearCache, async (c) => {
+    const status = await settings(c).clearCache()
+    audit(c, 'playback.cache-cleared')
+    return c.json(status, 200)
+  })
 }

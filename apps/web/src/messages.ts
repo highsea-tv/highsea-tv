@@ -269,12 +269,16 @@ export const player = defineMessages({
   subtitle: 'Subtitle',
   saved: 'Saved for this movie.',
   pictureTrack: 'This subtitle is a picture, which a browser can’t show yet.',
+  // in place of the nudge for a subtitle the server draws into the film (4.3's answer 6)
+  burntTiming: 'This subtitle is drawn into the picture, so its timing can’t be changed.',
   preparing: 'Getting it ready',
   preparingBody: 'Making the first minute for your connection.',
   buffering: 'Buffering',
   failed: 'This film didn’t start',
   failedBody:
     'highsea couldn’t read the file. Try again, or choose another version in Audio and subtitles.',
+  failedLimit:
+    'The server is already making as many films as it’s set to. Try again when one finishes.',
   stopped: '{name} stopped this stream',
   stoppedBody: 'You can start it again from where you were.',
   tryAgain: 'Try again',

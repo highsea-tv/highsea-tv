@@ -30,6 +30,7 @@ export const connections = defineMessages({
   'event.health': 'Health',
   'event.update': 'Update',
   'event.movie-added': 'Movie added',
+  'event.playback-started': 'Playback started',
   noEvents: 'Hears nothing yet',
   enabled: '{name}: on',
   serverMail: 'Server’s mail',

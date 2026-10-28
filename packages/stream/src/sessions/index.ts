@@ -30,6 +30,9 @@ export type SessionInput = {
   /** Seconds in at the start. */
   position: number
   duration: number | null
+  /** Where it's watched from, for Now playing; never kept once the session ends (4.3's answer 10). */
+  address: string
+  away: boolean
 }
 
 export type PlaySession = SessionInput & {
@@ -41,7 +44,14 @@ export type PlaySession = SessionInput & {
   /** When the URL stops working without another report. */
   expiresAt: number
   savedAt: number
+  /** Seconds actually watched: time playing, counted between reports as the place moved on. */
+  played: number
+  /** Passed 90% in this session (ADR 0054). */
+  finished: boolean
 }
+
+/** Why a session ended: left, nobody reported, access taken away, or stopped from Now playing. */
+export type EndReason = 'stopped' | 'idle' | 'revoked' | 'staff'
 
 export function createSessions({
   now,
@@ -52,8 +62,8 @@ export function createSessions({
   now: () => number
   idleMs?: number
   tokenMs?: number
-  /** Hears each session as it ends, whether left, idle or taken away. */
-  onEnd?: (session: PlaySession, why: 'stopped' | 'idle' | 'revoked') => void
+  /** Hears each session as it ends: left, idle, taken away, or stopped from Now playing. */
+  onEnd?: (session: PlaySession, why: EndReason) => void
 }) {
   const live = new Map<string, PlaySession>()
   const key = randomBytes(32)
@@ -61,7 +71,7 @@ export function createSessions({
   const mac = (s: Pick<PlaySession, 'id' | 'userId'>, fileId: string) =>
     createHmac('sha256', key).update(`${s.id}\n${s.userId}\n${fileId}`).digest('base64url')
 
-  function end(id: string, why: 'stopped' | 'idle' | 'revoked' = 'stopped'): boolean {
+  function end(id: string, why: EndReason = 'stopped'): boolean {
     const s = live.get(id)
     if (!s) return false
     live.delete(id)
@@ -85,6 +95,8 @@ export function createSessions({
       heardAt: t,
       expiresAt: t + tokenMs,
       savedAt: 0,
+      played: 0,
+      finished: false,
     }
     live.set(s.id, s)
     return s
@@ -104,6 +116,12 @@ export function createSessions({
   function heard(s: PlaySession, report: { position: number; paused: boolean }) {
     const t = now()
     const save = s.savedAt === 0 || report.paused !== s.paused || t - s.savedAt >= SAVE_EVERY_MS
+    // playing since the last report counts as watched, up to how far the place moved: a seek
+    // forward isn't watching, and a seek back counts nothing
+    if (!s.paused) {
+      const moved = report.position - s.position
+      if (moved > 0) s.played += Math.min(moved, (t - s.heardAt) / 1000)
+    }
     s.position = report.position
     s.paused = report.paused
     s.heardAt = t

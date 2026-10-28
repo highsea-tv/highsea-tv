@@ -248,6 +248,32 @@ export function createNotify(deps: NotifyDeps) {
     )
   }
 
+  /** Someone started watching (4.3a): off for every connection until the owner ticks it. */
+  function playbackStarted(p: {
+    sessionId: string
+    tmdbId: number
+    person: string
+    device: string
+    method: 'direct-play' | 'direct-stream' | 'transcode'
+    sent: string
+    away: boolean
+  }) {
+    const found = byTmdb(p.tmdbId)
+    if (!found) return
+    notifications.notify(
+      'playback-started',
+      {
+        movie: found.ref,
+        person: p.person,
+        device: p.device,
+        method: p.method,
+        sent: p.sent,
+        away: p.away,
+      },
+      `playback-started:${p.sessionId}`,
+    )
+  }
+
   function updateAvailable(version: string) {
     notifications.notify('update', { version, url: page('/settings/general') }, `update:${version}`)
   }
@@ -334,6 +360,7 @@ export function createNotify(deps: NotifyDeps) {
     onFailed: guarded('a failed download', onFailed),
     onListAdded: guarded('a list', onListAdded),
     movieAdded: guarded('a movie added', movieAdded),
+    playbackStarted: guarded('a stream started', playbackStarted),
     updateAvailable: guarded('an update', updateAvailable),
     checkHealth,
     verifyImage,

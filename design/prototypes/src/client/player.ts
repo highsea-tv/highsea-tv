@@ -135,6 +135,13 @@ export type Player = ReturnType<typeof usePlayer>
 export const offsetLabel = (ms: number) =>
   ms === 0 ? 'On time' : `${ms > 0 ? '+' : '−'}${Math.abs(ms)} ms`
 
+/**
+ * In place of the nudge for a subtitle that's a picture, which the server draws into the film
+ * (checkpoint 4.3's answer 6).
+ */
+export const PICTURE_TIMING =
+  'This subtitle is drawn into the picture, so its timing can’t be changed.'
+
 /** Plain words for the nudge's direction. */
 export const offsetHint = (ms: number) =>
   ms === 0

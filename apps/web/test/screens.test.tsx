@@ -58,6 +58,10 @@ type State = {
   away: boolean
   down: boolean
   playFails: boolean
+  /** Someone stopped the session from Now playing: its reports answer who and why. */
+  stopped: boolean
+  /** The open event streams, to send a server event down. */
+  streams: ReadableStreamDefaultController<Uint8Array>[]
   calls: string[]
   bodies: Record<string, unknown>
 }
@@ -89,6 +93,15 @@ const version = (id: string, label: string) => ({
       format: 'srt',
       kind: 'external',
     },
+    {
+      id: `${id}:p`,
+      language: 'en',
+      label: 'English · Blu-ray',
+      forced: false,
+      hi: false,
+      format: 'hdmv_pgs_subtitle',
+      kind: 'embedded',
+    },
   ],
 })
 
@@ -96,7 +109,11 @@ async function api(input: string | URL | Request, init: RequestInit = {}) {
   const u = new URL(String(input), 'http://localhost')
   const method = init.method ?? 'GET'
   if (state.down) throw new TypeError('fetch failed')
-  if (u.pathname === '/api/v1/events') return new Response(new ReadableStream())
+  if (u.pathname === '/api/v1/events')
+    return new Response(
+      new ReadableStream<Uint8Array>({ start: (c) => void state.streams.push(c) }),
+      { headers: { 'content-type': 'text/event-stream' } },
+    )
   state.calls.push(`${method} ${u.pathname}`)
   const body = init.body ? JSON.parse(String(init.body)) : undefined
   if (body !== undefined) state.bodies[`${method} ${u.pathname}`] = body
@@ -212,17 +229,39 @@ async function api(input: string | URL | Request, init: RequestInit = {}) {
           container: 'mp4',
           video: { action: 'copy' },
           audio: { id: `${body.versionId}:1`, action: 'copy', codec: 'aac', channels: 2 },
-          subtitle: null,
+          // the picture track is burned in (4.3)
+          subtitle:
+            body.subtitleId === `${body.versionId}:p`
+              ? { id: body.subtitleId, delivery: 'burn-in' }
+              : null,
           bitrate: 4_000_000,
           reasons: [],
         },
         url: '/stream/files/token-1',
-        subtitles: [{ id: `${body.versionId}:s`, url: '/stream/subtitles/token-1.vtt' }],
+        subtitles: [
+          {
+            id: `${body.versionId}:s`,
+            url: '/stream/subtitles/token-1.vtt',
+            delivery: 'external',
+          },
+          { id: `${body.versionId}:p`, url: null, delivery: 'burn-in' },
+        ],
         start: body.start ?? 360,
         duration: 888,
         expiresAt: '2026-10-28T01:00:00.000Z',
       })
     case 'POST /api/v1/playback/sessions/pls_1/progress':
+      if (state.stopped)
+        return json(
+          {
+            error: {
+              code: 'not-found',
+              message: 'Ines stopped this stream.',
+              details: { reason: 'stopped', by: 'Ines', message: 'Dinner’s ready.' },
+            },
+          },
+          404,
+        )
       return json({ watched: false, expiresAt: '2026-10-28T01:00:00.000Z' })
     case 'DELETE /api/v1/playback/sessions/pls_1':
       return new Response(null, { status: 204 })
@@ -235,7 +274,16 @@ async function api(input: string | URL | Request, init: RequestInit = {}) {
 }
 
 beforeEach(() => {
-  state = { signedIn: true, away: false, down: false, playFails: false, calls: [], bodies: {} }
+  state = {
+    signedIn: true,
+    away: false,
+    down: false,
+    playFails: false,
+    stopped: false,
+    streams: [],
+    calls: [],
+    bodies: {},
+  }
   globalThis.fetch = api as typeof fetch
 })
 afterEach(() => cleanup())
@@ -361,6 +409,34 @@ describe('the player', () => {
     expect(state.bodies['PUT /api/v1/items/movie/45745/prefs']).toEqual({ subtitleId: 'v4k:s' })
   })
 
+  test('a subtitle burned in starts the stream again, and says its timing can’t change', async () => {
+    const { page, user } = await open('/play/45745')
+    const plays = () => state.calls.filter((c) => c === 'POST /api/v1/items/movie/45745/play')
+    expect(plays()).toHaveLength(1)
+    await user.click(page.getByRole('button', { name: 'Audio and subtitles' }))
+    const panel = within(page.getByRole('complementary', { name: 'Audio and subtitles' }))
+    await user.click(panel.getByText('English · Blu-ray'))
+    await settle()
+    expect(plays()).toHaveLength(2)
+    expect(state.bodies['POST /api/v1/items/movie/45745/play']).toMatchObject({
+      subtitleId: 'v4k:p',
+    })
+    expect(
+      panel.getByText('This subtitle is drawn into the picture, so its timing can’t be changed.'),
+    ).toBeTruthy()
+    expect(panel.queryByRole('button', { name: /earlier/ })).toBeNull()
+    expect(panel.queryByText(/a browser can’t show yet/)).toBeNull()
+    expect(document.querySelector('track')).toBeNull()
+    // leaving it starts again; text to off doesn't
+    await user.click(panel.getByText('English', { exact: true }))
+    await settle()
+    expect(plays()).toHaveLength(3)
+    expect(panel.getByRole('button', { name: /earlier/ })).toBeTruthy()
+    await user.click(panel.getByText('Off', { exact: true }))
+    await settle()
+    expect(plays()).toHaveLength(3)
+  })
+
   test('a film that doesn’t start says so, with Try again, which asks again', async () => {
     state.playFails = true
     const { page, user } = await open('/play/45745')
@@ -369,6 +445,24 @@ describe('the player', () => {
     const again = within(message).getByRole('button', { name: 'Try again' })
     expect(document.activeElement).toBe(again)
     state.playFails = false
+    state.calls = []
+    await user.click(again)
+    await settle()
+    expect(state.calls).toContain('POST /api/v1/items/movie/45745/play')
+    expect(page.queryByRole('alertdialog')).toBeNull()
+  })
+
+  test('stopped from Now playing: the player says who stopped it and why, and starts again', async () => {
+    const { page, user } = await open('/play/45745')
+    state.stopped = true
+    const event = { id: 9, topic: 'playback.stopped', ids: ['pls_1'], at: Date.now() }
+    for (const c of state.streams)
+      c.enqueue(new TextEncoder().encode(`id: 9\ndata: ${JSON.stringify(event)}\n\n`))
+    await settle()
+    const message = page.getByRole('alertdialog', { name: 'Ines stopped this stream' })
+    expect(within(message).getByText('“Dinner’s ready.”')).toBeTruthy()
+    const again = within(message).getByRole('button', { name: 'Start again' })
+    state.stopped = false
     state.calls = []
     await user.click(again)
     await settle()

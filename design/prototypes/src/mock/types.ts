@@ -1093,6 +1093,11 @@ export type ClientTrack = {
   /** Subtitles: forced, SDH; audio: channels. */
   detail: string | null
   default: boolean
+  /**
+   * Subtitles drawn as pictures (PGS, VobSub), which the server burns into the film (checkpoint
+   * 4.3), so the player can't move their timing. Always false for audio.
+   */
+  picture: boolean
 }
 
 export type ClientVersion = {

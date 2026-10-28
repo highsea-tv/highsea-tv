@@ -48,16 +48,18 @@ async function clean(modal?: Element) {
 describe('A3 dashboard', () => {
   test('customize by keyboard: move, resize, remove, save', async () => {
     const { mock, user } = await open('/admin')
-    expect(order().slice(0, 2)).toEqual(['w-network', 'w-storage'])
+    // Now playing leads (the owner's word at 4.3a's review)
+    expect(order()[0]).toBe('w-now-playing')
+    expect(order().slice(1, 3)).toEqual(['w-network', 'w-storage'])
     await user.click(page().getByRole('button', { name: 'Customize' }))
     await clean()
 
     const handle = page().getByRole('button', { name: 'Move Network' })
     handle.focus()
     await user.keyboard(' ')
-    expect(page().getByText(/Network picked up, position 1 of 7/)).toBeTruthy()
+    expect(page().getByText(/Network picked up, position 2 of 8/)).toBeTruthy()
     await user.keyboard('{ArrowRight}')
-    expect(order().slice(0, 2)).toEqual(['w-storage', 'w-network'])
+    expect(order().slice(1, 3)).toEqual(['w-storage', 'w-network'])
     // focus stays on the handle after the move, so the next key keeps working
     expect(document.activeElement).toBe(page().getByRole('button', { name: 'Move Network' }))
     await user.keyboard('{Shift>}{ArrowRight}{/Shift}')
@@ -68,7 +70,7 @@ describe('A3 dashboard', () => {
     expect(page().getByText('Network is now 1 column wide and 3 rows tall.')).toBeTruthy()
     expect(document.activeElement).toBe(page().getByRole('button', { name: 'Move Network' }))
     await user.keyboard(' ')
-    expect(page().getByText('Network dropped at position 2 of 7.')).toBeTruthy()
+    expect(page().getByText('Network dropped at position 3 of 8.')).toBeTruthy()
 
     await user.click(page().getByRole('button', { name: 'Remove Subtitles' }))
     expect(order()).not.toContain('w-subtitles')
@@ -77,7 +79,7 @@ describe('A3 dashboard', () => {
 
     const saved = await client(mock).dashboard.layout()
     expect(saved.inherited).toBe(false)
-    expect(saved.widgets.slice(0, 2)).toEqual([
+    expect(saved.widgets.slice(1, 3)).toEqual([
       { id: 'w-storage', kind: 'storage', span: 1, rows: 2, settings: {} },
       { id: 'w-network', kind: 'network', span: 1, rows: 3, settings: { minutes: 10 } },
     ])
@@ -90,9 +92,9 @@ describe('A3 dashboard', () => {
     await user.click(page().getByRole('button', { name: 'Customize' }))
     page().getByRole('button', { name: 'Move Storage' }).focus()
     await user.keyboard(' {ArrowLeft}')
-    expect(order()[0]).toBe('w-storage')
+    expect(order()[1]).toBe('w-storage')
     await user.keyboard('{Escape}')
-    expect(order().slice(0, 2)).toEqual(['w-network', 'w-storage'])
+    expect(order().slice(1, 3)).toEqual(['w-network', 'w-storage'])
 
     await user.click(page().getByRole('button', { name: 'Remove Indexers' }))
     await user.click(page().getByRole('button', { name: 'Cancel' }))

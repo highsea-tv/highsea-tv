@@ -32,7 +32,7 @@ export type DecisionInput = {
   subtitle?: SubtitlePick | null
   /** Null at home, where streams are never limited. */
   ceiling?: Ceiling | null
-  /** What the server can do (ADR 0051): burning in image subtitles and tone mapping come at 4.3. */
+  /** What the server can do (ADR 0051): burning in subtitles (4.3a) and tone mapping (4.3b). */
   server?: { burnIn: boolean; toneMapping: boolean }
   locale?: string
 }
@@ -332,14 +332,17 @@ export function decide(input: DecisionInput): PlaybackDecision {
     const text = TEXT_SUBTITLES[raw]
     const image = IMAGE_SUBTITLES[raw]
     const format = SUBTITLE_NAMES[text ?? image ?? ''] ?? raw.toUpperCase()
-    if (text) {
+    // ASS the client can't draw keeps its styling only burned in (4.3); without that, it's sent as
+    // WebVTT, plain
+    const styled = text === 'ass' && !profile.subtitles.includes('ass')
+    if (text && !(styled && server.burnIn)) {
       subtitle = { pick, delivery: 'external' }
       say('accepted', 'subtitle.external', { format })
-      if (text === 'ass' && !profile.subtitles.includes('ass')) say('warning', 'subtitle.styling')
+      if (styled) say('warning', 'subtitle.styling')
     } else if (image && pick.kind === 'embedded' && profile.subtitles.includes(image as 'pgs')) {
       subtitle = { pick, delivery: 'embedded' }
       say('accepted', 'subtitle.embedded', { client, format })
-    } else if (server.burnIn) {
+    } else if (((image && pick.kind === 'embedded') || styled) && server.burnIn) {
       subtitle = { pick, delivery: 'burn-in' }
       videoCopy = false
       say('rejected', 'subtitle.burnIn', { client, format })

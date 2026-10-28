@@ -1,0 +1,44 @@
+---
+title: Playback
+description: How many transcodes run at once, the encoder, what's sent away from home, and the transcode cache's folder and limit.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The screen and its copy: apps/server/src/admin/playback.tsx and playback-messages.ts.
+  - The settings and their checks: packages/runtime/src/playback-settings.ts and
+    packages/api-contract/src/playback-settings.ts (defaults and ranges).
+  - The limits: packages/stream/src/hls/runner.ts (slots, the wait, the cache's limit).
+*/}
+
+Written for highsea 0.2.0-beta.2.
+
+**Settings › Playback** decides how hard the server works for the people watching. highsea plays a film as it is when the device can, and converts only what the device can't play. These settings shape that conversion. The Owner and Admins can change them.
+
+![Settings › Playback: the Transcoding group with Transcodes at once and the Encoder, Away from home with the most each stream is sent, and the Cache](/images/admin/settings-playback/overview.png)
+
+Changes wait in a bar at the bottom of the page until you choose **Save** or **Discard**. They apply to streams that start after you save.
+
+## Transcoding
+
+- **Transcodes at once**: how many films highsea makes again at the same time, from 1 to 8. The default is 3. A stream that only changes the sound or the container doesn't count. Past the limit, a new transcode waits for one to finish, and [Now playing](/now-playing/) shows it as **Waiting**. If none finishes within a minute, the player says the server is already making as many films as it's set to.
+- **Encoder**: **Faster** starts sooner and uses less of the machine, with pictures a little softer. **Balanced**, the default, is right for most servers. **Sharper** gives sharper pictures at the same bitrate and uses more of the machine.
+
+Transcodes use the processor in this version.
+
+## Away from home
+
+**The most each stream is sent** caps every stream that leaves your network, from 4 Mbps (720p) to 40 Mbps (4K), or **No limit**. The default is 8 Mbps. Set it below your upload speed, which everyone watching at once shares. Streams on your own network are never limited, and people can choose less in their apps.
+
+## Cache
+
+While a film is transcoded, highsea keeps the pieces it has made, so seeking back is instant. The group shows how much they take against the limit.
+
+![The Cache group: the space transcodes use against the limit, the folder, the limit in GB and Clear transcodes](/images/admin/settings-playback/cache.png)
+
+- **Folder**: where the pieces go, `/config/transcodes` by default. A fast disk helps, and it needn't be backed up. It must be a full path highsea can write, outside your library and downloads, because highsea removes what it makes there. Streams playing when you change it keep the old folder until they end.
+- **Limit, in GB**: from 2 to 2000, 20 by default. Over it, highsea removes the oldest pieces first, from films nobody is watching, and the group says **Over its limit**. Raise the limit if it stays over while people watch.
+- **Clear transcodes** empties the cache. Films playing now make their pieces again.
+
+The scrubber's preview images are counted apart. They're kept with each film and don't count towards the limit.

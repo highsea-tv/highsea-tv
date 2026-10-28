@@ -31,6 +31,8 @@ const input = (o: Partial<SessionInput> = {}): SessionInput => ({
   decision,
   position: 0,
   duration: 8160,
+  address: '192.168.1.20',
+  away: false,
   ...o,
 })
 
@@ -134,5 +136,27 @@ describe('sessions', () => {
     expect(ended).toEqual([[a.id, 'revoked']])
     expect(sessions.list().map((s) => s.id)).toContain(b.id)
     expect(sessions.list()).toHaveLength(2)
+  })
+})
+
+describe('what was watched', () => {
+  test('counts time playing as the place moves on, not seeks or pauses', () => {
+    const { sessions, tick } = setup()
+    const s = sessions.start(input())
+    tick(10_000)
+    sessions.heard(s, { position: 10, paused: false })
+    expect(s.played).toBe(10)
+    // a seek forward 20 minutes in 2 seconds counts the 2 seconds
+    tick(2_000)
+    sessions.heard(s, { position: 1210, paused: false })
+    expect(s.played).toBe(12)
+    // paused for a minute, then a seek back: nothing
+    sessions.heard(s, { position: 1210, paused: true })
+    tick(60_000)
+    sessions.heard(s, { position: 1215, paused: false })
+    expect(s.played).toBe(12)
+    tick(5_000)
+    sessions.heard(s, { position: 600, paused: false })
+    expect(s.played).toBe(12)
   })
 })

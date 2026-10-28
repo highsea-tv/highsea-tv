@@ -18,6 +18,7 @@ export const WIDGET_KINDS = [
   'recently-added',
   'calendar',
   'system-health',
+  'now-playing',
 ] as const
 
 /** What a widget reads. Public info lists the ones this server has so far. */
@@ -28,6 +29,7 @@ export const WIDGET_SOURCES = [
   'downloads',
   'subtitles',
   'curation',
+  'playback',
 ] as const
 
 const THEME_ID = /^[a-z0-9][a-z0-9-]{0,39}$/

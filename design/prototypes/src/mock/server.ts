@@ -906,12 +906,15 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     return picked.map((m) => clientItem(m, tagline(m.id)))
   }
 
+  // ffprobe's names for subtitles that are pictures: Blu-ray's PGS, DVD's VobSub, DVB's
+  const PICTURE_CODECS = new Set(['hdmv_pgs_subtitle', 'dvd_subtitle', 'dvb_subtitle'])
   const track = (
     kind: ClientTrack['kind'],
     id: string,
     language: string,
     detail: string | null,
     isDefault: boolean,
+    picture = false,
   ): ClientTrack => ({
     id,
     kind,
@@ -919,6 +922,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     language,
     detail,
     default: isDefault,
+    picture,
   })
 
   const versionsOf = (m: MediaItem): ClientVersion[] =>
@@ -938,8 +942,15 @@ export function createApi(srv: MockServer, ctx: Ctx) {
                 'subtitle',
                 `s${x.index}`,
                 x.language,
-                [x.forced && 'Forced', x.hi && 'SDH'].filter(Boolean).join(', ') || null,
+                [
+                  x.forced && 'Forced',
+                  x.hi && 'SDH',
+                  PICTURE_CODECS.has(x.codec) && 'From the disc',
+                ]
+                  .filter(Boolean)
+                  .join(', ') || null,
                 x.default,
+                PICTURE_CODECS.has(x.codec),
               ),
             ]
           : [],

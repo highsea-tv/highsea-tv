@@ -119,6 +119,7 @@ import { createLogFiles } from './logs.ts'
 import { createMailBrand } from './mail-brand.ts'
 import { createNetworkService, type NetworkService } from './network.ts'
 import { createNotify, HEALTH_EVERY_MS, type Notify } from './notify.ts'
+import { createNowPlaying, type NowPlayingService } from './now-playing.ts'
 import {
   createOperations,
   GENERAL_KEY,
@@ -127,6 +128,7 @@ import {
   UPDATES_TOPIC,
 } from './operations.ts'
 import { createPlayback, type Playback } from './playback.ts'
+import { createPlaybackSettings, type PlaybackSettingsService } from './playback-settings.ts'
 import {
   checkSetup,
   FOLDERS_KEY,
@@ -147,7 +149,7 @@ import {
 import { createTrickplay } from './trickplay.ts'
 import { createWorkerPool, type WorkerPool } from './workers.ts'
 
-/** Milestone 1 has the server, the movie library, indexers, downloads and subtitles; later checkpoints add theirs. */
+/** Milestone 1 has the server, the movie library, indexers, downloads and subtitles; later checkpoints add theirs (4.3a, playback). */
 const SOURCES: WidgetSource[] = [
   'system',
   'movies',
@@ -155,6 +157,7 @@ const SOURCES: WidgetSource[] = [
   'downloads',
   'subtitles',
   'curation',
+  'playback',
 ]
 
 /** A provider's credit, in the wording its terms ask for. */
@@ -262,6 +265,10 @@ export type Runtime = {
   movies: Movies
   /** Play sessions, the decision and `/stream` (checkpoint 4.1a). */
   playback: Playback
+  /** Now playing (4.3a): the live sessions as the admin shows them, and 30 days of history. */
+  nowPlaying: NowPlayingService
+  /** Settings › Playback: transcodes at once, the encoder, the remote ceiling and the cache (4.3a). */
+  playbackSettings: PlaybackSettingsService
   /** Subtitles for the movie library (checkpoint 7a). */
   subtitles: Subtitles
   /** Signed definitions: the seed, the main catalog, extra catalogs and local ones (ADR 0034). */
@@ -744,8 +751,43 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     ffprobe: ffprobeBinary(),
     logger: logger.child('stream'),
     now: () => clock.now(),
+    // Settings › Playback (4.3a): transcodes at once, the cache's limit and the encoder
+    limits: () => playbackSettings.limits(),
   })
-  await transcodes.clear()
+  const playbackSettings = createPlaybackSettings({
+    db,
+    clock,
+    events,
+    logger,
+    dataDir: config.dataDir,
+    transcodes,
+    trickplayRoot: join(config.dataDir, 'trickplay'),
+    shared: () => [...media.rootFolders.list().map((f) => f.path), folders().downloads],
+    streaming: () => playback.sessions().length > 0,
+  })
+  await playbackSettings.start()
+
+  // Now playing (4.3a): hears playback's sessions, and keeps 30 days of what was watched
+  const nowPlaying = createNowPlaying({
+    db,
+    clock,
+    events,
+    jobs,
+    logger,
+    transcodes,
+    live: () => playback.sessions(),
+    displayName: (userId) => {
+      try {
+        return auth.users.get(userId).displayName
+      } catch {
+        return null
+      }
+    },
+    device: (deviceId) => auth.devices.find(deviceId),
+    poster: (tmdbId) => metadata.cachedMovie(tmdbId)?.art.poster ?? null,
+    onStarted: (p) => notify?.playbackStarted(p),
+  })
+  nowPlaying.schedule(clock.now())
 
   // playback (4.1a): sessions in memory, ended when the person's access to them goes
   const playback = createPlayback({
@@ -763,9 +805,11 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     },
     deviceExists: (deviceId) => auth.devices.find(deviceId) !== null,
     transcodes,
+    ceiling: () => playbackSettings.ceiling(),
     ffprobe: ffprobeBinary(),
     subtitles: subtitles.clientTracks,
     trickplay,
+    hooks: nowPlaying.hooks,
   })
 
   // watching only speeds the library scan up: a change asks for its title folder's scan
@@ -1152,6 +1196,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     media,
     movies,
     playback,
+    nowPlaying,
+    playbackSettings,
     subtitles,
     catalog,
     indexers,
@@ -1423,6 +1469,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       stopIpBlocklist()
       await engine.close()
       playback.close()
+      nowPlaying.close()
+      playbackSettings.close()
       await transcodes.close()
       movies.close()
       stopSubtitles()

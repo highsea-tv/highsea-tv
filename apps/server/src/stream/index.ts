@@ -172,6 +172,8 @@ export function createStream(
   /** A failed request: ffmpeg's failure is the player's "didn't start", logged by the runner. */
   const failed = (res: ServerResponse) => (e: unknown) => {
     if (res.headersSent) return void res.destroy()
+    // past Settings › Playback's limit for a minute (4.3's answer 7): the player says why
+    if (e instanceof TranscodeError && e.reason === 'limit') return fail(res, 503, e.message)
     if (e instanceof TranscodeError) return fail(res, 500, DIDNT_START)
     log.error('streaming failed', { error: (e as Error).message })
     fail(res, 500, 'Something went wrong.')

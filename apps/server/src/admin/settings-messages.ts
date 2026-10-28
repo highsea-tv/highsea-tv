@@ -10,6 +10,7 @@ export const settings = defineMessages({
   'group.server': 'Server',
   'group.people': 'People',
   'group.library': 'Library',
+  'group.playback': 'Playback',
   'group.downloads': 'Downloads and alerts',
   'group.system': 'System',
   'area.general': 'General',
@@ -33,6 +34,9 @@ export const settings = defineMessages({
   'area.quality.description': 'How big a release can be for each quality.',
   'area.lists': 'Import lists',
   'area.lists.description': 'Watchlists that add movies on their own.',
+  'area.playback': 'Playback',
+  // hardware acceleration joins with 4.3b, and the prototype's description with it
+  'area.playback.description': 'Transcoding, streams away from home, and the cache.',
   'area.vpn': 'VPN',
   'area.vpn.description':
     'Torrents through your VPN provider, the checks that prove it, and port forwarding.',

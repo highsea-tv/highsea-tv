@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Settings' areas in their five groups (System and its Migration area came with 6b) (the prototype's settings.tsx). Plain data, so the
+// Settings' areas in their six groups (System and its Migration area came with 6b, Playback with
+// 4.3a) (the prototype's settings.tsx). Plain data, so the
 // `/settings/{area}` route can check an id on the server.
 import type { IconName } from '@highsea-tv/ui-web'
 
@@ -14,6 +15,7 @@ export type AreaId =
   | 'profiles'
   | 'quality'
   | 'lists'
+  | 'playback'
   | 'vpn'
   | 'downloads'
   | 'subtitles'
@@ -30,7 +32,7 @@ export type Area = {
 }
 
 export const areaGroups: {
-  id: 'server' | 'people' | 'library' | 'downloads' | 'system'
+  id: 'server' | 'people' | 'library' | 'playback' | 'downloads' | 'system'
   areas: Area[]
 }[] = [
   {
@@ -53,6 +55,8 @@ export const areaGroups: {
       { id: 'lists', icon: 'bookmark' },
     ],
   },
+  // transcoding and the cache, the owner's and admins' (checkpoint 4.3a)
+  { id: 'playback', areas: [{ id: 'playback', icon: 'speed' }] },
   {
     id: 'downloads',
     areas: [

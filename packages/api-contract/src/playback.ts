@@ -125,6 +125,11 @@ export const PlaySubtitle = z
      * device draws itself or can't show. It carries the session's token, as `url` does.
      */
     url: z.string().nullable(),
+    /**
+     * How the track would be sent on this device (4.3): `burn-in` is drawn into the picture by
+     * the server, so choosing it, or leaving it, starts a new stream.
+     */
+    delivery: z.enum(['external', 'embedded', 'burn-in', 'unavailable']),
   })
   .openapi('PlaySubtitle')
 

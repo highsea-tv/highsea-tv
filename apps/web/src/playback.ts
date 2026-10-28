@@ -24,10 +24,13 @@ import {
   reportDue,
   reportKey,
 } from '@highsea-tv/client/player'
-import type { HighseaClient } from '@highsea-tv/sdk'
+import { ApiError, type HighseaClient } from '@highsea-tv/sdk'
 import { useClient } from '@highsea-tv/sdk/react'
 import type HlsType from 'hls.js'
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+
+/** The player's error when the server is transcoding all it's allowed to, and this one gave up. */
+export const TRANSCODE_LIMIT = 'transcode-limit'
 
 const API = '/api/v1'
 const REPORTED = 'highsea:device-report'
@@ -148,9 +151,16 @@ export function usePlayback(id: number, fromStart: boolean) {
     null
   const subtitle = version?.subtitles.find((t) => t.id === merged.subtitleId) ?? null
   const offsetMs = merged.subtitleOffsetMs ?? 0
-  const subtitleUrl = subtitle
-    ? (session?.subtitles.find((t) => t.id === subtitle.id)?.url ?? null)
-    : null
+  // a subtitle the server draws into the picture (4.3) is part of the stream: choosing one, or
+  // leaving one, starts again. Judged by the last session's list, kept while the next one starts
+  const tracks = useRef<PlaySession['subtitles']>([])
+  if (session) tracks.current = session.subtitles
+  const burnt =
+    subtitle && tracks.current.find((t) => t.id === subtitle.id)?.delivery === 'burn-in'
+      ? subtitle.id
+      : null
+  const subtitleUrl =
+    subtitle && !burnt ? (session?.subtitles.find((t) => t.id === subtitle.id)?.url ?? null) : null
   // the subtitle goes with each start (the server may need it), but changing it never restarts
   const subtitleRef = useRef<string | null>(null)
   subtitleRef.current = subtitle?.id ?? null
@@ -207,6 +217,10 @@ export function usePlayback(id: number, fromStart: boolean) {
       }
       live.current = s
       setSession(s)
+      // what this stream burns in, as the server decided: the start's key, so its list arriving
+      // doesn't start it again
+      const burns = s.decision.subtitle?.delivery === 'burn-in' ? s.decision.subtitle.id : ''
+      if (started.current) started.current = started.current.replace(/\|[^|]*$/, `|${burns}`)
       dispatch({
         type: 'session',
         method: s.decision.method,
@@ -240,10 +254,35 @@ export function usePlayback(id: number, fromStart: boolean) {
           enableIMSC1: false,
           enableCEA708Captions: false,
           renderTextTracksNatively: false,
+          // a transcode past Settings › Playback's limit waits up to a minute for a slot before the
+          // server answers (4.3's answer 7): wait longer than that for the first byte, and don't
+          // retry its 503, which says the wait is over (the LoadPolicy's `shouldRetry`,
+          // https://github.com/video-dev/hls.js/blob/v1.7.3/docs/API.md#shouldretry; 1.7.3's
+          // hls.d.ts passes it the loader's response, whose `code` is the HTTP status)
+          fragLoadPolicy: {
+            default: {
+              maxTimeToFirstByteMs: 75_000,
+              maxLoadTimeMs: 120_000,
+              timeoutRetry: { maxNumRetry: 2, retryDelayMs: 0, maxRetryDelayMs: 0 },
+              errorRetry: {
+                maxNumRetry: 6,
+                retryDelayMs: 1000,
+                maxRetryDelayMs: 8000,
+                shouldRetry: (_config, _count, _timeout, response, retry) =>
+                  response?.code === 503 ? false : retry,
+              },
+            },
+          },
         })
         h.on(Hls.Events.ERROR, (_e, data) => {
-          if (data.fatal && gen === generation.current)
-            dispatch({ type: 'error', message: data.details })
+          if (!data.fatal || gen !== generation.current) return
+          // 503: it waited a minute past Settings › Playback's limit (4.3's answer 7). hls.js
+          // gives a failed load's HTTP status in `response.code`
+          // (https://github.com/video-dev/hls.js/blob/v1.7.3/docs/API.md#errors)
+          dispatch({
+            type: 'error',
+            message: data.response?.code === 503 ? TRANSCODE_LIMIT : data.details,
+          })
         })
         h.loadSource(s.url)
         h.attachMedia(v)
@@ -266,13 +305,13 @@ export function usePlayback(id: number, fromStart: boolean) {
   const started = useRef<string | null>(null)
   useEffect(() => {
     if (!ready || !versionId) return
-    const key = `${versionId}|${audioId ?? ''}`
+    const key = `${versionId}|${audioId ?? ''}|${burnt ?? ''}`
     if (started.current === key) return
     const first = started.current === null
     started.current = key
     const at = first ? (fromStart ? 0 : undefined) : stateRef.current.position
     begin(at, { versionId, audioId })
-  }, [ready, versionId, audioId, begin, fromStart])
+  }, [ready, versionId, audioId, burnt, begin, fromStart])
 
   // leaving: on unmount, and on the page closing
   useEffect(() => {
@@ -299,6 +338,29 @@ export function usePlayback(id: number, fromStart: boolean) {
     }
   }, [])
 
+  /**
+   * Stopped from Now playing (4.3a): the session's answer is a 404 with who stopped it and their
+   * message (`StoppedDetails`). The stream is let go, and the screen says so.
+   */
+  const stoppedBy = useCallback((e: unknown) => {
+    const d = e instanceof ApiError ? (e.details as Record<string, unknown> | null) : null
+    if (d?.reason !== 'stopped' || typeof d.by !== 'string') return
+    generation.current++
+    live.current = null
+    hls.current?.destroy()
+    hls.current = null
+    const v = video.current
+    if (v) {
+      v.removeAttribute('src')
+      v.load()
+    }
+    playingStream.current = false
+    dispatch({
+      type: 'stopped',
+      by: { name: d.by, message: typeof d.message === 'string' ? d.message : null },
+    })
+  }, [])
+
   const report = useCallback(() => {
     const s = live.current
     const v = video.current
@@ -307,8 +369,24 @@ export function usePlayback(id: number, fromStart: boolean) {
     dispatch({ type: 'reported', position, at: Date.now() })
     client.playback
       .progress({ params: { id: s.id }, body: { position, paused: v.paused } })
-      .catch(() => {})
-  }, [client])
+      .catch(stoppedBy)
+  }, [client, stoppedBy])
+
+  // the server says this session was stopped (`playback.stopped`, sent to this person alone):
+  // asking about it at once brings who stopped it, even before the stream played
+  useEffect(
+    () =>
+      client.events.subscribe((e) => {
+        const s = live.current
+        if (e.topic !== 'playback.stopped' || !s || !e.ids?.includes(s.id)) return
+        const v = video.current
+        const position = playingStream.current && v ? v.currentTime : s.start
+        client.playback
+          .progress({ params: { id: s.id }, body: { position, paused: true } })
+          .catch(stoppedBy)
+      }),
+    [client, stoppedBy],
+  )
 
   // every REPORT_MS while playing, checked each second
   useEffect(() => {
@@ -376,6 +454,8 @@ export function usePlayback(id: number, fromStart: boolean) {
     audio,
     subtitle,
     subtitleUrl,
+    /** The chosen subtitle is drawn into the picture by the server. */
+    burnt: !!burnt,
     offsetMs,
     attach,
     video,

@@ -241,6 +241,18 @@ function pairs(ids: Awaited<ReturnType<typeof seed>>): {
         name: 'manual import',
         ...both('/admin/activity/import', '/activity/import'),
       },
+      // 4.3a; the server's page has a stream only while someone plays, so this compares the tabs
+      { screen: 'Now playing', name: 'now', ...both('/admin/now-playing', '/now-playing') },
+      {
+        screen: 'Now playing',
+        name: 'last 30 days',
+        ...both('/admin/now-playing', '/now-playing', tab('Last 30 days')),
+      },
+      {
+        screen: 'Settings › Playback',
+        name: 'playback',
+        ...both('/admin/settings/playback', '/settings/playback'),
+      },
       { screen: 'A8 Downloads', name: 'downloads', ...both('/admin/downloads', '/downloads') },
       {
         screen: 'A8 Downloads',

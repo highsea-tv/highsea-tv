@@ -6,23 +6,29 @@
 // Next up. The decision itself is tested in packages/stream, the watch state's rules in
 // packages/media.
 import { afterEach, describe, expect, test } from 'bun:test'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { schema } from '@highsea-tv/db'
-import type { Runtime } from '@highsea-tv/runtime'
 import { ApiError, createClient } from '@highsea-tv/sdk'
 import { createApi } from '../src/api/app.ts'
 import { createHttpServer } from '../src/http.ts'
 import { createStream } from '../src/stream/index.ts'
-import { addMember, bootRuntime, cleanup, meta, OWNER, withOwner } from './helpers.ts'
+import {
+  addMember,
+  BYTES,
+  bootRuntime,
+  cleanup,
+  film,
+  meta,
+  OWNER,
+  SIZE,
+  withOwner,
+} from './helpers.ts'
 
 const SINTEL = 45745
 const TEARS = 133701
-const SIZE = 4096
-/** The file's bytes: each one its offset modulo 256, so a range can be checked byte for byte. */
-const BYTES = Buffer.from(Array.from({ length: SIZE }, (_, i) => i % 256))
 
 const cleanups: (() => Promise<void> | void)[] = []
 const dirs: string[] = []
@@ -32,110 +38,27 @@ afterEach(async () => {
   for (const d of dirs.splice(0)) rmSync(d, { recursive: true, force: true })
 })
 
-/** A film in Blender's collection with one H.264 and AAC MP4, 100 seconds long. */
-function film(runtime: Runtime, dir: string, tmdbId: number, title: string, year: number) {
-  const now = Date.now()
-  const path = join(dir, `${title}.mp4`)
-  writeFileSync(path, BYTES)
-  const { db } = runtime
-  db.insert(schema.movieMetadata)
-    .values({
-      tmdbId,
-      title,
-      originalTitle: title,
-      year,
-      releaseDate: `${year}-09-27`,
-      collectionId: 9,
-      language: 'en',
-      data: {},
-      fetchedAt: now,
-    })
-    .run()
-  const item = `itm_${tmdbId}`
-  db.insert(schema.mediaItems)
-    .values({
-      id: item,
-      type: 'movie',
-      tmdbId,
-      title,
-      sortTitle: title.toLowerCase(),
-      year,
-      releaseDate: `${year}-09-27`,
-      status: 'available',
-      monitored: true,
-      minimumAvailability: 'released',
-      qualityProfileId: 'qp-hd',
-      rootFolder: dir,
-      path: dir,
-      addedAt: now,
-      updatedAt: now,
-    })
-    .run()
-  db.insert(schema.mediaFiles)
-    .values({
-      id: `fil_${tmdbId}`,
-      itemId: item,
-      path,
-      size: SIZE,
-      sceneName: null,
-      mediaInfo: {
-        probe: {
-          duration: 100,
-          container: 'mov,mp4,m4a,3gp,3g2,mj2',
-          video: {
-            index: 0,
-            codec: 'h264',
-            codecTag: 'avc1',
-            profile: 'High',
-            width: 1920,
-            height: 1080,
-            bitDepth: 8,
-            bitrate: 4_000_000,
-            colorPrimaries: 'bt709',
-            colorTransfer: 'bt709',
-            hdr: 'sdr',
-            dolbyVision: null,
-          },
-          audio: [
-            {
-              index: 1,
-              codec: 'aac',
-              codecTag: 'mp4a',
-              profile: 'LC',
-              channels: 2,
-              layout: 'stereo',
-              language: 'eng',
-              title: null,
-              default: true,
-              bitrate: 128_000,
-            },
-          ],
-          subtitles: [],
-        },
-      },
-      addedAt: now,
-    } as typeof schema.mediaFiles.$inferInsert)
-    .run()
-  db.insert(schema.versions)
-    .values({
-      id: `ver_${tmdbId}`,
-      itemId: item,
-      label: 'Default',
-      qualityProfileId: 'qp-hd',
-      fileId: `fil_${tmdbId}`,
-      position: 0,
-      createdAt: now,
-    } as typeof schema.versions.$inferInsert)
-    .run()
-}
-
 async function serve() {
   const runtime = await bootRuntime()
   const { owner, token } = await withOwner(runtime)
   const member = await addMember(runtime, owner.id, 'Sam')
   const dir = mkdtempSync(join(tmpdir(), 'highsea-play-'))
   dirs.push(dir)
-  film(runtime, dir, SINTEL, 'Sintel', 2010)
+  // Sintel's subtitles: SRT, a Blu-ray picture track, and styled ASS
+  const track = (index: number, codec: string, language: string) => ({
+    index,
+    codec,
+    language,
+    title: null,
+    forced: false,
+    hi: false,
+    default: false,
+  })
+  film(runtime, dir, SINTEL, 'Sintel', 2010, [
+    track(2, 'subrip', 'eng'),
+    track(3, 'hdmv_pgs_subtitle', 'eng'),
+    track(4, 'ass', 'jpn'),
+  ])
   film(runtime, dir, TEARS, 'Tears of Steel', 2012)
   const server = createHttpServer({ api: createApi(runtime), stream: createStream(runtime) })
   await new Promise<void>((r) => server.listen(0, '127.0.0.1', r))
@@ -194,6 +117,36 @@ describe('playing', () => {
       await code(api.playback.play({ params: item(SINTEL), body: { versionId: `ver_${TEARS}` } })),
     ).toBe('not-found')
     expect(await code(api.playback.play({ params: item(1), body: {} }))).toBe('not-found')
+  })
+
+  test('a picture subtitle and styled ASS are burned in; each track says how it’d be sent', async () => {
+    const { api } = await serve()
+    const [srt, pgs, ass] = [2, 3, 4].map((i) => `fil_${SINTEL}:${i}`) as [string, string, string]
+    const play = (subtitleId: string | null) =>
+      api.playback.play({
+        params: item(SINTEL),
+        body: { subtitleId, profile: 'web-chromium' },
+      })
+    const plain = await play(srt)
+    expect(plain.decision).toMatchObject({
+      method: 'direct-play',
+      subtitle: { id: srt, delivery: 'external' },
+    })
+    expect(plain.subtitles.map((t) => [t.id, t.delivery])).toEqual([
+      [srt, 'external'],
+      [pgs, 'burn-in'],
+      [ass, 'burn-in'],
+    ])
+    expect(plain.subtitles[1]?.url).toBeNull()
+    for (const id of [pgs, ass]) {
+      const burnt = await play(id)
+      expect(burnt.decision).toMatchObject({
+        method: 'transcode',
+        subtitle: { id, delivery: 'burn-in' },
+      })
+      expect(burnt.decision.reasons.map((r) => r.code)).toContain('subtitle.burnIn')
+      expect(burnt.url).toMatch(/\/main\.m3u8$/)
+    }
   })
 
   test('the file by byte ranges: 200, 206, a suffix, 416, If-Range and HEAD', async () => {

@@ -26,16 +26,17 @@ Two tabs: **Now** (with the count) and **Last 30 days**.
 ### Now
 
 - **The totals:** streams, Mbps sent in all, Mbps away from home, and transcodes.
-- **A row per session:** the poster and title (to the movie's page), the person and device with the device's kind as an icon, then the state (Playing, Paused, Downloading, Can't keep up, Stopped) and how it's sent (Direct play, Direct stream, Transcode), and **Stop** (**Cancel** for a download).
+- **A row per session:** the poster and title (to the movie's page), the person and device with the device's kind as an icon, then the state (Playing, Paused, Waiting, Downloading, Can't keep up, Stopped) and how it's sent (Direct play, Direct stream, Transcode), and **Stop** (**Cancel** for a download).
   - **Progress:** the position as "6:52 of 15:00", or a download's "52% made" and when it started.
   - **Sent as:** what goes out ("1080p · H.264 · AAC stereo · 7.6 Mbps"), **From:** the version it's made from, **Network:** At home or Away from home with the address, and for a transcode **Transcoded by:** "VAAPI, 2.4× real time".
   - **Why:** a line per reason when it isn't direct play, in words: "Ruth is away from home, and the 4K file is more than the 8 Mbps allowed there, so it's sent as 1080p.", "Chrome can't play DTS audio, so the audio is converted to AAC. The picture is sent as it is."
   - **Can't keep up:** a transcode below real time turns its bar and line red, and says what to do: turn on hardware acceleration in Settings › Playback, or lower what's sent away from home.
+  - **Waiting** (added in 4.3a, from the plan's answer 7): a transcode waiting for a slot, because Transcodes at once is reached. A warning badge, and a line saying every slot is in use, with a link to Settings › Playback. Its Transcoded by line is left out until it runs, and a speed not yet measured shows as "starting".
 - **Downloads made for a device** (Downloads, C8) are sessions of their own kind, so the owner sees the transcode they cost.
 
 ### Last 30 days
 
-A table: movie, who, device, how it was sent (with "away" when remote), how much was watched ("All" when finished), and when. A filter by person.
+A table: movie, who, device, how it was sent (with "away" when remote), how much was watched ("All" when finished), and when. A filter by person. As built in 4.3a: starting the same film again on the same device within 2 minutes, to change the sound or subtitles, adds to the row before it rather than making another, and a session that played nothing isn't listed. No addresses are kept.
 
 ### Stop
 
@@ -43,7 +44,7 @@ A dialog: "Stop Ruth's stream?", "Their player stops and shows your message. The
 
 ### The widget
 
-Registry kind `now-playing`: 1 to 4 columns, 2 to 5 rows, default 2 × 3; owner and admin. A row per session (poster, title, how it's sent or Can't keep up, person and device, progress), the total Mbps in the header, and "Nobody is watching" when nobody is. In the prototype it leads the owner's and admins' first arrangement, since it's the one widget about this minute; saved layouts keep their own order.
+Registry kind `now-playing`: 1 to 4 columns, 2 to 5 rows, default 2 × 3; owner and admin. A row per session (poster, title, how it's sent or Can't keep up, person and device, progress), the total Mbps in the header, and "Nobody is watching" when nobody is. In the prototype it leads the owner's and admins' first arrangement, since it's the one widget about this minute; saved layouts keep their own order. At 4.3a's review (2026-10-28) the owner had it lead the built first arrangement too, placed 2 × 4 there so the widgets beside and below it leave no gap.
 
 ## States
 
@@ -52,6 +53,7 @@ Registry kind `now-playing`: 1 to 4 columns, 2 to 5 rows, default 2 × 3; owner 
 | Nobody watching | "Nobody is watching", "Streams show here as they start, with who's watching, on what, and how it's sent." |
 | One, several | The totals and the rows |
 | A transcode that can't keep up | Can't keep up, the red bar, and what to do |
+| A transcode waiting for a slot | Waiting, and a line linking to Settings › Playback (4.3a) |
 | Stopped | The row dimmed, who stopped it and their message, for 10 s |
 | No history | "Nothing watched yet", "Every stream is recorded here for 30 days: who, what, on which device and how it was sent." |
 

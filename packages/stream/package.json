@@ -9,6 +9,7 @@
     "./hls": "./src/hls/index.ts",
     "./profiles": "./src/profiles/index.ts",
     "./sessions": "./src/sessions/index.ts",
+    "./testing": "./src/testing/index.ts",
     "./trickplay": "./src/trickplay/index.ts"
   },
   "scripts": {

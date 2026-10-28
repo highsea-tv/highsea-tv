@@ -15,6 +15,7 @@ import {
   NUDGE_MS,
   offsetHint,
   offsetLabel,
+  PICTURE_TIMING,
   type Player,
   SEEK_S,
   sampleCue,
@@ -168,7 +169,15 @@ export function TracksPanel({ player, onClose }: { player: Player; onClose: () =
           })}
         </div>
       </section>
-      {player.subtitle && (
+      {player.subtitle?.picture && (
+        <section aria-labelledby="p-timing" className="grid gap-2">
+          <h3 id="p-timing" className="font-mono text-label text-text-3 uppercase">
+            Subtitle timing
+          </h3>
+          <p className="text-caption text-text-3">{PICTURE_TIMING}</p>
+        </section>
+      )}
+      {player.subtitle && !player.subtitle.picture && (
         <section aria-labelledby="p-timing" className="grid gap-2">
           <h3 id="p-timing" className="font-mono text-label text-text-3 uppercase">
             Subtitle timing

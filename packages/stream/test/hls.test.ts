@@ -3,12 +3,22 @@
 // against RFC 8216's rules, and ffmpeg's command lines kept as they are. Real ffmpeg runs in
 // hls-ffmpeg.test.ts.
 import { describe, expect, test } from 'bun:test'
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import {
+  assArgs,
+  attachmentArgs,
+  createTranscodes,
+  downmixFilter,
+  type EncoderPreset,
+  filterPath,
   gridSegments,
   keyframeArgs,
   keyframeSegments,
   mediaPlaylist,
   multivariantPlaylist,
+  parseFonts,
   parseKeyframes,
   pieceStarts,
   runArgs,
@@ -206,6 +216,7 @@ describe('ffmpeg’s command lines', () => {
       }),
     ).toEqual([
       ...['-hide_banner', '-nostdin', '-loglevel', 'warning'],
+      ...['-progress', 'pipe:1', '-stats_period', '1'],
       ...['-ss', '403.779375', '-copyts', '-start_at_zero'],
       ...['-i', '/m/Film (2001)/Film.mkv', '-map', '0:0', '-map', '0:1'],
       ...['-sn', '-dn', '-map_metadata', '-1', '-map_chapters', '-1'],
@@ -240,7 +251,8 @@ describe('ffmpeg’s command lines', () => {
         audio: { index: 2, plan: { index: 2, action: 'copy' } },
       }),
     ).toEqual([
-      ...['-hide_banner', '-nostdin', '-loglevel', 'warning', '-ss', '600.000000'],
+      ...['-hide_banner', '-nostdin', '-loglevel', 'warning'],
+      ...['-progress', 'pipe:1', '-stats_period', '1', '-ss', '600.000000'],
       ...['-copyts', '-start_at_zero', '-i', '/m/a.mkv', '-map', '0:0', '-map', '0:2'],
       ...['-sn', '-dn', '-map_metadata', '-1', '-map_chapters', '-1'],
       // the copied sound starts where the picture does
@@ -258,6 +270,148 @@ describe('ffmpeg’s command lines', () => {
       ...['-hls_fmp4_init_filename', 'init.mp4', '-start_number', '100'],
       ...['-hls_segment_filename', '/t/s2/%d.m4s', '/t/s2/ffmpeg.m3u8'],
     ])
+  })
+
+  test('the encoder’s three settings are libx264’s presets either side of 4.1’s', () => {
+    const at = (preset: EncoderPreset) => {
+      const args = runArgs({
+        input: '/m/a.mkv',
+        dir: '/t/s3',
+        start: 0,
+        startNumber: 0,
+        video: {
+          ...video,
+          plan: { action: 'transcode', codec: 'h264', height: 720, bitrate: 4e6, toSdr: false },
+        },
+        audio: null,
+        preset,
+      })
+      return args[args.indexOf('-preset') + 1]
+    }
+    expect([at('speed'), at('balanced'), at('quality')]).toEqual([
+      'superfast',
+      'veryfast',
+      'faster',
+    ])
+  })
+
+  const transcode = {
+    ...video,
+    plan: {
+      action: 'transcode' as const,
+      codec: 'h264' as const,
+      height: 720,
+      bitrate: 4_000_000,
+      toSdr: false,
+    },
+  }
+  const after = (args: string[], flag: string) => args[args.indexOf(flag) + 1]
+
+  test('a picture subtitle is scaled to the picture, laid over it, then scaled with it', () => {
+    const args = runArgs({
+      input: '/m/a.mkv',
+      dir: '/t/s',
+      start: 0,
+      startNumber: 0,
+      video: transcode,
+      audio: null,
+      burnIn: { kind: 'picture', index: 4 },
+    })
+    expect(after(args, '-filter_complex')).toBe(
+      '[0:4]scale=1920:800[s];[0:0][s]overlay=eof_action=pass,scale=1280:534,format=yuv420p[v]',
+    )
+    expect(after(args, '-map')).toBe('[v]')
+    expect(args).not.toContain('-vf')
+  })
+
+  test('ASS is drawn by libass after scaling, its paths escaped for the filtergraph', () => {
+    const args = runArgs({
+      input: '/m/a.mkv',
+      dir: '/t/s',
+      start: 0,
+      startNumber: 0,
+      video: transcode,
+      audio: null,
+      burnIn: { kind: 'text', path: "/t/s/Bob's: [film], 2.ass", fontsDir: '/t/s/fonts' },
+    })
+    expect(after(args, '-vf')).toBe(
+      String.raw`scale=1280:534,subtitles=filename=/t/s/Bob\\\'s\\: \[film\]\, 2.ass` +
+        ':fontsdir=/t/s/fonts,format=yuv420p',
+    )
+    expect(after(args, '-map')).toBe('0:0')
+    // ffmpeg-filters' own example of the two levels
+    expect(filterPath("a 'b': c, d")).toBe(String.raw`a \\\'b\\\'\\: c\, d`)
+  })
+
+  test('5.1 and 7.1 made stereo by RFC 7845’s matrices; other layouts by ffmpeg’s own', () => {
+    const sound = (channels: number, layout: string | null) =>
+      runArgs({
+        input: '/m/a.mkv',
+        dir: '/t/s',
+        start: 0,
+        startNumber: 0,
+        video: null,
+        audio: {
+          index: 1,
+          plan: { index: 1, action: 'transcode', codec: 'aac', channels: 2 },
+          channels,
+          layout,
+        },
+      })
+    expect(after(sound(6, '5.1(side)'), '-af')).toBe(
+      'pan=stereo|FL=0.529067*c0+0.374107*c2+0.458186*c4+0.264534*c5+0.374107*c3' +
+        '|FR=0.529067*c1+0.374107*c2+0.264534*c4+0.458186*c5+0.374107*c3',
+    )
+    expect(downmixFilter(8, '7.1')).toBe(
+      'pan=stereo|FL=0.388631*c0+0.274804*c2+0.336565*c6+0.194316*c7+0.336565*c4+0.194316*c5+0.274804*c3' +
+        '|FR=0.388631*c1+0.274804*c2+0.194316*c6+0.336565*c7+0.194316*c4+0.336565*c5+0.274804*c3',
+    )
+    // an older probe without a layout: six channels are 5.1
+    expect(downmixFilter(6, null)).toStartWith('pan=stereo|')
+    for (const [channels, layout] of [
+      [6, 'hexagonal'],
+      [2, 'stereo'],
+      [3, '2.1'],
+    ] as const) {
+      const args = sound(channels, layout)
+      expect(args).not.toContain('-af')
+      expect(after(args, '-ac')).toBe('2')
+    }
+    // each row sums to 2 (the RFC's normalization)
+    for (const n of [6, 8]) {
+      const rows = (downmixFilter(n, null) as string).split('|').slice(1)
+      for (const row of rows) {
+        const sum = [...row.matchAll(/([\d.]+)\*c/g)].reduce((a, m) => a + Number(m[1]), 0)
+        expect(sum).toBeCloseTo(2, 4)
+      }
+    }
+  })
+
+  test('an ASS track is taken out with its fonts, named by highsea', () => {
+    expect(
+      assArgs('/m/a.mkv', 3, '/t/s/burn.ass', [
+        { index: 7, path: '/t/s/fonts/0.font' },
+        { index: 9, path: '/t/s/fonts/1.font' },
+      ]),
+    ).toEqual([
+      ...['-hide_banner', '-nostdin', '-loglevel', 'error', '-y'],
+      ...['-dump_attachment:7', '/t/s/fonts/0.font', '-dump_attachment:9', '/t/s/fonts/1.font'],
+      ...['-i', '/m/a.mkv', '-map', '0:3', '-c:s', 'copy', '-f', 'ass', '/t/s/burn.ass'],
+    ])
+    expect(attachmentArgs('/m/a.mkv')).toContain('stream=index:stream_tags=mimetype,filename')
+    expect(
+      parseFonts(
+        JSON.stringify({
+          streams: [
+            { index: 7, tags: { mimetype: 'application/x-truetype-font', filename: 'a.ttf' } },
+            { index: 8, tags: { mimetype: 'image/jpeg', filename: 'cover.jpg' } },
+            { index: 9, tags: { filename: 'B.OTF' } },
+            { index: 10, tags: { mimetype: 'font/ttf' } },
+          ],
+        }),
+      ),
+    ).toEqual([7, 9, 10])
+    expect(parseFonts('')).toEqual([])
   })
 
   test('the picture’s size for a tier, even and never larger', () => {
@@ -292,5 +446,22 @@ describe('ffmpeg’s command lines', () => {
       count: 541,
       sheets: 6,
     })
+  })
+})
+
+describe('the cache', () => {
+  test('at boot only the sessions’ folders go: the owner may share the folder', async () => {
+    const root = mkdtempSync(join(tmpdir(), 'highsea-cache-'))
+    const session = join(root, '0b6f7a52-3c1e-4b8a-9d2f-5e6a7b8c9d0e')
+    mkdirSync(session)
+    writeFileSync(join(session, '0.m4s'), 'x')
+    writeFileSync(join(root, 'keep.txt'), 'x')
+    mkdirSync(join(root, 'films'))
+    const quiet = { info() {}, warn() {}, error() {} }
+    await createTranscodes({ root, ffmpeg: 'ffmpeg', ffprobe: 'ffprobe', logger: quiet }).clear()
+    expect(existsSync(session)).toBe(false)
+    expect(existsSync(join(root, 'keep.txt'))).toBe(true)
+    expect(existsSync(join(root, 'films'))).toBe(true)
+    rmSync(root, { recursive: true, force: true })
   })
 })

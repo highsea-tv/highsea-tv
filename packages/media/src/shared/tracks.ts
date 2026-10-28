@@ -66,6 +66,9 @@ const CODECS: Record<string, string> = {
   mpeg4: 'MPEG-4',
 }
 
+/** A picture codec's name as people know it: `hevc` is HEVC, `h264` H.264. */
+export const codecName = (codec: string) => CODECS[codec] ?? codec.toUpperCase()
+
 /** "4K · HDR10 · HEVC · 18.2 GB"; the parts the probe doesn't know are left out. */
 export function versionDetail(info: MediaInfo | null, size: number): string {
   const v = info?.video ?? null
@@ -73,7 +76,7 @@ export function versionDetail(info: MediaInfo | null, size: number): string {
   const parts = [
     lines === 2160 ? '4K' : lines ? `${lines}p` : null,
     v ? (HDR[v.hdr] ?? null) : null,
-    v ? (CODECS[v.codec] ?? v.codec.toUpperCase()) : null,
+    v ? codecName(v.codec) : null,
     `${(size / 1e9).toFixed(1)} GB`,
   ]
   return parts.filter(Boolean).join(' · ')

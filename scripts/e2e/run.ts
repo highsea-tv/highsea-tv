@@ -14,7 +14,8 @@
 // 7. Sintel played through `/stream` (phase-4-checkpoint-1.md › Tests, 4.1b): the play API, the
 //    HLS playlists, a segment far ahead on the film's timeline, and the subtitle as WebVTT;
 // 8. signing in on `/web` and playing Sintel in the browser's player (phase-4-checkpoint-2.md ›
-//    Tests, 4.2b), then leaving, which ends the session.
+//    Tests, 4.2b), the stream on the admin's Now playing (phase-4-checkpoint-3.md › Tests, 4.3a),
+//    then leaving, which ends the session.
 //
 //   HIGHSEA_IMAGE=highsea:ci bun scripts/e2e/run.ts
 //
@@ -439,32 +440,43 @@ try {
     },
   )
 
-  await step('8. Sintel in the web player: signed in on /web, playing, then Back', async () => {
-    const context = await (browser as Browser).newContext()
-    const page = await context.newPage()
-    current = page
-    await page.goto(`${BASE}/web/`)
-    await page.getByLabel('Username').fill(OWNER.username)
-    await page.getByLabel('Password').fill(OWNER.password)
-    await page.getByRole('button', { name: 'Sign in' }).click()
-    await page.getByRole('navigation', { name: 'Main' }).first().waitFor()
-    await page.goto(`${BASE}/web/play/${SINTEL}/start`)
-    await page.waitForFunction(
-      () => {
-        const v = document.querySelector('video')
-        return !!v && !v.paused && v.currentTime > 2
-      },
-      null,
-      { timeout: 90_000 },
-    )
-    const ended = page.waitForResponse(
-      (r) => r.request().method() === 'DELETE' && /\/playback\/sessions\/[^/]+$/.test(r.url()),
-    )
-    await page.getByRole('button', { name: 'Back to details' }).click()
-    if (!(await ended).ok()) throw new Error('Leaving the player didn’t end its session')
-    await page.waitForURL(`${BASE}/web/movies/${SINTEL}`)
-    await context.close()
-  })
+  await step(
+    '8. Sintel in the web player: signed in on /web, playing, on Now playing, then Back',
+    async () => {
+      const context = await (browser as Browser).newContext()
+      const page = await context.newPage()
+      current = page
+      await page.goto(`${BASE}/web/`)
+      await page.getByLabel('Username').fill(OWNER.username)
+      await page.getByLabel('Password').fill(OWNER.password)
+      await page.getByRole('button', { name: 'Sign in' }).click()
+      await page.getByRole('navigation', { name: 'Main' }).first().waitFor()
+      await page.goto(`${BASE}/web/play/${SINTEL}/start`)
+      await page.waitForFunction(
+        () => {
+          const v = document.querySelector('video')
+          return !!v && !v.paused && v.currentTime > 2
+        },
+        null,
+        { timeout: 90_000 },
+      )
+      // the same session, signed in, in the admin while it plays
+      const admin = await context.newPage()
+      await admin.goto(`${BASE}/now-playing`)
+      await admin.getByRole('listitem', { name: /, Sintel$/ }).waitFor({ timeout: 30_000 })
+      await admin.close()
+      const ended = page.waitForResponse(
+        (r) => r.request().method() === 'DELETE' && /\/playback\/sessions\/[^/]+$/.test(r.url()),
+      )
+      // the chrome hides after 3 s while playing; moving the pointer brings it back, as for a person
+      await page.mouse.move(200, 200)
+      await page.mouse.move(240, 220)
+      await page.getByRole('button', { name: 'Back to details' }).click()
+      if (!(await ended).ok()) throw new Error('Leaving the player didn’t end its session')
+      await page.waitForURL(`${BASE}/web/movies/${SINTEL}`)
+      await context.close()
+    },
+  )
 
   // the server's network has no way out (compose.e2e.yaml): everything above came from the fixtures
   const offline = inServer(

@@ -664,6 +664,17 @@ function streams(uhd: boolean, hdr: boolean, silent: boolean, subs: string[]): S
       hi: false,
       default: false,
     })
+  // 4K releases are Blu-ray remuxes and encodes, which carry the disc's own subtitles as pictures
+  if (uhd)
+    list.push({
+      index: 2 + subs.length,
+      type: 'subtitle',
+      codec: 'hdmv_pgs_subtitle',
+      language: 'en',
+      forced: false,
+      hi: false,
+      default: false,
+    })
   return list
 }
 

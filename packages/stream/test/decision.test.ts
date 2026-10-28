@@ -235,13 +235,32 @@ describe('the picks', () => {
     })
   })
 
-  test('ASS loses its styling', () => {
+  test('ASS loses its styling, unless the server burns it in', () => {
     const d = decide({
       file: FILES['mkv-av1-opus'],
       profile: profile('web-chromium'),
       subtitle: { kind: 'embedded', index: 2 },
     })
+    expect(d.subtitle?.delivery).toBe('external')
     expect(codes(d)).toContain('subtitle.styling')
+    const burnt = decide({
+      file: FILES['mkv-av1-opus'],
+      profile: profile('web-chromium'),
+      subtitle: { kind: 'embedded', index: 2 },
+      server: { burnIn: true, toneMapping: false },
+    })
+    expect(burnt.method).toBe('transcode')
+    expect(burnt.subtitle?.delivery).toBe('burn-in')
+    expect(codes(burnt)).toContain('subtitle.burnIn')
+    expect(codes(burnt)).not.toContain('subtitle.styling')
+    // a sidecar's SRT is never burned in
+    const srt = decide({
+      file: FILES['mkv-av1-opus'],
+      profile: profile('web-chromium'),
+      subtitle: { kind: 'sidecar', id: 's1', format: 'srt' },
+      server: { burnIn: true, toneMapping: false },
+    })
+    expect(srt.subtitle?.delivery).toBe('external')
   })
 
   test('PGS can’t be shown until the server burns it in, and then it forces a transcode', () => {

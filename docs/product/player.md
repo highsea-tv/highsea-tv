@@ -21,6 +21,7 @@ Everything around the picture: where you are and moving through it, sound and su
 - **Bottom:** the scrubber with a **trickplay** frame and time over the pointer; Play/Pause, back 10 s, forward 10 s, Mute (from the medium breakpoint up), "4:12 / 12:00", then **Audio and subtitles**, **Picture in picture** (where the browser has it) and **Full screen** at the right.
 - **Picture in picture** (checkpoint 4.2b): the film plays in the browser's own window, through the [Picture-in-Picture API](https://developer.mozilla.org/en-US/docs/Web/API/Picture-in-Picture_API). The button is left out where the browser hasn't got the API (Firefox has its own toggle on the video). While it's out, the frame shows the icon, "Playing in picture in picture" and **Back to this tab**; the chrome stays.
 - **Audio and subtitles panel** (right, 22rem, glass): Version (when several), Audio, Subtitles (Off first), then **Subtitle timing** when subtitles are on: − and + in 50 ms steps, the offset ("+100 ms", "On time"), **Reset**, the **live preview line**, and "Subtitles appear 100 ms later. Saved for this movie."
+- **A subtitle the server draws into the picture** (checkpoint 4.3a: a Blu-ray or DVD picture track, or a styled ASS track the client can’t draw): the timing section keeps its heading and shows "This subtitle is drawn into the picture, so its timing can’t be changed." in place of − and +; the owner approved it as prototyped on 2026-10-28. Choosing such a track, or leaving it, starts a new stream from where the film is, since the picture itself changes.
 - **Subtitles** sit in the lower third and rise above the chrome while it shows.
 
 ### Mobile
@@ -82,6 +83,7 @@ Prototyped on all three platforms; the prototype's toolbar picks one under **Str
 | Saved | Saved for this movie. |
 | TV legend | ◀ ▶ Seek 10 s · OK Pause · ▼ Audio and subtitles · Back Hide |
 | Getting it ready | Getting it ready · Making the first minute for your connection. |
+| Drawn into the picture | This subtitle is drawn into the picture, so its timing can’t be changed. |
 | Didn't start | This film didn't start · highsea couldn't read the file. Try again, or choose another version in Audio and subtitles. · Try again · Back |
 | Stopped | {name} stopped this stream · "{message}" · You can start it again from where you were. · Start again · Back |
 | Next up | Next up · {title} · Starts in {n} s · Play now · Cancel |

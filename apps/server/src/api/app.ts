@@ -24,6 +24,7 @@ import { registerOperations } from './operations.ts'
 import { registerPersonalization } from './personalization.ts'
 import { registerPlayback } from './playback.ts'
 import { registerQuality } from './quality.ts'
+import { registerSessions } from './sessions.ts'
 import { registerSubtitles } from './subtitles.ts'
 import { registerSystem } from './system.ts'
 import { registerTags } from './tags.ts'
@@ -97,6 +98,7 @@ export function createApi(runtime: Runtime) {
   registerQuality(app)
   registerLibrary(app)
   registerPlayback(app)
+  registerSessions(app)
   registerIndexers(app)
   registerDownloads(app)
   registerLibraryImport(app)

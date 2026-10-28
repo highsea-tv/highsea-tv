@@ -130,8 +130,10 @@ function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => vo
   const movies = useQuery('movies-count', (c) => c.movies.list({ query: { limit: 1 } }), [
     'movies.updated',
   ])
+  const playing = useQuery('sessions', (c) => c.sessions.list(), ['sessions.updated'])
   const counts: Partial<Record<Page['id'], number>> = {
     movies: movies.data?.total || undefined,
+    'now-playing': playing.data?.sessions.filter((s) => !s.stopped).length || undefined,
   }
 
   const card =

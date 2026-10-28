@@ -212,8 +212,30 @@ try {
   )
 
   // finish setup and seed what the pages show
-  const { invite, reset, pairing, notice, picks, drawsOn, decade, handPicked, nothingYet } =
+  const { token, invite, reset, pairing, notice, picks, drawsOn, decade, handPicked, nothingYet } =
     await seed(server, OWNER, 'Sweep script')
+  // Now playing (4.3a): the owner plays Sintel through the API, as the web player would, and the
+  // page is read again with the session on it. Passes run at once against one server, so the page
+  // may show another pass's stream beside this one: the first is enough
+  const playing = async (p: Page) => {
+    const s = await server.api<{ id: string }>(
+      'POST',
+      '/items/movie/45745/play',
+      { profile: 'web-chromium' },
+      token,
+    )
+    await server.api(
+      'POST',
+      `/playback/sessions/${s.id}/progress`,
+      { position: 252, paused: false },
+      token,
+    )
+    await p.reload()
+    await p
+      .getByRole('listitem', { name: /Sintel/ })
+      .first()
+      .waitFor()
+  }
 
   // signed out
   await sweep(
@@ -350,6 +372,8 @@ try {
         path: '/settings/connections',
         act: (p) => p.getByRole('button', { name: 'Discord', exact: true }).click(),
       },
+      // 4.3a: Settings › Playback, without hardware acceleration until 4.3b
+      { name: 'settings:playback', path: '/settings/playback' },
       { name: 'wanted', path: '/wanted' },
       { name: 'wanted:cutoff', path: '/wanted/cutoff' },
       { name: 'wanted:calendar', path: '/wanted/calendar' },
@@ -399,6 +423,18 @@ try {
       { name: 'activity', path: '/activity' },
       { name: 'activity:history', path: '/activity', act: tab('History') },
       { name: 'activity:blocklist', path: '/activity', act: tab(/Blocklist/) },
+      // Now playing (4.3a): nobody, then a stream and its Stop dialog, then the last 30 days
+      { name: 'now-playing:empty', path: '/now-playing' },
+      { name: 'now-playing', path: '/now-playing', act: playing },
+      {
+        name: 'now-playing:stop',
+        path: '/now-playing',
+        act: async (p) => {
+          await playing(p)
+          await p.getByRole('button', { name: 'Stop', exact: true }).first().click()
+        },
+      },
+      { name: 'now-playing:history', path: '/now-playing', act: tab('Last 30 days') },
       { name: 'import', path: '/activity/import' },
       { name: 'downloads', path: '/downloads' },
       {
@@ -600,6 +636,9 @@ try {
       { name: 'admin:downloads', path: '/downloads' },
       // Settings › VPN and Download client are the owner's: not there for an admin
       { name: 'admin:vpn', path: '/settings/vpn' },
+      // Settings › Playback is the owner's and admins' (4.3a)
+      { name: 'admin:playback', path: '/settings/playback' },
+      { name: 'admin:now-playing', path: '/now-playing' },
     ],
     await signIn('ruth', 'ruth ruth ruth'),
   )
@@ -622,6 +661,7 @@ try {
         '/system',
         '/people/68',
         '/activity',
+        '/now-playing',
         '/downloads',
       ].map((path) => ({ name: `user:${path}`, path, act: sent })),
     ],
