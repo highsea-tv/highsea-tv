@@ -55,3 +55,13 @@ Phase 4 moves the one Node from 24.21.0 to **26.11.1**, and the image from Debia
   - `module.register()` is deprecated and `--experimental-transform-types` removed. highsea uses neither: type stripping is all it needs (`erasableSyntaxOnly`).
 - **Moves together,** as before: `.nvmrc`, `engines`, the Dockerfile's three `FROM` lines (`node:26.11.1-trixie-slim`), CI through `node-version-file`, `scripts/check-node.ts` and `@types/node` 26.
 - **Why trixie.** Bookworm's regular security support ended on 2026-06-10 and it's in Debian LTS until 2028-06-30; trixie is stable, with regular support until 2028-08-08 ([Debian LTS](https://wiki.debian.org/LTS)). It carries ffmpeg 7.1 in place of 5.1, which Phase 4's transcoding is built and measured on, and GCC 14 for the build stage's addon compile. The packages the image installs keep their names; `docker/NOTICE` names trixie.
+
+## 2026-10-27: `/stream` is served (checkpoint 4.1a)
+
+`http.ts` now hands `/stream/` to `apps/server/src/stream/`, as it hands `/api` to Hono, so the file's bytes go straight from `fs.createReadStream` into Node's response and never through Hono or Next ([Node's fs docs](https://nodejs.org/api/fs.html#fscreatereadstreampath-options)). Without the stream handler (a test that builds only the API), `/stream/` still answers 501. `/ws` stays reserved and answers 501.
+
+- `GET /stream/files/{token}` serves one file for direct play by byte ranges ([RFC 9110 § 14](https://www.rfc-editor.org/rfc/rfc9110#section-14)): one range or a suffix, the whole file for several ranges, `416` past the end, and `If-Range` by a strong tag or the exact date. `HEAD` answers the same headers; any other method is `405`.
+- The token is the only credential, since a `<video>` element can't send headers. It's an HMAC over the play session, the person and the file, valid while the session lives and for 6 hours after its last report (the owner's answer 4), and never logged. Responses carry `Referrer-Policy: no-referrer`, `nosniff` and `Cache-Control: private, no-store`.
+- `GET /stream/try` is the review's test page, served only with `HIGHSEA_PLAYBACK_TRY=1`, with a warning at boot.
+
+4.1b adds HLS playlists, segments and WebVTT under the same prefix.

@@ -523,6 +523,7 @@ function Picker({
                         art: m.art,
                         progress: null,
                         position: 0,
+                        watched: false,
                         tagline: null,
                       },
                     ])

@@ -42,11 +42,14 @@ const GB = ['U', 'PG', '12A', '12', '15', '18', 'R18']
 const DE = ['0', '6', '12', '16', '18']
 /** The server's region's list; null before TMDB has been asked. */
 let ratings: string[] | null = US
+/** What each person has watched, by TMDB id. */
+const WATCHED = new Map([['ruth', new Set([10])]])
 const itemOf = (tmdb: number) => `i-${tmdb}`
 const tmdbOf = (item: string) => Number(item.slice(2))
 
-/** Answers year and genre conditions, and other collections, the way the SQL does. */
+/** Answers year, genre and watched conditions, and other collections, the way the SQL does. */
 function fakeLibrary(): CollectionLibrary {
+  let reader: string | null = null
   const matches = (
     rule: RuleGroup['rules'][number],
     tmdb: number,
@@ -65,6 +68,10 @@ function fakeLibrary(): CollectionLibrary {
             : t.year === v
       case 'genre':
         return (v as string[]).includes(t.genre) === (rule.op !== 'noneOf')
+      case 'watched': {
+        const seen = !!reader && !!WATCHED.get(reader)?.has(tmdb)
+        return v === 'no' ? !seen : seen
+      }
       case 'collection':
         return (v as string[]).some((id) => {
           const def = lookup(id)
@@ -101,7 +108,10 @@ function fakeLibrary(): CollectionLibrary {
       .map((tmdbId) => ({ itemId: itemOf(tmdbId), tmdbId, playable: !!TITLES.get(tmdbId)?.file }))
   }
   return {
-    evaluate: (def, lookup) => run(def, lookup),
+    evaluate: (def, lookup, userId) => {
+      reader = userId ?? null
+      return run(def, lookup)
+    },
     itemIds: (ids) => new Map(ids.filter((id) => TITLES.has(id)).map((id) => [id, itemOf(id)])),
     tmdbIds: (items) => new Map(items.map((i) => [i, tmdbOf(i)])),
     items: (ids) => ids.map(clientItem),
@@ -150,6 +160,7 @@ function clientItem(id: number): ClientItem {
     art: { poster: `/p/${id}`, backdrop: `/b/${id}` },
     progress: null,
     position: 0,
+    watched: false,
   }
 }
 
@@ -271,9 +282,10 @@ describe('checking a collection', () => {
     expect(message(all(cond('year', 'contains', 'x')))).toBe(
       'That comparison doesn’t go with that field.',
     )
-    expect(message(all(cond('watched', 'is', 'yes')))).toBe(
-      'Watch state comes with playback, so it can’t be used yet.',
-    )
+    expect(() => checkRules(all(cond('watched', 'is', 'yes')))).not.toThrow()
+    expect(() => checkRules(all(cond('lastPlayed', 'inLast', 30)))).not.toThrow()
+    expect(message(all(cond('watched', 'is', 'maybe')))).toBe('Choose watched or not watched.')
+    expect(message(all(cond('lastPlayed', 'inLast', 0)))).toBe('Give a number of days, 1 or more.')
     expect(message(all(cond('year', 'between', [2010] as unknown as [number, number])))).toBe(
       'Give both ends of the range.',
     )
@@ -439,7 +451,7 @@ describe('the admin', () => {
     expect(collections.list()).toEqual([])
   })
 
-  test('fields: every one, with choices, watch state waiting for playback', () => {
+  test('fields: every one, with choices, watch state among them', () => {
     const { collections } = setup()
     const a = collections.add(input({ name: 'A' }), null)
     const b = collections.add(input({ name: 'B' }), null)
@@ -477,7 +489,16 @@ describe('the admin', () => {
       { value: '9', label: 'Blender Open Movies' },
       { value: b.id, label: 'B' },
     ])
-    expect(field('watched')?.disabled).toBe('playback')
+    expect(field('watched')).toEqual({
+      field: 'watched',
+      type: 'choice',
+      ops: ['is'],
+      options: [
+        { value: 'yes', label: 'Watched' },
+        { value: 'no', label: 'Not watched' },
+      ],
+    })
+    expect(fields.some((f) => f.disabled)).toBe(false)
     expect(field('year')?.options).toBeUndefined()
     expect(collections.people('  ')).toEqual([])
     expect(collections.people('lang', 'director').map((p) => p.name)).toEqual(['Fritz Lang'])
@@ -541,6 +562,28 @@ describe('the apps', () => {
       smart: { rules: true, words: 'Comedy', mosaic: ['/p/10', '/p/30'] },
     })
     expect(collections.forApps('ruth', 'web')[1]).toMatchObject({ id: '9', smart: null })
+  })
+
+  test('watch rules read whoever reads the collection; the admin’s counts no one’s', () => {
+    const { collections } = setup()
+    const unseen = collections.add(
+      input({
+        name: 'Unwatched comedies',
+        rules: all(cond('genre', 'anyOf', ['35']), cond('watched', 'is', 'no')),
+      }),
+      null,
+    )
+    const ids = (user: string) => collections.page(unseen.id, user, 'web').items.map((i) => i.id)
+    // ruth has watched 10
+    expect(ids('ruth')).toEqual([30])
+    expect(ids('sam')).toEqual([10, 30])
+    expect(collections.forApps('ruth', 'web')[0]).toMatchObject({ count: 1 })
+    expect(collections.playable(unseen.id, 5, 'ruth')).toEqual({ tmdbIds: [30], total: 1 })
+    expect(collections.get(unseen.id)).toMatchObject({ matched: 2, playable: 2 })
+    const draft = input({ rules: all(cond('watched', 'is', 'yes')) })
+    expect(collections.preview(draft, undefined, 'ruth').items.map((i) => i.id)).toEqual([10])
+    expect(collections.preview(draft).matched).toBe(0)
+    expect(collections.get(unseen.id).words).toBe('Comedy, not watched')
   })
 
   test('a page, only where the person is in the audience', () => {
@@ -647,6 +690,10 @@ describe('the rules in words', () => {
       'Released 2010–2020, rated 4.5 or more, in en, (Comedy or Drama or 90 minutes or shorter)',
     )
     expect(inWords(all(cond('year', 'inLast', 1)), label)).toBe('Released in the last 1 year')
+    expect(inWords(all(cond('watched', 'is', 'no'), cond('lastPlayed', 'inLast', 30)), label)).toBe(
+      'Not watched, played in the last 30 days',
+    )
+    expect(inWords(all(cond('watched', 'is', 'yes')), label)).toBe('Watched')
     expect(inWords(all(), label)).toBeNull()
   })
 })

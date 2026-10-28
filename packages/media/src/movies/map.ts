@@ -79,6 +79,7 @@ export function toClientItem(
   row: ItemRow,
   meta: MovieMetadata | null,
   watch: WatchState,
+  person: { watched: boolean; playable: boolean },
 ): ClientItem {
   return {
     id: row.tmdbId,
@@ -93,9 +94,9 @@ export function toClientItem(
     releaseDate: row.releaseDate,
     addedAt: isoOf(row.addedAt),
     status: row.status,
-    // no version has a file until checkpoint 6
-    playable: false,
+    playable: person.playable,
     art: meta ? artOf(meta.art) : { poster: null, backdrop: null },
     ...progressOf(watch),
+    watched: person.watched,
   }
 }

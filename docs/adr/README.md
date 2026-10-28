@@ -6,7 +6,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | --- | --- | --- |
 | [0001](0001-design-first-sequencing.md) | Design-first sequencing | Accepted |
 | [0002](0002-bun-monorepo-multiple-apps.md) | Bun monorepo with multiple apps | Accepted |
-| [0003](0003-server-runtime-custom-entry.md) | Server runtime: custom Node entry hosting Next.js + Hono | Accepted; amended 2026-10-23 |
+| [0003](0003-server-runtime-custom-entry.md) | Server runtime: custom Node entry hosting Next.js + Hono | Accepted; amended 2026-10-27 |
 | [0004](0004-sqlite-drizzle.md) | SQLite + Drizzle for server data | Accepted |
 | [0005](0005-in-process-torrent-engine.md) | In-process TypeScript torrent engine | Accepted; amended by 0037 |
 | [0006](0006-public-api-openapi-sdk.md) | Public API: Hono + OpenAPI, typed SDK | Accepted |
@@ -42,7 +42,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0036](0036-domain-packages-with-subpath-exports.md) | Domain packages with a subpath export per kind | Accepted |
 | [0037](0037-the-torrent-engine-as-built.md) | The torrent engine as built: our session layer, one socket factory | Accepted |
 | [0038](0038-downloads.md) | Downloads: grabbing, the queue, protection and seeding | Accepted |
-| [0039](0039-importing.md) | Importing: an idempotent pipeline with Radarr's naming | Accepted |
+| [0039](0039-importing.md) | Importing: an idempotent pipeline with Radarr's naming | Accepted; amended 2026-10-27 |
 | [0040](0040-test-media.md) | Test media generated with ffmpeg, and a local swarm | Accepted |
 | [0041](0041-migration-importers.md) | The migration importers: Radarr and qBittorrent through their APIs | Accepted |
 | [0042](0042-vpn-connections.md) | VPN connections: one binding, four modes | Accepted |
@@ -52,10 +52,11 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0046](0046-notifications.md) | Notifications: the event catalogue, channels as code, delivery, email and web push | Accepted |
 | [0047](0047-operations.md) | The owner's tools: backups and restore, the log, crash reports, updates and /metrics | Accepted |
 | [0048](0048-curation.md) | Curation: announcements and featured sections, resolved per person and app | Accepted |
-| [0049](0049-smart-collections.md) | Smart collections: rules compiled to SQL, evaluated when read | Accepted |
+| [0049](0049-smart-collections.md) | Smart collections: rules compiled to SQL, evaluated when read | Accepted; amended 2026-10-27 |
 | [0050](0050-release-and-versioning.md) | Release and versioning: one SemVer version, two channels, a prepared commit and a gated workflow | Accepted |
 | [0051](0051-playback-engine.md) | The playback engine: direct play, then direct stream, then HLS transcodes made on demand | Proposed |
 | [0052](0052-device-profiles.md) | Device profiles: what each client plays, built in and reported, in one shape | Proposed |
 | [0053](0053-clients-build-and-distribution.md) | The clients' build and distribution: Vite at /web, Tauri for desktop, Expo for mobile and TV | Proposed |
+| [0054](0054-watch-state.md) | Watch state: positions, watched and the player's picks, per person and title | Accepted |
 
 Template: copy [`template.md`](template.md).

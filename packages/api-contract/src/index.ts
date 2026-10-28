@@ -19,6 +19,7 @@ export * from './metadata.ts'
 export * from './movies.ts'
 export * from './operations.ts'
 export * from './personalization.ts'
+export * from './playback.ts'
 export * from './quality.ts'
 export * from './settings.ts'
 export * from './setup.ts'
@@ -52,6 +53,7 @@ import { metadata } from './metadata.ts'
 import { movies, rootFolders } from './movies.ts'
 import { operationsSettings } from './operations.ts'
 import { appearance, dashboard, home, preferences } from './personalization.ts'
+import { playback } from './playback.ts'
 import { quality } from './quality.ts'
 import { settings } from './settings.ts'
 import { setup } from './setup.ts'
@@ -82,6 +84,7 @@ export const routes = {
   quality,
   rootFolders,
   library: { ...library, ...libraryCollections },
+  playback,
   indexers,
   catalog,
   queue,

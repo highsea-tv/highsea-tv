@@ -295,8 +295,13 @@ export function createLibrary(ctx: Ctx, media: Media) {
     if (query.cutoffUnmet !== undefined) where.push(eq(mediaItems.cutoffUnmet, query.cutoffUnmet))
     if (query.title?.trim()) where.push(titleMatch(query.title))
     if (query.genre?.trim()) where.push(genreMatch(query.genre.trim()))
-    // nothing has a file to play until checkpoint 6
-    if (query.playable === true) where.push(sql`0`)
+    // a version with a file: any file plays, transcoded where it must be (checkpoint 4.1)
+    if (query.playable !== undefined)
+      where.push(
+        query.playable
+          ? sql`EXISTS (SELECT 1 FROM versions v WHERE v.item_id = ${mediaItems.id} AND v.file_id IS NOT NULL)`
+          : sql`NOT EXISTS (SELECT 1 FROM versions v WHERE v.item_id = ${mediaItems.id} AND v.file_id IS NOT NULL)`,
+      )
     return and(...where)
   }
 

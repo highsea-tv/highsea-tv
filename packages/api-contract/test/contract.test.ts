@@ -229,6 +229,7 @@ describe('contract', () => {
         addedAt: movie.addedAt,
         status: 'wanted',
         playable: false,
+        watched: false,
         progress: null,
         position: 0,
       },
@@ -240,7 +241,9 @@ describe('contract', () => {
       directors: [],
       videos: [],
       collection: null,
-      versions: [{ id: 'v1', label: '1080p', detail: null, playable: false, subtitles: [] }],
+      versions: [
+        { id: 'v1', label: '1080p', detail: null, playable: false, audio: [], subtitles: [] },
+      ],
       related: [],
     })
     ok(SearchResults, {

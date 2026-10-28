@@ -50,6 +50,8 @@ export const media = defineMessages({
   'folders.free': '{free} free of {total}',
   'folders.unreadable': 'Can’t be read now',
   'folders.movies': '{count, plural, =0 {No movies} one {# movie} other {# movies}}',
+  'folders.waiting':
+    '{count, plural, one {# folder needs} other {# folders need}} a match in Library import',
   'folders.importExisting': 'Import what’s already here',
   'folders.importExistingLabel': 'Import what’s already in {path}',
   'folders.remove': 'Remove',
@@ -74,6 +76,7 @@ export const media = defineMessages({
   'add.placeholder': '/data/media/movies',
   'add.submit': 'Add folder',
   'add.added': '{path} added',
+  'add.addedScanning': 'Movies already in it are added as they’re found.',
   'add.missing': 'Enter the folder’s path.',
   'add.notAbsolute': 'Use the full path, starting with /.',
   'add.notFound': 'That folder doesn’t exist on the server.',

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The client API (client-library.md, client-detail.md, client-search.md): the library as the
-// household's apps read it, with each person's place in each title. Watch positions are read from
-// `watch_positions`; playback writes them in Phase 4.
+// household's apps read it, with each person's place in each title and whether they've watched it
+// (ADR 0054). A title is playable once a version has a file: any file plays, transcoded where the
+// device can't take it as it is (checkpoint 4.1).
 import type {
   ClientCollection,
   ClientDetail,
@@ -13,17 +14,19 @@ import type {
 } from '@highsea-tv/api-contract'
 import { schema } from '@highsea-tv/db'
 import { DEFAULT_SIZES, imageUrl } from '@highsea-tv/metadata'
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
+import { probeOf } from '../shared/file-facts.ts'
 import { type ItemRow, toApiCredit, toApiVideo } from '../shared/map.ts'
 import type { Dir, Sort } from '../shared/paging.ts'
 import { matchScore } from '../shared/search.ts'
-import { escapeLike } from '../shared/sql.ts'
-import { watchOf } from '../shared/watch.ts'
+import { chunks, escapeLike } from '../shared/sql.ts'
+import { audioTracks, versionDetail } from '../shared/tracks.ts'
+import { playedOf, watchOf } from '../shared/watch.ts'
 import { type Ctx, notInLibrary } from './context.ts'
 import { type Library, titleMatch } from './library.ts'
 import { toApiDiscoverMovie, toClientItem } from './map.ts'
 
-const { mediaItems, movieMetadata, collections } = schema
+const { mediaItems, movieMetadata, collections, versions: versionsTable, mediaFiles } = schema
 
 /** Results per section. */
 const SECTION_LIMIT = 20
@@ -42,14 +45,29 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
   const { db, metadata } = ctx
   const log = ctx.logger.child('movies')
 
+  /** The items among `itemIds` with a version that has a file. */
+  function withFile(itemIds: string[]): Set<string> {
+    const out = new Set<string>()
+    for (const ids of chunks(itemIds))
+      for (const v of db
+        .select({ itemId: versionsTable.itemId })
+        .from(versionsTable)
+        .where(and(inArray(versionsTable.itemId, ids), isNotNull(versionsTable.fileId)))
+        .all())
+        out.add(v.itemId)
+    return out
+  }
+
   function items(rows: ItemRow[], userId: string): ClientItem[] {
-    const watch = watchOf(
-      db,
-      userId,
-      rows.map((r) => r.id),
-    )
+    const ids = rows.map((r) => r.id)
+    const watch = watchOf(db, userId, ids)
+    const played = playedOf(db, userId, ids)
+    const playable = withFile(ids)
     return rows.map((r) =>
-      toClientItem(r, library.internal.cached(r.tmdbId), watch.get(r.id) ?? null),
+      toClientItem(r, library.internal.cached(r.tmdbId), watch.get(r.id) ?? null, {
+        watched: played.has(r.id),
+        playable: playable.has(r.id),
+      }),
     )
   }
 
@@ -112,6 +130,13 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
     }
     const cast = meta?.cast ?? []
     const crew = meta?.crew ?? []
+    const fileIds = versions.flatMap((v) => v.fileId ?? [])
+    const files = new Map(
+      (fileIds.length
+        ? db.select().from(mediaFiles).where(inArray(mediaFiles.id, fileIds)).all()
+        : []
+      ).map((f) => [f.id, f]),
+    )
     return {
       item: items([row], userId)[0] as ClientItem,
       originalTitle: meta?.originalTitle ?? row.title,
@@ -124,13 +149,18 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
       ),
       videos: (meta?.videos ?? []).map(toApiVideo),
       collection: meta?.collection ?? null,
-      versions: versions.map((v) => ({
-        id: v.id,
-        label: v.label,
-        detail: null,
-        playable: false,
-        subtitles: v.fileId ? (ctx.subtitles?.forFile(v.fileId) ?? []) : [],
-      })),
+      versions: versions.map((v) => {
+        const file = v.fileId ? files.get(v.fileId) : undefined
+        const info = file ? probeOf(file.mediaInfo) : null
+        return {
+          id: v.id,
+          label: v.label,
+          detail: file ? versionDetail(info, file.size) : null,
+          playable: !!file,
+          audio: file ? audioTracks(file.id, info) : [],
+          subtitles: file ? (ctx.subtitles?.forFile(file.id) ?? []) : [],
+        }
+      }),
       related,
     }
   }
@@ -324,7 +354,7 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
     return { sections }
   }
 
-  return { list, item, search, byIds }
+  return { list, item, search, byIds, items }
 }
 
 export type Client = ReturnType<typeof createClient>

@@ -13,7 +13,7 @@ Bring in files highsea didn't download, or couldn't import on its own: a folder 
 
 - Activity › **Manual import** in the page header (owners and admins).
 - Downloads › a finished manual torrent's sheet › More › **Import into the library** (6b, answer 7): `/activity/import?path=…` opens on the torrent's folder, or its one file, and looks inside straight away.
-- Settings › Media management › Root folders › **Import what’s already here** opens the Library import mode on that folder (6b).
+- Settings › Media management › Root folders › **Import what’s already here** opens the Library import mode on that folder (6b). *As built (4.1a's review, the owner's change):* the library scan adds the sure matches on its own, when a root folder is added and as new folders appear ([settings.md](settings.md)); Library import is for the rest, or to rename.
 
 ## Layout
 

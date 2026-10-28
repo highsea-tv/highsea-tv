@@ -127,7 +127,7 @@ export function createCurationLibrary(deps: {
     },
     items,
     builtIn(userId) {
-      // Continue watching: started and not finished, most recent first (playback writes it in Phase 4)
+      // Continue watching: started and not finished, most recent first (playback writes it, 4.1a)
       const started = db
         .all<{ tmdbId: number }>(
           sql`SELECT mi.tmdb_id AS tmdbId FROM watch_positions w

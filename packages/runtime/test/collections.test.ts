@@ -2,6 +2,7 @@
 // Smart collections' SQL (checkpoint 8d, ADR 0049) against rows written straight into SQLite:
 // every field and comparison, groups, Always and Never include, another collection named in a
 // rule (and a loop back), each sort with titles lacking a value last, the limit, the day's shuffle,
+// the watch rules for whoever reads it (4.1a),
 // the editor's choices and people by role. The service's own behaviour is tested in
 // packages/curation against a fake library.
 import { beforeAll, describe, expect, test } from 'bun:test'
@@ -340,10 +341,11 @@ const def = (over: Partial<CollectionDef> = {}): CollectionDef => ({
 })
 
 const saved = new Map<string, CollectionDef>()
-const run = (d: CollectionDef) => library.evaluate(d, (id) => saved.get(id) ?? null)
-/** The TMDB ids a condition matches, in title order. */
-const match = (c: RuleCondition) =>
-  run(def({ rules: group('all', c) }))
+const run = (d: CollectionDef, userId: string | null = null) =>
+  library.evaluate(d, (id) => saved.get(id) ?? null, userId)
+/** The TMDB ids a condition matches for the reader, in title order. */
+const match = (c: RuleCondition, userId: string | null = null) =>
+  run(def({ rules: group('all', c) }), userId)
     .map((m) => m.tmdbId)
     .sort((a, b) => a - b)
 
@@ -515,11 +517,62 @@ describe('every field and comparison', () => {
     expect(match(cond('edition', 'isNot', 'Restored'))).toEqual([SINTEL, TEARS, NOSFERATU, SPRING])
   })
 
-  test('TMDB’s collections, and watch state matches nothing until playback', () => {
+  test('TMDB’s collections', () => {
     expect(match(cond('collection', 'oneOf', ['9']))).toEqual([SINTEL, TEARS])
     expect(match(cond('collection', 'notOneOf', ['9']))).toEqual([METROPOLIS, NOSFERATU, SPRING])
+  })
+
+  test('watch state is the reader’s: watched, not watched and played lately', () => {
+    for (const id of ['ruth', 'sam'])
+      raw.run(
+        `INSERT INTO users (id, username, display_name, role, webauthn_id, created_at, updated_at)
+         VALUES (?, ?, ?, 'user', ?, 0, 0)`,
+        id,
+        id,
+        id,
+        `w-${id}`,
+      )
+    const watched = (user: string, tmdb: number, played: boolean, at: number | null) =>
+      raw.run(
+        `INSERT INTO watch_history (user_id, item_id, played, play_count, last_played_at, updated_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        user,
+        `itm_${tmdb}`,
+        played ? 1 : 0,
+        played ? 1 : 0,
+        at,
+        NOW,
+      )
+    watched('ruth', SINTEL, true, NOW - 2 * DAY)
+    watched('ruth', METROPOLIS, true, NOW - 90 * DAY)
+    // marked unwatched again after a viewing: not watched, but the date stays
+    watched('ruth', TEARS, false, null)
+    watched('sam', SPRING, true, NOW - DAY)
+    expect(match(cond('watched', 'is', 'yes'), 'ruth')).toEqual([SINTEL, METROPOLIS])
+    expect(match(cond('watched', 'is', 'no'), 'ruth')).toEqual([TEARS, NOSFERATU, SPRING])
+    expect(match(cond('watched', 'is', 'yes'), 'sam')).toEqual([SPRING])
+    expect(match(cond('lastPlayed', 'inLast', 30), 'ruth')).toEqual([SINTEL])
+    expect(match(cond('lastPlayed', 'inLast', 100), 'ruth')).toEqual([SINTEL, METROPOLIS])
+    // answered for no one (the admin's counts): nothing has been watched
     expect(match(cond('watched', 'is', 'yes'))).toEqual([])
+    expect(match(cond('watched', 'is', 'no'))).toEqual([
+      SINTEL,
+      METROPOLIS,
+      TEARS,
+      NOSFERATU,
+      SPRING,
+    ])
     expect(match(cond('lastPlayed', 'inLast', 30))).toEqual([])
+    // a collection named in a rule is answered for the same reader
+    saved.set(
+      'sc-ruth-seen',
+      def({ id: 'sc-ruth-seen', rules: group('all', cond('watched', 'is', 'yes')) }),
+    )
+    expect(match(cond('collection', 'oneOf', ['sc-ruth-seen']), 'ruth')).toEqual([
+      SINTEL,
+      METROPOLIS,
+    ])
+    saved.delete('sc-ruth-seen')
   })
 })
 

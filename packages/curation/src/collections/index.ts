@@ -24,7 +24,6 @@ import type {
 } from '@highsea-tv/api-contract'
 import {
   type Audience,
-  PLAYBACK_FIELDS,
   RULE_FIELD_NAMES,
   RULE_FIELDS,
   RuleGroup as RuleGroupSchema,
@@ -45,6 +44,7 @@ import {
   namedCollections,
   RESOLUTIONS,
   SMART_PREFIX,
+  WATCHED,
 } from './rules.ts'
 
 export * from './rules.ts'
@@ -89,8 +89,13 @@ export type CollectionLibrary = {
   /**
    * What a collection holds now, in its order and after its limit. `lookup` answers for the
    * collections its rules name; one that names a collection already being answered matches nothing.
+   * The watch rules read `userId`'s watch state; for null, no one has watched anything.
    */
-  evaluate(def: CollectionDef, lookup: (id: string) => CollectionDef | null): Member[]
+  evaluate(
+    def: CollectionDef,
+    lookup: (id: string) => CollectionDef | null,
+    userId?: string | null,
+  ): Member[]
   itemIds(tmdbIds: number[]): Map<number, string>
   tmdbIds(itemIds: string[]): Map<string, number>
   /** Titles as the apps see them, with this person's watch state, in this order. */
@@ -120,6 +125,8 @@ export const choiceMessages = defineMessages({
   'hdr.hdr10': 'HDR10',
   'hdr.hlg': 'HLG',
   'hdr.none': 'None',
+  'watched.yes': 'Watched',
+  'watched.no': 'Not watched',
   uhd: '4K',
   lines: '{n}p',
 })
@@ -127,7 +134,7 @@ const ct = createT(choiceMessages)
 
 const STATUSES = ['available', 'wanted', 'downloading', 'not-released', 'unmonitored'] as const
 
-/** Fixed choices: the library's statuses, resolutions and HDR formats. */
+/** Fixed choices: the library's statuses, resolutions, HDR formats and watched or not. */
 function fixedOptions(field: RuleField): Option[] | null {
   switch (field) {
     case 'status':
@@ -139,6 +146,8 @@ function fixedOptions(field: RuleField): Option[] | null {
       }))
     case 'hdr':
       return HDR_CHOICES.map((h) => ({ value: h, label: ct(`hdr.${h}`) }))
+    case 'watched':
+      return WATCHED.map((w) => ({ value: w, label: ct(`watched.${w}`) }))
     default:
       return null
   }
@@ -245,9 +254,12 @@ export function createCollections(deps: {
 
   // ------------------------------------------------------------ evaluating
 
-  /** What a collection holds now; another named in its rules is answered from what's saved. */
-  function evaluate(def: CollectionDef, saved = defs()): Member[] {
-    return library.evaluate(def, (id) => (id === def.id ? def : (saved.get(id) ?? null)))
+  /**
+   * What a collection holds now for whoever reads it (their watch state; null for no one's, as the
+   * admin's counts are); another named in its rules is answered from what's saved.
+   */
+  function evaluate(def: CollectionDef, saved = defs(), userId: string | null = null): Member[] {
+    return library.evaluate(def, (id) => (id === def.id ? def : (saved.get(id) ?? null)), userId)
   }
 
   function draftDef(input: SmartCollectionInput, id: string): CollectionDef {
@@ -464,7 +476,7 @@ export function createCollections(deps: {
   /** A collection of the server's as the apps see it: what can be played, in its own order. */
   function forApps(row: Row, saved: Map<string, CollectionDef>, userId: string) {
     const def = saved.get(row.id) as CollectionDef
-    const ids = evaluate(def, saved)
+    const ids = evaluate(def, saved, userId)
       .filter((m) => m.playable)
       .map((m) => m.tmdbId)
     if (!ids.length) return null
@@ -581,8 +593,15 @@ export function createCollections(deps: {
       })
     },
 
-    /** What a draft holds now: both counts, its first titles in order, its rules in words. */
-    preview(input: SmartCollectionInput, id?: string): CollectionPreview {
+    /**
+     * What a draft holds now: both counts, its first titles in order, its rules in words. The watch
+     * rules read `userId`'s watch state: the admin previewing sees their own.
+     */
+    preview(
+      input: SmartCollectionInput,
+      id?: string,
+      userId: string | null = null,
+    ): CollectionPreview {
       const draftId = id ?? 'draft'
       if (input.rules) {
         checkRules(input.rules, library.certifications())
@@ -594,7 +613,7 @@ export function createCollections(deps: {
         )
           throw invalid('A collection can’t be one of its own rules.', 'rules', 'self')
       }
-      const members = evaluate(draftDef(input, draftId))
+      const members = evaluate(draftDef(input, draftId), defs(), userId)
       const shown = members.slice(0, PREVIEW_MAX)
       const items = new Map(
         library
@@ -631,7 +650,6 @@ export function createCollections(deps: {
           type: info.type,
           ops: [...info.ops],
           ...(options ? { options } : {}),
-          ...(PLAYBACK_FIELDS.includes(field) ? { disabled: 'playback' as const } : {}),
         }
       })
     },
@@ -674,12 +692,19 @@ export function createCollections(deps: {
 
     // ---------------------------------------------------------- featured sections
 
-    /** What a section drawing on a collection shows: what can be played, in its order. */
-    playable(id: string, limit: number): { tmdbIds: number[]; total: number } {
+    /**
+     * What a section drawing on a collection shows: what can be played, in its order, for whoever
+     * reads it (null for no one, as the admin's preview of a section is).
+     */
+    playable(
+      id: string,
+      limit: number,
+      userId: string | null = null,
+    ): { tmdbIds: number[]; total: number } {
       const saved = defs()
       const def = saved.get(id)
       if (!def) return { tmdbIds: [], total: 0 }
-      const ids = evaluate(def, saved)
+      const ids = evaluate(def, saved, userId)
         .filter((m) => m.playable)
         .map((m) => m.tmdbId)
       return { tmdbIds: ids.slice(0, limit), total: ids.length }

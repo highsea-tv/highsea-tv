@@ -54,3 +54,13 @@ A finished download becomes a named file in the movie's folder, with its streams
 - With the TRaSH layout (one `/data` holding downloads and media), imports are hardlinks and seeding takes no extra space. On separate disks they're copies, and history says so.
 - ffprobe is a separate GPL program run over arguments and pipes, which is aggregation, not a combined work ([GPL FAQ › Mere aggregation](https://www.gnu.org/licenses/gpl-faq.html#MereAggregation)).
 - A migrating owner's Radarr formats mean the same thing here, apart from the empty `{Release Group}`.
+
+## 2026-10-27: the scan adds new folders it can match surely (4.1a's review)
+
+At 4.1a's review the owner asked that adding a root folder should scan it, and chose (2026-10-27) that the scan adds what it can match surely and leaves the rest for Library import, both when a root folder is added and when a new folder appears later. Until then the scan only recorded files in the folders of movies already in the library, and films already on disk came in only through Library import, where the owner confirms each match (answer 9).
+
+- **Adding a root folder** (`POST /api/v1/rootfolders`, and setup's movies folder once the TMDB key is saved) queues `library.scan` for that folder.
+- **The scan** (`scan.ts`) gathers the title folders under a root folder that hold a video and belong to no movie, and hands them to the library import's `addNew` (`library-import.ts`). The 12-hourly scan and the watcher's scans of one title folder do the same, so a film copied into the library later is found as well.
+- **A sure match** is one whose folder name carries a TMDB or IMDb id, or whose title (or original title) and year are TMDB's exactly. Library import's ranking still accepts a year off by one, as Radarr does; `addNew` doesn't, so a remake or a regional release year is never added unasked. A sure match is added as Library import adds it: in place, nothing renamed, with the first quality profile.
+- **The rest wait.** Their folders are kept by root folder in one settings row (`libraryScan.waiting`). The root folder's `waiting` count leaves out any imported since or gone, and Settings › Media management shows it. The 12-hourly scan doesn't search TMDB again for a waiting folder, though a scan of that folder alone (a change the watcher saw) does. Without a TMDB key, nothing is matched and nothing is marked. A second copy of a movie already in the library doesn't wait. A downloads folder inside a root folder is left alone, so a download in progress is never added.
+- Safe to repeat (ADR 0022): a folder that's a movie's is never handed over, and adding a movie that's in the library returns it.

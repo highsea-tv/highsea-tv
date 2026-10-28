@@ -104,7 +104,7 @@ const movie = (id: number, title: string, releaseDate: string | null, labels = [
   gone: false,
 })
 
-const folder = (id: string, path: string, total: number | null, movies: number) => ({
+const folder = (id: string, path: string, total: number | null, movies: number, waiting = 0) => ({
   id,
   path,
   free: total === null ? null : total / 2,
@@ -113,6 +113,7 @@ const folder = (id: string, path: string, total: number | null, movies: number) 
   accessible: total !== null,
   movies,
   languageProfileId: null as string | null,
+  waiting,
 })
 
 type Request = { method: string; path: string; body: unknown }
@@ -704,6 +705,19 @@ describe('Settings › Media management › root folders', () => {
     const inUse = page.getByRole('button', { name: 'Remove /data/media/movies' })
     expect(inUse.hasAttribute('disabled')).toBe(true)
     expect(page.getByText(/3 movies are filed under it/)).toBeTruthy()
+  })
+
+  test('a folder says how many of the scan’s new folders wait for a match (4.1a’s review)', async () => {
+    state.folders.push(folder('rf2', '/data/media/more', 2e12, 4, 2))
+    const { page } = await open(<MediaManagement />)
+    const list = page.getByRole('list', { name: 'Root folders' })
+    expect(
+      within(list).getByText(
+        '1.0 TB free of 2.0 TB · 4 movies · 2 folders need a match in Library import',
+      ),
+    ).toBeTruthy()
+    // none waiting says nothing
+    expect(within(list).getByText('1.0 TB free of 2.0 TB · 3 movies')).toBeTruthy()
   })
 
   test('each folder opens Library import for what’s already in it (6b)', async () => {

@@ -4,7 +4,7 @@
 // collections/rules.tsx: Match all or any of a list of conditions, each a field, a comparison and
 // a value, and groups one level deep. The server says which fields there are, their comparisons
 // and the library's choices (`GET /curation/collections/fields`); the admin names and groups them.
-// Watch state shows, disabled, until playback brings it.
+// Watch state is the reader's own (4.1a); a field the server marks disabled shows, disabled.
 //
 // What real data changes: people aren't listed with the fields (a real library credits thousands),
 // so a role's box searches `GET /curation/collections/people` as you type, and a saved rule's

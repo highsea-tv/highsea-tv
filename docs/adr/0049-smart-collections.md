@@ -60,3 +60,14 @@ Until now, most of what a rule needs lived only inside JSON: TMDB's `data` in th
 - **Codecs are ffprobe's names** (`h264`, `hevc`), labelled in the admin. Release names vary too much to filter on.
 - **Two fact stores to keep in step.** Every writer of metadata or probes goes through `putMovie` and `writeFileFacts`. A new writer that skips them leaves rules blind to its rows, until the backfill jobs' version is bumped.
 - **Watched and last played wait for Phase 4,** with personal collections.
+
+## 2026-10-27: watched and last played are on (checkpoint 4.1a)
+
+Playback brings watch state (ADR 0054), so the two fields that waited for it work:
+
+- `watched` is `yes` or `no`; `lastPlayed` takes `inLast` a number of days, matching titles last played to the end in that time. Play count, which the plan also named, isn't a field: the editor's fields are the contract's `RULE_FIELDS`, and a third would change the locked editor's list.
+- **They read whoever reads the collection.** `CollectionLibrary.evaluate` takes the reader, and `collection-query.ts` compiles both against `watch_history` for that person, so one "Unwatched comedies" collection shows each person their own. Library › Collections, a collection's page and featured sections drawing on one pass the person; the admin's live preview passes the admin, so they see it as they would; the admin's list and counts pass no one, for whom nothing is watched.
+- `disabled: 'playback'` is no longer set on any field and `PLAYBACK_FIELDS` is gone. `RuleFieldInfo.disabled` stays in the contract for a later field that waits on something.
+- A collection named in another's rule is answered for the same reader.
+
+The apps refetch a collection when they hear `watch.updated`, which 4.2's web client does.

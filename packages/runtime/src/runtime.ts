@@ -124,6 +124,7 @@ import {
   type Operations,
   UPDATES_TOPIC,
 } from './operations.ts'
+import { createPlayback, type Playback } from './playback.ts'
 import {
   checkSetup,
   FOLDERS_KEY,
@@ -256,6 +257,8 @@ export type Runtime = {
   media: Media
   /** The movie library. */
   movies: Movies
+  /** Play sessions, the decision and `/stream` (checkpoint 4.1a). */
+  playback: Playback
   /** Subtitles for the movie library (checkpoint 7a). */
   subtitles: Subtitles
   /** Signed definitions: the seed, the main catalog, extra catalogs and local ones (ADR 0034). */
@@ -713,6 +716,23 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   movies.jobs.schedule(clock.now())
   scheduleFileFacts({ db, jobs, clock })
 
+  // playback (4.1a): sessions in memory, ended when the person's access to them goes
+  const playback = createPlayback({
+    db,
+    clock,
+    events,
+    logger,
+    movies,
+    librariesOf: (userId) => {
+      try {
+        return auth.users.get(userId).libraries
+      } catch {
+        return null
+      }
+    },
+    deviceExists: (deviceId) => auth.devices.find(deviceId) !== null,
+  })
+
   // watching only speeds the library scan up: a change asks for its title folder's scan
   const watch = createLibraryWatch({
     onChange: (folder) => movies.libraryScan.queue(folder),
@@ -1096,6 +1116,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     metadata,
     media,
     movies,
+    playback,
     subtitles,
     catalog,
     indexers,
@@ -1168,6 +1189,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
           // the owner exists now: setup finishes, and the key is added in Settings › General
           log.warn('couldn’t save the TMDB key at setup', { error: (e as Error).message })
         }
+      // the movies already in the folder, matched with the key just saved
+      if (media.rootFolders.find(folder)) movies.libraryScan.queue(folder)
       // the indexer step: added once the owner exists, each tested first. Not awaited, so a slow
       // or unreachable site doesn't hold up Finish for its 30 seconds; they appear on the
       // dashboard as they pass, and one that fails is logged and can be added from Indexers
@@ -1364,6 +1387,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       stopDownloads()
       stopIpBlocklist()
       await engine.close()
+      playback.close()
       movies.close()
       stopSubtitles()
       stopIndexers()

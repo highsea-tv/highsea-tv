@@ -13,6 +13,9 @@
 //   seeded random (`random()` can't be seeded, https://sqlite.org/lang_corefunc.html#random), so
 //   the rowid is mixed with a seed from the day and the collection and multiplied by Knuth's
 //   golden-ratio constant modulo a prime (TAOCP vol. 3, 6.4), a stable order for the day.
+// - Watch state is the reader's (4.1a, ADR 0054): `watched` and `lastPlayed` read `watch_history`
+//   for the person the collection is answered for. Answered for no one (the admin's counts), no
+//   title has been watched.
 import { ROLE_JOBS, type RuleGroup } from '@highsea-tv/api-contract'
 import {
   type CollectionDef,
@@ -55,6 +58,8 @@ type Ctx = {
   visiting: Set<string>
   /** The region's certifications, mildest first (TMDB's `order`); null until TMDB has been asked. */
   ratings: string[] | null
+  /** Whose watch state the watch rules read; null for no one's. */
+  userId: string | null
 }
 
 /** `any` when a value matches, `all` when every one does; negatives are `any`'s opposite. */
@@ -240,10 +245,17 @@ export function conditionSql(c: Condition, ctx: Ctx): SQL {
     case 'size':
       // GB as people count them, 10^9 bytes
       return files(sql`max(mf.size) > 0 AND ${compare(sql`(max(mf.size) / 1e9)`, c)}`)
-    // watch state comes with playback (Phase 4); refused on save, nothing until then
-    case 'watched':
+    case 'watched': {
+      const seen = ctx.userId
+        ? sql`mi.id IN (SELECT wh.item_id FROM watch_history wh
+            WHERE wh.user_id = ${ctx.userId} AND wh.played = 1)`
+        : sql`0`
+      return values[0] === 'no' ? not(seen) : seen
+    }
     case 'lastPlayed':
-      return sql`0`
+      if (!ctx.userId) return sql`0`
+      return sql`mi.id IN (SELECT wh.item_id FROM watch_history wh
+        WHERE wh.user_id = ${ctx.userId} AND wh.last_played_at >= ${ctx.now - n * DAY})`
   }
 }
 
@@ -321,10 +333,11 @@ export function collectionQuery(
   lookup: (id: string) => CollectionDef | null,
   now: number,
   ratings: string[] | null = null,
+  userId: string | null = null,
 ): SQL {
   return membersSql(
     def,
-    { now, lookup, visiting: new Set(), ratings },
+    { now, lookup, visiting: new Set(), ratings, userId },
     sql`mi.id AS itemId, mi.tmdb_id AS tmdbId, ${PLAYABLE} AS playable`,
   )
 }

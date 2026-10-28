@@ -2,11 +2,11 @@
 // The folders every media type files its titles under. Adding one checks that it's absolute, exists and is a
 // directory the server can write to; free space, size and the device are read live each time, so
 // an unmounted disk shows as inaccessible rather than with stale numbers.
-import { accessSync, constants, statfsSync, statSync } from 'node:fs'
+import { accessSync, constants, existsSync, statfsSync, statSync } from 'node:fs'
 import { isAbsolute, relative, resolve, sep } from 'node:path'
 import type { RootFolder } from '@highsea-tv/api-contract'
 import { AppError, newId } from '@highsea-tv/core'
-import { schema } from '@highsea-tv/db'
+import { readSetting, schema } from '@highsea-tv/db'
 import type { MediaType } from '@highsea-tv/db/schema'
 import { asc, eq, sql } from 'drizzle-orm'
 import { invalid, type MediaDeps } from './context.ts'
@@ -15,6 +15,13 @@ const { rootFolders, mediaItems, languageProfiles } = schema
 
 /** How a refusal names each type: one, then many. A new media type adds its nouns here. */
 const NOUNS: Record<MediaType, [string, string]> = { movie: ['movie', 'movies'] }
+
+/**
+ * The folders the library scan couldn't match surely, by root folder: they wait for Library
+ * import (`@highsea-tv/media/movies`' `addNew` writes it).
+ */
+export const ROOT_WAITING_KEY = 'libraryScan.waiting'
+export type RootWaiting = Record<string, string[]>
 
 /** The titles filed under a folder, counted by type. */
 export type FiledCounts = Partial<Record<MediaType, number>>
@@ -81,12 +88,28 @@ export function createRootFolders({ db, clock }: MediaDeps) {
     return counts
   }
 
+  /** What still waits: a folder imported since, or gone, no longer counts. */
+  const waitingIn = (path: string): number => {
+    const folders = readSetting<RootWaiting>(db, ROOT_WAITING_KEY, {})[path] ?? []
+    if (folders.length === 0) return 0
+    const filed = new Set(
+      db
+        .select({ path: mediaItems.path })
+        .from(mediaItems)
+        .where(eq(mediaItems.rootFolder, path))
+        .all()
+        .map((r) => r.path),
+    )
+    return folders.filter((f) => !filed.has(f) && existsSync(f)).length
+  }
+
   const view = (row: typeof rootFolders.$inferSelect): RootFolder => ({
     id: row.id,
     path: row.path,
     ...probe(row.path),
     movies: filedIn(row.path).movie ?? 0,
     languageProfileId: row.languageProfileId,
+    waiting: waitingIn(row.path),
   })
 
   const rows = () => db.select().from(rootFolders).orderBy(asc(rootFolders.path)).all()

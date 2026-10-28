@@ -1117,7 +1117,15 @@ export function createImports(ctx: Ctx, deps: { media: Media; library: Library }
     adopt,
     /** Root folders where imports copy because hardlinks can't be made, and why. */
     copying: () => [...copying].map(([root, c]) => ({ root, ...c })),
-    internal: { roots, probed, qualityFor, pickVersion, versionRows, namingMovie },
+    internal: {
+      roots,
+      probed,
+      qualityFor,
+      pickVersion,
+      versionRows,
+      namingMovie,
+      downloadDirs: () => options.downloadDirs?.() ?? [],
+    },
   }
 }
 

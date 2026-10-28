@@ -28,6 +28,7 @@
     "@highsea-tv/notifications": "workspace:*",
     "@highsea-tv/personalization": "workspace:*",
     "@highsea-tv/quality": "workspace:*",
+    "@highsea-tv/stream": "workspace:*",
     "@highsea-tv/subtitles": "workspace:*",
     "@highsea-tv/torrent": "workspace:*",
     "@highsea-tv/vpn": "workspace:*",

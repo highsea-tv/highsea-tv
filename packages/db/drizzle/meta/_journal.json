@@ -99,6 +99,13 @@
       "when": 1792700595695,
       "tag": "0013_scale",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1793129305780,
+      "tag": "0014_playback",
+      "breakpoints": true
     }
   ]
 }

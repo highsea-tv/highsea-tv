@@ -511,6 +511,7 @@
         "@highsea-tv/notifications": "workspace:*",
         "@highsea-tv/personalization": "workspace:*",
         "@highsea-tv/quality": "workspace:*",
+        "@highsea-tv/stream": "workspace:*",
         "@highsea-tv/subtitles": "workspace:*",
         "@highsea-tv/torrent": "workspace:*",
         "@highsea-tv/vpn": "workspace:*",
@@ -553,6 +554,19 @@
       },
       "peerDependencies": {
         "react": "^19.3.0",
+      },
+    },
+    "packages/stream": {
+      "name": "@highsea-tv/stream",
+      "version": "0.0.0",
+      "dependencies": {
+        "@highsea-tv/i18n": "workspace:*",
+        "@highsea-tv/media": "workspace:*",
+        "zod": "4.6.7",
+      },
+      "devDependencies": {
+        "@highsea-tv/config": "workspace:*",
+        "@types/node": "26.6.5",
       },
     },
     "packages/subtitles": {
@@ -897,6 +911,8 @@
     "@highsea-tv/server": ["@highsea-tv/server@workspace:apps/server"],
 
     "@highsea-tv/storybook": ["@highsea-tv/storybook@workspace:apps/storybook"],
+
+    "@highsea-tv/stream": ["@highsea-tv/stream@workspace:packages/stream"],
 
     "@highsea-tv/subtitles": ["@highsea-tv/subtitles@workspace:packages/subtitles"],
 

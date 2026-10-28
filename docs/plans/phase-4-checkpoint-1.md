@@ -1,8 +1,8 @@
 # Phase 4, checkpoint 4.1: playback on the server
 
-- **Status:** Scoped on 2026-10-27, for the owner's review. Nothing is built until the owner approves the scope and answers the [open questions](#open-questions-for-the-owner).
+- **Status:** Scoped on 2026-10-27, and approved the same day with [the owner's answers](#the-owners-answers) (every recommendation). 4.1a starts first.
 - **Parent plan:** [phase-4-clients.md › Order of work](phase-4-clients.md#order-of-work-and-checkpoints), 4.1.
-- **Gate:** 4.0 was signed off on 2026-10-27, with Next.js 16.4.1. 4.1 doesn't depend on it and can start once this scope is approved.
+- **Gate:** 4.0 was signed off on 2026-10-27, with Next.js 16.4.1. 
 
 ## Read first
 
@@ -26,7 +26,7 @@ The server can play any film in the library to a client that asks, and explains 
 ## Out of scope
 
 - **The clients' screens:** 4.2 (web), 4.4 (desktop), 4.5 (TV) and 4.6 (mobile). 4.1's test page isn't a client ([Trying it](#trying-it-at-the-review-41a-and-41b)).
-- **Hardware acceleration, tone mapping, burn-in of image subtitles, better downmixing, transcode limits, throttling, and the cache's settings:** 4.3, with its own ADR. 4.1 uses fixed defaults and the processor. Whether software tone mapping comes forward is [question 6](#open-questions-for-the-owner).
+- **Hardware acceleration, tone mapping, burn-in of image subtitles, better downmixing, transcode limits, throttling, and the cache's settings:** 4.3, with its own ADR. 4.1 uses fixed defaults and the processor. Whether software tone mapping comes forward is [answer 6](#the-owners-answers).
 - **Settings › Playback, Now playing and its widget, and sessions' 30-day history:** 4.3. 4.1 keeps the live sessions in memory, which 4.3 shows.
 - **Reported profiles from native players:** 4.4 and 4.5. Browsers' reports are in 4.1.
 - **Downloads and transcoding for download:** with the apps that have them.
@@ -40,20 +40,36 @@ The server can play any film in the library to a client that asks, and explains 
 - **The client API's reads** are in `packages/media/src/movies/client.ts` and `packages/api-contract/src/library.ts` (items, an item, search).
 - **ffmpeg and ffprobe** are in the image (Debian trixie's), and the subtitle sync already runs ffmpeg from a pool worker (ADR 0044). `HIGHSEA_FFMPEG` names another binary.
 - **Test media:** `@highsea-tv/media/testing` makes short clips with ffmpeg's lavfi sources: `main` (1080p H.264, 5.1 and stereo, a forced subtitle), `hdr` (1080p HEVC 10-bit, PQ) and `sample`; `makeFeature` makes a longer one. `@highsea-tv/subtitles/testing` has the Sintel fixture and PGS samples.
-- **Smart collections' watched and last-played fields** carry `disabled: 'playback'` (`packages/curation/src/collections/index.ts`).
+- **Smart collections' watched and last-played fields** carry `disabled: 'playback'` (`packages/curation/src/collections/index.ts`). (Until 4.1a; on since 4.1a's sign-off.)
 - **Events:** the SSE stream carries domain events; `watch.updated` is named in player.md but not yet raised.
 - **The prototypes' mock** (`design/prototypes/src/mock/`) has `playback.prefs`, `playback.setPrefs` and `playback.progress`, the first draft of the API below.
 
 ## The size of this checkpoint, and its parts
 
-4.1 is the engine every app depends on, and large. It's split into two gated parts, each reviewed with real films ([question 1](#open-questions-for-the-owner)):
+4.1 is the engine every app depends on, and large. It's split into two gated parts, each reviewed with real films ([answer 1](#the-owners-answers)):
 
 - **4.1a, deciding and direct play:** `packages/stream` with device profiles and the decision; stream tokens and `/stream`'s direct play by byte ranges; the play API and live sessions; watch state (positions, played, picks, Continue watching, Next up) and the smart collection rules it switches on; the test page. At its review a browser plays the films it can play as they are.
 - **4.1b, HLS:** direct stream (remux) and software transcoding in fragmented-MP4 HLS made on demand, seeking far ahead, the transcode cache and its clean-up, text subtitles as WebVTT, trickplay tiles, and the end-to-end run playing Sintel through the container. At its review a browser plays every film in the library.
 
 ## Progress
 
-Nothing yet.
+- **2026-10-27, 4.1a, signed off by the owner on 2026-10-27.** The owner played the copied films in `/stream/try`: the MP4s play directly; Beetlejuice (MKV) and the SRT subtitles wait for 4.1b, as planned, and the page now says so when a subtitle is chosen. At review the owner asked that adding a root folder scan it, and chose the sure-match behaviour below (the change is in this entry). What was built:
+  - **`packages/stream`** (new, ADR 0036's subpaths):
+    - `profiles`: ADR 0052's shape as zod schemas, and the browsers' built-in profiles (`web-chromium`, `web-chromium-macos`, `web-firefox`, `web-safari`) from MDN's codec and container guides; `ReportedProfile` and `withReport` lay a browser's report over its base.
+    - `decision`: the pure decision, with reasons as i18n keys, tested over every built-in profile and kind of file.
+    - `sessions`: live play sessions in memory, their tokens (an HMAC over the session, person and file, with a key made at boot, compared in constant time), 6 hours renewed by each report (answer 4), ended when left, after 5 idle minutes, or when access goes.
+  - **The database** (migration 0014): `watch_history`, `playback_prefs` and `device_profiles` (`packages/db/src/schema/playback.ts`).
+  - **Watch state** (ADR 0054): `createWatch` in `@highsea-tv/media/shared` and `movies.playback`: positions, watched past 90% (answer 3) once per viewing, played and unplayed, the player's picks, and Next up. Each change raises `watch.updated` to the person alone. The client API's items carry `watched`, and each version its audio tracks and detail line.
+  - **The runtime's playback** (`packages/runtime/src/playback.ts`): the source, the picks, the profile (the device's report over its base), home or away (a private address after trusted proxies; away, the remote ceiling's default, 8 Mbps at 1080p), the decision and the session. Signing a device out or losing the library ends its sessions at once.
+  - **The API** (`packages/api-contract/src/playback.ts`, `apps/server/src/api/playback.ts`): play, progress, stop, the device's report, picks, played and unplayed, the item's progress, and Next up. `openapi.json` is regenerated.
+  - **`/stream`** (`apps/server/src/stream/`, ADR 0003's 2026-10-27 section): `GET`/`HEAD /stream/files/{token}` by byte ranges, and the test page `/stream/try` with `HIGHSEA_PLAYBACK_TRY=1` (answer 2), which lists the films, plays them, reports, saves picks, marks watched, and shows the decision, its reasons and Next up.
+  - **"Playable"** is now a version with a file, for the client API, curation and smart collections; whether it can be read is checked at play and at each request.
+  - **Smart collections' watch rules** (ADR 0049's 2026-10-27 section): `watched` and `lastPlayed` are on, for whoever reads the collection.
+  - **Tests:** the decision matrix and sessions in `packages/stream`; watch state in `packages/media`; the SQL rules in `packages/runtime`; the service's reader in `packages/curation`; and over the real HTTP server, the decision, byte ranges (`206`, a suffix, `416`, `If-Range`, `HEAD`, `405`), tokens (another file, a changed signature, an ended session, a signed-out device, a library taken away), positions, watched at 90%, played and unplayed, picks and Next up (`apps/server/test/playback-api.test.ts`, `ranges.test.ts`). Writing them found that a range starting exactly at the end of the file was sent whole rather than refused with `416`; fixed.
+  - **ADRs:** 0054 (watch state), new; dated sections for 0003 and 0049. 0051 and 0052 stay Proposed until 4.1b's sign-off.
+  - **Checks under Node 26.11.1:** lint (1,274 files), typecheck, 11,543 tests pass (6 skipped), smoke, licences (863 packages), the audit (718 packages, nothing high), the docs build, and the sweeps clean (1,624 prototype pages, 171 keyboard walks, the D-pad walk, and the server's admin pages from the production build).
+  - **Judgement calls,** in short: routes take `{type}/{id}`; tokens live with the sessions under a key made at boot; home is a private address after trusted proxies; the remote ceiling is fixed until 4.3; play count isn't a rule field; the admin's preview answers watch rules for the admin and its counts for no one; Mark as unwatched clears the play count; HLS decisions return no URL until 4.1b; the test page's copy isn't in i18n.
+  - **Changed at review (the owner, 2026-10-27):** adding a root folder scans it, and the library scan adds the new folders it can match surely (a TMDB or IMDb id in the name, or TMDB's title and year exactly) in place; the rest wait for Library import, counted on the root folder's row in Settings › Media management (`RootFolder.waiting`). The same happens when a new folder appears later, by the 12-hourly scan or the watcher. ADR 0039's 2026-10-27 section; `addNew` in `packages/media/src/movies/library-import.ts`, the scan's new folders in `scan.ts`; the guides' Root folders and Manual import pages. Found when the owner's test folder showed no movies: the scan only looked at films already in the library.
 
 ## Device profiles and the decision (4.1a)
 
@@ -66,7 +82,7 @@ Nothing yet.
 
 ## Stream tokens and direct play (4.1a)
 
-- **Tokens:** `/stream` takes a short-lived token in its path, since a `<video>` element can't send headers. The token is an HMAC over the person, the play session, the file and its expiry, with the server's secret, as the calendar feed's key is (ADR 0045). Its lifetime is [question 4](#open-questions-for-the-owner). Ending a session, or an admin taking away the library, makes its tokens fail at once. Tokens are left out of the logs, the same way the API's secrets are.
+- **Tokens:** `/stream` takes a short-lived token in its path, since a `<video>` element can't send headers. The token is an HMAC over the person, the play session, the file and its expiry, with the server's secret, as the calendar feed's key is (ADR 0045). Its lifetime is [answer 4](#the-owners-answers). Ending a session, or an admin taking away the library, makes its tokens fail at once. Tokens are left out of the logs, the same way the API's secrets are.
 - **Direct play:** `GET /stream/files/{token}` serves the file with `Range` and `206 Partial Content`, `If-Range`, and `416` where the range is outside it ([RFC 9110 § 14](https://www.rfc-editor.org/rfc/rfc9110#section-14)). It also sets `Accept-Ranges` and the file's type. It streams from the file with Node's `fs.createReadStream` and its `start` and `end` ([Node's docs](https://nodejs.org/api/fs.html#fscreatereadstreampath-options)), and never holds the file in memory.
 - **The route** lives in `apps/server/src/stream/`. `http.ts` hands `/stream/` to it, as it hands `/api` to Hono, and ADR 0003 gets a dated section. `/ws` stays reserved.
 
@@ -84,7 +100,7 @@ Declared in `@highsea-tv/api-contract` (a new `playback.ts`) and implemented in 
 ## Watch state (4.1a)
 
 - **Positions:** progress reports write `watch_positions`, at most every few seconds per session, and raise `watch.updated` on the SSE stream, so another device's Resume and Continue watching move at once.
-- **Played and unplayed:** a new `watch_history` per person and item: played (yes or no), the play count, and the last time played. A film counts as watched when the position passes 90% ([question 3](#open-questions-for-the-owner)); its position is then cleared, so it isn't resumed. `POST` and `DELETE /api/v1/items/{id}/played` are client-detail's Mark as watched and unwatched (answer 9 in 4.0).
+- **Played and unplayed:** a new `watch_history` per person and item: played (yes or no), the play count, and the last time played. A film counts as watched when the position passes 90% ([answer 3](#the-owners-answers)); its position is then cleared, so it isn't resumed. `POST` and `DELETE /api/v1/items/{id}/played` are client-detail's Mark as watched and unwatched (answer 9 in 4.0).
 - **The player's picks:** `GET|PUT /api/v1/items/{id}/prefs`, per person and title: version, audio, subtitles and the subtitle offset (player.md › Data). A device class's default version (answer 9 in Phase 4) is a preference in layers (ADR 0027); a pick on the title wins.
 - **Continue watching:** started and not watched, most recent first, from the positions.
 - **Next up:** `GET /api/v1/items/{id}/next`, the next film in the title's collection by release date, unwatched first (answer 9 in Phase 4). The countdown is the client's.
@@ -92,20 +108,20 @@ Declared in `@highsea-tv/api-contract` (a new `playback.ts`) and implemented in 
 
 ## Trying it at the review (4.1a and 4.1b)
 
-There's no client before 4.2, so the reviews use a **test page** on the server, `/stream/try`, available only when `HIGHSEA_PLAYBACK_TRY=1` is set ([question 2](#open-questions-for-the-owner)). It lists the library, plays a film in a plain `<video>` (with hls.js in 4.1b, pinned under the dependency rules), and shows the decision and its reasons, the position being saved, and the picks. It's for review and debugging, not a product screen, so it has no prototype and is never in the image's defaults.
+There's no client before 4.2, so the reviews use a **test page** on the server, `/stream/try`, available only when `HIGHSEA_PLAYBACK_TRY=1` is set ([answer 2](#the-owners-answers)). It lists the library, plays a film in a plain `<video>` (with hls.js in 4.1b, pinned under the dependency rules), and shows the decision and its reasons, the position being saved, and the picks. It's for review and debugging, not a product screen, so it has no prototype and is never in the image's defaults.
 
-The films are real ones from the owner's library, read only ([question 5](#open-questions-for-the-owner)).
+The films are real ones from the owner's library, read only ([answer 5](#the-owners-answers)).
 
 ## HLS: direct stream and transcoding (4.1b)
 
 Following ADR 0051:
 
-- **Playlists:** a multivariant playlist with one variant, and a media playlist that lists every segment from the start (`#EXT-X-PLAYLIST-TYPE:VOD`, `#EXT-X-ENDLIST`), in fragmented MP4 with `#EXT-X-MAP` and `#EXT-X-VERSION:7` ([RFC 8216](https://www.rfc-editor.org/rfc/rfc8216) § 4.3.2.5, § 4.3.3.5). One variant per session, chosen from the profile and the ceiling, is [question 7](#open-questions-for-the-owner).
+- **Playlists:** a multivariant playlist with one variant, and a media playlist that lists every segment from the start (`#EXT-X-PLAYLIST-TYPE:VOD`, `#EXT-X-ENDLIST`), in fragmented MP4 with `#EXT-X-MAP` and `#EXT-X-VERSION:7` ([RFC 8216](https://www.rfc-editor.org/rfc/rfc8216) § 4.3.2.5, § 4.3.3.5). One variant per session, chosen from the profile and the ceiling, is [answer 7](#the-owners-answers).
 - **Segments:** 6 seconds, as [Apple's HLS authoring specification](https://developer.apple.com/documentation/http-live-streaming/hls-authoring-specification-for-apple-devices) recommends, with a keyframe at each segment's start.
   - **A transcode** forces keyframes every 6 s (`-force_key_frames`; [ffmpeg's docs](https://ffmpeg.org/ffmpeg.html#Advanced-Video-options)), so every segment's length is known before it's made.
   - **A direct stream** copies the video, so its segments start at the source's own keyframes. The playlist is written from the keyframes' times, read once with ffprobe and kept with the file's facts.
 - **On demand:** ffmpeg runs as a child process with its HLS muxer (`-hls_segment_type fmp4`; [ffmpeg-formats › hls](https://ffmpeg.org/ffmpeg-formats.html#hls-2)), a few segments ahead of the last one asked for. A request far ahead, or behind what's been made, restarts ffmpeg at that segment's start. A session that's idle stops its ffmpeg, and it starts again where it's asked to.
-- **Software transcoding:** H.264 video with libx264 at a capped bitrate (`-maxrate` and `-bufsize`), from the source's size or smaller under the ceiling; AAC audio, stereo, or 5.1 where the profile takes it. A preset and quality are chosen from [x264's and ffmpeg's H.264 guide](https://trac.ffmpeg.org/wiki/Encode/H.264), measured on the owner's NAS (exit criterion 3; [question 8](#open-questions-for-the-owner)).
+- **Software transcoding:** H.264 video with libx264 at a capped bitrate (`-maxrate` and `-bufsize`), from the source's size or smaller under the ceiling; AAC audio, stereo, or 5.1 where the profile takes it. A preset and quality are chosen from [x264's and ffmpeg's H.264 guide](https://trac.ffmpeg.org/wiki/Encode/H.264), measured on the owner's NAS (exit criterion 3; [answer 8](#the-owners-answers)).
 - **The cache:** segments under the data folder's `transcodes/`, one folder per session, removed when the session ends, and on boot for any left behind. 4.3 adds its size limit and the setting.
 - **Errors:** ffmpeg's exit and the last lines of its log go to System › Logs. The client gets "This film didn't start" (player.md), and the session records why.
 
@@ -120,7 +136,7 @@ Following ADR 0051:
 
 - **Tiles:** a frame every 10 s, 320 px wide, in sheets of 10 × 10 JPEGs, made with ffmpeg's `fps`, `scale` and `tile` filters ([ffmpeg-filters](https://ffmpeg.org/ffmpeg-filters.html#tile)). Those are Jellyfin's defaults, which suit a scrubber's preview at both TV and phone sizes.
 - **The routes:** `GET /api/v1/items/{id}/trickplay` (the interval, the tile size and the sheets) and `GET /api/v1/items/{id}/trickplay/{n}.jpg` (player.md › Data).
-- **When they're made:** a `media.trickplay` job after import and on replacement, safe to repeat (ADR 0022), one at a time at low priority. For films already in the library, see [question 9](#open-questions-for-the-owner).
+- **When they're made:** a `media.trickplay` job after import and on replacement, safe to repeat (ADR 0022), one at a time at low priority. For films already in the library, see [answer 9](#the-owners-answers).
 - **Where they're kept:** the data folder, never beside the film, and outside the cache's limit (playback-settings.md).
 
 ## Tests and checks (4.1a and 4.1b)
@@ -184,6 +200,17 @@ Following ADR 0051:
     - **Recommended:** a beta release (`0.2.0-beta.1`, ADR 0050's beta channel) after 4.2's sign-off, when the web client can play. Nothing is published after 4.1, since there's nothing to watch with yet.
     - Or: a beta after 4.1b, to try the test page on the NAS itself. It's earlier, but the test page would have to ship, switched off, in a published image.
 
-## The owner's changes
-
 ## The owner's answers
+
+On 2026-10-27 the owner took every recommendation for questions 1 to 10.
+
+1. **The parts:** two gated parts, 4.1a (deciding, direct play and watch state) and 4.1b (HLS, subtitles and trickplay), each reviewed with real films.
+2. **Trying it:** the test page `/stream/try`, on only with `HIGHSEA_PLAYBACK_TRY=1`; no prototype, since it isn't a product screen.
+3. **Watched:** at 90% of the film's length, when the position is cleared.
+4. **Stream tokens:** 6 hours, renewed with each progress report, and ended with their session.
+5. **Films for the reviews:** a few copied from the NAS to a library folder on this Mac (H.264 MP4, HEVC MKV, 4K HDR, PGS subtitles, DTS or TrueHD); nothing on the NAS is written to.
+6. **HDR:** tone mapping stays in 4.3; until then the decision's reasons say an HDR film made into SDR looks washed out.
+7. **Variants:** one per session, from the device's profile and the remote ceiling; a change of quality restarts the stream at the same place.
+8. **The encoder:** libx264 `veryfast`, capped at the profile's or ceiling's bitrate, then measured against real time on the NAS at 1080p.
+9. **Trickplay for the existing library:** made one film at a time in the background at low priority, after new imports, until every film has it.
+10. **The NAS:** a beta, `0.2.0-beta.1`, after 4.2's sign-off; nothing is published after 4.1.

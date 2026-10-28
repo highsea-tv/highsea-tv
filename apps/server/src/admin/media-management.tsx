@@ -379,6 +379,8 @@ function Folder({
               ? t('folders.free', { free: bytes(f.free), total: bytes(f.total) })
               : null,
             t('folders.movies', { count: f.movies }),
+            // the library scan's new folders it couldn't match surely (4.1a's review)
+            f.waiting > 0 ? t('folders.waiting', { count: f.waiting }) : null,
           ]
             .filter(Boolean)
             .join(' · ')}
@@ -456,7 +458,7 @@ function AddFolder({ onAdded }: { onAdded: () => void }) {
     }
     setPath('')
     setError(null)
-    toast.success(t('add.added', { path: p }))
+    toast.success(t('add.added', { path: p }), { description: t('add.addedScanning') })
     onAdded()
   }
 

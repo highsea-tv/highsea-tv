@@ -12,6 +12,7 @@ import next from 'next'
 import pkg from './package.json' with { type: 'json' }
 import { createApi } from './src/api/app.ts'
 import { createHttpServer, createTlsServer } from './src/http.ts'
+import { createStream } from './src/stream/index.ts'
 
 const config = loadConfig()
 const runtime = await boot({
@@ -44,7 +45,14 @@ const app = next({ dev: config.dev, dir: dirname(fileURLToPath(import.meta.url))
 await app.prepare()
 const handle = app.getRequestHandler()
 
-const handlers = { api: createApi(runtime), next: handle }
+const tryPage = process.env.HIGHSEA_PLAYBACK_TRY === '1'
+if (tryPage)
+  log.warn('The playback test page is on at /stream/try', { env: 'HIGHSEA_PLAYBACK_TRY' })
+const handlers = {
+  api: createApi(runtime),
+  next: handle,
+  stream: createStream(runtime, { tryPage }),
+}
 const server = createHttpServer(handlers)
 server.listen(config.port, config.host, () =>
   log.info('listening', { url: `http://${config.host}:${config.port}`, dev: config.dev }),

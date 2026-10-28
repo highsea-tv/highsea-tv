@@ -30,7 +30,8 @@ export function registerCollections(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.collections.preview, (c) => {
     const { id, collection } = c.req.valid('json')
-    return c.json(collections(c).preview(collection, id), 200)
+    // the watch rules read the admin's own watch state
+    return c.json(collections(c).preview(collection, id, me(c).user.id), 200)
   })
 
   app.openapi(routes.collections.fields, (c) =>

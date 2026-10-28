@@ -47,8 +47,8 @@ export type RuleFieldType = (typeof RULE_FIELD_TYPES)[number]
 /**
  * Every field, its type and its comparisons (the plan's conditions table). Units: `year` a year,
  * or years for `inLast`; `rating` out of 5, as the admin shows it; `runtime` minutes; `size` GB;
- * `resolution` lines (`480`, `720`, `1080`, `2160`). `watched` and `lastPlayed` come with playback
- * (Phase 4) and are refused until then.
+ * `resolution` lines (`480`, `720`, `1080`, `2160`). `watched` (`yes` or `no`) and `lastPlayed` are
+ * the watch state of whoever reads the collection (checkpoint 4.1a, ADR 0054).
  */
 export const RULE_FIELDS = {
   title: { type: 'text', ops: ['contains'] },
@@ -92,9 +92,6 @@ export const RULE_FIELDS = {
 export type RuleField = keyof typeof RULE_FIELDS
 export const RULE_FIELD_NAMES = Object.keys(RULE_FIELDS) as [RuleField, ...RuleField[]]
 export const RuleField = z.enum(RULE_FIELD_NAMES).openapi('RuleField')
-
-/** Fields shown in the editor but refused until what they read exists. */
-export const PLAYBACK_FIELDS: readonly RuleField[] = ['watched', 'lastPlayed']
 
 /** The crew job each role field matches, as TMDB names it (`/3/configuration/jobs`). */
 export const ROLE_JOBS = {
@@ -245,7 +242,7 @@ export const RuleFieldInfo = z
     type: z.enum(RULE_FIELD_TYPES),
     ops: z.array(RuleOp),
     options: z.array(z.object({ value: z.string(), label: z.string() })).optional(),
-    /** Shown but not yet usable: `playback` until Phase 4. */
+    /** Shown but not yet usable. Until 4.1a, `playback` marked the watch state's fields; none now. */
     disabled: z.enum(['playback']).optional(),
   })
   .openapi('RuleFieldInfo')

@@ -50,6 +50,7 @@ function fakeLibrary() {
     art: { poster: `/p/${id}`, backdrop: `/b/${id}` },
     progress: null,
     position: 0,
+    watched: false,
   })
   const library: CurationLibrary = {
     itemIds: (ids) =>

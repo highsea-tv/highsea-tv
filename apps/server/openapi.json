@@ -4319,6 +4319,10 @@
               "string",
               "null"
             ]
+          },
+          "waiting": {
+            "type": "integer",
+            "minimum": 0
           }
         },
         "required": [
@@ -4329,7 +4333,8 @@
           "device",
           "accessible",
           "movies",
-          "languageProfileId"
+          "languageProfileId",
+          "waiting"
         ]
       },
       "QualityProfile": {
@@ -5383,6 +5388,9 @@
           "position": {
             "type": "number",
             "minimum": 0
+          },
+          "watched": {
+            "type": "boolean"
           }
         },
         "required": [
@@ -5401,7 +5409,8 @@
           "playable",
           "art",
           "progress",
-          "position"
+          "position",
+          "watched"
         ]
       },
       "ClientDetail": {
@@ -5498,6 +5507,12 @@
           "playable": {
             "type": "boolean"
           },
+          "audio": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientAudio"
+            }
+          },
           "subtitles": {
             "type": "array",
             "items": {
@@ -5510,7 +5525,48 @@
           "label",
           "detail",
           "playable",
+          "audio",
           "subtitles"
+        ]
+      },
+      "ClientAudio": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "language": {
+            "type": "string",
+            "example": "en"
+          },
+          "label": {
+            "type": "string"
+          },
+          "detail": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "codec": {
+            "type": "string",
+            "example": "eac3"
+          },
+          "channels": {
+            "type": "integer"
+          },
+          "default": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "language",
+          "label",
+          "detail",
+          "codec",
+          "channels",
+          "default"
         ]
       },
       "ClientSubtitle": {
@@ -5711,6 +5767,509 @@
           "name",
           "photo",
           "titles"
+        ]
+      },
+      "PlaySession": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/PlaybackDecision"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "start": {
+            "type": "number",
+            "minimum": 0
+          },
+          "duration": {
+            "type": [
+              "number",
+              "null"
+            ]
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "decision",
+          "url",
+          "start",
+          "duration",
+          "expiresAt"
+        ]
+      },
+      "PlaybackDecision": {
+        "type": "object",
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "direct-play",
+              "direct-stream",
+              "transcode",
+              "unplayable"
+            ]
+          },
+          "container": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "video": {
+            "oneOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "copy"
+                    ]
+                  }
+                },
+                "required": [
+                  "action"
+                ]
+              },
+              {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "transcode"
+                    ]
+                  },
+                  "codec": {
+                    "type": "string",
+                    "enum": [
+                      "h264"
+                    ]
+                  },
+                  "height": {
+                    "type": "integer"
+                  },
+                  "bitrate": {
+                    "type": "integer"
+                  },
+                  "toSdr": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "action",
+                  "codec",
+                  "height",
+                  "bitrate",
+                  "toSdr"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "audio": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "action": {
+                "type": "string",
+                "enum": [
+                  "copy",
+                  "transcode"
+                ]
+              },
+              "codec": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "channels": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "action",
+              "codec",
+              "channels"
+            ]
+          },
+          "subtitle": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "delivery": {
+                "type": "string",
+                "enum": [
+                  "external",
+                  "embedded",
+                  "burn-in",
+                  "unavailable"
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "delivery"
+            ]
+          },
+          "bitrate": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "reasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaybackReason"
+            }
+          }
+        },
+        "required": [
+          "method",
+          "container",
+          "video",
+          "audio",
+          "subtitle",
+          "bitrate",
+          "reasons"
+        ]
+      },
+      "PlaybackReason": {
+        "type": "object",
+        "properties": {
+          "kind": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "rejected",
+              "warning"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "code",
+          "message"
+        ]
+      },
+      "PlayRequest": {
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": "string",
+            "maxLength": 64
+          },
+          "audioId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          },
+          "subtitleId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          },
+          "start": {
+            "type": "number",
+            "minimum": 0
+          },
+          "profile": {
+            "type": "string",
+            "maxLength": 64
+          }
+        }
+      },
+      "ProgressResult": {
+        "type": "object",
+        "properties": {
+          "watched": {
+            "type": "boolean"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "watched",
+          "expiresAt"
+        ]
+      },
+      "ProgressReport": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "number",
+            "minimum": 0
+          },
+          "paused": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "position"
+        ]
+      },
+      "DeviceReport": {
+        "type": "object",
+        "properties": {
+          "base": {
+            "type": "string",
+            "maxLength": 64,
+            "example": "web-chromium"
+          },
+          "containers": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 16
+            },
+            "maxItems": 16
+          },
+          "video": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "codec": {
+                  "type": "string",
+                  "maxLength": 16
+                },
+                "profiles": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "maxLength": 32
+                  },
+                  "maxItems": 16
+                },
+                "bitDepths": {
+                  "type": "array",
+                  "items": {
+                    "type": "integer"
+                  },
+                  "maxItems": 4
+                },
+                "maxWidth": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "maxHeight": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                },
+                "tag": {
+                  "type": "string",
+                  "maxLength": 8
+                }
+              },
+              "required": [
+                "codec"
+              ]
+            },
+            "maxItems": 16
+          },
+          "hdr": {
+            "type": "object",
+            "properties": {
+              "formats": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "maxLength": 16
+                },
+                "maxItems": 8
+              },
+              "dolbyVision": {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                },
+                "maxItems": 8
+              }
+            },
+            "required": [
+              "formats",
+              "dolbyVision"
+            ]
+          },
+          "audio": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "codec": {
+                  "type": "string",
+                  "maxLength": 16
+                },
+                "maxChannels": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "required": [
+                "codec",
+                "maxChannels"
+              ]
+            },
+            "maxItems": 16
+          },
+          "subtitles": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 16
+            },
+            "maxItems": 8
+          },
+          "audioTracks": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "base"
+        ]
+      },
+      "PlaybackPrefs": {
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "audioId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subtitleId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "subtitleOffsetMs": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "versionId",
+          "audioId",
+          "subtitleId",
+          "subtitleOffsetMs"
+        ]
+      },
+      "PlaybackPrefsPatch": {
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 64
+          },
+          "audioId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          },
+          "subtitleId": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "maxLength": 128
+          },
+          "subtitleOffsetMs": {
+            "type": "integer",
+            "minimum": -60000,
+            "maximum": 60000
+          }
+        }
+      },
+      "ItemProgress": {
+        "type": "object",
+        "properties": {
+          "position": {
+            "type": "number",
+            "minimum": 0
+          },
+          "duration": {
+            "type": "number",
+            "exclusiveMinimum": 0
+          }
+        },
+        "required": [
+          "position"
+        ]
+      },
+      "NextUp": {
+        "type": "object",
+        "properties": {
+          "item": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ClientItem"
+              },
+              {
+                "type": [
+                  "object",
+                  "null"
+                ]
+              }
+            ]
+          }
+        },
+        "required": [
+          "item"
         ]
       },
       "CatalogStatus": {
@@ -20877,6 +21436,772 @@
           },
           "401": {
             "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/items/{type}/{id}/play": {
+      "post": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "Play a title on this device",
+        "description": "Decides how the device plays the version: as it is, remuxed or transcoded, with the reasons. Without a reported profile the device names a built-in one. 404 when the title isn’t here or its library isn’t yours; 409 when the version has no file to play.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlayRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The play session",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaySession"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/playback/sessions/{id}/progress": {
+      "post": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "Report the place in a play session",
+        "description": "Every few seconds while playing, and on pause and seek. Saves the place, keeps the session’s URL working, and marks the title watched past 90%.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProgressReport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProgressResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/playback/sessions/{id}": {
+      "delete": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "Leave the player",
+        "description": "Ends the session; its URL stops working at once.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/devices/current/profile": {
+      "put": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "Report what this device plays",
+        "description": "Kept for the device with its date, and laid over the built-in profile it names. Needs a signed-in device; an API key has none.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DeviceReport"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/items/{type}/{id}/prefs": {
+      "get": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "Your picks for a title",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The picks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackPrefs"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "Save your picks for a title",
+        "description": "Only the picks sent change.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PlaybackPrefsPatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The picks",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackPrefs"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/items/{type}/{id}/played": {
+      "post": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "Mark a title watched",
+        "description": "Counts as one more viewing, and clears where you stopped.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "Mark a title unwatched",
+        "description": "As if never started: the viewings and where you stopped are cleared.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/items/{type}/{id}/progress": {
+      "post": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "Save where you are in a title",
+        "description": "For a device that only saves a place, without a play session. Past 90% the title is watched.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ItemProgress"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Saved",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "watched": {
+                      "type": "boolean"
+                    }
+                  },
+                  "required": [
+                    "watched"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/items/{type}/{id}/next": {
+      "get": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "What plays next",
+        "description": "The next film in the title’s collection by release date, one you haven’t watched first. Only films with a file count.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Next up",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NextUp"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
             "content": {
               "application/json": {
                 "schema": {
