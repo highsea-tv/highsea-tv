@@ -6,8 +6,10 @@
   "type": "module",
   "exports": {
     "./decision": "./src/decision/index.ts",
+    "./hls": "./src/hls/index.ts",
     "./profiles": "./src/profiles/index.ts",
-    "./sessions": "./src/sessions/index.ts"
+    "./sessions": "./src/sessions/index.ts",
+    "./trickplay": "./src/trickplay/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

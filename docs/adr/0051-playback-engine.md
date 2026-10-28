@@ -1,6 +1,6 @@
 # 0051. The playback engine: direct play, then direct stream, then HLS transcodes made on demand
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-27, at checkpoint 4.1b's sign-off)
 - **Date:** 2026-10-23
 
 Drafted at Phase 4's checkpoint 4.0b ([phase-4-checkpoint-0.md › ADR drafts](../plans/phase-4-checkpoint-0.md#adr-drafts-40b)). It becomes Accepted at 4.1, which builds it, with a dated section for whatever building it changes. Hardware acceleration has its own ADR at 4.3.
@@ -42,3 +42,26 @@ Alternatives:
 - `packages/stream` is new, framework-free like the other domains, with subpaths as ADR 0036 sets them. Its tests build ffmpeg's command lines as snapshots, check playlists against RFC 8216's rules, and run real ffmpeg where it's present, skipping and saying so where it isn't, as ADR 0044's tests do.
 - ADR 0003 gets a dated section when `/stream` stops being reserved.
 - Left to settle at 4.1, from the docs: the segment length (Apple's specification recommends 6 s), how far ahead ffmpeg runs, when a film counts as watched, and the token's lifetime.
+
+## 2026-10-27: what building it settled (checkpoint 4.1)
+
+Built in 4.1a (the decision, direct play, tokens and sessions) and 4.1b (HLS, subtitles and trickplay), in `packages/stream` (`decision`, `sessions`, `hls`, `trickplay`), the runtime's `playback.ts` and `trickplay.ts`, and `apps/server/src/stream/`. What the draft left open, and what changed:
+
+- **Tokens** last 6 hours, renewed by each progress report, and end with their session (the plan's answer 4). They're an HMAC over the session, person and file with a key made at boot, so a restart ends every stream; the client asks to play again.
+- **Watched** is past 90% of the film's length (answer 3; ADR 0054).
+- **One variant per session** (answer 7), chosen from the profile and the remote ceiling. A change of quality is a new session at the same position. The multivariant playlist names `CODECS` only when both streams are made again, since a copied stream's exact codec string isn't known without reading its bitstream.
+- **Segments** are 6 s, as Apple's specification recommends.
+  - A transcode forces a keyframe every 6 s (`-force_key_frames expr:gte(t,n_forced*6)`), so each segment is one file and the playlist is known before anything is made.
+  - A direct stream can only be cut at the source's keyframes. ffprobe reads them once per file from the picture's packets and their flags, without decoding, and the runtime keeps them in `file_keyframes` by the file's size. A segment runs from one keyframe to the first at least 6 s later.
+- **How ffmpeg is run**, from [ffmpeg-formats › hls](https://ffmpeg.org/ffmpeg-formats.html#hls-2) and [› mov, mp4](https://ffmpeg.org/ffmpeg-formats.html#Options-6):
+  - `-hls_time 0` cuts a file at every keyframe, so a file's number is its keyframe's whichever run wrote it. Segments are served as their files joined.
+  - `-copyts -start_at_zero` and the MP4 muxer's `movflags=+frag_discont` (through `-hls_segment_options`) write the film's own time into each fragment's `tfdt`. Runs started anywhere then make the same timeline and identical initialization sections, so a seek lands where the playlist says. Without `frag_discont` each run started its fragments at 0.
+  - A transcode started after 0 also takes `-ss` and `-output_ts_offset` as output options, at the segment's start. Without them a copied audio track began at the source keyframe before it (3.6 s early on an HEVC film), and since hls.js takes its start from the earliest `tfdt`, subtitles were shown 3.6 s late.
+  - `-hls_flags temp_file` makes a file appear only when it's whole.
+  - ffmpeg runs 30 s ahead of the furthest segment asked for, and is then paused with `SIGSTOP` and continued with `SIGCONT`. A request more than 18 s past what's made, or before where the run started, restarts it there. A run nobody asks anything of for a minute stops.
+- **The encoder** is libx264 `veryfast`, CRF 23 capped with `-maxrate` at the bitrate and `-bufsize` at twice it, High profile; AAC at 160 kb/s stereo, or 384 kb/s for 5.1 (answer 8). HDR made into SDR isn't tone mapped until 4.3 (answer 6), and the reasons say so. On an Apple M2 Max, a minute of HEVC 1080p took 6.0 s at 1080p (10× real time) and 3.6 s at 720p. The owner's NAS is measured with the beta (answer 10).
+- **The cache** is the data folder's `transcodes/`, a folder per session, removed when the session ends and emptied at boot. Its size limit and Settings › Playback's folder are 4.3's.
+- **Errors:** a run that fails logs its exit and its log's last 20 lines to System › Logs. The request answers 500 with "This film didn’t start."
+- **Subtitles:** text tracks (embedded or sidecar SRT, ASS and WebVTT) are converted by ffmpeg to WebVTT once per session, at `/stream/subtitles/{token}/{track}.vtt`. For HLS they're also a subtitle rendition with one segment, the whole file ([RFC 8216 § 4.3.4.1](https://www.rfc-editor.org/rfc/rfc8216#section-4.3.4.1)). Their cues are on the film's timeline, so no `X-TIMESTAMP-MAP` is needed. Image tracks have no URL until 4.3 burns them in. The offset is the client's.
+- **Trickplay:** a frame every 10 s, 320 px wide, in 10 × 10 JPEG sheets, made from the keyframes alone (`-skip_frame nokey` with `fps`, `scale` and `tile`; [ffmpeg-filters › tile](https://ffmpeg.org/ffmpeg-filters.html#tile)) at the lowest priority (`nice` 19). They're kept in the data folder's `trickplay/<file>/`, outside the cache. A 92-minute HEVC 1080p film took 16.7 s and made 6 sheets (3.5 MB). The `media.trickplay` job makes the newest film without them, one at a time, then queues itself again until the library has them all (answer 9). It runs after each import, and at boot when any are missing. A film that fails keeps its error until its file changes. Served at `GET /api/v1/items/{type}/{id}/trickplay` and `…/trickplay/{n}.jpg`.
+- **Web:** hls.js 1.7.3 on the test page (`/stream/try`), which also plays Safari's native HLS. The web client takes it up in 4.2.

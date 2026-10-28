@@ -1,0 +1,190 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// ffmpeg's and ffprobe's command lines for HLS (ADR 0051), as argument arrays, never through a
+// shell. Pure, so the tests keep them as snapshots.
+//
+// A run writes fragmented MP4 with ffmpeg's HLS muxer (https://ffmpeg.org/ffmpeg-formats.html#hls-2):
+// - `-hls_time 0` cuts at every keyframe. The muxer cuts at a keyframe once the time since the run
+//   began passes `hls_time` × the segments written (libavformat/hlsenc.c, `hls_write_packet`), so
+//   at 0 every keyframe starts a file, and a file's number is its keyframe's, whichever keyframe a
+//   run starts from (`-start_number`).
+// - `-copyts` with `-start_at_zero` keeps the film's own timestamps from its start
+//   (https://ffmpeg.org/ffmpeg.html#Advanced-options), and the MP4 muxer's `frag_discont` writes
+//   them into each fragment, so a run started anywhere writes the same timeline, and the player's
+//   seeks land where the playlist says.
+// - `-hls_flags temp_file` writes each file under `.tmp` and renames it when it's whole, so a file
+//   that exists is complete. The muxer writes the initialization section when the first file is
+//   cut (`hls_write_packet`), so it's whole once that file is.
+import { join } from 'node:path'
+import type { AudioPlan, VideoPlan } from '../decision/index.ts'
+import { SEGMENT_SECONDS } from './playlist.ts'
+
+export type RunInput = {
+  /** The film, by its absolute path. */
+  input: string
+  /** The session's folder in the cache. */
+  dir: string
+  /** Seconds into the film the run starts at: a piece's start. */
+  start: number
+  /** That piece's number, ffmpeg's first file. */
+  startNumber: number
+  video: { index: number; codec: string; width: number; height: number; plan: VideoPlan } | null
+  audio: { index: number; plan: AudioPlan } | null
+}
+
+/** The run's own playlist, which highsea never serves: it writes its own (`playlist.ts`). */
+export const RUN_PLAYLIST = 'ffmpeg.m3u8'
+/** The pieces' and the initialization section's names in the session's folder. */
+export const pieceName = (n: number) => `${n}.m4s`
+export const INIT_NAME = 'init.mp4'
+
+/**
+ * The picture's size for a transcode to `height` tier lines: the source scaled by the same factor
+ * the tier is (`tierHeight`), even in both directions as H.264's 4:2:0 needs, never larger.
+ */
+export function scaledSize(
+  source: { width: number; height: number },
+  tier: number,
+): { width: number; height: number } {
+  const sourceTier = Math.max(source.height, Math.round((source.width * 9) / 16))
+  const f = Math.min(1, tier / sourceTier)
+  const even = (n: number) => Math.max(2, Math.round((n * f) / 2) * 2)
+  return { width: even(source.width), height: even(source.height) }
+}
+
+/**
+ * H.264's level for a picture this size, at up to 60 frames a second (ITU-T H.264 Annex A, Table
+ * A-1): 4.1 to 1080p, 5.1 above.
+ */
+export const h264Level = (height: number) => (height <= 1088 ? '4.1' : '5.1')
+
+/** The variant's RFC 6381 codecs for a transcode: H.264 High at its level, AAC-LC. */
+export function transcodeCodecs(height: number, audio: boolean): string {
+  const level = h264Level(height) === '4.1' ? '29' : '33'
+  return [`avc1.6400${level}`, ...(audio ? ['mp4a.40.2'] : [])].join(',')
+}
+
+const videoArgs = (video: NonNullable<RunInput['video']>): string[] => {
+  const plan = video.plan
+  if (plan.action === 'copy')
+    // Apple's players and Chrome want HEVC tagged hvc1 in MP4 (Apple's HLS authoring
+    // specification, "Video" § 1.10)
+    return ['-c:v', 'copy', ...(video.codec === 'hevc' ? ['-tag:v', 'hvc1'] : [])]
+  const size = scaledSize(video, plan.height)
+  const filters = [`scale=${size.width}:${size.height}`, 'format=yuv420p']
+  return [
+    ...['-vf', filters.join(',')],
+    // libx264 at the veryfast preset, capped (answer 8; https://trac.ffmpeg.org/wiki/Encode/H.264,
+    // "Constrained encoding (VBV / maximum bit rate)")
+    ...['-c:v', 'libx264', '-preset', 'veryfast', '-crf', '23'],
+    ...['-maxrate', String(plan.bitrate), '-bufsize', String(plan.bitrate * 2)],
+    ...['-profile:v', 'high', '-level:v', h264Level(size.height)],
+    // a keyframe every segment and none between, so every segment is one piece (`-force_key_frames`,
+    // https://ffmpeg.org/ffmpeg.html#Advanced-Video-options; x264's keyint and scenecut), as an IDR
+    // frame (`forced-idr`, https://ffmpeg.org/ffmpeg-codecs.html#libx264_002c-libx264rgb)
+    ...['-force_key_frames', `expr:gte(t,n_forced*${SEGMENT_SECONDS})`],
+    ...['-x264-params', 'keyint=infinite:scenecut=0', '-forced-idr', '1'],
+    // without tone mapping until 4.3 (answer 6), an HDR source is labelled SDR, and looks washed out
+    ...(plan.toSdr
+      ? ['-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709']
+      : []),
+  ]
+}
+
+const audioArgs = (plan: AudioPlan): string[] =>
+  plan.action === 'copy'
+    ? ['-c:a', 'copy']
+    : [
+        ...['-c:a', 'aac', '-ac', String(plan.channels)],
+        ...['-b:a', plan.channels > 2 ? '384k' : '160k'],
+      ]
+
+/** One run of ffmpeg, from `start` on, writing pieces into `dir`. */
+export function runArgs(run: RunInput): string[] {
+  const copy = run.video?.plan.action === 'copy'
+  // a copy starts at the keyframe at or before the seek, so a millisecond past the piece's start
+  // lands on its own keyframe however its time was rounded
+  const at = (run.start + (copy ? 0.001 : 0)).toFixed(6)
+  const seek = run.start > 0 ? ['-ss', at] : []
+  // a transcode's input seek is exact for the picture, which is decoded, but a copied sound track
+  // starts at the keyframe before: `-ss` on the output drops what's before the start, and
+  // `-output_ts_offset` puts the film's time back (https://ffmpeg.org/ffmpeg.html#Main-options)
+  const trim = run.start > 0 && !copy && run.video ? ['-ss', at, '-output_ts_offset', at] : []
+  return [
+    ...['-hide_banner', '-nostdin', '-loglevel', 'warning'],
+    ...seek,
+    ...['-copyts', '-start_at_zero'],
+    ...['-i', run.input],
+    ...(run.video ? ['-map', `0:${run.video.index}`] : []),
+    ...(run.audio ? ['-map', `0:${run.audio.index}`] : []),
+    ...['-sn', '-dn', '-map_metadata', '-1', '-map_chapters', '-1'],
+    ...trim,
+    ...(run.video ? videoArgs(run.video) : []),
+    ...(run.audio ? audioArgs(run.audio.plan) : []),
+    ...['-f', 'hls', '-hls_segment_type', 'fmp4'],
+    // without a picture every audio frame is a keyframe, so sound alone is cut by time
+    ...['-hls_time', run.video ? '0' : String(SEGMENT_SECONDS)],
+    ...['-hls_list_size', '0', '-hls_flags', 'temp_file'],
+    // each fragment's decode time (`tfdt`) is the film's own, not the run's, so pieces from any run
+    // share one timeline and one initialization section (`frag_discont`,
+    // https://ffmpeg.org/ffmpeg-formats.html#Options-6, as Jellyfin's HLS does)
+    ...['-hls_segment_options', 'movflags=+frag_discont'],
+    ...['-hls_fmp4_init_filename', INIT_NAME],
+    ...['-start_number', String(run.startNumber)],
+    ...['-hls_segment_filename', join(run.dir, '%d.m4s')],
+    join(run.dir, RUN_PLAYLIST),
+  ]
+}
+
+/**
+ * A text subtitle as WebVTT (https://ffmpeg.org/ffmpeg-codecs.html#webvtt): the film's own stream
+ * by index, or a sidecar file's only one. Timestamps from the film's start, as the picture's.
+ */
+export function subtitleArgs(input: string, index: number | null, output: string): string[] {
+  return [
+    ...['-hide_banner', '-nostdin', '-loglevel', 'error', '-y'],
+    ...['-i', input],
+    ...['-map', index === null ? '0:s:0' : `0:${index}`],
+    ...['-c:s', 'webvtt', '-f', 'webvtt', output],
+  ]
+}
+
+/**
+ * ffprobe's list of the picture's packets with their times and flags, read without decoding
+ * (https://ffmpeg.org/ffprobe.html): the keyframes are the ones flagged `K`.
+ */
+export function keyframeArgs(input: string, index: number): string[] {
+  return [
+    ...['-v', 'error', '-select_streams', String(index)],
+    ...['-show_entries', 'format=start_time:packet=pts_time,dts_time,flags'],
+    ...['-of', 'compact=p=0:nk=0', input],
+  ]
+}
+
+/**
+ * The keyframes' times in seconds from the film's start, ascending, from `keyframeArgs`'s output.
+ * The film's start is the container's `start_time`, which `-start_at_zero` takes away too.
+ */
+export function parseKeyframes(output: string): number[] {
+  let start = 0
+  const raw: number[] = []
+  for (const line of output.split('\n')) {
+    const fields = new Map(
+      line
+        .trim()
+        .split('|')
+        .map((f) => f.split('=') as [string, string]),
+    )
+    if (fields.has('start_time')) {
+      const s = Number(fields.get('start_time'))
+      if (Number.isFinite(s)) start = s
+      continue
+    }
+    if (!fields.get('flags')?.includes('K')) continue
+    const pts = Number(fields.get('pts_time'))
+    const t = Number.isFinite(pts) ? pts : Number(fields.get('dts_time'))
+    if (Number.isFinite(t)) raw.push(t)
+  }
+  return [...new Set(raw.map((t) => Math.max(0, Math.round((t - start) * 1e6) / 1e6)))].sort(
+    (a, b) => a - b,
+  )
+}

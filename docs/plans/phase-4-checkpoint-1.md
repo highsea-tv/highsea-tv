@@ -53,6 +53,70 @@ The server can play any film in the library to a client that asks, and explains 
 
 ## Progress
 
+- **2026-10-27, 4.1b, signed off by the owner on 2026-10-27,** which signs off checkpoint 4.1. The owner played Beetlejuice (HEVC in MKV, transcoded) in `/stream/try` with its SRT subtitles, and seeking worked. Every film in the test library plays in a browser through `/stream/try`: as it is, remuxed, or transcoded. ADRs 0051 and 0052 are now Accepted. Left open: measuring the encoder against real time on the NAS (answer 8) waits for the `0.2.0-beta.1` beta after 4.2 (answer 10), since highsea can't run there before it. What was built:
+  - **`@highsea-tv/stream/hls`** (new subpath):
+    - `playlist.ts`: the segments and the playlists (RFC 8216: VOD, `#EXT-X-MAP`, version 7). A transcode is cut every 6 s; a direct stream at the first source keyframe 6 s or more after the last.
+    - `args.ts`: ffmpeg's and ffprobe's command lines as literal arrays: the runs, the keyframe probe, WebVTT.
+    - `runner.ts`: one folder and at most one ffmpeg per session. It runs 30 s ahead and is then paused; a request 18 s past what's made, or before where it started, restarts it there; a minute idle stops it; a failure keeps its log's last lines.
+    - ADR 0051's dated section has the flags and why: `-hls_time 0`, `frag_discont`, and the output `-ss` for transcodes.
+  - **`@highsea-tv/stream/trickplay`** (new subpath): a frame every 10 s, 320 px wide, in 10 × 10 JPEG sheets, from the keyframes alone, at `nice` 19, moved into place when whole.
+  - **The database** (migration 0015): `file_keyframes` (each file's keyframe times, by its size) and `trickplay` (each file's manifest or error, by its size).
+  - **The runtime:**
+    - `playback.ts`: sessions open a transcode folder and close it when they end; the playlists, segments, init and WebVTT behind each token's access check; the play response's `url` is the multivariant playlist for HLS, and its `subtitles` carry each text track's WebVTT URL (image tracks `null`).
+    - `trickplay.ts`: the `media.trickplay` job (newest film first, one at a time, re-queued until none is missing; answer 9), queued after each import and at boot. It prunes orphaned and half-made folders.
+    - `runtime.ts`: the cache in `transcodes/`, emptied at boot and on shutdown.
+  - **The API:** `PlaySession.subtitles`; `GET /api/v1/items/{type}/{id}/trickplay` and `…/trickplay/{n}.jpg`. `openapi.json` is regenerated.
+  - **`/stream`:**
+    - `/stream/hls/{token}/`: `main.m3u8`, `video.m3u8`, `init.mp4`, `{n}.m4s`, and `subs/{track}.m3u8|.vtt`;
+    - `/stream/subtitles/{token}/{track}.vtt`;
+    - a failed run answers 500 "This film didn’t start." and is logged to System › Logs.
+  - **The test page** loads hls.js 1.7.3 (a devDependency, Apache-2.0, served from `/stream/try/hls.js`) for HLS, plays Safari's natively, and adds the chosen subtitle as a `<track>`. Its CSP allows `blob:` and `data:` media, which hls.js uses.
+  - **Measured** on this Mac (Apple M2 Max), answer 8's settings:
+
+    | What | Time | Against real time |
+    | --- | --- | --- |
+    | A minute of HEVC 1080p, transcoded to 1080p | 6.0 s | 10× |
+    | The same, to 720p | 3.6 s | 16.5× |
+    | Trickplay for a 92-minute HEVC 1080p film | 16.7 s (6 sheets, 3.5 MB) | 330× |
+    | A seek to 40 minutes in a transcode, to its first frame | 0.75 s | |
+
+  - **Tried in Chromium** with hls.js:
+    - Midnight in Paris remuxed to MKV: a direct stream, seeking to 50 minutes.
+    - Beetlejuice, HEVC 1080p MKV, on Firefox's profile: a transcode. Its SRT shows both as a `<track>` and as the HLS rendition, with cues on time; "Barbara!" is at 1188.6 s in the WebVTT and in hls.js.
+  - **Tests:**
+    - `packages/stream/test/hls.test.ts`: command lines as literal arrays; playlists against RFC 8216's rules; segments from keyframes.
+    - `hls-ffmpeg.test.ts`, real ffmpeg, skipped without it:
+      - runs and restarts on one timeline (`tfdt`), with equal init sections;
+      - the init asked for during a restart;
+      - a transcode with copied audio starting on time;
+      - pausing ahead, and a failure keeping ffmpeg’s last lines;
+      - WebVTT and trickplay.
+    - `apps/server/test/stream-hls.test.ts`, over HTTP:
+      - the playlists, a segment far ahead decoded on the film's timeline, and the rendition and WebVTT;
+      - the folder gone when the session ends;
+      - "This film didn’t start";
+      - trickplay made by the job and served, made again when the file changes, and orphans pruned.
+    - The container run's step 7 plays Sintel through `/stream`: the play API, the playlists, the last segment's `tfdt`, the `.en.srt` as WebVTT, and the stream gone with its session.
+  - **ADRs:** dated sections for 0051 and 0052 (Proposed until this sign-off).
+  - **Checks under Node 26.11.1:**
+    - lint (1,283 files), typecheck, 11,577 tests pass (6 skipped, 194 files), smoke;
+    - licences (864 packages), the audit (718 packages, nothing high), the docs build;
+    - the image built from this checkout (2,091 MB, budget 2,200) and the end-to-end run through it, with step 7;
+    - the sweeps clean: 1,624 prototype pages, 171 keyboard walks, the D-pad walk, and the server's admin pages from the production build.
+  - **Judgement calls,** in short:
+    - Segments are joined from per-keyframe files rather than cut at 6 s by ffmpeg, so every run numbers them the same.
+    - `CODECS` is only named when both streams are transcoded.
+    - The keyframes are kept in the database by file size.
+    - Trickplay records a failure and doesn't retry until the file changes.
+    - The transcode encoder was measured on this Mac, not the NAS: highsea can't run there before the beta (answer 10).
+    - The test page's copy isn't in i18n.
+  - **Found and fixed along the way:**
+    - Runs started later wrote fragments from 0 (`frag_discont`).
+    - Copied audio in a transcode started at the keyframe before, so subtitles were 3.6 s late (output `-ss` and `-output_ts_offset`).
+    - The init asked for during a restart failed (its waiter now follows the new run).
+    - The CSP blocked hls.js's `data:` placeholder.
+    - Outside the scope: the torrent engine's two-engine test read the tracker's status while the finished torrent's `completed` announce was still in flight, and failed under a full run's load. It now waits for the tracker's answer (`packages/torrent/test/engine.test.ts`; the engine is unchanged).
+
 - **2026-10-27, 4.1a, signed off by the owner on 2026-10-27.** The owner played the copied films in `/stream/try`: the MP4s play directly; Beetlejuice (MKV) and the SRT subtitles wait for 4.1b, as planned, and the page now says so when a subtitle is chosen. At review the owner asked that adding a root folder scan it, and chose the sure-match behaviour below (the change is in this entry). What was built:
   - **`packages/stream`** (new, ADR 0036's subpaths):
     - `profiles`: ADR 0052's shape as zod schemas, and the browsers' built-in profiles (`web-chromium`, `web-chromium-macos`, `web-firefox`, `web-safari`) from MDN's codec and container guides; `ReportedProfile` and `withReport` lay a browser's report over its base.

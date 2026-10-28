@@ -88,6 +88,9 @@ const TEXT_SUBTITLES: Record<string, string> = {
   mov_text: 'srt',
   text: 'srt',
 }
+/** Whether a subtitle format, ffmpeg's codec name or the library's, is text, sent as WebVTT. */
+export const isTextSubtitle = (format: string) => Object.hasOwn(TEXT_SUBTITLES, format)
+
 const IMAGE_SUBTITLES: Record<string, string> = {
   hdmv_pgs_subtitle: 'pgs',
   dvd_subtitle: 'vobsub',

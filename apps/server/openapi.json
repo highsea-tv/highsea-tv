@@ -5784,6 +5784,12 @@
               "null"
             ]
           },
+          "subtitles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PlaySubtitle"
+            }
+          },
           "start": {
             "type": "number",
             "minimum": 0
@@ -5804,6 +5810,7 @@
           "id",
           "decision",
           "url",
+          "subtitles",
           "start",
           "duration",
           "expiresAt"
@@ -5986,6 +5993,24 @@
           "kind",
           "code",
           "message"
+        ]
+      },
+      "PlaySubtitle": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "url": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "url"
         ]
       },
       "PlayRequest": {
@@ -6270,6 +6295,59 @@
         },
         "required": [
           "item"
+        ]
+      },
+      "Trickplay": {
+        "type": "object",
+        "properties": {
+          "versionId": {
+            "type": "string"
+          },
+          "manifest": {
+            "$ref": "#/components/schemas/TrickplayManifest"
+          }
+        },
+        "required": [
+          "versionId",
+          "manifest"
+        ]
+      },
+      "TrickplayManifest": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "interval": {
+            "type": "integer"
+          },
+          "width": {
+            "type": "integer"
+          },
+          "height": {
+            "type": "integer"
+          },
+          "columns": {
+            "type": "integer"
+          },
+          "rows": {
+            "type": "integer"
+          },
+          "count": {
+            "type": "integer"
+          },
+          "sheets": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "interval",
+          "width",
+          "height",
+          "columns",
+          "rows",
+          "count",
+          "sheets"
         ]
       },
       "CatalogStatus": {
@@ -22202,6 +22280,201 @@
           },
           "404": {
             "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/items/{type}/{id}/trickplay": {
+      "get": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "The scrubber’s previews of a version",
+        "description": "Thumbnails every 10 seconds, 320 pixels wide, in sheets of 10 × 10. The manifest is null until they’re made.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "required": false,
+            "name": "versionId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The previews",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Trickplay"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/items/{type}/{id}/trickplay/{sheet}": {
+      "get": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "A sheet of the scrubber’s previews",
+        "description": "Sheet `n` of the manifest, from 0, as a JPEG. 404 when it isn’t made.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d{1,5}\\.jpg$",
+              "example": "0.jpg"
+            },
+            "required": true,
+            "name": "sheet",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 64
+            },
+            "required": false,
+            "name": "versionId",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The sheet",
+            "content": {
+              "image/jpeg": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
             "content": {
               "application/json": {
                 "schema": {

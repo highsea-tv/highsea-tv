@@ -82,6 +82,8 @@ const USER_ROUTES = [
   'playback.report',
   'playback.setPrefs',
   'playback.stop',
+  'playback.trickplay',
+  'playback.trickplaySheet',
   'playback.unplayed',
   'preferences.get',
   'preferences.save',

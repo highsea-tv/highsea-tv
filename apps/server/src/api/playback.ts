@@ -2,7 +2,8 @@
 // Playback (checkpoint 4.1a): playing a title on a device, its session's reports, the device's
 // reported profile, and each person's watch state per title (ADR 0054). Thin handlers over the
 // runtime's playback and @highsea-tv/media/movies. A library the person can't see answers 404, as
-// the library's reads do.
+// the library's reads do. 4.1b adds the scrubber's previews (trickplay).
+import { readFile } from 'node:fs/promises'
 import { routes } from '@highsea-tv/api-contract'
 import { AppError } from '@highsea-tv/core'
 import type { OpenAPIHono } from '@hono/zod-openapi'
@@ -77,4 +78,36 @@ export function registerPlayback(app: OpenAPIHono<Env>) {
     const { userId } = viewer(c)
     return c.json({ item: watch(c).next(userId, c.req.valid('param').id) }, 200)
   })
+
+  app.openapi(routes.playback.trickplay, (c) => {
+    const { versionId, manifest } = playback(c).trickplay(
+      viewer(c),
+      c.req.valid('param').id,
+      c.req.valid('query').versionId,
+    )
+    return c.json({ versionId, manifest }, 200)
+  })
+
+  // bytes, not JSON: served directly, listed in the document from the contract, as images are
+  app.get(routes.playback.trickplaySheet.path.replace(/\{(\w+)\}/g, ':$1'), async (c) => {
+    const id = Number(c.req.param('id'))
+    const sheet = /^(\d{1,5})\.jpg$/.exec(c.req.param('sheet') ?? '')
+    if (c.req.param('type') !== 'movie' || !Number.isInteger(id) || id <= 0 || !sheet)
+      throw new AppError('not-found', 'Those previews aren’t made yet.')
+    const path = playback(c).trickplaySheet(
+      viewer(c),
+      id,
+      Number(sheet[1]),
+      c.req.query('versionId') || undefined,
+    )
+    const bytes = await readFile(path).catch(() => {
+      throw new AppError('not-found', 'Those previews aren’t made yet.')
+    })
+    return c.body(new Uint8Array(bytes), 200, {
+      'Content-Type': 'image/jpeg',
+      'Cache-Control': 'private, max-age=3600',
+      'X-Content-Type-Options': 'nosniff',
+    })
+  })
+  app.openAPIRegistry.registerPath(routes.playback.trickplaySheet)
 }

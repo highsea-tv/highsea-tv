@@ -10,9 +10,14 @@
 //   its default, 8 Mbps at 1080p.
 // - A library the person can't see answers 404, as the reads do, and taking it away, or signing
 //   the device out, ends their sessions at once (`users.updated`).
+// - A direct stream or a transcode is HLS made on demand (4.1b, ADR 0051): each session has a
+//   folder in the data folder's `transcodes/`, which goes when the session ends. A direct stream's
+//   segments follow the file's keyframes, read once by ffprobe and kept (`file_keyframes`).
+// - Text subtitles are sent as WebVTT, converted once a session; picture subtitles aren't sent.
 import type {
   PlaybackDecision as ApiDecision,
   PlaySession as ApiSession,
+  ClientSubtitle,
   DeviceReport,
   PlayRequest,
 } from '@highsea-tv/api-contract'
@@ -24,9 +29,22 @@ import { PRIVATE_RANGES, parseTrustedProxies } from '@highsea-tv/network'
 import {
   type Ceiling,
   decide,
+  isTextSubtitle,
   type PlaybackDecision,
   type SubtitlePick,
 } from '@highsea-tv/stream/decision'
+import {
+  type HlsSource,
+  mediaPlaylist,
+  multivariantPlaylist,
+  readKeyframes,
+  type SubtitleRendition,
+  scaledSize,
+  subtitlePlaylist,
+  type Transcode,
+  type Transcodes,
+  transcodeCodecs,
+} from '@highsea-tv/stream/hls'
 import {
   builtIn,
   type DeviceProfile,
@@ -34,9 +52,11 @@ import {
   withReport,
 } from '@highsea-tv/stream/profiles'
 import { createSessions, type PlaySession } from '@highsea-tv/stream/sessions'
+import type { TrickplayManifest } from '@highsea-tv/stream/trickplay'
 import { and, eq } from 'drizzle-orm'
+import type { Trickplay } from './trickplay.ts'
 
-const { deviceProfiles, subtitleFiles } = schema
+const { deviceProfiles, fileKeyframes, subtitleFiles } = schema
 
 /** Settings › Playback's default remote ceiling (playback-settings.md), until 4.3 makes it a setting. */
 export const REMOTE_CEILING: Ceiling = { bitrate: 8_000_000, height: 1080 }
@@ -77,13 +97,24 @@ export function createPlayback(deps: {
   librariesOf(userId: string): 'all' | string[] | null
   /** Whether the device is still signed in. */
   deviceExists(deviceId: string): boolean
+  /** The sessions' folders and their ffmpeg runs (`@highsea-tv/stream/hls`). */
+  transcodes: Transcodes
+  /** ffprobe's binary, for keyframes. */
+  ffprobe: string
+  /** A file's subtitle tracks, as the client API lists them. */
+  subtitles(fileId: string): ClientSubtitle[]
+  /** The scrubber's previews, by file. */
+  trickplay: Pick<Trickplay, 'manifest' | 'sheet'>
 }) {
-  const { db, clock, events, movies } = deps
+  const { db, clock, events, movies, transcodes } = deps
   const log = deps.logger.child('playback')
   const home = parseTrustedProxies(PRIVATE_RANGES.join(',')).trusted
   const sessions = createSessions({
     now: () => clock.now(),
-    onEnd: (s, why) => log.debug('play session ended', { session: s.id, why }),
+    onEnd: (s, why) => {
+      log.debug('play session ended', { session: s.id, why })
+      void transcodes.end(s.id)
+    },
   })
 
   // whoever's access changed: their sessions end if the library or the device is gone
@@ -100,7 +131,10 @@ export function createPlayback(deps: {
       )
     }
   })
-  const timer = setInterval(() => sessions.sweep(), SWEEP_MS)
+  const timer = setInterval(() => {
+    sessions.sweep()
+    transcodes.sweep()
+  }, SWEEP_MS)
   timer.unref?.()
 
   /** The device's profile: the built-in one it names (or reported from), with its report over it. */
@@ -182,14 +216,55 @@ export function createPlayback(deps: {
     }
   }
 
+  const isHls = (d: PlaybackDecision) => d.method === 'direct-stream' || d.method === 'transcode'
+
+  /** What the player loads: the file, or the multivariant playlist; the token is the session's. */
+  function urlOf(s: PlaySession): string | null {
+    if (s.decision.method === 'direct-play') return `/stream/files/${sessions.token(s)}`
+    return isHls(s.decision) ? `/stream/hls/${sessions.token(s)}/main.m3u8` : null
+  }
+
   const toApiSession = (s: PlaySession, decision: ApiDecision, start: number): ApiSession => ({
     id: s.id,
     decision,
-    url: s.decision.method === 'direct-play' ? `/stream/files/${sessions.token(s)}` : null,
+    url: urlOf(s),
+    subtitles: deps.subtitles(s.file.id).map((t) => ({
+      id: t.id,
+      url: isTextSubtitle(t.format)
+        ? `/stream/subtitles/${sessions.token(s)}/${encodeURIComponent(t.id)}.vtt`
+        : null,
+    })),
     start,
     duration: s.duration,
     expiresAt: new Date(s.expiresAt).toISOString(),
   })
+
+  /** Keyframes being read now, so two sessions of a file read it once. */
+  const reading = new Map<string, Promise<number[]>>()
+
+  /** A file's keyframes: kept from an earlier read when the file's size is the same, else read. */
+  function keyframes(file: { id: string; path: string; size: number }, index: number) {
+    const kept = db.select().from(fileKeyframes).where(eq(fileKeyframes.fileId, file.id)).get()
+    if (kept && kept.size === file.size) return Promise.resolve(kept.times)
+    const pending = reading.get(file.id)
+    if (pending) return pending
+    const read = readKeyframes(deps.ffprobe, file.path, index)
+      .then((times) => {
+        const row = { size: file.size, times, readAt: clock.now() }
+        try {
+          db.insert(fileKeyframes)
+            .values({ fileId: file.id, ...row })
+            .onConflictDoUpdate({ target: fileKeyframes.fileId, set: row })
+            .run()
+        } catch {
+          // the file left the library while it was read: nothing to keep
+        }
+        return times
+      })
+      .finally(() => reading.delete(file.id))
+    reading.set(file.id, read)
+    return read
+  }
 
   /** Starts a title on a device: the version, the picks, the decision and the session. */
   function play(
@@ -232,6 +307,10 @@ export function createPlayback(deps: {
       server: { burnIn: false, toneMapping: false },
       locale,
     })
+    if (isHls(decision) && !src.duration)
+      throw new AppError('conflict', 'That file’s length isn’t known, so it can’t be streamed.', {
+        reason: 'no-duration',
+      })
     const resume = movies.client.byIds([tmdbId], viewer.userId)[0]?.position ?? 0
     const start = request.start ?? resume
     const session = sessions.start({
@@ -246,6 +325,20 @@ export function createPlayback(deps: {
       position: start,
       duration: src.duration,
     })
+    // the session's folder; a stream's first run starts now, where the player will
+    const video = info.video
+    const source: HlsSource = {
+      input: src.file.path,
+      duration: src.duration ?? 0,
+      decision,
+      video: video
+        ? { index: video.index, codec: video.codec, width: video.width, height: video.height }
+        : null,
+      start,
+      keyframes: () => (video ? keyframes(src.file, video.index) : Promise.resolve([])),
+    }
+    const transcode = transcodes.open(session.id, source)
+    if (isHls(decision)) transcode.prepare()
     log.info('play session started', {
       session: session.id,
       tmdbId,
@@ -276,10 +369,10 @@ export function createPlayback(deps: {
   }
 
   /**
-   * The file a `/stream/files/{token}` request may read, or null. The token must be this server's,
-   * its session live, and the person still able to see the library from a signed-in device.
+   * The session a `/stream` request's token names, or null. The token must be this server's, its
+   * session live, and the person still able to see the library from a signed-in device.
    */
-  function open(token: string): { path: string; size: number; type: string } | null {
+  function live(token: string): PlaySession | null {
     const s = sessions.verify(token)
     if (!s) return null
     const libraries = deps.librariesOf(s.userId)
@@ -287,6 +380,13 @@ export function createPlayback(deps: {
       sessions.end(s.id, 'revoked')
       return null
     }
+    return s
+  }
+
+  /** The file a `/stream/files/{token}` request may read, or null. */
+  function open(token: string): { path: string; size: number; type: string } | null {
+    const s = live(token)
+    if (!s) return null
     return {
       path: s.file.path,
       size: s.file.size,
@@ -294,13 +394,133 @@ export function createPlayback(deps: {
     }
   }
 
+  /** A stream's session and its transcode, for `/stream/hls/{token}/…`; null when it's gone. */
+  function streamOf(token: string): { s: PlaySession; t: Transcode } | null {
+    const s = live(token)
+    const t = s && isHls(s.decision) ? transcodes.get(s.id) : null
+    return s && t ? { s, t } : null
+  }
+
+  /** The text tracks as HLS renditions, each with a name of its own (RFC 8216 § 4.3.4.1.1). */
+  function renditions(s: PlaySession): SubtitleRendition[] {
+    const seen = new Map<string, number>()
+    return deps
+      .subtitles(s.file.id)
+      .filter((t) => isTextSubtitle(t.format))
+      .map((t) => {
+        const n = (seen.get(t.label) ?? 0) + 1
+        seen.set(t.label, n)
+        return {
+          name: n > 1 ? `${t.label} (${n})` : t.label,
+          language: t.language || null,
+          forced: t.forced,
+          uri: `subs/${encodeURIComponent(t.id)}.m3u8`,
+        }
+      })
+  }
+
+  /** `main.m3u8`, the one variant and its subtitles, or `video.m3u8`, its segments. */
+  async function playlist(token: string, name: 'main' | 'video'): Promise<string | null> {
+    const stream = streamOf(token)
+    if (!stream) return null
+    const { s, t } = stream
+    if (name === 'video') return mediaPlaylist(await t.segments())
+    const d = s.decision
+    const plan = d.video
+    const source = t.source.video
+    const size =
+      plan?.action === 'transcode' && source ? scaledSize(source, plan.height) : (source ?? null)
+    const audioBits =
+      d.audio?.action === 'transcode' ? (d.audio.channels > 2 ? 384_000 : 160_000) : 0
+    // a copy's codecs are the file's, which the player reads from the init; RFC 8216 says SHOULD
+    const transcoded = plan?.action === 'transcode' && d.audio?.action !== 'copy'
+    return multivariantPlaylist(
+      {
+        bandwidth: plan?.action === 'transcode' ? plan.bitrate + audioBits : (d.bitrate ?? 0),
+        codecs: transcoded && size ? transcodeCodecs(size.height, !!d.audio) : null,
+        width: size?.width ?? null,
+        height: size?.height ?? null,
+        uri: 'video.m3u8',
+      },
+      renditions(s),
+    )
+  }
+
+  /** A segment's pieces in order, made if they aren't yet; null when the session's gone. */
+  async function segment(token: string, index: number): Promise<string[] | null> {
+    const stream = streamOf(token)
+    return stream ? stream.t.segment(index) : null
+  }
+
+  /** The stream's initialization section. */
+  async function init(token: string): Promise<string | null> {
+    const stream = streamOf(token)
+    return stream ? stream.t.init() : null
+  }
+
+  /** Where a session's text track is read from: the film's own stream, or a sidecar. */
+  function subtitleInput(s: PlaySession, trackId: string) {
+    const track = deps.subtitles(s.file.id).find((t) => t.id === trackId)
+    if (!track || !isTextSubtitle(track.format)) return null
+    const index = trackIndex(s.file.id, trackId)
+    if (index !== null) return { input: s.file.path, index }
+    const row = db
+      .select({ path: subtitleFiles.path })
+      .from(subtitleFiles)
+      .where(and(eq(subtitleFiles.id, trackId), eq(subtitleFiles.mediaFileId, s.file.id)))
+      .get()
+    return row ? { input: row.path, index: null } : null
+  }
+
+  /** A text track's rendition playlist: the whole track as one segment. */
+  function subtitleList(token: string, trackId: string): string | null {
+    const stream = streamOf(token)
+    if (!stream || !subtitleInput(stream.s, trackId)) return null
+    return subtitlePlaylist(stream.t.source.duration, `${encodeURIComponent(trackId)}.vtt`)
+  }
+
+  /** A text track as WebVTT, converted once a session: the file's path, or null. */
+  async function subtitle(token: string, trackId: string): Promise<string | null> {
+    const s = live(token)
+    const from = s && subtitleInput(s, trackId)
+    const t = s && transcodes.get(s.id)
+    return from && t ? t.subtitle(trackId, from.input, from.index) : null
+  }
+
+  /** A version's previews for the scrubber; the manifest is null until they're made. */
+  function trickplay(
+    viewer: Viewer,
+    tmdbId: number,
+    versionId?: string,
+  ): { versionId: string; manifest: TrickplayManifest | null; fileId: string } {
+    if (!seesMovies(viewer.libraries)) throw notHere()
+    const src = movies.playback.source(tmdbId, viewer.userId, versionId)
+    return {
+      versionId: src.versionId,
+      fileId: src.file.id,
+      manifest: deps.trickplay.manifest(src.file.id, src.file.size),
+    }
+  }
+
+  /** A sheet of a version's previews: its path, or a 404 when there's no such sheet. */
+  function trickplaySheet(viewer: Viewer, tmdbId: number, n: number, versionId?: string): string {
+    const { fileId, manifest } = trickplay(viewer, tmdbId, versionId)
+    if (!manifest || n >= manifest.sheets)
+      throw new AppError('not-found', 'Those previews aren’t made yet.')
+    return deps.trickplay.sheet(fileId, n)
+  }
+
   return {
     play,
+    trickplay,
+    trickplaySheet,
     progress,
     stop,
     report,
     profileFor,
     open,
+    hls: { playlist, segment, init, subtitleList },
+    subtitle,
     /** The live sessions, for Now playing (4.3) and the test page. */
     sessions: () => sessions.list(),
     close() {

@@ -68,6 +68,7 @@ import {
   checkPath,
   createLibraryWatch,
   createMedia,
+  ffprobeBinary,
   type LibraryWatch,
   type Media,
   unarAvailable,
@@ -84,6 +85,7 @@ import {
   type Personalization,
   type WidgetSource,
 } from '@highsea-tv/personalization'
+import { createTranscodes } from '@highsea-tv/stream/hls'
 import { createSubtitles, type RunSync, type Subtitles } from '@highsea-tv/subtitles/movies'
 import { PROVIDER_INFO } from '@highsea-tv/subtitles/providers'
 import { isLanguageCode } from '@highsea-tv/subtitles/shared'
@@ -142,6 +144,7 @@ import {
   type HealthIssue,
   type Resources,
 } from './system.ts'
+import { createTrickplay } from './trickplay.ts'
 import { createWorkerPool, type WorkerPool } from './workers.ts'
 
 /** Milestone 1 has the server, the movie library, indexers, downloads and subtitles; later checkpoints add theirs. */
@@ -691,6 +694,15 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   // (https://nodejs.org/api/intl.html)
   if (!process.versions.icu)
     log.warn('this Node has no ICU, so subtitles in legacy encodings may not decode')
+  // trickplay (4.1b): the scrubber's previews, made after each import and filled in behind
+  const trickplay = createTrickplay({
+    db,
+    jobs,
+    clock,
+    logger,
+    root: join(config.dataDir, 'trickplay'),
+    ffmpeg: ffmpegBinary(),
+  })
   const movies = createMovies(
     {
       db,
@@ -702,7 +714,14 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       // the owner's categories may keep their torrents outside the downloads folder (6b)
       importing: {
         ...options.importing,
-        hooks: options.importing?.hooks ?? subtitles.hooks,
+        hooks: options.importing?.hooks ?? {
+          replacing: (tx, from, to) => subtitles.hooks.replacing?.(tx, from, to),
+          // the subtitles' failure is logged by the import, and the previews are only queued
+          afterImport: async (file) => {
+            await trickplay.afterImport()
+            await subtitles.hooks.afterImport?.(file)
+          },
+        },
         downloadDirs: () => [folders().downloads, ...downloads.categoryFolders()],
       },
       subtitles: { forFile: subtitles.clientTracks },
@@ -715,6 +734,18 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   )
   movies.jobs.schedule(clock.now())
   scheduleFileFacts({ db, jobs, clock })
+  trickplay.start()
+
+  // HLS made on demand (4.1b, ADR 0051): one folder per play session in the data folder's
+  // `transcodes/`, emptied on boot, since no session outlives the process
+  const transcodes = createTranscodes({
+    root: join(config.dataDir, 'transcodes'),
+    ffmpeg: ffmpegBinary(),
+    ffprobe: ffprobeBinary(),
+    logger: logger.child('stream'),
+    now: () => clock.now(),
+  })
+  await transcodes.clear()
 
   // playback (4.1a): sessions in memory, ended when the person's access to them goes
   const playback = createPlayback({
@@ -731,6 +762,10 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       }
     },
     deviceExists: (deviceId) => auth.devices.find(deviceId) !== null,
+    transcodes,
+    ffprobe: ffprobeBinary(),
+    subtitles: subtitles.clientTracks,
+    trickplay,
   })
 
   // watching only speeds the library scan up: a change asks for its title folder's scan
@@ -1388,6 +1423,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       stopIpBlocklist()
       await engine.close()
       playback.close()
+      await transcodes.close()
       movies.close()
       stopSubtitles()
       stopIndexers()

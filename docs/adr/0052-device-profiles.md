@@ -1,6 +1,6 @@
 # 0052. Device profiles: what each client plays, built in and reported, in one shape
 
-- **Status:** Proposed
+- **Status:** Accepted (2026-10-27, at checkpoint 4.1b's sign-off)
 - **Date:** 2026-10-23
 
 Drafted at Phase 4's checkpoint 4.0b ([phase-4-checkpoint-0.md › ADR drafts](../plans/phase-4-checkpoint-0.md#adr-drafts-40b)). It becomes Accepted at 4.1, which builds it.
@@ -37,3 +37,11 @@ Prior art: Jellyfin's `DeviceProfile` ([jellyfin/MediaBrowser.Model/Dlna/DeviceP
 - The decision is a pure function of the version's streams and a profile, so its tests enumerate every built-in profile against every clip, with no device.
 - A wrong built-in profile shows as a needless transcode or a stream that doesn't start. Reported profiles correct the first, and "This film didn't start" with Try again covers the second while a fix ships.
 - Left to settle at 4.1: the profiles' exact contents per platform, from each platform's documentation, and how often a client reports again.
+
+## 2026-10-27: what building it settled (checkpoint 4.1)
+
+- **The browsers' built-in profiles** are `web-chromium`, `web-chromium-macos`, `web-firefox` and `web-safari` (`packages/stream/src/profiles/`). They're written from MDN's codec and container guides and each engine's own notes. Each takes MP4 and WebM to play directly, Safari HLS natively, and fragmented MP4 in HLS. None takes Matroska directly, so an MKV is a direct stream at best.
+- **Reported profiles** are kept per device with their date (`device_profiles`). `withReport` lays a report over the device's built-in profile: what the browser says it decodes, and smoothly, narrows or widens it. A client reports again when it starts and when its report would change; 4.2's web client decides how often.
+- **The variant** comes from the profile's codecs and `maxBitrate` and the remote ceiling: one per session (the plan's answer 7).
+- **Subtitles:** the browsers' profiles draw WebVTT, so text tracks are sent as WebVTT and image tracks have no URL until 4.3.
+- The other platforms' profiles come with their apps (4.4 to 4.6), from their platforms' documentation.

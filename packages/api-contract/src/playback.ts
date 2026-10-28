@@ -115,16 +115,32 @@ export const PlayRequest = z
   })
   .openapi('PlayRequest')
 
+/** A subtitle track as the player loads it (4.1b). */
+export const PlaySubtitle = z
+  .object({
+    /** The track's id from `ClientSubtitle`. */
+    id: z.string(),
+    /**
+     * The track as WebVTT, for a text track; null for a picture track (PGS, VobSub), which the
+     * device draws itself or can't show. It carries the session's token, as `url` does.
+     */
+    url: z.string().nullable(),
+  })
+  .openapi('PlaySubtitle')
+
 export const PlaySession = z
   .object({
     /** The play session, which the device reports its place to. */
     id: z.string(),
     decision: PlaybackDecision,
     /**
-     * What the player loads: the file itself for direct play. Null when the film needs HLS, which
-     * comes with checkpoint 4.1b. It carries a token, so it needs no header.
+     * What the player loads: the file itself for direct play, or an HLS multivariant playlist for
+     * a direct stream or a transcode (ADR 0051); null when the device can't play it. It carries a
+     * token, so it needs no header.
      */
     url: z.string().nullable(),
+    /** The version's subtitle tracks, each as WebVTT when it's text; the offset is the player's. */
+    subtitles: z.array(PlaySubtitle),
     /** Seconds in to start at. */
     start: z.number().min(0),
     /** The file's length in seconds, when the probe knows it. */
@@ -190,6 +206,36 @@ export const NextUp = z
     item: ClientItem.nullable(),
   })
   .openapi('NextUp')
+
+/** A version's previews for the scrubber (4.1b): JPEG sheets of thumbnails, left to right, then down. */
+export const TrickplayManifest = z
+  .object({
+    /** Seconds between thumbnails: thumbnail `n` shows `n × interval`. */
+    interval: z.number().int(),
+    /** One thumbnail's size in pixels. */
+    width: z.number().int(),
+    height: z.number().int(),
+    /** Thumbnails across and down a sheet. */
+    columns: z.number().int(),
+    rows: z.number().int(),
+    /** Thumbnails in all; the last sheet may be part full. */
+    count: z.number().int(),
+    sheets: z.number().int(),
+  })
+  .openapi('TrickplayManifest')
+
+export const Trickplay = z
+  .object({
+    versionId: z.string(),
+    /** Null until they're made, which happens in the background after the file arrives. */
+    manifest: TrickplayManifest.nullable(),
+  })
+  .openapi('Trickplay')
+
+export const TrickplayQuery = z.object({
+  /** The version; the person's pick for the title, then the first version, when absent. */
+  versionId: z.string().max(64).optional(),
+})
 
 export const playback = {
   play: createRoute({
@@ -311,12 +357,52 @@ export const playback = {
     request: { params: ItemParams },
     responses: { 200: json(NextUp, 'Next up'), ...errors('unauthorized', 'not-found') },
   }),
+  trickplay: createRoute({
+    method: 'get',
+    path: `${ITEMS}/{type}/{id}/trickplay`,
+    tags: ['Playback'],
+    summary: 'The scrubber’s previews of a version',
+    description:
+      'Thumbnails every 10 seconds, 320 pixels wide, in sheets of 10 × 10. The manifest is null until they’re made.',
+    ...access('user'),
+    request: { params: ItemParams, query: TrickplayQuery },
+    responses: {
+      200: json(Trickplay, 'The previews'),
+      ...errors('unauthorized', 'not-found', 'conflict'),
+    },
+  }),
+  trickplaySheet: createRoute({
+    method: 'get',
+    path: `${ITEMS}/{type}/{id}/trickplay/{sheet}`,
+    tags: ['Playback'],
+    summary: 'A sheet of the scrubber’s previews',
+    description: 'Sheet `n` of the manifest, from 0, as a JPEG. 404 when it isn’t made.',
+    ...access('user'),
+    request: {
+      params: ItemParams.extend({
+        sheet: z
+          .string()
+          .regex(/^\d{1,5}\.jpg$/)
+          .openapi({ param: { name: 'sheet', in: 'path' }, example: '0.jpg' }),
+      }),
+      query: TrickplayQuery,
+    },
+    responses: {
+      200: {
+        description: 'The sheet',
+        content: { 'image/jpeg': { schema: z.string().openapi({ format: 'binary' }) } },
+      },
+      ...errors('unauthorized', 'not-found', 'conflict'),
+    },
+  }),
 } as const
 
 export type DeviceReport = z.infer<typeof DeviceReport>
 export type PlaybackReason = z.infer<typeof PlaybackReason>
 export type PlaybackDecision = z.infer<typeof PlaybackDecision>
 export type PlayRequest = z.infer<typeof PlayRequest>
+export type PlaySubtitle = z.infer<typeof PlaySubtitle>
+export type Trickplay = z.infer<typeof Trickplay>
 export type PlaySession = z.infer<typeof PlaySession>
 export type ProgressReport = z.infer<typeof ProgressReport>
 export type ProgressResult = z.infer<typeof ProgressResult>

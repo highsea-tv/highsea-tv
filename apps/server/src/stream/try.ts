@@ -5,6 +5,10 @@
 // admin's cookie and uses the public API as an app would: the library, Play, progress, the picks
 // and played, and this browser's reported profile from `MediaSource.isTypeSupported()`
 // (https://developer.mozilla.org/en-US/docs/Web/API/MediaSource/isTypeSupported_static).
+//
+// Since 4.1b it plays HLS with hls.js (served at `/stream/try/hls.js`; https://github.com/video-dev/hls.js#embedding-hlsjs),
+// or natively where the browser has HLS and no Media Source Extensions, and shows the picked text
+// subtitle as a `<track>` from the session's WebVTT URL.
 export const TRY_PAGE = `<!doctype html>
 <html lang="en">
 <head>
@@ -12,6 +16,7 @@ export const TRY_PAGE = `<!doctype html>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="referrer" content="no-referrer">
 <title>highsea playback test</title>
+<script src="/stream/try/hls.js"></script>
 <style>
   :root { color-scheme: light dark; font: 15px/1.45 system-ui, sans-serif; }
   body { margin: 0 auto; max-width: 1100px; padding: 16px; }
@@ -89,7 +94,7 @@ $('profile').value = /Firefox\\//.test(ua) ? 'web-firefox'
   : /Safari\\//.test(ua) && !/Chrom(e|ium)\\//.test(ua) ? 'web-safari'
   : /Macintosh/.test(ua) ? 'web-chromium-macos' : 'web-chromium'
 
-let film = null, detail = null, session = null, timer = null
+let film = null, detail = null, session = null, timer = null, hls = null
 
 async function loadFilms() {
   try {
@@ -169,15 +174,30 @@ $('play').onclick = async () => {
   $('method').textContent = d.method + (d.bitrate ? ' · ' + (d.bitrate / 1e6).toFixed(1) + ' Mbps' : '')
   $('reasons').replaceChildren(...d.reasons.map((r) => { const li = document.createElement('li'); li.className = r.kind; li.textContent = r.message + ' (' + r.code + ')'; return li }))
   $('stop').disabled = false
-  if (!session.url) return say('This film needs HLS, which comes with 4.1b.')
+  if (!session.url) return say('This device can’t play this film.')
   const video = $('video')
-  video.src = session.url
-  video.currentTime = session.start
+  const picked = session.subtitles.find((t) => t.id === $('subtitle').value)
+  if (picked && picked.url) {
+    const track = document.createElement('track')
+    track.kind = 'subtitles'
+    track.src = picked.url
+    track.default = true
+    video.append(track)
+  }
+  if (d.method === 'direct-play' || (!window.Hls?.isSupported() && video.canPlayType('application/vnd.apple.mpegurl'))) {
+    video.src = session.url
+    video.currentTime = session.start
+  } else if (window.Hls?.isSupported()) {
+    // hls.js's own options: start where the session does (https://github.com/video-dev/hls.js/blob/master/docs/API.md#startposition)
+    hls = new Hls({ startPosition: session.start })
+    hls.on(Hls.Events.ERROR, (_, data) => { if (data.fatal) say('This film didn’t start: ' + data.details) })
+    hls.loadSource(session.url)
+    hls.attachMedia(video)
+  } else return say('This browser plays neither HLS nor Media Source Extensions.')
   video.play().catch(() => {})
   timer = setInterval(report, 10_000)
-  // 4.1a has no subtitle URL: WebVTT comes with 4.1b (the plan's Subtitles section)
-  const subs = $('subtitle').value ? ' Subtitles come with 4.1b, so it plays without them.' : ''
-  say('Playing from ' + Math.round(session.start) + ' s.' + subs)
+  const subs = picked && !picked.url ? ' That subtitle is a picture track, which this page can’t show.' : ''
+  say((d.method === 'direct-play' ? 'Playing' : 'Streaming') + ' from ' + Math.round(session.start) + ' s.' + subs)
 }
 
 async function report() {
@@ -199,7 +219,9 @@ async function stop() {
   $('stop').disabled = true
   try { await api('DELETE', '/playback/sessions/' + s.id) } catch {}
   const video = $('video')
+  if (hls) { hls.destroy(); hls = null }
   video.removeAttribute('src')
+  video.replaceChildren()
   video.load()
   await showSaved()
 }
