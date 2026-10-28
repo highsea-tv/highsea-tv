@@ -164,7 +164,10 @@ jobs:
       # arm64 to the same packages (arm64 measured at 2078 MB in all). ffmpeg 7.1 brings LLVM 19 and
       # Mesa's Gallium, and unar's libgnustep-base1.31 declares `Depends: dpkg-dev`, which brings
       # Perl, binutils and make (apt-cache show libgnustep-base1.31)
-      IMAGE_BUDGET_MB: 2200
+      # 2026-10-28, 2200 to 2300 (checkpoint 4.3b, the owner's answer 3): the hardware drivers on
+      # amd64, about 134 MB measured in a trixie container: Intel's media driver (42 MB), libmfx-gen
+      # (8.7 MB), libvpl and Mesa's VAAPI driver, and Mesa's Vulkan drivers (83 MB) for libplacebo
+      IMAGE_BUDGET_MB: 2300
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
@@ -207,6 +210,8 @@ jobs:
           test "$(docker inspect --format '{{.State.ExitCode}}' highsea)" = 0
       - name: Its size and largest folders
         run: bun scripts/image.ts size highsea:ci "$IMAGE_BUDGET_MB"
+      - name: Its hardware encoders, filters and drivers
+        run: bun scripts/image.ts hardware highsea:ci
       # The same build again from the cache, exported as an OCI layout with what a release pushes:
       # BuildKit's provenance (mode=min, its default) and the SBOM, which is opt-in
       # (https://docs.docker.com/build/metadata/attestations/). `tar=false` writes a folder

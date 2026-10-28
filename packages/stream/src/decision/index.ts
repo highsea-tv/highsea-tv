@@ -273,7 +273,9 @@ export function decide(input: DecisionInput): PlaybackDecision {
         videoCopy = false
         toSdr = true
         say('rejected', 'hdr.unsupported', { client, hdr })
-        if (!server.toneMapping) say('warning', 'hdr.washedOut')
+        // tone mapped where the runner finds it can (4.3b, `toneMapOn`); without, only relabelled
+        if (server.toneMapping) say('accepted', 'hdr.toneMapped', { hdr })
+        else say('warning', 'hdr.washedOut')
       }
     }
   }

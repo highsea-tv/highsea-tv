@@ -10,6 +10,7 @@ import { createReplayFetch, type ReplayFetch } from '@highsea-tv/metadata/replay
 import { createFakeNotifications } from '@highsea-tv/notifications/fake'
 import {
   type BootOptions,
+  bareHost,
   boot,
   getRuntime,
   hasRuntime,
@@ -62,6 +63,8 @@ export async function bootRuntime(
     indexerTimeoutMs: 2000,
     // no torrent opens a socket: grabs are added, nothing downloads
     torrent: { offline: true },
+    // no GPU, whatever this machine has, so the status reads the same everywhere
+    hardware: bareHost(),
     importing: options.importing,
     subtitles: options.subtitles,
     lists: options.lists,

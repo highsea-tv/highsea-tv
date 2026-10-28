@@ -373,6 +373,17 @@ The owner asked on 2026-10-20 for the admin dashboard to be as customizable as [
 
 It follows Phase 3's sign-off, with its new customize mode prototyped and approved first. The plan is [plans/dashboard-customization.md](plans/dashboard-customization.md).
 
+## Follow-up: installing with nothing to configure (Phase 4 and after)
+The owner asked on 2026-10-28 for installing and setting up highsea, the server and the apps, to need as little configuration as possible: no edits to compose files, the graphics chip handed over and used by itself, and all-in-one apps for NAS systems. The scope, from research, is [plans/install-simplicity.md](plans/install-simplicity.md):
+- a compose file and templates that work with no edits, GPU included;
+- setup asking only what highsea can't detect;
+- listings in Unraid's, TrueNAS's, Umbrel's and CasaOS's stores, and a one-line `install.sh`;
+- a Synology package that runs the container;
+- the apps finding the server and pairing without typing;
+- native server installers after 1.0.
+
+Approved with the owner's answers of 2026-10-28: A to C are checkpoint 4.3c, after 4.3b and before the desktop app; highsea ships its own TMDB key.
+
 ## Phase 4 (later): clients
 `ui-native`, then `apps/web` → `apps/desktop` (Tauri) → `apps/mobile` + `apps/tv` (Expo / react-native-tvos), built from the Phase 2 prototypes. Alongside them: `stream` (playback/transcode, WebSockets), TV/music/books domains, Usenet, requests, and the optional Connect relay.
 

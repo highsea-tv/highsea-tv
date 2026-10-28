@@ -30,5 +30,10 @@ services:
       - "6881:6881/tcp"
       - "6881:6881/udp"
       - "7368:7368/udp"
+    # Hardware acceleration (Settings › Playback), on a model with Intel graphics (the + models
+    # with a Celeron or Pentium, such as the DS920+ and DS1520+): pass it through, then press Check
+    # there. highsea joins the device's group by itself.
+    # devices:
+    #   - /dev/dri:/dev/dri
     # a restore in System › Backups restarts highsea by exiting with code 75 (ADR 0047)
     restart: unless-stopped

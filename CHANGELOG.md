@@ -7,6 +7,24 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.2.0-beta.2] - 2026-10-28
+
+### Added
+
+- Hardware acceleration: highsea transcodes on Intel and AMD graphics (VAAPI and Intel Quick Sync), NVIDIA graphics (NVENC) and a Mac's own graphics (VideoToolbox). If the chip fails partway through a film, the processor makes the rest.
+- highsea checks the graphics it finds by itself when it starts, and uses one only after its check passes. Settings › Playback shows what it found and lets you change it.
+- HDR films are converted for screens that can't show HDR, on the graphics chip where it can, so their colours look right.
+- The image has Intel's and AMD's drivers on amd64, and joins the graphics device's group by itself when `/dev/dri` is passed through. The compose files and NAS templates have the lines for it, commented out, and the install guides have a page on it.
+- Now playing, in the admin and as a dashboard widget: who is watching what, how each stream is sent and why, what made it, and the last 30 days. The Owner and Admins can stop a stream with a message.
+- Settings › Playback: how many transcodes run at once, the encoder's speed, the most sent to someone away from home, and the cache's folder and limit.
+- Picture subtitles and styled ASS subtitles that a browser can't draw are drawn into the picture.
+- A Playback started notification, off until it's ticked for a connection.
+
+### Changed
+
+- 5.1 and 7.1 sound made into stereo keeps dialogue at the level the mix intended.
+- The image is larger on amd64, by about 135 MB, for the graphics drivers.
+
 ## [0.2.0-beta.1] - 2026-10-28
 
 ### Added
@@ -46,6 +64,9 @@ While highsea is at 0.x, any release may change how something works. When one do
 - Images for amd64 and arm64 at `ghcr.io/highsea-tv/highsea`, with compose files and templates for Unraid, TrueNAS and Synology.
 
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.2.0-beta.1...HEAD
+
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.2.0-beta.2...HEAD
+[0.2.0-beta.2]: https://github.com/highsea-tv/highsea-tv/compare/v0.2.0-beta.1...v0.2.0-beta.2
 [0.2.0-beta.1]: https://github.com/highsea-tv/highsea-tv/compare/v0.1.0...v0.2.0-beta.1
 [0.1.0]: https://github.com/highsea-tv/highsea-tv/releases/tag/v0.1.0

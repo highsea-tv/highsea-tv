@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Settings › Playback (checkpoint 4.3a), rendered against a fake of the API: the three groups and
-// their saving, the numbers and the folder checked here and by the server, the cache's use and its
-// warning over the limit, and Clear. The shell and Next's router are stood in for.
+// Settings › Playback (checkpoints 4.3a and 4.3b), rendered against a fake of the API: the groups
+// and their saving, the numbers and the folder checked here and by the server, the cache's use and
+// its warning over the limit, and Clear; hardware acceleration with nothing found, a path found and
+// checked, one in use, a failed check, and Use and tone mapping saved. The shell and Next's router are stood in for.
 import './dom.ts'
-import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
+import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import type { ReactNode } from 'react'
 
 mock.module('next/navigation', () => ({
@@ -25,12 +26,22 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui-web')
+const { toast, TooltipProvider } = await import('@highsea-tv/ui-web')
 const { PlaybackSettingsPage } = await import('../src/admin/playback.tsx')
 
 const GB = 1e9
+type Path = {
+  id: string
+  device: string | null
+  name: string | null
+  check: { result: 'pass' | 'fail'; fps: number | null; detail: string; at: string } | null
+  unavailable: string | null
+  checking: boolean
+}
 type State = {
   settings: Record<string, unknown>
+  paths: Path[]
+  inUse: string | null
   cache: { transcodeBytes: number; trickplayBytes: number; limitBytes: number; over: boolean }
   failSettings: boolean
   requests: { method: string; path: string; body?: unknown }[]
@@ -40,7 +51,7 @@ let state: State
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
 
-const status = () => ({ paths: [], inUse: null, cache: state.cache })
+const status = () => ({ paths: state.paths, inUse: state.inUse, cache: state.cache })
 
 async function api(url: string, init: RequestInit = {}): Promise<Response> {
   const u = new URL(url, 'http://localhost')
@@ -69,6 +80,11 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
       return json(body)
     case 'GET /api/v1/playback/status':
       return json(status())
+    case 'POST /api/v1/playback/checks/vaapi':
+      state.paths = state.paths.map((p) => (p.id === 'vaapi' ? { ...p, checking: true } : p))
+      return json(status())
+    case 'POST /api/v1/playback/checks/qsv':
+      return json({ error: { code: 'conflict', message: 'A check is already running.' } }, 409)
     case 'DELETE /api/v1/playback/cache':
       state.cache = { ...state.cache, transcodeBytes: 0, over: false }
       return json(status())
@@ -93,10 +109,30 @@ beforeEach(() => {
       limitBytes: 20 * GB,
       over: false,
     },
+    paths: none(),
+    inUse: null,
     failSettings: false,
     requests: [],
   }
 })
+
+const path = (id: string, over: Partial<Path> = {}): Path => ({
+  id,
+  device: null,
+  name: null,
+  check: null,
+  unavailable: null,
+  checking: false,
+  ...over,
+})
+const none = () => [
+  path('vaapi', { unavailable: 'No /dev/dri in the container.' }),
+  path('qsv', { unavailable: 'No /dev/dri in the container.' }),
+  path('nvenc', { unavailable: 'No NVIDIA GPU in the container.' }),
+  path('videotoolbox', { unavailable: 'Only when highsea runs on a Mac, outside Docker.' }),
+]
+const intel = { device: '/dev/dri/renderD128', name: 'Intel graphics (iHD 24.1.0)' }
+const twoDaysAgo = () => new Date(Date.now() - 2 * 86_400_000).toISOString()
 afterEach(() => cleanup())
 
 const settle = () =>
@@ -128,10 +164,8 @@ describe('Settings › Playback', () => {
   test('Transcoding, Away from home and Cache, saved through the Save bar', async () => {
     const { page, user } = await open()
     expect(page.getByRole('heading', { name: 'Playback' })).toBeTruthy()
-    for (const name of ['Transcoding', 'Away from home', 'Cache'])
+    for (const name of ['Hardware acceleration', 'Transcoding', 'Away from home', 'Cache'])
       expect(page.getByRole('region', { name })).toBeTruthy()
-    // hardware acceleration is 4.3b's
-    expect(page.queryByRole('region', { name: 'Hardware acceleration' })).toBeNull()
     expect(
       page.getByText('Sharp pictures that start quickly. Right for most servers.'),
     ).toBeTruthy()
@@ -181,6 +215,98 @@ describe('Settings › Playback', () => {
     await user.click(within(cache).getByRole('button', { name: 'Clear transcodes' }))
     await settle()
     expect(state.requests.some((r) => r.method === 'DELETE')).toBe(true)
+  })
+
+  test('no graphics chip: every path says why, with the lines to pass one through', async () => {
+    const { page } = await open()
+    const hw = within(page.getByRole('region', { name: 'Hardware acceleration' }))
+    expect(hw.getByText('Transcoding with the processor, for now')).toBeTruthy()
+    expect(hw.getByText(/found no graphics chip it can use/)).toBeTruthy()
+    const found = within(hw.getByRole('list', { name: 'What highsea found' }))
+    expect(found.getAllByRole('listitem')).toHaveLength(4)
+    expect(found.getAllByLabelText('Not here')).toHaveLength(4)
+    expect(found.queryByRole('button', { name: 'Check' })).toBeNull()
+    expect(
+      hw.getByRole('figure', { name: 'Compose lines for Intel and AMD' }).textContent,
+    ).toContain('/dev/dri:/dev/dri')
+    expect(hw.getByRole('figure', { name: 'Compose lines for NVIDIA' })).toBeTruthy()
+    expect(
+      hw.getByRole('link', { name: /Hardware acceleration in the guide/ }).getAttribute('href'),
+    ).toBe('https://docs.highsea.tv/install/hardware-acceleration/')
+  })
+
+  test('a path found and not checked; Check starts it, and a refusal says why', async () => {
+    state.paths = [path('vaapi', intel), path('qsv', intel), ...none().slice(2)]
+    const { page, user } = await open()
+    const hw = within(page.getByRole('region', { name: 'Hardware acceleration' }))
+    expect(hw.getByText(/checks the graphics it finds by itself/)).toBeTruthy()
+    expect(hw.queryByRole('figure')).toBeNull()
+    const items = within(hw.getByRole('list')).getAllByRole('listitem')
+    const vaapi = within(items[0] as HTMLElement)
+    expect(vaapi.getByText('Intel graphics (iHD 24.1.0)')).toBeTruthy()
+    expect(vaapi.getByText('/dev/dri/renderD128')).toBeTruthy()
+    expect(
+      vaapi.getByText('Intel and AMD graphics on Linux, through /dev/dri. Not checked yet.'),
+    ).toBeTruthy()
+    await user.click(vaapi.getByRole('button', { name: 'Check' }))
+    await settle()
+    expect(state.requests.some((r) => r.path === '/api/v1/playback/checks/vaapi')).toBe(true)
+
+    const failed = spyOn(toast, 'error')
+    await user.click(within(items[1] as HTMLElement).getByRole('button', { name: 'Check' }))
+    await settle()
+    expect(failed).toHaveBeenCalledWith('Couldn’t check it', {
+      description: 'A check is already running.',
+    })
+    failed.mockRestore()
+  })
+
+  test('a path in use, a failed one, and Use and tone mapping saved', async () => {
+    state.paths = [
+      path('vaapi', {
+        ...intel,
+        check: {
+          result: 'pass',
+          fps: 286,
+          detail: 'Decodes 10-bit HEVC and encodes H.264. Tone maps HDR on the graphics chip.',
+          at: twoDaysAgo(),
+        },
+      }),
+      path('qsv', {
+        ...intel,
+        check: {
+          result: 'fail',
+          fps: null,
+          detail: 'The Intel media driver didn’t load, so ffmpeg couldn’t open the GPU.',
+          at: twoDaysAgo(),
+        },
+      }),
+      ...none().slice(2),
+    ]
+    state.inUse = 'vaapi'
+    const { page, user } = await open()
+    const hw = within(page.getByRole('region', { name: 'Hardware acceleration' }))
+    expect(hw.getByText('Transcoding with VAAPI')).toBeTruthy()
+    expect(
+      hw.getByText('Intel graphics (iHD 24.1.0). Its check passed, so highsea uses it.'),
+    ).toBeTruthy()
+    const [vaapi, qsv] = within(hw.getByRole('list')).getAllByRole('listitem') as HTMLElement[]
+    expect(within(vaapi as HTMLElement).getByText('In use')).toBeTruthy()
+    expect(
+      within(vaapi as HTMLElement).getByText(
+        '286 frames a second, checked 2 days ago. Decodes 10-bit HEVC and encodes H.264. Tone maps HDR on the graphics chip.',
+      ),
+    ).toBeTruthy()
+    expect(within(vaapi as HTMLElement).getByRole('button', { name: 'Check again' })).toBeTruthy()
+    expect(within(qsv as HTMLElement).getByLabelText('Failed')).toBeTruthy()
+    expect(
+      within(qsv as HTMLElement).getByText(/^Failed 2 days ago. The Intel media driver/),
+    ).toBeTruthy()
+
+    await user.click(hw.getByRole('switch', { name: /Convert HDR/ }))
+    await user.click(page.getByRole('button', { name: 'Save' }))
+    await settle()
+    expect(puts()).toEqual([{ ...state.settings, toneMapping: false }])
   })
 
   test('an error loading says so, with Try again', async () => {

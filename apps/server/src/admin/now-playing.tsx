@@ -7,7 +7,8 @@
 // - a transcode waiting for a free slot shows **Waiting**, with a line saying why;
 // - a transcode's speed is unknown for its first seconds, so it reads "starting";
 // - a title that has left the library has no link, and a film of unknown length no runtime;
-// - the processor transcodes everything until 4.3b's hardware paths;
+// - a transcode names the hardware path it runs on (4.3b), or the processor, and says so when the
+//   graphics chip failed partway and the processor took over;
 // - Downloads come with the apps that make them, so there's no Cancel yet.
 import {
   type DeliveryMethod,

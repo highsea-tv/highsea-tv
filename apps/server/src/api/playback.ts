@@ -128,6 +128,13 @@ export function registerPlayback(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.playback.status, async (c) => c.json(await settings(c).status(), 200))
 
+  app.openapi(routes.playback.check, async (c) => {
+    const { path } = c.req.valid('param')
+    const status = await settings(c).check(path)
+    audit(c, `playback.check.${path}`)
+    return c.json(status, 200)
+  })
+
   app.openapi(routes.playback.clearCache, async (c) => {
     const status = await settings(c).clearCache()
     audit(c, 'playback.cache-cleared')

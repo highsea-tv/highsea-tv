@@ -6,6 +6,7 @@
   "type": "module",
   "exports": {
     "./decision": "./src/decision/index.ts",
+    "./hardware": "./src/hardware/index.ts",
     "./hls": "./src/hls/index.ts",
     "./profiles": "./src/profiles/index.ts",
     "./sessions": "./src/sessions/index.ts",

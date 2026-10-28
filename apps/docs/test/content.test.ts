@@ -67,6 +67,7 @@ describe('the guides', () => {
       'indexers/index',
       'indexers/search-results',
       'install/docker',
+      'install/hardware-acceleration',
       'install/index',
       'install/prerequisites',
       'install/synology',

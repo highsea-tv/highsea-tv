@@ -12,8 +12,10 @@ The replaying `fetch` (`@highsea-tv/metadata/replay`) serves them, answers image
 **These files weren't recorded from TMDB's API.** There was no TMDB key on the machine that built checkpoint 4, so they were written by hand in exactly the recorded format, following TMDB's documented response schemas ([API reference](https://developer.themoviedb.org/reference)). They stay hand-built until the owner runs, in `packages/metadata`:
 
 ```sh
-TMDB_READ_TOKEN=… bun run record:tmdb    # or TMDB_API_KEY=…
+bun run record:tmdb    # reads HIGHSEA_TMDB_READ_TOKEN from the repository's .env.local, or the shell
 ```
+
+`TMDB_READ_TOKEN` or `TMDB_API_KEY` work too, and a value set in the shell wins over `.env.local`.
 
 That asks TMDB again for every request here and rewrites each file with TMDB's real answer.
 

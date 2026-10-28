@@ -38,7 +38,9 @@ import {
   type SubtitlePick,
   type SubtitlePlan,
 } from '@highsea-tv/stream/decision'
+import { toneMapOn } from '@highsea-tv/stream/hardware'
 import {
+  type Hardware,
   type HlsSource,
   mediaPlaylist,
   multivariantPlaylist,
@@ -92,6 +94,7 @@ const seesMovies = (libraries: 'all' | string[]) =>
 
 const notHere = () => new AppError('not-found', 'That movie isn’t in the library.')
 const noSession = () => new AppError('not-found', 'That play session has ended.')
+const NO_HARDWARE: Hardware = { accel: null, toneMapping: false, cpuToneMap: false }
 
 export function createPlayback(deps: {
   db: Db
@@ -115,9 +118,16 @@ export function createPlayback(deps: {
   trickplay: Pick<Trickplay, 'manifest' | 'sheet'>
   /** Now playing (4.3a): hears sessions start, move and end. */
   hooks?: NowPlayingService['hooks']
+  /** The path transcodes take and tone mapping (4.3b, ADR 0056); the processor without. */
+  hardware?: () => Hardware
 }) {
   const { db, clock, events, movies, transcodes } = deps
   const log = deps.logger.child('playback')
+  /** Whether a film with this HDR is tone mapped here, as the runner will (`toneMapOn`). */
+  const toneMaps = (hdr: string) => {
+    const hw = deps.hardware?.() ?? NO_HARDWARE
+    return hw.toneMapping && toneMapOn(hdr, hw.accel, hw.cpuToneMap) !== null
+  }
   const home = parseTrustedProxies(PRIVATE_RANGES.join(',')).trusted
   /** Sessions staff stopped: who and why, for the player's next report. */
   const notices = new Map<
@@ -353,7 +363,8 @@ export function createPlayback(deps: {
       audio,
       subtitle,
       ceiling: home.has(address) ? null : deps.ceiling(),
-      server: { burnIn: true, toneMapping: false },
+      // tone mapped when it's on and something here can: the path in use, or the processor (4.3b)
+      server: { burnIn: true, toneMapping: toneMaps(info.video?.hdr ?? 'none') },
       locale,
     }
     const decision = decide(input)
@@ -386,7 +397,14 @@ export function createPlayback(deps: {
       duration: src.duration ?? 0,
       decision,
       video: video
-        ? { index: video.index, codec: video.codec, width: video.width, height: video.height }
+        ? {
+            index: video.index,
+            codec: video.codec,
+            width: video.width,
+            height: video.height,
+            hdr: video.hdr,
+            bitDepth: video.bitDepth,
+          }
         : null,
       start,
       keyframes: () => (video ? keyframes(src.file, video.index) : Promise.resolve([])),

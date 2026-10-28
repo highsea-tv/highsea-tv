@@ -26,6 +26,9 @@ export const streamMessages = defineMessages({
   'hdr.fallback': '{client} can’t show {hdr}, and plays its {fallback} layer',
   'hdr.unsupported': '{client} can’t show {hdr}',
   'hdr.washedOut': 'Made into SDR without tone mapping, so the colours look washed out',
+  'hdr.toneMapped': 'Converted from {hdr} to SDR for this screen',
+  // Hardware (4.3b): said by Now playing, not the decision
+  'transcode.fellBack': 'The graphics chip failed partway, so the processor makes the rest',
   // The bitrate
   'bitrate.over': '{bitrate} is over the limit of {limit}',
   'bitrate.height': '{height}p is over the limit of {limit}p',

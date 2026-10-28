@@ -67,6 +67,8 @@ export async function boot(port: number, { production = false } = {}) {
       HIGHSEA_TMDB_REPLAY: '1',
       // the engine opens no socket: grabs join the queue, nothing downloads, nothing reaches the network
       HIGHSEA_TORRENT_OFFLINE: '1',
+      // no graphics chip, whatever this machine has; HIGHSEA_HARDWARE_NONE=0 looks for the real one
+      HIGHSEA_HARDWARE_NONE: process.env.HIGHSEA_HARDWARE_NONE ?? '1',
       // the subtitle providers are the fakes in packages/subtitles: no accounts, no network
       HIGHSEA_SUBTITLES_FAKE: '1',
     },

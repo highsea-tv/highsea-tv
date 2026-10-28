@@ -51,3 +51,7 @@ Prior art: Jellyfin's `DeviceProfile` ([jellyfin/MediaBrowser.Model/Dlna/DeviceP
 - The decision takes what the server can do, `server: { burnIn, toneMapping }`, so a client's profile stays what the client plays and the server's abilities are said once. 4.3a sets `burnIn`; tone mapping is 4.3b's.
 - A subtitle's `delivery` is `external`, `embedded`, `burn-in` or `unavailable`. A picture track of the film's own, or ASS the client can't draw, is `burn-in` when the server can, which forces a transcode, and the reasons say so: "{client} can't draw {format} subtitles, so they're burned into the picture". Without burn-in, ASS is sent as WebVTT without its styling, and a picture track is unavailable, as in 4.1.
 - The play API gives each track's delivery, so a client lists a burned-in track as choosable, loads no `<track>` for it, and leaves out its timing with a line saying why (the plan's answer 6).
+
+## 2026-10-28: tone mapping in the decision (checkpoint 4.3b)
+
+With Convert HDR on (Settings › Playback, ADR 0056), HDR sent to a screen that can't show it becomes an accepted reason, "Converted from {hdr} to SDR for this screen", in place of 4.1's "looks washed out" warning, which stays for when it's off or nothing here can tone map that kind of HDR (Dolby Vision profile 5 on the processor or VideoToolbox). The decision is told by the runtime (`server.toneMapping`), since what can be tone mapped depends on the host's paths and filters, which the pure decision doesn't know.

@@ -2,7 +2,7 @@
 // Settings › Playback through the SDK (checkpoint 4.3a): the defaults, saving for the owner and
 // admins and nobody else, the checks on the cache's folder (a full path, writable, outside the
 // library and the downloads), the folder new streams use, the status and Clear, the remote
-// ceilings, and `playback.updated` held back from people who aren't staff.
+// ceilings, a hardware path's check (4.3b), and `playback.updated` held back from people who aren't staff.
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -92,8 +92,17 @@ describe('Settings › Playback', () => {
   test('the status and Clear, for staff', async () => {
     const { admin, user } = await started()
     const status = await admin.playback.status()
+    // the test host has no GPU (bareHost), so every path says why
     expect(status).toEqual({
-      paths: [],
+      paths: [
+        { id: 'vaapi' as const, unavailable: 'No /dev/dri in the container.' },
+        { id: 'qsv' as const, unavailable: 'No /dev/dri in the container.' },
+        { id: 'nvenc' as const, unavailable: 'No NVIDIA GPU in the container.' },
+        {
+          id: 'videotoolbox' as const,
+          unavailable: 'Only when highsea runs on a Mac, outside Docker.',
+        },
+      ].map((p) => ({ ...p, name: null, device: null, check: null, checking: false })),
       inUse: null,
       cache: { transcodeBytes: 0, trickplayBytes: 0, limitBytes: 20e9, over: false },
     })
@@ -101,6 +110,16 @@ describe('Settings › Playback', () => {
     expect(await failure(user.playback.status())).toMatchObject({ code: 'forbidden' })
     expect(await failure(user.playback.clearCache())).toMatchObject({ code: 'forbidden' })
     expect(STAFF_TOPICS).toContain('playback.updated')
+  })
+
+  test('a check: staff only, and not on a path this host can’t use (4.3b)', async () => {
+    const { admin, user } = await started()
+    expect(await failure(admin.playback.check({ params: { path: 'vaapi' } }))).toMatchObject({
+      code: 'conflict',
+    })
+    expect(await failure(user.playback.check({ params: { path: 'vaapi' } }))).toMatchObject({
+      code: 'forbidden',
+    })
   })
 
   test('each remote ceiling’s bitrate and picture', () => {

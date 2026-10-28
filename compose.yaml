@@ -27,6 +27,18 @@ services:
       # one folder for downloads and the library, on one disk, so imports can hardlink instead of
       # copying: change ./data to where your films live
       - ./data:/data
+    # Hardware acceleration (Settings › Playback): pass Intel or AMD graphics through, then press
+    # Check there. highsea joins the device's group by itself.
+    # devices:
+    #   - /dev/dri:/dev/dri
+    # NVIDIA, after NVIDIA's container toolkit is installed on the host:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu, video]
     # a restore in System › Backups restarts highsea by exiting with code 75; this brings it back
     # (ADR 0047), and so does a reboot
     restart: unless-stopped

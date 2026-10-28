@@ -11,13 +11,16 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { hasFfmpeg } from '@highsea-tv/media/testing'
 import type { PlaybackDecision } from '../src/decision/index.ts'
+import { type Accel, clipArgs, parseList, probeArgs } from '../src/hardware/index.ts'
 import {
   createTranscodes,
   downmixFilter,
+  type Hardware,
   type HlsSource,
   type Limits,
   readKeyframes,
   type Spawn,
+  type Transcode,
   TranscodeError,
   type Transcodes,
   type TranscodesOptions,
@@ -615,5 +618,160 @@ describe.skipIf(!hasFfmpeg)('subtitles burned in, and the downmix, with ffmpeg (
     expectLevels(rms(`pan=7.1|SR=c0,${seven}`), [0.194316, 0.336565])
     expectLevels(rms(`pan=7.1|BL=c0,${seven}`), [0.336565, 0.194316])
     expectLevels(rms(`pan=7.1|FR=c0,${seven}`), [null, 0.388631])
+  })
+})
+
+const filters = hasFfmpeg
+  ? parseList(execFileSync(ffmpeg, ['-hide_banner', '-filters']).toString())
+  : new Set<string>()
+const hasZscale = filters.has('zscale') && filters.has('tonemap')
+if (hasFfmpeg && !hasZscale)
+  console.warn('This ffmpeg has no zscale, so the test of the processor’s tone mapping is skipped.')
+/** VideoToolbox: on a Mac whose ffmpeg has it, as highsea runs outside Docker (4.3's answer 4). */
+const hasVideoToolbox =
+  hasFfmpeg &&
+  process.platform === 'darwin' &&
+  filters.has('scale_vt') &&
+  Bun.spawnSync([ffmpeg, ...probeArgs('videotoolbox', null)]).exitCode === 0
+if (hasFfmpeg && !hasVideoToolbox)
+  console.warn('No VideoToolbox here, so the tests that transcode on it are skipped.')
+
+describe.skipIf(!hasFfmpeg)('hardware and tone mapping, with ffmpeg (4.3b)', () => {
+  let dir: string
+  let hdr: string
+  const W = 640
+  const H = 360
+  const BOX = { x: 220, y: 280, w: 200, h: 40 }
+  const failures: string[] = []
+
+  beforeAll(() => {
+    dir = mkdtempSync(join(tmpdir(), 'highsea-hw-'))
+    hdr = join(dir, 'hdr.mkv')
+    const sup = join(dir, 'box.sup')
+    writeFileSync(sup, pgsBox({ width: W, height: H, ...BOX, from: 0.5, to: 4 }))
+    // HDR10 as the check's clip is, small, with a PGS track as stream 1
+    const made = join(dir, 'hdr-video.mkv')
+    execFileSync(ffmpeg, clipArgs(made, { width: W, height: H, fps: 24, seconds: 14 }))
+    execFileSync(ffmpeg, [
+      ...['-v', 'error', '-y', '-i', made, '-i', sup, '-map', '0:v', '-map', '1:s'],
+      ...['-c', 'copy', hdr],
+    ])
+  })
+  afterAll(() => rmSync(dir, { recursive: true, force: true }))
+
+  const make = (hardware: () => Hardware) =>
+    createTranscodes({
+      root: join(dir, 'transcodes'),
+      ffmpeg,
+      ffprobe,
+      logger: { info: () => {}, warn: () => {}, error: () => {} },
+      hardware,
+      onHardwareFailure: (path) => failures.push(path),
+    })
+
+  const source = (burnIn: HlsSource['burnIn'] = null): HlsSource => ({
+    input: hdr,
+    duration: 14,
+    decision: {
+      ...decision({
+        action: 'transcode',
+        codec: 'h264',
+        height: H,
+        bitrate: 2_000_000,
+        toSdr: true,
+      }),
+      audio: null,
+    },
+    video: { index: 0, codec: 'hevc', width: W, height: H, hdr: 'hdr10', bitDepth: 10 },
+    start: 0,
+    keyframes: () => readKeyframes(ffprobe, hdr, 0),
+    burnIn,
+  })
+
+  /** The colour properties of the picture in a session's pieces. */
+  const colours = (t: Transcode, files: string[]) => {
+    const joined = join(t.dir, 'joined.mp4')
+    writeFileSync(
+      joined,
+      Buffer.concat([join(t.dir, 'header.mp4'), ...files].map((f) => readFileSync(f))),
+    )
+    return execFileSync(ffprobe, [
+      ...['-v', 'error', '-select_streams', 'v', '-show_entries'],
+      ...['stream=pix_fmt,color_transfer,color_primaries', '-of', 'csv=p=0', joined],
+    ])
+      .toString()
+      .trim()
+      .replace(/,+$/, '')
+  }
+
+  test.skipIf(!hasZscale)('the processor tone maps HDR10 to SDR with zscale', async () => {
+    const set = make(() => ({ accel: null, toneMapping: true, cpuToneMap: true }))
+    const t = set.open('cpu', source())
+    const files = await t.segment(0)
+    await t.init()
+    expect(colours(t, files)).toBe('yuv420p,bt709,bt709')
+    expect(t.hardware()).toBeNull()
+    await set.close()
+  })
+
+  test('a run on a GPU that fails goes on on the processor at the same piece', async () => {
+    failures.length = 0
+    // no CUDA device here: the run fails at once
+    const nvenc: Accel = {
+      path: 'nvenc',
+      vendor: 'nvidia',
+      device: null,
+      lowPower: false,
+      toneMap: false,
+    }
+    const set = make(() => ({ accel: nvenc, toneMapping: false, cpuToneMap: false }))
+    const t = set.open('fallback', source())
+    const files = await t.segment(0)
+    expect(files).toHaveLength(1)
+    expect(failures).toEqual(['nvenc'])
+    expect(t.fellBack()).toBe(true)
+    expect(t.hardware()).toBeNull()
+    // and stays there for the session
+    expect(await t.segment(2)).toHaveLength(1)
+    expect(failures).toEqual(['nvenc'])
+    await set.close()
+  })
+
+  describe.skipIf(!hasVideoToolbox)('on VideoToolbox', () => {
+    const vt: Accel = {
+      path: 'videotoolbox',
+      vendor: 'apple',
+      device: null,
+      lowPower: false,
+      toneMap: true,
+    }
+    const onVt = () => make(() => ({ accel: vt, toneMapping: true, cpuToneMap: false }))
+
+    test('tone maps on the GPU, with a keyframe every 6 s and none between', async () => {
+      const set = onVt()
+      const t = set.open('vt', source())
+      const files = [...(await t.segment(0)), ...(await t.segment(1))]
+      await t.init()
+      expect(t.hardware()).toBe('videotoolbox')
+      expect(colours(t, files)).toBe('yuv420p,bt709,bt709')
+      const keys = packets(t.dir, files)
+        .filter((p) => p.key)
+        .map((p) => Math.round(p.pts))
+      expect(keys).toEqual([0, 6])
+      expect(failures).not.toContain('videotoolbox')
+      await set.close()
+    })
+
+    test('lays a PGS track over the picture after it comes down from the GPU', async () => {
+      const set = onVt()
+      const t = set.open('vt-pgs', source({ kind: 'picture', index: 1 }))
+      const files = await t.segment(0)
+      await t.init()
+      expect(t.fellBack()).toBe(false)
+      const shown = frameAt(t.dir, files, 1)
+      expect(brightness(shown, W, BOX)).toBeGreaterThan(200)
+      expect(brightness(frameAt(t.dir, files, 5), W, BOX)).toBeLessThan(200)
+      await set.close()
+    })
   })
 })

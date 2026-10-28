@@ -7,7 +7,7 @@ import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Fetch } from '@highsea-tv/core'
 import { loadCertificate } from '@highsea-tv/network'
-import { boot, loadConfig, RESTART_EXIT_CODE } from '@highsea-tv/runtime'
+import { bareHost, boot, loadConfig, RESTART_EXIT_CODE } from '@highsea-tv/runtime'
 import next from 'next'
 import pkg from './package.json' with { type: 'json' }
 import { createApi } from './src/api/app.ts'
@@ -23,6 +23,9 @@ const runtime = await boot({
   fetch: await outsideFetch(),
   // HIGHSEA_TORRENT_OFFLINE=1: the engine opens no socket, for the browser sweeps (no network)
   torrent: process.env.HIGHSEA_TORRENT_OFFLINE === '1' ? { offline: true } : undefined,
+  // HIGHSEA_HARDWARE_NONE=1: no graphics chip is looked for, so the sweeps and the guides'
+  // screenshots read the same on every machine
+  hardware: process.env.HIGHSEA_HARDWARE_NONE === '1' ? bareHost() : undefined,
   subtitles: await fakeSubtitles(),
   lists: await fakeLists(),
   restart: () => void stop('restart', RESTART_EXIT_CODE),
@@ -37,6 +40,8 @@ if (process.env.HIGHSEA_TMDB_REPLAY === '1')
   log.warn('TMDB answers come from recordings', { env: 'HIGHSEA_TMDB_REPLAY' })
 if (process.env.HIGHSEA_TORRENT_OFFLINE === '1')
   log.warn('The torrent engine is offline: nothing downloads', { env: 'HIGHSEA_TORRENT_OFFLINE' })
+if (process.env.HIGHSEA_HARDWARE_NONE === '1')
+  log.warn('No graphics chip is looked for', { env: 'HIGHSEA_HARDWARE_NONE' })
 if (process.env.HIGHSEA_SUBTITLES_FAKE === '1')
   log.warn('Subtitle providers are fakes', { env: 'HIGHSEA_SUBTITLES_FAKE' })
 if (process.env.HIGHSEA_FIXTURES_URL)

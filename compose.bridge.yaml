@@ -31,6 +31,18 @@ services:
       - "6881:6881/tcp" # the torrent engine (ADR 0037); change both sides together
       - "6881:6881/udp"
       - "7368:7368/udp" # the apps' discovery broadcast (ADR 0020)
+    # Hardware acceleration (Settings › Playback): pass Intel or AMD graphics through, then press
+    # Check there. highsea joins the device's group by itself.
+    # devices:
+    #   - /dev/dri:/dev/dri
+    # NVIDIA, after NVIDIA's container toolkit is installed on the host:
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - driver: nvidia
+    #           count: 1
+    #           capabilities: [gpu, video]
     # a restore in System › Backups restarts highsea by exiting with code 75; this brings it back
     # (ADR 0047), and so does a reboot
     restart: unless-stopped

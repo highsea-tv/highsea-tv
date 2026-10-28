@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Playback (checkpoint 4.3a, docs/product/playback-settings.md): transcodes at once, the
 // encoder, the remote ceiling, and the transcode cache's folder and limit, kept in `settings` under
-// `playback` and read as each stream starts. The hardware's paths and their checks are 4.3b's;
-// until then the status lists none and transcodes use the processor.
+// `playback` and read as each stream starts. The hardware's paths and their checks (4.3b) are
+// `hardware.ts`'s; the status shows them.
 //
 // - The cache's folder is checked as Backups' is (a full path highsea can write) and must stay out
 //   of the library and the downloads, since highsea removes what it makes there. A new folder is
@@ -13,6 +13,7 @@ import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { readdir, stat } from 'node:fs/promises'
 import { isAbsolute, join, resolve } from 'node:path'
 import {
+  type AccelerationPath,
   PLAYBACK_SETTINGS_TOPICS,
   PlaybackSettings,
   type PlaybackStatus,
@@ -22,6 +23,7 @@ import { type Db, readSetting, writeSetting } from '@highsea-tv/db'
 import { isWithin, realOrParent } from '@highsea-tv/media/shared'
 import type { Ceiling } from '@highsea-tv/stream/decision'
 import type { Limits, Transcodes } from '@highsea-tv/stream/hls'
+import type { HardwareService } from './hardware.ts'
 
 export const PLAYBACK_KEY = 'playback'
 const GB = 1_000_000_000
@@ -109,6 +111,8 @@ export function createPlaybackSettings(deps: {
   shared: () => string[]
   /** Whether anyone streams now, so the cache's use is worth watching. */
   streaming: () => boolean
+  /** The paths found and their checks (4.3b); none without. */
+  hardware?: Pick<HardwareService, 'paths' | 'inUse' | 'check'>
 }) {
   const { db, clock, events, transcodes } = deps
   const log = deps.logger.child('playback')
@@ -158,11 +162,17 @@ export function createPlaybackSettings(deps: {
     ])
     const limitBytes = s.cacheLimitGb * GB
     return {
-      // hardware acceleration's paths come with 4.3b
-      paths: [],
-      inUse: null,
+      paths: deps.hardware?.paths() ?? [],
+      inUse: deps.hardware?.inUse() ?? null,
       cache: { transcodeBytes, trickplayBytes, limitBytes, over: transcodeBytes > limitBytes },
     }
+  }
+
+  /** Starts a path's check; the status says it's checking, and `playback.updated` when it ends. */
+  async function check(path: AccelerationPath) {
+    if (!deps.hardware) throw new AppError('conflict', 'highsea can’t check hardware here.')
+    await deps.hardware.check(path)
+    return status()
   }
 
   async function clearCache() {
@@ -187,6 +197,7 @@ export function createPlaybackSettings(deps: {
     update,
     status,
     clearCache,
+    check,
     start,
     ceiling: () => ceilingOf(get().remoteMaxMbps),
     limits: () => limitsOf(get()),

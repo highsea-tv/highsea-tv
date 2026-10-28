@@ -25,11 +25,16 @@
 //   `-stats_period` (https://ffmpeg.org/ffmpeg.html#Main-options). ffmpeg's own `speed=` counts
 //   from the run's start, paused time and all, so the runner measures its own: the film's seconds
 //   (`out_time_us`) made per second, over the last few reports while the run wasn't paused.
+// - **Hardware** (4.3b, ADR 0056): each transcode run takes the GPU path `hardware()` names, and
+//   tone maps where `toneMapOn` says. A run on a GPU that fails goes on on the processor from the
+//   first piece it hadn't made, for the rest of the session, and `onHardwareFailure` lets the
+//   runtime mark the path's check failed.
 import { type ChildProcess, execFile, spawn as nodeSpawn } from 'node:child_process'
 import { existsSync } from 'node:fs'
 import { copyFile, mkdir, readdir, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { PlaybackDecision } from '../decision/index.ts'
+import { type Accel, type AccelPath, toneMapOn } from '../hardware/index.ts'
 import {
   assArgs,
   attachmentArgs,
@@ -89,7 +94,18 @@ export type HlsSource = {
   /** Seconds. */
   duration: number
   decision: PlaybackDecision
-  video: { index: number; codec: string; width: number; height: number } | null
+  /**
+   * `hdr` is the probe's HDR format, for where it's tone mapped (`toneMapOn`); `bitDepth` the
+   * picture's, which a GPU's frames come down to memory in.
+   */
+  video: {
+    index: number
+    codec: string
+    width: number
+    height: number
+    hdr?: string
+    bitDepth?: number
+  } | null
   /** Where the player starts, in seconds: the first run starts there. */
   start: number
   /** The picture's keyframes, seconds from the film's start; a direct stream's segments need them. */
@@ -121,6 +137,8 @@ type Run = {
   samples: { at: number; out: number }[]
   /** Film seconds made per second, as last measured; null until measured. */
   speed: number | null
+  /** The GPU path it runs on; null on the processor. */
+  accel: Accel | null
 }
 
 type Waiter = {
@@ -153,7 +171,22 @@ export type TranscodesOptions = {
   limits?: () => Limits
   waitMs?: number
   keepBehindSeconds?: number
+  /** The GPU path transcodes take, and tone mapping (4.3b), read as each run starts. */
+  hardware?: () => Hardware
+  /** A run on a GPU path failed, and went on on the processor. */
+  onHardwareFailure?: (path: AccelPath, log: string[]) => void
 }
+
+export type Hardware = {
+  /** The path whose check passed and Settings › Playback allows; null for the processor. */
+  accel: Accel | null
+  /** Settings › Playback's tone mapping. */
+  toneMapping: boolean
+  /** The processor can tone map: this ffmpeg has `zscale` and `tonemap`. */
+  cpuToneMap: boolean
+}
+
+const NO_HARDWARE: Hardware = { accel: null, toneMapping: false, cpuToneMap: false }
 
 export type Limits = {
   maxTranscodes: number
@@ -291,6 +324,7 @@ type Context = {
   log: RunLogger
   root: string
   limits: () => Limits
+  hardware: () => Hardware
   slots: Slots
   /** A piece was written: the cache's limit is checked soon. */
   grew: () => void
@@ -314,6 +348,10 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
   let heardAt = now()
   let ended = false
   let failure: TranscodeError | null = null
+  /** A run on the GPU failed: the rest of the session runs on the processor. */
+  let fellBack = false
+  /** The GPU path the last run took, kept after it reaches the film's end. */
+  let made: AccelPath | null = null
   const subtitles = new Map<string, Promise<string>>()
 
   /**
@@ -447,6 +485,15 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
       else w.reject(new TranscodeError('The stream moved on.'))
     }
     waiters = waiters.filter((w) => w.piece >= s.first)
+    const plan = decision.video
+    const hw = ctx.hardware()
+    let accel = plan?.action === 'transcode' && source.video && !fellBack ? hw.accel : null
+    let toneMap: RunInput['toneMap'] = null
+    if (plan?.action === 'transcode' && plan.toSdr && hw.toneMapping) {
+      toneMap = toneMapOn(source.video?.hdr ?? 'none', accel, hw.cpuToneMap)
+      // a GPU that can't tone map this film leaves it to the processor altogether
+      if (toneMap === 'cpu') accel = null
+    }
     const input: RunInput = {
       input: source.input,
       dir,
@@ -463,6 +510,8 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
         : null,
       preset: ctx.limits().preset,
       burnIn: burn,
+      accel,
+      toneMap,
     }
     const child = spawn(options.ffmpeg, runArgs(input))
     const r: Run = {
@@ -475,8 +524,10 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
       log: [],
       samples: [],
       speed: null,
+      accel,
     }
     run = r
+    made = accel?.path ?? null
     failure = null
     child.stderr?.setEncoding('utf8')
     child.stderr?.on('data', (chunk: string) => {
@@ -523,6 +574,27 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
       // the film's end: anything still waited for isn't coming
       for (const w of waiters.splice(0))
         has(w.piece) ? w.resolve() : w.reject(new TranscodeError('That segment isn’t there.'))
+      return
+    }
+    if (r.accel && !ended) {
+      // the GPU failed: the processor makes the rest, from the first piece this run hadn't made,
+      // and what's waited for is made there
+      fellBack = true
+      log.warn('a transcode on the GPU failed, and goes on on the processor', {
+        session: id,
+        path: r.accel.path,
+        code,
+        log: r.log.join('\n'),
+      })
+      options.onHardwareFailure?.(r.accel.path, r.log)
+      void ready()
+        .then(({ segments }) => {
+          const at = segments.findIndex((s) => s.first <= r.next && r.next < s.last)
+          if (at >= 0) return start(at)
+          for (const w of waiters.splice(0))
+            has(w.piece) ? w.resolve() : w.reject(new TranscodeError('That segment isn’t there.'))
+        })
+        .catch(() => {})
       return
     }
     failure = new TranscodeError(
@@ -681,6 +753,13 @@ function createTranscode(id: string, source: HlsSource, ctx: Context) {
     waiting: () => slots.waiting(id),
     /** How fast the run makes the film against real time, for Now playing; null without one. */
     speed: () => run?.speed ?? null,
+    /**
+     * The GPU path that made the film, for Now playing: the last run's, even once it has reached
+     * the end; null on the processor or before any run.
+     */
+    hardware: () => made,
+    /** A run on the GPU failed, and the session went on on the processor. */
+    fellBack: () => fellBack,
     removable,
     size,
     sweep: () => {
@@ -697,6 +776,7 @@ export function createTranscodes(options: TranscodesOptions) {
   const idleMs = options.idleMs ?? RUN_IDLE_MS
   const keepBehind = options.keepBehindSeconds ?? KEEP_BEHIND_SECONDS
   const limits = options.limits ?? (() => NO_LIMITS)
+  const hardware = options.hardware ?? (() => NO_HARDWARE)
   const log = options.logger
   const live = new Map<string, Transcode>()
   const slots = createSlots(() => limits().maxTranscodes, options.waitMs ?? SLOT_WAIT_MS)
@@ -711,6 +791,7 @@ export function createTranscodes(options: TranscodesOptions) {
     log,
     root: options.root,
     limits,
+    hardware,
     slots,
     grew: () => {
       if (enforcing || limits().cacheBytes === null) return

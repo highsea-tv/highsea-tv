@@ -22,5 +22,9 @@ services:
     volumes:
       - /mnt/tank/apps/highsea:/config
       - /mnt/tank/data:/data
+    # Hardware acceleration (Settings › Playback), on a TrueNAS with Intel graphics: pass it
+    # through, then press Check there. highsea joins the device's group by itself.
+    # devices:
+    #   - /dev/dri:/dev/dri
     # a restore in System › Backups restarts highsea by exiting with code 75 (ADR 0047)
     restart: unless-stopped

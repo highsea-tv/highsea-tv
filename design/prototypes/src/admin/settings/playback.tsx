@@ -132,7 +132,7 @@ function HardwareGroup({ v, set, status }: GroupProps & { status: PlaybackStatus
               : chosen && !chosen.unavailable
                 ? `${pathLabel(chosen.id)} is used once its check passes.`
                 : found
-                  ? 'highsea uses a graphics chip only once its check passes. Check the one you have.'
+                  ? 'highsea checks the graphics it finds by itself, and uses them once a check passes.'
                   : 'highsea found no graphics chip it can use. Films that need a transcode still play, more slowly.'}
         </p>
       </div>
@@ -241,8 +241,9 @@ function PassThroughHelp() {
   return (
     <div className="grid gap-2">
       <p className="text-caption text-text-2">
-        Give highsea’s container the graphics chip, then check it here. For Intel and AMD graphics,
-        pass /dev/dri through. For NVIDIA, install NVIDIA’s container toolkit on the host first.
+        Give highsea’s container the graphics chip, then restart it, and highsea checks the chip as
+        it starts. For Intel and AMD graphics, pass /dev/dri through. For NVIDIA, install NVIDIA’s
+        container toolkit on the host first.
       </p>
       <CopyBlock
         label="Compose lines for Intel and AMD"

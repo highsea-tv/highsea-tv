@@ -54,7 +54,7 @@ bun scripts/sweeps/server.ts               # builds, then boots its own seeded p
 bun scripts/sweeps/playback.ts             # the web player in Chromium and Firefox, on :3140 (install firefox once)
 ```
 
-If the work touched packaging, also run `docker compose -f compose.dev.yaml up --build`, then `HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts` and `bun scripts/image.ts size highsea:dev 2200`.
+If the work touched packaging, also run `docker compose -f compose.dev.yaml up --build`, then `HIGHSEA_IMAGE=highsea:dev bun scripts/e2e/run.ts` and `bun scripts/image.ts size highsea:dev 2300` and `bun scripts/image.ts hardware highsea:dev`.
 
 ## Known false alarms
 

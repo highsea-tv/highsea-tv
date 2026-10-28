@@ -2,7 +2,9 @@
 // `bun run record:tmdb [path?query …]`: asks TMDB again for every recorded request (and any given
 // on the command line, like `/3/movie/603?append_to_response=credits&language=en-US`) with the
 // developer's own credential, and rewrites the recordings (ADR 0029). The credential comes from
-// TMDB_READ_TOKEN or TMDB_API_KEY and never lands in a file: the script refuses to write a
+// HIGHSEA_TMDB_READ_TOKEN (the name the release uses), TMDB_READ_TOKEN or TMDB_API_KEY, in the
+// shell or the repository's .env.local (package.json passes it with Bun's --env-file; a missing
+// file is skipped and the shell wins). It never lands in a file: the script refuses to write a
 // recording that contains it, or anything shaped like a key. It's never run in CI.
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -20,9 +22,12 @@ if (process.env.CI) {
   console.error('record:tmdb uses a personal TMDB key, so it doesn’t run in CI.')
   process.exit(1)
 }
-const secret = process.env.TMDB_READ_TOKEN ?? process.env.TMDB_API_KEY
+const secret =
+  process.env.HIGHSEA_TMDB_READ_TOKEN || process.env.TMDB_READ_TOKEN || process.env.TMDB_API_KEY
 if (!secret) {
-  console.error('Set TMDB_READ_TOKEN (or TMDB_API_KEY) to your own TMDB credential.')
+  console.error(
+    'Set HIGHSEA_TMDB_READ_TOKEN (or TMDB_READ_TOKEN or TMDB_API_KEY) to a TMDB credential, in the shell or .env.local.',
+  )
   process.exit(1)
 }
 const credential = credentialOf(secret)

@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Now playing (ADR 0021, checkpoint 4.3a): the prototype's copy, with what real data adds: a
 // transcode waiting for a free slot (Settings › Playback's limit), a title that has left the
-// library, and the processor named until 4.3b's hardware paths. Downloads' words wait for them.
+// library, and the processor named when no hardware path (4.3b) transcodes. Downloads' words wait
+// for them.
 import { defineMessages } from '@highsea-tv/i18n'
 
 export const nowPlaying = defineMessages({

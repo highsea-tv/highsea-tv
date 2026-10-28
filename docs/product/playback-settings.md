@@ -46,7 +46,7 @@ One page in Settings' **Playback** group, before Downloads and alerts. Four sect
 | State | What shows |
 | --- | --- |
 | No hardware found | Every path unavailable with its reason; the summary says the processor; the compose lines show |
-| Hardware found, not checked | The path "Found, not checked", with Check; Automatic still uses the processor |
+| Hardware found, not checked | The path "Found, not checked", with Check; Automatic still uses the processor. Brief: highsea checks every path it finds by itself when it starts |
 | Checked and in use | The path's check passed; the summary names it |
 | A check that failed | "Failed", with what ffmpeg reported and what to try (the Intel media driver not loading, a GPU that encodes partway and stops) |
 | The cache over its limit | The warning badge, the bar in warning, and the line on what highsea removes |
@@ -63,6 +63,7 @@ One page in Settings' **Playback** group, before Downloads and alerts. Four sect
 
 - **A real transcode decides,** not the device's presence: a render node that's there but unusable (no driver, wrong permissions) is the commonest failure, and only a check finds it.
 - **Automatic never uses an unchecked path.** A path that fails mid-film is worse than a slower processor transcode.
+- **highsea checks what it finds by itself** (the owner, 2026-10-28, at 4.3b's review): at boot, in the background, every path found without a check on its device and driver is checked, one at a time, so a new install uses its chip without a visit here. Settings › Playback is for seeing the result and changing it. A failed check isn't run again by itself.
 - **The remote ceiling is per stream,** not shared: the owner knows their upload speed, and "per stream" is what Plex and Jellyfin ask, so it's what owners coming from them expect.
 - **Trickplay isn't in the cache's limit,** since it's made once per film and kept; clearing it would mean making it again.
 

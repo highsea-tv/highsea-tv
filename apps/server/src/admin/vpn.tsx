@@ -279,11 +279,15 @@ function StatusGroup({ status: v }: { status: VpnStatus }) {
   )
 }
 
-function CopyBlock({ label, text }: { label: string; text: string }) {
+export function CopyBlock({ label, text }: { label: string; text: string }) {
   const t = useT(messages)
   return (
     <figure aria-label={label} className="grid gap-2">
-      <pre className="overflow-x-auto rounded-md border border-line bg-s2 p-3 font-mono text-figure text-text-2">
+      <pre
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: it scrolls sideways when the lines are longer than the panel, and a scrolling region must take focus to scroll by keyboard (axe’s scrollable-region-focusable)
+        tabIndex={0}
+        className="overflow-x-auto rounded-md border border-line bg-s2 p-3 font-mono text-figure text-text-2"
+      >
         {text}
       </pre>
       <Button

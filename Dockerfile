@@ -67,6 +67,23 @@ RUN apt-get update \
 RUN apt-get update \
   && apt-get install -y --no-install-recommends wireguard-tools iproute2 wireguard-go \
   && rm -rf /var/lib/apt/lists/*
+# Hardware acceleration (ADR 0056), on amd64 only, where Intel and AMD graphics are: Intel's media
+# driver for VAAPI, oneVPL's runtime and dispatcher for Quick Sync (libmfx-gen1.2, libvpl2), Mesa's
+# VAAPI driver for AMD, and Mesa's Vulkan drivers so libplacebo tone maps on AMD and Intel GPUs. The
+# driver is the non-free build (intel-media-va-driver-non-free, Debian's non-free component, added
+# for it alone): its GPU kernels come from Intel as binaries, and it's the one that encodes on chips
+# before Ice Lake, such as the J4125, without the HuC firmware loaded on the host
+# (https://github.com/intel/media-driver#build-types). NVIDIA's libraries come from the host,
+# through NVIDIA's container toolkit. Their sources: docker/NOTICE.
+ARG TARGETARCH
+RUN if [ "$TARGETARCH" = amd64 ]; then \
+    sed -i 's/^Components: main$/Components: main non-free/' /etc/apt/sources.list.d/debian.sources \
+    && grep -q '^Components: main non-free$' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends intel-media-va-driver-non-free libmfx-gen1.2 \
+      libvpl2 mesa-va-drivers mesa-vulkan-drivers \
+    && rm -rf /var/lib/apt/lists/*; \
+  fi
 WORKDIR /app
 COPY --from=production /production /app
 COPY docker/entrypoint.sh /usr/local/bin/highsea-entrypoint

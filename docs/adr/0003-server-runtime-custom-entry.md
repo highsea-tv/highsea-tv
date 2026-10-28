@@ -77,3 +77,9 @@ Phase 4 moves the one Node from 24.21.0 to **26.11.1**, and the image from Debia
 - Without a build, a route answers 503 with a page that says how to make one.
 
 The image builds the web app in its build stage, and `scripts/image.ts` copies `apps/web/dist` into the production tree, with none of the web app's sources or dependencies: it's served, never run. The image grew by 2 MB, to 2,093 MB.
+
+## 2026-10-28: the hardware drivers, and the render node's group (checkpoint 4.3b)
+
+Hardware acceleration (ADR 0056) adds Debian packages to the runtime stage on amd64 only, where Intel and AMD graphics are: `intel-media-va-driver-non-free`, `libmfx-gen1.2`, `libvpl2`, `mesa-va-drivers` and `mesa-vulkan-drivers`, about 134 MB measured in a trixie container. The non-free driver needs Debian's `non-free` component, which the Dockerfile adds to `/etc/apt/sources.list.d/debian.sources` (trixie's deb822 sources, [Debian wiki › SourcesList](https://wiki.debian.org/SourcesList)) for it alone, and checks it took. It's the build that encodes on chips before Ice Lake without the HuC firmware on the host ([Intel's media driver README](https://github.com/intel/media-driver#build-types)); docker/NOTICE lists the five packages and why one is non-free. CI's budget rises from 2,200 MB to 2,300 MB (the owner's answer 3 for 4.3), and `scripts/image.ts hardware` checks the built image's encoders, filters and driver files.
+
+The entrypoint adds the PUID user to the group of each render node passed through (`/dev/dri/renderD*`), creating the group by its number when the image has none. gosu given `uid:gid` drops every supplementary group, so when it added one, the entrypoint switches user with `setpriv --reuid --regid --init-groups` instead, which takes them from `/etc/group` ([setpriv(1)](https://man7.org/linux/man-pages/man1/setpriv.1.html), initgroups(3)). A node owned by group 0 is left alone: the user isn't put in root's group.

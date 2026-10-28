@@ -140,6 +140,7 @@ describe('the plans', () => {
       server: { burnIn: false, toneMapping: true },
     })
     expect(codes(mapped)).not.toContain('hdr.washedOut')
+    expect(codes(mapped)).toContain('hdr.toneMapped')
   })
 
   test('Dolby Vision 8.1 plays its HDR10 layer where HDR10 is shown, and profile 5 can’t', () => {

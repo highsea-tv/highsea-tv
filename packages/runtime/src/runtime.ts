@@ -113,6 +113,7 @@ import { createCollectionLibrary } from './collection-library.ts'
 import type { Config } from './config.ts'
 import { createCurationLibrary } from './curation-library.ts'
 import { scheduleFileFacts } from './file-facts.ts'
+import { createHardware, type Host } from './hardware.ts'
 import { homeRows } from './home-rows.ts'
 import { createListLibrary } from './list-library.ts'
 import { createLogFiles } from './logs.ts'
@@ -404,6 +405,8 @@ export type BootOptions = {
    * so Docker's restart policy brings it back; tests pass their own.
    */
   restart?: () => void
+  /** How hardware acceleration looks at the host (4.3b); tests pass `bareHost()`, which has none. */
+  hardware?: Host
 }
 
 const g = globalThis as typeof globalThis & { __highsea?: Runtime }
@@ -753,7 +756,29 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     now: () => clock.now(),
     // Settings › Playback (4.3a): transcodes at once, the cache's limit and the encoder
     limits: () => playbackSettings.limits(),
+    // the GPU path a check passed and tone mapping (4.3b, ADR 0056); a run that fails on it goes
+    // on on the processor, and its check is marked failed
+    hardware: () => hardware.current(),
+    onHardwareFailure: (path, log) => hardware.failedPlaying(path, log),
   })
+  const hardware = createHardware({
+    db,
+    clock,
+    events,
+    logger,
+    dataDir: config.dataDir,
+    ffmpeg: ffmpegBinary(),
+    settings: () => playbackSettings.get(),
+    host: options.hardware,
+  })
+  // what the host has, looked at in the background, so boot doesn't wait on ffmpeg; then each
+  // path found without a check is checked, so a new install uses its chip with nothing to press
+  void hardware
+    .start()
+    .then(() => hardware.checkNew())
+    .catch((e: Error) =>
+      logger.warn('couldn’t look for hardware acceleration', { error: e.message }),
+    )
   const playbackSettings = createPlaybackSettings({
     db,
     clock,
@@ -764,6 +789,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     trickplayRoot: join(config.dataDir, 'trickplay'),
     shared: () => [...media.rootFolders.list().map((f) => f.path), folders().downloads],
     streaming: () => playback.sessions().length > 0,
+    hardware,
   })
   await playbackSettings.start()
 
@@ -806,6 +832,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     deviceExists: (deviceId) => auth.devices.find(deviceId) !== null,
     transcodes,
     ceiling: () => playbackSettings.ceiling(),
+    hardware: () => hardware.current(),
     ffprobe: ffprobeBinary(),
     subtitles: subtitles.clientTracks,
     trickplay,

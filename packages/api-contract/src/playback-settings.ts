@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Settings › Playback (checkpoint 4.3, docs/product/playback-settings.md): how highsea transcodes,
 // what's sent away from home, and the transcode cache. The owner and admins read and change it
-// (the 4.0b scope's answer 6). Hardware acceleration's paths and their checks come with 4.3b; until
-// then the status lists none, and transcodes use the processor.
+// (the 4.0b scope's answer 6). Hardware acceleration's paths and their checks came with 4.3b
+// (ADR 0056): a path is used only once its check passes.
 import { createRoute, z } from '@hono/zod-openapi'
 import { API_PREFIX, access, body, errors, json } from './common.ts'
 
@@ -73,6 +73,10 @@ export const PlaybackStatus = z
   })
   .openapi('PlaybackStatus')
 
+const PathParam = z.object({
+  path: z.enum(ACCELERATION_PATHS).openapi({ param: { name: 'path', in: 'path' } }),
+})
+
 export const playbackSettings = {
   playback: createRoute({
     method: 'get',
@@ -111,6 +115,20 @@ export const playbackStatusRoutes = {
     responses: {
       200: json(PlaybackStatus, 'The status'),
       ...errors('unauthorized', 'forbidden'),
+    },
+  }),
+  check: createRoute({
+    method: 'post',
+    path: `${API_PREFIX}/playback/checks/{path}`,
+    tags: ['Playback'],
+    summary: 'Check a hardware path with a short transcode',
+    description:
+      'Looks at the hardware again, then transcodes a short 1080p HEVC clip on the path in the background, and once more with its tone mapping. The status shows the path checking; `playback.updated` says when the check ends. 409 when a check is already running or the path can’t be used here.',
+    ...access('staff'),
+    request: { params: PathParam },
+    responses: {
+      200: json(PlaybackStatus, 'The check has started'),
+      ...errors('unauthorized', 'forbidden', 'conflict'),
     },
   }),
   clearCache: createRoute({

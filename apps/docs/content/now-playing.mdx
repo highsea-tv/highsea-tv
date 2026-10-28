@@ -46,9 +46,9 @@ Under the progress bar, the row lists:
 - **Sent as**: what goes to the device and its rate, such as "1080p · H.264 · AAC stereo · 9.4 Mbps".
 - **From**: the version of the film it's made from.
 - **Network**: **At home** or **Away from home**, with the device's address. Streams at home are never limited; away from home, they're held to the limit in [Settings › Playback](/settings/playback/).
-- **Transcoded by**, for a transcode: what does the work and how fast, against real time. "The processor, 2.4× real time" keeps up easily. Below 1×, the row says **Can't keep up**.
+- **Transcoded by**, for a transcode: what does the work and how fast, against real time. "VAAPI, 6.1× real time" is the graphics chip; "The processor, 2.4× real time" keeps up easily. Below 1×, the row says **Can't keep up**. [Hardware acceleration](/settings/playback/#hardware-acceleration) puts transcodes on the graphics chip.
 
-When a stream isn't played directly, the reasons follow in plain words, such as the device not playing the file's sound format, or a subtitle that has to be drawn into the picture.
+When a stream isn't played directly, the reasons follow in plain words, such as the device not playing the file's sound format, or a subtitle that has to be drawn into the picture. If the graphics chip fails partway through a film, the row says **The graphics chip failed partway, so the processor makes the rest**.
 
 ### Stopping a stream
 

@@ -16,6 +16,7 @@
 //   cut (`hls_write_packet`), so it's whole once that file is.
 import { join } from 'node:path'
 import type { AudioPlan, VideoPlan } from '../decision/index.ts'
+import { type Accel, deviceArgs, encoderArgs, gpuFilters } from '../hardware/index.ts'
 import { SEGMENT_SECONDS } from './playlist.ts'
 
 export type RunInput = {
@@ -27,13 +28,28 @@ export type RunInput = {
   start: number
   /** That piece's number, ffmpeg's first file. */
   startNumber: number
-  video: { index: number; codec: string; width: number; height: number; plan: VideoPlan } | null
+  /** `bitDepth` is the picture's, 8 when left out: a GPU's frames come down to memory in it. */
+  video: {
+    index: number
+    codec: string
+    width: number
+    height: number
+    bitDepth?: number
+    plan: VideoPlan
+  } | null
   /** The track's own channels and ffprobe's layout, for the downmix. */
   audio: { index: number; plan: AudioPlan; channels?: number; layout?: string | null } | null
   /** Settings › Playback's Encoder (4.3): Faster, Balanced or Sharper; Balanced when left out. */
   preset?: EncoderPreset
   /** A subtitle drawn into the picture (4.3), which only a transcode can do. */
   burnIn?: BurnIn | null
+  /** The GPU path a transcode takes (4.3b, ADR 0056); the processor when left out. */
+  accel?: Accel | null
+  /**
+   * Where HDR is made SDR for a picture the plan sends as SDR: on `accel`'s GPU, or on the
+   * processor (`toneMapOn`); left out, it's only labelled SDR, as 4.1 did.
+   */
+  toneMap?: 'gpu' | 'cpu' | null
 }
 
 /**
@@ -96,63 +112,121 @@ export const filterPath = (path: string) =>
   path.replace(/[\\':]/g, (c) => `\\${c}`).replace(/[\\'[\],;]/g, (c) => `\\${c}`)
 
 /**
- * The picture's filters, and how it's mapped. A picture subtitle is a second input to `overlay`,
- * so the graph is a complex one with its own output; it's scaled to the picture first, since a
- * track's canvas needn't be the film's size. ASS is drawn by libass's `subtitles` after scaling,
- * so its text is sharp at the size sent (https://ffmpeg.org/ffmpeg-filters.html#overlay-1 and
- * #subtitles-1).
+ * The processor's tone mapping, after scaling so it works on fewer pixels: to linear light, BT.709's
+ * primaries, Hable's curve without desaturation, then BT.709's transfer and matrix (ffmpeg-filters ›
+ * tonemap, whose example this is; `npl=100` is SDR's reference white).
  */
-function pictureFilters(video: NonNullable<RunInput['video']>, burnIn: BurnIn | null | undefined) {
+const SDR_PARAMS = 'color_primaries=bt709:color_trc=bt709:colorspace=bt709'
+
+export const CPU_TONE_MAP =
+  'zscale=t=linear:npl=100,format=gbrpf32le,zscale=p=bt709,' +
+  'tonemap=tonemap=hable:desat=0,zscale=t=bt709:m=bt709:r=tv,format=yuv420p'
+
+/**
+ * The picture's filters, and how it's mapped. A picture subtitle is a second input to `overlay`,
+ * so the graph is a complex one with its own output. ASS is drawn by libass's `subtitles` after
+ * scaling, so its text is sharp at the size sent (https://ffmpeg.org/ffmpeg-filters.html#overlay-1
+ * and #subtitles-1).
+ *
+ * - On the processor without tone mapping, a picture track is scaled to the film's size and laid
+ *   on before scaling, since a track's canvas needn't be the film's size (4.3a).
+ * - Otherwise the picture is scaled (and tone mapped) first, on the GPU when there is one, and the
+ *   subtitle is laid on at the size sent, after tone mapping, so its colours aren't mapped. On a
+ *   GPU the frames come down to memory for the subtitle (`hwdownload`) and go back up for an
+ *   encoder that wants them there (`hwupload`): ffmpeg 7.1's `overlay_vaapi`, `overlay_qsv` and
+ *   `overlay_cuda` need the subtitle on the GPU too, and libass draws only in memory.
+ */
+function pictureFilters(
+  video: NonNullable<RunInput['video']>,
+  burnIn: BurnIn | null | undefined,
+  accel: Accel | null,
+  toneMap: 'gpu' | 'cpu' | null,
+) {
   const plan = video.plan as Extract<VideoPlan, { action: 'transcode' }>
   const size = scaledSize(video, plan.height)
   const scale = `scale=${size.width}:${size.height}`
+  const ass = (b: Extract<BurnIn, { kind: 'text' }>) =>
+    `subtitles=filename=${filterPath(b.path)}` +
+    (b.fontsDir ? `:fontsdir=${filterPath(b.fontsDir)}` : '')
+  if (!accel && toneMap !== 'cpu') {
+    if (burnIn?.kind === 'picture')
+      return {
+        map: ['-map', '[v]'],
+        filters: [
+          '-filter_complex',
+          `[0:${burnIn.index}]scale=${video.width}:${video.height}[s];` +
+            `[0:${video.index}][s]overlay=eof_action=pass,${scale},format=yuv420p[v]`,
+        ],
+      }
+    return {
+      map: ['-map', `0:${video.index}`],
+      filters: [
+        '-vf',
+        [scale, ...(burnIn?.kind === 'text' ? [ass(burnIn)] : []), 'format=yuv420p'].join(','),
+      ],
+    }
+  }
+  const gpu = accel ? gpuFilters(accel, size, toneMap === 'gpu', video.bitDepth) : null
+  // a GPU's frames are labelled in the graph: output options such as `-color_primaries` make
+  // ffmpeg add a `scale` to convert to them, which can't take a GPU's frames (`setparams`,
+  // https://ffmpeg.org/ffmpeg-filters.html#setparams); tone mapping labels its own
+  const label = plan.toSdr && toneMap === null ? [`setparams=${SDR_PARAMS}`] : []
+  const picture = gpu ? [gpu.scale, ...label].join(',') : [scale, CPU_TONE_MAP].join(',')
+  // a subtitle is drawn in memory; on a GPU the frames come down for it and go back up after
+  const down = gpu?.download ? [gpu.download] : []
+  const up = gpu ? (gpu.upload ? [gpu.upload] : ['format=yuv420p']) : ['format=yuv420p']
   if (burnIn?.kind === 'picture')
     return {
       map: ['-map', '[v]'],
       filters: [
         '-filter_complex',
-        `[0:${burnIn.index}]scale=${video.width}:${video.height}[s];` +
-          `[0:${video.index}][s]overlay=eof_action=pass,${scale},format=yuv420p[v]`,
+        `[0:${video.index}]${[picture, ...down].join(',')}[b];` +
+          `[0:${burnIn.index}]scale=${size.width}:${size.height}[s];` +
+          `[b][s]overlay=eof_action=pass,${up.join(',')}[v]`,
       ],
     }
-  const ass =
-    burnIn?.kind === 'text'
-      ? [
-          `subtitles=filename=${filterPath(burnIn.path)}` +
-            (burnIn.fontsDir ? `:fontsdir=${filterPath(burnIn.fontsDir)}` : ''),
-        ]
-      : []
-  return {
-    map: ['-map', `0:${video.index}`],
-    filters: ['-vf', [scale, ...ass, 'format=yuv420p'].join(',')],
-  }
+  if (burnIn?.kind === 'text')
+    return {
+      map: ['-map', `0:${video.index}`],
+      filters: ['-vf', [picture, ...down, ass(burnIn), ...up].join(',')],
+    }
+  return { map: ['-map', `0:${video.index}`], filters: ['-vf', picture] }
 }
 
-const videoArgs = (
-  video: NonNullable<RunInput['video']>,
-  preset: EncoderPreset = 'balanced',
-  burnIn: BurnIn | null = null,
-): string[] => {
+const forceKeyframes = ['-force_key_frames', `expr:gte(t,n_forced*${SEGMENT_SECONDS})`]
+
+const videoArgs = (video: NonNullable<RunInput['video']>, run: RunInput): string[] => {
+  const preset = run.preset ?? 'balanced'
+  const accel = run.accel ?? null
+  const toneMap = run.toneMap ?? null
   const plan = video.plan
   if (plan.action === 'copy')
     // Apple's players and Chrome want HEVC tagged hvc1 in MP4 (Apple's HLS authoring
     // specification, "Video" § 1.10)
     return ['-c:v', 'copy', ...(video.codec === 'hevc' ? ['-tag:v', 'hvc1'] : [])]
   const size = scaledSize(video, plan.height)
+  const level = h264Level(size.height)
   return [
-    ...pictureFilters(video, burnIn).filters,
-    // libx264 at the chosen preset, capped (4.1's answer 8; https://trac.ffmpeg.org/wiki/Encode/H.264,
-    // "Constrained encoding (VBV / maximum bit rate)")
-    ...['-c:v', 'libx264', '-preset', X264_PRESETS[preset], '-crf', '23'],
-    ...['-maxrate', String(plan.bitrate), '-bufsize', String(plan.bitrate * 2)],
-    ...['-profile:v', 'high', '-level:v', h264Level(size.height)],
+    ...pictureFilters(video, run.burnIn, accel, toneMap).filters,
     // a keyframe every segment and none between, so every segment is one piece (`-force_key_frames`,
-    // https://ffmpeg.org/ffmpeg.html#Advanced-Video-options; x264's keyint and scenecut), as an IDR
-    // frame (`forced-idr`, https://ffmpeg.org/ffmpeg-codecs.html#libx264_002c-libx264rgb)
-    ...['-force_key_frames', `expr:gte(t,n_forced*${SEGMENT_SECONDS})`],
-    ...['-x264-params', 'keyint=infinite:scenecut=0', '-forced-idr', '1'],
-    // without tone mapping until 4.3 (answer 6), an HDR source is labelled SDR, and looks washed out
-    ...(plan.toSdr
+    // https://ffmpeg.org/ffmpeg.html#Advanced-Video-options)
+    ...(accel
+      ? // the path's own encoder, capped at the same bitrate, keyframes only where forced (ADR 0056)
+        [...encoderArgs(accel, preset, plan.bitrate, level), ...forceKeyframes]
+      : [
+          // libx264 at the chosen preset, capped (4.1's answer 8; https://trac.ffmpeg.org/wiki/Encode/H.264,
+          // "Constrained encoding (VBV / maximum bit rate)")
+          ...['-c:v', 'libx264', '-preset', X264_PRESETS[preset], '-crf', '23'],
+          ...['-maxrate', String(plan.bitrate), '-bufsize', String(plan.bitrate * 2)],
+          ...['-profile:v', 'high', '-level:v', level],
+          ...forceKeyframes,
+          // and none of x264's own (keyint and scenecut), each an IDR frame (`forced-idr`,
+          // https://ffmpeg.org/ffmpeg-codecs.html#libx264_002c-libx264rgb)
+          ...['-x264-params', 'keyint=infinite:scenecut=0', '-forced-idr', '1'],
+        ]),
+    // SDR's labels on the processor: tone mapped, or without it only relabelled, which looks washed
+    // out (on a GPU, `pictureFilters` labels the frames)
+    ...(plan.toSdr && !accel
       ? ['-color_primaries', 'bt709', '-color_trc', 'bt709', '-colorspace', 'bt709']
       : []),
   ]
@@ -215,16 +289,18 @@ export function runArgs(run: RunInput): string[] {
     ...['-progress', 'pipe:1', '-stats_period', '1'],
     ...seek,
     ...['-copyts', '-start_at_zero'],
+    // decoding on the GPU, before the input it applies to
+    ...(run.video && !copy && run.accel ? deviceArgs(run.accel) : []),
     ...['-i', run.input],
     ...(run.video
       ? copy
         ? ['-map', `0:${run.video.index}`]
-        : pictureFilters(run.video, run.burnIn).map
+        : pictureFilters(run.video, run.burnIn, run.accel ?? null, run.toneMap ?? null).map
       : []),
     ...(run.audio ? ['-map', `0:${run.audio.index}`] : []),
     ...['-sn', '-dn', '-map_metadata', '-1', '-map_chapters', '-1'],
     ...trim,
-    ...(run.video ? videoArgs(run.video, run.preset, run.burnIn ?? null) : []),
+    ...(run.video ? videoArgs(run.video, run) : []),
     ...(run.audio ? audioArgs(run.audio) : []),
     ...['-f', 'hls', '-hls_segment_type', 'fmp4'],
     // without a picture every audio frame is a keyframe, so sound alone is cut by time

@@ -163,6 +163,15 @@ describe('Now playing', () => {
           state: 'waiting',
           reasons: ['The browser can’t play DTS.'],
         }),
+        // on the graphics chip (4.3b)
+        session({
+          id: 's4',
+          user: { id: 'u4', displayName: 'Jo' },
+          method: 'transcode',
+          hardware: 'vaapi',
+          speed: 5.2,
+          reasons: ['The browser can’t play HEVC.'],
+        }),
       ],
       totalMbps: 13.4,
       remoteMbps: 4,
@@ -185,6 +194,9 @@ describe('Now playing', () => {
     expect(within(noor).getByText(/Noor’s player keeps waiting for it/)).toBeTruthy()
     // the title left the library: no link
     expect(within(noor).queryByRole('link', { name: 'Old film' })).toBeNull()
+
+    const jo = page.getByRole('listitem', { name: 'Jo, Sintel' })
+    expect(within(jo).getByText('VAAPI, 5.2× real time')).toBeTruthy()
 
     const ali = page.getByRole('listitem', { name: 'Ali, Sintel' })
     expect(within(ali).getByText('Waiting')).toBeTruthy()

@@ -2,7 +2,7 @@
   "openapi": "3.1.0",
   "info": {
     "title": "highsea",
-    "version": "0.2.0-beta.1",
+    "version": "0.2.0-beta.2",
     "description": "The highsea server API. Every admin capability is here, with admin scope.",
     "license": {
       "name": "AGPL-3.0-only"
@@ -23200,6 +23200,82 @@
           },
           "403": {
             "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/playback/checks/{path}": {
+      "post": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "Check a hardware path with a short transcode",
+        "description": "Looks at the hardware again, then transcodes a short 1080p HEVC clip on the path in the background, and once more with its tone mapping. The status shows the path checking; `playback.updated` says when the check ends. 409 when a check is already running or the path can’t be used here.",
+        "x-highsea-access": "staff",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "vaapi",
+                "qsv",
+                "nvenc",
+                "videotoolbox"
+              ]
+            },
+            "required": true,
+            "name": "path",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The check has started",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PlaybackStatus"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
             "content": {
               "application/json": {
                 "schema": {

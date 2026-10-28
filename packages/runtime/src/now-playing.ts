@@ -29,7 +29,7 @@ import {
   resolutionOf,
   versionDetail,
 } from '@highsea-tv/media/shared'
-import type { PlaybackDecision } from '@highsea-tv/stream/decision'
+import { type PlaybackDecision, streamT } from '@highsea-tv/stream/decision'
 import type { Transcodes } from '@highsea-tv/stream/hls'
 import type { EndReason, PlaySession } from '@highsea-tv/stream/sessions'
 import { and, desc, eq, gte, lt } from 'drizzle-orm'
@@ -114,6 +114,8 @@ export function mbpsOf(d: PlaybackDecision): number {
   return Math.round(bits / 100_000) / 10
 }
 
+const said = streamT()
+
 export function createNowPlaying(deps: {
   db: Db
   clock: Clock
@@ -178,13 +180,16 @@ export function createNowPlaying(deps: {
       position: s.position,
       runtime: s.duration,
       method,
-      reasons: s.decision.reasons.filter((r) => r.kind !== 'accepted').map((r) => r.message),
+      reasons: [
+        ...s.decision.reasons.filter((r) => r.kind !== 'accepted').map((r) => r.message),
+        ...(t?.fellBack() ? [said('transcode.fellBack')] : []),
+      ],
       sent: f.sent,
       mbps: f.mbps,
       network: s.away ? 'remote' : 'lan',
       address: s.address,
-      // the processor until 4.3b's paths
-      hardware: null,
+      // the GPU path the run takes (4.3b), or the processor
+      hardware: method === 'transcode' ? (t?.hardware() ?? null) : null,
       speed:
         method === 'transcode' && s.decision.video?.action === 'transcode'
           ? (t?.speed() ?? null)

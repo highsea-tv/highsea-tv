@@ -6,6 +6,13 @@ export default {
   shots: [
     { name: 'overview', path: '/settings/playback' },
     {
+      name: 'hardware',
+      path: '/settings/playback',
+      // Taller than the window: the page scrolls in its own frame, so the crop needs it all in view.
+      height: 1500,
+      crop: (p) => p.getByRole('region', { name: 'Hardware acceleration' }),
+    },
+    {
       name: 'cache',
       path: '/settings/playback',
       crop: (p) => p.getByRole('region', { name: 'Cache' }),
