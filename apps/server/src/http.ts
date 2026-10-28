@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The one HTTP server (ADR 0003): `/api`, the calendar feed (`/feed/`) and Prometheus's `/metrics`
-// (ADR 0047) to Hono, `/stream/` to playback's files (checkpoint 4.1a), `/ws` reserved, and
-// everything else to Next's handler. The same handler serves HTTPS when built-in TLS is on.
+// (ADR 0047) to Hono, `/stream/` to playback's files (checkpoint 4.1a), `/web` to the web client's
+// build (checkpoint 4.2a), `/ws` reserved, and everything else to Next's handler. The same handler serves HTTPS when built-in TLS is on.
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
 import { createServer as createHttpsServer } from 'node:https'
 import type { Certificate } from '@highsea-tv/network'
@@ -9,12 +9,13 @@ import { getRequestListener } from '@hono/node-server'
 import type { Api } from './api/app.ts'
 import { PATH_HEADER, PEER_HEADER } from './session-cookie.ts'
 import type { StreamHandler } from './stream/index.ts'
+import { WEB, type WebHandler } from './web/index.ts'
 
 export type NextHandler = (req: IncomingMessage, res: ServerResponse) => Promise<void>
 
-type Handlers = { api: Api; next?: NextHandler; stream?: StreamHandler }
+type Handlers = { api: Api; next?: NextHandler; stream?: StreamHandler; web?: WebHandler }
 
-function handler({ api, next, stream }: Handlers) {
+function handler({ api, next, stream, web }: Handlers) {
   const toApi = getRequestListener(api.fetch)
   return (req: IncomingMessage, res: ServerResponse) => {
     const path = (req.url ?? '/').split('?')[0] ?? '/'
@@ -26,6 +27,7 @@ function handler({ api, next, stream }: Handlers) {
     )
       return void toApi(req, res)
     if (path.startsWith('/stream/') && stream) return void stream(req, res)
+    if ((path === WEB || path.startsWith(`${WEB}/`)) && web) return void web(req, res)
     if (path.startsWith('/stream/') || path === '/ws') {
       res.writeHead(501, { 'content-type': 'application/json' })
       return void res.end(

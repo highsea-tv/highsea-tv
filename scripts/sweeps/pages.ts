@@ -13,8 +13,11 @@ import {
   pool,
   prototypeRoutes,
   screenUrl,
+  servePrototypes,
+  settle,
   settleAnimations,
   WIDTHS,
+  WORKERS,
 } from './lib.ts'
 
 const [only, onlyQuery] = process.argv.slice(2) as [Platform | undefined, string | undefined]
@@ -37,16 +40,19 @@ const jobs = Object.entries(prototypeRoutes())
     routes.flatMap((r) => WIDTHS[p as Platform].flatMap((w) => VARIANTS.map((q) => ({ r, w, q })))),
   )
 
+const stop = await servePrototypes()
 const browser = await launch()
 const problems: string[] = []
-await pool(jobs, 6, async ({ r, w, q }) => {
+await pool(jobs, WORKERS, async ({ r, w, q }) => {
   const page = await browser.newPage({ viewport: { width: w, height: heightFor(w) } })
   const errors: string[] = []
   page.on('pageerror', (e) => errors.push(e.message.slice(0, 120)))
   try {
     await page.addInitScript(() => localStorage.clear())
     await page.goto(screenUrl(r, q))
-    await page.waitForTimeout(q === 'data=loading' ? 600 : 1500)
+    // the loading state is the skeleton, which never settles into data: give it the time it needs
+    if (q === 'data=loading') await page.waitForTimeout(600)
+    else await settle(page)
     await acknowledge(page)
     await settleAnimations(page)
     const o = await overflow(page)
@@ -61,5 +67,6 @@ await pool(jobs, 6, async ({ r, w, q }) => {
   await page.close()
 })
 await browser.close()
+stop()
 console.log(problems.length ? problems.sort().join('\n') : `clean: ${jobs.length} pages`)
 process.exit(problems.length ? 1 : 0)

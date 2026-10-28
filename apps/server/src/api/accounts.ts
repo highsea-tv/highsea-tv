@@ -69,8 +69,14 @@ export function registerAccounts(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.auth.session, (c) => {
     const p = me(c)
+    const session = sessionView({
+      user: p.user,
+      deviceId: p.deviceId,
+      expiresAt: p.expiresAt,
+      method: p.method,
+    })
     return c.json(
-      sessionView({ user: p.user, deviceId: p.deviceId, expiresAt: p.expiresAt, method: p.method }),
+      { ...session, away: c.get('runtime').playback.away(c.get('client').address) },
       200,
     )
   })

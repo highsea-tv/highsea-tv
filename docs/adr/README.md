@@ -35,7 +35,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0029](0029-external-services.md) | External services: one injected fetch, recorded responses | Accepted |
 | [0030](0030-metadata-cache.md) | The metadata cache: TMDB’s responses beside the library, under six months | Accepted |
 | [0031](0031-quality-and-the-decision-engine.md) | Quality and the decision engine: Radarr's documented behaviour, written fresh | Accepted |
-| [0032](0032-administrative-and-normal-access.md) | Administrative and normal access: Owner, Admin, User | Accepted |
+| [0032](0032-administrative-and-normal-access.md) | Administrative and normal access: Owner, Admin, User | Accepted; amended 2026-10-27 |
 | [0033](0033-indexer-definitions.md) | Indexer definitions: highsea's own declarative format, written by us | Accepted; amended 2026-10-20 |
 | [0034](0034-catalog-service-and-signing.md) | The catalog service and signing | Accepted |
 | [0035](0035-indexer-health-and-search.md) | Indexer health, rate limits and search fan-out | Accepted |
@@ -56,7 +56,8 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0050](0050-release-and-versioning.md) | Release and versioning: one SemVer version, two channels, a prepared commit and a gated workflow | Accepted |
 | [0051](0051-playback-engine.md) | The playback engine: direct play, then direct stream, then HLS transcodes made on demand | Accepted; amended 2026-10-27 |
 | [0052](0052-device-profiles.md) | Device profiles: what each client plays, built in and reported, in one shape | Accepted; amended 2026-10-27 |
-| [0053](0053-clients-build-and-distribution.md) | The clients' build and distribution: Vite at /web, Tauri for desktop, Expo for mobile and TV | Proposed |
+| [0053](0053-clients-build-and-distribution.md) | The clients' build and distribution: Vite at /web, Tauri for desktop, Expo for mobile and TV | Proposed; the web part built 2026-10-27 |
 | [0054](0054-watch-state.md) | Watch state: positions, watched and the player's picks, per person and title | Accepted |
+| [0055](0055-clients-shared-logic.md) | The clients' shared logic: `@highsea-tv/client`, everything but the drawing | Accepted |
 
 Template: copy [`template.md`](template.md).

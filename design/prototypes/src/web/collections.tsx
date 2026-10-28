@@ -35,7 +35,7 @@ export function WebCollections() {
   const list = useCollections('web')
   const xs = list.data ?? []
   return (
-    <main className={cn('mx-auto grid max-w-[1680px] gap-6 pt-6 pb-16', gutter)}>
+    <main className={cn('mx-auto w-full grid max-w-[1680px] gap-6 pt-6 pb-16', gutter)}>
       <div className="grid gap-3">
         <LibraryNav current="collections" />
         <div className="grid gap-1">

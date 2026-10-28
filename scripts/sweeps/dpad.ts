@@ -1,15 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // D-pad reachability on every TV route: from the screen's initial focus, every visible focusable
 // must be reachable with the arrow keys (tv.md#spatial-focus-model). Usage: bun scripts/sweeps/dpad.ts
-import { launch, prototypeRoutes, screenUrl } from './lib.ts'
+import {
+  launch,
+  pool,
+  prototypeRoutes,
+  screenUrl,
+  servePrototypes,
+  settle,
+  WORKERS,
+} from './lib.ts'
 
+const stop = await servePrototypes()
 const browser = await launch()
 const problems: string[] = []
-for (const r of [...prototypeRoutes().tv, '/tv/nowhere']) {
+await pool([...prototypeRoutes().tv, '/tv/nowhere'], WORKERS, async (r) => {
   const page = await browser.newPage({ viewport: { width: 1600, height: 900 } })
   await page.addInitScript(() => localStorage.clear())
   await page.goto(screenUrl(r))
-  await page.waitForTimeout(1500)
+  await settle(page)
   if (await page.getByRole('button', { name: 'Got it' }).count()) {
     await page.keyboard.press('Enter')
     await page.waitForTimeout(600)
@@ -24,7 +33,7 @@ for (const r of [...prototypeRoutes().tv, '/tv/nowhere']) {
   if (start === null) {
     problems.push(`${r}: no initial focus`)
     await page.close()
-    continue
+    return
   }
   const seen = new Set([start])
   const queue = [start]
@@ -62,7 +71,8 @@ for (const r of [...prototypeRoutes().tv, '/tv/nowhere']) {
   )
   if (missing.length) problems.push(`${r}: unreachable: ${missing.slice(0, 8).join(' | ')}`)
   await page.close()
-}
+})
 await browser.close()
-console.log(problems.length ? problems.join('\n') : 'clean: every TV focusable is reachable')
+stop()
+console.log(problems.length ? problems.sort().join('\n') : 'clean: every TV focusable is reachable')
 process.exit(problems.length ? 1 : 0)

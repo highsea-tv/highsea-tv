@@ -52,7 +52,7 @@ export const pageGroups: Page[][] = [
   [page('settings', 'settings', '/settings'), page('system', 'system', '/system')],
 ]
 
-/** The people who open the admin. A user gets the refusal page instead (decision 9). */
+/** The people who open the admin. A user is sent to the web app instead (decision 9, ADR 0032). */
 export type Role = 'owner' | 'admin'
 
 /** The page a path belongs to: `/movies/1` is under Movies. */

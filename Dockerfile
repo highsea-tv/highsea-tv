@@ -5,9 +5,10 @@
 # Checkpoint 9a slims it (phase-3-checkpoint-9.md › Docker), from Docker's multi-stage builds
 # (https://docs.docker.com/build/building/multi-stage/):
 #   manifests   the workspace's package.json files and bun.lock, and nothing else
-#   build       the whole workspace installed, and the admin built
+#   build       the whole workspace installed, and the admin and the web app (`/web`) built
 #   production  only what `node server.ts` loads (scripts/image.ts): production dependencies, the
-#               server's workspace packages as source without their tests, and Next's build
+#               server's workspace packages as source without their tests, Next's build, and
+#               the web app's static files
 #   runtime     the slim image, from `production` alone
 # CI builds it natively for linux/amd64 and linux/arm64 (.github/workflows/ci.yml).
 
@@ -37,6 +38,7 @@ RUN --mount=type=secret,id=ca,required=false \
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN cd apps/server && bun run build
+RUN cd apps/web && bun run build
 
 # ---- production: a clean install of the server's production dependencies, checked, plus the
 # sources it runs (scripts/image.ts says what goes in and what stays out)

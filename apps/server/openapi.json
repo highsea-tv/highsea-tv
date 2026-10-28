@@ -1712,6 +1712,24 @@
         ],
         "description": "Sent by apps: the sign-in returns a device token instead of setting a cookie"
       },
+      "CurrentSession": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Session"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "away": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "away"
+            ]
+          }
+        ]
+      },
       "WebAuthnOptions": {
         "type": "object",
         "properties": {
@@ -14525,7 +14543,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/Session"
+                  "$ref": "#/components/schemas/CurrentSession"
                 }
               }
             }

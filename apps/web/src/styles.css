@@ -1,0 +1,10 @@
+/* SPDX-License-Identifier: AGPL-3.0-only */
+@import "@highsea-tv/ui-web/styles.css";
+
+@source "./";
+
+/* A heading wider than its column (a long word at display size, at 200% on a phone) breaks
+   rather than widening the page. */
+:where(h1, h2, h3) {
+  overflow-wrap: anywhere;
+}

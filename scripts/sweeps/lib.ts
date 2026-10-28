@@ -2,7 +2,9 @@
 // Shared pieces of the browser sweeps: the routes to visit, the browser, and page helpers.
 // The routes come from the prototypes' routes test list (design/prototypes/src/routes.tsx), the
 // same list happy-dom renders; Phase 3 adds the server's admin routes the same way.
-import { readFileSync } from 'node:fs'
+import { execFileSync, spawn } from 'node:child_process'
+import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
+import { availableParallelism, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { type Browser, chromium, type Page } from 'playwright-core'
 
@@ -36,12 +38,57 @@ export const heightFor = (width: number) => (width === 390 ? 844 : 900)
 /** The prototypes' dev server (`bun run prototypes`); override with SWEEP_BASE. */
 export const BASE = process.env.SWEEP_BASE ?? 'http://localhost:4500'
 
+/** Where `screenUrl` points: BASE, or the build `servePrototypes` serves. */
+let base = BASE
+
+/**
+ * Builds the prototypes into a temporary folder and serves the build with `vite preview`
+ * (https://vite.dev/guide/cli#vite-preview), which loads each page about three times faster than
+ * the dev server's unbundled modules. SWEEP_BASE sweeps what's already there instead (the dev
+ * server, say). Returns what stops it.
+ */
+export async function servePrototypes(): Promise<() => void> {
+  if (process.env.SWEEP_BASE) return () => {}
+  const cwd = join(ROOT, 'design/prototypes')
+  const out = mkdtempSync(join(tmpdir(), 'highsea-prototypes-'))
+  execFileSync('bunx', ['vite', 'build', '--outDir', out, '--emptyOutDir', '--logLevel', 'warn'], {
+    cwd,
+    stdio: 'inherit',
+  })
+  const port = process.env.SWEEP_PROTOTYPES_PORT ?? '4510'
+  const preview = spawn(
+    'bunx',
+    ['vite', 'preview', '--outDir', out, '--port', port, '--strictPort'],
+    { cwd, stdio: 'ignore', detached: true },
+  )
+  base = `http://localhost:${port}`
+  for (let i = 0; ; i++) {
+    const ok = await fetch(`${base}/index.html`).then(
+      (r) => r.ok,
+      () => false,
+    )
+    if (ok) break
+    if (i > 60) throw new Error(`The prototypes' build didn't start on ${base}`)
+    await Bun.sleep(250)
+  }
+  return () => {
+    if (preview.pid) process.kill(-preview.pid, 'SIGTERM')
+    rmSync(out, { recursive: true, force: true })
+  }
+}
+
+/**
+ * Pages open at once: the machine's cores less two, for the server and the browser's own
+ * processes (https://nodejs.org/api/os.html#osavailableparallelism), between 2 and 12.
+ */
+export const WORKERS = Math.max(2, Math.min(12, availableParallelism() - 2))
+
 /** A screen URL with toolbar state from the query (design/prototypes/README.md#url-parameters). */
 /** A route may carry the toolbar's state after `?` (`/web/downloads?app=desktop`): it joins the query. */
 export const screenUrl = (route: string, query = '') => {
   const [path, own = ''] = route.split('?')
   const q = [own, query].filter(Boolean).join('&')
-  return `${BASE}/index.html?screen&time=pause&sound=off${q ? `&${q}` : ''}#${path}`
+  return `${base}/index.html?screen&time=pause&sound=off${q ? `&${q}` : ''}#${path}`
 }
 
 /**
@@ -51,12 +98,48 @@ export const screenUrl = (route: string, query = '') => {
 export const launch = (): Promise<Browser> =>
   chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {})
 
-/** Dismisses the client announcement modal, if it's up, and waits out its exit animation. */
+/**
+ * Waits until the page stops changing: no DOM mutation for `quiet` ms, or `max` ms at most. The quiet
+ * spell is longer than the mock's latency (180 ms a call, `mock/client.ts`), so a chain of calls
+ * counts as one; a page that never stops (a ticking clock) waits `max`, as a fixed wait did.
+ * MutationObserver: https://developer.mozilla.org/docs/Web/API/MutationObserver
+ */
+export const settle = (page: Page, { quiet = 400, max = 1500 } = {}) =>
+  page.evaluate(
+    ([quiet, max]) =>
+      new Promise<void>((resolve) => {
+        const done = () => {
+          observer.disconnect()
+          clearTimeout(timer)
+          clearTimeout(cap)
+          resolve()
+        }
+        let timer = setTimeout(done, quiet)
+        const cap = setTimeout(done, max)
+        const observer = new MutationObserver(() => {
+          clearTimeout(timer)
+          timer = setTimeout(done, quiet)
+        })
+        observer.observe(document, {
+          subtree: true,
+          childList: true,
+          attributes: true,
+          characterData: true,
+        })
+      }),
+    [quiet, max],
+  )
+
+/** Dismisses the client announcement modal, if it's up, and waits until it has left the page. */
 export async function acknowledge(page: Page) {
   const got = page.getByRole('button', { name: 'Got it' })
   if (await got.count()) {
     await got.first().click()
-    await page.waitForTimeout(1200)
+    // Radix keeps the dialog mounted through its exit animation, then removes it
+    await got
+      .first()
+      .waitFor({ state: 'detached', timeout: 3000 })
+      .catch(() => {})
   }
 }
 

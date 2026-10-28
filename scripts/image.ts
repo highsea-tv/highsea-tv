@@ -239,7 +239,13 @@ function production(from: string, to: string) {
       )
     },
   })
-  console.log(`The production tree: ${needed.length} workspaces, in ${to}`)
+  // the web app's static files (`/web`, ADR 0003's 4.2a section): served, never run, so none of
+  // its sources or dependencies come too; server.ts finds them at ../web/dist
+  const web = join(from, 'apps', 'web', 'dist')
+  if (!existsSync(join(web, 'index.html')))
+    throw new Error('The web app isn’t built: run `bun run build` in apps/web first.')
+  cpSync(web, join(to, 'apps', 'web', 'dist'), { recursive: true })
+  console.log(`The production tree: ${needed.length} workspaces and the web app, in ${to}`)
 }
 
 function size(image: string, budgetMb: number) {

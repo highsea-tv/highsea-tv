@@ -26,3 +26,13 @@ What has to be decided: how each app is built and served or packaged, how its ve
 - Desktop's codecs depend on the OS's webview, so the desktop app can't promise Chromium's set; device profiles carry the difference.
 - Store accounts (Apple Developer, Google Play) and code-signing certificates are the owner's to open; the plan lists them before 4.4 and 4.5.
 - Left to settle at each checkpoint: the desktop updater (Tauri's updater plugin and its signing key), EAS or local builds in CI, and which TV platforms beyond tvOS and Android TV.
+
+## 2026-10-27: the web client as built (checkpoint 4.2a)
+
+`apps/web` is built as decided: Vite 8 and React 19, `base: '/web/'`, Tailwind and `@highsea-tv/ui-web` as the prototype has them, and routes as real paths under `/web` through wouter's `base` ([wouter › Router](https://github.com/molefrog/wouter#router-hook-searchhook-base-)), so each screen has an address that can be shared and reloaded. How the server serves it (the fallback, caching, the CSP) is ADR 0003's 2026-10-27 section; what it shares with the native apps is [ADR 0055](0055-clients-shared-logic.md).
+
+- **Signing in** uses the admin's session cookie, so no token is kept where a page's script could read it ([OWASP's HTML5 Security Cheat Sheet › Local Storage](https://cheatsheetseries.owasp.org/cheatsheets/HTML5_Security_Cheat_Sheet.html#local-storage)). As far as the server knows, the web client's session is the admin's: same device, same `admin` client type.
+- **Development:** `bun run web` runs Vite's dev server on port 3200, which proxies `/api` and `/stream` to `bun run server` ([Vite › server.proxy](https://vite.dev/config/server-options.html#server-proxy)), so the cookie and the API stay on one origin.
+- **The bundle** is 1.38 MB (402 kB gzipped). Most of it is zod and the API contract's schemas, which the SDK uses at run time, as the admin does.
+
+The web part becomes Accepted at 4.2b's sign-off, with the player.

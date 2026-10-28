@@ -53,7 +53,7 @@ export function WebLibrary() {
   const items = library.data ?? []
   const shown = arrange(items, genre, sort, show === 'unwatched')
   return (
-    <main className={cn('mx-auto grid max-w-[1680px] gap-6 pt-6 pb-16', gutter)}>
+    <main className={cn('mx-auto w-full grid max-w-[1680px] gap-6 pt-6 pb-16', gutter)}>
       <LibraryNav current="movies" />
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">

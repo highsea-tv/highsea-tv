@@ -65,3 +65,15 @@ Phase 4 moves the one Node from 24.21.0 to **26.11.1**, and the image from Debia
 - `GET /stream/try` is the review's test page, served only with `HIGHSEA_PLAYBACK_TRY=1`, with a warning at boot.
 
 4.1b adds HLS playlists, segments and WebVTT under the same prefix.
+
+## 2026-10-27: `/web` is served (checkpoint 4.2a)
+
+`http.ts` hands `/web` and everything under it to `apps/server/src/web/`, after `/stream/` and before Next, which never sees those addresses. It serves the web client's static build ([ADR 0053](0053-clients-build-and-distribution.md)) from `apps/web/dist`, or `HIGHSEA_WEB_DIR`, so the client and the API share one origin and the admin's session cookie.
+
+- `/web` redirects to `/web/` (301), keeping the query, since the build's addresses are relative to `base: '/web/'` ([Vite › base](https://vite.dev/config/shared-options.html#base)).
+- An address without a file extension is a route of the app and gets `index.html` (the history API's fallback); a missing file with an extension is a 404, and a path that leaves the build folder is refused. Only `GET` and `HEAD`; anything else is 405.
+- Vite names what it builds under `assets/` by its content's hash, so those are sent with `Cache-Control: public, max-age=31536000, immutable` ([RFC 8246](https://www.rfc-editor.org/rfc/rfc8246)); `index.html` and the icons with `no-cache` and an ETag, so a new release is picked up at the next load ([Vite's static deploy guide](https://vite.dev/guide/static-deploy.html), [RFC 9111 § 5.2.2.4](https://www.rfc-editor.org/rfc/rfc9111#section-5.2.2.4)). Text over 1 KB is gzipped once and kept, for browsers that ask.
+- Every answer carries a Content-Security-Policy that allows only this origin, plus `blob:` media and workers for hls.js in 4.2b, with `nosniff` and `Referrer-Policy: same-origin`.
+- Without a build, a route answers 503 with a page that says how to make one.
+
+The image builds the web app in its build stage, and `scripts/image.ts` copies `apps/web/dist` into the production tree, with none of the web app's sources or dependencies: it's served, never run. The image grew by 2 MB, to 2,093 MB.

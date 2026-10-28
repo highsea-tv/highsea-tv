@@ -3,10 +3,9 @@
 The checks run in a real browser before each checkpoint (docs/plans): what happy-dom can't measure (color contrast, layout overflow, focus indicators, D-pad movement).
 
 ```sh
-bun run prototypes                         # in one terminal: the prototypes on :4500
 bunx playwright-core install chromium      # once
 bun scripts/sweeps/pages.ts [platform] [query]   # axe + overflow + page errors
-bun scripts/sweeps/keyboard.ts             # Tab through every page; every stop shows focus
+bun scripts/sweeps/keyboard.ts [platform]  # Tab through every page; every stop shows focus
 bun scripts/sweeps/dpad.ts                 # every TV focusable is reachable by arrows
 
 bun scripts/sweeps/server.ts [pages|keyboard]    # the server's real admin pages (no prototypes needed)
@@ -21,7 +20,10 @@ bun scripts/sweeps/compare.ts [folder]           # every admin screen beside its
 - **One browser context per page:** a signed-in page holds the event stream open, and Chromium allows six HTTP/1.1 connections per host.
 - **No `networkidle`:** for the same reason it never arrives. A page counts as ready once React has hydrated it and nothing is `aria-busy`.
 
-- `pages.ts` runs every route at its platform's widths in three themes, every data state, 200% text and reduced motion. Narrow it with a platform and one query, e.g. `bun scripts/sweeps/pages.ts web text=200`.
+- **The prototypes' sweeps serve their own build.** `pages.ts`, `keyboard.ts` and `dpad.ts` build the prototypes into a temporary folder and serve it with `vite preview` on :4510 (`SWEEP_PROTOTYPES_PORT`), so nothing needs starting first. A build loads each page about three times faster than the dev server's unbundled modules. `SWEEP_BASE=http://localhost:4500` sweeps a running `bun run prototypes` instead.
+- **No fixed waits.** A page counts as loaded once its DOM has been still for 400 ms (`settle` in `lib.ts`), longer than the mock's 180 ms a call, and 1.5 s at most. The announcement is gone once Radix has removed it. Pages run as many at once as the machine has cores, less two (`WORKERS`, 2 to 12). On a 12-core Mac the three take about 5½ minutes together (pages about 4½, keyboard 1, D-pad 10 seconds); they took 40 before.
+- `pages.ts` runs every route at its platform's widths in three themes, every data state, 200% text and reduced motion. Narrow it with a platform and one query, e.g. `bun scripts/sweeps/pages.ts web text=200`. `keyboard.ts` takes a platform too.
+- **Sweep what changed.** For a fix between checkpoints, run the sweeps for the platform it touched (`pages.ts web`, `keyboard.ts web`); `dpad.ts` only when TV screens changed; `server.ts` only when the admin, `/web` or the server changed. Every sweep runs before a checkpoint report.
 - `SWEEP_BASE` points at another server; `CHROMIUM_PATH` at another Chromium.
 - Each exits non-zero with a line per problem.
 

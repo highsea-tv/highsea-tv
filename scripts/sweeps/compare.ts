@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The full review against the prototypes (checkpoint 9c): every admin screen in the prototype's
-// state beside the server's, at 1440 and 390 in the default theme, for the owner to compare by eye.
+// state beside the server's, at 1440 and 390 in the default theme, for the owner to compare by eye;
+// since 4.2a, the web client's screens too, as the seeded user sees them.
 // Boots the seeded server (seeded.ts) from the production build, captures setup before an owner
 // exists, then seeds it and captures the rest; the prototypes come from `bun run prototypes`,
 // started here if nothing answers on :4500. Writes the pairs, index.html (side by side) and
@@ -116,7 +117,11 @@ const setupPairs: Pair[] = SERVER_STEPS.map((id) => ({
 
 // ---------------------------------------------------------------- the rest, by the matrix's rows
 
-function pairs(ids: Awaited<ReturnType<typeof seed>>): { signedOut: Pair[]; owner: Pair[] } {
+function pairs(ids: Awaited<ReturnType<typeof seed>>): {
+  signedOut: Pair[]
+  owner: Pair[]
+  web: Pair[]
+} {
   const path = (link: string) => new URL(link).pathname
   return {
     signedOut: [
@@ -423,8 +428,65 @@ function pairs(ids: Awaited<ReturnType<typeof seed>>): { signedOut: Pair[]; owne
       },
       { screen: 'A1 Shell', name: 'not found', ...both('/admin/nowhere', '/no/such/page') },
     ],
+    // the web client (4.2a), as Theo, a user; the prototype's ids are its mock's
+    web: [
+      { screen: 'C2 Home', name: 'web home', ...both('/web', '/web/') },
+      { screen: 'C3 Library', name: 'web library', ...both('/web/library', '/web/library') },
+      {
+        screen: 'C3 Library',
+        name: 'web collections',
+        ...both('/web/library/collections', '/web/library/collections'),
+      },
+      {
+        screen: 'C3 Library',
+        name: 'web collection',
+        ...both('/web/collections/sc-staff', `/web/collections/${ids.handPicked.id}`),
+      },
+      {
+        screen: 'C3 Library',
+        name: 'web smart collection',
+        ...both('/web/collections/sc-2010s', `/web/collections/${ids.decade.id}`),
+      },
+      { screen: 'C4 Item', name: 'web movie', ...both('/web/movies/4', '/web/movies/45745') },
+      {
+        screen: 'C4 Item',
+        name: 'web movie not here',
+        ...both('/web/movies/nothing-here', '/web/movies/19'),
+      },
+      { screen: 'C6 Search', name: 'web search', ...both('/web/search', '/web/search') },
+      ...['appearance', 'sounds', 'home', 'servers', 'devices', 'about'].map((section) => ({
+        screen: 'C7 Settings',
+        name: `web ${section}`,
+        ...both(`/web/settings/${section}`, `/web/settings/${section}`),
+      })),
+      { screen: 'C7 Settings', name: 'web profile', ...both('/web/profile', '/web/profile') },
+      {
+        screen: 'C7 Settings',
+        name: 'web downloads',
+        ...both('/web/downloads', '/web/downloads'),
+        note: 'Downloads live in the desktop app (4.4): the web says so.',
+      },
+    ],
   }
 }
+
+/** The web client's sign-in, before anyone's signed in: C1's step for this server. */
+const webSignedOut: Pair[] = [
+  {
+    screen: 'C1 Connect',
+    name: 'web sign in',
+    prototype: {
+      path: '/web/connect',
+      act: (p) =>
+        p
+          .getByRole('button', { name: /Harbor/ })
+          .first()
+          .click(),
+    },
+    server: { path: '/web/' },
+    note: 'The web uses the server it came from: no choosing or adding servers (the owner’s answer 3).',
+  },
+]
 
 // ---------------------------------------------------------------- capturing
 
@@ -482,12 +544,17 @@ async function captureServer(
       if (setup) localStorage.setItem('highsea:setup', setup)
     }, side.setup ?? '')
     await page.goto(`${base}${side.path}`)
-    // ready, as the sweep has it: hydrated, and nothing aria-busy
-    await page.waitForFunction(
-      () =>
-        Object.keys(document.documentElement).some((k) => k.startsWith('__reactProps$')) &&
-        !document.querySelector('[aria-busy="true"]'),
-    )
+    // ready, as the sweep has it: hydrated (Next's <html>, or the web app's #root), and nothing
+    // aria-busy
+    await page.waitForFunction(() => {
+      const rendered = (el: Element | null | undefined) =>
+        !!el && Object.keys(el).some((k) => k.startsWith('__reactProps$'))
+      return (
+        (rendered(document.documentElement) ||
+          rendered(document.getElementById('root')?.firstElementChild)) &&
+        !document.querySelector('[aria-busy="true"]')
+      )
+    })
     await side.act?.(page)
     await page.waitForTimeout(400)
     await settleAnimations(page)
@@ -540,23 +607,29 @@ if (!(await up())) {
 const production = process.env.COMPARE_DEV !== '1'
 if (production)
   execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/server'), stdio: 'inherit' })
+execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/web'), stdio: 'inherit' })
 const server = await boot(PORT, { production })
 try {
   await capture(setupPairs, () => browser.newContext(), server.base)
   const ids = await seed(server, OWNER, 'Compare script')
   const list = pairs(ids)
-  await capture(list.signedOut, () => browser.newContext(), server.base)
+  await capture([...list.signedOut, ...webSignedOut], () => browser.newContext(), server.base)
   // signed in through the login page once; each page's context reuses the cookie
-  const login = await browser.newContext()
-  const page = await login.newPage()
-  await page.goto(`${server.base}/login`)
-  await page.getByLabel('Username').fill(OWNER.username)
-  await page.getByLabel('Password').fill(OWNER.password)
-  await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-  await page.waitForURL(`${server.base}/`)
-  const storageState = await login.storageState()
-  await login.close()
-  await capture(list.owner, () => browser.newContext({ storageState }), server.base)
+  const signIn = async (username: string, password: string) => {
+    const login = await browser.newContext()
+    const page = await login.newPage()
+    await page.goto(`${server.base}/login`)
+    await page.getByLabel('Username').fill(username)
+    await page.getByLabel('Password').fill(password)
+    await page.getByRole('button', { name: 'Sign in', exact: true }).click()
+    // a user goes on to the web client
+    await page.waitForURL((u) => u.pathname === '/' || u.pathname === '/web/')
+    const storageState = await login.storageState()
+    await login.close()
+    return () => browser.newContext({ storageState })
+  }
+  await capture(list.owner, await signIn(OWNER.username, OWNER.password), server.base)
+  await capture(list.web, await signIn('theo', 'theo theo theo'), server.base)
 } finally {
   await browser.close()
   await server.stop()

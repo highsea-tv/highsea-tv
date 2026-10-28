@@ -3,7 +3,7 @@
 // else with Next, on one port, and on a second HTTPS port when built-in TLS is on (ADR 0026).
 // SIGTERM shuts down in order: stop listening, then the runtime. A restore restarts the same way,
 // exiting with RESTART_EXIT_CODE for Docker's restart policy (ADR 0047).
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Fetch } from '@highsea-tv/core'
 import { loadCertificate } from '@highsea-tv/network'
@@ -13,6 +13,7 @@ import pkg from './package.json' with { type: 'json' }
 import { createApi } from './src/api/app.ts'
 import { createHttpServer, createTlsServer } from './src/http.ts'
 import { createStream } from './src/stream/index.ts'
+import { createWeb } from './src/web/index.ts'
 
 const config = loadConfig()
 const runtime = await boot({
@@ -52,6 +53,12 @@ const handlers = {
   api: createApi(runtime),
   next: handle,
   stream: createStream(runtime, { tryPage }),
+  // the web client's build (apps/web); `bun run web` serves it with Vite in development instead
+  web: createWeb({
+    dir:
+      process.env.HIGHSEA_WEB_DIR ??
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'web', 'dist'),
+  }),
 }
 const server = createHttpServer(handlers)
 server.listen(config.port, config.host, () =>

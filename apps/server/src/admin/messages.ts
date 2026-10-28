@@ -19,6 +19,7 @@ export const shell = defineMessages({
   'nav.settings': 'Settings',
   'nav.system': 'System',
   'nav.account': 'Your account',
+  'nav.watch': 'Watch on highsea',
   // what else the palette finds each page by, comma-separated
   'keywords.dashboard': 'home',
   'keywords.discover': 'add, search, tmdb, trending',
@@ -34,6 +35,7 @@ export const shell = defineMessages({
   'keywords.system': 'logs, health, backups, tasks, events, updates, restore',
   'keywords.customize': 'widgets, layout',
   'keywords.account': 'password, two-step, passkeys, profile, sign out',
+  'keywords.watch': 'web, play, stream, movies, client',
   'keywords.addMovie': 'tmdb, search',
   'server.notConnected': 'Not connected',
   'server.retrying': 'Retrying every few seconds',

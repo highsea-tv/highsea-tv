@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The gate in front of every admin page: setup first, then a signed-in person, then staff. A user
-// gets the refusal page at every admin address, with nothing of the admin loaded (ADR 0032).
+// is sent to the web app at every admin address, with nothing of the admin loaded (ADR 0032's
+// 4.2a section).
 // Server components only redirect here (ADR 0018); the shell and its data are client components
 // on the API.
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
-import { Refusal } from '../../src/admin/refusal.tsx'
 import { currentSession, setupComplete } from '../../src/admin/session.ts'
 import { AdminShell } from '../../src/admin/shell.tsx'
 import { PATH_HEADER } from '../../src/session-cookie.ts'
@@ -22,6 +22,6 @@ export default async function AdminLayout({ children }: { children: ReactNode })
     const path = (await headers()).get(PATH_HEADER)
     redirect(path && path !== '/' ? `/login?next=${encodeURIComponent(path)}` : '/login')
   }
-  if (session.role === 'user') return <Refusal />
+  if (session.role === 'user') redirect('/web/')
   return <AdminShell role={session.role}>{children}</AdminShell>
 }

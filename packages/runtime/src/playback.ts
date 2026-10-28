@@ -519,6 +519,8 @@ export function createPlayback(deps: {
     report,
     profileFor,
     open,
+    /** Whether an address is away from home: the test that applies the remote ceiling. */
+    away: (address: string) => !home.has(address),
     hls: { playlist, segment, init, subtitleList },
     subtitle,
     /** The live sessions, for Now playing (4.3) and the test page. */

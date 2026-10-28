@@ -76,3 +76,12 @@ Half-powers were the problem. A member with "Manage the library" saw an admin wi
 - Saving network and metadata settings stays owner-only, as checkpoints 2 and 4 built it. Trusted proxies decide whose forward-auth header the server believes, so an admin who could change them could sign in as the owner. The owner confirmed this on 2026-10-20.
 - Security and Backups are left out for admins: not in their Settings, not at their addresses, and no Backups tab in System. The API refuses admins those settings, reads included. The owner chose this over a read-only view on 2026-10-20.
 - A future per-user setting such as a content rating limit goes on User. It doesn't bring back a role.
+
+## 2026-10-27: users are sent to the web client (checkpoint 4.2a)
+
+The refusal page is gone. With the web client at `/web` (Phase 4, checkpoint 4.2a), a user who signs in on the admin's sign-in page, or opens any admin address, is redirected to `/web/` by the admin's layout before anything of the admin loads. The rest of this ADR stands: the admin is the owner's and admins' only, and the API refuses users what it refused them before.
+
+- One session cookie serves both, so a user signed in on the admin is signed in on `/web`, and signing out of either signs out of both.
+- An open admin whose person is demoted reloads, and the reload sends them to `/web/`.
+- The owner and admins reach the web client from **Watch on highsea**, in the sidebar beside Your account and in the command palette (the owner's answer 5 to the 4.2 scope). The admin's link handler leaves `/web` to the browser, since it isn't one of Next's routes.
+- The prototype does the same: a user at `#/admin` is sent to `#/web`.

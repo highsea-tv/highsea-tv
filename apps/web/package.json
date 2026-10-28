@@ -1,0 +1,38 @@
+{
+  "name": "@highsea-tv/web",
+  "version": "0.1.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --port 3200",
+    "build": "vite build",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea-tv/api-contract": "workspace:*",
+    "@highsea-tv/brand": "workspace:*",
+    "@highsea-tv/client": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/i18n": "workspace:*",
+    "@highsea-tv/sdk": "workspace:*",
+    "@highsea-tv/tokens": "workspace:*",
+    "@highsea-tv/ui-web": "workspace:*",
+    "motion": "14.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "wouter": "3.13.0"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "21.0.3",
+    "@highsea-tv/config": "workspace:*",
+    "@tailwindcss/vite": "4.3.3",
+    "@testing-library/react": "16.3.3",
+    "@testing-library/user-event": "14.6.8",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.1.2",
+    "tailwindcss": "4.3.3",
+    "vite": "8.3.4"
+  }
+}

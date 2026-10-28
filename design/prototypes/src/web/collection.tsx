@@ -13,7 +13,7 @@ export function WebCollection() {
   const found = useCollection(id, 'web')
   if (found.status === 'loading')
     return (
-      <main aria-busy className={cn('mx-auto grid max-w-[1680px] gap-4 pt-8', gutter)}>
+      <main aria-busy className={cn('mx-auto w-full grid max-w-[1680px] gap-4 pt-8', gutter)}>
         <Skeleton className="h-10 w-80" />
         <SkeletonText lines={2} />
       </main>
@@ -45,7 +45,7 @@ export function WebCollection() {
           className="absolute inset-0 size-full object-cover opacity-35"
         />
         <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg),transparent)]" />
-        <div className={cn('relative mx-auto grid max-w-[1680px] gap-2 pt-24 pb-6', gutter)}>
+        <div className={cn('relative mx-auto w-full grid max-w-[1680px] gap-2 pt-24 pb-6', gutter)}>
           <p className="font-mono text-label text-text-3 uppercase">
             {c.smart?.words ? 'Smart collection' : 'Collection'}
           </p>

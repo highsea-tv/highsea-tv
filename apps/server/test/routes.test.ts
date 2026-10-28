@@ -340,6 +340,17 @@ describe('people', () => {
   })
 })
 
+describe('the session', () => {
+  test('says whether it’s asked from away, by the remote ceiling’s own test', async () => {
+    const { runtime, ownerApi } = await started()
+    // the tests' requests come from loopback, which is home
+    expect((await ownerApi.auth.session()).away).toBe(false)
+    expect(runtime.playback.away('192.168.1.20')).toBe(false)
+    expect(runtime.playback.away('fd12::5')).toBe(false)
+    expect(runtime.playback.away('203.0.113.9')).toBe(true)
+  })
+})
+
 describe('devices and keys', () => {
   test('your own current device signs out instead; others can be revoked', async () => {
     const { runtime, owner, app, ownerApi } = await started()

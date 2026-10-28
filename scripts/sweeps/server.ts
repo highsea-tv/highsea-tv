@@ -2,13 +2,15 @@
 // The server's admin pages (Phase 3): the same checks as the prototype sweeps, on the real thing.
 // Boots a throwaway server (seeded.ts), sweeps setup, finishes it and seeds the admin through the
 // API, then visits every admin page signed out, as the owner and as an admin, and as a user, who
-// gets the refusal page at every address (ADR 0032): axe, overflow and page errors in three themes,
-// at 200% text and with reduced motion, then the keyboard walk. It runs the production build, as the
-// image does (`next build` first); SWEEP_DEV=1 runs Next's dev server instead, without the build.
+// is sent to the web app at every address (ADR 0032), then the web app (`/web`, checkpoint 4.2a)
+// signed out and as that user: axe, overflow and page errors in three themes, at 200% text and
+// with reduced motion, then the keyboard walk. It runs the production build, as the image does
+// (`next build` and the web app's `vite build` first); SWEEP_DEV=1 runs Next's dev server instead,
+// without Next's build.
 // Usage: bun scripts/sweeps/server.ts [pages|keyboard]
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
-import type { BrowserContext, Page } from 'playwright-core'
+import type { BrowserContext, BrowserContextOptions, Page } from 'playwright-core'
 import {
   axe,
   escapes,
@@ -41,6 +43,8 @@ const SHOTS = process.env.SWEEP_SHOTS
 const production = process.env.SWEEP_DEV !== '1'
 if (production)
   execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/server'), stdio: 'inherit' })
+// the server serves the web app from its build in either mode
+execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/web'), stdio: 'inherit' })
 const server = await boot(PORT, { production })
 const { base: BASE, dataDir, stop } = server
 const path = (link: string) => new URL(link).pathname
@@ -61,6 +65,11 @@ type Visit = {
 
 const problems: string[] = []
 const browser = await launch()
+// axe goes in as an inline script, which /web's Content Security Policy refuses, as it should;
+// Playwright's `bypassCSP` lets the sweep's own scripts in
+// (https://playwright.dev/docs/api/class-browser#browser-new-context-option-bypass-csp)
+const context = (options: BrowserContextOptions = {}) =>
+  browser.newContext({ bypassCSP: true, ...options })
 
 async function open(context: BrowserContext, v: Visit, width: number, variant?: string) {
   const page = await context.newPage()
@@ -81,12 +90,17 @@ async function open(context: BrowserContext, v: Visit, width: number, variant?: 
   await page.goto(`${BASE}${v.path}`)
   // Not 'networkidle', which Playwright discourages and which never comes here: a signed-in page
   // keeps the event stream open. Ready means hydrated (React DOM puts its props key on an element
-  // once it's hydrated, and <html> finishes last) with nothing still loading (aria-busy).
-  await page.waitForFunction(
-    () =>
-      Object.keys(document.documentElement).some((k) => k.startsWith('__reactProps$')) &&
-      !document.querySelector('[aria-busy="true"]'),
-  )
+  // once it's hydrated, and <html> finishes last; the web app renders into #root instead) with
+  // nothing still loading (aria-busy).
+  await page.waitForFunction(() => {
+    const rendered = (el: Element | null | undefined) =>
+      !!el && Object.keys(el).some((k) => k.startsWith('__reactProps$'))
+    return (
+      (rendered(document.documentElement) ||
+        rendered(document.getElementById('root')?.firstElementChild)) &&
+      !document.querySelector('[aria-busy="true"]')
+    )
+  })
   if (variant?.startsWith('theme='))
     await page.evaluate(
       (t) => document.documentElement.setAttribute('data-theme', t),
@@ -183,7 +197,7 @@ try {
   ]
   await sweep(
     steps.map((s, i) => ({ name: `setup:${s}`, path: '/setup', init: i ? draft(i) : undefined })),
-    () => browser.newContext(),
+    () => context(),
   )
   await sweep(
     [
@@ -194,7 +208,7 @@ try {
         act: (p) => p.getByRole('button', { name: 'Browse' }).first().click(),
       },
     ],
-    () => browser.newContext(),
+    () => context(),
   )
 
   // finish setup and seed what the pages show
@@ -211,21 +225,22 @@ try {
       { name: 'link:dead', path: '/invite/nothing-here' },
       { name: 'nowhere', path: '/no/such/page/outside' },
     ],
-    () => browser.newContext(),
+    () => context(),
   )
 
   // signed in through the login page, once each; each page's context reuses the cookie
   async function signIn(username: string, password: string) {
-    const login = await browser.newContext()
+    const login = await context()
     const page = await login.newPage()
     await page.goto(`${BASE}/login`)
     await page.getByLabel('Username').fill(username)
     await page.getByLabel('Password').fill(password)
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-    await page.waitForURL(`${BASE}/`)
+    // a user goes on to the web app
+    await page.waitForURL((u) => u.pathname === '/' || u.pathname === '/web/')
     const storageState = await login.storageState()
     await login.close()
-    return () => browser.newContext({ storageState })
+    return () => context({ storageState })
   }
   const ownerContext = await signIn(OWNER.username, OWNER.password)
   const tab = (name: string | RegExp) => (p: Page) => p.getByRole('tab', { name }).click()
@@ -589,12 +604,15 @@ try {
     await signIn('ruth', 'ruth ruth ruth'),
   )
 
-  // a user: the refusal page at every admin address, and nothing else
-  const refused = (p: Page) =>
-    p.getByRole('heading', { name: 'This is where the server’s owner and admins run it' }).waitFor()
+  // a user: sent to the web app at every admin address, with nothing of the admin loaded
+  const sent = async (p: Page) => {
+    if (new URL(p.url()).pathname !== '/web/')
+      throw new Error(`a user stayed on ${new URL(p.url()).pathname}`)
+    await p.getByRole('navigation', { name: 'Main' }).waitFor()
+  }
+  const theo = await signIn('theo', 'theo theo theo')
   await sweep(
     [
-      { name: 'user:refusal', path: '/' },
       ...[
         '/',
         '/settings/users',
@@ -605,9 +623,62 @@ try {
         '/people/68',
         '/activity',
         '/downloads',
-      ].map((path) => ({ name: `user:${path}`, path, act: refused })),
+      ].map((path) => ({ name: `user:${path}`, path, act: sent })),
     ],
-    await signIn('theo', 'theo theo theo'),
+    theo,
+  )
+
+  // the web app (4.2a), signed out: its sign-in, and its routes, which all ask to sign in first
+  await sweep(
+    [
+      { name: 'web:sign-in', path: '/web/' },
+      { name: 'web:sign-in:deep', path: '/web/movies/45745' },
+      {
+        name: 'web:sign-in:wrong',
+        path: '/web/',
+        act: async (p) => {
+          // a new name each time: ten failures for one name would lock it (LIMITS.account)
+          await p.getByLabel('Username').fill(`nobody-${crypto.randomUUID().slice(0, 8)}`)
+          await p.getByLabel('Password').fill('not this')
+          await p.getByRole('button', { name: 'Sign in' }).click()
+          await p.getByText('That username and password don’t match').waitFor()
+        },
+      },
+    ],
+    () => context(),
+  )
+
+  // the web app as a user, with the seeded films, sections and collections
+  const search = (query: string) => async (p: Page) => {
+    await p.getByRole('searchbox', { name: 'Search titles, genres and people' }).fill(query)
+    await p.waitForFunction(() => !document.querySelector('[aria-busy="true"]'))
+  }
+  await sweep(
+    [
+      { name: 'web:home', path: '/web/' },
+      // no menus left open: an open Radix menu hides the page behind it with aria-hidden, which axe
+      // reads as hidden focusable content (as settings:profiles:edit:grouped says)
+      { name: 'web:library', path: '/web/library' },
+      { name: 'web:collections', path: '/web/library/collections' },
+      { name: 'web:collection', path: `/web/collections/${handPicked.id}` },
+      { name: 'web:collection:smart', path: `/web/collections/${decade.id}` },
+      { name: 'web:collection:missing', path: '/web/collections/nothing-here' },
+      { name: 'web:movie', path: '/web/movies/45745' },
+      { name: 'web:movie:one-version', path: '/web/movies/653' },
+      { name: 'web:movie:missing', path: '/web/movies/19' },
+      { name: 'web:search', path: '/web/search' },
+      { name: 'web:search:results', path: '/web/search', act: search('sintel') },
+      { name: 'web:search:nothing', path: '/web/search', act: search('zzzz') },
+      ...['appearance', 'sounds', 'home', 'servers', 'devices', 'about'].map((s) => ({
+        name: `web:settings:${s}`,
+        path: `/web/settings/${s}`,
+      })),
+      { name: 'web:profile', path: '/web/profile' },
+      { name: 'web:downloads', path: '/web/downloads' },
+      { name: 'web:play', path: '/web/play/45745' },
+      { name: 'web:nowhere', path: '/web/no/such/page' },
+    ],
+    theo,
   )
 } finally {
   await browser.close()

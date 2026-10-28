@@ -2,7 +2,7 @@
 // A1, the admin shell (admin.md): the sidebar (full at expanded and up, a rail at medium, a menu
 // sheet at compact), the ⌘K palette, announcement banners, toasts for background events, and the
 // status bar. Pages render inside through `AdminPage`. Only the owner and admins open the admin
-// (ADR 0032), so it has one shape; a user gets the refusal page instead.
+// (ADR 0032), so it has one shape; a user is sent to the web client instead (checkpoint 4.2a).
 
 import { bytes, relative } from '@highsea-tv/core/format'
 import {
@@ -42,7 +42,6 @@ import { useClient, useNow, useQuery } from '../mock/hooks.tsx'
 import type { Announcement, StaffRole, UserRole } from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'
 import { pageAt, pageGroups } from './nav.ts'
-import { Refusal } from './refusal.tsx'
 
 type Shell = {
   role: StaffRole
@@ -146,7 +145,7 @@ function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => vo
       footer={card}
       className={mode ? 'w-full border-0 bg-transparent p-0' : undefined}
     >
-      {pageGroups.map((group) => (
+      {pageGroups.map((group, i) => (
         <NavGroup key={group[0]?.id}>
           {group.map((p) => (
             <NavItem
@@ -159,6 +158,10 @@ function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => vo
               onClick={onNavigate}
             />
           ))}
+          {/* the web client, for watching (checkpoint 4.2a): with your own things, last */}
+          {i === pageGroups.length - 1 && (
+            <NavItem icon="tv" label="Watch on highsea" href="#/web" onClick={onNavigate} />
+          )}
         </NavGroup>
       ))}
     </Sidebar>
@@ -227,6 +230,13 @@ function usePaletteGroups(shell: Pick<Shell, 'setCustomizing'>): CommandGroup[] 
               () => toast({ title: 'Downloads resumed' }),
               () => toast.error('Couldn’t resume downloads'),
             ),
+        },
+        {
+          id: 'watch',
+          label: 'Watch on highsea',
+          icon: 'tv',
+          keywords: ['web', 'play', 'stream', 'client'],
+          onSelect: () => navigate('~/web'),
         },
         {
           id: 'sign-out',
@@ -357,10 +367,14 @@ function useImportToasts() {
 
 // ---------------------------------------------------------------- the shell
 
-/** The admin, or the refusal page for a user: no admin data loads for them. */
+/** The admin, or the web client for a user: no admin data loads for them. */
 export function AdminShell({ children }: { children: ReactNode }) {
   const role = useRole()
-  return role === 'user' ? <Refusal /> : <StaffShell role={role}>{children}</StaffShell>
+  const [, navigate] = useLocation()
+  useEffect(() => {
+    if (role === 'user') navigate('~/web', { replace: true })
+  }, [role, navigate])
+  return role === 'user' ? null : <StaffShell role={role}>{children}</StaffShell>
 }
 
 function StaffShell({ role, children }: { role: StaffRole; children: ReactNode }) {

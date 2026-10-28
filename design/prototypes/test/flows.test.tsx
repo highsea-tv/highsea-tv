@@ -129,9 +129,9 @@ describe('A3 dashboard', () => {
     expect(page().queryByRole('menuitem', { name: /default for/ })).toBeNull()
   })
 
-  test('a user gets the refusal page instead of the dashboard', async () => {
-    await open('/admin', 'user')
-    expect(page().getByText('This is where the server’s owner and admins run it')).toBeTruthy()
+  test('a user is sent to the web client instead of the dashboard', async () => {
+    const { location } = await open('/admin', 'user')
+    expect(location.history.at(-1)).toBe('/web')
     expect(page().queryByRole('button', { name: 'Customize' })).toBeNull()
   })
 })

@@ -20,7 +20,7 @@ export function WebSettings() {
   return (
     <main
       className={cn(
-        '@container mx-auto grid max-w-[1100px] grid-cols-[minmax(0,1fr)] gap-6 py-8',
+        '@container mx-auto w-full grid max-w-[1100px] grid-cols-[minmax(0,1fr)] gap-6 py-8',
         gutter,
       )}
     >
@@ -79,7 +79,12 @@ export function WebProfile() {
   const server = useServer()
   const name = server.data?.name ?? 'Harbor'
   return (
-    <main className={cn('mx-auto grid max-w-[720px] grid-cols-[minmax(0,1fr)] gap-6 py-8', gutter)}>
+    <main
+      className={cn(
+        'mx-auto w-full grid max-w-[720px] grid-cols-[minmax(0,1fr)] gap-6 py-8',
+        gutter,
+      )}
+    >
       <div className="flex items-center gap-4">
         <span
           aria-hidden
@@ -153,7 +158,7 @@ export function WebDownloads() {
   return (
     <main
       className={cn(
-        'mx-auto grid min-h-[60vh] max-w-[1680px] grid-cols-[minmax(0,1fr)] place-items-center',
+        'mx-auto w-full grid min-h-[60vh] max-w-[1680px] grid-cols-[minmax(0,1fr)] place-items-center',
         gutter,
       )}
     >
@@ -179,7 +184,7 @@ function DesktopDownloads() {
   return (
     <main
       className={cn(
-        'mx-auto grid max-w-[1680px] grid-cols-[minmax(0,1fr)] gap-6 pt-6 pb-16',
+        'mx-auto w-full grid max-w-[1680px] grid-cols-[minmax(0,1fr)] gap-6 pt-6 pb-16',
         gutter,
       )}
     >
