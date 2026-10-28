@@ -18,7 +18,8 @@ Everything around the picture: where you are and moving through it, sound and su
 
 - **Top:** Back (to the item page), the title and the version's description ("4K · HEVC · 2.4 GB"), the version tag at the right.
 - **Centre:** a large Play while paused (a pointer target only; the transport's Play is the accessible one).
-- **Bottom:** the scrubber with a **trickplay** frame and time over the pointer; Play/Pause, back 10 s, forward 10 s, Mute, "4:12 / 12:00", then **Audio and subtitles** and **Full screen** at the right.
+- **Bottom:** the scrubber with a **trickplay** frame and time over the pointer; Play/Pause, back 10 s, forward 10 s, Mute (from the medium breakpoint up), "4:12 / 12:00", then **Audio and subtitles**, **Picture in picture** (where the browser has it) and **Full screen** at the right.
+- **Picture in picture** (checkpoint 4.2b): the film plays in the browser's own window, through the [Picture-in-Picture API](https://developer.mozilla.org/en-US/docs/Web/API/Picture-in-Picture_API). The button is left out where the browser hasn't got the API (Firefox has its own toggle on the video). While it's out, the frame shows the icon, "Playing in picture in picture" and **Back to this tab**; the chrome stays.
 - **Audio and subtitles panel** (right, 22rem, glass): Version (when several), Audio, Subtitles (Off first), then **Subtitle timing** when subtitles are on: − and + in 50 ms steps, the offset ("+100 ms", "On time"), **Reset**, the **live preview line**, and "Subtitles appear 100 ms later. Saved for this movie."
 - **Subtitles** sit in the lower third and rise above the chrome while it shows.
 
@@ -65,7 +66,8 @@ Prototyped on all three platforms; the prototype's toolbar picks one under **Str
 | Tracks | The button, or the panel | The button | ↓ to Audio and subtitles |
 | Close panel / leave | Esc closes the panel, then leaves | Back | Back closes the panel, hides the chrome, then leaves |
 | Full screen | F, or the button | Always | Always |
-| Mute | M | The device's buttons | The TV's volume |
+| Picture in picture | The button, where the browser has it | — | — |
+| Mute | M, or the button from the medium breakpoint | The device's buttons | The TV's volume |
 
 - **Saving:** the position is reported on pause, on seeking and on leaving (Resume, Continue watching). The version, audio, subtitles and the subtitle offset are saved as they change, per person and title.
 - **Skip intro:** left out. It needs intro detection, which is a later feature; a greyed button would promise something that doesn't work.
@@ -83,6 +85,7 @@ Prototyped on all three platforms; the prototype's toolbar picks one under **Str
 | Didn't start | This film didn't start · highsea couldn't read the file. Try again, or choose another version in Audio and subtitles. · Try again · Back |
 | Stopped | {name} stopped this stream · "{message}" · You can start it again from where you were. · Start again · Back |
 | Next up | Next up · {title} · Starts in {n} s · Play now · Cancel |
+| Picture in picture | Picture in picture · Playing in picture in picture · Back to this tab |
 
 ## Data
 
@@ -97,6 +100,7 @@ Prototyped on all three platforms; the prototype's toolbar picks one under **Str
 - **A preview line, not a test clip.** Moving a bar under a cue shows the direction at once; replaying a line of dialogue is the product's job when real video exists.
 - **No skip intro** until intro detection exists (decided here, as the plan asked).
 - **Mobile is landscape,** like every phone video player; portrait playback isn't designed.
+- **Picture in picture is a button on the web** (approved by the owner on 2026-10-27, at the start of 4.2b): Chromium and Safari otherwise offer it only from a menu. To leave it room at 390, Mute shows from the medium breakpoint up; phones and tablets have their own volume buttons, and M still mutes.
 - **TV keeps Left and Right for seeking** while the scrubber has focus, and moves focus only with Down, so a press of the arrows never leaves the scrubber by surprise.
 
 ## Open questions

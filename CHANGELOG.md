@@ -7,6 +7,21 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.2.0-beta.1] - 2026-10-28
+
+### Added
+
+- Watching in the browser: every server has a web app at `/web`, with Home, the library, collections, search, each film's page and settings, for the Owner, Admins and Users alike. Users who sign in are taken there, and **Watch on highsea** in the admin's sidebar opens it.
+- A player in the web app: films play as they are where the browser can, and otherwise are repackaged or converted as they play. Audio, subtitles and the version can be changed while watching, subtitles can be moved earlier or later in 50 ms steps, and the position bar shows previews of the film.
+- Picking up where you stopped: the place in each film is kept for each person, on every device, and a film counts as watched past 90%. Smart collections can use what each person has watched.
+- Next up, near the end of a film in a collection, and picture in picture where the browser has it.
+- Adding a root folder now scans it, and adds the films in it that highsea can match with confidence.
+
+### Changed
+
+- The image runs on Node 26 and Debian trixie, and the admin on Next.js 16.4.
+- Long names, labels and numbers no longer spill out of their buttons, badges and panels in the admin on narrow screens.
+
 ## [0.1.0] - 2026-10-23
 
 ### Added
@@ -30,5 +45,7 @@ While highsea is at 0.x, any release may change how something works. When one do
 - A one-time migration from Radarr and qBittorrent in Settings › Migration.
 - Images for amd64 and arm64 at `ghcr.io/highsea-tv/highsea`, with compose files and templates for Unraid, TrueNAS and Synology.
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.1.0...HEAD
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.2.0-beta.1...HEAD
+[0.2.0-beta.1]: https://github.com/highsea-tv/highsea-tv/compare/v0.1.0...v0.2.0-beta.1
 [0.1.0]: https://github.com/highsea-tv/highsea-tv/releases/tag/v0.1.0

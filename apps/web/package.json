@@ -18,6 +18,7 @@
     "@highsea-tv/sdk": "workspace:*",
     "@highsea-tv/tokens": "workspace:*",
     "@highsea-tv/ui-web": "workspace:*",
+    "hls.js": "1.7.3",
     "motion": "14.3.0",
     "react": "19.3.1",
     "react-dom": "19.3.1",

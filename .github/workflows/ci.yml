@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Every push and pull request: lint, types, tests (Bun), the platform under Node, the license
-# audit, the dependency check, the admin's build, highsea connects' leak test, and the image on
+# audit, the dependency check, the admin's build, highsea connects' leak test, the web player in
+# Chromium and Firefox (phase-4-checkpoint-2.md › Tests, 4.2b), and the image on
 # both platforms: built, booted healthy, inside its size budget, with its labels and attestations.
 # Nothing is pushed (phase-3-checkpoint-9.md › Images: "CI builds both platforms … and pushes
 # nothing").
@@ -83,6 +84,37 @@ jobs:
       # the guides as static files, as docs.highsea.tv serves them; Vercel deploys them from main (ADR 0050's 2026-10-23 section)
       - name: Build the docs site
         run: bun run --filter @highsea-tv/docs build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+  # the web player in real browsers: the seeded production build with generated clips, one played
+  # directly and one as HLS, a subtitle drawn, a seek far ahead, and the place kept on leaving
+  # (scripts/sweeps/playback.ts). ffmpeg makes the clips and the server's streams, and its
+  # libraries are what Firefox decodes H.264 and AAC with on Linux
+  # (https://support.mozilla.org/kb/html5-audio-and-video-firefox)
+  playback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-${{ runner.arch }}-
+      - run: bun install --frozen-lockfile
+      - name: ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Chromium and Firefox for Playwright
+        run: bunx playwright-core install --with-deps chromium firefox
+      - name: Playback in Chromium and Firefox
+        run: bun scripts/sweeps/playback.ts
         env:
           NEXT_TELEMETRY_DISABLED: 1
 

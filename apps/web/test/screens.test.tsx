@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The web app (checkpoint 4.2a) against a fake of the API: signing in, Home, a title's page and
-// its picks, one that isn't here, the remote pill, and a server that stops answering.
+// The web app (checkpoints 4.2a and 4.2b) against a fake of the API: signing in, Home, a title's
+// page and its picks, one that isn't here, the remote pill, a server that stops answering, and the
+// player: starting, its panel, a film that doesn't start, and leaving.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
 
@@ -52,7 +53,14 @@ const theo = {
   createdAt: '2026-10-01T00:00:00.000Z',
 }
 
-type State = { signedIn: boolean; away: boolean; down: boolean; calls: string[] }
+type State = {
+  signedIn: boolean
+  away: boolean
+  down: boolean
+  playFails: boolean
+  calls: string[]
+  bodies: Record<string, unknown>
+}
 let state: State
 
 const version = (id: string, label: string) => ({
@@ -91,6 +99,7 @@ async function api(input: string | URL | Request, init: RequestInit = {}) {
   if (u.pathname === '/api/v1/events') return new Response(new ReadableStream())
   state.calls.push(`${method} ${u.pathname}`)
   const body = init.body ? JSON.parse(String(init.body)) : undefined
+  if (body !== undefined) state.bodies[`${method} ${u.pathname}`] = body
   switch (`${method} ${u.pathname}`) {
     case 'GET /api/v1/system/info/public':
       return json({
@@ -194,12 +203,39 @@ async function api(input: string | URL | Request, init: RequestInit = {}) {
       })
     case 'POST /api/v1/items/movie/45745/played':
       return new Response(null, { status: 204 })
+    case 'POST /api/v1/items/movie/45745/play':
+      if (state.playFails) return refused('unplayable', 'The file can’t be read.', 409)
+      return json({
+        id: 'pls_1',
+        decision: {
+          method: 'direct-play',
+          container: 'mp4',
+          video: { action: 'copy' },
+          audio: { id: `${body.versionId}:1`, action: 'copy', codec: 'aac', channels: 2 },
+          subtitle: null,
+          bitrate: 4_000_000,
+          reasons: [],
+        },
+        url: '/stream/files/token-1',
+        subtitles: [{ id: `${body.versionId}:s`, url: '/stream/subtitles/token-1.vtt' }],
+        start: body.start ?? 360,
+        duration: 888,
+        expiresAt: '2026-10-28T01:00:00.000Z',
+      })
+    case 'POST /api/v1/playback/sessions/pls_1/progress':
+      return json({ watched: false, expiresAt: '2026-10-28T01:00:00.000Z' })
+    case 'DELETE /api/v1/playback/sessions/pls_1':
+      return new Response(null, { status: 204 })
+    case 'GET /api/v1/items/movie/45745/trickplay':
+      return json({ versionId: u.searchParams.get('versionId') ?? 'v4k', manifest: null })
+    case 'GET /api/v1/items/movie/45745/next':
+      return json({ item: null })
   }
   return refused('not-found', 'That isn’t here.', 404)
 }
 
 beforeEach(() => {
-  state = { signedIn: true, away: false, down: false, calls: [] }
+  state = { signedIn: true, away: false, down: false, playFails: false, calls: [], bodies: {} }
   globalThis.fetch = api as typeof fetch
 })
 afterEach(() => cleanup())
@@ -290,5 +326,73 @@ describe('the server stops answering', () => {
     const { page } = await open('/')
     expect(page.getByText('Can’t reach localhost')).toBeTruthy()
     expect(page.getByRole('button', { name: 'Try again' })).toBeTruthy()
+  })
+})
+
+describe('the player', () => {
+  test('starts where the person stopped, on the first version, with the browser’s profile', async () => {
+    const { page } = await open('/play/45745')
+    expect(state.calls).toContain('POST /api/v1/items/movie/45745/play')
+    const asked = state.bodies['POST /api/v1/items/movie/45745/play'] as Record<string, unknown>
+    expect(asked.versionId).toBe('v4k')
+    expect(typeof asked.profile).toBe('string')
+    expect(asked.start).toBeUndefined()
+    expect(document.querySelector('video')?.getAttribute('src')).toBe('/stream/files/token-1')
+    expect(page.getByRole('button', { name: 'Back to details' })).toBeTruthy()
+    expect(page.getByRole('slider', { name: 'Position' })).toBeTruthy()
+  })
+
+  test('Play from the start asks for 0', async () => {
+    await open('/play/45745/start')
+    const asked = state.bodies['POST /api/v1/items/movie/45745/play'] as Record<string, unknown>
+    expect(asked.start).toBe(0)
+  })
+
+  test('Audio and subtitles lists the versions, the sound and the subtitles, and saves a pick', async () => {
+    const { page, user } = await open('/play/45745')
+    await user.click(page.getByRole('button', { name: 'Audio and subtitles' }))
+    const panel = within(page.getByRole('complementary', { name: 'Audio and subtitles' }))
+    expect(panel.getByRole('radiogroup', { name: 'Version' })).toBeTruthy()
+    expect(panel.getByRole('radio', { name: /1080p/ })).toBeTruthy()
+    expect(panel.getByRole('radio', { name: /English · Stereo/ })).toBeTruthy()
+    await user.click(panel.getByText('English', { exact: true }))
+    await settle()
+    expect(state.calls).toContain('PUT /api/v1/items/movie/45745/prefs')
+    expect(state.bodies['PUT /api/v1/items/movie/45745/prefs']).toEqual({ subtitleId: 'v4k:s' })
+  })
+
+  test('a film that doesn’t start says so, with Try again, which asks again', async () => {
+    state.playFails = true
+    const { page, user } = await open('/play/45745')
+    const message = page.getByRole('alertdialog', { name: 'This film didn’t start' })
+    expect(message).toBeTruthy()
+    const again = within(message).getByRole('button', { name: 'Try again' })
+    expect(document.activeElement).toBe(again)
+    state.playFails = false
+    state.calls = []
+    await user.click(again)
+    await settle()
+    expect(state.calls).toContain('POST /api/v1/items/movie/45745/play')
+    expect(page.queryByRole('alertdialog')).toBeNull()
+  })
+
+  test('leaving reports the place, paused, then ends the session', async () => {
+    const { page, user } = await open('/play/45745')
+    await user.click(page.getByRole('button', { name: 'Back to details' }))
+    await settle()
+    const report = state.calls.indexOf('POST /api/v1/playback/sessions/pls_1/progress')
+    const end = state.calls.indexOf('DELETE /api/v1/playback/sessions/pls_1')
+    expect(report).toBeGreaterThan(-1)
+    expect(end).toBeGreaterThan(report)
+    expect(state.bodies['POST /api/v1/playback/sessions/pls_1/progress']).toMatchObject({
+      paused: true,
+    })
+    expect(window.location.pathname).toBe('/web/movies/45745')
+  })
+
+  test('one that isn’t here says so, with Go home', async () => {
+    const { page } = await open('/play/19')
+    expect(page.getByText('That title isn’t on this server.')).toBeTruthy()
+    expect(page.getByRole('link', { name: 'Go home' }).getAttribute('href')).toBe('/web/')
   })
 })

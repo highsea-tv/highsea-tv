@@ -135,10 +135,12 @@ export async function acknowledge(page: Page) {
   const got = page.getByRole('button', { name: 'Got it' })
   if (await got.count()) {
     await got.first().click()
-    // Radix keeps the dialog mounted through its exit animation, then removes it
-    await got
-      .first()
-      .waitFor({ state: 'detached', timeout: 3000 })
+    // Radix keeps the dialog mounted (data-state="closed") through its exit animation, with its
+    // focus guards and aria-hidden still in place, so wait for the dialog itself to go, not the button
+    await page
+      .waitForFunction(() => !document.querySelector('[role=dialog],[role=alertdialog]'), null, {
+        timeout: 5000,
+      })
       .catch(() => {})
   }
 }

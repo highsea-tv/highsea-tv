@@ -311,8 +311,10 @@ if (import.meta.main) {
         env,
         stdio: 'inherit',
       })
+      // the API's description names the server's version, and a test fails when it's stale
+      execFileSync('bun', ['run', 'openapi'], { cwd: join(ROOT, 'apps/server'), stdio: 'inherit' })
       console.log(
-        `Prepared ${version} (${date}): ${Object.values(FILES).join(', ')}, and the seed.`,
+        `Prepared ${version} (${date}): ${Object.values(FILES).join(', ')}, the seed and apps/server/openapi.json.`,
       )
     } else if (command === 'check') {
       const problems = problemsOf(version, readFiles(), gitTags())

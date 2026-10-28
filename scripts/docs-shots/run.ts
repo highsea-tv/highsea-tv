@@ -6,6 +6,8 @@
 // The server's temporary folder is taken out of every path shown, so folders read as they do in the
 // Docker image (/data/movies). With pngquant on the PATH (https://pngquant.org), each is quantised
 // to a palette, about a third of the size with no visible change. Usage: bun scripts/docs-shots/run.ts [area ...]
+// DOCS_SHOTS_PRODUCTION=1 builds and boots the production build instead of Next's dev server, which
+// Next allows one of per app folder, so it runs beside `bun run server`.
 import { execFileSync } from 'node:child_process'
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { join } from 'node:path'
@@ -54,7 +56,12 @@ process.on('exit', () => {
   } catch {}
 })
 
-const server = await boot(PORT)
+const production = process.env.DOCS_SHOTS_PRODUCTION === '1'
+if (production)
+  execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/server'), stdio: 'inherit' })
+// the server serves the web app's build at /web in either mode
+execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/web'), stdio: 'inherit' })
+const server = await boot(PORT, { production })
 const problems: string[] = []
 const browser = await launch()
 try {
@@ -103,7 +110,9 @@ try {
         // hydrated, with nothing still loading (as the sweep waits)
         await page.waitForFunction(
           () =>
-            Object.keys(document.documentElement).some((k) => k.startsWith('__reactProps$')) &&
+            // Next hydrates the whole document; the web app (/web) renders into #root
+            (Object.keys(document.documentElement).some((k) => k.startsWith('__reactProps$')) ||
+              !!document.querySelector('#root > *')) &&
             !document.querySelector('[aria-busy="true"]'),
         )
         await shot.act?.(page, c)

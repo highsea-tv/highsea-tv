@@ -403,6 +403,7 @@ export type PlaybackDecision = z.infer<typeof PlaybackDecision>
 export type PlayRequest = z.infer<typeof PlayRequest>
 export type PlaySubtitle = z.infer<typeof PlaySubtitle>
 export type Trickplay = z.infer<typeof Trickplay>
+export type TrickplayManifest = z.infer<typeof TrickplayManifest>
 export type PlaySession = z.infer<typeof PlaySession>
 export type ProgressReport = z.infer<typeof ProgressReport>
 export type ProgressResult = z.infer<typeof ProgressResult>
