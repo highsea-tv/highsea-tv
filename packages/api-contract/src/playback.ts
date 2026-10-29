@@ -20,7 +20,7 @@ export const PLAYBACK_TOPICS = { watch: 'watch.updated' } as const
  */
 export const DeviceReport = z
   .object({
-    /** The built-in profile it starts from: `web-chromium`, `web-chromium-macos`, `web-firefox`, `web-safari`. */
+    /** The built-in profile it starts from: `web-chromium`, `web-chromium-macos`, `web-firefox`, `web-safari`, or the desktop app's `desktop-macos`, `desktop-windows`, `desktop-linux`. */
     base: z.string().max(64).openapi({ example: 'web-chromium' }),
     containers: z.array(z.string().max(16)).max(16).optional(),
     video: z

@@ -8,6 +8,7 @@ import { useLibrary } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { Button, cn, EmptyState, Poster, Select, Skeleton } from '@highsea-tv/ui-web'
 import { useState } from 'react'
+import { media } from './host.ts'
 import { library as messages } from './messages.ts'
 import { gutter, href, useFormat } from './shell.tsx'
 
@@ -74,7 +75,7 @@ export function ItemPoster({ item: m }: { item: ClientItem }) {
   return (
     <Poster
       title={m.title}
-      src={m.art.poster ?? undefined}
+      src={media(m.art.poster) ?? undefined}
       href={href(`/movies/${m.id}`)}
       progress={m.progress !== null ? m.progress * 100 : undefined}
       showTitle

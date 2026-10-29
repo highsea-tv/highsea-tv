@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!-- Merged into the app's Info.plist (https://v2.tauri.app/distribute/macos-application-bundle/).
+     macOS 15 asks before an app looks on the local network; these say why, and which Bonjour
+     type it browses (Apple TN3179). -->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>NSLocalNetworkUsageDescription</key>
+  <string>highsea looks on your network for highsea servers, so you can watch without typing an address.</string>
+  <key>NSBonjourServices</key>
+  <array>
+    <string>_highsea._tcp</string>
+  </array>
+</dict>
+</plist>

@@ -102,3 +102,5 @@ export function useMyDevices() {
 }
 
 export const APP_VERSION = '1.0.0'
+/** The desktop app's update the prototype has waiting (`?update=ready`). */
+export const NEXT_APP_VERSION = '1.0.1'

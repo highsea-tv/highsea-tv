@@ -39,3 +39,9 @@ Checked on 2026-10-28 with the templates as they are. On TrueNAS 25.10.7 (host n
 - Settings › Network doesn't show it yet. The variable changes it after setup.
 
 **The router's forwarding.** Remote access by a forwarded port (`remoteAccess: 'port-forward'` with highsea's own HTTPS) asks the router to forward the HTTPS port, once the owner has chosen it in setup or Settings › Network (install-simplicity's answer 10). It uses the torrent engine's mapper, NAT-PMP first ([RFC 6886](https://www.rfc-editor.org/rfc/rfc6886)) and then UPnP IGD, for TCP only through its new `protocols` option, and it's let go when the choice changes or the server stops. System › Health says whether the router forwarded the port, through which protocol, or that it didn't, with how to forward TCP to the server by hand. Both need host networking. In a bridge, the router sees the bridge's NAT, so a mapping there fails and Health says so.
+
+## 2026-10-29: discovery from the desktop app (checkpoint 4.4a)
+
+The desktop app looks both ways at once, from Rust ([ADR 0058](0058-desktop-app.md)): the broadcast to port 7368, and mDNS `_highsea._tcp` through [mdns-sd](https://docs.rs/mdns-sd/0.21.5/), whose TXT record's server id tells answers for the same server apart.
+
+On macOS 15 and later the system asks the person before an app may use the local network ([Apple TN3179](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy)). The app's `Info.plist` gives the reason (`NSLocalNetworkUsageDescription`) and declares `_highsea._tcp` (`NSBonjourServices`). The first search sets off the prompt, and C1 says what it's waiting for. While the person hasn't allowed it, sends fail with `EHOSTUNREACH`, which C1 shows as the refused state with the way to System Settings, and adding a server by address still works.

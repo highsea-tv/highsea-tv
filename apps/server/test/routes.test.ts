@@ -521,4 +521,23 @@ describe('system and settings', () => {
     expect(res.status).toBe(302)
     expect(res.headers.get('location')).toStartWith('/login?error=')
   })
+
+  test('an app’s single sign-on needs an S256 challenge, and its code works only with the verifier', async () => {
+    const { app } = await started()
+    for (const query of ['app=desktop', 'app=desktop&challenge=short', 'app=admin&challenge=x']) {
+      const res = await app.request(`${ORIGIN}/api/v1/auth/oidc/start?${query}`)
+      expect(res.status).toBe(400)
+    }
+    const res = await app.request(`${ORIGIN}/api/v1/auth/oidc/exchange`, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        code: 'not-a-code',
+        verifier: 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk',
+        device: { name: 'Mac', client: 'desktop', appVersion: '0.3.0' },
+      }),
+    })
+    expect(res.status).toBe(401)
+    expect(await res.json()).toMatchObject({ error: { details: { reason: 'challenge-expired' } } })
+  })
 })

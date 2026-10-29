@@ -255,9 +255,12 @@ export async function walk(page: Page): Promise<{ stops: number; bad: string[] }
   const bad: string[] = []
   for (let i = 0; i < 120; i++) {
     await page.keyboard.press('Tab')
-    const info = await page.evaluate(() => {
+    const info = await page.evaluate(async () => {
       const a = document.activeElement as HTMLElement | null
       if (!a || a === document.body) return null
+      // judge the stop once it has settled: an action that fades in on focus starts its own
+      // transition at opacity 0 (getAnimations flushes style, so the transition exists by now)
+      await Promise.all(a.getAnimations().map((x) => x.finished.catch(() => undefined)))
       const cs = getComputedStyle(a)
       const box = a.getBoundingClientRect()
       a.setAttribute('data-kbk', '')

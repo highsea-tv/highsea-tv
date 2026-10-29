@@ -46,6 +46,19 @@ bun run audit      # npm's advisories for production dependencies; fails on high
 - For Node itself: `.nvmrc`, the Dockerfile's two `FROM` lines and `engines` move together.
 - For a native addon (as with `better-sqlite3`), check it builds for Node 26.11 and in the image (`bun scripts/image.ts`).
 
+## Rust crates (the desktop app)
+
+The same rules hold for `apps/desktop/src-tauri/Cargo.toml` (ADR 0058):
+
+```sh
+bun run pin --crate keyring tauri@2   # crates.io: the newest unyanked version before the cutoff
+```
+
+- Write it as an exact requirement, `keyring = "=4.2.0"`, and turn off default features the app doesn't use (`default-features = false`).
+- `cargo check` in `apps/desktop/src-tauri` updates `Cargo.lock`; commit it.
+- `bun run licenses` reads every crate, on every platform, from `cargo metadata`. A crate's licence is often an expression (`(MIT OR Apache-2.0) AND Unicode-3.0`); the audit parses it.
+- `bun run audit` runs `cargo audit` on the lockfile (`cargo install cargo-audit@0.22.2 --locked` once). An exception takes the `RUSTSEC-YYYY-NNNN` id. Before writing one, see whether a feature the app doesn't need brings the crate in (as the updater's `zip` did).
+
 ## GitHub Actions
 
 Pin each action to a **full commit SHA**, with its version in a comment: `uses: actions/checkout@<sha> # v5.0.0`. Use a release that's at least two weeks old, and keep to its current major version unless the plan says otherwise.

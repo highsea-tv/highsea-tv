@@ -14,6 +14,7 @@ import { WebPlayer } from './player.tsx'
 import { WebSearch } from './search.tsx'
 import { WebDownloads, WebProfile, WebSettings } from './settings.tsx'
 import { WebShell, webHref } from './shell.tsx'
+import { WindowFrame } from './window.tsx'
 
 function Connect() {
   const [, navigate] = useLocation()
@@ -21,9 +22,12 @@ function Connect() {
 }
 
 export function WebApp() {
+  const [location] = useLocation()
   return (
     <>
       <ApplyDevicePrefs platform="web" />
+      {/* the desktop app's window chrome; the player draws its own, over the film */}
+      {!location.startsWith('/play/') && <WindowFrame />}
       <Routes />
     </>
   )

@@ -24,7 +24,7 @@ export {
 } from './accounts.ts'
 export type { ApiKeyScope, ApiKeyView } from './api-keys.ts'
 export * from './context.ts'
-export { CALLBACK_PATH } from './oidc.ts'
+export { APP_RETURN, CALLBACK_PATH, type Callback } from './oidc.ts'
 export {
   PAIRING_INTERVAL,
   PAIRING_TTL,

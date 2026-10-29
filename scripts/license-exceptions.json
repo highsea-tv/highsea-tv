@@ -10,5 +10,9 @@
   {
     "package": "slick",
     "reason": "Through juice, which mjml-core uses to inline the emails' CSS (checkpoint 8b, docs/product/emails.md). Its package.json says \"MIT (http://mootools.net/license.txt)\": MIT, written with the MooTools license's address rather than as an SPDX id. MIT is compatible with AGPL-3.0."
+  },
+  {
+    "package": "webpki-root-certs",
+    "reason": "Through reqwest's rustls, the desktop app's HTTPS to servers (4.4a). Mozilla's root certificates as data, under CDLA-Permissive-2.0, which lets the data be used and shared with its notice and puts no condition on the program that uses it (cdla.dev/permissive-2-0, section 3), so it's compatible with AGPL-3.0."
   }
 ]

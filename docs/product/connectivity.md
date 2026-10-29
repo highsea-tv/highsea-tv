@@ -51,6 +51,7 @@ One column (max 28rem), in a card on a desktop and full width on a phone, under 
 - **Connected remotely:** the LAN didn't answer and the remote address did. The switcher says "Connected remotely" (web: a pill beside the name; mobile: a line under it; TV: under the server name, top left). Everything works; streams may be transcoded down for the connection (C5).
 - **Unreachable:** neither answered. Web and mobile replace the page with "Can't reach {server}" · "highsea tried {server} on this network and at its remote address. It may be off, or the network may be down. Downloads still play." with **Try again** and **Switch server** (mobile: **Watch downloads** first). TV: the same, with **Try again** and **Another server**.
 - **Discovering:** servers appear one by one; the list never jumps (new ones append).
+- **Local network permission (the desktop app on macOS):** while the system asks, and when it was refused: [desktop-app.md › Local network on a Mac](desktop-app.md#local-network-on-a-mac).
 - **Errors:** "That doesn't look like an address. Try harbor.example.net or 192.168.1.20." · "Nothing answered at {address}. Check the address, and that the server is running and reachable from here." · sign-in and 2FA errors as on the admin's sign-in ([login.md](login.md#copy)).
 - **Loading:** buttons show their spinner while probing or signing in.
 

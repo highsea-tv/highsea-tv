@@ -2,13 +2,16 @@
 // C7 Settings and C8 Profile on the web and desktop (docs/product/client-settings.md): the
 // sections beside each other from medium widths, an index on a phone-width window; the account
 // page; and Downloads, which needs the desktop app.
-import { cn, EmptyState, Field, Icon } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Icon } from '@highsea-tv/ui-web'
+import { useState } from 'react'
 import { useParams } from 'wouter'
 import { useDesktopApp, useServer } from '../client/data.ts'
+import { GetTheAppsDialog } from '../client/get-the-apps.tsx'
 import { OfflineList } from '../client/offline-list.tsx'
 import { type SettingsSectionId, settingsSections } from '../client/settings.ts'
 import { SettingsSectionBody } from '../client/settings-sections.tsx'
 import { Soon } from '../kit/soon.tsx'
+import { KeptIn } from './kept-in.tsx'
 import { gutter, webHref } from './shell.tsx'
 
 export function WebSettings() {
@@ -154,7 +157,10 @@ export function WebProfile() {
 
 /** Downloads (C8): a browser can't keep films; the desktop app can. */
 export function WebDownloads() {
-  if (useDesktopApp()) return <DesktopDownloads />
+  const desktop = useDesktopApp()
+  const server = useServer()
+  const [apps, setApps] = useState(false)
+  if (desktop) return <DesktopDownloads />
   return (
     <main
       className={cn(
@@ -167,14 +173,25 @@ export function WebDownloads() {
         title="Downloads live in the desktop app"
         // it wraps rather than widening a phone at 200% text
         action={
-          <Soon variant="primary" className="h-auto min-h-9 whitespace-normal py-1.5">
+          <Button
+            variant="primary"
+            icon="laptop"
+            className="h-auto min-h-9 whitespace-normal py-1.5"
+            onClick={() => setApps(true)}
+          >
             Get the desktop app
-          </Soon>
+          </Button>
         }
       >
-        A browser can’t keep films for offline. The highsea app for macOS, Windows and Linux can,
-        and they play on a plane, a train, or anywhere the server can’t be reached.
+        To keep films for offline, use the highsea app for macOS, Windows or Linux. They play on a
+        plane, a train, or anywhere the server can’t be reached.
       </EmptyState>
+      <GetTheAppsDialog
+        server={server.data?.name ?? 'Harbor'}
+        address={server.data?.addresses.public ?? server.data?.addresses.local[0] ?? ''}
+        open={apps}
+        onOpenChange={setApps}
+      />
     </main>
   )
 }
@@ -189,20 +206,7 @@ function DesktopDownloads() {
       )}
     >
       <h1 className="text-display">Downloads</h1>
-      <OfflineList
-        app="desktop"
-        href={(id) => webHref(`/play/${id}`)}
-        settings={
-          <Field label="Kept in" hint="Moving them copies what’s already downloaded.">
-            <div className="flex flex-wrap items-center gap-2">
-              <code className="min-w-0 truncate font-mono text-figure text-text-2">
-                ~/Movies/highsea
-              </code>
-              <Soon size="sm">Change</Soon>
-            </div>
-          </Field>
-        }
-      />
+      <OfflineList app="desktop" href={(id) => webHref(`/play/${id}`)} settings={<KeptIn />} />
     </main>
   )
 }

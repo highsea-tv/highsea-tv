@@ -18,7 +18,7 @@ import {
   toast,
   useSoundPlayer,
 } from '@highsea-tv/ui-web'
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
 import { Soon } from '../kit/soon.tsx'
 import { useNow } from '../mock/hooks.tsx'
@@ -27,13 +27,18 @@ import { useProto } from '../screen/screen.tsx'
 import {
   type ClientPlatform,
   clientType,
+  useAppUpdateReady,
   useConnection,
+  useDesktopApp,
+  useDesktopOs,
   useKnownServers,
   useServer,
 } from './data.ts'
+import { GetTheAppsDialog } from './get-the-apps.tsx'
 import { useAppearance, useDevicePrefs, useThemeEverywhere } from './prefs.tsx'
 import {
   APP_VERSION,
+  NEXT_APP_VERSION,
   type SettingsSectionId,
   useHomeLayout,
   useMyDevices,
@@ -337,13 +342,47 @@ function DevicesSection({ platform }: { platform: ClientPlatform }) {
   )
 }
 
-function AboutSection() {
+/** The desktop app restarts into the new version; the prototype only says so. */
+export const restartToUpdate = () => toast({ title: `Restarting into highsea ${NEXT_APP_VERSION}` })
+
+const osNames = { mac: 'Mac', windows: 'Windows', linux: 'Linux' } as const
+
+/** The desktop app's own updates (desktop-app.md › Updates): checked by itself, applied on restart. */
+function AppUpdates() {
+  const ready = useAppUpdateReady()
+  const now = useNow()
+  return ready ? (
+    <div className="grid justify-items-start gap-2 rounded-md border border-line bg-s1 p-3">
+      <p className="text-text text-ui">
+        highsea {NEXT_APP_VERSION} is ready. It’s used the next time the app starts.
+      </p>
+      <Button size="sm" variant="primary" icon="refresh" onClick={restartToUpdate}>
+        Restart to update
+      </Button>
+    </div>
+  ) : (
+    <p className="text-caption text-text-3">
+      Up to date. highsea checks for a new version by itself, last{' '}
+      {relative(new Date(now - 40 * 60_000).toISOString(), now)}.
+    </p>
+  )
+}
+
+function AboutSection({ platform }: { platform: ClientPlatform }) {
   const server = useServer()
+  const desktop = useDesktopApp()
+  const os = useDesktopOs()
+  const [apps, setApps] = useState(false)
+  const name = server.data?.name ?? 'Harbor'
+  const address = server.data?.addresses.public ?? server.data?.addresses.local[0] ?? ''
   return (
     <div className="grid gap-4">
       <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-6 gap-y-2 text-ui [overflow-wrap:anywhere]">
         <dt className="text-text-3">This app</dt>
-        <dd className="font-mono text-figure text-text">highsea {APP_VERSION}</dd>
+        <dd className="font-mono text-figure text-text">
+          highsea {APP_VERSION}
+          {desktop && ` for ${osNames[os]}`}
+        </dd>
         <dt className="text-text-3">Server</dt>
         <dd className="font-mono text-figure text-text">
           {server.data?.name ?? 'Harbor'} {server.data?.version ?? ''}
@@ -351,10 +390,18 @@ function AboutSection() {
         <dt className="text-text-3">Licence</dt>
         <dd className="text-text">AGPL-3.0, free software</dd>
       </dl>
+      {desktop && <AppUpdates />}
       <div className="flex flex-wrap gap-2">
+        {/* the desktop app, from a browser (desktop-app.md › Get the apps) */}
+        {platform === 'web' && !desktop && (
+          <Button size="sm" icon="laptop" onClick={() => setApps(true)}>
+            Get the apps
+          </Button>
+        )}
         <Soon size="sm">Open-source licences</Soon>
         <Soon size="sm">Send diagnostics</Soon>
       </div>
+      <GetTheAppsDialog server={name} address={address} open={apps} onOpenChange={setApps} />
     </div>
   )
 }
@@ -371,5 +418,5 @@ export function SettingsSectionBody({
   if (id === 'home') return <HomeSection />
   if (id === 'servers') return <ServersSection platform={platform} />
   if (id === 'devices') return <DevicesSection platform={platform} />
-  return <AboutSection />
+  return <AboutSection platform={platform} />
 }

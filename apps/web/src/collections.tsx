@@ -7,6 +7,7 @@ import { useCollection, useCollections } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { Button, cn, EmptyState, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
+import { media } from './host.ts'
 import { CollectionTile } from './kit.tsx'
 import { ItemPoster, LibraryNav, PosterGridSkeleton } from './library.tsx'
 import { library as messages } from './messages.ts'
@@ -57,7 +58,7 @@ export function WebCollections() {
                   label={t(smart ? 'smartTileLabel' : 'tileLabel', { name: c.name, caption })}
                   name={c.name}
                   caption={caption}
-                  poster={c.art.poster}
+                  poster={media(c.art.poster)}
                   mosaic={c.smart?.mosaic}
                   smart={smart ? t('smart') : null}
                 />
@@ -105,7 +106,7 @@ export function WebCollection() {
       <header className="relative">
         {c.art.backdrop && (
           <img
-            src={c.art.backdrop}
+            src={media(c.art.backdrop)}
             alt=""
             className="absolute inset-0 size-full object-cover opacity-35"
           />

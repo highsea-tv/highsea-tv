@@ -10,11 +10,15 @@ import { useSession } from '@highsea-tv/client/data'
 import { ApiError, createClient } from '@highsea-tv/sdk'
 import { ClientProvider, useClient } from '@highsea-tv/sdk/react'
 import { Skeleton, UIProvider } from '@highsea-tv/ui-web'
+import { openUrl } from '@tauri-apps/plugin-opener'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Route, Router, Switch, useLocation } from 'wouter'
 import { WebCollection, WebCollections } from './collections.tsx'
+import { DesktopRoot, DesktopUnreachable, useDesktop } from './desktop/root.tsx'
+import { WindowFrame } from './desktop/window.tsx'
 import { WebDetail } from './detail.tsx'
 import { WebHome } from './home.tsx'
+import { hostFetch, inApp } from './host.ts'
 import { WebLibrary } from './library.tsx'
 import { WebPlayer } from './player.tsx'
 import { ApplyDevicePrefs } from './prefs.tsx'
@@ -32,28 +36,52 @@ import {
 import { SignIn } from './sign-in.tsx'
 
 export function App() {
-  const client = useMemo(() => createClient(), [])
+  return (
+    <UIProvider>
+      {inApp ? <DesktopRoot>{(key) => <Connected key={key} />}</DesktopRoot> : <Connected />}
+    </UIProvider>
+  )
+}
+
+/** One server's client, its routes and its gate. The desktop app makes a new one per server. */
+function Connected() {
+  const client = useMemo(() => createClient({ fetch: hostFetch }), [])
   return (
     <ClientProvider client={client}>
-      <UIProvider>
-        <Router base={BASE}>
-          <Gate />
-        </Router>
-      </UIProvider>
+      <Router base={BASE}>
+        <Chrome />
+        <Gate />
+      </Router>
     </ClientProvider>
   )
+}
+
+/** The desktop app's window chrome; the player draws its own, over the film. */
+function Chrome() {
+  const [location] = useLocation()
+  return location.startsWith('/play/') ? null : <WindowFrame />
 }
 
 const unreachable = (e: unknown) => e instanceof ApiError && e.code === 'unavailable'
 
 function Gate() {
   const session = useSession()
+  const app = useDesktop()
   if (session.status === 'loading') return <Loading />
   if (session.status === 'error') {
     if (session.error instanceof ApiError && session.error.status === 401)
       return <SignIn onSignedIn={session.refetch} />
     if (unreachable(session.error))
-      return <Unreachable name={window.location.host} onRetry={session.refetch} />
+      return app ? (
+        <DesktopUnreachable
+          name={app.current.name}
+          onRetry={() => app.reconnect().then(session.refetch)}
+          onSwitch={app.choose}
+          className="min-h-screen bg-bg text-text"
+        />
+      ) : (
+        <Unreachable name={window.location.host} onRetry={session.refetch} />
+      )
     return <SignIn onSignedIn={session.refetch} />
   }
   return <SignedIn session={session.data} />
@@ -107,9 +135,17 @@ function useLinks() {
       if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey)
         return
       const a = (e.target as Element | null)?.closest?.('a')
-      if (!a || a.hasAttribute('download') || (a.target && a.target !== '_self')) return
+      if (!a || a.hasAttribute('download')) return
       const url = new URL(a.href, window.location.href)
-      if (url.origin !== window.location.origin) return
+      // the app's window shows only highsea: another site, or a new tab, opens in the browser
+      // (Tauri's webviews open no windows of their own; https://v2.tauri.app/plugin/opener/)
+      const leaves = url.origin !== window.location.origin || (a.target && a.target !== '_self')
+      if (inApp && leaves && /^https?:$/.test(url.protocol)) {
+        e.preventDefault()
+        void openUrl(url.href)
+        return
+      }
+      if (leaves) return
       if (url.pathname !== BASE && !url.pathname.startsWith(`${BASE}/`)) return
       e.preventDefault()
       navigate(url.pathname.slice(BASE.length) + url.search + url.hash || '/')

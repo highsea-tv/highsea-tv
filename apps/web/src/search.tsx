@@ -8,6 +8,7 @@ import { useSearch } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { cn, Icon, Input, Poster } from '@highsea-tv/ui-web'
 import { useEffect, useState } from 'react'
+import { media } from './host.ts'
 import { search as messages } from './messages.ts'
 import { gutter, href, useFormat, useServerName } from './shell.tsx'
 
@@ -117,7 +118,7 @@ function Results({ section, onPerson }: { section: Shown; onPerson: (name: strin
             <li key={m.id}>
               <Poster
                 title={m.title}
-                src={m.art.poster ?? undefined}
+                src={media(m.art.poster) ?? undefined}
                 href={href(`/movies/${m.id}`)}
                 showTitle
                 caption={m.year ?? undefined}
@@ -133,7 +134,7 @@ function Results({ section, onPerson }: { section: Shown; onPerson: (name: strin
             <li key={c.id}>
               <Poster
                 title={c.name}
-                src={c.art.poster ?? undefined}
+                src={media(c.art.poster) ?? undefined}
                 href={href(`/collections/${c.id}`)}
                 showTitle
                 caption={f.caption(c)}
@@ -153,7 +154,7 @@ function Results({ section, onPerson }: { section: Shown; onPerson: (name: strin
                 className="flex items-center gap-2.5 rounded-full border border-line bg-s1 py-1 ps-1 pe-3.5 text-start outline-none hover:bg-s2 focus-visible:ring-focus"
               >
                 {p.photo ? (
-                  <img src={p.photo} alt="" className="size-8 rounded-full object-cover" />
+                  <img src={media(p.photo)} alt="" className="size-8 rounded-full object-cover" />
                 ) : (
                   <span aria-hidden className="size-8 rounded-full bg-s2" />
                 )}

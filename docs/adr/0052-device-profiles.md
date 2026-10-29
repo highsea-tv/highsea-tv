@@ -55,3 +55,13 @@ Prior art: Jellyfin's `DeviceProfile` ([jellyfin/MediaBrowser.Model/Dlna/DeviceP
 ## 2026-10-28: tone mapping in the decision (checkpoint 4.3b)
 
 With Convert HDR on (Settings › Playback, ADR 0056), HDR sent to a screen that can't show it becomes an accepted reason, "Converted from {hdr} to SDR for this screen", in place of 4.1's "looks washed out" warning, which stays for when it's off or nothing here can tone map that kind of HDR (Dolby Vision profile 5 on the processor or VideoToolbox). The decision is told by the runtime (`server.toneMapping`), since what can be tone mapped depends on the host's paths and filters, which the pure decision doesn't know.
+
+## 2026-10-29: the desktop app's webviews (checkpoint 4.4a)
+
+The desktop app names its built-in profile itself, since a webview's user agent doesn't say which app it's in (`baseProfile(userAgent, os)` in `@highsea-tv/client/player`). Three are added, each from its webview's documentation ([Tauri › webview versions](https://v2.tauri.app/reference/webview-versions/)):
+
+- **`desktop-macos`** is `web-safari`'s: WKWebView is Safari's engine, with native HLS, `hvc1` HEVC, AC-3 and E-AC-3, and audio tracks.
+- **`desktop-windows`** is `web-chromium`'s: WebView2 is Edge's Chromium, and Microsoft lists no media feature among its differences ([Microsoft Learn](https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/browser-features)).
+- **`desktop-linux`** is narrower: WebKitGTK plays what the machine's GStreamer plugins decode, which it doesn't document. The packages depend on the good, bad and libav sets, so it's H.264, VP8 and VP9 profile 0 at 8 bits, AAC, MP3, FLAC, Opus and Vorbis, in MP4 and WebM, through hls.js. The device's report widens it where the machine plays more.
+
+The report (ADR 0053's 4.2b section) is made the same way in the app as in a browser.

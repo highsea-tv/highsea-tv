@@ -15327,7 +15327,7 @@
           "Auth"
         ],
         "summary": "Sign in with the single sign-on provider",
-        "description": "Redirects to the provider. With `invite`, the provider identity is linked to that invite’s account.",
+        "description": "Redirects to the provider. With `invite`, the provider identity is linked to that invite’s account. An app sends `app` and the S256 `challenge` of a PKCE verifier it keeps (RFC 7636): the callback then sends the browser to `highsea://oidc` with a one-time code, which the app exchanges at `oidc/exchange`.",
         "x-highsea-access": "public",
         "parameters": [
           {
@@ -15337,11 +15337,47 @@
             "required": false,
             "name": "invite",
             "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "desktop",
+                "ios",
+                "android",
+                "tvos",
+                "androidtv",
+                "webos",
+                "tizen"
+              ]
+            },
+            "required": false,
+            "name": "app",
+            "in": "query"
+          },
+          {
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9_-]{43}$"
+            },
+            "required": false,
+            "name": "challenge",
+            "in": "query"
           }
         ],
         "responses": {
           "302": {
             "description": "To the provider"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           },
           "403": {
             "description": "forbidden",
@@ -15394,7 +15430,78 @@
         ],
         "responses": {
           "302": {
-            "description": "To the admin, or back to sign-in"
+            "description": "To the admin, or back to sign-in; for an app, to `highsea://oidc` with `?code=` or `?error=`"
+          }
+        }
+      }
+    },
+    "/api/v1/auth/oidc/exchange": {
+      "post": {
+        "tags": [
+          "Auth"
+        ],
+        "summary": "An app exchanges its single sign-on code for a device token",
+        "description": "The code from `highsea://oidc`, with the PKCE verifier whose challenge started the sign-in. A code works once, for two minutes. Error: 401 `unauthorized` with reason `challenge-expired`.",
+        "x-highsea-access": "public",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "verifier": {
+                    "type": "string",
+                    "minLength": 43,
+                    "maxLength": 128
+                  },
+                  "device": {
+                    "$ref": "#/components/schemas/DeviceInput"
+                  }
+                },
+                "required": [
+                  "code",
+                  "verifier",
+                  "device"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Signed in, with the device token",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SignInResult"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
           }
         }
       }

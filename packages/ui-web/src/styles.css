@@ -231,3 +231,16 @@
 :root [data-widget-id][data-dnd-placeholder] > * {
   visibility: hidden;
 }
+
+/*
+ * The native page scrollbar is hidden where components/page-scrollbar.tsx draws its own over the
+ * page. `scrollbar-width: none` hides it in Firefox, Chromium 121+ and Safari 18.2+
+ * (https://developer.mozilla.org/en-US/docs/Web/CSS/scrollbar-width); the pseudo-element covers
+ * older WebKit. The page still scrolls.
+ */
+html[data-page-scrollbar] {
+  scrollbar-width: none;
+}
+html[data-page-scrollbar]::-webkit-scrollbar {
+  display: none;
+}

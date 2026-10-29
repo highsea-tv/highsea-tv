@@ -14,9 +14,13 @@
 #   4. catalog: built and signed with the release key, with the release's entry in it.
 #   5. spk: the Synology package for a stable release (scripts/spk.ts), which runs this release's
 #      image as a Container Manager project; a dry run uploads it for review.
-#   6. publish, only when it isn't a dry run: the platforms merged under their tags
+#   6. desktop: the desktop app for a stable release (ADR 0058), built on macOS, Windows and Linux
+#      and signed for the updater with TAURI_SIGNING_PRIVATE_KEY (a dry run without it signs with
+#      the development key), then `latest.json` and the installers' SHA-256 sums from them.
+#   7. publish, only when it isn't a dry run: the platforms merged under their tags
 #      (`docker buildx imagetools create`), the catalog deployed to GitHub Pages, and the GitHub
-#      release created with the changelog's section and the Synology package, which makes the tag.
+#      release created with the changelog's section, the Synology package and the desktop app's
+#      installers and feed, which makes the tag.
 #
 # Jobs that read highsea's keys or the catalog key use the `release` environment, whose required
 # reviewer is the owner, so nothing signed or keyed runs without their approval; its secrets reach
@@ -98,7 +102,8 @@ jobs:
         run: |
           mkdir -p "$RUNNER_TEMP/release-files"
           cp --parents CHANGELOG.md apps/server/package.json catalog/indexers/releases.json \
-            catalog/indexers/CHANGES.md "$RUNNER_TEMP/release-files/"
+            catalog/indexers/CHANGES.md apps/desktop/package.json apps/desktop/src-tauri/tauri.conf.json \
+            apps/desktop/src-tauri/Cargo.toml apps/desktop/src-tauri/Cargo.lock "$RUNNER_TEMP/release-files/"
           cp -r --parents packages/catalog/seed "$RUNNER_TEMP/release-files/"
           bun scripts/release.ts notes "$VERSION" > "$RUNNER_TEMP/release-notes.md"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
@@ -294,6 +299,134 @@ jobs:
           name: spk
           path: dist/spk/
 
+  # the desktop app on each stable release (ADR 0050's 4.4 section), as Tauri's pipeline guide
+  # builds it (https://v2.tauri.app/distribute/pipelines/github/), with the updater's artifacts
+  # signed (https://v2.tauri.app/plugin/updater/#building). The Mac app is signed and notarized
+  # once the Apple secrets are there (https://v2.tauri.app/distribute/sign/macos/); Windows'
+  # installer stays unsigned until 1.0 (the owner's answer of 2026-10-29)
+  desktop:
+    if: ${{ needs.prepare.outputs.prerelease == 'false' }}
+    needs: [prepare, ci]
+    environment: release
+    strategy:
+      matrix:
+        include:
+          - runner: macos-15
+            target: universal-apple-darwin
+          - runner: windows-2025
+            target: x86_64-pc-windows-msvc
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-files
+          path: ${{ github.workspace }}
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - name: Linux libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential \
+            file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libdbus-1-dev
+      - name: Rust, and both Mac targets
+        working-directory: apps/desktop/src-tauri
+        run: |
+          rustup show active-toolchain || rustup toolchain install
+          if [ "$RUNNER_OS" = macOS ]; then rustup target add aarch64-apple-darwin x86_64-apple-darwin; fi
+      - run: bun install --frozen-lockfile
+      # installed apps take only updates signed with the key in tauri.conf.json
+      - name: The updater's key
+        run: |
+          if [ -n "$KEY" ] && bun scripts/release.ts desktop-key; then
+            { echo 'TAURI_SIGNING_PRIVATE_KEY<<EOF'; echo "$KEY"; echo 'EOF'
+              echo 'TAURI_SIGNING_PRIVATE_KEY_PASSWORD<<EOF'; echo "$PASSWORD"; echo 'EOF'; } >> "$GITHUB_ENV"
+          elif [ "$DRY_RUN" = true ]; then
+            echo "::warning::No release key for the desktop app's updates; signed with the development key. A real release would stop here."
+            { echo 'TAURI_SIGNING_PRIVATE_KEY<<EOF'; cat apps/desktop/keys/development.key; echo; echo 'EOF'
+              echo 'TAURI_SIGNING_PRIVATE_KEY_PASSWORD='; } >> "$GITHUB_ENV"
+          else
+            echo "The release environment needs TAURI_SIGNING_PRIVATE_KEY, and tauri.conf.json its public half (apps/desktop/keys/README.md)." >&2
+            exit 1
+          fi
+        env:
+          KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+          DRY_RUN: ${{ inputs.dry-run }}
+      # Tauri signs and notarizes when these are set, and builds an unsigned app when they aren't
+      - name: The Mac app's signing, when the owner has added it
+        if: runner.os == 'macOS'
+        run: |
+          if [ -n "$APPLE_CERTIFICATE" ]; then
+            for name in APPLE_CERTIFICATE APPLE_CERTIFICATE_PASSWORD APPLE_SIGNING_IDENTITY APPLE_API_ISSUER APPLE_API_KEY; do
+              { echo "$name<<EOF"; printenv "$name"; echo 'EOF'; } >> "$GITHUB_ENV"
+            done
+            printf '%s' "$APPLE_API_KEY_P8" > "$RUNNER_TEMP/AuthKey.p8"
+            echo "APPLE_API_KEY_PATH=$RUNNER_TEMP/AuthKey.p8" >> "$GITHUB_ENV"
+          else
+            echo "::warning::The Mac app is unsigned: the release environment has no Apple certificate yet."
+          fi
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_KEY: ${{ secrets.APPLE_API_KEY }}
+          APPLE_API_KEY_P8: ${{ secrets.APPLE_API_KEY_P8 }}
+      - name: The app, its installers and the updater's artifacts
+        working-directory: apps/desktop
+        run: bun run tauri build --ci --target ${{ matrix.target }} --config '{"bundle":{"createUpdaterArtifacts":true}}' -- --locked
+      - name: Gather them
+        run: |
+          mkdir -p "$RUNNER_TEMP/desktop"
+          find "apps/desktop/src-tauri/target/${{ matrix.target }}/release/bundle" -type f \
+            \( -name '*.dmg' -o -name '*.app.tar.gz' -o -name '*.app.tar.gz.sig' -o -name '*-setup.exe' \
+               -o -name '*-setup.exe.sig' -o -name '*.AppImage' -o -name '*.AppImage.sig' \
+               -o -name '*.deb' -o -name '*.rpm' \) -exec cp {} "$RUNNER_TEMP/desktop/" \;
+          ls -l "$RUNNER_TEMP/desktop"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: desktop-${{ matrix.target }}
+          path: ${{ runner.temp }}/desktop/
+
+  # the updater's feed and the installers' sums, from all three
+  desktop-feed:
+    needs: [prepare, desktop]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: release-files
+          path: ${{ github.workspace }}
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          pattern: desktop-*
+          merge-multiple: true
+          path: ${{ runner.temp }}/desktop
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - name: latest.json and SHA256SUMS
+        run: |
+          bun scripts/release.ts feed "$VERSION" "$RUNNER_TEMP/desktop" > "$RUNNER_TEMP/latest.json"
+          rm "$RUNNER_TEMP"/desktop/*.sig
+          mv "$RUNNER_TEMP/latest.json" "$RUNNER_TEMP/desktop/"
+          (cd "$RUNNER_TEMP/desktop" && sha256sum -- * > SHA256SUMS)
+          cat "$RUNNER_TEMP/desktop/latest.json" "$RUNNER_TEMP/desktop/SHA256SUMS"
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: desktop
+          path: ${{ runner.temp }}/desktop/
+
   merge:
     if: ${{ !inputs.dry-run }}
     needs: [prepare, image, catalog]
@@ -346,8 +479,8 @@ jobs:
   github-release:
     # spk is skipped for a prerelease, which would skip this too without the explicit check
     # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idneeds)
-    if: ${{ !cancelled() && !inputs.dry-run && needs.merge.result == 'success' && needs.pages.result == 'success' && (needs.spk.result == 'success' || needs.prepare.outputs.prerelease == 'true') }}
-    needs: [prepare, merge, pages, spk]
+    if: ${{ !cancelled() && !inputs.dry-run && needs.merge.result == 'success' && needs.pages.result == 'success' && ((needs.spk.result == 'success' && needs.desktop-feed.result == 'success') || needs.prepare.outputs.prerelease == 'true') }}
+    needs: [prepare, merge, pages, spk, desktop-feed]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -361,6 +494,11 @@ jobs:
         with:
           name: spk
           path: ${{ runner.temp }}/assets
+      - if: ${{ needs.prepare.outputs.prerelease == 'false' }}
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: desktop
+          path: ${{ runner.temp }}/assets
       # creating the release makes the tag on this commit, with the Synology package attached
       # (https://cli.github.com/manual/gh_release_create)
       - name: The release and its tag
@@ -370,8 +508,13 @@ jobs:
           # GitHub's Latest follows the image's `latest`, so a fix to an older line doesn't take it
           if grep -qx latest <<< "$TAGS"; then kind+=(--latest); else kind+=(--latest=false); fi
           shopt -s nullglob
-          # the package and its manifest, which packages.highsea.tv reads from the Latest release
-          assets=("$RUNNER_TEMP"/assets/*.spk "$RUNNER_TEMP"/assets/highsea-spk.json)
+          # the package and its manifest, which packages.highsea.tv reads from the Latest release; the
+          # desktop app's installers, their sums and the updater's latest.json, which the app reads
+          # from the Latest release too
+          assets=("$RUNNER_TEMP"/assets/*.spk "$RUNNER_TEMP"/assets/highsea-spk.json \
+            "$RUNNER_TEMP"/assets/*.dmg "$RUNNER_TEMP"/assets/*.app.tar.gz "$RUNNER_TEMP"/assets/*-setup.exe \
+            "$RUNNER_TEMP"/assets/*.AppImage "$RUNNER_TEMP"/assets/*.deb "$RUNNER_TEMP"/assets/*.rpm \
+            "$RUNNER_TEMP"/assets/latest.json "$RUNNER_TEMP"/assets/SHA256SUMS)
           gh release create "v$VERSION" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "highsea $VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" "${kind[@]}"
         env:

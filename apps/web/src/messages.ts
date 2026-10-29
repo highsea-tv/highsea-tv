@@ -236,7 +236,10 @@ export const profile = defineMessages({
   downloadsHint: 'Movies kept on a computer',
   downloadsTitle: 'Downloads live in the desktop app',
   downloadsBody:
-    'A browser can’t keep films for offline. The highsea app for macOS, Windows and Linux can, and they play on a plane, a train, or anywhere the server can’t be reached.',
+    'To keep films for offline, use the highsea app for macOS, Windows or Linux. They play on a plane, a train, or anywhere the server can’t be reached.',
+  // the desktop app's Downloads until 4.4b brings downloading
+  appDownloadsTitle: 'Nothing downloaded',
+  appDownloadsBody: 'Downloading films to this computer comes in the next update of the app.',
   downloadsSoon: 'The desktop app comes next',
 })
 
@@ -290,4 +293,76 @@ export const player = defineMessages({
   cancel: 'Cancel',
   missing: 'That title isn’t on this server.',
   goHome: 'Go home',
+})
+
+// ---------------------------------------------------------------- the desktop app (4.4a)
+// From the prototype's client/connect-flow.tsx, web/shell.tsx, web/window.tsx and
+// client/settings-sections.tsx with `?app=desktop`. A server's public info doesn't name its owner,
+// so its rows give its address where the prototype has "Ines's server".
+
+export const desktopWindow = defineMessages({
+  minimise: 'Minimise',
+  maximise: 'Maximise',
+  close: 'Close',
+})
+
+export const connect = defineMessages({
+  title: 'Choose a server',
+  back: 'Back',
+  yourServers: 'Your servers',
+  knownLine:
+    '{address} · {signedIn, select, true {signed in} other {signed out}} · {when, select, now {just now} other {{when}}}',
+  nearby: 'On this network',
+  looking: 'Looking…',
+  waitingMac: 'Waiting for your Mac…',
+  lookAgain: 'Look again',
+  asking:
+    'Your Mac is asking whether highsea may find devices on your local network. Choose Allow to look for servers.',
+  refused:
+    'highsea can’t look on this network. Allow it in System Settings › Privacy & Security › Local Network, or add the server by address.',
+  onlyKnown: 'Only servers you already use answered.',
+  none: 'No servers answered. They may be on another network, or discovery may be off: add one by address.',
+  addLabel: 'Add a server by address',
+  addHint: 'Its name or IP, with the port if it isn’t 443: harbor.example.net, 192.168.1.20:3000.',
+  connect: 'Connect',
+  unreachable: 'Nothing answered at {address}. Check the address, and that the server is on.',
+  notHighsea: 'There’s no highsea server at {address}.',
+  invalid: 'That isn’t an address. Try harbor.example.net or 192.168.1.20:3000.',
+  failed: 'Couldn’t connect. {message}',
+  starting: 'Connecting to {name}…',
+})
+
+export const desktop = defineMessages({
+  unreachableBody:
+    'highsea tried {name} on this network and at its remote address. It may be off, or the network may be down.',
+  switchServer: 'Switch server',
+  thisServer: 'In use · {address}',
+  remoteLine: 'Remote · {address}',
+  localLine: 'On this network · {address}',
+  offLine: 'Can’t reach it right now',
+  otherLine: '{signedIn, select, true {Signed in} other {Signed out}} · last used {when}',
+  addServer: 'Add a server',
+  switch: 'Switch',
+  signIn: 'Sign in',
+  eachKeeps: 'Each server keeps its own sign-in. Signing out of one leaves the others alone.',
+  oidcBrowser:
+    'Finish signing in with {provider} in your browser. highsea opens again when you’re done.',
+  oidcCancel: 'Cancel',
+  'oidc.oidc-unknown': 'There’s no account on {name} for you yet. Ask its owner for an invite.',
+  'oidc.oidc-denied': '{provider} didn’t sign you in. Try again, or sign in with a password.',
+  'oidc.challenge-expired': 'That sign-in took too long or was already used. Start again.',
+  'oidc.keychain': 'highsea couldn’t keep your sign-in in this computer’s keychain. Try again.',
+  'oidc.other': 'Signing in with {provider} didn’t work. Try again.',
+  openSetup: 'Set it up in your browser',
+})
+
+export const updates = defineMessages({
+  ready: 'highsea {version} is ready. It’s used the next time the app starts.',
+  restart: 'Restart to update',
+  menuDetail: 'highsea {version} is ready. You have {current}.',
+  upToDate: 'Up to date. highsea checks for a new version by itself, last {when}.',
+  notChecked: 'highsea checks for a new version by itself.',
+  restartFailed: 'Couldn’t install the update. Try again later.',
+  thisApp: 'highsea {version} for {os}',
+  profileUpdate: '{name}: profile and settings. An update is ready.',
 })

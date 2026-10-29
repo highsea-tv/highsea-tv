@@ -28,6 +28,8 @@ import { ApiError, type HighseaClient } from '@highsea-tv/sdk'
 import { useClient } from '@highsea-tv/sdk/react'
 import type HlsType from 'hls.js'
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { desktopOs } from './desktop/window.tsx'
+import { hostFetch, inApp, media } from './host.ts'
 
 /** The player's error when the server is transcoding all it's allowed to, and this one gave up. */
 export const TRANSCODE_LIMIT = 'transcode-limit'
@@ -100,8 +102,8 @@ function reportDevice(client: HighseaClient, base: Base) {
 function leave(session: PlaySession, position: number, closing: boolean) {
   const init = { keepalive: true, credentials: 'same-origin' } as const
   const path = `${API}/playback/sessions/${encodeURIComponent(session.id)}`
-  const end = () => fetch(path, { ...init, method: 'DELETE' }).catch(() => {})
-  const report = fetch(`${path}/progress`, {
+  const end = () => hostFetch(path, { ...init, method: 'DELETE' }).catch(() => {})
+  const report = hostFetch(`${path}/progress`, {
     ...init,
     method: 'POST',
     headers: { 'content-type': 'application/json' },
@@ -160,7 +162,9 @@ export function usePlayback(id: number, fromStart: boolean) {
       ? subtitle.id
       : null
   const subtitleUrl =
-    subtitle && !burnt ? (session?.subtitles.find((t) => t.id === subtitle.id)?.url ?? null) : null
+    subtitle && !burnt
+      ? media(session?.subtitles.find((t) => t.id === subtitle.id)?.url ?? null)
+      : null
   // the subtitle goes with each start (the server may need it), but changing it never restarts
   const subtitleRef = useRef<string | null>(null)
   subtitleRef.current = subtitle?.id ?? null
@@ -194,7 +198,7 @@ export function usePlayback(id: number, fromStart: boolean) {
       release()
       setSession(null)
       dispatch({ type: 'start', at: Date.now() })
-      const base = baseProfile(navigator.userAgent)
+      const base = baseProfile(navigator.userAgent, inApp ? desktopOs : undefined)
       await reportDevice(client, base)
       let s: PlaySession
       try {
@@ -235,7 +239,7 @@ export function usePlayback(id: number, fromStart: boolean) {
         s.decision.method === 'direct-play' ? { default: null } : await import('hls.js')
       if (gen !== generation.current) return
       if (!Hls || (!Hls.isSupported() && nativeHls)) {
-        v.src = s.url
+        v.src = media(s.url)
         v.addEventListener(
           'loadedmetadata',
           () => {
@@ -284,7 +288,7 @@ export function usePlayback(id: number, fromStart: boolean) {
             message: data.response?.code === 503 ? TRANSCODE_LIMIT : data.details,
           })
         })
-        h.loadSource(s.url)
+        h.loadSource(media(s.url))
         h.attachMedia(v)
         hls.current = h
       } else {

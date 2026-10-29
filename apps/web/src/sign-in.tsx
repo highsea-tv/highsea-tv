@@ -6,15 +6,27 @@
 // has two-step verification. Single sign-on goes through the server's OIDC start and comes back
 // to `/`, which sends a User here. Passkeys and setting up two-step verification stay on the
 // admin's sign-in page, which this one links to and which comes back here.
+//
+// In the desktop app (4.4a) the server was chosen in C1, which Back returns to. The sign-in sends
+// this computer as its device, so the server answers with a device token the app keeps in the
+// keychain (host.ts), and single sign-on opens in the system browser and comes back through
+// `highsea://oidc` (RFC 8252; apps/desktop/src-tauri/src/oidc.rs).
 import type { SignInResult } from '@highsea-tv/api-contract'
 import { usePublicInfo } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { ApiError } from '@highsea-tv/sdk'
 import { useAction } from '@highsea-tv/sdk/react'
 import { Button, Field, Icon, Input, Lockup, Mark, Skeleton } from '@highsea-tv/ui-web'
+import { openUrl } from '@tauri-apps/plugin-opener'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
-import { signIn as messages } from './messages.ts'
-import { href } from './shell.tsx'
+import { useDesktop } from './desktop/root.tsx'
+import { desktop } from './host.ts'
+import {
+  connect as connectMessages,
+  desktop as desktopMessages,
+  signIn as messages,
+} from './messages.ts'
+import { href, useServerAddress } from './shell.tsx'
 
 type Step =
   | { kind: 'form' }
@@ -37,7 +49,17 @@ function Alert({ children }: { children: ReactNode }) {
   )
 }
 
-function Card({ title, children }: { title: string; children: ReactNode }) {
+function Card({
+  title,
+  children,
+  onBack,
+}: {
+  title: string
+  children: ReactNode
+  /** The desktop app: back to Choose a server. */
+  onBack?: () => void
+}) {
+  const c = useT(connectMessages)
   return (
     <main className="grid min-h-screen place-items-center bg-bg p-4 text-text">
       <div className="grid w-full max-w-[28rem] gap-6">
@@ -46,9 +68,22 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
           aria-labelledby="sign-in-title"
           className="grid gap-5 rounded-lg border border-line bg-s1 px-6 py-5 shadow-2"
         >
-          <h1 id="sign-in-title" className="text-title">
-            {title}
-          </h1>
+          <div className="flex items-center gap-2">
+            {onBack && (
+              <Button
+                variant="ghost"
+                size="sm"
+                iconOnly
+                icon="arrow-left"
+                aria-label={c('back')}
+                onClick={onBack}
+                className="-ms-2"
+              />
+            )}
+            <h1 id="sign-in-title" className="text-title">
+              {title}
+            </h1>
+          </div>
           {children}
         </section>
       </div>
@@ -58,7 +93,11 @@ function Card({ title, children }: { title: string; children: ReactNode }) {
 
 export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   const t = useT(messages)
+  const d = useT(desktopMessages)
+  const app = useDesktop()
+  const address = useServerAddress()
   const info = usePublicInfo()
+  const [ssoError, setSsoError] = useState<string | null>(null)
   const [step, setStep] = useState<Step>({ kind: 'form' })
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
@@ -67,7 +106,10 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   const codeInput = useRef<HTMLInputElement>(null)
   const passwordInput = useRef<HTMLInputElement>(null)
 
-  const signIn = useAction((c) => c.auth.signIn({ body: { username, password } }))
+  const device = app?.device ?? undefined
+  const signIn = useAction((c) =>
+    c.auth.signIn({ body: { username, password, ...(device ? { device } : {}) } }),
+  )
   const verify = useAction((c, challenge: string, value: string) =>
     c.auth.twoFactor({ body: { challenge, code: value } }),
   )
@@ -79,8 +121,37 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   // a server that isn't set up has nobody to sign in yet: its owner starts at setup
   const unset = info.status === 'success' && !info.data.setupComplete
   useEffect(() => {
-    if (unset) window.location.assign('/setup')
-  }, [unset])
+    if (!unset) return
+    // the app opens the server's setup in the browser, where its owner finishes it
+    if (app) void openUrl(`${app.current.base}/setup`)
+    else window.location.assign('/setup')
+  }, [unset, app])
+
+  // a browser sign-in in the app comes back through `highsea://oidc`
+  const provider = info.status === 'success' ? (info.data.auth.oidc?.name ?? '') : ''
+  const name = info.status === 'success' ? info.data.name : ''
+  useEffect(() => {
+    if (!app || step.kind !== 'sso') return
+    const off = desktop.onOidc((done) => {
+      if (done.status === 'signedIn') return onSignedIn()
+      const known = ['oidc-unknown', 'oidc-denied', 'challenge-expired', 'keychain']
+      setSsoError(
+        d(
+          known.includes(done.reason)
+            ? (`oidc.${done.reason}` as 'oidc.oidc-unknown')
+            : 'oidc.other',
+          {
+            name,
+            provider,
+          },
+        ),
+      )
+      setStep({ kind: 'form' })
+    })
+    return () => {
+      void off.then((f) => f())
+    }
+  }, [app, step.kind, onSignedIn, d, name, provider])
 
   const after = (result: SignInResult) => {
     setError(null)
@@ -129,10 +200,10 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
     )
   if (info.status === 'error')
     return (
-      <Card title={t('signIn')}>
+      <Card title={t('signIn')} onBack={app?.choose}>
         <Alert>
           {info.error instanceof ApiError && info.error.code === 'unavailable'
-            ? t('unavailable', { name: window.location.host })
+            ? t('unavailable', { name: address })
             : t('failed', { message: info.error.message })}
         </Alert>
         <Button variant="primary" icon="refresh" onClick={info.refetch}>
@@ -150,8 +221,15 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
       <Card title={t('oidc', { provider: server.auth.oidc?.name ?? '' })}>
         <p className="flex items-center gap-2 text-caption text-text-2" role="status">
           <Icon name="loading" size={16} className="animate-spin" />
-          {t('oidcWait', { provider: server.auth.oidc?.name ?? '' })}
+          {app
+            ? d('oidcBrowser', { provider: server.auth.oidc?.name ?? '' })
+            : t('oidcWait', { provider: server.auth.oidc?.name ?? '' })}
         </p>
+        {app && (
+          <Button variant="ghost" onClick={() => setStep({ kind: 'form' })}>
+            {d('oidcCancel')}
+          </Button>
+        )}
       </Card>
     )
 
@@ -159,9 +237,19 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
     return (
       <Card title={t('setupTitle')}>
         <p className="text-body text-text-2">{t('setupDetail', { name: server.name })}</p>
-        <Button variant="primary" asChild>
-          <a href={`/login?next=${encodeURIComponent(href('/'))}`}>{t('setupAction')}</a>
-        </Button>
+        {app ? (
+          <Button
+            variant="primary"
+            icon="external"
+            onClick={() => void openUrl(`${app.current.base}/login`)}
+          >
+            {d('openSetup')}
+          </Button>
+        ) : (
+          <Button variant="primary" asChild>
+            <a href={`/login?next=${encodeURIComponent(href('/'))}`}>{t('setupAction')}</a>
+          </Button>
+        )}
         <Button variant="ghost" onClick={() => setStep({ kind: 'form' })}>
           {t('otherAccount')}
         </Button>
@@ -227,16 +315,15 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   }
 
   return (
-    <Card title={t('title', { name: server.name })}>
+    <Card title={t('title', { name: server.name })} onBack={app?.choose}>
       <div className="flex items-center gap-3 rounded-md bg-s2 px-3 py-2.5">
         <Mark size={28} />
         <span className="grid min-w-0">
           <span className="truncate font-semibold text-text text-ui">{server.name}</span>
-          <span className="truncate font-mono text-caption text-text-3">
-            {window.location.host}
-          </span>
+          <span className="truncate font-mono text-caption text-text-3">{address}</span>
         </span>
       </div>
+      {ssoError && <Alert>{ssoError}</Alert>}
       {server.auth.local ? (
         <form className="grid gap-4" onSubmit={submit} noValidate>
           <Field label={t('username')}>
@@ -278,8 +365,14 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
             icon="shield"
             className="h-auto min-h-9 whitespace-normal py-1.5"
             onClick={() => {
+              setSsoError(null)
               setStep({ kind: 'sso' })
-              window.location.assign('/api/v1/auth/oidc/start')
+              if (app)
+                desktop.oidcStart().catch(() => {
+                  setStep({ kind: 'form' })
+                  setSsoError(d('oidc.other', { provider: server.auth.oidc?.name ?? '' }))
+                })
+              else window.location.assign('/api/v1/auth/oidc/start')
             }}
           >
             {t('oidc', { provider: server.auth.oidc.name })}

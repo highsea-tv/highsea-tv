@@ -17,6 +17,12 @@ export type Connection = 'local' | 'remote' | 'offline'
  */
 /** The web platform as a browser, or inside the desktop app (Tauri), which keeps downloads (C8). */
 export type WebApp = 'browser' | 'desktop'
+/** The desktop app's computer (checkpoint 4.4a): its window chrome and folders differ by OS. */
+export type DesktopOs = 'mac' | 'windows' | 'linux'
+/** The desktop app's own update: none waiting, or downloaded and ready for a restart. */
+export type AppUpdate = 'none' | 'ready'
+/** macOS's local network permission for the desktop app (Apple TN3179): granted, asking, refused. */
+export type LocalNetwork = 'allowed' | 'asking' | 'refused'
 export type StreamState = 'normal' | 'preparing' | 'buffering' | 'failed' | 'stopped' | 'next-up'
 
 export type ProtoState = {
@@ -33,6 +39,9 @@ export type ProtoState = {
   connection: Connection
   stream: StreamState
   app: WebApp
+  os: DesktopOs
+  update: AppUpdate
+  lan: LocalNetwork
   /** A client preview inside the admin (`?preview`): no prototype affordances. */
   preview: boolean
 }
@@ -49,6 +58,9 @@ export const defaultState: ProtoState = {
   connection: 'local',
   stream: 'normal',
   app: 'browser',
+  os: 'mac',
+  update: 'none',
+  lan: 'allowed',
   preview: false,
 }
 
@@ -90,6 +102,23 @@ export const connections: { id: Connection; label: string }[] = [
 export const webApps: { id: WebApp; label: string }[] = [
   { id: 'browser', label: 'Browser' },
   { id: 'desktop', label: 'Desktop app' },
+]
+
+export const desktopOses: { id: DesktopOs; label: string }[] = [
+  { id: 'mac', label: 'macOS' },
+  { id: 'windows', label: 'Windows' },
+  { id: 'linux', label: 'Linux' },
+]
+
+export const appUpdates: { id: AppUpdate; label: string }[] = [
+  { id: 'none', label: 'Up to date' },
+  { id: 'ready', label: 'Ready to restart' },
+]
+
+export const localNetworks: { id: LocalNetwork; label: string }[] = [
+  { id: 'allowed', label: 'Allowed' },
+  { id: 'asking', label: 'Asking' },
+  { id: 'refused', label: 'Refused' },
 ]
 
 export const streamStates: { id: StreamState; label: string }[] = [
@@ -138,7 +167,8 @@ export function saveState(state: ProtoState): void {
 /**
  * URL parameters override the state, so a screen can be opened on its own at a known state:
  * `?screen&data=empty&theme=oled&role=admin&motion=reduced&text=200&time=pause&connection=remote`
- * (and `&stream=buffering` on a player, `&app=desktop` for the desktop app);
+ * (and `&stream=buffering` on a player, `&app=desktop` for the desktop app, with `&os=windows`,
+ * `&update=ready` and `&lan=refused`);
  * `&preview` marks a client preview inside the admin.
  */
 export function stateFromParams(params: URLSearchParams, base: ProtoState): ProtoState {
@@ -164,6 +194,21 @@ export function stateFromParams(params: URLSearchParams, base: ProtoState): Prot
         'app',
         webApps.map((x) => x.id),
       ) ?? base.app,
+    os:
+      pick(
+        'os',
+        desktopOses.map((x) => x.id),
+      ) ?? base.os,
+    update:
+      pick(
+        'update',
+        appUpdates.map((x) => x.id),
+      ) ?? base.update,
+    lan:
+      pick(
+        'lan',
+        localNetworks.map((x) => x.id),
+      ) ?? base.lan,
     reducedMotion: params.has('motion') ? params.get('motion') === 'reduced' : base.reducedMotion,
     largeText: params.has('text') ? params.get('text') === '200' : base.largeText,
     preview: params.has('preview'),
