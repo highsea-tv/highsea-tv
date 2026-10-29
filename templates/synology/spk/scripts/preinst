@@ -1,0 +1,40 @@
+#!/bin/sh
+# SPDX-License-Identifier: AGPL-3.0-only
+# Writes the compose project's .env into the unpacked package, before Container Manager creates the
+# project from it. An upgrade keeps the shared folder chosen at install, which postinst saved in
+# the package's var folder (@appdata, kept across upgrades); /var/packages/highsea/var isn't linked
+# while the new version's preinst runs, so it's read from the volume.
+. "$(dirname "$0")/common"
+
+saved="${SYNOPKG_PKGDEST_VOL:-/volume1}/@appdata/highsea/package.conf"
+share=""
+if [ "$SYNOPKG_PKG_STATUS" = UPGRADE ] && [ -r "$saved" ]; then
+  share=$(sed -n 's/^share=//p' "$saved")
+fi
+[ -n "$share" ] || share="${wizard_data_share:-}"
+if [ -z "$share" ]; then
+  say "Choose a shared folder for highsea's films."
+  exit 1
+fi
+
+if [ "$SYNOPKG_PKG_STATUS" = INSTALL ] && listening 3000; then
+  say "Something on this NAS already uses port 3000. If it's highsea in Container Manager, stop and delete that project first, then install the package again."
+  exit 1
+fi
+
+dri="/var/packages/highsea/target/compose/no-graphics"
+gid=$(id -g)
+for node in /dev/dri/renderD*; do
+  [ -e "$node" ] || continue
+  dri=/dev/dri
+  gid=$(stat -c %g "$node")
+  break
+done
+
+cat > "$SYNOPKG_PKGINST_TEMP_DIR/compose/.env" <<ENV
+HIGHSEA_DATA='/var/packages/highsea/shares/$share'
+HIGHSEA_DRI=$dri
+HIGHSEA_RENDER_GID=$gid
+HIGHSEA_HOSTNAME=$(hostname -s 2>/dev/null || hostname)
+ENV
+exit 0

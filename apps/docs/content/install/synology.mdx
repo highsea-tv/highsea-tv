@@ -1,6 +1,6 @@
 ---
 title: Install on Synology
-description: Run highsea as a Container Manager project on DSM 7.2 or later.
+description: Install highsea's package from its package source in Package Center, or run it as a Container Manager project, on DSM 7.2 or later.
 ---
 
 {/* SPDX-License-Identifier: AGPL-3.0-only */}
@@ -12,13 +12,57 @@ description: Run highsea as a Container Manager project on DSM 7.2 or later.
   - Shared folders: https://kb.synology.com/en-global/DSM/help/DSM/AdminCenter/file_share_create?version=7
   - The compose file is templates/synology/compose.yaml in the repository.
   - The user highsea runs as: docker/entrypoint.sh (ADR 0057).
+  - The package: templates/synology/spk (its wizard's words are in WIZARD_UIFILES), built by
+    scripts/spk.ts and attached to each stable release.
+  - Package Center › Manual Install: https://kb.synology.com/en-global/DSM/help/DSM/PkgManApp/PackageCenter_desc?version=7
+  - Package sources and the Community list:
+    https://kb.synology.com/en-global/DSM/tutorial/How_to_install_applications_with_Package_Center
+  - The package source: apps/packages (packages.highsea.tv). Tried on DSM 7.4.1 on 2026-10-29:
+    adding it, installing from Community, and Update.
 */}
 
-Written for highsea 0.2.0-beta.3 on DSM 7.2 or later with Container Manager, and checked on DSM 7.4.1.
+Written for highsea 0.2.0 on DSM 7.2 or later with Container Manager, and checked on DSM 7.4.1.
 
-Container Manager runs highsea from a compose file, which it calls a project. Its containers use published ports rather than the NAS's own network, which highsea supports.
+Container Manager runs highsea from a compose file, which it calls a project. Its containers use published ports rather than the NAS's own network, which highsea supports. There are two ways to set it up:
+
+- [Install the package](#install-the-package), which makes the project for you. It needs DSM 7.2.1 or later.
+- [Create the project yourself](#before-you-start), with a compose file you can change.
+
+## Install the package
+
+highsea has its own package source, which lists the package in Package Center and tells it when there's an update. The package runs the same image as the project below.
+
+1. Install **Container Manager** from Package Center.
+2. In Package Center, choose **Settings**, then **Package Sources**, and choose **Add**.
+3. Type `highsea` as the **Name** and `https://packages.highsea.tv` as the **Location**, then choose **OK** twice.
+4. Choose **Community** in Package Center's sidebar, find **highsea**, and choose **Install**.
+5. DSM says the package isn't from Synology. Choose **Agree** to carry on.
+6. On **Where your films go**, type the name of the shared folder your films are in, or keep `highsea` to make a new shared folder.
+7. Read **Before you start**, check the summary, and choose **Done**.
+
+![The package's first step, Where your films go, asking for a shared folder with highsea filled in](/images/synology-package-wizard.png)
+
+Container Manager then downloads highsea's image and starts it, which can take a few minutes. When Package Center shows highsea as running, choose **Open**, or open `http://<your NAS's address>:3000`, and [run setup](#run-setup).
+
+The package runs highsea as its own DSM user, `highsea`, and gives that user read and write access to the shared folder you chose. It finds the graphics chip and DSM's mDNS service by itself, so there's nothing else to choose. highsea's settings, database and backups live in the package's own folder on the volume.
+
+If highsea already runs as a Container Manager project you made, stop and delete that project first: both use port 3000, and the package says so if the port is taken. The package starts with its own settings.
+
+### Updates
+
+When a new version is out, Package Center shows **Update** on highsea, under **Installed**, and notifies you if its notifications are on. Package Center checks its sources from time to time, so an update can take a while to show. To have it update highsea by itself, turn that on in **Settings › Auto-update**. The shared folder and highsea's settings are kept.
+
+### Without the package source
+
+Each stable release on [GitHub](https://github.com/highsea-tv/highsea-tv/releases) also has the package under **Assets**, named like `highsea-0.2.0-0001.spk`. Download it, choose **Manual Install** in Package Center, choose the file, and carry on from step 5. Package Center doesn't tell you about updates to a package installed this way: install the newer release's `.spk` the same way.
+
+### Uninstall
+
+Choose **Uninstall** in Package Center. Your films and the shared folder are kept. highsea's settings, database and backups are kept too, so installing again carries on where it left off, unless you tick **Also delete highsea's settings, database and backups**. To remove the package source as well, select it in **Settings › Package Sources** and choose **Delete**.
 
 ## Before you start
+
+This section and the next are for creating the project yourself. The package does both for you.
 
 - Install **Container Manager** from Package Center.
 - In **Control Panel › Shared Folder**, make a shared folder called `data` on the volume with the most room. Inside it, in File Station, make `downloads` and `media/movies`. Keeping both in one shared folder is what lets highsea hardlink finished downloads into the library instead of copying them.

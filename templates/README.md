@@ -11,6 +11,7 @@ asks nothing highsea can find out by itself.
 | `truenas/compose.yaml` | A compose file for Apps › Install via YAML | Copied by hand, as the TrueNAS guide says |
 | `truenas/highsea/` | The app for TrueNAS's community train, in [truenas/apps](https://github.com/truenas/apps)' format (`ix-dev/community/highsea/`) | A pull request to truenas/apps |
 | `synology/compose.yaml` | A compose file for Container Manager | Copied by hand, as the Synology guide says |
+| `synology/spk/` | The Synology package (DSM 7.2.1 and later): INFO's source is `scripts/spk.ts`, which packs this folder, pins the image to the release and checksums the payload | `bun scripts/spk.ts build <version>` makes `dist/highsea-<version>-0001.spk` and `dist/highsea-spk.json`; the release workflow attaches both to each stable release, and `packages.highsea.tv` (`apps/packages`) lists the Latest one in Package Center |
 | `umbrel/highsea/` | The app for [umbrel-apps](https://github.com/getumbrel/umbrel-apps) (`highsea/`) | A pull request to umbrel-apps |
 | `casaos/highsea/` | The app for the [CasaOS and ZimaOS store](https://github.com/IceWhaleTech/CasaOS-AppStore) (`Apps/highsea/`) | A pull request to CasaOS-AppStore |
 
@@ -38,3 +39,29 @@ header: truenas/apps is under the LGPL-3.0 and CasaOS-AppStore under the Apache-
 
 Each pins the release it was written for, by tag and, where the store asks, by digest. A release
 moves them on.
+
+## The Synology package
+
+`synology/spk/` is the package's tree, laid out as Synology's developer guide has it
+([introduction](https://help.synology.com/developer-guide/synology_package/introduction.html)):
+
+- `package/compose/` becomes the package's target folder. Container Manager's `docker-project`
+  worker (`conf/resource`) creates the project from `compose.yaml` before `postinst` runs, so
+  `scripts/preinst` writes the project's `.env` into the unpacked package: the shared folder, the
+  graphics and their group, and the NAS's name. `no-graphics/` is what's mounted on `/dev/dri` on a
+  model without graphics, since DSM's Docker won't start a container whose bind source is missing.
+- `conf/privilege` runs the scripts as the package's own user, and the container runs as it too
+  (Container Manager adds `user:` for a package's project). `conf/resource` also asks the
+  `data-share` worker for the shared folder from the wizard, with read and write for that user.
+- `WIZARD_UIFILES/` holds the install wizard (the shared folder) and the uninstall wizard (whether
+  to delete highsea's settings), in the JSON format of the DSM 6.0 developer guide, which DSM 7
+  still reads.
+- `PACKAGE_ICON.PNG` is 64×64; the 256×256 icon is the brand's, added by the build.
+
+`scripts/spk.test.ts` checks the archive with the system's `tar`, the scripts with `sh -n`, and
+`preinst` with DSM's variables. A real install is tried on a NAS by hand, never in CI.
+
+Owners get the package from highsea's package source, `packages.highsea.tv`, which they add in
+Package Center › Settings › Package Sources. It's `apps/packages`, a Vercel Function that answers
+Package Center as SynoCommunity's spkrepo does, from the `highsea-spk.json` attached to GitHub's
+Latest release (ADR 0050's 2026-10-29 section). A release reaches it with nothing to deploy.

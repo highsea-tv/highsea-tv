@@ -1,0 +1,41 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# highsea's Synology package (install-simplicity.md, part D). Container Manager's docker-project
+# worker creates this project before postinst and only starts it afterwards
+# (https://help.synology.com/developer-guide/resource_acquisition/docker-project.html), so the
+# values that differ by NAS come from .env, which preinst writes into the unpacked package first.
+# Container Manager runs it as the package's own user (it adds `user:` in docker-compose.admin.yaml),
+# so highsea runs as that user, which the data-share worker gave read and write on the shared folder.
+services:
+  highsea:
+    image: ghcr.io/highsea-tv/highsea:@VERSION@
+    container_name: highsea
+    # the NAS's own name, which setup offers as the server's (a container's is its id otherwise)
+    hostname: ${HIGHSEA_HOSTNAME:-highsea}
+    volumes:
+      # kept on uninstall unless the uninstall wizard is told to delete it
+      - /var/packages/highsea/var/config:/config
+      # the shared folder chosen at install, through the link DSM makes for the package
+      - ${HIGHSEA_DATA}:/data
+      # the graphics chip's folder, or an empty one on a model without it (Synology's Docker
+      # won't start a container whose bind mount is missing)
+      - ${HIGHSEA_DRI}:/dev/dri
+      - /run/dbus:/run/dbus:ro
+    # the render node's group (videodriver on DSM), so ffmpeg can open it (ADR 0056)
+    group_add:
+      - "${HIGHSEA_RENDER_GID}"
+    ports:
+      - "3000:3000"
+      - "6881:6881/tcp"
+      - "6881:6881/udp"
+      - "7368:7368/udp"
+    device_cgroup_rules:
+      - "c 226:128 rw"
+      - "c 226:129 rw"
+      - "c 226:130 rw"
+      - "c 226:131 rw"
+      - "c 226:132 rw"
+      - "c 226:133 rw"
+      - "c 226:134 rw"
+      - "c 226:135 rw"
+    # a restore in System › Backups restarts highsea by exiting with code 75 (ADR 0047)
+    restart: unless-stopped

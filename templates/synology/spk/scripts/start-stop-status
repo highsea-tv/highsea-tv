@@ -1,0 +1,5 @@
+#!/bin/sh
+# SPDX-License-Identifier: AGPL-3.0-only
+# Container Manager's docker-project worker starts and stops the container with the package, and
+# Docker restarts it if it stops, so there's nothing to do here.
+exit 0

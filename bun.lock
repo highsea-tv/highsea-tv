@@ -43,9 +43,17 @@
         "tailwindcss": "4.3.3",
       },
     },
+    "apps/packages": {
+      "name": "@highsea-tv/packages",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@highsea-tv/config": "workspace:*",
+        "@types/node": "26.6.5",
+      },
+    },
     "apps/server": {
       "name": "@highsea-tv/server",
-      "version": "0.2.0-beta.1",
+      "version": "0.2.0",
       "dependencies": {
         "@highsea-tv/api-contract": "workspace:*",
         "@highsea-tv/auth": "workspace:*",
@@ -950,6 +958,8 @@
     "@highsea-tv/network": ["@highsea-tv/network@workspace:packages/network"],
 
     "@highsea-tv/notifications": ["@highsea-tv/notifications@workspace:packages/notifications"],
+
+    "@highsea-tv/packages": ["@highsea-tv/packages@workspace:apps/packages"],
 
     "@highsea-tv/parser": ["@highsea-tv/parser@workspace:packages/parser"],
 

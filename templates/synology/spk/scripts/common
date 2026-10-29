@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# Shared by the package's scripts, which DSM runs as the package's user
+# (https://help.synology.com/developer-guide/synology_package/scripts.html).
+SETTINGS=/var/packages/highsea/var/package.conf
+
+# A message Package Center shows the person installing
+# (https://help.synology.com/developer-guide/synology_package/show_massage.html).
+say() { echo "$1" > "$SYNOPKG_TEMP_LOGFILE"; }
+
+# Is something listening on this TCP port? /proc/net/tcp and tcp6 list sockets with the port in
+# hex, and state 0A is LISTEN (proc(5)).
+listening() {
+  hex=$(printf ':%04X' "$1")
+  awk -v p="$hex" '$2 ~ p"$" && $4 == "0A" { found = 1 } END { exit !found }' /proc/net/tcp /proc/net/tcp6 2>/dev/null
+}
