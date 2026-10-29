@@ -41,6 +41,30 @@ async function started() {
   }
 }
 
+describe.skipIf(!hasFfmpeg)('adding a root folder scans it (4.1a’s review)', () => {
+  test('the movies already there are added when their match is sure', async () => {
+    const runtime = await bootRuntime({ importing: { sampleSeconds: 2 } })
+    const app = createApi(runtime)
+    const { token } = await withOwner(runtime)
+    await runtime.metadata.settings.setKey('test-tmdb-key')
+    const root = join(runtime.config.dataDir, 'media', 'films')
+    mkdirSync(join(root, 'Sintel (2010)'), { recursive: true })
+    copyFileSync(main, join(root, 'Sintel (2010)', 'Sintel.2010.1080p.BluRay.x264-GRP.mkv'))
+    const api = clientFor(app, { token })
+    await api.rootFolders.add({ body: { path: root } })
+    expect(runtime.jobs.list({ type: 'library.scan' }).map((j) => j.payload)).toEqual([
+      { folder: root },
+    ])
+    await runtime.jobs.tick()
+    await runtime.jobs.idle()
+    expect(runtime.movies.get(SINTEL).path).toBe(join(root, 'Sintel (2010)'))
+    expect((await api.rootFolders.list()).find((f) => f.path === root)).toMatchObject({
+      movies: 1,
+      waiting: 0,
+    })
+  })
+})
+
 describe.skipIf(!hasFfmpeg)('library import over the API', () => {
   test('scan, run and progress, as an admin', async () => {
     const { runtime, root, adminApi } = await started()

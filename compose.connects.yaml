@@ -4,7 +4,7 @@
 # Then in Settings › VPN choose "highsea connects", pick your provider and add its configuration.
 #
 # - NET_ADMIN lets highsea make its interface (hswg0), its routes and its rule. The entrypoint keeps
-#   the capability for the PUID user (docker/entrypoint.sh); nothing else in the image gets root.
+#   the capability for the user highsea runs as (docker/entrypoint.sh); nothing else in the image gets root.
 # - The container has its own network, not the host's: with host networking, highsea's interface and
 #   rule would land in the host's network, beside everything else on the machine. So the ports are
 #   published, and LAN discovery is limited to the UDP broadcast (ADR 0020).
@@ -17,11 +17,12 @@ services:
     container_name: highsea
     cap_add: [NET_ADMIN]
     # devices: [/dev/net/tun:/dev/net/tun]
-    environment:
-      # the user and group that own your files (`id` on the host shows yours)
-      PUID: "1000"
-      PGID: "1000"
-      TZ: Etc/UTC
+    # highsea runs as whoever owns /data, and takes the time zone from your browser at setup.
+    # To choose instead:
+    # environment:
+    #   PUID: "1000"
+    #   PGID: "1000"
+    #   TZ: Europe/London
     volumes:
       # the database, settings, logs and backups
       - ./config:/config

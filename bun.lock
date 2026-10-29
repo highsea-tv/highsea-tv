@@ -11,6 +11,7 @@
         "@highsea-tv/indexers": "workspace:*",
         "@highsea-tv/media": "workspace:*",
         "@highsea-tv/metadata": "workspace:*",
+        "@highsea-tv/stream": "workspace:*",
         "@highsea-tv/subtitles": "workspace:*",
         "@highsea-tv/torrent": "workspace:*",
         "@types/bun": "^1.4.3",
@@ -44,7 +45,7 @@
     },
     "apps/server": {
       "name": "@highsea-tv/server",
-      "version": "0.1.0",
+      "version": "0.2.0-beta.1",
       "dependencies": {
         "@highsea-tv/api-contract": "workspace:*",
         "@highsea-tv/auth": "workspace:*",
@@ -68,6 +69,7 @@
         "@highsea-tv/quality": "workspace:*",
         "@highsea-tv/runtime": "workspace:*",
         "@highsea-tv/sdk": "workspace:*",
+        "@highsea-tv/stream": "workspace:*",
         "@highsea-tv/subtitles": "workspace:*",
         "@highsea-tv/tokens": "workspace:*",
         "@highsea-tv/ui-web": "workspace:*",
@@ -96,6 +98,7 @@
         "@types/node": "26.6.5",
         "@types/react": "19.3.0",
         "@types/react-dom": "19.3.0",
+        "hls.js": "1.7.3",
         "postcss": "8.5.29",
         "tailwindcss": "4.3.3",
       },
@@ -131,11 +134,43 @@
         "vite": "8.3.4",
       },
     },
+    "apps/web": {
+      "name": "@highsea-tv/web",
+      "version": "0.1.0",
+      "dependencies": {
+        "@highsea-tv/api-contract": "workspace:*",
+        "@highsea-tv/brand": "workspace:*",
+        "@highsea-tv/client": "workspace:*",
+        "@highsea-tv/core": "workspace:*",
+        "@highsea-tv/i18n": "workspace:*",
+        "@highsea-tv/sdk": "workspace:*",
+        "@highsea-tv/tokens": "workspace:*",
+        "@highsea-tv/ui-web": "workspace:*",
+        "hls.js": "1.7.3",
+        "motion": "14.3.0",
+        "react": "19.3.1",
+        "react-dom": "19.3.1",
+        "wouter": "3.13.0",
+      },
+      "devDependencies": {
+        "@happy-dom/global-registrator": "21.0.3",
+        "@highsea-tv/config": "workspace:*",
+        "@tailwindcss/vite": "4.3.3",
+        "@testing-library/react": "16.3.3",
+        "@testing-library/user-event": "14.6.8",
+        "@types/react": "19.3.0",
+        "@types/react-dom": "19.3.0",
+        "@vitejs/plugin-react": "6.1.2",
+        "tailwindcss": "4.3.3",
+        "vite": "8.3.4",
+      },
+    },
     "design/prototypes": {
       "name": "@highsea-tv/prototypes",
       "version": "0.1.0",
       "dependencies": {
         "@highsea-tv/brand": "workspace:*",
+        "@highsea-tv/client": "workspace:*",
         "@highsea-tv/core": "workspace:*",
         "@highsea-tv/fixtures": "workspace:*",
         "@highsea-tv/i18n": "workspace:*",
@@ -223,6 +258,26 @@
       "devDependencies": {
         "@highsea-tv/config": "workspace:*",
         "@types/node": "26.6.5",
+      },
+    },
+    "packages/client": {
+      "name": "@highsea-tv/client",
+      "version": "0.0.0",
+      "dependencies": {
+        "@highsea-tv/api-contract": "workspace:*",
+        "@highsea-tv/i18n": "workspace:*",
+        "@highsea-tv/sdk": "workspace:*",
+      },
+      "devDependencies": {
+        "@happy-dom/global-registrator": "21.0.3",
+        "@highsea-tv/config": "workspace:*",
+        "@testing-library/react": "16.3.3",
+        "@types/react": "19.3.0",
+        "react": "19.3.1",
+        "react-dom": "19.3.1",
+      },
+      "peerDependencies": {
+        "react": "^19.3.0",
       },
     },
     "packages/config": {
@@ -511,6 +566,7 @@
         "@highsea-tv/notifications": "workspace:*",
         "@highsea-tv/personalization": "workspace:*",
         "@highsea-tv/quality": "workspace:*",
+        "@highsea-tv/stream": "workspace:*",
         "@highsea-tv/subtitles": "workspace:*",
         "@highsea-tv/torrent": "workspace:*",
         "@highsea-tv/vpn": "workspace:*",
@@ -553,6 +609,19 @@
       },
       "peerDependencies": {
         "react": "^19.3.0",
+      },
+    },
+    "packages/stream": {
+      "name": "@highsea-tv/stream",
+      "version": "0.0.0",
+      "dependencies": {
+        "@highsea-tv/i18n": "workspace:*",
+        "@highsea-tv/media": "workspace:*",
+        "zod": "4.6.7",
+      },
+      "devDependencies": {
+        "@highsea-tv/config": "workspace:*",
+        "@types/node": "26.6.5",
       },
     },
     "packages/subtitles": {
@@ -848,6 +917,8 @@
 
     "@highsea-tv/catalog": ["@highsea-tv/catalog@workspace:packages/catalog"],
 
+    "@highsea-tv/client": ["@highsea-tv/client@workspace:packages/client"],
+
     "@highsea-tv/config": ["@highsea-tv/config@workspace:packages/config"],
 
     "@highsea-tv/core": ["@highsea-tv/core@workspace:packages/core"],
@@ -898,6 +969,8 @@
 
     "@highsea-tv/storybook": ["@highsea-tv/storybook@workspace:apps/storybook"],
 
+    "@highsea-tv/stream": ["@highsea-tv/stream@workspace:packages/stream"],
+
     "@highsea-tv/subtitles": ["@highsea-tv/subtitles@workspace:packages/subtitles"],
 
     "@highsea-tv/tokens": ["@highsea-tv/tokens@workspace:packages/tokens"],
@@ -907,6 +980,8 @@
     "@highsea-tv/ui-web": ["@highsea-tv/ui-web@workspace:packages/ui-web"],
 
     "@highsea-tv/vpn": ["@highsea-tv/vpn@workspace:packages/vpn"],
+
+    "@highsea-tv/web": ["@highsea-tv/web@workspace:apps/web"],
 
     "@homebridge/ciao": ["@homebridge/ciao@1.3.12", "", { "dependencies": { "debug": "^4.4.3", "fast-deep-equal": "^3.1.3", "source-map-support": "^0.5.21", "tslib": "^2.8.1" }, "bin": { "ciao-bcs": "lib/bonjour-conformance-testing.js" } }, "sha512-84/0u0kqKy4qcKupIDaTtbkmk+3qFDuMzxTC0NPfVlHcUT+jHGdP+QCqwEw94/GJxRezDeBLwxaclkBZgCdeUg=="],
 
@@ -1786,7 +1861,7 @@
 
     "enhanced-resolve": ["enhanced-resolve@5.26.0", "", { "dependencies": { "graceful-fs": "^4.2.4", "tapable": "^2.3.3" } }, "sha512-9vhedylFonb2YGogzUKX6+Ja72gOJbN1QHAqdrvqLwhdl/QWbKopzoUC9EbQNVsAns/bx/4uyqalrQAoy1IByw=="],
 
-    "entities": ["entities@4.5.0", "", {}, "sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw=="],
+    "entities": ["entities@7.0.1", "", {}, "sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA=="],
 
     "env-paths": ["env-paths@2.2.1", "", {}, "sha512-+h1lkLKhZMTYjog1VEpJNG7NZJWcuc2DDk/qsqSTRRCOXiLjeQ1d1/udrUGhqMxUgAlwKNZ0cf2uqan5GLuS2A=="],
 
@@ -1901,6 +1976,8 @@
     "hast-util-whitespace": ["hast-util-whitespace@3.0.0", "", { "dependencies": { "@types/hast": "^3.0.0" } }, "sha512-88JUN06ipLwsnv+dVn+OIYOvAuvBMy/Qoi6O7mQHxdPXpjy+Cd6xRkWwux7DKO+4sYILtLBRIKgsdpS2gQc7qw=="],
 
     "hastscript": ["hastscript@9.0.1", "", { "dependencies": { "@types/hast": "^3.0.0", "comma-separated-tokens": "^2.0.0", "hast-util-parse-selector": "^4.0.0", "property-information": "^7.0.0", "space-separated-tokens": "^2.0.0" } }, "sha512-g7df9rMFX/SPi34tyGCyUBREQoKkapwdY/T04Qn9TDWfHhAYt4/I0gMVirzK5wEzeUqIjEB+LXC/ypb7Aqno5w=="],
+
+    "hls.js": ["hls.js@1.7.3", "", {}, "sha512-MsPlx6yVW4Qv4C7mEVou4/gk/5cN2dVxOTnrNjPSmyH2f0Ln+/UkG10Ax1PE6OvrmTVPKgQYozTtBaPOuCzq7A=="],
 
     "hono": ["hono@4.13.13", "", {}, "sha512-CQ46U0ZkAGmbT/4UxdzzGJpacP2IeKgY4a5/tOI9AABbpOMfK739wfDXmv1usCk+3RkKj1hQy4/fjhiwa2xlrA=="],
 
@@ -2756,25 +2833,23 @@
 
     "csso/css-tree": ["css-tree@2.2.1", "", { "dependencies": { "mdn-data": "2.0.28", "source-map-js": "^1.0.1" } }, "sha512-OA0mILzGc1kCOCSJerOeqDxDQ4HOh+G8NbOJFOTgOCzpw7fCBubk0fEyxp8AgOL/jvLgYA/uV0cMbe43ElF1JA=="],
 
+    "dom-serializer/entities": ["entities@4.5.0", "", {}, "sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw=="],
+
     "editorconfig/commander": ["commander@14.0.3", "", {}, "sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw=="],
 
     "fumadocs-mdx/esbuild": ["esbuild@0.28.2", "", { "optionalDependencies": { "@esbuild/aix-ppc64": "0.28.2", "@esbuild/android-arm": "0.28.2", "@esbuild/android-arm64": "0.28.2", "@esbuild/android-x64": "0.28.2", "@esbuild/darwin-arm64": "0.28.2", "@esbuild/darwin-x64": "0.28.2", "@esbuild/freebsd-arm64": "0.28.2", "@esbuild/freebsd-x64": "0.28.2", "@esbuild/linux-arm": "0.28.2", "@esbuild/linux-arm64": "0.28.2", "@esbuild/linux-ia32": "0.28.2", "@esbuild/linux-loong64": "0.28.2", "@esbuild/linux-mips64el": "0.28.2", "@esbuild/linux-ppc64": "0.28.2", "@esbuild/linux-riscv64": "0.28.2", "@esbuild/linux-s390x": "0.28.2", "@esbuild/linux-x64": "0.28.2", "@esbuild/netbsd-arm64": "0.28.2", "@esbuild/netbsd-x64": "0.28.2", "@esbuild/openbsd-arm64": "0.28.2", "@esbuild/openbsd-x64": "0.28.2", "@esbuild/openharmony-arm64": "0.28.2", "@esbuild/sunos-x64": "0.28.2", "@esbuild/win32-arm64": "0.28.2", "@esbuild/win32-ia32": "0.28.2", "@esbuild/win32-x64": "0.28.2" }, "bin": { "esbuild": "bin/esbuild" } }, "sha512-HKVLS8dvII+xoKW9kmqxbRKrnWEXfJJr/FZhhJmiqIB0e053QNYFqOBouTMO/k5sID4MvCiUCvv8b9M4h32wIA=="],
-
-    "happy-dom/entities": ["entities@7.0.1", "", {}, "sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA=="],
 
     "happy-dom/whatwg-mimetype": ["whatwg-mimetype@3.0.0", "", {}, "sha512-nt+N2dzIutVRxARx1nghPKGv1xHikU7HKdfafKkLNLindmPU/ch3U31NOCGGA/dmPcmb1VlofO0vnKAcsm0o/Q=="],
 
     "html-minifier-terser/commander": ["commander@10.0.1", "", {}, "sha512-y4Mg2tXshplEbSGzx7amzPwKKOCGuoSRP/CjEdwwk0FOGlUbq6lKuoyDZTNZkmxHdJtp54hdfY/JUrdL7Xfdug=="],
 
-    "htmlnano/commander": ["commander@14.0.3", "", {}, "sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw=="],
+    "html-minifier-terser/entities": ["entities@4.5.0", "", {}, "sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw=="],
 
-    "htmlparser2/entities": ["entities@7.0.1", "", {}, "sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA=="],
+    "htmlnano/commander": ["commander@14.0.3", "", {}, "sha512-H+y0Jo/T1RZ9qPP4Eh1pkcQcLRglraJaSLoyOtHxu6AapkjWVCy2Sit1QQ4x3Dng8qDlSsZEet7g5Pq06MvTgw=="],
 
     "juice/cheerio": ["cheerio@1.0.0", "", { "dependencies": { "cheerio-select": "^2.1.0", "dom-serializer": "^2.0.0", "domhandler": "^5.0.3", "domutils": "^3.1.0", "encoding-sniffer": "^0.2.0", "htmlparser2": "^9.1.0", "parse5": "^7.1.2", "parse5-htmlparser2-tree-adapter": "^7.0.0", "parse5-parser-stream": "^7.1.2", "undici": "^6.19.5", "whatwg-mimetype": "^4.0.0" } }, "sha512-quS9HgjQpdaXOvsZz82Oz7uxtXiy6UIsIQcpBj7HRw2M63Skasm9qlDocAM7jNuaxdhpPU7c4kJN+gA5MCu4ww=="],
 
     "juice/commander": ["commander@12.1.0", "", {}, "sha512-Vw8qHK3bZM9y/P10u3Vib8o/DdkvA2OtPtZvD871QKjy74Wj1WSKFILMPRPSdUSx5RFK1arlJzEtA4PkFgnbuA=="],
-
-    "juice/entities": ["entities@7.0.1", "", {}, "sha512-TWrgLOFUQTH994YUyl1yT4uyavY5nNB5muff+RtWaqNVCAK408b5ZnnbNAUEWLTCpum9w6arT70i1XdQ4UeOPA=="],
 
     "k-rpc-socket/bencode": ["bencode@2.0.3", "", {}, "sha512-D/vrAD4dLVX23NalHwb8dSvsUsxeRPO8Y7ToKA015JQYq69MLDOMkC0uGZYA/MPpltLO8rt8eqFC2j8DxjTZ/w=="],
 
@@ -2941,6 +3016,8 @@
     "mjml-cli/yargs/y18n": ["y18n@5.0.8", "", {}, "sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA=="],
 
     "mjml-cli/yargs/yargs-parser": ["yargs-parser@21.1.1", "", {}, "sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw=="],
+
+    "mjml-parser-xml/htmlparser2/entities": ["entities@4.5.0", "", {}, "sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw=="],
 
     "posthtml-parser/htmlparser2/domhandler": ["domhandler@4.3.1", "", { "dependencies": { "domelementtype": "^2.2.0" } }, "sha512-GrwoxYN+uWlzO8uhUXRl0P+kHE4GtVPfYzVLcUxPL7KNdHKj66vvlhiweIHqYYXWlw+T8iLMp42Lm67ghw4WMQ=="],
 
@@ -3125,6 +3202,8 @@
     "vite/lightningcss/lightningcss-win32-arm64-msvc": ["lightningcss-win32-arm64-msvc@1.33.0", "", { "os": "win32", "cpu": "arm64" }, "sha512-1K+MPfLSFVpphzpdbfkhlWk6wBrTObBzS2T6db10PNOZgR9GoVsAWzwNyuhUYYbTp23j+4RrncfujZ4uAzXvwA=="],
 
     "vite/lightningcss/lightningcss-win32-x64-msvc": ["lightningcss-win32-x64-msvc@1.33.0", "", { "os": "win32", "cpu": "x64" }, "sha512-OlEICDx/Xl0FqSp4bry8zFnCvGpig3Gl4gCquvYwHuqJKEC1+n9NgDniFvqHGmMv1ZkqDJrDqKKSykTDX+ehuA=="],
+
+    "web-resource-inliner/htmlparser2/entities": ["entities@4.5.0", "", {}, "sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw=="],
 
     "juice/cheerio/htmlparser2/entities": ["entities@4.5.0", "", {}, "sha512-V0hjH4dGPh9Ao5p0MoRY6BVqtwCjhz6vI5LT8AJ55H+4g9/4vbHx1I54fS0XuclLhDHArPQCiMjDxjaL8fPxhw=="],
 

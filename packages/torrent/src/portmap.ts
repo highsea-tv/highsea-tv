@@ -59,6 +59,8 @@ export type PortMapperOptions = {
   tries?: number
   /** How long to look for a UPnP gateway. */
   discoverMs?: number
+  /** What to map: both for the torrent engine, TCP alone for remote access's HTTPS port (4.3c). */
+  protocols?: readonly ('tcp' | 'udp')[]
 }
 
 /** RFC 6886 §3.3: the recommended lifetime, in seconds. */
@@ -175,6 +177,7 @@ export function createPortMapper(options: PortMapperOptions) {
   const retryMs = options.retryMs ?? 250
   const tries = options.tries ?? 4
   const pmpPort = options.pmpPort ?? PMP_PORT
+  const withUdp = (options.protocols ?? ['tcp', 'udp']).includes('udp')
   let status: MappingStatus | null = null
   let generation = 0
   let mapped: number | null = null
@@ -213,13 +216,13 @@ export function createPortMapper(options: PortMapperOptions) {
       // §3.3: a renewal asks for the external ports the router gave last time
       const external = { udp: port, tcp: port }
       const renew = async () => {
-        const udp = await client.map('udp', port, external.udp, PMP_LIFETIME)
+        const udp = withUdp ? await client.map('udp', port, external.udp, PMP_LIFETIME) : null
         const tcp = await client.map('tcp', port, external.tcp, PMP_LIFETIME)
-        external.udp = udp.externalPort
+        external.udp = udp?.externalPort ?? external.udp
         external.tcp = tcp.externalPort
         if (mine !== generation) return
         // §3.3: renew halfway to expiry, from the shorter lifetime the router granted
-        const seconds = Math.max(1, Math.min(udp.lifetime, tcp.lifetime) / 2)
+        const seconds = Math.max(1, Math.min(udp?.lifetime ?? tcp.lifetime, tcp.lifetime) / 2)
         renewTimer = setTimeout(() => {
           renew().catch((e) =>
             options.log('warn', 'The NAT-PMP mapping couldn’t be renewed.', { error: String(e) }),
@@ -263,7 +266,7 @@ export function createPortMapper(options: PortMapperOptions) {
       upnpGateway = found
       const host = localAddressFor(found.host) ?? '0.0.0.0'
       const tcp = await found.map(port, host, { protocol: 'TCP', description: DESCRIPTION })
-      await found.map(port, host, { protocol: 'UDP', description: DESCRIPTION })
+      if (withUdp) await found.map(port, host, { protocol: 'UDP', description: DESCRIPTION })
       if (mine !== generation) return true
       mapped = port
       status = {
@@ -289,7 +292,7 @@ export function createPortMapper(options: PortMapperOptions) {
     /** Whether a mapping is being made or is in place. */
     active: () => running !== null || mapped !== null,
 
-    /** Maps `port` (TCP and UDP). Never throws: a router that won't is logged. */
+    /** Maps `port` (TCP and UDP, or `protocols`). Never throws: a router that won't is logged. */
     start(port: number): Promise<void> {
       if (mapper.active()) return running ?? Promise.resolve()
       const mine = ++generation
@@ -316,7 +319,7 @@ export function createPortMapper(options: PortMapperOptions) {
       upnpGateway = null
       if (client && port !== null)
         await Promise.allSettled([
-          client.map('udp', port, 0, 0, 1),
+          ...(withUdp ? [client.map('udp', port, 0, 0, 1)] : []),
           client.map('tcp', port, 0, 0, 1),
         ])
       closePmpSocket()

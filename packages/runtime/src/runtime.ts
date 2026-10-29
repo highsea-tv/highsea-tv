@@ -68,6 +68,7 @@ import {
   checkPath,
   createLibraryWatch,
   createMedia,
+  ffprobeBinary,
   type LibraryWatch,
   type Media,
   unarAvailable,
@@ -84,6 +85,8 @@ import {
   type Personalization,
   type WidgetSource,
 } from '@highsea-tv/personalization'
+import type { AccelPath } from '@highsea-tv/stream/hardware'
+import { createTranscodes } from '@highsea-tv/stream/hls'
 import { createSubtitles, type RunSync, type Subtitles } from '@highsea-tv/subtitles/movies'
 import { PROVIDER_INFO } from '@highsea-tv/subtitles/providers'
 import { isLanguageCode } from '@highsea-tv/subtitles/shared'
@@ -111,21 +114,31 @@ import { createCollectionLibrary } from './collection-library.ts'
 import type { Config } from './config.ts'
 import { createCurationLibrary } from './curation-library.ts'
 import { scheduleFileFacts } from './file-facts.ts'
+import { createHardware, type Host } from './hardware.ts'
 import { homeRows } from './home-rows.ts'
 import { createListLibrary } from './list-library.ts'
 import { createLogFiles } from './logs.ts'
 import { createMailBrand } from './mail-brand.ts'
 import { createNetworkService, type NetworkService } from './network.ts'
 import { createNotify, HEALTH_EVERY_MS, type Notify } from './notify.ts'
+import { createNowPlaying, type NowPlayingService } from './now-playing.ts'
 import {
   createOperations,
   GENERAL_KEY,
   type GeneralSettings,
+  isTimeZone,
   type Operations,
   UPDATES_TOPIC,
 } from './operations.ts'
+import { createPlayback, type Playback } from './playback.ts'
+import { createPlaybackSettings, type PlaybackSettingsService } from './playback-settings.ts'
 import {
+  ADDRESS_KEY,
+  type AdvertisedAddress,
   checkSetup,
+  detectAddress,
+  detectFolders,
+  detectServerName,
   FOLDERS_KEY,
   isSetupComplete,
   type MediaFolders,
@@ -139,11 +152,13 @@ import {
   disks,
   folderIssues,
   type HealthIssue,
+  hardlinkIssues,
   type Resources,
 } from './system.ts'
+import { createTrickplay } from './trickplay.ts'
 import { createWorkerPool, type WorkerPool } from './workers.ts'
 
-/** Milestone 1 has the server, the movie library, indexers, downloads and subtitles; later checkpoints add theirs. */
+/** Milestone 1 has the server, the movie library, indexers, downloads and subtitles; later checkpoints add theirs (4.3a, playback). */
 const SOURCES: WidgetSource[] = [
   'system',
   'movies',
@@ -151,6 +166,7 @@ const SOURCES: WidgetSource[] = [
   'downloads',
   'subtitles',
   'curation',
+  'playback',
 ]
 
 /** A provider's credit, in the wording its terms ask for. */
@@ -219,9 +235,17 @@ export type SetupInput = {
   owner: { username: string; displayName: string; password: string }
   folders: MediaFolders
   remoteAccess: RemoteAccessInput
-  cloudLink: boolean
-  /** The TMDB key step: the key (skipped when absent), the metadata language and the region. */
+  /** Remembered for when highsea cloud exists; false when absent (4.3c's Review shows it off). */
+  cloudLink?: boolean
+  /**
+   * The owner's own TMDB key, if they added one on Review (else highsea's own is used), and the
+   * metadata language and region from the browser.
+   */
   metadata?: { key?: string; language?: string; region?: string }
+  /** An IANA zone, the browser's unless changed on Review (4.3c). */
+  timeZone?: string
+  /** The address apps on the network use, `host:port` (4.3c; ADR 0020). */
+  address?: string
   /** The indexer step: definition ids from the starter pack. */
   indexers?: string[]
   /** The subtitles step: language codes, in order, for the first language profile. */
@@ -231,6 +255,14 @@ export type SetupInput = {
 export type HealthReport = {
   status: 'ok' | 'degraded'
   checks: { name: string; ok: boolean; message?: string }[]
+}
+
+/** What setup found by itself (install-simplicity.md B); null where setup asks or guesses. */
+export type SetupDetected = {
+  serverName: string | null
+  folders: MediaFolders | null
+  address: string | null
+  graphics: { name: string; path: AccelPath } | null
 }
 
 export type Runtime = {
@@ -256,6 +288,12 @@ export type Runtime = {
   media: Media
   /** The movie library. */
   movies: Movies
+  /** Play sessions, the decision and `/stream` (checkpoint 4.1a). */
+  playback: Playback
+  /** Now playing (4.3a): the live sessions as the admin shows them, and 30 days of history. */
+  nowPlaying: NowPlayingService
+  /** Settings › Playback: transcodes at once, the encoder, the remote ceiling and the cache (4.3a). */
+  playbackSettings: PlaybackSettingsService
   /** Subtitles for the movie library (checkpoint 7a). */
   subtitles: Subtitles
   /** Signed definitions: the seed, the main catalog, extra catalogs and local ones (ADR 0034). */
@@ -301,6 +339,8 @@ export type Runtime = {
   setupComplete(): boolean
   /** Setup's indexer step: public starters that need no setting, so each adds in a click. */
   starterPack(): ReturnType<Indexers['catalog']>
+  /** What setup fills in by itself (4.3c). */
+  detectSetup(): SetupDetected
   /** Setup's last step: the owner, the server's name and choices, and the owner signed in. */
   completeSetup(input: SetupInput, meta: RequestMeta): Promise<Issued>
   server(): ServerView
@@ -391,6 +431,14 @@ export type BootOptions = {
    * so Docker's restart policy brings it back; tests pass their own.
    */
   restart?: () => void
+  /** How hardware acceleration looks at the host (4.3b); tests pass `bareHost()`, which has none. */
+  hardware?: Host
+  /**
+   * Makes the process follow General's time zone, at boot and when it's changed. The server entry
+   * passes one when Docker gave no `TZ`, so setup's time zone from the browser is the logs' and
+   * dates' too; tests leave the process's zone alone.
+   */
+  followTimeZone?: (zone: string) => void
 }
 
 const g = globalThis as typeof globalThis & { __highsea?: Runtime }
@@ -493,6 +541,15 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   const workers = createWorkerPool()
   const shutdownHooks: (() => Promise<void> | void)[] = []
   const startedAt = clock.now()
+  // The hardlink check (install-simplicity.md › A), once per downloads and movies folder while the
+  // server runs: it writes a file, so Health's polls don't repeat it
+  const linkChecked = new Map<string, ReturnType<typeof hardlinkIssues>>()
+  const linkCheck = (roots: string[]) =>
+    roots.flatMap((root) => {
+      const key = `${folders().downloads}\0${root}`
+      if (!linkChecked.has(key)) linkChecked.set(key, hardlinkIssues(folders().downloads, [root]))
+      return linkChecked.get(key) ?? []
+    })
 
   const identity = (): ServerIdentity => {
     const row = db.select().from(schema.settings).where(eq(schema.settings.key, 'server')).get()
@@ -514,13 +571,26 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     events.emit({ topic: 'server.updated' })
   }
 
+  /** The address apps use, as a URL: HIGHSEA_PUBLISHED_URL, else setup's, else none. */
+  const advertised = (): string | null => {
+    if (config.publishedUrl) return new URL(config.publishedUrl).origin
+    const { address } = readSetting<AdvertisedAddress>(db, ADDRESS_KEY, { address: '' })
+    return address ? `http://${address}` : null
+  }
+
   const publicInfo = (origin?: string): PublicInfo => {
     const { id, name } = identity()
     return {
       id,
       name,
       version,
-      localAddresses: localAddresses(config.port),
+      // the advertised address first, so apps try the one that reaches the host (ADR 0020, 4.3c)
+      localAddresses: [
+        ...new Set([
+          ...(advertised() ? [advertised() as string] : []),
+          ...localAddresses(config.port),
+        ]),
+      ],
       publicUrl: network.externalUrl(),
       setupComplete: isSetupComplete(db),
       auth: auth.methods(origin),
@@ -565,6 +635,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     sealer,
     fetch: options.fetch ?? globalThis.fetch,
     imagesDir: join(config.dataDir, 'images'),
+    builtInKey: config.tmdbKey,
   })
   metadata.jobs.schedule(clock.now())
 
@@ -688,6 +759,15 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   // (https://nodejs.org/api/intl.html)
   if (!process.versions.icu)
     log.warn('this Node has no ICU, so subtitles in legacy encodings may not decode')
+  // trickplay (4.1b): the scrubber's previews, made after each import and filled in behind
+  const trickplay = createTrickplay({
+    db,
+    jobs,
+    clock,
+    logger,
+    root: join(config.dataDir, 'trickplay'),
+    ffmpeg: ffmpegBinary(),
+  })
   const movies = createMovies(
     {
       db,
@@ -699,7 +779,14 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       // the owner's categories may keep their torrents outside the downloads folder (6b)
       importing: {
         ...options.importing,
-        hooks: options.importing?.hooks ?? subtitles.hooks,
+        hooks: options.importing?.hooks ?? {
+          replacing: (tx, from, to) => subtitles.hooks.replacing?.(tx, from, to),
+          // the subtitles' failure is logged by the import, and the previews are only queued
+          afterImport: async (file) => {
+            await trickplay.afterImport()
+            await subtitles.hooks.afterImport?.(file)
+          },
+        },
         downloadDirs: () => [folders().downloads, ...downloads.categoryFolders()],
       },
       subtitles: { forFile: subtitles.clientTracks },
@@ -712,6 +799,100 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   )
   movies.jobs.schedule(clock.now())
   scheduleFileFacts({ db, jobs, clock })
+  trickplay.start()
+
+  // HLS made on demand (4.1b, ADR 0051): one folder per play session in the data folder's
+  // `transcodes/`, emptied on boot, since no session outlives the process
+  const transcodes = createTranscodes({
+    root: join(config.dataDir, 'transcodes'),
+    ffmpeg: ffmpegBinary(),
+    ffprobe: ffprobeBinary(),
+    logger: logger.child('stream'),
+    now: () => clock.now(),
+    // Settings › Playback (4.3a): transcodes at once, the cache's limit and the encoder
+    limits: () => playbackSettings.limits(),
+    // the GPU path a check passed and tone mapping (4.3b, ADR 0056); a run that fails on it goes
+    // on on the processor, and its check is marked failed
+    hardware: () => hardware.current(),
+    onHardwareFailure: (path, log) => hardware.failedPlaying(path, log),
+  })
+  const hardware = createHardware({
+    db,
+    clock,
+    events,
+    logger,
+    dataDir: config.dataDir,
+    ffmpeg: ffmpegBinary(),
+    settings: () => playbackSettings.get(),
+    host: options.hardware,
+  })
+  // what the host has, looked at in the background, so boot doesn't wait on ffmpeg; then each
+  // path found without a check is checked, so a new install uses its chip with nothing to press
+  void hardware
+    .start()
+    .then(() => hardware.checkNew())
+    .catch((e: Error) =>
+      logger.warn('couldn’t look for hardware acceleration', { error: e.message }),
+    )
+  const playbackSettings = createPlaybackSettings({
+    db,
+    clock,
+    events,
+    logger,
+    dataDir: config.dataDir,
+    transcodes,
+    trickplayRoot: join(config.dataDir, 'trickplay'),
+    shared: () => [...media.rootFolders.list().map((f) => f.path), folders().downloads],
+    streaming: () => playback.sessions().length > 0,
+    hardware,
+  })
+  await playbackSettings.start()
+
+  // Now playing (4.3a): hears playback's sessions, and keeps 30 days of what was watched
+  const nowPlaying = createNowPlaying({
+    db,
+    clock,
+    events,
+    jobs,
+    logger,
+    transcodes,
+    live: () => playback.sessions(),
+    displayName: (userId) => {
+      try {
+        return auth.users.get(userId).displayName
+      } catch {
+        return null
+      }
+    },
+    device: (deviceId) => auth.devices.find(deviceId),
+    poster: (tmdbId) => metadata.cachedMovie(tmdbId)?.art.poster ?? null,
+    onStarted: (p) => notify?.playbackStarted(p),
+  })
+  nowPlaying.schedule(clock.now())
+
+  // playback (4.1a): sessions in memory, ended when the person's access to them goes
+  const playback = createPlayback({
+    db,
+    clock,
+    events,
+    logger,
+    movies,
+    librariesOf: (userId) => {
+      try {
+        return auth.users.get(userId).libraries
+      } catch {
+        return null
+      }
+    },
+    deviceExists: (deviceId) => auth.devices.find(deviceId) !== null,
+    transcodes,
+    ceiling: () => playbackSettings.ceiling(),
+    hardware: () => hardware.current(),
+    ffprobe: ffprobeBinary(),
+    subtitles: subtitles.clientTracks,
+    trickplay,
+    hooks: nowPlaying.hooks,
+  })
 
   // watching only speeds the library scan up: a change asks for its title folder's scan
   const watch = createLibraryWatch({
@@ -999,6 +1180,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     setLogLevel: (level) => {
       logLevel = level
     },
+    followTimeZone: options.followTimeZone,
     logs,
     logFiles,
     catalog,
@@ -1096,6 +1278,9 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     metadata,
     media,
     movies,
+    playback,
+    nowPlaying,
+    playbackSettings,
     subtitles,
     catalog,
     indexers,
@@ -1135,10 +1320,26 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       indexers
         .catalog({ starter: true })
         .filter((d) => d.settings.every((f) => !f.required || f.default !== undefined)),
+    detectSetup() {
+      const accel = hardware.current().accel
+      return {
+        serverName: detectServerName(),
+        folders: detectFolders(config),
+        address: detectAddress(config),
+        graphics: accel
+          ? {
+              name: hardware.paths().find((p) => p.id === accel.path)?.name ?? accel.device ?? '',
+              path: accel.path,
+            }
+          : null,
+      }
+    },
     async completeSetup(input, meta) {
       if (isSetupComplete(db)) throw new AppError('not-found', 'Setup is already complete.')
       // everything that can be checked before the owner exists, so a mistake leaves nothing behind
       checkSetup(config, input)
+      if (input.timeZone !== undefined && !isTimeZone(input.timeZone))
+        throw new AppError('invalid', 'Choose a time zone from the list.', { field: 'timeZone' })
       const languages = [...new Set(input.subtitleLanguages ?? [])]
       if (languages.some((code) => !isLanguageCode(code)))
         throw new AppError('invalid', 'Choose subtitle languages from the list.', {
@@ -1150,6 +1351,11 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       if (key) await metadata.settings.checkKey(key)
       const owner = await auth.createOwner(input.owner, meta)
       saveSetup({ db, config, clock, events }, input, rename, input.serverName)
+      // the browser's time zone, or the one picked on Review, over the host's (4.3c)
+      if (input.timeZone)
+        operations.general.update({ ...operations.general.get(), timeZone: input.timeZone })
+      // remote access by a forwarded port asks the router now, with the owner's consent given
+      void network.applyRouter()
       // the contract checked their shape; the owner's locale when the step sent them
       if (md.language !== undefined || md.region !== undefined)
         metadata.settings.update({ language: md.language, region: md.region })
@@ -1168,6 +1374,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
           // the owner exists now: setup finishes, and the key is added in Settings › General
           log.warn('couldn’t save the TMDB key at setup', { error: (e as Error).message })
         }
+      // the movies already in the folder, matched with the key just saved
+      if (media.rootFolders.find(folder)) movies.libraryScan.queue(folder)
       // the indexer step: added once the owner exists, each tested first. Not awaited, so a slow
       // or unreachable site doesn't hold up Finish for its 30 seconds; they appear on the
       // dashboard as they pass, and one that fails is logged and can be added from Indexers
@@ -1266,6 +1474,34 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
             'The external URL isn’t HTTPS: passwords cross the internet unencrypted, and passkeys can’t work there.',
           since: startedAt,
         })
+      // no key from the owner or the image (install-simplicity.md B): nothing new can be found
+      const key = metadata.settings.get().key
+      if (!key.set && !key.builtIn)
+        out.push({
+          id: 'tmdb-key',
+          source: 'Metadata',
+          level: 'warning',
+          message:
+            'There’s no TMDB key, so Discover, adding movies and refreshing their details don’t work. Add one in Settings › General › Metadata.',
+          since: startedAt,
+        })
+      const router = network.router()
+      if (router?.state === 'open')
+        out.push({
+          id: 'router',
+          source: 'Network',
+          level: 'ok',
+          message: `Your router forwards port ${router.port} to highsea, through ${router.via === 'upnp' ? 'UPnP' : 'NAT-PMP'}.`,
+          since: startedAt,
+        })
+      else if (router?.state === 'failed')
+        out.push({
+          id: 'router',
+          source: 'Network',
+          level: 'warning',
+          message: `Your router didn’t forward port ${router.port} when highsea asked with UPnP or NAT-PMP. In your router’s settings, forward TCP port ${router.port} to this server, or turn on UPnP.`,
+          since: startedAt,
+        })
       for (const i of catalog.issues()) out.push({ ...i, source: 'Catalog', since: startedAt })
       for (const i of indexers.issues()) out.push({ ...i, source: 'Indexers' })
       for (const i of downloads.issues()) out.push({ ...i, source: 'Downloads' })
@@ -1307,6 +1543,12 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
         for (const i of folderIssues(library))
           out.push({ ...i, source: 'Library', since: startedAt })
       }
+      // imports that had to copy, and before the first one, what the hardlink check found at start
+      const copied = new Set(movies.copying().map((c) => c.root))
+      if (isSetupComplete(db))
+        for (const i of linkCheck(media.rootFolders.list().map((f) => f.path)))
+          if (!copied.has(i.id.slice('copying:'.length)))
+            out.push({ ...i, source: 'Import', since: startedAt })
       for (const c of movies.copying())
         out.push({
           id: `copying:${c.root}`,
@@ -1326,6 +1568,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
           message: `${p.root} isn’t watched for changes (${p.message}). The library scan still finds them every 12 hours.`,
           since: startedAt,
         })
+      for (const i of hardware.issues())
+        out.push({ ...i, source: 'Playback', level: 'notice', since: startedAt })
       return out
     },
     health() {
@@ -1364,10 +1608,14 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
       stopDownloads()
       stopIpBlocklist()
       await engine.close()
+      playback.close()
+      nowPlaying.close()
+      playbackSettings.close()
+      await transcodes.close()
       movies.close()
       stopSubtitles()
       stopIndexers()
-      await network.stopDiscovery()
+      await network.close()
       await jobs.drain()
       await workers.close()
       stopOperations()
@@ -1382,6 +1630,7 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
   }
   g.__highsea = runtime
   await network.startDiscovery()
+  void network.applyRouter()
   log.info('booted', { version, database: database.driver, configDir: config.configDir })
   return runtime
 }

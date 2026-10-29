@@ -1,0 +1,32 @@
+manifestVersion: 1.1
+id: highsea
+storage:
+  dataRoot: data
+category: media
+name: highsea
+version: "0.1.0"
+tagline: Find, download and watch your films
+description: >-
+  highsea finds, downloads and organises your films, with their subtitles, and serves them to your own apps. It's one server in place of Radarr, Prowlarr, qBittorrent and Bazarr.
+
+
+  The first time you open it, highsea asks for an owner account and shows what it found. Your films live in Umbrel's Downloads folder, which highsea sees as /data: setup suggests /data/downloads for downloads and /data/media/movies for the library, so imports hardlink instead of copying.
+
+
+  highsea uses your Umbrel's graphics for transcoding when it can, and the processor when it can't. The guides are at https://docs.highsea.tv.
+releaseNotes: ""
+developer: highsea
+website: https://docs.highsea.tv
+dependencies: []
+repo: https://github.com/highsea-tv/highsea-tv
+support: https://github.com/highsea-tv/highsea-tv/issues
+port: 3636
+gallery: []
+path: ""
+defaultUsername: ""
+defaultPassword: ""
+permissions:
+  - STORAGE_DOWNLOADS
+  - GPU
+submitter: highsea
+submission: https://github.com/getumbrel/umbrel-apps/pull/0

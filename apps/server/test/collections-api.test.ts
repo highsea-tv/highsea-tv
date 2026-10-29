@@ -108,7 +108,12 @@ describe('the admin', () => {
     expect((await api.collections.get({ params: { id: made.id } })).name).toBe('Picked')
 
     const fields = await api.collections.fields({ query: {} })
-    expect(fields.find((f) => f.field === 'watched')?.disabled).toBe('playback')
+    // watch state is on since 4.1a: nothing is disabled
+    expect(fields.find((f) => f.field === 'watched')?.options?.map((o) => o.value)).toEqual([
+      'yes',
+      'no',
+    ])
+    expect(fields.some((f) => f.disabled)).toBe(false)
     expect(fields.find((f) => f.field === 'collection')?.options).toContainEqual({
       value: made.id,
       label: 'Picked',

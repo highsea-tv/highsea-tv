@@ -1,6 +1,6 @@
 {
   "name": "@highsea-tv/server",
-  "version": "0.1.0",
+  "version": "0.2.0-beta.2",
   "private": true,
   "license": "AGPL-3.0-only",
   "type": "module",
@@ -34,6 +34,7 @@
     "@highsea-tv/quality": "workspace:*",
     "@highsea-tv/runtime": "workspace:*",
     "@highsea-tv/sdk": "workspace:*",
+    "@highsea-tv/stream": "workspace:*",
     "@highsea-tv/subtitles": "workspace:*",
     "@highsea-tv/tokens": "workspace:*",
     "@highsea-tv/ui-web": "workspace:*",
@@ -62,6 +63,7 @@
     "@types/node": "26.6.5",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
+    "hls.js": "1.7.3",
     "postcss": "8.5.29",
     "tailwindcss": "4.3.3"
   }

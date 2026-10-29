@@ -62,6 +62,7 @@ import {
   PanelLeft,
   Pause,
   Pencil,
+  PictureInPicture2,
   Play,
   Plus,
   Podcast,
@@ -132,6 +133,7 @@ export const icons = {
   // actions
   play: Play,
   pause: Pause,
+  'picture-in-picture': PictureInPicture2,
   add: Plus,
   remove: Minus,
   edit: Pencil,

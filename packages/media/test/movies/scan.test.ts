@@ -68,6 +68,8 @@ describe.skipIf(!hasFfmpeg)('the library scan', () => {
 
     expect(await s.movies.libraryScan.scan()).toEqual({
       added: 1,
+      movies: 0,
+      waiting: 0,
       changed: 0,
       removed: 0,
       unreadable: [],
@@ -89,6 +91,8 @@ describe.skipIf(!hasFfmpeg)('the library scan', () => {
     // safe to repeat: nothing new the second time
     expect(await s.movies.libraryScan.scan()).toEqual({
       added: 0,
+      movies: 0,
+      waiting: 0,
       changed: 0,
       removed: 0,
       unreadable: [],
@@ -97,7 +101,7 @@ describe.skipIf(!hasFfmpeg)('the library scan', () => {
     expect(s.movies.history(SINTEL).items).toHaveLength(1)
   })
 
-  test('a sample, and a video outside any movie’s folder, are left alone', async () => {
+  test('a sample is left alone, and a video in no movie’s folder isn’t recorded against one', async () => {
     const s = await start()
     copyFileSync(clips.sample, join(s.row.path, 'sintel-sample.mkv'))
     mkdirSync(join(s.folder.path, 'Unknown (1999)'))
@@ -177,6 +181,8 @@ describe.skipIf(!hasFfmpeg)('the library scan', () => {
     try {
       expect(await s.movies.libraryScan.scan()).toEqual({
         added: 0,
+        movies: 0,
+        waiting: 0,
         changed: 0,
         removed: 0,
         unreadable: [s.folder.path],

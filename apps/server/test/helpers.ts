@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A booted runtime in a temporary directory, with an owner and a way to sign people in.
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { defaultSecuritySettings, issueDevice, SECURITY_KEY } from '@highsea-tv/auth'
 import type { Fetch } from '@highsea-tv/core'
-import { writeSetting } from '@highsea-tv/db'
+import { schema, writeSetting } from '@highsea-tv/db'
 import { createReplayFetch, type ReplayFetch } from '@highsea-tv/metadata/replay'
 import { createFakeNotifications } from '@highsea-tv/notifications/fake'
 import {
   type BootOptions,
+  bareHost,
   boot,
   getRuntime,
   hasRuntime,
@@ -44,6 +45,7 @@ export async function bootRuntime(
     lists?: BootOptions['lists']
     notifications?: BootOptions['notifications']
     restart?: BootOptions['restart']
+    clock?: BootOptions['clock']
   } = {},
 ): Promise<Runtime> {
   const dir = mkdtempSync(join(tmpdir(), 'highsea-api-'))
@@ -61,12 +63,15 @@ export async function bootRuntime(
     indexerTimeoutMs: 2000,
     // no torrent opens a socket: grabs are added, nothing downloads
     torrent: { offline: true },
+    // no GPU, whatever this machine has, so the status reads the same everywhere
+    hardware: bareHost(),
     importing: options.importing,
     subtitles: options.subtitles,
     lists: options.lists,
     notifications: options.notifications ?? { fetch: createFakeNotifications().fetch },
     // a restore's restart never ends the test process
     restart: options.restart ?? (() => {}),
+    clock: options.clock,
   })
 }
 
@@ -138,4 +143,112 @@ export async function failure(call: Promise<unknown>) {
     throw e
   }
   throw new Error('expected the call to fail')
+}
+
+export const SIZE = 4096
+/** A test film's bytes: each one its offset modulo 256, so a range can be checked byte for byte. */
+export const BYTES = Buffer.from(Array.from({ length: SIZE }, (_, i) => i % 256))
+
+/** A film in Blender's collection with one H.264 and AAC MP4, 100 seconds long. */
+export function film(
+  runtime: Runtime,
+  dir: string,
+  tmdbId: number,
+  title: string,
+  year: number,
+  subtitles: unknown[] = [],
+) {
+  const now = Date.now()
+  const path = join(dir, `${title}.mp4`)
+  writeFileSync(path, BYTES)
+  const { db } = runtime
+  db.insert(schema.movieMetadata)
+    .values({
+      tmdbId,
+      title,
+      originalTitle: title,
+      year,
+      releaseDate: `${year}-09-27`,
+      collectionId: 9,
+      language: 'en',
+      data: {},
+      fetchedAt: now,
+    })
+    .run()
+  const item = `itm_${tmdbId}`
+  db.insert(schema.mediaItems)
+    .values({
+      id: item,
+      type: 'movie',
+      tmdbId,
+      title,
+      sortTitle: title.toLowerCase(),
+      year,
+      releaseDate: `${year}-09-27`,
+      status: 'available',
+      monitored: true,
+      minimumAvailability: 'released',
+      qualityProfileId: 'qp-hd',
+      rootFolder: dir,
+      path: dir,
+      addedAt: now,
+      updatedAt: now,
+    })
+    .run()
+  db.insert(schema.mediaFiles)
+    .values({
+      id: `fil_${tmdbId}`,
+      itemId: item,
+      path,
+      size: SIZE,
+      sceneName: null,
+      mediaInfo: {
+        probe: {
+          duration: 100,
+          container: 'mov,mp4,m4a,3gp,3g2,mj2',
+          video: {
+            index: 0,
+            codec: 'h264',
+            codecTag: 'avc1',
+            profile: 'High',
+            width: 1920,
+            height: 1080,
+            bitDepth: 8,
+            bitrate: 4_000_000,
+            colorPrimaries: 'bt709',
+            colorTransfer: 'bt709',
+            hdr: 'sdr',
+            dolbyVision: null,
+          },
+          audio: [
+            {
+              index: 1,
+              codec: 'aac',
+              codecTag: 'mp4a',
+              profile: 'LC',
+              channels: 2,
+              layout: 'stereo',
+              language: 'eng',
+              title: null,
+              default: true,
+              bitrate: 128_000,
+            },
+          ],
+          subtitles,
+        },
+      },
+      addedAt: now,
+    } as typeof schema.mediaFiles.$inferInsert)
+    .run()
+  db.insert(schema.versions)
+    .values({
+      id: `ver_${tmdbId}`,
+      itemId: item,
+      label: 'Default',
+      qualityProfileId: 'qp-hd',
+      fileId: `fil_${tmdbId}`,
+      position: 0,
+      createdAt: now,
+    } as typeof schema.versions.$inferInsert)
+    .run()
 }

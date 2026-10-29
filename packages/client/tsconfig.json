@@ -1,0 +1,8 @@
+{
+  "extends": "@highsea-tv/config/tsconfig/library.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx"
+  },
+  "include": ["src", "test"]
+}

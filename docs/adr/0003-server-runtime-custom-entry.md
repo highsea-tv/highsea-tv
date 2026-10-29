@@ -55,3 +55,37 @@ Phase 4 moves the one Node from 24.21.0 to **26.11.1**, and the image from Debia
   - `module.register()` is deprecated and `--experimental-transform-types` removed. highsea uses neither: type stripping is all it needs (`erasableSyntaxOnly`).
 - **Moves together,** as before: `.nvmrc`, `engines`, the Dockerfile's three `FROM` lines (`node:26.11.1-trixie-slim`), CI through `node-version-file`, `scripts/check-node.ts` and `@types/node` 26.
 - **Why trixie.** Bookworm's regular security support ended on 2026-06-10 and it's in Debian LTS until 2028-06-30; trixie is stable, with regular support until 2028-08-08 ([Debian LTS](https://wiki.debian.org/LTS)). It carries ffmpeg 7.1 in place of 5.1, which Phase 4's transcoding is built and measured on, and GCC 14 for the build stage's addon compile. The packages the image installs keep their names; `docker/NOTICE` names trixie.
+
+## 2026-10-27: `/stream` is served (checkpoint 4.1a)
+
+`http.ts` now hands `/stream/` to `apps/server/src/stream/`, as it hands `/api` to Hono, so the file's bytes go straight from `fs.createReadStream` into Node's response and never through Hono or Next ([Node's fs docs](https://nodejs.org/api/fs.html#fscreatereadstreampath-options)). Without the stream handler (a test that builds only the API), `/stream/` still answers 501. `/ws` stays reserved and answers 501.
+
+- `GET /stream/files/{token}` serves one file for direct play by byte ranges ([RFC 9110 § 14](https://www.rfc-editor.org/rfc/rfc9110#section-14)): one range or a suffix, the whole file for several ranges, `416` past the end, and `If-Range` by a strong tag or the exact date. `HEAD` answers the same headers; any other method is `405`.
+- The token is the only credential, since a `<video>` element can't send headers. It's an HMAC over the play session, the person and the file, valid while the session lives and for 6 hours after its last report (the owner's answer 4), and never logged. Responses carry `Referrer-Policy: no-referrer`, `nosniff` and `Cache-Control: private, no-store`.
+- `GET /stream/try` is the review's test page, served only with `HIGHSEA_PLAYBACK_TRY=1`, with a warning at boot.
+
+4.1b adds HLS playlists, segments and WebVTT under the same prefix.
+
+## 2026-10-27: `/web` is served (checkpoint 4.2a)
+
+`http.ts` hands `/web` and everything under it to `apps/server/src/web/`, after `/stream/` and before Next, which never sees those addresses. It serves the web client's static build ([ADR 0053](0053-clients-build-and-distribution.md)) from `apps/web/dist`, or `HIGHSEA_WEB_DIR`, so the client and the API share one origin and the admin's session cookie.
+
+- `/web` redirects to `/web/` (301), keeping the query, since the build's addresses are relative to `base: '/web/'` ([Vite › base](https://vite.dev/config/shared-options.html#base)).
+- An address without a file extension is a route of the app and gets `index.html` (the history API's fallback); a missing file with an extension is a 404, and a path that leaves the build folder is refused. Only `GET` and `HEAD`; anything else is 405.
+- Vite names what it builds under `assets/` by its content's hash, so those are sent with `Cache-Control: public, max-age=31536000, immutable` ([RFC 8246](https://www.rfc-editor.org/rfc/rfc8246)); `index.html` and the icons with `no-cache` and an ETag, so a new release is picked up at the next load ([Vite's static deploy guide](https://vite.dev/guide/static-deploy.html), [RFC 9111 § 5.2.2.4](https://www.rfc-editor.org/rfc/rfc9111#section-5.2.2.4)). Text over 1 KB is gzipped once and kept, for browsers that ask.
+- Every answer carries a Content-Security-Policy that allows only this origin, plus `blob:` media and workers for hls.js in 4.2b, with `nosniff` and `Referrer-Policy: same-origin`.
+- Without a build, a route answers 503 with a page that says how to make one.
+
+The image builds the web app in its build stage, and `scripts/image.ts` copies `apps/web/dist` into the production tree, with none of the web app's sources or dependencies: it's served, never run. The image grew by 2 MB, to 2,093 MB.
+
+## 2026-10-28: the hardware drivers, and the render node's group (checkpoint 4.3b)
+
+Hardware acceleration (ADR 0056) adds Debian packages to the runtime stage on amd64 only, where Intel and AMD graphics are: `intel-media-va-driver-non-free`, `libmfx-gen1.2`, `libvpl2`, `mesa-va-drivers` and `mesa-vulkan-drivers`, about 134 MB measured in a trixie container. The non-free driver needs Debian's `non-free` component, which the Dockerfile adds to `/etc/apt/sources.list.d/debian.sources` (trixie's deb822 sources, [Debian wiki › SourcesList](https://wiki.debian.org/SourcesList)) for it alone, and checks it took. It's the build that encodes on chips before Ice Lake without the HuC firmware on the host ([Intel's media driver README](https://github.com/intel/media-driver#build-types)); docker/NOTICE lists the five packages and why one is non-free. CI's budget rises from 2,200 MB to 2,300 MB (the owner's answer 3 for 4.3), and `scripts/image.ts hardware` checks the built image's encoders, filters and driver files.
+
+The entrypoint adds the PUID user to the group of each render node passed through (`/dev/dri/renderD*`), creating the group by its number when the image has none. gosu given `uid:gid` drops every supplementary group, so when it added one, the entrypoint switches user with `setpriv --reuid --regid --init-groups` instead, which takes them from `/etc/group` ([setpriv(1)](https://man7.org/linux/man-pages/man1/setpriv.1.html), initgroups(3)). A node owned by group 0 is left alone: the user isn't put in root's group.
+
+## 2026-10-28: NVIDIA's variables, and the user found from /data (checkpoint 4.3c, ADR 0057)
+
+The runtime stage's `ENV` drops `PUID=1000` and `PGID=1000`, which the entrypoint couldn't tell from values an owner chose, and adds `NVIDIA_VISIBLE_DEVICES=all` and `NVIDIA_DRIVER_CAPABILITIES=compute,video,utility`, which do nothing under runc and hand the cards and their video libraries to the container under NVIDIA's runtime ([NVIDIA Container Toolkit: specialized configurations](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/docker-specialized.html)).
+
+When the container starts as root and `PUID` or `PGID` isn't set, `docker/entrypoint.sh` takes them from `/data`: its owner, else the first thing at its top level not owned by root (`find -maxdepth 1 ! -uid 0 -printf '%U:%G' -quit`), else 1000:1000. A value that's set wins, and the log says which it chose. `scripts/image.ts user` checks five cases on the built image, and CI runs it beside `hardware`.

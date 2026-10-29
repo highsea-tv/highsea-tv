@@ -7,6 +7,10 @@ import { AppError } from '@highsea-tv/core'
 import {
   checkHardlinks,
   checkSetup,
+  detectAddress,
+  detectFolders,
+  detectServerName,
+  isAddress,
   listFolders,
   loadConfig,
   networkFor,
@@ -94,5 +98,96 @@ describe('setup', () => {
       tls: 'built-in',
       httpsPort: 8443,
     })
+  })
+
+  test('a server name from the host’s, unless it’s Docker’s id or localhost', () => {
+    expect(detectServerName('harbor.local')).toBe('harbor')
+    expect(detectServerName('DS1520')).toBe('DS1520')
+    expect(detectServerName('8c7c974a32a7')).toBeNull()
+    expect(detectServerName('localhost')).toBeNull()
+    expect(detectServerName('')).toBeNull()
+  })
+
+  test('folders found under /data, in either case, or asked for', () => {
+    const { config: c } = config()
+    // this fixture has movies and downloads at the top
+    expect(detectFolders(c)).toEqual({
+      movies: join(c.dataDir, 'movies'),
+      downloads: join(c.dataDir, 'downloads'),
+    })
+    // TRaSH's layout first, matched without regard to case; torrents for downloads
+    rmSync(join(c.dataDir, 'movies'), { recursive: true })
+    rmSync(join(c.dataDir, 'downloads'), { recursive: true })
+    mkdirSync(join(c.dataDir, 'Media', 'Movies'), { recursive: true })
+    mkdirSync(join(c.dataDir, 'torrents'))
+    expect(detectFolders(c)).toEqual({
+      movies: join(c.dataDir, 'Media', 'Movies'),
+      downloads: join(c.dataDir, 'torrents'),
+    })
+    // movies without downloads: downloads goes beside them
+    rmSync(join(c.dataDir, 'torrents'), { recursive: true })
+    expect(detectFolders(c)?.downloads).toBe(join(c.dataDir, 'downloads'))
+    // other folders and no movies: the owner points at them
+    rmSync(join(c.dataDir, 'Media'), { recursive: true })
+    mkdirSync(join(c.dataDir, 'tv'))
+    expect(detectFolders(c)).toBeNull()
+    // empty (hidden folders, lost+found and the transcode cache don't count): highsea's own layout
+    rmSync(join(c.dataDir, 'tv'), { recursive: true })
+    mkdirSync(join(c.dataDir, 'lost+found'))
+    mkdirSync(join(c.dataDir, 'transcodes'))
+    expect(detectFolders(c)).toEqual(setupDefaults(c).folders)
+  })
+
+  test('the address apps use: the published URL, the LAN address, or null in a bridge', () => {
+    const { config: c } = config()
+    const nic = (address: string, internal = false) => ({
+      address,
+      family: 'IPv4' as const,
+      internal,
+      netmask: '255.255.255.0',
+      mac: '00:00:00:00:00:00',
+      cidr: null,
+    })
+    const host = {
+      lo: [nic('127.0.0.1', true)],
+      docker0: [nic('172.17.0.1')],
+      eth0: [nic('192.168.1.20')],
+      eth1: [nic('169.254.3.4')],
+    }
+    expect(detectAddress(c, { interfaces: host, inContainer: false })).toBe(
+      `192.168.1.20:${c.port}`,
+    )
+    // host networking: Docker's interfaces show, so the host's address is ours
+    expect(detectAddress(c, { interfaces: host, inContainer: true })).toBe(`192.168.1.20:${c.port}`)
+    // a bridge network: only the container's own address, which nothing outside reaches
+    expect(
+      detectAddress(c, {
+        interfaces: { lo: host.lo, eth0: [nic('172.18.0.5')] },
+        inContainer: true,
+      }),
+    ).toBeNull()
+    expect(detectAddress(c, { interfaces: { lo: host.lo }, inContainer: false })).toBeNull()
+    const published = loadConfig({
+      HIGHSEA_DATA_DIR: c.dataDir,
+      HIGHSEA_PUBLISHED_URL: 'http://nas.home.arpa:8096/',
+    })
+    expect(detectAddress(published, { interfaces: {}, inContainer: true })).toBe(
+      'nas.home.arpa:8096',
+    )
+  })
+
+  test('the address check, and setup refusing a wrong one', () => {
+    const { config: c } = config()
+    expect(isAddress('192.168.1.20:3000')).toBe(true)
+    expect(isAddress('harbor.local')).toBe(true)
+    for (const wrong of ['http://x', 'a b', '', 'x:port', '[::1]:3000'])
+      expect(isAddress(wrong)).toBe(false)
+    const input = {
+      serverName: 'Harbor',
+      folders: setupDefaults(c).folders,
+      remoteAccess: { kind: 'local-only' as const },
+    }
+    expect(field(() => checkSetup(c, { ...input, address: '192.168.1.20:3000' }))).toBeNull()
+    expect(field(() => checkSetup(c, { ...input, address: 'http://x' }))).toBe('address')
   })
 })

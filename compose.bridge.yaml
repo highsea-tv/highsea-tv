@@ -6,31 +6,51 @@
 #
 # Finding the server on your network works only in part this way. The apps' UDP broadcast on 7368
 # reaches the container through the published port, but mDNS needs the host's network (ADR 0020),
-# so an app that doesn't find the server can be given its address instead. On Linux, compose.yaml
-# with host networking is the better choice.
+# or, on a Linux host running avahi, the host's D-Bus (the commented line below), so an app that
+# doesn't find the server can be given its address instead. On Linux, compose.yaml with host
+# networking is the better choice.
 services:
   highsea:
     # `latest` is the newest stable release; pin a version (0.1.0) to choose when you move
     image: ghcr.io/highsea-tv/highsea:latest
     container_name: highsea
-    environment:
-      # the user and group that own your files (`id` on the host shows yours)
-      PUID: "1000"
-      PGID: "1000"
-      TZ: Etc/UTC
-      # HIGHSEA_PUBLIC_URL: https://highsea.example.net
+    # highsea runs as whoever owns /data, and takes the time zone from your browser at setup.
+    # To choose instead, or to give the address people use from outside:
+    # environment:
+    #   PUID: "1000"
+    #   PGID: "1000"
+    #   TZ: Europe/London
+    #   HIGHSEA_PUBLIC_URL: https://highsea.example.net
     volumes:
       # the database, settings, logs and backups
       - ./config:/config
       # one folder for downloads and the library, on one disk, so imports can hardlink instead of
       # copying: change ./data to where your films live
       - ./data:/data
+      - /dev/dri:/dev/dri
+      # mDNS through the host's avahi, on Linux (ADR 0020); Docker Desktop has no host D-Bus to give
+      # - /run/dbus:/run/dbus:ro
     ports:
       - "3000:3000"
       # - "8443:8443"   # built-in TLS, when it's on (ADR 0026)
       - "6881:6881/tcp" # the torrent engine (ADR 0037); change both sides together
       - "6881:6881/udp"
       - "7368:7368/udp" # the apps' discovery broadcast (ADR 0020)
+    # Intel and AMD graphics, for hardware acceleration (ADR 0056, 0057). The bind mount, unlike
+    # `devices:`, starts on a host without graphics too (Docker makes an empty folder), and the rules
+    # let highsea open the render nodes (226:128 to 226:135) and nothing else. highsea checks what
+    # it finds at start and joins the device's group by itself.
+    # NVIDIA needs no lines here: install NVIDIA's container toolkit on the host and make it Docker's
+    # default runtime (`nvidia-ctk runtime configure --runtime=docker --set-as-default`).
+    device_cgroup_rules:
+      - "c 226:128 rw"
+      - "c 226:129 rw"
+      - "c 226:130 rw"
+      - "c 226:131 rw"
+      - "c 226:132 rw"
+      - "c 226:133 rw"
+      - "c 226:134 rw"
+      - "c 226:135 rw"
     # a restore in System › Backups restarts highsea by exiting with code 75; this brings it back
     # (ADR 0047), and so does a reboot
     restart: unless-stopped

@@ -10,7 +10,12 @@
 // 4. the `.en.srt` the import found at Subdl's fake, marked Synced on the movie's Subtitles tab;
 // 5. a custom theme and a dashboard layout, the same after signing out and in, and in another
 //    browser;
-// 6. an announcement for Admins, on an Admin's dashboard and not in a User's announcements.
+// 6. an announcement for Admins, on an Admin's dashboard and not in a User's announcements;
+// 7. Sintel played through `/stream` (phase-4-checkpoint-1.md › Tests, 4.1b): the play API, the
+//    HLS playlists, a segment far ahead on the film's timeline, and the subtitle as WebVTT;
+// 8. signing in on `/web` and playing Sintel in the browser's player (phase-4-checkpoint-2.md ›
+//    Tests, 4.2b), the stream on the admin's Now playing (phase-4-checkpoint-3.md › Tests, 4.3a),
+//    then leaving, which ends the session.
 //
 //   HIGHSEA_IMAGE=highsea:ci bun scripts/e2e/run.ts
 //
@@ -382,6 +387,96 @@ try {
     if (!admins.some((a) => a.title === NOTICE))
       throw new Error('The client API left the Admin out')
   })
+
+  await step(
+    '7. Sintel through /stream: the playlist, a segment far ahead, the subtitle',
+    async () => {
+      type Session = {
+        id: string
+        url: string | null
+        decision: { method: string }
+        subtitles: { id: string; url: string | null }[]
+      }
+      // Chrome won't play Matroska (and the clip's audio is FLAC), so the server makes HLS of it
+      const session = await api<Session>(
+        'POST',
+        `/items/movie/${SINTEL}/play`,
+        { profile: 'web-chromium' },
+        token,
+      )
+      if (session.decision.method === 'direct-play' || !session.url?.endsWith('/main.m3u8'))
+        throw new Error(`Sintel would be played by ${session.decision.method}, not HLS`)
+      const get = async (path: string) => {
+        const res = await fetch(`${BASE}${path}`)
+        if (!res.ok) throw new Error(`GET ${path}: ${res.status} ${await res.text()}`)
+        return res
+      }
+      const base = session.url.replace(/main\.m3u8$/, '')
+      if (!(await (await get(session.url)).text()).includes('video.m3u8'))
+        throw new Error('The multivariant playlist names no media playlist')
+      const media = await (await get(`${base}video.m3u8`)).text()
+      const last = media
+        .split('\n')
+        .filter((l) => /^\d+\.m4s$/.test(l))
+        .at(-1)
+      if (!last || !media.includes('#EXT-X-ENDLIST')) throw new Error(`No segments in:\n${media}`)
+      const segment = Buffer.from(await (await get(`${base}${last}`)).arrayBuffer())
+      // its fragment's decode time (ISO/IEC 14496-12 § 8.8.12) is far into the film, not at 0
+      const at = segment.indexOf('tfdt')
+      const time =
+        segment[at + 4] === 1
+          ? Number(segment.readBigUInt64BE(at + 8))
+          : segment.readUInt32BE(at + 8)
+      if (at < 0 || time <= 0) throw new Error(`The last segment starts at ${time}, not far ahead`)
+      // the `.en.srt` step 4 found, as WebVTT
+      const subtitle = session.subtitles.find((t) => t.url)
+      if (!subtitle?.url) throw new Error('The session lists no text subtitle')
+      const vtt = await (await get(subtitle.url)).text()
+      if (!vtt.startsWith('WEBVTT') || !vtt.includes('-->'))
+        throw new Error(`The subtitle isn't WebVTT:\n${vtt.slice(0, 200)}`)
+      await api('DELETE', `/playback/sessions/${session.id}`, undefined, token)
+      if ((await fetch(`${BASE}${base}video.m3u8`)).status !== 404)
+        throw new Error('The stream outlived its session')
+    },
+  )
+
+  await step(
+    '8. Sintel in the web player: signed in on /web, playing, on Now playing, then Back',
+    async () => {
+      const context = await (browser as Browser).newContext()
+      const page = await context.newPage()
+      current = page
+      await page.goto(`${BASE}/web/`)
+      await page.getByLabel('Username').fill(OWNER.username)
+      await page.getByLabel('Password').fill(OWNER.password)
+      await page.getByRole('button', { name: 'Sign in' }).click()
+      await page.getByRole('navigation', { name: 'Main' }).first().waitFor()
+      await page.goto(`${BASE}/web/play/${SINTEL}/start`)
+      await page.waitForFunction(
+        () => {
+          const v = document.querySelector('video')
+          return !!v && !v.paused && v.currentTime > 2
+        },
+        null,
+        { timeout: 90_000 },
+      )
+      // the same session, signed in, in the admin while it plays
+      const admin = await context.newPage()
+      await admin.goto(`${BASE}/now-playing`)
+      await admin.getByRole('listitem', { name: /, Sintel$/ }).waitFor({ timeout: 30_000 })
+      await admin.close()
+      const ended = page.waitForResponse(
+        (r) => r.request().method() === 'DELETE' && /\/playback\/sessions\/[^/]+$/.test(r.url()),
+      )
+      // the chrome hides after 3 s while playing; moving the pointer brings it back, as for a person
+      await page.mouse.move(200, 200)
+      await page.mouse.move(240, 220)
+      await page.getByRole('button', { name: 'Back to details' }).click()
+      if (!(await ended).ok()) throw new Error('Leaving the player didn’t end its session')
+      await page.waitForURL(`${BASE}/web/movies/${SINTEL}`)
+      await context.close()
+    },
+  )
 
   // the server's network has no way out (compose.e2e.yaml): everything above came from the fixtures
   const offline = inServer(

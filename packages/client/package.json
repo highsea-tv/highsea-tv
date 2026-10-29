@@ -1,0 +1,32 @@
+{
+  "name": "@highsea-tv/client",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    "./data": "./src/data/index.ts",
+    "./format": "./src/format/index.ts",
+    "./player": "./src/player/index.ts",
+    "./prefs": "./src/prefs/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea-tv/api-contract": "workspace:*",
+    "@highsea-tv/i18n": "workspace:*",
+    "@highsea-tv/sdk": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^19.3.0"
+  },
+  "devDependencies": {
+    "@happy-dom/global-registrator": "21.0.3",
+    "@highsea-tv/config": "workspace:*",
+    "@testing-library/react": "16.3.3",
+    "@types/react": "19.3.0",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  }
+}

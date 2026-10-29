@@ -278,6 +278,8 @@ function Metadata({
             <span className="font-medium text-text text-ui">{t('key.label')}</span>
             {loaded.key.set ? (
               <Badge tone="success">{t('key.set')}</Badge>
+            ) : loaded.key.builtIn ? (
+              <Badge tone="neutral">{t('key.builtIn')}</Badge>
             ) : (
               <Badge tone="warning">{t('key.notSet')}</Badge>
             )}
@@ -300,7 +302,11 @@ function Metadata({
               </span>
             )}
           </div>
-          {!loaded.key.set && <p className="text-caption text-text-3">{t('key.notSetBody')}</p>}
+          {!loaded.key.set && (
+            <p className="text-caption text-text-3">
+              {t(loaded.key.builtIn ? 'key.builtInBody' : 'key.notSetBody')}
+            </p>
+          )}
         </div>
         {entering && owner && (
           <div className="grid gap-2">
@@ -361,7 +367,7 @@ function Metadata({
         open={removing}
         onOpenChange={setRemoving}
         title={t('key.removeTitle')}
-        description={t('key.removeBody')}
+        description={t(loaded.key.builtIn ? 'key.removeBodyBuiltIn' : 'key.removeBody')}
         confirmLabel={t('key.removeConfirm')}
         cancelLabel={t('key.keep')}
         destructive

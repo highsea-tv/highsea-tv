@@ -8,12 +8,19 @@ services:
     image: highsea:dev
     container_name: highsea
     network_mode: host
-    environment:
-      PUID: "1000"
-      PGID: "1000"
-      TZ: Etc/UTC
     volumes:
       - ./.dev/docker/config:/config
       # one root for downloads and the library, so imports can hardlink
       - ./.dev/docker/data:/data
+      # graphics as compose.yaml hands them over (ADR 0057)
+      - /dev/dri:/dev/dri
+    device_cgroup_rules:
+      - "c 226:128 rw"
+      - "c 226:129 rw"
+      - "c 226:130 rw"
+      - "c 226:131 rw"
+      - "c 226:132 rw"
+      - "c 226:133 rw"
+      - "c 226:134 rw"
+      - "c 226:135 rw"
     restart: unless-stopped

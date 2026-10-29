@@ -1,16 +1,18 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
-// A2 Setup wizard (docs/product/setup.md), ported from the prototype. First run, before anyone has
-// signed in: name the server, create the owner, add a TMDB key (checkpoint 4; skippable), pick
-// folders, add indexers from the starter pack (checkpoint 5; skippable), pick subtitle languages
-// (checkpoint 7a), choose remote access and the optional highsea cloud link, then review and
-// finish on the dashboard. The starter pack lists only public starters that need no setting, so
-// each adds without a form; the prototype's "Needs an account" badge has nothing to mark. The
-// prototype offers a dozen languages as chips; highsea knows 186, so the chips are the
-// prototype's dozen and whatever is picked, and a select adds any other. Progress is kept in the
-// browser so a reload picks up where you left off, except the password and the TMDB key, which
-// never go into storage (OWASP HTML5 Security Cheat Sheet: no sensitive data in localStorage).
-import type { SetupInput } from '@highsea-tv/api-contract'
+// A2 Setup wizard (docs/product/setup.md), ported from the prototype as install-simplicity B shrank
+// it (4.3c). highsea fills in what it can find (`setup.detect`: the server's name, the folders under
+// /data, the address apps use, the graphics chip; the browser's languages and time zone) and asks
+// only for the owner; movie details come with highsea's own TMDB key. Folders become a step only
+// when highsea found none. Review lists what highsea decided, and each line opens its own editor
+// in place. What real data changed from the prototype: the starter pack lists only public starters
+// that need no setting, so the "Needs an account" badge has nothing to mark; highsea knows 186
+// subtitle languages, so the chips are the prototype's dozen and whatever is picked, and a select
+// adds any other; the folder picker stops at the media root, as the server does. Progress is kept
+// in the browser so a reload picks up where you left off, except the password and the TMDB key,
+// which never go into storage (OWASP HTML5 Security Cheat Sheet: no sensitive data in
+// localStorage).
+import type { SetupDetected, SetupInput } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
@@ -28,84 +30,81 @@ import {
   Lockup,
   Select,
   Skeleton,
-  type Step,
   Stepper,
-  Switch,
   toast,
 } from '@highsea-tv/ui-web'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
-import { TmdbNotice } from './attribution.tsx'
-import {
-  errorReason,
-  keyRejected,
-  metadataLocale,
-  TMDB_KEY_PAGE,
-  tmdbBusy,
-} from './metadata-locale.ts'
+import { errorReason, keyRejected, metadataLocale, tmdbBusy } from './metadata-locale.ts'
 import { setup as messages } from './setup-messages.ts'
 
-type StepId =
-  | 'name'
-  | 'owner'
-  | 'metadata'
-  | 'folders'
-  | 'indexers'
-  | 'subtitles'
-  | 'remote'
-  | 'cloud'
-  | 'review'
-const STEP_IDS: StepId[] = [
-  'name',
+type StepId = 'owner' | 'folders' | 'review'
+
+/** Folders are a step only when highsea found none. */
+const stepsFor = (found: SetupDetected): StepId[] => [
   'owner',
-  'metadata',
-  'folders',
-  'indexers',
-  'subtitles',
-  'remote',
-  'cloud',
+  ...(found.folders ? [] : (['folders'] as const)),
   'review',
 ]
+
 type Remote = SetupInput['remoteAccess']['kind']
 
 type Draft = {
   serverName: string
   owner: { displayName: string; username: string; password: string; confirm: string }
-  /** The TMDB key as typed. Never stored; `keyChecked` remembers that TMDB accepted one. */
-  metadataKey: string
-  keyChecked: boolean
   folders: { movies: string; downloads: string }
+  /** The owner's own TMDB key, as typed. Never stored. */
+  metadataKey: string
   /** Starter-pack definition ids to add at Finish. */
   indexers: string[]
   /** Codes, in order: the first is preferred. */
   subtitleLanguages: string[]
+  timeZone: string
+  address: string
   remote: Remote
   proxyUrl: string
   port: string
-  cloudLink: boolean
+}
+
+/** The Review lines with an editor; one the owner changed loses its "from this browser" note. */
+type Line = 'folders' | 'metadata' | 'indexers' | 'subtitles' | 'timeZone' | 'address' | 'remote'
+
+type Saved = {
+  step: StepId
+  reached: number
+  draft: Draft
+  /** The detected defaults have been filled in, once. */
+  seeded: boolean
+  changed: Line[]
 }
 
 const blank: Draft = {
   serverName: '',
   owner: { displayName: '', username: '', password: '', confirm: '' },
-  metadataKey: '',
-  keyChecked: false,
   folders: { movies: '', downloads: '' },
+  metadataKey: '',
   indexers: [],
-  subtitleLanguages: ['en'],
+  subtitleLanguages: [],
+  timeZone: '',
+  address: '',
   remote: 'local-only',
   proxyUrl: '',
   port: '8484',
-  cloudLink: false,
 }
 
-/** `indexersSeeded`: the public starters were checked once, so unchecking them sticks. */
-type Saved = { step: number; reached: number; draft: Draft; indexersSeeded?: boolean }
+const fresh = (): Saved => ({ step: 'owner', reached: 0, draft: blank, seeded: false, changed: [] })
 const storageKey = 'highsea:setup'
 
 function load(): Saved | null {
   try {
     const raw = localStorage.getItem(storageKey)
-    return raw ? (JSON.parse(raw) as Saved) : null
+    if (!raw) return null
+    const kept = JSON.parse(raw) as Saved
+    // a draft from before 4.3c's setup has numbered steps: start again
+    if (typeof kept.step !== 'string') return null
+    return {
+      ...kept,
+      draft: { ...blank, ...kept.draft, owner: { ...blank.owner, ...kept.draft.owner } },
+    }
   } catch {
     return null
   }
@@ -122,27 +121,65 @@ function persist(saved: Saved | null) {
   }
 }
 
+// ---------------------------------------------------------------- what the browser knows
+
+const browserZone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  } catch {
+    return 'UTC'
+  }
+}
+
+const allZones = (current: string) => {
+  let zones: string[] = []
+  try {
+    zones = Intl.supportedValuesOf('timeZone')
+  } catch {
+    // an older browser: the detected zone alone
+  }
+  return zones.includes(current) ? zones : [current, ...zones]
+}
+
+/** The browser's languages that highsea has subtitles in, in the browser's order. */
+function browserLanguages(available: { code: string }[]): string[] {
+  const codes = (typeof navigator === 'undefined' ? [] : (navigator.languages ?? []))
+    .map((l) => l.split('-')[0]?.toLowerCase() ?? '')
+    .filter((c, i, all) => c && all.indexOf(c) === i && available.some((l) => l.code === c))
+  return codes.length ? codes : ['en']
+}
+
+// ---------------------------------------------------------------- checks
+
 type Errors = Partial<Record<string, string>>
 type T = ReturnType<typeof useT<typeof messages>>
 
-function validate(step: StepId, d: Draft, t: T): Errors {
+function ownerErrors(d: Draft, t: T): Errors {
   const e: Errors = {}
-  if (step === 'name' && !d.serverName.trim()) e.serverName = t('name.missing')
-  if (step === 'owner') {
-    if (!d.owner.displayName.trim()) e.displayName = t('owner.nameMissing')
-    if (!/^[a-z0-9._-]{2,32}$/.test(d.owner.username)) e.username = t('owner.usernameInvalid')
-    if (d.owner.password.length < 10) e.password = t('owner.short')
-    else if (d.owner.confirm !== d.owner.password) e.confirm = t('owner.mismatch')
-  }
-  if (step === 'metadata' && !d.metadataKey.trim()) e.metadataKey = t('metadata.missing')
-  if (step === 'folders') {
-    if (!d.folders.movies) e.movies = t('folders.moviesMissing')
-    if (!d.folders.downloads) e.downloads = t('folders.downloadsMissing')
-    if (d.folders.movies && d.folders.movies === d.folders.downloads)
-      e.downloads = t('folders.same')
-  }
-  if (step === 'subtitles' && d.subtitleLanguages.length === 0) e.languages = t('subtitles.missing')
-  if (step === 'remote') {
+  if (!d.owner.displayName.trim()) e.displayName = t('owner.nameMissing')
+  if (!/^[a-z0-9._-]{2,32}$/.test(d.owner.username)) e.username = t('owner.usernameInvalid')
+  if (d.owner.password.length < 10) e.password = t('owner.short')
+  else if (d.owner.confirm !== d.owner.password) e.confirm = t('owner.mismatch')
+  if (!d.serverName.trim()) e.serverName = t('owner.serverNameMissing')
+  return e
+}
+
+function folderErrors(d: Draft, t: T): Errors {
+  const e: Errors = {}
+  if (!d.folders.movies) e.movies = t('folders.moviesMissing')
+  if (!d.folders.downloads) e.downloads = t('folders.downloadsMissing')
+  if (d.folders.movies && d.folders.movies === d.folders.downloads) e.downloads = t('folders.same')
+  return e
+}
+
+/** The checks behind each Review line's Done, and Finish. */
+function lineErrors(line: Line, d: Draft, t: T): Errors {
+  const e: Errors = {}
+  if (line === 'folders') return folderErrors(d, t)
+  if (line === 'subtitles' && d.subtitleLanguages.length === 0) e.languages = t('subtitles.missing')
+  if (line === 'address' && !/^[^\s/]+(:\d{1,5})?$/.test(d.address.trim()))
+    e.address = t('review.addressInvalid')
+  if (line === 'remote') {
     if (d.remote === 'reverse-proxy' && !/^https:\/\/[^\s/]+/.test(d.proxyUrl))
       e.proxyUrl = t('remote.addressInvalid')
     const port = Number(d.port)
@@ -152,16 +189,17 @@ function validate(step: StepId, d: Draft, t: T): Errors {
   return e
 }
 
-/** Where a field the server refused lives: its step and the error's key. */
-const FIELDS: Record<string, [StepId, string]> = {
-  serverName: ['name', 'serverName'],
+/** Where a field the server refused lives: a step, or a Review line, and the error's key. */
+const FIELDS: Record<string, [StepId | Line, string]> = {
+  serverName: ['owner', 'serverName'],
   displayName: ['owner', 'displayName'],
   username: ['owner', 'username'],
   password: ['owner', 'password'],
-  'metadata.key': ['metadata', 'metadataKey'],
   'folders.movies': ['folders', 'movies'],
   'folders.downloads': ['folders', 'downloads'],
   subtitleLanguages: ['subtitles', 'languages'],
+  timeZone: ['timeZone', 'timeZone'],
+  address: ['address', 'address'],
   'remoteAccess.url': ['remote', 'proxyUrl'],
   'remoteAccess.port': ['remote', 'port'],
 }
@@ -182,99 +220,117 @@ const toInput = (d: Draft): SetupInput => ({
       : d.remote === 'port-forward'
         ? { kind: 'port-forward', port: Number(d.port) }
         : { kind: 'local-only' },
-  cloudLink: d.cloudLink,
-  // the owner's locale for the metadata language and region (decision 5), with the key if added
+  cloudLink: false,
+  // the owner's locale for the metadata language and region (decision 5), with their key if added
   metadata: {
     ...metadataLocale(typeof navigator === 'undefined' ? undefined : navigator.language),
     ...(d.metadataKey.trim() ? { key: d.metadataKey.trim() } : {}),
   },
+  timeZone: d.timeZone,
+  address: d.address.trim(),
 })
 
 // ---------------------------------------------------------------- the wizard
 
 export function Setup() {
   const t = useT(messages)
+  const detect = useQuery('setup-detect', (c) => c.setup.detect())
   const defaults = useQuery('setup-defaults', (c) => c.setup.defaults())
-  const [saved, setSaved] = useState<Saved>({ step: 0, reached: 0, draft: blank })
+  const pack = useQuery('starter-pack', (c) => c.setup.starterPack())
+  const languages = useQuery('setup-languages', (c) => c.setup.languages())
+  const [saved, setSaved] = useState<Saved>(fresh)
   const [restored, setRestored] = useState(false)
   const [errors, setErrors] = useState<Errors>({})
+  // the Review line whose editor is open
+  const [open, setOpen] = useState<Line | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
   const first = useRef(true)
   const complete = useAction((c, input: SetupInput) => c.setup.complete({ body: input }))
-  const checkKey = useAction((c, key: string) => c.setup.checkMetadataKey({ body: { key } }))
   const { step, reached, draft } = saved
-  const id = STEP_IDS[step] ?? 'name'
-  const steps: Step[] = STEP_IDS.map((s) => ({ id: s, label: t(`step.${s}`) }))
 
-  // what was kept, or the server's suggestions, once the browser and the server have answered
+  // what was kept, read once the page is in the browser
   useEffect(() => {
-    if (restored || defaults.status !== 'success') return
     const kept = load()
-    const d = defaults.data
-    setSaved(
-      kept
-        ? {
-            ...kept,
-            draft: { ...blank, ...kept.draft, owner: { ...blank.owner, ...kept.draft.owner } },
-          }
-        : { step: 0, reached: 0, draft: { ...blank, serverName: '', folders: d.folders } },
-    )
+    if (kept) setSaved(kept)
     setRestored(true)
-  }, [defaults.status, defaults.data, restored])
-
+  }, [])
   useEffect(() => {
     if (restored) persist(saved)
   }, [saved, restored])
+
+  // the detected defaults go in once, when the server and the lists have answered
+  // biome-ignore lint/correctness/useExhaustiveDependencies: seeds once
+  useEffect(() => {
+    if (!restored || saved.seeded || detect.status !== 'success') return
+    if (pack.status === 'loading' || languages.status === 'loading') return
+    const found = detect.data
+    setSaved((s) => ({
+      ...s,
+      seeded: true,
+      draft: {
+        ...s.draft,
+        serverName: s.draft.serverName || (found.serverName ?? ''),
+        folders: found.folders ?? s.draft.folders,
+        indexers: pack.status === 'success' ? pack.data.map((d) => d.id) : [],
+        subtitleLanguages:
+          languages.status === 'success' ? browserLanguages(languages.data) : ['en'],
+        timeZone: browserZone(),
+        // a bridge network can't see the host's address, so the one this browser used is the best guess
+        address: found.address ?? (typeof location === 'undefined' ? '' : location.host),
+      },
+    }))
+  }, [restored, detect.status, pack.status, languages.status, saved.seeded])
+
+  const steps = detect.status === 'success' ? stepsFor(detect.data) : (['owner'] as StepId[])
+  const index = Math.max(0, steps.indexOf(step))
+  const id = steps[index] ?? 'owner'
+
   // each step moves focus to its heading, so a screen reader hears where it is
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs on step change
   useEffect(() => {
     if (first.current) first.current = false
     else heading.current?.focus()
-  }, [step])
+  }, [id])
 
-  const update = (patch: Partial<Draft>) =>
-    setSaved((s) => ({ ...s, draft: { ...s.draft, ...patch } }))
-  const goTo = (to: number) => {
+  const update = (patch: Partial<Draft>, line?: Line) =>
+    setSaved((s) => ({
+      ...s,
+      draft: { ...s.draft, ...patch },
+      changed: line && !s.changed.includes(line) ? [...s.changed, line] : s.changed,
+    }))
+  const go = (to: StepId) => {
     setErrors({})
-    setSaved((s) => ({ ...s, step: to, reached: Math.max(s.reached, to) }))
+    setOpen(null)
+    const at = steps.indexOf(to)
+    setSaved((s) => ({ ...s, step: to, reached: Math.max(s.reached, at) }))
+  }
+  /** A field the server or Finish found wrong: its step, or its Review line opened. */
+  const show = (where: StepId | Line, found: Errors) => {
+    if (where === 'owner' || (where === 'folders' && steps.includes('folders'))) {
+      go(where)
+      setErrors(found)
+    } else {
+      if (id !== 'review') go('review')
+      setOpen(where as Line)
+      setErrors(found)
+    }
   }
 
   const next = async (e?: FormEvent) => {
     e?.preventDefault()
-    const found = validate(id, draft, t)
+    const found =
+      id === 'owner' ? ownerErrors(draft, t) : id === 'folders' ? folderErrors(draft, t) : {}
     setErrors(found)
     if (Object.keys(found).length) return
-    if (id === 'metadata') {
-      // checked with TMDB now, so a mistyped key is caught here and not after Finish
-      const key = draft.metadataKey.trim()
-      try {
-        await checkKey.run(key)
-      } catch (err) {
-        const reason = errorReason(err)
-        return setErrors({
-          metadataKey: keyRejected(reason)
-            ? t('metadata.rejected')
-            : tmdbBusy(reason)
-              ? t('metadata.unavailable')
-              : (err as Error).message,
-        })
-      }
-      update({ metadataKey: key, keyChecked: true })
-      return goTo(step + 1)
-    }
-    if (id !== 'review') return goTo(step + 1)
+    if (id !== 'review') return go(steps[index + 1] ?? 'review')
     // after a reload the password is gone: ask for it again
-    const owner = validate('owner', draft, t)
-    if (Object.keys(owner).length) {
-      goTo(STEP_IDS.indexOf('owner'))
-      setErrors({ ...owner, password: owner.password && t('owner.forgotten') })
-      return
-    }
-    // a key TMDB accepted before a reload is gone too: ask for it, or let it be skipped
-    if (draft.keyChecked && !draft.metadataKey.trim()) {
-      goTo(STEP_IDS.indexOf('metadata'))
-      setErrors({ metadataKey: t('metadata.forgotten') })
-      return
+    const owner = ownerErrors(draft, t)
+    if (Object.keys(owner).length)
+      return show('owner', { ...owner, password: owner.password && t('owner.forgotten') })
+    // an editor left wrong opens again with its message
+    for (const line of ['folders', 'subtitles', 'address', 'remote'] as const) {
+      const wrong = lineErrors(line, draft, t)
+      if (Object.keys(wrong).length) return show(line, wrong)
     }
     try {
       const result = await complete.run(toInput(draft))
@@ -283,50 +339,26 @@ export function Setup() {
       // a fresh load: the server components see the owner's new session
       window.location.assign('/')
     } catch (err) {
+      const reason = errorReason(err)
+      if (keyRejected(reason) || tmdbBusy(reason))
+        return show('metadata', {
+          metadataKey: keyRejected(reason) ? t('review.keyRejected') : t('review.keyUnavailable'),
+        })
       const field = ((err as ApiError).details as { field?: string } | undefined)?.field
       const at = field ? FIELDS[field] : undefined
-      if (at) {
-        goTo(STEP_IDS.indexOf(at[0]))
-        setErrors({ [at[1]]: (err as Error).message })
-      } else toast.error(t('failed'), { description: (err as Error).message })
+      if (at) show(at[0], { [at[1]]: (err as Error).message })
+      else toast.error(t('failed'), { description: (err as Error).message })
     }
-  }
-
-  /** "Add it later in Settings": no key, and on to the next step. */
-  const skipKey = () => {
-    update({ metadataKey: '', keyChecked: false })
-    goTo(step + 1)
   }
 
   const startOver = () => {
     setErrors({})
-    setSaved({
-      step: 0,
-      reached: 0,
-      draft: { ...blank, folders: defaults.data?.folders ?? blank.folders },
-    })
+    setOpen(null)
+    setSaved(fresh())
   }
 
+  const root = defaults.data?.dataDir ?? '/'
   const body: Record<StepId, { title: string; detail: ReactNode; content: ReactNode }> = {
-    name: {
-      title: t('name.title'),
-      detail: t('name.detail'),
-      content: (
-        <>
-          <Field label={t('name.label')} error={errors.serverName}>
-            <Input
-              value={draft.serverName}
-              placeholder="Harbor"
-              autoComplete="off"
-              maxLength={60}
-              onChange={(e) => update({ serverName: e.target.value })}
-            />
-          </Field>
-          {/* plain text: Settings › Migration opens only once setup has signed the owner in */}
-          <p className="text-caption text-text-3">{t('name.migrate')}</p>
-        </>
-      ),
-    },
     owner: {
       title: t('owner.title'),
       detail: t('owner.detail'),
@@ -350,7 +382,7 @@ export function Setup() {
               }
             />
           </Field>
-          <div className="grid gap-4 medium:grid-cols-2">
+          <div className="grid items-start gap-4 medium:grid-cols-2">
             <Field
               label={t('owner.password')}
               hint={t('owner.passwordHint')}
@@ -372,86 +404,56 @@ export function Setup() {
               />
             </Field>
           </div>
+          <Field
+            label={t('owner.serverName')}
+            hint={detect.data?.serverName ? t('owner.serverNameFound') : t('owner.serverNameHint')}
+            error={errors.serverName}
+          >
+            <Input
+              value={draft.serverName}
+              placeholder="Harbor"
+              autoComplete="off"
+              maxLength={60}
+              onChange={(e) => update({ serverName: e.target.value })}
+            />
+          </Field>
+          {/* plain text: Settings › Migration opens only once setup has signed the owner in */}
           <p className="text-caption text-text-3">{t('owner.later')}</p>
         </>
-      ),
-    },
-    metadata: {
-      title: t('metadata.title'),
-      detail: t('metadata.detail'),
-      content: (
-        <MetadataKey
-          value={draft.metadataKey}
-          error={errors.metadataKey}
-          onChange={(metadataKey) => update({ metadataKey, keyChecked: false })}
-        />
       ),
     },
     folders: {
       title: t('folders.title'),
       detail: t('folders.detail'),
       content: (
-        <Folders
-          draft={draft}
-          errors={errors}
-          update={update}
-          root={defaults.data?.dataDir ?? '/'}
-        />
-      ),
-    },
-    indexers: {
-      title: t('indexers.title'),
-      detail: t('indexers.detail'),
-      content: (
-        <Indexers
-          selected={draft.indexers}
-          seeded={saved.indexersSeeded === true}
-          onChange={(indexers, seeded) =>
-            setSaved((s) => ({ ...s, indexersSeeded: seeded, draft: { ...s.draft, indexers } }))
-          }
-        />
-      ),
-    },
-    subtitles: {
-      title: t('subtitles.title'),
-      detail: t('subtitles.detail'),
-      content: (
-        <Languages
-          selected={draft.subtitleLanguages}
-          error={errors.languages}
-          onChange={(subtitleLanguages) => update({ subtitleLanguages })}
-        />
-      ),
-    },
-    remote: {
-      title: t('remote.title'),
-      detail: t('remote.detail'),
-      content: <RemoteAccess draft={draft} errors={errors} update={update} />,
-    },
-    cloud: {
-      title: t('cloud.title'),
-      detail: t('cloud.detail'),
-      content: (
-        <div className="grid gap-4">
-          <Field inline label={t('cloud.label')} hint={t('cloud.hint')}>
-            <Switch
-              checked={draft.cloudLink}
-              onCheckedChange={(cloudLink) => update({ cloudLink })}
-            />
-          </Field>
-          <ul className="grid gap-2 rounded-md border border-line bg-s2 p-4 text-caption text-text-2">
-            <CloudPoint icon="globe">{t('cloud.find')}</CloudPoint>
-            <CloudPoint icon="notification">{t('cloud.push')}</CloudPoint>
-            <CloudPoint icon="movie">{t('cloud.tmdb')}</CloudPoint>
-            <CloudPoint icon="lock">{t('cloud.privacy')}</CloudPoint>
-          </ul>
-        </div>
+        <Folders draft={draft} errors={errors} update={(p) => update(p, 'folders')} root={root} />
       ),
     },
     review: {
       title: t('review.title'),
       detail: t('review.detail'),
-      content: <Review draft={draft} onEdit={goTo} />,
+      content:
+        detect.status === 'success' ? (
+          <Review
+            found={detect.data}
+            saved={saved}
+            steps={steps}
+            open={open}
+            errors={errors}
+            root={root}
+            onOpen={(line) => {
+              setErrors({})
+              setOpen(line)
+            }}
+            onDone={(line) => {
+              const wrong = lineErrors(line, draft, t)
+              setErrors(wrong)
+              if (Object.keys(wrong).length === 0) setOpen(null)
+            }}
+            update={update}
+            onStep={go}
+          />
+        ) : null,
     },
   }
   const current = body[id]
@@ -462,19 +464,39 @@ export function Setup() {
         <Lockup size={17} />
         <span className="text-caption text-text-3">{t('label')}</span>
         <div className="flex-1" />
-        {(step > 0 || reached > 0) && (
+        {(index > 0 || reached > 0) && (
           <Button variant="ghost" size="sm" icon="replay" onClick={startOver}>
             {t('startOver')}
           </Button>
         )}
       </header>
       <div className="mx-auto grid w-full max-w-240 flex-1 content-start gap-6 px-4 py-6 medium:px-6 medium:py-10 expanded:grid-cols-[13rem_minmax(0,1fr)] expanded:gap-10">
-        <Stepper steps={steps} current={step} reached={reached} onSelect={goTo} />
+        {detect.status === 'success' ? (
+          <Stepper
+            steps={steps.map((s) => ({ id: s, label: t(`step.${s}`) }))}
+            current={index}
+            reached={Math.min(reached, steps.length - 1)}
+            onSelect={(i) => go(steps[i] ?? 'owner')}
+          />
+        ) : (
+          <Skeleton className="h-24 expanded:h-40" />
+        )}
         <main className="min-w-0">
-          {!restored ? (
+          {detect.status === 'error' ? (
+            <EmptyState
+              tone="error"
+              title={t('unreachable')}
+              action={<Button onClick={detect.refetch}>{t('retry')}</Button>}
+            >
+              {detect.error.message}
+            </EmptyState>
+          ) : detect.status === 'loading' || !saved.seeded ? (
             <div aria-busy className="grid max-w-150 gap-4">
-              <Skeleton className="h-8 w-60" />
-              <Skeleton className="h-10" />
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-5" />
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-16" />
+              ))}
             </div>
           ) : (
             <form onSubmit={next} noValidate className="grid max-w-150 gap-6">
@@ -486,23 +508,22 @@ export function Setup() {
               </div>
               <div className="grid gap-4">{current.content}</div>
               <div className="flex flex-wrap items-center gap-2 border-line border-t pt-5">
-                {step > 0 && (
-                  <Button variant="ghost" icon="arrow-left" onClick={() => goTo(step - 1)}>
+                {index > 0 && (
+                  <Button
+                    variant="ghost"
+                    icon="arrow-left"
+                    onClick={() => go(steps[index - 1] ?? 'owner')}
+                  >
                     {t('back')}
                   </Button>
                 )}
                 <div className="flex-1" />
-                {id === 'metadata' && (
-                  <Button variant="ghost" onClick={skipKey} disabled={checkKey.pending}>
-                    {t('metadata.skip')}
-                  </Button>
-                )}
                 <Button
                   type="submit"
                   variant="primary"
                   iconEnd={id === 'review' ? undefined : 'arrow-right'}
                   icon={id === 'review' ? 'check' : undefined}
-                  loading={complete.pending || checkKey.pending}
+                  loading={complete.pending}
                 >
                   {id === 'review' ? t('finish') : t('continue')}
                 </Button>
@@ -515,223 +536,281 @@ export function Setup() {
   )
 }
 
-// ---------------------------------------------------------------- indexers
+// ---------------------------------------------------------------- review
 
-function Indexers({
-  selected,
-  seeded,
-  onChange,
+function Review({
+  found,
+  saved,
+  steps,
+  open,
+  errors,
+  root,
+  onOpen,
+  onDone,
+  update,
+  onStep,
 }: {
-  selected: string[]
-  seeded: boolean
-  onChange: (ids: string[], seeded: boolean) => void
+  found: SetupDetected
+  saved: Saved
+  steps: StepId[]
+  open: Line | null
+  errors: Errors
+  root: string
+  onOpen: (line: Line) => void
+  onDone: (line: Line) => void
+  update: (patch: Partial<Draft>, line?: Line) => void
+  onStep: (step: StepId) => void
 }) {
   const t = useT(messages)
+  const { draft, changed } = saved
   const pack = useQuery('starter-pack', (c) => c.setup.starterPack())
-  // the starters start checked, once
-  // biome-ignore lint/correctness/useExhaustiveDependencies: seeds once, when the pack arrives
-  useEffect(() => {
-    if (!seeded && pack.status === 'success')
-      onChange(
-        pack.data.map((d) => d.id),
-        true,
-      )
-  }, [pack.status, seeded])
+  const languages = useQuery('setup-languages', (c) => c.setup.languages())
+  const { movies, downloads } = draft.folders
+  const links = useQuery(`hardlinks:${movies}:${downloads}`, (c) =>
+    c.setup.checkHardlinks({ query: { a: downloads, b: movies } }),
+  )
 
-  if (pack.status === 'loading')
-    return (
-      <div aria-busy className="grid gap-2">
-        {[0, 1, 2].map((i) => (
-          <Skeleton key={i} className="h-16" />
-        ))}
-      </div>
-    )
-  if (pack.status === 'error')
-    return (
-      <EmptyState
-        size="sm"
-        tone="error"
-        title={t('indexers.failed')}
-        action={<Button onClick={pack.refetch}>{t('indexers.retry')}</Button>}
-      >
-        {t('indexers.failedBody', { message: pack.error.message })}
-      </EmptyState>
-    )
-  if (!pack.data.length)
-    return (
-      <EmptyState size="sm" title={t('indexers.none')}>
-        {t('indexers.noneBody')}
-      </EmptyState>
-    )
-  return (
-    <ul className="grid gap-2">
-      {pack.data.map((d) => (
-        <li key={d.id}>
-          <Field
-            inline
-            label={<span className="text-text">{d.name}</span>}
-            hint={d.description}
-            className="rounded-md border border-line bg-s1 p-3"
-          >
-            <Checkbox
-              checked={selected.includes(d.id)}
-              onCheckedChange={(v) =>
-                onChange(v ? [...selected, d.id] : selected.filter((x) => x !== d.id), true)
-              }
+  const indexerNames = draft.indexers.map((i) => pack.data?.find((d) => d.id === i)?.name ?? i)
+  const languageNames = draft.subtitleLanguages.map(
+    (c) => languages.data?.find((l) => l.code === c)?.name ?? c,
+  )
+  const asked = (s: StepId) => steps.includes(s)
+  const note = (line: Line, text: string) => (changed.includes(line) ? undefined : text)
+  const edit = (line: Line, patch: Partial<Draft>) => update(patch, line)
+  const key = draft.metadataKey.trim()
+
+  type Row = {
+    id: string
+    label: string
+    value: ReactNode
+    note?: string
+    /** A step to go back to, an editor here, or nothing to change now. */
+    change?: { step: StepId } | { line: Line; editor: ReactNode }
+  }
+
+  const rows: Row[] = [
+    {
+      id: 'owner',
+      label: t('review.owner'),
+      value: (
+        <>
+          {draft.owner.displayName}{' '}
+          <span className="font-mono text-text-3">@{draft.owner.username}</span>
+        </>
+      ),
+      change: { step: 'owner' },
+    },
+    {
+      id: 'name',
+      label: t('review.serverName'),
+      value: draft.serverName,
+      change: { step: 'owner' },
+    },
+    {
+      id: 'folders',
+      label: t('review.folders'),
+      value: (
+        <span className="grid font-mono text-mono [overflow-wrap:anywhere]">
+          <span>{movies}</span>
+          <span>{downloads}</span>
+        </span>
+      ),
+      note:
+        movies && downloads && movies !== downloads && links.status === 'success'
+          ? links.data.sameDevice
+            ? t('review.hardlinked')
+            : t('review.copied')
+          : undefined,
+      change: asked('folders')
+        ? { step: 'folders' }
+        : {
+            line: 'folders',
+            editor: (
+              <Folders
+                draft={draft}
+                errors={errors}
+                update={(p) => edit('folders', p)}
+                root={root}
+              />
+            ),
+          },
+    },
+    {
+      id: 'metadata',
+      label: t('review.metadata'),
+      value: key ? t('review.ownKey', { last4: key.slice(-4) }) : t('review.highseaKey'),
+      change: {
+        line: 'metadata',
+        editor: (
+          <Field label={t('review.keyLabel')} hint={t('review.keyHint')} error={errors.metadataKey}>
+            <Input
+              type="password"
+              value={draft.metadataKey}
+              autoComplete="off"
+              autoCapitalize="none"
+              spellCheck={false}
+              className="font-mono"
+              onChange={(e) => edit('metadata', { metadataKey: e.target.value })}
             />
           </Field>
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-// ---------------------------------------------------------------- subtitles
-
-/** The prototype's chips: the languages most libraries want, in its order. */
-const COMMON = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'ja', 'ko', 'zh', 'ar', 'hi']
-
-function Languages({
-  selected,
-  error,
-  onChange,
-}: {
-  selected: string[]
-  error?: string
-  onChange: (codes: string[]) => void
-}) {
-  const t = useT(messages)
-  const languages = useQuery('setup-languages', (c) => c.setup.languages())
-  if (languages.status === 'loading') return <Skeleton className="h-24" />
-  if (languages.status === 'error')
-    return (
-      <EmptyState
-        size="sm"
-        tone="error"
-        title={t('subtitles.failed')}
-        action={<Button onClick={languages.refetch}>{t('indexers.retry')}</Button>}
-      >
-        {languages.error.message}
-      </EmptyState>
-    )
-  const all = languages.data
-  const name = (code: string) => all.find((l) => l.code === code)?.name ?? code
-  const chips = [
-    ...COMMON.filter((c) => all.some((l) => l.code === c)),
-    ...selected.filter((c) => !COMMON.includes(c)),
+        ),
+      },
+    },
+    {
+      id: 'indexers',
+      label: t('review.indexers'),
+      value: indexerNames.length ? indexerNames.join(', ') : t('review.noIndexers'),
+      note: note('indexers', t('review.indexersNote')),
+      change: {
+        line: 'indexers',
+        editor: (
+          <Indexers
+            selected={draft.indexers}
+            onChange={(indexers) => edit('indexers', { indexers })}
+          />
+        ),
+      },
+    },
+    {
+      id: 'subtitles',
+      label: t('review.subtitles'),
+      value: languageNames.join(t('review.then')),
+      note: note('subtitles', t('review.subtitlesNote')),
+      change: {
+        line: 'subtitles',
+        editor: (
+          <Languages
+            selected={draft.subtitleLanguages}
+            error={errors.languages}
+            onChange={(subtitleLanguages) => edit('subtitles', { subtitleLanguages })}
+          />
+        ),
+      },
+    },
+    {
+      id: 'timeZone',
+      label: t('review.timeZone'),
+      value: draft.timeZone,
+      note: note('timeZone', t('review.timeZoneNote')),
+      change: {
+        line: 'timeZone',
+        editor: (
+          <Field
+            label={t('review.timeZone')}
+            hint={t('review.timeZoneHint')}
+            error={errors.timeZone}
+          >
+            <Select
+              value={draft.timeZone}
+              onValueChange={(timeZone) => edit('timeZone', { timeZone })}
+              options={allZones(draft.timeZone).map((z) => ({ value: z, label: z }))}
+            />
+          </Field>
+        ),
+      },
+    },
+    {
+      id: 'address',
+      label: t('review.address'),
+      value: <span className="font-mono text-mono [overflow-wrap:anywhere]">{draft.address}</span>,
+      note: note('address', found.address ? t('review.addressFound') : t('review.addressBrowser')),
+      change: {
+        line: 'address',
+        editor: (
+          <Field label={t('review.address')} hint={t('review.addressHint')} error={errors.address}>
+            <Input
+              value={draft.address}
+              spellCheck={false}
+              autoCapitalize="none"
+              className="font-mono"
+              onChange={(e) => edit('address', { address: e.target.value })}
+            />
+          </Field>
+        ),
+      },
+    },
+    {
+      id: 'remote',
+      label: t('review.remote'),
+      value:
+        draft.remote === 'reverse-proxy'
+          ? t('review.remoteProxy', { url: draft.proxyUrl })
+          : draft.remote === 'port-forward'
+            ? t('review.remotePort', { port: draft.port })
+            : t('remote.local'),
+      note: note('remote', t('review.remoteNote')),
+      change: {
+        line: 'remote',
+        editor: <RemoteAccess draft={draft} errors={errors} update={(p) => edit('remote', p)} />,
+      },
+    },
+    {
+      id: 'graphics',
+      label: t('review.graphics'),
+      value: found.graphics
+        ? t('review.graphicsFound', {
+            name: found.graphics.name,
+            path: t(`path.${found.graphics.path}`),
+          })
+        : t('review.processor'),
+      note: found.graphics ? t('review.graphicsNote') : t('review.processorNote'),
+    },
+    {
+      id: 'cloud',
+      label: t('review.cloud'),
+      value: t('review.notLinked'),
+      note: t('review.cloudNote'),
+    },
   ]
-  const others = all.filter((l) => !chips.includes(l.code))
-  return (
-    <div className="grid gap-3">
-      <fieldset className="grid gap-2">
-        <legend className="mb-2 font-medium text-[13px] text-text-2">
-          {t('subtitles.legend')}
-        </legend>
-        <div className="flex flex-wrap gap-2">
-          {chips.map((code) => {
-            const on = selected.includes(code)
-            return (
-              <button
-                key={code}
-                type="button"
-                aria-pressed={on}
-                onClick={() =>
-                  onChange(on ? selected.filter((c) => c !== code) : [...selected, code])
-                }
-                className={cn(
-                  'flex h-8 items-center gap-1.5 rounded-full border px-3 text-ui transition-tint',
-                  on
-                    ? 'border-accent bg-accent-soft text-accent-text'
-                    : 'border-line-strong text-text-2 hover:bg-s2 hover:text-text',
-                )}
-              >
-                {on && <Icon name="check" size={14} />}
-                {name(code)}
-              </button>
-            )
-          })}
-        </div>
-      </fieldset>
-      <Select
-        value=""
-        onValueChange={(code) => code && onChange([...selected, code])}
-        placeholder={t('subtitles.more')}
-        aria-label={t('subtitles.more')}
-        options={others.map((l) => ({ value: l.code, label: l.name }))}
-        className="w-full max-w-56"
-      />
-      {/* the error is about none being picked, so picking one answers it */}
-      {error && selected.length === 0 ? (
-        <p role="alert" className="flex items-start gap-1.5 text-badge-danger text-caption">
-          <Icon name="alert" size={14} className="mt-px shrink-0" />
-          {error}
-        </p>
-      ) : selected.length === 0 ? null : (
-        <p className="text-caption text-text-3" aria-live="polite">
-          {selected.length === 1
-            ? t('subtitles.only', { language: name(selected[0] ?? '') })
-            : t('subtitles.order', { languages: selected.map(name).join(t('subtitles.then')) })}
-        </p>
-      )}
-    </div>
-  )
-}
 
-function CloudPoint({
-  icon,
-  children,
-}: {
-  icon: 'globe' | 'notification' | 'movie' | 'lock'
-  children: ReactNode
-}) {
   return (
-    <li className="flex items-start gap-2.5">
-      <Icon name={icon} size={16} className="mt-px shrink-0 text-text-3" />
-      {children}
-    </li>
-  )
-}
-
-// ---------------------------------------------------------------- the TMDB key
-
-/** The key step: the field, where TMDB shows the key, why highsea asks, and TMDB's notice. */
-function MetadataKey({
-  value,
-  error,
-  onChange,
-}: {
-  value: string
-  error?: string
-  onChange: (key: string) => void
-}) {
-  const t = useT(messages)
-  return (
-    <>
-      <Field label={t('metadata.label')} hint={t('metadata.hint')} error={error}>
-        <Input
-          value={value}
-          type="password"
-          autoComplete="off"
-          autoCapitalize="none"
-          spellCheck={false}
-          className="font-mono"
-          onChange={(e) => onChange(e.target.value)}
-        />
-      </Field>
-      <a
-        href={TMDB_KEY_PAGE}
-        target="_blank"
-        rel="noreferrer"
-        className="flex items-center gap-1.5 justify-self-start rounded-sm text-accent-text text-ui outline-none hover:underline focus-visible:ring-focus"
-      >
-        {t('metadata.open')}
-        <Icon name="external" size={14} />
-      </a>
-      <div className="grid gap-3 rounded-md border border-line bg-s2 p-4 text-caption text-text-2">
-        <p>{t('metadata.why')}</p>
-        <TmdbNotice />
-      </div>
-    </>
+    <ul className="grid rounded-md border border-line bg-s1">
+      {rows.map((r) => {
+        const change = r.change
+        const editing = change && 'line' in change && open === change.line
+        const what = r.label.toLowerCase()
+        return (
+          <li key={r.id} className="grid gap-3 border-line border-b px-4 py-3 last:border-b-0">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3">
+              <dl className="grid min-w-0 gap-x-3 gap-y-0.5 medium:grid-cols-[10rem_minmax(0,1fr)]">
+                <dt className="text-caption text-text-3 medium:pt-0.5">{r.label}</dt>
+                <dd className="min-w-0 break-words text-text text-ui">
+                  {r.value}
+                  {r.note && <span className="block text-caption text-text-3">{r.note}</span>}
+                </dd>
+              </dl>
+              {change &&
+                ('step' in change ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onStep(change.step)}
+                    aria-label={t('review.changeLabel', { what })}
+                  >
+                    {t('review.change')}
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-expanded={editing}
+                    aria-controls={editing ? `edit-${r.id}` : undefined}
+                    onClick={() => (editing ? onDone(change.line) : onOpen(change.line))}
+                    aria-label={t(editing ? 'review.doneLabel' : 'review.changeLabel', { what })}
+                  >
+                    {editing ? t('review.done') : t('review.change')}
+                  </Button>
+                ))}
+            </div>
+            {editing && 'line' in change && (
+              <div id={`edit-${r.id}`} className="grid gap-4 border-line border-t pt-3">
+                {change.editor}
+              </div>
+            )}
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
@@ -929,6 +1008,156 @@ function FolderRow({
   )
 }
 
+// ---------------------------------------------------------------- indexers
+
+function Indexers({
+  selected,
+  onChange,
+}: {
+  selected: string[]
+  onChange: (ids: string[]) => void
+}) {
+  const t = useT(messages)
+  const pack = useQuery('starter-pack', (c) => c.setup.starterPack())
+  if (pack.status === 'loading')
+    return (
+      <div aria-busy className="grid gap-2">
+        {[0, 1, 2].map((i) => (
+          <Skeleton key={i} className="h-16" />
+        ))}
+      </div>
+    )
+  if (pack.status === 'error')
+    return (
+      <EmptyState
+        size="sm"
+        tone="error"
+        title={t('indexers.failed')}
+        action={<Button onClick={pack.refetch}>{t('retry')}</Button>}
+      >
+        {t('indexers.failedBody', { message: pack.error.message })}
+      </EmptyState>
+    )
+  if (!pack.data.length)
+    return (
+      <EmptyState size="sm" title={t('indexers.none')}>
+        {t('indexers.noneBody')}
+      </EmptyState>
+    )
+  return (
+    <ul className="grid gap-2">
+      {pack.data.map((d) => (
+        <li key={d.id}>
+          <Field
+            inline
+            label={<span className="text-text">{d.name}</span>}
+            hint={d.description}
+            className="rounded-md border border-line bg-s2 p-3"
+          >
+            <Checkbox
+              checked={selected.includes(d.id)}
+              onCheckedChange={(v) =>
+                onChange(v ? [...selected, d.id] : selected.filter((x) => x !== d.id))
+              }
+            />
+          </Field>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
+// ---------------------------------------------------------------- subtitles
+
+/** The prototype's chips: the languages most libraries want, in its order. */
+const COMMON = ['en', 'es', 'fr', 'de', 'it', 'pt', 'nl', 'ja', 'ko', 'zh', 'ar', 'hi']
+
+function Languages({
+  selected,
+  error,
+  onChange,
+}: {
+  selected: string[]
+  error?: string
+  onChange: (codes: string[]) => void
+}) {
+  const t = useT(messages)
+  const languages = useQuery('setup-languages', (c) => c.setup.languages())
+  if (languages.status === 'loading') return <Skeleton className="h-24" />
+  if (languages.status === 'error')
+    return (
+      <EmptyState
+        size="sm"
+        tone="error"
+        title={t('subtitles.failed')}
+        action={<Button onClick={languages.refetch}>{t('retry')}</Button>}
+      >
+        {languages.error.message}
+      </EmptyState>
+    )
+  const all = languages.data
+  const name = (code: string) => all.find((l) => l.code === code)?.name ?? code
+  const chips = [
+    ...COMMON.filter((c) => all.some((l) => l.code === c)),
+    ...selected.filter((c) => !COMMON.includes(c)),
+  ]
+  const others = all.filter((l) => !chips.includes(l.code))
+  return (
+    <div className="grid gap-3">
+      <fieldset className="grid gap-2">
+        <legend className="mb-2 font-medium text-[13px] text-text-2">
+          {t('subtitles.legend')}
+        </legend>
+        <div className="flex flex-wrap gap-2">
+          {chips.map((code) => {
+            const on = selected.includes(code)
+            return (
+              <button
+                key={code}
+                type="button"
+                aria-pressed={on}
+                onClick={() =>
+                  onChange(on ? selected.filter((c) => c !== code) : [...selected, code])
+                }
+                className={cn(
+                  'flex h-8 items-center gap-1.5 rounded-full border px-3 text-ui transition-tint',
+                  on
+                    ? 'border-accent bg-accent-soft text-accent-text'
+                    : 'border-line-strong text-text-2 hover:bg-s2 hover:text-text',
+                )}
+              >
+                {on && <Icon name="check" size={14} />}
+                {name(code)}
+              </button>
+            )
+          })}
+        </div>
+      </fieldset>
+      <Select
+        value=""
+        onValueChange={(code) => code && onChange([...selected, code])}
+        placeholder={t('subtitles.more')}
+        aria-label={t('subtitles.more')}
+        options={others.map((l) => ({ value: l.code, label: l.name }))}
+        className="w-full max-w-56"
+      />
+      {/* the error is about none being picked, so picking one answers it */}
+      {error && selected.length === 0 ? (
+        <p role="alert" className="flex items-start gap-1.5 text-badge-danger text-caption">
+          <Icon name="alert" size={14} className="mt-px shrink-0" />
+          {error}
+        </p>
+      ) : selected.length === 0 ? null : (
+        <p className="text-caption text-text-3" aria-live="polite">
+          {selected.length === 1
+            ? t('subtitles.only', { language: name(selected[0] ?? '') })
+            : t('subtitles.order', { languages: selected.map(name).join(t('review.then')) })}
+        </p>
+      )}
+    </div>
+  )
+}
+
 // ---------------------------------------------------------------- remote access
 
 const remoteOptions = [
@@ -1002,93 +1231,5 @@ function RemoteAccess({
         )
       })}
     </fieldset>
-  )
-}
-
-// ---------------------------------------------------------------- review
-
-function Review({ draft, onEdit }: { draft: Draft; onEdit: (step: number) => void }) {
-  const t = useT(messages)
-  const pack = useQuery('starter-pack', (c) => c.setup.starterPack())
-  const indexerNames = draft.indexers.map((i) => pack.data?.find((d) => d.id === i)?.name ?? i)
-  const languages = useQuery('setup-languages', (c) => c.setup.languages())
-  const languageNames = draft.subtitleLanguages.map(
-    (c) => languages.data?.find((l) => l.code === c)?.name ?? c,
-  )
-  const rows: { step: StepId; label: string; value: ReactNode }[] = [
-    { step: 'name', label: t('step.name'), value: draft.serverName },
-    {
-      step: 'owner',
-      label: t('review.owner'),
-      value: (
-        <>
-          {draft.owner.displayName}{' '}
-          <span className="font-mono text-text-3">@{draft.owner.username}</span>
-        </>
-      ),
-    },
-    {
-      step: 'metadata',
-      label: t('review.metadata'),
-      value: draft.metadataKey.trim()
-        ? t('review.keyAdded', { last4: draft.metadataKey.trim().slice(-4) })
-        : t('review.keyLater'),
-    },
-    {
-      step: 'folders',
-      label: t('review.folders'),
-      value: (
-        <span className="grid font-mono text-mono [overflow-wrap:anywhere]">
-          <span>{draft.folders.movies}</span>
-          <span>{draft.folders.downloads}</span>
-        </span>
-      ),
-    },
-    {
-      step: 'indexers',
-      label: t('step.indexers'),
-      value: indexerNames.length ? indexerNames.join(', ') : t('review.noIndexers'),
-    },
-    { step: 'subtitles', label: t('step.subtitles'), value: languageNames.join(', ') },
-    {
-      step: 'remote',
-      label: t('step.remote'),
-      value:
-        draft.remote === 'reverse-proxy'
-          ? t('review.remoteProxy', { url: draft.proxyUrl })
-          : draft.remote === 'port-forward'
-            ? t('review.remotePort', { port: draft.port })
-            : t('remote.local'),
-    },
-    {
-      step: 'cloud',
-      label: t('step.cloud'),
-      value: draft.cloudLink ? t('review.linked') : t('review.notLinked'),
-    },
-  ]
-  return (
-    <dl className="grid rounded-md border border-line bg-s1">
-      {rows.map((r) => (
-        <div
-          key={r.step}
-          className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3 gap-y-0.5 border-line border-b px-4 py-3 last:border-b-0 medium:grid-cols-[10rem_minmax(0,1fr)_auto]"
-        >
-          <dt className="text-caption text-text-3 medium:pt-0.5">{r.label}</dt>
-          <dd className="col-start-1 min-w-0 break-words text-text text-ui medium:col-start-2 medium:row-start-1">
-            {r.value}
-          </dd>
-          <dd className="col-start-2 row-span-2 row-start-1 medium:col-start-3 medium:row-span-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onEdit(STEP_IDS.indexOf(r.step))}
-              aria-label={t('review.changeLabel', { what: r.label.toLowerCase() })}
-            >
-              {t('review.change')}
-            </Button>
-          </dd>
-        </div>
-      ))}
-    </dl>
   )
 }

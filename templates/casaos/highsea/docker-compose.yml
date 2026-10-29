@@ -1,0 +1,121 @@
+name: highsea
+services:
+  highsea:
+    image: ghcr.io/highsea-tv/highsea:0.1.0
+    container_name: highsea
+    network_mode: bridge
+    environment:
+      PUID: $PUID
+      PGID: $PGID
+      TZ: $TZ
+    ports:
+      - target: 3000
+        published: "3636"
+        protocol: tcp
+      - target: 6881
+        published: "6881"
+        protocol: tcp
+      - target: 6881
+        published: "6881"
+        protocol: udp
+      - target: 7368
+        published: "7368"
+        protocol: udp
+    volumes:
+      - type: bind
+        source: /DATA/AppData/$AppID/config
+        target: /config
+      - type: bind
+        source: /DATA
+        target: /data
+      - type: bind
+        source: /dev/dri
+        target: /dev/dri
+      - type: bind
+        source: /run/dbus
+        target: /run/dbus
+        read_only: true
+    # Intel and AMD graphics: the render nodes and nothing else. The bind mount, unlike devices:,
+    # starts on a machine without graphics too.
+    device_cgroup_rules:
+      - "c 226:128 rw"
+      - "c 226:129 rw"
+      - "c 226:130 rw"
+      - "c 226:131 rw"
+      - "c 226:132 rw"
+      - "c 226:133 rw"
+      - "c 226:134 rw"
+      - "c 226:135 rw"
+    restart: unless-stopped
+    x-casaos:
+      envs:
+        - container: PUID
+          description:
+            en_US: The user highsea runs as, who owns your films.
+        - container: PGID
+          description:
+            en_US: The group highsea runs as.
+        - container: TZ
+          description:
+            en_US: The time zone.
+      ports:
+        - container: "3000"
+          description:
+            en_US: The admin, the web app and the apps' address.
+        - container: "6881"
+          description:
+            en_US: The torrent engine's incoming peers, TCP and UDP.
+        - container: "7368"
+          description:
+            en_US: Apps on your network find highsea by this broadcast.
+      volumes:
+        - container: /config
+          description:
+            en_US: The database, settings, logs and backups.
+        - container: /data
+          description:
+            en_US: Downloads and the library together, so imports hardlink instead of copying.
+        - container: /dev/dri
+          description:
+            en_US: Intel or AMD graphics, for hardware acceleration.
+        - container: /run/dbus
+          description:
+            en_US: The system bus, read only, so highsea can publish itself over mDNS through avahi.
+x-casaos:
+  id: tv.highsea.highsea
+  architectures:
+    - amd64
+    - arm64
+  main: highsea
+  author: highsea
+  developer: highsea
+  category: Media
+  title:
+    en_US: highsea
+  tagline:
+    en_US: Find, download and watch your films
+  description:
+    en_US: >-
+      highsea finds, downloads and organises your films, with their subtitles, and serves them to
+      your own apps. One self-hosted server in place of Radarr, Prowlarr, qBittorrent and Bazarr.
+  tips:
+    before_install:
+      en_US: >-
+        highsea sees /DATA as /data. Setup suggests /data/Downloads for downloads and
+        /data/Media/Movies for the library, both on one disk, so imports hardlink instead of
+        copying. You create the owner account when you first open it.
+  icon: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/highsea/icon.svg
+  screenshot_link:
+    - https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/highsea/screenshot-1.png
+  thumbnail: https://cdn.jsdelivr.net/gh/IceWhaleTech/CasaOS-AppStore@main/Apps/highsea/thumbnail.png
+  index: /
+  port_map: "3636"
+  scheme: http
+  version: "0.1.0"
+  update_at: "2026-10-28"
+  release_notes:
+    en_US: The first release in the store.
+  website: https://docs.highsea.tv
+  repo: https://github.com/highsea-tv/highsea-tv
+  support: https://github.com/highsea-tv/highsea-tv/issues
+  docs: https://docs.highsea.tv

@@ -13,10 +13,20 @@ name: highsea-e2e
 services:
   highsea:
     image: ${HIGHSEA_IMAGE:-highsea:ci}
+    # no PUID, PGID or TZ, and graphics handed over on a runner without any: the defaults as
+    # compose.yaml ships them (ADR 0057)
+    volumes:
+      - /dev/dri:/dev/dri
+    device_cgroup_rules:
+      - "c 226:128 rw"
+      - "c 226:129 rw"
+      - "c 226:130 rw"
+      - "c 226:131 rw"
+      - "c 226:132 rw"
+      - "c 226:133 rw"
+      - "c 226:134 rw"
+      - "c 226:135 rw"
     environment:
-      PUID: "1000"
-      PGID: "1000"
-      TZ: Etc/UTC
       HIGHSEA_FIXTURES_URL: http://fixtures:4000
       HIGHSEA_CATALOG_URL: http://fixtures:4000/catalog
       # the fixtures' catalog is signed with the development key, which production builds don't

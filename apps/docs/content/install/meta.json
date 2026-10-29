@@ -1,5 +1,13 @@
 {
   "title": "Installation",
   "defaultOpen": true,
-  "pages": ["prerequisites", "docker", "unraid", "synology", "truenas"]
+  "pages": [
+    "prerequisites",
+    "script",
+    "docker",
+    "unraid",
+    "synology",
+    "truenas",
+    "hardware-acceleration"
+  ]
 }

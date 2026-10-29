@@ -12,10 +12,10 @@ description: Add highsea to Unraid's Docker page from its template, with downloa
   - Shares: https://docs.unraid.net/unraid-os/using-unraid-to/manage-storage/shares/
   - The server's time zone, which Unraid passes to every container as TZ (xmlToCommand):
     https://github.com/unraid/webgui/blob/master/emhttp/plugins/dynamix.docker.manager/include/Helpers.php
-  - The template itself is templates/unraid/highsea.xml in the repository.
+  - The templates are templates/unraid/highsea.xml and highsea-nvidia.xml in the repository.
 */}
 
-Written for highsea 0.1.0 on Unraid 7, and checked on 7.3.4.
+Written for highsea 0.2.0-beta.3 on Unraid 7, and checked on 7.3.4.
 
 highsea isn't listed in Community Applications yet, so you add its template by hand once. After that, Unraid treats it like any other container.
 
@@ -34,6 +34,8 @@ wget -O /boot/config/plugins/dockerMan/templates-user/my-highsea.xml \
   https://raw.githubusercontent.com/highsea-tv/highsea-tv/main/templates/unraid/highsea.xml
 ```
 
+With an NVIDIA card, install the **Nvidia-Driver** plugin from the **Apps** tab first, and use `highsea-nvidia.xml` in place of `highsea.xml`. That template runs highsea with NVIDIA's runtime, so it can use the card for [hardware acceleration](/install/hardware-acceleration/).
+
 This saves the template on the flash drive, where Unraid keeps the templates for your own containers. Unraid makes that folder when you add your first container, so on a new server the first command makes it.
 
 ## Create the container
@@ -44,20 +46,22 @@ This saves the template on the flash drive, where Unraid keeps the templates for
    - **Config**: `/mnt/user/appdata/highsea`, where highsea keeps its database, settings and backups.
    - **Data**: `/mnt/user/data`, your media share.
    - **Web UI**: `3000`. Change it only if another container uses port 3000.
-   - **PUID** and **PGID**, under **Show more settings**: `99` and `100`, Unraid's `nobody` and `users`, which own your shares.
+   - **PUID** and **PGID**, under **Show more settings**: `99` and `100`, Unraid's `nobody` and `users`, which own your shares. Leave them as they are.
+   - **Graphics**, under **Show more settings**: `/dev/dri`, which gives highsea Intel or AMD graphics for [hardware acceleration](/install/hardware-acceleration/). On a server without them, the container starts all the same.
+   - **D-Bus**, under **Show more settings**: `/run/dbus`, which lets highsea announce itself through Unraid's own mDNS service. Leave it as it is.
 4. Choose **Apply**. Unraid downloads the image and starts the container. Wait until it says the command finished, then choose **Done**.
 
 ![Unraid's Add Container page with the highsea template's fields filled in](/images/unraid-add-container.png)
 
 highsea uses the time zone in **Settings › Date and Time**, which Unraid passes to every container.
 
-The template uses bridge networking, Unraid's default. Apps on your network find highsea by its broadcast on port 7368. If you'd like them to find it by mDNS too, set **Network Type** to **Host**; the ports then can't be changed, so check nothing else uses 3000 and 6881.
+The template uses bridge networking, Unraid's default. Apps on your network find highsea by its broadcast on port 7368, and by mDNS through Unraid's own service, so nothing needs changing.
 
 ## Run setup
 
 On the **Docker** page, select highsea's icon and choose **WebUI**. highsea opens its setup; [Install with Docker › Run setup](/install/docker/#run-setup) walks through each step.
 
-When setup asks for your folders, use the paths inside the container: `/data/media/movies` and `/data/downloads`. highsea says "Hardlinks will work" when both are on the `data` share.
+Setup finds `/data/media/movies` and `/data/downloads` inside the container, or makes them on an empty `data` share, so it asks only for the owner account. If your films are elsewhere on the share, setup asks for the folders: use the paths inside the container, under `/data`. highsea says "Hardlinks will work" when both are on the `data` share. On Review, **Address on your network** is the address you opened setup at, since the template uses a bridge network: check it's the server's address.
 
 ![The Docker page's menu for highsea, with WebUI highlighted](/images/unraid-webui-menu.png)
 

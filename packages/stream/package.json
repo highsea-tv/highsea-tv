@@ -1,0 +1,28 @@
+{
+  "name": "@highsea-tv/stream",
+  "version": "0.0.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "type": "module",
+  "exports": {
+    "./decision": "./src/decision/index.ts",
+    "./hardware": "./src/hardware/index.ts",
+    "./hls": "./src/hls/index.ts",
+    "./profiles": "./src/profiles/index.ts",
+    "./sessions": "./src/sessions/index.ts",
+    "./testing": "./src/testing/index.ts",
+    "./trickplay": "./src/trickplay/index.ts"
+  },
+  "scripts": {
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@highsea-tv/i18n": "workspace:*",
+    "@highsea-tv/media": "workspace:*",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@highsea-tv/config": "workspace:*",
+    "@types/node": "26.6.5"
+  }
+}

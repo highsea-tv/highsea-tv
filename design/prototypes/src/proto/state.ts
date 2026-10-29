@@ -6,7 +6,7 @@ export type Platform = 'admin' | 'web' | 'mobile' | 'tv'
 export type DataState = 'populated' | 'empty' | 'loading' | 'error'
 export type Width = 'fluid' | 1440 | 1024 | 768 | 390
 export type ThemeId = 'default' | 'oled' | 'high-contrast' | 'harbor'
-/** Who's signed in: the owner, an admin, or a user (who gets the admin's refusal page). */
+/** Who's signed in: the owner, an admin, or a user (whom the admin sends to the web client). */
 export type Role = 'owner' | 'admin' | 'user'
 export type TimeMode = 'play' | 'pause' | 'fast'
 /** How a client reaches its server (connectivity.md): on the LAN, failed over to remote, or not. */

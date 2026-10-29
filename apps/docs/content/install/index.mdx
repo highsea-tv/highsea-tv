@@ -10,16 +10,17 @@ description: Install highsea with Docker, or on Unraid, Synology or TrueNAS, and
   - The install guides beside this page, each followed on the version it names.
 */}
 
-Written for highsea 0.1.0. highsea runs as one Docker container, wherever you run it. Each guide below ends at highsea's setup screen, which takes about five minutes.
+Written for highsea 0.2.0-beta.3. highsea runs as one Docker container, wherever you run it. Each guide below ends at highsea's setup screen, which takes about five minutes.
 
 ## Before you start
 
-Check the [prerequisites](/install/prerequisites/): a 64-bit machine with Docker or a supported NAS, a folder for your downloads and films on one disk, a few ports and a free TMDB account.
+Check the [prerequisites](/install/prerequisites/): a 64-bit machine with Docker or a supported NAS, a folder for your downloads and films on one disk, and a few ports.
 
 ## Choose where highsea runs
 
 | Where | How you install it | Network | Checked on |
 | --- | --- | --- | --- |
+| [Linux, in one command](/install/script/) | `curl -fsSL https://get.highsea.tv \| sh` | The host's own network | Docker Engine 29.8 |
 | [Linux, macOS or Windows](/install/docker/) | A compose file and `docker compose up` | The host's own network on Linux, published ports on macOS and Windows | Docker Engine 29.8 |
 | [Unraid](/install/unraid/) | highsea's template on the **Docker** page | Published ports | Unraid 7.3.4 |
 | [Synology](/install/synology/) | A project in Container Manager | Published ports | DSM 7.4.1 |
@@ -28,11 +29,16 @@ Check the [prerequisites](/install/prerequisites/): a 64-bit machine with Docker
 On the host's own network, apps find the server by themselves. With published ports they still find it on most networks, and when one doesn't, you give it the server's address.
 
 <Cards>
+  <Card title="One command on Linux" href="/install/script/" description="An installer that writes the compose file and starts highsea." />
   <Card title="Docker on Linux, macOS or Windows" href="/install/docker/" description="Docker Compose on any machine. The other guides build on this one." />
   <Card title="Unraid" href="/install/unraid/" description="A template for the Docker page, with Unraid's shares." />
   <Card title="Synology" href="/install/synology/" description="A Container Manager project on DSM 7.2 or later." />
   <Card title="TrueNAS" href="/install/truenas/" description="A custom app from YAML on TrueNAS 25.04 or later." />
 </Cards>
+
+## Hardware acceleration
+
+A graphics chip makes films that need converting play smoothly, and converts HDR for screens that can't show it. [Hardware acceleration](/install/hardware-acceleration/) says how to give highsea's container your Intel, AMD or NVIDIA graphics.
 
 ## After installing
 

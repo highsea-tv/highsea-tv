@@ -11,9 +11,10 @@ description: Run highsea as a Container Manager project on DSM 7.2 or later.
   - Container Manager: https://www.synology.com/en-us/dsm/feature/docker
   - Shared folders: https://kb.synology.com/en-global/DSM/help/DSM/AdminCenter/file_share_create?version=7
   - The compose file is templates/synology/compose.yaml in the repository.
+  - The user highsea runs as: docker/entrypoint.sh (ADR 0057).
 */}
 
-Written for highsea 0.1.0 on DSM 7.2 or later with Container Manager, and checked on DSM 7.4.1.
+Written for highsea 0.2.0-beta.3 on DSM 7.2 or later with Container Manager, and checked on DSM 7.4.1.
 
 Container Manager runs highsea from a compose file, which it calls a project. Its containers use published ports rather than the NAS's own network, which highsea supports.
 
@@ -23,16 +24,7 @@ Container Manager runs highsea from a compose file, which it calls a project. It
 - In **Control Panel › Shared Folder**, make a shared folder called `data` on the volume with the most room. Inside it, in File Station, make `downloads` and `media/movies`. Keeping both in one shared folder is what lets highsea hardlink finished downloads into the library instead of copying them.
 - In File Station, make a folder for highsea's own files, such as `docker/highsea`, and a `config` folder inside it. Container Manager may have made the `docker` shared folder already. Container Manager doesn't make a missing folder for a container: without `config`, the project stops with "Bind mount failed" and the folder's name.
 
-## Find your user and group
-
-highsea runs as the user and group that own your files. Turn on SSH in **Control Panel › Terminal & SNMP**, sign in as your DSM user, and run:
-
-```sh
-id
-# uid=1026(alex) gid=100(users) …
-```
-
-The first user made on DSM is usually 1026, and `users` is 100. Make sure this user can read and write the `data` and `docker` shared folders, in **Control Panel › Shared Folder › Edit › Permissions**.
+highsea runs as the DSM user who made `downloads` and `media`, so the files it writes are yours. Make sure that user can read and write the `data` and `docker` shared folders, in **Control Panel › Shared Folder › Edit › Permissions**.
 
 ## Create the project
 
@@ -49,26 +41,33 @@ services:
   highsea:
     image: ghcr.io/highsea-tv/highsea:latest
     container_name: highsea
-    environment:
-      PUID: "1026"
-      PGID: "100"
-      TZ: Etc/UTC
     volumes:
       - ./config:/config
       - /volume1/data:/data
+      - /dev/dri:/dev/dri
+      - /run/dbus:/run/dbus:ro
     ports:
       - "3000:3000"
       - "6881:6881/tcp"
       - "6881:6881/udp"
       - "7368:7368/udp"
+    device_cgroup_rules:
+      - "c 226:128 rw"
+      - "c 226:129 rw"
+      - "c 226:130 rw"
+      - "c 226:131 rw"
+      - "c 226:132 rw"
+      - "c 226:133 rw"
+      - "c 226:134 rw"
+      - "c 226:135 rw"
     restart: unless-stopped
 ```
 
-Before you paste it, change:
+If your `data` shared folder is on another volume, change `/volume1/data` to match. Nothing else needs changing: highsea takes your time zone from your browser during setup.
 
-- `PUID` and `PGID` to the numbers `id` showed.
-- `/volume1/data` if your `data` shared folder is on another volume.
-- `TZ` to your time zone, such as `Europe/Berlin`.
+The `/dev/dri` line and the rules under it give highsea the graphics chip on models with an Intel Celeron or Pentium, such as the DS920+ and DS1520+, for [hardware acceleration](/install/hardware-acceleration/). On a model without one, the project starts all the same.
+
+The `/run/dbus` line lets highsea announce itself through DSM's own mDNS service, so apps on your network can find it by name.
 
 `./config` is a folder inside the project's path, so highsea's database and backups sit next to its compose file.
 
@@ -78,9 +77,9 @@ Before you paste it, change:
 
 Open `http://<your NAS's address>:3000`. highsea opens its setup; [Install with Docker › Run setup](/install/docker/#run-setup) walks through each step.
 
-When setup asks for your folders, use the paths inside the container: `/data/media/movies` and `/data/downloads`.
+Setup finds `/data/media/movies` and `/data/downloads` inside the container, or makes them in an empty `data` folder, so it asks only for the owner account. On Review, **Address on your network** is the address you opened setup at, since the project uses a bridge network: check it's the NAS's address.
 
-Apps on your network find highsea by its broadcast on port 7368. If one doesn't, give it the NAS's address.
+Apps on your network find highsea by its broadcast on port 7368 and by mDNS. If one doesn't, give it the NAS's address.
 
 ## Firewall
 

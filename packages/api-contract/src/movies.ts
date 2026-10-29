@@ -257,6 +257,11 @@ export const RootFolder = z
      * 8c): the add dialog starts on it, and import lists, the library import and migration use it.
      */
     languageProfileId: z.string().nullable(),
+    /**
+     * Folders the library scan found here that it couldn't match surely, waiting for Library
+     * import (the owner's change at 4.1a's review).
+     */
+    waiting: z.number().int().nonnegative(),
   })
   .openapi('RootFolder')
 

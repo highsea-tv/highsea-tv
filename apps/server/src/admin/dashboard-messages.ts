@@ -151,4 +151,8 @@ export const widgets = defineMessages({
   'page.system': 'System',
   'page.movies': 'Movies',
   'page.activity': 'Activity',
+  'page.now-playing': 'Now playing',
+  'playing.none': 'Nobody is watching',
+  'playing.paused': ' · paused',
+  'playing.so-far': '{title}, watched so far',
 })

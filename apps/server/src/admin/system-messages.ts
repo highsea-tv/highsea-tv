@@ -80,6 +80,7 @@ export const system = defineMessages({
   'task.movies.availability': 'Check movie availability',
   'task.movies.wanted': 'Search for wanted movies',
   'task.notifications.prune': 'Clear old notifications',
+  'task.playback.prune': 'Clear what was watched over 30 days ago',
   'task.subtitles.upgrade': 'Upgrade subtitles',
   'task.subtitles.wanted': 'Search for wanted subtitles',
   // ---------------------------------------------------------------- status

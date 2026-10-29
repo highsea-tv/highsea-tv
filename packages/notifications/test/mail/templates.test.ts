@@ -43,6 +43,14 @@ const PAYLOADS: { [E in MessageEvent]: EventPayloads[E] } = {
   health: { level: 'warning', source: 'Disk space', message: '18 GB free.', cleared: false },
   update: { version: '0.2.0' },
   'movie-added': { count: 1, source: 'Blender Open Movies', movies: [SINTEL], by: 'list' },
+  'playback-started': {
+    movie: SINTEL,
+    person: 'Sam',
+    device: 'Living room TV',
+    method: 'transcode',
+    sent: '1080p · H.264 · AAC stereo',
+    away: true,
+  },
   test: {},
 }
 

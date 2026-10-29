@@ -353,6 +353,7 @@ describe('appearance', () => {
       'downloads',
       'subtitles',
       'curation',
+      'playback',
     ])
   })
 })

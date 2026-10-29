@@ -160,7 +160,13 @@ export {
   type StoredFormat,
   type StoredProfile,
 } from './profiles.ts'
-export { type FiledCounts, normalizeFolder, type RootFolders } from './root-folders.ts'
+export {
+  type FiledCounts,
+  normalizeFolder,
+  ROOT_WAITING_KEY,
+  type RootFolders,
+  type RootWaiting,
+} from './root-folders.ts'
 export { matchScore } from './search.ts'
 export {
   COLON_REPLACEMENTS,
@@ -173,6 +179,7 @@ export {
 } from './settings.ts'
 export { CHUNK, chunks, escapeLike } from './sql.ts'
 export { type TagMode, type Tags, tagsMatch } from './tags.ts'
+export { audioTracks, codecName, trackId, trackIndex, versionDetail } from './tracks.ts'
 export {
   nodeFs,
   type TransferFs,
@@ -182,7 +189,14 @@ export {
   transfer,
   transferMessage,
 } from './transfer.ts'
-export { watchOf } from './watch.ts'
+export {
+  createWatch,
+  NO_PREFS,
+  type PlaybackPrefs,
+  playedOf,
+  type Watch,
+  watchOf,
+} from './watch.ts'
 export {
   createLibraryWatch,
   type LibraryWatch,

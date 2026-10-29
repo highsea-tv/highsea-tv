@@ -107,8 +107,24 @@ describe('messages', () => {
       { t, now: NOW },
     )
     expect(health).toMatchObject({ level: 'error', title: 'VPN needs attention' })
+    const playing = render(
+      'playback-started',
+      {
+        movie: SINTEL,
+        person: 'Sam',
+        device: 'Living room TV',
+        method: 'transcode',
+        sent: '720p · H.264 · AAC stereo',
+        away: true,
+      },
+      { t, now: NOW },
+    )
+    expect(playing.text).toBe(
+      'Sam is watching Sintel (2010). Transcoded on Living room TV, away from home. 720p · H.264 · AAC stereo.',
+    )
+    expect(playing.url).toBe(SINTEL.url)
     // no exclamation marks anywhere in the catalog
-    for (const m of [imported, failed, added, health]) expect(m.text).not.toContain('!')
+    for (const m of [imported, failed, added, health, playing]) expect(m.text).not.toContain('!')
   })
 })
 

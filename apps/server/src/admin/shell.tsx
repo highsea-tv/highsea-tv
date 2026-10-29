@@ -130,8 +130,10 @@ function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => vo
   const movies = useQuery('movies-count', (c) => c.movies.list({ query: { limit: 1 } }), [
     'movies.updated',
   ])
+  const playing = useQuery('sessions', (c) => c.sessions.list(), ['sessions.updated'])
   const counts: Partial<Record<Page['id'], number>> = {
     movies: movies.data?.total || undefined,
+    'now-playing': playing.data?.sessions.filter((s) => !s.stopped).length || undefined,
   }
 
   const card =
@@ -182,6 +184,8 @@ function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => vo
               }}
             />
           )}
+          {/* the web client, for watching (checkpoint 4.2a) */}
+          {i === groups.length - 1 && <NavItem icon="tv" label={t('nav.watch')} href={WEB_APP} />}
         </NavGroup>
       ))}
     </Sidebar>
@@ -255,6 +259,15 @@ function usePaletteGroups(shell: Shell, search: string): CommandGroup[] {
             .split(',')
             .map((k) => k.trim()),
           onSelect: shell.openAccount,
+        },
+        {
+          id: 'watch',
+          label: t('nav.watch'),
+          icon: 'tv',
+          keywords: t('keywords.watch')
+            .split(',')
+            .map((k) => k.trim()),
+          onSelect: () => window.location.assign(WEB_APP),
         },
         { id: 'sign-out', label: t('palette.signOut'), icon: 'sign-out', onSelect: signOut },
       ],
@@ -351,6 +364,9 @@ function AdminStatusBar() {
  * Same-origin links go through Next's router, so the shell and its data stay put between pages.
  * The design system's links are plain anchors; one handler here covers them all.
  */
+/** The web client (apps/web), where everyone watches; Users are sent there (ADR 0032). */
+const WEB_APP = '/web/'
+
 function useClientLinks() {
   const router = useRouter()
   return useCallback(
@@ -367,6 +383,8 @@ function useClientLinks() {
       )
         return
       if (a.origin !== window.location.origin) return
+      // the web client is its own app (served from apps/web's build), not one of Next's routes
+      if (a.pathname === '/web' || a.pathname.startsWith('/web/')) return
       e.preventDefault()
       router.push(a.pathname + a.search + a.hash)
     },
@@ -397,7 +415,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
       window.location.assign(`/login?next=${encodeURIComponent(path)}`)
   }, [session.status, session.error, path])
 
-  // no longer staff: a fresh load shows the refusal page (ADR 0032)
+  // no longer staff: a fresh load sends them to the web app (ADR 0032)
   useEffect(() => {
     if (live === 'user') window.location.reload()
   }, [live])

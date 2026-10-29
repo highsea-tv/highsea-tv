@@ -10,10 +10,13 @@
 // - one whose size or modification time changed is probed again;
 // - one that's gone clears its version's file, and with Stop monitoring deleted files on (Settings
 //   › Media management), the movie stops being monitored.
+// - a folder that's no movie's, new under a root folder or there when the root folder was added,
+//   goes to the library import's `addNew`: added in place when its match is sure, else left for
+//   Library import (the owner's change at 4.1a's review, as Jellyfin's scan adds what it finds).
 // A root folder that can't be read (an unmounted disk) is skipped whole, so a missing disk never
 // reads as every file deleted. Safe to repeat (ADR 0022): a second scan finds nothing to do.
 import { promises as fsp } from 'node:fs'
-import { basename, dirname, extname } from 'node:path'
+import { basename, dirname, extname, join, relative, sep } from 'node:path'
 import { schema } from '@highsea-tv/db'
 import { eq } from 'drizzle-orm'
 import { writeFileFacts } from '../shared/file-facts.ts'
@@ -24,6 +27,7 @@ import { isWithin } from '../shared/paths.ts'
 import { announce, type Ctx, TOPICS } from './context.ts'
 import type { Imports, StoredFileInfo } from './import.ts'
 import type { Library } from './library.ts'
+import type { LibraryImport } from './library-import.ts'
 
 const { mediaItems, versions, mediaFiles } = schema
 
@@ -34,7 +38,12 @@ export const SCAN_EVERY_MS = 12 * 60 * 60 * 1000
 const MAX_FILES = 1_000_000
 
 export type ScanResult = {
+  /** Files recorded against movies already in the library. */
   added: number
+  /** Movies added from new folders whose match was sure. */
+  movies: number
+  /** New folders left for Library import. */
+  waiting: number
   changed: number
   removed: number
   /** Root folders that couldn't be read, left alone. */
@@ -43,10 +52,15 @@ export type ScanResult = {
 
 export function createLibraryScan(
   ctx: Ctx,
-  deps: { media: Media; library: Library; imports: Imports },
+  deps: {
+    media: Media
+    library: Library
+    imports: Imports
+    addNew: LibraryImport['addNew']
+  },
 ) {
   const { db, events } = ctx
-  const { media, library, imports } = deps
+  const { media, library, imports, addNew } = deps
   const log = ctx.logger.child('scan')
 
   const readable = (dir: string) =>
@@ -141,7 +155,14 @@ export function createLibraryScan(
    * by watching) when it's inside one.
    */
   async function scan({ folder }: { folder?: string } = {}): Promise<ScanResult> {
-    const result: ScanResult = { added: 0, changed: 0, removed: 0, unreadable: [] }
+    const result: ScanResult = {
+      added: 0,
+      movies: 0,
+      waiting: 0,
+      changed: 0,
+      removed: 0,
+      unreadable: [],
+    }
     const roots = media.rootFolders.list().map((r) => r.path)
     const scopes = folder ? (roots.some((r) => isWithin(r, folder)) ? [folder] : []) : roots
     const settings = media.mediaManagement.get()
@@ -185,20 +206,30 @@ export function createLibraryScan(
       }
 
       const fresh = found.filter((f) => !knownPaths.has(f.path))
-      if (fresh.length) {
-        const movies = db
-          .select()
-          .from(mediaItems)
-          .where(eq(mediaItems.type, 'movie'))
-          .all()
-          .filter((m) => isWithin(root, m.path)) as ItemRow[]
-        for (const f of fresh) {
-          const row = owner(movies, f.path)
-          if (row && (await addedFile(row, f))) result.added++
+      const movies = db
+        .select()
+        .from(mediaItems)
+        .where(eq(mediaItems.type, 'movie'))
+        .all()
+        .filter((m) => isWithin(root, m.path)) as ItemRow[]
+      // a video in no movie's folder: its title folder (the root's child) is new
+      const newFolders = new Set<string>()
+      for (const f of fresh) {
+        const row = owner(movies, f.path)
+        if (row) {
+          if (await addedFile(row, f)) result.added++
+          continue
         }
+        const rel = relative(root, f.path).split(sep)
+        if (rel.length > 1 && rel[0]) newFolders.add(join(root, rel[0]))
+      }
+      if (newFolders.size) {
+        const fromNew = await addNew(root, [...newFolders].sort(), { retry: scope !== root })
+        result.movies += fromNew.added
+        result.waiting += fromNew.waiting
       }
     }
-    if (result.added || result.changed || result.removed)
+    if (result.added || result.movies || result.changed || result.removed)
       log.info('the library scan found changes', { ...result, folder: folder ?? null })
     return result
   }

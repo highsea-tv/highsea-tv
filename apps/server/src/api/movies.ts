@@ -110,6 +110,8 @@ export function registerMovies(app: OpenAPIHono<Env>) {
     audit(c, 'rootfolder.added', { type: 'rootfolder', id: folder.id })
     // Settings › Media management and Storage's folders refetch on it
     c.get('runtime').events.emit({ topic: 'settings.updated' })
+    // what's already there: the scan adds the sure matches, the rest wait for Library import
+    c.get('runtime').movies.libraryScan.queue(folder.path)
     return c.json(folder, 201)
   })
 

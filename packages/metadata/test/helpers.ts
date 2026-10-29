@@ -22,9 +22,12 @@ export const DAY = 24 * 60 * 60 * 1000
 
 export async function setup({
   key = true,
+  builtInKey,
   onRequest,
 }: {
   key?: boolean
+  /** highsea's own key, as the image carries it. */
+  builtInKey?: string
   onRequest?: ReplayOptions['onRequest']
 } = {}) {
   const { db, raw } = openDatabase(':memory:')
@@ -46,6 +49,7 @@ export async function setup({
     sealer: createSealer(generateSecretKey()),
     fetch,
     imagesDir,
+    builtInKey,
     sleep: async (ms) => {
       waits.push(ms)
       clock.advance(ms)

@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
 import { createSocket } from 'node:dgram'
+import { EventEmitter } from 'node:events'
 import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { PassThrough } from 'node:stream'
 import {
+  avahiResponder,
+  type Child,
+  chooseResponder,
   createDiscoveryResponder,
   createMdnsAdvertiser,
   DISCOVERY_MESSAGE,
@@ -13,6 +18,7 @@ import {
   PRIVATE_RANGES,
   parseTrustedProxies,
   resolveClient,
+  SYSTEM_BUS,
 } from '../src/index.ts'
 import { selfSigned } from './self-signed.ts'
 
@@ -208,5 +214,146 @@ describe('built-in TLS certificate', () => {
     writeFileSync(join(config, 'tls', 'key.pem'), selfSigned().key)
     const result = loadCertificate(config)
     expect(result.ok).toBe(false)
+  })
+})
+
+describe('mDNS through the host’s avahi', () => {
+  /** A stand-in for avahi-publish: records its arguments and says what it's told to. */
+  function fakePublish() {
+    const runs: {
+      args: string[]
+      child: Child & EventEmitter
+      out: PassThrough
+      killed: string[]
+    }[] = []
+    const run = (args: string[]) => {
+      const out = new PassThrough()
+      const err = new PassThrough()
+      const killed: string[] = []
+      const child = Object.assign(new EventEmitter(), {
+        stdout: out,
+        stderr: err,
+        kill: (signal?: string) => killed.push(signal ?? 'SIGTERM') > 0,
+      }) as unknown as Child & EventEmitter
+      runs.push({ args, child, out, killed })
+      return child
+    }
+    return { runs, run }
+  }
+  const service = {
+    name: 'Harbor',
+    type: 'highsea',
+    port: 3000,
+    txt: { id: 'srv_1', version: '0.2.0' },
+  }
+
+  test('runs avahi-publish with the service and TXT record, and stops it on end', async () => {
+    const { runs, run } = fakePublish()
+    const r = avahiResponder(run)
+    const s = r.createService(service)
+    const advertised = s.advertise()
+    runs[0]?.out.write("Established under name 'Harbor'\n")
+    await advertised
+    expect(runs[0]?.args).toEqual([
+      '-s',
+      'Harbor',
+      '_highsea._tcp',
+      '3000',
+      'id=srv_1',
+      'version=0.2.0',
+    ])
+    expect(r.via).toBe('avahi')
+    await s.end()
+    expect(runs[0]?.killed).toEqual(['SIGTERM'])
+  })
+
+  test('fails with avahi-publish’s last words when it exits', async () => {
+    const { runs, run } = fakePublish()
+    const advertised = avahiResponder(run).createService(service).advertise()
+    runs[0]?.child.emit('exit', 1)
+    await expect(advertised).rejects.toThrow('avahi-publish exited with 1')
+  })
+
+  test('fails when avahi doesn’t answer in time', async () => {
+    const { runs, run } = fakePublish()
+    await expect(avahiResponder(run, 10).createService(service).advertise()).rejects.toThrow(
+      'in time',
+    )
+    expect(runs[0]?.killed).toEqual(['SIGTERM'])
+  })
+
+  test('chooses avahi when the bus and avahi-publish are there, with highsea’s own as the fallback', async () => {
+    const ciao = avahiResponder(fakePublish().run)
+    const chosen = await chooseResponder({
+      exists: () => true,
+      portFree: async () => true,
+      avahi: () => avahiResponder(fakePublish().run),
+      ciao: async () => ciao,
+    })
+    expect(chosen.via).toBe('avahi')
+    expect(await chosen.fallback?.()).toBe(ciao)
+  })
+
+  test('falls back when the host has a bus but avahi doesn’t publish', async () => {
+    const avahi = fakePublish()
+    const calls: string[] = []
+    const own: MdnsResponder = {
+      createService: () => ({
+        advertise: async () => void calls.push('own advertise'),
+        end: async () => {},
+        destroy: async () => {},
+      }),
+      shutdown: async () => {},
+    }
+    const infos: string[] = []
+    const logger = {
+      info: (m: string) => infos.push(m),
+      warn: (m: string) => infos.push(`warn: ${m}`),
+      debug() {},
+      error() {},
+      child: () => logger,
+    }
+    const mdns = createMdnsAdvertiser({
+      responder: () =>
+        chooseResponder({
+          exists: () => true,
+          avahi: () => avahiResponder(avahi.run),
+          portFree: async () => true,
+          ciao: async () => own,
+        }),
+      logger: logger as never,
+    })
+    const started = mdns.start({ name: 'Harbor', id: 'srv_1', version: '0.2.0', port: 3000 })
+    await Bun.sleep(0)
+    avahi.runs[0]?.child.emit('exit', 1)
+    await started
+    expect(calls).toEqual(['own advertise'])
+    expect(infos).toEqual([
+      'the host’s avahi didn’t publish highsea, so it answers mDNS itself',
+      'advertising over mDNS',
+    ])
+    expect(avahi.runs[0]?.killed).toEqual(['SIGTERM'])
+  })
+
+  test('chooses ciao without the bus, when port 5353 can be shared', async () => {
+    const ciao = avahiResponder(fakePublish().run)
+    const seen: string[] = []
+    const chosen = await chooseResponder({
+      exists: (p) => {
+        seen.push(p)
+        return false
+      },
+      portFree: async () => true,
+      ciao: async () => ciao,
+    })
+    expect(chosen).toBe(ciao)
+    expect(seen).toEqual([SYSTEM_BUS])
+  })
+
+  test('says plainly that another mDNS service holds the port, rather than trying', async () => {
+    const chosen = await chooseResponder({ exists: () => false, portFree: async () => false })
+    await expect(chosen.createService(service).advertise()).rejects.toThrow(
+      'another mDNS service holds port 5353',
+    )
   })
 })

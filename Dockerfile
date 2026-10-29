@@ -5,9 +5,10 @@
 # Checkpoint 9a slims it (phase-3-checkpoint-9.md › Docker), from Docker's multi-stage builds
 # (https://docs.docker.com/build/building/multi-stage/):
 #   manifests   the workspace's package.json files and bun.lock, and nothing else
-#   build       the whole workspace installed, and the admin built
+#   build       the whole workspace installed, and the admin and the web app (`/web`) built
 #   production  only what `node server.ts` loads (scripts/image.ts): production dependencies, the
-#               server's workspace packages as source without their tests, and Next's build
+#               server's workspace packages as source without their tests, Next's build, and
+#               the web app's static files
 #   runtime     the slim image, from `production` alone
 # CI builds it natively for linux/amd64 and linux/arm64 (.github/workflows/ci.yml).
 
@@ -37,6 +38,7 @@ RUN --mount=type=secret,id=ca,required=false \
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN cd apps/server && bun run build
+RUN cd apps/web && bun run build
 
 # ---- production: a clean install of the server's production dependencies, checked, plus the
 # sources it runs (scripts/image.ts says what goes in and what stays out)
@@ -62,9 +64,28 @@ RUN apt-get update \
 # highsea connects (ADR 0042): `ip` (iproute2) and `wg` (wireguard-tools) run as separate programs,
 # and wireguard-go stands in where the kernel has no WireGuard. setpriv (util-linux, already in the
 # image) keeps CAP_NET_ADMIN for the PUID user. Their sources: docker/NOTICE.
+# avahi-publish (avahi-utils) publishes highsea through the host's avahi when the container is
+# given /run/dbus (ADR 0020's 2026-10-28 section)
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends wireguard-tools iproute2 wireguard-go \
+  && apt-get install -y --no-install-recommends wireguard-tools iproute2 wireguard-go avahi-utils \
   && rm -rf /var/lib/apt/lists/*
+# Hardware acceleration (ADR 0056), on amd64 only, where Intel and AMD graphics are: Intel's media
+# driver for VAAPI, oneVPL's runtime and dispatcher for Quick Sync (libmfx-gen1.2, libvpl2), Mesa's
+# VAAPI driver for AMD, and Mesa's Vulkan drivers so libplacebo tone maps on AMD and Intel GPUs. The
+# driver is the non-free build (intel-media-va-driver-non-free, Debian's non-free component, added
+# for it alone): its GPU kernels come from Intel as binaries, and it's the one that encodes on chips
+# before Ice Lake, such as the J4125, without the HuC firmware loaded on the host
+# (https://github.com/intel/media-driver#build-types). NVIDIA's libraries come from the host,
+# through NVIDIA's container toolkit. Their sources: docker/NOTICE.
+ARG TARGETARCH
+RUN if [ "$TARGETARCH" = amd64 ]; then \
+    sed -i 's/^Components: main$/Components: main non-free/' /etc/apt/sources.list.d/debian.sources \
+    && grep -q '^Components: main non-free$' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends intel-media-va-driver-non-free libmfx-gen1.2 \
+      libvpl2 mesa-va-drivers mesa-vulkan-drivers \
+    && rm -rf /var/lib/apt/lists/*; \
+  fi
 WORKDIR /app
 COPY --from=production /production /app
 COPY docker/entrypoint.sh /usr/local/bin/highsea-entrypoint
@@ -87,6 +108,13 @@ RUN --mount=type=secret,id=trakt_id,required=false \
   if [ -s /run/secrets/trakt_secret ]; then \
     install -D -m 0444 /run/secrets/trakt_secret /usr/share/highsea/trakt-client-secret; \
   fi
+# highsea's TMDB key, the API Read Access Token, the same way (`--secret id=tmdb,env=HIGHSEA_TMDB_READ_TOKEN`;
+# install-simplicity.md, answer 7). An owner's own key in Settings › General wins. Without either,
+# System › Health says so.
+RUN --mount=type=secret,id=tmdb,required=false \
+  if [ -s /run/secrets/tmdb ]; then \
+    install -D -m 0444 /run/secrets/tmdb /usr/share/highsea/tmdb-read-token; \
+  fi
 ENV NODE_ENV=production \
   NEXT_TELEMETRY_DISABLED=1 \
   HIGHSEA_CONFIG_DIR=/config \
@@ -94,9 +122,10 @@ ENV NODE_ENV=production \
   HIGHSEA_OPENSUBTITLES_KEY_FILE=/usr/share/highsea/opensubtitles.key \
   HIGHSEA_TRAKT_CLIENT_ID_FILE=/usr/share/highsea/trakt-client-id \
   HIGHSEA_TRAKT_CLIENT_SECRET_FILE=/usr/share/highsea/trakt-client-secret \
+  HIGHSEA_TMDB_READ_TOKEN_FILE=/usr/share/highsea/tmdb-read-token \
   PORT=3000 \
-  PUID=1000 \
-  PGID=1000
+  NVIDIA_VISIBLE_DEVICES=all \
+  NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
 VOLUME ["/config", "/data"]
 EXPOSE 3000 6881/tcp 6881/udp 7368/udp
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --start-interval=2s --retries=3 \

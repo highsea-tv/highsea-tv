@@ -99,6 +99,27 @@
       "when": 1792700595695,
       "tag": "0013_scale",
       "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "6",
+      "when": 1793129305780,
+      "tag": "0014_playback",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "6",
+      "when": 1793149613301,
+      "tag": "0015_streaming",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "6",
+      "when": 1793178482755,
+      "tag": "0016_now_playing",
+      "breakpoints": true
     }
   ]
 }

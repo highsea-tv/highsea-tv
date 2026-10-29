@@ -201,11 +201,10 @@ describe('A6 media pages', () => {
     expect(page().getByRole('dialog', { name: /Add Scarlet Street/ })).toBeTruthy()
   })
 
-  test('a user gets the refusal page, not the movie', async () => {
-    await open('/admin/movies/107', 'user')
+  test('a user is sent to the web client, not the movie', async () => {
+    const { location } = await open('/admin/movies/107', 'user')
     expect(page().queryByRole('button', { name: 'Add movie' })).toBeNull()
-    expect(page().getByText('This is where the server’s owner and admins run it')).toBeTruthy()
-    await clean()
+    expect(location.history.at(-1)).toBe('/web')
   })
 })
 
@@ -365,9 +364,9 @@ describe('A9 indexers', () => {
     expect((await client(mock).indexers.list()).some((i) => i.definitionId === 'bosun')).toBe(true)
   })
 
-  test('users are turned away', async () => {
-    await open('/admin/indexers', 'user')
-    expect(page().getByText('This is where the server’s owner and admins run it')).toBeTruthy()
+  test('users are sent to the web client', async () => {
+    const { location } = await open('/admin/indexers', 'user')
+    expect(location.history.at(-1)).toBe('/web')
   })
 })
 

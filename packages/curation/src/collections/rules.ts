@@ -4,7 +4,6 @@
 // types and comparisons are the contract's `RULE_FIELDS`; the library answers the rules in SQL
 // (the runtime's collection query).
 import {
-  PLAYBACK_FIELDS,
   RULE_FIELDS,
   type RuleCondition,
   type RuleField,
@@ -33,6 +32,8 @@ export const RESOLUTIONS = [480, 576, 720, 1080, 2160] as const
  * is Dolby Vision), any of them, or none.
  */
 export const HDR_CHOICES = ['any', 'dolby-vision', 'hdr10', 'hlg', 'none'] as const
+/** `watched`'s values: whether the person reading the collection has watched the title. */
+export const WATCHED = ['yes', 'no'] as const
 
 /** `1080`, `1080p` and `4K` are the same answer. */
 export function resolutionOf(value: string): number | null {
@@ -120,6 +121,8 @@ function problem(c: Condition, ratings: Ratings): string | null {
         return 'Choose 480p, 576p, 720p, 1080p or 4K.'
       if (c.field === 'hdr' && list.some((x) => !(HDR_CHOICES as readonly string[]).includes(x)))
         return 'Choose an HDR format, any HDR, or none.'
+      if (c.field === 'watched' && list.some((x) => !(WATCHED as readonly string[]).includes(x)))
+        return 'Choose watched or not watched.'
       if (c.field === 'collection' && list.some((x) => !isSmartId(x) && !/^\d+$/.test(x)))
         return 'Choose a collection.'
       return null
@@ -140,8 +143,6 @@ export function checkRules(g: RuleGroup, ratings: Ratings = null) {
     if (r.kind === 'group' && r.rules.some((x: { kind: string }) => x.kind === 'group'))
       throw invalid('Groups go one level deep.', 'rules', r.id)
   for (const c of conditionsOf(g)) {
-    if (PLAYBACK_FIELDS.includes(c.field))
-      throw invalid('Watch state comes with playback, so it can’t be used yet.', 'rules', c.id)
     if (!(RULE_FIELDS[c.field].ops as readonly string[]).includes(c.op))
       throw invalid('That comparison doesn’t go with that field.', 'rules', c.id)
     const why = problem(c, ratings)
@@ -248,7 +249,9 @@ export const collectionMessages = defineMessages({
   'edition.not': 'not {names}',
   'size.atMost': '{n} GB or smaller',
   'size.atLeast': '{n} GB or larger',
-  watch: 'watch state',
+  watched: 'watched',
+  'watched.not': 'not watched',
+  'lastPlayed.inLast': 'played in the last {n, plural, one {# day} other {# days}}',
   and: '{first} and {last}',
   or: '{first} or {last}',
   group: '({words})',
@@ -340,8 +343,9 @@ export function describeCondition(c: Condition, label: Labels): string {
     case 'size':
       return t(c.op === 'atMost' ? 'size.atMost' : 'size.atLeast', { n })
     case 'watched':
+      return t(values[0] === 'no' ? 'watched.not' : 'watched')
     case 'lastPlayed':
-      return t('watch')
+      return t('lastPlayed.inLast', { n })
     default:
       // the fields whose words are "{field} {names}" or "{field}.not {names}"
       return t(not ? `${c.field}.not` : c.field, { names: names() })

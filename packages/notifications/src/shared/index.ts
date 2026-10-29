@@ -44,6 +44,15 @@ export type EventPayloads = {
    * the list's name, or the person's when `by` is `person`.
    */
   'movie-added': { count: number; source: string; movies: MovieRef[]; by?: 'list' | 'person' }
+  /** Checkpoint 4.3a: someone started watching. `sent` is "1080p · H.264 · AAC stereo". */
+  'playback-started': {
+    movie: MovieRef
+    person: string
+    device: string
+    method: 'direct-play' | 'direct-stream' | 'transcode'
+    sent: string
+    away: boolean
+  }
   test: Record<string, never>
 }
 
@@ -92,6 +101,12 @@ export const notificationMessages = defineMessages({
   'added.bodyPerson': 'Added by {source}.',
   'added.bodyNames': 'From {source}: {names}.',
   'added.bodyMore': 'From {source}: {names} and {more, plural, one {# other} other {# others}}.',
+  'playing.title': '{person} is watching {movie}',
+  'playing.direct-play': 'Direct play',
+  'playing.direct-stream': 'Direct stream',
+  'playing.transcode': 'Transcoded',
+  'playing.body': '{how} on {device}. {sent}.',
+  'playing.bodyAway': '{how} on {device}, away from home. {sent}.',
   'test.title': 'A test from highsea',
   'test.body': 'This connection works. Messages you choose will arrive here.',
   text: '{title}. {body}',
@@ -241,6 +256,19 @@ function parts_(
             ? t('added.bodyMore', { source: p.source, names: named.join(', '), more })
             : t('added.bodyNames', { source: p.source, names }),
         image: first?.posterUrl ?? null,
+      }
+    }
+    case 'playback-started': {
+      const p = payload as EventPayloads['playback-started']
+      return {
+        level: 'info',
+        title: t('playing.title', { person: p.person, movie: movieName(t, p.movie) }),
+        body: t(p.away ? 'playing.bodyAway' : 'playing.body', {
+          how: t(`playing.${p.method}`),
+          device: p.device,
+          sent: p.sent,
+        }),
+        ...of(p.movie),
       }
     }
     case 'test':

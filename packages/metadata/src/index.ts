@@ -14,7 +14,7 @@ export function createMetadata(deps: MetadataDeps) {
 
   return {
     settings: {
-      /** `{ key: { set, last4 }, language, region }`. The key is never returned. */
+      /** `{ key: { set, last4, builtIn }, language, region }`. The key is never returned. */
       get: () => settings.view(),
       /** Validates the key with TMDB (`GET /3/authentication`), then stores it sealed. */
       async setKey(credential: string) {

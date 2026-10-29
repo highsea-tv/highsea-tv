@@ -4,31 +4,47 @@
 # Create, with that folder as the path and this file as its Compose file
 # (https://www.synology.com/en-us/dsm/feature/docker).
 #
-# Change before creating the project:
-# - /volume1/data, to the shared folder that holds downloads and the library together, so imports
-#   hardlink instead of copying;
-# - PUID and PGID, to your DSM user and its group (`id` over SSH shows them; 100 is `users`).
+# /volume1/data is the shared folder that holds downloads and the library together, so imports
+# hardlink instead of copying; change it if yours is named otherwise. highsea runs as whoever owns
+# what's in it, your DSM user and the `users` group (100).
 #
 # Published ports, as in compose.bridge.yaml: apps on your network find highsea by its broadcast on
-# 7368/udp, but not by mDNS, which needs the host's network (ADR 0020). An app that doesn't find it
-# can be given its address.
+# 7368/udp, and by mDNS through DSM's own avahi, over the host's D-Bus (/run/dbus; ADR 0020).
 services:
   highsea:
     image: ghcr.io/highsea-tv/highsea:latest
     container_name: highsea
-    environment:
-      PUID: "1026"
-      PGID: "100"
-      TZ: Etc/UTC
+    # highsea runs as whoever owns /data, and takes the time zone from your browser at setup.
+    # To choose instead:
+    # environment:
+    #   PUID: "1026"
+    #   PGID: "100"
+    #   TZ: Europe/London
     volumes:
       # highsea's config, in this project's folder. Make the folder first: Container Manager
       # doesn't make a missing one, and the project stops with "Bind mount failed"
       - ./config:/config
       - /volume1/data:/data
+      - /dev/dri:/dev/dri
+      - /run/dbus:/run/dbus:ro
     ports:
       - "3000:3000"
       - "6881:6881/tcp"
       - "6881:6881/udp"
       - "7368:7368/udp"
+    # Intel graphics (the + models with a Celeron or Pentium, such as the DS920+ and DS1520+), for
+    # hardware acceleration (ADR 0056, 0057). The bind mount, unlike `devices:`, starts on a model
+    # without graphics too (Docker makes an empty folder), and the rules let highsea open the render
+    # nodes (226:128 to 226:135) and nothing else. highsea checks what it finds at start and joins
+    # the device's group by itself.
+    device_cgroup_rules:
+      - "c 226:128 rw"
+      - "c 226:129 rw"
+      - "c 226:130 rw"
+      - "c 226:131 rw"
+      - "c 226:132 rw"
+      - "c 226:133 rw"
+      - "c 226:134 rw"
+      - "c 226:135 rw"
     # a restore in System › Backups restarts highsea by exiting with code 75 (ADR 0047)
     restart: unless-stopped

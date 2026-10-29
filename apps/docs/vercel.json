@@ -1,13 +1,82 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "redirects": [
-    { "source": "/install-docker/", "destination": "/install/docker/", "permanent": true },
-    { "source": "/install-unraid/", "destination": "/install/unraid/", "permanent": true },
-    { "source": "/install-synology/", "destination": "/install/synology/", "permanent": true },
-    { "source": "/install-truenas/", "destination": "/install/truenas/", "permanent": true },
-    { "source": "/install-docker", "destination": "/install/docker/", "permanent": true },
-    { "source": "/install-unraid", "destination": "/install/unraid/", "permanent": true },
-    { "source": "/install-synology", "destination": "/install/synology/", "permanent": true },
-    { "source": "/install-truenas", "destination": "/install/truenas/", "permanent": true }
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "host",
+          "value": "get\\.highsea\\.tv"
+        }
+      ],
+      "destination": "/install.sh",
+      "permanent": false
+    },
+    {
+      "source": "/:path((?!install\\.sh).*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "get\\.highsea\\.tv"
+        }
+      ],
+      "destination": "https://docs.highsea.tv/install/script/",
+      "permanent": false
+    },
+    {
+      "source": "/install-docker/",
+      "destination": "/install/docker/",
+      "permanent": true
+    },
+    {
+      "source": "/install-unraid/",
+      "destination": "/install/unraid/",
+      "permanent": true
+    },
+    {
+      "source": "/install-synology/",
+      "destination": "/install/synology/",
+      "permanent": true
+    },
+    {
+      "source": "/install-truenas/",
+      "destination": "/install/truenas/",
+      "permanent": true
+    },
+    {
+      "source": "/install-docker",
+      "destination": "/install/docker/",
+      "permanent": true
+    },
+    {
+      "source": "/install-unraid",
+      "destination": "/install/unraid/",
+      "permanent": true
+    },
+    {
+      "source": "/install-synology",
+      "destination": "/install/synology/",
+      "permanent": true
+    },
+    {
+      "source": "/install-truenas",
+      "destination": "/install/truenas/",
+      "permanent": true
+    }
+  ],
+  "headers": [
+    {
+      "source": "/install.sh(.sha256)?",
+      "headers": [
+        {
+          "key": "Content-Type",
+          "value": "text/plain; charset=utf-8"
+        },
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=300, must-revalidate"
+        }
+      ]
+    }
   ]
 }

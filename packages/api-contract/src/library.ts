@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The client API (client-library.md, client-detail.md, client-search.md): what the household's apps
 // read. A title is addressed by its type and TMDB id, so a show and a movie with the same number
-// stay apart. Watch positions are stored per person and title; playback writes them in Phase 4,
-// and these shapes carry them now so they're settled.
+// stay apart. Each person's watch state rides along: where they are, and whether they've watched
+// it (checkpoint 4.1, ADR 0054).
 import { createRoute, z } from '@hono/zod-openapi'
 import { API_PREFIX, access, errors, IsoDate, IsoDay, json } from './common.ts'
 import { Art, CollectionRef, Credit, DiscoverMovie, Video } from './metadata.ts'
@@ -29,13 +29,18 @@ export const ClientItem = z
     releaseDate: IsoDay.nullable(),
     addedAt: IsoDate,
     status: MovieStatus,
-    /** Whether a version has a file to play. False for every title until files arrive (checkpoint 6). */
+    /**
+     * Whether a version has a file to play. Any file plays, transcoded where the device can't take
+     * it as it is (checkpoint 4.1), so the codec doesn't matter.
+     */
     playable: z.boolean(),
     art: Art,
     /** 0–1 through the title, or null when not started or finished. */
     progress: z.number().min(0).max(1).nullable(),
     /** Seconds in, for Resume; 0 when not started. */
     position: z.number().min(0),
+    /** Watched to the end (past 90%) or marked watched, and not marked unwatched since. */
+    watched: z.boolean(),
   })
   .openapi('ClientItem')
 
@@ -52,6 +57,23 @@ export const ClientSubtitle = z
   })
   .openapi('ClientSubtitle')
 
+/** One of a file's sound tracks. */
+export const ClientAudio = z
+  .object({
+    /** `{fileId}:{stream index}`, as the player's picks name it. */
+    id: z.string(),
+    /** ISO 639-1 where the file says, otherwise empty. */
+    language: z.string().openapi({ example: 'en' }),
+    /** "English · Commentary", or "English · 5.1". */
+    label: z.string(),
+    /** The track's title, or its channels ("5.1"). */
+    detail: z.string().nullable(),
+    codec: z.string().openapi({ example: 'eac3' }),
+    channels: z.number().int(),
+    default: z.boolean(),
+  })
+  .openapi('ClientAudio')
+
 export const ClientVersion = z
   .object({
     id: z.string(),
@@ -59,9 +81,11 @@ export const ClientVersion = z
     /** "4K · HDR10 · HEVC · 18.2 GB" once it has a file; null until then. */
     detail: z.string().nullable(),
     playable: z.boolean(),
+    /** Its sound tracks, in the file's order. */
+    audio: z.array(ClientAudio),
     /**
      * Its subtitle tracks (checkpoint 7): the file's own streams, then the sidecars highsea keeps.
-     * Playing them waits for `/stream`.
+     * Text tracks play as WebVTT from checkpoint 4.1b.
      */
     subtitles: z.array(ClientSubtitle),
   })
@@ -135,7 +159,7 @@ export const SearchSection = z
 /** Results grouped by kind, the best-matching kind first. Empty kinds are left out. */
 export const SearchResults = z.object({ sections: z.array(SearchSection) }).openapi('SearchResults')
 
-const ItemParams = z.object({
+export const ItemParams = z.object({
   type: z.enum(ITEM_TYPES).openapi({ param: { name: 'type', in: 'path' } }),
   id: z.coerce
     .number<number>()
@@ -144,7 +168,7 @@ const ItemParams = z.object({
     .openapi({ param: { name: 'id', in: 'path' }, example: 603 }),
 })
 
-const ITEMS = `${API_PREFIX}/items`
+export const ITEMS = `${API_PREFIX}/items`
 
 export const library = {
   list: createRoute({
@@ -194,6 +218,7 @@ export const library = {
 } as const
 
 export type ClientItem = z.infer<typeof ClientItem>
+export type ClientAudio = z.infer<typeof ClientAudio>
 export type ClientSubtitle = z.infer<typeof ClientSubtitle>
 export type ClientVersion = z.infer<typeof ClientVersion>
 export type ClientDetail = z.infer<typeof ClientDetail>

@@ -84,7 +84,7 @@ export function WebDetail() {
 
   if (detail.status === 'loading')
     return (
-      <div aria-busy className={cn('mx-auto grid max-w-[1680px] gap-6 pt-24', gutter)}>
+      <div aria-busy className={cn('mx-auto w-full grid max-w-[1680px] gap-6 pt-24', gutter)}>
         <Skeleton className="h-10 w-80" />
         <SkeletonText lines={3} />
         <Skeleton className="h-10 w-56" />
@@ -92,7 +92,9 @@ export function WebDetail() {
     )
   if (detail.status === 'error')
     return (
-      <main className={cn('mx-auto grid min-h-[60vh] max-w-[1680px] place-items-center', gutter)}>
+      <main
+        className={cn('mx-auto w-full grid min-h-[60vh] max-w-[1680px] place-items-center', gutter)}
+      >
         <EmptyState
           icon="movie"
           tone="error"
@@ -179,7 +181,7 @@ export function WebDetail() {
         </div>
       </section>
 
-      <div className="mx-auto grid max-w-[1680px] gap-10 pt-4">
+      <div className="mx-auto w-full grid max-w-[1680px] gap-10 pt-4">
         <section aria-labelledby="watch-with" className={cn('grid max-w-[56rem] gap-3', gutter)}>
           <h2 id="watch-with" className="text-title">
             Watch with

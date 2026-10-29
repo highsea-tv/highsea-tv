@@ -37,7 +37,7 @@ highsea writes each file under a temporary name and renames it into place, so a 
 
 ## Permissions
 
-Leave **Set folder permissions** off unless something else that reads your library, such as another media player running as a different user, can't open what highsea writes. Then `775` lets everyone in your group write too. The user highsea runs as comes from `PUID` and `PGID` in your compose file; see [Install with Docker](/install/docker/).
+Leave **Set folder permissions** off unless something else that reads your library, such as another media player running as a different user, can't open what highsea writes. Then `775` lets everyone in your group write too. highsea runs as whoever owns your data folder, unless `PUID` and `PGID` in your compose file choose another user; see [Install with Docker](/install/docker/#plan-your-folders).
 
 ## Archives
 

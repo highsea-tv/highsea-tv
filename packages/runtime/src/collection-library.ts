@@ -279,10 +279,10 @@ export function createCollectionLibrary(deps: {
   }
 
   return {
-    evaluate(def, lookup) {
+    evaluate(def, lookup, userId) {
       return db
         .all<{ itemId: string; tmdbId: number; playable: number }>(
-          collectionQuery(def, lookup, clock.now(), ratings()),
+          collectionQuery(def, lookup, clock.now(), ratings(), userId ?? null),
         )
         .map((r) => ({ itemId: r.itemId, tmdbId: r.tmdbId, playable: !!r.playable }))
     },

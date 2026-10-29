@@ -1,0 +1,101 @@
+---
+title: Hardware acceleration
+description: Give highsea's container your Intel, AMD or NVIDIA graphics, so films that need converting play smoothly and HDR looks right.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - What highsea looks for and checks: packages/runtime/src/hardware.ts and
+    packages/stream/src/hardware/ (index.ts, messages.ts).
+  - The render node's group: docker/entrypoint.sh.
+  - The compose lines: compose.yaml and templates/ in the repository (ADR 0057).
+  - NVIDIA: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
+    (nvidia-ctk runtime configure --set-as-default) and the image's NVIDIA_VISIBLE_DEVICES and
+    NVIDIA_DRIVER_CAPABILITIES (Dockerfile).
+  - Intel's drivers: https://github.com/intel/media-driver
+*/}
+
+Written for highsea 0.2.0-beta.3.
+
+Most films play as they are. When a device can't play one, highsea converts it as it plays, which is called transcoding. The processor can do that, but a graphics chip does it many times faster with far less power, and it can convert HDR for screens that can't show it. A NAS's processor often can't keep up with 4K at all.
+
+When highsea starts, it checks the graphics it finds by itself, in the background, and uses the first that passes. There's nothing to press: a new install starts using its graphics chip soon after it first starts. Until a check has passed, and whenever the chip fails, the processor transcodes. [Settings › Playback](/settings/playback/#hardware-acceleration) shows what it found and lets you change it.
+
+## Which graphics highsea uses
+
+| Graphics | How highsea uses it | What it needs |
+| --- | --- | --- |
+| Intel (most NAS boxes with a Celeron, Pentium or Core) | **VAAPI** or **Intel Quick Sync** | Nothing: the compose files pass `/dev/dri` through, and the drivers are in highsea's image |
+| AMD | **VAAPI** | Nothing, as for Intel |
+| NVIDIA | **NVIDIA NVENC** | NVIDIA's driver and container toolkit on the host, as Docker's default runtime |
+| A Mac's own graphics | **VideoToolbox** | highsea running on the Mac itself, outside Docker, which isn't a supported install yet |
+
+The Intel and AMD drivers are in the image for 64-bit Intel and AMD processors (amd64). On ARM boards, only NVIDIA can be used.
+
+**VAAPI** works on Intel graphics from Broadwell (2014) on, with Intel's media driver, which the image carries. **Intel Quick Sync** needs newer graphics, from Tiger Lake (2020) on. Many NAS boxes have older Celerons, such as the J4125 in Synology's DS920+ and DS1520+: use VAAPI on those, which their check passes.
+
+## Intel and AMD
+
+There's nothing to do. The compose files and NAS templates highsea gives have these lines, which pass the graphics chip's render nodes through and nothing else:
+
+```yaml
+services:
+  highsea:
+    volumes:
+      - /dev/dri:/dev/dri
+    device_cgroup_rules:
+      - "c 226:128 rw"
+      # … to "c 226:135 rw"
+```
+
+On a computer without graphics, Docker makes an empty `/dev/dri` folder and highsea uses the processor. When it starts, highsea joins the device's group by itself, so you don't need `group_add` or to change the device's permissions.
+
+If you wrote your own compose file before, `devices: - /dev/dri:/dev/dri` works too, as long as the host has the device.
+
+If highsea finds no graphics on a computer that has them, check that the host has the chip's device. On the host, run:
+
+```sh
+ls -l /dev/dri
+# crw-rw---- 1 root render 226, 128 Oct 28 09:12 renderD128
+```
+
+If there's no `renderD128`, the host's graphics driver isn't loaded, and highsea can't use the chip. Your NAS's or distribution's documentation says how to load it.
+
+## NVIDIA
+
+The compose file needs nothing for NVIDIA. The one step is on the host:
+
+1. Install NVIDIA's driver, then NVIDIA's container toolkit, following [NVIDIA's install guide](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html). Check it with `nvidia-smi` on the host.
+2. Make NVIDIA's runtime Docker's default, and restart Docker:
+
+   ```sh
+   sudo nvidia-ctk runtime configure --runtime=docker --set-as-default
+   sudo systemctl restart docker
+   ```
+
+3. Start highsea's container again.
+
+highsea's image asks NVIDIA's runtime for every NVIDIA card and its video libraries. When a card is in the computer but not in the container, **Settings › Playback** and **System › Health** say so.
+
+## On a NAS
+
+- **Synology:** models with an Intel Celeron, such as the DS720+, DS920+ and DS1520+, have `/dev/dri`, and the project's compose file passes it through. Models with an AMD Ryzen processor, such as the DS1621+, have no graphics chip.
+- **Unraid:** highsea's template fills **Graphics** with `/dev/dri`. For NVIDIA, install the **Nvidia-Driver** plugin and use the `highsea-nvidia.xml` template, as [Install on Unraid](/install/unraid/#add-the-template) shows.
+- **TrueNAS:** the app's YAML passes `/dev/dri` through. For NVIDIA, tick **Install NVIDIA Drivers** in **Apps › Configuration › Settings**.
+
+## Check it
+
+As it starts, highsea checks each graphics path it found that hasn't been checked, one at a time: it transcodes a short HDR clip on it and keeps how many frames a second it made. The first check also makes the clip, which can take a few minutes on a NAS's processor. Once a check passes, **Automatic** uses it.
+
+To see the result, open **Settings › Playback**. Under **Hardware acceleration**, highsea lists what it found and each check's result. **Check again** runs a check whenever you like. See [Settings › Playback](/settings/playback/#hardware-acceleration) for what each line means.
+
+If the check fails, it says why:
+
+- **highsea couldn't open /dev/dri/renderD128.** The device isn't passed through, or the container can't use it. Check the `/dev/dri` and `device_cgroup_rules` lines, and that the device exists on the host. Rootless Docker and Podman can't open a device the user running them doesn't own.
+- **Quick Sync needs Intel graphics from Tiger Lake (2020) on.** The graphics are older than Quick Sync's runtime supports. Check **VAAPI** instead, which works on them.
+- **The Intel media driver didn't load.** Quick Sync couldn't start on these graphics. Check **VAAPI** instead, which works on the same graphics without it.
+- **highsea couldn't find an NVIDIA GPU.** NVIDIA's container toolkit isn't installed, or it isn't Docker's default runtime.
+- **ffmpeg opened the GPU, but the transcode failed**, followed by ffmpeg's own words. **System › Logs** has the rest of ffmpeg's output.
+
+A check is forgotten when the graphics or their driver change, after an update for example, and highsea checks them again by itself the next time it starts. A check that failed isn't run again by itself: choose **Check again** once you've fixed what it said.

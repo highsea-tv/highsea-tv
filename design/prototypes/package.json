@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@highsea-tv/brand": "workspace:*",
+    "@highsea-tv/client": "workspace:*",
     "@highsea-tv/core": "workspace:*",
     "@highsea-tv/fixtures": "workspace:*",
     "@highsea-tv/i18n": "workspace:*",

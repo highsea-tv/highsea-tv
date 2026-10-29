@@ -32,6 +32,13 @@
 //
 //   bun scripts/image.ts size <image> <budget in MB>
 //     Lists the image's largest folders, and fails above the budget (the plan's size check).
+//   bun scripts/image.ts hardware <image>
+//     Fails unless the image's ffmpeg lists the hardware encoders and filters highsea uses, and, on
+//     amd64, the drivers are there: Intel's and Mesa's VAAPI drivers and Mesa's Vulkan ICDs
+//     (phase-4-checkpoint-3.md › Hardware acceleration, ADR 0056).
+//   bun scripts/image.ts user <image>
+//     Fails unless the entrypoint runs highsea as the user ADR 0057 says: /data's owner, or the first
+//     thing in it not owned by root, or 1000:1000, with PUID and PGID winning when they're set.
 //   bun scripts/image.ts attestations <OCI layout folder>
 //     Reads an image exported with `type=oci` and fails unless it has the OCI labels GitHub reads
 //     and both attestations: BuildKit's provenance and the SBOM. They're stored as an attestation
@@ -239,15 +246,16 @@ function production(from: string, to: string) {
       )
     },
   })
-  console.log(`The production tree: ${needed.length} workspaces, in ${to}`)
+  // the web app's static files (`/web`, ADR 0003's 4.2a section): served, never run, so none of
+  // its sources or dependencies come too; server.ts finds them at ../web/dist
+  const web = join(from, 'apps', 'web', 'dist')
+  if (!existsSync(join(web, 'index.html')))
+    throw new Error('The web app isn’t built: run `bun run build` in apps/web first.')
+  cpSync(web, join(to, 'apps', 'web', 'dist'), { recursive: true })
+  console.log(`The production tree: ${needed.length} workspaces and the web app, in ${to}`)
 }
 
 function size(image: string, budgetMb: number) {
-  const inspect = spawnSync('docker', ['image', 'inspect', '--format', '{{.Size}}', image], {
-    encoding: 'utf8',
-  })
-  if (inspect.status !== 0) throw new Error(`No image called ${image}: ${inspect.stderr}`)
-  const mb = Math.round(Number(inspect.stdout.trim()) / 1_000_000)
   const du = spawnSync(
     'docker',
     [
@@ -261,6 +269,13 @@ function size(image: string, budgetMb: number) {
     ],
     { encoding: 'utf8' },
   )
+  // after a container has run: Docker's containerd image store reports the compressed content's
+  // size until the image is unpacked (`docker image ls` shows both), which would pass any image
+  const inspect = spawnSync('docker', ['image', 'inspect', '--format', '{{.Size}}', image], {
+    encoding: 'utf8',
+  })
+  if (inspect.status !== 0) throw new Error(`No image called ${image}: ${inspect.stderr}`)
+  const mb = Math.round(Number(inspect.stdout.trim()) / 1_000_000)
   console.log(`The largest folders in ${image}:`)
   for (const line of du.stdout.trim().split('\n')) {
     const [kb, path] = line.split('\t')
@@ -271,6 +286,120 @@ function size(image: string, budgetMb: number) {
     console.error(
       `The image is ${mb - budgetMb} MB over its budget. Find what grew above, or raise the budget in ci.yml with the reason.`,
     )
+    process.exit(1)
+  }
+}
+
+/** What each architecture's image must have for hardware acceleration (ADR 0056). */
+const HARDWARE: Record<string, { encoders: string[]; filters: string[]; files: string[] }> = {
+  amd64: {
+    encoders: ['libx264', 'h264_vaapi', 'h264_qsv', 'h264_nvenc'],
+    filters: ['scale_vaapi', 'tonemap_vaapi', 'vpp_qsv', 'scale_cuda', 'libplacebo', 'zscale'],
+    files: [
+      '/usr/lib/x86_64-linux-gnu/dri/iHD_drv_video.so',
+      '/usr/lib/x86_64-linux-gnu/dri/radeonsi_drv_video.so',
+      '/usr/lib/x86_64-linux-gnu/libmfx-gen.so.1.2',
+      '/usr/share/vulkan/icd.d/radeon_icd.json',
+      '/usr/share/vulkan/icd.d/intel_icd.json',
+    ],
+  },
+  // no Intel or AMD graphics on arm64 boards; NVENC comes from the host's toolkit
+  arm64: {
+    encoders: ['libx264', 'h264_nvenc'],
+    filters: ['scale_cuda', 'libplacebo', 'zscale'],
+    files: [],
+  },
+}
+
+function hardware(image: string) {
+  const arch = spawnSync('docker', ['image', 'inspect', '--format', '{{.Architecture}}', image], {
+    encoding: 'utf8',
+  })
+  if (arch.status !== 0) throw new Error(`No image called ${image}: ${arch.stderr}`)
+  const want = HARDWARE[arch.stdout.trim()]
+  if (!want) throw new Error(`No hardware list for ${arch.stdout.trim()}`)
+  const run = (script: string) =>
+    spawnSync('docker', ['run', '--rm', '--entrypoint', 'sh', image, '-c', script], {
+      encoding: 'utf8',
+    }).stdout
+  // `-encoders` and `-filters` print a flags column, then the name
+  const names = (out: string) =>
+    new Set(
+      out
+        .split('\n')
+        .map((l) => /^\s*[A-Z.|]{2,6}\s+(\w+)\s/.exec(l)?.[1])
+        .filter(Boolean),
+    )
+  const encoders = names(run('ffmpeg -hide_banner -encoders'))
+  const filters = names(run('ffmpeg -hide_banner -filters'))
+  const files = run(want.files.map((f) => `[ -e ${f} ] && echo ${f}`).join('; ') || 'true')
+    .trim()
+    .split('\n')
+  const missing = [
+    ...want.encoders.filter((e) => !encoders.has(e)).map((e) => `the encoder ${e}`),
+    ...want.filters.filter((f) => !filters.has(f)).map((f) => `the filter ${f}`),
+    ...want.files.filter((f) => !files.includes(f)),
+  ]
+  console.log(
+    `${image} (${arch.stdout.trim()}): ${want.encoders.length} encoders, ${want.filters.length} filters and ${want.files.length} driver files looked for`,
+  )
+  if (missing.length) {
+    console.error(`Hardware acceleration is missing:\n- ${missing.join('\n- ')}`)
+    process.exit(1)
+  }
+}
+
+/** The entrypoint's choice of user (ADR 0057): what's in /data, the variables set, and the answer. */
+const USERS: { name: string; prepare: string; env: string[]; want: string }[] = [
+  { name: '/data owned by a user', prepare: 'chown 1234:5678 /data', env: [], want: '1234:5678' },
+  {
+    name: "root's /data with a user's folder in it",
+    prepare: 'mkdir /data/films && chown 2000:2001 /data/films',
+    env: [],
+    want: '2000:2001',
+  },
+  { name: "root's empty /data", prepare: 'true', env: [], want: '1000:1000' },
+  {
+    name: 'PUID and PGID set',
+    prepare: 'chown 1234:5678 /data',
+    env: ['PUID=4321', 'PGID=8765'],
+    want: '4321:8765',
+  },
+  {
+    name: 'PUID alone set',
+    prepare: 'chown 1234:5678 /data',
+    env: ['PUID=4321'],
+    want: '4321:5678',
+  },
+]
+
+function user(image: string) {
+  const wrong: string[] = []
+  for (const { name, prepare, env, want } of USERS) {
+    // /data is a fresh tmpfs, made ready as root before the real entrypoint runs `id` in its place
+    const script = `${prepare} && exec /usr/local/bin/highsea-entrypoint sh -c 'echo "$(id -u):$(id -g)"'`
+    const run = spawnSync(
+      'docker',
+      [
+        'run',
+        '--rm',
+        '--tmpfs',
+        '/data',
+        ...env.flatMap((e) => ['-e', e]),
+        '--entrypoint',
+        'sh',
+        image,
+        '-c',
+        script,
+      ],
+      { encoding: 'utf8' },
+    )
+    const got = run.stdout.trim()
+    console.log(`${name}: ${got || run.stderr.trim()}`)
+    if (got !== want) wrong.push(`${name}: ran as ${got || 'nothing'}, not ${want}`)
+  }
+  if (wrong.length) {
+    console.error(`The entrypoint chose the wrong user:\n- ${wrong.join('\n- ')}`)
     process.exit(1)
   }
 }
@@ -398,11 +527,13 @@ if (import.meta.main) {
   const self = relative(process.cwd(), import.meta.path)
   if (command === 'production' && a && b) production(a, b)
   else if (command === 'size' && a && Number(b) > 0) size(a, Number(b))
+  else if (command === 'hardware' && a) hardware(a)
+  else if (command === 'user' && a) user(a)
   else if (command === 'attestations' && a) attestations(attestationProblems(a))
   else if (command === 'published' && a) attestations(publishedProblems(a))
   else {
     console.error(
-      `Usage: bun ${self} production <from> <to>\n       bun ${self} size <image> <budget in MB>\n       bun ${self} attestations <OCI layout folder>\n       bun ${self} published <name@digest>`,
+      `Usage: bun ${self} production <from> <to>\n       bun ${self} size <image> <budget in MB>\n       bun ${self} hardware <image>\n       bun ${self} user <image>\n       bun ${self} attestations <OCI layout folder>\n       bun ${self} published <name@digest>`,
     )
     process.exit(1)
   }

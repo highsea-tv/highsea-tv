@@ -1,6 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-only
 # Every push and pull request: lint, types, tests (Bun), the platform under Node, the license
-# audit, the dependency check, the admin's build, highsea connects' leak test, and the image on
+# audit, the dependency check, the admin's build, highsea connects' leak test, the web player in
+# Chromium and Firefox (phase-4-checkpoint-2.md › Tests, 4.2b), and the image on
 # both platforms: built, booted healthy, inside its size budget, with its labels and attestations.
 # Nothing is pushed (phase-3-checkpoint-9.md › Images: "CI builds both platforms … and pushes
 # nothing").
@@ -86,6 +87,37 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: 1
 
+  # the web player in real browsers: the seeded production build with generated clips, one played
+  # directly and one as HLS, a subtitle drawn, a seek far ahead, and the place kept on leaving
+  # (scripts/sweeps/playback.ts). ffmpeg makes the clips and the server's streams, and its
+  # libraries are what Firefox decodes H.264 and AAC with on Linux
+  # (https://support.mozilla.org/kb/html5-audio-and-video-firefox)
+  playback:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: ~/.bun/install/cache
+          key: bun-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('bun.lock') }}
+          restore-keys: bun-${{ runner.os }}-${{ runner.arch }}-
+      - run: bun install --frozen-lockfile
+      - name: ffmpeg
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends ffmpeg
+      - name: Chromium and Firefox for Playwright
+        run: bunx playwright-core install --with-deps chromium firefox
+      - name: Playback in Chromium and Firefox
+        run: bun scripts/sweeps/playback.ts
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
   # highsea connects' kill switch on a real kernel: the runner's kernel has WireGuard, and sudo
   # gives the test the root it needs to make a network namespace and a second peer
   leak:
@@ -132,7 +164,10 @@ jobs:
       # arm64 to the same packages (arm64 measured at 2078 MB in all). ffmpeg 7.1 brings LLVM 19 and
       # Mesa's Gallium, and unar's libgnustep-base1.31 declares `Depends: dpkg-dev`, which brings
       # Perl, binutils and make (apt-cache show libgnustep-base1.31)
-      IMAGE_BUDGET_MB: 2200
+      # 2026-10-28, 2200 to 2300 (checkpoint 4.3b, the owner's answer 3): the hardware drivers on
+      # amd64, about 134 MB measured in a trixie container: Intel's media driver (42 MB), libmfx-gen
+      # (8.7 MB), libvpl and Mesa's VAAPI driver, and Mesa's Vulkan drivers (83 MB) for libplacebo
+      IMAGE_BUDGET_MB: 2300
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
@@ -175,6 +210,10 @@ jobs:
           test "$(docker inspect --format '{{.State.ExitCode}}' highsea)" = 0
       - name: Its size and largest folders
         run: bun scripts/image.ts size highsea:ci "$IMAGE_BUDGET_MB"
+      - name: Its hardware encoders, filters and drivers
+        run: bun scripts/image.ts hardware highsea:ci
+      - name: The user its entrypoint runs highsea as
+        run: bun scripts/image.ts user highsea:ci
       # The same build again from the cache, exported as an OCI layout with what a release pushes:
       # BuildKit's provenance (mode=min, its default) and the SBOM, which is opt-in
       # (https://docs.docker.com/build/metadata/attestations/). `tar=false` writes a folder

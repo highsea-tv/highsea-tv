@@ -31,6 +31,7 @@ export const NOTIFICATION_EVENTS = [
   'health',
   'update',
   'movie-added',
+  'playback-started',
 ] as const
 export type NotificationEvent = (typeof NOTIFICATION_EVENTS)[number]
 

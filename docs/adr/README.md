@@ -6,7 +6,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | --- | --- | --- |
 | [0001](0001-design-first-sequencing.md) | Design-first sequencing | Accepted |
 | [0002](0002-bun-monorepo-multiple-apps.md) | Bun monorepo with multiple apps | Accepted |
-| [0003](0003-server-runtime-custom-entry.md) | Server runtime: custom Node entry hosting Next.js + Hono | Accepted; amended 2026-10-23 |
+| [0003](0003-server-runtime-custom-entry.md) | Server runtime: custom Node entry hosting Next.js + Hono | Accepted; amended 2026-10-27 and 2026-10-28 |
 | [0004](0004-sqlite-drizzle.md) | SQLite + Drizzle for server data | Accepted |
 | [0005](0005-in-process-torrent-engine.md) | In-process TypeScript torrent engine | Accepted; amended by 0037 |
 | [0006](0006-public-api-openapi-sdk.md) | Public API: Hono + OpenAPI, typed SDK | Accepted |
@@ -23,7 +23,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0017](0017-web-home-full-bleed-hero.md) | The web home uses a full-bleed hero | Accepted |
 | [0018](0018-admin-data-through-the-api.md) | The admin UI reads and writes through the public API | Accepted |
 | [0019](0019-database-driver-seam.md) | One schema, two SQLite drivers | Accepted |
-| [0020](0020-discovery-port.md) | LAN discovery on UDP 7368, plus mDNS | Accepted |
+| [0020](0020-discovery-port.md) | LAN discovery on UDP 7368, plus mDNS | Accepted; amended 2026-10-28 |
 | [0021](0021-i18n-message-catalogs.md) | Strings live in typed message catalogs | Accepted |
 | [0022](0022-job-queue.md) | A SQLite job queue, at least once | Accepted |
 | [0023](0023-accounts-sessions-devices.md) | Every sign-in is a device | Accepted; amended 2026-10-20 |
@@ -35,27 +35,31 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0029](0029-external-services.md) | External services: one injected fetch, recorded responses | Accepted |
 | [0030](0030-metadata-cache.md) | The metadata cache: TMDB’s responses beside the library, under six months | Accepted |
 | [0031](0031-quality-and-the-decision-engine.md) | Quality and the decision engine: Radarr's documented behaviour, written fresh | Accepted |
-| [0032](0032-administrative-and-normal-access.md) | Administrative and normal access: Owner, Admin, User | Accepted |
+| [0032](0032-administrative-and-normal-access.md) | Administrative and normal access: Owner, Admin, User | Accepted; amended 2026-10-27 |
 | [0033](0033-indexer-definitions.md) | Indexer definitions: highsea's own declarative format, written by us | Accepted; amended 2026-10-20 |
 | [0034](0034-catalog-service-and-signing.md) | The catalog service and signing | Accepted |
 | [0035](0035-indexer-health-and-search.md) | Indexer health, rate limits and search fan-out | Accepted |
 | [0036](0036-domain-packages-with-subpath-exports.md) | Domain packages with a subpath export per kind | Accepted |
 | [0037](0037-the-torrent-engine-as-built.md) | The torrent engine as built: our session layer, one socket factory | Accepted |
 | [0038](0038-downloads.md) | Downloads: grabbing, the queue, protection and seeding | Accepted |
-| [0039](0039-importing.md) | Importing: an idempotent pipeline with Radarr's naming | Accepted |
+| [0039](0039-importing.md) | Importing: an idempotent pipeline with Radarr's naming | Accepted; amended 2026-10-27 |
 | [0040](0040-test-media.md) | Test media generated with ffmpeg, and a local swarm | Accepted |
 | [0041](0041-migration-importers.md) | The migration importers: Radarr and qBittorrent through their APIs | Accepted |
 | [0042](0042-vpn-connections.md) | VPN connections: one binding, four modes | Accepted |
 | [0043](0043-subtitles.md) | Subtitles: providers in code, Bazarr's scoring, originals kept | Accepted |
 | [0044](0044-subtitle-sync.md) | The subtitle sync engine: speech, correlation, splits and a confidence that can veto | Accepted |
 | [0045](0045-automation.md) | Automation: RSS, the backlog sweep, upgrades, import lists and the calendar feed | Accepted |
-| [0046](0046-notifications.md) | Notifications: the event catalogue, channels as code, delivery, email and web push | Accepted |
+| [0046](0046-notifications.md) | Notifications: the event catalogue, channels as code, delivery, email and web push | Accepted; amended 2026-10-28 |
 | [0047](0047-operations.md) | The owner's tools: backups and restore, the log, crash reports, updates and /metrics | Accepted |
 | [0048](0048-curation.md) | Curation: announcements and featured sections, resolved per person and app | Accepted |
-| [0049](0049-smart-collections.md) | Smart collections: rules compiled to SQL, evaluated when read | Accepted |
-| [0050](0050-release-and-versioning.md) | Release and versioning: one SemVer version, two channels, a prepared commit and a gated workflow | Accepted |
-| [0051](0051-playback-engine.md) | The playback engine: direct play, then direct stream, then HLS transcodes made on demand | Proposed |
-| [0052](0052-device-profiles.md) | Device profiles: what each client plays, built in and reported, in one shape | Proposed |
-| [0053](0053-clients-build-and-distribution.md) | The clients' build and distribution: Vite at /web, Tauri for desktop, Expo for mobile and TV | Proposed |
+| [0049](0049-smart-collections.md) | Smart collections: rules compiled to SQL, evaluated when read | Accepted; amended 2026-10-27 |
+| [0050](0050-release-and-versioning.md) | Release and versioning: one SemVer version, two channels, a prepared commit and a gated workflow | Accepted; amended 2026-10-23 and 2026-10-28 |
+| [0051](0051-playback-engine.md) | The playback engine: direct play, then direct stream, then HLS transcodes made on demand | Accepted; amended 2026-10-27 and 2026-10-28 (twice) |
+| [0052](0052-device-profiles.md) | Device profiles: what each client plays, built in and reported, in one shape | Accepted; amended 2026-10-27 and 2026-10-28 (twice) |
+| [0053](0053-clients-build-and-distribution.md) | The clients' build and distribution: Vite at /web, Tauri for desktop, Expo for mobile and TV | Proposed; the web part Accepted 2026-10-28 |
+| [0054](0054-watch-state.md) | Watch state: positions, watched and the player's picks, per person and title | Accepted |
+| [0055](0055-clients-shared-logic.md) | The clients' shared logic: `@highsea-tv/client`, everything but the drawing | Accepted |
+| [0056](0056-hardware-acceleration.md) | Hardware acceleration: four paths, each used only once a check on this host passes | Accepted; amended 2026-10-28 |
+| [0057](0057-installing-without-configuration.md) | Installing without configuration: graphics handed over by default, the user, time zone, folders and address detected, and highsea's own TMDB key | Accepted |
 
 Template: copy [`template.md`](template.md).

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- SPDX-License-Identifier: AGPL-3.0-only -->
+<!--
+  highsea's maintainer profile for Unraid's Community Applications (install-simplicity.md › C).
+  CA reads it from the repository's root and blocks a submission without a non-empty <Profile>
+  (https://ca.unraid.net/submit/help/repository-info-xml); the fields are CA's
+  (https://ca.unraid.net/submit/help/xml-field-reference). The templates it lists are in
+  templates/unraid/. <Forum> is added once highsea has a support thread in Unraid's Docker
+  Containers forum; until then, support is GitHub's issues.
+-->
+<CommunityApplications>
+  <Profile>highsea finds, downloads and organises your films, with their subtitles, and serves them to your own apps: one self-hosted server in place of Radarr, Prowlarr, qBittorrent and Bazarr. It's open source, under the AGPL-3.0.
+
+There are two templates. **highsea** is for Intel or AMD graphics, or none. **highsea-nvidia** is for NVIDIA graphics, with the Nvidia-Driver plugin. Install one of them.
+
+The guides are at https://docs.highsea.tv/install/unraid/. Questions and bugs go to https://github.com/highsea-tv/highsea-tv/issues.</Profile>
+  <Icon>https://raw.githubusercontent.com/highsea-tv/highsea-tv/main/packages/brand/assets/icons/web/icon-512.png</Icon>
+  <WebPage>https://github.com/highsea-tv/highsea-tv</WebPage>
+</CommunityApplications>

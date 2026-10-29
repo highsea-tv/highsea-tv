@@ -1,0 +1,79 @@
+---
+title: Install with one command
+description: On a Linux machine with Docker, install highsea and start it with one command, and update it the same way.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The installer: apps/docs/public/install.sh, served at https://get.highsea.tv with
+    install.sh.sha256 beside it; its tests are apps/docs/test/install.test.ts.
+  - The compose file it writes is compose.yaml at the repository's root, with the data folder,
+    the version and NVIDIA's runtime filled in.
+  - Installing Docker Engine: https://docs.docker.com/engine/install/
+  - The Compose plugin: https://docs.docker.com/compose/install/linux/
+  - NVIDIA's container toolkit: https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html
+*/}
+
+Written for highsea 0.2.0-beta.3, and followed on Docker Engine 29.8 with Docker Compose 5.6.
+
+On a Linux machine that already has Docker, one command installs highsea and starts it. It writes the same compose file as [Install with Docker](/install/docker/), so everything there applies afterwards.
+
+## Before you start
+
+You need a 64-bit Linux machine with Docker Engine and its Compose plugin. The installer never installs Docker for you. If it's missing, follow [Docker's own instructions](https://docs.docker.com/engine/install/) first. On a Mac or Windows, use [Install with Docker](/install/docker/) instead.
+
+## Install
+
+```sh
+curl -fsSL https://get.highsea.tv | sh
+```
+
+The installer:
+
+- checks that Docker and Compose are there and answering, and asks for your password through `sudo` when it needs to;
+- looks for graphics: Intel and AMD at `/dev/dri`, and NVIDIA through NVIDIA's container toolkit;
+- writes `compose.yaml` to `/opt/highsea`, with highsea's settings in `/opt/highsea/config` and your films in `/opt/highsea/data`;
+- makes the data folder yours, so highsea runs as you;
+- starts highsea, waits until it's ready and prints the address to open.
+
+Open that address to [run setup](/install/docker/#run-setup).
+
+## Choose the folders
+
+Your films probably live somewhere else. Give the installer the folder that holds downloads and the library, on one disk, so imports hardlink instead of copying:
+
+```sh
+curl -fsSL https://get.highsea.tv | sh -s -- --data /srv/data
+```
+
+| Option | What it does |
+| --- | --- |
+| `--data FOLDER` | The folder for downloads and the library, mounted as `/data`. Setup looks inside it for `downloads` and `media/movies`. |
+| `--dir FOLDER` | Where `compose.yaml` and highsea's settings go, instead of `/opt/highsea`. |
+| `--version X.Y.Z` | A version to stay on, instead of the newest stable release. |
+| `--no-start` | Writes `compose.yaml` and stops there, so you can read or change it first. |
+| `--print-compose` | Prints the compose file it would write, and does nothing else. |
+
+## Check the installer first
+
+To read the script before running it, and check it's the one highsea publishes:
+
+```sh
+curl -fsSLO https://get.highsea.tv/install.sh
+curl -fsSL https://get.highsea.tv/install.sh.sha256 | sha256sum -c
+sh install.sh
+```
+
+## Update
+
+Run the same command again. The installer keeps your `compose.yaml` as it is, with any changes you made, pulls the image it names and restarts highsea. System › Updates tells you when there's a new release.
+
+## When something stops it
+
+The installer says what it found and stops without changing anything:
+
+- **Docker isn't installed, or isn't answering:** install or start it, then run the installer again.
+- **A container called highsea already exists:** it came from another folder. Run the installer with `--dir` and that folder to update it.
+- **Something else is using port 3000:** highsea's web page needs it. Stop the other program, or install with [Docker](/install/docker/) and change the port.
+- **An NVIDIA card without NVIDIA's container toolkit:** highsea installs and uses the processor. [Hardware acceleration](/install/hardware-acceleration/) says how to add the toolkit.

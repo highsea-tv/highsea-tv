@@ -53,6 +53,15 @@ export const Session = z
   })
   .openapi('Session')
 
+/** Who's signed in, as they ask: the session, and where they're asking from. */
+export const CurrentSession = Session.extend({
+  /**
+   * The request came from outside the server's own network (4.1a's home-or-away test), so streams
+   * keep to the remote ceiling. The apps show "Connected remotely" (connectivity.md).
+   */
+  away: z.boolean(),
+}).openapi('CurrentSession')
+
 export const DeviceInput = z
   .object({
     name: z.string().min(1).max(100).openapi({ example: 'Living room TV' }),
@@ -284,7 +293,7 @@ export const auth = {
     tags: ['Auth'],
     summary: 'Who’s signed in',
     ...access('user'),
-    responses: { 200: json(Session, 'The session'), ...errors('unauthorized') },
+    responses: { 200: json(CurrentSession, 'The session'), ...errors('unauthorized') },
   }),
   passkeyOptions: createRoute({
     method: 'post',
@@ -708,6 +717,7 @@ export const audit = {
 
 export type User = z.infer<typeof User>
 export type Session = z.infer<typeof Session>
+export type CurrentSession = z.infer<typeof CurrentSession>
 export type SignInResult = z.infer<typeof SignInResult>
 export type Device = z.infer<typeof Device>
 export type ApiKey = z.infer<typeof ApiKey>

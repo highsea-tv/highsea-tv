@@ -181,12 +181,10 @@ describe('A11 curation', () => {
     expect(await c.announcements.active('tvos')).toEqual([])
   })
 
-  test('a user gets the refusal page, not curation', async () => {
-    await open('/admin/curation', 'user')
-    expect(page().getByText('This is where the server’s owner and admins run it')).toBeTruthy()
-    expect(page().getByRole('button', { name: 'Sign out' })).toBeTruthy()
-    expect(page().queryByRole('navigation')).toBeNull()
-    await clean()
+  test('a user is sent to the web client, not curation', async () => {
+    const { location } = await open('/admin/curation', 'user')
+    expect(location.history.at(-1)).toBe('/web')
+    expect(page().queryByRole('heading', { name: 'Curation' })).toBeNull()
   })
 })
 
@@ -321,13 +319,13 @@ describe('A13 users and devices', () => {
     await clean()
   })
 
-  test('settings: the index lists every area, and a user gets the refusal page', async () => {
+  test('settings: the index lists every area, and a user is sent to the web client', async () => {
     await open('/admin/settings')
     expect(page().getByRole('link', { name: /Users and devices/ })).toBeTruthy()
     await clean()
     cleanup()
-    await open('/admin/settings/users', 'user')
-    expect(page().getByText('This is where the server’s owner and admins run it')).toBeTruthy()
+    const { location } = await open('/admin/settings/users', 'user')
+    expect(location.history.at(-1)).toBe('/web')
   })
 })
 

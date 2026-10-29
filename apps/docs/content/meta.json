@@ -12,11 +12,14 @@
     "collections",
     "wanted",
     "activity",
+    "now-playing",
     "downloads",
     "indexers",
     "subtitles",
     "curation",
     "system",
-    "settings"
+    "settings",
+    "---Watching---",
+    "watch"
   ]
 }

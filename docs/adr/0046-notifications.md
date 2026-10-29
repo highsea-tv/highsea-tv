@@ -83,3 +83,9 @@ The owner approved the email prototype ([docs/product/emails.md](../product/emai
 - **Its sources:** the runtime hands notifications a `MailBrand`: the server's name, external URL, language and time zone; the Appearance mark when it's a PNG; and the poster from the metadata image cache at `w185`. So the package still imports neither personalization nor metadata (ADR 0036). An SVG mark, or none, gives highsea's app icon, which is read from `@highsea/brand` with `import.meta.resolve`. The accent stays highsea's.
 - **The server's mail** goes through `sendServerMail(to, link)`, which renders the invite or reset with the same brand. The old plain renderer (`renderLinkMail`, `mailMessages` in `shared`) is gone.
 
+
+## 2026-10-28: Playback started (checkpoint 4.3a)
+
+- A new event, `playback-started`, in the catalogue (`NOTIFICATION_EVENTS` in the schema and the contract): who is watching, the film, the device, how it's sent (Direct play, Direct stream or Transcoded) and what's sent, with "away from home" when it is. Its message is in `shared`'s catalogue, and email has its label.
+- **Off by default** for every connection, existing and new (4.3's answer 9): the connection dialog's defaults leave it out, so it's heard only once ticked.
+- The runtime raises it from Now playing's `onStarted` hook when a session starts, with the id `playback-started:{session}`, so a retried job doesn't send it twice. A restart on the same device within 2 minutes, to change the sound or subtitles, isn't a new start and sends nothing.

@@ -18,6 +18,7 @@ export const WIDGET_KINDS = [
   'recently-added',
   'calendar',
   'system-health',
+  'now-playing',
 ] as const
 export type WidgetKind = (typeof WIDGET_KINDS)[number]
 
@@ -37,6 +38,7 @@ export const WIDGET_SOURCES = [
   'downloads',
   'subtitles',
   'curation',
+  'playback',
 ] as const
 export type WidgetSource = (typeof WIDGET_SOURCES)[number]
 
@@ -89,6 +91,8 @@ export const widgetMessages = defineMessages({
   'calendar.description': 'This month’s releases at a glance.',
   'system-health.title': 'System health',
   'system-health.description': 'Health checks that need attention.',
+  'now-playing.title': 'Now playing',
+  'now-playing.description': 'Who’s watching what, and how each stream is sent.',
 })
 
 const staff: WidgetRole[] = ['owner', 'admin']
@@ -194,6 +198,15 @@ export const widgetDefinitions: WidgetDefinition[] = [
     roles: staff,
     source: 'system',
   }),
+  // checkpoint 4.3a (docs/product/now-playing.md)
+  define('now-playing', {
+    width: [1, 4],
+    height: [2, 5],
+    defaultSpan: 2,
+    defaultRows: 3,
+    roles: staff,
+    source: 'playback',
+  }),
 ]
 
 export const isWidgetKind = (kind: string): kind is WidgetKind =>
@@ -231,8 +244,13 @@ export function normalize(w: WidgetPlacement): WidgetPlacement {
   }
 }
 
-/** The arrangement from admin.md › main area, then the queue across the full width. */
+/**
+ * Now playing first, as the one widget about this minute (the owner's word at 4.3a's review,
+ * 2026-10-28), then the arrangement from admin.md › main area and the queue across the full width.
+ * Four rows tall here, so Network, Storage and Indexers fill its side and the grid has no gap.
+ */
 export const ownerDefault: WidgetPlacement[] = [
+  place('now-playing', 2, 4),
   place('network'),
   place('storage'),
   place('indexers'),

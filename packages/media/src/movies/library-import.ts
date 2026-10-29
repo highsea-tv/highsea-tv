@@ -10,6 +10,12 @@
 // already renamed is found under its new name, and the file is recorded by path. Progress lives in
 // one settings row, `libraryImport`, announced on `import.updated`; the job's payload carries the
 // items, so a restart picks up where it stopped.
+//
+// The library scan adds new folders on its own (`addNew`, the owner's change at 4.1a's review): a
+// folder that appears under a root folder, or is there when the root folder is added, is added in
+// place when its match is sure (an id in its name, or TMDB's title and year the same as its own),
+// as Jellyfin adds what its scan finds. The rest wait in Library import, counted on the root
+// folder's row (`ROOT_WAITING_KEY`), and the 12-hourly scan doesn't search TMDB for them again.
 import { promises as fsp } from 'node:fs'
 import { basename, dirname, extname, join } from 'node:path'
 import type { AddMovieInput } from '@highsea-tv/api-contract'
@@ -22,8 +28,9 @@ import { z } from 'zod'
 import { type FoundFile, isVideo, listFiles, skipBeforeProbe } from '../shared/files.ts'
 import type { Media } from '../shared/index.ts'
 import { buildFolderName } from '../shared/naming.ts'
-import { checkPath } from '../shared/paths.ts'
+import { checkPath, isWithin } from '../shared/paths.ts'
 import type { MediaInfo } from '../shared/probe.ts'
+import { ROOT_WAITING_KEY, type RootWaiting } from '../shared/root-folders.ts'
 import type { Ctx } from './context.ts'
 import type { Imports } from './import.ts'
 import type { Library } from './library.ts'
@@ -84,6 +91,12 @@ const Payload = z.object({
   qualityProfileId: z.string(),
   items: z.array(z.object({ folder: z.string(), tmdbId: z.number().int().positive() })),
 })
+
+/** A folder's match, and whether it's sure enough to add without asking. */
+type Matched = { match: LibraryCandidate['match']; sure: boolean }
+
+/** What `addNew` did with the folders it was given. */
+export type AddNewResult = { added: number; waiting: number }
 
 const invalid = (message: string, reason: string) => new AppError('invalid', message, { reason })
 
@@ -154,7 +167,11 @@ export function createLibraryImport(
       .sort((a, b) => b.size - a.size)
   }
 
-  async function matchFor(name: string): Promise<LibraryCandidate['match']> {
+  /**
+   * The folder's movie on TMDB. Sure when the name carries its id, or when TMDB's title (or
+   * original title) and year are the folder's own: what the scan adds without asking.
+   */
+  async function matchFor(name: string): Promise<Matched> {
     const parsed = parse(name)
     const toMatch = (m: { id: number; title: string; year: number | null }) => ({
       tmdbId: m.id,
@@ -166,17 +183,23 @@ export function createLibraryImport(
         if ((e as AppError).code === 'not-found') return null
         throw e
       })
-      if (m) return toMatch(m)
+      if (m) return { match: toMatch(m), sure: true }
     }
     if (parsed.ids.imdb) {
       const m = await metadata.discover.findByImdb(parsed.ids.imdb)
-      if (m) return toMatch(m)
+      if (m) return { match: toMatch(m), sure: true }
     }
-    if (!parsed.title) return null
+    if (!parsed.title) return { match: null, sure: false }
     // TMDB's search ignores case; one spelling keeps the requests (and the recordings) the same
     const page = await metadata.discover.search(parsed.title.toLowerCase())
     const best = bestMatch(page.results, parsed.title, parsed.year)
-    return best ? toMatch(best) : null
+    if (!best) return { match: null, sure: false }
+    const want = plain(parsed.title)
+    const sure =
+      parsed.year !== null &&
+      best.year === parsed.year &&
+      (plain(best.title) === want || plain(best.originalTitle) === want)
+    return { match: toMatch(best), sure }
   }
 
   /**
@@ -214,7 +237,7 @@ export function createLibraryImport(
       let match: LibraryCandidate['match'] = null
       let matchProblem: string | null = null
       try {
-        match = await matchFor(name)
+        match = (await matchFor(name)).match
       } catch (e) {
         // no key: nothing can be matched, so the whole scan says so
         if ((e as { details?: { reason?: string } }).details?.reason === 'no-tmdb-key') throw e
@@ -244,6 +267,98 @@ export function createLibraryImport(
       })
     }
     return out
+  }
+
+  const readWaiting = () => readSetting<RootWaiting>(db, ROOT_WAITING_KEY, {})
+
+  /**
+   * The library scan's new folders under one root folder: each with a video and a sure match is
+   * added where it is, as Library import would; the rest wait for Library import. A folder already
+   * waiting isn't searched for again unless `retry` (the scan of that folder alone, after a
+   * change). Without a TMDB key nothing is matched and nothing changes. Safe to repeat: a folder
+   * that's a movie's is never given, and adding a movie that's in the library returns it.
+   */
+  async function addNew(
+    rootPath: string,
+    folders: readonly string[],
+    { retry = false }: { retry?: boolean } = {},
+  ): Promise<AddNewResult> {
+    const result: AddNewResult = { added: 0, waiting: 0 }
+    const root = media.rootFolders.find(rootPath)?.path
+    const profile = media.profiles.list()[0]
+    if (!root || !profile || folders.length === 0) return result
+    const waiting = new Set(readWaiting()[root] ?? [])
+    const before = waiting.size
+    const here = new Set(
+      db
+        .select({ tmdbId: mediaItems.tmdbId })
+        .from(mediaItems)
+        .where(eq(mediaItems.type, 'movie'))
+        .all()
+        .map((r) => r.tmdbId),
+    )
+    const p: z.infer<typeof Payload> = {
+      root,
+      rename: false,
+      qualityProfileId: profile.id,
+      items: [],
+    }
+    // a downloads folder inside the root folder holds downloads, not the library
+    const downloads = imports.internal.downloadDirs()
+    for (const folder of folders) {
+      if (!isWithin(root, folder) || folder === root) continue
+      if (downloads.some((d) => isWithin(d, folder) || isWithin(folder, d))) continue
+      if (waiting.has(folder) && !retry) continue
+      const videos = await videosIn(folder).catch(() => [] as FoundFile[])
+      if (videos.length === 0) {
+        waiting.delete(folder)
+        continue
+      }
+      let found: Matched
+      try {
+        found = await matchFor(basename(folder))
+      } catch (e) {
+        if ((e as { details?: { reason?: string } }).details?.reason === 'no-tmdb-key') {
+          log.info('new folders wait for a TMDB key to be matched', { root })
+          break
+        }
+        // TMDB unreachable: the next scan tries again
+        log.warn('couldn’t match a new folder', { folder, error: (e as Error).message })
+        continue
+      }
+      const { match, sure } = found
+      // a second copy of a movie in the library isn't one to match: Library import shows it
+      if (match && here.has(match.tmdbId)) {
+        waiting.delete(folder)
+        continue
+      }
+      if (!match || !sure) {
+        waiting.add(folder)
+        continue
+      }
+      let problem: string | null
+      try {
+        problem = await importOne({ folder, tmdbId: match.tmdbId }, p, profile.name)
+      } catch (e) {
+        problem = (e as Error).message
+      }
+      if (problem) {
+        log.warn('couldn’t add a new folder’s movie', { folder, problem })
+        waiting.add(folder)
+        continue
+      }
+      here.add(match.tmdbId)
+      waiting.delete(folder)
+      result.added++
+      log.info('added a movie found in a root folder', { folder, tmdbId: match.tmdbId })
+    }
+    result.waiting = waiting.size
+    if (waiting.size !== before || result.added) {
+      writeSetting(db, ROOT_WAITING_KEY, { ...readWaiting(), [root]: [...waiting] }, clock.now())
+      // Settings › Media management's root folders show how many wait
+      events.emit({ topic: 'settings.updated' })
+    }
+    return result
   }
 
   function status(): LibraryImportState {
@@ -444,7 +559,7 @@ export function createLibraryImport(
     },
   })
 
-  return { scan, run, status }
+  return { scan, run, status, addNew }
 }
 
 export type LibraryImport = ReturnType<typeof createLibraryImport>

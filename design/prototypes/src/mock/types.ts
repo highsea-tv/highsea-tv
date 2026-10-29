@@ -981,6 +981,27 @@ export type SetupInput = {
   subtitleLanguages: string[]
   remoteAccess: RemoteAccess
   cloudLink: boolean
+  /** The owner's own TMDB key; without one, the key built into the image (install-simplicity B). */
+  metadataKey?: string
+  /** An IANA zone, from the browser unless changed. */
+  timeZone: string
+  /** The address apps on the network use (ADR 0020's advertised address). */
+  address: string
+}
+
+/**
+ * What the server found before setup (install-simplicity B). Each is a default the owner can
+ * change on Review; null means setup asks.
+ */
+export type SetupDetected = {
+  /** The host's name as a server name; null when the container's hostname is only its id. */
+  serverName: string | null
+  /** A movies folder and a downloads folder under /data, or null to ask. */
+  folders: { movies: string; downloads: string } | null
+  /** The host's LAN address, with host networking; null in bridge mode, where the browser's is used. */
+  address: string | null
+  /** The graphics chip whose check passed at boot, or null for the processor. */
+  graphics: { name: string; path: string } | null
 }
 
 // ---------------------------------------------------------------- events (SSE stand-in)
@@ -1093,6 +1114,11 @@ export type ClientTrack = {
   /** Subtitles: forced, SDH; audio: channels. */
   detail: string | null
   default: boolean
+  /**
+   * Subtitles drawn as pictures (PGS, VobSub), which the server burns into the film (checkpoint
+   * 4.3), so the player can't move their timing. Always false for audio.
+   */
+  picture: boolean
 }
 
 export type ClientVersion = {

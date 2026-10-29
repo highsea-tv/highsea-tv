@@ -58,5 +58,17 @@ export const migrations: Migration[] = [
   {
     "tag": "0013_scale",
     "sql": "CREATE INDEX `downloads_queue` ON `downloads` (`grabbed_at`) WHERE state IN ('downloading', 'importing', 'import-blocked') OR (state = 'completed' AND torrent_id IS NOT NULL);--> statement-breakpoint\nCREATE INDEX `movie_terms_label` ON `movie_terms` (`kind`,lower(\"label\"));"
+  },
+  {
+    "tag": "0014_playback",
+    "sql": "CREATE TABLE `device_profiles` (\n\t`device_id` text PRIMARY KEY NOT NULL,\n\t`base` text NOT NULL,\n\t`report` text NOT NULL,\n\t`reported_at` integer NOT NULL,\n\tFOREIGN KEY (`device_id`) REFERENCES `devices`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE TABLE `playback_prefs` (\n\t`user_id` text NOT NULL,\n\t`item_id` text NOT NULL,\n\t`version_id` text,\n\t`audio_id` text,\n\t`subtitle_id` text,\n\t`subtitle_offset_ms` integer NOT NULL,\n\t`updated_at` integer NOT NULL,\n\tPRIMARY KEY(`user_id`, `item_id`),\n\tFOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`item_id`) REFERENCES `media_items`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE TABLE `watch_history` (\n\t`user_id` text NOT NULL,\n\t`item_id` text NOT NULL,\n\t`played` integer NOT NULL,\n\t`play_count` integer NOT NULL,\n\t`last_played_at` integer,\n\t`updated_at` integer NOT NULL,\n\tPRIMARY KEY(`user_id`, `item_id`),\n\tFOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`item_id`) REFERENCES `media_items`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE INDEX `watch_history_last` ON `watch_history` (`user_id`,`last_played_at`);"
+  },
+  {
+    "tag": "0015_streaming",
+    "sql": "CREATE TABLE `file_keyframes` (\n\t`file_id` text PRIMARY KEY NOT NULL,\n\t`size` integer NOT NULL,\n\t`times` text NOT NULL,\n\t`read_at` integer NOT NULL,\n\tFOREIGN KEY (`file_id`) REFERENCES `media_files`(`id`) ON UPDATE no action ON DELETE cascade\n);\n--> statement-breakpoint\nCREATE TABLE `trickplay` (\n\t`file_id` text PRIMARY KEY NOT NULL,\n\t`size` integer NOT NULL,\n\t`manifest` text,\n\t`error` text,\n\t`made_at` integer NOT NULL,\n\tFOREIGN KEY (`file_id`) REFERENCES `media_files`(`id`) ON UPDATE no action ON DELETE cascade\n);\n"
+  },
+  {
+    "tag": "0016_now_playing",
+    "sql": "CREATE TABLE `playback_history` (\n\t`id` text PRIMARY KEY NOT NULL,\n\t`user_id` text NOT NULL,\n\t`device_name` text NOT NULL,\n\t`client` text NOT NULL,\n\t`item_id` text,\n\t`tmdb_id` integer NOT NULL,\n\t`title` text NOT NULL,\n\t`year` integer,\n\t`version` text NOT NULL,\n\t`method` text NOT NULL,\n\t`away` integer NOT NULL,\n\t`watched` integer NOT NULL,\n\t`finished` integer NOT NULL,\n\t`started_at` integer NOT NULL,\n\t`ended_at` integer NOT NULL,\n\tFOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON UPDATE no action ON DELETE cascade,\n\tFOREIGN KEY (`item_id`) REFERENCES `media_items`(`id`) ON UPDATE no action ON DELETE set null\n);\n--> statement-breakpoint\nCREATE INDEX `playback_history_ended` ON `playback_history` (`ended_at`);--> statement-breakpoint\nCREATE INDEX `playback_history_user` ON `playback_history` (`user_id`,`ended_at`);"
   }
 ]

@@ -12,9 +12,10 @@ description: Install highsea as a custom app from YAML on TrueNAS 25.04 or later
     https://www.truenas.com/docs/scale/25.10/scaletutorials/datasets/datasetsscale/
   - System › Shell: https://www.truenas.com/docs/scale/25.10/scaletutorials/systemsettings/usescaleshell/
   - The compose file is templates/truenas/compose.yaml in the repository.
+  - The user highsea runs as: docker/entrypoint.sh (ADR 0057).
 */}
 
-Written for highsea 0.1.0 on TrueNAS Community Edition 25.04 or later, and checked on 25.10.7.
+Written for highsea 0.2.0-beta.3 on TrueNAS Community Edition 25.04 or later, and checked on 25.10.7.
 
 Since 24.10, TrueNAS runs apps on Docker and can install one straight from a compose file. highsea uses that.
 
@@ -43,16 +44,30 @@ services:
     environment:
       PUID: "568"
       PGID: "568"
-      TZ: Etc/UTC
     volumes:
       - /mnt/tank/apps/highsea:/config
       - /mnt/tank/data:/data
+      - /dev/dri:/dev/dri
+      - /run/dbus:/run/dbus:ro
+    device_cgroup_rules:
+      - "c 226:128 rw"
+      - "c 226:129 rw"
+      - "c 226:130 rw"
+      - "c 226:131 rw"
+      - "c 226:132 rw"
+      - "c 226:133 rw"
+      - "c 226:134 rw"
+      - "c 226:135 rw"
     restart: unless-stopped
 ```
 
-Change `tank` to your pool's name, and `TZ` to your time zone. TrueNAS checks only that the YAML is well formed, so a wrong path shows up when the app starts, in its logs.
+If your pool isn't called `tank`, change it in the two paths. highsea takes your time zone from your browser during setup.
+
+The `/dev/dri` line and the rules under it give highsea Intel or AMD graphics, for [hardware acceleration](/install/hardware-acceleration/). On a NAS without them, the app starts all the same. TrueNAS checks only that the YAML is well formed, so a wrong path shows up when the app starts, in its logs.
 
 Host networking lets apps on your network find highsea by themselves. If something else on the NAS already uses port 3000 or 6881, stop it first.
+
+The `/run/dbus` line lets highsea announce itself through TrueNAS's own mDNS service, which keeps that job to itself. Without the line, apps still find highsea by its broadcast on port 7368.
 
 ![TrueNAS's Install via YAML screen, with the name and custom config filled in](/images/truenas-install-via-yaml.png)
 
@@ -60,6 +75,6 @@ Host networking lets apps on your network find highsea by themselves. If somethi
 
 TrueNAS shows the app as **Deploying** while it starts. When it shows **Running** on the **Apps** page, open `http://<your NAS's address>:3000`. highsea opens its setup; [Install with Docker › Run setup](/install/docker/#run-setup) walks through each step.
 
-When setup asks for your folders, use the paths inside the container: `/data/media/movies` and `/data/downloads`.
+Setup finds `/data/media/movies` and `/data/downloads` inside the container, or makes them in an empty dataset, so it asks only for the owner account. If your films are elsewhere in the dataset, setup asks for the folders: use the paths inside the container, under `/data`.
 
 ![The Apps page, with highsea running](/images/truenas-apps-running.png)

@@ -66,11 +66,11 @@ describe('two engines on loopback', () => {
       { path: 'Sintel.mkv', size: data.length, progress: 1, priority: 'normal' },
     ])
     expect(snap.completedAt).not.toBeNull()
-    expect(snap.trackers[0]?.status).toBe('working')
     await until(() => a.engine.get(seedId).uploaded >= data.length, 5_000, 'the seeder’s count')
     expect(b.events.some((e) => e.type === 'finished' && e.id === id)).toBe(true)
-    // the finished torrent told the tracker
+    // the finished torrent told the tracker; the tracker shows `updating` until it answers (BEP 3)
     await until(() => tracker.announces.some((x) => x.event === 'completed'), 5_000, 'completed')
+    await until(() => b.engine.get(id).trackers[0]?.status === 'working', 5_000, 'the answer')
   }, 30_000)
 
   test('a folder over a UDP tracker, with one file skipped and never created', async () => {

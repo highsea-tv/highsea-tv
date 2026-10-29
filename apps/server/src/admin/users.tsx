@@ -18,7 +18,6 @@ import {
   DialogContent,
   Field,
   Icon,
-  type IconName,
   Input,
   Menu,
   MenuContent,
@@ -43,6 +42,7 @@ import {
   toast,
 } from '@highsea-tv/ui-web'
 import { useState } from 'react'
+import { clientIcon } from './delivery.ts'
 import { Loadable } from './loadable.tsx'
 import { AreaPage } from './settings.tsx'
 import { useRelative } from './time.ts'
@@ -50,7 +50,6 @@ import { users as messages } from './users-messages.ts'
 
 type Role = User['role']
 type Permission = User['permissions'][number]
-type ClientType = Device['client']
 type Invitable = Exclude<Role, 'owner'>
 type InviteInput = Pick<User, 'displayName' | 'email' | 'libraries'> & { role: Invitable }
 type CreatedKey = ApiKey & { secret: string }
@@ -67,18 +66,6 @@ const permissions = ['request', 'download'] as const satisfies Permission[]
 
 /** The server's defaults (packages/auth/src/roles.ts), shown as soon as the role changes. */
 const roleDefaults: Record<Invitable, Permission[]> = { admin: [], user: ['request'] }
-
-const clientIcon: Record<ClientType, IconName> = {
-  admin: 'laptop',
-  web: 'laptop',
-  desktop: 'laptop',
-  ios: 'phone',
-  android: 'phone',
-  tvos: 'tv',
-  androidtv: 'tv',
-  webos: 'tv',
-  tizen: 'tv',
-}
 
 type Tab = 'users' | 'devices' | 'keys'
 

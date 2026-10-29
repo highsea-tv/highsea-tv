@@ -88,4 +88,8 @@ export const STAFF_TOPICS: readonly string[] = [
   'curation.updated',
   // smart collections (checkpoint 8d); the apps hear `home.updated`
   'collections.updated',
+  // Settings › Playback and its cache (checkpoint 4.3a)
+  'playback.updated',
+  // Now playing (checkpoint 4.3a); the person stopped hears `playback.stopped`, sent to them alone
+  'sessions.updated',
 ]

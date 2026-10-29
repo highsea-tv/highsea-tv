@@ -151,7 +151,8 @@ export type DiscoverList = (typeof DISCOVER_LISTS)[number]
 
 /** What the API shows of the metadata settings. The key itself is never returned. */
 export type MetadataSettingsView = {
-  key: { set: boolean; last4: string | null }
+  /** `set` is the owner's own key; `builtIn`, highsea's, used when the owner has none. */
+  key: { set: boolean; last4: string | null; builtIn: boolean }
   /** TMDB's language for metadata (`en-US`). */
   language: string
   /** ISO 3166-1 alpha-2: certifications, release dates and Discover's lists. */

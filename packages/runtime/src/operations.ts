@@ -114,6 +114,8 @@ export type OperationsDeps = {
   /** The level the config gives, until General saves one. */
   defaultLogLevel: Level
   setLogLevel: (level: Level) => void
+  /** Makes the process follow General's time zone, when the server entry asks (install-simplicity.md › A). */
+  followTimeZone?: (zone: string) => void
   logs: MemorySink
   logFiles: LogFiles
   catalog: Pick<Catalog, 'releases' | 'status'>
@@ -139,6 +141,7 @@ export function createOperations(deps: OperationsDeps) {
     crashReports: false,
   })
   const general = () => readSetting(db, GENERAL_KEY, generalDefaults())
+  deps.followTimeZone?.(general().timeZone)
 
   // ------------------------------------------------------------ backups
 
@@ -385,7 +388,10 @@ export function createOperations(deps: OperationsDeps) {
         const before = general()
         const next = writeSetting(db, GENERAL_KEY, parsed.data, clock.now())
         deps.setLogLevel(next.logLevel)
-        if (before.timeZone !== next.timeZone) backups.reschedule()
+        if (before.timeZone !== next.timeZone) {
+          deps.followTimeZone?.(next.timeZone)
+          backups.reschedule()
+        }
         if (before.updateChannel !== next.updateChannel) announceUpdate()
         if (before.logLevel !== next.logLevel)
           log.info('the log level changed', { from: before.logLevel, to: next.logLevel })

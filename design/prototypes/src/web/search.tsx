@@ -11,7 +11,7 @@ export function WebSearch() {
   const { results, settled } = useSearch(q)
   const r = results.data
   return (
-    <main className={cn('mx-auto grid max-w-[1680px] content-start gap-8 py-8', gutter)}>
+    <main className={cn('mx-auto w-full grid max-w-[1680px] content-start gap-8 py-8', gutter)}>
       <h1 className="sr-only">Search</h1>
       <Input
         type="search"

@@ -3,15 +3,17 @@
 // else with Next, on one port, and on a second HTTPS port when built-in TLS is on (ADR 0026).
 // SIGTERM shuts down in order: stop listening, then the runtime. A restore restarts the same way,
 // exiting with RESTART_EXIT_CODE for Docker's restart policy (ADR 0047).
-import { dirname } from 'node:path'
+import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import type { Fetch } from '@highsea-tv/core'
 import { loadCertificate } from '@highsea-tv/network'
-import { boot, loadConfig, RESTART_EXIT_CODE } from '@highsea-tv/runtime'
+import { bareHost, boot, loadConfig, RESTART_EXIT_CODE } from '@highsea-tv/runtime'
 import next from 'next'
 import pkg from './package.json' with { type: 'json' }
 import { createApi } from './src/api/app.ts'
 import { createHttpServer, createTlsServer } from './src/http.ts'
+import { createStream } from './src/stream/index.ts'
+import { createWeb } from './src/web/index.ts'
 
 const config = loadConfig()
 const runtime = await boot({
@@ -21,9 +23,19 @@ const runtime = await boot({
   fetch: await outsideFetch(),
   // HIGHSEA_TORRENT_OFFLINE=1: the engine opens no socket, for the browser sweeps (no network)
   torrent: process.env.HIGHSEA_TORRENT_OFFLINE === '1' ? { offline: true } : undefined,
+  // HIGHSEA_HARDWARE_NONE=1: no graphics chip is looked for, so the sweeps and the guides'
+  // screenshots read the same on every machine
+  hardware: process.env.HIGHSEA_HARDWARE_NONE === '1' ? bareHost() : undefined,
   subtitles: await fakeSubtitles(),
   lists: await fakeLists(),
   restart: () => void stop('restart', RESTART_EXIT_CODE),
+  // Without Docker's TZ, the process takes General's time zone, which setup takes from the browser.
+  // Node reads a TZ set while it runs (https://nodejs.org/api/cli.html#tz); a TZ given wins.
+  followTimeZone: process.env.TZ
+    ? undefined
+    : (zone) => {
+        process.env.TZ = zone
+      },
 })
 // a crash report, when General › Diagnostics' switch is on; Node's default handling still runs
 // after a monitor (Node's docs, 'uncaughtExceptionMonitor')
@@ -35,6 +47,8 @@ if (process.env.HIGHSEA_TMDB_REPLAY === '1')
   log.warn('TMDB answers come from recordings', { env: 'HIGHSEA_TMDB_REPLAY' })
 if (process.env.HIGHSEA_TORRENT_OFFLINE === '1')
   log.warn('The torrent engine is offline: nothing downloads', { env: 'HIGHSEA_TORRENT_OFFLINE' })
+if (process.env.HIGHSEA_HARDWARE_NONE === '1')
+  log.warn('No graphics chip is looked for', { env: 'HIGHSEA_HARDWARE_NONE' })
 if (process.env.HIGHSEA_SUBTITLES_FAKE === '1')
   log.warn('Subtitle providers are fakes', { env: 'HIGHSEA_SUBTITLES_FAKE' })
 if (process.env.HIGHSEA_FIXTURES_URL)
@@ -44,7 +58,20 @@ const app = next({ dev: config.dev, dir: dirname(fileURLToPath(import.meta.url))
 await app.prepare()
 const handle = app.getRequestHandler()
 
-const handlers = { api: createApi(runtime), next: handle }
+const tryPage = process.env.HIGHSEA_PLAYBACK_TRY === '1'
+if (tryPage)
+  log.warn('The playback test page is on at /stream/try', { env: 'HIGHSEA_PLAYBACK_TRY' })
+const handlers = {
+  api: createApi(runtime),
+  next: handle,
+  stream: createStream(runtime, { tryPage }),
+  // the web client's build (apps/web); `bun run web` serves it with Vite in development instead
+  web: createWeb({
+    dir:
+      process.env.HIGHSEA_WEB_DIR ??
+      join(dirname(fileURLToPath(import.meta.url)), '..', 'web', 'dist'),
+  }),
+}
 const server = createHttpServer(handlers)
 server.listen(config.port, config.host, () =>
   log.info('listening', { url: `http://${config.host}:${config.port}`, dev: config.dev }),

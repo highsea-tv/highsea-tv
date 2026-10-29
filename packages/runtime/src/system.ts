@@ -1,9 +1,17 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The status bar's numbers (CPU, memory, disks) from node:os and node:fs, the last minute of them
 // for System › Status (8b), and the health checks behind the server card's dot.
-import { accessSync, constants, statfsSync, statSync } from 'node:fs'
+import {
+  accessSync,
+  constants,
+  linkSync,
+  rmSync,
+  statfsSync,
+  statSync,
+  writeFileSync,
+} from 'node:fs'
 import { cpus, freemem, totalmem } from 'node:os'
-import { resolve } from 'node:path'
+import { join, resolve } from 'node:path'
 
 export type Disk = { path: string; label: string; free: number; total: number; usedBy: DiskUse }
 
@@ -189,7 +197,7 @@ export function folderIssues(
       out.push({
         id: `folder-read-only:${path}`,
         level: 'error',
-        message: `highsea can’t write to the ${label} folder ${path}. Check that it isn’t mounted read-only, and that the user in PUID and PGID owns it.`,
+        message: `highsea can’t write to the ${label} folder ${path}. Check that it isn’t mounted read-only, and that highsea’s user owns it: whoever owns /data, unless PUID and PGID choose another.`,
       })
     }
     if (seen.has(dev)) continue
@@ -213,6 +221,61 @@ export function folderIssues(
     } catch {
       // statfs isn't there on every filesystem; the folder's own checks above still ran
     }
+  }
+  return out
+}
+
+/** The calls the hardlink check makes, injectable so a test can refuse a link. */
+export type LinkFs = {
+  writeFileSync: (path: string, data: string) => void
+  linkSync: (from: string, to: string) => void
+  rmSync: (path: string, options: { force: true }) => void
+}
+
+/**
+ * Whether imports from the downloads folder into each movies folder will hardlink (install-
+ * simplicity.md › A): it makes a real link, since the same `st_dev` isn't proof (a FUSE union such
+ * as Unraid's /mnt/user reports one device and may still refuse). `EXDEV` means another disk,
+ * `EPERM`, `ENOTSUP` and `EOPNOTSUPP` a disk without hardlinks (link(2)). Any other failure (a
+ * missing or read-only folder) is folderIssues' to report, so it's left out here.
+ */
+export function hardlinkIssues(
+  downloads: string,
+  roots: string[],
+  fs: LinkFs = { writeFileSync, linkSync, rmSync },
+): Omit<HealthIssue, 'source' | 'since'>[] {
+  const out: Omit<HealthIssue, 'source' | 'since'>[] = []
+  const name = `.highsea-link-check-${process.pid}`
+  const from = join(downloads, name)
+  try {
+    fs.writeFileSync(from, '')
+  } catch {
+    return out
+  }
+  try {
+    for (const root of roots) {
+      const to = join(root, name)
+      try {
+        fs.linkSync(from, to)
+        fs.rmSync(to, { force: true })
+      } catch (e) {
+        const code = (e as NodeJS.ErrnoException).code
+        if (code === 'EXDEV')
+          out.push({
+            id: `copying:${root}`,
+            level: 'warning',
+            message: `Imports into ${root} will be copied, not hardlinked, because the downloads folder is on another disk. Each film takes its space twice while it seeds. Keep downloads and movies under one /data folder, on one disk.`,
+          })
+        else if (code === 'EPERM' || code === 'ENOTSUP' || code === 'EOPNOTSUPP')
+          out.push({
+            id: `copying:${root}`,
+            level: 'warning',
+            message: `Imports into ${root} will be copied, not hardlinked, because the disk doesn’t support hardlinks. Each film takes its space twice while it seeds.`,
+          })
+      }
+    }
+  } finally {
+    fs.rmSync(from, { force: true })
   }
   return out
 }

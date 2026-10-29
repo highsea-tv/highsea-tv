@@ -137,7 +137,7 @@ function SpotlightRow({ section }: { section: HomeSection }) {
 
 function Rows({ sections }: { sections: HomeSection[] }) {
   return (
-    <div className="mx-auto grid max-w-[1680px] gap-8 pb-16">
+    <div className="mx-auto w-full grid max-w-[1680px] gap-8 pb-16">
       {sections.map((s) =>
         s.layout === 'hero' ? null : (
           // data-section: a curation preview scrolls to the section being edited
@@ -160,7 +160,7 @@ function HomeStates({ children }: { children: (sections: HomeSection[]) => React
   const home = useHome('web')
   if (home.status === 'loading')
     return (
-      <div aria-busy className={cn('mx-auto grid max-w-[1680px] gap-8 pt-24', gutter)}>
+      <div aria-busy className={cn('mx-auto w-full grid max-w-[1680px] gap-8 pt-24', gutter)}>
         <Skeleton className="h-[40vh] rounded-lg" />
         <div className="flex gap-4 overflow-hidden">
           {[0, 1, 2, 3, 4, 5, 6].map((i) => (
@@ -171,7 +171,9 @@ function HomeStates({ children }: { children: (sections: HomeSection[]) => React
     )
   if (home.status === 'error')
     return (
-      <main className={cn('mx-auto grid min-h-[60vh] max-w-[1680px] place-items-center', gutter)}>
+      <main
+        className={cn('mx-auto w-full grid min-h-[60vh] max-w-[1680px] place-items-center', gutter)}
+      >
         <EmptyState
           tone="error"
           icon="alert"
@@ -184,7 +186,9 @@ function HomeStates({ children }: { children: (sections: HomeSection[]) => React
     )
   if (home.data.length === 0)
     return (
-      <main className={cn('mx-auto grid min-h-[60vh] max-w-[1680px] place-items-center', gutter)}>
+      <main
+        className={cn('mx-auto w-full grid min-h-[60vh] max-w-[1680px] place-items-center', gutter)}
+      >
         <EmptyState icon="movie" title="Nothing to watch yet">
           When the server’s owner adds movies, they show up here.
         </EmptyState>
@@ -240,7 +244,7 @@ function FullBleed({ sections }: { sections: HomeSection[] }) {
                 )}
               </>
             }
-            className="medium:h-[min(58svh,56.25vw)] [&>div:last-child]:mx-auto [&>div:last-child]:max-w-[1680px]"
+            className="medium:h-[min(58svh,56.25vw)] [&>div:last-child]:mx-auto [&>div:last-child]:w-full [&>div:last-child]:max-w-[1680px]"
           />
         </div>
       )}

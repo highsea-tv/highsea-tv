@@ -83,8 +83,11 @@ export type CurationLibrary = {
 
 /** The server's own collections (checkpoint 8d), which a `collection` rule can draw on. */
 export type SmartSource = {
-  /** What can be played, in the collection's order, at most `limit`, and how many in all. */
-  playable(id: string, limit: number): { tmdbIds: number[]; total: number }
+  /**
+   * What can be played, in the collection's order, at most `limit`, and how many in all; its watch
+   * rules read `userId`'s watch state (null for no one's).
+   */
+  playable(id: string, limit: number, userId?: string | null): { tmdbIds: number[]; total: number }
   exists(id: string): boolean
   names(): { id: string; name: string }[]
   /** Changes whenever any collection does. */
@@ -217,10 +220,14 @@ export function createCuration(deps: {
 
   // ------------------------------------------------------------ resolving a section
 
-  /** TMDB ids a source picks now, with a file, in order, and how many in all. */
+  /**
+   * TMDB ids a source picks now, with a file, in order, and how many in all. A collection's watch
+   * rules read `userId`'s watch state (null, the admin's list of sections, for no one's).
+   */
   function picks(
     source: FeaturedSource,
     limit = SECTION_MAX,
+    userId: string | null = null,
   ): { tmdbIds: number[]; total: number } {
     if (source.kind === 'manual') {
       const playable = library.withFile(source.itemIds)
@@ -230,7 +237,7 @@ export function createCuration(deps: {
     const pick = rulePick(source)
     if (!pick) return { tmdbIds: [], total: 0 }
     if (pick.rule === 'smart')
-      return deps.smart?.playable(pick.collectionId, limit) ?? { tmdbIds: [], total: 0 }
+      return deps.smart?.playable(pick.collectionId, limit, userId) ?? { tmdbIds: [], total: 0 }
     return library.pick(pick, limit)
   }
 
@@ -261,7 +268,7 @@ export function createCuration(deps: {
   function homeFor(v: Viewer, client: ClientType, all: Section[], now: number): HomeSection[] {
     let hero = false
     const featured = visibleSections(all, v, client, now).flatMap((s): HomeSection[] => {
-      const items = homeItems(picks(s.source).tmdbIds, s.overrides, v.id)
+      const items = homeItems(picks(s.source, SECTION_MAX, v.id).tmdbIds, s.overrides, v.id)
       if (!items.length) return []
       const layout = s.layout === 'hero' && !hero ? 'hero' : s.layout === 'hero' ? 'row' : s.layout
       if (layout === 'hero') hero = true
@@ -748,7 +755,7 @@ export function createCuration(deps: {
     resolve(source: FeaturedSource, userId: string): { items: HomeItem[]; total: number } {
       if (source.kind === 'rule' && !rulePick(source))
         throw invalid(RULE_ERRORS[source.rule], 'source.value')
-      const { tmdbIds, total } = picks(source, 100)
+      const { tmdbIds, total } = picks(source, 100, userId)
       return { items: homeItems(tmdbIds, [], userId), total }
     },
 

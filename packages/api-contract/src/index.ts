@@ -19,7 +19,10 @@ export * from './metadata.ts'
 export * from './movies.ts'
 export * from './operations.ts'
 export * from './personalization.ts'
+export * from './playback.ts'
+export * from './playback-settings.ts'
 export * from './quality.ts'
+export * from './sessions.ts'
 export * from './settings.ts'
 export * from './setup.ts'
 export * from './subtitles.ts'
@@ -52,7 +55,10 @@ import { metadata } from './metadata.ts'
 import { movies, rootFolders } from './movies.ts'
 import { operationsSettings } from './operations.ts'
 import { appearance, dashboard, home, preferences } from './personalization.ts'
+import { playback } from './playback.ts'
+import { playbackSettings, playbackStatusRoutes } from './playback-settings.ts'
 import { quality } from './quality.ts'
+import { sessions } from './sessions.ts'
 import { settings } from './settings.ts'
 import { setup } from './setup.ts'
 import { subtitles } from './subtitles.ts'
@@ -71,7 +77,7 @@ export const routes = {
   users,
   devices,
   apiKeys,
-  settings: { ...settings, ...downloadSettingsRoutes, ...operationsSettings },
+  settings: { ...settings, ...downloadSettingsRoutes, ...operationsSettings, ...playbackSettings },
   audit,
   dashboard,
   preferences,
@@ -82,6 +88,8 @@ export const routes = {
   quality,
   rootFolders,
   library: { ...library, ...libraryCollections },
+  playback: { ...playback, ...playbackStatusRoutes },
+  sessions,
   indexers,
   catalog,
   queue,

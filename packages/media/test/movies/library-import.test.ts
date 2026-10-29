@@ -3,7 +3,15 @@
 // folder read by name and matched, the confirmed ones added where they are by a job, safe to run
 // twice, and Rename to my format renaming the folder and the file. Plus the matcher on its own.
 import { afterAll, afterEach, beforeAll, describe, expect, test } from 'bun:test'
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync } from 'node:fs'
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readdirSync,
+  renameSync,
+  rmSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import type { DiscoverMovie } from '@highsea-tv/metadata'
@@ -157,6 +165,86 @@ describe.skipIf(!hasFfmpeg)('importing an existing library', () => {
     const status = s.movies.libraryImport.status()
     expect(status).toMatchObject({ state: 'done', done: 2, imported: 1 })
     expect(status.failures.map((f) => f.folder)).toEqual([join(s.root, 'Sintel (2010)')])
+  })
+})
+
+describe.skipIf(!hasFfmpeg)('the library scan adds new folders it can match surely', () => {
+  test('an id in the name, or the title and year, are added in place; the rest wait', async () => {
+    const s = await start({
+      'Sintel (2010)': { 'Sintel.2010.1080p.BluRay.x264-GRP.mkv': 'main' },
+      'Metropolis {tmdb-19}': { 'metropolis.mkv': 'main' },
+      // TMDB's Metropolis is 1927, a year out: Library import asks
+      'Metropolis (1926)': { 'metropolis.1926.mkv': 'main' },
+      // no year to be sure by
+      Nosferatu: { 'nosferatu.mkv': 'main' },
+      'Empty (2000)': {},
+    })
+    expect(await s.movies.libraryScan.scan()).toMatchObject({ movies: 2, waiting: 2 })
+    expect(s.movies.get(SINTEL)).toMatchObject({
+      status: 'available',
+      path: join(s.root, 'Sintel (2010)'),
+    })
+    expect(s.movies.files(SINTEL)[0]?.path).toBe(
+      join(s.root, 'Sintel (2010)', 'Sintel.2010.1080p.BluRay.x264-GRP.mkv'),
+    )
+    expect(s.movies.get(METROPOLIS).path).toBe(join(s.root, 'Metropolis {tmdb-19}'))
+    expect(s.movies.history(SINTEL).items[0]?.message).toBe(
+      'Imported from the existing library, where it was.',
+    )
+    // the root folder's row says how many wait
+    expect(s.media.rootFolders.list()[0]).toMatchObject({ movies: 2, waiting: 2 })
+
+    // safe to repeat: nothing added twice, and the waiting ones aren't searched again
+    expect(await s.movies.libraryScan.scan()).toMatchObject({ movies: 0, added: 0, waiting: 2 })
+    expect(s.movies.files(SINTEL)).toHaveLength(1)
+
+    // one imported by hand in Library import no longer waits
+    s.movies.libraryImport.run([{ folder: join(s.root, 'Nosferatu'), tmdbId: NOSFERATU }])
+    await s.runJob()
+    expect(s.media.rootFolders.list()[0]?.waiting).toBe(1)
+  })
+
+  test('a folder that appears later, or changes, is tried again on its own', async () => {
+    const s = await start({ Sintel: { 'sintel.mkv': 'main' } })
+    expect(await s.movies.libraryScan.scan()).toMatchObject({ movies: 0, waiting: 1 })
+    // renamed with its year, as the watcher would see it
+    renameSync(join(s.root, 'Sintel'), join(s.root, 'Sintel (2010)'))
+    expect(
+      await s.movies.libraryScan.scan({ folder: join(s.root, 'Sintel (2010)') }),
+    ).toMatchObject({ movies: 1 })
+    expect(s.movies.get(SINTEL).path).toBe(join(s.root, 'Sintel (2010)'))
+    // the old name is gone, so it no longer waits
+    expect(s.media.rootFolders.list()[0]?.waiting).toBe(0)
+  })
+
+  test('a second copy of a movie in the library doesn’t wait for a match', async () => {
+    const s = await start({
+      'Sintel (2010)': { 'Sintel.2010.1080p.BluRay.x264-GRP.mkv': 'main' },
+      'Sintel {tmdb-45745}': { 'sintel.mkv': 'main' },
+    })
+    expect(await s.movies.libraryScan.scan()).toMatchObject({ movies: 1, waiting: 0 })
+    expect(s.movies.files(SINTEL)).toHaveLength(1)
+  })
+
+  test('without a TMDB key nothing is added, and nothing is marked as waiting', async () => {
+    const s = await setup({ key: false, importing: { downloadDirs: () => [], sampleSeconds: 2 } })
+    cleanups.push(s.cleanup)
+    mkdirSync(join(s.folder.path, 'Sintel (2010)'))
+    copyFileSync(clips.main, join(s.folder.path, 'Sintel (2010)', 'sintel.mkv'))
+    expect(await s.movies.libraryScan.scan()).toMatchObject({ movies: 0, waiting: 0 })
+    expect(s.media.rootFolders.list()[0]?.waiting).toBe(0)
+  })
+
+  test('a downloads folder inside the root folder is left alone', async () => {
+    let downloads = ''
+    const s = await setup({
+      importing: { downloadDirs: () => [downloads], sampleSeconds: 2 },
+    })
+    cleanups.push(s.cleanup)
+    downloads = join(s.folder.path, 'Sintel (2010)')
+    mkdirSync(downloads)
+    copyFileSync(clips.main, join(downloads, 'Sintel.2010.1080p.BluRay.x264-GRP.mkv'))
+    expect(await s.movies.libraryScan.scan()).toMatchObject({ movies: 0, waiting: 0 })
   })
 })
 

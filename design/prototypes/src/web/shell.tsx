@@ -150,13 +150,15 @@ export function TopBar({ overHero }: { overHero: boolean }) {
   return (
     <header
       className={cn(
-        'sticky top-0 z-30 transition-tint',
+        // the border is there in both states, so its colour fades from transparent, not from
+        // Tailwind's default `currentColor` (https://tailwindcss.com/docs/upgrade-guide#default-border-color)
+        'sticky top-0 z-30 border-b transition-tint',
         clear
-          ? 'bg-[linear-gradient(var(--color-bg),transparent)]'
-          : 'glass-bar border-line border-b',
+          ? 'border-transparent bg-[linear-gradient(var(--color-bg),transparent)]'
+          : 'glass-bar border-line',
       )}
     >
-      <div className={cn('mx-auto flex h-16 max-w-[1680px] items-center gap-3', gutter)}>
+      <div className={cn('mx-auto w-full flex h-16 max-w-[1680px] items-center gap-3', gutter)}>
         <ServerSwitcher />
         <nav
           aria-label="Main"
@@ -214,7 +216,10 @@ export function Banners() {
   const a = useAnnouncements('web')
   if (!a.banners.length) return null
   return (
-    <section aria-label="Announcements" className={cn('mx-auto grid max-w-[1680px] gap-2', gutter)}>
+    <section
+      aria-label="Announcements"
+      className={cn('mx-auto w-full grid max-w-[1680px] gap-2', gutter)}
+    >
       {a.banners.map((b) => (
         <Banner
           key={b.id}
@@ -274,7 +279,9 @@ export function Unreachable() {
   const [, navigate] = useLocation()
   const name = server.data?.name ?? 'Harbor'
   return (
-    <main className={cn('mx-auto grid min-h-[70vh] max-w-[1680px] place-items-center', gutter)}>
+    <main
+      className={cn('mx-auto w-full grid min-h-[70vh] max-w-[1680px] place-items-center', gutter)}
+    >
       <EmptyState
         icon="network"
         title={`Can’t reach ${name}`}

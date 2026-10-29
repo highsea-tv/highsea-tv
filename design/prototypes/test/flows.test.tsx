@@ -23,10 +23,10 @@ const settle = () =>
     for (let i = 0; i < 4; i++) await new Promise((r) => setTimeout(r, 0))
   })
 
-async function open(path: string, role: Role = 'owner') {
+async function open(path: string, role: Role = 'owner', data: 'populated' | 'empty' = 'populated') {
   const mock = createMock()
   const location = memoryLocation({ path, record: true })
-  const state = { ...defaultState, data: 'populated' as const, role, time: 'pause' as const }
+  const state = { ...defaultState, data, role, time: 'pause' as const }
   await act(async () => {
     render(<ScreenApp mock={mock} state={state} hook={location.hook} latency={0} />)
   })
@@ -48,16 +48,18 @@ async function clean(modal?: Element) {
 describe('A3 dashboard', () => {
   test('customize by keyboard: move, resize, remove, save', async () => {
     const { mock, user } = await open('/admin')
-    expect(order().slice(0, 2)).toEqual(['w-network', 'w-storage'])
+    // Now playing leads (the owner's word at 4.3a's review)
+    expect(order()[0]).toBe('w-now-playing')
+    expect(order().slice(1, 3)).toEqual(['w-network', 'w-storage'])
     await user.click(page().getByRole('button', { name: 'Customize' }))
     await clean()
 
     const handle = page().getByRole('button', { name: 'Move Network' })
     handle.focus()
     await user.keyboard(' ')
-    expect(page().getByText(/Network picked up, position 1 of 7/)).toBeTruthy()
+    expect(page().getByText(/Network picked up, position 2 of 8/)).toBeTruthy()
     await user.keyboard('{ArrowRight}')
-    expect(order().slice(0, 2)).toEqual(['w-storage', 'w-network'])
+    expect(order().slice(1, 3)).toEqual(['w-storage', 'w-network'])
     // focus stays on the handle after the move, so the next key keeps working
     expect(document.activeElement).toBe(page().getByRole('button', { name: 'Move Network' }))
     await user.keyboard('{Shift>}{ArrowRight}{/Shift}')
@@ -68,7 +70,7 @@ describe('A3 dashboard', () => {
     expect(page().getByText('Network is now 1 column wide and 3 rows tall.')).toBeTruthy()
     expect(document.activeElement).toBe(page().getByRole('button', { name: 'Move Network' }))
     await user.keyboard(' ')
-    expect(page().getByText('Network dropped at position 2 of 7.')).toBeTruthy()
+    expect(page().getByText('Network dropped at position 3 of 8.')).toBeTruthy()
 
     await user.click(page().getByRole('button', { name: 'Remove Subtitles' }))
     expect(order()).not.toContain('w-subtitles')
@@ -77,7 +79,7 @@ describe('A3 dashboard', () => {
 
     const saved = await client(mock).dashboard.layout()
     expect(saved.inherited).toBe(false)
-    expect(saved.widgets.slice(0, 2)).toEqual([
+    expect(saved.widgets.slice(1, 3)).toEqual([
       { id: 'w-storage', kind: 'storage', span: 1, rows: 2, settings: {} },
       { id: 'w-network', kind: 'network', span: 1, rows: 3, settings: { minutes: 10 } },
     ])
@@ -90,9 +92,9 @@ describe('A3 dashboard', () => {
     await user.click(page().getByRole('button', { name: 'Customize' }))
     page().getByRole('button', { name: 'Move Storage' }).focus()
     await user.keyboard(' {ArrowLeft}')
-    expect(order()[0]).toBe('w-storage')
+    expect(order()[1]).toBe('w-storage')
     await user.keyboard('{Escape}')
-    expect(order().slice(0, 2)).toEqual(['w-network', 'w-storage'])
+    expect(order().slice(1, 3)).toEqual(['w-network', 'w-storage'])
 
     await user.click(page().getByRole('button', { name: 'Remove Indexers' }))
     await user.click(page().getByRole('button', { name: 'Cancel' }))
@@ -129,9 +131,9 @@ describe('A3 dashboard', () => {
     expect(page().queryByRole('menuitem', { name: /default for/ })).toBeNull()
   })
 
-  test('a user gets the refusal page instead of the dashboard', async () => {
-    await open('/admin', 'user')
-    expect(page().getByText('This is where the server’s owner and admins run it')).toBeTruthy()
+  test('a user is sent to the web client instead of the dashboard', async () => {
+    const { location } = await open('/admin', 'user')
+    expect(location.history.at(-1)).toBe('/web')
     expect(page().queryByRole('button', { name: 'Customize' })).toBeNull()
   })
 })
@@ -171,29 +173,101 @@ describe('A18 login', () => {
 })
 
 describe('A2 setup', () => {
-  test('walks every step and finishes on the dashboard', async () => {
-    const { mock, location, user } = await open('/admin/setup')
-    const proceed = () => user.click(page().getByRole('button', { name: 'Continue' }))
-    const heading = (name: string) => page().getByRole('heading', { level: 1, name })
+  const proceed = (user: ReturnType<typeof userEvent.setup>) =>
+    user.click(page().getByRole('button', { name: 'Continue' }))
+  const heading = (name: string) => page().getByRole('heading', { level: 1, name })
 
-    await proceed()
-    expect(page().getByText('Give the server a name.')).toBeTruthy()
-    await user.type(page().getByLabelText('Server name'), 'Lighthouse')
-    await proceed()
+  // user.clear leaves React's value tracker behind on a value React rendered: select and delete
+  async function wipe(user: ReturnType<typeof userEvent.setup>, label: string) {
+    await user.tripleClick(page().getByLabelText(label))
+    await user.keyboard('{Backspace}')
+  }
 
-    expect(heading('Create the owner account')).toBeTruthy()
+  async function owner(user: ReturnType<typeof userEvent.setup>) {
     await user.type(page().getByLabelText('Your name'), 'Ines')
     await user.type(page().getByLabelText('Username'), 'ines')
     await user.type(page().getByLabelText('Password'), 'long enough pass')
     await user.type(page().getByLabelText('Confirm password'), 'long enough')
-    await proceed()
+    await proceed(user)
     expect(page().getByText('The passwords don’t match.')).toBeTruthy()
     await user.type(page().getByLabelText('Confirm password'), ' pass')
-    await proceed()
+  }
+
+  test('with everything found: the owner, then Review, finishing on the dashboard', async () => {
+    const { mock, location, user } = await open('/admin/setup')
+    expect(page().getByText('Step 1 of 2')).toBeTruthy()
+    expect(heading('Create the owner account')).toBeTruthy()
+    // the host's name, filled in
+    expect((page().getByLabelText('Server name') as HTMLInputElement).value).toBe('Harbor')
+    await wipe(user, 'Server name')
+    await owner(user)
+    expect(page().getByText('Give the server a name.')).toBeTruthy()
+    await user.type(page().getByLabelText('Server name'), 'Lighthouse')
+    await clean()
+    await proceed(user)
+
+    expect(heading('Check and finish')).toBeTruthy()
+    await settle()
+    expect(page().getByText('Lighthouse')).toBeTruthy()
+    expect(page().getByText('From TMDB, with highsea’s key')).toBeTruthy()
+    expect(page().getByText('192.168.1.20:3000')).toBeTruthy()
+    expect(page().getByText('Intel UHD Graphics 770, through VAAPI')).toBeTruthy()
+    expect(page().getByText('Same disk, so imports are hardlinked.')).toBeTruthy()
+    expect(page().getByText('From this browser’s languages.')).toBeTruthy()
+    await clean()
+
+    // a line highsea decided opens its editor in place, and loses its note once changed
+    await user.click(page().getByRole('button', { name: 'Change subtitles' }))
+    await settle()
+    await user.click(page().getByRole('button', { name: 'Spanish' }))
+    await clean()
+    await user.click(page().getByRole('button', { name: 'Done with subtitles' }))
+    expect(page().getByText('English, then Spanish')).toBeTruthy()
+    expect(page().queryByText('From this browser’s languages.')).toBeNull()
+
+    // remote access is opened only by choosing it
+    await user.click(page().getByRole('button', { name: 'Change away from home' }))
+    await user.click(page().getByRole('radio', { name: /reverse proxy/ }))
+    await user.type(page().getByLabelText('Public address'), 'movies.example.com')
+    await user.click(page().getByRole('button', { name: 'Done with away from home' }))
+    expect(page().getByText(/starting with https/)).toBeTruthy()
+    await user.clear(page().getByLabelText('Public address'))
+    await user.type(page().getByLabelText('Public address'), 'https://movies.example.com')
+    await clean()
+    await user.click(page().getByRole('button', { name: 'Done with away from home' }))
+    expect(page().getByText('Reverse proxy at https://movies.example.com')).toBeTruthy()
+
+    // an editor left wrong opens again on Finish
+    await user.click(page().getByRole('button', { name: 'Change address on your network' }))
+    await wipe(user, 'Address on your network')
+    await user.click(page().getByRole('button', { name: 'Finish setup' }))
+    expect(page().getByText(/Enter the address apps use/)).toBeTruthy()
+    await user.type(page().getByLabelText('Address on your network'), '192.168.1.20:3000')
+
+    // a line that was asked goes back to its step
+    await user.click(page().getByRole('button', { name: 'Change server name' }))
+    expect(heading('Create the owner account')).toBeTruthy()
+    await user.type(page().getByLabelText('Password'), 'long enough pass')
+    await user.type(page().getByLabelText('Confirm password'), 'long enough pass')
+    await proceed(user)
+
+    await user.click(page().getByRole('button', { name: 'Finish setup' }))
+    await settle()
+    expect(location.history.at(-1)).toBe('/admin/')
+    expect((await client(mock).system.server()).name).toBe('Lighthouse')
+  })
+
+  test('with no folders found: Folders becomes a step', async () => {
+    const { user } = await open('/admin/setup', 'owner', 'empty')
+    expect(page().getByText('Step 1 of 3')).toBeTruthy()
+    expect((page().getByLabelText('Server name') as HTMLInputElement).value).toBe('')
+    await user.type(page().getByLabelText('Server name'), 'Lighthouse')
+    await owner(user)
+    await proceed(user)
 
     expect(heading('Choose your folders')).toBeTruthy()
-    await settle()
-    expect(page().getByText('Hardlinks will work')).toBeTruthy()
+    await proceed(user)
+    expect(page().getByText('Pick a folder for movies.')).toBeTruthy()
     await user.click(page().getAllByRole('button', { name: 'Browse' })[0] as HTMLElement)
     await settle()
     const picker = page().getByRole('dialog', { name: 'Choose the movies folder' })
@@ -205,64 +279,36 @@ describe('A2 setup', () => {
       await settle()
     }
     await user.click(within(picker).getByRole('button', { name: 'Use this folder' }))
+    await user.type(page().getByLabelText('Downloads folder'), '/data/downloads')
     await settle()
-    expect((page().getByLabelText('Movies folder') as HTMLInputElement).value).toBe(
-      '/mnt/nas/movies',
-    )
     expect(page().getByText('Imports will be copied')).toBeTruthy()
     await clean()
-    await proceed()
-
-    expect(heading('Add indexers')).toBeTruthy()
-    await settle()
-    const checked = page()
-      .getAllByRole('checkbox')
-      .filter((c) => c.dataset.state === 'checked')
-    expect(checked.length).toBeGreaterThan(0)
-    await clean()
-    await proceed()
-
-    expect(heading('Subtitle languages')).toBeTruthy()
-    await settle()
-    await user.click(page().getByRole('button', { name: 'Spanish' }))
-    expect(page().getByText('English, then Spanish, in that order.')).toBeTruthy()
-    await clean()
-    await proceed()
-
-    expect(heading('Watching away from home')).toBeTruthy()
-    await user.click(page().getByRole('radio', { name: /reverse proxy/ }))
-    await user.type(page().getByLabelText('Public address'), 'movies.example.com')
-    await proceed()
-    expect(page().getByText(/starting with https/)).toBeTruthy()
-    await user.clear(page().getByLabelText('Public address'))
-    await user.type(page().getByLabelText('Public address'), 'https://movies.example.com')
-    await clean()
-    await proceed()
-
-    expect(heading('Link to highsea cloud')).toBeTruthy()
-    expect(page().getByRole('switch').getAttribute('aria-checked')).toBe('false')
-    await proceed()
+    await proceed(user)
 
     expect(heading('Check and finish')).toBeTruthy()
-    expect(page().getByText('Lighthouse')).toBeTruthy()
-    expect(page().getByText('Reverse proxy at https://movies.example.com')).toBeTruthy()
-    await clean()
-    await user.click(page().getByRole('button', { name: 'Finish setup' }))
     await settle()
-    expect(location.history.at(-1)).toBe('/admin/')
-    expect((await client(mock).system.server()).name).toBe('Lighthouse')
+    expect(page().getByText('From TMDB, with highsea’s key')).toBeTruthy()
+    expect(page().getByText('This computer’s processor')).toBeTruthy()
+    expect(page().getByText(/The address you opened setup at/)).toBeTruthy()
+    await clean()
   })
 
   test('progress survives a reload; Start over clears it', async () => {
     const first = await open('/admin/setup')
+    await wipe(first.user, 'Server name')
     await first.user.type(page().getByLabelText('Server name'), 'Lighthouse')
-    await first.user.click(page().getByRole('button', { name: 'Continue' }))
+    await owner(first.user)
+    await proceed(first.user)
+    expect(heading('Check and finish')).toBeTruthy()
     cleanup()
 
     const again = await open('/admin/setup')
-    expect(page().getByRole('heading', { level: 1, name: 'Create the owner account' })).toBeTruthy()
+    expect(heading('Check and finish')).toBeTruthy()
+    expect(page().getByText('Lighthouse')).toBeTruthy()
     await again.user.click(page().getByRole('button', { name: 'Start over' }))
-    expect((page().getByLabelText('Server name') as HTMLInputElement).value).toBe('')
+    await settle()
+    expect(heading('Create the owner account')).toBeTruthy()
+    expect((page().getByLabelText('Server name') as HTMLInputElement).value).toBe('Harbor')
   })
 })
 

@@ -49,6 +49,7 @@ import { createLibraryImport } from './library-import.ts'
 import { toApiDiscoverMovie } from './map.ts'
 import { createMigrate } from './migrate.ts'
 import { createParse } from './parse.ts'
+import { createPlayback } from './playback.ts'
 import { createLibraryScan, LIBRARY_SCAN_JOB, SCAN_EVERY_MS } from './scan.ts'
 import { createWanted } from './wanted.ts'
 
@@ -59,10 +60,16 @@ export function createMovies(deps: MoviesDeps, media: Media) {
   const library = createLibrary(deps, media)
   const parse = createParse(deps, { media, library })
   const client = createClient(deps, { library })
+  const playback = createPlayback(deps, { library, client })
   const imports = createImports(deps, { media, library })
   defineMovieJobs(deps.jobs, library.internal.checkAvailability)
-  const libraryScan = createLibraryScan(deps, { media, library, imports })
   const libraryImport = createLibraryImport(deps, { media, library, imports })
+  const libraryScan = createLibraryScan(deps, {
+    media,
+    library,
+    imports,
+    addNew: libraryImport.addNew,
+  })
   const migrate = createMigrate(deps, { media, library, imports })
   const wanted = createWanted(deps, { media, library })
   deps.jobs.define({
@@ -124,6 +131,8 @@ export function createMovies(deps: MoviesDeps, media: Media) {
     },
     parse,
     client,
+    /** Each person's watch state, and the file a version plays from (checkpoint 4.1a). */
+    playback,
     /** A finished download into the library (checkpoint 6's import pipeline). */
     async importDownload(input: Parameters<typeof imports.importDownload>[0]) {
       const result = await imports.importDownload(input)
@@ -209,6 +218,7 @@ export {
 } from './library-import.ts'
 export { toApiDiscoverMovie } from './map.ts'
 export type { InPlaceInput, InPlaceResult, Migrate } from './migrate.ts'
+export { type Playback, type PlaySource, WATCH_TOPIC } from './playback.ts'
 export { LIBRARY_SCAN_JOB, type LibraryScan, SCAN_EVERY_MS, type ScanResult } from './scan.ts'
 export {
   ASSUMED_HOME_RELEASE_DAYS,

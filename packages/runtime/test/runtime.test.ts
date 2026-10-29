@@ -75,6 +75,28 @@ describe('config', () => {
     ).toBeUndefined()
   })
 
+  test('reads highsea’s TMDB key from the variable or the file the image has (4.3c)', () => {
+    const file = join(temp(), 'tmdb')
+    writeFileSync(file, 'built-in\n')
+    expect(loadConfig({}).tmdbKey).toBeUndefined()
+    expect(loadConfig({ HIGHSEA_TMDB_READ_TOKEN_FILE: file }).tmdbKey).toBe('built-in')
+    expect(
+      loadConfig({ HIGHSEA_TMDB_READ_TOKEN: 'given', HIGHSEA_TMDB_READ_TOKEN_FILE: file }).tmdbKey,
+    ).toBe('given')
+    // a build without the secret installs no file
+    expect(
+      loadConfig({ HIGHSEA_TMDB_READ_TOKEN_FILE: join(temp(), 'missing') }).tmdbKey,
+    ).toBeUndefined()
+  })
+
+  test('the published address, as Jellyfin’s JELLYFIN_PublishedServerUrl', () => {
+    expect(loadConfig({}).publishedUrl).toBeUndefined()
+    expect(loadConfig({ HIGHSEA_PUBLISHED_URL: 'http://nas.home.arpa:3000' }).publishedUrl).toBe(
+      'http://nas.home.arpa:3000',
+    )
+    expect(() => loadConfig({ HIGHSEA_PUBLISHED_URL: 'not a url' })).toThrow('publishedUrl')
+  })
+
   test('says which setting is wrong', () => {
     expect(() => loadConfig({ PORT: 'eighty' })).toThrow('port')
     expect(() => loadConfig({ HIGHSEA_PUBLIC_URL: 'not a url' })).toThrow('publicUrl')

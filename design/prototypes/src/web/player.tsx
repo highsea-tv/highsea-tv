@@ -3,6 +3,9 @@
 // title and Back on top; the scrubber with a trickplay frame, the transport and the track menu
 // at the bottom; the Audio and subtitles panel with the timing nudge and its live preview line.
 // Keyboard: Space plays or pauses, ←/→ seek 10 s, M mutes, F full screen, Esc closes the panel.
+// Picture in picture (4.2b) sits beside Full screen where the browser has the Picture-in-Picture
+// API (https://developer.mozilla.org/docs/Web/API/Picture-in-Picture_API); the prototype has no
+// video to hand it, so the frame shows what the tab shows while the film plays in its window.
 import { Button, cn, EmptyState, Icon, QualityTag } from '@highsea-tv/ui-web'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
@@ -12,6 +15,7 @@ import {
   NUDGE_MS,
   offsetHint,
   offsetLabel,
+  PICTURE_TIMING,
   type Player,
   SEEK_S,
   sampleCue,
@@ -165,7 +169,15 @@ export function TracksPanel({ player, onClose }: { player: Player; onClose: () =
           })}
         </div>
       </section>
-      {player.subtitle && (
+      {player.subtitle?.picture && (
+        <section aria-labelledby="p-timing" className="grid gap-2">
+          <h3 id="p-timing" className="font-mono text-label text-text-3 uppercase">
+            Subtitle timing
+          </h3>
+          <p className="text-caption text-text-3">{PICTURE_TIMING}</p>
+        </section>
+      )}
+      {player.subtitle && !player.subtitle.picture && (
         <section aria-labelledby="p-timing" className="grid gap-2">
           <h3 id="p-timing" className="font-mono text-label text-text-3 uppercase">
             Subtitle timing
@@ -267,6 +279,9 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
   const [panel, setPanel] = useState(false)
   const [muted, setMuted] = useState(false)
   const [shown, setShown] = useState(true)
+  const [pip, setPip] = useState(false)
+  // Firefox has no API, only its own toggle on the video, so the button is left out there
+  const pipAvailable = typeof document !== 'undefined' && document.pictureInPictureEnabled === true
   const root = useRef<HTMLDivElement>(null)
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
 
@@ -340,13 +355,25 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
       )}
       <h1 className="sr-only">Playing {d?.item.title ?? ''}</h1>
 
+      {pip && (
+        <div className="absolute inset-0 grid place-items-center bg-[#000]">
+          <div className="grid justify-items-center gap-4 text-center">
+            <Icon name="picture-in-picture" size={40} className="text-text-2" />
+            <p className="text-text-2 text-ui">Playing in picture in picture</p>
+            <Button variant="secondary" onClick={() => setPip(false)}>
+              Back to this tab
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div
         className={cn(
           'absolute inset-x-0 bottom-[16%] transition-[bottom] duration-200',
           chrome && 'bottom-[22%]',
         )}
       >
-        <CueLine player={player} />
+        {!pip && <CueLine player={player} />}
       </div>
 
       <div
@@ -417,7 +444,9 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
               aria-label={muted ? 'Unmute' : 'Mute'}
               aria-pressed={muted}
               onClick={() => setMuted((m) => !m)}
-              className={glassButton}
+              // phones and tablets set the volume with their own buttons; this leaves Picture in
+              // picture and Full screen room at 390
+              className={cn(glassButton, 'hidden medium:grid')}
             >
               <Icon name={muted ? 'mute' : 'sound'} size={20} />
             </button>
@@ -433,6 +462,17 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
             >
               <Icon name="subtitles" size={20} />
             </button>
+            {pipAvailable && (
+              <button
+                type="button"
+                aria-label="Picture in picture"
+                aria-pressed={pip}
+                onClick={() => setPip((p) => !p)}
+                className={glassButton}
+              >
+                <Icon name="picture-in-picture" size={20} />
+              </button>
+            )}
             <button
               type="button"
               aria-label="Full screen"

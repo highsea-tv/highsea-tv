@@ -4,7 +4,7 @@
 // nudge (±50 ms on Left and Right) with its live preview line.
 import { cn, Icon } from '@highsea-tv/ui-web'
 import { useEffect, useRef } from 'react'
-import { NUDGE_MS, offsetHint, offsetLabel } from '../client/player.ts'
+import { NUDGE_MS, offsetHint, offsetLabel, PICTURE_TIMING } from '../client/player.ts'
 import type { ClientTrack, ClientVersion } from '../mock/types.ts'
 import { NudgePreview } from '../web/player.tsx'
 
@@ -118,7 +118,15 @@ export function TvTracksPanel({
         current={subtitle?.id ?? 'off'}
         onPick={(id) => onSubtitle(id === 'off' ? null : id)}
       />
-      {timing && subtitle && (
+      {timing && subtitle?.picture && (
+        <section aria-label="Subtitle timing" className="grid gap-[0.6cqw]">
+          <h3 className="font-semibold text-(length:--tv-text-eyebrow) text-text-3 uppercase tracking-eyebrow">
+            Subtitle timing
+          </h3>
+          <p className="text-(length:--tv-text-pill) text-text-2">{PICTURE_TIMING}</p>
+        </section>
+      )}
+      {timing && subtitle && !subtitle.picture && (
         <section aria-label="Subtitle timing" className="grid gap-[0.6cqw]">
           <h3 className="font-semibold text-(length:--tv-text-eyebrow) text-text-3 uppercase tracking-eyebrow">
             Subtitle timing

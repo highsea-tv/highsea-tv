@@ -23,7 +23,7 @@ One page in Settings' **Playback** group, before Downloads and alerts. Four sect
 - **What highsea found:** a row per path: VAAPI, Intel Quick Sync, NVIDIA NVENC and VideoToolbox, each with a line on what it is, the device it found (`/dev/dri/renderD128`, "Intel UHD Graphics 770") or why it can't be used here ("No /dev/dri in the container.", "No NVIDIA GPU in the container.", "Only when highsea runs on a Mac, outside Docker."), and its last check: "Passed · 286 fps · 2 days ago" with what it decodes and encodes, or "Failed" with what went wrong and what to do. **Check** transcodes a short clip (1080p HEVC to H.264) on that path; while it runs, "Transcoding a short clip…".
 - **Use:** Automatic (the first path whose check passed), one path, or "The processor only". "highsea never uses one that hasn't" passed its check: an untested path stays off (the Phase 4 plan's risk).
 - **Convert HDR for screens that can't show it:** tone mapping, on by default.
-- **When nothing is found:** how to give the container the chip, with copyable compose lines for Intel and AMD (`devices: [/dev/dri:/dev/dri]`) and NVIDIA (a device reservation with the `gpu` and `video` capabilities, after NVIDIA's container toolkit on the host), and a link to the guide.
+- **When nothing is found:** how to give the container the chip, with copyable compose lines for Intel and AMD and commands for NVIDIA, and a link to the guide. Since 2026-10-28 (ADR 0057, approved by the owner on 2026-10-28) these are the default compose files' bind mount of `/dev/dri` with its device rules for 226:128 to 226:135, and, for NVIDIA, `nvidia-ctk runtime configure --runtime=docker --set-as-default` and a restart of Docker on the host; before, `devices: [/dev/dri:/dev/dri]` and a device reservation with the `gpu` and `video` capabilities.
 
 ### Transcoding
 
@@ -46,7 +46,7 @@ One page in Settings' **Playback** group, before Downloads and alerts. Four sect
 | State | What shows |
 | --- | --- |
 | No hardware found | Every path unavailable with its reason; the summary says the processor; the compose lines show |
-| Hardware found, not checked | The path "Found, not checked", with Check; Automatic still uses the processor |
+| Hardware found, not checked | The path "Found, not checked", with Check; Automatic still uses the processor. Brief: highsea checks every path it finds by itself when it starts |
 | Checked and in use | The path's check passed; the summary names it |
 | A check that failed | "Failed", with what ffmpeg reported and what to try (the Intel media driver not loading, a GPU that encodes partway and stops) |
 | The cache over its limit | The warning badge, the bar in warning, and the line on what highsea removes |
@@ -63,6 +63,7 @@ One page in Settings' **Playback** group, before Downloads and alerts. Four sect
 
 - **A real transcode decides,** not the device's presence: a render node that's there but unusable (no driver, wrong permissions) is the commonest failure, and only a check finds it.
 - **Automatic never uses an unchecked path.** A path that fails mid-film is worse than a slower processor transcode.
+- **highsea checks what it finds by itself** (the owner, 2026-10-28, at 4.3b's review): at boot, in the background, every path found without a check on its device and driver is checked, one at a time, so a new install uses its chip without a visit here. Settings › Playback is for seeing the result and changing it. A failed check isn't run again by itself.
 - **The remote ceiling is per stream,** not shared: the owner knows their upload speed, and "per stream" is what Plex and Jellyfin ask, so it's what owners coming from them expect.
 - **Trickplay isn't in the cache's limit,** since it's made once per film and kept; clearing it would mean making it again.
 

@@ -1,0 +1,54 @@
+app_version: 0.1.0
+capabilities:
+- description: highsea is able to change file ownership arbitrarily
+  name: CHOWN
+- description: highsea is able to bypass file permission checks
+  name: DAC_OVERRIDE
+- description: highsea is able to bypass permission checks for file operations
+  name: FOWNER
+- description: highsea is able to send signals to any process
+  name: KILL
+- description: highsea is able to change group ID of processes
+  name: SETGID
+- description: highsea is able to change user ID of processes
+  name: SETUID
+categories:
+- media
+changelog_url: https://github.com/highsea-tv/highsea-tv/blob/main/CHANGELOG.md
+date_added: '2026-10-28'
+description: highsea finds, downloads and organises your films, with their subtitles,
+  and serves them to your own apps. One self-hosted server in place of Radarr, Prowlarr,
+  qBittorrent and Bazarr.
+home: https://docs.highsea.tv
+host_mounts:
+- description: D-Bus socket, read only, to publish highsea over mDNS through TrueNAS's
+    avahi (optional)
+  host_path: /run/dbus
+icon: https://media.sys.truenas.net/apps/highsea/icons/icon.svg
+keywords:
+- media
+- movies
+- torrent
+- subtitles
+- streaming
+lib_version: 2.3.17
+lib_version_hash: b02a8040f1971a601638300b595bbd5b72f0664ba13fdf7759c212867caeed24
+maintainers:
+- email: dev@truenas.com
+  name: truenas
+  url: https://www.truenas.com/
+name: highsea
+run_as_context:
+- description: Container [highsea] runs as root user and group.
+  gid: 0
+  group_name: Host group is [root]
+  uid: 0
+  user_name: Host user is [root]
+screenshots: []
+sources:
+- https://apps.truenas.com/catalog/highsea_community/
+- https://docs.highsea.tv/
+- https://github.com/highsea-tv/highsea-tv
+title: highsea
+train: community
+version: 1.0.0

@@ -2,13 +2,15 @@
 // The server's admin pages (Phase 3): the same checks as the prototype sweeps, on the real thing.
 // Boots a throwaway server (seeded.ts), sweeps setup, finishes it and seeds the admin through the
 // API, then visits every admin page signed out, as the owner and as an admin, and as a user, who
-// gets the refusal page at every address (ADR 0032): axe, overflow and page errors in three themes,
-// at 200% text and with reduced motion, then the keyboard walk. It runs the production build, as the
-// image does (`next build` first); SWEEP_DEV=1 runs Next's dev server instead, without the build.
+// is sent to the web app at every address (ADR 0032), then the web app (`/web`, checkpoint 4.2a)
+// signed out and as that user: axe, overflow and page errors in three themes, at 200% text and
+// with reduced motion, then the keyboard walk. It runs the production build, as the image does
+// (`next build` and the web app's `vite build` first); SWEEP_DEV=1 runs Next's dev server instead,
+// without Next's build.
 // Usage: bun scripts/sweeps/server.ts [pages|keyboard]
 import { execFileSync } from 'node:child_process'
 import { join } from 'node:path'
-import type { BrowserContext, Page } from 'playwright-core'
+import type { BrowserContext, BrowserContextOptions, Page } from 'playwright-core'
 import {
   axe,
   escapes,
@@ -41,6 +43,8 @@ const SHOTS = process.env.SWEEP_SHOTS
 const production = process.env.SWEEP_DEV !== '1'
 if (production)
   execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/server'), stdio: 'inherit' })
+// the server serves the web app from its build in either mode
+execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/web'), stdio: 'inherit' })
 const server = await boot(PORT, { production })
 const { base: BASE, dataDir, stop } = server
 const path = (link: string) => new URL(link).pathname
@@ -61,6 +65,11 @@ type Visit = {
 
 const problems: string[] = []
 const browser = await launch()
+// axe goes in as an inline script, which /web's Content Security Policy refuses, as it should;
+// Playwright's `bypassCSP` lets the sweep's own scripts in
+// (https://playwright.dev/docs/api/class-browser#browser-new-context-option-bypass-csp)
+const context = (options: BrowserContextOptions = {}) =>
+  browser.newContext({ bypassCSP: true, ...options })
 
 async function open(context: BrowserContext, v: Visit, width: number, variant?: string) {
   const page = await context.newPage()
@@ -81,12 +90,17 @@ async function open(context: BrowserContext, v: Visit, width: number, variant?: 
   await page.goto(`${BASE}${v.path}`)
   // Not 'networkidle', which Playwright discourages and which never comes here: a signed-in page
   // keeps the event stream open. Ready means hydrated (React DOM puts its props key on an element
-  // once it's hydrated, and <html> finishes last) with nothing still loading (aria-busy).
-  await page.waitForFunction(
-    () =>
-      Object.keys(document.documentElement).some((k) => k.startsWith('__reactProps$')) &&
-      !document.querySelector('[aria-busy="true"]'),
-  )
+  // once it's hydrated, and <html> finishes last; the web app renders into #root instead) with
+  // nothing still loading (aria-busy).
+  await page.waitForFunction(() => {
+    const rendered = (el: Element | null | undefined) =>
+      !!el && Object.keys(el).some((k) => k.startsWith('__reactProps$'))
+    return (
+      (rendered(document.documentElement) ||
+        rendered(document.getElementById('root')?.firstElementChild)) &&
+      !document.querySelector('[aria-busy="true"]')
+    )
+  })
   if (variant?.startsWith('theme='))
     await page.evaluate(
       (t) => document.documentElement.setAttribute('data-theme', t),
@@ -153,53 +167,85 @@ async function sweep(visits: Visit[], context: () => Promise<BrowserContext>) {
   }
 }
 
-const draft = (step: number) =>
-  JSON.stringify({
-    step,
-    reached: 8,
-    draft: {
-      serverName: 'Harbor',
-      owner: { displayName: 'Ines', username: 'ines' },
-      folders: { movies: join(dataDir, 'movies'), downloads: join(dataDir, 'downloads') },
-      remote: step === 6 ? 'reverse-proxy' : 'local-only',
-      proxyUrl: 'https://movies.example.com',
-      port: '8484',
-      cloudLink: false,
-    },
-  })
+// a kept draft at Review (4.3c's setup: Owner account, then Review, since the folders are found)
+const review = JSON.stringify({
+  step: 'review',
+  reached: 1,
+  seeded: true,
+  changed: [],
+  draft: {
+    serverName: 'Harbor',
+    owner: { displayName: 'Ines', username: 'ines' },
+    folders: { movies: join(dataDir, 'movies'), downloads: join(dataDir, 'downloads') },
+    indexers: ['internet-archive'],
+    subtitleLanguages: ['en', 'pt'],
+    timeZone: 'Europe/Lisbon',
+    address: '192.168.1.20:3000',
+    remote: 'reverse-proxy',
+    proxyUrl: 'https://movies.example.com',
+    port: '8484',
+  },
+})
 
 try {
-  // setup, each step, while there's no owner yet
-  const steps = [
-    'name',
-    'owner',
-    'metadata',
+  // setup, each step and each of Review's editors, while there's no owner yet
+  const editors = [
     'folders',
+    'movie details',
     'indexers',
     'subtitles',
-    'remote',
-    'cloud',
-    'review',
+    'time zone',
+    'address on your network',
+    'away from home',
   ]
   await sweep(
-    steps.map((s, i) => ({ name: `setup:${s}`, path: '/setup', init: i ? draft(i) : undefined })),
-    () => browser.newContext(),
-  )
-  await sweep(
     [
+      { name: 'setup:owner', path: '/setup' },
+      { name: 'setup:review', path: '/setup', init: review },
+      ...editors.map((what) => ({
+        name: `setup:review:${what}`,
+        path: '/setup',
+        init: review,
+        act: (p: Page) => p.getByRole('button', { name: `Change ${what}` }).click(),
+      })),
       {
         name: 'setup:picker',
         path: '/setup',
-        init: draft(3),
-        act: (p) => p.getByRole('button', { name: 'Browse' }).first().click(),
+        init: review,
+        act: async (p: Page) => {
+          await p.getByRole('button', { name: 'Change folders' }).click()
+          await p.getByRole('button', { name: 'Browse' }).first().click()
+        },
       },
     ],
-    () => browser.newContext(),
+    () => context(),
   )
 
   // finish setup and seed what the pages show
-  const { invite, reset, pairing, notice, picks, drawsOn, decade, handPicked, nothingYet } =
+  const { token, invite, reset, pairing, notice, picks, drawsOn, decade, handPicked, nothingYet } =
     await seed(server, OWNER, 'Sweep script')
+  // Now playing (4.3a): the owner plays Sintel through the API, as the web player would, and the
+  // page is read again with the session on it. Passes run at once against one server, so the page
+  // may show another pass's stream beside this one: the first is enough
+  const playing = async (p: Page) => {
+    const s = await server.api<{ id: string }>(
+      'POST',
+      '/items/movie/45745/play',
+      { profile: 'web-chromium' },
+      token,
+    )
+    await server.api(
+      'POST',
+      `/playback/sessions/${s.id}/progress`,
+      { position: 252, paused: false },
+      token,
+    )
+    await p.reload()
+    await p
+      .getByRole('listitem', { name: /Sintel/ })
+      .first()
+      .waitFor()
+  }
 
   // signed out
   await sweep(
@@ -211,21 +257,22 @@ try {
       { name: 'link:dead', path: '/invite/nothing-here' },
       { name: 'nowhere', path: '/no/such/page/outside' },
     ],
-    () => browser.newContext(),
+    () => context(),
   )
 
   // signed in through the login page, once each; each page's context reuses the cookie
   async function signIn(username: string, password: string) {
-    const login = await browser.newContext()
+    const login = await context()
     const page = await login.newPage()
     await page.goto(`${BASE}/login`)
     await page.getByLabel('Username').fill(username)
     await page.getByLabel('Password').fill(password)
     await page.getByRole('button', { name: 'Sign in', exact: true }).click()
-    await page.waitForURL(`${BASE}/`)
+    // a user goes on to the web app
+    await page.waitForURL((u) => u.pathname === '/' || u.pathname === '/web/')
     const storageState = await login.storageState()
     await login.close()
-    return () => browser.newContext({ storageState })
+    return () => context({ storageState })
   }
   const ownerContext = await signIn(OWNER.username, OWNER.password)
   const tab = (name: string | RegExp) => (p: Page) => p.getByRole('tab', { name }).click()
@@ -335,6 +382,8 @@ try {
         path: '/settings/connections',
         act: (p) => p.getByRole('button', { name: 'Discord', exact: true }).click(),
       },
+      // 4.3a: Settings › Playback, without hardware acceleration until 4.3b
+      { name: 'settings:playback', path: '/settings/playback' },
       { name: 'wanted', path: '/wanted' },
       { name: 'wanted:cutoff', path: '/wanted/cutoff' },
       { name: 'wanted:calendar', path: '/wanted/calendar' },
@@ -384,6 +433,18 @@ try {
       { name: 'activity', path: '/activity' },
       { name: 'activity:history', path: '/activity', act: tab('History') },
       { name: 'activity:blocklist', path: '/activity', act: tab(/Blocklist/) },
+      // Now playing (4.3a): nobody, then a stream and its Stop dialog, then the last 30 days
+      { name: 'now-playing:empty', path: '/now-playing' },
+      { name: 'now-playing', path: '/now-playing', act: playing },
+      {
+        name: 'now-playing:stop',
+        path: '/now-playing',
+        act: async (p) => {
+          await playing(p)
+          await p.getByRole('button', { name: 'Stop', exact: true }).first().click()
+        },
+      },
+      { name: 'now-playing:history', path: '/now-playing', act: tab('Last 30 days') },
       { name: 'import', path: '/activity/import' },
       { name: 'downloads', path: '/downloads' },
       {
@@ -585,16 +646,22 @@ try {
       { name: 'admin:downloads', path: '/downloads' },
       // Settings › VPN and Download client are the owner's: not there for an admin
       { name: 'admin:vpn', path: '/settings/vpn' },
+      // Settings › Playback is the owner's and admins' (4.3a)
+      { name: 'admin:playback', path: '/settings/playback' },
+      { name: 'admin:now-playing', path: '/now-playing' },
     ],
     await signIn('ruth', 'ruth ruth ruth'),
   )
 
-  // a user: the refusal page at every admin address, and nothing else
-  const refused = (p: Page) =>
-    p.getByRole('heading', { name: 'This is where the server’s owner and admins run it' }).waitFor()
+  // a user: sent to the web app at every admin address, with nothing of the admin loaded
+  const sent = async (p: Page) => {
+    if (new URL(p.url()).pathname !== '/web/')
+      throw new Error(`a user stayed on ${new URL(p.url()).pathname}`)
+    await p.getByRole('navigation', { name: 'Main' }).waitFor()
+  }
+  const theo = await signIn('theo', 'theo theo theo')
   await sweep(
     [
-      { name: 'user:refusal', path: '/' },
       ...[
         '/',
         '/settings/users',
@@ -604,10 +671,64 @@ try {
         '/system',
         '/people/68',
         '/activity',
+        '/now-playing',
         '/downloads',
-      ].map((path) => ({ name: `user:${path}`, path, act: refused })),
+      ].map((path) => ({ name: `user:${path}`, path, act: sent })),
     ],
-    await signIn('theo', 'theo theo theo'),
+    theo,
+  )
+
+  // the web app (4.2a), signed out: its sign-in, and its routes, which all ask to sign in first
+  await sweep(
+    [
+      { name: 'web:sign-in', path: '/web/' },
+      { name: 'web:sign-in:deep', path: '/web/movies/45745' },
+      {
+        name: 'web:sign-in:wrong',
+        path: '/web/',
+        act: async (p) => {
+          // a new name each time: ten failures for one name would lock it (LIMITS.account)
+          await p.getByLabel('Username').fill(`nobody-${crypto.randomUUID().slice(0, 8)}`)
+          await p.getByLabel('Password').fill('not this')
+          await p.getByRole('button', { name: 'Sign in' }).click()
+          await p.getByText('That username and password don’t match').waitFor()
+        },
+      },
+    ],
+    () => context(),
+  )
+
+  // the web app as a user, with the seeded films, sections and collections
+  const search = (query: string) => async (p: Page) => {
+    await p.getByRole('searchbox', { name: 'Search titles, genres and people' }).fill(query)
+    await p.waitForFunction(() => !document.querySelector('[aria-busy="true"]'))
+  }
+  await sweep(
+    [
+      { name: 'web:home', path: '/web/' },
+      // no menus left open: an open Radix menu hides the page behind it with aria-hidden, which axe
+      // reads as hidden focusable content (as settings:profiles:edit:grouped says)
+      { name: 'web:library', path: '/web/library' },
+      { name: 'web:collections', path: '/web/library/collections' },
+      { name: 'web:collection', path: `/web/collections/${handPicked.id}` },
+      { name: 'web:collection:smart', path: `/web/collections/${decade.id}` },
+      { name: 'web:collection:missing', path: '/web/collections/nothing-here' },
+      { name: 'web:movie', path: '/web/movies/45745' },
+      { name: 'web:movie:one-version', path: '/web/movies/653' },
+      { name: 'web:movie:missing', path: '/web/movies/19' },
+      { name: 'web:search', path: '/web/search' },
+      { name: 'web:search:results', path: '/web/search', act: search('sintel') },
+      { name: 'web:search:nothing', path: '/web/search', act: search('zzzz') },
+      ...['appearance', 'sounds', 'home', 'servers', 'devices', 'about'].map((s) => ({
+        name: `web:settings:${s}`,
+        path: `/web/settings/${s}`,
+      })),
+      { name: 'web:profile', path: '/web/profile' },
+      { name: 'web:downloads', path: '/web/downloads' },
+      { name: 'web:play', path: '/web/play/45745' },
+      { name: 'web:nowhere', path: '/web/no/such/page' },
+    ],
+    theo,
   )
 } finally {
   await browser.close()

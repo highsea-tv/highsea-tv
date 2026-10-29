@@ -9,6 +9,20 @@ Debian's own archive, with apt. highsea runs them as separate programs; it doesn
   wireguard-tools  GPL-2.0        `wg`: sets the WireGuard keys and peer of highsea connects
   iproute2         GPL-2.0        `ip`: the interface, address, routes and rule of highsea connects
   wireguard-go     MIT            WireGuard in user space, where the kernel has none
+  avahi-utils      LGPL-2.1+      `avahi-publish`: publishes highsea through the host's avahi over D-Bus
+
+On amd64 only, for hardware acceleration:
+
+  Package                         License                What highsea uses it for
+  intel-media-va-driver-non-free  BSD-3-Clause, MIT      VAAPI on Intel graphics (ffmpeg loads it)
+  libmfx-gen1.2                   MIT                    Quick Sync on Intel graphics
+  libvpl2                         MIT, Apache-2.0        Quick Sync's dispatcher
+  mesa-va-drivers                 MIT                    VAAPI on AMD graphics
+  mesa-vulkan-drivers             MIT                    Vulkan, for tone mapping on the GPU
+
+intel-media-va-driver-non-free is in Debian's non-free component: its source is open, but some of
+its GPU kernels are built from binaries Intel distributes. Its source is at the addresses below, as
+for the rest.
 
 Each package's copyright and full license text are in the image, at
 /usr/share/doc/<package>/copyright. The exact version of each is what `dpkg -s <package>` reports

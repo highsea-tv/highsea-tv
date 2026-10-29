@@ -18,6 +18,7 @@ import {
   type Movie,
   type QueueItem,
   type RootFolder,
+  SESSIONS_TOPICS,
   SUBTITLE_TOPICS,
 } from '@highsea-tv/api-contract'
 import {
@@ -68,9 +69,11 @@ import {
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useState } from 'react'
 import { widgets as messages } from './dashboard-messages.ts'
+import { behind, mbps, methodTone } from './delivery.ts'
 import { type QueueFilter, queueFilters, torrentTone } from './downloads-status.ts'
 import { foldersOnDisk, releasesByDay } from './library-figures.ts'
 import { torrentState } from './movie-detail-messages.ts'
+import { nowPlaying } from './now-playing-messages.ts'
 import { useNow } from './time.ts'
 
 export type WidgetProps = {
@@ -1140,6 +1143,62 @@ function SystemHealth(props: WidgetProps) {
   )
 }
 
+// ---------------------------------------------------------------- now playing
+
+function NowPlaying(props: WidgetProps) {
+  const t = useT(messages)
+  const tn = useT(nowPlaying)
+  // the sidebar's count and the page share this answer
+  const query = useQuery('sessions', (c) => c.sessions.list(), [SESSIONS_TOPICS.updated])
+  const clip = useClip<HTMLUListElement>(':scope > li')
+  return (
+    <Widget
+      {...props}
+      kind="now-playing"
+      query={query}
+      meta={(np) => (np.sessions.length ? mbps(np.totalMbps) : null)}
+    >
+      {(np) =>
+        np.sessions.length === 0 ? (
+          <EmptyState size="sm" icon="play" title={t('playing.none')} />
+        ) : (
+          <>
+            <ul ref={clip.ref} className={cn('grid content-start gap-3', fill)}>
+              {np.sessions.map((s) => (
+                <li key={s.id} className="grid grid-cols-[32px_minmax(0,1fr)] items-center gap-3">
+                  <Poster title={s.item.title} src={s.item.poster ?? undefined} />
+                  <div className="grid min-w-0 gap-1">
+                    <div className="flex min-w-0 items-center justify-between gap-2">
+                      <span className="truncate text-text">{s.item.title}</span>
+                      {behind(s) ? (
+                        <Badge tone="danger">{tn('state.behind')}</Badge>
+                      ) : (
+                        <Badge tone={methodTone[s.method]} dot={false}>
+                          {tn(`method.${s.method}`)}
+                        </Badge>
+                      )}
+                    </div>
+                    <span className="truncate text-caption text-text-3">
+                      {s.user.displayName} · {s.deviceName}
+                      {s.state === 'paused' && !s.stopped ? t('playing.paused') : ''}
+                    </span>
+                    <Progress
+                      value={s.runtime ? (s.position / s.runtime) * 100 : 0}
+                      tone={behind(s) ? 'danger' : 'accent'}
+                      aria-label={t('playing.so-far', { title: s.item.title })}
+                    />
+                  </div>
+                </li>
+              ))}
+            </ul>
+            <More count={clip.hidden} page={t('page.now-playing')} path="/now-playing" />
+          </>
+        )
+      }
+    </Widget>
+  )
+}
+
 // ---------------------------------------------------------------- registry
 
 export const widgetRenderers: Record<WidgetKind, (props: WidgetProps) => ReactNode> = {
@@ -1153,4 +1212,5 @@ export const widgetRenderers: Record<WidgetKind, (props: WidgetProps) => ReactNo
   'recently-added': RecentlyAdded,
   calendar: Calendar,
   'system-health': SystemHealth,
+  'now-playing': NowPlaying,
 }

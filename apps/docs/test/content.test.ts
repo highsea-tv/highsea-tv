@@ -67,8 +67,10 @@ describe('the guides', () => {
       'indexers/index',
       'indexers/search-results',
       'install/docker',
+      'install/hardware-acceleration',
       'install/index',
       'install/prerequisites',
+      'install/script',
       'install/synology',
       'install/truenas',
       'install/unraid',
@@ -79,6 +81,7 @@ describe('the guides', () => {
       'movies/library',
       'movies/manage-a-film',
       'movies/people-and-collections',
+      'now-playing',
       'recommended-setup',
       'settings/appearance/index',
       'settings/appearance/themes',
@@ -104,6 +107,7 @@ describe('the guides', () => {
       'settings/notifications/events',
       'settings/notifications/index',
       'settings/notifications/services',
+      'settings/playback',
       'settings/quality/custom-formats',
       'settings/quality/index',
       'settings/quality/profiles',
@@ -133,6 +137,8 @@ describe('the guides', () => {
       'wanted/calendar',
       'wanted/finding-releases',
       'wanted/index',
+      'watch/index',
+      'watch/playing',
     ])
   })
 

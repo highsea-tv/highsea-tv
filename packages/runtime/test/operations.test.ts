@@ -42,7 +42,12 @@ afterEach(async () => {
 })
 
 async function start(
-  options: { dir?: string; memory?: boolean; clock?: ReturnType<typeof createFakeClock> } = {},
+  options: {
+    dir?: string
+    memory?: boolean
+    clock?: ReturnType<typeof createFakeClock>
+    followTimeZone?: (zone: string) => void
+  } = {},
 ) {
   const dir = options.dir ?? temp()
   const restarts: number[] = []
@@ -60,6 +65,7 @@ async function start(
     catalog: { seedDir: null },
     clock: options.clock,
     restart: () => restarts.push(1),
+    followTimeZone: options.followTimeZone,
   })
   const seen: ServerEvent[] = []
   rt.events.subscribe((e) => seen.push(e))
@@ -247,6 +253,27 @@ describe('before an update', () => {
     })
     expect(readdirSync(backupFolder(rt)).filter((f) => f.endsWith('.db'))).toEqual([])
     expect(readSetting(rt.db, 'runtime.version', { version: '' }).version).toBe('0.2.0')
+  })
+})
+
+describe('the time zone', () => {
+  test('the process follows General’s at boot and when it changes, when the entry asks', async () => {
+    const dir = temp()
+    const zones: string[] = []
+    const first = await start({ dir, memory: false, followTimeZone: (z) => zones.push(z) })
+    expect(zones).toEqual([first.rt.operations.general.get().timeZone])
+    first.rt.operations.general.update({
+      ...first.rt.operations.general.get(),
+      timeZone: 'Europe/Lisbon',
+    })
+    // saving it again unchanged doesn't call it again
+    first.rt.operations.general.update(first.rt.operations.general.get())
+    expect(zones.at(-1)).toBe('Europe/Lisbon')
+    expect(zones).toHaveLength(2)
+    await first.rt.shutdown()
+    zones.length = 0
+    await start({ dir, memory: false, followTimeZone: (z) => zones.push(z) })
+    expect(zones).toEqual(['Europe/Lisbon'])
   })
 })
 

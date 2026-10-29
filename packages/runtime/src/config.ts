@@ -18,6 +18,11 @@ export const configSchema = z.object({
   discoveryPort: port,
   /** The address people use from outside, if there is one. */
   publicUrl: z.url().optional(),
+  /**
+   * The address apps on the network use (`HIGHSEA_PUBLISHED_URL`, `http://192.168.1.20:3000`),
+   * over what setup stored and what highsea detects (ADR 0020's 4.3c section).
+   */
+  publishedUrl: z.url().optional(),
   logLevel: z.enum(LEVELS),
   /** Development: the Next dev server and readable logs. */
   dev: z.boolean(),
@@ -47,6 +52,12 @@ export const configSchema = z.object({
    */
   traktClientId: z.string().min(1).optional(),
   traktClientSecret: z.string().min(1).optional(),
+  /**
+   * highsea's TMDB API Read Access Token (`HIGHSEA_TMDB_READ_TOKEN`, or `_FILE`), built into the
+   * image from the release environment as the others are (install-simplicity.md, answer 7). The
+   * owner's own key in Settings wins. A build from a checkout reads it from its environment.
+   */
+  tmdbKey: z.string().min(1).optional(),
 })
 
 export type Config = z.infer<typeof configSchema>
@@ -62,6 +73,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     port: env.PORT ?? 3000,
     discoveryPort: env.HIGHSEA_DISCOVERY_PORT ?? 7368,
     publicUrl: env.HIGHSEA_PUBLIC_URL || undefined,
+    publishedUrl: env.HIGHSEA_PUBLISHED_URL || undefined,
     logLevel: env.HIGHSEA_LOG_LEVEL ?? 'info',
     dev: env.NODE_ENV === 'development',
     catalogUrl:
@@ -77,6 +89,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     traktClientId: env.HIGHSEA_TRAKT_CLIENT_ID?.trim() || keyFile(env.HIGHSEA_TRAKT_CLIENT_ID_FILE),
     traktClientSecret:
       env.HIGHSEA_TRAKT_CLIENT_SECRET?.trim() || keyFile(env.HIGHSEA_TRAKT_CLIENT_SECRET_FILE),
+    tmdbKey: env.HIGHSEA_TMDB_READ_TOKEN?.trim() || keyFile(env.HIGHSEA_TMDB_READ_TOKEN_FILE),
   })
   if (!parsed.success) {
     const problems = parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`)
