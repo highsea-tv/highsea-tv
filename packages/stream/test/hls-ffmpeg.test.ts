@@ -51,9 +51,6 @@ function packets(dir: string, files: string[]) {
     })
 }
 
-/** The video track's timescale in the clip's MP4 pieces: the muxer's default for 24 fps. */
-const VIDEO_TIMESCALE = 16000
-
 /**
  * Each fragment's decode time (`tfdt`, ISO/IEC 14496-12 § 8.8.12) in a piece, by track: the
  * film's own time, whichever run wrote it.
@@ -115,7 +112,18 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
         '-i',
         `testsrc2=size=320x180:rate=24:duration=${DURATION}`,
       ],
-      ...['-f', 'lavfi', '-i', `sine=frequency=440:duration=${DURATION}`, '-i', srt],
+      // the sound 24 ms late: AAC's 1,024 priming samples start it 23 ms before the picture,
+      // which would move the film's start and every time below (ffmpeg 6.1 to 9.0 all do)
+      ...[
+        '-itsoffset',
+        '0.024',
+        '-f',
+        'lavfi',
+        '-i',
+        `sine=frequency=440:duration=${DURATION}`,
+        '-i',
+        srt,
+      ],
       ...['-map', '0:v', '-map', '1:a', '-map', '2:s'],
       ...['-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p'],
       ...['-g', '48', '-keyint_min', '48', '-force_key_frames', '5'],
@@ -180,7 +188,9 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     const last = segments.length - 1
     const tail = await t.segment(last)
     expect(packets(t.dir, tail).find((p) => p.stream === 0)).toMatchObject({ pts: 37, key: true })
-    expect(decodeTimes(tail[0] as string)[0]).toBe(37 * VIDEO_TIMESCALE)
+    // the picture's timescale is the muxer's choice, 16000 or 12288 for 24 fps by ffmpeg's version
+    const [videoScale] = timescales(await t.init())
+    expect(decodeTimes(tail[0] as string)[0]).toBe(37 * (videoScale as number))
 
     // the same piece from a run started elsewhere starts at the same time, from the same header
     const before = decodeTimes(join(t.dir, '5.m4s'))
@@ -201,8 +211,9 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     t.prepare()
     const segments = await t.segments()
     const [header, tail] = await Promise.all([t.init(), t.segment(segments.length - 1)])
-    expect(timescales(header)).toHaveLength(2)
-    expect(decodeTimes(tail[0] as string)[0]).toBe(37 * VIDEO_TIMESCALE)
+    const scales = timescales(header)
+    expect(scales).toHaveLength(2)
+    expect(decodeTimes(tail[0] as string)[0]).toBe(37 * (scales[0] as number))
     await transcodes.end('init-restart')
   })
 

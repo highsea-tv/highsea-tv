@@ -32,6 +32,9 @@ services:
       # the fixtures' catalog is signed with the development key, which production builds don't
       # trust unless told to (ADR 0034)
       HIGHSEA_CATALOG_DEV_KEY: "1"
+      # highsea's own TMDB key, as a release's image has it (ADR 0057): the fixtures' recordings
+      # take any key
+      HIGHSEA_TMDB_READ_TOKEN: e2e-tmdb-key
     tmpfs:
       - /config
       # one filesystem for downloads and the library, so the import hardlinks, as a real setup does
