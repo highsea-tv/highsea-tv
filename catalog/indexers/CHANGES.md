@@ -2,13 +2,9 @@
 
 Newest first. Each version's notes appear in the server's What changed dialog.
 
-## 2026.10.28.2
+## 2026.10.29
 
-- highsea 0.2.0-beta.2 is out. System › Updates has its notes.
-
-## 2026.10.28
-
-- highsea 0.2.0-beta.1 is out. System › Updates has its notes.
+- highsea 0.2.0 is out. System › Updates has its notes.
 
 ## 2026.10.23
 

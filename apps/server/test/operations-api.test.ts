@@ -3,7 +3,9 @@
 // with downloads that are zips and a restore that asks for a restart; the log and its download;
 // crash reports from an API failure; updates; /metrics behind its switch and an API key; the three
 // settings rows; and the log's topic held back from people who aren't staff.
+
 import { afterEach, describe, expect, test } from 'bun:test'
+import { readFileSync } from 'node:fs'
 import { STAFF_TOPICS } from '@highsea-tv/api-contract'
 import { createApi } from '../src/api/app.ts'
 import { routeFor } from '../src/api/guard.ts'
@@ -18,6 +20,13 @@ import {
 } from './helpers.ts'
 
 afterEach(cleanup)
+
+/** The newest stable release the seed lists (catalog/indexers/releases.json, newest first). */
+const newestStable = (
+  JSON.parse(
+    readFileSync(new URL('../../../catalog/indexers/releases.json', import.meta.url), 'utf8'),
+  ) as { version: string; channel: string }[]
+).find((r) => r.channel === 'stable')?.version
 
 async function started() {
   const restarts: number[] = []
@@ -133,9 +142,9 @@ describe('updates and settings', () => {
     expect(await admin.system.updates()).toMatchObject({
       current: '0.1.0',
       channel: 'stable',
-      // the seed's releases.json lists the version being released, so it's the latest and no update
-      latest: { version: '0.1.0' },
-      available: false,
+      // the helpers' server is at 0.1.0, so a newer stable release in the seed is an update
+      latest: { version: newestStable },
+      available: newestStable !== '0.1.0',
     })
     const general = await admin.settings.general()
     expect(general).toMatchObject({ language: 'en', updateChannel: 'stable', crashReports: false })
