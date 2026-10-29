@@ -61,6 +61,6 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0055](0055-clients-shared-logic.md) | The clients' shared logic: `@highsea-tv/client`, everything but the drawing | Accepted |
 | [0056](0056-hardware-acceleration.md) | Hardware acceleration: four paths, each used only once a check on this host passes | Accepted; amended 2026-10-28 |
 | [0057](0057-installing-without-configuration.md) | Installing without configuration: graphics handed over by default, the user, time zone, folders and address detected, and highsea's own TMDB key | Accepted; amended 2026-10-29 |
-| [0058](0058-desktop-app.md) | The desktop app: Tauri around the web build, with the server reached through Rust | Accepted |
+| [0058](0058-desktop-app.md) | The desktop app: Tauri around the web build, with the server reached through Rust | Accepted; amended 2026-10-29 |
 
 Template: copy [`template.md`](template.md).

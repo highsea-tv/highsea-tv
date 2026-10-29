@@ -42,3 +42,8 @@ The page in the app's window is the app's own (`tauri://localhost` on macOS and 
 - Tauri's WebDriver doesn't run on macOS ([Tauri › WebDriver](https://v2.tauri.app/develop/tests/webdriver/)), so the app's own flows are tested in happy-dom with Tauri's IPC mocked ([`@tauri-apps/api/mocks`](https://v2.tauri.app/develop/tests/mocking/), `apps/web/test/desktop.test.tsx`) and the Rust side with `cargo test`.
 - Lose the release key and every install has to be reinstalled by hand; the owner keeps it in the `release` environment and their own backup.
 - Linux arm64 and the cloud's account-linked discovery are left for later.
+
+## 2026-10-29: the Mac app is signed ad hoc until the Apple membership
+
+On the owner's word the first desktop release is 0.3.0, with 4.4a's app, before the owner has an Apple Developer membership. An app downloaded from the internet must be signed to run on Apple silicon, and an app without an Apple certificate is signed ad hoc, with the pseudo-identity `-` ([Tauri: macOS code signing](https://v2.tauri.app/distribute/sign/macos/)). So `bundle.macOS.signingIdentity` is `-`. Ad-hoc signing doesn't spare people Gatekeeper: the first launch is approved in System Settings › Privacy & Security, which the install guide shows. Tauri's docs don't say whether `APPLE_SIGNING_IDENTITY` wins over the config's identity, so when the Apple secrets are added the release workflow passes the identity through `--config` as well.
+
