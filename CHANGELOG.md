@@ -7,25 +7,7 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
-## [0.2.0-beta.2] - 2026-10-28
-
-### Added
-
-- Hardware acceleration: highsea transcodes on Intel and AMD graphics (VAAPI and Intel Quick Sync), NVIDIA graphics (NVENC) and a Mac's own graphics (VideoToolbox). If the chip fails partway through a film, the processor makes the rest.
-- highsea checks the graphics it finds by itself when it starts, and uses one only after its check passes. Settings › Playback shows what it found and lets you change it.
-- HDR films are converted for screens that can't show HDR, on the graphics chip where it can, so their colours look right.
-- The image has Intel's and AMD's drivers on amd64, and joins the graphics device's group by itself when `/dev/dri` is passed through. The compose files and NAS templates have the lines for it, commented out, and the install guides have a page on it.
-- Now playing, in the admin and as a dashboard widget: who is watching what, how each stream is sent and why, what made it, and the last 30 days. The Owner and Admins can stop a stream with a message.
-- Settings › Playback: how many transcodes run at once, the encoder's speed, the most sent to someone away from home, and the cache's folder and limit.
-- Picture subtitles and styled ASS subtitles that a browser can't draw are drawn into the picture.
-- A Playback started notification, off until it's ticked for a connection.
-
-### Changed
-
-- 5.1 and 7.1 sound made into stereo keeps dialogue at the level the mix intended.
-- The image is larger on amd64, by about 135 MB, for the graphics drivers.
-
-## [0.2.0-beta.1] - 2026-10-28
+## [0.2.0] - 2026-10-29
 
 ### Added
 
@@ -33,11 +15,26 @@ While highsea is at 0.x, any release may change how something works. When one do
 - A player in the web app: films play as they are where the browser can, and otherwise are repackaged or converted as they play. Audio, subtitles and the version can be changed while watching, subtitles can be moved earlier or later in 50 ms steps, and the position bar shows previews of the film.
 - Picking up where you stopped: the place in each film is kept for each person, on every device, and a film counts as watched past 90%. Smart collections can use what each person has watched.
 - Next up, near the end of a film in a collection, and picture in picture where the browser has it.
-- Adding a root folder now scans it, and adds the films in it that highsea can match with confidence.
+- Hardware acceleration: highsea transcodes on Intel and AMD graphics (VAAPI and Intel Quick Sync), NVIDIA graphics (NVENC) and a Mac's own graphics (VideoToolbox). If the chip fails partway through a film, the processor makes the rest.
+- highsea checks the graphics it finds by itself when it starts, and uses one only after its check passes. Settings › Playback shows what it found and lets you change it.
+- HDR films are converted for screens that can't show HDR, on the graphics chip where it can, so their colours look right.
+- Now playing, in the admin and as a dashboard widget: who is watching what, how each stream is sent and why, what made it, and the last 30 days. The Owner and Admins can stop a stream with a message.
+- Settings › Playback: how many transcodes run at once, the encoder's speed, the most sent to someone away from home, and the cache's folder and limit.
+- Picture subtitles and styled ASS subtitles that a browser can't draw are drawn into the picture.
+- A Playback started notification, off until it's ticked for a connection.
+- An installer for a Linux machine with Docker: `curl -fsSL https://get.highsea.tv | sh` writes a compose file and starts highsea.
+- highsea comes with its own TMDB key, so setup no longer asks for one. A key of your own in Settings › General › Metadata is used instead.
+- Servers announce themselves through the host's avahi when the container can reach `/run/dbus`, so apps on the network find them on NAS systems that run avahi.
+- An Unraid template for NVIDIA graphics, and apps for TrueNAS's community train, Umbrel and CasaOS.
 
 ### Changed
 
-- The image runs on Node 26 and Debian trixie, and the admin on Next.js 16.4.
+- Setup asks only what highsea can't find out by itself: an owner account, then a review of what it found, the server's name, the media folders, the address apps use and the graphics, each changeable in place. It asks for media folders only when it finds none under `/data`.
+- The compose file and the NAS templates work without edits. highsea runs as the user that owns `/data`, hands the graphics chip over when there is one, and takes the time zone from your browser at setup. System › Health says when imports will be copied because downloads and the library can't be hardlinked.
+- The router is asked to forward the HTTPS port only once you choose to reach highsea away from home, and System › Health says whether it worked.
+- Adding a root folder now scans it, and adds the films in it that highsea can match with confidence.
+- 5.1 and 7.1 sound made into stereo keeps dialogue at the level the mix intended.
+- The image runs on Node 26 and Debian trixie, and the admin on Next.js 16.4. It has Intel's and AMD's graphics drivers on amd64, which make it about 135 MB larger there.
 - Long names, labels and numbers no longer spill out of their buttons, badges and panels in the admin on narrow screens.
 
 ## [0.1.0] - 2026-10-23
@@ -66,7 +63,7 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.2.0-beta.2...HEAD
-[0.2.0-beta.2]: https://github.com/highsea-tv/highsea-tv/compare/v0.2.0-beta.1...v0.2.0-beta.2
-[0.2.0-beta.1]: https://github.com/highsea-tv/highsea-tv/compare/v0.1.0...v0.2.0-beta.1
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/highsea-tv/highsea-tv/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/highsea-tv/highsea-tv/releases/tag/v0.1.0

@@ -1,6 +1,6 @@
 {
   "name": "@highsea-tv/server",
-  "version": "0.2.0-beta.2",
+  "version": "0.2.0",
   "private": true,
   "license": "AGPL-3.0-only",
   "type": "module",
