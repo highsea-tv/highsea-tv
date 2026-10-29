@@ -3,7 +3,7 @@
 # at least two weeks old (`bun run pin --crate <name>`), as for npm; Cargo.lock is committed.
 [package]
 name = "highsea-desktop"
-version = "0.2.0"
+version = "0.3.0"
 description = "highsea for Mac, Windows and Linux"
 license = "AGPL-3.0-only"
 edition = "2024"
