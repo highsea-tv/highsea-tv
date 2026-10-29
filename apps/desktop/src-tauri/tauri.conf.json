@@ -46,7 +46,7 @@
       "desktop": { "schemes": ["highsea"] }
     },
     "updater": {
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDY0OEI3QjUwQ0Q0OTVBQkMKUldTOFdrbk5VSHVMWkxEcVZDdzlyM3diaVF4c1oyWGNjVjlUUjl1bHh6bW9RczkyZzNtenBDbnMK",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDEwNEE1NDE1MkQyQjQ3RDMKUldUVFJ5c3RGVlJLRUxjZGlkeXBkcFRReHRvV2lnOWFBdUluWmROUEFqaFFuOWxXTUxxcEVKUXgK",
       "endpoints": ["https://github.com/highsea-tv/highsea-tv/releases/latest/download/latest.json"]
     }
   },

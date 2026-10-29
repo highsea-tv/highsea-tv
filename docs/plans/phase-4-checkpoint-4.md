@@ -191,6 +191,10 @@ The rules were written for npm. The Rust side gets the same, decided in the ADR:
 
 ## The owner's changes
 
+On 2026-10-29, after 4.4a's sign-off, the owner made 1 change:
+
+1. **The first desktop release is 0.3.0, now, with 4.4a's app** (answer 12 changed): the installers and the update feed ship with 4.4a's server work, a dry run first, and a short guide to installing the app; 4.4b's downloads follow in 0.4.0. The Apple membership is set aside for now, so the Mac app ships unsigned.
+
 ## The owner's answers
 
 On 2026-10-29 the owner took every recommendation for questions 1 to 12 except question 6.
@@ -206,4 +210,4 @@ On 2026-10-29 the owner took every recommendation for questions 1 to 12 except q
 9. A download is the original file when it plays directly, otherwise one MP4 transcoded at the chosen quality, with WebVTT subtitles beside it.
 10. Downloads have readable names (`Title (Year).mp4`, subtitles beside them).
 11. AppImage, `.deb` and `.rpm` on Linux.
-12. 0.3.0 carries 4.4's server work and the first desktop app, published on the owner's word after 4.4b's sign-off.
+12. 0.3.0 carries 4.4's server work and the first desktop app, published on the owner's word after 4.4b's sign-off. **Changed by the owner** on 2026-10-29 (The owner's changes, 1): 0.3.0 ships 4.4a's app now, and 4.4b goes in 0.4.0.

@@ -3,9 +3,9 @@
 
 Tauri's updater installs an update only when its signature verifies against the public key in `src-tauri/tauri.conf.json` (`plugins.updater.pubkey`). It can't be turned off (https://v2.tauri.app/plugin/updater/#signing-updates).
 
-`development.key` is the **development key**: a throwaway minisign key, with no password, that signs the installers CI builds. It's in the repo on purpose, as the catalog's `development.pem` is: it protects nothing, and anyone can sign with it. The config carries its public key until the owner replaces it.
+`development.key` is the **development key**: a throwaway minisign key, with no password, that signs the installers CI builds in a dry run. It's in the repo on purpose, as the catalog's `development.pem` is: it protects nothing, and anyone can sign with it.
 
-The **release key** signs what a release publishes. It doesn't exist yet. The owner creates it before the first release with the desktop app, and `bun scripts/release.ts check` fails while the config still has the development key.
+The **release key** signs what a release publishes. It was made on 2026-10-29, on the owner's word, on the owner's Mac: the private key is `~/.tauri/highsea-release.key`, its password beside it in `highsea-release.key.password`, both readable only by the owner and never in the repo. Its public half (key ID `104A54152D2B47D3`) is in `tauri.conf.json`, so steps 1 and 2 below are done; step 3, the secrets, is left. `bun scripts/release.ts check` fails whenever the config has the development key.
 
 ## Before the first release with the desktop app
 
