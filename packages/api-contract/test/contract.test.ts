@@ -252,7 +252,11 @@ describe('contract', () => {
         { kind: 'discover', items: [discover] },
       ],
     })
-    ok(MetadataSettings, { key: { set: true, last4: '9f2c' }, language: 'en-US', region: 'GB' })
+    ok(MetadataSettings, {
+      key: { set: true, last4: '9f2c', builtIn: false },
+      language: 'en-US',
+      region: 'GB',
+    })
     expect(MovieMetadata.safeParse({ ...discover, rating: 8.2 }).success).toBe(false)
   })
 

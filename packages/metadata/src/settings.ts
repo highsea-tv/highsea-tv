@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The `metadata` settings row: the owner's TMDB credential, sealed like every provider secret
 // (docs/plans/phase-3-server.md, Data › Secrets) and never returned, and the metadata language and
-// region (owner's decisions 1 and 5). Each server uses its owner's own key, as TMDB's terms ask:
-// they don't allow sublicensing access to the API (https://www.themoviedb.org/api-terms-of-use).
+// region (owner's decisions 1 and 5). Since 4.3c the image carries highsea's own key, used when the
+// owner hasn't set one (install-simplicity.md, answer 7: the owner chose to ship it, as Jellyfin
+// does); the owner's key always wins.
 import { AppError } from '@highsea-tv/core'
 import { readSetting, writeSetting } from '@highsea-tv/db'
 import type { MetadataDeps } from './context.ts'
@@ -61,16 +62,19 @@ export function createSettings(deps: MetadataDeps) {
   const write = (next: MetadataSettings) =>
     writeSetting(db, METADATA_SETTINGS_KEY, next, clock.now())
 
+  const builtIn = deps.builtInKey?.trim() || null
+
   const view = (s = read()): MetadataSettingsView => ({
-    key: { set: !!s.keySealed, last4: s.keyLast4 },
+    key: { set: !!s.keySealed, last4: s.keyLast4, builtIn: !!builtIn },
     language: s.language,
     region: s.region ?? localeRegion(),
   })
 
-  /** The stored credential, or null. */
+  /** The owner's credential, else highsea's own, else null. */
   function credential(): Credential | null {
     const s = read()
-    return s.keySealed ? credentialOf(sealer.open(s.keySealed)) : null
+    if (s.keySealed) return credentialOf(sealer.open(s.keySealed))
+    return builtIn ? credentialOf(builtIn) : null
   }
 
   /** Checks a credential with TMDB; returns it trimmed. A 401 (`status_code` 7) is the owner's to fix. */

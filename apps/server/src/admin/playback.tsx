@@ -440,9 +440,11 @@ function HardwareGroup({
   )
 }
 
-const DRI_LINES = 'services:\n  highsea:\n    devices:\n      - /dev/dri:/dev/dri'
+// ADR 0057's handover: the render nodes alone, and NVIDIA's runtime made Docker's default on the host
+const DRI_LINES =
+  'services:\n  highsea:\n    volumes:\n      - /dev/dri:/dev/dri\n    device_cgroup_rules:\n      - "c 226:128 rw"\n      - "c 226:129 rw"\n      - "c 226:130 rw"\n      - "c 226:131 rw"\n      - "c 226:132 rw"\n      - "c 226:133 rw"\n      - "c 226:134 rw"\n      - "c 226:135 rw"'
 const NVIDIA_LINES =
-  'services:\n  highsea:\n    deploy:\n      resources:\n        reservations:\n          devices:\n            - driver: nvidia\n              count: 1\n              capabilities: [gpu, video]'
+  'sudo nvidia-ctk runtime configure --runtime=docker --set-as-default\nsudo systemctl restart docker'
 
 function PassThroughHelp() {
   const t = useT(messages)

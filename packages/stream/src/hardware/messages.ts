@@ -8,6 +8,8 @@ export const hardwareMessages = defineMessages({
   // Why a path can't be used here
   'unavailable.dri': 'No /dev/dri in the container.',
   'unavailable.nvidia': 'No NVIDIA GPU in the container.',
+  'unavailable.nvidiaHost':
+    'This computer has an NVIDIA GPU, but the container doesn’t. Install NVIDIA’s container toolkit on the host and make it Docker’s default runtime, then restart highsea.',
   'unavailable.mac': 'Only when highsea runs on a Mac, outside Docker.',
   'unavailable.linux': 'Only when highsea runs on Linux.',
   'unavailable.notIntel': 'Only on Intel graphics. This is {name}.',
@@ -24,7 +26,7 @@ export const hardwareMessages = defineMessages({
   'check.mediaDriver':
     'The Intel media driver didn’t load, so ffmpeg couldn’t open the GPU. VAAPI works on the same graphics without it.',
   'check.nvidia':
-    'highsea couldn’t find an NVIDIA GPU. Install NVIDIA’s container toolkit on the host and give the container the GPU.',
+    'highsea couldn’t find an NVIDIA GPU. Install NVIDIA’s container toolkit on the host and make it Docker’s default runtime.',
   'check.failed': 'ffmpeg opened the GPU, but the transcode failed: {line}',
   'check.timedOut': 'The transcode didn’t finish in 2 minutes.',
   'check.failedPlaying':

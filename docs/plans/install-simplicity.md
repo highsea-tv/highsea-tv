@@ -57,7 +57,123 @@ Six parts. A to C are server work, built as one checkpoint, 4.3c, after 4.3b's s
 
 ## Progress
 
-Nothing yet.
+- **2026-10-28, 4.3c, the new setup's prototype, approved by the owner on 2026-10-28:** `design/prototypes/src/admin/setup/setup.tsx` is rewritten as B describes. With everything found, the steps are Owner account and then Review, with Media folders only when highsea found none. Review shows what highsea decided, and each line has an editor in place. The mock adds `setup.detect` (`mock/server.ts`, `SetupDetected` in `mock/types.ts`), and the toolbar's Populated and Empty show the two cases. At review the owner had the TMDB key step removed (the owner's change 1) and the password fields lined up; both are done and checked again. The spec's dated section in [docs/product/setup.md](../product/setup.md) lists every change. Checks: three new setup flows in `test/flows.test.tsx` (1,021 prototype tests pass), the admin page sweep clean (928 pages), and a walk of each step and editor in three themes at 1440, 768 and 390 clean (axe and overflow). Nothing in `apps/server` has changed.
+
+- **2026-10-28, 4.3c, part A built** (waiting for the checks on TrueNAS and Unraid, and the owner's review at 4.3c's gate):
+  - **Compose files and templates:** `compose.yaml`, `compose.bridge.yaml`, `compose.dev.yaml`, `compose.e2e.yaml` and the Synology and TrueNAS templates hand over `/dev/dri` as a bind mount, with `device_cgroup_rules` for 226:128 to 226:135. `PUID`, `PGID` and `TZ` are commented out as optional overrides, here and in `compose.connects.yaml` and `compose.gluetun.yaml`. Unraid's `highsea.xml` has a `/dev/dri` Path and the rules in `ExtraParams`. The new `highsea-nvidia.xml` runs `--runtime=nvidia`, with the two NVIDIA variables. Two templates keep the user set, because detection would guess wrong there: Unraid (99:100; a share Docker makes for a missing path is root's) and TrueNAS (568; the Apps preset grants it through an ACL on a dataset root owns).
+  - **The image:** the `Dockerfile` drops `PUID=1000 PGID=1000` and sets `NVIDIA_VISIBLE_DEVICES=all` and `NVIDIA_DRIVER_CAPABILITIES=compute,video,utility`. When the container starts as root without `PUID` or `PGID`, `docker/entrypoint.sh` takes them from `/data`'s owner, else from the first thing at its top level not owned by root, else uses 1000:1000, and logs its choice. `scripts/image.ts user` checks five cases on the built image, and `ci.yml` runs it after `hardware`.
+  - **The runtime:**
+    - `hardlinkIssues` (`packages/runtime/src/system.ts`) makes a real link from the downloads folder into each movies folder once per start, and Health warns "Imports into … will be copied" before the first import.
+    - `followTimeZone` makes the process take General's time zone when Docker gave no `TZ`; the server entry passes it.
+    - An NVIDIA card in sysfs's PCI list that ffmpeg can't open gives NVENC the reason `unavailable.nvidiaHost`, shown as a notice on Health under Playback. The check's NVIDIA message now names the default runtime.
+  - **Guides:** `install/docker.mdx`, `synology.mdx`, `truenas.mdx` and `unraid.mdx` lose their editing steps. `install/hardware-acceleration.mdx` keeps NVIDIA's host step and the troubleshooting. `settings/general`, `media-management/importing` and `system/health` follow. They say 0.2.0-beta.3. Setup's steps in `install/docker.mdx` wait for part B.
+  - **ADRs:** 0057, and dated sections in 0003 and 0056.
+  - **Checked on the DS1520+ over SSH (answer 12):** the amd64 image from this checkout was loaded straight onto the NAS, and the Synology template ran as a test project in `/volume1/docker/highsea-test`, with only its image, name, data folder and port changed.
+    - Container Manager's Docker 24.0.2 accepted the device rules.
+    - The entrypoint chose 1026:100, the DSM user, with no `PUID`.
+    - The boot-time check passed VAAPI through the rules at 136 frames a second, tone mapping on the GPU. Quick Sync failed with its Tiger Lake sentence, as in 4.3b.
+    - `card0` was refused ("Operation not permitted"), and sysfs's PCI list was readable.
+    - Run read only (`:ro`) on the real `/volume1/data`, the entrypoint would choose 1026:65541: root owns the share, and `media`'s group is the NAS's `highseatv` group.
+    - The test project, its image and its folder are deleted, and the owner's containers and `/docker/acme` are untouched.
+  - **Checks under Node 26.11.1:** lint (1,342 files), typecheck, 11,769 tests pass (8 skipped, 206 files), the guides' tests (738), `image.ts user` on `highsea:dev` and `highsea:amd64`, `image.ts size` (2,287 MB of 2,300), and the end-to-end run through the image on the new defaults, on a Docker without graphics (Docker Desktop).
+  - **Found and fixed:** `image.ts size` read the image's size before running a container, and Docker's containerd image store reports the compressed size until then. A fresh image measured 509 MB against its true 2,287, so the size check could pass any image. It now measures after its `du` run.
+  - **Checked on TrueNAS SCALE 25.10.7 (answer 3):** installed from its published ISO (sha256 checked) in an x86 VM under QEMU on this Mac, with a pool `tank` on a second disk and Apps on it (Docker 28.3.1). `tank/apps/highsea` and `tank/data` were made with the Apps preset, the amd64 image from this checkout was loaded and tagged as `latest`, and the TrueNAS template went in unchanged through `app.create` with `custom_app`, which is the call behind Install via YAML.
+    - The app reached RUNNING with all eight device rules, the `/dev/dri` bind mount (an empty folder, since the VM has no graphics) and both datasets.
+    - `node` runs as 568 (TrueNAS's `apps`), under tini as root, and the config files are 568:568. highsea migrated, answered discovery on 7368 and sent `/` to `/setup`.
+    - Found: mDNS can't bind on TrueNAS. Its avahi-daemon is set to `disallow-other-stacks=yes`, which avahi-daemon.conf(5) says stops any other process binding UDP 5353. Apps find highsea there by the broadcast only. The template's comment said both, so it now says so. highsea still logs "advertising over mDNS" after the bind fails, with ciao's stack traces before it; see the report.
+    - Found: `useradd` warns that uid 568 is outside `UID_MIN` to `UID_MAX`. It's harmless, but it's the first line an owner sees in the log.
+    - The VM is kept, shut down, in the session's scratchpad for part B's setup check.
+  - **Checked on Unraid 7.3.4 (answer 3 after the TrueNAS check):** booted in an x86 VM under QEMU from the owner's USB stick, passed through for its trial, with the stick backed up first. The array used only a VM disk. The amd64 image was tagged as `latest` and the template went in through dockerMan's own `docker run` command (its Apply always pulls the published image), in bridge mode.
+    - highsea published through Unraid's avahi (`via: avahi`); Unraid's `avahi-browse` resolved it at `Unraid.local` port 3000 with its TXT record.
+    - `node` and `avahi-publish` run as 99 (`nobody`), the config files are 99:100, `useradd` no longer warns, and `/` sends to `/setup`.
+    - Afterwards the container and template were removed, Unraid was powered down, and the stick was restored file for file from the backup (rsync with `--delete`, then compared). That brought back the stick's own earlier `my-highsea.xml`, which the cleanup had removed.
+  - **Built from the answers after the TrueNAS check:**
+    - **mDNS through the host's avahi** (ADR 0020's 2026-10-28 section): `chooseResponder` in `packages/network/src/mdns.ts` uses `avahi-publish` (from `avahi-utils`, now in the image and `docker/NOTICE`) when the container has `/run/dbus`. It falls back to highsea's own responder when avahi doesn't publish. Without the bus, highsea checks it can share UDP 5353 before starting ciao, and otherwise logs one plain warning. With seven new tests.
+    - The TrueNAS, Unraid and Synology templates and `compose.yaml` mount `/run/dbus:/run/dbus:ro` (Unraid's as an advanced **D-Bus** path); `compose.bridge.yaml` has it commented out for Docker Desktop. The install guides and Settings › Network's guide say so.
+    - **`useradd`'s warning:** the entrypoint passes `-K UID_MIN=1 -K UID_MAX=2147483647` (useradd(8)), so TrueNAS's 568 and Unraid's 99 start quietly.
+    - Rechecked on TrueNAS with the new image and template: `via: avahi`, and `avahi-browse` resolved `truenas.local` port 3000 over IPv4 and IPv6. Rechecked on the DS1520+ the same way as before, with the Synology template and a test folder of its own: `via: avahi` on DSM's bridge, `avahi-publish` as 1026, and the Mac's `dns-sd -L` resolved `highseatv.local.:3000`. The test project, image and folder were deleted.
+    - Known limit: on a bridge, avahi advertises the container's port 3000, so a different host port gives a record with the wrong port.
+  - **Found and fixed:** the prototypes' sweeps left their `vite preview` running after a run, since `bunx` starts it in a process group of its own that the stop couldn't reach (`servePrototypes` in `scripts/sweeps/lib.ts` now runs Vite's binary directly).
+  - **The owner's answers on part A (2026-10-28):**
+    1. The group chosen on a share whose top level mixes groups (1026:65541 on the DS1520+'s `/volume1/data`) stays as built. `PUID` and `PGID` override it.
+    2. **Approved:** Settings › Playback's help when nothing is found now matches ADR 0057, in the admin (`playback.tsx`, `playback-messages.ts`) and its prototype. It has the bind mount with its device rules under "Compose lines for Intel and AMD", and `nvidia-ctk runtime configure --runtime=docker --set-as-default` with a restart of Docker under "Commands for NVIDIA, on the host". Its sentence now says highsea's compose files already pass Intel and AMD graphics through. The spec (`playback-settings.md`), the guide and its screenshot follow.
+    3. TrueNAS and Unraid are checked in VMs on this Mac, as the plan says.
+    4. The guides say 0.2.0-beta.3, the version prepared at 4.3c's gate.
+  - **The owner's answers after the TrueNAS check (2026-10-28):**
+    1. **Changed by the owner:** where another mDNS stack holds port 5353 (TrueNAS's avahi), highsea also publishes through the host's avahi over D-Bus, rather than only logging that it can't. The log says plainly what happened either way.
+    2. The entrypoint silences `useradd`'s warning for a uid outside `UID_MIN` to `UID_MAX`.
+    3. Unraid is checked in a VM booted from a spare USB stick that the owner provides, using the trial and the owner's Unraid.net sign-in.
+- **2026-10-28, 4.3c, part B built** (waiting for the owner's review at 4.3c's gate):
+  - **Setup** (`apps/server/src/admin/setup.tsx`, `setup-messages.ts`) is ported from the approved prototype. It has Owner account, then Media folders only when highsea found none, then Review, whose lines open their editors in place. The progress kept in the browser leaves out the password and the owner's key, as before. A draft from the nine-step setup starts again. The forced changes from the prototype are listed in [setup.md's as-built section](../product/setup.md#as-built-in-43cs-part-b-2026-10-28).
+  - **The API:**
+    - `GET /api/v1/setup/detect` (public until setup is done) returns `{ serverName, folders, address, graphics }`.
+    - `SetupInput` gains `timeZone` and `address`, and `cloudLink` is optional.
+    - `MetadataSettings.key` gains `builtIn`.
+    - `checkMetadataKey` stays, unused by the screen, so a key can still be checked on its own.
+  - **What highsea finds** (`packages/runtime/src/setup.ts`): `detectServerName`, `detectFolders` and `detectAddress`, with `isAddress` checking the address on Finish. Setup keeps the time zone as General's and the address as its own setting, which leads `localAddresses` (ADR 0020's section). `HIGHSEA_PUBLISHED_URL` overrides the address.
+  - **highsea's TMDB key:**
+    - The Dockerfile installs the `tmdb` build secret as `/usr/share/highsea/tmdb-read-token` (`HIGHSEA_TMDB_READ_TOKEN_FILE`), and `release.yml` passes it and requires it on a real run.
+    - `@highsea-tv/metadata` falls back to it when the owner has no key of their own.
+    - Settings › General › Metadata shows **highsea’s key**, and its Remove goes back to it.
+    - Health warns when there's no key from anywhere.
+    - `catalog/keys/README.md` lists the secret.
+  - **The router:** the network service asks the router for the HTTPS port with the torrent engine's mapper, for TCP only (its new `protocols` option). It does so only when remote access is by a forwarded port with highsea's HTTPS: at boot, on Finish and on Settings › Network's save. It's let go on a change and at shutdown. Health says whether it worked.
+  - **Guides:**
+    - `install/docker.mdx`'s Run setup is rewritten, with a new screenshot, `setup-owner.png`, which replaces `setup-name.png`.
+    - The Synology, TrueNAS and Unraid guides say setup finds the folders.
+    - `prerequisites.mdx` makes TMDB optional.
+    - `settings/general/metadata.mdx` explains highsea's key.
+    - `movies/index.mdx`, `root-folders.mdx` and `manual-import.mdx` no longer say a key of your own is needed.
+  - **ADRs:** 0057's key in detail, and dated sections in 0020 (the address and the router) and 0050 (the secret).
+  - **Tests:**
+    - `apps/server/test/setup-screen.test.tsx` (14), which replaces the old setup tests in `library-settings.test.tsx`;
+    - route tests for detect, the time zone, the address and the missing key;
+    - `packages/runtime/test/network.test.ts` (3), for the router with a fake mapper;
+    - the detection helpers in `setup.test.ts`;
+    - the key file and `HIGHSEA_PUBLISHED_URL` in `runtime.test.ts`.
+  - **Found and fixed:** boot makes the transcode cache, `/data/transcodes`, so an empty `/data` didn't look empty to the folder detection. It now ignores that folder, as it does `lost+found`.
+  - **The server sweep** (`scripts/sweeps/server.ts`) now visits the owner step, Review, each of Review's seven editors open and the folder picker, instead of the nine old steps.
+  - **Checks under Node 26.11.1:**
+    - lint (1,344 files) and typecheck are clean;
+    - 11,794 tests pass and 8 are skipped, across 208 files, after the contract fixture gained `builtIn`;
+    - the guides' tests (738) and the docs build pass;
+    - the server sweep is clean on the production build.
+    - The smoke test, licences, audit and the prototype sweeps wait for 4.3c's report.
+- **2026-10-28, 4.3c, part C built in the repository** (submissions held for the owner; waiting for the owner's review at 4.3c's gate):
+  - **`install.sh`** (`apps/docs/public/install.sh`, with `install.sh.sha256`), modelled on Tailscale's: everything in `main()`, POSIX sh, shellcheck clean. It checks Docker, Compose and the daemon, never installs them and links Docker's own instructions. It looks for `/dev/dri`, and for an NVIDIA card with or without NVIDIA's toolkit, naming `runtime: nvidia` when the toolkit isn't Docker's default. It refuses a container called highsea from another folder, and something else on port 3000. It writes `compose.yaml` to `/opt/highsea` (`--dir`), with the data folder (`--data`) made the owner's, so the entrypoint picks them (ADR 0057). Then it pulls, starts, waits for healthy and prints the LAN address. Run again, it keeps the compose file and updates. `--version`, `--no-start`, `--print-compose`.
+    - Tested in Docker-in-Docker (Alpine, BusyBox): a first install as root and again as an update; a user with sudo refused for a conflicting container, then installed to `/srv/films` owned by them; with this checkout's image, the entrypoint ran highsea as that user (1001:1001) and it came up healthy. The published 0.1.0 predates ADR 0057's entrypoint and runs as 1000.
+    - `apps/docs/test/install.test.ts` (5): the checksum, `sh -n`, and the compose file it writes is `compose.yaml` with the data folder and version filled in.
+  - **`get.highsea.tv`:** added to Vercel's `highsea-docs` project (verified). `vercel.json` redirects its `/` to `/install.sh` and every other path to the guide, and serves both files as text. The DNS record in Cloudflare is the owner's to add, since no Cloudflare access is set up here: a DNS-only CNAME from `get` to `80d67be45df9a6f8.vercel-dns-016.com`. Until it's added and this is pushed to `main`, `get.highsea.tv` answers with Cloudflare's current record.
+  - **Unraid:** `ca_profile.xml` at the root (CA's one hard requirement). Both templates gain `ExtraSearchTerms` and `Shell`, and the NVIDIA one `Requires`; its comment now cites Curacast and Curacast-NVIDIA, not Immich, which uses branches. Support stays GitHub's issues until there's a forum thread.
+  - **TrueNAS** (`templates/truenas/highsea/`, truenas/apps' `ix-dev/community/highsea/`): the app on their library 2.3.17. It starts as root with Plex's six capabilities and drops to `run_as` (568) through the entrypoint; the library sets `PUID`, `PGID` and `TZ` from the form. GPUs come from `resources.gpus` (real `devices:` and groups 44 and 107, no rules needed). `/run/dbus` is behind a checkbox, through the library's `add_dbus()`, declared in `host_mounts`. Bridge by default, as Plex and Jellyfin are there, with the web port on 30636 (free in the catalog), 6881 and 7368; host networking offered. Built from Radarr's `questions.yaml` so the boilerplate matches theirs. Not rendered: their `ci.py` runs their code and image, which needs the owner's permission here.
+  - **Umbrel** (`templates/umbrel/highsea/`): `umbrel-app.yml` with `STORAGE_DOWNLOADS` and `GPU` (umbrelOS adds `/dev/dri` itself and removes one mapped by hand), the image pinned by tag and index digest, port 3636, Umbrel's Downloads mounted as `/data`, `PROXY_AUTH_ADD: "false"` since the apps reach `/api` and `/stream` with highsea's own accounts. No `/run/dbus`.
+  - **CasaOS and ZimaOS** (`templates/casaos/highsea/`; one store serves both): compose with `x-casaos`, `$PUID`, `$PGID`, `$TZ`, `/DATA` as `/data` (setup finds `Media/Movies` and `Downloads`), the graphics as in `compose.yaml`, port 3636. `docker compose config` passes.
+  - **No SPDX header** on the files that go to the stores' repositories: truenas/apps is LGPL-3.0, CasaOS-AppStore Apache-2.0, and TrueNAS's generator rewrites `app.yaml`. `templates/README.md` says so, and lists what each pull request needs first.
+  - **Pins:** the listings name 0.1.0, the newest published release, and move to the release that has 4.3c in it.
+  - **Guides:** `install/script.mdx` (new, in the sidebar after the prerequisites), linked from the installation page and the Docker guide; the installation page no longer asks for a TMDB account.
+  - **ADRs:** 0050's 2026-10-28 section on the stores and `get.highsea.tv`; 0057 points to it.
+  - **4.3c's full checks under Node 26.11.1:**
+    - lint (1,345 files) and typecheck are clean;
+    - 11,808 tests pass and 8 are skipped, across 209 files. One failed under the full run's load: `hls-ffmpeg.test.ts`'s copied-sound test, which this checkpoint doesn't touch. It passed alone three times, and its whole file passes;
+    - smoke ok, licences (864 packages) compatible, the audit finds nothing (719 packages);
+    - the docs build exports `install.sh` unchanged;
+    - the sweeps are clean: pages (1,624), keyboard (171), D-pad, and the server's admin pages on the production build.
+- **2026-10-28, 4.3c, the owner's answers to part C's report, and the stores tested** (still waiting for the owner's review at 4.3c's gate):
+  - **The owner's answers:** the owner added `get.highsea.tv`'s CNAME in Cloudflare; gave permission to run TrueNAS's `generate_metadata.py` and `ci.py` and to test the Umbrel app in a containerised umbrelOS; and approved submitting to all four stores after the release that has 4.3c in it, with the listings' pins moved to it.
+  - **`get.highsea.tv`:** the CNAME resolves to Vercel, which reports the domain configured, and Vercel issued its certificate (Let's Encrypt, until 2027-01-27). Before that it briefly served an expired `*.highsea.tv` certificate. It serves the docs site until `vercel.json` and `install.sh` reach `main`.
+  - **TrueNAS, tested on TrueNAS 25.10.7** (the part A VM) with truenas/apps at `ea9e6a1`:
+    - `port_validation.py` passes;
+    - `generate_metadata.py` filled in the six capabilities, `run_as_context` (root, which the entrypoint drops to `run_as`), `lib_version_hash` and `item.yaml`, and `check_metadata.py` finds them up to date. The generated `app.yaml` and `item.yaml` are now in `templates/truenas/highsea/`;
+    - `ci.py` renders, starts and waits for healthy with both `basic-values.yaml` (bridge) and `hostnet-values.yaml`. The permissions container gives the folders to 568, and highsea runs as it.
+    - Two adjustments were needed to run their checks here, neither in the app. Their library uses TrueNAS's real middleware whenever the kernel's release says `truenas` (`validations.py`'s `is_truenas_system`), so the middleware socket was mounted into their validation container. Their test values' `/opt/tests` was moved onto the pool, because TrueNAS's root is read only. On this Mac their amd64-only validation image fails for every app (Radarr too): Docker Desktop's emulation has no `openat2`. Their GitHub runners, plain amd64 Ubuntu, need neither change.
+    - With avahi off on host networking (the second test), highsea's own mDNS responder meets TrueNAS's avahi on 5353, logs the clash and carries on, as ADR 0020's 2026-10-28 section expects. The default (avahi on) publishes through avahi.
+  - **Umbrel, tested on umbrelOS 2.0.0** (`ghcr.io/getumbrel/umbrelos:2.0.0`):
+    - Following umbrel-apps' `umbrel-test-app` skill, the package was placed in the store's folder and installed with `umbreld client apps.install.mutate`. It reached `ready`, healthy, running as 1000, and opened at setup through Umbrel's gateway on 3636. The data survived `apps.restart`.
+    - umbrelOS 2.0 serves the gateway from `umbreld` itself (`app-gateway.json`, no `app_proxy` container) and maps `${UMBREL_ROOT}/data/storage/downloads` to `${UMBREL_ROOT}/home/Downloads`. No change was needed.
+    - Their skill's container flags (`--network host`) are documented for OrbStack. On Docker Desktop they stopped Docker Desktop's own engine until it was restarted. The test ran on a bridge network with a private cgroup namespace.
+    - Umbrel's `lint:apps` wasn't run: it needs their `npm install`, which this session's permissions blocked.
+  - **CasaOS** still has only `docker compose config`; its store has no test harness to run.
+- **2026-10-28, 4.3c, signed off by the owner on 2026-10-28:** parts A, B and C as built and tested above, merged into `main` and pushed on the owner's word, so `get.highsea.tv` serves the installer from this deploy. Left for later: the store submissions, after the release that has 4.3c in it (Umbrel's `lint:apps` and CasaOS's icon, thumbnail and screenshot first; `templates/README.md`); part D, the Synology package; and part E, folded into 4.4 to 4.6.
 
 ## A. The compose file and templates work with no edits
 
@@ -132,7 +248,7 @@ Setup's nine steps become about three. Each one dropped is filled in by highsea 
 - **Owner:** stays. It's the one thing highsea can't know.
 - **Metadata (the TMDB key):** gone from setup. highsea ships its own key (the owner's answer 7).
   - The owner registers an application for highsea on TMDB. Its key lives in the approval-gated `release` environment, as the catalog's signing key does, and the release workflow builds it into the published image. It is never in the repository, a fixture or a log.
-  - An owner's own key in Settings › Metadata still wins, and is how a build from a checkout works (setup asks for one only when the image has none).
+  - An owner's own key in Settings › Metadata still wins. Setup never asks for a key (the owner's change 1). A build from a checkout reads `HIGHSEA_TMDB_READ_TOKEN` from its environment, as development does from `.env.local`. Without a key from anywhere, Health says so and Settings › Metadata takes one.
   - Jellyfin ships a key in its source. TMDB's terms and FAQ don't address shipping one in open-source software ([terms](https://www.themoviedb.org/api-terms-of-use), [FAQ](https://developer.themoviedb.org/docs/faq)); the owner chose to ship it without asking first. Keeping it out of the source limits who can copy it, though anyone with the image can still read it.
   - TMDB's attribution requirement already appears in the admin and the apps.
 - **Folders:** shown only when highsea can't find a download folder and a library folder under `/data` by itself. Today's suggestions become the default.
@@ -329,7 +445,9 @@ Docker stays the way to run highsea through 1.0. After that, in this order:
 
 ## The owner's changes
 
-None beyond answer 7, below.
+Beyond answer 7, below:
+
+1. **2026-10-28, reviewing the new setup's prototype:** setup has no TMDB key step, even when the image has no key built in. A build from source gets its key from `HIGHSEA_TMDB_READ_TOKEN` in its environment ([B](#b-highsea-detects-what-setup-used-to-ask)). The same review had the owner step's password fields line up.
 
 ## The owner's answers
 

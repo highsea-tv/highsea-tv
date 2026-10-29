@@ -119,3 +119,19 @@ Each one happens only when the owner says so: a real run of `release.yml` from m
 ## 2026-10-23: the docs deploy from `main`
 
 On the owner's word, `docs.highsea.tv` went live ahead of the first release, and it stays out of the release. Vercel's `highsea-docs` project deploys every push to `main` from Vercel's GitHub integration, so a merged change to `apps/docs/content/` is the owner's word for that change ([Vercel: Git deployments](https://vercel.com/docs/deployments/git)). Pull requests get previews behind Vercel's sign-in. The other four kinds of publishing above are unchanged.
+
+## 2026-10-28: highsea's TMDB key in the image (checkpoint 4.3c)
+
+Setup no longer asks for a TMDB key (ADR 0057). On the owner's answer of 2026-10-28 to install-simplicity's question on the key, highsea ships its own. The owner added it to the `release` environment as `HIGHSEA_TMDB_READ_TOKEN`, TMDB's API Read Access Token, which makes six secrets there.
+
+- **The release workflow** passes it to the image build as the `tmdb` BuildKit secret, beside the OpenSubtitles.com and Trakt keys. The key check now needs it too: a dry run without it warns, and a real run stops ([Docker: build secrets](https://docs.docker.com/build/building/secrets/)).
+- **CI's image and a build from this checkout** have no secret, so they carry no key. They use `HIGHSEA_TMDB_READ_TOKEN` from their environment if it's set, as development does from `.env.local`. Without it, Health says no key is set.
+- `catalog/keys/README.md` lists the secret with the others.
+
+## 2026-10-28: the stores and `get.highsea.tv` (checkpoint 4.3c)
+
+ADR 0057 left the stores to part C of install-simplicity.md. They're one more way a release reaches owners, and each is published only on the owner's word, as the image is.
+
+- **`get.highsea.tv`** serves the Linux installer, `apps/docs/public/install.sh`, with `install.sh.sha256` beside it. It's a domain of Vercel's `highsea-docs` project, so it deploys from `main` with the guides, as the 2026-10-23 section says. `vercel.json` sends the domain's `/` to `/install.sh`, since Vercel serves a static file before a rewrite ([Vercel: rewrites](https://vercel.com/docs/project-configuration/vercel-json#rewrites)), and every other path to the installer's guide. The installer writes a compose file on the `latest` tag, or the version given with `--version`, and an existing one is kept, so the owner's pins stay.
+- **The store listings** live in `templates/` and pin the release they were written for: Unraid's templates and `ca_profile.xml` (Community Applications reads them from this repository), and the apps for TrueNAS's community train, Umbrel and CasaOS, each copied into that store's repository by pull request. Unraid follows the tag. TrueNAS's and Umbrel's listings pin a digest, so moving them is a change in their repositories: TrueNAS's bot opens it ([truenas/apps: CONTRIBUTIONS.md](https://github.com/truenas/apps/blob/master/CONTRIBUTIONS.md)), and Umbrel's is a pull request. `prepare` doesn't touch them yet.
+- **When they're submitted:** on the owner's answer of 2026-10-28, all four go in after the release that has 4.3c in it, with each listing's pin moved to that release first. TrueNAS's app passed truenas/apps' own checks and Umbrel's installed on umbrelOS 2.0.0 (install-simplicity.md's Progress).

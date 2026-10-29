@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A2 Setup wizard (docs/product/setup.md). First run, before anyone has signed in: name the
-// server, create the owner, pick folders, add indexers and subtitle languages, choose remote
-// access and the optional highsea cloud link, then review and finish on the dashboard. Progress
-// is kept in the browser, so a reload picks up where you left off.
+// A2 Setup wizard (docs/product/setup.md), as install-simplicity B shrinks it: highsea fills in
+// what it can find (the server's name, the folders under /data, the browser's languages and time
+// zone, the address apps use) and asks only for the owner; movie details come with highsea's own
+// TMDB key. Folders become a step only when highsea found none. Review lists what highsea decided, and each line
+// opens its own editor in place. Progress is kept in the browser, so a reload picks up where you
+// left off.
 import {
   Badge,
   Banner,
@@ -16,90 +18,155 @@ import {
   Icon,
   Input,
   Lockup,
+  Select,
   Skeleton,
-  type Step,
   Stepper,
-  Switch,
   toast,
 } from '@highsea-tv/ui-web'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
-import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { RemoteAccess, SetupInput } from '../../mock/types.ts'
+import { useAction, useClient, useQuery } from '../../mock/hooks.tsx'
+import type { Language, RemoteAccess, SetupDetected, SetupInput } from '../../mock/types.ts'
 
-const steps: Step[] = [
-  { id: 'name', label: 'Server name' },
-  { id: 'owner', label: 'Owner account' },
-  { id: 'folders', label: 'Media folders' },
-  { id: 'indexers', label: 'Indexers' },
-  { id: 'subtitles', label: 'Subtitles' },
-  { id: 'remote', label: 'Remote access' },
-  { id: 'cloud', label: 'highsea cloud' },
-  { id: 'review', label: 'Review' },
+type StepId = 'owner' | 'folders' | 'review'
+
+const stepLabels: Record<StepId, string> = {
+  owner: 'Owner account',
+  folders: 'Media folders',
+  review: 'Review',
+}
+
+/** Folders are a step only when highsea found none. */
+const stepsFor = (found: SetupDetected): StepId[] => [
+  'owner',
+  ...(found.folders ? [] : (['folders'] as const)),
+  'review',
 ]
 
-type Draft = Omit<SetupInput, 'owner' | 'remoteAccess'> & {
+type Draft = {
+  serverName: string
   owner: SetupInput['owner'] & { confirm: string }
+  folders: SetupInput['folders']
+  metadataKey: string
+  indexers: string[]
+  subtitleLanguages: string[]
+  timeZone: string
+  address: string
   remote: RemoteAccess['kind']
   proxyUrl: string
   port: string
 }
 
-// the server detects the usual container layout and suggests it
-const initial: Draft = {
+/** The Review lines the owner changed, which lose their "from this browser" note. */
+type Line = 'folders' | 'metadata' | 'indexers' | 'subtitles' | 'timeZone' | 'address' | 'remote'
+
+type Saved = {
+  step: StepId
+  reached: number
+  draft: Draft
+  /** The detected defaults have been filled in, once. */
+  seeded: boolean
+  changed: Line[]
+}
+
+const blank: Draft = {
   serverName: '',
   owner: { displayName: '', username: '', password: '', confirm: '' },
-  folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
+  folders: { movies: '', downloads: '' },
+  metadataKey: '',
   indexers: [],
-  subtitleLanguages: ['en'],
-  cloudLink: false,
+  subtitleLanguages: [],
+  timeZone: '',
+  address: '',
   remote: 'local-only',
   proxyUrl: '',
   port: '8484',
 }
 
-type Saved = { step: number; reached: number; draft: Draft; indexersSeeded: boolean }
-const storageKey = 'highsea-proto:setup'
+const fresh = (): Saved => ({ step: 'owner', reached: 0, draft: blank, seeded: false, changed: [] })
 
-function load(): Saved | null {
+// one draft per server, so the toolbar's Populated and Empty don't share answers
+const storageKey = (server: string) => `highsea-proto:setup:${server}`
+
+function load(key: string): Saved | null {
   try {
-    const raw = localStorage.getItem(storageKey)
+    const raw = localStorage.getItem(key)
     return raw ? (JSON.parse(raw) as Saved) : null
   } catch {
     return null
   }
 }
 
-function persist(saved: Saved | null) {
+function persist(key: string, saved: Saved | null) {
   try {
-    if (saved) localStorage.setItem(storageKey, JSON.stringify(saved))
-    else localStorage.removeItem(storageKey)
+    if (saved) localStorage.setItem(key, JSON.stringify(saved))
+    else localStorage.removeItem(key)
   } catch {
     // private mode: progress just isn't remembered
   }
 }
 
+// ---------------------------------------------------------------- what the browser knows
+
+const browserZone = () => {
+  try {
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC'
+  } catch {
+    return 'UTC'
+  }
+}
+
+const allZones = (current: string) => {
+  let zones: string[] = []
+  try {
+    zones = Intl.supportedValuesOf('timeZone')
+  } catch {
+    // an older browser: the detected zone alone
+  }
+  return zones.includes(current) ? zones : [current, ...zones]
+}
+
+/** The browser's languages that highsea has subtitles in, in the browser's order. */
+function browserLanguages(available: Language[]): string[] {
+  const codes = (typeof navigator === 'undefined' ? [] : (navigator.languages ?? []))
+    .map((l) => l.split('-')[0]?.toLowerCase() ?? '')
+    .filter((c, i, all) => c && all.indexOf(c) === i && available.some((l) => l.code === c))
+  return codes.length ? codes : ['en']
+}
+
+// ---------------------------------------------------------------- checks
+
 type Errors = Partial<Record<string, string>>
 
-function validate(step: string, d: Draft): Errors {
+const ownerErrors = (d: Draft): Errors => {
   const e: Errors = {}
-  if (step === 'name' && !d.serverName.trim()) e.serverName = 'Give the server a name.'
-  if (step === 'owner') {
-    if (!d.owner.displayName.trim()) e.displayName = 'Enter your name.'
-    if (!/^[a-z0-9._-]{2,32}$/.test(d.owner.username))
-      e.username = 'Use 2 to 32 lowercase letters, numbers, dots, dashes or underscores.'
-    if (d.owner.password.length < 10) e.password = 'Use at least 10 characters.'
-    else if (d.owner.confirm !== d.owner.password) e.confirm = 'The passwords don’t match.'
-  }
-  if (step === 'folders') {
-    if (!d.folders.movies) e.movies = 'Pick a folder for movies.'
-    if (!d.folders.downloads) e.downloads = 'Pick a folder for downloads.'
-    if (d.folders.movies && d.folders.movies === d.folders.downloads)
-      e.downloads = 'Use a different folder from the movies folder.'
-  }
-  if (step === 'subtitles' && d.subtitleLanguages.length === 0)
+  if (!d.owner.displayName.trim()) e.displayName = 'Enter your name.'
+  if (!/^[a-z0-9._-]{2,32}$/.test(d.owner.username))
+    e.username = 'Use 2 to 32 lowercase letters, numbers, dots, dashes or underscores.'
+  if (d.owner.password.length < 10) e.password = 'Use at least 10 characters.'
+  else if (d.owner.confirm !== d.owner.password) e.confirm = 'The passwords don’t match.'
+  if (!d.serverName.trim()) e.serverName = 'Give the server a name.'
+  return e
+}
+
+const folderErrors = (d: Draft): Errors => {
+  const e: Errors = {}
+  if (!d.folders.movies) e.movies = 'Pick a folder for movies.'
+  if (!d.folders.downloads) e.downloads = 'Pick a folder for downloads.'
+  if (d.folders.movies && d.folders.movies === d.folders.downloads)
+    e.downloads = 'Use a different folder from the movies folder.'
+  return e
+}
+
+/** The checks behind each Review line's Done, and Finish. */
+function lineErrors(line: Line, d: Draft): Errors {
+  const e: Errors = {}
+  if (line === 'folders') return folderErrors(d)
+  if (line === 'subtitles' && d.subtitleLanguages.length === 0)
     e.languages = 'Pick at least one language, or turn subtitles off later in Settings.'
-  if (step === 'remote') {
+  if (line === 'address' && !/^[^\s/]+(:\d{1,5})?$/.test(d.address.trim()))
+    e.address = 'Enter the address apps use, such as 192.168.1.20:3000.'
+  if (line === 'remote') {
     if (d.remote === 'reverse-proxy' && !/^https:\/\/[^\s/]+/.test(d.proxyUrl))
       e.proxyUrl = 'Enter the full address, starting with https://'
     const port = Number(d.port)
@@ -125,50 +192,104 @@ const toInput = (d: Draft): SetupInput => ({
       : d.remote === 'port-forward'
         ? { kind: 'port-forward', port: Number(d.port) }
         : { kind: 'local-only' },
-  cloudLink: d.cloudLink,
+  cloudLink: false,
+  metadataKey: d.metadataKey.trim() || undefined,
+  timeZone: d.timeZone,
+  address: d.address.trim(),
 })
 
 // ---------------------------------------------------------------- the wizard
 
 export function Setup() {
   const [, navigate] = useLocation()
-  const [saved, setSaved] = useState<Saved>(
-    () => load() ?? { step: 0, reached: 0, draft: initial, indexersSeeded: false },
-  )
+  const client = useClient()
+  const key = storageKey(client.dataState)
+  const [saved, setSaved] = useState<Saved>(() => load(key) ?? fresh())
   const [errors, setErrors] = useState<Errors>({})
+  // the Review line whose editor is open
+  const [open, setOpen] = useState<Line | null>(null)
   const heading = useRef<HTMLHeadingElement>(null)
   const first = useRef(true)
+  const detect = useQuery('setup-detect', (c) => c.setup.detect())
+  const pack = useQuery('starter-pack', (c) => c.catalog.starterPack())
+  const languages = useQuery('languages', (c) => c.subtitles.languages())
   const complete = useAction((c, input: SetupInput) => c.setup.complete(input))
   const { step, reached, draft } = saved
-  const id = steps[step]?.id ?? 'name'
 
-  useEffect(() => persist(saved), [saved])
+  useEffect(() => persist(key, saved), [key, saved])
   useEffect(() => {
     document.title = 'Set up highsea'
   }, [])
+
+  // the detected defaults go in once, when the server and the lists have answered
+  // biome-ignore lint/correctness/useExhaustiveDependencies: seeds once
+  useEffect(() => {
+    if (saved.seeded || detect.status !== 'success') return
+    if (pack.status === 'loading' || languages.status === 'loading') return
+    const found = detect.data
+    setSaved((s) => ({
+      ...s,
+      seeded: true,
+      draft: {
+        ...s.draft,
+        serverName: s.draft.serverName || (found.serverName ?? ''),
+        folders: found.folders ?? s.draft.folders,
+        indexers:
+          pack.status === 'success'
+            ? pack.data.filter((d) => d.privacy === 'public').map((d) => d.id)
+            : [],
+        subtitleLanguages:
+          languages.status === 'success' ? browserLanguages(languages.data) : ['en'],
+        timeZone: browserZone(),
+        // bridge mode can't see the host's address, so the one this browser used is the best guess
+        address: found.address ?? (typeof location === 'undefined' ? '' : location.host),
+      },
+    }))
+  }, [detect.status, pack.status, languages.status, saved.seeded])
+
+  const steps = detect.status === 'success' ? stepsFor(detect.data) : (['owner'] as StepId[])
+  const index = Math.max(0, steps.indexOf(step))
+  const id = steps[index] ?? 'owner'
+
   // each step moves focus to its heading, so a screen reader hears where it is
   // biome-ignore lint/correctness/useExhaustiveDependencies: runs on step change
   useEffect(() => {
     if (first.current) first.current = false
     else heading.current?.focus()
-  }, [step])
+  }, [id])
 
-  const update = (patch: Partial<Draft>) =>
-    setSaved((s) => ({ ...s, draft: { ...s.draft, ...patch } }))
-  const go = (to: number) => {
+  const update = (patch: Partial<Draft>, line?: Line) =>
+    setSaved((s) => ({
+      ...s,
+      draft: { ...s.draft, ...patch },
+      changed: line && !s.changed.includes(line) ? [...s.changed, line] : s.changed,
+    }))
+  const go = (to: StepId) => {
     setErrors({})
-    setSaved((s) => ({ ...s, step: to, reached: Math.max(s.reached, to) }))
+    setOpen(null)
+    const at = steps.indexOf(to)
+    setSaved((s) => ({ ...s, step: to, reached: Math.max(s.reached, at) }))
   }
+  const forward = () => go(steps[index + 1] ?? 'review')
 
   const next = async (e?: FormEvent) => {
     e?.preventDefault()
-    const found = validate(id, draft)
+    const found = id === 'owner' ? ownerErrors(draft) : id === 'folders' ? folderErrors(draft) : {}
     setErrors(found)
     if (Object.keys(found).length) return
-    if (id !== 'review') return go(step + 1)
+    if (id !== 'review') return forward()
+    // an editor left wrong opens again with its message
+    for (const line of ['folders', 'subtitles', 'address', 'remote'] as const) {
+      const wrong = lineErrors(line, draft)
+      if (Object.keys(wrong).length) {
+        setOpen(line)
+        setErrors(wrong)
+        return
+      }
+    }
     try {
       const server = await complete.run(toInput(draft))
-      persist(null)
+      persist(key, null)
       toast.success(`${server.name} is ready`, {
         description: 'Add your first movie from Discover.',
       })
@@ -180,24 +301,10 @@ export function Setup() {
 
   const startOver = () => {
     setErrors({})
-    setSaved({ step: 0, reached: 0, draft: initial, indexersSeeded: false })
+    setSaved(fresh())
   }
 
-  const body: Record<string, { title: string; detail: ReactNode; content: ReactNode }> = {
-    name: {
-      title: 'Name your server',
-      detail: 'Everyone who connects sees this name. You can change it later in Settings.',
-      content: (
-        <Field label="Server name" error={errors.serverName}>
-          <Input
-            value={draft.serverName}
-            placeholder="Harbor"
-            autoComplete="off"
-            onChange={(e) => update({ serverName: e.target.value })}
-          />
-        </Field>
-      ),
-    },
+  const body: Record<StepId, { title: string; detail: ReactNode; content: ReactNode }> = {
     owner: {
       title: 'Create the owner account',
       detail:
@@ -222,7 +329,7 @@ export function Setup() {
               }
             />
           </Field>
-          <div className="grid gap-4 medium:grid-cols-2">
+          <div className="grid items-start gap-4 medium:grid-cols-2">
             <Field label="Password" hint="At least 10 characters." error={errors.password}>
               <Input
                 type="password"
@@ -240,8 +347,25 @@ export function Setup() {
               />
             </Field>
           </div>
+          <Field
+            label="Server name"
+            hint={
+              detect.data?.serverName
+                ? 'From this computer’s name. Everyone who connects sees it.'
+                : 'Everyone who connects sees this name.'
+            }
+            error={errors.serverName}
+          >
+            <Input
+              value={draft.serverName}
+              placeholder="Harbor"
+              autoComplete="off"
+              onChange={(e) => update({ serverName: e.target.value })}
+            />
+          </Field>
           <p className="text-caption text-text-3">
-            You can turn on two-factor sign-in and passkeys in Settings › Security.
+            You can turn on two-factor sign-in and passkeys in Settings › Security. Coming from
+            Radarr or qBittorrent? You can bring your library across after setup.
           </p>
         </>
       ),
@@ -249,80 +373,37 @@ export function Setup() {
     folders: {
       title: 'Choose your folders',
       detail:
-        'Movies is where your library lives. Downloads is where torrents land before they’re imported.',
-      content: <Folders draft={draft} errors={errors} update={update} />,
-    },
-    indexers: {
-      title: 'Add indexers',
-      detail:
-        'Indexers are the sites highsea searches for releases. These public ones need no account. Add private ones from the catalog later.',
-      content: (
-        <Indexers
-          selected={draft.indexers}
-          seeded={saved.indexersSeeded}
-          onChange={(indexers, seeded) =>
-            setSaved((s) => ({ ...s, indexersSeeded: seeded, draft: { ...s.draft, indexers } }))
-          }
-        />
-      ),
-    },
-    subtitles: {
-      title: 'Subtitle languages',
-      detail:
-        'highsea finds subtitles in these languages and syncs them to each movie. The first one is preferred.',
-      content: (
-        <Languages
-          selected={draft.subtitleLanguages}
-          error={errors.languages}
-          onChange={(subtitleLanguages) => update({ subtitleLanguages })}
-        />
-      ),
-    },
-    remote: {
-      title: 'Watching away from home',
-      detail:
-        'Choose how apps reach this server from outside your network. You can change it later.',
-      content: <Remote draft={draft} errors={errors} update={update} />,
-    },
-    cloud: {
-      title: 'Link to highsea cloud',
-      detail:
-        'Optional. Everything works without it: the cloud only adds conveniences, and your library never leaves this server.',
-      content: (
-        <div className="grid gap-4">
-          <Field
-            inline
-            label="Link this server to highsea cloud"
-            hint="Off by default. You can link or unlink it any time in Settings."
-          >
-            <Switch
-              checked={draft.cloudLink}
-              onCheckedChange={(cloudLink) => update({ cloudLink })}
-            />
-          </Field>
-          <ul className="grid gap-2 rounded-md border border-line bg-s2 p-4 text-caption text-text-2">
-            <CloudPoint icon="globe">
-              Apps find this server from anywhere, without a port or a proxy.
-            </CloudPoint>
-            <CloudPoint icon="notification">
-              Push notifications on phones, without running your own relay.
-            </CloudPoint>
-            <CloudPoint icon="movie">Movie details without your own TMDB key.</CloudPoint>
-            <CloudPoint icon="lock">
-              The cloud sees your server’s address and account email, never your library or what you
-              watch.
-            </CloudPoint>
-          </ul>
-        </div>
-      ),
+        'highsea didn’t find a movies folder and a downloads folder under /data. Pick the folders you mounted for it.',
+      content: <Folders draft={draft} errors={errors} update={(p) => update(p, 'folders')} />,
     },
     review: {
       title: 'Check and finish',
-      detail: 'Everything here can be changed later in Settings.',
-      content: <Review draft={draft} onEdit={go} />,
+      detail:
+        'highsea chose these from what it found. Change anything here now, or later in Settings.',
+      content:
+        detect.status === 'success' ? (
+          <Review
+            found={detect.data}
+            saved={saved}
+            steps={steps}
+            open={open}
+            errors={errors}
+            onOpen={(line) => {
+              setErrors({})
+              setOpen(line)
+            }}
+            onDone={(line) => {
+              const wrong = lineErrors(line, draft)
+              setErrors(wrong)
+              if (Object.keys(wrong).length === 0) setOpen(null)
+            }}
+            update={update}
+            onStep={go}
+          />
+        ) : null,
     },
   }
-  const current = body[id] ?? body.name
+  const current = body[id]
 
   return (
     <div className="flex min-h-screen flex-col bg-bg text-text">
@@ -330,59 +411,344 @@ export function Setup() {
         <Lockup size={17} />
         <span className="text-caption text-text-3">Setup</span>
         <div className="flex-1" />
-        {(step > 0 || reached > 0) && (
+        {(index > 0 || reached > 0) && (
           <Button variant="ghost" size="sm" icon="replay" onClick={startOver}>
             Start over
           </Button>
         )}
       </header>
       <div className="mx-auto grid w-full max-w-240 flex-1 content-start gap-6 px-4 py-6 medium:px-6 medium:py-10 expanded:grid-cols-[13rem_minmax(0,1fr)] expanded:gap-10">
-        <Stepper steps={steps} current={step} reached={reached} onSelect={go} />
+        {detect.status === 'success' ? (
+          <Stepper
+            steps={steps.map((s) => ({ id: s, label: stepLabels[s] }))}
+            current={index}
+            reached={Math.min(reached, steps.length - 1)}
+            onSelect={(i) => go(steps[i] ?? 'owner')}
+          />
+        ) : (
+          <Skeleton className="h-24 expanded:h-40" />
+        )}
         <main className="min-w-0">
-          <form onSubmit={next} noValidate className="grid max-w-150 gap-6">
-            <div className="grid gap-1.5">
-              <h1 ref={heading} tabIndex={-1} className="text-heading outline-none">
-                {current?.title}
-              </h1>
-              <p className="text-body text-text-2">{current?.detail}</p>
+          {detect.status === 'error' ? (
+            <EmptyState
+              tone="error"
+              title="Can’t reach the server"
+              action={<Button onClick={detect.refetch}>Try again</Button>}
+            >
+              {detect.error.message}
+            </EmptyState>
+          ) : detect.status === 'loading' || !saved.seeded ? (
+            <div className="grid max-w-150 gap-4">
+              <Skeleton className="h-8 w-64" />
+              <Skeleton className="h-5" />
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-16" />
+              ))}
             </div>
-            <div className="grid gap-4">{current?.content}</div>
-            <div className="flex flex-wrap items-center gap-2 border-line border-t pt-5">
-              {step > 0 && (
-                <Button variant="ghost" icon="arrow-left" onClick={() => go(step - 1)}>
-                  Back
+          ) : (
+            <form onSubmit={next} noValidate className="grid max-w-150 gap-6">
+              <div className="grid gap-1.5">
+                <h1 ref={heading} tabIndex={-1} className="text-heading outline-none">
+                  {current.title}
+                </h1>
+                <p className="text-body text-text-2">{current.detail}</p>
+              </div>
+              <div className="grid gap-4">{current.content}</div>
+              <div className="flex flex-wrap items-center gap-2 border-line border-t pt-5">
+                {index > 0 && (
+                  <Button
+                    variant="ghost"
+                    icon="arrow-left"
+                    onClick={() => go(steps[index - 1] ?? 'owner')}
+                  >
+                    Back
+                  </Button>
+                )}
+                <div className="flex-1" />
+                <Button
+                  type="submit"
+                  variant="primary"
+                  iconEnd={id === 'review' ? undefined : 'arrow-right'}
+                  icon={id === 'review' ? 'check' : undefined}
+                  loading={complete.pending}
+                >
+                  {id === 'review' ? 'Finish setup' : 'Continue'}
                 </Button>
-              )}
-              <div className="flex-1" />
-              <Button
-                type="submit"
-                variant="primary"
-                iconEnd={id === 'review' ? undefined : 'arrow-right'}
-                icon={id === 'review' ? 'check' : undefined}
-                loading={complete.pending}
-              >
-                {id === 'review' ? 'Finish setup' : 'Continue'}
-              </Button>
-            </div>
-          </form>
+              </div>
+            </form>
+          )}
         </main>
       </div>
     </div>
   )
 }
 
-function CloudPoint({
-  icon,
-  children,
+// ---------------------------------------------------------------- review
+
+function Review({
+  found,
+  saved,
+  steps,
+  open,
+  errors,
+  onOpen,
+  onDone,
+  update,
+  onStep,
 }: {
-  icon: 'globe' | 'notification' | 'movie' | 'lock'
-  children: ReactNode
+  found: SetupDetected
+  saved: Saved
+  steps: StepId[]
+  open: Line | null
+  errors: Errors
+  onOpen: (line: Line) => void
+  onDone: (line: Line) => void
+  update: (patch: Partial<Draft>, line?: Line) => void
+  onStep: (step: StepId) => void
 }) {
+  const { draft, changed } = saved
+  const pack = useQuery('starter-pack', (c) => c.catalog.starterPack())
+  const languages = useQuery('languages', (c) => c.subtitles.languages())
+  const { movies, downloads } = draft.folders
+  const links = useQuery(`hardlinks:${movies}:${downloads}`, (c) =>
+    c.fs.checkHardlinks(movies, downloads),
+  )
+
+  const indexerNames = draft.indexers.map((i) => pack.data?.find((d) => d.id === i)?.name ?? i)
+  const languageNames = draft.subtitleLanguages.map(
+    (c) => languages.data?.find((l) => l.code === c)?.name ?? c,
+  )
+  const asked = (s: StepId) => steps.includes(s)
+  const note = (line: Line, text: string) => (changed.includes(line) ? undefined : text)
+
+  const edit = (line: Line, patch: Partial<Draft>) => update(patch, line)
+
+  type Row = {
+    id: string
+    label: string
+    value: ReactNode
+    note?: string
+    /** A step to go back to, an editor here, or nothing to change now. */
+    change?: { step: StepId } | { line: Line; editor: ReactNode }
+  }
+
+  const rows: Row[] = [
+    {
+      id: 'owner',
+      label: 'Owner',
+      value: (
+        <>
+          {draft.owner.displayName}{' '}
+          <span className="font-mono text-text-3">@{draft.owner.username}</span>
+        </>
+      ),
+      change: { step: 'owner' },
+    },
+    { id: 'name', label: 'Server name', value: draft.serverName, change: { step: 'owner' } },
+    {
+      id: 'folders',
+      label: 'Folders',
+      value: (
+        <span className="grid font-mono text-mono">
+          <span>{movies}</span>
+          <span>{downloads}</span>
+        </span>
+      ),
+      note:
+        links.status === 'success' && links.data.ok
+          ? links.data.sameDevice
+            ? 'Same disk, so imports are hardlinked.'
+            : 'Different disks, so imports are copied.'
+          : undefined,
+      change: asked('folders')
+        ? { step: 'folders' }
+        : {
+            line: 'folders',
+            editor: <Folders draft={draft} errors={errors} update={(p) => edit('folders', p)} />,
+          },
+    },
+    {
+      id: 'metadata',
+      label: 'Movie details',
+      value: draft.metadataKey.trim()
+        ? `From TMDB, with your key ending in ${draft.metadataKey.trim().slice(-4)}`
+        : 'From TMDB, with highsea’s key',
+      change: {
+        line: 'metadata',
+        editor: (
+          <Field
+            label="Your own TMDB key"
+            hint="Optional. highsea uses its own key unless you add one; yours wins."
+          >
+            <Input
+              type="password"
+              value={draft.metadataKey}
+              autoComplete="off"
+              spellCheck={false}
+              className="font-mono"
+              onChange={(e) => edit('metadata', { metadataKey: e.target.value })}
+            />
+          </Field>
+        ),
+      },
+    },
+    {
+      id: 'indexers',
+      label: 'Indexers',
+      value: indexerNames.length ? indexerNames.join(', ') : 'None yet',
+      note: note('indexers', 'The catalog’s public indexers. They need no account.'),
+      change: {
+        line: 'indexers',
+        editor: (
+          <Indexers
+            selected={draft.indexers}
+            onChange={(indexers) => edit('indexers', { indexers })}
+          />
+        ),
+      },
+    },
+    {
+      id: 'subtitles',
+      label: 'Subtitles',
+      value: languageNames.join(', then '),
+      note: note('subtitles', 'From this browser’s languages.'),
+      change: {
+        line: 'subtitles',
+        editor: (
+          <Languages
+            selected={draft.subtitleLanguages}
+            error={errors.languages}
+            onChange={(subtitleLanguages) => edit('subtitles', { subtitleLanguages })}
+          />
+        ),
+      },
+    },
+    {
+      id: 'timeZone',
+      label: 'Time zone',
+      value: draft.timeZone,
+      note: note('timeZone', 'From this browser.'),
+      change: {
+        line: 'timeZone',
+        editor: (
+          <Field label="Time zone" hint="Schedules, history and notifications use it.">
+            <Select
+              value={draft.timeZone}
+              onValueChange={(timeZone) => edit('timeZone', { timeZone })}
+              options={allZones(draft.timeZone).map((z) => ({ value: z, label: z }))}
+            />
+          </Field>
+        ),
+      },
+    },
+    {
+      id: 'address',
+      label: 'Address on your network',
+      value: <span className="font-mono text-mono">{draft.address}</span>,
+      note: note(
+        'address',
+        found.address
+          ? 'This server’s address. Apps on your network find it here.'
+          : 'The address you opened setup at. Apps on your network find the server here.',
+      ),
+      change: {
+        line: 'address',
+        editor: (
+          <Field
+            label="Address on your network"
+            hint="Apps on your network connect here. Use the address of the computer highsea runs on, with its port."
+            error={errors.address}
+          >
+            <Input
+              value={draft.address}
+              spellCheck={false}
+              className="font-mono"
+              onChange={(e) => edit('address', { address: e.target.value })}
+            />
+          </Field>
+        ),
+      },
+    },
+    {
+      id: 'remote',
+      label: 'Away from home',
+      value:
+        draft.remote === 'reverse-proxy'
+          ? `Reverse proxy at ${draft.proxyUrl}`
+          : draft.remote === 'port-forward'
+            ? `Port ${draft.port}, forwarded by your router`
+            : 'Only at home',
+      note: note('remote', 'Nothing is opened to the internet unless you choose it.'),
+      change: {
+        line: 'remote',
+        editor: <Remote draft={draft} errors={errors} update={(p) => edit('remote', p)} />,
+      },
+    },
+    {
+      id: 'graphics',
+      label: 'Video conversion',
+      value: found.graphics
+        ? `${found.graphics.name}, through ${found.graphics.path}`
+        : 'This computer’s processor',
+      note: found.graphics
+        ? 'Its check passed. You can change it in Settings › Playback.'
+        : 'highsea found no graphics chip. The install guide shows how to hand one over.',
+    },
+    {
+      id: 'cloud',
+      label: 'highsea cloud',
+      value: 'Not linked',
+      note: 'Optional, and nothing here needs it. Linking comes in a later version.',
+    },
+  ]
+
   return (
-    <li className="flex items-start gap-2.5">
-      <Icon name={icon} size={16} className="mt-px shrink-0 text-text-3" />
-      {children}
-    </li>
+    <ul className="grid rounded-md border border-line bg-s1">
+      {rows.map((r) => {
+        const change = r.change
+        const editing = change && 'line' in change && open === change.line
+        return (
+          <li key={r.id} className="grid gap-3 border-line border-b px-4 py-3 last:border-b-0">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-3">
+              <dl className="grid min-w-0 gap-x-3 gap-y-0.5 medium:grid-cols-[10rem_minmax(0,1fr)]">
+                <dt className="text-caption text-text-3 medium:pt-0.5">{r.label}</dt>
+                <dd className="min-w-0 break-words text-text text-ui">
+                  {r.value}
+                  {r.note && <span className="block text-caption text-text-3">{r.note}</span>}
+                </dd>
+              </dl>
+              {change &&
+                ('step' in change ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => onStep(change.step)}
+                    aria-label={`Change ${r.label.toLowerCase()}`}
+                  >
+                    Change
+                  </Button>
+                ) : (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-expanded={editing}
+                    aria-controls={editing ? `edit-${r.id}` : undefined}
+                    onClick={() => (editing ? onDone(change.line) : onOpen(change.line))}
+                    aria-label={`${editing ? 'Done with' : 'Change'} ${r.label.toLowerCase()}`}
+                  >
+                    {editing ? 'Done' : 'Change'}
+                  </Button>
+                ))}
+            </div>
+            {editing && 'line' in change && (
+              <div id={`edit-${r.id}`} className="grid gap-4 border-line border-t pt-3">
+                {change.editor}
+              </div>
+            )}
+          </li>
+        )
+      })}
+    </ul>
   )
 }
 
@@ -437,7 +803,7 @@ function Folders({
       <PathPicker
         open={picking !== null}
         title={picking === 'downloads' ? 'Choose the downloads folder' : 'Choose the movies folder'}
-        start={picking ? draft.folders[picking] : '/'}
+        start={(picking && draft.folders[picking]) || '/data'}
         onOpenChange={(open) => !open && setPicking(null)}
         onPick={(path) => {
           if (picking) set(picking, path)
@@ -580,24 +946,12 @@ function FolderRow({
 
 function Indexers({
   selected,
-  seeded,
   onChange,
 }: {
   selected: string[]
-  seeded: boolean
-  onChange: (ids: string[], seeded: boolean) => void
+  onChange: (ids: string[]) => void
 }) {
   const pack = useQuery('starter-pack', (c) => c.catalog.starterPack())
-  // the public starters start switched on, once
-  // biome-ignore lint/correctness/useExhaustiveDependencies: seeds once, when the pack arrives
-  useEffect(() => {
-    if (!seeded && pack.status === 'success')
-      onChange(
-        pack.data.filter((d) => d.privacy === 'public').map((d) => d.id),
-        true,
-      )
-  }, [pack.status, seeded])
-
   if (pack.status === 'loading')
     return (
       <div className="grid gap-2">
@@ -633,12 +987,12 @@ function Indexers({
                 </span>
               }
               hint={d.description}
-              className="rounded-md border border-line bg-s1 p-3"
+              className="rounded-md border border-line bg-s2 p-3"
             >
               <Checkbox
                 checked={on}
                 onCheckedChange={(v) =>
-                  onChange(v ? [...selected, d.id] : selected.filter((x) => x !== d.id), true)
+                  onChange(v ? [...selected, d.id] : selected.filter((x) => x !== d.id))
                 }
               />
             </Field>
@@ -677,7 +1031,7 @@ function Languages({
   return (
     <div className="grid gap-3">
       <fieldset className="grid gap-2">
-        <legend className="mb-2 font-medium text-[13px] text-text-2">Languages</legend>
+        <legend className="mb-2 font-medium text-[13px] text-text-2">Subtitle languages</legend>
         <div className="flex flex-wrap gap-2">
           {languages.data.map((l) => {
             const on = selected.includes(l.code)
@@ -712,7 +1066,7 @@ function Languages({
         <p className="text-caption text-text-3" aria-live="polite">
           {selected.length === 1
             ? `${name(selected[0] ?? '')} only.`
-            : `${selected.map(name).join(', then ')}, in that order.`}
+            : `${selected.map(name).join(', then ')}, in that order. The first is preferred.`}
         </p>
       )}
     </div>
@@ -735,7 +1089,8 @@ const remoteOptions: { kind: RemoteAccess['kind']; title: string; detail: string
   {
     kind: 'port-forward',
     title: 'Forward a port on my router',
-    detail: 'highsea serves HTTPS on a port you forward. It checks the port is reachable.',
+    detail:
+      'highsea asks your router to forward this port, using UPnP or NAT-PMP, and serves HTTPS on it. If the router doesn’t answer, Health says how to forward it yourself.',
   },
 ]
 
@@ -750,7 +1105,7 @@ function Remote({
 }) {
   return (
     <fieldset className="grid gap-2">
-      <legend className="sr-only">Remote access</legend>
+      <legend className="sr-only">Away from home</legend>
       {remoteOptions.map((o) => {
         const on = draft.remote === o.kind
         return (
@@ -787,7 +1142,7 @@ function Remote({
             {on && o.kind === 'port-forward' && (
               <Field
                 label="Port"
-                hint="Forward this TCP port on your router to this server."
+                hint="The TCP port your router forwards to this server."
                 error={errors.port}
                 className="ps-7"
               >
@@ -803,81 +1158,5 @@ function Remote({
         )
       })}
     </fieldset>
-  )
-}
-
-// ---------------------------------------------------------------- review
-
-function Review({ draft, onEdit }: { draft: Draft; onEdit: (step: number) => void }) {
-  const pack = useQuery('starter-pack', (c) => c.catalog.starterPack())
-  const languages = useQuery('languages', (c) => c.subtitles.languages())
-  const indexerNames = draft.indexers.map((i) => pack.data?.find((d) => d.id === i)?.name ?? i)
-  const languageNames = draft.subtitleLanguages.map(
-    (c) => languages.data?.find((l) => l.code === c)?.name ?? c,
-  )
-  const rows: { step: string; label: string; value: ReactNode }[] = [
-    { step: 'name', label: 'Server name', value: draft.serverName },
-    {
-      step: 'owner',
-      label: 'Owner',
-      value: (
-        <>
-          {draft.owner.displayName}{' '}
-          <span className="font-mono text-text-3">@{draft.owner.username}</span>
-        </>
-      ),
-    },
-    {
-      step: 'folders',
-      label: 'Folders',
-      value: (
-        <span className="grid font-mono text-mono">
-          <span>{draft.folders.movies}</span>
-          <span>{draft.folders.downloads}</span>
-        </span>
-      ),
-    },
-    {
-      step: 'indexers',
-      label: 'Indexers',
-      value: indexerNames.length ? indexerNames.join(', ') : 'None yet',
-    },
-    { step: 'subtitles', label: 'Subtitles', value: languageNames.join(', ') },
-    {
-      step: 'remote',
-      label: 'Remote access',
-      value:
-        draft.remote === 'reverse-proxy'
-          ? `Reverse proxy at ${draft.proxyUrl}`
-          : draft.remote === 'port-forward'
-            ? `Port ${draft.port}, forwarded`
-            : 'Only at home',
-    },
-    { step: 'cloud', label: 'highsea cloud', value: draft.cloudLink ? 'Linked' : 'Not linked' },
-  ]
-  return (
-    <dl className="grid rounded-md border border-line bg-s1">
-      {rows.map((r) => (
-        <div
-          key={r.step}
-          className="grid grid-cols-[1fr_auto] items-start gap-x-3 gap-y-0.5 border-line border-b px-4 py-3 last:border-b-0 medium:grid-cols-[10rem_1fr_auto]"
-        >
-          <dt className="text-caption text-text-3 medium:pt-0.5">{r.label}</dt>
-          <dd className="col-start-1 min-w-0 break-words text-text text-ui medium:col-start-2 medium:row-start-1">
-            {r.value}
-          </dd>
-          <dd className="col-start-2 row-span-2 row-start-1 medium:col-start-3 medium:row-span-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => onEdit(steps.findIndex((s) => s.id === r.step))}
-              aria-label={`Change ${r.label.toLowerCase()}`}
-            >
-              Change
-            </Button>
-          </dd>
-        </div>
-      ))}
-    </dl>
   )
 }

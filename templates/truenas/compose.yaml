@@ -3,13 +3,17 @@
 # ⋮ › Install via YAML, which takes a Compose file
 # (https://www.truenas.com/docs/scale/25.10/scaleuireference/apps/installcustomappscreens/).
 #
-# Change before installing:
-# - the two host paths, to datasets on your pool: one for highsea's config, one for downloads and
-#   the library together, so imports hardlink instead of copying;
-# - PUID and PGID, to the user and group that own those datasets. 568 is TrueNAS's `apps` user and
-#   group, which its own apps run as.
+# The two host paths are TrueNAS's usual ones: a dataset for highsea's config, and one for
+# downloads and the library together, so imports hardlink instead of copying. Change them if your
+# pool or datasets are named otherwise.
 #
-# Host networking lets apps on your network find highsea by broadcast and mDNS (ADR 0020).
+# PUID and PGID stay set: a dataset made with the Apps preset gives the `apps` group (568) its
+# permissions through an ACL, but root still owns it, so highsea's own guess would be 1000:1000
+# (ADR 0057). 568 is the user and group TrueNAS's own apps run as.
+#
+# Host networking lets apps on your network find highsea by its broadcast on 7368/udp (ADR 0020).
+# For mDNS, highsea publishes through TrueNAS's own avahi, over the host's D-Bus (/run/dbus), since
+# that avahi keeps port 5353 to itself (`disallow-other-stacks=yes`).
 services:
   highsea:
     # `latest` is the newest stable release; pin a version (0.1.0) to choose when you move
@@ -18,13 +22,26 @@ services:
     environment:
       PUID: "568"
       PGID: "568"
-      TZ: Etc/UTC
+      # highsea takes the time zone from your browser at setup; set it here to choose instead
+      # TZ: Europe/London
     volumes:
       - /mnt/tank/apps/highsea:/config
       - /mnt/tank/data:/data
-    # Hardware acceleration (Settings › Playback), on a TrueNAS with Intel graphics: pass it
-    # through, then press Check there. highsea joins the device's group by itself.
-    # devices:
-    #   - /dev/dri:/dev/dri
+      - /dev/dri:/dev/dri
+      - /run/dbus:/run/dbus:ro
+    # Intel and AMD graphics, for hardware acceleration (ADR 0056, 0057). The bind mount, unlike
+    # `devices:`, starts on a host without graphics too (Docker makes an empty folder), and the rules
+    # let highsea open the render nodes (226:128 to 226:135) and nothing else. highsea checks what
+    # it finds at start and joins the device's group by itself.
+    # NVIDIA: tick Install NVIDIA Drivers in Apps › Configuration › Settings.
+    device_cgroup_rules:
+      - "c 226:128 rw"
+      - "c 226:129 rw"
+      - "c 226:130 rw"
+      - "c 226:131 rw"
+      - "c 226:132 rw"
+      - "c 226:133 rw"
+      - "c 226:134 rw"
+      - "c 226:135 rw"
     # a restore in System › Backups restarts highsea by exiting with code 75 (ADR 0047)
     restart: unless-stopped

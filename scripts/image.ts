@@ -36,6 +36,9 @@
 //     Fails unless the image's ffmpeg lists the hardware encoders and filters highsea uses, and, on
 //     amd64, the drivers are there: Intel's and Mesa's VAAPI drivers and Mesa's Vulkan ICDs
 //     (phase-4-checkpoint-3.md › Hardware acceleration, ADR 0056).
+//   bun scripts/image.ts user <image>
+//     Fails unless the entrypoint runs highsea as the user ADR 0057 says: /data's owner, or the first
+//     thing in it not owned by root, or 1000:1000, with PUID and PGID winning when they're set.
 //   bun scripts/image.ts attestations <OCI layout folder>
 //     Reads an image exported with `type=oci` and fails unless it has the OCI labels GitHub reads
 //     and both attestations: BuildKit's provenance and the SBOM. They're stored as an attestation
@@ -253,11 +256,6 @@ function production(from: string, to: string) {
 }
 
 function size(image: string, budgetMb: number) {
-  const inspect = spawnSync('docker', ['image', 'inspect', '--format', '{{.Size}}', image], {
-    encoding: 'utf8',
-  })
-  if (inspect.status !== 0) throw new Error(`No image called ${image}: ${inspect.stderr}`)
-  const mb = Math.round(Number(inspect.stdout.trim()) / 1_000_000)
   const du = spawnSync(
     'docker',
     [
@@ -271,6 +269,13 @@ function size(image: string, budgetMb: number) {
     ],
     { encoding: 'utf8' },
   )
+  // after a container has run: Docker's containerd image store reports the compressed content's
+  // size until the image is unpacked (`docker image ls` shows both), which would pass any image
+  const inspect = spawnSync('docker', ['image', 'inspect', '--format', '{{.Size}}', image], {
+    encoding: 'utf8',
+  })
+  if (inspect.status !== 0) throw new Error(`No image called ${image}: ${inspect.stderr}`)
+  const mb = Math.round(Number(inspect.stdout.trim()) / 1_000_000)
   console.log(`The largest folders in ${image}:`)
   for (const line of du.stdout.trim().split('\n')) {
     const [kb, path] = line.split('\t')
@@ -340,6 +345,61 @@ function hardware(image: string) {
   )
   if (missing.length) {
     console.error(`Hardware acceleration is missing:\n- ${missing.join('\n- ')}`)
+    process.exit(1)
+  }
+}
+
+/** The entrypoint's choice of user (ADR 0057): what's in /data, the variables set, and the answer. */
+const USERS: { name: string; prepare: string; env: string[]; want: string }[] = [
+  { name: '/data owned by a user', prepare: 'chown 1234:5678 /data', env: [], want: '1234:5678' },
+  {
+    name: "root's /data with a user's folder in it",
+    prepare: 'mkdir /data/films && chown 2000:2001 /data/films',
+    env: [],
+    want: '2000:2001',
+  },
+  { name: "root's empty /data", prepare: 'true', env: [], want: '1000:1000' },
+  {
+    name: 'PUID and PGID set',
+    prepare: 'chown 1234:5678 /data',
+    env: ['PUID=4321', 'PGID=8765'],
+    want: '4321:8765',
+  },
+  {
+    name: 'PUID alone set',
+    prepare: 'chown 1234:5678 /data',
+    env: ['PUID=4321'],
+    want: '4321:5678',
+  },
+]
+
+function user(image: string) {
+  const wrong: string[] = []
+  for (const { name, prepare, env, want } of USERS) {
+    // /data is a fresh tmpfs, made ready as root before the real entrypoint runs `id` in its place
+    const script = `${prepare} && exec /usr/local/bin/highsea-entrypoint sh -c 'echo "$(id -u):$(id -g)"'`
+    const run = spawnSync(
+      'docker',
+      [
+        'run',
+        '--rm',
+        '--tmpfs',
+        '/data',
+        ...env.flatMap((e) => ['-e', e]),
+        '--entrypoint',
+        'sh',
+        image,
+        '-c',
+        script,
+      ],
+      { encoding: 'utf8' },
+    )
+    const got = run.stdout.trim()
+    console.log(`${name}: ${got || run.stderr.trim()}`)
+    if (got !== want) wrong.push(`${name}: ran as ${got || 'nothing'}, not ${want}`)
+  }
+  if (wrong.length) {
+    console.error(`The entrypoint chose the wrong user:\n- ${wrong.join('\n- ')}`)
     process.exit(1)
   }
 }
@@ -468,11 +528,12 @@ if (import.meta.main) {
   if (command === 'production' && a && b) production(a, b)
   else if (command === 'size' && a && Number(b) > 0) size(a, Number(b))
   else if (command === 'hardware' && a) hardware(a)
+  else if (command === 'user' && a) user(a)
   else if (command === 'attestations' && a) attestations(attestationProblems(a))
   else if (command === 'published' && a) attestations(publishedProblems(a))
   else {
     console.error(
-      `Usage: bun ${self} production <from> <to>\n       bun ${self} size <image> <budget in MB>\n       bun ${self} hardware <image>\n       bun ${self} attestations <OCI layout folder>\n       bun ${self} published <name@digest>`,
+      `Usage: bun ${self} production <from> <to>\n       bun ${self} size <image> <budget in MB>\n       bun ${self} hardware <image>\n       bun ${self} user <image>\n       bun ${self} attestations <OCI layout folder>\n       bun ${self} published <name@digest>`,
     )
     process.exit(1)
   }

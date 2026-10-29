@@ -25,7 +25,7 @@ export {
   torrentFileOf,
 } from './metainfo.ts'
 export type { EncryptionPolicy, Method } from './mse.ts'
-export type { MappingStatus } from './portmap.ts'
+export { createPortMapper, type MappingStatus, type PortMapperOptions } from './portmap.ts'
 export type { Binding, SocketRecord } from './sockets.ts'
 export type { Priority } from './storage.ts'
 export type { EngineState, PeerInfo, SeedRule, SessionStats } from './torrent.ts'

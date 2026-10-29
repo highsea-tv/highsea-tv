@@ -83,6 +83,8 @@ export const MetadataSettings = z
       set: z.boolean(),
       /** Its last four characters, so the owner can tell which one it is. */
       last4: z.string().nullable(),
+      /** The image carries highsea's own key, used while `set` is false (4.3c). */
+      builtIn: z.boolean(),
     }),
     language: MetadataLanguage,
     /** For certifications, release dates and Discover's lists. The owner's locale by default. */

@@ -194,3 +194,47 @@ As built in Phase 3, checkpoints 2, 4, 5 and 7a.
 - **Restoring an existing server.** Should step 1 offer "Restore from a backup" for people moving an install?
 - **More than one movies folder.** The roadmap's root folders allow several. Setup asks for one. Is that enough, with the rest in Settings?
 - **Two-factor for the owner.** Should setup offer to turn on two-factor right after the owner account, or leave it to Settings?
+
+## 2026-10-28: the shorter setup (checkpoint 4.3c, prototyped and approved by the owner on 2026-10-28)
+
+[install-simplicity.md › B](../plans/install-simplicity.md#b-highsea-detects-what-setup-used-to-ask) cuts the nine steps down to what highsea can't find out for itself. The prototype at `#/admin/setup` now shows it. The owner approved it on 2026-10-28. Where this section and the layout, copy and data above disagree, this section wins. The server's wizard is built to it in 4.3c's part B.
+
+- **Steps:** **Owner account**, then **Review**. **Media folders** comes between them only when highsea found no movies folder and downloads folder under `/data`. The stepper lists only the steps this server needs: "Step 1 of 2" when the folders were found, and "Step 1 of 3" when they weren't. The toolbar's Populated shows the first case and Empty the second.
+- **No TMDB key step** (the owner, 2026-10-28, reviewing the prototype): movie details always come with highsea's own key. A build from source reads `HIGHSEA_TMDB_READ_TOKEN` from its environment instead, as development does from `.env.local`. Review's **Movie details** line takes the owner's own key, which is optional.
+- **Owner account** gains **Server name** below the password fields. It is filled in from the host's name, with the hint "From this computer's name. Everyone who connects sees it.", or left empty when the container's hostname is only its id. The two-factor line and the migration line become one caption.
+- **Media folders**, when asked, opens with "highsea didn't find a movies folder and a downloads folder under /data. Pick the folders you mounted for it." The fields start empty, and the picker opens at `/data`.
+- **Review** ("Check and finish": "highsea chose these from what it found. Change anything here now, or later in Settings.") is one line per decision. A line that was asked in a step has **Change**, which goes back to that step. A line highsea decided has **Change**, which opens its editor in place under the line, and **Done** closes it after checking it. A line keeps its "from …" note until the owner changes it.
+
+  | Line | What highsea chose | Its editor |
+  | --- | --- | --- |
+  | Owner, Server name | what the owner typed | back to Owner account |
+  | Folders | the folders found, and "Same disk, so imports are hardlinked." or "Different disks, so imports are copied." | the folder fields, Browse and the hardlink banner (or back to Media folders) |
+  | Movie details | "From TMDB, with highsea's key" or "From TMDB, with your key ending in {last4}" | "Your own TMDB key", optional; the owner's key wins |
+  | Indexers | the catalog's public starters, all on | the checklist |
+  | Subtitles | the browser's languages that highsea has subtitles in, in the browser's order, or English | the language chips |
+  | Time zone | the browser's (`Intl.DateTimeFormat().resolvedOptions().timeZone`) | a list of every IANA zone |
+  | Address on your network | the host's LAN address with host networking; in bridge mode, the address the browser used (`location.host`) | the address, checked as host and port |
+  | Away from home | Only at home | the three radio cards |
+  | Video conversion | the graphics chip whose check passed at boot, or the processor | none: Settings › Playback, once setup is done |
+  | highsea cloud | Not linked | none, until the relay exists |
+
+- **Away from home:** **Forward a port on my router** now means highsea asks the router to forward the port, with UPnP or NAT-PMP (answer 10: only once the owner chooses it): "highsea asks your router to forward this port, using UPnP or NAT-PMP, and serves HTTPS on it. If the router doesn't answer, Health says how to forward it yourself."
+- **Finish setup** checks each editor again. One left wrong opens again with its message, for example "Enter the address apps use, such as 192.168.1.20:3000."
+- **Gone:** the Server name, TMDB key, Indexers, Subtitles, Remote access and highsea cloud steps, and the cloud's switch.
+- **Owner account's password fields** line up at the top (`items-start` on their two-column grid). Before, the grid stretched both fields to the taller one's height, so Confirm password sat lower than Password whenever Password showed its hint.
+- **Data:** `setup.detect()` returns `{ serverName, folders, address, graphics }`, with null for anything not found (`mock/types.ts` `SetupDetected`). `SetupInput` gains `metadataKey?`, `timeZone` and `address`.
+- **Loading and error:** the stepper and the form show skeletons until `detect` answers. When it fails, the page shows "Can't reach the server" and **Try again**.
+
+### As built in 4.3c's part B (2026-10-28)
+
+`apps/server/src/admin/setup.tsx` follows the prototype, with these differences that real data forced:
+
+- **The owner's own key** is sent as `metadata.key`, beside the browser's locale, as before, rather than as a top-level `metadataKey`. TMDB checks it on Finish. A key it refuses opens the Movie details line with "TMDB didn't accept that key. Copy it again from your TMDB account."
+- **A field the server refuses** goes back to where it's asked: an owner field to Owner account; a folder to Media folders, or to the Folders line when the folders were found; the time zone, the address, subtitles and remote access to their lines.
+- **What highsea finds** (`packages/runtime/src/setup.ts`):
+  - **The name** is the hostname's first label, and null for Docker's 12-digit id or `localhost`.
+  - **The folders:** an empty `/data` gets `media/movies` and `downloads`; hidden folders, `lost+found` and highsea's own `transcodes/` don't count. Otherwise highsea looks for `media/movies`, `movies`, `media/films` or `films` and for `downloads` or `torrents`, without regard to case, with `downloads` beside the movies when there is none.
+  - **The address** is `HIGHSEA_PUBLISHED_URL`'s, if set. Otherwise it is the private LAN address outside a container, or with host networking, which shows Docker's own interfaces. Otherwise it's null.
+  - **The graphics** are the path the boot check chose.
+- **The time zone** Setup sends replaces the container's `TZ` in Settings › General, as a saved setting already does.
+- **The address** is kept as its own setting and leads the addresses that apps are told and that discovery answers with. Settings › Network doesn't show it yet.

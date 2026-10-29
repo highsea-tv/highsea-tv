@@ -29,6 +29,13 @@ const runtime = await boot({
   subtitles: await fakeSubtitles(),
   lists: await fakeLists(),
   restart: () => void stop('restart', RESTART_EXIT_CODE),
+  // Without Docker's TZ, the process takes General's time zone, which setup takes from the browser.
+  // Node reads a TZ set while it runs (https://nodejs.org/api/cli.html#tz); a TZ given wins.
+  followTimeZone: process.env.TZ
+    ? undefined
+    : (zone) => {
+        process.env.TZ = zone
+      },
 })
 // a crash report, when General › Diagnostics' switch is on; Node's default handling still runs
 // after a monitor (Node's docs, 'uncaughtExceptionMonitor')

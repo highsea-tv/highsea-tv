@@ -11,13 +11,17 @@ description: Run highsea with Docker Compose on Linux, macOS or Windows.
   - Docker Desktop: https://docs.docker.com/desktop/
   - Host networking, and where Docker Desktop supports it: https://docs.docker.com/engine/network/drivers/host/
   - The compose files are compose.yaml and compose.bridge.yaml at the repository's root.
+  - The user highsea runs as: docker/entrypoint.sh (ADR 0057).
+  - Bind mounts make a missing source folder: https://docs.docker.com/engine/storage/bind-mounts/
+  - Setup and its copy: apps/server/src/admin/setup.tsx and setup-messages.ts; what it finds by
+    itself: packages/runtime/src/setup.ts (detectServerName, detectFolders, detectAddress).
 */}
 
-Written for highsea 0.1.0, and followed on Docker Engine 29.8 with Docker Compose 5.6. Any Docker with the Compose plugin works.
+Written for highsea 0.2.0-beta.3, and followed on Docker Engine 29.8 with Docker Compose 5.6. Any Docker with the Compose plugin works.
 
 ## Before you start
 
-[Prerequisites](/install/prerequisites/) lists what highsea needs. Here, that's Docker with the Compose plugin. On Linux, install [Docker Engine](https://docs.docker.com/engine/install/). On macOS and Windows, install [Docker Desktop](https://docs.docker.com/desktop/). Check both are there:
+[Prerequisites](/install/prerequisites/) lists what highsea needs. Here, that's Docker with the Compose plugin. On Linux, install [Docker Engine](https://docs.docker.com/engine/install/). On macOS and Windows, install [Docker Desktop](https://docs.docker.com/desktop/). On Linux, [one command](/install/script/) can do the rest of this page for you. Check both are there:
 
 ```sh
 docker compose version
@@ -38,18 +42,9 @@ A layout that works well:
 /srv/data/media/movies
 ```
 
-Setup suggests `/data/downloads` and `/data/media/movies` inside the container, which is this layout once `/srv/data` is mounted as `/data`.
+Setup finds `/data/downloads` and `/data/media/movies` inside the container, which is this layout once `/srv/data` is mounted as `/data`, so it doesn't ask for folders.
 
-## Find your user and group
-
-highsea runs as the user and group that own your files, given as `PUID` and `PGID`. On Linux, `id` shows yours:
-
-```sh
-id
-# uid=1000(alex) gid=1000(alex) …
-```
-
-On macOS and Windows, Docker Desktop handles file ownership itself, so the defaults of 1000 are fine.
+highsea runs as whoever owns the data folder, so the files it writes are yours. If the folder is new, or root owns it and everything in it, highsea runs as user and group 1000. Its log's first line says which it chose.
 
 ## Write the compose file
 
@@ -58,7 +53,7 @@ Make a folder for highsea and save this as `compose.yaml` inside it.
 <Tabs items={['Linux', 'macOS and Windows']}>
 <Tab value="Linux">
 
-Host networking lets highsea's apps find the server on your network by themselves, and lets the torrent engine take incoming connections.
+Host networking lets highsea's apps find the server on your network by themselves, and lets the torrent engine take incoming connections. Where the machine runs avahi, as most desktop Linux does, the `/run/dbus` line lets highsea announce itself through it rather than alongside it.
 
 ```yaml title="compose.yaml"
 services:
@@ -66,13 +61,20 @@ services:
     image: ghcr.io/highsea-tv/highsea:latest
     container_name: highsea
     network_mode: host
-    environment:
-      PUID: "1000"
-      PGID: "1000"
-      TZ: Etc/UTC
     volumes:
       - ./config:/config
       - /srv/data:/data
+      - /dev/dri:/dev/dri
+      - /run/dbus:/run/dbus:ro
+    device_cgroup_rules:
+      - "c 226:128 rw"
+      - "c 226:129 rw"
+      - "c 226:130 rw"
+      - "c 226:131 rw"
+      - "c 226:132 rw"
+      - "c 226:133 rw"
+      - "c 226:134 rw"
+      - "c 226:135 rw"
     restart: unless-stopped
 ```
 
@@ -86,10 +88,6 @@ services:
   highsea:
     image: ghcr.io/highsea-tv/highsea:latest
     container_name: highsea
-    environment:
-      PUID: "1000"
-      PGID: "1000"
-      TZ: Etc/UTC
     volumes:
       - ./config:/config
       - ./data:/data
@@ -104,11 +102,18 @@ services:
 </Tab>
 </Tabs>
 
-Change these to suit you:
+The one line to look at is the data folder, `/srv/data` or `./data`: change it if your downloads and films are somewhere else.
 
-- `/srv/data` or `./data`: the folder that holds your downloads and films.
-- `PUID` and `PGID`: the numbers `id` showed.
-- `TZ`: your time zone, such as `Europe/London` or `America/New_York`. Schedules and the calendar use it.
+On Linux, the `/dev/dri` line and the rules under it give highsea your Intel or AMD graphics, for [hardware acceleration](/install/hardware-acceleration/). They let highsea open the graphics chip's render nodes and nothing else, and on a computer without graphics the container starts all the same. Docker Desktop has no graphics to give, so the macOS and Windows file leaves them out.
+
+There's nothing else to set. highsea takes your time zone from your browser during setup, over `TZ`, and you can change it later in **Settings › General**. To choose the user and time zone yourself, add them:
+
+```yaml
+    environment:
+      PUID: "1000"   # `id` on the host shows your numbers
+      PGID: "1000"
+      TZ: Europe/London
+```
 
 The `latest` tag is the newest stable release. To choose when you move to a new version, use a version number instead, such as `ghcr.io/highsea-tv/highsea:0.1.0`. [Upgrade](/upgrade/) explains both.
 
@@ -124,19 +129,20 @@ The first start downloads the image, about 400 MB. When it's running, `docker co
 
 ## Run setup
 
-Open `http://<your server's address>:3000` in a browser, or `http://localhost:3000` on the same machine. highsea opens its setup:
+Open `http://<your server's address>:3000` in a browser, or `http://localhost:3000` on the same machine. highsea opens its setup, having already looked around: at the server's name, the folders under `/data`, the address apps reach it at, and its graphics.
 
-![highsea's setup, at its first step, Name your server](/images/setup-name.png)
+![highsea's setup at its first step, Create the owner account, with the server's name filled in](/images/setup-owner.png)
 
-1. **Name your server.** Everyone who connects sees this name.
-2. **Create the owner account.** A username of 2 to 32 lowercase letters, numbers, dots, dashes or underscores, and a password of at least 10 characters. You can turn on two-step verification and passkeys later, from Your account.
-3. **Add your TMDB key.** Either the API key or the Read Access Token from [TMDB's API page](https://www.themoviedb.org/settings/api). You can add it later in Settings.
-4. **Choose your folders.** These are folders inside the container, under `/data`. highsea says "Hardlinks will work" when the two are on the same disk, and "Imports will be copied" when they aren't.
-5. **Add indexers.** Pick public indexers from highsea's catalog, which need no account. If none are listed, continue, and add them later from Indexers.
-6. **Subtitle languages.** The languages to find subtitles in, in order of preference.
-7. **Watching away from home.** "Only at home" opens nothing to the internet, and is a good place to start.
-8. **Link to highsea cloud.** Optional, and off unless you turn it on. Everything in highsea works without it.
-9. **Check and finish.**
+1. **Create the owner account.** Your name, then a username of 2 to 32 lowercase letters, numbers, dots, dashes or underscores, and a password of at least 10 characters. **Server name** comes from the computer's name; everyone who connects sees it, so change it if you like. You can turn on two-step verification and passkeys later, from Your account.
+2. **Choose your folders**, only if highsea didn't find them. It looks under `/data` for a movies folder (`media/movies`, `movies`, `media/films` or `films`) and a downloads folder (`downloads` or `torrents`), and when `/data` is empty it makes `media/movies` and `downloads` itself. Otherwise, pick the two folders you mounted. highsea says "Hardlinks will work" when they're on the same disk, and "Imports will be copied" when they aren't.
+3. **Check and finish.** A list of what highsea chose, each with **Change** to edit it in place:
+   - **Movie details** come from TMDB with highsea's own key. You can add your own key here instead, or later in Settings.
+   - **Indexers** are the public ones in highsea's catalog, which need no account.
+   - **Subtitles** are in your browser's languages, the first preferred.
+   - **Time zone** is your browser's. It's used for schedules, history and notifications, and replaces the container's `TZ` if you set one.
+   - **Address on your network** is where apps on your network find highsea. With host networking, as the Linux compose file has, highsea fills in this computer's address. In a bridge network, as on Docker Desktop, it can't see it, so it uses the address you opened setup at. To set it yourself, add `HIGHSEA_PUBLISHED_URL: http://192.168.1.20:3000` under `environment`, with your server's address.
+   - **Away from home** is **Only at home**, which opens nothing to the internet. **Forward a port on my router** asks your router to forward the port, with UPnP or NAT-PMP. If the router doesn't answer, **System › Health** says so and how to forward it yourself.
+   - **Video conversion** shows the graphics chip highsea found and checked, or this computer's processor.
 
 **Finish setup** opens the Dashboard. Add your first film from Discover. [Recommended setup](/recommended-setup/) covers what to set up next.
 
@@ -153,5 +159,5 @@ docker compose logs -f  # follow its log
 ## If something goes wrong
 
 - **The page doesn't load.** Check `docker compose ps`. If the container keeps restarting, `docker compose logs` says why.
-- **highsea can't write to a folder.** The folder on the host isn't owned by `PUID` and `PGID`. Change the owner with `sudo chown -R 1000:1000 /srv/data`, using your own numbers.
+- **highsea can't write to a folder.** highsea's user doesn't own it. `docker compose logs highsea` says which user highsea chose in its first line. Either change the folder's owner on the host, such as `sudo chown -R 1000:1000 /srv/data` with your own numbers from `id`, or set `PUID` and `PGID` to the user who owns it.
 - **Port 3000 is taken.** On Linux with host networking, another program is using it. With published ports, change the left-hand side only, such as `"3080:3000"`, and open port 3080 instead.

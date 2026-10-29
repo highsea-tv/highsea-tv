@@ -8,7 +8,13 @@
   /boot/config/plugins/dockerMan/templates-user/ and add the container from Docker › Add Container.
 
   The paths follow the TRaSH Guides' one-share layout on Unraid, so downloads and the library are
-  on one share and imports hardlink. 99:100 is Unraid's nobody:users, which owns its shares.
+  on one share and imports hardlink. 99:100 is Unraid's nobody:users, which owns its shares. They
+  stay set here, since a share Docker makes for a missing path is root's, and highsea's own guess
+  would then be 1000:1000.
+
+  Graphics (ADR 0057): /dev/dri as a path, which starts on a server without graphics too, and
+  device rules in ExtraParams that let highsea open the render nodes (226:128 to 226:135) and
+  nothing else. NVIDIA has its own template, highsea-nvidia.xml.
 
   There's no TZ: Unraid passes the server's own time zone to every container it runs
   (xmlToCommand in https://github.com/unraid/webgui/blob/master/emhttp/plugins/dynamix.docker.manager/include/Helpers.php),
@@ -25,20 +31,23 @@
   <ReadMe>https://docs.highsea.tv</ReadMe>
   <Overview>highsea finds, downloads and organises your films, with their subtitles, and serves them to your own apps. One self-hosted server in place of Radarr, Prowlarr, qBittorrent and Bazarr.&#xD;
 &#xD;
-Put downloads and the library on one share (the data path), so imports hardlink instead of copying. In bridge mode, apps on your network find highsea by its broadcast on 7368/udp, but not by mDNS; set Network to host for both.</Overview>
+Put downloads and the library on one share (the data path), so imports hardlink instead of copying. Apps on your network find highsea by its broadcast on 7368/udp, and by mDNS through Unraid's own avahi (the D-Bus path), in bridge mode too.</Overview>
+  <ExtraSearchTerms>radarr prowlarr qbittorrent bazarr torrent subtitles movies films</ExtraSearchTerms>
   <Category>Downloaders: MediaApp:Video MediaServer:Video</Category>
   <WebUI>http://[IP]:[PORT:3000]/</WebUI>
   <TemplateURL>https://raw.githubusercontent.com/highsea-tv/highsea-tv/main/templates/unraid/highsea.xml</TemplateURL>
   <Icon>https://raw.githubusercontent.com/highsea-tv/highsea-tv/main/packages/brand/assets/icons/web/icon-512.png</Icon>
-  <ExtraParams/>
+  <ExtraParams>--device-cgroup-rule='c 226:128 rw' --device-cgroup-rule='c 226:129 rw' --device-cgroup-rule='c 226:130 rw' --device-cgroup-rule='c 226:131 rw' --device-cgroup-rule='c 226:132 rw' --device-cgroup-rule='c 226:133 rw' --device-cgroup-rule='c 226:134 rw' --device-cgroup-rule='c 226:135 rw'</ExtraParams>
   <PostArgs/>
+  <Shell>bash</Shell>
   <Config Name="Web UI" Target="3000" Default="3000" Mode="tcp" Description="The admin, the API and the apps' address." Type="Port" Display="always" Required="true" Mask="false">3000</Config>
   <Config Name="Torrents (TCP)" Target="6881" Default="6881" Mode="tcp" Description="The torrent engine's listening port. Change both sides together, and forward it on your router for incoming peers." Type="Port" Display="always" Required="true" Mask="false">6881</Config>
   <Config Name="Torrents (UDP)" Target="6881" Default="6881" Mode="udp" Description="The same port, for uTP and the DHT." Type="Port" Display="always" Required="true" Mask="false">6881</Config>
   <Config Name="Discovery" Target="7368" Default="7368" Mode="udp" Description="Apps on your network find the server by this broadcast." Type="Port" Display="always" Required="false" Mask="false">7368</Config>
   <Config Name="Config" Target="/config" Default="/mnt/user/appdata/highsea" Mode="rw" Description="The database, settings, logs and backups." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/appdata/highsea</Config>
   <Config Name="Data" Target="/data" Default="/mnt/user/data" Mode="rw" Description="One share for downloads and the library, so imports hardlink. Setup suggests /data/downloads and /data/media/movies." Type="Path" Display="always" Required="true" Mask="false">/mnt/user/data</Config>
-  <Config Name="Graphics" Target="" Default="/dev/dri" Mode="" Description="Optional. /dev/dri passes Intel or AMD graphics through for hardware acceleration; then press Check in Settings › Playback. Leave it empty without them." Type="Device" Display="always" Required="false" Mask="false"/>
+  <Config Name="Graphics" Target="/dev/dri" Default="/dev/dri" Mode="rw" Description="Intel or AMD graphics, for hardware acceleration. highsea checks them at start; without them it uses the processor." Type="Path" Display="advanced" Required="false" Mask="false">/dev/dri</Config>
+  <Config Name="D-Bus" Target="/run/dbus" Default="/run/dbus" Mode="ro" Description="Unraid's system bus, so highsea can publish itself over mDNS through Unraid's avahi." Type="Path" Display="advanced" Required="false" Mask="false">/run/dbus</Config>
   <Config Name="PUID" Target="PUID" Default="99" Mode="" Description="The user that owns your files." Type="Variable" Display="advanced" Required="true" Mask="false">99</Config>
   <Config Name="PGID" Target="PGID" Default="100" Mode="" Description="The group that owns your files." Type="Variable" Display="advanced" Required="true" Mask="false">100</Config>
   <Config Name="Public address" Target="HIGHSEA_PUBLIC_URL" Default="" Mode="" Description="Optional. The https:// address you reach highsea at from outside, if you serve it through a reverse proxy." Type="Variable" Display="advanced" Required="false" Mask="false"/>

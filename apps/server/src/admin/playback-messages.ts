@@ -49,9 +49,9 @@ export const playback = defineMessages({
   'path.nvenc.line': 'NVIDIA graphics, through NVIDIA’s container toolkit.',
   'path.videotoolbox.line': 'Apple silicon and Intel Macs.',
   passThrough:
-    'Give highsea’s container the graphics chip, then restart it, and highsea checks the chip as it starts. For Intel and AMD graphics, pass /dev/dri through. For NVIDIA, install NVIDIA’s container toolkit on the host first.',
+    'highsea’s compose files give it Intel and AMD graphics already. If yours is older, add these lines and restart the container, and highsea checks the chip as it starts. For NVIDIA, install NVIDIA’s container toolkit on the host, then run these commands there.',
   'passThrough.intel': 'Compose lines for Intel and AMD',
-  'passThrough.nvidia': 'Compose lines for NVIDIA',
+  'passThrough.nvidia': 'Commands for NVIDIA, on the host',
   'passThrough.guide': 'Hardware acceleration in the guide',
   use: 'Use',
   useHint: 'Automatic picks the first one whose check passed. highsea never uses one that hasn’t.',

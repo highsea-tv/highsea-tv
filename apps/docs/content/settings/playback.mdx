@@ -26,7 +26,7 @@ Changes wait in a bar at the bottom of the page until you choose **Save** or **D
 
 A graphics chip transcodes many times faster than the processor, and uses far less power. This group says what highsea transcodes with now, lists the graphics it looked for, and shows each one's check. highsea checks the graphics it finds by itself when it starts, so you only come here to see the result or change it. [Hardware acceleration](/install/hardware-acceleration/) says how to give highsea's container your graphics.
 
-![The Hardware acceleration group on a server with no graphics chip: each path says why it can't be used, with the compose lines to pass one through](/images/admin/settings-playback/hardware.png)
+![The Hardware acceleration group on a server with no graphics chip: each path says why it can't be used, with the compose lines for Intel and AMD and the commands for NVIDIA](/images/admin/settings-playback/hardware.png)
 
 The line at the top says what transcodes use:
 
@@ -36,7 +36,7 @@ The line at the top says what transcodes use:
 
 Each of the four paths, **VAAPI**, **Intel Quick Sync**, **NVIDIA NVENC** and **VideoToolbox**, shows one of these:
 
-- **Not here**, with the reason, such as **No /dev/dri in the container.** When nothing is found, the group shows the compose lines for Intel and AMD and for NVIDIA, each with **Copy**.
+- **Not here**, with the reason, such as **No /dev/dri in the container.** When nothing is found, the group shows the compose lines for Intel and AMD, which highsea's own compose files already have, and the commands for NVIDIA on the host, each with **Copy**.
 - **Found, not checked**: the graphics' name and device, and **Not checked yet.** highsea checks it by itself the next time it starts, or choose **Check** to check it now.
 - **Checking**: highsea is transcoding a short HDR clip on it. One check runs at a time.
 - **Passed**: how many frames a second it made, when, and what it does, such as **Decodes 10-bit HEVC and encodes H.264 in low-power mode. Tone maps HDR on the graphics chip.** The one in use has an **In use** badge.

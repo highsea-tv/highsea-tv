@@ -15,6 +15,8 @@ export const general = defineMessages({
   'key.notSet': 'Not set',
   'key.masked': 'Ending in {last4}',
   'key.notSetBody': 'Discover, adding movies and refreshing their details need a key.',
+  'key.builtIn': 'highsea’s key',
+  'key.builtInBody': 'highsea’s own key is in use. Add yours to use it instead.',
   'key.replace': 'Replace',
   'key.remove': 'Remove',
   'key.cancel': 'Keep the current key',
@@ -28,6 +30,7 @@ export const general = defineMessages({
   'key.removeTitle': 'Remove the TMDB key?',
   'key.removeBody':
     'Discover, adding movies and refreshing their details stop until you add a key. The library and its pages keep working.',
+  'key.removeBodyBuiltIn': 'highsea goes back to its own key.',
   'key.removeConfirm': 'Remove key',
   'key.keep': 'Keep it',
   'key.removed': 'TMDB key removed',

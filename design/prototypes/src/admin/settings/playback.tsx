@@ -241,17 +241,17 @@ function PassThroughHelp() {
   return (
     <div className="grid gap-2">
       <p className="text-caption text-text-2">
-        Give highsea’s container the graphics chip, then restart it, and highsea checks the chip as
-        it starts. For Intel and AMD graphics, pass /dev/dri through. For NVIDIA, install NVIDIA’s
-        container toolkit on the host first.
+        highsea’s compose files give it Intel and AMD graphics already. If yours is older, add these
+        lines and restart the container, and highsea checks the chip as it starts. For NVIDIA,
+        install NVIDIA’s container toolkit on the host, then run these commands there.
       </p>
       <CopyBlock
         label="Compose lines for Intel and AMD"
-        text={`services:\n  highsea:\n    devices:\n      - /dev/dri:/dev/dri`}
+        text={`services:\n  highsea:\n    volumes:\n      - /dev/dri:/dev/dri\n    device_cgroup_rules:\n      - "c 226:128 rw"\n      - "c 226:129 rw"\n      - "c 226:130 rw"\n      - "c 226:131 rw"\n      - "c 226:132 rw"\n      - "c 226:133 rw"\n      - "c 226:134 rw"\n      - "c 226:135 rw"`}
       />
       <CopyBlock
-        label="Compose lines for NVIDIA"
-        text={`services:\n  highsea:\n    deploy:\n      resources:\n        reservations:\n          devices:\n            - driver: nvidia\n              count: 1\n              capabilities: [gpu, video]`}
+        label="Commands for NVIDIA, on the host"
+        text={`sudo nvidia-ctk runtime configure --runtime=docker --set-as-default\nsudo systemctl restart docker`}
       />
       <a
         href="https://docs.highsea.tv/settings/playback"

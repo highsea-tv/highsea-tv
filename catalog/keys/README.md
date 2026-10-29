@@ -22,6 +22,7 @@ The owner does each of these steps. Nothing here is automated, and nothing goes 
    | `HIGHSEA_OPENSUBTITLES_KEY` | highsea's OpenSubtitles.com API key |
    | `HIGHSEA_TRAKT_CLIENT_ID` | highsea's Trakt Client ID |
    | `HIGHSEA_TRAKT_CLIENT_SECRET` | optional; Trakt's new portal issues none (ADR 0045) |
+   | `HIGHSEA_TMDB_READ_TOKEN` | highsea's TMDB API Read Access Token, built into the image so setup needs no key (ADR 0057); the owner added it on 2026-10-28 |
 
 4. **Pages.** In Settings › Pages, set the source to GitHub Actions and the custom domain to `catalog.highsea.tv`. At the DNS host, add a CNAME record from `catalog` to `highsea-tv.github.io`. Then turn on Enforce HTTPS once GitHub offers it.
 5. **Packages.** In the organisation's Settings › Packages, allow public packages. After the first release, make `highsea` public on its package page.

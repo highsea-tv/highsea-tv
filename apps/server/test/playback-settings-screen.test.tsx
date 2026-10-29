@@ -228,8 +228,10 @@ describe('Settings › Playback', () => {
     expect(found.queryByRole('button', { name: 'Check' })).toBeNull()
     expect(
       hw.getByRole('figure', { name: 'Compose lines for Intel and AMD' }).textContent,
-    ).toContain('/dev/dri:/dev/dri')
-    expect(hw.getByRole('figure', { name: 'Compose lines for NVIDIA' })).toBeTruthy()
+    ).toContain('c 226:128 rw')
+    expect(
+      hw.getByRole('figure', { name: 'Commands for NVIDIA, on the host' }).textContent,
+    ).toContain('nvidia-ctk runtime configure')
     expect(
       hw.getByRole('link', { name: /Hardware acceleration in the guide/ }).getAttribute('href'),
     ).toBe('https://docs.highsea.tv/install/hardware-acceleration/')

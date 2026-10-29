@@ -56,9 +56,11 @@ export async function servePrototypes(): Promise<() => void> {
     stdio: 'inherit',
   })
   const port = process.env.SWEEP_PROTOTYPES_PORT ?? '4510'
+  // Vite's own binary, not bunx: bunx starts it in a process group of its own, which the stop
+  // below can't reach, and the server outlives the sweep
   const preview = spawn(
-    'bunx',
-    ['vite', 'preview', '--outDir', out, '--port', port, '--strictPort'],
+    join(cwd, 'node_modules/.bin/vite'),
+    ['preview', '--outDir', out, '--port', port, '--strictPort'],
     { cwd, stdio: 'ignore', detached: true },
   )
   base = `http://localhost:${port}`

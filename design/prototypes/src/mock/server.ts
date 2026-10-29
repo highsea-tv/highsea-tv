@@ -69,6 +69,7 @@ import type {
   SearchSection,
   SectionSummary,
   Server,
+  SetupDetected,
   SetupInput,
   SignInResult,
   SmartCollection,
@@ -1151,6 +1152,17 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     },
 
     setup: {
+      // Harbor runs with host networking on a NAS whose graphics passed their check; the empty
+      // server runs in bridge mode, with its folders mounted somewhere other than /data
+      detect: (): SetupDetected =>
+        srv.kind === 'populated'
+          ? {
+              serverName: 'Harbor',
+              folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
+              address: '192.168.1.20:3000',
+              graphics: { name: 'Intel UHD Graphics 770', path: 'VAAPI' },
+            }
+          : { serverName: null, folders: null, address: null, graphics: null },
       complete: (input: SetupInput) => {
         state.server.name = input.serverName
         state.server.branding.name = input.serverName

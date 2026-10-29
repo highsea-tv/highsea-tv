@@ -2,8 +2,12 @@
 // The library folders' checks on System › Health (9c), against a fake filesystem: a folder that's
 // missing or read-only is an error, as Radarr's RootFolderCheck and MountCheck are; a disk that's
 // all but full is an error, one that's getting full a warning, and each disk is reported once.
+// Then the hardlink check (install-simplicity.md › A): a real link, and refusals from link(2).
 import { describe, expect, test } from 'bun:test'
-import { type FolderFs, folderIssues } from '../src/system.ts'
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
+import { type FolderFs, folderIssues, hardlinkIssues, type LinkFs } from '../src/system.ts'
 
 const GiB = 1024 ** 3
 
@@ -107,5 +111,57 @@ describe('folderIssues', () => {
     }
     const issues = folderIssues([{ label: 'movies', path: '/data/movies' }], fs)
     expect(issues.map((i) => i.id)).toEqual(['folder-read-only:/data/movies'])
+  })
+})
+
+describe('hardlinkIssues', () => {
+  const folders = () => {
+    const root = mkdtempSync(join(tmpdir(), 'highsea-links-'))
+    for (const f of ['downloads', 'movies']) mkdirSync(join(root, f))
+    return { root, downloads: join(root, 'downloads'), movies: join(root, 'movies') }
+  }
+  /** The real calls, with link(2) failing with this code. */
+  const refusing = (code: string): LinkFs => ({
+    writeFileSync,
+    rmSync,
+    linkSync: () => {
+      throw Object.assign(new Error(code), { code })
+    },
+  })
+
+  test('folders on one disk link, raise nothing, and are left as they were', () => {
+    const f = folders()
+    try {
+      expect(hardlinkIssues(f.downloads, [f.movies])).toEqual([])
+      expect(readdirSync(f.downloads)).toEqual([])
+      expect(readdirSync(f.movies)).toEqual([])
+    } finally {
+      rmSync(f.root, { recursive: true })
+    }
+  })
+
+  test('another disk, and a disk without hardlinks, are warnings', () => {
+    const f = folders()
+    try {
+      const [cross] = hardlinkIssues(f.downloads, [f.movies], refusing('EXDEV'))
+      expect(cross).toMatchObject({ id: `copying:${f.movies}`, level: 'warning' })
+      expect(cross?.message).toContain('on another disk')
+      const [unsupported] = hardlinkIssues(f.downloads, [f.movies], refusing('EPERM'))
+      expect(unsupported?.message).toContain('doesn’t support hardlinks')
+      expect(readdirSync(f.downloads)).toEqual([])
+    } finally {
+      rmSync(f.root, { recursive: true })
+    }
+  })
+
+  test('a folder that is missing or read-only is left to the folder checks', () => {
+    const f = folders()
+    try {
+      expect(hardlinkIssues(f.downloads, [join(f.root, 'gone')])).toEqual([])
+      expect(hardlinkIssues(join(f.root, 'gone'), [f.movies])).toEqual([])
+      expect(hardlinkIssues(f.downloads, [f.movies], refusing('EROFS'))).toEqual([])
+    } finally {
+      rmSync(f.root, { recursive: true })
+    }
   })
 })

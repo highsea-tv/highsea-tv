@@ -597,6 +597,72 @@
           "serverName"
         ]
       },
+      "SetupDetected": {
+        "type": "object",
+        "properties": {
+          "serverName": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "folders": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "movies": {
+                "type": "string"
+              },
+              "downloads": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "movies",
+              "downloads"
+            ]
+          },
+          "address": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "192.168.1.20:3000"
+          },
+          "graphics": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "path": {
+                "type": "string",
+                "enum": [
+                  "vaapi",
+                  "qsv",
+                  "nvenc",
+                  "videotoolbox"
+                ]
+              }
+            },
+            "required": [
+              "name",
+              "path"
+            ]
+          }
+        },
+        "required": [
+          "serverName",
+          "folders",
+          "address",
+          "graphics"
+        ]
+      },
       "FsEntry": {
         "type": "object",
         "properties": {
@@ -1071,6 +1137,14 @@
           "metadata": {
             "$ref": "#/components/schemas/MetadataInput"
           },
+          "timeZone": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "address": {
+            "type": "string",
+            "maxLength": 260
+          },
           "indexers": {
             "type": "array",
             "items": {
@@ -1092,8 +1166,7 @@
           "serverName",
           "owner",
           "folders",
-          "remoteAccess",
-          "cloudLink"
+          "remoteAccess"
         ]
       },
       "RemoteAccessInput": {
@@ -3674,11 +3747,15 @@
                   "string",
                   "null"
                 ]
+              },
+              "builtIn": {
+                "type": "boolean"
               }
             },
             "required": [
               "set",
-              "last4"
+              "last4",
+              "builtIn"
             ]
           },
           "language": {
@@ -13465,6 +13542,38 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/SetupDefaults"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/setup/detect": {
+      "get": {
+        "tags": [
+          "Setup"
+        ],
+        "summary": "What highsea found by itself: a name, folders, an address and graphics",
+        "description": "The defaults setup shows on Review (4.3c). Each is null when highsea couldn’t find it: setup then asks for folders, and offers the address the browser used.",
+        "x-highsea-access": "public",
+        "responses": {
+          "200": {
+            "description": "What was found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SetupDetected"
                 }
               }
             }

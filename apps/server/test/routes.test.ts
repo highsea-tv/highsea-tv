@@ -77,6 +77,64 @@ describe('setup', () => {
   })
 })
 
+describe('setup’s detection and Review (4.3c)', () => {
+  const finish = (app: ReturnType<typeof createApi>, extra: Record<string, unknown>) =>
+    clientFor(app)
+      .setup.defaults()
+      .then((d) =>
+        app.request(`${ORIGIN}/api/v1/setup`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json', origin: ORIGIN },
+          body: JSON.stringify({
+            serverName: 'Harbor',
+            owner: OWNER,
+            folders: d.folders,
+            remoteAccess: { kind: 'local-only' },
+            ...extra,
+          }),
+        }),
+      )
+
+  test('detect answers before setup, with an empty /data getting highsea’s layout, then closes', async () => {
+    const { app, anon, runtime } = await start()
+    const found = await anon.setup.detect()
+    expect(found.folders).toEqual((await anon.setup.defaults()).folders)
+    expect(found.graphics).toBeNull()
+    expect((await finish(app, {})).status).toBe(200)
+    expect(runtime.setupComplete()).toBe(true)
+    expect(await failure(anon.setup.detect())).toEqual({ code: 'not-found', reason: undefined })
+  })
+
+  test('the time zone and the address are kept; the address leads what apps are told', async () => {
+    const { app, anon, runtime } = await start()
+    const res = await finish(app, { timeZone: 'America/Halifax', address: '192.168.1.20:3000' })
+    expect(res.status).toBe(200)
+    expect(runtime.operations.general.get().timeZone).toBe('America/Halifax')
+    expect((await anon.system.publicInfo()).localAddresses[0]).toBe('http://192.168.1.20:3000')
+  })
+
+  test('a time zone or an address that’s wrong is refused under its line, and nothing is made', async () => {
+    const { app, runtime } = await start()
+    for (const [extra, field] of [
+      [{ timeZone: 'Mars/Olympus' }, 'timeZone'],
+      [{ address: 'http://nas:3000' }, 'address'],
+    ] as const) {
+      const res = await finish(app, extra)
+      expect(res.status).toBe(400)
+      expect(((await res.json()) as { error: { details: unknown } }).error.details).toEqual({
+        field,
+      })
+    }
+    expect(runtime.setupComplete()).toBe(false)
+  })
+
+  test('with no key of highsea’s or the owner’s, Health says so', async () => {
+    const { runtime } = await started()
+    expect(runtime.metadata.settings.get().key).toEqual({ set: false, last4: null, builtIn: false })
+    expect(runtime.issues().find((i) => i.id === 'tmdb-key')?.level).toBe('warning')
+  })
+})
+
 describe('setup’s subtitle step', () => {
   async function finish(app: ReturnType<typeof createApi>, subtitleLanguages: string[]) {
     return app.request(`${ORIGIN}/api/v1/setup`, {

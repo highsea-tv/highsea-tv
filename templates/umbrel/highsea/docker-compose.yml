@@ -1,0 +1,27 @@
+version: "3.7"
+
+services:
+  app_proxy:
+    environment:
+      APP_HOST: highsea_server_1
+      APP_PORT: 3000
+      # highsea has its own accounts, and its apps reach /api and /stream directly
+      PROXY_AUTH_ADD: "false"
+
+  server:
+    image: ghcr.io/highsea-tv/highsea:0.1.0@sha256:3f719901fa04769143deb44bcab9c1ba110a3159d8ee1100090f621b232e9a2e
+    restart: on-failure
+    hostname: "${DEVICE_HOSTNAME}"
+    environment:
+      - PUID=1000
+      - PGID=1000
+    volumes:
+      - ${APP_DATA_DIR}/data/config:/config
+      # downloads and the library in one folder, so imports hardlink instead of copying
+      - ${UMBREL_ROOT}/data/storage/downloads:/data
+    ports:
+      # the torrent engine's incoming peers
+      - 6881:6881
+      - 6881:6881/udp
+      # apps on the network find highsea by this broadcast
+      - 7368:7368/udp

@@ -63,7 +63,11 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         attributions: [],
       })
     case 'GET /api/v1/settings/metadata':
-      return json({ language: 'en-GB', region: 'GB', key: { set: true, last4: 'ab12' } })
+      return json({
+        language: 'en-GB',
+        region: 'GB',
+        key: { set: true, last4: 'ab12', builtIn: false },
+      })
     case 'GET /api/v1/settings/general':
       return json(state.general)
     case 'PUT /api/v1/settings/general':

@@ -16,6 +16,11 @@ export type MetadataDeps = {
   fetch: Fetch
   /** Where cached images live: `/data/images`. */
   imagesDir: string
+  /**
+   * highsea's own TMDB key, built into the image from the release environment
+   * (install-simplicity.md, answer 7); the owner's key in Settings wins over it.
+   */
+  builtInKey?: string
   /** Waits between retries; tests pass one that moves a fake clock. */
   sleep?: (ms: number) => Promise<void>
 }

@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Checkpoint 4's settings and the widgets the library switches on, rendered against a fake of the
-// API: setup's TMDB key step (checked on Continue, skippable, sent with Finish), Settings › General
-// › Metadata, Media management's root folders, Profiles and formats and Quality sizes (their
-// editors are quality-editors-screen.test.tsx),
-// System › About with TMDB's notice, and the Upcoming, Calendar, Recently added and Storage widgets
-// with and without the `movies` source. Checkpoint 5 adds setup's indexer step, Settings › General
-// › Catalog, the catalog's version in About, and the Indexers widget; checkpoint 6a, Media
-// management's Naming and Importing. The shell and Next's router
-// are stood in for.
+// API: Settings › General › Metadata, Media management's root folders, Profiles and formats and
+// Quality sizes (their editors are quality-editors-screen.test.tsx), System › About with TMDB's
+// notice, and the Upcoming, Calendar, Recently added and Storage widgets with and without the
+// `movies` source. Checkpoint 5 adds Settings › General › Catalog, the catalog's version in About,
+// and the Indexers widget; checkpoint 6a, Media management's Naming and Importing. Setup is
+// setup-screen.test.tsx. The shell and Next's router are stood in for.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { ReactNode } from 'react'
@@ -44,7 +42,6 @@ const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
 const { TooltipProvider } = await import('@highsea-tv/ui-web')
 const { TMDB_ATTRIBUTION } = await import('@highsea-tv/api-contract')
-const { Setup } = await import('../src/admin/setup.tsx')
 const { General } = await import('../src/admin/general.tsx')
 const { MediaManagement } = await import('../src/admin/media-management.tsx')
 const { Profiles, QualitySizes } = await import('../src/admin/profiles.tsx')
@@ -119,7 +116,11 @@ const folder = (id: string, path: string, total: number | null, movies: number, 
 type Request = { method: string; path: string; body: unknown }
 let state: {
   sources: string[]
-  metadata: { key: { set: boolean; last4: string | null }; language: string; region: string }
+  metadata: {
+    key: { set: boolean; last4: string | null; builtIn: boolean }
+    language: string
+    region: string
+  }
   folders: ReturnType<typeof folder>[]
   upcoming: ReturnType<typeof movie>[]
   recent: ReturnType<typeof movie>[]
@@ -162,43 +163,6 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         sources: state.sources,
         attributions: [TMDB_ATTRIBUTION],
       })
-    case 'GET /api/v1/setup/defaults':
-      return json({
-        dataDir: '/data',
-        folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
-        serverName: '',
-      })
-    case 'GET /api/v1/setup/indexers':
-      return json([
-        {
-          id: 'internet-archive',
-          name: 'Internet Archive',
-          description: 'Public-domain feature films, shared over BitTorrent.',
-          privacy: 'public',
-          starter: true,
-          settings: [],
-        },
-      ])
-    case 'GET /api/v1/setup/languages':
-      return json([
-        { code: 'zh', name: 'Chinese' },
-        { code: 'en', name: 'English' },
-        { code: 'fr', name: 'French' },
-        { code: 'is', name: 'Icelandic' },
-        { code: 'pt', name: 'Portuguese' },
-        { code: 'pt-BR', name: 'Brazilian Portuguese' },
-      ])
-    case 'GET /api/v1/setup/fs/hardlinks':
-      return json({ ok: true, sameDevice: true, message: 'Both folders are on the same disk.' })
-    case 'POST /api/v1/setup/metadata-key':
-      if (body.key === GOOD_KEY) return noContent()
-      if (body.key === 'offline')
-        return failure('unavailable', 'TMDB can’t be reached.', 503, {
-          reason: 'tmdb-unreachable',
-        })
-      return failure('invalid', 'Invalid API key.', 400, { reason: 'tmdb-key-rejected' })
-    case 'POST /api/v1/setup':
-      return json({ server: { id: 'srv_1', name: body.serverName } })
     case 'GET /api/v1/settings/metadata':
       return json(state.metadata)
     case 'PUT /api/v1/settings/metadata':
@@ -208,11 +172,11 @@ async function api(url: string, init: RequestInit = {}): Promise<Response> {
         ...state.metadata,
         ...(body.language ? { language: body.language } : {}),
         ...(body.region ? { region: body.region } : {}),
-        ...(body.key ? { key: { set: true, last4: body.key.slice(-4) } } : {}),
+        ...(body.key ? { key: { set: true, last4: body.key.slice(-4), builtIn: false } } : {}),
       }
       return json(state.metadata)
     case 'DELETE /api/v1/settings/metadata':
-      state.metadata = { ...state.metadata, key: { set: false, last4: null } }
+      state.metadata = { ...state.metadata, key: { set: false, last4: null, builtIn: false } }
       return json(state.metadata)
     // 8b's groups on the same page: Region, Updates and Diagnostics
     case 'GET /api/v1/settings/general':
@@ -351,7 +315,11 @@ beforeEach(() => {
   localStorage.clear()
   state = {
     sources: ['system', 'movies'],
-    metadata: { key: { set: true, last4: 'ab12' }, language: 'en-GB', region: 'GB' },
+    metadata: {
+      key: { set: true, last4: 'ab12', builtIn: false },
+      language: 'en-GB',
+      region: 'GB',
+    },
     folders: [folder('rf1', '/data/media/movies', 2e12, 3)],
     upcoming: [movie(1, 'Dune: Part Three', today(), ['HD 1080p', '4K HDR'])],
     recent: [movie(2, 'Sintel', '2010-09-30'), movie(3, 'Tears of Steel', '2012-09-26')],
@@ -396,232 +364,6 @@ async function open(ui: ReactNode) {
 
 const requested = (method: string, path: string) =>
   state.requests.filter((r) => r.method === method && r.path.split('?')[0] === path)
-
-// ---------------------------------------------------------------- setup
-
-describe('setup’s TMDB key step', () => {
-  async function toKeyStep() {
-    const opened = await open(<Setup />)
-    const { user, page } = opened
-    await user.type(page.getByLabelText('Server name'), 'Harbor')
-    await user.click(page.getByRole('button', { name: 'Continue' }))
-    await user.type(page.getByLabelText('Your name'), 'Ana Lima')
-    await user.type(page.getByLabelText('Username'), 'ana')
-    await user.type(page.getByLabelText('Password'), 'correct horse battery')
-    await user.type(page.getByLabelText('Confirm password'), 'correct horse battery')
-    await user.click(page.getByRole('button', { name: 'Continue' }))
-    await settle()
-    expect(page.getByRole('heading', { level: 1, name: 'Add your TMDB key' })).toBeTruthy()
-    return opened
-  }
-
-  async function toReview(
-    user: ReturnType<typeof userEvent.setup>,
-    page: ReturnType<typeof within>,
-  ) {
-    for (const heading of [
-      'Choose your folders',
-      'Add indexers',
-      'Subtitle languages',
-      'Watching away from home',
-      'Link to highsea cloud',
-    ]) {
-      expect(page.getByRole('heading', { level: 1, name: heading })).toBeTruthy()
-      await user.click(page.getByRole('button', { name: 'Continue' }))
-      await settle()
-    }
-    expect(page.getByRole('heading', { level: 1, name: 'Check and finish' })).toBeTruthy()
-  }
-
-  test('comes after the owner, links to TMDB’s key page and carries TMDB’s notice', async () => {
-    const { page } = await toKeyStep()
-    const link = page.getByRole('link', { name: /Open TMDB’s API page/ })
-    expect(link.getAttribute('href')).toBe('https://www.themoviedb.org/settings/api')
-    expect(page.getByText(TMDB_ATTRIBUTION.notice)).toBeTruthy()
-    expect(page.getByRole('img', { name: 'TMDB' })).toBeTruthy()
-  })
-
-  test('Continue checks the key with TMDB: empty, rejected and unreachable say so in place', async () => {
-    const { user, page } = await toKeyStep()
-    const field = page.getByLabelText('TMDB API key or Read Access Token')
-    await user.click(page.getByRole('button', { name: 'Continue' }))
-    expect(page.getByText('Paste your TMDB key, or add it later in Settings.')).toBeTruthy()
-    expect(requested('POST', '/api/v1/setup/metadata-key')).toHaveLength(0)
-
-    await user.type(field, 'not-a-key')
-    await user.click(page.getByRole('button', { name: 'Continue' }))
-    await settle()
-    expect(
-      page.getByText('TMDB didn’t accept that key. Copy it again from your TMDB account.'),
-    ).toBeTruthy()
-
-    await user.clear(field)
-    await user.type(field, 'offline')
-    await user.click(page.getByRole('button', { name: 'Continue' }))
-    await settle()
-    expect(page.getByText(/Can’t reach TMDB right now/)).toBeTruthy()
-    expect(page.getByRole('heading', { level: 1, name: 'Add your TMDB key' })).toBeTruthy()
-  })
-
-  test('an accepted key goes on, shows in Review by its last four, and is sent with Finish', async () => {
-    const { user, page } = await toKeyStep()
-    await user.type(page.getByLabelText('TMDB API key or Read Access Token'), GOOD_KEY)
-    await user.click(page.getByRole('button', { name: 'Continue' }))
-    await settle()
-    expect(requested('POST', '/api/v1/setup/metadata-key')[0]?.body).toEqual({ key: GOOD_KEY })
-    // the key never goes into storage
-    expect(localStorage.getItem('highsea:setup')).not.toContain(GOOD_KEY)
-    await toReview(user, page)
-    expect(page.getByText('Added, ending in 3f9a')).toBeTruthy()
-    await user.click(page.getByRole('button', { name: 'Finish setup' }))
-    await settle()
-    const sent = requested('POST', '/api/v1/setup')[0]?.body as { metadata: unknown }
-    expect(sent.metadata).toEqual({ ...metadataLocale(navigator.language), key: GOOD_KEY })
-  })
-
-  test('“Add it later in Settings” skips without asking TMDB, and Finish sends no key', async () => {
-    const { user, page } = await toKeyStep()
-    await user.type(page.getByLabelText('TMDB API key or Read Access Token'), 'half-typed')
-    await user.click(page.getByRole('button', { name: 'Add it later in Settings' }))
-    await settle()
-    expect(requested('POST', '/api/v1/setup/metadata-key')).toHaveLength(0)
-    await toReview(user, page)
-    expect(page.getByText('Not yet: add it later in Settings')).toBeTruthy()
-    await user.click(page.getByRole('button', { name: 'Finish setup' }))
-    await settle()
-    const sent = requested('POST', '/api/v1/setup')[0]?.body as { metadata: { key?: string } }
-    expect(sent.metadata.key).toBeUndefined()
-  })
-})
-
-describe('setup’s indexer step', () => {
-  async function toIndexers() {
-    localStorage.setItem(
-      'highsea:setup',
-      JSON.stringify({
-        step: 4,
-        reached: 4,
-        draft: {
-          serverName: 'Harbor',
-          owner: { displayName: 'Ana Lima', username: 'ana' },
-          folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
-        },
-      }),
-    )
-    const opened = await open(<Setup />)
-    await settle()
-    expect(opened.page.getByRole('heading', { level: 1, name: 'Add indexers' })).toBeTruthy()
-    return opened
-  }
-
-  async function finish(user: ReturnType<typeof userEvent.setup>, page: ReturnType<typeof within>) {
-    for (let i = 0; i < 4; i++) {
-      await user.click(page.getByRole('button', { name: 'Continue' }))
-      await settle()
-    }
-    expect(page.getByRole('heading', { level: 1, name: 'Check and finish' })).toBeTruthy()
-  }
-
-  const password = async (
-    user: ReturnType<typeof userEvent.setup>,
-    page: ReturnType<typeof within>,
-  ) => {
-    // the password isn't kept across the reload this test starts from
-    await user.click(page.getByRole('button', { name: 'Finish setup' }))
-    await settle()
-    await user.type(page.getByLabelText('Password'), 'correct horse battery')
-    await user.type(page.getByLabelText('Confirm password'), 'correct horse battery')
-    await user.click(page.getByRole('button', { name: /Review/ }))
-    await settle()
-  }
-
-  test('the public starters come checked, show in Review and are sent with Finish', async () => {
-    const { user, page } = await toIndexers()
-    const box = page.getByRole('checkbox', { name: /Internet Archive/ })
-    expect(box.getAttribute('aria-checked')).toBe('true')
-    await finish(user, page)
-    expect(page.getByText('Internet Archive')).toBeTruthy()
-    await password(user, page)
-    await user.click(page.getByRole('button', { name: 'Finish setup' }))
-    await settle()
-    const sent = requested('POST', '/api/v1/setup')[0]?.body as { indexers: string[] }
-    expect(sent.indexers).toEqual(['internet-archive'])
-  })
-
-  test('unchecked, it’s skipped: Review says none yet and the choice survives a reload', async () => {
-    const { user, page } = await toIndexers()
-    await user.click(page.getByRole('checkbox', { name: /Internet Archive/ }))
-    await finish(user, page)
-    expect(page.getByText('None yet')).toBeTruthy()
-    cleanup()
-    const again = await open(<Setup />)
-    await settle()
-    expect(again.page.getByText('None yet')).toBeTruthy()
-  })
-})
-
-describe('setup’s subtitle step', () => {
-  async function toSubtitles() {
-    localStorage.setItem(
-      'highsea:setup',
-      JSON.stringify({
-        step: 5,
-        reached: 5,
-        draft: {
-          serverName: 'Harbor',
-          owner: { displayName: 'Ana Lima', username: 'ana' },
-          folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
-        },
-      }),
-    )
-    const opened = await open(<Setup />)
-    await settle()
-    expect(opened.page.getByRole('heading', { level: 1, name: 'Subtitle languages' })).toBeTruthy()
-    return opened
-  }
-
-  test('comes between indexers and remote access, with English picked', async () => {
-    const { page } = await toSubtitles()
-    const steps = page.getAllByRole('listitem').map((li) => li.textContent ?? '')
-    const at = (label: string) => steps.findIndex((s) => s.includes(label))
-    expect(at('Indexers')).toBeLessThan(at('Subtitles'))
-    expect(at('Subtitles')).toBeLessThan(at('Remote access'))
-    expect(page.getByRole('button', { name: 'English' }).getAttribute('aria-pressed')).toBe('true')
-    expect(page.getByText('English only.')).toBeTruthy()
-    // the prototype's chips, from what the server knows; the rest are in the select
-    expect(page.queryByRole('button', { name: 'Icelandic' })).toBeNull()
-    expect(page.getByRole('combobox', { name: 'Add another language' })).toBeTruthy()
-  })
-
-  test('none picked says so in place; the order picked is sent with Finish', async () => {
-    const { user, page } = await toSubtitles()
-    await user.click(page.getByRole('button', { name: 'English' }))
-    await user.click(page.getByRole('button', { name: 'Continue' }))
-    expect(
-      page.getByText('Pick at least one language, or turn subtitles off later in Settings.'),
-    ).toBeTruthy()
-    expect(page.getByRole('heading', { level: 1, name: 'Subtitle languages' })).toBeTruthy()
-
-    await user.click(page.getByRole('button', { name: 'Portuguese' }))
-    await user.click(page.getByRole('button', { name: 'English' }))
-    expect(page.getByText('Portuguese, then English, in that order.')).toBeTruthy()
-    for (let i = 0; i < 3; i++) {
-      await user.click(page.getByRole('button', { name: 'Continue' }))
-      await settle()
-    }
-    expect(page.getByText('Portuguese, English')).toBeTruthy()
-    await user.click(page.getByRole('button', { name: 'Finish setup' }))
-    await settle()
-    await user.type(page.getByLabelText('Password'), 'correct horse battery')
-    await user.type(page.getByLabelText('Confirm password'), 'correct horse battery')
-    await user.click(page.getByRole('button', { name: /Review/ }))
-    await settle()
-    await user.click(page.getByRole('button', { name: 'Finish setup' }))
-    await settle()
-    const sent = requested('POST', '/api/v1/setup')[0]?.body as { subtitleLanguages: string[] }
-    expect(sent.subtitleLanguages).toEqual(['pt', 'en'])
-  })
-})
 
 // ---------------------------------------------------------------- settings
 

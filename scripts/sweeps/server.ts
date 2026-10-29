@@ -167,45 +167,55 @@ async function sweep(visits: Visit[], context: () => Promise<BrowserContext>) {
   }
 }
 
-const draft = (step: number) =>
-  JSON.stringify({
-    step,
-    reached: 8,
-    draft: {
-      serverName: 'Harbor',
-      owner: { displayName: 'Ines', username: 'ines' },
-      folders: { movies: join(dataDir, 'movies'), downloads: join(dataDir, 'downloads') },
-      remote: step === 6 ? 'reverse-proxy' : 'local-only',
-      proxyUrl: 'https://movies.example.com',
-      port: '8484',
-      cloudLink: false,
-    },
-  })
+// a kept draft at Review (4.3c's setup: Owner account, then Review, since the folders are found)
+const review = JSON.stringify({
+  step: 'review',
+  reached: 1,
+  seeded: true,
+  changed: [],
+  draft: {
+    serverName: 'Harbor',
+    owner: { displayName: 'Ines', username: 'ines' },
+    folders: { movies: join(dataDir, 'movies'), downloads: join(dataDir, 'downloads') },
+    indexers: ['internet-archive'],
+    subtitleLanguages: ['en', 'pt'],
+    timeZone: 'Europe/Lisbon',
+    address: '192.168.1.20:3000',
+    remote: 'reverse-proxy',
+    proxyUrl: 'https://movies.example.com',
+    port: '8484',
+  },
+})
 
 try {
-  // setup, each step, while there's no owner yet
-  const steps = [
-    'name',
-    'owner',
-    'metadata',
+  // setup, each step and each of Review's editors, while there's no owner yet
+  const editors = [
     'folders',
+    'movie details',
     'indexers',
     'subtitles',
-    'remote',
-    'cloud',
-    'review',
+    'time zone',
+    'address on your network',
+    'away from home',
   ]
   await sweep(
-    steps.map((s, i) => ({ name: `setup:${s}`, path: '/setup', init: i ? draft(i) : undefined })),
-    () => context(),
-  )
-  await sweep(
     [
+      { name: 'setup:owner', path: '/setup' },
+      { name: 'setup:review', path: '/setup', init: review },
+      ...editors.map((what) => ({
+        name: `setup:review:${what}`,
+        path: '/setup',
+        init: review,
+        act: (p: Page) => p.getByRole('button', { name: `Change ${what}` }).click(),
+      })),
       {
         name: 'setup:picker',
         path: '/setup',
-        init: draft(3),
-        act: (p) => p.getByRole('button', { name: 'Browse' }).first().click(),
+        init: review,
+        act: async (p: Page) => {
+          await p.getByRole('button', { name: 'Change folders' }).click()
+          await p.getByRole('button', { name: 'Browse' }).first().click()
+        },
       },
     ],
     () => context(),

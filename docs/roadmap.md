@@ -384,6 +384,8 @@ The owner asked on 2026-10-28 for installing and setting up highsea, the server 
 
 Approved with the owner's answers of 2026-10-28: A to C are checkpoint 4.3c, after 4.3b and before the desktop app; highsea ships its own TMDB key.
 
+Checkpoint 4.3c (A to C) was signed off by the owner on 2026-10-28.
+
 ## Phase 4 (later): clients
 `ui-native`, then `apps/web` → `apps/desktop` (Tauri) → `apps/mobile` + `apps/tv` (Expo / react-native-tvos), built from the Phase 2 prototypes. Alongside them: `stream` (playback/transcode, WebSockets), TV/music/books domains, Usenet, requests, and the optional Connect relay.
 

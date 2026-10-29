@@ -43,7 +43,7 @@ Setup asked which of these you wanted and filled in the settings to match. You c
 **Let apps on this network find** the server answers the apps on your own network when they look for servers, so nobody needs to type an address at home. It's on by default. It works two ways:
 
 - **UDP broadcast** on port 7368. In Docker, this needs host networking or the published UDP port, which `compose.bridge.yaml` and `compose.connects.yaml` publish.
-- **mDNS**, which needs host networking in Docker.
+- **mDNS**. In Docker, highsea publishes through the host's own mDNS service (avahi) when the container has the host's `/run/dbus`, as `compose.yaml` and the NAS templates give it, and that works with published ports too. Without it, mDNS needs host networking.
 
 Turn it off if you'd rather the server stayed quiet on the network; apps then need its address.
 

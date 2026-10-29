@@ -49,6 +49,7 @@ function fakeHost(over: Partial<Host> & { answer?: (args: string[]) => Ran | und
     platform: 'linux',
     inContainer: () => true,
     dri: () => ['card0', 'renderD128'],
+    pci: () => [],
     run: async (command, args) => {
       calls.push([command, ...args])
       if (args.includes('-encoders')) return ok(ENCODERS)
@@ -138,6 +139,8 @@ describe('hardware acceleration (4.3b)', () => {
     const bare = setup(fakeHost({ dri: () => [] }).host).hardware
     await bare.detect()
     expect(bare.paths()[0]?.unavailable).toBe('No /dev/dri in the container.')
+    expect(bare.paths()[2]?.unavailable).toBe('No NVIDIA GPU in the container.')
+    expect(bare.issues()).toEqual([])
 
     const { host } = fakeHost({
       run: async (_, args) => {
@@ -169,6 +172,28 @@ describe('hardware acceleration (4.3b)', () => {
       ['nvenc', null, 'Only when highsea runs on Linux.'],
       ['videotoolbox', 'Apple M2 Max', null],
     ])
+  })
+
+  test('an NVIDIA card on the bus but not in the container names the host step, on Health too', async () => {
+    const { hardware } = setup(
+      fakeHost({
+        dri: () => [],
+        pci: () => [
+          { vendor: '0x8086', class: '0x060000' },
+          { vendor: '0x10de', class: '0x030000' },
+        ],
+      }).host,
+    )
+    await hardware.detect()
+    const why = hardware.paths()[2]?.unavailable
+    expect(why).toContain('container toolkit')
+    expect(hardware.issues()).toEqual([{ id: 'nvidia-host', message: why as string }])
+    // an NVIDIA device that isn't a display controller (an audio function) is no card
+    const audio = setup(
+      fakeHost({ dri: () => [], pci: () => [{ vendor: '0x10de', class: '0x040300' }] }).host,
+    ).hardware
+    await audio.detect()
+    expect(audio.paths()[2]?.unavailable).toBe('No NVIDIA GPU in the container.')
   })
 
   test('a check passes on Intel’s low-power encoder first, with its tone mapping, and is used', async () => {

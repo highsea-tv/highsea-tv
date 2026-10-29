@@ -145,9 +145,9 @@ describe('the adapter, against the recordings', () => {
 describe('the key', () => {
   test('a good key is validated and stored sealed, and never returned', async () => {
     const { metadata, db } = await open({ key: false })
-    expect(metadata.settings.get().key).toEqual({ set: false, last4: null })
+    expect(metadata.settings.get().key).toEqual({ set: false, last4: null, builtIn: false })
     const view = await metadata.settings.setKey(TEST_KEY)
-    expect(view.key).toEqual({ set: true, last4: '0001' })
+    expect(view.key).toEqual({ set: true, last4: '0001', builtIn: false })
     expect(view.language).toBe('en-US')
     const row = db
       .select()
@@ -211,6 +211,27 @@ describe('the key', () => {
     expect((e as AppError).code).toBe('unavailable')
     expect(isNoKeyError(await rejects(metadata.movie(653)))).toBe(true)
     expect((await metadata.movie(19)).title).toBe('Metropolis')
+  })
+
+  test('highsea’s own key is used until the owner sets theirs, which wins', async () => {
+    const seen: string[] = []
+    const { metadata } = await open({
+      key: false,
+      builtInKey: 'built-in-key-for-replay',
+      onRequest: (url) => {
+        seen.push(new URL(url).searchParams.get('api_key') ?? '')
+      },
+    })
+    expect(metadata.settings.get().key).toEqual({ set: false, last4: null, builtIn: true })
+    expect((await metadata.movie(19)).title).toBe('Metropolis')
+    expect(seen.at(-1)).toBe('built-in-key-for-replay')
+    await metadata.settings.setKey(TEST_KEY)
+    await metadata.movie(653)
+    expect(seen.at(-1)).toBe(TEST_KEY)
+    metadata.settings.clearKey()
+    expect(metadata.settings.get().key.builtIn).toBe(true)
+    await metadata.movie(603).catch(() => {})
+    expect(seen.at(-1)).toBe('built-in-key-for-replay')
   })
 
   test('credentials are told apart by shape', () => {

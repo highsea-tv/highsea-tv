@@ -14,7 +14,7 @@ description: What highsea needs before you install it, from the machine and its 
   - The image's platforms, tools and ports: the Dockerfile, compose.yaml and compose.bridge.yaml at the repository's root.
 */}
 
-Written for highsea 0.1.0. Check these before you pick an install guide.
+Written for highsea 0.2.0-beta.3. Check these before you pick an install guide.
 
 ## A machine that stays on
 
@@ -58,7 +58,7 @@ Nothing needs to be open to the internet to install highsea. To watch away from 
 
 ## Accounts
 
-- **TMDB**, needed. Film details, artwork and Discover come from TMDB. Make a free account, then copy the API key or the Read Access Token from [TMDB's API page](https://www.themoviedb.org/settings/api). Setup asks for it, and you can add it later in Settings.
+- **TMDB**, optional. Film details, artwork and Discover come from TMDB, with highsea's own key. To use a key of your own instead, make a free account, copy the API key or the Read Access Token from [TMDB's API page](https://www.themoviedb.org/settings/api), and add it on setup's Review or in **Settings › General**.
 - **Indexers**, needed to find releases. The public indexers in highsea's catalog need no account. A private tracker needs your own account with it.
 - **Subtitle providers**, optional. OpenSubtitles.com, Subdl and SubSource. Some need an account of your own, and highsea says which.
 - **A VPN provider**, optional, and recommended for torrents. highsea's own tunnel needs a provider that offers WireGuard, and Linux. Providers that offer only OpenVPN work through a gluetun container. [A VPN for torrents](/recommended-setup/#a-vpn-for-torrents) has the details.

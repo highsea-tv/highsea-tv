@@ -64,8 +64,10 @@ RUN apt-get update \
 # highsea connects (ADR 0042): `ip` (iproute2) and `wg` (wireguard-tools) run as separate programs,
 # and wireguard-go stands in where the kernel has no WireGuard. setpriv (util-linux, already in the
 # image) keeps CAP_NET_ADMIN for the PUID user. Their sources: docker/NOTICE.
+# avahi-publish (avahi-utils) publishes highsea through the host's avahi when the container is
+# given /run/dbus (ADR 0020's 2026-10-28 section)
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends wireguard-tools iproute2 wireguard-go \
+  && apt-get install -y --no-install-recommends wireguard-tools iproute2 wireguard-go avahi-utils \
   && rm -rf /var/lib/apt/lists/*
 # Hardware acceleration (ADR 0056), on amd64 only, where Intel and AMD graphics are: Intel's media
 # driver for VAAPI, oneVPL's runtime and dispatcher for Quick Sync (libmfx-gen1.2, libvpl2), Mesa's
@@ -106,6 +108,13 @@ RUN --mount=type=secret,id=trakt_id,required=false \
   if [ -s /run/secrets/trakt_secret ]; then \
     install -D -m 0444 /run/secrets/trakt_secret /usr/share/highsea/trakt-client-secret; \
   fi
+# highsea's TMDB key, the API Read Access Token, the same way (`--secret id=tmdb,env=HIGHSEA_TMDB_READ_TOKEN`;
+# install-simplicity.md, answer 7). An owner's own key in Settings › General wins. Without either,
+# System › Health says so.
+RUN --mount=type=secret,id=tmdb,required=false \
+  if [ -s /run/secrets/tmdb ]; then \
+    install -D -m 0444 /run/secrets/tmdb /usr/share/highsea/tmdb-read-token; \
+  fi
 ENV NODE_ENV=production \
   NEXT_TELEMETRY_DISABLED=1 \
   HIGHSEA_CONFIG_DIR=/config \
@@ -113,9 +122,10 @@ ENV NODE_ENV=production \
   HIGHSEA_OPENSUBTITLES_KEY_FILE=/usr/share/highsea/opensubtitles.key \
   HIGHSEA_TRAKT_CLIENT_ID_FILE=/usr/share/highsea/trakt-client-id \
   HIGHSEA_TRAKT_CLIENT_SECRET_FILE=/usr/share/highsea/trakt-client-secret \
+  HIGHSEA_TMDB_READ_TOKEN_FILE=/usr/share/highsea/tmdb-read-token \
   PORT=3000 \
-  PUID=1000 \
-  PGID=1000
+  NVIDIA_VISIBLE_DEVICES=all \
+  NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
 VOLUME ["/config", "/data"]
 EXPOSE 3000 6881/tcp 6881/udp 7368/udp
 HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --start-interval=2s --retries=3 \

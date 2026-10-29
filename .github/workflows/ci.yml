@@ -212,6 +212,8 @@ jobs:
         run: bun scripts/image.ts size highsea:ci "$IMAGE_BUDGET_MB"
       - name: Its hardware encoders, filters and drivers
         run: bun scripts/image.ts hardware highsea:ci
+      - name: The user its entrypoint runs highsea as
+        run: bun scripts/image.ts user highsea:ci
       # The same build again from the cache, exported as an OCI layout with what a release pushes:
       # BuildKit's provenance (mode=min, its default) and the SBOM, which is opt-in
       # (https://docs.docker.com/build/metadata/attestations/). `tar=false` writes a folder

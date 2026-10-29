@@ -70,6 +70,7 @@ describe('the guides', () => {
       'install/hardware-acceleration',
       'install/index',
       'install/prerequisites',
+      'install/script',
       'install/synology',
       'install/truenas',
       'install/unraid',

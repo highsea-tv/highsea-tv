@@ -140,17 +140,18 @@ jobs:
           path: ${{ github.workspace }}
       - name: highsea's keys are there
         run: |
-          if [ -z "$OPENSUBTITLES" ] || [ -z "$TRAKT_ID" ]; then
+          if [ -z "$OPENSUBTITLES" ] || [ -z "$TRAKT_ID" ] || [ -z "$TMDB" ]; then
             if [ "$DRY_RUN" = true ]; then
-              echo "::warning::The release environment has no OpenSubtitles.com key or Trakt Client ID; a real release would stop here."
+              echo "::warning::The release environment lacks the OpenSubtitles.com key, the Trakt Client ID or the TMDB token; a real release would stop here."
             else
-              echo "The release environment needs HIGHSEA_OPENSUBTITLES_KEY and HIGHSEA_TRAKT_CLIENT_ID." >&2
+              echo "The release environment needs HIGHSEA_OPENSUBTITLES_KEY, HIGHSEA_TRAKT_CLIENT_ID and HIGHSEA_TMDB_READ_TOKEN." >&2
               exit 1
             fi
           fi
         env:
           OPENSUBTITLES: ${{ secrets.HIGHSEA_OPENSUBTITLES_KEY }}
           TRAKT_ID: ${{ secrets.HIGHSEA_TRAKT_CLIENT_ID }}
+          TMDB: ${{ secrets.HIGHSEA_TMDB_READ_TOKEN }}
           DRY_RUN: ${{ inputs.dry-run }}
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
@@ -195,6 +196,7 @@ jobs:
             opensubtitles=${{ secrets.HIGHSEA_OPENSUBTITLES_KEY }}
             trakt_id=${{ secrets.HIGHSEA_TRAKT_CLIENT_ID }}
             trakt_secret=${{ secrets.HIGHSEA_TRAKT_CLIENT_SECRET }}
+            tmdb=${{ secrets.HIGHSEA_TMDB_READ_TOKEN }}
           provenance: mode=min
           sbom: true
           # A dry run writes an OCI layout to check and keep; a real release pushes by digest, as

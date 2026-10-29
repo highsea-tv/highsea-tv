@@ -61,3 +61,11 @@ What the servers highsea replaces do: Jellyfin and Plex offer VAAPI, QSV, NVENC 
 - One package in the image is non-free in Debian's terms: its source is open, but some GPU kernels come from Intel as binaries. docker/NOTICE says so.
 - Command lines are tested as snapshots, and VideoToolbox's and the processor's runs with real ffmpeg where it's present. VAAPI and QSV are checked by hand on the owner's NAS; NVENC and AMD weren't checked on real hardware at 4.3b and stay off unless their check passes on the owner's host.
 - Not done: HEVC and AV1 output (the clients play H.264 everywhere), decoding on one device and encoding on another, more than one GPU (the first render node is used), and a check that reruns by itself after a driver update.
+
+## 2026-10-28: the handover is on by default (checkpoint 4.3c, ADR 0057)
+
+The Decision's "Handing the device to the container" is replaced by ADR 0057's:
+
+- **Intel and AMD:** the compose files and the TrueNAS and Synology templates hand over `/dev/dri` as a bind mount, with `device_cgroup_rules` for the render nodes 226:128 to 226:135, uncommented. A host without graphics starts with an empty folder, and highsea reports the processor. Unraid's template has the same as a Path and `--device-cgroup-rule` in `ExtraParams`. The entrypoint still adds highsea's user to each render node's group. `devices: [/dev/dri:/dev/dri]` still works where the device exists.
+- **NVIDIA:** nothing in compose. The image sets `NVIDIA_VISIBLE_DEVICES=all` and `NVIDIA_DRIVER_CAPABILITIES=compute,video,utility`, and the host makes NVIDIA's runtime Docker's default. Unraid has `highsea-nvidia.xml`, with `--runtime=nvidia`.
+- **Detection:** when CUDA doesn't open but sysfs lists an NVIDIA display controller, NVENC's reason names the host step (`unavailable.nvidiaHost`), and System › Health shows it as a notice under Playback. The check's own NVIDIA message now names the default runtime in place of "give the container the GPU".

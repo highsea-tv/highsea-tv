@@ -82,6 +82,11 @@ export function registerSystem(app: OpenAPIHono<Env>) {
     return c.json(setupDefaults(rt(c).config), 200)
   })
 
+  app.openapi(routes.setup.detect, (c) => {
+    setupOpen(c)
+    return c.json(rt(c).detectSetup(), 200)
+  })
+
   app.openapi(routes.setup.listFolders, (c) => {
     setupOpen(c)
     return c.json(listFolders(rt(c).config, c.req.valid('query').path), 200)

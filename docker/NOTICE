@@ -9,6 +9,7 @@ Debian's own archive, with apt. highsea runs them as separate programs; it doesn
   wireguard-tools  GPL-2.0        `wg`: sets the WireGuard keys and peer of highsea connects
   iproute2         GPL-2.0        `ip`: the interface, address, routes and rule of highsea connects
   wireguard-go     MIT            WireGuard in user space, where the kernel has none
+  avahi-utils      LGPL-2.1+      `avahi-publish`: publishes highsea through the host's avahi over D-Bus
 
 On amd64 only, for hardware acceleration:
 

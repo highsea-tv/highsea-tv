@@ -12,7 +12,7 @@ description: The folders your films are filed under, adding and removing one, it
   - Films found in a root folder: packages/media/src/movies/scan.ts and library-import.ts (addNew).
 */}
 
-Written for highsea 0.1.0.
+Written for highsea 0.2.0-beta.3.
 
 A root folder is a folder your films are filed under, such as `/data/media/movies`. Each film gets a folder of its own inside one. Setup adds your first; most servers need only one.
 
@@ -33,7 +33,7 @@ Put it on the same disk as your downloads, so imports can use hardlinks. [Folder
 
 ## Films already in the folder
 
-When you add a root folder, at setup or here, highsea looks inside it straight away. It does the same whenever a new film folder appears in it, and in the library scan every 12 hours. Each folder inside is read as one film, by its name, and matched on TMDB, so this needs a TMDB key (see [General](/settings/general/)).
+When you add a root folder, at setup or here, highsea looks inside it straight away. It does the same whenever a new film folder appears in it, and in the library scan every 12 hours. Each folder inside is read as one film, by its name, and matched on TMDB, with highsea's key or yours (see [Metadata](/settings/general/metadata/)).
 
 A film is added where it is, with nothing moved or renamed, when its match is sure:
 
@@ -48,7 +48,7 @@ Each root folder has a **Subtitle languages for movies added here** setting. Fil
 
 ## Import what's already here
 
-**Import what's already here** opens the library import in Activity for that folder, for films that need a match, or to import them renamed. highsea reads each folder inside it as one film, by its name: `Title (Year)`, or with a `{tmdb-…}` or `{imdb-…}` ID in the name. It matches each on TMDB, so it needs a TMDB key (see [General](/settings/general/)).
+**Import what's already here** opens the library import in Activity for that folder, for films that need a match, or to import them renamed. highsea reads each folder inside it as one film, by its name: `Title (Year)`, or with a `{tmdb-…}` or `{imdb-…}` ID in the name. It matches each on TMDB, with highsea's key or yours (see [Metadata](/settings/general/metadata/)).
 
 You choose a quality profile, and whether to **Rename to my format**, which names folders and files with the [naming formats](/settings/media-management/naming/); otherwise nothing is moved or renamed. A folder with no match on TMDB says so: add `{tmdb-…}` with the film's TMDB ID to the folder's name and look again. [Activity](/activity/) has more on importing.
 

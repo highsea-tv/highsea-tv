@@ -77,11 +77,19 @@ async function library() {
 describe('metadata settings and the setup key step', () => {
   test('the owner sets, reads and removes the key; it’s never returned', async () => {
     const { ownerApi, memberApi } = await started({ tmdb: false })
-    expect((await ownerApi.settings.metadata()).key).toEqual({ set: false, last4: null })
+    expect((await ownerApi.settings.metadata()).key).toEqual({
+      set: false,
+      last4: null,
+      builtIn: false,
+    })
     const saved = await ownerApi.settings.saveMetadata({
       body: { key: 'abcd-efgh-1234', language: 'en-US', region: 'US' },
     })
-    expect(saved).toEqual({ key: { set: true, last4: '1234' }, language: 'en-US', region: 'US' })
+    expect(saved).toEqual({
+      key: { set: true, last4: '1234', builtIn: false },
+      language: 'en-US',
+      region: 'US',
+    })
     expect(JSON.stringify(await ownerApi.settings.metadata())).not.toContain('abcd')
     expect(await failure(ownerApi.settings.saveMetadata({ body: { key: 'invalid-key' } }))).toEqual(
       { code: 'invalid', reason: 'tmdb-key-rejected' },
@@ -119,7 +127,7 @@ describe('metadata settings and the setup key step', () => {
     })
     expect(res.status).toBe(200)
     expect(runtime.metadata.settings.get()).toEqual({
-      key: { set: true, last4: '-key' },
+      key: { set: true, last4: '-key', builtIn: false },
       language: 'pt-BR',
       region: 'BR',
     })

@@ -35,7 +35,7 @@ The server's own language and time.
 | **Language** | The language of the server's own messages: notifications and the calendar feed. English is the only one for now; more come with translations. | English |
 | **Time zone** | Used for schedules, such as when backups run. | The time zone of the machine or container highsea runs in, or UTC when it has none |
 
-In Docker, the container's time zone usually comes from the `TZ` variable in your compose file. Setting **Time zone** here is the simpler way to correct it.
+Setup sets it from your browser. When your compose file sets `TZ`, highsea starts with that zone instead, and **Time zone** here still decides when schedules run.
 
 ## Indexer catalog
 

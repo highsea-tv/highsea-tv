@@ -13,7 +13,7 @@
 // - **A run that fails mid-film** marks its path's check failed; the film goes on on the processor
 //   (`@highsea-tv/stream/hls`'s runner).
 import { execFile } from 'node:child_process'
-import { existsSync, mkdirSync, readdirSync } from 'node:fs'
+import { existsSync, mkdirSync, readdirSync, readFileSync } from 'node:fs'
 import { rename } from 'node:fs/promises'
 import { join } from 'node:path'
 import type { PathStatus, PlaybackSettings } from '@highsea-tv/api-contract'
@@ -54,6 +54,10 @@ const TONE_MAP_FILTERS: Record<AccelPath, (vendor: Vendor) => string[]> = {
   videotoolbox: () => ['scale_vt'],
 }
 
+const PCI = '/sys/bus/pci/devices'
+const nvidiaCard = (d: { vendor: string; class: string }) =>
+  d.vendor === '0x10de' && d.class.startsWith('0x03')
+
 export type Ran = { code: number | null; stdout: string; stderr: string; ms: number }
 
 /** How highsea looks at the host: the real one, or a test's. */
@@ -63,6 +67,8 @@ export type Host = {
   inContainer: () => boolean
   /** The names in `/dev/dri`; none when it isn't there. */
   dri: () => string[]
+  /** Each PCI device's vendor and class from sysfs (`0x10de`, `0x030000`); none off Linux. */
+  pci: () => { vendor: string; class: string }[]
   run: (command: string, args: string[], timeoutMs: number) => Promise<Ran>
 }
 
@@ -71,6 +77,7 @@ export const bareHost = (): Host => ({
   platform: 'linux',
   inContainer: () => true,
   dri: () => [],
+  pci: () => [],
   run: async () => ({ code: 1, stdout: '', stderr: '', ms: 0 }),
 })
 
@@ -80,6 +87,17 @@ export const realHost = (): Host => ({
   dri: () => {
     try {
       return readdirSync('/dev/dri')
+    } catch {
+      return []
+    }
+  },
+  // sysfs lists every PCI device, inside a container too (https://docs.kernel.org/PCI/sysfs-pci.html)
+  pci: () => {
+    try {
+      return readdirSync(PCI).map((d) => ({
+        vendor: readFileSync(join(PCI, d, 'vendor'), 'utf8').trim(),
+        class: readFileSync(join(PCI, d, 'class'), 'utf8').trim(),
+      }))
     } catch {
       return []
     }
@@ -223,7 +241,12 @@ export function createHardware(deps: {
     if (host.platform !== 'linux') next.nvenc = none(t('unavailable.linux'))
     else {
       const cuda = await host.run(ffmpeg, probeArgs('nvenc', null), 15_000)
-      if (cuda.code !== 0) next.nvenc = none(t('unavailable.nvidia'))
+      // a card on the bus that ffmpeg can't open means the host step is missing (install-
+      // simplicity.md › A): NVIDIA is vendor 0x10de, and class 0x03 a display controller
+      if (cuda.code !== 0)
+        next.nvenc = none(
+          t(host.pci().some(nvidiaCard) ? 'unavailable.nvidiaHost' : 'unavailable.nvidia'),
+        )
       else {
         const smi = await host.run(
           'nvidia-smi',
@@ -520,6 +543,11 @@ export function createHardware(deps: {
     checkNew,
     current,
     paths,
+    /** System › Health's line when an NVIDIA card is in the computer but not the container. */
+    issues: (): { id: string; message: string }[] =>
+      found.nvenc.unavailable === t('unavailable.nvidiaHost')
+        ? [{ id: 'nvidia-host', message: found.nvenc.unavailable }]
+        : [],
     inUse: () => current().accel?.path ?? null,
     failedPlaying,
   }
