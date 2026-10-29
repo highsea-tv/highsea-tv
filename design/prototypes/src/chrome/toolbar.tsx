@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
 import { flowFor, flows } from '../flows.ts'
 import {
+  airplays,
   appUpdates,
   connections,
   dataStates,
@@ -10,6 +11,7 @@ import {
   localNetworks,
   type Platform,
   type ProtoState,
+  phoneDownloads,
   platforms,
   roles,
   streamStates,
@@ -318,6 +320,63 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
             </Group>
           )}
         </>
+      )}
+
+      {platform === 'mobile' && /\/connect/.test(path) && (
+        <Group label="Local network">
+          {(id) => (
+            <select
+              id={id}
+              className={control}
+              value={state.lan}
+              onChange={(e) => update('lan', e.target.value as ProtoState['lan'])}
+            >
+              {localNetworks.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </Group>
+      )}
+
+      {platform === 'mobile' && /\/play\//.test(path) && (
+        <Group label="AirPlay">
+          {(id) => (
+            <select
+              id={id}
+              className={control}
+              value={state.airplay}
+              onChange={(e) => update('airplay', e.target.value as ProtoState['airplay'])}
+            >
+              {airplays.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </Group>
+      )}
+
+      {platform === 'mobile' && /\/offline/.test(path) && (
+        <Group label="Downloads">
+          {(id) => (
+            <select
+              id={id}
+              className={control}
+              value={state.downloads}
+              onChange={(e) => update('downloads', e.target.value as ProtoState['downloads'])}
+            >
+              {phoneDownloads.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </Group>
       )}
 
       {platform !== 'admin' && /\/play\//.test(path) && (

@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The mobile client (C1–C8), drawn inside the phone's safe areas: connect, the five tabs (Home,
-// Search, Library, Offline, You), item detail, the player, and settings under You.
+// Search, Library, Offline, You), item detail, the player, settings under You, and signing in a
+// TV (4.5a).
 import { EmptyState } from '@highsea-tv/ui-web'
 import { Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
@@ -12,6 +13,7 @@ import { MobileDetail } from './detail.tsx'
 import { MobileHome } from './home.tsx'
 import { MobileLibrary } from './library.tsx'
 import { MobileOffline, MobileSearch, MobileSettingsScreen, MobileYou } from './more.tsx'
+import { MobileLinkConfirm, MobileLinkScan } from './pair.tsx'
 import { MobilePlayer } from './player.tsx'
 import { MobileShell } from './shell.tsx'
 
@@ -19,7 +21,11 @@ function Connect() {
   const [, navigate] = useLocation()
   return (
     <MobileScreen>
-      <ConnectFlow onSignedIn={() => navigate('/')} className="min-h-full bg-transparent" />
+      <ConnectFlow
+        platform="mobile"
+        onSignedIn={() => navigate('/')}
+        className="min-h-full bg-transparent"
+      />
     </MobileScreen>
   )
 }
@@ -38,6 +44,12 @@ function Routes() {
     <Switch>
       <Route path="/connect">
         <Connect />
+      </Route>
+      <Route path="/link">
+        <MobileLinkScan />
+      </Route>
+      <Route path="/link/:code">
+        <MobileLinkConfirm />
       </Route>
       <Route path="/play/:id/start">
         <MobilePlayer fromStart />

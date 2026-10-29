@@ -28,6 +28,8 @@ Everything around the picture: where you are and moving through it, sound and su
 
 Landscape, full screen (the prototype turns it a quarter inside the portrait phone frame). A tap shows or hides the chrome: Back and the title at the top with Audio and subtitles at the right; back 10 s, Play/Pause (72pt) and forward 10 s in the middle, in thumb reach; the times and the scrubber at the bottom. The panel is the web's.
 
+**AirPlay (the iPhone app, checkpoint 4.5a):** an AirPlay button sits before Audio and subtitles in the top bar ("AirPlay"; "AirPlay: playing on {device}" while it is, tinted in the accent). It opens iOS's own list of screens (AVRoutePickerView; the prototype draws a stand-in with iPhone and Living room TV, the current one checked). While a film plays on another screen, the chrome stays shown, the picture behind it dims, and the middle says "Playing on {device}" · "The controls here still work. Subtitles show on {device}." Play, Pause, seeking and the panel keep working from the phone. The phone draws no subtitle line then: the TV shows the subtitle the panel chose, from the HLS playlist's subtitle renditions. Prototype: `#/mobile/play/4?airplay=on` (toolbar › **AirPlay**).
+
 ### TV
 
 - **Top:** the title (2.2u) and the version's description; the version tag at the right.
@@ -103,6 +105,7 @@ Prototyped on all three platforms; the prototype's toolbar picks one under **Str
 - **No skip intro** until intro detection exists (decided here, as the plan asked).
 - **Mobile is landscape,** like every phone video player; portrait playback isn't designed.
 - **Picture in picture is a button on the web** (approved by the owner on 2026-10-27, at the start of 4.2b): Chromium and Safari otherwise offer it only from a menu. To leave it room at 390, Mute shows from the medium breakpoint up; phones and tablets have their own volume buttons, and M still mutes.
+- **AirPlay is iOS's own picker** (expo-video's `VideoAirPlayButton`), not a list highsea draws: iOS knows the screens and asks for codes. Added on the owner's answer 9 of 2026-10-29 ([phase-4-checkpoint-5.md](../plans/phase-4-checkpoint-5.md#the-owners-answers)).
 - **TV keeps Left and Right for seeking** while the scrubber has focus, and moves focus only with Down, so a press of the arrows never leaves the scrubber by surprise.
 
 ## Open questions

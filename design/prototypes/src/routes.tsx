@@ -119,6 +119,13 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/mobile/you/appearance',
     '/mobile/you/home',
     '/mobile/you/servers',
+    '/mobile/connect?lan=asking',
+    '/mobile/connect?lan=refused',
+    '/mobile/link',
+    '/mobile/link/KQ7-4PM',
+    '/mobile/link/ABC-123',
+    '/mobile/play/4?airplay=on',
+    '/mobile/offline?downloads=later',
   ],
   tv: [
     '/tv',

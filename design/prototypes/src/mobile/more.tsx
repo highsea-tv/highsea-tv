@@ -8,6 +8,7 @@ import { useLocation, useParams } from 'wouter'
 import {
   searchKinds,
   searchSuggestions,
+  usePhoneDownloadsLater,
   useSearch,
   useSearchQuery,
   useServer,
@@ -142,6 +143,19 @@ function MobileResults({
 
 export function MobileOffline() {
   const [wifi, setWifi] = useState(true)
+  // the app until 4.6 builds downloads: the tab stays, and says what's coming (4.5a)
+  const later = usePhoneDownloadsLater()
+  if (later)
+    return (
+      <div className="grid gap-5 pt-1">
+        <Header title="Offline" />
+        <div className={cn('py-6', gutter)}>
+          <EmptyState icon="download" title="Nothing downloaded">
+            Downloading films to this phone comes in the next update of the app.
+          </EmptyState>
+        </div>
+      </div>
+    )
   return (
     <div className="grid gap-5 pt-1">
       <Header title="Offline" />

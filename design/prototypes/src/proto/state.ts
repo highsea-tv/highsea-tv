@@ -21,8 +21,15 @@ export type WebApp = 'browser' | 'desktop'
 export type DesktopOs = 'mac' | 'windows' | 'linux'
 /** The desktop app's own update: none waiting, or downloaded and ready for a restart. */
 export type AppUpdate = 'none' | 'ready'
-/** macOS's local network permission for the desktop app (Apple TN3179): granted, asking, refused. */
+/**
+ * The local network permission (Apple TN3179) for the desktop app on macOS and the phone app on
+ * iOS: granted, asking, refused.
+ */
 export type LocalNetwork = 'allowed' | 'asking' | 'refused'
+/** The phone's player sent to an AirPlay screen (checkpoint 4.5a), or playing on the phone. */
+export type AirPlay = 'off' | 'on'
+/** Downloads on the phone: built (4.6), or not yet, as the app has them until then (4.5a). */
+export type PhoneDownloads = 'built' | 'later'
 export type StreamState = 'normal' | 'preparing' | 'buffering' | 'failed' | 'stopped' | 'next-up'
 
 export type ProtoState = {
@@ -42,6 +49,8 @@ export type ProtoState = {
   os: DesktopOs
   update: AppUpdate
   lan: LocalNetwork
+  airplay: AirPlay
+  downloads: PhoneDownloads
   /** A client preview inside the admin (`?preview`): no prototype affordances. */
   preview: boolean
 }
@@ -61,6 +70,8 @@ export const defaultState: ProtoState = {
   os: 'mac',
   update: 'none',
   lan: 'allowed',
+  airplay: 'off',
+  downloads: 'built',
   preview: false,
 }
 
@@ -121,6 +132,16 @@ export const localNetworks: { id: LocalNetwork; label: string }[] = [
   { id: 'refused', label: 'Refused' },
 ]
 
+export const airplays: { id: AirPlay; label: string }[] = [
+  { id: 'off', label: 'On the phone' },
+  { id: 'on', label: 'Living room TV' },
+]
+
+export const phoneDownloads: { id: PhoneDownloads; label: string }[] = [
+  { id: 'built', label: 'Built (4.6)' },
+  { id: 'later', label: 'Not yet' },
+]
+
 export const streamStates: { id: StreamState; label: string }[] = [
   { id: 'normal', label: 'Playing' },
   { id: 'preparing', label: 'Getting it ready' },
@@ -168,7 +189,8 @@ export function saveState(state: ProtoState): void {
  * URL parameters override the state, so a screen can be opened on its own at a known state:
  * `?screen&data=empty&theme=oled&role=admin&motion=reduced&text=200&time=pause&connection=remote`
  * (and `&stream=buffering` on a player, `&app=desktop` for the desktop app, with `&os=windows`,
- * `&update=ready` and `&lan=refused`);
+ * `&update=ready` and `&lan=refused`; on the phone `&lan=asking`, `&airplay=on` and
+ * `&downloads=later`);
  * `&preview` marks a client preview inside the admin.
  */
 export function stateFromParams(params: URLSearchParams, base: ProtoState): ProtoState {
@@ -209,6 +231,16 @@ export function stateFromParams(params: URLSearchParams, base: ProtoState): Prot
         'lan',
         localNetworks.map((x) => x.id),
       ) ?? base.lan,
+    airplay:
+      pick(
+        'airplay',
+        airplays.map((x) => x.id),
+      ) ?? base.airplay,
+    downloads:
+      pick(
+        'downloads',
+        phoneDownloads.map((x) => x.id),
+      ) ?? base.downloads,
     reducedMotion: params.has('motion') ? params.get('motion') === 'reduced' : base.reducedMotion,
     largeText: params.has('text') ? params.get('text') === '200' : base.largeText,
     preview: params.has('preview'),

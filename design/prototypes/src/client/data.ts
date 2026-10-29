@@ -146,11 +146,20 @@ export const useAppUpdateReady = () => {
   const p = useProto()
   return p.app === 'desktop' && p.update === 'ready'
 }
-/** macOS's local network permission, which the desktop app needs to find servers. */
-export const useLocalNetwork = () => {
+/**
+ * The local network permission that the desktop app on macOS and the phone app on iOS need to
+ * find servers (Apple TN3179). Which device asks: a Mac, an iPhone, or none (no permission).
+ */
+export const useLocalNetwork = (platform: 'web' | 'mobile' = 'web') => {
   const p = useProto()
-  return p.app === 'desktop' && p.os === 'mac' ? p.lan : 'allowed'
+  const device =
+    platform === 'mobile' ? 'iphone' : p.app === 'desktop' && p.os === 'mac' ? 'mac' : null
+  return { lan: device ? p.lan : ('allowed' as const), device }
 }
+/** The phone's player on an AirPlay screen: its name, or null while it plays on the phone. */
+export const useAirPlay = () => (useProto().airplay === 'on' ? 'Living room TV' : null)
+/** Downloads on the phone aren't built until 4.6; until then Offline says so. */
+export const usePhoneDownloadsLater = () => useProto().downloads === 'later'
 
 // ---------------------------------------------------------------- formatting
 

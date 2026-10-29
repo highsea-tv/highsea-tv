@@ -1,6 +1,6 @@
 # Phase 4, checkpoint 4.4: the desktop app
 
-- **Status:** Scoped on 2026-10-29 and approved with [the owner's answers](#the-owners-answers) of 2026-10-29 (every recommendation but question 6: the Windows installer stays unsigned until 1.0). 4.4a is next, starting with its prototypes. Nothing is built.
+- **Status:** 4.4a signed off on 2026-10-29 and released in 0.3.0. **4.4b is held** on the owner's word of 2026-10-29, while the native apps come first and becomes 4.6, downloads for the desktop app and the phone together ([phase-4-checkpoint-5.md](phase-4-checkpoint-5.md), answer 11). Scoped on 2026-10-29 and approved with [the owner's answers](#the-owners-answers) of 2026-10-29 (every recommendation but question 6: the Windows installer stays unsigned until 1.0). 4.4a is next, starting with its prototypes. Nothing is built.
 - **Parent plan:** [phase-4-clients.md › Order of work](phase-4-clients.md#order-of-work-and-checkpoints), 4.4, with [install-simplicity.md › E](install-simplicity.md#e-the-apps-find-pair-and-update-without-typing-folded-into-44-46)'s desktop items folded in.
 - **Gate:** 4.3 was signed off on 2026-10-28, and 4.3c (with part D) on 2026-10-29, so the web player plays every film, the server says which address apps use (ADR 0020's 2026-10-28 section), and 0.2.0 is published.
 

@@ -280,6 +280,12 @@ function ServersSection({ platform }: { platform: ClientPlatform }) {
         <Button icon="add" className={wraps} onClick={() => navigate('/connect')}>
           Add a server
         </Button>
+        {platform === 'mobile' && (
+          // the phone approves a TV's code, so nobody types on the TV (4.5a)
+          <Button icon="tv" className={wraps} onClick={() => navigate('/link')}>
+            Sign in a TV
+          </Button>
+        )}
         <Button
           variant="ghost"
           icon="sign-out"

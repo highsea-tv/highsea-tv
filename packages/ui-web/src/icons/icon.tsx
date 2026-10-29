@@ -3,6 +3,7 @@
 // docs/design-language/iconography.md
 import {
   Activity,
+  Airplay,
   Archive,
   ArrowLeft,
   ArrowRight,
@@ -70,6 +71,7 @@ import {
   Radar,
   RefreshCw,
   RotateCcw,
+  ScanQrCode,
   ScrollText,
   Search,
   Server,
@@ -134,6 +136,8 @@ export const icons = {
   play: Play,
   pause: Pause,
   'picture-in-picture': PictureInPicture2,
+  airplay: Airplay,
+  scan: ScanQrCode,
   add: Plus,
   remove: Minus,
   edit: Pencil,

@@ -366,6 +366,8 @@ export const flows: Flow[] = [
         'Servers answer discovery over two seconds; type harbor.example.net to connect remotely.',
         'Sign in as ines with any password for the two-step code (any six digits but 000000).',
         'TV: wait eight seconds and the phone “approves” the code; or press OK on Use a password.',
+        'Mobile: You › Servers › Sign in a TV scans the TV’s code (three seconds), then asks once.',
+        'Mobile: Toolbar › Local network shows iOS asking, or refused.',
         'Toolbar › Connection: Remote shows the failover; Unreachable shows what to do.',
       ],
     },
@@ -428,6 +430,7 @@ export const flows: Flow[] = [
       hints: [
         'Turn English subtitles on, then nudge the timing in 50 ms steps and watch the preview.',
         'Web: Space, ← →, M and F. TV: OK, ← → on the scrubber, ↓ for tracks, Back.',
+        'Mobile: AirPlay in the top bar lists the screens; Toolbar › AirPlay starts on the TV.',
       ],
     },
   ),

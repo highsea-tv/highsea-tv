@@ -28,18 +28,23 @@ const row =
   'grid w-full cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md px-3 py-2.5 text-start outline-none transition-tint hover:bg-s2 focus-visible:ring-focus disabled:cursor-default disabled:opacity-60'
 
 function Choose({
+  platform,
   onChoose,
   pending,
   error,
 }: {
+  platform: 'web' | 'mobile'
   onChoose: (address: string) => void
   pending: string | null
   error: string | null
 }) {
   const known = useKnownServers()
   const discovery = useDiscovery()
-  // on macOS 15 the desktop app needs the person's permission to look (Apple TN3179)
-  const lan = useLocalNetwork()
+  // on macOS 15 and iOS 14 the apps need the person's permission to look (Apple TN3179)
+  const { lan, device } = useLocalNetwork(platform)
+  const mine = device === 'iphone' ? 'iPhone' : 'Mac'
+  // where to turn it on afterwards: the Mac's System Settings, the iPhone's Settings
+  const settingsApp = device === 'iphone' ? 'Settings' : 'System Settings'
   const { servers, scanning, rescan } =
     lan === 'allowed' ? discovery : { servers: [], scanning: lan === 'asking', rescan: () => {} }
   const now = useNow()
@@ -93,7 +98,7 @@ function Choose({
             {lan === 'refused' ? null : scanning ? (
               <>
                 <Icon name="loading" size={14} className="animate-spin" />
-                {lan === 'asking' ? 'Waiting for your Mac…' : 'Looking…'}
+                {lan === 'asking' ? `Waiting for your ${mine}…` : 'Looking…'}
               </>
             ) : (
               <button
@@ -126,13 +131,13 @@ function Choose({
         ))}
         {lan === 'asking' && (
           <p className="px-3 py-2 text-caption text-text-3">
-            Your Mac is asking whether highsea may find devices on your local network. Choose Allow
-            to look for servers.
+            Your {mine} is asking whether highsea may find devices on your local network. Choose
+            Allow to look for servers.
           </p>
         )}
         {lan === 'refused' && (
           <p className="px-3 py-2 text-caption text-text-3">
-            highsea can’t look on this network. Allow it in System Settings › Privacy & Security ›
+            highsea can’t look on this network. Allow it in {settingsApp} › Privacy & Security ›
             Local Network, or add the server by address.
           </p>
         )}
@@ -300,9 +305,12 @@ function TwoFactor({
 }
 
 export function ConnectFlow({
+  platform = 'web',
   onSignedIn,
   className,
 }: {
+  /** The phone app asks iOS for the local network; on the web only the Mac's app does. */
+  platform?: 'web' | 'mobile'
   onSignedIn: () => void
   className?: string
 }) {
@@ -342,6 +350,7 @@ export function ConnectFlow({
           <div className={s.step === 'choose' ? '' : 'px-3'}>
             {s.step === 'choose' && (
               <Choose
+                platform={platform}
                 pending={flow.probe.pending ? chosen : null}
                 error={flow.probe.error?.message ?? null}
                 onChoose={(address) => {
