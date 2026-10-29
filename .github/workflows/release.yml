@@ -12,9 +12,11 @@
 #      (https://docs.docker.com/build/ci/github-actions/multi-platform/,
 #      https://docs.docker.com/build/exporters/image-registry/).
 #   4. catalog: built and signed with the release key, with the release's entry in it.
-#   5. publish, only when it isn't a dry run: the platforms merged under their tags
+#   5. spk: the Synology package for a stable release (scripts/spk.ts), which runs this release's
+#      image as a Container Manager project; a dry run uploads it for review.
+#   6. publish, only when it isn't a dry run: the platforms merged under their tags
 #      (`docker buildx imagetools create`), the catalog deployed to GitHub Pages, and the GitHub
-#      release created with the changelog's section, which makes the tag.
+#      release created with the changelog's section and the Synology package, which makes the tag.
 #
 # Jobs that read highsea's keys or the catalog key use the `release` environment, whose required
 # reviewer is the owner, so nothing signed or keyed runs without their approval; its secrets reach
@@ -272,6 +274,26 @@ jobs:
         with:
           path: dist/catalog/
 
+  # DSM's versions have no place for a prerelease, so only a stable release gets a package
+  # (https://help.synology.com/developer-guide/synology_package/INFO_necessary_fields.html)
+  spk:
+    if: ${{ needs.prepare.outputs.prerelease == 'false' }}
+    needs: prepare
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      # the commit's time, so the same commit makes the same package
+      # (https://reproducible-builds.org/specs/source-date-epoch/)
+      - name: The package
+        run: SOURCE_DATE_EPOCH="$(git log -1 --format=%ct)" bun scripts/spk.ts build "$VERSION" --out dist/spk
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: spk
+          path: dist/spk/
+
   merge:
     if: ${{ !inputs.dry-run }}
     needs: [prepare, image, catalog]
@@ -322,8 +344,10 @@ jobs:
         uses: actions/deploy-pages@d6db90164ac5ed86f2b6aed7e0febac5b3c0c03e # v4.0.5
 
   github-release:
-    if: ${{ !inputs.dry-run }}
-    needs: [prepare, merge, pages]
+    # spk is skipped for a prerelease, which would skip this too without the explicit check
+    # (https://docs.github.com/en/actions/reference/workflows-and-actions/workflow-syntax#jobsjob_idneeds)
+    if: ${{ !cancelled() && !inputs.dry-run && needs.merge.result == 'success' && needs.pages.result == 'success' && (needs.spk.result == 'success' || needs.prepare.outputs.prerelease == 'true') }}
+    needs: [prepare, merge, pages, spk]
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -332,7 +356,12 @@ jobs:
         with:
           name: release-notes
           path: ${{ runner.temp }}
-      # creating the release makes the tag on this commit
+      - if: ${{ needs.prepare.outputs.prerelease == 'false' }}
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: spk
+          path: ${{ runner.temp }}/assets
+      # creating the release makes the tag on this commit, with the Synology package attached
       # (https://cli.github.com/manual/gh_release_create)
       - name: The release and its tag
         run: |
@@ -340,7 +369,10 @@ jobs:
           if [ "$PRERELEASE" = true ]; then kind+=(--prerelease); fi
           # GitHub's Latest follows the image's `latest`, so a fix to an older line doesn't take it
           if grep -qx latest <<< "$TAGS"; then kind+=(--latest); else kind+=(--latest=false); fi
-          gh release create "v$VERSION" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
+          shopt -s nullglob
+          # the package and its manifest, which packages.highsea.tv reads from the Latest release
+          assets=("$RUNNER_TEMP"/assets/*.spk "$RUNNER_TEMP"/assets/highsea-spk.json)
+          gh release create "v$VERSION" "${assets[@]}" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" \
             --title "highsea $VERSION" --notes-file "$RUNNER_TEMP/release-notes.md" "${kind[@]}"
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

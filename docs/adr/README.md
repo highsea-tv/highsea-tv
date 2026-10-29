@@ -53,13 +53,13 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0047](0047-operations.md) | The owner's tools: backups and restore, the log, crash reports, updates and /metrics | Accepted |
 | [0048](0048-curation.md) | Curation: announcements and featured sections, resolved per person and app | Accepted |
 | [0049](0049-smart-collections.md) | Smart collections: rules compiled to SQL, evaluated when read | Accepted; amended 2026-10-27 |
-| [0050](0050-release-and-versioning.md) | Release and versioning: one SemVer version, two channels, a prepared commit and a gated workflow | Accepted; amended 2026-10-23 and 2026-10-28 |
+| [0050](0050-release-and-versioning.md) | Release and versioning: one SemVer version, two channels, a prepared commit and a gated workflow | Accepted; amended 2026-10-23, 2026-10-28 and 2026-10-29 |
 | [0051](0051-playback-engine.md) | The playback engine: direct play, then direct stream, then HLS transcodes made on demand | Accepted; amended 2026-10-27 and 2026-10-28 (twice) |
 | [0052](0052-device-profiles.md) | Device profiles: what each client plays, built in and reported, in one shape | Accepted; amended 2026-10-27 and 2026-10-28 (twice) |
 | [0053](0053-clients-build-and-distribution.md) | The clients' build and distribution: Vite at /web, Tauri for desktop, Expo for mobile and TV | Proposed; the web part Accepted 2026-10-28 |
 | [0054](0054-watch-state.md) | Watch state: positions, watched and the player's picks, per person and title | Accepted |
 | [0055](0055-clients-shared-logic.md) | The clients' shared logic: `@highsea-tv/client`, everything but the drawing | Accepted |
 | [0056](0056-hardware-acceleration.md) | Hardware acceleration: four paths, each used only once a check on this host passes | Accepted; amended 2026-10-28 |
-| [0057](0057-installing-without-configuration.md) | Installing without configuration: graphics handed over by default, the user, time zone, folders and address detected, and highsea's own TMDB key | Accepted |
+| [0057](0057-installing-without-configuration.md) | Installing without configuration: graphics handed over by default, the user, time zone, folders and address detected, and highsea's own TMDB key | Accepted; amended 2026-10-29 |
 
 Template: copy [`template.md`](template.md).

@@ -1,0 +1,10 @@
+#!/bin/sh
+# SPDX-License-Identifier: AGPL-3.0-only
+# DSM keeps the package's var folder and the shared folder when it's uninstalled. highsea's
+# settings, database and backups go too only when the uninstall wizard was told to delete them;
+# an upgrade also runs this, and keeps them.
+. "$(dirname "$0")/common"
+if [ "$SYNOPKG_PKG_STATUS" = UNINSTALL ] && [ "${wizard_delete_config:-false}" = true ]; then
+  rm -rf "$SYNOPKG_PKGVAR/config" "$SETTINGS"
+fi
+exit 0

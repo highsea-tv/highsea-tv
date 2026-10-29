@@ -1,0 +1,18 @@
+[
+  {
+    "step_title": "Uninstall highsea",
+    "items": [
+      {
+        "type": "multiselect",
+        "desc": "Your films and the shared folder are kept. highsea's settings, database and backups are kept too unless you choose otherwise, so installing it again carries on where it left off.",
+        "subitems": [
+          {
+            "key": "wizard_delete_config",
+            "desc": "Also delete highsea's settings, database and backups",
+            "defaultValue": false
+          }
+        ]
+      }
+    ]
+  }
+]

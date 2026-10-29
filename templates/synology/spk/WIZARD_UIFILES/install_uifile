@@ -1,0 +1,34 @@
+[
+  {
+    "step_title": "Where your films go",
+    "invalid_next_disabled": true,
+    "items": [
+      {
+        "type": "textfield",
+        "desc": "highsea keeps downloads and the library in one shared folder, so imports are hardlinks rather than copies. Type the name of the shared folder your films are in, or keep highsea to make a new one. highsea gets read and write access to that folder.",
+        "subitems": [
+          {
+            "key": "wizard_data_share",
+            "desc": "Shared folder",
+            "defaultValue": "highsea",
+            "validator": {
+              "allowBlank": false,
+              "regex": {
+                "expr": "/^[A-Za-z0-9][A-Za-z0-9 ._-]{0,31}$/",
+                "errorText": "Use letters, numbers, spaces, dots, dashes and underscores, up to 32 characters."
+              }
+            }
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "step_title": "Before you start",
+    "items": [
+      {
+        "desc": "Container Manager downloads highsea's image and starts it, which can take a few minutes; you can follow it in Container Manager. Then open highsea at port 3000 of this NAS, for example http://your-nas:3000, and set it up there. highsea finds the graphics chip by itself.<br><br>The guide: <a href='https://docs.highsea.tv/install/synology/' target='_blank'>docs.highsea.tv/install/synology</a>"
+      }
+    ]
+  }
+]

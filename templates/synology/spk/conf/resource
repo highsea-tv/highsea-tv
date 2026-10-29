@@ -1,0 +1,14 @@
+{
+  "data-share": {
+    "shares": [{ "name": "{{wizard_data_share}}", "permission": { "rw": ["highsea"] } }]
+  },
+  "docker-project": {
+    "projects": [
+      {
+        "name": "highsea",
+        "path": "compose",
+        "build_params": { "force_pull": false, "force_recreate": true, "build": false }
+      }
+    ]
+  }
+}

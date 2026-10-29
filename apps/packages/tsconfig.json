@@ -1,0 +1,8 @@
+{
+  "extends": "@highsea-tv/config/tsconfig/base.json",
+  "compilerOptions": {
+    "lib": ["ES2023", "DOM"],
+    "types": ["bun", "node"]
+  },
+  "include": ["api", "test"]
+}
