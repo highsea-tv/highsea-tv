@@ -1,0 +1,58 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# highsea's desktop app (ADR 0058): Tauri 2 around apps/web's build. Every version is exact and
+# at least two weeks old (`bun run pin --crate <name>`), as for npm; Cargo.lock is committed.
+[package]
+name = "highsea-desktop"
+version = "0.2.0"
+description = "highsea for Mac, Windows and Linux"
+license = "AGPL-3.0-only"
+edition = "2024"
+rust-version = "1.98"
+publish = false
+
+[lib]
+# the library is what the binary and the tests share (https://v2.tauri.app/start/create-project/)
+name = "highsea_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "=2.7.3", features = [] }
+
+[dependencies]
+tauri = { version = "=2.12.4", features = [] }
+tauri-plugin-deep-link = "=2.6.2"
+tauri-plugin-opener = "=2.7.2"
+tauri-plugin-os = "=2.4.0"
+tauri-plugin-process = "=2.4.0"
+# without its `zip` feature: that unpacks Tauri 1's .zip and .tar.gz updates on Windows and Linux,
+# and highsea's are Tauri 2's, the installer and the AppImage themselves (createUpdaterArtifacts:
+# true, https://v2.tauri.app/plugin/updater/#building). macOS's .app.tar.gz doesn't need it. It
+# also leaves out `zip` 4.6, with RUSTSEC-2026-0367, -0368 and -0369.
+tauri-plugin-updater = { version = "=2.14.0", default-features = false, features = ["rustls-tls", "system-proxy"] }
+tauri-plugin-window-state = "=2.5.0"
+serde = { version = "=1.0.229", features = ["derive"] }
+serde_json = "=1.0.154"
+reqwest = { version = "=0.13.5", features = ["json", "stream"] }
+futures-util = "=0.3.34"
+tokio = { version = "=1.53.3", features = ["net", "time", "macros", "rt-multi-thread", "sync"] }
+mdns-sd = "=0.21.5"
+sha2 = "=0.11.1"
+base64 = "=0.23.1"
+getrandom = "=0.4.3"
+# the OS's own store: Keychain, Credential Manager or the Secret Service (keyring's `v1` mode)
+keyring = { version = "=4.2.0", features = ["v1"] }
+
+# one instance, with highsea:// links handed to it (https://v2.tauri.app/plugin/single-instance/)
+[target.'cfg(any(target_os = "macos", windows, target_os = "linux"))'.dependencies]
+tauri-plugin-single-instance = { version = "=2.5.4", features = ["deep-link"] }
+
+[dev-dependencies]
+tempfile = "=3.27.0"
+
+[profile.release]
+# smaller installers (https://v2.tauri.app/concept/size/)
+codegen-units = 1
+lto = true
+opt-level = "s"
+panic = "abort"
+strip = true

@@ -10,7 +10,7 @@ import { type FormEvent, useState } from 'react'
 import { useNow } from '../mock/hooks.tsx'
 import type { ProbeResult } from '../mock/types.ts'
 import { useDiscovery, useSignIn } from './connect.ts'
-import { useKnownServers } from './data.ts'
+import { useKnownServers, useLocalNetwork } from './data.ts'
 
 function Alert({ children }: { children: string }) {
   return (
@@ -37,7 +37,11 @@ function Choose({
   error: string | null
 }) {
   const known = useKnownServers()
-  const { servers, scanning, rescan } = useDiscovery()
+  const discovery = useDiscovery()
+  // on macOS 15 the desktop app needs the person's permission to look (Apple TN3179)
+  const lan = useLocalNetwork()
+  const { servers, scanning, rescan } =
+    lan === 'allowed' ? discovery : { servers: [], scanning: lan === 'asking', rescan: () => {} }
   const now = useNow()
   const [address, setAddress] = useState('')
   const [cloud, setCloud] = useState(false)
@@ -86,10 +90,10 @@ function Choose({
             role="status"
             className="ms-auto flex items-center gap-1.5 text-caption text-text-3"
           >
-            {scanning ? (
+            {lan === 'refused' ? null : scanning ? (
               <>
                 <Icon name="loading" size={14} className="animate-spin" />
-                Looking…
+                {lan === 'asking' ? 'Waiting for your Mac…' : 'Looking…'}
               </>
             ) : (
               <button
@@ -120,7 +124,19 @@ function Choose({
             <Icon name="chevron-right" size={16} className="text-text-3" />
           </button>
         ))}
-        {!scanning && nearby.length === 0 && (
+        {lan === 'asking' && (
+          <p className="px-3 py-2 text-caption text-text-3">
+            Your Mac is asking whether highsea may find devices on your local network. Choose Allow
+            to look for servers.
+          </p>
+        )}
+        {lan === 'refused' && (
+          <p className="px-3 py-2 text-caption text-text-3">
+            highsea can’t look on this network. Allow it in System Settings › Privacy & Security ›
+            Local Network, or add the server by address.
+          </p>
+        )}
+        {lan === 'allowed' && !scanning && nearby.length === 0 && (
           <p className="px-3 py-2 text-caption text-text-3">
             {servers.length > 0
               ? 'Only servers you already use answered.'

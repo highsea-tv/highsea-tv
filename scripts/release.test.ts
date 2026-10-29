@@ -5,6 +5,8 @@ import { join } from 'node:path'
 import {
   addCatalogChange,
   catalogNote,
+  desktopFeed,
+  desktopKeyProblems,
   imageTags,
   nextCatalogVersion,
   notesOf,
@@ -47,6 +49,11 @@ const files = () => ({
   server: `${JSON.stringify({ name: '@highsea-tv/server', version: '0.1.0' }, null, 2)}\n`,
   releases: '',
   catalogChanges: '# Catalog changes\n\nNewest first.\n\n## 2026.11.2\n\n- A definition.\n',
+  desktopConfig: '{\n  "productName": "highsea",\n  "version": "0.1.0",\n  "plugins": {}\n}\n',
+  desktopCargo: '[package]\nname = "highsea-desktop"\nversion = "0.1.0"\nedition = "2024"\n',
+  desktopLock:
+    '[[package]]\nname = "heck"\nversion = "0.5.0"\n\n[[package]]\nname = "highsea-desktop"\nversion = "0.1.0"\n',
+  desktopPackage: '{\n  "name": "@highsea-tv/desktop",\n  "version": "0.1.0"\n}\n',
 })
 
 describe('the image’s tags', () => {
@@ -125,6 +132,10 @@ describe('preparing and checking', () => {
     const before = files()
     expect(problemsOf('0.2.0', before, ['v0.1.0'])).toEqual([
       'apps/server is at 0.1.0, not 0.2.0.',
+      'apps/desktop/src-tauri/tauri.conf.json is at 0.1.0, not 0.2.0.',
+      'apps/desktop/src-tauri/Cargo.toml is at 0.1.0, not 0.2.0.',
+      'apps/desktop/src-tauri/Cargo.lock is at 0.1.0, not 0.2.0.',
+      'apps/desktop/package.json is at 0.1.0, not 0.2.0.',
       'CHANGELOG.md has no ## [0.2.0] section.',
       'releases.json doesn’t start with 0.2.0.',
       'The catalog’s CHANGES.md doesn’t mention 0.2.0, so servers wouldn’t see it.',
@@ -133,6 +144,12 @@ describe('preparing and checking', () => {
     expect(problemsOf('0.2.0', after, ['v0.1.0'])).toEqual([])
 
     expect(JSON.parse(after.server).version).toBe('0.2.0')
+    // the desktop app's version, and nothing else in its files
+    expect(after.desktopConfig).toBe(before.desktopConfig.replace('0.1.0', '0.2.0'))
+    expect(after.desktopCargo).toBe(before.desktopCargo.replace('0.1.0', '0.2.0'))
+    expect(after.desktopLock).toContain('name = "heck"\nversion = "0.5.0"')
+    expect(after.desktopLock).toContain('name = "highsea-desktop"\nversion = "0.2.0"')
+    expect(JSON.parse(after.desktopPackage).version).toBe('0.2.0')
     expect(JSON.parse(after.releases)).toEqual([
       {
         version: '0.2.0',
@@ -195,6 +212,10 @@ describe('preparing and checking', () => {
       server: read('apps/server/package.json'),
       releases: read('catalog/indexers/releases.json'),
       catalogChanges: read('catalog/indexers/CHANGES.md'),
+      desktopConfig: read('apps/desktop/src-tauri/tauri.conf.json'),
+      desktopCargo: read('apps/desktop/src-tauri/Cargo.toml'),
+      desktopLock: read('apps/desktop/src-tauri/Cargo.lock'),
+      desktopPackage: read('apps/desktop/package.json'),
     }
     const version = JSON.parse(repo.server).version
     const { unreleased, sections } = readChangelog(repo.changelog)
@@ -220,5 +241,36 @@ describe('trust', () => {
     expect(trustProblems(['release-2027'], ['release-2027'], 'release-2028')).toEqual([
       'The catalog would be signed with release-2028, which isn’t a release key.',
     ])
+  })
+})
+
+describe('the desktop app’s updates', () => {
+  test('latest.json names each platform’s installer, its signature and its address', () => {
+    const feed = desktopFeed('0.3.0', '- Playing offline.', '2026-11-20', {
+      'macos/highsea.app.tar.gz': 'sig-mac\n',
+      'nsis/highsea_0.3.0_x64-setup.exe': 'sig-win',
+      'appimage/highsea_0.3.0_amd64.AppImage': 'sig-linux',
+      'dmg/highsea_0.3.0_universal.dmg': 'not for the updater',
+    })
+    const base = `${REPOSITORY}/releases/download/v0.3.0`
+    expect(feed).toEqual({
+      version: '0.3.0',
+      notes: '- Playing offline.',
+      pub_date: '2026-11-20T00:00:00Z',
+      platforms: {
+        'darwin-aarch64': { signature: 'sig-mac', url: `${base}/highsea.app.tar.gz` },
+        'darwin-x86_64': { signature: 'sig-mac', url: `${base}/highsea.app.tar.gz` },
+        'windows-x86_64': { signature: 'sig-win', url: `${base}/highsea_0.3.0_x64-setup.exe` },
+        'linux-x86_64': { signature: 'sig-linux', url: `${base}/highsea_0.3.0_amd64.AppImage` },
+      },
+    })
+    expect(() => desktopFeed('0.3.0', '', '2026-11-20', {})).toThrow('No signed installer')
+  })
+
+  test('a release needs the release key in tauri.conf.json, not the development one', () => {
+    const config = (pubkey: string) => JSON.stringify({ plugins: { updater: { pubkey } } })
+    expect(desktopKeyProblems(config('DEV'), 'DEV')[0]).toContain('trusts the development key')
+    expect(desktopKeyProblems(config('RELEASE'), 'DEV')).toEqual([])
+    expect(desktopKeyProblems('{}', 'DEV')).toEqual(['tauri.conf.json has no updater pubkey.'])
   })
 })

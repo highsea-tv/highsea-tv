@@ -1,0 +1,94 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The desktop app (ADR 0058; phase-4-checkpoint-4.md › Signed installers and updates): on every pull
+# request and push to main that could change it, the Rust side's format, lints and tests on all
+# three systems, then the app built and bundled on each, as Tauri's pipeline guide builds it
+# (https://v2.tauri.app/distribute/pipelines/github/). Nothing is signed or uploaded here; the
+# release workflow builds, signs and attaches the installers in the `release` environment.
+#
+# Rust is the one in apps/desktop/src-tauri/rust-toolchain.toml, which rustup installs on GitHub's
+# images when cargo first runs there (https://rust-lang.github.io/rustup/overrides.html). Each
+# action is pinned to a full commit SHA, with its version beside it.
+name: Desktop
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/desktop/**'
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'bun.lock'
+      - '.github/workflows/desktop.yml'
+  pull_request:
+    paths:
+      - 'apps/desktop/**'
+      - 'apps/web/**'
+      - 'packages/**'
+      - 'bun.lock'
+      - '.github/workflows/desktop.yml'
+
+concurrency:
+  group: desktop-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # one universal app for Apple silicon and Intel Macs
+          - runner: macos-15
+            target: universal-apple-darwin
+          - runner: windows-2025
+            target: x86_64-pc-windows-msvc
+          - runner: ubuntu-24.04
+            target: x86_64-unknown-linux-gnu
+    runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      # Tauri's Linux prerequisites (https://v2.tauri.app/start/prerequisites/#linux), and D-Bus for
+      # the Secret Service the keychain uses there
+      - name: Linux libraries
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libwebkit2gtk-4.1-dev build-essential \
+            file libxdo-dev libssl-dev libayatana-appindicator3-dev librsvg2-dev libdbus-1-dev
+      - name: Rust, and both Mac targets
+        working-directory: apps/desktop/src-tauri
+        run: |
+          rustup show active-toolchain || rustup toolchain install
+          if [ "$RUNNER_OS" = macOS ]; then rustup target add aarch64-apple-darwin x86_64-apple-darwin; fi
+      # the registry and the build, kept between runs by the lockfile
+      # (https://doc.rust-lang.org/cargo/guide/cargo-home.html#caching-the-cargo-home-in-ci)
+      - uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5.1.0
+        with:
+          path: |
+            ~/.cargo/registry/index/
+            ~/.cargo/registry/cache/
+            ~/.cargo/git/db/
+            apps/desktop/src-tauri/target/
+          key: cargo-${{ matrix.target }}-${{ hashFiles('apps/desktop/src-tauri/Cargo.lock') }}
+          restore-keys: cargo-${{ matrix.target }}-
+      - run: bun install --frozen-lockfile
+      # the page's checks run in CI's main job; here, what only the Rust side has
+      - name: Format, lints and tests
+        working-directory: apps/desktop/src-tauri
+        run: |
+          cargo fmt --check
+          cargo clippy --locked --all-targets -- -D warnings
+          cargo test --locked
+      # unsigned, without the updater's artifacts: the release builds those with its key
+      - name: The app and its installers
+        working-directory: apps/desktop
+        run: bun run tauri build --ci --target ${{ matrix.target }} -- --locked

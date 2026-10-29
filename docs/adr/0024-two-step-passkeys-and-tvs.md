@@ -46,3 +46,9 @@ The owner decided this with [ADR 0032](0032-administrative-and-normal-access.md)
 - **The policy is one switch:** **Require two-step for the owner and admins**. Only they open the admin, and two-step only ever blocks the admin, so "everyone" and "staff" meant the same thing.
 - **New servers** start with it on. Migration `0004_roles` turns "everyone" and "staff" on and "optional" off. A server that never saved Security keeps what it had: off.
 - **Turning someone else's two-step off** is the owner's alone, for admins and users alike.
+
+## 2026-10-29: single sign-on from the apps (checkpoint 4.4a)
+
+The apps sign in as client type `desktop` (and later `ios`, `android` and the TVs), each a device with its own token. Single sign-on from an app follows [RFC 8252](https://www.rfc-editor.org/rfc/rfc8252): the provider opens in the system browser, never a webview the app controls (§ 8.12), and the browser comes back to the app through its own scheme, `highsea://oidc` (§ 7.1).
+
+Any app can claim a scheme, so a token never travels that way. `GET /api/v1/auth/oidc/start` takes `app` and the S256 `challenge` of a PKCE verifier the app keeps ([RFC 7636](https://www.rfc-editor.org/rfc/rfc7636), as RFC 8252 § 8.1 asks), held with the round as a challenge of kind `oidc-app`. The callback then sends the browser to `highsea://oidc?code=` with a one-time code, or `?error=` with the reason. `POST /api/v1/auth/oidc/exchange` takes the code, the verifier and the device, and answers as a sign-in does. A code works once, for two minutes, and only with the verifier whose challenge started it. As with the admin's single sign-on, highsea asks for no second step; the provider does its own.

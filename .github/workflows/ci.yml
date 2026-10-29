@@ -73,8 +73,14 @@ jobs:
         run: bun run smoke
       - name: License audit
         run: bun run licenses
+      # cargo-audit for the desktop app's crates (ADR 0058); cargo is on GitHub's Ubuntu image
+      # (https://github.com/actions/runner-images/blob/main/images/ubuntu/Ubuntu2404-Readme.md),
+      # which the license audit's `cargo metadata` uses too
+      - name: cargo-audit
+        run: cargo install cargo-audit@0.22.2 --locked
       # the exit criteria's dependency check: npm's advisories, high and critical, production
-      # packages only; exceptions with reasons and dates in scripts/audit-exceptions.json
+      # packages only, and RustSec's for the desktop app's crates; exceptions with reasons and
+      # dates in scripts/audit-exceptions.json
       - name: Dependency check
         run: bun run audit
       - name: Build the admin

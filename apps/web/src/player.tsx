@@ -34,6 +34,8 @@ import { useQuery } from '@highsea-tv/sdk/react'
 import { Button, cn, EmptyState, Icon, QualityTag } from '@highsea-tv/ui-web'
 import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
+import { trafficLightRoom, WindowFrame, windowChrome } from './desktop/window.tsx'
+import { inApp, media } from './host.ts'
 import { player as messages } from './messages.ts'
 import { type Playback, TRANSCODE_LIMIT, usePlayback } from './playback.ts'
 import { href } from './shell.tsx'
@@ -293,7 +295,9 @@ function Preview({
   const tile = trickplayTile(manifest, seconds)
   if (!tile) return null
   const scale = 160 / tile.width
-  const sheet = `/api/v1/items/movie/${id}/trickplay/${tile.sheet}.jpg?versionId=${encodeURIComponent(versionId)}`
+  const sheet = media(
+    `/api/v1/items/movie/${id}/trickplay/${tile.sheet}.jpg?versionId=${encodeURIComponent(versionId)}`,
+  )
   return (
     <div
       className="w-40 rounded-sm border border-line-strong bg-s2 bg-no-repeat shadow-3"
@@ -451,7 +455,7 @@ function NextUpCard({
       <div className="grid grid-cols-[auto_minmax(0,1fr)] items-center gap-3">
         {next.art.backdrop ? (
           <img
-            src={next.art.backdrop}
+            src={media(next.art.backdrop)}
             alt=""
             className="aspect-still w-24 rounded-sm object-cover"
           />
@@ -567,7 +571,7 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
     const ms = navigator.mediaSession
     ms.metadata = new MediaMetadata({
       title: d.item.title,
-      artwork: d.item.art.poster ? [{ src: d.item.art.poster }] : [],
+      artwork: d.item.art.poster ? [{ src: media(d.item.art.poster) }] : [],
     })
     const v = () => p.video.current
     const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
@@ -664,6 +668,9 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
         ref={p.attach}
         playsInline
         preload="auto"
+        // in the app the subtitles come from the server's scheme, another origin, which a track
+        // loads only with CORS (https://html.spec.whatwg.org/multipage/media.html#sourcing-out-of-band-text-tracks)
+        crossOrigin={inApp ? 'anonymous' : undefined}
         onClick={p.toggle}
         className="absolute inset-0 size-full object-contain"
       >
@@ -692,6 +699,9 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
         </div>
       )}
 
+      {/* the desktop app: macOS's window buttons stay; a title bar comes and goes with the controls */}
+      {windowChrome === 'mac' && <WindowFrame />}
+
       <div
         className={cn(
           'pointer-events-none absolute inset-x-0 bottom-[16%] transition-[bottom] duration-200',
@@ -707,7 +717,15 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
           chrome ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
-        <div className="absolute inset-x-0 top-0 flex items-center gap-3 bg-[linear-gradient(rgb(0_0_0/0.7),transparent)] p-4 medium:px-8">
+        {windowChrome === 'bar' && <WindowFrame overlay />}
+        <div
+          data-tauri-drag-region
+          className={cn(
+            'absolute inset-x-0 top-0 flex items-center gap-3 bg-[linear-gradient(rgb(0_0_0/0.7),transparent)] p-4 medium:px-8',
+            windowChrome === 'bar' && 'pt-12',
+          )}
+        >
+          {windowChrome === 'mac' && <span aria-hidden className={trafficLightRoom} />}
           <button type="button" aria-label={t('back')} onClick={exit} className={glassButton}>
             <Icon name="arrow-left" size={20} />
           </button>

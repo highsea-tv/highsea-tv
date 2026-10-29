@@ -12,9 +12,16 @@
 //   bun scripts/release.ts tags 0.1.0      the image's tags, one a line, given the tags already made
 //   bun scripts/release.ts trust           production servers will trust what the release signs:
 //       the key in HIGHSEA_CATALOG_KEY_ID is a release key, and the image's seed is signed with one
+//   bun scripts/release.ts desktop-key     the desktop app's updater trusts the release key, not the
+//       development one (apps/desktop/keys/README.md)
+//   bun scripts/release.ts feed 0.1.0 <dir>   the updater's latest.json, from the signed installers
+//       in <dir> (ADR 0058)
+//
+// The desktop app carries the same version (ADR 0050's 4.4 section): prepare sets it in
+// tauri.conf.json, its Cargo.toml and Cargo.lock, and its package.json, and check reads them.
 import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
-import { join } from 'node:path'
+import { basename, join } from 'node:path'
 import {
   compareAppVersions,
   compareCatalogVersions,
@@ -31,7 +38,35 @@ const FILES = {
   server: 'apps/server/package.json',
   releases: 'catalog/indexers/releases.json',
   catalogChanges: 'catalog/indexers/CHANGES.md',
+  desktopConfig: 'apps/desktop/src-tauri/tauri.conf.json',
+  desktopCargo: 'apps/desktop/src-tauri/Cargo.toml',
+  desktopLock: 'apps/desktop/src-tauri/Cargo.lock',
+  desktopPackage: 'apps/desktop/package.json',
 }
+
+/** The desktop app's crate in Cargo.toml and Cargo.lock: its name line, then its version line. */
+const CRATE_VERSION = /(name = "highsea-desktop"\nversion = ")([^"]+)(")/
+
+/** The desktop app's version in each file that carries it, `null` where it can't be read. */
+function desktopVersions(files: Files): [string, string | null][] {
+  const json = (text: string) => {
+    try {
+      return (JSON.parse(text) as { version?: string }).version ?? null
+    } catch {
+      return null
+    }
+  }
+  return [
+    [FILES.desktopConfig, json(files.desktopConfig)],
+    [FILES.desktopCargo, files.desktopCargo.match(CRATE_VERSION)?.[2] ?? null],
+    [FILES.desktopLock, files.desktopLock.match(CRATE_VERSION)?.[2] ?? null],
+    [FILES.desktopPackage, json(files.desktopPackage)],
+  ]
+}
+
+/** Sets a JSON file's top-level `version`, keeping the rest of its text as it was. */
+const withJsonVersion = (text: string, version: string) =>
+  text.replace(/^(\s*"version":\s*")[^"]*(")/m, `$1${version}$2`)
 /** The schema's limits on a release's notes (packages/catalog's releaseSchema). */
 const NOTES = { lines: 50, length: 300 }
 const MAX_RELEASES = 20
@@ -231,6 +266,8 @@ export function problemsOf(version: string, files: Files, tags: string[]): strin
     problems.push(`${version} isn’t newer than v${newest}, the newest tag.`)
   const server = JSON.parse(files.server).version
   if (server !== version) problems.push(`apps/server is at ${server}, not ${version}.`)
+  for (const [path, v] of desktopVersions(files))
+    if (v !== version) problems.push(`${path} is at ${v ?? 'no version'}, not ${version}.`)
   const section = readChangelog(files.changelog).sections.find((s) => s.version === version)
   if (!section) problems.push(`CHANGELOG.md has no ## [${version}] section.`)
   else if (!/^\d{4}-\d{2}-\d{2}$/.test(section.date))
@@ -268,7 +305,68 @@ export function prepare(version: string, date: string, files: Files, tags: strin
     server: `${JSON.stringify(server, null, 2)}\n`,
     releases: `${JSON.stringify(kept, null, 2)}\n`,
     catalogChanges: addCatalogChange(files.catalogChanges, version, date),
+    desktopConfig: withJsonVersion(files.desktopConfig, version),
+    desktopCargo: files.desktopCargo.replace(CRATE_VERSION, `$1${version}$3`),
+    desktopLock: files.desktopLock.replace(CRATE_VERSION, `$1${version}$3`),
+    desktopPackage: withJsonVersion(files.desktopPackage, version),
   }
+}
+
+/** The development key's public half (apps/desktop/keys/development.key.pub). */
+const DESKTOP_DEV_PUBKEY = () =>
+  readFileSync(join(ROOT, 'apps/desktop/keys/development.key.pub'), 'utf8').trim()
+
+/** Why installed apps wouldn't take this release's updates as the owner's. */
+export function desktopKeyProblems(config: string, developmentKey: string): string[] {
+  const pubkey = (JSON.parse(config) as { plugins?: { updater?: { pubkey?: string } } }).plugins
+    ?.updater?.pubkey
+  if (!pubkey) return ['tauri.conf.json has no updater pubkey.']
+  if (pubkey.trim() === developmentKey)
+    return [
+      'The desktop app’s updater trusts the development key; put the release key’s public half in tauri.conf.json (apps/desktop/keys/README.md).',
+    ]
+  return []
+}
+
+/** Which updater platform an installer is for, by its name as Tauri's bundler writes it. */
+const FEED_TARGETS: [RegExp, string[]][] = [
+  // the universal app serves both Macs (https://v2.tauri.app/plugin/updater/#static-json-file)
+  [/\.app\.tar\.gz$/, ['darwin-aarch64', 'darwin-x86_64']],
+  [/_x64-setup\.exe$/, ['windows-x86_64']],
+  [/_amd64\.AppImage$/, ['linux-x86_64']],
+  [/_aarch64\.AppImage$/, ['linux-aarch64']],
+]
+
+export type Feed = {
+  version: string
+  notes: string
+  pub_date: string
+  platforms: Record<string, { signature: string; url: string }>
+}
+
+/**
+ * The updater's static `latest.json` (https://v2.tauri.app/plugin/updater/#static-json-file): for
+ * each installer with its `.sig` beside it, the platforms it serves, its signature and where the
+ * release has it.
+ */
+export function desktopFeed(
+  version: string,
+  notes: string,
+  date: string,
+  signed: Record<string, string>,
+): Feed {
+  const platforms: Feed['platforms'] = {}
+  for (const [file, signature] of Object.entries(signed)) {
+    const name = basename(file)
+    const targets = FEED_TARGETS.find(([pattern]) => pattern.test(name))?.[1] ?? []
+    for (const t of targets)
+      platforms[t] = {
+        signature: signature.trim(),
+        url: `${REPOSITORY}/releases/download/v${version}/${encodeURIComponent(name)}`,
+      }
+  }
+  if (!Object.keys(platforms).length) throw new Error('No signed installer for the updater.')
+  return { version, notes, pub_date: `${date}T00:00:00Z`, platforms }
 }
 
 function readFiles(): Files {
@@ -279,12 +377,7 @@ function readFiles(): Files {
       return ''
     }
   }
-  return {
-    changelog: read(FILES.changelog),
-    server: read(FILES.server),
-    releases: read(FILES.releases),
-    catalogChanges: read(FILES.catalogChanges),
-  }
+  return Object.fromEntries(Object.entries(FILES).map(([key, path]) => [key, read(path)])) as Files
 }
 
 function gitTags(): string[] {
@@ -336,11 +429,28 @@ if (import.meta.main) {
       for (const p of problems) console.error(p)
       if (problems.length) process.exit(1)
       console.log('Production servers will trust the catalog and the seed.')
+    } else if (command === 'desktop-key') {
+      const problems = desktopKeyProblems(readFiles().desktopConfig, DESKTOP_DEV_PUBKEY())
+      for (const p of problems) console.error(p)
+      if (problems.length) process.exit(1)
+      console.log('Installed apps will take this release’s updates.')
+    } else if (command === 'feed') {
+      const dir = process.argv[4]
+      if (!dir) throw new Error('Usage: bun scripts/release.ts feed <version> <dir>')
+      const section = readChangelog(readFiles().changelog).sections.find(
+        (s) => s.version === version,
+      )
+      if (!section) throw new Error(`CHANGELOG.md has no ## [${version}] section.`)
+      const signed: Record<string, string> = {}
+      for (const f of readdirSync(dir, { recursive: true, encoding: 'utf8' }))
+        if (f.endsWith('.sig')) signed[f.slice(0, -4)] = readFileSync(join(dir, f), 'utf8')
+      const feed = desktopFeed(version, section.body, section.date, signed)
+      console.log(JSON.stringify(feed, null, 2))
     } else if (command === 'tags') {
       console.log(imageTags(version, taggedVersions(gitTags())).join('\n'))
     } else {
       console.error(
-        'Usage: bun scripts/release.ts prepare <version> [--date YYYY-MM-DD], check|notes|tags <version>, or trust',
+        'Usage: bun scripts/release.ts prepare <version> [--date YYYY-MM-DD], check|notes|tags <version>, feed <version> <dir>, trust, or desktop-key',
       )
       process.exit(2)
     }

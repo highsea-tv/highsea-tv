@@ -132,7 +132,7 @@ const chromium: DeviceProfile = {
   maxBitrate: null,
 }
 
-export const BUILT_IN: readonly DeviceProfile[] = [
+const BUILT_IN_WEB: readonly DeviceProfile[] = [
   chromium,
   {
     ...chromium,
@@ -160,6 +160,39 @@ export const BUILT_IN: readonly DeviceProfile[] = [
     maxBitrate: null,
   },
 ]
+
+// The desktop app's three webviews (4.4a; ADR 0052's dated section), per Tauri's webview versions
+// (https://v2.tauri.app/reference/webview-versions/). WKWebView is Safari's engine, with its
+// native HLS, `hvc1` HEVC and AC-3; its user agent doesn't name Safari, so the app names the
+// profile itself. WebView2 is Edge's Chromium, and Microsoft lists no media feature among its
+// differences from Edge (https://learn.microsoft.com/en-us/microsoft-edge/webview2/concepts/browser-features),
+// so it plays as Chrome on Windows does. WebKitGTK plays what the machine's GStreamer plugins
+// decode, which its documentation doesn't list; the Linux packages depend on the good, bad and
+// libav sets, so this is H.264, VP8 and VP9 at 8 bits with the common audio, and the report says
+// the rest.
+const desktop: DeviceProfile[] = [
+  {
+    ...(BUILT_IN_WEB.find((p) => p.id === 'web-safari') as DeviceProfile),
+    id: 'desktop-macos',
+    name: 'highsea for Mac',
+  },
+  { ...chromium, id: 'desktop-windows', name: 'highsea for Windows' },
+  {
+    id: 'desktop-linux',
+    name: 'highsea for Linux',
+    containers: ['mp4', 'webm'],
+    video: [h264, vp8, { codec: 'vp9', profiles: ['profile 0'], bitDepths: [8] }],
+    hdr: noHdr,
+    audio: [...webAudio, { codec: 'opus', maxChannels: 8 }, { codec: 'vorbis', maxChannels: 8 }],
+    passthrough: [],
+    subtitles: ['webvtt'],
+    audioTracks: false,
+    hls: { native: false, supported: true },
+    maxBitrate: null,
+  },
+]
+
+export const BUILT_IN: readonly DeviceProfile[] = [...BUILT_IN_WEB, ...desktop]
 
 export const builtIn = (id: string): DeviceProfile | null =>
   BUILT_IN.find((p) => p.id === id) ?? null

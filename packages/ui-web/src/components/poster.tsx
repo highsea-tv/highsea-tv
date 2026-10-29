@@ -159,7 +159,10 @@ export function Poster({
     <div className={cn('group/poster relative min-w-0 hover:z-10', className)}>
       {target}
       {actions && (
-        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-end gap-1 p-2 opacity-0 transition-tint group-focus-within/poster:pointer-events-auto group-focus-within/poster:opacity-100 group-hover/poster:pointer-events-auto group-hover/poster:opacity-100">
+        // each action fades itself: an ancestor with opacity below 1 is a backdrop root, so a glass
+        // action would blur nothing until the fade ended (Filter Effects 2 § 3.1, Backdrop Root).
+        // The row lets clicks through to the poster; only the actions take them.
+        <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-end gap-1 p-2 *:opacity-0 *:transition-tint group-focus-within/poster:*:pointer-events-auto group-focus-within/poster:*:opacity-100 group-hover/poster:*:pointer-events-auto group-hover/poster:*:opacity-100">
           {actions}
         </div>
       )}

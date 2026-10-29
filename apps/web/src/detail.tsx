@@ -27,6 +27,7 @@ import {
 } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
 import { PosterRow } from './home.tsx'
+import { media } from './host.ts'
 import { detail as messages } from './messages.ts'
 import { gutter, href, useFormat } from './shell.tsx'
 
@@ -175,7 +176,7 @@ export function WebDetail() {
       >
         {m.art.backdrop && (
           <img
-            src={m.art.backdrop}
+            src={media(m.art.backdrop)}
             alt=""
             className="-z-10 absolute inset-0 size-full object-cover"
           />
@@ -260,7 +261,7 @@ export function WebDetail() {
                 <li key={c.id}>
                   <Poster
                     title={c.name}
-                    src={c.photo ?? undefined}
+                    src={media(c.photo) ?? undefined}
                     showTitle
                     caption={c.character ?? undefined}
                   />

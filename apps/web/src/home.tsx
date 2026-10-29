@@ -16,6 +16,7 @@ import {
   Skeleton,
 } from '@highsea-tv/ui-web'
 import { type ReactNode, useState } from 'react'
+import { media } from './host.ts'
 import { home as messages } from './messages.ts'
 import { Banners, gutter, href, useFormat } from './shell.tsx'
 
@@ -51,7 +52,7 @@ export function PosterRow({
         <Poster
           key={m.id}
           title={m.title}
-          src={m.art.poster ?? undefined}
+          src={media(m.art.poster) ?? undefined}
           href={href(`/movies/${m.id}`)}
           progress={m.progress !== null ? m.progress * 100 : undefined}
           actions={
@@ -80,7 +81,7 @@ function ContinueRow({ section, title }: { section: HomeSection; title: string }
         <Poster
           key={m.id}
           title={m.title}
-          src={m.art.backdrop ?? m.art.poster ?? undefined}
+          src={media(m.art.backdrop ?? m.art.poster) ?? undefined}
           aspect="still"
           href={href(`/play/${m.id}`)}
           progress={(m.progress ?? 0) * 100}
@@ -105,7 +106,7 @@ function SpotlightRow({ section, title }: { section: HomeSection; title: string 
         >
           {m.art.backdrop ? (
             <img
-              src={m.art.backdrop}
+              src={media(m.art.backdrop)}
               alt=""
               loading="lazy"
               className="aspect-still w-full rounded-md object-cover"
@@ -206,7 +207,7 @@ function Hero({
         item={{
           id: String(item.id),
           title: item.title,
-          backdrop: item.art.backdrop ?? undefined,
+          backdrop: media(item.art.backdrop) ?? undefined,
           eyebrow: hero.title ?? undefined,
           meta: <span>{f.meta(item)}</span>,
           synopsis: item.tagline ?? item.synopsis,

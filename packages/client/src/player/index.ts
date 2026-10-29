@@ -265,10 +265,22 @@ export function trickplayTile(m: TrickplayManifest, seconds: number): TrickplayT
 // strings RFC 6381 and each codec's MP4 or WebM binding use
 // (https://developer.mozilla.org/en-US/docs/Web/API/MediaSource/isTypeSupported_static).
 
-export type Base = 'web-chromium' | 'web-chromium-macos' | 'web-firefox' | 'web-safari'
+export type Base =
+  | 'web-chromium'
+  | 'web-chromium-macos'
+  | 'web-firefox'
+  | 'web-safari'
+  | 'desktop-macos'
+  | 'desktop-windows'
+  | 'desktop-linux'
 
-/** The built-in profile a browser starts from, from its user agent. */
-export function baseProfile(userAgent: string): Base {
+/**
+ * The built-in profile a browser starts from, from its user agent. The desktop app names its
+ * webview's (`app`), since WKWebView's user agent doesn't say Safari.
+ */
+export function baseProfile(userAgent: string, app?: 'mac' | 'windows' | 'linux'): Base {
+  if (app)
+    return app === 'mac' ? 'desktop-macos' : app === 'windows' ? 'desktop-windows' : 'desktop-linux'
   if (/Firefox\//.test(userAgent)) return 'web-firefox'
   if (/Safari\//.test(userAgent) && !/Chrom(e|ium)\//.test(userAgent)) return 'web-safari'
   return /Macintosh/.test(userAgent) ? 'web-chromium-macos' : 'web-chromium'
@@ -300,7 +312,7 @@ export function deviceReport(
       profiles: hevc,
       bitDepths: hevc.includes('main 10') ? [8, 10] : [8],
       // Safari plays HEVC in MP4 only with the `hvc1` sample entry (Apple's HLS authoring spec)
-      ...(base === 'web-safari' ? { tag: 'hvc1' } : {}),
+      ...(base === 'web-safari' || base === 'desktop-macos' ? { tag: 'hvc1' } : {}),
     })
   if (can('video/webm; codecs="vp8"')) video.push({ codec: 'vp8', bitDepths: [8] })
   if (can('video/webm; codecs="vp09.00.10.08"')) {

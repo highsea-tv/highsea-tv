@@ -49,3 +49,14 @@ The player is built on the browser's own `<video>`, with what each browser can p
 - **Tests:** the player's logic is a pure reducer in `@highsea-tv/client/player` (ADR 0055), tested without a DOM; the screen against a fake API in happy-dom; and the real thing by `scripts/sweeps/playback.ts`, which plays an MP4 directly and an MKV as HLS in Playwright's Chromium and Firefox against the seeded production build. Safari is tried by hand at each review.
 
 The web part is Accepted: the owner signed off 4.2b on 2026-10-28. Desktop and the native apps stay Proposed until 4.4 and 4.5.
+
+## 2026-10-29: the desktop app as built (checkpoint 4.4a)
+
+Desktop is built as decided, with what building it settled in [ADR 0058](0058-desktop-app.md):
+
+- `apps/web` builds a second time for the app (`vite build --mode desktop`, at `/` in `dist-desktop/`), and the page reaches the server through the app's Rust side rather than the same origin.
+- Windows' installer is NSIS only, for the current user, with no MSI. Linux has `.rpm` as well as the AppImage and `.deb`, and the Mac app is universal, one build for Apple silicon and Intel.
+- The updater is Tauri's, with highsea's own minisign key, the release key being the owner's to make. The app's version is the release's, in `tauri.conf.json`, `Cargo.toml` and `apps/desktop/package.json`, set by `scripts/release.ts prepare` ([ADR 0050](0050-release-and-versioning.md)'s 4.4 section).
+- Downloads to disk come in 4.4b; the file system plugin is chosen there.
+
+The desktop part is Accepted: the owner signed off 4.4a on 2026-10-29.

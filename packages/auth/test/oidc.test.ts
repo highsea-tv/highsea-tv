@@ -5,7 +5,7 @@ import { describe, expect, test } from 'bun:test'
 import { createHash, generateKeyPairSync, randomBytes, sign } from 'node:crypto'
 import { isAppError } from '@highsea-tv/core'
 import { schema } from '@highsea-tv/db'
-import type { Fetch } from '../src/index.ts'
+import type { Callback, Fetch, Issued } from '../src/index.ts'
 import { meta, withOwner } from './helpers.ts'
 
 const ISSUER = 'https://auth.example.net/application/o/highsea/'
@@ -117,6 +117,13 @@ async function configured() {
   return { ...env, provider }
 }
 
+/** The admin's sign-in: the callback's session, not an app's code. */
+async function session(pending: Promise<Callback>): Promise<Issued> {
+  const out = await pending
+  if (out.kind !== 'session') throw new Error(`expected a session, got ${out.kind}`)
+  return out.issued
+}
+
 async function reason(fn: () => unknown): Promise<string | undefined> {
   try {
     await fn()
@@ -144,7 +151,9 @@ describe('single sign-on', () => {
     )
     const token = invite.link.split('/').pop() as string
     let url = await env.auth.oidc.start({ invite: token })
-    const joined = await env.auth.oidc.callback(env.provider.authorize(url, 'mara-sub'), meta)
+    const joined = await session(
+      env.auth.oidc.callback(env.provider.authorize(url, 'mara-sub'), meta),
+    )
     expect(joined.session.user).toMatchObject({
       id: invite.user.id,
       invited: false,
@@ -157,7 +166,9 @@ describe('single sign-on', () => {
     // the invite is used up
     expect(await reason(() => env.auth.links.info(token))).toBe('link-expired')
     url = await env.auth.oidc.start()
-    const again = await env.auth.oidc.callback(env.provider.authorize(url, 'mara-sub'), meta)
+    const again = await session(
+      env.auth.oidc.callback(env.provider.authorize(url, 'mara-sub'), meta),
+    )
     expect(again.session.user.id).toBe(invite.user.id)
     // discovery ran once
     expect(env.provider.requests.filter((p) => p.endsWith('openid-configuration'))).toHaveLength(1)
@@ -198,6 +209,77 @@ describe('single sign-on', () => {
     expect(
       await reason(() => env.auth.oidc.callback(`?error=access_denied&state=${state}`, meta)),
     ).toBe('oidc-denied')
+  })
+
+  test('an app signs in through the browser and exchanges its code with its verifier', async () => {
+    const env = await configured()
+    const invite = env.auth.users.invite(
+      { displayName: 'Mara', email: null, role: 'user', libraries: 'all' },
+      env.actor,
+      meta,
+    )
+    const joined = await env.auth.oidc.start({ invite: invite.link.split('/').pop() as string })
+    await env.auth.oidc.callback(env.provider.authorize(joined, 'mara-sub'), meta)
+
+    // the app's verifier and its S256 challenge (RFC 7636 appendix B's)
+    const verifier = 'dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk'
+    const challenge = 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM'
+    const device = { name: 'Mara’s MacBook', client: 'desktop' as const, appVersion: '0.3.0' }
+    const url = await env.auth.oidc.start({ challenge })
+    const out = await env.auth.oidc.callback(env.provider.authorize(url, 'mara-sub'), meta)
+    if (out.kind !== 'app') throw new Error('expected a code for the app')
+    // no session until the app exchanges the code
+    const before = env.db.select().from(schema.devices).all().length
+
+    expect(
+      await reason(() =>
+        env.auth.oidc.exchange({ code: out.code, verifier: 'x'.repeat(43), device }, meta),
+      ),
+    ).toBe('challenge-expired')
+    // a wrong verifier used the code up
+    expect(
+      await reason(() => env.auth.oidc.exchange({ code: out.code, verifier, device }, meta)),
+    ).toBe('challenge-expired')
+    expect(env.db.select().from(schema.devices).all()).toHaveLength(before)
+
+    const url2 = await env.auth.oidc.start({ challenge })
+    const out2 = await env.auth.oidc.callback(env.provider.authorize(url2, 'mara-sub'), meta)
+    if (out2.kind !== 'app') throw new Error('expected a code for the app')
+    const issued = env.auth.oidc.exchange({ code: out2.code, verifier, device }, meta)
+    expect(issued.secret.startsWith('hst_')).toBe(true)
+    expect(issued.session).toMatchObject({ method: 'oidc', expiresAt: null })
+    expect(
+      env.db
+        .select()
+        .from(schema.devices)
+        .all()
+        .find((d) => d.id === issued.session.deviceId),
+    ).toMatchObject({
+      kind: 'token',
+      client: 'desktop',
+      name: 'Mara’s MacBook',
+      appVersion: '0.3.0',
+    })
+    expect(
+      await reason(() => env.auth.oidc.exchange({ code: out2.code, verifier, device }, meta)),
+    ).toBe('challenge-expired')
+  })
+
+  test('an app’s failed sign-in says it was the app’s', async () => {
+    const env = await configured()
+    const url = await env.auth.oidc.start({
+      challenge: 'E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM',
+    })
+    try {
+      await env.auth.oidc.callback(env.provider.authorize(url, 'nobody'), meta)
+      throw new Error('expected a failure')
+    } catch (e) {
+      expect(isAppError(e) && e.details).toEqual({ reason: 'oidc-unknown', app: true })
+    }
+    // a challenge that isn't S256 doesn't start
+    await expect(env.auth.oidc.start({ challenge: 'short' })).rejects.toMatchObject({
+      code: 'invalid',
+    })
   })
 
   test('not offered until it’s set up', async () => {

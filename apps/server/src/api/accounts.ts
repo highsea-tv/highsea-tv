@@ -1,7 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // People and access over HTTP: thin handlers over @highsea-tv/auth (ADR 0023, 0024, 0025).
 import { routes } from '@highsea-tv/api-contract'
-import { CALLBACK_PATH, type Issued, SECRET_PREFIX, type SignInOutcome } from '@highsea-tv/auth'
+import {
+  APP_RETURN,
+  CALLBACK_PATH,
+  type Issued,
+  SECRET_PREFIX,
+  type SignInOutcome,
+} from '@highsea-tv/auth'
 import { AppError } from '@highsea-tv/core'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { AuthenticationResponseJSON, RegistrationResponseJSON } from '@simplewebauthn/server'
@@ -98,24 +104,35 @@ export function registerAccounts(app: OpenAPIHono<Env>) {
 
   // a redirect, not JSON: served directly and listed in the document from the contract
   app.get(routes.auth.oidcStart.path, async (c) => {
-    const invite = c.req.query('invite')
-    const url = await auth(c).oidc.start({ invite })
+    const query = routes.auth.oidcStart.request.query.safeParse(c.req.query())
+    if (!query.success) throw new AppError('invalid', 'That sign-in can’t start.')
+    const { invite, app: forApp, challenge } = query.data
+    if (forApp && !challenge) throw new AppError('invalid', 'An app’s sign-in needs a challenge.')
+    const url = await auth(c).oidc.start({ invite, challenge: forApp ? challenge : undefined })
     return c.redirect(url.href, 302)
   })
   app.openAPIRegistry.registerPath(routes.auth.oidcStart)
 
   app.get(CALLBACK_PATH, async (c) => {
     try {
-      const issued = await auth(c).oidc.callback(new URL(c.req.url).search, c.get('meta'))
-      setSession(c, issued.secret, issued.session.expiresAt)
+      const out = await auth(c).oidc.callback(new URL(c.req.url).search, c.get('meta'))
+      // an app's sign-in goes back to the app, by its scheme (RFC 8252 § 7.1)
+      if (out.kind === 'app')
+        return c.redirect(`${APP_RETURN}?code=${encodeURIComponent(out.code)}`, 302)
+      setSession(c, out.issued.secret, out.issued.session.expiresAt)
       return c.redirect('/', 302)
     } catch (e) {
-      const reason =
-        e instanceof AppError ? ((e.details as { reason?: string })?.reason ?? e.code) : 'internal'
+      const details = e instanceof AppError ? (e.details as { reason?: string; app?: boolean }) : {}
+      const reason = e instanceof AppError ? (details?.reason ?? e.code) : 'internal'
+      if (details?.app) return c.redirect(`${APP_RETURN}?error=${encodeURIComponent(reason)}`, 302)
       return c.redirect(`/login?error=${encodeURIComponent(reason)}`, 302)
     }
   })
   app.openAPIRegistry.registerPath(routes.auth.oidcCallback)
+
+  app.openapi(routes.auth.oidcExchange, (c) =>
+    c.json(finish(c, signedIn(auth(c).oidc.exchange(c.req.valid('json'), c.get('meta')))), 200),
+  )
 
   // ---------------------------------------------------------------- TV pairing
 

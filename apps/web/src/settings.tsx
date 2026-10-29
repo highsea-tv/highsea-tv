@@ -26,13 +26,18 @@ import {
 } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import { useParams } from 'wouter'
+import { useDesktop } from './desktop/root.tsx'
+import { restartToUpdate, useAppUpdate } from './desktop/updates.ts'
+import { desktopOs } from './desktop/window.tsx'
 import {
+  desktop as desktopMessages,
   home as homeMessages,
   settings as messages,
   profile as profileMessages,
+  updates as updateMessages,
 } from './messages.ts'
 import { CustomThemeStyles } from './prefs.tsx'
-import { gutter, href, useServerName, useSignedIn, useSignOut } from './shell.tsx'
+import { gutter, href, useServerAddress, useServerName, useSignedIn, useSignOut } from './shell.tsx'
 
 const SECTIONS = [
   { id: 'appearance', icon: 'palette' },
@@ -274,10 +279,74 @@ function HomeSection() {
   )
 }
 
+/** The desktop app's servers (the prototype's Servers section with `?app=desktop`). */
+function AppServersSection() {
+  const t = useT(messages)
+  const d = useT(desktopMessages)
+  const locale = useLocale()
+  const app = useDesktop()
+  const name = useServerName()
+  const { away } = useSignedIn()
+  const signOut = useSignOut()
+  if (!app) return null
+  const now = Date.now()
+  return (
+    <div className="grid gap-3">
+      <ul aria-label={t('section.servers')} className="grid gap-2">
+        {app.servers.map((k) => {
+          const current = k.id === app.current.id
+          return (
+            <Row key={k.id}>
+              <Mark size={26} />
+              <span className="grid min-w-0 flex-1">
+                <span className="truncate text-text text-ui">{k.name}</span>
+                <span className="truncate text-caption text-text-3">
+                  {current
+                    ? d(away ? 'remoteLine' : 'localLine', {
+                        address: new URL(app.current.base).host,
+                      })
+                    : d('otherLine', {
+                        signedIn: String(k.signedIn),
+                        when: relative(new Date(k.lastSeen * 1000).toISOString(), now, locale),
+                      })}
+                </span>
+              </span>
+              {current ? (
+                <Badge tone="accent">{t('inUse')}</Badge>
+              ) : (
+                <Button size="sm" onClick={() => void app.switchTo(k.id)}>
+                  {k.signedIn ? d('switch') : d('signIn')}
+                </Button>
+              )}
+            </Row>
+          )
+        })}
+      </ul>
+      <div className="flex flex-wrap gap-2">
+        <Button icon="add" className={wraps} onClick={app.choose}>
+          {d('addServer')}
+        </Button>
+        <Button
+          variant="ghost"
+          icon="sign-out"
+          className={wraps}
+          loading={signOut.pending}
+          onClick={signOut.run}
+        >
+          {t('signOut', { name })}
+        </Button>
+      </div>
+      <p className="text-caption text-text-3">{d('eachKeeps')}</p>
+    </div>
+  )
+}
+
 function ServersSection() {
   const t = useT(messages)
   const name = useServerName()
+  const address = useServerAddress()
   const signOut = useSignOut()
+  if (useDesktop()) return <AppServersSection />
   return (
     <div className="grid gap-3">
       <ul aria-label={t('section.servers')} className="grid gap-2">
@@ -286,7 +355,7 @@ function ServersSection() {
           <span className="grid min-w-0 flex-1">
             <span className="truncate text-text text-ui">{name}</span>
             <span className="truncate text-caption text-text-3">
-              {t('serverDetail', { address: window.location.host })}
+              {t('serverDetail', { address })}
             </span>
           </span>
           <Badge tone="accent">{t('inUse')}</Badge>
@@ -362,17 +431,52 @@ function DevicesSection() {
   )
 }
 
+/** The desktop app's own updates (desktop-app.md › Updates): checked by itself, used on restart. */
+/** The computers' own names, which aren't translated. */
+const OS_NAMES = { mac: 'Mac', windows: 'Windows', linux: 'Linux' } as const
+
+function AppUpdates() {
+  const u = useT(updateMessages)
+  const locale = useLocale()
+  const update = useAppUpdate()
+  if (update.ready)
+    return (
+      <div className="grid justify-items-start gap-2 rounded-md border border-line bg-s1 p-3">
+        <p className="text-text text-ui">{u('ready', { version: update.ready })}</p>
+        <Button size="sm" variant="primary" icon="refresh" onClick={() => void restartToUpdate()}>
+          {u('restart')}
+        </Button>
+      </div>
+    )
+  return (
+    <p className="text-caption text-text-3">
+      {update.checkedAt
+        ? u('upToDate', {
+            when: relative(new Date(update.checkedAt).toISOString(), Date.now(), locale),
+          })
+        : u('notChecked')}
+    </p>
+  )
+}
+
 function AboutSection() {
   const t = useT(messages)
+  const u = useT(updateMessages)
   const server = useServer()
   const name = useServerName()
+  const app = useDesktop()
+  const update = useAppUpdate()
   const version = server.data?.version ?? ''
   return (
     <div className="grid gap-4">
       <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-6 gap-y-2 text-ui [overflow-wrap:anywhere]">
         <dt className="text-text-3">{t('thisApp')}</dt>
         {/* the web app is served by its server, so it's always the server's version */}
-        <dd className="font-mono text-figure text-text">highsea web {version}</dd>
+        <dd className="font-mono text-figure text-text">
+          {app
+            ? u('thisApp', { version: update.current ?? '', os: OS_NAMES[desktopOs] })
+            : `highsea web ${version}`}
+        </dd>
         <dt className="text-text-3">{t('server')}</dt>
         <dd className="font-mono text-figure text-text">
           {name} {version}
@@ -380,6 +484,7 @@ function AboutSection() {
         <dt className="text-text-3">{t('licence')}</dt>
         <dd className="text-text">{t('free')}</dd>
       </dl>
+      {app && <AppUpdates />}
       <div className="flex flex-wrap gap-2">
         <Button size="sm" icon="external" asChild>
           <a href="https://github.com/highsea-tv/highsea-tv" target="_blank" rel="noreferrer">
@@ -540,6 +645,21 @@ export function WebProfile() {
 /** Downloads (C8): a browser can't keep films; the desktop app can. */
 export function WebDownloads() {
   const t = useT(profileMessages)
+  // the app's own Downloads (the prototype's DesktopDownloads) comes with downloading, in 4.4b
+  if (useDesktop())
+    return (
+      <main
+        className={cn(
+          'mx-auto w-full grid max-w-[1680px] grid-cols-[minmax(0,1fr)] gap-6 pt-6 pb-16',
+          gutter,
+        )}
+      >
+        <h1 className="text-display">{t('downloads')}</h1>
+        <EmptyState icon="download" title={t('appDownloadsTitle')}>
+          {t('appDownloadsBody')}
+        </EmptyState>
+      </main>
+    )
   return (
     <main
       className={cn(

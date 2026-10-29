@@ -321,10 +321,22 @@ export const auth = {
     tags: ['Auth'],
     summary: 'Sign in with the single sign-on provider',
     description:
-      'Redirects to the provider. With `invite`, the provider identity is linked to that invite’s account.',
+      'Redirects to the provider. With `invite`, the provider identity is linked to that invite’s account. An app sends `app` and the S256 `challenge` of a PKCE verifier it keeps (RFC 7636): the callback then sends the browser to `highsea://oidc` with a one-time code, which the app exchanges at `oidc/exchange`.',
     ...access('public'),
-    request: { query: z.object({ invite: z.string().optional() }) },
-    responses: { 302: { description: 'To the provider' }, ...errors('forbidden', 'unavailable') },
+    request: {
+      query: z.object({
+        invite: z.string().optional(),
+        app: ClientType.exclude(['admin', 'web']).optional(),
+        challenge: z
+          .string()
+          .regex(/^[A-Za-z0-9_-]{43}$/)
+          .optional(),
+      }),
+    },
+    responses: {
+      302: { description: 'To the provider' },
+      ...errors('invalid', 'forbidden', 'unavailable'),
+    },
   }),
   oidcCallback: createRoute({
     method: 'get',
@@ -337,7 +349,34 @@ export const auth = {
     request: {
       query: z.object({ state: z.string().optional(), code: z.string().optional() }).passthrough(),
     },
-    responses: { 302: { description: 'To the admin, or back to sign-in' } },
+    responses: {
+      302: {
+        description:
+          'To the admin, or back to sign-in; for an app, to `highsea://oidc` with `?code=` or `?error=`',
+      },
+    },
+  }),
+  oidcExchange: createRoute({
+    method: 'post',
+    path: `${AUTH}/oidc/exchange`,
+    tags: ['Auth'],
+    summary: 'An app exchanges its single sign-on code for a device token',
+    description:
+      'The code from `highsea://oidc`, with the PKCE verifier whose challenge started the sign-in. A code works once, for two minutes. Error: 401 `unauthorized` with reason `challenge-expired`.',
+    ...access('public'),
+    request: {
+      ...body(
+        z.object({
+          code: z.string().max(200),
+          verifier: z.string().min(43).max(128),
+          device: DeviceInput,
+        }),
+      ),
+    },
+    responses: {
+      200: json(SignInResult, 'Signed in, with the device token'),
+      ...errors('invalid', 'unauthorized'),
+    },
   }),
   startPairing: createRoute({
     method: 'post',

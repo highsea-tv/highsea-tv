@@ -220,6 +220,7 @@ export const CHALLENGE_KINDS = [
   'passkey-sign-in',
   'passkey-register',
   'oidc',
+  'oidc-app',
   'pairing',
 ] as const
 export type ChallengeKind = (typeof CHALLENGE_KINDS)[number]

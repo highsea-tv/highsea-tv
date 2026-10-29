@@ -4,6 +4,7 @@
 // their call to action, and a collection's poster or mosaic with its tile.
 import { Badge, Button, cn, Icon } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
+import { media } from './host.ts'
 
 const TOKENS = /(\*\*[^*]+\*\*|_[^_]+_|\[[^\]]+\]\([^)\s]+\))/
 
@@ -72,7 +73,7 @@ export function CollectionArt({
     className,
   )
   if (poster || mosaic.length < 2) {
-    const src = poster ?? mosaic[0]
+    const src = media(poster ?? mosaic[0])
     return (
       <div className={frame}>
         {src && <img src={src} alt="" className="absolute inset-0 size-full object-cover" />}
@@ -84,7 +85,7 @@ export function CollectionArt({
       {[0, 1, 2, 3].map((i) => (
         <img
           key={i}
-          src={mosaic[i % mosaic.length]}
+          src={media(mosaic[i % mosaic.length])}
           alt=""
           className="size-full min-h-0 object-cover"
         />

@@ -27,11 +27,11 @@ The same six sections everywhere: **Theme**, **Sounds**, **Home screen**, **Serv
 | **Home screen** | "The featured hero stays on top. Your order follows you to every device." · each row with a drag handle (drag it, or Space, Up and Down, Space) and a switch (shown or hidden); **Use the server's order** (TV: OK toggles a row; Up and Down buttons move it) |
 | **Servers** | Each known server (in use, or signed in or out, with how it's reached), **Switch** or **Sign in**, **Add a server**, **Sign out of Harbor** |
 | **Your devices** | This person's devices ("This device", or last used), with **Sign out** |
-| **About** | This app's version, the server and its version, the licence (AGPL-3.0); open-source licences and send diagnostics (not in the prototype) |
+| **About** | This app's version, the server and its version, the licence (AGPL-3.0); open-source licences and send diagnostics (not in the prototype). In a browser, **Get the apps**; in the desktop app, its updates ([desktop-app.md](desktop-app.md)) |
 
 - **Profile (web):** the person, Account (server, two-step verification, libraries; Change password and Set up a passkey not in the prototype), and links to Settings, Your devices and Downloads.
 - **Offline (mobile)** and **Downloads (desktop app):** the list of downloads ([below](#offline)).
-- **Downloads (web, in a browser):** "Downloads live in the desktop app": a browser can't keep films; the desktop app can.
+- **Downloads (web, in a browser):** "Downloads live in the desktop app": a browser can't keep films; the desktop app can. **Get the desktop app** opens Get the apps ([desktop-app.md](desktop-app.md#get-the-apps)).
 
 ### Offline
 
@@ -51,7 +51,8 @@ Checkpoint 4.0b filled in what Phase 2 left at reference fidelity. Mobile's Offl
   | Expired | an **Expired** badge, "Connect to Harbor to keep watching it." | **Remove** |
 
   Remove says "{title} removed · It still plays from Harbor."
-- **Settings under the list:** Quality for new downloads (Original, High · 1080p, Data saver · 720p; "Higher looks better and takes more room."), then on a phone **Download on Wi-Fi only**, and in the desktop app **Kept in** (the folder, with **Change**; not in the prototype).
+- **Settings under the list:** Quality for new downloads (Original, High · 1080p, Data saver · 720p; "Higher looks better and takes more room."), then on a phone **Download on Wi-Fi only**, and in the desktop app **Kept in** (below).
+- **Kept in** (the desktop app, prototyped at checkpoint 4.4a): the folder, in mono, with **Change** and "New downloads go here. Changing it moves what's already downloaded." It starts in the OS's videos folder (`~/Movies/highsea`, `C:\Users\{you}\Videos\highsea`, `~/Videos/highsea`). **Change** opens the system's folder picker (in the prototype it picks a folder on another drive at once). With nothing downloaded, the folder just changes ("New downloads go here"). Otherwise a dialog asks "Move your downloads?": "Your {n} downloaded movies ({size}) move to {folder}. Make sure it has room. They keep playing while they move.", **Move downloads** and **Cancel**. While they move, a bar and "Moving {n} movies to {folder} · {done} of {size}. They play from where they are until they've moved."; then "Downloads moved".
 - **Download on the item page:** [client-detail.md › Download](client-detail.md#download).
 - **The desktop app** has its own Downloads page in place of the browser's "Downloads live in the desktop app"; the same address shows one or the other.
 - **Expiry:** a download plays offline for 30 days after the device last saw its server; seeing it again renews it. An expired download stays on the device until it does.

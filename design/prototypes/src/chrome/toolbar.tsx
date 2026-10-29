@@ -3,8 +3,11 @@
 import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
 import { flowFor, flows } from '../flows.ts'
 import {
+  appUpdates,
   connections,
   dataStates,
+  desktopOses,
+  localNetworks,
   type Platform,
   type ProtoState,
   platforms,
@@ -260,6 +263,61 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
             </select>
           )}
         </Group>
+      )}
+
+      {platform === 'web' && state.app === 'desktop' && (
+        <>
+          <Group label="OS">
+            {(id) => (
+              <select
+                id={id}
+                className={control}
+                value={state.os}
+                onChange={(e) => update('os', e.target.value as ProtoState['os'])}
+              >
+                {desktopOses.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Group>
+          <Group label="Update">
+            {(id) => (
+              <select
+                id={id}
+                className={control}
+                value={state.update}
+                onChange={(e) => update('update', e.target.value as ProtoState['update'])}
+              >
+                {appUpdates.map((x) => (
+                  <option key={x.id} value={x.id}>
+                    {x.label}
+                  </option>
+                ))}
+              </select>
+            )}
+          </Group>
+          {state.os === 'mac' && /\/connect/.test(path) && (
+            <Group label="Local network">
+              {(id) => (
+                <select
+                  id={id}
+                  className={control}
+                  value={state.lan}
+                  onChange={(e) => update('lan', e.target.value as ProtoState['lan'])}
+                >
+                  {localNetworks.map((x) => (
+                    <option key={x.id} value={x.id}>
+                      {x.label}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </Group>
+          )}
+        </>
       )}
 
       {platform !== 'admin' && /\/play\//.test(path) && (

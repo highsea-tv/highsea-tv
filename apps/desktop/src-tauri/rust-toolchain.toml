@@ -1,0 +1,6 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The one Rust highsea's desktop app builds with, as .nvmrc pins Node (ADR 0058):
+# https://rust-lang.github.io/rustup/overrides.html#the-toolchain-file
+[toolchain]
+channel = "1.98.1"
+components = ["clippy", "rustfmt"]

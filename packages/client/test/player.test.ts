@@ -283,6 +283,20 @@ describe('the browser’s report', () => {
     ).toBe('web-chromium')
   })
 
+  test('the desktop app names its webview’s, whatever the user agent says', () => {
+    // WKWebView's user agent has no Safari token
+    const wk =
+      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko)'
+    expect(baseProfile(wk)).toBe('web-chromium-macos')
+    expect(baseProfile(wk, 'mac')).toBe('desktop-macos')
+    expect(baseProfile('Mozilla/5.0 (Windows NT 10.0) Chrome/141.0 Edg/141.0', 'windows')).toBe(
+      'desktop-windows',
+    )
+    expect(baseProfile('Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/605.1.15', 'linux')).toBe(
+      'desktop-linux',
+    )
+  })
+
   test('only what the browser says it decodes', () => {
     const yes = new Set([
       'video/mp4; codecs="avc1.640028"',

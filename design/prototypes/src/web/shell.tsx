@@ -20,6 +20,7 @@ import {
   MenuLabel,
   MenuSeparator,
   MenuTrigger,
+  PageScrollbar,
   toast,
 } from '@highsea-tv/ui-web'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
@@ -27,12 +28,16 @@ import { useLocation } from 'wouter'
 import {
   clientHref,
   useAnnouncements,
+  useAppUpdateReady,
   useConnection,
   useKnownServers,
   useServer,
 } from '../client/data.ts'
+import { APP_VERSION, NEXT_APP_VERSION } from '../client/settings.ts'
+import { restartToUpdate } from '../client/settings-sections.tsx'
 import { Cta, Inline } from '../kit/inline.tsx'
 import { useNow } from '../mock/hooks.tsx'
+import { trafficLightRoom, useWindowChrome } from './window.tsx'
 
 export const webHref = (path: string) => clientHref('web', path)
 
@@ -109,15 +114,23 @@ function ServerSwitcher() {
 
 function Profile() {
   const [, navigate] = useLocation()
+  const update = useAppUpdateReady()
   return (
     <Menu>
       <MenuTrigger asChild>
         <button
           type="button"
-          aria-label="Ines: profile and settings"
-          className="grid size-8 place-items-center rounded-full bg-accent-soft font-semibold text-accent-text text-ui outline-none focus-visible:ring-focus"
+          aria-label={
+            update
+              ? 'Ines: profile and settings. An update is ready.'
+              : 'Ines: profile and settings'
+          }
+          className="relative grid size-8 place-items-center rounded-full bg-accent-soft font-semibold text-accent-text text-ui outline-none focus-visible:ring-focus"
         >
-          I
+          I{/* the desktop app's update, waiting quietly for a restart */}
+          {update && (
+            <span className="absolute -end-0.5 -top-0.5 size-2.5 rounded-full border-2 border-bg bg-accent" />
+          )}
         </button>
       </MenuTrigger>
       <MenuContent>
@@ -131,6 +144,19 @@ function Profile() {
         <MenuItem icon="sign-out" onSelect={() => navigate('/connect')}>
           Sign out of Harbor
         </MenuItem>
+        {update && (
+          <>
+            <MenuSeparator />
+            <MenuItem icon="refresh" onSelect={restartToUpdate}>
+              <span className="grid">
+                <span>Restart to update</span>
+                <span className="text-[12px] text-text-3">
+                  highsea {NEXT_APP_VERSION} is ready. You have {APP_VERSION}.
+                </span>
+              </span>
+            </MenuItem>
+          </>
+        )}
       </MenuContent>
     </Menu>
   )
@@ -139,6 +165,7 @@ function Profile() {
 /** The top bar. Over a hero it starts clear and turns to glass once the page scrolls. */
 export function TopBar({ overHero }: { overHero: boolean }) {
   const [location] = useLocation()
+  const chrome = useWindowChrome()
   const [scrolled, setScrolled] = useState(false)
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 8)
@@ -149,16 +176,20 @@ export function TopBar({ overHero }: { overHero: boolean }) {
   const clear = overHero && !scrolled
   return (
     <header
+      // in the desktop app the bar moves the window, as a title bar does
+      data-tauri-drag-region={chrome === 'none' ? undefined : true}
       className={cn(
         // the border is there in both states, so its colour fades from transparent, not from
         // Tailwind's default `currentColor` (https://tailwindcss.com/docs/upgrade-guide#default-border-color)
-        'sticky top-0 z-30 border-b transition-tint',
+        'sticky z-30 border-b bg-origin-border transition-tint',
+        chrome === 'bar' ? 'top-8' : 'top-0',
         clear
           ? 'border-transparent bg-[linear-gradient(var(--color-bg),transparent)]'
           : 'glass-bar border-line',
       )}
     >
       <div className={cn('mx-auto w-full flex h-16 max-w-[1680px] items-center gap-3', gutter)}>
+        {chrome === 'mac' && <span aria-hidden className={trafficLightRoom} />}
         <ServerSwitcher />
         <nav
           aria-label="Main"
@@ -324,9 +355,12 @@ export function WebShell({
   overHero?: boolean
 }) {
   const connection = useConnection()
+  // in a Mac window the handle keeps clear of the rounded corners
+  const chrome = useWindowChrome()
   return (
     <div className="min-h-screen bg-bg text-text">
       <TopBar overHero={overHero && connection !== 'offline'} />
+      <PageScrollbar inset={chrome === 'mac' ? 10 : 6} />
       {connection === 'offline' ? <Unreachable /> : children}
       {connection !== 'offline' && (
         <>

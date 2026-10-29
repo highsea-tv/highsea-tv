@@ -1,0 +1,90 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "highsea",
+  "version": "0.2.0",
+  "identifier": "tv.highsea.desktop",
+  "build": {
+    "beforeDevCommand": "bun run --cwd ../web dev:desktop",
+    "devUrl": "http://localhost:3201",
+    "beforeBuildCommand": "bun run --cwd ../web build:desktop",
+    "frontendDist": "../../web/dist-desktop"
+  },
+  "app": {
+    "windows": [
+      {
+        "label": "main",
+        "title": "highsea",
+        "width": 1280,
+        "height": 800,
+        "minWidth": 400,
+        "minHeight": 560,
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "trafficLightPosition": { "x": 20, "y": 34 },
+        "backgroundColor": "#0b0b0c",
+        "dragDropEnabled": false
+      }
+    ],
+    "security": {
+      "csp": {
+        "default-src": "'self'",
+        "script-src": "'self'",
+        "style-src": "'self' 'unsafe-inline'",
+        "img-src": "'self' data: blob: server: http://server.localhost",
+        "font-src": "'self' data:",
+        "connect-src": "'self' ipc: http://ipc.localhost server: http://server.localhost",
+        "media-src": "'self' blob: data: server: http://server.localhost",
+        "worker-src": "'self' blob:",
+        "object-src": "'none'",
+        "base-uri": "'self'",
+        "form-action": "'none'"
+      }
+    }
+  },
+  "plugins": {
+    "deep-link": {
+      "desktop": { "schemes": ["highsea"] }
+    },
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDEwNEE1NDE1MkQyQjQ3RDMKUldUVFJ5c3RGVlJLRUxjZGlkeXBkcFRReHRvV2lnOWFBdUluWmROUEFqaFFuOWxXTUxxcEVKUXgK",
+      "endpoints": ["https://github.com/highsea-tv/highsea-tv/releases/latest/download/latest.json"]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["app", "dmg", "nsis", "appimage", "deb", "rpm"],
+    "publisher": "highsea",
+    "homepage": "https://highsea.tv",
+    "category": "Video",
+    "shortDescription": "Your films, from your highsea server",
+    "longDescription": "Watch the films on your own highsea server, and keep them for when you're offline.",
+    "license": "AGPL-3.0-only",
+    "copyright": "highsea contributors",
+    "createUpdaterArtifacts": false,
+    "icon": [
+      "../../../packages/brand/assets/icons/desktop/32x32.png",
+      "../../../packages/brand/assets/icons/desktop/128x128.png",
+      "../../../packages/brand/assets/icons/desktop/128x128@2x.png",
+      "../../../packages/brand/assets/icons/desktop/icon.icns",
+      "../../../packages/brand/assets/icons/desktop/icon.ico"
+    ],
+    "macOS": {
+      "minimumSystemVersion": "11.0",
+      "dmg": {
+        "appPosition": { "x": 180, "y": 170 },
+        "applicationFolderPosition": { "x": 480, "y": 170 }
+      }
+    },
+    "windows": {
+      "nsis": { "installMode": "currentUser" }
+    },
+    "linux": {
+      "deb": {
+        "depends": ["gstreamer1.0-plugins-good", "gstreamer1.0-plugins-bad", "gstreamer1.0-libav"]
+      },
+      "rpm": {
+        "depends": ["gstreamer1-plugins-good", "gstreamer1-plugins-bad-free", "gstreamer1-libav"]
+      }
+    }
+  }
+}

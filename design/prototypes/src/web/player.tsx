@@ -29,6 +29,7 @@ import {
   StreamWaiting,
 } from '../client/stream-states.tsx'
 import { webHref } from './shell.tsx'
+import { trafficLightRoom, useWindowChrome, WindowFrame } from './window.tsx'
 
 const glassButton =
   'grid size-11 cursor-pointer place-items-center rounded-full text-text outline-none transition-tint hover:bg-text/12 focus-visible:ring-focus'
@@ -273,6 +274,7 @@ export const webStreamAction: StreamAction = ({ primary, initial, onClick, child
 )
 
 export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
+  const windowChrome = useWindowChrome()
   const { id } = useParams<{ id: string }>()
   const [, navigate] = useLocation()
   const player = usePlayer(id, fromStart)
@@ -354,6 +356,8 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
         <img src={d.item.art.still} alt="" className="absolute inset-0 size-full object-cover" />
       )}
       <h1 className="sr-only">Playing {d?.item.title ?? ''}</h1>
+      {/* macOS's window buttons stay; a title bar comes and goes with the controls (below) */}
+      {windowChrome === 'mac' && <WindowFrame />}
 
       {pip && (
         <div className="absolute inset-0 grid place-items-center bg-[#000]">
@@ -382,7 +386,15 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
           chrome ? 'opacity-100' : 'pointer-events-none opacity-0',
         )}
       >
-        <div className="absolute inset-x-0 top-0 flex items-center gap-3 bg-[linear-gradient(rgb(0_0_0/0.7),transparent)] p-4 medium:px-8">
+        {windowChrome === 'bar' && <WindowFrame overlay />}
+        <div
+          className={cn(
+            'absolute inset-x-0 top-0 flex items-center gap-3 bg-[linear-gradient(rgb(0_0_0/0.7),transparent)] p-4 medium:px-8',
+            // the desktop app's window buttons: macOS's at the start, a title bar above
+            windowChrome === 'bar' && 'pt-12',
+          )}
+        >
+          {windowChrome === 'mac' && <span aria-hidden className={trafficLightRoom} />}
           <button type="button" aria-label="Back to details" onClick={exit} className={glassButton}>
             <Icon name="arrow-left" size={20} />
           </button>

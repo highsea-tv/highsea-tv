@@ -32,6 +32,7 @@ import {
 } from '@highsea-tv/ui-web'
 import { useEffect, useState } from 'react'
 import { useLocation } from 'wouter'
+import { GetTheAppsDialog } from '../../client/get-the-apps.tsx'
 import { Soon } from '../../kit/soon.tsx'
 import { useAction, useClient, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { Backup, HealthCheck, Job, LogEntry, ServerEvent } from '../../mock/types.ts'
@@ -109,6 +110,7 @@ export function System({ tab: asked = 'status' }: { tab?: SystemTab }) {
 function Status() {
   const status = useQuery('system:status', (c) => c.system.status(), ['jobs.updated'])
   const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
+  const [apps, setApps] = useState(false)
   const now = useNow()
   return (
     <Loadable query={status} what="the server’s status">
@@ -152,12 +154,28 @@ function Status() {
                   {server.data?.addresses.public ?? 'Not set'}
                 </dd>
               </dl>
-              <a
-                href={adminHref('/settings/network')}
-                className="text-caption text-text-2 underline underline-offset-2"
-              >
-                Network and remote access
-              </a>
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+                <a
+                  href={adminHref('/settings/network')}
+                  className="text-caption text-text-2 underline underline-offset-2"
+                >
+                  Network and remote access
+                </a>
+                {/* the desktop app, with the address apps use (desktop-app.md › Get the apps) */}
+                <button
+                  type="button"
+                  onClick={() => setApps(true)}
+                  className="cursor-pointer text-caption text-text-2 underline underline-offset-2 outline-none focus-visible:ring-focus"
+                >
+                  Get the apps
+                </button>
+              </div>
+              <GetTheAppsDialog
+                server={server.data?.name ?? 'Harbor'}
+                address={server.data?.addresses.public ?? server.data?.addresses.local[0] ?? ''}
+                open={apps}
+                onOpenChange={setApps}
+              />
             </section>
           </div>
           <section

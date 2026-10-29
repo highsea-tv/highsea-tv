@@ -139,6 +139,18 @@ export const useConnection = () => useProto().connection
 export const useStreamState = () => useProto().stream
 /** The web platform inside the desktop app, which keeps downloads. */
 export const useDesktopApp = () => useProto().app === 'desktop'
+/** The desktop app's computer: macOS, Windows or Linux (its window chrome and folders). */
+export const useDesktopOs = () => useProto().os
+/** The desktop app's own update, downloaded and waiting for a restart. */
+export const useAppUpdateReady = () => {
+  const p = useProto()
+  return p.app === 'desktop' && p.update === 'ready'
+}
+/** macOS's local network permission, which the desktop app needs to find servers. */
+export const useLocalNetwork = () => {
+  const p = useProto()
+  return p.app === 'desktop' && p.os === 'mac' ? p.lan : 'allowed'
+}
 
 // ---------------------------------------------------------------- formatting
 
