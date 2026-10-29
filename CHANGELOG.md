@@ -7,6 +7,8 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-29
+
 ### Added
 
 - The highsea app for macOS, Windows and Linux. It finds highsea servers on your network without typing an address, signs in with your password or single sign-on, keeps a list of servers to switch between, and plays films with the computer's media keys and its Now Playing controls. It updates itself, checking each update against highsea's signature. The installers are attached to each release; downloading films to keep offline comes in a later release.
@@ -76,6 +78,8 @@ While highsea is at 0.x, any release may change how something works. When one do
 
 
 
-[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.2.0...HEAD
+
+[unreleased]: https://github.com/highsea-tv/highsea-tv/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/highsea-tv/highsea-tv/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/highsea-tv/highsea-tv/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/highsea-tv/highsea-tv/releases/tag/v0.1.0

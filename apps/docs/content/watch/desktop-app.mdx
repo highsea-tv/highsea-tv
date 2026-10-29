@@ -1,0 +1,76 @@
+---
+title: The highsea app
+description: Installing the highsea app on macOS, Windows or Linux, connecting it to your server, and how it updates.
+---
+
+{/* SPDX-License-Identifier: AGPL-3.0-only */}
+{/*
+  Sources:
+  - The app: apps/desktop (tauri.conf.json's bundles, src-tauri/src/discovery.rs, oidc.rs, keychain.rs)
+    and its screens in apps/web/src/desktop/, with their words in apps/web/src/messages.ts
+    (connect, desktop, updates).
+  - What a release attaches: .github/workflows/release.yml's desktop and github-release jobs.
+  - macOS's first launch: https://support.apple.com/guide/mac-help/open-a-mac-app-from-an-unknown-developer-mh40616/mac
+*/}
+
+Written for highsea 0.3.0.
+
+The highsea app is the web app in a window of its own, for macOS, Windows and Linux. It finds the highsea servers on your network by itself, keeps a list of the servers you use, and plays films with your computer's media keys and its Now Playing controls. It updates itself. Downloading films to keep offline comes in a later release.
+
+## Downloading it
+
+The installers are attached to each highsea release on GitHub. Open [the latest release](https://github.com/highsea-tv/highsea-tv/releases/latest) and download the one for your computer from its **Assets**:
+
+| Computer | File |
+| --- | --- |
+| A Mac, Apple silicon or Intel (macOS 11 or later) | `highsea_<version>_universal.dmg` |
+| Windows 10 or 11, 64-bit | `highsea_<version>_x64-setup.exe` |
+| Linux, x86-64 | `highsea_<version>_amd64.AppImage`, `.deb` or `.rpm` |
+
+`SHA256SUMS`, beside them, has each file's checksum.
+
+## Installing on a Mac
+
+Open the `.dmg` and drag **highsea** into **Applications**.
+
+The app isn't signed with an Apple Developer certificate yet, so the first time you open it macOS says it can't check it for malicious software, and doesn't open it. To open it anyway:
+
+1. Choose **Done** on macOS's message.
+2. Open **System Settings › Privacy & Security**, scroll to **Security**, and choose **Open Anyway** beside the line about highsea.
+3. Choose **Open Anyway** again, and enter your password.
+
+macOS remembers this, so highsea opens normally from then on, and its updates don't ask again.
+
+When highsea first looks for servers, your Mac asks whether it may find devices on your local network. Choose **Allow**. If you chose **Don't Allow**, turn highsea on in **System Settings › Privacy & Security › Local Network**, or add your server by address.
+
+## Installing on Windows
+
+Run `highsea_<version>_x64-setup.exe`. It installs highsea for your Windows account only, so it doesn't ask for an administrator.
+
+The installer isn't signed yet, so Windows may show **Windows protected your PC**. Choose **More info**, then **Run anyway**.
+
+## Installing on Linux
+
+- **Debian, Ubuntu and their relatives:** `sudo apt install ./highsea_<version>_amd64.deb`
+- **Fedora and its relatives:** `sudo dnf install ./highsea-<version>-1.x86_64.rpm`
+- **Anywhere else:** make the AppImage runnable with `chmod +x highsea_<version>_amd64.AppImage`, and open it.
+
+Films play through GStreamer. The `.deb` and `.rpm` install the plugins they need. With the AppImage, install GStreamer's good, bad and libav plugins from your distribution (on Debian, `gstreamer1.0-plugins-good`, `gstreamer1.0-plugins-bad` and `gstreamer1.0-libav`).
+
+## Connecting to your server
+
+highsea opens on **Choose a server**. Servers on the same network are listed under **On this network** as they answer. Choose yours, and sign in with your highsea username and password, or with the single sign-on button when the server has one. Single sign-on finishes in your browser, and highsea opens again when you're done.
+
+If your server isn't listed, it may be on another network, or its discovery may be off. Use **Add a server by address** with its name or IP, and the port if it isn't 443: `harbor.example.net`, or `192.168.1.20:3000` at home.
+
+highsea keeps your sign-in for each server in your computer's keychain, so it doesn't ask again. To use another server, open the server's name at the top left and choose **Switch server** or **Add a server**. Each server keeps its own sign-in, and signing out of one leaves the others alone.
+
+At home, highsea uses the server's address on your network. Away from home, it uses the server's remote address, the one set in [Settings › Network](/settings/network/), so it works in both places without changing anything.
+
+## Watching
+
+Everything else works as in [the web app](/watch/): Home, the library, search, and [the player](/watch/playing/). Your computer's play and pause keys control the film, and it shows in macOS's Now Playing, Windows' media controls, or your Linux desktop's media controls.
+
+## Updates
+
+highsea checks for a new version by itself. When one is ready, it says **highsea &lt;version&gt; is ready** and offers **Restart to update**; otherwise the new version is used the next time the app starts. Every update is checked against highsea's signature before it's installed.

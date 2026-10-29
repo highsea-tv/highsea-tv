@@ -1,5 +1,19 @@
 [
   {
+    "version": "0.3.0",
+    "channel": "stable",
+    "date": "2026-10-29",
+    "notes": [
+      "The highsea app for macOS, Windows and Linux. It finds highsea servers on your network without typing an address, signs in with your password or single sign-on, keeps a list of servers to switch between, and plays films with the computer's media keys and its Now Playing controls. It updates itself,…",
+      "A Synology package source at https://packages.highsea.tv: added in Package Center, it installs highsea from Community and keeps it up to date. The package is attached to each release too, for Manual Install.",
+      "The web app's scrollbar is thin and drawn over the page, so it no longer leaves a strip beside the artwork and the top bar.",
+      "The top bar over a film's artwork no longer shows a line under it before the page scrolls.",
+      "Clicking the top of a poster opens the film again; only its buttons take the click, and their glass no longer appears late as they fade in.",
+      "Downloads in the browser says to use the highsea app to keep films for offline."
+    ],
+    "url": "https://github.com/highsea-tv/highsea-tv/releases/tag/v0.3.0"
+  },
+  {
     "version": "0.2.0",
     "channel": "stable",
     "date": "2026-10-29",
