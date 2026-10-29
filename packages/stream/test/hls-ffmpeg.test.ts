@@ -51,9 +51,6 @@ function packets(dir: string, files: string[]) {
     })
 }
 
-/** The video track's timescale in the clip's MP4 pieces: the muxer's default for 24 fps. */
-const VIDEO_TIMESCALE = 16000
-
 /**
  * Each fragment's decode time (`tfdt`, ISO/IEC 14496-12 § 8.8.12) in a piece, by track: the
  * film's own time, whichever run wrote it.
@@ -191,7 +188,9 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     const last = segments.length - 1
     const tail = await t.segment(last)
     expect(packets(t.dir, tail).find((p) => p.stream === 0)).toMatchObject({ pts: 37, key: true })
-    expect(decodeTimes(tail[0] as string)[0]).toBe(37 * VIDEO_TIMESCALE)
+    // the picture's timescale is the muxer's choice, 16000 or 12288 for 24 fps by ffmpeg's version
+    const [videoScale] = timescales(await t.init())
+    expect(decodeTimes(tail[0] as string)[0]).toBe(37 * (videoScale as number))
 
     // the same piece from a run started elsewhere starts at the same time, from the same header
     const before = decodeTimes(join(t.dir, '5.m4s'))
@@ -212,8 +211,9 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
     t.prepare()
     const segments = await t.segments()
     const [header, tail] = await Promise.all([t.init(), t.segment(segments.length - 1)])
-    expect(timescales(header)).toHaveLength(2)
-    expect(decodeTimes(tail[0] as string)[0]).toBe(37 * VIDEO_TIMESCALE)
+    const scales = timescales(header)
+    expect(scales).toHaveLength(2)
+    expect(decodeTimes(tail[0] as string)[0]).toBe(37 * (scales[0] as number))
     await transcodes.end('init-restart')
   })
 
