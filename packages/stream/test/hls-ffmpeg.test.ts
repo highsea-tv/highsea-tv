@@ -104,7 +104,9 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
       srt,
       '1\n00:00:01,000 --> 00:00:03,000\nHello.\n\n2\n00:00:30,000 --> 00:00:32,000\nLater.\n',
     )
-    // 24 fps with a keyframe every 2 s, and one forced at 5 s, which x264 counts on from
+    // 24 fps with a keyframe every 2 s, and one forced at 5 s, which x264 counts on from. FLAC, not
+    // AAC: AAC's 1,024 priming samples make ffmpeg 6.1 (Ubuntu 24.04, in CI) start the Matroska
+    // file 23 ms early, which shifts every expected time, and newer ffmpeg doesn't
     execFileSync(ffmpeg, [
       ...[
         '-v',
@@ -119,7 +121,7 @@ describe.skipIf(!hasFfmpeg)('HLS with ffmpeg', () => {
       ...['-map', '0:v', '-map', '1:a', '-map', '2:s'],
       ...['-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p'],
       ...['-g', '48', '-keyint_min', '48', '-force_key_frames', '5'],
-      ...['-c:a', 'aac', '-c:s', 'srt', clip],
+      ...['-c:a', 'flac', '-c:s', 'srt', clip],
     ])
     transcodes = createTranscodes({
       root: join(dir, 'transcodes'),

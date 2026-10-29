@@ -27,6 +27,7 @@ const SECONDS = 60
 const ffprobe = process.env.HIGHSEA_FFPROBE || 'ffprobe'
 
 /** A minute of H.264 at 24 fps with a keyframe every 2 s, AAC, and an English SubRip track. */
+/** FLAC, not AAC, whose priming samples make ffmpeg 6.1 start the file 23 ms early (CI's). */
 function makeClip(path: string) {
   const srt = `${path}.srt`
   writeFileSync(srt, '1\n00:00:00,000 --> 00:00:02,000\nHello.\n')
@@ -43,7 +44,7 @@ function makeClip(path: string) {
     ...['-f', 'lavfi', '-i', `sine=frequency=440:duration=${SECONDS}`, '-i', srt],
     ...['-map', '0:v', '-map', '1:a', '-map', '2:s'],
     ...['-c:v', 'libx264', '-preset', 'ultrafast', '-pix_fmt', 'yuv420p', '-g', '48'],
-    ...['-c:a', 'aac', '-c:s', 'srt', '-metadata:s:s:0', 'language=eng', path],
+    ...['-c:a', 'flac', '-c:s', 'srt', '-metadata:s:s:0', 'language=eng', path],
   ])
   return path
 }

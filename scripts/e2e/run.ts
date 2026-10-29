@@ -134,21 +134,17 @@ try {
     const page = await ownerContext.newPage()
     current = page
     await page.goto(`${BASE}/setup`)
-    const next = () => page.getByRole('button', { name: 'Continue' }).click()
+    // /data is empty, so setup takes highsea's own folders and asks only for the owner, then
+    // Review (install-simplicity.md B); TMDB answers with the key compose.e2e.yaml gives the image
     await page.getByLabel('Server name').fill('Harbor')
-    await next()
     await page.getByLabel('Your name').fill(OWNER.name)
     await page.getByLabel('Username').fill(OWNER.username)
     await page.getByLabel('Password', { exact: true }).fill(OWNER.password)
     await page.getByLabel('Confirm password').fill(OWNER.password)
-    await next()
-    // TMDB answers from the recordings at the fixtures, which take any key
-    await page.getByLabel('TMDB API key or Read Access Token').fill('e2e-tmdb-key')
-    await next()
-    await page.getByRole('heading', { name: 'Choose your folders' }).waitFor()
-    await next()
+    await page.getByRole('button', { name: 'Continue' }).click()
+    await page.getByRole('heading', { name: 'Check and finish' }).waitFor()
     // the catalog's public starters, from the fixtures' signed catalog: only the test indexer
-    await page.getByRole('heading', { name: 'Add indexers' }).waitFor()
+    await page.getByRole('button', { name: 'Change indexers' }).click()
     const harbor = page.getByRole('checkbox', { name: 'Harbor Test Indexer' })
     await harbor.waitFor()
     for (const box of await page.getByRole('checkbox').all())
@@ -157,14 +153,7 @@ try {
         (await box.evaluate((b, h) => b === h, await harbor.elementHandle()))
       )
         await box.click()
-    await next()
-    await page.getByRole('heading', { name: 'Subtitle languages' }).waitFor()
-    await next()
-    await page.getByRole('heading', { name: 'Watching away from home' }).waitFor()
-    await next()
-    await page.getByRole('heading', { name: 'Link to highsea cloud' }).waitFor()
-    await next()
-    await page.getByRole('heading', { name: 'Check and finish' }).waitFor()
+    await page.getByRole('button', { name: 'Done with indexers' }).click()
     await page.getByRole('button', { name: 'Finish setup' }).click()
     // setup signs the owner in and opens the dashboard
     await page.waitForURL(`${BASE}/`)
