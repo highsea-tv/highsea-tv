@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C3 Library browse, TV (docs/product/client-library.md#tv): the poster grid, each with its title
 // and year, with an alphabet
-// rail on the left. The rail is isolated: Left from the grid's first column enters it, Up and Down
+// rail on the left: a column of its own at the container's left edge, beside the grid, which fills
+// the rest (the owner, 2026-10-30). The rail is isolated: Left from the grid's first column enters it, Up and Down
 // run through the letters (only the ones with titles), and OK jumps the grid to that letter.
 // Movies is its own destination in the global nav (the owner, 2026-10-30), so the title stands
 // alone, with the sort as a row of choices on its right; Up from the grid reaches the sort.
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useLibrary } from '../client/data.ts'
-import { arrange, type Sort } from '../web/library.tsx'
+import { arrange, LETTERS, letterOf, type Sort } from '../web/library.tsx'
 import {
   TvButton,
   TvHead,
@@ -18,10 +19,17 @@ import {
   useInitialFocus,
 } from './kit.tsx'
 
-const LETTERS = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ']
-const letterOf = (sortTitle: string) => {
-  const c = sortTitle.charAt(0).toUpperCase()
-  return /[A-Z]/.test(c) ? c : '#'
+/**
+ * The rail's column: the letters' width, and the room the grid leaves for it. Another sort closes
+ * the room with spring.quick as the rail fades, and A–Z opens it again, rather than snapping (the
+ * owner, 2026-10-30); grid-template-columns interpolates between track lists of the same shape
+ * (CSS Grid 1 § 7.2, https://www.w3.org/TR/css-grid-1/#track-sizing).
+ */
+const rail = 'w-[2cqw]'
+const motion = 'duration-(--duration-spring-quick) ease-(--ease-spring-quick)'
+const room = {
+  open: 'grid-cols-[2cqw_minmax(0,1fr)] gap-x-(--tv-poster-gap)',
+  shut: 'grid-cols-[0cqw_minmax(0,1fr)] gap-x-0',
 }
 
 const sortChoices: { value: Sort; label: string }[] = [
@@ -36,9 +44,8 @@ const shiftOf = (transform: string) =>
 
 /**
  * The letter index's box: it starts level with the first row's top as that row shows with focus
- * in it (arriving lifts the grid a little, to keep focus in view), and its square letters share
- * the height from there to the safe area's foot. Measured, since the header sets where the grid
- * starts; while focus is further down (or on the index), the index stays where it was rather than
+ * in it (arriving lifts the grid a little, to keep focus in view), and its square letters share the
+ * height from there to the safe area's foot. Measured, since the header sets where the grid starts; while focus is further down (or on the index), the index stays where it was rather than
  * following the first row off the screen. It's hidden until focus first reaches the first row, so
  * it shows once, in place, rather than at the grid's resting spot and then moving.
  */
@@ -100,9 +107,9 @@ export function TvLibrary() {
   const library = useLibrary()
   const [sort, setSort] = useState<Sort>('title')
   const [unwatched, setUnwatched] = useState(false)
-  // after an error the grid isn't there, and the index only shows sorted by title, so both
-  // re-measure it once they're back
-  const index = useIndexBox(`${library.status}:${sort}`)
+  // after an error the grid isn't there, so it re-measures once it's back
+  const index = useIndexBox(library.status)
+  const titled = sort === 'title'
   useInitialFocus(
     library.status === 'success',
     `${sort}:${unwatched}`,
@@ -131,32 +138,34 @@ export function TvLibrary() {
   }
   return (
     <>
-      {sort === 'title' && (
-        <nav
-          ref={index.nav}
-          aria-label="Jump to a letter"
-          data-group="alpha"
-          data-isolate=""
-          data-go-right="grid"
-          // from the first row's top to the safe area's foot, centred in the left gutter
-          style={{ top: index.top, left: `calc((var(--tv-safe-x) - ${index.size}px) / 2)` }}
-          className={`absolute bottom-(--tv-safe-y) z-10 grid content-start ${index.placed ? '' : 'invisible'}`}
-        >
-          {LETTERS.map((l) => (
-            <button
-              key={l}
-              type="button"
-              disabled={!present.has(l)}
-              {...(present.has(l) ? { 'data-focusable': '' } : {})}
-              onClick={() => jump(l)}
-              style={{ width: index.size, height: index.size }}
-              className="grid place-items-center rounded-[0.3cqw] font-semibold text-(length:--tv-text-quality) text-text-2 outline-none transition-lift focus-visible:scale-125 focus-visible:bg-text focus-visible:text-bg disabled:text-text-3/40"
-            >
-              {l}
-            </button>
-          ))}
-        </nav>
-      )}
+      <nav
+        ref={index.nav}
+        aria-label="Jump to a letter"
+        aria-hidden={!titled || undefined}
+        inert={!titled}
+        data-group="alpha"
+        data-isolate=""
+        data-go-right="grid"
+        // from the first row's top to the safe area's foot, in its column at the container's
+        // left edge; the grid moves under focus and the rail stays, so it's outside the track
+        style={{ top: index.top }}
+        className={`absolute start-(--tv-safe-x) bottom-(--tv-safe-y) z-10 grid content-start justify-items-center transition-opacity ${motion} ${rail} ${titled && index.placed ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+      >
+        {LETTERS.map((l) => (
+          <button
+            key={l}
+            type="button"
+            disabled={!present.has(l)}
+            {...(titled && present.has(l) ? { 'data-focusable': '' } : {})}
+            onClick={() => jump(l)}
+            // square: a 27th of the height, or the column's width if that's less
+            style={{ width: `min(${index.size}px, 2cqw)`, height: `min(${index.size}px, 2cqw)` }}
+            className="grid place-items-center rounded-[0.3cqw] font-semibold text-(length:--tv-text-quality) text-text-2 outline-none transition-lift focus-visible:scale-125 focus-visible:bg-text focus-visible:text-bg disabled:text-text-3/40"
+          >
+            {l}
+          </button>
+        ))}
+      </nav>
       <main ref={index.main} className="absolute inset-0 overflow-hidden">
         <div
           data-scroll="y"
@@ -197,31 +206,37 @@ export function TvLibrary() {
               </button>
             </div>
           </div>
-          {library.status === 'loading' && (
-            <div aria-busy className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]">
-              {Array.from({ length: 14 }, (_, i) => (
-                // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
-                <TvTileSkeleton key={i} />
-              ))}
-            </div>
-          )}
-          <ul
-            ref={index.grid}
-            data-group="grid"
-            data-go-left={sort === 'title' ? 'alpha' : undefined}
-            data-go-up="sort"
-            className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]"
+          <div
+            className={`grid transition-[grid-template-columns,column-gap] ${motion} ${titled ? room.open : room.shut}`}
           >
-            {items.map((m, i) => {
-              const l = letterOf(m.sortTitle)
-              const firstOfLetter = i === 0 || letterOf(items[i - 1]?.sortTitle ?? '') !== l
-              return (
-                <li key={m.id} {...(firstOfLetter && sort === 'title' ? { 'data-letter': l } : {})}>
-                  <TvPoster item={m} href={tvHref(`/movies/${m.id}`)} />
-                </li>
-              )
-            })}
-          </ul>
+            {/* the rail's room; the rail itself stays put outside the moving track */}
+            <div aria-hidden />
+            {library.status === 'loading' && (
+              <div aria-busy className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]">
+                {Array.from({ length: 14 }, (_, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
+                  <TvTileSkeleton key={i} />
+                ))}
+              </div>
+            )}
+            <ul
+              ref={index.grid}
+              data-group="grid"
+              data-go-left={titled ? 'alpha' : undefined}
+              data-go-up="sort"
+              className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]"
+            >
+              {items.map((m, i) => {
+                const l = letterOf(m.sortTitle)
+                const firstOfLetter = i === 0 || letterOf(items[i - 1]?.sortTitle ?? '') !== l
+                return (
+                  <li key={m.id} {...(firstOfLetter && titled ? { 'data-letter': l } : {})}>
+                    <TvPoster item={m} href={tvHref(`/movies/${m.id}`)} />
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
         </div>
       </main>
     </>
