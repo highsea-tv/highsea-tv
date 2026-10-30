@@ -7,16 +7,10 @@
 // signs in.
 import { cn, Icon, useSound } from '@highsea-tv/ui-web'
 import { useReducedMotion } from 'motion/react'
-import {
-  Fragment,
-  type KeyboardEvent as ReactKeyboardEvent,
-  useEffect,
-  useRef,
-  useState,
-} from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useBack } from './back.ts'
-import { ServerIdentity, TvAvatar, TvButton, tvKey, useInitialFocus } from './kit.tsx'
+import { focusFrom, ServerIdentity, TvAvatar, TvButton, tvKey, useInitialFocus } from './kit.tsx'
 import { MAX_PROFILES, type Tone, type TvPerson, tones, usePeople } from './people.ts'
 
 /** How many wrong PINs in a row before the pad rests for a minute. */
@@ -351,16 +345,22 @@ export function TvNewProfile() {
     if (shift !== 'lock') setShift(atStart(n) ? 'once' : 'off')
   }
   // Space is narrower than the row above it, so the navigator, which scores by centres, would
-  // take Down from the row's ends to the colours; every key in that row goes to Space instead
+  // take Down from the row's ends to the colours; every key in that row goes to Space instead. On
+  // the grid itself, so it runs before the navigator on the TV's root.
   const play = useSound()
+  const keys = useRef<HTMLDivElement>(null)
   const spaceKey = useRef<HTMLButtonElement>(null)
-  const downToSpace = (e: ReactKeyboardEvent<HTMLDivElement>) => {
-    const key = e.target instanceof HTMLElement ? e.target.closest('[data-above-space]') : null
-    if (e.key !== 'ArrowDown' || !key || !spaceKey.current) return
-    e.preventDefault()
-    spaceKey.current.focus()
-    play('navigate')
-  }
+  useEffect(() => {
+    const el = keys.current
+    const onKey = (e: KeyboardEvent) => {
+      const key = (e.target as HTMLElement).closest('[data-above-space]')
+      if (e.key !== 'ArrowDown' || e.defaultPrevented || !key || !spaceKey.current) return
+      e.preventDefault()
+      focusFrom(key, spaceKey.current, play)
+    }
+    el?.addEventListener('keydown', onKey)
+    return () => el?.removeEventListener('keydown', onKey)
+  }, [play])
   const pressShift = () => setShift((s) => (s === 'off' ? 'once' : s === 'once' ? 'lock' : 'off'))
   const preview: TvPerson = { id: 'new', name: name || '?', tone, pin: null, main: false }
   const taken = people.some((p) => p.name.toLowerCase() === name.trim().toLowerCase())
@@ -387,8 +387,7 @@ export function TvNewProfile() {
           {name || <span className="text-text-3">Name</span>}
           <span aria-hidden className="ms-[0.1cqw] h-[1.6cqw] w-[0.12cqw] bg-text" />
         </p>
-        {/* biome-ignore lint/a11y/noStaticElementInteractions: Down from the keys, handled for the D-pad */}
-        <div data-group="keys" onKeyDown={downToSpace} className="grid grid-cols-10 gap-[0.5cqw]">
+        <div ref={keys} data-group="keys" className="grid grid-cols-10 gap-[0.5cqw]">
           {LETTERS.map((k, i) => (
             <Fragment key={k}>
               {i === 20 && (

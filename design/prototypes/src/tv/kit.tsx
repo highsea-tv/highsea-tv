@@ -4,8 +4,14 @@
 // pill, and the global navigation, a top tab row on every screen but the player
 // (client-home.md#tv), with the alternatives the owner asked to compare.
 import { tv } from '@highsea-tv/tokens'
-import { cn, Icon, type IconName, Mark, Poster } from '@highsea-tv/ui-web'
-import { type ComponentProps, type CSSProperties, type ReactNode, useEffect } from 'react'
+import { cn, Icon, type IconName, Mark, Poster, useSound } from '@highsea-tv/ui-web'
+import {
+  type ComponentProps,
+  type CSSProperties,
+  type ReactNode,
+  type RefObject,
+  useEffect,
+} from 'react'
 import { useLocation } from 'wouter'
 import { clientHref, useAnnouncements, useConnection, useServer } from '../client/data.ts'
 import { mediaCard } from '../client/media-card.tsx'
@@ -30,6 +36,62 @@ export function useInitialFocus(ready: boolean, key: unknown = null, selector = 
     )
     return () => cancelAnimationFrame(t)
   }, [ready, key, selector])
+}
+
+/**
+ * Moves focus as the spatial navigator does when a screen picks the item itself: the item left
+ * drops its ring at once (navigator.ts's dropRing) and `navigate` plays.
+ */
+export function focusFrom(from: Element | null, to: HTMLElement, play: (e: 'navigate') => void) {
+  to.focus({ preventScroll: true })
+  if (from && typeof from.getAnimations === 'function')
+    for (const a of from.getAnimations({ subtree: true }))
+      if (a instanceof CSSTransition && a.transitionProperty === 'box-shadow') a.finish()
+  play('navigate')
+}
+
+/**
+ * Up and Down between a page's rows (`[data-row]` inside `ref`, in order) go to the next row with
+ * something to focus, landing on the item it was left on, or its first. The navigator's nearest
+ * centre would land mid-row, or pass over a film row, whose one stop sits at its left, from a card
+ * far to the right (the owner, 2026-10-30). Past the first or last row, the navigator carries on.
+ * It listens on `ref` itself, so it runs before the navigator on the TV's root; a screen that
+ * renders its rows after loading passes `ready`, a new value for each set of rows.
+ */
+export function useRowNavigation(ref: RefObject<HTMLElement | null>, ready: unknown = true) {
+  const play = useSound()
+  useEffect(() => {
+    const el = ref.current
+    if (!el || !ready) return
+    const left = new WeakMap<Element, HTMLElement>()
+    const onFocus = (e: FocusEvent) => {
+      const item = (e.target as HTMLElement).closest<HTMLElement>('[data-focusable]')
+      const row = item?.closest('[data-row]')
+      if (item && row) left.set(row, item)
+    }
+    const onKey = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
+      const by = e.key === 'ArrowDown' ? 1 : e.key === 'ArrowUp' ? -1 : 0
+      const from = (e.target as HTMLElement).closest('[data-row]')
+      if (!by || !from) return
+      const rows = [...el.querySelectorAll('[data-row]')]
+      let i = rows.indexOf(from) + by
+      while (rows[i] && !rows[i]?.querySelector('[data-focusable]')) i += by
+      const row = rows[i]
+      if (!row) return
+      const was = left.get(row)
+      const to = was?.isConnected ? was : row.querySelector<HTMLElement>('[data-focusable]')
+      if (!to) return
+      e.preventDefault()
+      focusFrom(e.target as Element, to, play)
+    }
+    el.addEventListener('focusin', onFocus)
+    el.addEventListener('keydown', onKey)
+    return () => {
+      el.removeEventListener('focusin', onFocus)
+      el.removeEventListener('keydown', onKey)
+    }
+  }, [ref, play, ready])
 }
 
 const buttonBase =

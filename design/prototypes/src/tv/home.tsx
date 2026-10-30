@@ -27,6 +27,7 @@ import {
   TvRow,
   tvHref,
   useInitialFocus,
+  useRowNavigation,
 } from './kit.tsx'
 
 /**
@@ -179,7 +180,9 @@ function Home({ sections }: { sections: HomeSection[] }) {
   const hero = sections.find((s) => s.layout === 'hero')
   const rows = sections.filter((s) => s !== hero)
   const { page, style, lifted } = usePageOffset(pageTop)
+  const rowsRef = useRef<HTMLDivElement>(null)
   useInitialFocus(true)
+  useRowNavigation(rowsRef)
   return (
     <>
       {/* lifted, the row above fades out under the top edge rather than being cut */}
@@ -193,6 +196,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
           <AnnouncementBanner />
           <TvHead className="px-(--tv-safe-x)" />
           <div
+            ref={rowsRef}
             data-rows=""
             className="relative grid grid-cols-1 gap-[1.6cqw] pt-[1.6cqw] pb-(--tv-safe-y)"
           >

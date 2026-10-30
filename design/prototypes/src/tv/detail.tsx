@@ -11,7 +11,15 @@ import { useAction } from '../mock/hooks.tsx'
 import type { ClientItem, PlaybackPrefs } from '../mock/types.ts'
 import { useBack } from './back.ts'
 import { TvFilmRow } from './film-row.tsx'
-import { TvButton, TvHead, TvMessage, TvRow, tvHref, useInitialFocus } from './kit.tsx'
+import {
+  TvButton,
+  TvHead,
+  TvMessage,
+  TvRow,
+  tvHref,
+  useInitialFocus,
+  useRowNavigation,
+} from './kit.tsx'
 import { TvTracksPanel } from './tracks.tsx'
 
 export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: boolean) => void }) {
@@ -33,6 +41,9 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
     return () => document.removeEventListener('focusin', onFocus)
   }, [])
   useInitialFocus(detail.status === 'success' && !panel && !options, `${id}:${focusKey}`)
+  // Up and Down go row by row: the actions, the cast, then More like this
+  const rows = useRef<HTMLDivElement>(null)
+  useRowNavigation(rows, detail.status === 'success' && id)
 
   if (detail.status === 'loading')
     return (
@@ -69,6 +80,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
         className={`absolute inset-0 overflow-hidden ${lifted ? '[mask-image:linear-gradient(transparent,black_var(--tv-safe-y))]' : ''}`}
       >
         <div
+          ref={rows}
           data-scroll="y"
           data-keep="0.4"
           className="relative grid grid-cols-1 gap-[1.6cqw] pb-(--tv-safe-y) transition-lift"
@@ -132,6 +144,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
                 </p>
               )}
               <div
+                data-row=""
                 data-group="actions"
                 data-go-up="nav"
                 className="mt-[0.6cqw] flex gap-[1cqw]"
@@ -164,36 +177,39 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
             </div>
           </section>
           {d.cast.length > 0 && (
-            <TvRow group="cast" title="Cast" goUp="actions" className="relative">
-              {d.cast.map((c) => (
-                <li key={c.personId} className="w-[8cqw] shrink-0">
-                  {/* cast cards are focus stops, so the row can be read by D-pad */}
-                  <div
-                    data-focusable=""
-                    tabIndex={-1}
-                    className="group/link rounded-(--tv-radius-poster) outline-none"
-                  >
-                    <Poster title={c.name} src={c.photo} />
-                    <p className="mt-[1cqw] truncate font-semibold text-(length:--tv-text-pill) text-text-2 leading-[1.3] group-focus-visible/link:text-text">
-                      {c.name}
-                    </p>
-                    <p className="truncate text-(length:--tv-text-pill) text-text-3 leading-[1.3]">
-                      {c.character}
-                    </p>
-                  </div>
-                </li>
-              ))}
-            </TvRow>
+            <div data-row="" className="relative grid grid-cols-1">
+              <TvRow group="cast" title="Cast" goUp="actions">
+                {d.cast.map((c) => (
+                  <li key={c.personId} className="w-[8cqw] shrink-0">
+                    {/* cast cards are focus stops, so the row can be read by D-pad */}
+                    <div
+                      data-focusable=""
+                      tabIndex={-1}
+                      className="group/link rounded-(--tv-radius-poster) outline-none"
+                    >
+                      <Poster title={c.name} src={c.photo} />
+                      <p className="mt-[1cqw] truncate font-semibold text-(length:--tv-text-pill) text-text-2 leading-[1.3] group-focus-visible/link:text-text">
+                        {c.name}
+                      </p>
+                      <p className="truncate text-(length:--tv-text-pill) text-text-3 leading-[1.3]">
+                        {c.character}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </TvRow>
+            </div>
           )}
           {d.related.length > 0 && (
-            <TvFilmRow
-              group="related"
-              title="More like this"
-              goUp="actions"
-              className="relative"
-              items={d.related}
-              hrefOf={(r) => tvHref(`/movies/${r.id}`)}
-            />
+            <div data-row="" className="relative grid grid-cols-1">
+              <TvFilmRow
+                group="related"
+                title="More like this"
+                goUp="actions"
+                items={d.related}
+                hrefOf={(r) => tvHref(`/movies/${r.id}`)}
+              />
+            </div>
           )}
         </div>
       </div>
