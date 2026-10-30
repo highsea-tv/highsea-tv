@@ -49,6 +49,8 @@ export function usePlayback(id: number, fromStart: boolean) {
   const [session, setSession] = useState<PlaySession | null>(null)
   const [local, setLocal] = useState<Partial<Picks>>({})
   const [external, setExternal] = useState(false)
+  // counts the sources loaded, so the subtitle choice below is made again on each one
+  const [loads, setLoads] = useState(0)
   const [cues, setCues] = useState<Cue[]>([])
   const live = useRef<PlaySession | null>(null)
   // each start bumps this, so a slow answer to an older one is ended, not played
@@ -336,8 +338,12 @@ export function usePlayback(id: number, fromStart: boolean) {
 
   // on another screen the phone draws nothing, so the TV shows the chosen subtitle from the HLS
   // playlist's renditions, matched by language, and none on the phone again
-  // (https://docs.expo.dev/versions/latest/sdk/video/#subtitletrack)
+  // (https://docs.expo.dev/versions/latest/sdk/video/#subtitletrack). It's made again once each
+  // source has loaded: before then expo-video has no item to select on, and AVPlayer, given
+  // expo-video's criteria preferring a legible track, turns one of the renditions on by itself
+  useEventListener(player, 'sourceLoad', () => setLoads((n) => n + 1))
   const subtitleLanguage = subtitle && !burnt ? subtitle.language : null
+  // biome-ignore lint/correctness/useExhaustiveDependencies: loads is the trigger, not a value read
   useEffect(() => {
     if (!external || !subtitleLanguage) {
       player.subtitleTrack = null
@@ -345,7 +351,7 @@ export function usePlayback(id: number, fromStart: boolean) {
     }
     player.subtitleTrack =
       player.availableSubtitleTracks.find((t) => t.language === subtitleLanguage) ?? null
-  }, [player, external, subtitleLanguage])
+  }, [player, external, subtitleLanguage, loads])
 
   const seekTo = useCallback(
     (to: number) => {

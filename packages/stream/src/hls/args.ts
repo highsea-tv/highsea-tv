@@ -145,6 +145,14 @@ function pictureFilters(
   const plan = video.plan as Extract<VideoPlan, { action: 'transcode' }>
   const size = scaledSize(video, plan.height)
   const scale = `scale=${size.width}:${size.height}`
+  // HDR only relabelled as SDR on the processor: the frames carry the labels, since ffmpeg's
+  // encoder takes primaries and transfer from the frames and `-color_primaries` and `-color_trc`
+  // alone left PQ on an 8-bit H.264 stream, which AVPlayer refuses (`scale`'s `out_color_matrix`
+  // and `setparams`, https://ffmpeg.org/ffmpeg-filters.html#scale-1 and #setparams)
+  const sized =
+    plan.toSdr && toneMap === null
+      ? `${scale}:out_color_matrix=bt709,setparams=${SDR_PARAMS}`
+      : scale
   const ass = (b: Extract<BurnIn, { kind: 'text' }>) =>
     `subtitles=filename=${filterPath(b.path)}` +
     (b.fontsDir ? `:fontsdir=${filterPath(b.fontsDir)}` : '')
@@ -155,14 +163,14 @@ function pictureFilters(
         filters: [
           '-filter_complex',
           `[0:${burnIn.index}]scale=${video.width}:${video.height}[s];` +
-            `[0:${video.index}][s]overlay=eof_action=pass,${scale},format=yuv420p[v]`,
+            `[0:${video.index}][s]overlay=eof_action=pass,${sized},format=yuv420p[v]`,
         ],
       }
     return {
       map: ['-map', `0:${video.index}`],
       filters: [
         '-vf',
-        [scale, ...(burnIn?.kind === 'text' ? [ass(burnIn)] : []), 'format=yuv420p'].join(','),
+        [sized, ...(burnIn?.kind === 'text' ? [ass(burnIn)] : []), 'format=yuv420p'].join(','),
       ],
     }
   }
