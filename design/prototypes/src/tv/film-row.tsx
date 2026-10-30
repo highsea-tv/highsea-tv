@@ -8,7 +8,8 @@
 // one back the same way. Under every row, the card's film
 // is described, no wider than the card and two gaps, its synopsis at most two lines and wrapped
 // with text-wrap: pretty so no line is left with one word, so nothing moves as focus does (the
-// owner, 2026-10-30).
+// owner, 2026-10-30). Home's rows loop (the owner, 2026-10-30): past the last film comes the
+// first again, either way, the posters running on without a seam.
 import { Poster, QualityTag, useSound } from '@highsea-tv/ui-web'
 import { useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
@@ -31,22 +32,32 @@ const step = `(${poster}cqw + var(--tv-poster-gap))`
 const after = `(${wide}cqw + var(--tv-poster-gap))`
 
 /**
- * Where a film's poster sits on the strip, from the card's left edge: the films before the card's
- * to its left, running off the screen, and the ones after it to its right. The card's own film is
+ * Where a slot's poster sits on the strip, from the card's left edge: the slots before the card's
+ * to its left, running off the screen, and the ones after it to its right. The card's own slot is
  * hidden one place from where it came in, under the card's edge, so every poster moves exactly one
  * place a press, whichever way (the owner, 2026-10-30).
  */
-const place = (i: number, at: number, dir: number) =>
-  i < at
-    ? `calc(${i - at} * ${step})`
-    : i > at
-      ? `calc(${after} + ${i - at - 1} * ${step})`
+const place = (v: number, pos: number, dir: number) =>
+  v < pos
+    ? `calc(${v - pos} * ${step})`
+    : v > pos
+      ? `calc(${after} + ${v - pos - 1} * ${step})`
       : dir < 0
         ? '0px'
         : `calc(${after} - ${step})`
 
 /** Where the card's film, hidden, starts from as it comes out: one place short of its slot. */
 const exit = (dir: number) => (dir > 0 ? '0px' : `calc(${after} - ${step})`)
+
+/**
+ * The strip's slots kept around the card's: enough after it to run past the screen's right edge
+ * (about six posters show), and two before it, the one showing at the left edge and one off it.
+ * A slot is a place on an endless strip, keyed by its number, so a poster keeps its element as it
+ * slides; slots are made and dropped off the screen.
+ */
+const AHEAD = 9
+const BEHIND = 2
+const mod = (a: number, n: number) => ((a % n) + n) % n
 
 export function TvFilmRow({
   group,
@@ -55,6 +66,7 @@ export function TvFilmRow({
   goUp,
   items,
   hrefOf,
+  loop = false,
   className,
 }: {
   group: string
@@ -63,9 +75,15 @@ export function TvFilmRow({
   goUp?: string
   items: ClientItem[]
   hrefOf: (item: ClientItem) => string
+  /** Past the last film comes the first again, either way. */
+  loop?: boolean
   className?: string
 }) {
-  const [{ at, dir }, setAt] = useState({ at: 0, dir: 1 })
+  // `pos` is the card's slot on the strip; looping, it runs on past either end
+  const [{ pos, dir }, setPos] = useState({ pos: 0, dir: 1 })
+  const n = items.length
+  const loops = loop && n > 1
+  const at = loops ? mod(pos, n) : pos
   const card = useRef<HTMLAnchorElement>(null)
   const strip = useRef<HTMLUListElement>(null)
   const play = useSound()
@@ -77,11 +95,11 @@ export function TvFilmRow({
     const onKey = (e: KeyboardEvent) => {
       if (e.altKey || e.ctrlKey || e.metaKey || e.shiftKey) return
       const by = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0
-      if (!by || at + by < 0 || at + by >= items.length) return
+      if (!by || (!loops && (pos + by < 0 || pos + by >= n))) return
       e.preventDefault()
       // the card's film is hidden, so it jumps to where it comes out from, one place short of its
       // slot, before sliding there with the others
-      const leaving = strip.current?.children[at] as HTMLElement | undefined
+      const leaving = strip.current?.querySelector<HTMLElement>(`[data-slot="${pos}"]`)
       if (leaving && !reduced) {
         const transition = leaving.style.transition
         leaving.style.transition = 'none'
@@ -89,12 +107,14 @@ export function TvFilmRow({
         void leaving.offsetWidth
         leaving.style.transition = transition
       }
-      setAt({ at: at + by, dir: by })
+      setPos({ pos: pos + by, dir: by })
       play('navigate')
     }
     el?.addEventListener('keydown', onKey)
     return () => el?.removeEventListener('keydown', onKey)
-  }, [at, items.length, play, reduced])
+  }, [pos, n, loops, play, reduced])
+  const slots: number[] = []
+  for (let v = pos - BEHIND; v <= pos + AHEAD; v++) if (loops || (v >= 0 && v < n)) slots.push(v)
   const item = items[at]
   if (!item) return null
   return (
@@ -153,21 +173,25 @@ export function TvFilmRow({
           {/* every film as a poster on one strip behind the card, each sliding to its place as
           the card takes the next or the previous */}
           <ul ref={strip} aria-hidden className="absolute inset-y-0 left-0">
-            {items.map((m, i) => (
-              <li
-                key={m.id}
-                style={{
-                  width: `${poster}cqw`,
-                  transform: `translateX(${place(i, at, dir)})`,
-                  transition: reduced
-                    ? 'none'
-                    : `${slide}, opacity ${i === at ? 'var(--duration-fade-out) ease-out' : 'var(--duration-spring-quick) var(--ease-spring-quick)'}`,
-                }}
-                className={`absolute top-0 left-0 ${i === at ? 'opacity-0' : 'opacity-100'}`}
-              >
-                <Poster title={m.title} src={m.art.poster} />
-              </li>
-            ))}
+            {slots.map((v) => {
+              const m = items[mod(v, n)] as ClientItem
+              return (
+                <li
+                  key={v}
+                  data-slot={v}
+                  style={{
+                    width: `${poster}cqw`,
+                    transform: `translateX(${place(v, pos, dir)})`,
+                    transition: reduced
+                      ? 'none'
+                      : `${slide}, opacity ${v === pos ? 'var(--duration-fade-out) ease-out' : 'var(--duration-spring-quick) var(--ease-spring-quick)'}`,
+                  }}
+                  className={`absolute top-0 left-0 ${v === pos ? 'opacity-0' : 'opacity-100'}`}
+                >
+                  <Poster title={m.title} src={m.art.poster} />
+                </li>
+              )
+            })}
           </ul>
         </div>
       </div>

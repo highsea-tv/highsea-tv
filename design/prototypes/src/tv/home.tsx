@@ -118,7 +118,7 @@ function Bloom({ items, active, shown }: { items: ClientItem[]; active: number; 
 function Row({ section, goUp }: { section: HomeSection; goUp?: string }) {
   // Continue watching keeps its row of 16:9 cards, larger now, each resuming (the owner,
   // 2026-10-30); the
-  // other rows have their first slot fixed, and open the movie
+  // other rows have their first slot fixed, loop (the owner, 2026-10-30), and open the movie
   if (section.layout === 'continue')
     return (
       <TvRow group={section.id} title={section.title} suffix={section.suffix} goUp={goUp}>
@@ -137,6 +137,7 @@ function Row({ section, goUp }: { section: HomeSection; goUp?: string }) {
       goUp={goUp}
       items={section.items}
       hrefOf={(m) => tvHref(`/movies/${m.id}`)}
+      loop
     />
   )
 }
