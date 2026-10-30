@@ -267,9 +267,9 @@ export function WebFilmRow({
           </div>
         </div>
       </div>
-      {/* the card's film described */}
+      {/* the card's film described, as wide as the card */}
       <div className="px-(--g)">
-        <div id={described} className="grid w-[calc(var(--wide)+2*var(--gap))] max-w-full gap-1.5">
+        <div id={described} className="grid w-(--wide) max-w-full gap-1.5">
           <p className="flex flex-wrap items-center gap-x-3 gap-y-1 font-semibold text-body">
             {item.title}
             <span className="font-normal text-text-2">{meta(item)}</span>
@@ -322,7 +322,7 @@ export function WebFilmRowSkeleton() {
         </div>
       </div>
       <div className="px-(--g)">
-        <div className="grid w-[calc(var(--wide)+2*var(--gap))] max-w-full gap-2.5 pt-1">
+        <div className="grid w-(--wide) max-w-full gap-2.5 pt-1">
           <Skeleton className="h-4 w-2/3" />
           <SkeletonText lines={2} />
         </div>

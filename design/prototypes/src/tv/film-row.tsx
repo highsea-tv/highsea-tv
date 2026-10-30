@@ -195,9 +195,9 @@ export function TvFilmRow({
           </ul>
         </div>
       </div>
-      {/* the card's film described, under every row */}
+      {/* the card's film described under every row, as wide as the card */}
       <div
-        style={{ width: `calc(${wide}cqw + 2 * var(--tv-poster-gap) + var(--tv-safe-x))` }}
+        style={{ width: `calc(${wide}cqw + var(--tv-safe-x))` }}
         className="grid max-w-full gap-[0.5cqw] ps-(--tv-safe-x) pt-[0.4cqw] pb-[1.2cqw]"
       >
         <p className="flex flex-wrap items-center gap-x-[1cqw] gap-y-[0.3cqw] font-semibold text-(length:--tv-text-meta)">
@@ -247,7 +247,7 @@ export function TvFilmRowSkeleton() {
         </div>
       </div>
       <div
-        style={{ width: `calc(${wide}cqw + 2 * var(--tv-poster-gap) + var(--tv-safe-x))` }}
+        style={{ width: `calc(${wide}cqw + var(--tv-safe-x))` }}
         className="grid max-w-full gap-[0.7cqw] ps-(--tv-safe-x) pt-[0.6cqw] pb-[1.4cqw]"
       >
         <Skeleton className="h-[1.05cqw] w-2/3" />
