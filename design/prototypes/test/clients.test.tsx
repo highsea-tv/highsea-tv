@@ -197,7 +197,19 @@ describe('C3 library', () => {
       within(nav)
         .getAllByRole('link')
         .map((a) => a.getAttribute('aria-label') ?? a.textContent),
-    ).toEqual(['Search', 'Home', 'Collections', 'Movies', 'Shows', 'Music', 'Settings'])
+    ).toEqual([
+      'Search',
+      'Home',
+      'Collections',
+      'Movies',
+      'Shows',
+      'Music',
+      'Ines: profile and settings',
+    ])
+    // Settings is reached through the profile, the avatar, not as a destination
+    expect(
+      within(nav).getByRole('link', { name: 'Ines: profile and settings' }).getAttribute('href'),
+    ).toBe('#/tv/settings')
     expect(page().getByRole('heading', { level: 1, name: 'Shows' })).toBeTruthy()
     expect(page().getByText(/Shows come to highsea in a later version/)).toBeTruthy()
     const go = page().getAllByRole('link', { name: 'Movies' }).at(-1)

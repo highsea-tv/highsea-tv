@@ -438,12 +438,13 @@ describe('C6–C8 clients', () => {
   test('TV collection: its titles as a row', async () => {
     await open('/tv/collections/caminandes')
     expect(page().getByRole('heading', { level: 1, name: 'Caminandes Collection' })).toBeTruthy()
-    // the row's fixed card holds the first film, and the posters after it are the other two
+    // the row's fixed card holds the first film; every film is a poster on the strip behind it,
+    // the card's own hidden under it
     const row = within(page().getByRole('region', { name: 'Movies' }))
     const [card, ...more] = row.getAllByRole('link')
     expect(more).toHaveLength(0)
     expect(card?.getAttribute('aria-label')).toStartWith('Caminandes')
-    expect(row.getAllByRole('listitem', { hidden: true })).toHaveLength(2)
+    expect(row.getAllByRole('listitem', { hidden: true })).toHaveLength(3)
   })
 
   test('web search: suggestions, then results', async () => {

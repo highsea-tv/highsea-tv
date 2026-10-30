@@ -251,7 +251,8 @@ const destinations: { path: string; label: string; icon: IconName }[] = [
   { path: '/movies', label: 'Movies', icon: 'movie' },
   { path: '/shows', label: 'Shows', icon: 'series' },
   { path: '/music', label: 'Music', icon: 'music' },
-  { path: '/settings', label: 'Settings', icon: 'settings' },
+  // Settings isn't a destination: it's reached through the profile, the avatar at the head's
+  // right (the owner, 2026-10-30)
 ]
 
 /** Home's bloom: a glow colour for each featured card, the one focus is on, and whether it shows. */
@@ -334,28 +335,30 @@ export function TvHead({ down = 'hero', className }: { down?: string; className?
           )
         })}
       </div>
-      <Account />
+      <Account current={active('/settings')} />
     </nav>
   )
 }
 
 /**
- * The signed-in person's avatar, at the head's right. It will open switching accounts and signing
- * out; for now it's only a focus stop.
+ * The signed-in person's avatar, at the head's right: their profile, which is where the TV's
+ * Settings are (the owner, 2026-10-30). For now it opens Settings; switching accounts and signing
+ * out join it there.
  */
-function Account() {
+function Account({ current }: { current: boolean }) {
   return (
-    <button
-      type="button"
+    <a
+      href={tvHref('/settings')}
       data-focusable=""
-      aria-label="Ines: switch account or sign out"
+      aria-label="Ines: profile and settings"
+      aria-current={current ? 'page' : undefined}
       className="group/account grid size-[3cqw] place-items-center justify-self-end rounded-full outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text"
     >
       {/* on the focused ring the circle turns dark, so the initial still reads */}
       <span className="grid size-[2.2cqw] place-items-center rounded-full bg-accent-soft font-semibold text-(length:--tv-text-pill) text-accent-text group-focus-visible/account:bg-bg group-focus-visible/account:text-text">
         I
       </span>
-    </button>
+    </a>
   )
 }
 
