@@ -61,12 +61,14 @@ export function NudgePreview({ offsetMs, className }: { offsetMs: number; classN
     <div aria-hidden className={cn('relative h-12 overflow-hidden rounded-sm bg-s2', className)}>
       <div className="absolute inset-y-0 left-1/2 w-px bg-line-strong" />
       <div className="absolute top-2 left-[calc(50%-60px)] h-3 w-[120px] rounded-full bg-text-3/60" />
-      <span className="absolute top-1.5 left-2 font-mono text-[10px] text-text-3">Speech</span>
+      <span className="absolute top-1.5 left-2 font-mono text-caption text-text-3">Speech</span>
       <div
         className="absolute bottom-2 h-3 w-[120px] rounded-full bg-accent transition-[left] duration-200"
         style={{ left: `calc(50% - 60px + ${shift}px)` }}
       />
-      <span className="absolute bottom-1.5 left-2 font-mono text-[10px] text-text-3">Subtitle</span>
+      <span className="absolute bottom-1.5 left-2 font-mono text-caption text-text-3">
+        Subtitle
+      </span>
     </div>
   )
 }
@@ -84,7 +86,7 @@ function RadioRow({
   children: React.ReactNode
 }) {
   return (
-    <label className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 py-2 text-ui transition-tint hover:bg-text/8 has-[:focus-visible]:ring-focus">
+    <label className="flex w-full cursor-pointer items-center gap-2 rounded-sm px-2.5 py-2 text-body transition-tint hover:bg-text/8 has-[:focus-visible]:ring-focus">
       <input type="radio" name={name} checked={checked} onChange={onChange} className="sr-only" />
       <Icon name="check" size={14} className={checked ? '' : 'invisible'} />
       {children}
@@ -191,7 +193,10 @@ export function TracksPanel({ player, onClose }: { player: Player; onClose: () =
               aria-label={`Show subtitles ${NUDGE_MS} ms earlier`}
               onClick={() => player.nudge(-1)}
             />
-            <output aria-live="polite" className="min-w-24 text-center font-mono text-text text-ui">
+            <output
+              aria-live="polite"
+              className="min-w-24 text-center font-mono text-text text-body"
+            >
               {offsetLabel(player.offsetMs)}
             </output>
             <Button
@@ -268,7 +273,7 @@ export function Scrubber({ player }: { player: Player }) {
             alt=""
             className="aspect-still w-40 rounded-sm border border-line-strong object-cover shadow-3"
           />
-          <span className="font-mono text-[12px] text-text">{clock(shown.t)}</span>
+          <span className="text-mono text-text">{clock(shown.t)}</span>
         </div>
       )}
       <input
@@ -393,7 +398,7 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
         <div className="absolute inset-0 grid place-items-center bg-[#000]">
           <div className="grid justify-items-center gap-4 text-center">
             <Icon name="picture-in-picture" size={40} className="text-text-2" />
-            <p className="text-text-2 text-ui">Playing in picture in picture</p>
+            <p className="text-text-2 text-body">Playing in picture in picture</p>
             <Button variant="secondary" onClick={() => setPip(false)}>
               Back to this tab
             </Button>
@@ -492,7 +497,7 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
             >
               <Icon name={muted ? 'mute' : 'sound'} size={20} />
             </button>
-            <span className="ms-2 font-mono text-[13px] text-text-2">
+            <span className="ms-2 text-mono text-text-2">
               {clock(player.position)} / {clock(player.duration)}
             </span>
             <button

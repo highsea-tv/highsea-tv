@@ -71,7 +71,7 @@ function Choose({
             >
               <Mark size={28} />
               <span className="grid min-w-0">
-                <span className="truncate font-semibold text-text text-ui">{k.name}</span>
+                <span className="truncate font-semibold text-text text-body">{k.name}</span>
                 <span className="truncate text-caption text-text-3">
                   {k.owner}’s server · {k.signedIn ? 'signed in' : 'signed out'} ·{' '}
                   {now - Date.parse(k.lastSeen) < 60_000 ? 'just now' : relative(k.lastSeen, now)}
@@ -122,7 +122,7 @@ function Choose({
           >
             <Mark size={28} paint="mono" />
             <span className="grid min-w-0">
-              <span className="truncate font-semibold text-text text-ui">{s.name}</span>
+              <span className="truncate font-semibold text-text text-body">{s.name}</span>
               <span className="truncate text-caption text-text-3">
                 {s.owner}’s server · <span className="font-mono">{s.address}</span>
               </span>
@@ -188,7 +188,7 @@ function Choose({
           type="button"
           aria-expanded={cloud}
           onClick={() => setCloud((c) => !c)}
-          className="flex cursor-pointer items-center gap-2 text-start text-text-2 text-ui outline-none hover:text-text focus-visible:ring-focus"
+          className="flex cursor-pointer items-center gap-2 text-start text-text-2 text-body outline-none hover:text-text focus-visible:ring-focus"
         >
           <Icon name="globe" size={16} />
           Find my servers with a highsea account
@@ -230,7 +230,7 @@ function SignIn({
       <div className="flex items-center gap-3 rounded-md bg-s2 px-3 py-2.5">
         <Mark size={28} />
         <span className="grid min-w-0">
-          <span className="truncate font-semibold text-text text-ui">{server.name}</span>
+          <span className="truncate font-semibold text-text text-body">{server.name}</span>
           <span className="truncate text-caption text-text-3">
             {server.reachability === 'remote' ? 'Remotely, through ' : 'On this network, at '}
             <span className="font-mono">{server.address}</span>

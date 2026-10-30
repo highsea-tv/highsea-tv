@@ -33,7 +33,7 @@ export function WebSearch() {
                 key={s}
                 type="button"
                 onClick={() => setQ(s)}
-                className="rounded-full border border-line-strong px-3.5 py-1.5 text-text-2 text-ui outline-none hover:bg-s2 hover:text-text focus-visible:ring-focus"
+                className="rounded-full border border-line-strong px-3.5 py-1.5 text-text-2 text-body outline-none hover:bg-s2 hover:text-text focus-visible:ring-focus"
               >
                 {s}
               </button>
@@ -41,13 +41,13 @@ export function WebSearch() {
           </div>
         </section>
       ) : results.status === 'error' ? (
-        <p className="text-badge-danger text-ui">Search didn’t work. {results.error.message}</p>
+        <p className="text-badge-danger text-body">Search didn’t work. {results.error.message}</p>
       ) : !r ? (
         <p aria-busy className="text-caption text-text-3">
           Searching…
         </p>
       ) : r.sections.length === 0 ? (
-        <p className="text-text-2 text-ui">
+        <p className="text-text-2 text-body">
           Nothing on Harbor matches “{settled}”. Try part of a title, a genre or a name.
         </p>
       ) : (
@@ -90,7 +90,7 @@ function Results({
         <ul className={grid}>
           {section.items.map((m) => (
             <li key={m.id}>
-              <MediaPoster item={m} href={webHref(`/movies/${m.id}`)} />
+              <MediaPoster item={m} titleSize="body" href={webHref(`/movies/${m.id}`)} />
             </li>
           ))}
         </ul>
@@ -123,7 +123,7 @@ function Results({
               >
                 <img src={p.photo} alt="" className="size-8 rounded-full object-cover" />
                 <span className="grid">
-                  <span className="text-text text-ui">{p.name}</span>
+                  <span className="text-text text-body">{p.name}</span>
                   <span className="text-caption text-text-3">
                     {p.titles} {p.titles === 1 ? 'movie' : 'movies'} here
                   </span>

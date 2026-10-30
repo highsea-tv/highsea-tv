@@ -77,7 +77,7 @@ export function KeptIn() {
           {moving && (
             <div role="status" className="grid gap-1.5">
               <Progress value={done * 100} aria-label="Moving downloads" />
-              <p className="text-[13px] text-text-3">
+              <p className="text-caption text-text-3">
                 Moving {kept.length} {kept.length === 1 ? 'movie' : 'movies'} to{' '}
                 <span className="font-mono">{moving.to}</span> · {bytes(total * done)} of{' '}
                 {bytes(total)}. They play from where they are until they’ve moved.

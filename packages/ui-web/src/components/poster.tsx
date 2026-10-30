@@ -35,6 +35,8 @@ export type PosterProps = {
   progressBelow?: boolean
   /** Shows the title (two lines, then an ellipsis) and `caption` under the art. */
   showTitle?: boolean
+  /** The title's size: the admin's `ui`, or the clients' `body` (the owner, 2026-10-30). */
+  titleSize?: 'ui' | 'body'
   caption?: ReactNode
   /** Quick actions over the art, shown on hover and focus (Play, Add to list, More). */
   actions?: ReactNode
@@ -56,6 +58,7 @@ export function Poster({
   progress,
   progressBelow = false,
   showTitle = false,
+  titleSize = 'ui',
   caption,
   actions,
   focusable,
@@ -123,7 +126,14 @@ export function Poster({
   const below = progress !== undefined && progressBelow && <Progress value={progress} />
   const label = showTitle && (
     <div className="mt-2 grid gap-0.5 text-start">
-      <span className="line-clamp-2 text-text text-ui">{title}</span>
+      <span
+        className={cn(
+          'line-clamp-2 font-semibold text-text',
+          titleSize === 'body' ? 'text-body' : 'text-ui',
+        )}
+      >
+        {title}
+      </span>
       {caption && <span className="text-caption text-text-3">{caption}</span>}
     </div>
   )

@@ -27,7 +27,7 @@ export function WebSettings() {
         gutter,
       )}
     >
-      <h1 className="text-display">Settings</h1>
+      <h1 className="text-heading">Settings</h1>
       <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @min-[42rem]:grid-cols-[14rem_minmax(0,1fr)]">
         <nav
           aria-label="Settings"
@@ -38,7 +38,7 @@ export function WebSettings() {
               key={s.id}
               href={webHref(`/settings/${s.id}`)}
               aria-current={(current?.id ?? 'appearance') === s.id ? 'page' : undefined}
-              className="flex items-center gap-3 rounded-md px-3 py-2.5 text-text-2 text-ui outline-none hover:bg-text/6 hover:text-text focus-visible:ring-focus @min-[42rem]:aria-[current=page]:bg-text/8 @min-[42rem]:aria-[current=page]:text-text"
+              className="flex items-center gap-3 rounded-md px-3 py-2.5 text-text-2 text-body outline-none hover:bg-text/6 hover:text-text focus-visible:ring-focus @min-[42rem]:aria-[current=page]:bg-text/8 @min-[42rem]:aria-[current=page]:text-text"
             >
               <Icon name={s.icon} size={18} />
               <span className="grid">
@@ -58,7 +58,7 @@ export function WebSettings() {
           {current && (
             <a
               href={webHref('/settings')}
-              className="flex items-center gap-1 justify-self-start text-text-2 text-ui @min-[42rem]:hidden"
+              className="flex items-center gap-1 justify-self-start text-text-2 text-body @min-[42rem]:hidden"
             >
               <Icon name="chevron-left" size={16} />
               Settings
@@ -91,18 +91,18 @@ export function WebProfile() {
       <div className="flex items-center gap-4">
         <span
           aria-hidden
-          className="grid size-16 place-items-center rounded-full bg-accent-soft font-semibold text-[28px] text-accent-text"
+          className="grid size-16 place-items-center rounded-full bg-accent-soft font-semibold text-heading text-accent-text"
         >
           I
         </span>
         <div className="grid">
-          <h1 className="text-display">Ines</h1>
-          <p className="text-text-2 text-ui">@ines · owner of {name}</p>
+          <h1 className="text-heading">Ines</h1>
+          <p className="text-text-2 text-body">@ines · owner of {name}</p>
         </div>
       </div>
       <section aria-label="Account" className="grid gap-3 rounded-lg border border-line bg-s1 p-5">
         <h2 className="text-title">Account</h2>
-        <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-6 gap-y-2 text-ui [overflow-wrap:anywhere]">
+        <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-6 gap-y-2 text-body [overflow-wrap:anywhere]">
           <dt className="text-text-3">Server</dt>
           <dd className="text-text">{name}</dd>
           <dt className="text-text-3">Two-step verification</dt>
@@ -139,7 +139,7 @@ export function WebProfile() {
           <li key={l.href}>
             <a
               href={webHref(l.href)}
-              className="flex items-center gap-3 rounded-md border border-line bg-s1 px-4 py-3 text-ui outline-none hover:bg-s2 focus-visible:ring-focus"
+              className="flex items-center gap-3 rounded-md border border-line bg-s1 px-4 py-3 text-body outline-none hover:bg-s2 focus-visible:ring-focus"
             >
               <Icon name={l.icon} size={18} className="text-text-3" />
               <span className="grid flex-1">
@@ -205,7 +205,7 @@ function DesktopDownloads() {
         gutter,
       )}
     >
-      <h1 className="text-display">Downloads</h1>
+      <h1 className="text-heading">Downloads</h1>
       <OfflineList app="desktop" href={(id) => webHref(`/play/${id}`)} settings={<KeptIn />} />
     </main>
   )

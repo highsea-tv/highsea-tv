@@ -50,7 +50,7 @@ export function WatchWith({
             }))}
           />
         ) : (
-          <p className="flex h-(--size-control) items-center text-text-2 text-ui">
+          <p className="flex h-(--size-control) items-center text-text-2 text-body">
             {version.detail}
           </p>
         )}
@@ -130,7 +130,7 @@ export function WebDetail() {
             <h1 id="title" className="text-balance text-display">
               {m.title}
             </h1>
-            <p className="flex flex-wrap items-center gap-2 text-text-2 text-ui">
+            <p className="flex flex-wrap items-center gap-2 text-text-2 text-body">
               <span>{m.year}</span>
               <span aria-hidden>·</span>
               <span>{runtime(m.runtimeMinutes)}</span>

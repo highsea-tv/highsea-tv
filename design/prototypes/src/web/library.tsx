@@ -125,7 +125,7 @@ export function WebLibrary() {
         >
           {shown.map((m) => (
             <li key={m.id}>
-              <MediaPoster item={m} href={webHref(`/movies/${m.id}`)} />
+              <MediaPoster item={m} titleSize="body" href={webHref(`/movies/${m.id}`)} />
             </li>
           ))}
         </ul>

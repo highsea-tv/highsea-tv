@@ -49,7 +49,7 @@ export function DownloadButton({
           aria-label={`Downloading ${item.title}`}
         />
         <div className="flex items-center justify-between gap-2">
-          <p className="text-[13px] text-text-3">
+          <p className="text-caption text-text-3">
             {x.state === 'paused'
               ? `Paused · ${bytes(x.bytes * x.progress)} of ${bytes(x.bytes)}`
               : `Downloading · ${bytes(x.speed)}/s · ${bytes(x.bytes * (1 - x.progress))} to go`}
@@ -69,7 +69,7 @@ export function DownloadButton({
   if (x.state === 'queued' || x.state === 'waiting-wifi')
     return (
       <div className={cn('flex items-center gap-2', className)}>
-        <span className="text-[14px] text-text-2">
+        <span className="text-body text-text-2">
           {x.state === 'queued' ? 'Waiting to download' : 'Waiting for Wi-Fi'}
         </span>
         <Button size="sm" variant="ghost" onClick={() => d.remove(x.id)}>
@@ -81,7 +81,7 @@ export function DownloadButton({
   if (x.state === 'failed')
     return (
       <div className={cn('flex flex-wrap items-center gap-2', className)}>
-        <span className="text-[14px] text-danger">The download stopped</span>
+        <span className="text-body text-danger">The download stopped</span>
         <Button size="sm" icon="download" onClick={() => d.retry(x.id)}>
           Try again
         </Button>
@@ -90,7 +90,7 @@ export function DownloadButton({
 
   return (
     <div className={cn('flex flex-wrap items-center gap-2', className)}>
-      <span className="text-[14px] text-text-2">
+      <span className="text-body text-text-2">
         {x.state === 'expired'
           ? 'Downloaded · connect to Harbor to keep watching it'
           : `Downloaded · plays offline for ${x.daysLeft} more days`}

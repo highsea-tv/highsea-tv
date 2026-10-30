@@ -51,7 +51,7 @@ export function WebCollection() {
             {c.smart?.words ? 'Smart collection' : 'Collection'}
           </p>
           <h1 className="text-display">{c.name}</h1>
-          <p className="text-text-2 text-ui">
+          <p className="text-text-2 text-body">
             {c.count} {c.count === 1 ? 'movie' : 'movies'} here · {c.years}
           </p>
           {c.smart?.words && <p className="text-caption text-text-3">{c.smart.words}</p>}
@@ -67,7 +67,7 @@ export function WebCollection() {
       >
         {items.map((m) => (
           <li key={m.id}>
-            <MediaPoster item={m} href={webHref(`/movies/${m.id}`)} />
+            <MediaPoster item={m} titleSize="body" href={webHref(`/movies/${m.id}`)} />
           </li>
         ))}
       </ul>

@@ -19,8 +19,8 @@ type Size = 'web' | 'mobile' | 'tv'
 
 const text: Record<Size, { title: string; body: string; small: string; spinner: string }> = {
   web: {
-    title: 'text-[22px] font-semibold',
-    body: 'text-ui text-text-2',
+    title: 'text-title',
+    body: 'text-body text-text-2',
     small: 'text-caption text-text-2',
     spinner: 'size-7',
   },
@@ -205,7 +205,11 @@ export function NextUp({
           <span
             className={cn(
               'truncate font-semibold text-text',
-              size === 'tv' ? 'text-(length:--tv-text-button)' : 'text-ui',
+              size === 'tv'
+                ? 'text-(length:--tv-text-button)'
+                : size === 'web'
+                  ? 'text-body'
+                  : 'text-ui',
             )}
           >
             {next.title}

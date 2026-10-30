@@ -202,7 +202,7 @@ export function WebFilmRow({
       {/* the card's film described */}
       <div className={gutter}>
         <div id={described} className="grid w-[calc(var(--wide)+2*var(--gap))] max-w-full gap-1.5">
-          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 font-semibold text-ui">
+          <p className="flex flex-wrap items-center gap-x-3 gap-y-1 font-semibold text-body">
             {item.title}
             <span className="font-normal text-text-2">{meta(item)}</span>
             {qualityTags(item).map((q) => (

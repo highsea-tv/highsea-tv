@@ -46,7 +46,7 @@ export function OfflineList({
     <div className="grid grid-cols-[minmax(0,1fr)] gap-5">
       <div className="grid gap-1.5">
         <Progress value={(used / total) * 100} aria-label="Space used by downloads" />
-        <p className="text-[13px] text-text-3">
+        <p className="text-caption text-text-3">
           {ready} {ready === 1 ? 'movie' : 'movies'} ready to watch · {bytes(used)} ·{' '}
           {bytes(total - used)} free on {where}
         </p>
@@ -176,9 +176,9 @@ function Row({
         aspect="still"
         href={x.state === 'done' ? href(x.id) : undefined}
       />
-      <div className="grid gap-1">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1">
         <p className="flex flex-wrap items-center gap-x-2 gap-y-1">
-          <span className="truncate font-semibold text-[15px]">{x.title}</span>
+          <span className="min-w-0 truncate font-semibold text-body">{x.title}</span>
           {s.badge}
         </p>
         {moving && (
@@ -190,7 +190,7 @@ function Row({
             className="max-w-[24rem]"
           />
         )}
-        <p className={cn('text-[13px]', x.state === 'failed' ? 'text-danger' : 'text-text-3')}>
+        <p className={cn('text-caption', x.state === 'failed' ? 'text-danger' : 'text-text-3')}>
           {s.line}
         </p>
         <div className="-ms-2 flex flex-wrap items-center gap-1 [&>*]:h-auto [&>*]:min-h-(--size-control-sm) [&>*]:max-w-full [&>*]:whitespace-normal [&>*]:py-1 [&>*]:text-start">

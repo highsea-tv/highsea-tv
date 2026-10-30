@@ -35,7 +35,7 @@ export function MediaPoster({
   ...rest
 }: MediaCardOptions & { item: ClientItem; href: string } & Pick<
     PosterProps,
-    'quality' | 'actions' | 'className'
+    'quality' | 'actions' | 'className' | 'titleSize'
   >) {
   const card = mediaCard(item, { wide, resume })
   return (

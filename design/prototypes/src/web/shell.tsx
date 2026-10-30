@@ -72,16 +72,16 @@ function ServerSwitcher() {
       <MenuTrigger asChild>
         <button
           type="button"
-          className="flex min-w-0 items-center gap-2 rounded-sm px-1.5 py-1 font-semibold text-ui outline-none hover:bg-text/8 focus-visible:ring-focus"
+          className="flex min-w-0 items-center gap-2 rounded-sm px-1.5 py-1 font-semibold text-body outline-none hover:bg-text/8 focus-visible:ring-focus"
         >
-          <Mark size={22} />
+          <Mark size={24} />
           <span className="truncate">{name}</span>
           {connection === 'remote' && (
-            <span className="hidden rounded-full bg-text/10 px-2 py-0.5 font-normal text-[12px] text-text-2 medium:inline">
+            <span className="hidden rounded-full bg-text/10 px-2 py-0.5 font-normal text-caption text-text-2 medium:inline">
               Connected remotely
             </span>
           )}
-          <Icon name="chevron-down" size={14} className="text-text-3" />
+          <Icon name="chevron-down" size={15} className="text-text-3" />
         </button>
       </MenuTrigger>
       <MenuContent align="start" className="w-72">
@@ -96,7 +96,7 @@ function ServerSwitcher() {
             >
               <span className="grid">
                 <span>{k.name}</span>
-                <span className="text-[12px] text-text-3">
+                <span className="text-caption text-text-3">
                   {current
                     ? connection === 'remote'
                       ? `Remote · ${k.addresses.remote}`
@@ -131,7 +131,7 @@ function Profile() {
               ? 'Ines: profile and settings. An update is ready.'
               : 'Ines: profile and settings'
           }
-          className="relative grid size-8 place-items-center rounded-full bg-accent-soft font-semibold text-accent-text text-ui outline-none focus-visible:ring-focus"
+          className="relative grid size-8 place-items-center rounded-full bg-accent-soft font-semibold text-accent-text text-body outline-none focus-visible:ring-focus"
         >
           I{/* the desktop app's update, waiting quietly for a restart */}
           {update && (
@@ -159,7 +159,7 @@ function Profile() {
             <MenuItem icon="refresh" onSelect={restartToUpdate}>
               <span className="grid">
                 <span>Restart to update</span>
-                <span className="text-[12px] text-text-3">
+                <span className="text-caption text-text-3">
                   highsea {NEXT_APP_VERSION} is ready. You have {APP_VERSION}.
                 </span>
               </span>
@@ -228,12 +228,16 @@ export function TopBar({ overHero }: { overHero: boolean | 'bloom' }) {
                 aria-current={active ? 'page' : undefined}
                 aria-label={d.icon ? d.label : undefined}
                 className={cn(
-                  'shrink-0 rounded-sm px-3 py-1.5 text-ui outline-none transition-tint hover:text-text focus-visible:ring-focus',
+                  'shrink-0 rounded-sm px-3 py-1.5 font-semibold text-body outline-none transition-tint hover:text-text focus-visible:ring-focus',
                   // unselected, the text colour with alpha, as on the TV, so the bloom's colour shows through
-                  active ? 'font-semibold text-text' : 'text-text/65',
+                  active ? 'text-text' : 'text-text/65',
                 )}
               >
-                {d.icon ? <Icon name={d.icon} size={18} className="block" /> : d.label}
+                {d.icon ? (
+                  <Icon name={d.icon} size={18} strokeWidth={2.25} className="block" />
+                ) : (
+                  d.label
+                )}
               </a>
             )
           })}
@@ -244,7 +248,7 @@ export function TopBar({ overHero }: { overHero: boolean | 'bloom' }) {
             aria-label="Search"
             className="grid size-9 place-items-center rounded-full text-text/65 outline-none hover:text-text focus-visible:ring-focus medium:hidden"
           >
-            <Icon name="search" size={18} />
+            <Icon name="search" size={18} strokeWidth={2.25} />
           </a>
           <Profile />
         </div>
@@ -261,7 +265,7 @@ export function TopBar({ overHero }: { overHero: boolean | 'bloom' }) {
               key={d.path}
               href={webHref(d.path)}
               aria-current={isCurrent(d.path, location) ? 'page' : undefined}
-              className="shrink-0 rounded-full px-3 py-1 text-text/65 text-ui outline-none hover:text-text aria-[current=page]:bg-text/10 aria-[current=page]:text-text focus-visible:ring-focus"
+              className="shrink-0 rounded-full px-3 py-1 font-semibold text-body text-text/65 outline-none hover:text-text aria-[current=page]:bg-text/10 aria-[current=page]:text-text focus-visible:ring-focus"
             >
               {d.label}
             </a>
@@ -298,7 +302,7 @@ export function Banners() {
             b.severity === 'warning' ? 'text-badge-warning' : 'text-accent-text',
           )}
         />
-        <p className="min-w-0 flex-1 py-2 text-text-2 text-ui">
+        <p className="min-w-0 flex-1 py-2 text-text-2 text-body">
           <span className="me-3 font-semibold text-text">{b.title}</span>
           <Inline text={b.body} />
         </p>

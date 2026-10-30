@@ -104,7 +104,7 @@ function ThemeSection({ platform }: { platform: ClientPlatform }) {
               className="size-4 accent-accent-fill"
             />
             <span className="grid min-w-0 flex-1">
-              <span className="truncate text-text text-ui">{t.name}</span>
+              <span className="truncate text-text text-body">{t.name}</span>
               <span className="text-caption text-text-3">{t.detail}</span>
             </span>
             {t.id !== 'server' && (
@@ -175,7 +175,7 @@ function SoundSection({ platform }: { platform: ClientPlatform }) {
         />
       </Field>
       <div className="grid gap-2">
-        <span className="font-medium text-text text-ui">Listen</span>
+        <span className="font-medium text-text text-body">Listen</span>
         <div className="flex flex-wrap gap-1.5">
           {SOUND_EVENTS.slice(0, 4).map((e) => (
             <Button key={e} size="sm" icon="sound" onClick={() => player?.play(e, { force: true })}>
@@ -218,7 +218,7 @@ function HomeSection() {
               {handle}
               <span
                 className={cn(
-                  'min-w-0 flex-1 truncate text-ui',
+                  'min-w-0 flex-1 truncate text-body',
                   shown ? 'text-text' : 'text-text-3',
                 )}
               >
@@ -254,7 +254,7 @@ function ServersSection({ platform }: { platform: ClientPlatform }) {
             <Row key={k.id}>
               <Mark size={26} />
               <span className="grid min-w-0 flex-1">
-                <span className="truncate text-text text-ui">{k.name}</span>
+                <span className="truncate text-text text-body">{k.name}</span>
                 <span className="truncate text-caption text-text-3">
                   {current
                     ? connection === 'remote'
@@ -321,7 +321,7 @@ function DevicesSection({ platform }: { platform: ClientPlatform }) {
         <Row key={d.id}>
           <Icon name={deviceIcon(d.client)} size={18} className="shrink-0 text-text-3" />
           <span className="grid min-w-0 flex-1">
-            <span className="truncate text-text text-ui">{d.name}</span>
+            <span className="truncate text-text text-body">{d.name}</span>
             <span className="text-caption text-text-3">
               {d.id === here ? 'This device' : `Last used ${relative(d.lastSeen, now)}`}
             </span>
@@ -359,7 +359,7 @@ function AppUpdates() {
   const now = useNow()
   return ready ? (
     <div className="grid justify-items-start gap-2 rounded-md border border-line bg-s1 p-3">
-      <p className="text-text text-ui">
+      <p className="text-text text-body">
         highsea {NEXT_APP_VERSION} is ready. It’s used the next time the app starts.
       </p>
       <Button size="sm" variant="primary" icon="refresh" onClick={restartToUpdate}>
@@ -383,7 +383,7 @@ function AboutSection({ platform }: { platform: ClientPlatform }) {
   const address = server.data?.addresses.public ?? server.data?.addresses.local[0] ?? ''
   return (
     <div className="grid gap-4">
-      <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-6 gap-y-2 text-ui [overflow-wrap:anywhere]">
+      <dl className="grid grid-cols-[minmax(0,auto)_minmax(0,1fr)] gap-x-6 gap-y-2 text-body [overflow-wrap:anywhere]">
         <dt className="text-text-3">This app</dt>
         <dd className="font-mono text-figure text-text">
           highsea {APP_VERSION}

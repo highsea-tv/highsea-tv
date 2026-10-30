@@ -52,6 +52,7 @@ export function PosterRow({
           key={m.id}
           item={m}
           wide={wide}
+          titleSize="body"
           href={webHref(`/movies/${m.id}`)}
           quality={qualityTags(m).slice(0, 1)}
           actions={
@@ -74,7 +75,7 @@ function ContinueRow({ section }: { section: HomeSection }) {
   return (
     <CarouselRow title={section.title} itemClassName={cardWidth}>
       {section.items.map((m) => (
-        <MediaPoster key={m.id} item={m} resume href={webHref(`/play/${m.id}`)} />
+        <MediaPoster key={m.id} item={m} resume href={webHref(`/play/${m.id}`)} titleSize="body" />
       ))}
     </CarouselRow>
   )
@@ -176,7 +177,7 @@ function FeaturedCard({ item }: { item: ClientItem }) {
             item.title
           )}
         </h2>
-        <p className="flex flex-wrap items-center gap-2 text-text-2 text-ui">
+        <p className="flex flex-wrap items-center gap-2 text-text-2 text-body">
           <Meta item={item} />
         </p>
         <p className="line-clamp-2 text-body text-text-2">{item.tagline ?? item.synopsis}</p>
