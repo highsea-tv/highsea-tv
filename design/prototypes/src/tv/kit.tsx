@@ -351,8 +351,8 @@ export function GlobalNav({ down = 'hero', lifted }: { down?: string; lifted?: b
 }
 
 /**
- * The left rail: a transparent column the screen's height, with the destinations' icons centred
- * in it. Left from any screen's edge focuses it, and it opens with its labels, pushing the page
+ * The left rail: a transparent column the screen's height, with the destinations' icons under the
+ * server's mark (the owner, 2026-10-30). Left from any screen's edge focuses it, and it opens with its labels, pushing the page
  * right to make room rather than covering it; Right, or leaving it, closes it and returns focus to
  * where it was in the page (or to `down`). Up and Down stay inside it.
  */
@@ -395,14 +395,14 @@ function Rail({ down }: { down: string }) {
       }}
       className="absolute inset-y-0 left-0 z-20 flex"
     >
-      {/* the server's mark at the top, the destinations in the middle, the account at the foot */}
+      {/* the server's mark at the top, the destinations under it, the account at the foot */}
       <div
         ref={list}
         className="grid grid-rows-[auto_1fr_auto] items-center gap-[0.5cqw] py-(--tv-safe-y)"
         style={{ marginLeft: `${railGap - railPad}cqw` }}
       >
         <RailServer open={open} />
-        <div className="grid gap-[0.5cqw]">
+        <div className="grid gap-[0.5cqw] self-start pt-[2cqw]">
           {destinations.map((d) => (
             <a
               key={d.path}
