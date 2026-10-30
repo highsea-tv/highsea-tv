@@ -7,7 +7,7 @@
 import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import { useHome } from '../client/data.ts'
-import { MediaPoster } from '../client/media-card.tsx'
+import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
 import type { ClientItem, HomeSection } from '../mock/types.ts'
 import { PullToRefresh } from './pull.tsx'
 import { AnnouncementCard, gutter, Header, mobileHref } from './shell.tsx'
@@ -94,6 +94,59 @@ function Featured({ section }: { section: HomeSection }) {
   )
 }
 
+/** A row while it loads: its title, then cards of `width`, running past the edge. */
+export function MobileRowSkeleton({
+  width,
+  wide = false,
+  resume = false,
+}: {
+  width: string
+  wide?: boolean
+  resume?: boolean
+}) {
+  return (
+    <div aria-hidden className="grid gap-2.5">
+      <div className={gutter}>
+        <Skeleton className="my-0.5 h-4.5 w-40" />
+      </div>
+      <div className="flex gap-2 overflow-hidden px-4">
+        {[0, 1, 2].map((i) => (
+          <MediaPosterSkeleton
+            key={i}
+            wide={wide}
+            resume={resume}
+            className={cn('shrink-0', width)}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Home while it loads, laid out as it will be: the featured cards with their eyebrow and title at
+ * the bottom, the next one peeking, then Continue watching and a row of stills.
+ */
+function HomeSkeleton() {
+  return (
+    <div aria-busy className="grid gap-6">
+      <div className="flex gap-3 overflow-hidden px-4">
+        {[0, 1].map((i) => (
+          <div
+            key={i}
+            className="grid aspect-[4/5] w-[78%] shrink-0 content-end gap-2 rounded-lg bg-s1 p-4"
+          >
+            <Skeleton className="h-2.5 w-32" />
+            <Skeleton className="my-0.5 h-6 w-3/5" />
+          </div>
+        ))}
+      </div>
+      <MobileRowSkeleton width="w-[62%]" resume />
+      <MobileRowSkeleton width="w-[46%]" wide />
+    </div>
+  )
+}
+
 export function MobileHome() {
   const home = useHome('mobile')
   return (
@@ -102,17 +155,7 @@ export function MobileHome() {
         <Header />
         <AnnouncementCard />
         {home.status === 'loading' ? (
-          <div aria-busy className="grid gap-6">
-            <div className="flex gap-3 overflow-hidden px-4">
-              <Skeleton className="aspect-[4/5] w-[78%] shrink-0 rounded-lg" />
-              <Skeleton className="aspect-[4/5] w-[78%] shrink-0 rounded-lg" />
-            </div>
-            <div className="flex gap-2 overflow-hidden px-4">
-              {[0, 1, 2, 3].map((i) => (
-                <Skeleton key={i} className="aspect-still w-[46%] shrink-0 rounded-poster" />
-              ))}
-            </div>
-          </div>
+          <HomeSkeleton />
         ) : home.status === 'error' ? (
           <div className={gutter}>
             <EmptyState

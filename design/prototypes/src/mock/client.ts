@@ -60,8 +60,8 @@ export function createClient(
 ): HighseaClient {
   const server = data === 'empty' ? servers.empty : servers.populated
   const api = createApi(server, { userId: userFor(role), storage })
-  const call = async <R>(fn: () => R): Promise<R> => {
-    if (data === 'loading') return pending<R>()
+  const call = async <R>(fn: () => R, { held = true } = {}): Promise<R> => {
+    if (data === 'loading' && held) return pending<R>()
     await wait(latency)
     if (data === 'error')
       throw new ApiError(
@@ -72,7 +72,14 @@ export function createClient(
     // a copy, as a network response would be: screens can't mutate server state by accident
     return structuredClone(fn())
   }
-  return Object.assign(wrap(api, call), {
+  const client = wrap(api, call)
+  // The apps' announcements come before a screen's data, so a screen loading already shows them
+  // where they'll stay, with nothing popping in when it's ready (the owner, 2026-10-30)
+  client.announcements.active = (...args) =>
+    call(() => api.announcements.active(...args), { held: false })
+  client.announcements.dismiss = (...args) =>
+    call(() => api.announcements.dismiss(...args), { held: false })
+  return Object.assign(client, {
     events: { subscribe: server.events.subscribe },
     now: () => server.clock.now(),
     dataState: data,

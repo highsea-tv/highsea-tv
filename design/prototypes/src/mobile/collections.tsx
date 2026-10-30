@@ -3,6 +3,7 @@
 // as Movies with a switch between the two, then the collections three a row, smart ones marked.
 import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui-web'
 import { collectionCaption, useCollections } from '../client/data.ts'
+import { MediaPosterSkeleton } from '../client/media-card.tsx'
 import { CollectionTile } from '../kit/collection-art.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
 
@@ -38,17 +39,23 @@ export function MobileCollections() {
     <div className="grid gap-4 pt-1">
       <Header title="Library" />
       <LibraryNav current="collections" />
-      <p className={cn('text-[13px] text-text-3', gutter)}>
-        {list.status === 'success'
-          ? `${xs.length} ${xs.length === 1 ? 'collection' : 'collections'}`
-          : ' '}
-      </p>
+      {list.status === 'loading' ? (
+        <div className={gutter}>
+          <Skeleton className="my-1 h-3 w-20" />
+        </div>
+      ) : (
+        <p className={cn('text-[13px] text-text-3', gutter)}>
+          {list.status === 'success'
+            ? `${xs.length} ${xs.length === 1 ? 'collection' : 'collections'}`
+            : ' '}
+        </p>
+      )}
       <div className={gutter}>
         {list.status === 'loading' ? (
-          <div aria-busy className="grid grid-cols-3 gap-2">
+          <div aria-busy className="grid grid-cols-3 gap-x-2 gap-y-4">
             {Array.from({ length: 6 }, (_, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
-              <Skeleton key={i} className="aspect-poster rounded-poster" />
+              <MediaPosterSkeleton key={i} />
             ))}
           </div>
         ) : list.status === 'error' ? (

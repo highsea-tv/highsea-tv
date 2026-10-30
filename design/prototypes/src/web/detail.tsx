@@ -18,6 +18,7 @@ import { useParams } from 'wouter'
 import { left, runtime, useDesktopApp, useItem } from '../client/data.ts'
 import { DownloadButton } from '../client/download-button.tsx'
 import { ItemMore } from '../client/item-more.tsx'
+import { MediaPosterSkeleton } from '../client/media-card.tsx'
 import { useAction } from '../mock/hooks.tsx'
 import type { ClientDetail, PlaybackPrefs } from '../mock/types.ts'
 import { PosterRow } from './home.tsx'
@@ -84,11 +85,48 @@ export function WebDetail() {
 
   if (detail.status === 'loading')
     return (
-      <div aria-busy className={cn('mx-auto w-full grid max-w-[1680px] gap-6 pt-24', gutter)}>
-        <Skeleton className="h-10 w-80" />
-        <SkeletonText lines={3} />
-        <Skeleton className="h-10 w-56" />
-      </div>
+      <main aria-busy className="pb-16">
+        <div className="relative isolate flex min-h-[30rem] items-end overflow-hidden medium:-mt-20 medium:h-[min(68svh,56.25vw)]">
+          {/* where the backdrop goes, fading into the page as it will */}
+          <div className="-z-10 absolute inset-0 bg-s1" />
+          <div className="-z-10 absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg),transparent_50%)]" />
+          <div className={cn('mx-auto grid w-full max-w-[1680px] gap-4 pt-28 pb-8', gutter)}>
+            <div className="grid max-w-[40rem] gap-3">
+              <Skeleton className="my-1 h-9 w-[min(26rem,80%)]" />
+              <Skeleton className="my-1 h-4 w-72 max-w-full" />
+              <SkeletonText lines={3} className="max-w-[65ch] py-1" />
+              <Skeleton className="my-0.5 h-3 w-40" />
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Skeleton className="h-(--size-control) w-28 rounded-md" />
+              <Skeleton className="h-(--size-control) w-44 rounded-md" />
+              <Skeleton className="size-(--size-control) rounded-md" />
+            </div>
+          </div>
+        </div>
+        <div className="mx-auto w-full grid max-w-[1680px] gap-10 pt-4">
+          <div className={cn('grid max-w-[56rem] gap-3', gutter)}>
+            <Skeleton className="my-0.5 h-6 w-32" />
+            <div className="grid gap-3 medium:grid-cols-3">
+              {[0, 1, 2].map((i) => (
+                <div key={i} className="grid gap-1.5">
+                  <Skeleton className="my-0.5 h-3 w-16" />
+                  <Skeleton className="h-(--size-control) rounded-md" />
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className={cn('grid gap-3', gutter)}>
+            <Skeleton className="my-0.5 h-6 w-16" />
+            <div className="grid grid-cols-[repeat(auto-fill,minmax(6.5rem,1fr))] gap-x-4 gap-y-5 expanded:grid-cols-[repeat(auto-fill,minmax(7.5rem,1fr))]">
+              {Array.from({ length: 8 }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
+                <MediaPosterSkeleton key={i} />
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
     )
   if (detail.status === 'error')
     return (

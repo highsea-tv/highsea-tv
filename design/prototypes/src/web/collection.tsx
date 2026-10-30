@@ -6,7 +6,7 @@
 import { Button, cn, EmptyState, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
 import { useCollection } from '../client/data.ts'
-import { MediaPoster } from '../client/media-card.tsx'
+import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
 import { gutter, webHref } from './shell.tsx'
 
 export function WebCollection() {
@@ -14,9 +14,24 @@ export function WebCollection() {
   const found = useCollection(id, 'web')
   if (found.status === 'loading')
     return (
-      <main aria-busy className={cn('mx-auto w-full grid max-w-[1680px] gap-4 pt-8', gutter)}>
-        <Skeleton className="h-10 w-80" />
-        <SkeletonText lines={2} />
+      <main aria-busy className="grid grid-cols-[minmax(0,1fr)] gap-8 pb-16">
+        <div className={cn('mx-auto w-full grid max-w-[1680px] gap-2 pt-24 pb-6', gutter)}>
+          <Skeleton className="my-0.5 h-3 w-24" />
+          <Skeleton className="my-1 h-9 w-[min(28rem,80%)]" />
+          <Skeleton className="my-1 h-4 w-48" />
+          <SkeletonText lines={2} className="max-w-[60ch] pt-1" />
+        </div>
+        <div
+          className={cn(
+            'mx-auto grid w-full max-w-[1680px] grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-x-4 gap-y-6',
+            gutter,
+          )}
+        >
+          {Array.from({ length: 7 }, (_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
+            <MediaPosterSkeleton key={i} />
+          ))}
+        </div>
       </main>
     )
   if (found.status === 'error')

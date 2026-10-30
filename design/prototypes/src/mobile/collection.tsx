@@ -2,10 +2,10 @@
 // A collection on mobile (reference, docs/product/client-search.md#collections): the first part's
 // backdrop with Back over it, the name, years and overview, then its titles here, oldest first. A smart one
 // (docs/product/collections.md) says so and gives its rules in words.
-import { Button, cn, EmptyState, Icon, Skeleton } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Icon, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
 import { useCollection } from '../client/data.ts'
-import { MediaPoster } from '../client/media-card.tsx'
+import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
 import { gutter, mobileHref } from './shell.tsx'
 
 export function MobileCollection() {
@@ -28,9 +28,22 @@ export function MobileCollection() {
   )
   if (found.status === 'loading')
     return (
-      <div aria-busy className="grid gap-4">
-        <Skeleton className="aspect-still w-full rounded-none" />
-        <Skeleton className={cn('h-8 w-56', gutter)} />
+      <div aria-busy className="relative grid gap-5 pb-6">
+        {back}
+        <div className="relative aspect-still w-full bg-s1">
+          <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg),transparent_60%)]" />
+        </div>
+        <div className={cn('-mt-12 relative grid gap-2', gutter)}>
+          <Skeleton className="my-1 h-7 w-3/5" />
+          <Skeleton className="my-0.5 h-3.5 w-40" />
+          <SkeletonText lines={2} className="py-1" />
+        </div>
+        <div className={cn('grid grid-cols-3 gap-x-2 gap-y-4', gutter)}>
+          {Array.from({ length: 6 }, (_, i) => (
+            // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
+            <MediaPosterSkeleton key={i} />
+          ))}
+        </div>
       </div>
     )
   if (found.status === 'error')

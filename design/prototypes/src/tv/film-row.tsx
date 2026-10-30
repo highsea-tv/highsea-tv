@@ -10,7 +10,7 @@
 // with text-wrap: pretty so no line is left with one word, so nothing moves as focus does (the
 // owner, 2026-10-30). Home's rows loop (the owner, 2026-10-30): past the last film comes the
 // first again, either way, the posters running on without a seam.
-import { Poster, QualityTag, useSound } from '@highsea-tv/ui-web'
+import { Poster, QualityTag, Skeleton, useSound } from '@highsea-tv/ui-web'
 import { useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { meta, qualityTags } from '../client/data.ts'
@@ -214,5 +214,46 @@ export function TvFilmRow({
         </p>
       </div>
     </section>
+  )
+}
+
+/**
+ * The row while its screen loads: its title, the card and the posters after it at the row's sizes,
+ * and the description's lines under the card.
+ */
+export function TvFilmRowSkeleton() {
+  return (
+    <div aria-hidden className="grid grid-cols-1 gap-[0.8cqw]">
+      <div className="px-(--tv-safe-x) py-[0.2cqw]">
+        <Skeleton className="h-[1.2cqw] w-[12cqw]" />
+      </div>
+      <div className="py-[1cqw] ps-(--tv-safe-x)">
+        <div className="relative" style={{ height: `${height}cqw` }}>
+          <Skeleton
+            style={{ width: `${wide}cqw`, height: `${height}cqw` }}
+            className="relative rounded-(--tv-radius-poster)"
+          />
+          <ul className="absolute inset-y-0 left-0">
+            {Array.from({ length: AHEAD }, (_, i) => i + 1).map((v) => (
+              <li
+                key={v}
+                style={{ width: `${poster}cqw`, transform: `translateX(${place(v, 0, 1)})` }}
+                className="absolute top-0 left-0"
+              >
+                <Skeleton className="aspect-poster rounded-(--tv-radius-poster)" />
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+      <div
+        style={{ width: `calc(${wide}cqw + 2 * var(--tv-poster-gap) + var(--tv-safe-x))` }}
+        className="grid max-w-full gap-[0.7cqw] ps-(--tv-safe-x) pt-[0.6cqw] pb-[1.4cqw]"
+      >
+        <Skeleton className="h-[1.05cqw] w-2/3" />
+        <Skeleton className="h-[1cqw] w-full" />
+        <Skeleton className="h-[1cqw] w-3/5" />
+      </div>
+    </div>
   )
 }

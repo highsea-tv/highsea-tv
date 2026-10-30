@@ -5,7 +5,7 @@
 import { Button, cn, EmptyState, Select, Skeleton } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useLibrary } from '../client/data.ts'
-import { MediaPoster } from '../client/media-card.tsx'
+import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
 import type { ClientItem } from '../mock/types.ts'
 import { gutter, webHref } from './shell.tsx'
 
@@ -57,6 +57,7 @@ export function WebLibrary() {
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
           <h1 className="text-heading">Movies</h1>
+          {library.status === 'loading' && <Skeleton className="my-0.5 h-3 w-20" />}
           {library.status === 'success' && (
             <p className="text-caption text-text-3">
               {items.length} {items.length === 1 ? 'movie' : 'movies'}
@@ -97,7 +98,7 @@ export function WebLibrary() {
         >
           {Array.from({ length: 14 }, (_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
-            <Skeleton key={i} className="aspect-poster rounded-poster" />
+            <MediaPosterSkeleton key={i} />
           ))}
         </div>
       ) : library.status === 'error' ? (

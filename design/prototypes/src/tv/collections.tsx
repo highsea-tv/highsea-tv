@@ -5,12 +5,11 @@
 // All, the default, with Video and Audio as two sections, then each family on its own. The
 // collections are a poster grid, smart ones marked. Up from the grid reaches the choices, Up again
 // the nav; focus starts on the first collection.
-import { Icon } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { collectionCaption, useCollections } from '../client/data.ts'
 import { CollectionTile } from '../kit/collection-art.tsx'
 import type { ClientCollection } from '../mock/types.ts'
-import { TvButton, TvHead, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
+import { TvButton, TvHead, TvMessage, TvTileSkeleton, tvHref, useInitialFocus } from './kit.tsx'
 
 type Family = 'video' | 'audio'
 type Show = 'all' | Family
@@ -117,8 +116,11 @@ export function TvCollections() {
             </div>
           </div>
           {list.status === 'loading' ? (
-            <div aria-busy className="grid place-items-center py-[6cqw]">
-              <Icon name="loading" size={48} className="size-[3cqw] animate-spin text-text-3" />
+            <div aria-busy className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]">
+              {Array.from({ length: 7 }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
+                <TvTileSkeleton key={i} />
+              ))}
             </div>
           ) : (
             // one D-pad group across the sections, so Down from the last video row reaches the

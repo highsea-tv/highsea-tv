@@ -4,7 +4,7 @@
 import { Button, cn, EmptyState, Sheet, SheetContent, Skeleton } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useLibrary } from '../client/data.ts'
-import { MediaPoster } from '../client/media-card.tsx'
+import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
 import { ALL, arrange, genresOf, type Show, type Sort, shows, sorts } from '../web/library.tsx'
 import { LibraryNav } from './collections.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
@@ -26,9 +26,13 @@ export function MobileLibrary() {
       <Header title="Library" />
       <LibraryNav current="movies" />
       <div className={cn('flex items-center gap-2', gutter)}>
-        <p className="text-[13px] text-text-3">
-          {library.status === 'success' ? `${shown.length} of ${items.length} movies` : ' '}
-        </p>
+        {library.status === 'loading' ? (
+          <Skeleton className="h-3 w-24" />
+        ) : (
+          <p className="text-[13px] text-text-3">
+            {library.status === 'success' ? `${shown.length} of ${items.length} movies` : ' '}
+          </p>
+        )}
         <Button
           size="sm"
           icon="filter"
@@ -41,10 +45,10 @@ export function MobileLibrary() {
       </div>
       <div className={gutter}>
         {library.status === 'loading' ? (
-          <div aria-busy className="grid grid-cols-3 gap-2">
+          <div aria-busy className="grid grid-cols-3 gap-x-2 gap-y-4">
             {Array.from({ length: 9 }, (_, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
-              <Skeleton key={i} className="aspect-poster rounded-poster" />
+              <MediaPosterSkeleton key={i} />
             ))}
           </div>
         ) : library.status === 'error' ? (

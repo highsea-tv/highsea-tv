@@ -7,7 +7,7 @@
 // Behind the featured card, a bloom in its most vibrant colour fills the screen and fades into the
 // background (the owner, 2026-10-30).
 // An announcement that must be acknowledged comes first, on its own.
-import { Icon, QualityTag } from '@highsea-tv/ui-web'
+import { Icon, QualityTag, Skeleton } from '@highsea-tv/ui-web'
 import { useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { BloomGlow } from '../client/bloom.tsx'
@@ -15,7 +15,7 @@ import { meta, qualityTags, useAnnouncements, useHome } from '../client/data.ts'
 import { useVibrant } from '../client/vibrant.ts'
 import { Inline } from '../kit/inline.tsx'
 import type { ClientItem, HomeSection } from '../mock/types.ts'
-import { TvFilmRow } from './film-row.tsx'
+import { TvFilmRow, TvFilmRowSkeleton } from './film-row.tsx'
 import {
   AnnouncementBanner,
   pageTop,
@@ -25,6 +25,7 @@ import {
   TvMessage,
   TvPoster,
   TvRow,
+  TvRowSkeleton,
   tvHref,
   useInitialFocus,
   useRowNavigation,
@@ -213,6 +214,35 @@ function Home({ sections }: { sections: HomeSection[] }) {
   )
 }
 
+/**
+ * Home while it loads, laid out as it will be: the head, the featured card at its size with its
+ * logo, details and tagline low on the left, then Continue watching and a film row.
+ */
+function HomeSkeleton() {
+  return (
+    <main aria-busy className="absolute inset-0 overflow-hidden">
+      <AnnouncementBanner />
+      <TvHead className="px-(--tv-safe-x)" />
+      <div className="grid grid-cols-1 gap-[1.6cqw] pt-[1.6cqw]">
+        <div className="px-(--tv-safe-x) py-[1cqw]">
+          <div className="relative h-[40.5cqw] overflow-hidden rounded-[1.4cqw] bg-s1">
+            <div className="absolute bottom-[2.8cqw] left-[2.8cqw] grid w-[34cqw] gap-[0.8cqw]">
+              <Skeleton className="h-[6cqw] w-[22cqw] rounded-[0.6cqw]" />
+              <Skeleton className="my-[0.15cqw] h-[1.05cqw] w-[16cqw]" />
+              <div className="grid gap-[0.6cqw] py-[0.2cqw]">
+                <Skeleton className="h-[1.1cqw] w-full" />
+                <Skeleton className="h-[1.1cqw] w-3/5" />
+              </div>
+            </div>
+          </div>
+        </div>
+        <TvRowSkeleton width="w-[22cqw]" count={5} wide resume />
+        <TvFilmRowSkeleton />
+      </div>
+    </main>
+  )
+}
+
 function AcknowledgeScreen() {
   const a = useAnnouncements('tv')
   const m = a.modal
@@ -251,12 +281,7 @@ export function TvHome() {
   const home = useHome('tv')
   const a = useAnnouncements('tv')
   if (a.modal) return <AcknowledgeScreen />
-  if (home.status === 'loading')
-    return (
-      <main aria-busy className="grid h-full place-items-center">
-        <Icon name="loading" size={48} className="size-[3cqw] animate-spin text-text-3" />
-      </main>
-    )
+  if (home.status === 'loading') return <HomeSkeleton />
   if (home.status === 'error')
     return (
       <TvMessage

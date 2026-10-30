@@ -8,7 +8,15 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useLibrary } from '../client/data.ts'
 import { arrange, type Sort } from '../web/library.tsx'
-import { TvButton, TvHead, TvMessage, TvPoster, tvHref, useInitialFocus } from './kit.tsx'
+import {
+  TvButton,
+  TvHead,
+  TvMessage,
+  TvPoster,
+  TvTileSkeleton,
+  tvHref,
+  useInitialFocus,
+} from './kit.tsx'
 
 const LETTERS = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ']
 const letterOf = (sortTitle: string) => {
@@ -189,6 +197,14 @@ export function TvLibrary() {
               </button>
             </div>
           </div>
+          {library.status === 'loading' && (
+            <div aria-busy className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]">
+              {Array.from({ length: 14 }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
+                <TvTileSkeleton key={i} />
+              ))}
+            </div>
+          )}
           <ul
             ref={index.grid}
             data-group="grid"

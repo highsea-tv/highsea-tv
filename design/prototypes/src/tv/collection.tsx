@@ -2,10 +2,10 @@
 // A collection on the TV (reference, docs/product/client-search.md#collections): the ambient
 // backdrop, the name, years and overview, then its titles here as a row, oldest first; a smart one says so and gives its rules in words. Focus
 // starts on the first title; Back goes back to wherever it was opened from.
-import { Icon } from '@highsea-tv/ui-web'
+import { Skeleton } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
 import { useCollection } from '../client/data.ts'
-import { TvFilmRow } from './film-row.tsx'
+import { TvFilmRow, TvFilmRowSkeleton } from './film-row.tsx'
 import { TvButton, TvHead, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
 
 export function TvCollection() {
@@ -14,8 +14,18 @@ export function TvCollection() {
   useInitialFocus(found.status === 'success', id, '[data-group="parts"] [data-focusable]')
   if (found.status === 'loading')
     return (
-      <main aria-busy className="grid h-full place-items-center">
-        <Icon name="loading" size={48} className="size-[3cqw] animate-spin text-text-3" />
+      <main aria-busy className="absolute inset-0 grid content-start gap-[1.6cqw] overflow-hidden">
+        <TvHead className="px-(--tv-safe-x)" />
+        <div className="grid max-w-[60cqw] gap-[1cqw] px-(--tv-safe-x)">
+          <Skeleton className="my-[0.15cqw] h-[1.05cqw] w-[10cqw]" />
+          <Skeleton className="my-[0.2cqw] h-[3.4cqw] w-[32cqw] rounded-[0.5cqw]" />
+          <Skeleton className="my-[0.15cqw] h-[1.05cqw] w-[16cqw]" />
+          <div className="grid max-w-[44cqw] gap-[0.6cqw] py-[0.2cqw]">
+            <Skeleton className="h-[1.1cqw] w-full" />
+            <Skeleton className="h-[1.1cqw] w-3/5" />
+          </div>
+        </div>
+        <TvFilmRowSkeleton />
       </main>
     )
   if (found.status === 'error')

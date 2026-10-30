@@ -7,7 +7,7 @@
 // hover, or by clicking a poster, which brings that film into the card. Under the row, the card's
 // film is described, no wider than the card, so nothing moves as the film changes. Home's rows
 // loop: past the last film comes the first again, either way.
-import { cn, Icon, Poster, QualityTag, useSound } from '@highsea-tv/ui-web'
+import { cn, Icon, Poster, QualityTag, Skeleton, SkeletonText, useSound } from '@highsea-tv/ui-web'
 import { useReducedMotion } from 'motion/react'
 import {
   type CSSProperties,
@@ -278,6 +278,53 @@ export function WebFilmRow({
             ))}
           </p>
           <p className="line-clamp-2 text-pretty text-body text-text-2">{item.synopsis}</p>
+        </div>
+      </div>
+    </section>
+  )
+}
+
+/**
+ * The row while Home loads: its title, the card and the posters after it at the sizes the row will
+ * have, a poster showing past each end, and the description's two lines.
+ */
+export function WebFilmRowSkeleton() {
+  const section = useRef<HTMLElement>(null)
+  const poster = usePosterWidth(section)
+  return (
+    <section
+      aria-hidden
+      ref={section}
+      style={poster ? ({ ...sizes, '--poster': `${poster}px` } as CSSProperties) : sizes}
+      className={cn('relative grid grid-cols-1 gap-3', inset)}
+    >
+      <div className="px-(--g)">
+        <Skeleton className="h-6 w-48" />
+      </div>
+      <div className="relative mx-[calc(var(--g)-var(--inset))]">
+        <div style={fade} className="overflow-x-clip px-(--inset) py-2">
+          <div className="relative h-(--height)">
+            <Skeleton className="relative h-(--height) w-(--wide) rounded-poster" />
+            <ul className="absolute inset-y-0 left-0">
+              {Array.from({ length: AHEAD + BEHIND }, (_, i) => i - BEHIND).map((v) =>
+                v === 0 ? null : (
+                  <li
+                    key={v}
+                    style={{ transform: `translateX(${place(v, 0, 1)})` }}
+                    className="absolute top-0 left-0 w-(--poster)"
+                  >
+                    <Skeleton className="aspect-poster rounded-poster" />
+                  </li>
+                ),
+              )}
+            </ul>
+          </div>
+        </div>
+      </div>
+      <div className="px-(--g)">
+        <div className="grid w-[calc(var(--wide)+2*var(--gap))] max-w-full gap-2.5 pt-1">
+          <Skeleton className="h-4 w-2/3" />
+          <SkeletonText lines={2} />
         </div>
       </div>
     </section>

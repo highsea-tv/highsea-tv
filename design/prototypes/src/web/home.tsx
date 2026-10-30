@@ -2,14 +2,23 @@
 // C2 Home, web/desktop (docs/product/client-home.md), brought over from the TV (the owner,
 // 2026-10-30): the featured title as one large card with a bloom in its colour behind the bar and
 // the card, then Continue watching, and every other row with its first slot fixed (film-row.tsx).
-import { Button, CarouselRow, cn, EmptyState, Icon, QualityTag, Skeleton } from '@highsea-tv/ui-web'
+import {
+  Button,
+  CarouselRow,
+  cn,
+  EmptyState,
+  Icon,
+  QualityTag,
+  Skeleton,
+  SkeletonText,
+} from '@highsea-tv/ui-web'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { BloomGlow } from '../client/bloom.tsx'
 import { meta, qualityTags, useHome } from '../client/data.ts'
-import { MediaPoster } from '../client/media-card.tsx'
+import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
 import { useVibrant } from '../client/vibrant.ts'
 import type { ClientItem, HomeSection } from '../mock/types.ts'
-import { WebFilmRow } from './film-row.tsx'
+import { WebFilmRow, WebFilmRowSkeleton } from './film-row.tsx'
 import { gutter, webHref } from './shell.tsx'
 
 // ---------------------------------------------------------------- shared pieces
@@ -106,19 +115,48 @@ function Rows({ sections }: { sections: HomeSection[] }) {
   )
 }
 
-function HomeStates({ children }: { children: (sections: HomeSection[]) => ReactNode }) {
-  const home = useHome('web')
-  if (home.status === 'loading')
-    return (
-      <div aria-busy className={cn('mx-auto w-full grid max-w-[1680px] gap-8 pt-24', gutter)}>
-        <Skeleton className="h-[40vh] rounded-lg" />
-        <div className="flex gap-4 overflow-hidden">
-          {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className={cn('aspect-still shrink-0 rounded-poster', cardWidth)} />
-          ))}
+/**
+ * Home while it loads, laid out as it will be: the featured card at its size, with its logo, meta
+ * and tagline at the bottom left; Continue watching's stills; then two film rows.
+ */
+function HomeSkeleton() {
+  return (
+    <main aria-busy className="overflow-x-clip">
+      <div className="grid gap-20 pb-16">
+        <div className={cn('mx-auto w-full max-w-[1680px]', gutter)}>
+          <div className="relative h-[clamp(18rem,min(62svh,42vw),44rem)] overflow-hidden rounded-[1.25rem] bg-s1">
+            <div className="absolute inset-x-5 bottom-5 grid max-w-[38rem] gap-3 medium:inset-x-10 medium:bottom-9">
+              <Skeleton className="h-[clamp(3rem,6vw,5.5rem)] w-[min(22rem,70%)] rounded-md" />
+              <Skeleton className="h-4 w-56" />
+              <SkeletonText lines={2} className="max-w-[30rem]" />
+            </div>
+          </div>
+        </div>
+        <div className="mx-auto grid w-full max-w-[1680px] gap-20">
+          <section
+            aria-hidden
+            className="grid gap-3 [--row-gutter:1rem] medium:[--row-gutter:2rem] wide:[--row-gutter:4rem]"
+          >
+            <div className="px-(--row-gutter)">
+              <Skeleton className="h-6 w-52" />
+            </div>
+            <div className="flex gap-3 overflow-hidden px-(--row-gutter) py-3">
+              {[0, 1, 2, 3, 4, 5].map((i) => (
+                <MediaPosterSkeleton key={i} resume className={cn('shrink-0', cardWidth)} />
+              ))}
+            </div>
+          </section>
+          <WebFilmRowSkeleton />
+          <WebFilmRowSkeleton />
         </div>
       </div>
-    )
+    </main>
+  )
+}
+
+function HomeStates({ children }: { children: (sections: HomeSection[]) => ReactNode }) {
+  const home = useHome('web')
+  if (home.status === 'loading') return <HomeSkeleton />
   if (home.status === 'error')
     return (
       <main

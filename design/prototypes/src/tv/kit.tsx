@@ -4,7 +4,7 @@
 // pill, and the global navigation, a top tab row on every screen but the player
 // (client-home.md#tv), with the alternatives the owner asked to compare.
 import { tv } from '@highsea-tv/tokens'
-import { cn, Icon, type IconName, Mark, Poster, useSound } from '@highsea-tv/ui-web'
+import { cn, Icon, type IconName, Mark, Poster, Skeleton, useSound } from '@highsea-tv/ui-web'
 import {
   type ComponentProps,
   type CSSProperties,
@@ -257,6 +257,58 @@ export function TvTile({
         {caption}
       </span>
     </a>
+  )
+}
+
+/** A tile while its screen loads, laid out as `TvTile`: the art, then its title and caption. */
+export function TvTileSkeleton({
+  wide = false,
+  resume = false,
+}: {
+  wide?: boolean
+  resume?: boolean
+}) {
+  return (
+    <div aria-hidden>
+      <Skeleton
+        className={cn('rounded-(--tv-radius-poster)', wide ? 'aspect-still' : 'aspect-poster')}
+      />
+      {resume && <Skeleton className="mt-3.5 h-1 rounded-full" />}
+      <div className="mt-[1cqw] grid gap-[0.5cqw] py-[0.2cqw]">
+        <Skeleton className="h-[1.05cqw] w-4/5" />
+        <Skeleton className="h-[0.95cqw] w-2/5" />
+      </div>
+    </div>
+  )
+}
+
+/** A row of tiles while its screen loads: its title, then `count` tiles of `width`. */
+export function TvRowSkeleton({
+  width,
+  count,
+  wide,
+  resume,
+}: {
+  width: string
+  count: number
+  wide?: boolean
+  resume?: boolean
+}) {
+  return (
+    // positioned, so a screen's backdrop layer stays under it as it does under TvRow's
+    <div aria-hidden className="relative grid grid-cols-1 gap-[0.8cqw]">
+      <div className="px-(--tv-safe-x) py-[0.2cqw]">
+        <Skeleton className="h-[1.2cqw] w-[14cqw]" />
+      </div>
+      <div className="flex gap-(--tv-poster-gap) overflow-hidden px-(--tv-safe-x) py-[1cqw]">
+        {Array.from({ length: count }, (_, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
+          <div key={i} className={cn('shrink-0', width)}>
+            <TvTileSkeleton wide={wide} resume={resume} />
+          </div>
+        ))}
+      </div>
+    </div>
   )
 }
 

@@ -40,12 +40,29 @@ export function MobileDetail() {
   )
   if (detail.status === 'loading')
     return (
-      <div aria-busy className="grid gap-4">
-        <Skeleton className="aspect-still w-full rounded-none" />
+      <div aria-busy className="relative grid gap-5">
+        {back}
+        <div className="relative aspect-still w-full bg-s1">
+          <div className="absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg),transparent_60%)]" />
+        </div>
+        <div className={cn('-mt-12 relative grid gap-3', gutter)}>
+          <Skeleton className="my-1 h-7 w-3/5" />
+          <Skeleton className="my-0.5 h-3.5 w-48" />
+          <Skeleton className="h-12 rounded-md" />
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] gap-2">
+            <Skeleton className="h-11 rounded-md" />
+            <Skeleton className="size-11 rounded-md" />
+          </div>
+          <SkeletonText lines={3} className="py-1" />
+        </div>
         <div className={cn('grid gap-3', gutter)}>
-          <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-11 w-full" />
-          <SkeletonText lines={3} />
+          <Skeleton className="my-0.5 h-4.5 w-28" />
+          {[0, 1, 2].map((i) => (
+            <div key={i} className="grid gap-1.5">
+              <Skeleton className="my-0.5 h-3 w-16" />
+              <Skeleton className="h-(--size-control) rounded-md" />
+            </div>
+          ))}
         </div>
       </div>
     )

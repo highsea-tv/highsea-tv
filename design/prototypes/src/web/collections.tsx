@@ -4,6 +4,7 @@
 // collections this person sees, marked smart, then TMDB's, as a grid of posters and mosaics.
 import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui-web'
 import { collectionCaption, useCollections } from '../client/data.ts'
+import { MediaPosterSkeleton } from '../client/media-card.tsx'
 import { CollectionTile } from '../kit/collection-art.tsx'
 import { gutter, webHref } from './shell.tsx'
 
@@ -15,6 +16,7 @@ export function WebCollections() {
       <div className="grid gap-3">
         <div className="grid gap-1">
           <h1 className="text-heading">Collections</h1>
+          {list.status === 'loading' && <Skeleton className="my-0.5 h-3 w-20" />}
           {list.status === 'success' && (
             <p className="text-caption text-text-3">
               {xs.length} {xs.length === 1 ? 'collection' : 'collections'}
@@ -29,7 +31,7 @@ export function WebCollections() {
         >
           {Array.from({ length: 7 }, (_, i) => (
             // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
-            <Skeleton key={i} className="aspect-poster rounded-poster" />
+            <MediaPosterSkeleton key={i} />
           ))}
         </div>
       ) : list.status === 'error' ? (
@@ -59,6 +61,7 @@ export function WebCollections() {
                 poster={c.art.poster}
                 mosaic={c.smart?.mosaic}
                 smart={!!c.smart?.words}
+                titleSize="body"
               />
             </li>
           ))}

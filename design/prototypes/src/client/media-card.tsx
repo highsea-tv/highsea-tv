@@ -3,7 +3,7 @@
 // still, with the title and year under it. Only Home's Continue watching shows how far you got,
 // as the bar under the art and the time left; nowhere else does a card show progress. The TV draws
 // its own focus stop around these props (tv/kit.tsx's TvPoster).
-import { Poster, type PosterProps } from '@highsea-tv/ui-web'
+import { cn, Poster, type PosterProps, Skeleton } from '@highsea-tv/ui-web'
 import type { ClientItem } from '../mock/types.ts'
 import { left } from './data.ts'
 
@@ -50,5 +50,28 @@ export function MediaPoster({
       showTitle
       caption={card.caption}
     />
+  )
+}
+
+/**
+ * A card while its list loads, as `MediaPoster` lays one out: the art, then a line for the title
+ * and a shorter one for the caption (Continue watching's adds the bar between).
+ */
+export function MediaPosterSkeleton({
+  wide = false,
+  resume = false,
+  className,
+}: MediaCardOptions & { className?: string }) {
+  return (
+    <div aria-hidden className={cn('min-w-0', className)}>
+      <Skeleton
+        className={cn('rounded-poster', wide || resume ? 'aspect-still' : 'aspect-poster')}
+      />
+      {resume && <Skeleton className="mt-3.5 h-1 rounded-full" />}
+      <div className="mt-2 grid gap-1.5 py-1">
+        <Skeleton className="h-3.5 w-4/5" />
+        <Skeleton className="h-3 w-2/5" />
+      </div>
+    </div>
   )
 }
