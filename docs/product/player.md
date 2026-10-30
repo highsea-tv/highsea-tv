@@ -30,6 +30,8 @@ Landscape, full screen (the prototype turns it a quarter inside the portrait pho
 
 **AirPlay (the iPhone app, checkpoint 4.5a):** an AirPlay button sits before Audio and subtitles in the top bar ("AirPlay"; "AirPlay: playing on {device}" while it is, tinted in the accent). It opens iOS's own list of screens (AVRoutePickerView; the prototype draws a stand-in with iPhone and Living room TV, the current one checked). While a film plays on another screen, the chrome stays shown, the picture behind it dims, and the middle says "Playing on {device}" · "The controls here still work. Subtitles show on {device}." Play, Pause, seeking and the panel keep working from the phone. The phone draws no subtitle line then: the TV shows the subtitle the panel chose, from the HLS playlist's subtitle renditions. Prototype: `#/mobile/play/4?airplay=on` (toolbar › **AirPlay**).
 
+**As built (4.5a, approved by the owner on 2026-10-29):** expo-video doesn't give the AirPlay route's name, so the app says "Playing on another screen" · "The controls here still work. Subtitles show on that screen.", and the button's label is "AirPlay: playing on another screen". Audio and subtitles opens as an iOS page sheet rather than the web's side panel, and the player turns with the phone rather than staying in landscape.
+
 ### TV
 
 - **Top:** the title (2.2u) and the version's description; the version tag at the right.

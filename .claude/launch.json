@@ -1,0 +1,49 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "server",
+      "url": "http://localhost:3150"
+    },
+    {
+      "name": "web",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "export PATH=\"$HOME/.nvm/versions/node/v26.11.1/bin:$PATH\" && HIGHSEA_DEV_SERVER=http://localhost:3150 bun run web"
+      ],
+      "port": 3200
+    },
+    {
+      "name": "prototypes",
+      "url": "http://localhost:4500"
+    },
+    {
+      "name": "docs",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "export PATH=\"$HOME/.nvm/versions/node/v26.11.1/bin:$PATH\" && bun run docs"
+      ],
+      "port": 3100
+    },
+    {
+      "name": "storybook",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "export PATH=\"$HOME/.nvm/versions/node/v26.11.1/bin:$PATH\" && bun run storybook"
+      ],
+      "port": 6006
+    },
+    {
+      "name": "server-dev",
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "export PATH=\"$HOME/.nvm/versions/node/v26.11.1/bin:$PATH\" && HIGHSEA_TMDB_REPLAY=1 bun run server"
+      ],
+      "port": 3000
+    }
+  ]
+}

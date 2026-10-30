@@ -1,0 +1,105 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The phone's main screens, for scripts/sweeps/phone-compare.ts to put beside the prototype's
+# (phase-4-checkpoint-5.md › Tests and checks): a fresh install signs Theo in to the seeded server,
+# then visits each screen and takes a screenshot of it, named as the script's pairs are
+# (https://docs.maestro.dev/api-reference/commands/takescreenshot). Elements are found by the
+# labels VoiceOver reads, as in sign-in-and-play.yaml. A settings section's Back reads "You", as
+# the tab does; it comes first, at the top.
+appId: tv.highsea.mobile
+env:
+  SERVER: http://localhost:3170
+  USERNAME: theo
+  PASSWORD: theo theo theo
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+- tapOn:
+    text: Allow
+    optional: true
+
+# C1 and its sign-in
+- extendedWaitUntil:
+    visible: Choose a server
+    timeout: 20000
+- takeScreenshot: connect
+- tapOn: Add a server by address
+- inputText: ${SERVER}
+- pressKey: Enter
+- extendedWaitUntil:
+    visible: Sign in to Harbor
+    timeout: 20000
+- hideKeyboard
+- takeScreenshot: sign-in
+- tapOn: Username
+- inputText: ${USERNAME}
+- tapOn: Password
+- inputText: ${PASSWORD}
+- pressKey: Enter
+
+# the tabs
+# (while its sheet is up the app is hidden from the accessibility tree, so wait for either)
+- extendedWaitUntil:
+    visible: (Home|Not Now)
+    timeout: 20000
+- tapOn:
+    text: Not Now
+    optional: true
+- extendedWaitUntil:
+    visible: Home
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: home
+- tapOn: Search
+- waitForAnimationToEnd
+- takeScreenshot: search
+- tapOn: Library
+- waitForAnimationToEnd
+- takeScreenshot: library
+- tapOn: Collections
+- waitForAnimationToEnd
+- takeScreenshot: library-collections
+- tapOn: Offline
+- waitForAnimationToEnd
+- takeScreenshot: offline
+- tapOn: You
+- waitForAnimationToEnd
+- takeScreenshot: you
+- tapOn: Theme
+- waitForAnimationToEnd
+- takeScreenshot: you-appearance
+- tapOn:
+    text: You
+    index: 0
+- tapOn: Home screen
+- waitForAnimationToEnd
+- takeScreenshot: you-home
+- tapOn:
+    text: You
+    index: 0
+- tapOn: Servers
+- waitForAnimationToEnd
+- takeScreenshot: you-servers
+- tapOn:
+    text: You
+    index: 0
+
+# a film's page and its player
+- tapOn: Search
+- tapOn: Search titles, genres and people
+- inputText: Sintel
+- hideKeyboard
+- takeScreenshot: search-results
+- tapOn:
+    text: Sintel, .*
+    retryTapIfNoChange: false
+- extendedWaitUntil:
+    visible: Play
+    timeout: 20000
+- waitForAnimationToEnd
+- takeScreenshot: movie
+- tapOn: Play
+- extendedWaitUntil:
+    visible: Pause
+    timeout: 60000
+- takeScreenshot: player

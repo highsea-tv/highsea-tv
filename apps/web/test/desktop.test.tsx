@@ -175,6 +175,10 @@ function rust(cmd: string, args: Record<string, unknown>): unknown {
     case 'server_leave':
       state.current = null
       return null
+    case 'server_forget':
+      state.servers = state.servers.filter((x) => x.id !== args.id)
+      if (state.current === args.id) state.current = null
+      return null
     case 'discover': {
       const channel = args.onFound as { onmessage: (f: unknown) => void }
       for (const n of state.nearby) channel.onmessage({ kind: 'server', ...n })
@@ -277,6 +281,25 @@ describe('the desktop app', () => {
     expect(page.getByRole('heading', { name: 'Your servers' })).toBeTruthy()
   })
 
+  test('Forget this server, at the foot of sign-in, asks first and drops it from the list', async () => {
+    state.servers = [{ ...HARBOR, signedIn: false }]
+    state.current = 'srv_1'
+    const { page, user } = await open()
+    await user.click(page.getByRole('button', { name: 'Forget this server' }))
+    const dialog = within(page.getByRole('alertdialog', { name: 'Forget Harbor?' }))
+    await user.click(dialog.getByRole('button', { name: 'Cancel' }))
+    await settle()
+    expect(state.calls).not.toContain('server_forget')
+    expect(page.getByRole('heading', { name: 'Sign in to Harbor' })).toBeTruthy()
+
+    await user.click(page.getByRole('button', { name: 'Forget this server' }))
+    await user.click(page.getByRole('button', { name: 'Forget Harbor' }))
+    await settle()
+    expect(state.calls).toContain('server_forget')
+    expect(page.getByRole('heading', { name: 'Choose a server' })).toBeTruthy()
+    expect(page.queryByRole('heading', { name: 'Your servers' })).toBeNull()
+  })
+
   test('opens the server last signed in to', async () => {
     state.servers = [HARBOR]
     state.signedIn = true
@@ -296,6 +319,17 @@ describe('the desktop app', () => {
 
     await user.click(page.getByRole('button', { name: 'Switch server' }))
     await settle()
+    expect(page.getByRole('heading', { name: 'Choose a server' })).toBeTruthy()
+  })
+
+  test('a server that doesn’t answer can be forgotten from Unreachable', async () => {
+    state.servers = [HARBOR]
+    state.off.add('srv_1')
+    const { page, user } = await open()
+    await user.click(page.getByRole('button', { name: 'Forget this server' }))
+    await user.click(page.getByRole('button', { name: 'Forget Harbor' }))
+    await settle()
+    expect(state.servers).toEqual([])
     expect(page.getByRole('heading', { name: 'Choose a server' })).toBeTruthy()
   })
 

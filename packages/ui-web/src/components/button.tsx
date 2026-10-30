@@ -5,7 +5,7 @@ import type { ComponentProps } from 'react'
 import { Icon, type IconName } from '../icons/icon.tsx'
 import { cn } from '../lib/cn.ts'
 
-export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger'
+export type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-ghost'
 export type ButtonSize = 'md' | 'sm'
 
 // A label wraps only when the button would be wider than its container (a phone at 200% text, WCAG
@@ -21,6 +21,9 @@ export const buttonVariants: Record<ButtonVariant, string> = {
   ghost: 'bg-transparent text-text-2 hover:bg-s2 hover:text-text',
   danger:
     'bg-danger-fill font-semibold text-on-danger [-webkit-font-smoothing:auto] hover:brightness-110',
+  // danger's words without its fill (the owner, 2026-10-29): a destructive action that shouldn't
+  // weigh as much as the view's own, such as Forget this server
+  'danger-ghost': 'bg-transparent text-danger hover:bg-s2',
 }
 
 export const buttonSizes: Record<ButtonSize, { box: string; icon: string; glyph: number }> = {

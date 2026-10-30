@@ -10,7 +10,9 @@ const codes = (d: { reasons: { code: string }[] }) => d.reasons.map((r) => r.cod
 
 // Exit criterion 2: every built-in profile against every kind of file, with the method each
 // should get. Chrome and Firefox share MDN's lists; Chrome on a Mac adds HEVC; Safari takes
-// AC-3 and E-AC-3 and HEVC tagged hvc1, and no Opus.
+// AC-3 and E-AC-3 and HEVC tagged hvc1, and no Opus. The iPhone and Apple TV apps (AVPlayer) answer
+// as Safari does for every file here: the one WebM file has Opus, which neither plays, so both
+// transcode it.
 const MATRIX: Record<FileName, Record<string, Method>> = {
   'mp4-h264-aac': {
     'web-chromium': 'direct-play',
@@ -20,6 +22,8 @@ const MATRIX: Record<FileName, Record<string, Method>> = {
     'desktop-macos': 'direct-play',
     'desktop-windows': 'direct-play',
     'desktop-linux': 'direct-play',
+    ios: 'direct-play',
+    tvos: 'direct-play',
   },
   'mkv-h264-ac3-srt': {
     'web-chromium': 'direct-stream',
@@ -29,6 +33,8 @@ const MATRIX: Record<FileName, Record<string, Method>> = {
     'desktop-macos': 'direct-stream',
     'desktop-windows': 'direct-stream',
     'desktop-linux': 'direct-stream',
+    ios: 'direct-stream',
+    tvos: 'direct-stream',
   },
   'mkv-hevc-hdr10-truehd-pgs': {
     'web-chromium': 'transcode',
@@ -38,6 +44,8 @@ const MATRIX: Record<FileName, Record<string, Method>> = {
     'desktop-macos': 'transcode',
     'desktop-windows': 'transcode',
     'desktop-linux': 'transcode',
+    ios: 'transcode',
+    tvos: 'transcode',
   },
   'mp4-hevc-hev1': {
     'web-chromium': 'transcode',
@@ -47,6 +55,8 @@ const MATRIX: Record<FileName, Record<string, Method>> = {
     'desktop-macos': 'direct-stream',
     'desktop-windows': 'transcode',
     'desktop-linux': 'transcode',
+    ios: 'direct-stream',
+    tvos: 'direct-stream',
   },
   'mp4-dv5': {
     'web-chromium': 'transcode',
@@ -56,6 +66,8 @@ const MATRIX: Record<FileName, Record<string, Method>> = {
     'desktop-macos': 'transcode',
     'desktop-windows': 'transcode',
     'desktop-linux': 'transcode',
+    ios: 'transcode',
+    tvos: 'transcode',
   },
   'mkv-dv81': {
     'web-chromium': 'transcode',
@@ -65,6 +77,8 @@ const MATRIX: Record<FileName, Record<string, Method>> = {
     'desktop-macos': 'transcode',
     'desktop-windows': 'transcode',
     'desktop-linux': 'transcode',
+    ios: 'transcode',
+    tvos: 'transcode',
   },
   'webm-vp9-opus': {
     'web-chromium': 'direct-play',
@@ -74,6 +88,8 @@ const MATRIX: Record<FileName, Record<string, Method>> = {
     'desktop-macos': 'transcode',
     'desktop-windows': 'direct-play',
     'desktop-linux': 'direct-play',
+    ios: 'transcode',
+    tvos: 'transcode',
   },
   'mkv-av1-opus': {
     'web-chromium': 'direct-stream',
@@ -83,6 +99,8 @@ const MATRIX: Record<FileName, Record<string, Method>> = {
     'desktop-macos': 'transcode',
     'desktop-windows': 'direct-stream',
     'desktop-linux': 'transcode',
+    ios: 'transcode',
+    tvos: 'transcode',
   },
   'mkv-h264-hi10p': {
     'web-chromium': 'transcode',
@@ -92,6 +110,8 @@ const MATRIX: Record<FileName, Record<string, Method>> = {
     'desktop-macos': 'transcode',
     'desktop-windows': 'transcode',
     'desktop-linux': 'transcode',
+    ios: 'transcode',
+    tvos: 'transcode',
   },
   'avi-mpeg4-mp3': {
     'web-chromium': 'transcode',
@@ -101,6 +121,8 @@ const MATRIX: Record<FileName, Record<string, Method>> = {
     'desktop-macos': 'transcode',
     'desktop-windows': 'transcode',
     'desktop-linux': 'transcode',
+    ios: 'transcode',
+    tvos: 'transcode',
   },
   'mkv-h264-dts': {
     'web-chromium': 'direct-stream',
@@ -110,6 +132,8 @@ const MATRIX: Record<FileName, Record<string, Method>> = {
     'desktop-macos': 'direct-stream',
     'desktop-windows': 'direct-stream',
     'desktop-linux': 'direct-stream',
+    ios: 'direct-stream',
+    tvos: 'direct-stream',
   },
 }
 

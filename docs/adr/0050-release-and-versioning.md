@@ -157,3 +157,7 @@ The release workflow gains two jobs for a stable release, both waiting in the `r
 - **`desktop-feed`** makes the updater's `latest.json` from the signatures (`release.ts feed`, [Tauri's static JSON](https://v2.tauri.app/plugin/updater/#static-json-file)), with the changelog's section as its notes, and `SHA256SUMS` for every installer.
 
 The GitHub release attaches the installers, `latest.json` and `SHA256SUMS`. Installed apps read `latest.json` from the Latest release, so a beta never reaches them. Nothing is published without the owner's word, as before. The secrets to add are listed in `apps/desktop/keys/README.md`.
+
+## 2026-10-29: the phone app's version (checkpoint 4.5a)
+
+The phone app carries the release's version. Its `app.config.ts` reads `apps/mobile/package.json`, and `scripts/release.ts prepare` sets that file with the desktop app's, which `check` reads back. Nothing of the phone's is built or uploaded by the release workflow in 4.5: store uploads wait for the Apple Developer membership and the owner's word. Build numbers come with the first upload ([ADR 0059](0059-native-apps.md)).

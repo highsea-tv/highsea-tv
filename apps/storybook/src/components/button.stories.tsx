@@ -34,6 +34,7 @@ export const Variants: Story = {
       <Button variant="danger" icon="delete">
         Delete
       </Button>
+      <Button variant="danger-ghost">Forget this server</Button>
     </div>
   ),
 }

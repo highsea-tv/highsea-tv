@@ -307,6 +307,8 @@ describe('signing in', () => {
     state.signedIn = false
     const { page, user } = await open('/')
     expect(page.getByRole('heading', { name: 'Sign in to Harbor' })).toBeTruthy()
+    // the page is its server's: there's no other to choose, so nothing to forget
+    expect(page.queryByRole('button', { name: 'Forget this server' })).toBeNull()
     await user.type(page.getByLabelText('Username'), 'theo')
     await user.type(page.getByLabelText('Password'), 'not theo')
     await user.click(page.getByRole('button', { name: 'Sign in' }))

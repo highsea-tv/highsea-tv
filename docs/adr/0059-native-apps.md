@@ -1,0 +1,42 @@
+# 0059. The native apps: Expo on React Native, two apps sharing ui-native and the client
+
+- **Status:** Proposed
+- **Date:** 2026-10-29
+
+Scoped at Phase 4's checkpoint 4.5 ([phase-4-checkpoint-5.md](../plans/phase-4-checkpoint-5.md)) and started in 4.5a, the phone app on iOS. It stays Proposed until 4.5c, when the TV app and Android have tested it too.
+
+## Context
+
+[ADR 0053](0053-clients-build-and-distribution.md) chose React Native with Expo for the phone and the TV, sharing logic with the web through `@highsea-tv/client` ([ADR 0055](0055-clients-shared-logic.md)). The owner joined the TV and phone checkpoints on 2026-10-29, Apple's platforms first. What 0053 left open: how the apps are laid out in the monorepo, how their native projects are made and built, how they draw the design system, how they find servers and keep tokens, how they play, and how they're tested, all under the owner's rules (exact versions at least two weeks old, AGPL-compatible licences, no network in tests).
+
+## Decision
+
+- **Expo SDK 58 and React Native 0.88**, with Expo Router 58 for the screens as files (`apps/mobile/src/app/`), its protected routes for the gate (C1 before the tabs; [Expo › Protected routes](https://docs.expo.dev/router/advanced/protected/)), and its tab navigator with highsea's own tab bar. The phone app is on `react-native` 0.88.0. The TV app goes on `react-native-tvos` in 4.5b, which can be pinned from 2026-10-31.
+- **Two apps, not one with a switch:** `apps/mobile` now and `apps/tv` in 4.5b, each with its own `app.config.ts`, bundle identifier (`tv.highsea.mobile`) and layouts. A prebuild targets one platform, and the prototypes keep separate layouts.
+- **Generated native projects:** `ios/` is made by `expo prebuild` from `app.config.ts` and its config plugins, and is never committed ([Expo › Prebuild](https://docs.expo.dev/workflow/prebuild/)). Builds are local and in CI with `xcodebuild`, not EAS Build. Signing stays on the owner's Mac now, and in the `release` environment once there's a membership.
+- **Bun's isolated installs work with Metro** as they are. Two of Expo's native packages had to be held together in the root `package.json`'s `overrides`: `expo-modules-core` 58.0.19 with `expo-modules-jsi` 58.0.14. With jsi 58.0.21 the app stops at launch with a missing `createHostObject` symbol, because core 58.0.19 was built against jsi 58.0.14's headers.
+- **`@highsea-tv/ui-native`:** the design system for React Native. It has the same components as ui-web, by name and shape, on `@highsea-tv/tokens`' native export. Icons are Lucide through `lucide-react-native`, by ui-web's names, and a test keeps both the names and the glyphs in step. Motion uses Reanimated and respects Reduce Motion.
+- **The servers it knows:** `@highsea-tv/client/servers` holds the pure list, as the desktop app's `servers.rs` does. The phone keeps names and addresses in `servers.json` in its documents, and each server's device token in the iOS keychain through expo-secure-store ([Expo › SecureStore](https://docs.expo.dev/versions/latest/sdk/securestore/)). Each server gets an SDK `ServerConnection`, which probes its addresses and fails over, over Expo's streaming `fetch`, so the event stream works.
+- **Discovery:** a local Expo module (`apps/mobile/modules/discovery`) browses for `_highsea._tcp` with Network framework's `NWBrowser`, and resolves each result with an `NWConnection`. The local-network prompt shows as `NWBrowser` waiting with `PolicyDenied`, and the app explains it as the approved prototype does ([Apple TN3179](https://developer.apple.com/documentation/technotes/tn3179-understanding-local-network-privacy)).
+- **Single sign-on** opens the server's OIDC start in `ASWebAuthenticationSession` (expo-web-browser's `openAuthSessionAsync`) with PKCE from expo-crypto, back through `highsea://oidc` (RFC 8252, [ADR 0024](0024-sign-in-methods-and-sessions.md)).
+- **Playback** is expo-video, which is AVPlayer on iOS ([Expo › Video](https://docs.expo.dev/versions/latest/sdk/video/)):
+  - The player is driven by `@highsea-tv/client/player`'s reducer, with the same session flow as the web's (`apps/mobile/src/lib/playback.ts`).
+  - It uses the `ios` built-in profile from `@highsea-tv/stream/profiles` ([ADR 0052](0052-device-profiles.md)'s dated section). AVPlayer has no way to ask what it decodes, so the phone doesn't report.
+  - The stream is loaded with the device token in a header.
+  - Subtitles are fetched as the session's WebVTT and drawn by the app with the person's offset, through `parseCues` and `cuesAt`.
+  - Now Playing and the lock screen come from `showNowPlayingNotification`, with the source's title and artwork.
+  - AirPlay is `VideoAirPlayButton` with `allowsExternalPlayback`. Picture in picture is AVKit's.
+- **Tests:**
+  - Jest with `jest-expo` and React Native Testing Library, as [Expo › Unit testing](https://docs.expo.dev/develop/unit-testing/) documents, for components and screens. Its files end in `.jest.tsx`, which Bun's runner leaves alone, and `bun run test` runs Bun's tests, then Jest's.
+  - Reanimated uses its Jest resolver and `setUpTests()`, and worklets use their mock, as their testing guides say.
+  - Under Bun's isolated installs, `node_modules/.bun` is let through to Babel, and `@babel/runtime` is mapped for the workspace's packages.
+  - Logic stays in plain modules tested by Bun.
+- **The licence audit** reads the pods: each pod in `Podfile.lock` gets its licence from its spec in `Pods/Local Podspecs` ([CocoaPods › license](https://guides.cocoapods.org/syntax/podspec.html#license)). CI's `native.yml` runs it after a prebuild.
+
+## Consequences
+
+- One codebase gives two apps' layouts, and the TV and Android follow from the same packages. The cost is two configs and two prebuilds.
+- Nothing native is committed, so a new Expo SDK is a version bump and a prebuild. The cost is that a local module, like discovery, is the only Swift highsea keeps.
+- The phone can't say what it decodes, so its profile is Apple's documented formats. A future report from AVFoundation's asset checks could refine it.
+- Expo's native packages have to be held in step by hand when their releases disagree, as core and jsi did. Each override is listed, and dropped once the pinnable versions agree.
+- The end-to-end run on the simulator (Maestro) and the TV's D-pad walk (XCUITest) are the plan's, and wait on the owner's word to install Maestro (4.5a's report).

@@ -77,6 +77,7 @@ function Gate() {
           name={app.current.name}
           onRetry={() => app.reconnect().then(session.refetch)}
           onSwitch={app.choose}
+          onForget={app.forget}
           className="min-h-screen bg-bg text-text"
         />
       ) : (

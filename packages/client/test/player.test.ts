@@ -19,6 +19,7 @@ import {
   nudged,
   type PlayerEvent,
   type PlayerState,
+  parseCues,
   playerReducer,
   REPORT_MS,
   reportDue,
@@ -211,6 +212,29 @@ describe('subtitles', () => {
     { startTime: 10, endTime: 12, text: 'One' },
     { startTime: 11.5, endTime: 13, text: 'Two' },
   ]
+
+  test('a WebVTT file read into cues: identifiers, settings, hours and notes', () => {
+    const vtt = [
+      'WEBVTT',
+      '',
+      'NOTE made by highsea',
+      '',
+      '1',
+      '00:00:10.000 --> 00:00:12.500 line:0 align:start',
+      '<i>One</i>',
+      'line two',
+      '',
+      '01:02:03.040 --> 01:02:04.000',
+      'Two',
+      '',
+      'bad --> 00:01.000',
+      'Dropped',
+    ].join('\r\n')
+    expect(parseCues(vtt)).toEqual([
+      { startTime: 10, endTime: 12.5, text: '<i>One</i>\nline two' },
+      { startTime: 3723.04, endTime: 3724, text: 'Two' },
+    ])
+  })
 
   test('the cues showing at a time, overlapping ones together', () => {
     expect(cuesAt(cues, 9.99, 0)).toEqual([])

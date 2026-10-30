@@ -5,41 +5,13 @@
 // read a page at a time, so filters and sorts work on all of it.
 import type { ClientItem } from '@highsea-tv/api-contract'
 import { useLibrary } from '@highsea-tv/client/data'
+import { ALL, arrange, genresOf, type Show, SORTS, type Sort } from '@highsea-tv/client/library'
 import { useT } from '@highsea-tv/i18n/react'
 import { Button, cn, EmptyState, Poster, Select, Skeleton } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { media } from './host.ts'
 import { library as messages } from './messages.ts'
 import { gutter, href, useFormat } from './shell.tsx'
-
-export const SORTS = ['title', 'added', 'year', 'rating'] as const
-export type Sort = (typeof SORTS)[number]
-export type Show = 'all' | 'unwatched'
-export const ALL = 'all'
-
-const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true })
-
-/** "The Matrix" files under M, as the admin's sort title does. */
-const sortTitle = (title: string) => title.replace(/^(the|a|an)\s+/i, '')
-
-/** The genre, then Unwatched, then the sort. Titles without a year sort last by year. */
-export function arrange(items: ClientItem[], genre: string, sort: Sort, unwatched = false) {
-  const shown = items.filter(
-    (m) => (genre === ALL || m.genres.includes(genre)) && !(unwatched && m.watched),
-  )
-  return [...shown].sort((a, b) =>
-    sort === 'added'
-      ? Date.parse(b.addedAt) - Date.parse(a.addedAt)
-      : sort === 'year'
-        ? (b.year ?? 0) - (a.year ?? 0)
-        : sort === 'rating'
-          ? b.rating - a.rating
-          : collator.compare(sortTitle(a.title), sortTitle(b.title)),
-  )
-}
-
-export const genresOf = (items: ClientItem[]) =>
-  [...new Set(items.flatMap((m) => m.genres))].sort((a, b) => collator.compare(a, b))
 
 const grid = 'grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-x-4 gap-y-6'
 

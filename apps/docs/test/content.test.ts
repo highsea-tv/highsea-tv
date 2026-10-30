@@ -139,6 +139,7 @@ describe('the guides', () => {
       'wanted/index',
       'watch/desktop-app',
       'watch/index',
+      'watch/iphone',
       'watch/playing',
     ])
   })

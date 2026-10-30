@@ -10,6 +10,7 @@ import { createContext, type ReactNode, useCallback, useContext, useEffect, useS
 import { type AppDevice, type AppServer, type CurrentServer, desktop } from '../host.ts'
 import { desktop as messages, shell as shellMessages } from '../messages.ts'
 import { Choose } from './connect.tsx'
+import { ForgetServer } from './forget.tsx'
 import { WindowFrame } from './window.tsx'
 
 type Phase =
@@ -28,6 +29,8 @@ export type Desktop = {
   switchTo: (id: string) => Promise<void>
   /** This server again, at whichever of its addresses answers now. */
   reconnect: () => Promise<void>
+  /** Forgets this server (its token and its place in the list), back to C1. */
+  forget: () => Promise<void>
   /** Signed out of this server: its sign-in, with a fresh client. */
   signedOut: () => void
   refresh: () => void
@@ -91,6 +94,15 @@ export function DesktopRoot({ children }: { children: (key: string) => ReactNode
     setPhase({ kind: 'choose' })
   }, [refresh])
 
+  const forget = useCallback(
+    async (id: string) => {
+      await desktop.forget(id).catch(() => {})
+      refresh()
+      setPhase({ kind: 'choose' })
+    },
+    [refresh],
+  )
+
   // a `highsea://connect?server=` link opens C1 with that address (ADR 0020's 4.4 section)
   const [linked, setLinked] = useState<string | null>(null)
   useEffect(() => {
@@ -128,6 +140,7 @@ export function DesktopRoot({ children }: { children: (key: string) => ReactNode
           name={phase.server.name}
           onRetry={() => connectTo(phase.server.id, phase.server.name)}
           onSwitch={choose}
+          onForget={() => forget(phase.server.id)}
           className="min-h-screen bg-bg text-text"
         />
       </>
@@ -139,6 +152,7 @@ export function DesktopRoot({ children }: { children: (key: string) => ReactNode
     servers,
     device,
     choose,
+    forget: () => forget(current.id),
     switchTo: (id) => connectTo(id, servers.find((s) => s.id === id)?.name ?? current.name),
     reconnect: async () => {
       const again = await desktop.use(current.id).catch(() => null)
@@ -173,11 +187,14 @@ export function DesktopUnreachable({
   name,
   onRetry,
   onSwitch,
+  onForget,
   className,
 }: {
   name: string
   onRetry: () => void
   onSwitch: () => void
+  /** Before signing in, the window's foot offers Forget this server. */
+  onForget?: () => void
   className?: string
 }) {
   const t = useT(messages)
@@ -186,6 +203,7 @@ export function DesktopUnreachable({
     <main
       className={cn(
         'mx-auto grid min-h-[70vh] w-full max-w-[1680px] place-items-center px-4 medium:px-8 wide:px-16',
+        onForget && 'grid-rows-[minmax(0,1fr)_auto]',
         className,
       )}
     >
@@ -203,6 +221,7 @@ export function DesktopUnreachable({
       >
         {t('unreachableBody', { name })}
       </EmptyState>
+      {onForget && <ForgetServer name={name} onForget={onForget} />}
     </main>
   )
 }

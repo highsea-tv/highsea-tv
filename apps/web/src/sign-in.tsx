@@ -19,6 +19,7 @@ import { useAction } from '@highsea-tv/sdk/react'
 import { Button, Field, Icon, Input, Lockup, Mark, Skeleton } from '@highsea-tv/ui-web'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
+import { ForgetServer } from './desktop/forget.tsx'
 import { useDesktop } from './desktop/root.tsx'
 import { desktop } from './host.ts'
 import {
@@ -53,16 +54,19 @@ function Card({
   title,
   children,
   onBack,
+  footer,
 }: {
   title: string
   children: ReactNode
   /** The desktop app: back to Choose a server. */
   onBack?: () => void
+  /** The desktop app: Forget this server, at the window's foot. */
+  footer?: ReactNode
 }) {
   const c = useT(connectMessages)
   return (
-    <main className="grid min-h-screen place-items-center bg-bg p-4 text-text">
-      <div className="grid w-full max-w-[28rem] gap-6">
+    <main className="grid min-h-screen grid-rows-[minmax(0,1fr)_auto] bg-bg text-text">
+      <div className="grid w-full max-w-[28rem] gap-6 place-self-center p-4">
         <Lockup size={20} className="justify-self-center" />
         <section
           aria-labelledby="sign-in-title"
@@ -87,6 +91,7 @@ function Card({
           {children}
         </section>
       </div>
+      {footer}
     </main>
   )
 }
@@ -119,6 +124,10 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   }, [step])
 
   // a server that isn't set up has nobody to sign in yet: its owner starts at setup
+  // at the foot of the form, also when the server doesn't answer (the owner, 2026-10-29, as on the
+  // phone): a server that's gone, or whose address changed, can be let go of from here
+  const forget = app && <ForgetServer name={app.current.name} onForget={app.forget} />
+
   const unset = info.status === 'success' && !info.data.setupComplete
   useEffect(() => {
     if (!unset) return
@@ -200,7 +209,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
     )
   if (info.status === 'error')
     return (
-      <Card title={t('signIn')} onBack={app?.choose}>
+      <Card title={t('signIn')} onBack={app?.choose} footer={forget}>
         <Alert>
           {info.error instanceof ApiError && info.error.code === 'unavailable'
             ? t('unavailable', { name: address })
@@ -315,7 +324,7 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
   }
 
   return (
-    <Card title={t('title', { name: server.name })} onBack={app?.choose}>
+    <Card title={t('title', { name: server.name })} onBack={app?.choose} footer={forget}>
       <div className="flex items-center gap-3 rounded-md bg-s2 px-3 py-2.5">
         <Mark size={28} />
         <span className="grid min-w-0">

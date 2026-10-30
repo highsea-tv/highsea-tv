@@ -32,3 +32,13 @@ What stays out: drawing of any kind (components, CSS, the design system), and pl
 - A change to how a title's time left reads is made once, and shows in the prototype as in every app.
 - The package has to stay free of the DOM. Its tests run without `react-dom` for `format` and `prefs`; the hooks' tests use happy-dom only because Testing Library renders through `react-dom`.
 - The prototype keeps its own data hooks over its mock. They match the real ones in name, not in shape, until the mock is brought up to the API's shapes, which nothing schedules yet.
+
+## 2026-10-29: the library, the servers and WebVTT (checkpoint 4.5a)
+
+Three things the web had kept to itself, and the phone needs too, moved into `@highsea-tv/client`:
+
+- `library`: C3's arranging, meaning Unwatched, a genre and a sort;
+- `servers`: the pure list of servers a native app knows, as the desktop app's `servers.rs` holds it;
+- `player`'s `parseCues`: WebVTT's cues from the session's file, which React Native has no `TextTrack` to read.
+
+The player's `Base` gains `ios` and `tvos`. Each has a Bun test ([ADR 0059](0059-native-apps.md)).

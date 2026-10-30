@@ -12,7 +12,7 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "typecheck": "bun run --filter '*' typecheck && tsc -p scripts/tsconfig.json",
-    "test": "bun test --isolate",
+    "test": "bun test --isolate && bun run --filter @highsea-tv/mobile test",
     "smoke": "node scripts/check-node.ts && node apps/server/scripts/smoke.ts",
     "check:node": "node scripts/check-node.ts",
     "explorations": "bunx serve design/explorations -l 4400",
@@ -49,6 +49,8 @@
     "@dnd-kit/abstract": "0.5.0",
     "@dnd-kit/collision": "0.5.0",
     "@dnd-kit/geometry": "0.5.0",
-    "@dnd-kit/state": "0.5.0"
+    "@dnd-kit/state": "0.5.0",
+    "expo-modules-core": "58.0.19",
+    "expo-modules-jsi": "58.0.14"
   }
 }

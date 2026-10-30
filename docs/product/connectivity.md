@@ -22,11 +22,11 @@ Getting from "I installed the app" to watching, on any network, with as little t
 One column (max 28rem), in a card on a desktop and full width on a phone, under the lockup.
 
 - **Choose a server:**
-  - **Your servers:** servers this device has signed in to: the mark, the name, "{Owner}'s server · signed in · just now".
+  - **Your servers:** servers this device has signed in to: the mark, the name, "{Owner}'s server · signed in · just now". On the phone, swiping a row left or pressing it long asks "Forget {name}?" (the owner's answer of 2026-10-29).
   - **On this network:** servers answering discovery that aren't yours yet, appearing as they answer (nearest first, over about two seconds), with "Looking…" while the scan runs and **Look again** after. With nothing new: "Only servers you already use answered." or "No servers answered. They may be on another network, or discovery may be off: add one by address."
   - **Add a server by address:** one field (mono), the hint "Its name or IP, with the port if it isn't 443", **Connect**.
   - **Find my servers with a highsea account** (collapsed): what highsea cloud does and that it's optional.
-- **Sign in to {server}:** the server and how it was reached ("On this network, at 192.168.1.20:3000" or "Remotely, through harbor.example.net"); Username; Password; **Sign in**; **Sign in with {OIDC provider}** when the server offers it.
+- **Sign in to {server}:** the server and how it was reached ("On this network, at 192.168.1.20:3000" or "Remotely, through harbor.example.net"); Username; Password; **Sign in**; **Sign in with {OIDC provider}** when the server offers it. In the apps that keep a list of servers (the phone and the desktop app), **Forget this server** sits at the foot of the screen in the danger ghost button (danger's words without its fill), also when the server doesn't answer, and asks first (the owner's answers of 2026-10-29). The web app has none: it's served by its server, so there's no other to choose.
 - **Two-step verification:** the 6-digit code field; **Verify**.
 - Back (←) returns to Choose a server.
 

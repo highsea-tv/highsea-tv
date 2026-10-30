@@ -7,8 +7,10 @@
   "exports": {
     "./data": "./src/data/index.ts",
     "./format": "./src/format/index.ts",
+    "./library": "./src/library/index.ts",
     "./player": "./src/player/index.ts",
-    "./prefs": "./src/prefs/index.ts"
+    "./prefs": "./src/prefs/index.ts",
+    "./servers": "./src/servers/index.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"

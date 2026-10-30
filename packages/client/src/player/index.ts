@@ -226,6 +226,36 @@ export function cuesAt(cues: Iterable<Cue>, t: number, offsetMs: number): string
   return out
 }
 
+const VTT_TIME = /^(?:(\d+):)?(\d{2}):(\d{2})\.(\d{3})/
+
+/**
+ * The cues of a WebVTT file, for players with no `<track>` to read it (the native apps). It
+ * follows the W3C's parser where it matters here (https://www.w3.org/TR/webvtt1/#webvtt-parser-algorithm):
+ * blocks are separated by blank lines, a cue's timing line holds `-->`, after an optional
+ * identifier line, and a cue whose times don't parse is dropped. NOTE, STYLE and REGION blocks
+ * have no `-->`, so they fall away.
+ */
+export function parseCues(text: string): Cue[] {
+  const seconds = (m: RegExpExecArray) =>
+    Number(m[1] ?? 0) * 3600 + Number(m[2]) * 60 + Number(m[3]) + Number(m[4]) / 1000
+  const cues: Cue[] = []
+  for (const block of text.replace(/\r\n?/g, '\n').split(/\n{2,}/)) {
+    const lines = block.split('\n')
+    const at = lines.findIndex((l) => l.includes('-->'))
+    if (at < 0 || at > 1) continue
+    const [from = '', to = ''] = (lines[at] ?? '').split('-->')
+    const start = VTT_TIME.exec(from.trim())
+    const end = VTT_TIME.exec(to.trim())
+    if (!start || !end) continue
+    cues.push({
+      startTime: seconds(start),
+      endTime: seconds(end),
+      text: lines.slice(at + 1).join('\n'),
+    })
+  }
+  return cues
+}
+
 /** WebVTT cue text without its tags (`<i>`, `<c.yellow>`, `<00:01.000>`), as plain lines. */
 export const cueText = (text: string) =>
   text
@@ -273,6 +303,8 @@ export type Base =
   | 'desktop-macos'
   | 'desktop-windows'
   | 'desktop-linux'
+  | 'ios'
+  | 'tvos'
 
 /**
  * The built-in profile a browser starts from, from its user agent. The desktop app names its

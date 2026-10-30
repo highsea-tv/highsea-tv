@@ -2,10 +2,11 @@
 // C1 on web and mobile (docs/product/connectivity.md#web-and-mobile): your servers, the servers
 // answering on this network as they appear, an address field, and highsea cloud as an option;
 // then sign-in, with two-factor when the account has it. One column, so it fits a phone and sits
-// in a centered card on a desktop.
+// in a centered card on a desktop. In the apps, sign-in has Forget this server at the screen's foot
+// (the owner, 2026-10-29), which asks first.
 
 import { relative } from '@highsea-tv/core/format'
-import { Button, cn, Field, Icon, Input, Lockup, Mark } from '@highsea-tv/ui-web'
+import { Button, ConfirmDialog, cn, Field, Icon, Input, Lockup, Mark } from '@highsea-tv/ui-web'
 import { type FormEvent, useState } from 'react'
 import { useNow } from '../mock/hooks.tsx'
 import type { ProbeResult } from '../mock/types.ts'
@@ -324,8 +325,10 @@ export function ConnectFlow({
         ? `Sign in to ${s.server.name}`
         : 'Two-step verification'
   return (
-    <main className={cn('grid min-h-full place-items-center bg-bg p-4 text-text', className)}>
-      <div className="grid w-full max-w-[28rem] gap-6">
+    <main
+      className={cn('grid min-h-full grid-rows-[minmax(0,1fr)_auto] bg-bg text-text', className)}
+    >
+      <div className="grid w-full max-w-[28rem] gap-6 place-self-center p-4">
         <Lockup size={20} className="justify-self-center" />
         <section
           aria-labelledby="connect-title"
@@ -377,6 +380,18 @@ export function ConnectFlow({
           </div>
         </section>
       </div>
+      {s.step === 'sign-in' && (
+        <div className="flex justify-center px-4 pt-2 pb-6">
+          <ConfirmDialog
+            trigger={<Button variant="danger-ghost">Forget this server</Button>}
+            title={`Forget ${s.server.name}?`}
+            description="This device signs out of it and stops listing it. You can add it again later."
+            confirmLabel={`Forget ${s.server.name}`}
+            destructive
+            onConfirm={flow.back}
+          />
+        </div>
+      )}
     </main>
   )
 }

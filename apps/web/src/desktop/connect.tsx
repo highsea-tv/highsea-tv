@@ -323,9 +323,32 @@ export function Choose({
                 {t('connect')}
               </Button>
             </form>
+            <Cloud />
           </div>
         </section>
       </div>
     </main>
+  )
+}
+
+/** Find my servers with a highsea account, collapsed and explained as C1 prototypes it
+ * (phase-4-checkpoint-4.md): highsea cloud isn't built yet. */
+function Cloud() {
+  const t = useT(messages)
+  const [open, setOpen] = useState(false)
+  return (
+    <div className="grid gap-2 border-line border-t px-3 pt-4">
+      <button
+        type="button"
+        aria-expanded={open}
+        onClick={() => setOpen((o) => !o)}
+        className="flex cursor-pointer items-center gap-2 text-start text-text-2 text-ui outline-none hover:text-text focus-visible:ring-focus"
+      >
+        <Icon name="globe" size={16} />
+        {t('cloud')}
+        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={14} className="ms-auto" />
+      </button>
+      {open && <p className="text-caption text-text-3">{t('cloudDetail')}</p>}
+    </div>
   )
 }
