@@ -83,7 +83,7 @@ function ContinueRow({ section }: { section: HomeSection }) {
 
 function Rows({ sections }: { sections: HomeSection[] }) {
   return (
-    <div className="mx-auto w-full grid max-w-[1680px] gap-8 pb-16">
+    <div className="mx-auto w-full grid max-w-[1680px] gap-20 pb-16">
       {sections.map((s) =>
         s.layout === 'hero' ? null : (
           // data-section: a curation preview scrolls to the section being edited
@@ -227,15 +227,16 @@ function Home({ sections }: { sections: HomeSection[] }) {
   const item = hero?.items[0]
   const { ref, inView } = useMostlyInView()
   return (
-    // not positioned: the bloom is placed from the page's top, behind the banner and the bar
-    <main>
+    // not positioned: the bloom is placed from the page's top, behind the banner and the bar;
+    // clipped across, as the film rows reach into the page's margins
+    <main className="overflow-x-clip">
       {item && <Bloom item={item} shown={inView} />}
-      <div className="relative grid gap-8">
+      <div className="relative grid gap-20">
         {hero && item && (
           <div
             ref={ref}
             data-section={hero.id}
-            className={cn('mx-auto w-full max-w-[1680px] pt-2', gutter)}
+            className={cn('mx-auto w-full max-w-[1680px]', gutter)}
           >
             <FeaturedCard item={item} />
           </div>

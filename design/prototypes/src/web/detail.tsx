@@ -116,7 +116,7 @@ export function WebDetail() {
     <main className="pb-16">
       <section
         aria-labelledby="title"
-        className="relative isolate flex min-h-[30rem] items-end overflow-hidden medium:-mt-16 medium:h-[min(68svh,56.25vw)]"
+        className="relative isolate flex min-h-[30rem] items-end overflow-hidden medium:-mt-20 medium:h-[min(68svh,56.25vw)]"
       >
         <img
           src={m.art.backdrop}

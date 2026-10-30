@@ -39,7 +39,7 @@ import { APP_VERSION, NEXT_APP_VERSION } from '../client/settings.ts'
 import { restartToUpdate } from '../client/settings-sections.tsx'
 import { Cta, Inline } from '../kit/inline.tsx'
 import { useNow } from '../mock/hooks.tsx'
-import { trafficLightRoom, useWindowChrome } from './window.tsx'
+import { trafficLightInset, useWindowChrome } from './window.tsx'
 
 export const webHref = (path: string) => clientHref('web', path)
 
@@ -212,8 +212,13 @@ export function TopBar({ overHero }: { overHero: boolean | 'bloom' }) {
             : 'border-transparent bg-[linear-gradient(var(--color-bg),transparent)]',
       )}
     >
-      <div className={cn('mx-auto w-full flex h-16 max-w-[1680px] items-center gap-3', gutter)}>
-        {chrome === 'mac' && <span aria-hidden className={trafficLightRoom} />}
+      <div
+        className={cn(
+          'mx-auto w-full flex h-20 max-w-[1680px] items-center gap-3',
+          gutter,
+          chrome === 'mac' && trafficLightInset,
+        )}
+      >
         <ServerSwitcher />
         <nav
           aria-label="Main"
@@ -292,8 +297,13 @@ export function Banners() {
       data-tauri-drag-region={chrome === 'mac' ? true : undefined}
       className="relative z-10 bg-[color-mix(in_oklab,var(--color-bg)_80%,black)]"
     >
-      <div className={cn('mx-auto flex min-h-12 w-full max-w-[1680px] items-center gap-3', gutter)}>
-        {chrome === 'mac' && <span aria-hidden className={trafficLightRoom} />}
+      <div
+        className={cn(
+          'mx-auto flex min-h-12 w-full max-w-[1680px] items-center gap-3',
+          gutter,
+          chrome === 'mac' && trafficLightInset,
+        )}
+      >
         <Icon
           name="announcement"
           size={18}

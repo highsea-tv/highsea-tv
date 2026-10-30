@@ -22,6 +22,15 @@ export function useWindowChrome(): WindowChrome {
  */
 export const trafficLightRoom = 'w-[68px] shrink-0 medium:w-[52px] wide:w-[20px]'
 
+/**
+ * The same room for a bar centred at 1680px (the top bar and the banner), as its start padding in
+ * place of the gutter's: the gutter, or as much as reaches 84px from the window's edge, whichever
+ * is more. A wide window's margin already clears the buttons, so the content stays in line with
+ * the page's.
+ */
+export const trafficLightInset =
+  'ps-[max(1rem,calc(84px-max(0px,(100vw-1680px)/2)))] medium:ps-[max(2rem,calc(84px-max(0px,(100vw-1680px)/2)))] wide:ps-[max(4rem,calc(84px-max(0px,(100vw-1680px)/2)))]'
+
 /** The title bar's height, which pushes the sticky top bar and the player's controls down. */
 export const titleBarHeight = 'h-8'
 
