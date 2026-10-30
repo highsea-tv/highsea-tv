@@ -3,9 +3,10 @@
 // name, years and overview over the first part's backdrop, then its titles on this server, oldest
 // first. Reached from search and Library › Collections; a smart one (docs/product/collections.md)
 // says so and gives its rules in words.
-import { Button, cn, EmptyState, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
-import { left, useCollection } from '../client/data.ts'
+import { useCollection } from '../client/data.ts'
+import { MediaPoster } from '../client/media-card.tsx'
 import { gutter, webHref } from './shell.tsx'
 
 export function WebCollection() {
@@ -66,14 +67,7 @@ export function WebCollection() {
       >
         {items.map((m) => (
           <li key={m.id}>
-            <Poster
-              title={m.title}
-              src={m.art.poster}
-              href={webHref(`/movies/${m.id}`)}
-              progress={m.progress !== null ? m.progress * 100 : undefined}
-              showTitle
-              caption={m.progress !== null ? left(m) : m.year}
-            />
+            <MediaPoster item={m} href={webHref(`/movies/${m.id}`)} />
           </li>
         ))}
       </ul>

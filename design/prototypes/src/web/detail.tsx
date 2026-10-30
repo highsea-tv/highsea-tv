@@ -205,7 +205,7 @@ export function WebDetail() {
             </ul>
           </section>
         )}
-        {related.length > 0 && <PosterRow title="More like this" items={related} />}
+        {related.length > 0 && <PosterRow title="More like this" items={related} wide />}
       </div>
     </main>
   )

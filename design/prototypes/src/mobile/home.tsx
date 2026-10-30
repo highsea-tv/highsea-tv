@@ -4,9 +4,10 @@
 // peeking, never auto-advancing), then rows of 16:9 cards (Continue watching's at 62%, the rest
 // at 46%, two and a peek), with the title under the art; only Continue watching has a watched
 // bar, between the two.
-import { Button, cn, EmptyState, Poster, Skeleton } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
-import { left, useHome } from '../client/data.ts'
+import { useHome } from '../client/data.ts'
+import { MediaPoster } from '../client/media-card.tsx'
 import type { ClientItem, HomeSection } from '../mock/types.ts'
 import { PullToRefresh } from './pull.tsx'
 import { AnnouncementCard, gutter, Header, mobileHref } from './shell.tsx'
@@ -42,22 +43,13 @@ export function MobileRow({
   )
 }
 
-/** Posters about 30% wide; on Home, `wide` makes them 16:9 stills with the title and year. */
+/** Posters about 30% wide; `wide` makes them 16:9 stills, as on Home and More like this. */
 export function PosterItems({ items, wide = false }: { items: ClientItem[]; wide?: boolean }) {
   return (
     <>
       {items.map((m) => (
         <li key={m.id} className={cn('shrink-0 snap-start', wide ? 'w-[46%]' : 'w-[30%]')}>
-          <Poster
-            title={m.title}
-            src={wide ? m.art.still : m.art.poster}
-            aspect={wide ? 'still' : 'poster'}
-            showTitle={wide}
-            caption={wide ? String(m.year) : undefined}
-            href={mobileHref(`/movies/${m.id}`)}
-            // on Home only Continue watching shows how far you got
-            progress={!wide && m.progress !== null ? m.progress * 100 : undefined}
-          />
+          <MediaPoster item={m} wide={wide} href={mobileHref(`/movies/${m.id}`)} />
         </li>
       ))}
     </>
@@ -148,16 +140,7 @@ export function MobileHome() {
               <MobileRow key={s.id} title={s.title} section={s.id}>
                 {s.items.map((m) => (
                   <li key={m.id} className="w-[62%] shrink-0 snap-start">
-                    <Poster
-                      title={m.title}
-                      src={m.art.still}
-                      aspect="still"
-                      href={mobileHref(`/play/${m.id}`)}
-                      progress={(m.progress ?? 0) * 100}
-                      progressBelow
-                      showTitle
-                      caption={left(m)}
-                    />
+                    <MediaPoster item={m} resume href={mobileHref(`/play/${m.id}`)} />
                   </li>
                 ))}
               </MobileRow>

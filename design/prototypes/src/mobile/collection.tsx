@@ -2,9 +2,10 @@
 // A collection on mobile (reference, docs/product/client-search.md#collections): the first part's
 // backdrop with Back over it, the name, years and overview, then its titles here, oldest first. A smart one
 // (docs/product/collections.md) says so and gives its rules in words.
-import { Button, cn, EmptyState, Icon, Poster, Skeleton } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Icon, Skeleton } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
-import { left, useCollection } from '../client/data.ts'
+import { useCollection } from '../client/data.ts'
+import { MediaPoster } from '../client/media-card.tsx'
 import { gutter, mobileHref } from './shell.tsx'
 
 export function MobileCollection() {
@@ -74,14 +75,7 @@ export function MobileCollection() {
       <ul aria-label="Movies" className={cn('grid grid-cols-3 gap-x-2 gap-y-4', gutter)}>
         {items.map((m) => (
           <li key={m.id}>
-            <Poster
-              title={m.title}
-              src={m.art.poster}
-              href={mobileHref(`/movies/${m.id}`)}
-              progress={m.progress !== null ? m.progress * 100 : undefined}
-              showTitle
-              caption={m.progress !== null ? left(m) : String(m.year)}
-            />
+            <MediaPoster item={m} href={mobileHref(`/movies/${m.id}`)} />
           </li>
         ))}
       </ul>

@@ -2,9 +2,10 @@
 // C3 Library browse, web/desktop (docs/product/client-library.md). Everything you can watch on this
 // server as a poster grid, with a genre filter and a sort. Other media types appear as tabs only
 // once the server has them; in M1 it's movies only, so there are no tabs.
-import { Button, cn, EmptyState, Poster, Select, Skeleton } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Select, Skeleton } from '@highsea-tv/ui-web'
 import { useState } from 'react'
-import { left, useLibrary } from '../client/data.ts'
+import { useLibrary } from '../client/data.ts'
+import { MediaPoster } from '../client/media-card.tsx'
 import type { ClientItem } from '../mock/types.ts'
 import { LibraryNav } from './collections.tsx'
 import { gutter, webHref } from './shell.tsx'
@@ -126,14 +127,7 @@ export function WebLibrary() {
         >
           {shown.map((m) => (
             <li key={m.id}>
-              <Poster
-                title={m.title}
-                src={m.art.poster}
-                href={webHref(`/movies/${m.id}`)}
-                progress={m.progress !== null ? m.progress * 100 : undefined}
-                showTitle
-                caption={m.progress !== null ? left(m) : m.year}
-              />
+              <MediaPoster item={m} href={webHref(`/movies/${m.id}`)} />
             </li>
           ))}
         </ul>

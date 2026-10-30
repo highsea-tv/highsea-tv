@@ -3,6 +3,7 @@
 // as you type, in a section per kind (movies, collections, people), the best-matching kind first.
 import { cn, Icon, Input, Poster } from '@highsea-tv/ui-web'
 import { searchKinds, searchSuggestions, useSearch, useSearchQuery } from '../client/data.ts'
+import { MediaPoster } from '../client/media-card.tsx'
 import type { SearchSection } from '../mock/types.ts'
 import { gutter, webHref } from './shell.tsx'
 
@@ -89,13 +90,7 @@ function Results({
         <ul className={grid}>
           {section.items.map((m) => (
             <li key={m.id}>
-              <Poster
-                title={m.title}
-                src={m.art.poster}
-                href={webHref(`/movies/${m.id}`)}
-                showTitle
-                caption={String(m.year)}
-              />
+              <MediaPoster item={m} href={webHref(`/movies/${m.id}`)} />
             </li>
           ))}
         </ul>

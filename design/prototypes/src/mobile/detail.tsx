@@ -126,7 +126,7 @@ export function MobileDetail() {
       )}
       {d.related.length > 0 && (
         <MobileRow title="More like this">
-          <PosterItems items={d.related} />
+          <PosterItems items={d.related} wide />
         </MobileRow>
       )}
     </article>

@@ -16,7 +16,8 @@ import {
 } from 'react'
 import { createPortal } from 'react-dom'
 import { useLocation } from 'wouter'
-import { clientHref, left, useAnnouncements, useConnection, useServer } from '../client/data.ts'
+import { clientHref, useAnnouncements, useConnection, useServer } from '../client/data.ts'
+import { mediaCard } from '../client/media-card.tsx'
 import type { ClientItem } from '../mock/types.ts'
 import type { TvNav } from '../proto/state.ts'
 import { useProto } from '../screen/screen.tsx'
@@ -137,16 +138,17 @@ export function TvPoster({
   /** Continue watching: the time left for a caption, and the bar between the art and the title. */
   resume?: boolean
 }) {
+  // the card's rules are every client's (client/media-card.tsx): progress on Continue watching only
+  const card = mediaCard(item, { wide, resume })
   return (
     <TvTile
-      title={item.title}
-      caption={resume && item.progress !== null ? left(item) : String(item.year)}
-      src={wide ? item.art.still : item.art.poster}
+      title={card.title}
+      caption={card.caption}
+      src={card.src}
       href={href}
-      wide={wide}
-      // on Home only Continue watching shows how far you got
-      progress={resume || !wide ? item.progress : null}
-      progressBelow={resume}
+      wide={card.aspect === 'still'}
+      progress={card.progress}
+      progressBelow={card.progressBelow}
     />
   )
 }

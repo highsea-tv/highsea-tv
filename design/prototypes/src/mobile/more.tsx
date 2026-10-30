@@ -13,6 +13,7 @@ import {
   useSearchQuery,
   useServer,
 } from '../client/data.ts'
+import { MediaPoster } from '../client/media-card.tsx'
 import { OfflineList } from '../client/offline-list.tsx'
 import { type SettingsSectionId, settingsSections } from '../client/settings.ts'
 import { SettingsSectionBody } from '../client/settings-sections.tsx'
@@ -92,13 +93,7 @@ function MobileResults({
         <ul className={cn('grid grid-cols-3 gap-x-2 gap-y-4', gutter)}>
           {section.items.map((m) => (
             <li key={m.id}>
-              <Poster
-                title={m.title}
-                src={m.art.poster}
-                href={mobileHref(`/movies/${m.id}`)}
-                showTitle
-                caption={String(m.year)}
-              />
+              <MediaPoster item={m} href={mobileHref(`/movies/${m.id}`)} />
             </li>
           ))}
         </ul>

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// C4 Item detail, TV (docs/product/client-detail.md#tv): the ambient backdrop (the artwork,
-// blurred 2.6u and dimmed: elevation.md#blur), the title and its actions, then the cast and More
-// like this as rows. Audio and subtitles opens the shared panel; Back closes it, then leaves.
+// C4 Item detail, TV (docs/product/client-detail.md#tv): Home's hero, with the backdrop filling the
+// screen and the title's logo low on the left, here beside the poster and with the fuller details
+// (the owner, 2026-10-30); then the cast and More like this as rows, which scroll the hero away. Audio and subtitles opens the shared panel; Back closes it, then leaves.
 import { Icon, Poster, QualityTag, Rating } from '@highsea-tv/ui-web'
-import { type KeyboardEvent, useRef, useState } from 'react'
+import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
 import { useParams } from 'wouter'
 import { left, runtime, useItem } from '../client/data.ts'
 import { useMarkWatched } from '../client/item-more.tsx'
@@ -11,7 +11,6 @@ import { useAction } from '../mock/hooks.tsx'
 import type { ClientItem, PlaybackPrefs } from '../mock/types.ts'
 import { useBack } from './back.ts'
 import {
-  backdropReach,
   GlobalNav,
   ServerIdentity,
   TvButton,
@@ -30,6 +29,16 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
   const [focusKey, setFocusKey] = useState(0)
   const [options, setOptions] = useState(false)
   const hold = useHold(() => setOptions(true))
+  // below the hero, the row above fades out under the top edge rather than being cut
+  const [lifted, setLifted] = useState(false)
+  useEffect(() => {
+    const onFocus = (e: FocusEvent) => {
+      const el = e.target as HTMLElement
+      if (el.closest('[data-scroll="y"]')) setLifted(!el.closest('[data-group="actions"]'))
+    }
+    document.addEventListener('focusin', onFocus)
+    return () => document.removeEventListener('focusin', onFocus)
+  }, [])
   useInitialFocus(detail.status === 'success' && !panel && !options, `${id}:${focusKey}`)
 
   if (detail.status === 'loading')
@@ -62,42 +71,51 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
   }
   return (
     <>
-      <img
-        src={m.art.backdrop}
-        alt=""
-        className={`absolute inset-0 h-full w-full scale-110 object-cover blur-[2.6cqw] brightness-[0.45] ${backdropReach}`}
-      />
-      <div
-        className={`absolute inset-0 bg-[linear-gradient(90deg,var(--color-bg)_10%,transparent_70%)] ${backdropReach}`}
-      />
       <div
         {...(panel || options ? { 'data-isolate': '' } : {})}
-        className="absolute inset-0 overflow-hidden [mask-image:linear-gradient(transparent,black_3.2cqw)]"
+        className={`absolute inset-0 overflow-hidden ${lifted ? '[mask-image:linear-gradient(transparent,black_3.2cqw)]' : ''}`}
       >
         <div
           data-scroll="y"
           data-keep="0.4"
-          className="relative grid grid-cols-1 gap-[2.4cqw] pt-[calc(8cqw-var(--tv-head,0px))] pb-[4cqw] transition-lift"
+          className="relative grid grid-cols-1 gap-[2.4cqw] pb-[4cqw] transition-lift"
         >
+          {/* the whole 16:9 screen, as on Home, fading into the background at the left and foot */}
+          <img
+            src={m.art.backdrop}
+            alt=""
+            className="absolute inset-x-0 top-0 h-[56.25cqw] w-full object-cover"
+          />
+          <div className="absolute inset-x-0 top-0 h-[56.25cqw] bg-[linear-gradient(90deg,var(--color-bg)_7%,transparent_55%),linear-gradient(0deg,var(--color-bg)_8%,transparent_45%)]" />
           <ServerIdentity />
+          {/* the hero sits low on the first screen, leaving the top to the backdrop, with the cast's
+          title showing under it */}
           <section
             aria-labelledby="title"
-            className="grid max-w-[60cqw] grid-cols-[13cqw_1fr] gap-[2.4cqw] px-(--tv-safe-x)"
+            className="relative grid h-[calc(46cqw-var(--tv-head,0px))] max-w-[66cqw] grid-cols-[11cqw_1fr] items-end gap-[2.4cqw] px-(--tv-safe-x)"
           >
             <img
               src={m.art.poster}
               alt=""
               className="aspect-poster w-full rounded-(--tv-radius-poster) object-cover shadow-4"
             />
-            <div className="grid content-start gap-[1cqw]">
+            <div className="grid content-end gap-[1cqw]">
               <h1
                 id="title"
-                className="font-semibold text-[3.6cqw] leading-[0.95] tracking-display"
+                className="font-semibold text-(length:--tv-text-hero-title) leading-[0.95] tracking-display"
               >
-                {m.title}
+                {m.art.logo ? (
+                  <img
+                    src={m.art.logo}
+                    alt={m.title}
+                    className="max-h-[7.5cqw] max-w-[28cqw] object-contain object-left drop-shadow-[0_0.2cqw_0.8cqw_rgb(0_0_0/0.5)]"
+                  />
+                ) : (
+                  m.title
+                )}
               </h1>
               <p className="flex items-center gap-[1cqw] text-(length:--tv-text-meta) text-text-2">
-                {m.year} · {runtime(m.runtimeMinutes)} · {m.genres[0]}
+                {m.year} · {runtime(m.runtimeMinutes)} · {m.genres.slice(0, 2).join(', ')}
                 {m.rating > 0 && <Rating value={m.rating} size={20} />}
                 {m.quality.map((q) => (
                   <QualityTag key={q} overlay className="text-(length:--tv-text-quality)">
@@ -105,7 +123,12 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
                   </QualityTag>
                 ))}
               </p>
-              <p className="line-clamp-4 max-w-[44cqw] text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
+              {m.tagline && (
+                <p className="font-semibold text-(length:--tv-text-synopsis) leading-[1.45]">
+                  {m.tagline}
+                </p>
+              )}
+              <p className="line-clamp-3 max-w-[44cqw] text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
                 {m.synopsis}
               </p>
               {d.directors.length > 0 && (
@@ -146,7 +169,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
             </div>
           </section>
           {d.cast.length > 0 && (
-            <TvRow group="cast" title="Cast" goUp="actions">
+            <TvRow group="cast" title="Cast" goUp="actions" className="relative">
               {d.cast.map((c) => (
                 <li key={c.personId} className="w-[8cqw] shrink-0">
                   {/* cast cards are focus stops, so the row can be read by D-pad */}
@@ -168,10 +191,11 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
             </TvRow>
           )}
           {d.related.length > 0 && (
-            <TvRow group="related" title="More like this" goUp="actions">
+            <TvRow group="related" title="More like this" goUp="actions" className="relative">
               {d.related.map((r) => (
-                <li key={r.id} className="w-(--tv-poster-width) shrink-0">
-                  <TvPoster item={r} href={tvHref(`/movies/${r.id}`)} />
+                // Home's 16:9 cards
+                <li key={r.id} className="w-[17cqw] shrink-0">
+                  <TvPoster item={r} wide href={tvHref(`/movies/${r.id}`)} />
                 </li>
               ))}
             </TvRow>

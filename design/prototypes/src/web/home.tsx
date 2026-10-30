@@ -9,12 +9,12 @@ import {
   cn,
   EmptyState,
   Icon,
-  Poster,
   QualityTag,
   Skeleton,
 } from '@highsea-tv/ui-web'
 import { type ReactNode, useState } from 'react'
-import { left, meta, qualityTags, useHome } from '../client/data.ts'
+import { meta, qualityTags, useHome } from '../client/data.ts'
+import { MediaPoster } from '../client/media-card.tsx'
 import type { ClientItem, HomeSection } from '../mock/types.ts'
 import { Banners, gutter, webHref } from './shell.tsx'
 
@@ -53,8 +53,8 @@ function Meta({ item }: { item: ClientItem }) {
 const cardWidth = 'w-[clamp(15rem,24vw,21rem)]'
 
 /**
- * Posters, with Play over the art on hover and focus. On Home, `wide` makes them 16:9 stills with
- * the title and year under them, and no watched bar: on Home only Continue watching has one.
+ * Posters, with Play over the art on hover and focus; `wide` makes them 16:9 stills, as on Home
+ * and More like this. No progress bar: only Continue watching has one (client/media-card.tsx).
  */
 export function PosterRow({
   title,
@@ -70,17 +70,12 @@ export function PosterRow({
   return (
     <CarouselRow title={title} suffix={suffix} itemClassName={wide ? cardWidth : undefined}>
       {items.map((m) => (
-        <Poster
+        <MediaPoster
           key={m.id}
-          title={m.title}
-          src={wide ? m.art.still : m.art.poster}
-          aspect={wide ? 'still' : 'poster'}
-          showTitle={wide}
-          caption={wide ? String(m.year) : undefined}
+          item={m}
+          wide={wide}
           href={webHref(`/movies/${m.id}`)}
           quality={qualityTags(m).slice(0, 1)}
-          // on Home only Continue watching shows how far you got
-          progress={!wide && m.progress !== null ? m.progress * 100 : undefined}
           actions={
             <a
               href={webHref(`/play/${m.id}`)}
@@ -101,17 +96,7 @@ function ContinueRow({ section }: { section: HomeSection }) {
   return (
     <CarouselRow title={section.title} itemClassName={cardWidth}>
       {section.items.map((m) => (
-        <Poster
-          key={m.id}
-          title={m.title}
-          src={m.art.still}
-          aspect="still"
-          href={webHref(`/play/${m.id}`)}
-          progress={(m.progress ?? 0) * 100}
-          progressBelow
-          showTitle
-          caption={left(m)}
-        />
+        <MediaPoster key={m.id} item={m} resume href={webHref(`/play/${m.id}`)} />
       ))}
     </CarouselRow>
   )

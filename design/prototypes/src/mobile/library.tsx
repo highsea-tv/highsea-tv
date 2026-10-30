@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C3 Library browse, mobile (docs/product/client-library.md#mobile): a large title, the count and
 // one Sort and filter button that opens a sheet; then three posters a row.
-import { Button, cn, EmptyState, Poster, Sheet, SheetContent, Skeleton } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Sheet, SheetContent, Skeleton } from '@highsea-tv/ui-web'
 import { useState } from 'react'
-import { left, useLibrary } from '../client/data.ts'
+import { useLibrary } from '../client/data.ts'
+import { MediaPoster } from '../client/media-card.tsx'
 import { ALL, arrange, genresOf, type Show, type Sort, shows, sorts } from '../web/library.tsx'
 import { LibraryNav } from './collections.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
@@ -68,14 +69,7 @@ export function MobileLibrary() {
           <ul className="grid grid-cols-3 gap-x-2 gap-y-4">
             {shown.map((m) => (
               <li key={m.id}>
-                <Poster
-                  title={m.title}
-                  src={m.art.poster}
-                  href={mobileHref(`/movies/${m.id}`)}
-                  progress={m.progress !== null ? m.progress * 100 : undefined}
-                  showTitle
-                  caption={m.progress !== null ? left(m) : m.year}
-                />
+                <MediaPoster item={m} href={mobileHref(`/movies/${m.id}`)} />
               </li>
             ))}
           </ul>
