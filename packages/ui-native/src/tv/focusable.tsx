@@ -27,6 +27,7 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 export type ViewHandle = ComponentRef<typeof View>
 
 const ring = tokens.focus.tv
+const ROW_SCALE = 1.03
 
 /** The ring as a box shadow, at this theme's ring scale and unit. */
 export function focusShadow(text: string, u: number, scale = 1) {
@@ -39,8 +40,11 @@ export type FocusableProps = {
   onLongPress?: () => void
   onFocus?: () => void
   onBlur?: () => void
-  /** `button` lifts by 1.07, `poster` by 1.05 (focus.tv). */
-  lift?: 'button' | 'poster' | 'none'
+  /**
+   * `button` lifts by 1.07, `poster` by 1.05 (focus.tv); `row`, a list's full-width row, by the
+   * prototype's 1.03 (its settings and server rows' `scale-[1.03]`).
+   */
+  lift?: 'button' | 'poster' | 'row' | 'none'
   /** Whether the ring is drawn on this stop; a poster draws it around its art instead. */
   ring?: boolean
   /** The ring's corner radius, in points. */
@@ -79,7 +83,14 @@ export function Focusable({
   const reduced = useReducedMotion()
   const [focused, setFocused] = useState(false)
   const scale = useSharedValue(1)
-  const to = lift === 'button' ? ring.scaleButton : lift === 'poster' ? ring.scalePoster : 1
+  const to =
+    lift === 'button'
+      ? ring.scaleButton
+      : lift === 'poster'
+        ? ring.scalePoster
+        : lift === 'row'
+          ? ROW_SCALE
+          : 1
   const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
   return (
     <AnimatedPressable

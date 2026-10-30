@@ -183,6 +183,13 @@ function Nav({ phase }: { phase: Phase }) {
       >
         <Stack.Protected guard={phase === 'in'} redirectTo={start}>
           <Stack.Screen name="index" />
+          <Stack.Screen name="search" />
+          <Stack.Screen name="library/index" />
+          <Stack.Screen name="library/collections" />
+          <Stack.Screen name="movies/[id]" />
+          <Stack.Screen name="collections/[id]" />
+          <Stack.Screen name="settings" />
+          <Stack.Screen name="play/[id]" />
         </Stack.Protected>
         <Stack.Screen name="connect" />
       </Stack>

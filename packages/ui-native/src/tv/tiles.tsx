@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Titled art as a focus stop (kit.tsx's TvTile in the prototype): a poster or a wide tile, its
 // title and a caption under the art. The art lifts on focus and takes the ring; the words stay
-// put, clear of it, and the title turns from `text-2` to `text`. A row of them scrolls sideways
-// by transform to keep focus 30% in from the left, measured from centres (tv.md › Scrolling),
-// and is a focus guide with `autoFocus`, so coming back to it lands on the tile left
-// (react-native-tvos's TVFocusGuideView).
+// put, clear of it, and the title turns from `text-2` to `text`. A row of them is a sideways
+// scroll view, so tvOS's focus engine reaches tiles past the screen's edge, and each tile lands
+// 30% in from the left, measured from centres (tv.md › Scrolling); the row is a focus guide with
+// `autoFocus`, so coming back to it lands on the tile left (react-native-tvos's TVFocusGuideView).
 import { Image } from 'expo-image'
 import { type ReactNode, type Ref, useEffect } from 'react'
-import { TVFocusGuideView, useWindowDimensions, View } from 'react-native'
+import { ScrollView, TVFocusGuideView, useWindowDimensions, View } from 'react-native'
 import Animated, {
   useAnimatedStyle,
   useReducedMotion,
@@ -18,7 +18,7 @@ import { Progress } from '../progress.tsx'
 import { Text } from '../text.tsx'
 import { tokens, useTheme } from '../theme.tsx'
 import { Focusable, focusShadow, type ViewHandle } from './focusable.tsx'
-import { rowOffset, TRACK_SPRING } from './model.ts'
+import { KEEP, keptAt, TRACK_SPRING } from './model.ts'
 
 const tv = tokens.tv
 
@@ -168,9 +168,10 @@ function Art({
 }
 
 /**
- * A titled row of tiles (kit.tsx's TvRow): the title at the safe area's inset, and the track
- * moved by transform so the focused tile sits 30% in. Item widths are known (posters 10.5u, wide
- * tiles 17u), so the centres are worked out, not measured.
+ * A titled row of tiles (kit.tsx's TvRow): the title at the safe area's inset, and the tiles in a
+ * sideways scroll view that lands each focused tile with its centre 30% in (react-native-tvos's
+ * `snapToAlignment="item"` with each tile's `scrollSnapOffset`). Item widths are known (posters
+ * 10.5u, wide tiles 17u), so where they land is worked out, not measured.
  */
 export function TvRow<T>({
   title,
@@ -195,16 +196,8 @@ export function TvRow<T>({
   const u = theme.u
   const { width } = useWindowDimensions()
   const reduced = useReducedMotion()
-  const offset = useSharedValue(0)
   const w = (wide ? WIDE_WIDTH : tv.poster.width) * u
-  const gap = tv.poster.gap * u
   const inset = tv.safe.x * u
-  const total = inset * 2 + items.length * w + Math.max(0, items.length - 1) * gap
-  const track = useAnimatedStyle(() => ({ transform: [{ translateX: -offset.value }] }))
-  const focus = (index: number) => {
-    const to = rowOffset(inset + index * (w + gap) + w / 2, width, total)
-    offset.value = reduced ? to : withSpring(to, TRACK_SPRING)
-  }
   return (
     <View ref={ref} accessibilityRole="list" accessibilityLabel={title} style={{ gap: 0.8 * u }}>
       <Text variant="rowTitle" style={{ paddingHorizontal: inset }} accessibilityRole="header">
@@ -216,30 +209,26 @@ export function TvRow<T>({
         ) : null}
       </Text>
       <TVFocusGuideView autoFocus trapFocusLeft trapFocusRight>
-        <Animated.View
-          style={[
-            {
-              flexDirection: 'row',
-              gap,
-              paddingHorizontal: inset,
-              paddingVertical: 1 * u,
-              width: total,
-            },
-            track,
-          ]}
+        <ScrollView
+          horizontal
+          snapToAlignment="item"
+          scrollAnimationEnabled={!reduced}
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{
+            gap: tv.poster.gap * u,
+            paddingHorizontal: inset,
+            paddingVertical: 1 * u,
+          }}
         >
           {items.map((item, index) => (
-            <View key={keyOf(item)}>
+            <View key={keyOf(item)} scrollSnapOffset={keptAt(KEEP.row, width, w)}>
               {render(item, {
                 index,
-                onFocus: () => {
-                  focus(index)
-                  onFocusItem?.(item, index)
-                },
+                onFocus: () => onFocusItem?.(item, index),
               })}
             </View>
           ))}
-        </Animated.View>
+        </ScrollView>
       </TVFocusGuideView>
     </View>
   )

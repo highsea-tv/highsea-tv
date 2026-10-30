@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C2 Home, TV (client-home.md#tv, the prototype's tv/home.tsx): the locked Hero + rows layout
 // (tv.md#layout). The hero follows focus through the featured row after the 220 ms dwell and
-// cross-fades; rows below it don't bind it, and focus there lifts the page so that row's title sits
-// at the safe area's top (homeLift). Up from the hero's actions opens the global navigation. Back
+// cross-fades; rows below it don't bind it, and focus there scrolls the page so that row's title
+// sits at the safe area's top (homeRowAt). The page is a scroll view, so tvOS's focus engine reaches
+// the rows below the screen. Up from the hero's actions opens the global navigation. Back
 // at the root returns focus to the first item of the top row, and from there leaves highsea
 // (homeBack). An announcement that must be acknowledged comes first, on its own. Built-in rows
 // have no title from the server; they're named here.
@@ -17,8 +18,7 @@ import {
   focusOn,
   HERO_DWELL_MS,
   homeBack,
-  homeLift,
-  TRACK_SPRING,
+  homeRowAt,
   TvButton,
   TvMessage,
   TvRow,
@@ -26,17 +26,10 @@ import {
   type ViewHandle,
 } from '@highsea-tv/ui-native/tv'
 import { Image } from 'expo-image'
-import { router } from 'expo-router'
+import { router, useIsFocused } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ActivityIndicator, StyleSheet, useWindowDimensions, View } from 'react-native'
-import Animated, {
-  FadeIn,
-  FadeOut,
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated'
+import { ActivityIndicator, ScrollView, StyleSheet, useWindowDimensions, View } from 'react-native'
+import Animated, { FadeIn, FadeOut, useReducedMotion } from 'react-native-reanimated'
 import { useBack } from '../back.ts'
 import { AnnouncementPill, appKind, GlobalNav, ServerIdentity } from '../kit.tsx'
 import { home as messages, shell } from '../messages.ts'
@@ -128,41 +121,43 @@ function Home({ sections }: { sections: HomeSection[] }) {
   const rows = sections
   const featured = hero ? sections.indexOf(hero) : -1
 
-  // the page lifts by the focused row (homeLift), measured where each row lands
-  const tops = useRef<number[]>([])
-  const rowsTop = useRef(0)
-  const lift = useSharedValue(0)
-  const page = useAnimatedStyle(() => ({ transform: [{ translateY: -lift.value }] }))
+  // where each row lands as focus reaches it (homeRowAt), from where it's laid out on the page
+  const [tops, setTops] = useState<number[]>([])
+  const [rowsTop, setRowsTop] = useState(0)
   const [atRow, setAtRow] = useState(-1)
-  const onRow = (row: number) => {
-    setAtRow(row)
-    const to = homeLift({
-      row,
-      featured: Math.max(featured, 0),
-      rowTop: rowsTop.current + (tops.current[row] ?? 0),
-      width,
-    })
-    lift.value = reduced ? to : withSpring(to, TRACK_SPRING)
-  }
 
   // Back: to the first item of the top row, then out of highsea
   const firstTile = useRef<ViewHandle>(null)
   const [onFirst, setOnFirst] = useState(false)
-  const leave = useLeaveOnBack(onFirst)
+  // Home stays mounted under the screens opened from it, which need Menu for their own Back
+  const onView = useIsFocused()
+  const leave = useLeaveOnBack(onFirst && onView)
   useBack(() => {
     if (homeBack(onFirst) === 'exit') leave()
     else focusOn(firstTile.current)
   })
 
+  const toHero = () => {
+    setAtRow(-1)
+    setOnFirst(false)
+  }
+
   if (!shown) return null
   const playLabel = shown.progress !== null ? t('resume') : t('play')
   return (
     <View style={{ flex: 1 }}>
-      <Animated.View style={[{ flex: 1 }, page]}>
+      <ScrollView
+        snapToAlignment="item"
+        scrollAnimationEnabled={!reduced}
+        showsVerticalScrollIndicator={false}
+        style={{ flex: 1 }}
+      >
         <Backdrop source={media(shown.art.backdrop)} />
         <ServerIdentity />
         <AnnouncementPill />
+        {/* the hero lands where it's laid out, so the page rests at the top */}
         <View
+          scrollSnapOffset={tv.hero.copyTop * u}
           style={{
             position: 'absolute',
             top: tv.hero.copyTop * u,
@@ -199,11 +194,16 @@ function Home({ sections }: { sections: HomeSection[] }) {
               preferred
               icon="play"
               label={`${playLabel}, ${shown.title}`}
+              onFocus={toHero}
               onPress={() => router.push(`/play/${shown.id}`)}
             >
               {playLabel}
             </TvButton>
-            <TvButton icon="info" onPress={() => router.push(`/movies/${shown.id}`)}>
+            <TvButton
+              icon="info"
+              onFocus={toHero}
+              onPress={() => router.push(`/movies/${shown.id}`)}
+            >
               {t('details')}
             </TvButton>
           </View>
@@ -211,9 +211,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
         {/* the rows start about half way down, so the next row's title shows under the featured
         one */}
         <View
-          onLayout={(e) => {
-            rowsTop.current = e.nativeEvent.layout.y
-          }}
+          onLayout={(e) => setRowsTop(e.nativeEvent.layout.y)}
           style={{ paddingTop: 28.5 * u, paddingBottom: tv.safe.y * u, gap: 1.6 * u }}
         >
           {rows.map((section, row) => {
@@ -223,8 +221,15 @@ function Home({ sections }: { sections: HomeSection[] }) {
               <View
                 key={section.id}
                 onLayout={(e) => {
-                  tops.current[row] = e.nativeEvent.layout.y
+                  const y = e.nativeEvent.layout.y
+                  setTops((all) => (all[row] === y ? all : Object.assign([...all], { [row]: y })))
                 }}
+                scrollSnapOffset={homeRowAt({
+                  row,
+                  featured: Math.max(featured, 0),
+                  rowTop: rowsTop + (tops[row] ?? 0),
+                  width,
+                })}
               >
                 <TvRow
                   title={titleOf(section, t)}
@@ -233,7 +238,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
                   keyOf={(m) => m.id}
                   wide={wide}
                   onFocusItem={(m, index) => {
-                    onRow(row)
+                    setAtRow(row)
                     setOnFirst(row === 0 && index === 0)
                     if (binds) setFocused(m)
                   }}
@@ -260,8 +265,10 @@ function Home({ sections }: { sections: HomeSection[] }) {
             )
           })}
         </View>
-      </Animated.View>
-      {atRow < 0 ? <GlobalNav /> : null}
+      </ScrollView>
+      {/* once the page scrolls, the tabs' guide would catch Up from a row, so they're there only
+          while the hero's actions sit between it and focus (rows up to the featured one) */}
+      {atRow <= Math.max(featured, 0) ? <GlobalNav /> : null}
     </View>
   )
 }

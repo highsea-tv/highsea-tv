@@ -4,11 +4,11 @@ import { describe, expect, test } from 'bun:test'
 import {
   HERO_DWELL_MS,
   homeBack,
-  homeLift,
+  homeRowAt,
   inUnits,
   KEEP,
+  keptAt,
   remoteKey,
-  rowOffset,
   unit,
 } from '../src/tv/model.ts'
 
@@ -24,37 +24,30 @@ describe('screen units', () => {
   })
 })
 
-describe('rows by transform', () => {
-  test('keep the focused item 30% in', () => {
+describe('where focus lands', () => {
+  test("a row's tile lands with its centre 30% in", () => {
     expect(KEEP.row).toBe(0.3)
-    // an item centred at 1500 in a 1920 view of a 4000 track sits at 576 (30%)
-    expect(rowOffset(1500, 1920, 4000)).toBe(1500 - 576)
+    // a 200px tile in a 1920 view: its leading edge at 476, so its centre is at 576 (30%)
+    expect(keptAt(KEEP.row, 1920, 200)).toBe(476)
   })
 
-  test('clamp at the start and the end', () => {
-    expect(rowOffset(200, 1920, 4000)).toBe(0)
-    expect(rowOffset(3900, 1920, 4000)).toBe(4000 - 1920)
-    // a row shorter than the screen never moves
-    expect(rowOffset(1000, 1920, 1200)).toBe(0)
+  test("a page's part lands with its centre `keep` of the way down", () => {
+    expect(keptAt(0.4, 1080, 300)).toBe(432 - 150)
   })
 })
 
-describe("Home's lift", () => {
-  test('rests while focus is on the hero or the featured row', () => {
-    expect(homeLift({ row: -1, featured: 0, rowTop: 600, width: 1920 })).toBe(0)
-    expect(homeLift({ row: 0, featured: 0, rowTop: 600, width: 1920 })).toBe(0)
+describe("Home's rows", () => {
+  test('the hero and the featured row land where they are, so the page rests at the top', () => {
+    expect(homeRowAt({ row: -1, featured: 0, rowTop: 400, width: 1920 })).toBe(400)
+    expect(homeRowAt({ row: 0, featured: 0, rowTop: 600, width: 1920 })).toBe(600)
   })
 
-  test("lifts a lower row's title to the safe area's top (3.2u)", () => {
-    expect(homeLift({ row: 2, featured: 0, rowTop: 1400, width: 1920 })).toBeCloseTo(
-      1400 - 3.2 * 19.2,
-    )
+  test("a lower row's title lands at the safe area's top (3.2u)", () => {
+    expect(homeRowAt({ row: 2, featured: 0, rowTop: 1400, width: 1920 })).toBeCloseTo(3.2 * 19.2)
   })
 
   test('without a featured row, any row below the hero lifts', () => {
-    expect(homeLift({ row: 0, featured: -1, rowTop: 700, width: 1920 })).toBeCloseTo(
-      700 - 3.2 * 19.2,
-    )
+    expect(homeRowAt({ row: 0, featured: -1, rowTop: 700, width: 1920 })).toBeCloseTo(3.2 * 19.2)
   })
 })
 

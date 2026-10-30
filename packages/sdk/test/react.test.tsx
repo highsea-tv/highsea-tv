@@ -98,4 +98,43 @@ describe('useQuery', () => {
     await Bun.sleep(50)
     expect(calls).toBe(after)
   })
+
+  test('refresh fetches again keeping what is shown; refetch starts over from loading', async () => {
+    let calls = 0
+    const client = createClient({
+      fetch: async () => {
+        calls++
+        return new Response(
+          JSON.stringify({
+            id: 'srv_1',
+            name: `n${calls}`,
+            version: '0',
+            localAddresses: [],
+            publicUrl: null,
+          }),
+        )
+      },
+    })
+    let query: ReturnType<typeof useQuery> | null = null
+    function Name() {
+      const q = useQuery('info', (c) => c.system.publicInfo())
+      query = q
+      return <p>{q.status === 'success' ? q.data.name : '…'}</p>
+    }
+    const view = render(
+      <ClientProvider client={client}>
+        <Name />
+      </ClientProvider>,
+    )
+    await act(() => Bun.sleep(10))
+    act(() => query?.refresh())
+    expect(view.container.textContent).toBe('n1')
+    await act(() => Bun.sleep(10))
+    expect(view.container.textContent).toBe('n2')
+    act(() => query?.refetch())
+    expect(view.container.textContent).toBe('…')
+    await act(() => Bun.sleep(10))
+    expect(view.container.textContent).toBe('n3')
+    view.unmount()
+  })
 })

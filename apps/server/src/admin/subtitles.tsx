@@ -155,7 +155,13 @@ function Wanted() {
   if (data.status === 'success') last.current = data.data
   const kept = data.status === 'loading' ? last.current : undefined
   const shown = kept
-    ? { status: 'success' as const, data: kept, error: undefined, refetch: data.refetch }
+    ? {
+        status: 'success' as const,
+        data: kept,
+        error: undefined,
+        refetch: data.refetch,
+        refresh: data.refresh,
+      }
     : data
 
   const searchAll = useAction((c) => c.subtitles.searchAllMissing())

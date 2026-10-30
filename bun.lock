@@ -935,6 +935,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "react-native-screens@4.30.0": "patches/react-native-screens@4.30.0.patch",
+  },
   "overrides": {
     "@dnd-kit/abstract": "0.5.0",
     "@dnd-kit/collision": "0.5.0",

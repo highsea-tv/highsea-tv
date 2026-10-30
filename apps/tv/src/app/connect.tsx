@@ -371,6 +371,7 @@ function Servers({ knownCount }: { knownCount: number }) {
           <Focusable
             key={r.id}
             preferred={i === 0}
+            lift="row"
             label={`${r.name}, ${r.line}`}
             radius={0.6 * u}
             onPress={() => {

@@ -9,7 +9,7 @@ import { cn, Icon, QualityTag } from '@highsea-tv/ui-web'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock } from '../client/data.ts'
-import { HIDE_MS, SEEK_S, trickplayAt, usePlayer } from '../client/player.ts'
+import { HIDE_MS, SCRUB_MS, SEEK_S, trickplayAt, usePlayer } from '../client/player.ts'
 import {
   NextUp,
   type StreamAction,
@@ -33,7 +33,14 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
   const player = usePlayer(id, fromStart)
   const [panel, setPanel] = useState(false)
   const [shown, setShown] = useState(true)
-  const [seeking, setSeeking] = useState(false)
+  // the preview shows while seeking by key, until SCRUB_MS after the last press
+  const [scrubAt, setScrubAt] = useState(0)
+  const seeking = scrubAt > 0
+  useEffect(() => {
+    if (!scrubAt) return
+    const t = setTimeout(() => setScrubAt(0), SCRUB_MS)
+    return () => clearTimeout(t)
+  }, [scrubAt])
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined)
   const scrubber = useRef<HTMLDivElement>(null)
   const ready = player.detail.status === 'success'
@@ -48,7 +55,7 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
     clearTimeout(timer.current)
     timer.current = setTimeout(() => {
       setShown(false)
-      setSeeking(false)
+      setScrubAt(0)
     }, HIDE_MS)
   }, [])
 
@@ -75,11 +82,11 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault()
-        setSeeking(true)
+        setScrubAt(Date.now())
         player.seekBy(e.key === 'ArrowLeft' ? -SEEK_S : SEEK_S)
       } else if (e.key === 'Enter') {
         e.preventDefault()
-        setSeeking(false)
+        setScrubAt(0)
         player.toggle()
       }
     }
@@ -200,7 +207,7 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
             <TvButton
               icon="subtitles"
               onClick={() => {
-                setSeeking(false)
+                setScrubAt(0)
                 setPanel(true)
               }}
             >

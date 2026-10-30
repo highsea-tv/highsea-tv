@@ -3,12 +3,14 @@
 // `text` fill with `bg` words, secondary `text` at 12%; focus adds the ring and the lift. A key on
 // an on-screen keyboard fills with `text` when focused. A chip is a choice in a row (Sort, the
 // Unwatched filter): `text` at 12% while chosen. A message fills the screen with its actions.
+import { Image } from 'expo-image'
 import type { ReactNode, Ref } from 'react'
 import { View } from 'react-native'
 import { Icon, type IconName } from '../icon.tsx'
 import { Text } from '../text.tsx'
 import { tokens, useTheme } from '../theme.tsx'
 import { Focusable, type ViewHandle } from './focusable.tsx'
+import type { TileSource } from './tiles.tsx'
 
 const tv = tokens.tv
 
@@ -22,8 +24,10 @@ export function TvButton({
   children,
   onPress,
   onLongPress,
+  onFocus,
   primary = false,
   icon,
+  image,
   preferred,
   disabled,
   label,
@@ -32,8 +36,11 @@ export function TvButton({
   children: string
   onPress?: () => void
   onLongPress?: () => void
+  onFocus?: () => void
   primary?: boolean
   icon?: IconName
+  /** A round picture before the words, as a person's in Search. */
+  image?: TileSource
   preferred?: boolean
   disabled?: boolean
   label?: string
@@ -47,6 +54,7 @@ export function TvButton({
       ref={ref}
       onPress={onPress}
       onLongPress={onLongPress}
+      onFocus={onFocus}
       preferred={preferred}
       disabled={disabled}
       label={label ?? children}
@@ -55,13 +63,28 @@ export function TvButton({
         flexDirection: 'row',
         alignItems: 'center',
         gap: 0.6 * u,
-        paddingHorizontal: 1.6 * u,
+        paddingLeft: image !== undefined ? 0.6 * u : 1.6 * u,
+        paddingRight: 1.6 * u,
         paddingVertical: 0.8 * u,
         backgroundColor: primary ? theme.colors.text : alpha(theme.colors.text, 0.12),
         opacity: disabled ? 0.5 : 1,
       }}
     >
       {icon ? <Icon name={icon} size={1.2} color={fg} /> : null}
+      {image !== undefined ? (
+        <Image
+          source={image}
+          style={{
+            width: 2.2 * u,
+            height: 2.2 * u,
+            marginVertical: -0.4 * u,
+            borderRadius: 1.1 * u,
+            backgroundColor: alpha(theme.colors.text, 0.12),
+          }}
+          contentFit="cover"
+          accessibilityIgnoresInvertColors
+        />
+      ) : null}
       <Text variant="button" color={fg} numberOfLines={1}>
         {children}
       </Text>
@@ -73,21 +96,27 @@ export function TvButton({
 export function TvKey({
   children,
   onPress,
+  onFocus,
   width,
   preferred,
   label,
+  ref,
 }: {
   children: string
   onPress: () => void
+  onFocus?: () => void
   width: number
   preferred?: boolean
   label?: string
+  ref?: Ref<ViewHandle>
 }) {
   const theme = useTheme()
   const u = theme.u
   return (
     <Focusable
+      ref={ref}
       onPress={onPress}
+      onFocus={onFocus}
       preferred={preferred}
       label={label ?? children}
       ring={false}
@@ -115,21 +144,27 @@ export function TvKey({
 
 /** A choice in a row of them: Sort's A–Z, the Unwatched filter. */
 export function TvChip({
+  ref,
   children,
   chosen,
   onPress,
+  onFocus,
   preferred,
 }: {
+  ref?: Ref<ViewHandle>
   children: string
   chosen: boolean
   onPress: () => void
+  onFocus?: () => void
   preferred?: boolean
 }) {
   const theme = useTheme()
   const u = theme.u
   return (
     <Focusable
+      ref={ref}
       onPress={onPress}
+      onFocus={onFocus}
       preferred={preferred}
       selected={chosen}
       label={children}

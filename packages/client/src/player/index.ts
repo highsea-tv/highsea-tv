@@ -16,6 +16,8 @@ export const NUDGE_MS = 50
 export const NUDGE_LIMIT_MS = 60_000
 /** ← and → seek this far. */
 export const SEEK_S = 10
+/** Without a pointer, the scrubber's preview shows while scrubbing by key and this long after. */
+export const SCRUB_MS = 1000
 /** The chrome hides after this long without input while playing. */
 export const HIDE_MS = 3000
 /** Next up shows for a film's last this-many seconds, counting down to the next. */

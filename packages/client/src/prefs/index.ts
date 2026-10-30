@@ -48,7 +48,7 @@ export function useDevicePrefs() {
     c.preferences.save({ body: { layer, values } }),
   )
   const write = (layer: 'device' | 'user', values: Patch) =>
-    save.run(layer, values).then(() => prefs.refetch())
+    save.run(layer, values).then(() => prefs.refresh())
   const current = prefs.data ? devicePrefs(prefs.data) : null
   return {
     prefs,

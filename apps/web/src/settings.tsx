@@ -411,7 +411,7 @@ function DevicesSection() {
                 onClick={() =>
                   revoke(d.id).then(
                     () => {
-                      devices.refetch()
+                      devices.refresh()
                       toast({
                         title: t('deviceSignedOut', { name: d.name }),
                         description: t('deviceSignedOutDetail'),

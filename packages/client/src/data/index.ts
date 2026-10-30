@@ -158,7 +158,7 @@ export function useHomeLayout() {
     : saved
   const hidden = layout.data?.hidden ?? []
   const write = (order: string[], hide: string[]) =>
-    save.run({ order, hidden: hide }).then(() => layout.refetch())
+    save.run({ order, hidden: hide }).then(() => layout.refresh())
   return {
     status: layout.status,
     rows,

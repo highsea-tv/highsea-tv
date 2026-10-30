@@ -153,6 +153,9 @@ export function usePlayback(id: number, fromStart: boolean) {
     null
   const subtitle = version?.subtitles.find((t) => t.id === merged.subtitleId) ?? null
   const offsetMs = merged.subtitleOffsetMs ?? 0
+  // nudges count from the last one asked for, so presses quicker than a render all add up
+  const offsetRef = useRef(offsetMs)
+  offsetRef.current = offsetMs
   // a subtitle the server draws into the picture (4.3) is part of the stream: choosing one, or
   // leaving one, starts again. Judged by the last session's list, kept while the next one starts
   const tracks = useRef<PlaySession['subtitles']>([])
@@ -482,7 +485,10 @@ export function usePlayback(id: number, fromStart: boolean) {
     setVersion: (versionId: string) => set({ versionId }),
     setAudio: (audioId: string) => set({ audioId }),
     setSubtitle: (subtitleId: string | null) => set({ subtitleId }),
-    nudge: (dir: 1 | -1 | 0) => set({ subtitleOffsetMs: nudged(offsetMs, dir) }),
+    nudge: (dir: 1 | -1 | 0) => {
+      offsetRef.current = nudged(offsetRef.current, dir)
+      set({ subtitleOffsetMs: offsetRef.current })
+    },
   }
 }
 

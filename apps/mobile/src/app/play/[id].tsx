@@ -124,9 +124,6 @@ function Preview({
   const sheet = media(
     `/api/v1/items/movie/${id}/trickplay/${tile.sheet}.jpg?versionId=${encodeURIComponent(versionId)}`,
   )
-  const rows = Math.ceil(
-    Math.min(manifest.count, manifest.columns * manifest.rows) / manifest.columns,
-  )
   return (
     <View
       style={{
@@ -146,8 +143,11 @@ function Preview({
           left: -tile.x * scale,
           top: -tile.y * scale,
           width: manifest.columns * tile.width * scale,
-          height: rows * tile.height * scale,
+          height: manifest.rows * tile.height * scale,
         }}
+        // a sheet is always the full grid: ffmpeg's tile filter pads the last one
+        // (https://ffmpeg.org/ffmpeg-filters.html#tile); pinned to its top left all the same
+        contentPosition="top left"
       />
     </View>
   )

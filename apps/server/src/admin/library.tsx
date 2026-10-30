@@ -154,7 +154,13 @@ export function MoviesLibrary() {
       ? last.current.data
       : undefined
   const shownQuery = kept
-    ? { status: 'success' as const, data: kept, error: undefined, refetch: movies.refetch }
+    ? {
+        status: 'success' as const,
+        data: kept,
+        error: undefined,
+        refetch: movies.refetch,
+        refresh: movies.refresh,
+      }
     : movies
 
   const profiles = useQuery('quality-profiles', (c) => c.quality.profiles())

@@ -15,6 +15,7 @@ import {
   useMyDevices,
   useThemeChoices,
 } from '../client/settings.ts'
+import { CustomThemeStyles } from '../client/settings-sections.tsx'
 import { useProto } from '../screen/screen.tsx'
 import { GlobalNav, ServerIdentity, TvButton, useInitialFocus } from './kit.tsx'
 
@@ -40,6 +41,7 @@ function Theme() {
   const choose = (theme: string) => (everywhere === null ? set({ theme }) : setEverywhere(theme))
   return (
     <div className="grid gap-[1.2cqw]">
+      <CustomThemeStyles />
       <div role="radiogroup" aria-label="Theme" className="grid gap-[0.4cqw]">
         {choices.map((t) => (
           // biome-ignore lint/a11y/useSemanticElements: a D-pad row, focused by the spatial navigator
@@ -55,6 +57,17 @@ function Theme() {
             <Check on={prefs.theme === t.id} />
             <span className="flex-1">{t.name}</span>
             <span className="text-(length:--tv-text-pill) opacity-70">{t.detail}</span>
+            {t.id !== 'server' && (
+              <span aria-hidden className="flex gap-[0.4cqw]" data-theme={t.id}>
+                {(['bg', 's2', 'accent'] as const).map((r) => (
+                  <span
+                    key={r}
+                    className="size-[1.1cqw] rounded-full ring-[0.08cqw] ring-line-strong"
+                    style={{ background: `var(--color-${r})` }}
+                  />
+                ))}
+              </span>
+            )}
           </button>
         ))}
       </div>

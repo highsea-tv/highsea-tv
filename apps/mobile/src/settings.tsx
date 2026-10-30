@@ -402,7 +402,7 @@ function DevicesSection() {
                   onPress={() =>
                     revoke(d.id).then(
                       () => {
-                        devices.refetch()
+                        devices.refresh()
                         Alert.alert(t('deviceSignedOut', { name: d.name }))
                       },
                       (e: Error) => Alert.alert(e.message),

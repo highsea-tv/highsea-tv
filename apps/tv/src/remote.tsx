@@ -2,8 +2,9 @@
 // The remote (tv.md#remote-keys), the same on Apple TV and Android TV: react-native-tvos turns the
 // Siri Remote's Menu and Android TV's Back into BackHandler's `hardwareBackPress`, and each press
 // and move into useTVEventHandler's events (https://github.com/react-native-tvos/react-native-tvos#readme).
-// Back runs the screen's registered handler (back.ts), else goes Home. Every key plays its sound
-// from the device's pack (sound.md), on by default on a TV.
+// Back runs the screen's registered handler (back.ts), else goes up a level. Every key plays its
+// sound from the device's pack (sound.md), on by default on a TV, except over a film. On tvOS a
+// pushed screen's Menu reaches JS through the root's patch of react-native-screens (#4618).
 //
 // tvOS leaves for the Home screen on Menu only while the app isn't taking the key, and an app
 // can't leave by itself, so at Home's root, with focus on the first item, the key is let go
@@ -29,8 +30,13 @@ export function Remote({ children, signedIn }: { children: ReactNode; signedIn: 
         registry.current()
         return true
       }
+      // up a level: back where this screen was opened from, or Home from a tab's own screen
+      if (router.canGoBack()) {
+        router.back()
+        return true
+      }
       if (pathname !== '/') {
-        router.dismissTo('/')
+        router.replace('/')
         return true
       }
       return false
@@ -54,12 +60,14 @@ function PreferredSounds() {
 
 function Sounds({ on, volume }: { on: boolean; volume: number }) {
   const play = useSounds({ on, volume })
+  // none over a film: the player's keys seek and pause, and its sound is the film's
+  const playing = usePathname().startsWith('/play/')
   const onEvent = useCallback(
     (evt: { eventType: string }) => {
       const key = remoteKey(evt.eventType)
-      if (key) play(key.sound)
+      if (key && !playing) play(key.sound)
     },
-    [play],
+    [play, playing],
   )
   useTVEventHandler(onEvent)
   return null

@@ -26,6 +26,9 @@ type Spec = {
   uppercase?: boolean
 }
 
+/** Geist's glyphs reach 1.2em of line before the tops are cut (its ascender is 1.005em). */
+const NATURAL_LEADING = 1.2
+
 export function textStyle(theme: Theme, variant: Variant, size?: number, weight?: number) {
   const scale = (theme.platform === 'tv' ? tokens.text.tv : tokens.text.mobile) as Record<
     string,
@@ -33,10 +36,17 @@ export function textStyle(theme: Theme, variant: Variant, size?: number, weight?
   >
   const spec = scale[variant] ?? (tokens.text.mobile.body as Spec)
   const px = (size ?? spec.size) * theme.u
+  const lineHeight = Math.round(px * spec.leading)
+  // a line tighter than the font's own (display titles) has its glyphs' tops cut off by the
+  // text's frame on iOS, so the frame grows upward by the difference and the margin takes it
+  // back: the layout keeps the tight leading
+  const headroom = Math.max(0, Math.round(px * NATURAL_LEADING) - lineHeight)
   return {
     fontFamily: family(weight ?? spec.weight),
     fontSize: px,
-    lineHeight: Math.round(px * spec.leading),
+    lineHeight,
+    paddingTop: headroom || undefined,
+    marginTop: headroom ? -headroom : undefined,
     letterSpacing: spec.tracking ? spec.tracking * px : 0,
     textTransform: spec.uppercase ? ('uppercase' as const) : undefined,
   }

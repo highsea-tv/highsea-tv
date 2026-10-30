@@ -26,7 +26,7 @@ import {
 import { ApiError } from '@highsea-tv/sdk'
 import { useClient } from '@highsea-tv/sdk/react'
 import { useEventListener } from 'expo'
-import { useVideoPlayer } from 'expo-video'
+import { useVideoPlayer, type VideoPlayer } from 'expo-video'
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
 import { Platform } from 'react-native'
 import { playbackProfile } from './device.ts'
@@ -34,6 +34,14 @@ import { useMedia } from './media.ts'
 
 /** The player's error when the server is transcoding all it's allowed to, and this one gave up. */
 export const TRANSCODE_LIMIT = 'transcode-limit'
+
+/**
+ * Empties the player. expo-video warns on every `replace`, since on iOS it loads a new asset on
+ * the main thread, but with no source it loads nothing: it only cancels a load under way and
+ * clears the item (VideoPlayer.swift's `replaceCurrentItem`), which `replaceAsync(null)` wouldn't
+ * cancel. So the warning is turned off here, by its documented second argument.
+ */
+const clear = (player: VideoPlayer) => player.replace(null, true)
 
 type Picks = {
   versionId: string | null
@@ -92,6 +100,9 @@ export function usePlayback(id: number, fromStart: boolean) {
     null
   const subtitle = version?.subtitles.find((t) => t.id === merged.subtitleId) ?? null
   const offsetMs = merged.subtitleOffsetMs ?? 0
+  // nudges count from the last one asked for, so presses quicker than a render all add up
+  const offsetRef = useRef(offsetMs)
+  offsetRef.current = offsetMs
   // a subtitle the server draws into the picture is part of the stream: choosing one, or leaving
   // one, starts again. Judged by the last session's list, kept while the next one starts
   const tracks = useRef<PlaySession['subtitles']>([])
@@ -132,7 +143,7 @@ export function usePlayback(id: number, fromStart: boolean) {
   /** Lets go of the current stream: the player's source and the session. */
   const release = useCallback(() => {
     player.pause()
-    player.replace(null)
+    clear(player)
     playingStream.current = false
     pendingStart.current = null
     const s = live.current
@@ -246,7 +257,7 @@ export function usePlayback(id: number, fromStart: boolean) {
       generation.current++
       live.current = null
       player.pause()
-      player.replace(null)
+      clear(player)
       playingStream.current = false
       dispatch({
         type: 'stopped',
@@ -403,7 +414,10 @@ export function usePlayback(id: number, fromStart: boolean) {
     setVersion: (v: string) => set({ versionId: v }),
     setAudio: (a: string) => set({ audioId: a }),
     setSubtitle: (s: string | null) => set({ subtitleId: s }),
-    nudge: (dir: 1 | -1 | 0) => set({ subtitleOffsetMs: nudged(offsetMs, dir) }),
+    nudge: (dir: 1 | -1 | 0) => {
+      offsetRef.current = nudged(offsetRef.current, dir)
+      set({ subtitleOffsetMs: offsetRef.current })
+    },
   }
 }
 

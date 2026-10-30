@@ -32,10 +32,15 @@ export function useClient(): HighseaClient {
   return client
 }
 
-export type Query<T> =
-  | { status: 'loading'; data: undefined; error: undefined; refetch: () => void }
-  | { status: 'error'; data: undefined; error: Error; refetch: () => void }
-  | { status: 'success'; data: T; error: undefined; refetch: () => void }
+/**
+ * `refetch` starts over from loading (a Retry); `refresh` fetches again quietly, keeping what's on
+ * screen until the answer comes (after a save, so the controls a person is on stay put).
+ */
+export type Query<T> = (
+  | { status: 'loading'; data: undefined; error: undefined }
+  | { status: 'error'; data: undefined; error: Error }
+  | { status: 'success'; data: T; error: undefined }
+) & { refetch: () => void; refresh: () => void }
 
 export type QueryOptions = {
   /** Refetch quietly this often, in milliseconds, for numbers no event announces (CPU, memory). */
@@ -104,7 +109,7 @@ export function useQuery<T>(
     return () => clearInterval(timer)
   }, [interval, load])
 
-  return { ...state, refetch: () => load(false) } as Query<T>
+  return { ...state, refetch: () => load(false), refresh: () => load(true) } as Query<T>
 }
 
 /** Wraps a change: `run(...)` returns its promise; `pending` and `error` follow the last call. */

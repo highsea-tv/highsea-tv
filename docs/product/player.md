@@ -18,7 +18,7 @@ Everything around the picture: where you are and moving through it, sound and su
 
 - **Top:** Back (to the item page), the title and the version's description ("4K · HEVC · 2.4 GB"), the version tag at the right.
 - **Centre:** a large Play while paused (a pointer target only; the transport's Play is the accessible one).
-- **Bottom:** the scrubber with a **trickplay** frame and time over the pointer; Play/Pause, back 10 s, forward 10 s, Mute (from the medium breakpoint up), "4:12 / 12:00", then **Audio and subtitles**, **Picture in picture** (where the browser has it) and **Full screen** at the right.
+- **Bottom:** the scrubber with a **trickplay** frame and time over the pointer, and at the position while the scrubber's keys move it (until a second after the last press); Play/Pause, back 10 s, forward 10 s, Mute (from the medium breakpoint up), "4:12 / 12:00", then **Audio and subtitles**, **Picture in picture** (where the browser has it) and **Full screen** at the right.
 - **Picture in picture** (checkpoint 4.2b): the film plays in the browser's own window, through the [Picture-in-Picture API](https://developer.mozilla.org/en-US/docs/Web/API/Picture-in-Picture_API). The button is left out where the browser hasn't got the API (Firefox has its own toggle on the video). While it's out, the frame shows the icon, "Playing in picture in picture" and **Back to this tab**; the chrome stays.
 - **Audio and subtitles panel** (right, 22rem, glass): Version (when several), Audio, Subtitles (Off first), then **Subtitle timing** when subtitles are on: − and + in 50 ms steps, the offset ("+100 ms", "On time"), **Reset**, the **live preview line**, and "Subtitles appear 100 ms later. Saved for this movie."
 - **A subtitle the server draws into the picture** (checkpoint 4.3a: a Blu-ray or DVD picture track, or a styled ASS track the client can’t draw): the timing section keeps its heading and shows "This subtitle is drawn into the picture, so its timing can’t be changed." in place of − and +; the owner approved it as prototyped on 2026-10-28. Choosing such a track, or leaving it, starts a new stream from where the film is, since the picture itself changes.
@@ -36,7 +36,7 @@ Landscape, full screen (the prototype turns it a quarter inside the portrait pho
 
 - **Top:** the title (2.2u) and the version's description; the version tag at the right.
 - **Bottom:** the scrubber (focused on arrival) with elapsed and remaining time; **Audio and subtitles**; and a legend of the remote mapping: "◀ ▶ Seek 10 s · OK Pause · ▼ Audio and subtitles · Back Hide".
-- **Seeking** shows a trickplay frame (14u) over the scrubber.
+- **Seeking** shows a trickplay frame (14u) over the scrubber, until a second after the last press: focus alone never shows it. Without a pointer (TV and phone) the frame shows only while scrubbing, at the scrubber's position (owner, 2026-10-29).
 - **Audio and subtitles** is the TV panel ([client-detail.md](client-detail.md#layout)) plus **Subtitle timing**: a row that takes **Left** and **Right** as −50 ms and +50 ms, with the preview line.
 
 ### The live preview line

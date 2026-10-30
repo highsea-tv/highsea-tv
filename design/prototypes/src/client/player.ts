@@ -12,6 +12,8 @@ import { useStreamState } from './data.ts'
 /** One nudge of the subtitle timing, matching the admin's (movies.md#decisions). */
 export const NUDGE_MS = 50
 export const SEEK_S = 10
+/** Without a pointer, the scrubber's preview shows while scrubbing by key and this long after. */
+export const SCRUB_MS = 1000
 /** The chrome hides after this long without input while playing. */
 export const HIDE_MS = 3000
 

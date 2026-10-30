@@ -1,0 +1,115 @@
+diff --git a/ios/RNSScreenStack.mm b/ios/RNSScreenStack.mm
+index 5da11964f5932cb44e1131c44a2480803c0a62b5..4857224b50af8d3651049c02e9cc331b2b3047af 100644
+--- a/ios/RNSScreenStack.mm
++++ b/ios/RNSScreenStack.mm
+@@ -25,6 +25,15 @@
+ #import "integrations/RNSDismissibleModalProtocol.h"
+ #import "utils/UINavigationBar+RNSUtility.h"
+ 
++#if TARGET_OS_TV
++// highsea: backported from react-native-screens#4665 (merged 2026-09-21, not yet in a stable
++// release): while React Native takes the Menu key (TVEventControl.enableTVMenuKey), UIKit's Menu
++// back gesture on the navigation controller is off, so a pushed screen's Back reaches JS
++// (https://github.com/software-mansion/react-native-screens/issues/4618). Always on here, where
++// upstream has the opt-in `disableDefaultMenuAction` prop.
++#import <React/RCTTVRemoteHandler.h>
++#endif // TARGET_OS_TV
++
+ namespace react = facebook::react;
+ 
+ @interface RNSScreenStackView () <UINavigationControllerDelegate,
+@@ -37,6 +46,10 @@ @interface RNSScreenStackView () <UINavigationControllerDelegate,
+ @property (nonatomic) BOOL updatingModals;
+ @property (nonatomic) BOOL scheduleModalsUpdate;
+ 
++#if TARGET_OS_TV
++@property (nonatomic, assign) BOOL observingTVMenuKeyNotifications;
++#endif // TARGET_OS_TV
++
+ @end
+ 
+ #if RNS_IPHONE_OS_VERSION_AVAILABLE(26_0) && !TARGET_OS_TV
+@@ -369,8 +382,83 @@ - (void)didMoveToWindow
+   [super didMoveToWindow];
+   // for handling nested stacks
+   [self maybeAddToParentAndUpdateContainer];
++#if TARGET_OS_TV
++  if (self.window != nil) {
++    [self registerForTVMenuKeyNotificationsIfNeeded];
++    [self syncTVMenuKeyHandling];
++  } else {
++    [self unregisterForTVMenuKeyNotificationsIfNeeded];
++  }
++#endif // TARGET_OS_TV
++}
++
++#if TARGET_OS_TV
++
++- (void)registerForTVMenuKeyNotificationsIfNeeded
++{
++  if (_observingTVMenuKeyNotifications) {
++    return;
++  }
++  _observingTVMenuKeyNotifications = YES;
++  NSNotificationCenter *center = NSNotificationCenter.defaultCenter;
++  [center addObserver:self
++             selector:@selector(handleTVMenuKeyNotification:)
++                 name:RCTTVEnableMenuKeyNotification
++               object:nil];
++  [center addObserver:self
++             selector:@selector(handleTVMenuKeyNotification:)
++                 name:RCTTVDisableMenuKeyNotification
++               object:nil];
++}
++
++- (void)unregisterForTVMenuKeyNotificationsIfNeeded
++{
++  if (!_observingTVMenuKeyNotifications) {
++    return;
++  }
++  _observingTVMenuKeyNotifications = NO;
++  NSNotificationCenter *center = NSNotificationCenter.defaultCenter;
++  [center removeObserver:self name:RCTTVEnableMenuKeyNotification object:nil];
++  [center removeObserver:self name:RCTTVDisableMenuKeyNotification object:nil];
++}
++
++- (void)handleTVMenuKeyNotification:(NSNotification *)notification
++{
++  [self syncTVMenuKeyHandling];
+ }
+ 
++- (nullable UITapGestureRecognizer *)uiKitMenuBackGestureRecognizer
++{
++  for (UIGestureRecognizer *recognizer in _controller.view.gestureRecognizers) {
++    if (![recognizer isKindOfClass:UITapGestureRecognizer.class]) {
++      continue;
++    }
++    UITapGestureRecognizer *tapRecognizer = (UITapGestureRecognizer *)recognizer;
++    if ([tapRecognizer.allowedPressTypes containsObject:@(UIPressTypeMenu)]) {
++      return tapRecognizer;
++    }
++  }
++  return nil;
++}
++
++- (void)syncTVMenuKeyHandling
++{
++  UITapGestureRecognizer *menuBackGesture = [self uiKitMenuBackGestureRecognizer];
++  if (menuBackGesture == nil) {
++    return;
++  }
++  menuBackGesture.enabled = ![RCTTVRemoteHandler useMenuKey];
++}
++
++- (void)navigationController:(UINavigationController *)navigationController
++       didShowViewController:(UIViewController *)viewController
++                    animated:(BOOL)animated
++{
++  [self syncTVMenuKeyHandling];
++}
++
++#endif // TARGET_OS_TV
++
+ - (void)maybeAddToParentAndUpdateContainer
+ {
+   BOOL wasScreenMounted = _controller.parentViewController != nil;

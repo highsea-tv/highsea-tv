@@ -11,7 +11,7 @@ export const ALL = 'all'
 const collator = new Intl.Collator(undefined, { sensitivity: 'base', numeric: true })
 
 /** "The Matrix" files under M, as the admin's sort title does. */
-const sortTitle = (title: string) => title.replace(/^(the|a|an)\s+/i, '')
+export const sortTitle = (title: string) => title.replace(/^(the|a|an)\s+/i, '')
 
 /** The genre, then Unwatched, then the sort. Titles without a year sort last by year. */
 export function arrange(items: ClientItem[], genre: string, sort: Sort, unwatched = false) {

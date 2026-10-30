@@ -94,7 +94,7 @@ function WatchWith({ detail }: { detail: ClientDetail }) {
   const run = (patch: Parameters<typeof save.run>[0]) =>
     save
       .run(patch)
-      .then(() => picks.refetch())
+      .then(() => picks.refresh())
       .catch((e: Error) => Alert.alert(t('saveFailed', { message: e.message })))
   const audio =
     version.audio.find((a) => a.id === p?.audioId) ?? version.audio.find((a) => a.default)
@@ -225,7 +225,7 @@ export default function Detail() {
     mark.run(!m.watched).then(
       () => {
         successHaptic()
-        detail.refetch()
+        detail.refresh()
       },
       (e: Error) => Alert.alert(t('markFailed', { message: e.message })),
     )

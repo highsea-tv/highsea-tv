@@ -44,7 +44,7 @@ export function WatchWith({ detail }: { detail: ClientDetail }) {
   const run = (patch: Parameters<typeof save.run>[0]) =>
     save
       .run(patch)
-      .then(() => picks.refetch())
+      .then(() => picks.refresh())
       .catch((e: Error) =>
         toast({ title: t('saveFailed', { message: e.message }), tone: 'danger' }),
       )

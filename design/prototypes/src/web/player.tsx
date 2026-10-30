@@ -17,6 +17,7 @@ import {
   offsetLabel,
   PICTURE_TIMING,
   type Player,
+  SCRUB_MS,
   SEEK_S,
   sampleCue,
   trickplayAt,
@@ -219,8 +220,28 @@ export function TracksPanel({ player, onClose }: { player: Player; onClose: () =
   )
 }
 
+/** The keys a range input moves by (HTML's range state). */
+const SCRUB_KEYS = new Set([
+  'ArrowLeft',
+  'ArrowRight',
+  'ArrowUp',
+  'ArrowDown',
+  'PageUp',
+  'PageDown',
+  'Home',
+  'End',
+])
+
 export function Scrubber({ player }: { player: Player }) {
+  // the preview follows the pointer over the bar; without one, it shows at the position while the
+  // bar's keys scrub, until SCRUB_MS after the last press
   const [hover, setHover] = useState<{ x: number; t: number } | null>(null)
+  const [keyAt, setKeyAt] = useState(0)
+  useEffect(() => {
+    if (!keyAt) return
+    const t = setTimeout(() => setKeyAt(0), SCRUB_MS)
+    return () => clearTimeout(t)
+  }, [keyAt])
   const still = player.detail.data?.item.art.still ?? ''
   const ref = useRef<HTMLInputElement>(null)
   const at = (clientX: number) => {
@@ -229,20 +250,25 @@ export function Scrubber({ player }: { player: Player }) {
     const f = Math.max(0, Math.min(1, (clientX - r.left) / r.width))
     return { x: f * r.width, t: f * player.duration }
   }
+  const shown = hover
+    ? { left: hover.x as number | string, t: hover.t }
+    : keyAt
+      ? { left: `${(player.position / Math.max(1, player.duration)) * 100}%`, t: player.position }
+      : null
   return (
     <div className="relative">
-      {hover && (
+      {shown && (
         <div
           aria-hidden
           className="pointer-events-none absolute bottom-6 grid -translate-x-1/2 gap-1 text-center"
-          style={{ left: hover.x }}
+          style={{ left: shown.left }}
         >
           <img
-            src={trickplayAt(still, hover.t)}
+            src={trickplayAt(still, shown.t)}
             alt=""
             className="aspect-still w-40 rounded-sm border border-line-strong object-cover shadow-3"
           />
-          <span className="font-mono text-[12px] text-text">{clock(hover.t)}</span>
+          <span className="font-mono text-[12px] text-text">{clock(shown.t)}</span>
         </div>
       )}
       <input
@@ -255,6 +281,10 @@ export function Scrubber({ player }: { player: Player }) {
         onChange={(e) => player.seekTo(Number(e.target.value))}
         onPointerMove={(e) => setHover(at(e.clientX))}
         onPointerLeave={() => setHover(null)}
+        onKeyDown={(e) => {
+          if (SCRUB_KEYS.has(e.key)) setKeyAt(Date.now())
+        }}
+        onBlur={() => setKeyAt(0)}
         aria-label="Position"
         aria-valuetext={`${clock(player.position)} of ${clock(player.duration)}`}
         className="h-1.5 w-full cursor-pointer appearance-none rounded-full bg-text/25 accent-[var(--color-accent)] outline-none focus-visible:ring-focus"

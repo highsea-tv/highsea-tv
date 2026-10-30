@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The TV's layout and remote rules without React Native (tv.md), so Bun tests them as it tests the
-// web's: screen units, tracks kept by transform, Home's lift, the remote's keys and their sounds,
-// and Back at the home root. tvOS's own focus engine moves focus (ADR 0059); what it can't do is
-// here. The track maths is the web's own (ui-web's focus/spatial.ts), so the two can't drift.
+// web's: screen units, where rows and pages land as focus moves, the remote's keys and their
+// sounds, and Back at the home root. tvOS's own focus engine moves focus and scrolls (ADR 0059);
+// what it can't do is here.
 import { nativeTokens, tvUnit } from '@highsea-tv/tokens/native'
-import { trackOffset } from '@highsea-tv/ui-web/focus'
-
-export { trackOffset }
 
 const { durations, springs, tv } = nativeTokens
 
@@ -26,20 +23,22 @@ export const HERO_DWELL_MS = durations.dwell
 export const TRACK_SPRING = springs.base
 
 /**
- * Where a horizontal row sits to keep the focused item at 30% from its left, clamped at both ends,
- * measured from the item's centre in the row's own coordinates.
+ * Where an item lands as focus reaches it inside a scroll view, as react-native-tvos's
+ * `scrollSnapOffset` takes it: its leading edge this far into the view, so its centre sits `keep`
+ * of the way across (a row's tile 30% in, a page's part `keep` of the way down). The scroll view
+ * clamps at both ends, so a short row or page never moves.
  */
-export function rowOffset(itemCenter: number, view: number, total: number) {
-  return trackOffset({ itemCenter, view, total, keep: KEEP.row })
+export function keptAt(keep: number, view: number, size: number) {
+  return keep * view - size / 2
 }
 
 /**
- * How far Home lifts (tv.md#scrolling): it rests at the top while focus is on the hero or the
- * featured row, and on a row below them lifts so that row's title sits at the safe area's top.
- * `row` is the focused row's index, -1 for the hero's actions, and `featured` is the featured row's
- * index (0 when Home has one, -1 when it hasn't); `rowTop` is the focused row's top on the page.
+ * Where a Home row lands as focus reaches it (tv.md#scrolling), as its `scrollSnapOffset`: the
+ * page rests at the top while focus is on the hero or the featured row, so those land where they
+ * are laid out (`rowTop`, the row's top on the page); a row below them lands with its title at the
+ * safe area's top. `featured` is the featured row's index, 0 when Home has one and -1 when not.
  */
-export function homeLift({
+export function homeRowAt({
   row,
   featured,
   rowTop,
@@ -50,8 +49,7 @@ export function homeLift({
   rowTop: number
   width: number
 }) {
-  if (row <= featured) return 0
-  return Math.max(0, rowTop - inUnits(tv.safe.y, width))
+  return row <= featured ? rowTop : inUnits(tv.safe.y, width)
 }
 
 /** The Siri Remote's events from react-native-tvos's `useTVEventHandler` that highsea answers. */
