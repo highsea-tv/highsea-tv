@@ -16,7 +16,12 @@
     },
     {
       "name": "prototypes",
-      "url": "http://localhost:4500"
+      "runtimeExecutable": "sh",
+      "runtimeArgs": [
+        "-c",
+        "export PATH=\"$HOME/.nvm/versions/node/v26.11.1/bin:$PATH\" && bun run prototypes"
+      ],
+      "port": 4500
     },
     {
       "name": "docs",

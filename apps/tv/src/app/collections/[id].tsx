@@ -8,10 +8,11 @@ import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
 import { Text, tokens, useTheme } from '@highsea-tv/ui-native'
-import { TvButton, TvMessage, TvRow, TvTile } from '@highsea-tv/ui-native/tv'
+import { TvButton, TvMessage, TvRow, TvTile, type ViewHandle } from '@highsea-tv/ui-native/tv'
 import { router, useLocalSearchParams } from 'expo-router'
+import { useState } from 'react'
 import { ActivityIndicator, View } from 'react-native'
-import { Ambient, appKind, ServerIdentity } from '../../kit.tsx'
+import { Ambient, appKind, GlobalNav, ServerIdentity } from '../../kit.tsx'
 import { collection as messages } from '../../messages.ts'
 
 const tv = tokens.tv
@@ -22,6 +23,8 @@ export default function Collection() {
   const theme = useTheme()
   const u = theme.u
   const media = useMedia()
+  // the first title: the navigation's Down goes to it
+  const [first, setFirst] = useState<ViewHandle | null>(null)
   const { id } = useLocalSearchParams<{ id: string }>()
   const found = useCollection(id, appKind)
   if (found.status === 'loading')
@@ -82,16 +85,19 @@ export default function Collection() {
           keyOf={(m) => m.id}
           render={(m, at) => (
             <TvTile
+              ref={at.index === 0 ? setFirst : undefined}
               preferred={at.index === 0}
               title={m.title}
               caption={m.progress !== null ? (f.left(m) ?? '') : m.year ? String(m.year) : ''}
               src={media(m.art.poster)}
               progress={m.progress}
               onPress={() => router.push(`/movies/${m.id}`)}
+              onPlay={() => router.push(`/play/${m.id}`)}
             />
           )}
         />
       </View>
+      <GlobalNav down={first} />
     </View>
   )
 }

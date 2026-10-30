@@ -14,6 +14,7 @@ import type { ClientItem, HomeSection } from '../mock/types.ts'
 import {
   AnnouncementPill,
   GlobalNav,
+  pageTop,
   ServerIdentity,
   TvButton,
   TvMessage,
@@ -21,6 +22,7 @@ import {
   TvRow,
   tvHref,
   useInitialFocus,
+  useTvNav,
 } from './kit.tsx'
 
 function HeroCopy({ item, eyebrow }: { item: ClientItem; eyebrow: string }) {
@@ -95,7 +97,8 @@ function Row({
   featured: boolean
   onFocusItem: (m: ClientItem) => void
 }) {
-  const wide = section.layout === 'continue'
+  // every card on Home is 16:9; Continue watching's resume, the rest open the movie
+  const resume = section.layout === 'continue'
   return (
     <TvRow
       group={section.id}
@@ -106,14 +109,15 @@ function Row({
       {section.items.map((m) => (
         <li
           key={m.id}
-          className={wide ? 'w-[17cqw] shrink-0' : 'w-(--tv-poster-width) shrink-0'}
+          className="w-[17cqw] shrink-0"
           // only the featured titles bind the hero
           onFocus={featured ? () => onFocusItem(m) : undefined}
         >
           <TvPoster
             item={m}
-            wide={wide}
-            href={tvHref(wide ? `/play/${m.id}` : `/movies/${m.id}`)}
+            wide
+            resume={resume}
+            href={tvHref(resume ? `/play/${m.id}` : `/movies/${m.id}`)}
           />
         </li>
       ))}
@@ -126,7 +130,7 @@ function Row({
  * any row below, it lifts so that row's title sits at the safe area's top, with the next row under
  * it, and the hero goes out of view.
  */
-function usePageOffset() {
+function usePageOffset(clear: number) {
   const page = useRef<HTMLDivElement>(null)
   const reduced = useReducedMotion()
   const [offset, setOffset] = useState(0)
@@ -138,7 +142,7 @@ function usePageOffset() {
       if (!row || row.dataset.row === '0') return setOffset(0)
       // layout positions: both boxes carry the same transform
       const top = row.getBoundingClientRect().top - el.getBoundingClientRect().top
-      const safe = (el.clientWidth / 100) * 3.2
+      const safe = (el.clientWidth / 100) * clear
       const max = el.scrollHeight - el.parentElement.clientHeight
       setOffset(Math.max(0, Math.min(top - safe, max)))
     }
@@ -151,7 +155,7 @@ function usePageOffset() {
       el?.removeEventListener('focusin', onFocus)
       window.removeEventListener('highsea:reveal', onReveal)
     }
-  }, [])
+  }, [clear])
   const style = { transform: `translateY(${-offset}px)`, transition: reduced ? 'none' : undefined }
   return { page, style, lifted: offset > 0 }
 }
@@ -161,7 +165,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
   const first = hero?.items[0] ?? sections[0]?.items[0]
   const [focused, setFocused] = useState<ClientItem | undefined>(first)
   const shown = useDwell(focused) ?? first
-  const { page, style, lifted } = usePageOffset()
+  const { page, style, lifted } = usePageOffset(pageTop(useTvNav()))
   useInitialFocus(true)
   // the hero's own titles lead the rows, so focus can reach every featured title
   const rows: HomeSection[] = sections.map((s) =>
@@ -170,7 +174,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
   if (!shown) return null
   return (
     <>
-      <GlobalNav />
+      <GlobalNav lifted={lifted} />
       {/* lifted, the row above fades out under the top edge rather than being cut */}
       <div
         className={`absolute inset-0 overflow-hidden ${lifted ? '[mask-image:linear-gradient(transparent,black_3.2cqw)]' : ''}`}

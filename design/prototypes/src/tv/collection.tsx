@@ -6,6 +6,7 @@ import { Icon } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
 import { useCollection } from '../client/data.ts'
 import {
+  GlobalNav,
   ServerIdentity,
   TvButton,
   TvMessage,
@@ -68,7 +69,7 @@ export function TvCollection() {
             </p>
           )}
         </section>
-        <TvRow group="parts" title="Movies">
+        <TvRow group="parts" title="Movies" goUp="nav">
           {items.map((m) => (
             <li key={m.id} className="w-(--tv-poster-width) shrink-0">
               <TvPoster item={m} href={tvHref(`/movies/${m.id}`)} />
@@ -76,6 +77,7 @@ export function TvCollection() {
           ))}
         </TvRow>
       </main>
+      <GlobalNav down="parts" />
     </>
   )
 }

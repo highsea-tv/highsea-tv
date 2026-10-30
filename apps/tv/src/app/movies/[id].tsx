@@ -21,10 +21,10 @@ import {
 } from '@highsea-tv/ui-native/tv'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
-import { useRef, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { ActivityIndicator, StyleSheet, TVFocusGuideView, View } from 'react-native'
 import { useBack } from '../../back.ts'
-import { Ambient, Kept, ServerIdentity, TvPage } from '../../kit.tsx'
+import { Ambient, GlobalNav, Kept, ServerIdentity, TvPage } from '../../kit.tsx'
 import { detail as messages } from '../../messages.ts'
 import { TvTracksPanel } from '../../tracks.tsx'
 
@@ -73,6 +73,19 @@ function Item({ d, refresh }: { d: ClientDetail; refresh: () => void }) {
   const [options, setOptions] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const play = useRef<ViewHandle>(null)
+  // the first action, kept as state too: the navigation's Down goes to it
+  const [first, setFirst] = useState<ViewHandle | null>(null)
+  const playRef = useCallback((node: ViewHandle | null) => {
+    play.current = node
+    setFirst(node)
+  }, [])
+  // the tabs take focus only while it's in the actions: once the page scrolls to the rows, their
+  // guide across the top would catch Up before the row above it (Home's rule)
+  const [atTop, setAtTop] = useState(true)
+  const below = (onFocus: () => void) => () => {
+    setAtTop(false)
+    onFocus()
+  }
   const tracksButton = useRef<ViewHandle>(null)
 
   const p = picks.data
@@ -142,10 +155,10 @@ function Item({ d, refresh }: { d: ClientDetail; refresh: () => void }) {
                   {t('directedBy', { names: d.directors.map((x) => x.name).join(' and ') })}
                 </Text>
               ) : null}
-              <Actions reach={POSTER + GAP}>
+              <Actions reach={POSTER + GAP} onEnter={() => setAtTop(true)}>
                 {version ? (
                   <TvButton
-                    ref={play}
+                    ref={playRef}
                     primary
                     preferred
                     icon="play"
@@ -175,7 +188,7 @@ function Item({ d, refresh }: { d: ClientDetail; refresh: () => void }) {
                   </TvButton>
                 ) : (
                   // nothing to play, so OK alone opens what a long press would
-                  <TvButton preferred icon="more" onPress={hold}>
+                  <TvButton ref={setFirst} preferred icon="more" onPress={hold}>
                     {t('more')}
                   </TvButton>
                 )}
@@ -209,7 +222,7 @@ function Item({ d, refresh }: { d: ClientDetail; refresh: () => void }) {
                   caption={c.character ?? ''}
                   src={media(c.photo)}
                   width={8}
-                  onFocus={onFocus}
+                  onFocus={below(onFocus)}
                 />
               )}
             />
@@ -224,14 +237,16 @@ function Item({ d, refresh }: { d: ClientDetail; refresh: () => void }) {
                   title={r.title}
                   caption={r.year ? String(r.year) : ''}
                   src={media(r.art.poster)}
-                  onFocus={onFocus}
+                  onFocus={below(onFocus)}
                   onPress={() => router.push(`/movies/${r.id}`)}
+                  onPlay={() => router.push(`/play/${r.id}`)}
                 />
               )}
             />
           ) : null}
         </View>
       </TvPage>
+      <GlobalNav down={first} reachable={atTop} />
       {options ? (
         <Options
           title={m.title}
@@ -272,19 +287,30 @@ function Item({ d, refresh }: { d: ClientDetail; refresh: () => void }) {
 }
 
 /**
- * The actions' row, Kept in view when focus comes back up to it. The focus engine looks only
+ * The actions' row, which takes the page back to its top when focus comes up to it, as the
+ * prototype's rests there (a long synopsis would otherwise land it 0.4 down by scrolling the
+ * server's name off the top). The focus engine looks only
  * straight up, and the rows' first tiles sit under the poster, so the row's guide reaches `reach`
  * units left over the poster's column and takes focus from anything below; it returns to the action
  * last used.
  */
-function Actions({ reach, children }: { reach: number; children: React.ReactNode }) {
+function Actions({
+  reach,
+  onEnter,
+  children,
+}: {
+  reach: number
+  onEnter: () => void
+  children: React.ReactNode
+}) {
   const u = useTheme().u
   return (
-    <Kept style={{ marginTop: 0.6 * u, marginLeft: -reach * u }}>
+    <Kept rest style={{ marginTop: 0.6 * u, marginLeft: -reach * u }}>
       <TVFocusGuideView
         // without destinations a guide only takes focus with autoFocus, deprecated or not
         // (TVFocusGuideView.js: `focusable` defaults to false otherwise)
         autoFocus
+        onFocusEnter={onEnter}
         style={{ flexDirection: 'row', gap: 1 * u, paddingLeft: reach * u }}
       >
         {children}

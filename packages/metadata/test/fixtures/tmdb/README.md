@@ -32,12 +32,16 @@ What they hold is real, read from TMDB's public web pages (no key needed) on 202
 - **Certifications (checkpoint 8d):** `/3/certification/movie/list` keeps three countries, the United States, the United Kingdom and Germany, in TMDB's documented shape ([Movie certifications](https://developer.themoviedb.org/reference/certification-movie-list)). The ratings and their order are each board's published scale (MPA, BBFC, FSK); the `meaning` texts are short paraphrases. `bun run record:tmdb` replaces them with TMDB's full list.
 - **The 404** (`/3/movie/999999999`) and the bad-key **401** use TMDB's documented error bodies ([Errors](https://developer.themoviedb.org/docs/errors)).
 
+## Recorded from TMDB
+
+Twenty films and one collection were recorded from TMDB's API with the owner's key on 2026-10-30 (`bun run record:tmdb --only <request …>`, which asks for those requests alone and leaves the hand-built files as they are). They give the apps' Home rows enough films to scroll (`seed`'s `shelves` in `scripts/sweeps/seeded.ts`): The Kid (10098), Night of the Living Dead (10331) and its Living Dead Collection (261590), Key Largo (11016), Citizen Kane (15), Safety Last! (22596), Steamboat Bill, Jr. (25768), Casablanca (289), It Happened One Night (3078), Modern Times (3082), His Girl Friday (3085), Charade (4808), Titanic (597), Sunrise: A Song of Two Humans (631), Battleship Potemkin (643), The Passion of Joan of Arc (780), City Lights (901), The Great Dictator (914), The General (961), The Gold Rush (962) and Sherlock Jr. (992). Their lists are TMDB's, uncut.
+
 ## The catalogue
 
 | Kind | What |
 | --- | --- |
-| Movies, in full | Sintel (45745), Big Buck Bunny (10378), Tears of Steel (133701), Elephants Dream (9761), Cosmos Laundromat (358332), the three Caminandes shorts (253777, 253774, 406956), Metropolis (19), Nosferatu (653), The Cabinet of Dr. Caligari (234), M (832), Nanook of the North (669), Dr. Mabuse, the Gambler (5998), A Trip to the Moon (775), Spider-Man: Brand New Day (969681), The Cat in the Hat (1117898, not released yet) |
-| Collections | Caminandes Collection (339473), Dr. Mabuse Collection (11140), Spider-Man (MCU) Collection (531241) |
+| Movies, in full | Sintel (45745), Big Buck Bunny (10378), Tears of Steel (133701), Elephants Dream (9761), Cosmos Laundromat (358332), the three Caminandes shorts (253777, 253774, 406956), Metropolis (19), Nosferatu (653), The Cabinet of Dr. Caligari (234), M (832), Nanook of the North (669), Dr. Mabuse, the Gambler (5998), A Trip to the Moon (775), Spider-Man: Brand New Day (969681), The Cat in the Hat (1117898, not released yet), and the twenty recorded from TMDB above |
+| Collections | Caminandes Collection (339473), Dr. Mabuse Collection (11140), Spider-Man (MCU) Collection (531241), Living Dead Collection (261590) |
 | People | Fritz Lang (68), Max Schreck (9839), Robert Flaherty (10092), Colin Levy (133631) |
 | Search | `sintel`, `metropolis`, `nanook`, `caminandes`, `nosferatu` |
 | Lists | Trending (week), Popular, Now playing, Upcoming and Top rated, page 1, region US; the public list 8512345 |

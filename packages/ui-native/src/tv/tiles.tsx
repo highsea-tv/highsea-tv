@@ -6,7 +6,7 @@
 // 30% in from the left, measured from centres (tv.md › Scrolling); the row is a focus guide with
 // `autoFocus`, so coming back to it lands on the tile left (react-native-tvos's TVFocusGuideView).
 import { Image } from 'expo-image'
-import { type ReactNode, type Ref, useEffect } from 'react'
+import { type ReactNode, type Ref, useEffect, useRef } from 'react'
 import { ScrollView, TVFocusGuideView, useWindowDimensions, View } from 'react-native'
 import Animated, {
   useAnimatedStyle,
@@ -17,7 +17,7 @@ import Animated, {
 import { Progress } from '../progress.tsx'
 import { Text } from '../text.tsx'
 import { tokens, useTheme } from '../theme.tsx'
-import { Focusable, focusShadow, type ViewHandle } from './focusable.tsx'
+import { Focusable, focusShadow, StopScope, type ViewHandle } from './focusable.tsx'
 import { KEEP, keptAt, TRACK_SPRING } from './model.ts'
 
 const tv = tokens.tv
@@ -26,6 +26,13 @@ const tv = tokens.tv
 export const WIDE_WIDTH = 17
 
 export type TileSource = string | { uri: string; headers?: Record<string, string> } | null
+
+/**
+ * What Play/Pause does while a tile is focused (tv.md#remote-keys: it plays the focused title): the
+ * focused tile's `onPlay`, kept in one place so the app's one key handler can run it, rather than
+ * a handler in each of the hundreds of tiles a library draws.
+ */
+export const focusedPlay: { current: (() => void) | null } = { current: null }
 
 export function TvTile({
   title,
@@ -37,6 +44,7 @@ export function TvTile({
   onPress,
   onLongPress,
   onFocus,
+  onPlay,
   preferred,
   ref,
 }: {
@@ -51,11 +59,23 @@ export function TvTile({
   onPress?: () => void
   onLongPress?: () => void
   onFocus?: () => void
+  /** What Play/Pause does while this tile is focused: a film's tile plays it. */
+  onPlay?: () => void
   preferred?: boolean
   ref?: Ref<ViewHandle>
 }) {
   const theme = useTheme()
   const u = theme.u
+  const play = useRef(onPlay)
+  play.current = onPlay
+  const mine = useRef(() => play.current?.())
+  // a tile unmounted while focused (a screen left) takes its action with it
+  useEffect(() => {
+    const own = mine.current
+    return () => {
+      if (focusedPlay.current === own) focusedPlay.current = null
+    }
+  }, [])
   const w = (width ?? (wide ? WIDE_WIDTH : tv.poster.width)) * u
   const radius = tv.radius.poster * u
   return (
@@ -63,7 +83,13 @@ export function TvTile({
       ref={ref}
       onPress={onPress}
       onLongPress={onLongPress}
-      onFocus={onFocus}
+      onFocus={() => {
+        focusedPlay.current = mine.current
+        onFocus?.()
+      }}
+      onBlur={() => {
+        if (focusedPlay.current === mine.current) focusedPlay.current = null
+      }}
       preferred={preferred}
       lift="none"
       ring={false}
@@ -222,10 +248,12 @@ export function TvRow<T>({
         >
           {items.map((item, index) => (
             <View key={keyOf(item)} scrollSnapOffset={keptAt(KEEP.row, width, w)}>
-              {render(item, {
-                index,
-                onFocus: () => onFocusItem?.(item, index),
-              })}
+              <StopScope.Provider value={`${title}/${index}/`}>
+                {render(item, {
+                  index,
+                  onFocus: () => onFocusItem?.(item, index),
+                })}
+              </StopScope.Provider>
             </View>
           ))}
         </ScrollView>

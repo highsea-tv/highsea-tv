@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // `bun run record:tmdb [path?query …]`: asks TMDB again for every recorded request (and any given
 // on the command line, like `/3/movie/603?append_to_response=credits&language=en-US`) with the
-// developer's own credential, and rewrites the recordings (ADR 0029). The credential comes from
+// developer's own credential, and rewrites the recordings (ADR 0029). With `--only`, it asks for the
+// command line's requests alone and leaves the other recordings as they are. The credential comes from
 // HIGHSEA_TMDB_READ_TOKEN (the name the release uses), TMDB_READ_TOKEN or TMDB_API_KEY, in the
 // shell or the repository's .env.local (package.json passes it with Bun's --env-file; a missing
 // file is skipped and the shell wins). It never lands in a file: the script refuses to write a
@@ -34,12 +35,13 @@ const credential = credentialOf(secret)
 /** What the bad-key recordings send: TMDB answers 401, status_code 7. */
 const INVALID = 'invalid0000000000000000000000000'
 
+const only = process.argv.includes('--only')
 const wanted = new Map<string, { url: string; credential: RecordedCredential }>()
-for (const name of readdirSync(RECORDINGS_DIR).filter((n) => n.endsWith('.json'))) {
+for (const name of only ? [] : readdirSync(RECORDINGS_DIR).filter((n) => n.endsWith('.json'))) {
   const r = JSON.parse(readFileSync(join(RECORDINGS_DIR, name), 'utf8')) as Recording
   wanted.set(`${r.request.url} ${r.request.credential}`, r.request)
 }
-for (const arg of process.argv.slice(2)) {
+for (const arg of process.argv.slice(2).filter((a) => a !== '--only')) {
   const url = canonicalUrl(new URL(arg, TMDB_API))
   wanted.set(`${url} valid`, { url, credential: 'valid' })
 }

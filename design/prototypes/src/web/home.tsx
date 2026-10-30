@@ -49,26 +49,38 @@ function Meta({ item }: { item: ClientItem }) {
   )
 }
 
-/** Posters, with Play over the art on hover and focus. */
+/** 16:9 cards on Home: Continue watching's width, so every row lines up. */
+const cardWidth = 'w-[clamp(15rem,24vw,21rem)]'
+
+/**
+ * Posters, with Play over the art on hover and focus. On Home, `wide` makes them 16:9 stills with
+ * the title and year under them, and no watched bar: on Home only Continue watching has one.
+ */
 export function PosterRow({
   title,
   suffix,
   items,
+  wide = false,
 }: {
   title: string
   suffix?: string | null
   items: ClientItem[]
+  wide?: boolean
 }) {
   return (
-    <CarouselRow title={title} suffix={suffix}>
+    <CarouselRow title={title} suffix={suffix} itemClassName={wide ? cardWidth : undefined}>
       {items.map((m) => (
         <Poster
           key={m.id}
           title={m.title}
-          src={m.art.poster}
+          src={wide ? m.art.still : m.art.poster}
+          aspect={wide ? 'still' : 'poster'}
+          showTitle={wide}
+          caption={wide ? String(m.year) : undefined}
           href={webHref(`/movies/${m.id}`)}
           quality={qualityTags(m).slice(0, 1)}
-          progress={m.progress !== null ? m.progress * 100 : undefined}
+          // on Home only Continue watching shows how far you got
+          progress={!wide && m.progress !== null ? m.progress * 100 : undefined}
           actions={
             <a
               href={webHref(`/play/${m.id}`)}
@@ -87,7 +99,7 @@ export function PosterRow({
 /** Continue watching: stills that resume where you left off. */
 function ContinueRow({ section }: { section: HomeSection }) {
   return (
-    <CarouselRow title={section.title} itemClassName="w-[clamp(15rem,24vw,21rem)]">
+    <CarouselRow title={section.title} itemClassName={cardWidth}>
       {section.items.map((m) => (
         <Poster
           key={m.id}
@@ -96,6 +108,7 @@ function ContinueRow({ section }: { section: HomeSection }) {
           aspect="still"
           href={webHref(`/play/${m.id}`)}
           progress={(m.progress ?? 0) * 100}
+          progressBelow
           showTitle
           caption={left(m)}
         />
@@ -147,7 +160,7 @@ function Rows({ sections }: { sections: HomeSection[] }) {
             ) : s.layout === 'spotlight' ? (
               <SpotlightRow section={s} />
             ) : (
-              <PosterRow title={s.title} suffix={s.suffix} items={s.items} />
+              <PosterRow title={s.title} suffix={s.suffix} items={s.items} wide />
             )}
           </div>
         ),
@@ -164,7 +177,7 @@ function HomeStates({ children }: { children: (sections: HomeSection[]) => React
         <Skeleton className="h-[40vh] rounded-lg" />
         <div className="flex gap-4 overflow-hidden">
           {[0, 1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="aspect-poster w-40 shrink-0 rounded-poster" />
+            <Skeleton key={i} className={cn('aspect-still shrink-0 rounded-poster', cardWidth)} />
           ))}
         </div>
       </div>

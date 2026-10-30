@@ -3,7 +3,8 @@
 // Siri Remote's Menu and Android TV's Back into BackHandler's `hardwareBackPress`, and each press
 // and move into useTVEventHandler's events (https://github.com/react-native-tvos/react-native-tvos#readme).
 // Back runs the screen's registered handler (back.ts), else goes up a level. Every key plays its
-// sound from the device's pack (sound.md), on by default on a TV, except over a film. On tvOS a
+// sound from the device's pack (sound.md), on by default on a TV, except over a film, and Play/Pause
+// plays the focused film's tile (TvTile's onPlay). On tvOS a
 // pushed screen's Menu reaches JS through the root's patch of react-native-screens (#4618).
 //
 // tvOS leaves for the Home screen on Menu only while the app isn't taking the key, and an app
@@ -12,7 +13,7 @@
 // takes the press.
 import { useDevicePrefs } from '@highsea-tv/client/prefs'
 import { useSounds } from '@highsea-tv/native/sound'
-import { remoteKey } from '@highsea-tv/ui-native/tv'
+import { focusedPlay, remoteKey } from '@highsea-tv/ui-native/tv'
 import { router, usePathname } from 'expo-router'
 import { type ReactNode, useCallback, useEffect, useMemo } from 'react'
 import { BackHandler, Platform, TVEventControl, useTVEventHandler } from 'react-native'
@@ -66,6 +67,8 @@ function Sounds({ on, volume }: { on: boolean; volume: number }) {
     (evt: { eventType: string }) => {
       const key = remoteKey(evt.eventType)
       if (key && !playing) play(key.sound)
+      // Play/Pause plays the focused title (tv.md#remote-keys); the player takes it itself
+      if (evt.eventType === 'playPause' && !playing) focusedPlay.current?.()
     },
     [play, playing],
   )

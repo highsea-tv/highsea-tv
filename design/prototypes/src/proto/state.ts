@@ -30,6 +30,11 @@ export type LocalNetwork = 'allowed' | 'asking' | 'refused'
 export type AirPlay = 'off' | 'on'
 /** Downloads on the phone: built (4.6), or not yet, as the app has them until then (4.5a). */
 export type PhoneDownloads = 'built' | 'later'
+/**
+ * The TV's global navigation, as alternatives for the owner to compare (2026-10-30): the floating
+ * pill it has now, the pill over a fade, a solid band, a left rail, or a bar that scrolls away.
+ */
+export type TvNav = 'pill' | 'scrim' | 'band' | 'rail' | 'scroll'
 export type StreamState = 'normal' | 'preparing' | 'buffering' | 'failed' | 'stopped' | 'next-up'
 
 export type ProtoState = {
@@ -51,6 +56,7 @@ export type ProtoState = {
   lan: LocalNetwork
   airplay: AirPlay
   downloads: PhoneDownloads
+  tvNav: TvNav
   /** A client preview inside the admin (`?preview`): no prototype affordances. */
   preview: boolean
 }
@@ -72,6 +78,7 @@ export const defaultState: ProtoState = {
   lan: 'allowed',
   airplay: 'off',
   downloads: 'built',
+  tvNav: 'pill',
   preview: false,
 }
 
@@ -142,6 +149,14 @@ export const phoneDownloads: { id: PhoneDownloads; label: string }[] = [
   { id: 'later', label: 'Not yet' },
 ]
 
+export const tvNavs: { id: TvNav; label: string }[] = [
+  { id: 'pill', label: 'Floating pill (now)' },
+  { id: 'scrim', label: 'Pill over a fade' },
+  { id: 'band', label: 'Solid band' },
+  { id: 'rail', label: 'Left rail' },
+  { id: 'scroll', label: 'Scrolls away' },
+]
+
 export const streamStates: { id: StreamState; label: string }[] = [
   { id: 'normal', label: 'Playing' },
   { id: 'preparing', label: 'Getting it ready' },
@@ -190,7 +205,7 @@ export function saveState(state: ProtoState): void {
  * `?screen&data=empty&theme=oled&role=admin&motion=reduced&text=200&time=pause&connection=remote`
  * (and `&stream=buffering` on a player, `&app=desktop` for the desktop app, with `&os=windows`,
  * `&update=ready` and `&lan=refused`; on the phone `&lan=asking`, `&airplay=on` and
- * `&downloads=later`);
+ * `&downloads=later`; on the TV `&nav=rail`);
  * `&preview` marks a client preview inside the admin.
  */
 export function stateFromParams(params: URLSearchParams, base: ProtoState): ProtoState {
@@ -241,6 +256,11 @@ export function stateFromParams(params: URLSearchParams, base: ProtoState): Prot
         'downloads',
         phoneDownloads.map((x) => x.id),
       ) ?? base.downloads,
+    tvNav:
+      pick(
+        'nav',
+        tvNavs.map((x) => x.id),
+      ) ?? base.tvNav,
     reducedMotion: params.has('motion') ? params.get('motion') === 'reduced' : base.reducedMotion,
     largeText: params.has('text') ? params.get('text') === '200' : base.largeText,
     preview: params.has('preview'),

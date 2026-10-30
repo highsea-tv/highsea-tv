@@ -34,7 +34,7 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 - Artwork and rows may bleed past the safe area to the screen edge.
 - On platforms with overscan, the safe area grows to 5% on every side.
 
-**Global navigation (designed in Phase 2).** Top-level navigation (Home, Search, Library, Settings) is a top tab row that appears when focus moves Up from the hero actions, as on tvOS. It is a focus guide target, and hidden otherwise.
+**Global navigation (designed in Phase 2).** Top-level navigation (Home, Search, Library, Settings) is a top tab row, reached when focus moves Up from the hero actions or a screen's top row, as on tvOS. It is a focus guide target. It was hidden otherwise; since the owner's change of 2026-10-30 it shows on every screen but the player, always.
 
 ## Type
 

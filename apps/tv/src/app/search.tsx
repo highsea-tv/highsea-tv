@@ -277,6 +277,7 @@ function Results({
               width={at.width}
               progress={m.progress}
               onPress={() => router.push(`/movies/${m.id}`)}
+              onPlay={() => router.push(`/play/${m.id}`)}
             />
           )}
         />

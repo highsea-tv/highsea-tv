@@ -116,12 +116,15 @@ export type Person = { username: string; displayName: string; password: string }
 
 /**
  * Finishes setup as `owner` and seeds the library, indexers, downloads, subtitles, people, curation
- * and collections. Returns the owner's token and what the pages link to.
+ * and collections. Returns the owner's token and what the pages link to. `shelves` is for checking
+ * the apps by hand: 28 more films with files, so Home's rows scroll, the three Caminandes shorts
+ * among them, so Next up has a next film. The sweeps and the guides' screenshots leave it off.
  */
 export async function seed(
   { api, dir, dataDir, indexer }: Server,
   owner: Person,
   deviceName: string,
+  { shelves = false }: { shelves?: boolean } = {},
 ) {
   await api('POST', '/setup', {
     serverName: 'Harbor',
@@ -286,37 +289,40 @@ export async function seed(
     if (srt) writeFileSync(join(folder, `${name}.en.srt`), srt)
     return folder
   }
-  for (const folder of [
-    release('Sintel.2010.1080p.BluRay.x264-GRP', late, speaking),
-    release('Nosferatu.1922.1080p.BluRay.x264-GRP'),
-  ]) {
-    const found = await api<
-      { path: string; movieId: number | null; versionId: string | null; skip: string | null }[]
-    >('POST', '/import/scan', { path: folder }, token)
-    // into the 1080p version, as the owner would pick it in the Version column: the scan suggests
-    // the first without a file, and Sintel's first is 4K HDR, which refuses a 1080p release
-    const files = []
-    for (const f of found) {
-      if (!f.movieId || f.skip) continue
-      const movie = await api<{ versions: { id: string; label: string }[] }>(
-        'GET',
-        `/movies/${f.movieId}`,
-        undefined,
+  // into the 1080p version, as the owner would pick it in the Version column: the scan suggests
+  // the first without a file, and Sintel's first is 4K HDR, which refuses a 1080p release
+  const importFolders = async (folders: string[]) => {
+    for (const folder of folders) {
+      const found = await api<
+        { path: string; movieId: number | null; versionId: string | null; skip: string | null }[]
+      >('POST', '/import/scan', { path: folder }, token)
+      const files = []
+      for (const f of found) {
+        if (!f.movieId || f.skip) continue
+        const movie = await api<{ versions: { id: string; label: string }[] }>(
+          'GET',
+          `/movies/${f.movieId}`,
+          undefined,
+          token,
+        )
+        const hd = movie.versions.find((v) => v.label === '1080p')
+        files.push({ path: f.path, movieId: f.movieId, versionId: hd?.id ?? f.versionId })
+      }
+      if (!files.length) throw new Error(`nothing to import in ${folder}: ${JSON.stringify(found)}`)
+      const ran = await api<{ results: { ok: boolean; message: string }[] }>(
+        'POST',
+        '/import',
+        { files, mode: 'hardlink' },
         token,
       )
-      const hd = movie.versions.find((v) => v.label === '1080p')
-      files.push({ path: f.path, movieId: f.movieId, versionId: hd?.id ?? f.versionId })
+      const refused = ran.results.filter((r) => !r.ok)
+      if (refused.length) throw new Error(`not imported: ${JSON.stringify(refused)}`)
     }
-    if (!files.length) throw new Error(`nothing to import in ${folder}: ${JSON.stringify(found)}`)
-    const ran = await api<{ results: { ok: boolean; message: string }[] }>(
-      'POST',
-      '/import',
-      { files, mode: 'hardlink' },
-      token,
-    )
-    const refused = ran.results.filter((r) => !r.ok)
-    if (refused.length) throw new Error(`not imported: ${JSON.stringify(refused)}`)
   }
+  await importFolders([
+    release('Sintel.2010.1080p.BluRay.x264-GRP', late, speaking),
+    release('Nosferatu.1922.1080p.BluRay.x264-GRP'),
+  ])
   // Sintel has what its profile asks for (the release's English and the clip's forced stream);
   // Nosferatu lacks regular English, so its import searched the fakes
   for (let i = 0; i < 50; i++) {
@@ -461,5 +467,28 @@ export async function seed(
     },
     token,
   )
+
+  if (shelves) {
+    // the films recorded for the apps (packages/metadata's recordings README), each with the clip,
+    // named as a release would be, and the Caminandes shorts, the one collection here with all its
+    // films recorded
+    const more = [
+      253777, 253774, 406956, 358332, 234, 669, 5998, 775, 961, 992, 962, 10098, 643, 780, 631,
+      22596, 25768, 10331, 3085, 4808, 901, 3082, 914, 3078, 15, 289, 597, 11016,
+    ]
+    const folders = []
+    for (const id of more) {
+      await add(id)
+      const movie = await api<{ title: string; year: number | null }>(
+        'GET',
+        `/movies/${id}`,
+        undefined,
+        token,
+      )
+      const name = movie.title.replace(/[^\p{L}\p{N}]+/gu, '.').replace(/^\.|\.$/g, '')
+      folders.push(release(`${name}.${movie.year}.1080p.BluRay.x264-GRP`))
+    }
+    await importFolders(folders)
+  }
   return { token, invite, reset, pairing, notice, picks, drawsOn, decade, handPicked, nothingYet }
 }

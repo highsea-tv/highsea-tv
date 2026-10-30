@@ -187,6 +187,7 @@ function Grid({
             progress={m.progress}
             onFocus={() => onLetter(l)}
             onPress={() => router.push(`/movies/${m.id}`)}
+            onPlay={() => router.push(`/play/${m.id}`)}
           />
         )
       }}

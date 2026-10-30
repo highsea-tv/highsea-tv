@@ -348,5 +348,6 @@ export const player = defineMessages({
   startsIn: 'Starts in {seconds} s',
   playNow: 'Play now',
   cancel: 'Cancel',
-  missing: 'That title isn’t on this server.',
+  missingBody: 'It may have been removed.',
+  goHome: 'Go home',
 })

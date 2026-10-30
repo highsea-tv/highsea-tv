@@ -258,6 +258,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
                       progress={m.progress}
                       onFocus={at.onFocus}
                       onPress={() => router.push(wide ? `/play/${m.id}` : `/movies/${m.id}`)}
+                      onPlay={() => router.push(`/play/${m.id}`)}
                     />
                   )}
                 />
@@ -266,9 +267,9 @@ function Home({ sections }: { sections: HomeSection[] }) {
           })}
         </View>
       </ScrollView>
-      {/* once the page scrolls, the tabs' guide would catch Up from a row, so they're there only
+      {/* once the page scrolls, the tabs' guide would catch Up from a row, so they take focus only
           while the hero's actions sit between it and focus (rows up to the featured one) */}
-      {atRow <= Math.max(featured, 0) ? <GlobalNav /> : null}
+      <GlobalNav reachable={atRow <= Math.max(featured, 0)} />
     </View>
   )
 }

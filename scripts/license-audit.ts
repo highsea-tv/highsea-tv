@@ -3,9 +3,12 @@
 // be compatible with AGPL-3.0-only (ADR 0009). GPL-2.0-only, SSPL and anything unknown fail the
 // run, unless reviewed and listed in license-exceptions.json with the reason. Since 4.4a it also
 // reads the desktop app's crates, on every platform, from `cargo metadata` (ADR 0058), and since
-// 4.5a the phone app's CocoaPods pods, once a prebuild has made its iOS project (ADR 0059).
+// 4.5a the phone app's CocoaPods pods, once a prebuild has made its iOS project (ADR 0059), and the
+// TV app's alike since 4.5b.
 import { execFileSync } from 'node:child_process'
+import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
+import { homedir } from 'node:os'
 import { join } from 'node:path'
 import { loadDefinitionFiles } from '@highsea-tv/catalog'
 
@@ -145,9 +148,11 @@ function crates(root: string) {
 }
 
 /**
- * The phone app's pods: each pod `Podfile.lock` names, with the licence from its spec. Every pod
+ * An app's pods (the phone's or the TV's): each pod `Podfile.lock` names, with the licence from its spec. Every pod
  * comes from a package's podspec, which CocoaPods keeps as JSON in `Pods/Local Podspecs`
- * (https://guides.cocoapods.org/syntax/podspec.html#license: a string or `{ type, file }`). The
+ * (https://guides.cocoapods.org/syntax/podspec.html#license: a string or `{ type, file }`), or from
+ * the trunk (expo-image's SDWebImage and codecs), whose specs `pod install` keeps in
+ * `~/.cocoapods/repos/trunk`, sharded by the first three hex digits of the name's MD5. The
  * iOS project is generated, so without a prebuild there's nothing to read, and the audit says so.
  */
 export function pods(dir: string) {
@@ -158,7 +163,17 @@ export function pods(dir: string) {
   // top-level entries only (two spaces in); a subspec (`React-Core/Default`) is its pod's
   for (const m of listed.matchAll(/^ {2}- "?([^\s/"]+)(?:\/[^\s"]+)? \(([^)]+)\)/gm)) {
     const [, name, version] = m as unknown as [string, string, string]
-    const spec = join(dir, 'Pods/Local Podspecs', `${name}.podspec.json`)
+    const local = join(dir, 'Pods/Local Podspecs', `${name}.podspec.json`)
+    const shard = createHash('md5').update(name).digest('hex').slice(0, 3).split('')
+    const trunk = join(
+      homedir(),
+      '.cocoapods/repos/trunk/Specs',
+      ...shard,
+      name,
+      version,
+      `${name}.podspec.json`,
+    )
+    const spec = existsSync(local) ? local : trunk
     const license = existsSync(spec)
       ? (JSON.parse(readFileSync(spec, 'utf8')) as { license?: string | { type?: string } }).license
       : undefined
@@ -200,7 +215,9 @@ if (import.meta.main) {
   const bad: string[] = []
   const all = installed(root)
   const rust = crates(root)
-  const ios = pods(join(root, 'apps/mobile/ios'))
+  const phone = pods(join(root, 'apps/mobile/ios'))
+  const tv = pods(join(root, 'apps/tv/ios'))
+  const ios = phone || tv ? new Map([...(phone ?? []), ...(tv ?? [])]) : null
   for (const [pkg, license] of [...all, ...rust, ...(ios ?? [])]) {
     const name = pkg.slice(0, pkg.lastIndexOf('@'))
     if (!compatible(license) && !excepted.has(name) && !excepted.has(pkg))
@@ -221,6 +238,6 @@ if (import.meta.main) {
     process.exit(1)
   }
   console.log(
-    `license audit: ${all.size} packages, ${rust.size} crates and ${ios ? `${ios.size} pods` : 'no pods (no iOS prebuild to read)'}, all compatible; catalog definitions all CC0-1.0 or MIT`,
+    `license audit: ${all.size} packages, ${rust.size} crates and ${ios ? `${ios.size} pods` : 'no pods (no iOS or tvOS prebuild to read)'}, all compatible; catalog definitions all CC0-1.0 or MIT`,
   )
 }

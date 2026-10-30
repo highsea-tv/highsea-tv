@@ -4,8 +4,9 @@
 # `expo prebuild` (https://docs.expo.dev/workflow/prebuild/), the licence audit over its pods, and
 # the app built for the iOS simulator with xcodebuild, signed ad hoc (`CODE_SIGN_IDENTITY=-`, no
 # certificate): an unsigned build gets no keychain entitlement, so it can't keep a sign-in, which
-# scripts/sweeps/phone.ts found. Nothing is signed with a certificate or uploaded here, and there are no EAS builds (the plan's answer 10). The TV app joins in 4.5b and Android
-# in 4.5c.
+# scripts/sweeps/phone.ts found. Nothing is signed with a certificate or uploaded here, and there
+# are no EAS builds (the plan's answer 10). The TV app (4.5b) is built the same way for the tvOS simulator, its project from `EXPO_TV=1 expo prebuild`
+# (https://docs.expo.dev/guides/building-for-tv/). Android joins in 4.5c.
 #
 # The runner's Xcode must be one Expo SDK 58 supports, so the image is macOS 26's
 # (https://github.com/actions/runner-images). Each action is pinned to a full commit SHA, with its
@@ -17,6 +18,7 @@ on:
     branches: [main]
     paths:
       - 'apps/mobile/**'
+      - 'apps/tv/**'
       - 'packages/**'
       - 'bun.lock'
       - 'package.json'
@@ -25,6 +27,7 @@ on:
   pull_request:
     paths:
       - 'apps/mobile/**'
+      - 'apps/tv/**'
       - 'packages/**'
       - 'bun.lock'
       - 'package.json'
@@ -69,4 +72,33 @@ jobs:
         run: |
           xcodebuild -workspace highsea.xcworkspace -scheme highsea -configuration Release \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO build
+
+  tvos:
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version-file: .nvmrc
+      - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
+        with:
+          bun-version: 1.4.2
+      - run: bun install --frozen-lockfile
+      - name: Types
+        working-directory: apps/tv
+        run: bun run typecheck
+      - name: The tvOS project
+        working-directory: apps/tv
+        env:
+          CI: '1'
+          EXPO_NO_TELEMETRY: '1'
+        run: bun run prebuild
+      - name: Licences, with the pods
+        run: bun run licenses
+      - name: The app, for the simulator
+        working-directory: apps/tv/ios
+        run: |
+          xcodebuild -workspace highsea.xcworkspace -scheme highsea -configuration Release \
+            -sdk appletvsimulator -destination 'generic/platform=tvOS Simulator' \
             -derivedDataPath build CODE_SIGN_IDENTITY=- CODE_SIGNING_REQUIRED=NO build

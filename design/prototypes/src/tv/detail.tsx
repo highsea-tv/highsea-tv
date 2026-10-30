@@ -11,6 +11,7 @@ import { useAction } from '../mock/hooks.tsx'
 import type { ClientItem, PlaybackPrefs } from '../mock/types.ts'
 import { useBack } from './back.ts'
 import {
+  GlobalNav,
   ServerIdentity,
   TvButton,
   TvMessage,
@@ -111,6 +112,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
               )}
               <div
                 data-group="actions"
+                data-go-up="nav"
                 className="mt-[0.6cqw] flex gap-[1cqw]"
                 onKeyDownCapture={hold.down}
                 onKeyUpCapture={hold.up}
@@ -173,6 +175,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
           )}
         </div>
       </div>
+      <GlobalNav down="actions" />
       {options && (
         <TvOptions
           item={m}

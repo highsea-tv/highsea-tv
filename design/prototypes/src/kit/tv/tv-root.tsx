@@ -7,22 +7,26 @@ import { type ReactNode, useEffect, useRef } from 'react'
 export function TvRoot({ children, onBack }: { children: ReactNode; onBack?: () => void }) {
   const root = useRef<HTMLDivElement>(null)
   const play = useSound()
+  // the latest Back, so a new one each render doesn't re-run the effects below
+  const back = useRef(onBack)
+  back.current = onBack
   useSpatialNavigation(root)
+
+  // focus starts inside the root, where the navigator listens (data-initial picks the item)
+  useEffect(() => root.current?.focus({ preventScroll: true }), [])
 
   useEffect(() => {
     const el = root.current
-    // focus starts inside the root, where the navigator listens (data-initial picks the item)
-    el?.focus({ preventScroll: true })
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Enter') play('select')
       if (e.key === 'Escape') {
         play('back')
-        onBack?.()
+        back.current?.()
       }
     }
     el?.addEventListener('keydown', onKey)
     return () => el?.removeEventListener('keydown', onKey)
-  }, [play, onBack])
+  }, [play])
 
   return (
     <div

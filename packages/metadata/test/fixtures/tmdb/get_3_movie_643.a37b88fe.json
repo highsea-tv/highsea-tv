@@ -1,0 +1,1570 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/643?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations%2Ckeywords&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "adult": false,
+      "backdrop_path": "/3RH61Z7BP3f215936PJBEG2qQrT.jpg",
+      "belongs_to_collection": null,
+      "budget": 0,
+      "genres": [
+        {
+          "id": 18,
+          "name": "Drama"
+        },
+        {
+          "id": 36,
+          "name": "History"
+        },
+        {
+          "id": 10752,
+          "name": "War"
+        }
+      ],
+      "homepage": "",
+      "id": 643,
+      "imdb_id": "tt0015648",
+      "origin_country": ["SU"],
+      "original_language": "ru",
+      "original_title": "Броненосец Потёмкин",
+      "overview": "In the midst of the Russian Revolution of 1905, the crew of the battleship Potemkin revolt against the brutal, tyrannical regime of the vessel's officers. The resulting street demonstration in Odessa brings on a police massacre.",
+      "popularity": 4.7216,
+      "poster_path": "/hZmsRLsCnE9Zshf1YJONUpCOhds.jpg",
+      "production_companies": [
+        {
+          "id": 344,
+          "logo_path": "/xenuUvcunUNpbaDOYGhWZERaym7.png",
+          "name": "Mosfilm",
+          "origin_country": "SU"
+        }
+      ],
+      "production_countries": [
+        {
+          "iso_3166_1": "SU",
+          "name": "Soviet Union"
+        }
+      ],
+      "release_date": "1925-12-24",
+      "revenue": 45100,
+      "runtime": 75,
+      "softcore": false,
+      "spoken_languages": [
+        {
+          "english_name": "No Language",
+          "iso_639_1": "xx",
+          "name": "No Language"
+        }
+      ],
+      "status": "Released",
+      "tagline": "Revolution is the only lawful, equal, effectual war. It was in Russia that this war was declared and begun.",
+      "title": "Battleship Potemkin",
+      "video": false,
+      "vote_average": 7.568,
+      "vote_count": 1352,
+      "credits": {
+        "cast": [
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9609,
+            "known_for_department": "Acting",
+            "name": "Aleksandr Antonov",
+            "original_name": "Александр Антонов",
+            "popularity": 0.9844,
+            "profile_path": "/2SsBRWuIQr3T0Ou7K75HarJoNIo.jpg",
+            "cast_id": 8,
+            "character": "Grigory Vakulinchuk",
+            "credit_id": "52fe4263c3a36847f801a8f7",
+            "order": 0
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9610,
+            "known_for_department": "Directing",
+            "name": "Vladimir Barsky",
+            "original_name": "Владимир Барский",
+            "popularity": 1.5292,
+            "profile_path": "/fHxaQHe74SPYffMXu4f0lR61K8w.jpg",
+            "cast_id": 9,
+            "character": "Commander Golikov",
+            "credit_id": "52fe4263c3a36847f801a8fb",
+            "order": 1
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9607,
+            "known_for_department": "Directing",
+            "name": "Grigori Aleksandrov",
+            "original_name": "Григорий Александров",
+            "popularity": 0.8884,
+            "profile_path": "/A8LitAachroJZ2wQq4mdbB698WS.jpg",
+            "cast_id": 10,
+            "character": "Chief Officer Giliarovsky",
+            "credit_id": "52fe4263c3a36847f801a8ff",
+            "order": 2
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9611,
+            "known_for_department": "Acting",
+            "name": "Ivan Bobrov",
+            "original_name": "Иван Бобров",
+            "popularity": 0.7105,
+            "profile_path": "/yCHbMMtSGOYzn5O7FfaTncYsSBw.jpg",
+            "cast_id": 11,
+            "character": "Young Sailor Flogged While Sleeping",
+            "credit_id": "52fe4263c3a36847f801a903",
+            "order": 3
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9727,
+            "known_for_department": "Directing",
+            "name": "Mikhail Gomorov",
+            "original_name": "Михаил Гоморов",
+            "popularity": 0.4254,
+            "profile_path": "/lXCarRbaWNwYFTZXTY5llc1nKPP.jpg",
+            "cast_id": 12,
+            "character": "Militant Sailor",
+            "credit_id": "52fe4263c3a36847f801a907",
+            "order": 4
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9728,
+            "known_for_department": "Directing",
+            "name": "Aleksandr Levshin",
+            "original_name": "Александр Левшин",
+            "popularity": 0.3423,
+            "profile_path": null,
+            "cast_id": 13,
+            "character": "Petty Officer",
+            "credit_id": "52fe4263c3a36847f801a90b",
+            "order": 5
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 1906799,
+            "known_for_department": "Acting",
+            "name": "Nina Poltavtseva",
+            "original_name": "Нина Полтавцева",
+            "popularity": 0.3123,
+            "profile_path": null,
+            "cast_id": 25,
+            "character": "Woman with Pince-nez",
+            "credit_id": "59e4e1e7c3a36846ae0301f3",
+            "order": 6
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1906801,
+            "known_for_department": "Acting",
+            "name": "Konstantin Feldman",
+            "original_name": "Константин Фельдман",
+            "popularity": 0.3538,
+            "profile_path": null,
+            "cast_id": 26,
+            "character": "Student Agitator",
+            "credit_id": "59e4e202925141081002f077",
+            "order": 7
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1906804,
+            "known_for_department": "Acting",
+            "name": "Prokhorenko",
+            "original_name": "Прохоренко",
+            "popularity": 0.2694,
+            "profile_path": null,
+            "cast_id": 27,
+            "character": "Mother Carrying Wounded Boy",
+            "credit_id": "59e4e225925141084b0301ae",
+            "order": 8
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1906805,
+            "known_for_department": "Acting",
+            "name": "A. Glauberman",
+            "original_name": "Абба Глауберман",
+            "popularity": 0.2606,
+            "profile_path": null,
+            "cast_id": 28,
+            "character": "Wounded Boy",
+            "credit_id": "59e4e233c3a3684654031638",
+            "order": 9
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 9729,
+            "known_for_department": "Acting",
+            "name": "Beatrice Vitoldi",
+            "original_name": "Беатрис Ветольди",
+            "popularity": 0.2538,
+            "profile_path": null,
+            "cast_id": 14,
+            "character": "Woman with Baby Carriage",
+            "credit_id": "52fe4263c3a36847f801a90f",
+            "order": 10
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1308319,
+            "known_for_department": "Acting",
+            "name": "Danylo Antonovych",
+            "original_name": "Даниил Антонович",
+            "popularity": 0.818,
+            "profile_path": "/6X3iC9YY3EuNXW71IryT1NjKLrO.jpg",
+            "cast_id": 19,
+            "character": "Sailor",
+            "credit_id": "57c9aa7a9251415eca001b1c",
+            "order": 11
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1611369,
+            "known_for_department": "Acting",
+            "name": "Iona Biy-Brodskiy",
+            "original_name": "Иона Бий-Бродский",
+            "popularity": 0.5343,
+            "profile_path": "/k26XTe0naR9IwZdeDQylClafKPN.jpg",
+            "cast_id": 29,
+            "character": "Student",
+            "credit_id": "59e4e249c3a368463a02bda3",
+            "order": 12
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 1906807,
+            "known_for_department": "Acting",
+            "name": "Julia Eisenstein",
+            "original_name": "Юлия Эйзенштейн",
+            "popularity": 0.2501,
+            "profile_path": null,
+            "cast_id": 30,
+            "character": "Woman with Food for Sailors",
+            "credit_id": "59e4e25792514107f503177f",
+            "order": 13
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9603,
+            "known_for_department": "Directing",
+            "name": "Sergei Eisenstein",
+            "original_name": "Сергей Эйзенштейн",
+            "popularity": 0.9022,
+            "profile_path": "/ks9uuDtKu9m9w50t18PamLZ91to.jpg",
+            "cast_id": 20,
+            "character": "Odessa Citizen",
+            "credit_id": "57c9aacc92514148e30080ca",
+            "order": 14
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 86747,
+            "known_for_department": "Acting",
+            "name": "Andrey Fayt",
+            "original_name": "Андрей Файт",
+            "popularity": 0.5888,
+            "profile_path": "/cMlf0uUGzc6Ds7db9G0VZDCH693.jpg",
+            "cast_id": 21,
+            "character": "Recruit",
+            "credit_id": "57c9aaf3c3a36847b7001a1e",
+            "order": 15
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1545649,
+            "known_for_department": "Acting",
+            "name": "Yuriy Korobeynikov",
+            "original_name": "Юрий Коробейников",
+            "popularity": 0.2438,
+            "profile_path": null,
+            "cast_id": 31,
+            "character": "Legless Veteran",
+            "credit_id": "59e4e27c925141084f030c4d",
+            "order": 16
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1906808,
+            "known_for_department": "Acting",
+            "name": "Marusov",
+            "original_name": "Николай Марусов",
+            "popularity": 0.261,
+            "profile_path": null,
+            "cast_id": 32,
+            "character": "Officer",
+            "credit_id": "59e4e28ac3a36846cc03458b",
+            "order": 17
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1906809,
+            "known_for_department": "Acting",
+            "name": "Protopopov",
+            "original_name": "Протопопов",
+            "popularity": 0.2826,
+            "profile_path": null,
+            "cast_id": 33,
+            "character": "Old Man",
+            "credit_id": "59e4e295c3a36846dd02f6fb",
+            "order": 18
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 1906810,
+            "known_for_department": "Acting",
+            "name": "Repnikova",
+            "original_name": "Репникова",
+            "popularity": 0.2441,
+            "profile_path": null,
+            "cast_id": 34,
+            "character": "Woman on the Steps",
+            "credit_id": "59e4e2a1c3a368461e03135d",
+            "order": 19
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 237489,
+            "known_for_department": "Acting",
+            "name": "Vladimir Uralskiy",
+            "original_name": "Владимир Уральский",
+            "popularity": 0.507,
+            "profile_path": "/zcX8uW3LxVvsOS4vVIpdIU4THNz.jpg",
+            "cast_id": 53,
+            "character": "Sailor",
+            "credit_id": "6539b6a7ec4552010b3afb62",
+            "order": 20
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1906811,
+            "known_for_department": "Acting",
+            "name": "Zerenin",
+            "original_name": "Зеренин",
+            "popularity": 0.2375,
+            "profile_path": null,
+            "cast_id": 35,
+            "character": "Student",
+            "credit_id": "59e4e2ac925141084f030ca4",
+            "order": 21
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1906812,
+            "known_for_department": "Acting",
+            "name": "Aleksanteri Ahola-Valo",
+            "original_name": "Aleksanteri Ahola-Valo",
+            "popularity": 0.4426,
+            "profile_path": null,
+            "cast_id": 36,
+            "character": "Extra (uncredited)",
+            "credit_id": "59e4e2bf92514108550312a6",
+            "order": 22
+          }
+        ],
+        "crew": [
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9603,
+            "known_for_department": "Directing",
+            "name": "Sergei Eisenstein",
+            "original_name": "Сергей Эйзенштейн",
+            "popularity": 0.9022,
+            "profile_path": "/ks9uuDtKu9m9w50t18PamLZ91to.jpg",
+            "credit_id": "52fe4263c3a36847f801a8cf",
+            "department": "Directing",
+            "job": "Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9603,
+            "known_for_department": "Directing",
+            "name": "Sergei Eisenstein",
+            "original_name": "Сергей Эйзенштейн",
+            "popularity": 0.9022,
+            "profile_path": "/ks9uuDtKu9m9w50t18PamLZ91to.jpg",
+            "credit_id": "52fe4263c3a36847f801a8e7",
+            "department": "Editing",
+            "job": "Editor"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 2793,
+            "known_for_department": "Sound",
+            "name": "Edmund Meisel",
+            "original_name": "Edmund Meisel",
+            "popularity": 0.3645,
+            "profile_path": null,
+            "credit_id": "52fe4263c3a36847f801a8f3",
+            "department": "Sound",
+            "job": "Original Music Composer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9606,
+            "known_for_department": "Camera",
+            "name": "Eduard Tisse",
+            "original_name": "Эдуард Тиссэ",
+            "popularity": 0.6721,
+            "profile_path": "/94KdR4OcoEQV5r4rWLSXWwtbOQG.jpg",
+            "credit_id": "52fe4263c3a36847f801a915",
+            "department": "Camera",
+            "job": "Director of Photography"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1403591,
+            "known_for_department": "Writing",
+            "name": "Sergei Tretyakov",
+            "original_name": "Сергей Третьяков",
+            "popularity": 0.4536,
+            "profile_path": null,
+            "credit_id": "65324eca9ac535087f3ad7af",
+            "department": "Writing",
+            "job": "Writer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1170907,
+            "known_for_department": "Directing",
+            "name": "Yakov Bliokh",
+            "original_name": "Яков Блиох",
+            "popularity": 0.3333,
+            "profile_path": null,
+            "credit_id": "6540125ce894a6013a9d8d9e",
+            "department": "Production",
+            "job": "Producer"
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 947665,
+            "known_for_department": "Writing",
+            "name": "Nina Agadzhanova",
+            "original_name": "Нина Агаджанова-Шутко",
+            "popularity": 0.5311,
+            "profile_path": "/7JVZeHtkcRcc0Wa1Bk9tBmXgtjO.jpg",
+            "credit_id": "632d57bb544c41007ff91576",
+            "department": "Writing",
+            "job": "Writer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9603,
+            "known_for_department": "Directing",
+            "name": "Sergei Eisenstein",
+            "original_name": "Сергей Эйзенштейн",
+            "popularity": 0.9022,
+            "profile_path": "/ks9uuDtKu9m9w50t18PamLZ91to.jpg",
+            "credit_id": "632d57d555937b008e53f8a8",
+            "department": "Writing",
+            "job": "Writer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1880551,
+            "known_for_department": "Writing",
+            "name": "Nikolay Aseev",
+            "original_name": "Николай Асеев",
+            "popularity": 0.2996,
+            "profile_path": null,
+            "credit_id": "59a97e6b925141579902ddf0",
+            "department": "Writing",
+            "job": "Writer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9609,
+            "known_for_department": "Acting",
+            "name": "Aleksandr Antonov",
+            "original_name": "Александр Антонов",
+            "popularity": 0.9844,
+            "profile_path": "/2SsBRWuIQr3T0Ou7K75HarJoNIo.jpg",
+            "credit_id": "59e4e3ecc3a368461e031561",
+            "department": "Directing",
+            "job": "Assistant Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9727,
+            "known_for_department": "Directing",
+            "name": "Mikhail Gomorov",
+            "original_name": "Михаил Гоморов",
+            "popularity": 0.4254,
+            "profile_path": "/lXCarRbaWNwYFTZXTY5llc1nKPP.jpg",
+            "credit_id": "59e4e409c3a36846dd02f8db",
+            "department": "Directing",
+            "job": "Assistant Director"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1906820,
+            "known_for_department": "Production",
+            "name": "A. Kotoshev",
+            "original_name": "A. Kotoshev",
+            "popularity": 0.2587,
+            "profile_path": null,
+            "credit_id": "59e4e416c3a36846ae0304bd",
+            "department": "Production",
+            "job": "Administration"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1906821,
+            "known_for_department": "Production",
+            "name": "A.P. Kryukov",
+            "original_name": "А. Крюков",
+            "popularity": 0.2434,
+            "profile_path": null,
+            "credit_id": "59e4e421c3a36846cc0347d6",
+            "department": "Production",
+            "job": "Administration"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9728,
+            "known_for_department": "Directing",
+            "name": "Aleksandr Levshin",
+            "original_name": "Александр Левшин",
+            "popularity": 0.3423,
+            "profile_path": null,
+            "credit_id": "59e4e431c3a3684668031d6e",
+            "department": "Directing",
+            "job": "Assistant Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 2747645,
+            "known_for_department": "Art",
+            "name": "Vasiliy Rakhals",
+            "original_name": "Василий Рахальс",
+            "popularity": 0.3073,
+            "profile_path": "/fDu1aDFbRX1izmT2SFjX6A9C4hd.jpg",
+            "credit_id": "6712397025c70b8b1d67adde",
+            "department": "Art",
+            "job": "Production Design"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 2362139,
+            "known_for_department": "Directing",
+            "name": "Mikhail Kapchinsky",
+            "original_name": "Mikhail Kapchinsky",
+            "popularity": 0.2682,
+            "profile_path": null,
+            "credit_id": "68d1d44d27c236f3c1cd7e65",
+            "department": "Production",
+            "job": "Executive Producer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9607,
+            "known_for_department": "Directing",
+            "name": "Grigori Aleksandrov",
+            "original_name": "Григорий Александров",
+            "popularity": 0.8884,
+            "profile_path": "/A8LitAachroJZ2wQq4mdbB698WS.jpg",
+            "credit_id": "693aa77b3cab6703a8cdf083",
+            "department": "Directing",
+            "job": "Assistant Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 9607,
+            "known_for_department": "Directing",
+            "name": "Grigori Aleksandrov",
+            "original_name": "Григорий Александров",
+            "popularity": 0.8884,
+            "profile_path": "/A8LitAachroJZ2wQq4mdbB698WS.jpg",
+            "credit_id": "693aa796dd97317ef6dfa9ce",
+            "department": "Writing",
+            "job": "Writer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 213294,
+            "known_for_department": "Acting",
+            "name": "Maksim Shtraukh",
+            "original_name": "Максим Штраух",
+            "popularity": 0.4483,
+            "profile_path": "/dNJR5w6SAGLEQCXjcI19bR752NN.jpg",
+            "credit_id": "6a3732b5901c52660d942852",
+            "department": "Directing",
+            "job": "Assistant Director"
+          }
+        ]
+      },
+      "videos": {
+        "results": [
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Neil Tennant on It Couldn't Happen Here and Battleship Potemkin | BFI Q&A",
+            "key": "OOmnUT2Pyjc",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Featurette",
+            "official": true,
+            "id": "68d3290fb9a9b3da7ddfe75b",
+            "published_at": "2025-09-19T10:00:47.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "2025 UK Re-release Trailer | Music by Pet Shop Boys",
+            "key": "VC66LgoOlCs",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": true,
+            "id": "686f98f1f3d805056051f257",
+            "published_at": "2025-07-10T10:00:50.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Mark Kermode reviews Eisenstein's Battleship Potemkin (1925) | BFI Player",
+            "key": "GWu9CyhP4js",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Featurette",
+            "official": true,
+            "id": "686f998eeb6de7aeae9a5444",
+            "published_at": "2016-06-10T09:37:50.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Battleship Potemkin Trailer 2011 HD Official",
+            "key": "kS5kzTbNKjs",
+            "site": "YouTube",
+            "size": 720,
+            "type": "Trailer",
+            "official": false,
+            "id": "533ec655c3a36854480004dc",
+            "published_at": "2010-12-28T05:23:58.000Z"
+          }
+        ]
+      },
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "AR",
+            "release_dates": [
+              {
+                "certification": "ATP",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1940-08-27T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "AU",
+            "release_dates": [
+              {
+                "certification": "PG",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1951-09-21T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "BE",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1928-06-18T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "BR",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "São Paulo",
+                "release_date": "2005-02-25T00:00:00.000Z",
+                "type": 2
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "re-release, uncut version",
+                "release_date": "1980-05-01T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "DE",
+            "release_dates": [
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Berlin International Film Festival",
+                "release_date": "1986-02-20T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1930-08-11T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1926-04-29T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "DK",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1926-09-30T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "DO",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1928-10-02T00:00:00.000Z",
+                "type": 2
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "ES",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1931-01-14T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FR",
+            "release_dates": [
+              {
+                "certification": "TP",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Cine Club De France, Paris",
+                "release_date": "1925-11-12T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1926-11-12T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Re-release (Potemkine éditions)",
+                "release_date": "2026-06-17T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "GB",
+            "release_dates": [
+              {
+                "certification": "12A",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Centenary Edition ",
+                "release_date": "2025-08-22T00:00:00.000Z",
+                "type": 2
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1931-01-01T00:00:00.000Z",
+                "type": 2
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "rated X",
+                "release_date": "1954-01-11T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "PG",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Re-release",
+                "release_date": "2011-04-29T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "PG",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD",
+                "release_date": "2000-04-17T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "GR",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Athens",
+                "release_date": "1927-02-24T00:00:00.000Z",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "HU",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1951-01-20T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "IE",
+            "release_dates": [
+              {
+                "certification": "G",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Centenary Edition ",
+                "release_date": "2025-08-22T00:00:00.000Z",
+                "type": 2
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "IT",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1960-04-07T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "JP",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1967-10-04T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "KR",
+            "release_dates": [
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1994-10-15T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "NL",
+            "release_dates": [
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "DVD, Blu ray",
+                "release_date": "2007-02-10T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "PL",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1958-11-07T00:00:00.000Z",
+                "type": 6
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "PT",
+            "release_dates": [
+              {
+                "certification": "M/12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1974-05-19T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Re-release",
+                "release_date": "2014-05-16T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "RU",
+            "release_dates": [
+              {
+                "certification": "0+",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2026-01-29T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "SE",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1926-11-17T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "SU",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Bolshoi Theatre",
+                "release_date": "1925-12-21T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "1st State Gaming Theater",
+                "release_date": "1926-01-18T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1925-12-24T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "US",
+            "release_dates": [
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "New York City, New York",
+                "release_date": "1926-12-05T00:00:00.000Z",
+                "type": 1
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "San Francisco Silent Film Festival",
+                "release_date": "2017-05-03T00:00:00.000Z",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "XC",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1926-10-01T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          }
+        ]
+      },
+      "external_ids": {
+        "imdb_id": "tt0015648",
+        "wikidata_id": "Q152350",
+        "facebook_id": null,
+        "instagram_id": null,
+        "twitter_id": null
+      },
+      "recommendations": {
+        "page": 1,
+        "results": [
+          {
+            "adult": false,
+            "backdrop_path": "/ip7bH8RJJFaWOni6Y7Oa5nZGnm7.jpg",
+            "id": 13506,
+            "title": "Admiral",
+            "original_title": "Адмиралъ",
+            "overview": "This is a story of a great love facing the greatest drama of the history of Russia. Admiral Kolchak is a true war hero and beloved husband and father. One day he meets Anna, the love of his life and the wife of his best friend. The revolution in his heart faces the revolution in his own country His destiny is to become the Supreme Ruler of Russia.",
+            "poster_path": "/8tZqS6ssVbTs7gow90jaUkvGWQV.jpg",
+            "media_type": "movie",
+            "original_language": "ru",
+            "genre_ids": [10752, 18],
+            "popularity": 2.2701,
+            "release_date": "2008-06-06",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.2,
+            "vote_count": 177
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/KlYRORotYilG7XL2kPsHImDeBO.jpg",
+            "id": 59709,
+            "title": "Britannic",
+            "original_title": "Britannic",
+            "overview": "It was the sister ship of the infamous Titanic... and its final destiny was the same. Experience the true untold story of Britannic, a tumultuous, epic voyage of human passion, courage and betrayal aboard an ill-fated ocean liner bound for a shattering demise. With the world at war, an undercover British agent (Amanda Ryan), embarks the Britannic in search of a German spy believed to be on board to sabotage the ship. Posing as a governess, the undercover agent finds herself falling in love with the ship's chaplain (Edward Atterton). In a stunning discovery, the lovers suddenly find themselves enemies of war. And when a massive explosion deals a deathblow to the ship, their battle becomes one for their own survival. With a dynamic, international cast and a story line that hosts a chilling tale of espionage, politics and romance, Britannic brings one of history's most devastating events to riveting, new life.",
+            "poster_path": "/dzjEdjrRNAe6gIYcQFm0lKAby6Q.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [28, 18, 36, 10770, 10752],
+            "popularity": 2.3139,
+            "release_date": "2000-01-10",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.8,
+            "vote_count": 82
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/vhGmRg0RyTwpoPsLpGHtqOcsGSI.jpg",
+            "id": 8665,
+            "title": "K-19: The Widowmaker",
+            "original_title": "K-19: The Widowmaker",
+            "overview": "When Russia's first nuclear submarine malfunctions on its maiden voyage, the crew must race to save the ship and prevent a nuclear disaster.",
+            "poster_path": "/vImR0HQkJs7Xs2qgdXEUDeX49m0.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [36, 53, 18],
+            "popularity": 9.0415,
+            "release_date": "2002-07-19",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.587,
+            "vote_count": 1256
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/1WU0h2ivjKXOlRke4DtGGn0CBKA.jpg",
+            "id": 38646,
+            "title": "Nicholas and Alexandra",
+            "original_title": "Nicholas and Alexandra",
+            "overview": "Tsar Nicholas II, the inept last monarch of Russia, insensitive to the needs of his people, is overthrown and exiled to Siberia with his family.",
+            "poster_path": "/66JQ2dtAQNjyVIppBqBDk7MAGKv.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 10752, 36],
+            "popularity": 2.2673,
+            "release_date": "1971-11-29",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7,
+            "vote_count": 82
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/n4j994w22L2V1YVEzTRsfPjldmp.jpg",
+            "id": 42997,
+            "title": "H.M.S. Defiant",
+            "original_title": "H.M.S. Defiant",
+            "overview": "Defiant's crew is part of a fleet-wide movement to present a petition of grievances to the Admiralty. Violence must be no part of it. The continual sadism of Defiant's first officer makes this difficult, and when the captain is disabled, the chance for violence increases.",
+            "poster_path": "/xN8zeOsIqsyZGsEHDX403pMkf0G.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [12, 36, 10752],
+            "popularity": 2.2443,
+            "release_date": "1962-04-15",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.6,
+            "vote_count": 62
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/tpn4FbxL6oeZh8YtanV1a0k7dLB.jpg",
+            "id": 401200,
+            "title": "Kursk",
+            "original_title": "Kursk",
+            "overview": "Barents Sea, August 12th, 2000. During a Russian naval exercise, and after suffering a serious accident, the K-141 Kursk submarine sinks with 118 crew members on board. While the few sailors who are still alive barely manage to survive, their families push for accurate information and a British officer struggles to obtain from the Russian government a permit to attempt a rescue before it is late. But general incompetence are against all their efforts.",
+            "poster_path": "/1Y09MkMJ8CESSPW4fcbDm9s5cAS.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36, 53, 28],
+            "popularity": 5.4679,
+            "release_date": "2018-11-07",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.6,
+            "vote_count": 739
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/n3rEkTewthP1VIhwTCaJXYrEE0n.jpg",
+            "id": 52679,
+            "title": "The Last Command",
+            "original_title": "The Last Command",
+            "overview": "A former Imperial Russian general and cousin of the Czar ends up in Hollywood as an extra in a movie directed by a former revolutionary.",
+            "poster_path": "/uKb5bFIwEzDtT3km99lqQBGNFCx.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36, 10752],
+            "popularity": 1.2756,
+            "release_date": "1928-01-21",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.4,
+            "vote_count": 98
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/swmxPBwXM9k5kB8LS300QqFpZkr.jpg",
+            "id": 68553,
+            "title": "Siberiade",
+            "original_title": "Сибириада",
+            "overview": "The story about a very small god-forgotten village in Siberia reflects the history of Russia from the beginning of the century till the early 1980s. Three generations try to find the land of happiness and to give it to the people. One builds the road through taiga to the star over horizon, the second 'build communism' and the third searches for oil.",
+            "poster_path": "/z3WYuEQkI5hAFGmCsip1hcModo0.jpg",
+            "media_type": "movie",
+            "original_language": "ru",
+            "genre_ids": [10752, 18, 36],
+            "popularity": 3.6028,
+            "release_date": "1979-11-28",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.2,
+            "vote_count": 50
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/tcx15vswrQJCGET5lGxESQ4J5LG.jpg",
+            "id": 57212,
+            "title": "War Horse",
+            "original_title": "War Horse",
+            "overview": "On the brink of the First World War, Albert's beloved horse Joey is sold to the Cavalry by his father. Against the backdrop of the Great War, Joey begins an odyssey full of danger, joy, and sorrow, and he transforms everyone he meets along the way. Meanwhile, Albert, unable to forget his equine friend, searches the battlefields of France to find Joey and bring him home.",
+            "poster_path": "/3aRHhvvngFPJFy5uAjo7GVr3PhL.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [10752, 36, 18],
+            "popularity": 8.2772,
+            "release_date": "2011-12-25",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.307,
+            "vote_count": 3800
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/manPK0qPPyp1fXFs9cvW0gNratx.jpg",
+            "id": 44691,
+            "title": "The Scarlet and the Black",
+            "original_title": "The Scarlet and the Black",
+            "overview": "Fr. Hugh O'Flaherty is a Vatican official in 1943-45 who has been hiding downed pilots, escaped prisoners of war, and Italian resistance families. His activities become so large that the Nazis decide to assassinate him the next time he leaves the Vatican.",
+            "poster_path": "/f6nTRZC0RbdrUhauvhFjWlcbiTM.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36, 10770, 10752],
+            "popularity": 2.9496,
+            "release_date": "1983-02-02",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.1,
+            "vote_count": 69
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/aRTiGPgzE1S2F8IercFUmR19kxP.jpg",
+            "id": 763144,
+            "title": "The Last Rifleman",
+            "original_title": "The Last Rifleman",
+            "overview": "A WWII veteran escapes his care home in Northern Ireland and embarks on an arduous but inspirational journey to France to attend the 75th anniversary of the D-Day landings, finding the courage to face the ghosts of his past.",
+            "poster_path": "/co1GhkWdgt2J0LRTEJjHntkMrj3.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36, 10752],
+            "popularity": 3.2938,
+            "release_date": "2023-12-07",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.6,
+            "vote_count": 107
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/4H4RAeeykpi0ijvu3wYgV346y06.jpg",
+            "id": 618,
+            "title": "The Birth of a Nation",
+            "original_title": "The Birth of a Nation",
+            "overview": "Two families, abolitionist Northerners the Stonemans and Southern landowners the Camerons, intertwine. When Confederate colonel Ben Cameron is captured in battle, nurse Elsie Stoneman petitions for his pardon. In Reconstruction-era South Carolina, Cameron founds the Ku Klux Klan, battling Elsie's congressman father and his African-American protégé, Silas Lynch.",
+            "poster_path": "/f9MkgI1ObRVvJwWgJyWtRbgyWng.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36, 10752],
+            "popularity": 3.7285,
+            "release_date": "1915-03-08",
+            "softcore": false,
+            "video": false,
+            "vote_average": 5.9,
+            "vote_count": 623
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/9UAcMhSCDJ2OCo5QdPpSERjhMA1.jpg",
+            "id": 1396,
+            "title": "Mirror",
+            "original_title": "Зеркало",
+            "overview": "A dying man in his forties recalls his childhood, his mother, the war and personal moments that tell of and juxtapose pivotal moments in Soviet history with daily life.",
+            "poster_path": "/AttDP5OEsMxtHPPN7Z92p2Ntnmd.jpg",
+            "media_type": "movie",
+            "original_language": "ru",
+            "genre_ids": [18, 36],
+            "popularity": 6.2633,
+            "release_date": "1975-03-07",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.9,
+            "vote_count": 1146
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/xXBnM6uSTk6qqCf0SRZKXcga9Ba.jpg",
+            "id": 516486,
+            "title": "Greyhound",
+            "original_title": "Greyhound",
+            "overview": "A first-time captain leads a convoy of allied ships carrying thousands of soldiers across the treacherous waters of the \"Black Pit\" to the front lines of WWII. With no air cover protection for 5 days, the captain and his convoy must battle the surrounding enemy Nazi U-boats in order to give the allies a chance to win the war.",
+            "poster_path": "/kjMbDciooTbJPofVXgAoFjfX8Of.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [10752, 28, 18],
+            "popularity": 12.5628,
+            "release_date": "2020-07-09",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.416,
+            "vote_count": 3523
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/mzCLXcA61mbmlKx6gBNeeOidLnn.jpg",
+            "id": 42193,
+            "title": "The Charge of the Light Brigade",
+            "original_title": "The Charge of the Light Brigade",
+            "overview": "During the Crimean War between Britain and Russia in the 1850s, a British cavalry division, led by the overbearing Lord Cardigan, engages in an infamously reckless strategic debacle against a Russian artillery battery.",
+            "poster_path": "/ptEaZjVn6ilw4kYDrZz1gBaNhJL.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36, 10752],
+            "popularity": 2.786,
+            "release_date": "1968-04-10",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.2,
+            "vote_count": 80
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/l8fZIjnAR5rzK70ruatTyucFrFx.jpg",
+            "id": 31010,
+            "title": "Uprising",
+            "original_title": "Uprising",
+            "overview": "In the Warsaw ghetto in 1943, Jews rise against the Nazis.",
+            "poster_path": "/2Sl2XSNE4qW9rJ7zB80wqLxPfWf.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 10752, 10770],
+            "popularity": 5.7956,
+            "release_date": "2001-11-04",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.6,
+            "vote_count": 95
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/kG93zIRD0nnD4MPmNfGRIf8AFxQ.jpg",
+            "id": 16914,
+            "title": "The Cruel Sea",
+            "original_title": "The Cruel Sea",
+            "overview": "At the start of World War II, Cmdr. Ericson is assigned to convoy escort HMS Compass Rose with inexperienced officers and men just out of training. The winter seas make life miserable enough, but the men must also harden themselves to rescuing survivors of U-Boat attacks, while seldom able to strike back. Traumatic events afloat and ashore create a warm bond between the skipper and his first officer.",
+            "poster_path": "/kmMGoeLx7rntdbqKZFp6bmT8ZCW.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36, 10752],
+            "popularity": 2.0709,
+            "release_date": "1953-02-24",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.9,
+            "vote_count": 85
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/oZtoyj3rhOST8FUtIXUqblIYmCv.jpg",
+            "id": 661231,
+            "title": "Operation Mincemeat",
+            "original_title": "Operation Mincemeat",
+            "overview": "In 1943, two British intelligence officers concoct Operation Mincemeat, wherein their plan to drop a corpse with false papers off the coast of Spain would fool Nazi spies into believing the Allied forces were planning to attack by way of Greece rather than Sicily.",
+            "poster_path": "/tfdfh1mK24VujxT5z11732asxdR.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [10752, 36, 18],
+            "popularity": 5.0548,
+            "release_date": "2022-04-01",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.5,
+            "vote_count": 854
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/9HguisYwGUiEE9ajopMEBmjvDwN.jpg",
+            "id": 55936,
+            "title": "Prisoner of the Mountains",
+            "original_title": "Кавказский пленник",
+            "overview": "Two Russian soldiers, one battle-seasoned and the other barely into his boots and uniform, are taken prisoner by an anxious Islamic father from a remote village hoping to trade them for his captured son.",
+            "poster_path": "/82WdNsibYEwZI3u3XB0ndfKKKLe.jpg",
+            "media_type": "movie",
+            "original_language": "ru",
+            "genre_ids": [18, 10752],
+            "popularity": 1.7644,
+            "release_date": "1996-03-15",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.7,
+            "vote_count": 71
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/uTo4Xisq2ikWNp11ULKaSk08954.jpg",
+            "id": 670439,
+            "title": "Six Minutes to Midnight",
+            "original_title": "Six Minutes to Midnight",
+            "overview": "Summer 1939. Influential families in Nazi Germany have sent their daughters to a finishing school in an English seaside town to learn the language and be ambassadors for a future looking National Socialist. A teacher there sees what is coming and is trying to raise the alarm. But the authorities believe he is the problem.",
+            "poster_path": "/hOdW30Yk3aAmiWGjbfeNJ316QQY.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [53, 18, 36, 10752],
+            "popularity": 2.9193,
+            "release_date": "2020-10-15",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.2,
+            "vote_count": 197
+          }
+        ],
+        "total_pages": 19,
+        "total_results": 367
+      },
+      "keywords": {
+        "keywords": [
+          {
+            "id": 4210,
+            "name": "panic"
+          },
+          {
+            "id": 3234,
+            "name": "baby carriage"
+          },
+          {
+            "id": 3560,
+            "name": "cossack"
+          },
+          {
+            "id": 10089,
+            "name": "slaughter"
+          },
+          {
+            "id": 14546,
+            "name": "massacre"
+          },
+          {
+            "id": 14837,
+            "name": "rage"
+          },
+          {
+            "id": 41599,
+            "name": "sailor"
+          },
+          {
+            "id": 154802,
+            "name": "silent film"
+          },
+          {
+            "id": 158620,
+            "name": "russian revolution (1917)"
+          },
+          {
+            "id": 162845,
+            "name": "revolt"
+          },
+          {
+            "id": 186004,
+            "name": "imperial russia"
+          },
+          {
+            "id": 205585,
+            "name": "insubordination"
+          },
+          {
+            "id": 208568,
+            "name": "port city"
+          },
+          {
+            "id": 224427,
+            "name": "soviet realism"
+          },
+          {
+            "id": 239182,
+            "name": "maggots"
+          },
+          {
+            "id": 275067,
+            "name": "ussr"
+          },
+          {
+            "id": 308591,
+            "name": "soviet"
+          },
+          {
+            "id": 325778,
+            "name": "bold"
+          }
+        ]
+      }
+    }
+  }
+}

@@ -55,6 +55,7 @@ const files = () => ({
     '[[package]]\nname = "heck"\nversion = "0.5.0"\n\n[[package]]\nname = "highsea-desktop"\nversion = "0.1.0"\n',
   desktopPackage: '{\n  "name": "@highsea-tv/desktop",\n  "version": "0.1.0"\n}\n',
   mobilePackage: '{\n  "name": "@highsea-tv/mobile",\n  "version": "0.1.0"\n}\n',
+  tvPackage: '{\n  "name": "@highsea-tv/tv",\n  "version": "0.1.0"\n}\n',
 })
 
 describe('the image’s tags', () => {
@@ -138,6 +139,7 @@ describe('preparing and checking', () => {
       'apps/desktop/src-tauri/Cargo.lock is at 0.1.0, not 0.2.0.',
       'apps/desktop/package.json is at 0.1.0, not 0.2.0.',
       'apps/mobile/package.json is at 0.1.0, not 0.2.0.',
+      'apps/tv/package.json is at 0.1.0, not 0.2.0.',
       'CHANGELOG.md has no ## [0.2.0] section.',
       'releases.json doesn’t start with 0.2.0.',
       'The catalog’s CHANGES.md doesn’t mention 0.2.0, so servers wouldn’t see it.',
@@ -153,6 +155,7 @@ describe('preparing and checking', () => {
     expect(after.desktopLock).toContain('name = "highsea-desktop"\nversion = "0.2.0"')
     expect(JSON.parse(after.desktopPackage).version).toBe('0.2.0')
     expect(JSON.parse(after.mobilePackage).version).toBe('0.2.0')
+    expect(JSON.parse(after.tvPackage).version).toBe('0.2.0')
     expect(JSON.parse(after.releases)).toEqual([
       {
         version: '0.2.0',
@@ -220,6 +223,7 @@ describe('preparing and checking', () => {
       desktopLock: read('apps/desktop/src-tauri/Cargo.lock'),
       desktopPackage: read('apps/desktop/package.json'),
       mobilePackage: read('apps/mobile/package.json'),
+      tvPackage: read('apps/tv/package.json'),
     }
     const version = JSON.parse(repo.server).version
     const { unreleased, sections } = readChangelog(repo.changelog)

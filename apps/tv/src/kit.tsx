@@ -100,16 +100,23 @@ const destinations = [
 ] as const
 
 /**
- * The global navigation (client-home.md#tv): a tab row across the top that shows while focus is in
- * it, reached by Up from the hero's actions or a screen's top row, and Down leaves it again. It's
- * always laid out, faint while unfocused, since tvOS's focus engine skips views it can't see. The
+ * The global navigation (client-home.md#tv): a tab row across the top of every screen but the
+ * player, always shown (the owner, 2026-10-30), reached by Up from the hero's actions or a screen's
+ * top row, and Down leaves it again. A screen that scrolls makes it `reachable` only while its top
+ * is in view, so Up from a row lower down goes to the row above, not the tabs. The
  * focus engine only looks straight up from what has focus, so the guide around the tabs spans the
  * screen's width and sends focus arriving from anywhere below to the tab in use
  * (react-native-tvos's TVFocusGuideView `destinations`). A screen whose first stop isn't below the
  * tabs names it as `down` (the prototype's `down`): while focus is in the tabs, a guide under them
  * sends Down there. It's only there then, or it would catch Up on the way in.
  */
-export function GlobalNav({ down }: { down?: ViewHandle | null }) {
+export function GlobalNav({
+  down,
+  reachable = true,
+}: {
+  down?: ViewHandle | null
+  reachable?: boolean
+}) {
   const t = useT(shell)
   const theme = useTheme()
   const u = theme.u
@@ -117,11 +124,13 @@ export function GlobalNav({ down }: { down?: ViewHandle | null }) {
   const [inside, setInside] = useState(false)
   const [current, setCurrent] = useState<ViewHandle | null>(null)
   const active = (path: string) => (path === '/' ? pathname === '/' : pathname.startsWith(path))
+  // a film's or a collection's page is none of the tabs: Up lands on the first, Home
+  const landing = destinations.find((d) => active(d.path)) ?? destinations[0]
   return (
     <TVFocusGuideView
       accessibilityRole="tablist"
       accessibilityLabel={t('main')}
-      destinations={current ? [current] : []}
+      destinations={current && reachable ? [current] : []}
       onFocusEnter={() => setInside(true)}
       onFocusLeave={() => setInside(false)}
       style={{
@@ -132,7 +141,6 @@ export function GlobalNav({ down }: { down?: ViewHandle | null }) {
         zIndex: 20,
         alignItems: 'center',
         paddingTop: tv.safe.y * u,
-        opacity: inside ? 1 : 0.02,
       }}
     >
       <View
@@ -149,12 +157,13 @@ export function GlobalNav({ down }: { down?: ViewHandle | null }) {
           return (
             <Focusable
               key={d.path}
-              ref={here ? setCurrent : undefined}
+              ref={d === landing ? setCurrent : undefined}
               role="tab"
               selected={here}
               label={t(d.label)}
               ring={false}
               radius={999}
+              disabled={!reachable}
               onPress={() => (here ? null : router.replace(d.path as Href))}
             >
               {(focused) => (
@@ -212,9 +221,11 @@ const KeepContext = createContext<number | null>(null)
 /**
  * A part of a TvPage that lands as focus reaches anything in it, its centre `keep` of the way down
  * the screen (react-native-tvos's `scrollSnapOffset`, worked out from its own height). Parts don't
- * nest: the outermost one decides. Outside a page it's a plain view.
+ * nest: the outermost one decides. Outside a page it's a plain view. A part on the first screen can
+ * `rest` instead: the page goes back to its top, as Home's does for the hero, since landing it a
+ * screen down asks for a scroll above the top, which the page never goes past.
  */
-export function Kept({ children, ...props }: ViewProps) {
+export function Kept({ rest, children, ...props }: ViewProps & { rest?: boolean }) {
   const keep = useContext(KeepContext)
   const { height } = useWindowDimensions()
   const [h, setH] = useState(0)
@@ -223,7 +234,7 @@ export function Kept({ children, ...props }: ViewProps) {
     <View
       {...props}
       onLayout={(e) => setH(e.nativeEvent.layout.height)}
-      scrollSnapOffset={keptAt(keep, height, h)}
+      scrollSnapOffset={rest ? height : keptAt(keep, height, h)}
     >
       {children}
     </View>

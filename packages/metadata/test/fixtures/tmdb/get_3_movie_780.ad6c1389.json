@@ -1,0 +1,1291 @@
+{
+  "request": {
+    "method": "GET",
+    "url": "https://api.themoviedb.org/3/movie/780?append_to_response=credits%2Cvideos%2Crelease_dates%2Cexternal_ids%2Crecommendations%2Ckeywords&language=en-US",
+    "credential": "valid"
+  },
+  "response": {
+    "status": 200,
+    "headers": {
+      "content-type": "application/json;charset=utf-8"
+    },
+    "body": {
+      "adult": false,
+      "backdrop_path": "/uyYwhxRnXGuGWoCxiAdINlRExud.jpg",
+      "belongs_to_collection": null,
+      "budget": 0,
+      "genres": [
+        {
+          "id": 18,
+          "name": "Drama"
+        },
+        {
+          "id": 36,
+          "name": "History"
+        }
+      ],
+      "homepage": "",
+      "id": 780,
+      "imdb_id": "tt0019254",
+      "origin_country": ["FR"],
+      "original_language": "fr",
+      "original_title": "La Passion de Jeanne d'Arc",
+      "overview": "A classic of the silent age, this film tells the story of the doomed but ultimately canonized 15th-century teenage warrior. On trial for claiming she'd spoken to God, Jeanne d'Arc is subjected to inhumane treatment and scare tactics at the hands of church court officials. Initially bullied into changing her story, Jeanne eventually opts for what she sees as the truth. Her punishment, a famously brutal execution, earns her perpetual martyrdom.",
+      "popularity": 5.6221,
+      "poster_path": "/8OYGtQlO8k9PcOm49apV62eVJQo.jpg",
+      "production_companies": [
+        {
+          "id": 1237,
+          "logo_path": null,
+          "name": "Société générale des films",
+          "origin_country": "FR"
+        }
+      ],
+      "production_countries": [
+        {
+          "iso_3166_1": "FR",
+          "name": "France"
+        }
+      ],
+      "release_date": "1928-04-21",
+      "revenue": 18121,
+      "runtime": 81,
+      "softcore": false,
+      "spoken_languages": [
+        {
+          "english_name": "No Language",
+          "iso_639_1": "xx",
+          "name": "No Language"
+        }
+      ],
+      "status": "Released",
+      "tagline": "An Immortal Screen Classic that will live Forever!",
+      "title": "The Passion of Joan of Arc",
+      "video": false,
+      "vote_average": 7.971,
+      "vote_count": 1149,
+      "credits": {
+        "cast": [
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 11589,
+            "known_for_department": "Acting",
+            "name": "Maria Falconetti",
+            "original_name": "Maria Falconetti",
+            "popularity": 0.7903,
+            "profile_path": "/zlZX11vxjxukuBW76ZhF11ffPh5.jpg",
+            "cast_id": 1,
+            "character": "Jeanne d'Arc",
+            "credit_id": "52fe4275c3a36847f8020417",
+            "order": 0
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11590,
+            "known_for_department": "Acting",
+            "name": "Eugène Silvain",
+            "original_name": "Eugène Silvain",
+            "popularity": 0.3955,
+            "profile_path": "/a0K5np0UVaFcGKXixA7BCTZ1sXC.jpg",
+            "cast_id": 2,
+            "character": "Bishop Pierre Cauchon",
+            "credit_id": "52fe4275c3a36847f802041b",
+            "order": 1
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11591,
+            "known_for_department": "Acting",
+            "name": "André Berley",
+            "original_name": "André Berley",
+            "popularity": 1.2842,
+            "profile_path": "/w33Urmm5nROsJNWdmQFy0MPcG8r.jpg",
+            "cast_id": 3,
+            "character": "Jean d'Estivet",
+            "credit_id": "52fe4275c3a36847f802041f",
+            "order": 2
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11586,
+            "known_for_department": "Acting",
+            "name": "Maurice Schutz",
+            "original_name": "Maurice Schutz",
+            "popularity": 0.6315,
+            "profile_path": "/94drhs4q0P1oTM6kkGT00vDTlw8.jpg",
+            "cast_id": 19,
+            "character": "Nicolas Loyseleur",
+            "credit_id": "52fe4275c3a36847f802046f",
+            "order": 3
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11595,
+            "known_for_department": "Acting",
+            "name": "Antonin Artaud",
+            "original_name": "Antonin Artaud",
+            "popularity": 0.6515,
+            "profile_path": "/dIMl6oIhK7Yid3do0dGHQ7Wxjza.jpg",
+            "cast_id": 7,
+            "character": "Jean Massieu",
+            "credit_id": "52fe4275c3a36847f8020435",
+            "order": 4
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 12748,
+            "known_for_department": "Acting",
+            "name": "Michel Simon",
+            "original_name": "Michel Simon",
+            "popularity": 0.8773,
+            "profile_path": "/cB7x5hkjMEd2fsVC86tIpEZ9jff.jpg",
+            "cast_id": 20,
+            "character": "Jean Lemaître",
+            "credit_id": "57d73dabc3a368178f00285a",
+            "order": 5
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11596,
+            "known_for_department": "Acting",
+            "name": "Jean d'Yd",
+            "original_name": "Jean d'Yd",
+            "popularity": 0.7263,
+            "profile_path": "/b9mtziX14RF8wQIZl8DMZ76guN1.jpg",
+            "cast_id": 8,
+            "character": "Guillaume Evrard",
+            "credit_id": "52fe4275c3a36847f8020439",
+            "order": 6
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11597,
+            "known_for_department": "Acting",
+            "name": "Louis Ravet",
+            "original_name": "Louis Ravet",
+            "popularity": 0.42,
+            "profile_path": "/gixCabXZyuKcJpKJBJTRSLGydIn.jpg",
+            "cast_id": 9,
+            "character": "Jean Beaupère",
+            "credit_id": "52fe4275c3a36847f802043d",
+            "order": 7
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11598,
+            "known_for_department": "Acting",
+            "name": "Armand Lurville",
+            "original_name": "Armand Lurville",
+            "popularity": 0.487,
+            "profile_path": "/kxdxMGbaunHLYOrDj6bfcIk6jkX.jpg",
+            "cast_id": 10,
+            "character": "Judge",
+            "credit_id": "52fe4275c3a36847f8020441",
+            "order": 8
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11599,
+            "known_for_department": "Acting",
+            "name": "Jacques Arnna",
+            "original_name": "Jacques Arnna",
+            "popularity": 0.3484,
+            "profile_path": null,
+            "cast_id": 11,
+            "character": "Judge",
+            "credit_id": "52fe4275c3a36847f8020445",
+            "order": 9
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11600,
+            "known_for_department": "Acting",
+            "name": "Alexandre Mihalesco",
+            "original_name": "Alexandre Mihalesco",
+            "popularity": 0.4948,
+            "profile_path": "/aiOaqzS7wmQdIR0Q4b7o1UAwh1K.jpg",
+            "cast_id": 12,
+            "character": "Judge",
+            "credit_id": "52fe4275c3a36847f8020449",
+            "order": 10
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11601,
+            "known_for_department": "Acting",
+            "name": "Léon Larive",
+            "original_name": "Léon Larive",
+            "popularity": 0.9412,
+            "profile_path": "/igrzIXXMqZ2PPJkivGkFWSCAgxX.jpg",
+            "cast_id": 13,
+            "character": "Judge",
+            "credit_id": "52fe4275c3a36847f802044d",
+            "order": 11
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 102849,
+            "known_for_department": "Acting",
+            "name": "Jean Aymé",
+            "original_name": "Jean Aymé",
+            "popularity": 0.5014,
+            "profile_path": null,
+            "cast_id": 21,
+            "character": "Judge (uncredited)",
+            "credit_id": "57d73e08c3a3680237002ebf",
+            "order": 12
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1693185,
+            "known_for_department": "Acting",
+            "name": "Gilbert Dacheux",
+            "original_name": "Gilbert Dacheux",
+            "popularity": 0.4998,
+            "profile_path": null,
+            "cast_id": 29,
+            "character": "Judge (uncredited)",
+            "credit_id": "59d3ce22c3a36845280027f2",
+            "order": 13
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1387941,
+            "known_for_department": "Acting",
+            "name": "Gilbert Dalleu",
+            "original_name": "Gilbert Dalleu",
+            "popularity": 0.5921,
+            "profile_path": "/iHSMe4nWnbDHBx3aouUnXi2baHt.jpg",
+            "cast_id": 24,
+            "character": "Jean Lemaître (uncredited)",
+            "credit_id": "57d73f05c3a3682a8700000f",
+            "order": 14
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1899153,
+            "known_for_department": "Acting",
+            "name": "Paul Delauzac",
+            "original_name": "Paul Delauzac",
+            "popularity": 0.5572,
+            "profile_path": null,
+            "cast_id": 30,
+            "character": "Martin Ladvenu (uncredited)",
+            "credit_id": "59d3ce43c3a368451b0024ea",
+            "order": 15
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1899155,
+            "known_for_department": "Acting",
+            "name": "Dimitri Dimitriev",
+            "original_name": "Dimitri Dimitriev",
+            "popularity": 0.4197,
+            "profile_path": null,
+            "cast_id": 31,
+            "character": "Judge (uncredited)",
+            "credit_id": "59d3ce559251414b5c002ae2",
+            "order": 16
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 100031,
+            "known_for_department": "Acting",
+            "name": "Fournez-Goffard",
+            "original_name": "Fournez-Goffard",
+            "popularity": 0.4151,
+            "profile_path": "/vf0FtZIeLdgHE8HbdGHlw58fI7x.jpg",
+            "cast_id": 32,
+            "character": "Judge (uncredited)",
+            "credit_id": "59d3ce62c3a36844e1002a50",
+            "order": 17
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1899158,
+            "known_for_department": "Acting",
+            "name": "Henri Gaultier",
+            "original_name": "Henri Gaultier",
+            "popularity": 0.2873,
+            "profile_path": null,
+            "cast_id": 33,
+            "character": "Judge (uncredited)",
+            "credit_id": "59d3ce759251414b7f002a88",
+            "order": 18
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1146139,
+            "known_for_department": "Acting",
+            "name": "Paul Jorge",
+            "original_name": "Paul Jorge",
+            "popularity": 0.4868,
+            "profile_path": null,
+            "cast_id": 22,
+            "character": "Judge (uncredited)",
+            "credit_id": "57d73e81c3a36817dc002b47",
+            "order": 19
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 1505633,
+            "known_for_department": "Acting",
+            "name": "Marie Lacroix",
+            "original_name": "Marie Lacroix",
+            "popularity": 0.4501,
+            "profile_path": null,
+            "cast_id": 25,
+            "character": "Woman Looking at the Stake (uncredited)",
+            "credit_id": "57d73f3c9251412f9c00258b",
+            "order": 20
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1899159,
+            "known_for_department": "Acting",
+            "name": "Henri Maillard",
+            "original_name": "Henri Maillard",
+            "popularity": 0.3689,
+            "profile_path": "/kKGUtLAi61V2grJqxEpSdagSndj.jpg",
+            "cast_id": 34,
+            "character": "Judge (uncredited)",
+            "credit_id": "59d3ceadc3a36844e1002a9f",
+            "order": 21
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 1612258,
+            "known_for_department": "Acting",
+            "name": "Raymond Narlay",
+            "original_name": "Raymond Narlay",
+            "popularity": 0.5401,
+            "profile_path": "/nOXv0dOexUk9pWdZ6CE9pJ04WY7.jpg",
+            "cast_id": 23,
+            "character": "Judge (uncredited)",
+            "credit_id": "57d73ed69251412043002be9",
+            "order": 22
+          }
+        ],
+        "crew": [
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11593,
+            "known_for_department": "Camera",
+            "name": "Rudolph Maté",
+            "original_name": "Rudolph Maté",
+            "popularity": 0.7471,
+            "profile_path": "/pq0x1cUNdapjIvmnipOiWQxABb1.jpg",
+            "credit_id": "52fe4275c3a36847f802042b",
+            "department": "Camera",
+            "job": "Director of Photography"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 11594,
+            "known_for_department": "Costume & Make-Up",
+            "name": "Valentine Hugo",
+            "original_name": "Valentine Hugo",
+            "popularity": 0.33,
+            "profile_path": null,
+            "credit_id": "52fe4275c3a36847f8020431",
+            "department": "Costume & Make-Up",
+            "job": "Costume Design"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11572,
+            "known_for_department": "Directing",
+            "name": "Carl Theodor Dreyer",
+            "original_name": "Carl Theodor Dreyer",
+            "popularity": 1.2634,
+            "profile_path": "/l4g1K4ai3HgAIg0267O5ppnknVX.jpg",
+            "credit_id": "52fe4275c3a36847f8020453",
+            "department": "Directing",
+            "job": "Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11572,
+            "known_for_department": "Directing",
+            "name": "Carl Theodor Dreyer",
+            "original_name": "Carl Theodor Dreyer",
+            "popularity": 1.2634,
+            "profile_path": "/l4g1K4ai3HgAIg0267O5ppnknVX.jpg",
+            "credit_id": "52fe4275c3a36847f8020459",
+            "department": "Writing",
+            "job": "Screenplay"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11572,
+            "known_for_department": "Directing",
+            "name": "Carl Theodor Dreyer",
+            "original_name": "Carl Theodor Dreyer",
+            "popularity": 1.2634,
+            "profile_path": "/l4g1K4ai3HgAIg0267O5ppnknVX.jpg",
+            "credit_id": "52fe4275c3a36847f8020465",
+            "department": "Editing",
+            "job": "Editor"
+          },
+          {
+            "adult": false,
+            "gender": 1,
+            "id": 11623,
+            "known_for_department": "Editing",
+            "name": "Marguerite Beaugé",
+            "original_name": "Marguerite Beaugé",
+            "popularity": 0.6805,
+            "profile_path": null,
+            "credit_id": "52fe4275c3a36847f802046b",
+            "department": "Editing",
+            "job": "Editor"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11622,
+            "known_for_department": "Writing",
+            "name": "Joseph Delteil",
+            "original_name": "Joseph Delteil",
+            "popularity": 0.4424,
+            "profile_path": "/zVWSf3IDOgBBhzu1yklfSFe6ltE.jpg",
+            "credit_id": "637266a1bf0f630091fab4d7",
+            "department": "Writing",
+            "job": "Writer"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11572,
+            "known_for_department": "Directing",
+            "name": "Carl Theodor Dreyer",
+            "original_name": "Carl Theodor Dreyer",
+            "popularity": 1.2634,
+            "profile_path": "/l4g1K4ai3HgAIg0267O5ppnknVX.jpg",
+            "credit_id": "57d740649251412043002c9c",
+            "department": "Crew",
+            "job": "Title Graphics"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 63146,
+            "known_for_department": "Sound",
+            "name": "Jesper Kyd",
+            "original_name": "Jesper Kyd",
+            "popularity": 0.7806,
+            "profile_path": null,
+            "credit_id": "59d3ceda9251414b99002ad5",
+            "department": "Sound",
+            "job": "Music"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1899160,
+            "known_for_department": "Directing",
+            "name": "Ralph Christian Holm",
+            "original_name": "Ralph Christian Holm",
+            "popularity": 0.2942,
+            "profile_path": null,
+            "credit_id": "59d3cf179251414b83002a89",
+            "department": "Directing",
+            "job": "Assistant Director"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1876068,
+            "known_for_department": "Writing",
+            "name": "Paul La Cour",
+            "original_name": "Paul La Cour",
+            "popularity": 0.6183,
+            "profile_path": null,
+            "credit_id": "59d3cf279251414b99002b2d",
+            "department": "Directing",
+            "job": "Assistant Director"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11592,
+            "known_for_department": "Acting",
+            "name": "Ole Schmidt",
+            "original_name": "Ole Schmidt",
+            "popularity": 0.4071,
+            "profile_path": null,
+            "credit_id": "59d3cf7bc3a3684594002ae5",
+            "department": "Sound",
+            "job": "Music"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2113086,
+            "known_for_department": "Sound",
+            "name": "Victor Alix",
+            "original_name": "Victor Alix",
+            "popularity": 0.2563,
+            "profile_path": null,
+            "credit_id": "5b7da99a92514104f00024bc",
+            "department": "Sound",
+            "job": "Music"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 2113087,
+            "known_for_department": "Sound",
+            "name": "Léo Pouget",
+            "original_name": "Léo Pouget",
+            "popularity": 0.249,
+            "profile_path": null,
+            "credit_id": "5b7da9a30e0a2615cc002520",
+            "department": "Sound",
+            "job": "Music"
+          },
+          {
+            "adult": false,
+            "gender": 0,
+            "id": 1899164,
+            "known_for_department": "Art",
+            "name": "Jean Hugo",
+            "original_name": "Jean Hugo",
+            "popularity": 0.2632,
+            "profile_path": null,
+            "credit_id": "5b7da9bec3a3683411002189",
+            "department": "Art",
+            "job": "Art Direction"
+          },
+          {
+            "adult": false,
+            "gender": 2,
+            "id": 11579,
+            "known_for_department": "Art",
+            "name": "Hermann Warm",
+            "original_name": "Hermann Warm",
+            "popularity": 0.7638,
+            "profile_path": null,
+            "credit_id": "5b7da9c8c3a3683415002e22",
+            "department": "Art",
+            "job": "Art Direction"
+          }
+        ]
+      },
+      "videos": {
+        "results": [
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Trailer",
+            "key": "1mbsGj2WS1s",
+            "site": "YouTube",
+            "size": 2160,
+            "type": "Trailer",
+            "official": false,
+            "id": "631fa0c7f621b20084ed2f2d",
+            "published_at": "2022-06-11T09:39:02.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "New & Exclusive Trailer",
+            "key": "Iz3XmfNzrNs",
+            "site": "YouTube",
+            "size": 1080,
+            "type": "Trailer",
+            "official": true,
+            "id": "5969072ac3a36879cb020e6d",
+            "published_at": "2017-07-14T16:09:24.000Z"
+          },
+          {
+            "iso_639_1": "en",
+            "iso_3166_1": "US",
+            "name": "Critics' Picks - 'Passion of Joan of Arc'",
+            "key": "X7ddz1S8pJ8",
+            "site": "YouTube",
+            "size": 480,
+            "type": "Featurette",
+            "official": false,
+            "id": "533ec656c3a36854480005c2",
+            "published_at": "2011-04-14T13:30:22.000Z"
+          }
+        ]
+      },
+      "release_dates": {
+        "results": [
+          {
+            "iso_3166_1": "AU",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Melbourne International Film Festival",
+                "release_date": "1952-01-27T00:00:00.000Z",
+                "type": 1
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "DE",
+            "release_dates": [
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1928-10-25T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "DK",
+            "release_dates": [
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1928-04-21T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "ES",
+            "release_dates": [
+              {
+                "certification": "16",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "ICAA 24696",
+                "release_date": "1996-04-12T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "FR",
+            "release_dates": [
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1928-10-25T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "GB",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1930-01-06T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "GR",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "Re-Issue",
+                "release_date": "2025-07-10T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "IT",
+            "release_dates": [
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1929-01-18T00:00:00.000Z",
+                "type": 3
+              },
+              {
+                "certification": "",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1966-09-25T00:00:00.000Z",
+                "type": 6
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "JP",
+            "release_dates": [
+              {
+                "certification": "R15+",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1929-10-25T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "KR",
+            "release_dates": [
+              {
+                "certification": "12",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "2003-11-20T00:00:00.000Z",
+                "type": 5
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "SE",
+            "release_dates": [
+              {
+                "certification": "15",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "",
+                "release_date": "1932-05-09T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          },
+          {
+            "iso_3166_1": "US",
+            "release_dates": [
+              {
+                "certification": "NR",
+                "descriptors": [],
+                "iso_639_1": "",
+                "note": "New York City, New York",
+                "release_date": "1929-03-28T00:00:00.000Z",
+                "type": 3
+              }
+            ]
+          }
+        ]
+      },
+      "external_ids": {
+        "imdb_id": "tt0019254",
+        "wikidata_id": "Q51520",
+        "facebook_id": null,
+        "instagram_id": null,
+        "twitter_id": null
+      },
+      "recommendations": {
+        "page": 1,
+        "results": [
+          {
+            "adult": false,
+            "backdrop_path": "/iW2ZLRkKJvFuI6ZkSchk5f8kCPc.jpg",
+            "id": 10047,
+            "title": "The Messenger: The Story of Joan of Arc",
+            "original_title": "Joan of Arc",
+            "overview": "In 1429, a French teenager stood before her King with a message she claimed came from God; that she would defeat the world's greatest army and liberate her country from its political and religious turmoil. As she reclaims God's diminished kingdom, this courageous young woman has various amazing victories until her violent and untimely death.",
+            "poster_path": "/vHEezeYWXuif6ImjHgeC3qVwAa9.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [12, 18, 28, 36, 10752],
+            "popularity": 6.8231,
+            "release_date": "1999-10-27",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.43,
+            "vote_count": 1671
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/evVyt6xNSih4mZRZVViMypR4CZr.jpg",
+            "id": 36773,
+            "title": "The Third Miracle",
+            "original_title": "The Third Miracle",
+            "overview": "The Vatican sends a priest to verify some miracles, performed by a woman who has been nominated for sainthood...",
+            "poster_path": "/lkxqF5lQSVoLk9ikALSByJgBPoN.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18],
+            "popularity": 2.3874,
+            "release_date": "1999-11-18",
+            "softcore": false,
+            "video": false,
+            "vote_average": 5.9,
+            "vote_count": 55
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/gwRWQeHfPuA8mg73kydQsM8rdXq.jpg",
+            "id": 687,
+            "title": "Dead Man Walking",
+            "original_title": "Dead Man Walking",
+            "overview": "A death row inmate turns for spiritual guidance to a local nun in the days leading up to his scheduled execution for the murders of a young couple.",
+            "poster_path": "/eShxyjhWoFl3BwsuEmVsr4nLaMZ.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18],
+            "popularity": 5.2021,
+            "release_date": "1995-12-29",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.307,
+            "vote_count": 1556
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/xwlShstQ7tODGkJJQ2ddM2JoNMu.jpg",
+            "id": 12524,
+            "title": "Titus",
+            "original_title": "Titus",
+            "overview": "Titus Andronicus returns from the wars and sees his sons and daughters taken from him, one by one. Shakespeare's goriest and earliest tragedy.",
+            "poster_path": "/82mCeQoeT2C7h7vR6Ot9MQotE1R.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36],
+            "popularity": 7.1485,
+            "release_date": "1999-12-25",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.4,
+            "vote_count": 297
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/2tE0A6WjLowwQOUY8se1Xlf3O6U.jpg",
+            "id": 68730,
+            "title": "Silence",
+            "original_title": "Silence",
+            "overview": "In the 17th century, two Portuguese Jesuit priests travel to Japan in an attempt to locate their mentor, who is rumored to have committed apostasy, and to propagate Catholicism.",
+            "poster_path": "/x5T0cQDYws0xRBVG4Q3wpcrcmax.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36],
+            "popularity": 8.1303,
+            "release_date": "2016-12-23",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.12,
+            "vote_count": 3444
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/aHPEtpwRQgl84vLKUmVss45duZV.jpg",
+            "id": 96399,
+            "title": "Outlaws - For Greater Glory",
+            "original_title": "For Greater Glory: The True Story of Cristiada",
+            "overview": "A chronicle of the Cristeros War (1926-1929), which was touched off by a rebellion against the Mexican government's attempt to secularize the country.",
+            "poster_path": "/7jgh0ej04j98q2NFpSZLlpDazUo.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [36, 18, 28, 10752],
+            "popularity": 4.9817,
+            "release_date": "2012-06-01",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7,
+            "vote_count": 184
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/iHfVnZrb6w39x1KIcgTGNY7g0l1.jpg",
+            "id": 5051,
+            "title": "The Baby of Mâcon",
+            "original_title": "The Baby of Mâcon",
+            "overview": "In 17th-century Tuscany, a church play is performed for the benefit of young aristocrat Cosimo. In the play, a grotesque old woman gives birth to a beautiful baby boy. The child's older sister is quick to exploit the situation, selling blessings from the baby, and even claiming she's the true mother by virgin birth. However, when she attempts to seduce the bishop's son, the Church exacts a terrible revenge.",
+            "poster_path": "/lYB5uF36JE61GMLInD3Gp7yCCyL.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36],
+            "popularity": 2.517,
+            "release_date": "1993-09-17",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.8,
+            "vote_count": 117
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/dkx8j5Orh3e46DIU6atEAfj7j2i.jpg",
+            "id": 70925,
+            "title": "Oranges and Sunshine",
+            "original_title": "Oranges and Sunshine",
+            "overview": "The story of Margaret Humphreys, a social worker from Nottingham, who uncovers one of the most significant social scandals in recent times – the forced migration of children from the United Kingdom to Australia and other Commonwealth countries. Almost singlehandedly, Margaret reunited thousands of families, brought authorities to account and worldwide attention to an extraordinary miscarriage of justice.",
+            "poster_path": "/tMOAXwYuXCCmj7DvJW1e3Wafeib.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36],
+            "popularity": 2.717,
+            "release_date": "2010-10-08",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.9,
+            "vote_count": 94
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/teMi2HuGuWOmBL599u7dg1xtD1Q.jpg",
+            "id": 8094,
+            "title": "The Magdalene Sisters",
+            "original_title": "The Magdalene Sisters",
+            "overview": "Three young Irish women struggle to maintain their spirits while they endure dehumanizing abuse as inmates of a Magdalene Sisters Asylum.",
+            "poster_path": "/akOnyPsfzcDvCwP3lzY35i2NIha.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36],
+            "popularity": 4.0692,
+            "release_date": "2002-08-30",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.5,
+            "vote_count": 493
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/3G8dPy3q6qfEW2o4CCB3gDk2qJY.jpg",
+            "id": 253279,
+            "title": "The Trials of Cate McCall",
+            "original_title": "The Trials of Cate McCall",
+            "overview": "In order to be reinstated to the bar and recover custody of her daughter, a hotshot lawyer, now in recovery and on probation, must take on the appeal of a woman wrongfully convicted of murder.",
+            "poster_path": "/2u9raM4MWJTtGVQ7MeYwfgGouRl.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18],
+            "popularity": 3.6698,
+            "release_date": "2013-11-28",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.4,
+            "vote_count": 318
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/oJuMZHOjmm9CSNIqDPGgKNIHXh6.jpg",
+            "id": 348390,
+            "title": "Confirmation",
+            "original_title": "Confirmation",
+            "overview": "Judge Clarence Thomas' nomination to the United States' Supreme Court is called into question when former colleague, Anita Hill, testifies that he had sexually harassed her.",
+            "poster_path": "/9lxg4KidKhRAMupBYvgdHxAnxKE.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36, 10770],
+            "popularity": 3.6353,
+            "release_date": "2016-04-16",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.9,
+            "vote_count": 161
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/98PhUeOMK33Oyekw53tSGsfPZ7H.jpg",
+            "id": 1443940,
+            "title": "Truth & Treason",
+            "original_title": "Truth & Treason",
+            "overview": "In 1941 Nazi Germany, 16-year-old Helmuth Hübener begins questioning the regime after learning the truth about the war and seeing his Jewish friend persecuted. With two friends, he secretly listens to banned foreign broadcasts and distributes leaflets exposing Nazi lies. As the Gestapo closes in, the teenagers face mounting danger for choosing conscience over obedience. Based on the true story of one of Germany’s youngest resistance fighters.",
+            "poster_path": "/ArDLn658OjT3dMThIi4GDQJRuY3.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [36, 18, 53],
+            "popularity": 3.1704,
+            "release_date": "2025-10-16",
+            "softcore": false,
+            "video": false,
+            "vote_average": 8.1,
+            "vote_count": 114
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/b1yxcZAjoU9ArgxWDjVrVgpupv0.jpg",
+            "id": 41411,
+            "title": "The Round Up",
+            "original_title": "La Rafle",
+            "overview": "A faithful retelling of the 1942 \"Vel' d'Hiv Roundup\" and the events surrounding it.",
+            "poster_path": "/9osPoGTddZZfMUzFDs82n57y2wQ.jpg",
+            "media_type": "movie",
+            "original_language": "fr",
+            "genre_ids": [18, 36, 10752],
+            "popularity": 3.3104,
+            "release_date": "2010-03-10",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.5,
+            "vote_count": 1057
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/lRi60HBL9fDd3MlouxJU0OUgR2j.jpg",
+            "id": 1318335,
+            "title": "The Rays and Shadows",
+            "original_title": "Les Rayons et les Ombres",
+            "overview": "Jean and Otto, a French newspaperman and a young German Francophile, are fighting for peace in Europe. Jean’s daughter, Corinne, is launching a brilliant acting career in the film world, but war breaks out and France is occupied. The two friends have a major role to play in this new France. Jean becomes a big press baron and an ardent advocate of collaboration with the occupying forces, while Otto becomes the Reich’s ambassador in Paris. Corinne, meanwhile, finds herself thrown into the lion’s pit.",
+            "poster_path": "/cSWYnBFJroVGtf6QeDLAeqhojiS.jpg",
+            "media_type": "movie",
+            "original_language": "fr",
+            "genre_ids": [18, 36],
+            "popularity": 6.7353,
+            "release_date": "2026-03-18",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.435,
+            "vote_count": 131
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/gPpgjFsSBc9hWHvxyK40GppUcNE.jpg",
+            "id": 3526,
+            "title": "Frances",
+            "original_title": "Frances",
+            "overview": "The true story of Frances Farmer's meteoric rise to fame in Hollywood and the tragic turn her life took when she was blacklisted.",
+            "poster_path": "/eyUq8VBgoHncr0cXFTKgg3VPyfi.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18],
+            "popularity": 2.9698,
+            "release_date": "1982-12-03",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.9,
+            "vote_count": 129
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/v4d6PPfqHeUNSdcyBVQ2Xb8yBk0.jpg",
+            "id": 192,
+            "title": "The Name of the Rose",
+            "original_title": "The Name of the Rose",
+            "overview": "14th-century Franciscan monk William of Baskerville and his young novice arrive at a conference to find that several monks have been murdered under mysterious circumstances. To solve the crimes, William must rise up against the Church's authority and fight the shadowy conspiracy of monastery monks using only his intelligence; which is considerable.",
+            "poster_path": "/fY8MAv403bTIfFPP4ePdHGHUKrp.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 53, 9648],
+            "popularity": 14.399,
+            "release_date": "1986-09-24",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.498,
+            "vote_count": 3441
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/4MLjm9ghDgx2cccqdKDRhBla9VT.jpg",
+            "id": 411976,
+            "title": "Novitiate",
+            "original_title": "Novitiate",
+            "overview": "In the early 1960s, during the Vatican II era, a young woman training to become a nun struggles with issues of faith, sexuality and the changing church.",
+            "poster_path": "/44D1sofF19zPZDuzcprLNStqQJM.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18],
+            "popularity": 5.291,
+            "release_date": "2017-10-27",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.5,
+            "vote_count": 193
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/2ldAA1P4byx3aUdKDBT4mmSwYsK.jpg",
+            "id": 615115,
+            "title": "The Secrets We Keep",
+            "original_title": "The Secrets We Keep",
+            "overview": "In post-World War II America, a woman, rebuilding her life in the suburbs with her husband, kidnaps her neighbor and seeks vengeance for the heinous war crimes she believes he committed against her.",
+            "poster_path": "/nI9tlSTnSn3YWIQl8ir3I0CgNnz.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [53, 36, 18],
+            "popularity": 3.3495,
+            "release_date": "2020-09-16",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6,
+            "vote_count": 292
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/f1k5jMK6QQ46E4jlwENmEBPf3Hk.jpg",
+            "id": 509364,
+            "title": "By the Grace of God",
+            "original_title": "Grâce à Dieu",
+            "overview": "Alexandre, a man in his 40s living in Lyon with his wife and children, discovers that the priest who abused him decades ago continues to work with children. He joins forces with others victims of the priest, to bring justice and “lift the burden of silence” about what they endured.",
+            "poster_path": "/qbwcnAdBkfGBIbQ1xdQZtiUg2lf.jpg",
+            "media_type": "movie",
+            "original_language": "fr",
+            "genre_ids": [18],
+            "popularity": 4.136,
+            "release_date": "2019-02-20",
+            "softcore": false,
+            "video": false,
+            "vote_average": 7.1,
+            "vote_count": 605
+          },
+          {
+            "adult": false,
+            "backdrop_path": "/tnJhsuLigMBWWMm7qEpUcUkl1Ni.jpg",
+            "id": 980816,
+            "title": "Miranda's Victim",
+            "original_title": "Miranda's Victim",
+            "overview": "The true story of Trish Weir who in 1963 was kidnapped and brutally raped by Ernesto Miranda. Committed to putting her assailant in prison, Trish’s life is destroyed by America’s legal system as she triggers a law that transforms the nation.",
+            "poster_path": "/82lu2Rb0MoBpfyUtoVwhLiVrDlF.jpg",
+            "media_type": "movie",
+            "original_language": "en",
+            "genre_ids": [18, 36],
+            "popularity": 2.5985,
+            "release_date": "2023-10-06",
+            "softcore": false,
+            "video": false,
+            "vote_average": 6.8,
+            "vote_count": 52
+          }
+        ],
+        "total_pages": 29,
+        "total_results": 568
+      },
+      "keywords": {
+        "keywords": [
+          {
+            "id": 3032,
+            "name": "suffering"
+          },
+          {
+            "id": 3012,
+            "name": "court case"
+          },
+          {
+            "id": 934,
+            "name": "judge"
+          },
+          {
+            "id": 3441,
+            "name": "sentence"
+          },
+          {
+            "id": 2822,
+            "name": "woman martyr"
+          },
+          {
+            "id": 2976,
+            "name": "heresy"
+          },
+          {
+            "id": 11038,
+            "name": "trial"
+          },
+          {
+            "id": 11001,
+            "name": "religion"
+          },
+          {
+            "id": 10772,
+            "name": "torture chamber"
+          },
+          {
+            "id": 12999,
+            "name": "black and white"
+          },
+          {
+            "id": 41610,
+            "name": "saint"
+          },
+          {
+            "id": 41611,
+            "name": "martyrdom"
+          },
+          {
+            "id": 54610,
+            "name": "dove"
+          },
+          {
+            "id": 154802,
+            "name": "silent film"
+          },
+          {
+            "id": 161207,
+            "name": "catholicism"
+          },
+          {
+            "id": 163165,
+            "name": "martyr"
+          },
+          {
+            "id": 190855,
+            "name": "joan of arc"
+          },
+          {
+            "id": 195537,
+            "name": "forgery"
+          },
+          {
+            "id": 207968,
+            "name": "judiciary"
+          },
+          {
+            "id": 213097,
+            "name": "15th century"
+          },
+          {
+            "id": 234115,
+            "name": "burning at stake"
+          },
+          {
+            "id": 234116,
+            "name": "holy communion"
+          },
+          {
+            "id": 238085,
+            "name": "bloodletting"
+          },
+          {
+            "id": 281585,
+            "name": "inspirational"
+          },
+          {
+            "id": 338914,
+            "name": "jeanne d'arc"
+          }
+        ]
+      }
+    }
+  }
+}

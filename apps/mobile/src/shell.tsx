@@ -297,7 +297,7 @@ export function Unreachable() {
         icon="network"
         title={t('unreachableTitle', { name })}
         action={
-          <View style={{ gap: 8, alignSelf: 'stretch' }}>
+          <View style={{ gap: 8, flex: 1 }}>
             <Button variant="primary" icon="refresh" block onPress={retry}>
               {t('tryAgain')}
             </Button>

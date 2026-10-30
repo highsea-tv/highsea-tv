@@ -44,7 +44,7 @@ Server identity (top left) · the announcement pill (top right) · the hero (top
 - **The page lifts past the hero.** Down from the featured row moves the whole page up, so the focused row's title sits at the safe area's top with the next row under it; the server identity and the pill go with it, and the row above fades out under the top edge. Up to the featured row brings the hero back.
 - **Rows scroll sideways** by transform, keeping focus 30% in (tv.md#scrolling); a focused poster lifts without being clipped.
 
-- **Global navigation (new design work):** a tab row (Home, Search, Library, Settings) at the top centre, in a pill, hidden until focus moves **Up** from the hero actions. It's an isolated focus region entered only by that guide; **Down** returns to the hero. While it's showing, the hero stays as it was.
+- **Global navigation (new design work):** a tab row (Home, Search, Library, Settings) at the top centre, in a pill, on every screen but the player and always shown (the owner, 2026-10-30; it was hidden until focus moved Up). Focus reaches it by **Up** from the hero actions or a screen's top row. It's an isolated focus region entered only by that guide; **Down** returns to the hero. While focus is in it, the hero stays as it was. Once a page has scrolled down to its rows, the tabs stay on screen but Up from a row goes to the row above them.
 
 ## Announcements
 
@@ -100,7 +100,7 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 - **A full-bleed hero on the web** ([ADR 0017](../adr/0017-web-home-full-bleed-hero.md)): two options were built at checkpoint 3, this one and a contained card with the other featured titles beside it. The owner chose the full-bleed hero, which carries the TV's hero to the desktop.
 - **Continue watching goes after the hero,** whatever the owner's order: it's the most personal row and the most used.
 - **The hero's titles are also the first TV row,** so every featured title can be reached and bound by focus, and **only that row binds the hero** (the owner's call at the checkpoint 3 review): the hero is the featured section's, and other rows shouldn't repaint it while it's scrolled away.
-- **Nothing is pinned on TV.** The server identity and the pill scroll with the page, so they never sit over a poster.
+- **Only the navigation is pinned on TV.** The server identity and the pill scroll with the page, so they never sit over a poster; the navigation stays at the top on its own pill (the owner, 2026-10-30), so it passes over the rows as the page scrolls.
 - **Spotlights become rows on a phone:** there's no room for the synopsis beside the art.
 - **Acknowledge-required comes before Home on TV,** as a screen of its own, since a modal over a D-pad layout would leave focus ambiguous.
 

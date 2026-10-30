@@ -56,3 +56,7 @@ Any app can claim a scheme, so a token never travels that way. `GET /api/v1/auth
 ## 2026-10-29: approving a TV from the phone, and single sign-on there (checkpoint 4.5a)
 
 The phone approves a TV's code at **Connect a device** (You › Settings › Servers). It scans the QR code the TV shows (expo-camera), or the code is typed, and then it reads the pairing request and approves it through the existing `pairingRequest` and `approvePairing` routes, signed in as the person. The TV never sees a password, a two-step code or a passkey, as this ADR decided. Single sign-on on the phone opens the server's OIDC start in `ASWebAuthenticationSession` with PKCE, back through `highsea://oidc`, as the desktop app does (RFC 8252; [ADR 0059](0059-native-apps.md)).
+
+## 2026-10-29: signing in the Apple TV (checkpoint 4.5b)
+
+The TV app signs in by code by default, as the prototype has it: the code, and a QR holding `highsea://link?server=…&code=…` with `{server}/link` as text for a browser, approved from the phone (4.5a's section) or the web. **Use a password** stays, with two-step verification's code; setting two-step up, passkeys and single sign-on happen elsewhere and the TV then signs in by code. A TV's device token is kept in its keychain and lasts until it's revoked (the plan's answer 9).

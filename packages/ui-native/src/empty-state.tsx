@@ -43,7 +43,17 @@ export function EmptyState({
         </Text>
       ) : null}
       {action ? (
-        <View style={{ alignSelf: 'stretch', marginTop: 4 * theme.u }}>{action}</View>
+        // centred, as ui-web's is: a row, since Button sets its own alignSelf (flex: 1 fills it)
+        <View
+          style={{
+            alignSelf: 'stretch',
+            flexDirection: 'row',
+            justifyContent: 'center',
+            marginTop: 4 * theme.u,
+          }}
+        >
+          {action}
+        </View>
       ) : null}
     </View>
   )

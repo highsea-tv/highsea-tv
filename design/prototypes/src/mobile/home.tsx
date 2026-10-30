@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C2 Home, mobile (docs/product/client-home.md#mobile): the locked Tabs + carousel layout. The
 // header, the owner's announcement card, the featured carousel (78% wide cards with the next one
-// peeking, never auto-advancing), then poster rows (about 30% wide, three and a peek).
+// peeking, never auto-advancing), then rows of 16:9 cards (Continue watching's at 62%, the rest
+// at 46%, two and a peek), with the title under the art; only Continue watching has a watched
+// bar, between the two.
 import { Button, cn, EmptyState, Poster, Skeleton } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
 import { left, useHome } from '../client/data.ts'
@@ -40,16 +42,21 @@ export function MobileRow({
   )
 }
 
-export function PosterItems({ items }: { items: ClientItem[] }) {
+/** Posters about 30% wide; on Home, `wide` makes them 16:9 stills with the title and year. */
+export function PosterItems({ items, wide = false }: { items: ClientItem[]; wide?: boolean }) {
   return (
     <>
       {items.map((m) => (
-        <li key={m.id} className="w-[30%] shrink-0 snap-start">
+        <li key={m.id} className={cn('shrink-0 snap-start', wide ? 'w-[46%]' : 'w-[30%]')}>
           <Poster
             title={m.title}
-            src={m.art.poster}
+            src={wide ? m.art.still : m.art.poster}
+            aspect={wide ? 'still' : 'poster'}
+            showTitle={wide}
+            caption={wide ? String(m.year) : undefined}
             href={mobileHref(`/movies/${m.id}`)}
-            progress={m.progress !== null ? m.progress * 100 : undefined}
+            // on Home only Continue watching shows how far you got
+            progress={!wide && m.progress !== null ? m.progress * 100 : undefined}
           />
         </li>
       ))}
@@ -110,7 +117,7 @@ export function MobileHome() {
             </div>
             <div className="flex gap-2 overflow-hidden px-4">
               {[0, 1, 2, 3].map((i) => (
-                <Skeleton key={i} className="aspect-poster w-[30%] shrink-0 rounded-poster" />
+                <Skeleton key={i} className="aspect-still w-[46%] shrink-0 rounded-poster" />
               ))}
             </div>
           </div>
@@ -147,6 +154,7 @@ export function MobileHome() {
                       aspect="still"
                       href={mobileHref(`/play/${m.id}`)}
                       progress={(m.progress ?? 0) * 100}
+                      progressBelow
                       showTitle
                       caption={left(m)}
                     />
@@ -156,7 +164,7 @@ export function MobileHome() {
             ) : (
               // spotlights read as rows on a phone: there's no room for a synopsis beside the art
               <MobileRow key={s.id} title={s.title} suffix={s.suffix} section={s.id}>
-                <PosterItems items={s.items} />
+                <PosterItems items={s.items} wide />
               </MobileRow>
             ),
           )

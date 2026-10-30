@@ -161,3 +161,7 @@ The GitHub release attaches the installers, `latest.json` and `SHA256SUMS`. Inst
 ## 2026-10-29: the phone app's version (checkpoint 4.5a)
 
 The phone app carries the release's version. Its `app.config.ts` reads `apps/mobile/package.json`, and `scripts/release.ts prepare` sets that file with the desktop app's, which `check` reads back. Nothing of the phone's is built or uploaded by the release workflow in 4.5: store uploads wait for the Apple Developer membership and the owner's word. Build numbers come with the first upload ([ADR 0059](0059-native-apps.md)).
+
+## 2026-10-29: the TV app's version (checkpoint 4.5b)
+
+The TV app carries the release's version as the phone does: its `app.config.ts` reads `apps/tv/package.json`, which `scripts/release.ts prepare` sets and `check` reads back. Nothing of it is built or uploaded by the release workflow until the Apple Developer membership and the owner's word ([ADR 0059](0059-native-apps.md)).

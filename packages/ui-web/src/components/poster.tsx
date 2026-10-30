@@ -31,6 +31,8 @@ export type PosterProps = {
   status?: ReactNode
   /** 0–100: a continue-watching bar, 7% in from the edges. */
   progress?: number
+  /** The bar goes between the art and the title, full width, rather than on the art (16:9 cards). */
+  progressBelow?: boolean
   /** Shows the title (two lines, then an ellipsis) and `caption` under the art. */
   showTitle?: boolean
   caption?: ReactNode
@@ -52,6 +54,7 @@ export function Poster({
   quality,
   status,
   progress,
+  progressBelow = false,
   showTitle = false,
   caption,
   actions,
@@ -107,27 +110,17 @@ export function Poster({
         <div
           className={cn(
             'absolute right-[7%] left-[7%] flex',
-            progress === undefined ? 'bottom-[7%]' : 'bottom-[calc(7%+0.75rem)]',
+            progress === undefined || progressBelow ? 'bottom-[7%]' : 'bottom-[calc(7%+0.75rem)]',
           )}
         >
           {status}
         </div>
       )}
-      {progress !== undefined && (
-        <div
-          role="progressbar"
-          aria-label="Watched"
-          aria-valuenow={Math.round(progress)}
-          aria-valuemin={0}
-          aria-valuemax={100}
-          className="absolute inset-x-[7%] bottom-[7%] h-1 overflow-hidden rounded-full bg-text/25"
-        >
-          <div className="h-full rounded-full bg-accent" style={{ width: `${progress}%` }} />
-        </div>
-      )}
+      {progress !== undefined && !progressBelow && <Progress value={progress} onArt />}
     </div>
   )
 
+  const below = progress !== undefined && progressBelow && <Progress value={progress} />
   const label = showTitle && (
     <div className="mt-2 grid gap-0.5 text-start">
       <span className="line-clamp-2 text-text text-ui">{title}</span>
@@ -141,16 +134,19 @@ export function Poster({
   const target = href ? (
     <a href={href} className={linkClass} {...focusProps}>
       {art}
+      {below}
       {label}
     </a>
   ) : onClick ? (
     <button type="button" onClick={onClick} className={linkClass} {...focusProps}>
       {art}
+      {below}
       {label}
     </button>
   ) : (
     <div className="relative block w-full">
       {art}
+      {below}
       {label}
     </div>
   )
@@ -166,6 +162,26 @@ export function Poster({
           {actions}
         </div>
       )}
+    </div>
+  )
+}
+
+/** The watched bar: on the art, 7% in from its edges, or under it, the card's full width. */
+function Progress({ value, onArt = false }: { value: number; onArt?: boolean }) {
+  return (
+    <div
+      role="progressbar"
+      aria-label="Watched"
+      aria-valuenow={Math.round(value)}
+      aria-valuemin={0}
+      aria-valuemax={100}
+      className={cn(
+        'h-1 overflow-hidden rounded-full bg-text/25',
+        // under the art, clear of it as it scales up on hover and focus
+        onArt ? 'absolute inset-x-[7%] bottom-[7%]' : 'mt-3.5',
+      )}
+    >
+      <div className="h-full rounded-full bg-accent" style={{ width: `${value}%` }} />
     </div>
   )
 }

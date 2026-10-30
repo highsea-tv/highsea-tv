@@ -596,10 +596,10 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
         <EmptyState
           icon="movie"
           tone="error"
-          title={t('missing')}
-          action={<Button onPress={() => router.replace('/')}>{t('back')}</Button>}
+          title={p.detail.error.message}
+          action={<Button onPress={() => router.replace('/')}>{t('goHome')}</Button>}
         >
-          {p.detail.error.message}
+          {t('missingBody')}
         </EmptyState>
       </Center>
     )

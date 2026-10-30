@@ -4,7 +4,14 @@
 // scale on `spring.base` and drawing the ring, the `text` colour 0.2u wide with its dark drop
 // shadow. Reduced motion keeps the ring without the scale. The ring is a box shadow, so it never
 // moves the layout (https://reactnative.dev/docs/view-style-props#boxshadow).
-import { type ComponentRef, type ReactNode, type Ref, useState } from 'react'
+import {
+  type ComponentRef,
+  createContext,
+  type ReactNode,
+  type Ref,
+  useContext,
+  useState,
+} from 'react'
 import {
   type AccessibilityRole,
   type DimensionValue,
@@ -34,6 +41,13 @@ export function focusShadow(text: string, u: number, scale = 1) {
   const s = ring.shadow
   return `0 0 0 ${ring.width * scale * u}px ${text}, ${s.x}px ${s.y * u}px ${s.blur * u}px ${s.spread * u}px rgba(0, 0, 0, ${s.opacity})`
 }
+
+/**
+ * Where a stop sits, for its test id: a row names each of its items (`Staff picks/0/`), since the
+ * same film can be in several rows under the same label. The D-pad walk (apps/tv/uitest) tells
+ * stops apart by these ids, which iOS and tvOS expose as accessibility identifiers.
+ */
+export const StopScope = createContext('')
 
 export type FocusableProps = {
   onPress?: () => void
@@ -81,6 +95,7 @@ export function Focusable({
 }: FocusableProps) {
   const theme = useTheme()
   const reduced = useReducedMotion()
+  const scope = useContext(StopScope)
   const [focused, setFocused] = useState(false)
   const scale = useSharedValue(1)
   const to =
@@ -98,6 +113,7 @@ export function Focusable({
       accessibilityRole={role}
       accessibilityLabel={label}
       accessibilityState={{ disabled, selected }}
+      testID={`tv:${scope}${label ?? ''}`}
       hasTVPreferredFocus={preferred}
       disabled={disabled}
       focusable={!disabled}

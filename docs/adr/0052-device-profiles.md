@@ -78,3 +78,7 @@ The report (ADR 0053's 4.2b section) is made the same way in the app as in a bro
 - no HDR until a report says the screen shows it.
 
 AVPlayer has no way to ask, as `MediaSource.isTypeSupported()` does, so the phone doesn't report and the server decides from the built-in profile. For each of the test library's files the decision is the same as Safari's, which a test checks ([ADR 0059](0059-native-apps.md)).
+
+## 2026-10-29: the Apple TV app uses `tvos` (checkpoint 4.5b)
+
+The TV app asks for sessions with the `tvos` built-in profile, as the phone does with `ios`. It doesn't report either, for the same reason. Audio is chosen by a new session, so the server's decision picks the track on both, and nothing depends on expo-video's `audioTrack`, which its docs don't list for tvOS ([ADR 0059](0059-native-apps.md)).

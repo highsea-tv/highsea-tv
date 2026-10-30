@@ -1,13 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Pieces every TV screen shares (tv.md): addresses, focus on arrival, buttons in screen units,
 // posters with their titles, rows that scroll by focus, the server identity, the announcement
-// pill, and the global navigation, a top tab row that appears when focus moves Up from the hero
-// actions (new design work, client-home.md#tv).
+// pill, and the global navigation, a top tab row on every screen but the player
+// (client-home.md#tv), with the alternatives the owner asked to compare.
 import { cn, Icon, type IconName, Mark, Poster } from '@highsea-tv/ui-web'
-import { type ComponentProps, type ReactNode, useEffect } from 'react'
+import {
+  type ComponentProps,
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
+import { createPortal } from 'react-dom'
 import { useLocation } from 'wouter'
 import { clientHref, left, useAnnouncements, useConnection, useServer } from '../client/data.ts'
 import type { ClientItem } from '../mock/types.ts'
+import type { TvNav } from '../proto/state.ts'
+import { useProto } from '../screen/screen.tsx'
 
 export const tvHref = (path: string) => clientHref('tv', path)
 
@@ -113,19 +125,24 @@ export function TvPoster({
   item,
   href,
   wide = false,
+  resume = false,
 }: {
   item: ClientItem
   href: string
   wide?: boolean
+  /** Continue watching: the time left for a caption, and the bar between the art and the title. */
+  resume?: boolean
 }) {
   return (
     <TvTile
       title={item.title}
-      caption={wide && item.progress !== null ? left(item) : String(item.year)}
+      caption={resume && item.progress !== null ? left(item) : String(item.year)}
       src={wide ? item.art.still : item.art.poster}
       href={href}
       wide={wide}
-      progress={item.progress}
+      // on Home only Continue watching shows how far you got
+      progress={resume || !wide ? item.progress : null}
+      progressBelow={resume}
     />
   )
 }
@@ -138,6 +155,7 @@ export function TvTile({
   href,
   wide = false,
   progress = null,
+  progressBelow = false,
 }: {
   title: string
   caption: string
@@ -145,6 +163,7 @@ export function TvTile({
   href: string
   wide?: boolean
   progress?: number | null
+  progressBelow?: boolean
 }) {
   return (
     <a
@@ -158,6 +177,7 @@ export function TvTile({
         src={src}
         aspect={wide ? 'still' : 'poster'}
         progress={progress !== null ? progress * 100 : undefined}
+        progressBelow={progressBelow}
       />
       <span className="mt-[1cqw] block truncate font-semibold text-(length:--tv-text-meta) text-text-2 leading-[1.3] transition-lift group-focus-visible/link:text-text">
         {title}
@@ -212,46 +232,199 @@ export function TvRow({
   )
 }
 
-const destinations = [
-  { path: '/', label: 'Home' },
-  { path: '/search', label: 'Search' },
-  { path: '/library', label: 'Library' },
-  { path: '/settings', label: 'Settings' },
+const destinations: { path: string; label: string; icon: IconName }[] = [
+  { path: '/', label: 'Home', icon: 'home' },
+  { path: '/search', label: 'Search', icon: 'search' },
+  { path: '/library', label: 'Library', icon: 'library' },
+  { path: '/settings', label: 'Settings', icon: 'settings' },
 ]
 
+/** Which global navigation the prototype shows (the toolbar's TV nav; the owner, 2026-10-30). */
+export const useTvNav = () => useProto().tvNav
+
 /**
- * The global navigation: hidden until focus moves Up into it from the hero actions (a focus guide),
- * then a tab row across the top. It's isolated, so focus enters it only that way, and Down returns
- * to the hero.
+ * The left rail's spacing, in screen units (the owner, 2026-10-30): its icons sit `railGap` from
+ * the screen's edge and the page `railGap` from the icons, so the page's inset is the sum.
  */
-export function GlobalNav({ down = 'hero' }: { down?: string }) {
+export const railGap = 3
+const railIcon = 1.4
+const railPad = 0.8
+export const railInset = railGap * 2 + railIcon
+
+/**
+ * What the app hands the rail: the slot it's drawn into, outside the page so the page can move
+ * aside for it; `push`, which moves the page right by that many pixels while the rail is open; and
+ * `leave`, which puts focus back where it was in the page.
+ */
+export type RailHost = {
+  slot: HTMLElement | null
+  push: (px: number) => void
+  leave: (fallback: string) => void
+}
+export const RailContext = createContext<RailHost | null>(null)
+
+/**
+ * Where Home lifts a row's title to when focus moves below the hero: under the top safe area, or
+ * under the band when the band holds the navigation.
+ */
+export const pageTop = (nav: TvNav) => (nav === 'band' ? 7.6 : 3.2)
+
+/**
+ * The global navigation, on every screen but the player. The owner had it always shown on
+ * 2026-10-30 (it was hidden until focus moved Up), then asked for alternatives to compare once the
+ * rows were seen scrolling under it:
+ * - `pill`: a tab row floating at the top, as built;
+ * - `scrim`: the same over a fade from the background, so it stays readable over posters;
+ * - `band`: a solid strip of the background holding the tabs and the server's name, with the
+ *   page's rows scrolling under it, so nothing focusable is ever covered;
+ * - `rail`: icons down the left edge that open with their labels when focus moves Left into them,
+ *   pushing the page aside (Max, Hulu, Disney+, Plex, and tvOS 18's sidebar); the owner chose it
+ *   on 2026-10-30, since it's reachable from anywhere, however far a page has scrolled;
+ * - `scroll`: Apple's tab bar (HIG, Tab bars): shown at the top of a page, sliding away once focus
+ *   goes below the page's first group, and back with Up or Back.
+ * Focus moves Up into it from the hero actions or a screen's top row (a focus guide), or Left into
+ * the rail; it's isolated, so focus enters it only that way, and Down (Right from the rail)
+ * returns to `down`. `lifted` says Home has moved past its hero.
+ */
+export function GlobalNav({ down = 'hero', lifted }: { down?: string; lifted?: boolean }) {
   const [location] = useLocation()
+  const nav = useTvNav()
+  const away = useAway(nav === 'scroll', down, lifted)
+  const active = (path: string) => (path === '/' ? location === '/' : location.startsWith(path))
+  if (nav === 'rail') return <Rail down={down} />
   return (
     <nav
       aria-label="Main"
       data-group="nav"
       data-isolate=""
       data-go-down={down}
-      className="group/nav absolute inset-x-0 top-0 z-20 flex justify-center pt-(--tv-safe-y) opacity-0 transition-opacity focus-within:opacity-100"
+      className={cn(
+        'group/nav absolute inset-x-0 top-0 z-20 flex justify-center pt-(--tv-safe-y) transition-[translate,opacity] duration-300',
+        away && '-translate-y-full opacity-0',
+      )}
     >
-      <div className="flex gap-[0.6cqw] rounded-full bg-s2/85 p-[0.4cqw] backdrop-blur-pill">
-        {destinations.map((d) => {
-          const active = d.path === '/' ? location === '/' : location.startsWith(d.path)
-          return (
-            <a
-              key={d.path}
-              href={tvHref(d.path)}
-              data-focusable=""
-              aria-current={active ? 'page' : undefined}
-              className="rounded-full px-[1.4cqw] py-[0.5cqw] font-semibold text-(length:--tv-text-button) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text"
-            >
-              {d.label}
-            </a>
-          )
-        })}
+      {nav === 'scrim' && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-x-0 top-0 h-[11cqw] bg-[linear-gradient(var(--color-bg)_25%,transparent)]"
+        />
+      )}
+      {nav === 'band' && (
+        <>
+          <div
+            aria-hidden
+            className="pointer-events-none absolute inset-x-0 top-0 h-[8.6cqw] bg-[linear-gradient(var(--color-bg)_80%,transparent)]"
+          />
+          {/* the band covers the page's own top, so it carries what sits there */}
+          <ServerIdentity />
+          {location === '/' && <AnnouncementPill />}
+        </>
+      )}
+      <div className="relative flex gap-[0.6cqw] rounded-full bg-s2/85 p-[0.4cqw] backdrop-blur-pill">
+        {destinations.map((d) => (
+          <a
+            key={d.path}
+            href={tvHref(d.path)}
+            data-focusable=""
+            aria-current={active(d.path) ? 'page' : undefined}
+            className="rounded-full px-[1.4cqw] py-[0.5cqw] font-semibold text-(length:--tv-text-button) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text"
+          >
+            {d.label}
+          </a>
+        ))}
       </div>
     </nav>
   )
+}
+
+/**
+ * The left rail: a transparent column the screen's height, with the destinations' icons centred
+ * in it. Left from any screen's edge focuses it, and it opens with its labels, pushing the page
+ * right to make room rather than covering it; Right, or leaving it, closes it and returns focus to
+ * where it was in the page (or to `down`). Up and Down stay inside it.
+ */
+function Rail({ down }: { down: string }) {
+  const host = useContext(RailContext)
+  const [location] = useLocation()
+  const [open, setOpen] = useState(false)
+  const list = useRef<HTMLDivElement>(null)
+  const active = (path: string) => (path === '/' ? location === '/' : location.startsWith(path))
+  useLayoutEffect(() => {
+    const el = list.current
+    const root = el?.closest<HTMLElement>('[data-platform="tv"]')
+    if (!host || !el || !root) return
+    const unit = root.clientWidth / 100
+    // open, the page starts as far from the widest label as it does from the icons when closed
+    const right = el.getBoundingClientRect().right - root.getBoundingClientRect().left
+    host.push(open ? right + (railGap - railPad) * unit - railInset * unit : 0)
+  }, [open, host])
+  useEffect(() => () => host?.push(0), [host])
+  if (!host?.slot) return null
+  const items = () => [...(list.current?.querySelectorAll<HTMLElement>('[data-focusable]') ?? [])]
+  return createPortal(
+    <nav
+      aria-label="Main"
+      data-group="rail"
+      data-isolate=""
+      data-go-left=""
+      onFocus={() => setOpen(true)}
+      onBlur={(e) => {
+        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false)
+      }}
+      onKeyDown={(e) => {
+        const all = items()
+        const at = all.indexOf(document.activeElement as HTMLElement)
+        if (e.key === 'ArrowRight') host.leave(down)
+        else if (e.key === 'ArrowUp') all[at - 1]?.focus()
+        else if (e.key === 'ArrowDown') all[at + 1]?.focus()
+        else return
+        e.preventDefault()
+      }}
+      className="absolute inset-y-0 left-0 z-20 flex items-center"
+    >
+      <div
+        ref={list}
+        className="grid gap-[0.5cqw]"
+        style={{ marginLeft: `${railGap - railPad}cqw` }}
+      >
+        {destinations.map((d) => (
+          <a
+            key={d.path}
+            href={tvHref(d.path)}
+            data-focusable=""
+            aria-label={d.label}
+            aria-current={active(d.path) ? 'page' : undefined}
+            style={{ padding: `${railPad}cqw` }}
+            className="flex items-center gap-[0.9cqw] rounded-full font-semibold text-(length:--tv-text-button) text-text-3 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text"
+          >
+            <Icon name={d.icon} size={24} className="size-[1.4cqw] shrink-0" />
+            {open && <span className="pe-[0.8cqw]">{d.label}</span>}
+          </a>
+        ))}
+      </div>
+    </nav>,
+    host.slot,
+  )
+}
+
+/**
+ * For the bar that scrolls away: away once focus is below the page's first group (`down`), or,
+ * on Home, once the page has lifted past its hero.
+ */
+function useAway(enabled: boolean, top: string, lifted: boolean | undefined) {
+  const [below, setBelow] = useState(false)
+  useEffect(() => {
+    if (!enabled || lifted !== undefined) return
+    const onFocus = (e: FocusEvent) => {
+      const el = e.target as HTMLElement
+      setBelow(
+        !el.closest('[data-group="nav"]') && !el.closest(`[data-group="${CSS.escape(top)}"]`),
+      )
+    }
+    document.addEventListener('focusin', onFocus)
+    return () => document.removeEventListener('focusin', onFocus)
+  }, [enabled, top, lifted])
+  return enabled && (lifted ?? below)
 }
 
 /** A full-screen message (unreachable, nothing here yet), with its actions. */
