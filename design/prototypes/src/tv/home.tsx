@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C2 Home, TV (docs/product/client-home.md#tv): the locked Hero + rows layout (tv.md#layout).
-// The hero follows focus through the featured row after a 220 ms dwell and cross-fades; the rows
+// The hero fills the screen behind the featured row, its copy low on the left under the title's
+// logo, so the backdrop has the room (the owner, 2026-10-30). It follows focus through the featured row after a 220 ms dwell and cross-fades; the rows
 // below it don't bind it: focus there lifts the page past the hero. Up from the featured row goes
 // to the hero actions, and Up from those opens the global navigation. Rows remember their spot.
 // An announcement that must be acknowledged comes first, on its own.
@@ -25,7 +26,7 @@ import {
   useTvNav,
 } from './kit.tsx'
 
-function HeroCopy({ item, eyebrow }: { item: ClientItem; eyebrow: string }) {
+function HeroCopy({ item }: { item: ClientItem }) {
   return (
     <motion.div
       key={item.id}
@@ -38,11 +39,18 @@ function HeroCopy({ item, eyebrow }: { item: ClientItem; eyebrow: string }) {
       }}
       className="grid gap-[0.8cqw]"
     >
-      <p className="font-semibold text-(length:--tv-text-eyebrow) text-accent-text uppercase tracking-eyebrow">
-        {eyebrow}
-      </p>
+      {/* the title's logo in place of its name, as the streaming apps set it; the name when TMDB
+      has no logo */}
       <h1 className="font-semibold text-(length:--tv-text-hero-title) leading-[0.95] tracking-display">
-        {item.title}
+        {item.art.logo ? (
+          <img
+            src={item.art.logo}
+            alt={item.title}
+            className="max-h-[7.5cqw] max-w-[28cqw] object-contain object-left drop-shadow-[0_0.2cqw_0.8cqw_rgb(0_0_0/0.5)]"
+          />
+        ) : (
+          item.title
+        )}
       </h1>
       <p className="flex items-center gap-[1cqw] text-(length:--tv-text-meta) text-text-2">
         {meta(item)}
@@ -70,7 +78,9 @@ function Backdrop({ src }: { src: string }) {
         : { ...l, [l.front === 'a' ? 'b' : 'a']: src, front: l.front === 'a' ? 'b' : 'a' },
     )
   }, [src])
-  // 62% of the 16:9 screen (56.25u tall)
+  // the whole 16:9 screen (56.25cqw tall), fading into the background at the left, under the
+  // copy (solid as far as the rail's background reaches, so its edge doesn't show), and at the
+  // foot, under the featured row
   return (
     <>
       {(['a', 'b'] as const).map((k) =>
@@ -79,11 +89,11 @@ function Backdrop({ src }: { src: string }) {
             key={k}
             src={layers[k]}
             alt=""
-            className={`absolute inset-x-0 top-0 h-[34.9cqw] w-full object-cover transition-opacity duration-700 ${layers.front === k ? 'opacity-100' : 'opacity-0'}`}
+            className={`absolute inset-x-0 top-0 h-[56.25cqw] w-full object-cover transition-opacity duration-700 ${layers.front === k ? 'opacity-100' : 'opacity-0'}`}
           />
         ) : null,
       )}
-      <div className="absolute inset-x-0 top-0 h-[34.9cqw] bg-[linear-gradient(90deg,var(--color-bg)_8%,transparent_60%),linear-gradient(0deg,var(--color-bg),transparent_45%)]" />
+      <div className="absolute inset-x-0 top-0 h-[56.25cqw] bg-[linear-gradient(90deg,var(--color-bg)_7%,transparent_50%),linear-gradient(0deg,var(--color-bg)_8%,transparent_45%)]" />
     </>
   )
 }
@@ -183,9 +193,10 @@ function Home({ sections }: { sections: HomeSection[] }) {
           <Backdrop src={shown.art.backdrop} />
           <ServerIdentity />
           <AnnouncementPill />
-          <div className="absolute top-[calc(7.5cqw-var(--tv-head,0px))] left-(--tv-safe-x) grid max-w-[38cqw] gap-[1.6cqw]">
+          {/* the copy sits low, just above the featured row, leaving the top to the backdrop */}
+          <div className="absolute top-0 left-(--tv-safe-x) grid h-[calc(35cqw-var(--tv-head,0px))] max-w-[36cqw] content-end gap-[1.6cqw]">
             <AnimatePresence mode="wait">
-              <HeroCopy item={shown} eyebrow={hero?.title ?? 'On Harbor'} />
+              <HeroCopy item={shown} />
             </AnimatePresence>
             {/* Play acts on what the hero shows (tv.md#hero-behavior) */}
             <div data-group="hero" data-go-up="nav" className="flex gap-[1cqw]">
@@ -197,11 +208,11 @@ function Home({ sections }: { sections: HomeSection[] }) {
               </TvButton>
             </div>
           </div>
-          {/* the rows start about half way down, so the next row's title shows under the featured
-          one; positioned, so they paint over the backdrop */}
+          {/* the rows start two thirds of the way down, so the featured row sits at the screen's
+          foot with the next row's title under it; positioned, so they paint over the backdrop */}
           <div
             data-rows=""
-            className="relative grid grid-cols-1 gap-[1.6cqw] pt-[calc(28.5cqw-var(--tv-head,0px))] pb-(--tv-safe-y)"
+            className="relative grid grid-cols-1 gap-[1.6cqw] pt-[calc(37.5cqw-var(--tv-head,0px))] pb-(--tv-safe-y)"
           >
             {rows.map((s, i) => (
               <div key={s.id} data-row={i} data-section={s.id} className="grid grid-cols-1">

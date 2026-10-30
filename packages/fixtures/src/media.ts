@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Sample library. `titles` is Blender Studio's open movies (CC BY), the same titles the e2e tests
 // use. `library` adds more open films and US public-domain features, for screens that need density.
-import { backdropArt, posterArt, stillArt } from './art.ts'
+import { backdropArt, logoArt, posterArt, stillArt } from './art.ts'
 
 export type Title = {
   id: string
@@ -442,6 +442,7 @@ export const art = (t: Title) => ({
   poster: posterArt(t.title),
   still: stillArt(t.title),
   backdrop: backdropArt(t.title),
+  logo: logoArt(t.title),
 })
 
 export const byId = (id: string) => library.find((t) => t.id === id) as Title

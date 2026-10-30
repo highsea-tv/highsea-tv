@@ -63,3 +63,7 @@ next-env.d.ts
 .claude/settings.local.json
 .claude/worktrees/
 .claude/.cc-writes/
+
+# the featured films' real logos from TMDB, for the TV prototype's hero on this machine only: the
+# logos are trademarks outside the films' Creative Commons licences, so never committed
+design/prototypes/src/local-logos/

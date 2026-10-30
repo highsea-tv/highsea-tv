@@ -194,7 +194,8 @@ export function TvTile({
 }
 
 /**
- * A titled row that scrolls sideways by transform to keep focus 30% in (tv.md#scrolling). The
+ * A titled row that scrolls sideways by transform to keep focus in its first slot, lined up with
+ * the title, until the row's end comes into view (the owner, 2026-10-30; tv.md#scrolling). The
  * track's column is `minmax(0, 1fr)`, so it stays the screen's width and its content overflows.
  */
 export function TvRow({
@@ -226,7 +227,7 @@ export function TvRow({
       <div className="grid grid-cols-1">
         <ul
           data-scroll="x"
-          data-keep="0.3"
+          data-keep="start"
           className="flex w-max gap-(--tv-poster-gap) px-(--tv-safe-x) py-[1cqw] transition-lift"
         >
           {children}
@@ -360,6 +361,8 @@ function Rail({ down }: { down: string }) {
   const host = useContext(RailContext)
   const [location] = useLocation()
   const [open, setOpen] = useState(false)
+  // how far the page is pushed right, which the rail's background follows
+  const [reach, setReach] = useState(0)
   const list = useRef<HTMLDivElement>(null)
   const active = (path: string) => (path === '/' ? location === '/' : location.startsWith(path))
   useLayoutEffect(() => {
@@ -369,7 +372,9 @@ function Rail({ down }: { down: string }) {
     const unit = root.clientWidth / 100
     // open, the page starts as far from the widest label as it does from the icons when closed
     const right = el.getBoundingClientRect().right - root.getBoundingClientRect().left
-    host.push(open ? right + (railGap - railPad) * unit - railInset * unit : 0)
+    const px = Math.round(open ? right + (railGap - railPad) * unit - railInset * unit : 0)
+    host.push(px)
+    setReach(px)
   }, [open, host])
   useEffect(() => () => host?.push(0), [host])
   if (!host?.slot) return null
@@ -395,10 +400,23 @@ function Rail({ down }: { down: string }) {
       }}
       className="absolute inset-y-0 left-0 z-20 flex"
     >
+      {/* a solid background up to just short of the page's inset (room for a focused item's zoom),
+      so rows scrolled left pass under the rail rather than through its icons (the owner,
+      2026-10-30); it moves with the page, as a translation timed like the page's, so the two
+      edges never part */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-y-0 bg-bg transition-transform duration-300 ease-out motion-reduce:transition-none"
+        style={{
+          width: '100cqw',
+          left: `calc(${railInset - 1}cqw - 100cqw)`,
+          transform: `translateX(${reach}px)`,
+        }}
+      />
       {/* the server's mark at the top, the destinations under it, the account at the foot */}
       <div
         ref={list}
-        className="grid grid-rows-[auto_1fr_auto] items-center gap-[0.5cqw] py-(--tv-safe-y)"
+        className="relative grid grid-rows-[auto_1fr_auto] items-center gap-[0.5cqw] py-(--tv-safe-y)"
         style={{ marginLeft: `${railGap - railPad}cqw` }}
       >
         <RailServer open={open} />

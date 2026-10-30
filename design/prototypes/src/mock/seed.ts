@@ -52,6 +52,18 @@ import type {
 } from './types.ts'
 import type { VpnRuntime } from './vpn.ts'
 
+// The featured films' real logos from TMDB, when they've been downloaded to src/local-logos (each
+// named by the title's id): trademarks outside the films' Creative Commons licences, so gitignored
+// and never committed. Without them each title has its placeholder wordmark. Only Vite has the
+// glob (it sets the mode); the tests under Bun go without.
+const localLogos: Record<string, string> = import.meta.env.MODE
+  ? import.meta.glob<string>('../local-logos/*.png', {
+      eager: true,
+      query: '?url',
+      import: 'default',
+    })
+  : {}
+
 export const GB = 1e9
 export const MB = 1e6
 const MIN = 60_000
@@ -629,7 +641,7 @@ function item(t: Title, i: number, now: number): MediaItem {
       },
     ],
     quality: t.quality,
-    art: art(t),
+    art: { ...art(t), logo: localLogos[`../local-logos/${t.id}.png`] ?? art(t).logo },
   }
 }
 

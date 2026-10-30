@@ -42,6 +42,63 @@ export const posterArt = (title: string) => scene(title, 400, 600)
 export const stillArt = (title: string) => scene(`${title} still`, 640, 360)
 export const backdropArt = (title: string) => scene(`${title} backdrop`, 1920, 1080)
 
+const xml = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
+/**
+ * A title's logo, as TMDB's logos are: the name as a wordmark on a transparent ground, in one of a
+ * few treatments picked by the title (a wide uppercase sans, a serif, a condensed heavy face). Long
+ * names break onto two lines, set left as the hero sets them. Each line is set to a width
+ * estimated from its length, with its spacing adjusted to fit, so the box always fits the type.
+ */
+export function logoArt(title: string): string {
+  const n = hash(`${title} logo`)
+  const styles = [
+    {
+      family: 'Helvetica Neue, Arial, sans-serif',
+      weight: 800,
+      upper: true,
+      track: 0.12,
+      em: 0.72,
+    },
+    { family: 'Georgia, Times New Roman, serif', weight: 700, upper: false, track: 0, em: 0.6 },
+    {
+      family: 'Avenir Next Condensed, Arial Narrow, sans-serif',
+      weight: 800,
+      upper: true,
+      track: 0.04,
+      em: 0.56,
+    },
+  ] as const
+  const st = styles[n % styles.length] as (typeof styles)[number]
+  const text = st.upper ? title.toUpperCase() : title
+  const words = text.split(' ')
+  // two lines past 14 characters, split near the middle
+  let lines = [text]
+  if (text.length > 14 && words.length > 1) {
+    let best = 1
+    for (let i = 1; i < words.length; i++) {
+      const a = words.slice(0, i).join(' ').length
+      const b = words.slice(0, best).join(' ').length
+      if (Math.abs(a - text.length / 2) < Math.abs(b - text.length / 2)) best = i
+    }
+    lines = [words.slice(0, best).join(' '), words.slice(best).join(' ')]
+  }
+  const size = 100
+  const width = (l: string) => Math.round(l.length * size * (st.em + st.track))
+  const w = Math.max(...lines.map(width))
+  const h = Math.round(size * (lines.length * 1.05 + 0.15))
+  const body = lines
+    .map(
+      (l, i) =>
+        `<text x="0" y="${Math.round(size * (0.9 + i * 1.05))}" textLength="${width(l)}" lengthAdjust="spacing" font-family="${st.family}" font-weight="${st.weight}" font-size="${size}" fill="#f4f1ea">${xml(l)}</text>`,
+    )
+    .join('')
+  return `data:image/svg+xml;utf8,${encodeURIComponent(
+    `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${w} ${h}">${body}</svg>`,
+  )}`
+}
+
 /** A person's photo: a head-and-shoulders silhouette on the name's palette. */
 export function portraitArt(name: string): string {
   const n = hash(name)

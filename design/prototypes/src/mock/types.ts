@@ -174,7 +174,8 @@ export type MediaItem = {
   status: MediaStatus
   versions: MediaVersion[]
   quality: string[]
-  art: { poster: string; backdrop: string; still: string }
+  /** `logo`: the title's logo from TMDB, when it has one (the TV's hero sets it in place of the name). */
+  art: { poster: string; backdrop: string; still: string; logo?: string }
 }
 
 export type VideoStream = {

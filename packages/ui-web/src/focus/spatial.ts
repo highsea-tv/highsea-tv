@@ -82,3 +82,31 @@ export function trackOffset({
   const target = itemCenter - view * keep
   return clamp ? Math.min(Math.max(0, target), Math.max(0, total - view)) : target
 }
+
+/**
+ * Where a track should sit to keep an item in its first slot, its leading edge at the track's
+ * padding (`data-keep="start"`): each move along a row brings the next item into that slot. Near
+ * the end, the track stops at the first item's slot that shows the track's end, so an item always
+ * sits flush in the first slot and the space is left after the last one (the owner, 2026-10-30).
+ * `itemCenter` is relative to the track as in `trackOffset`; `width` is the item's unscaled width;
+ * `stops` are every item's first-slot offsets, ascending.
+ */
+export function trackStart({
+  itemCenter,
+  width,
+  pad,
+  view,
+  total,
+  stops,
+}: {
+  itemCenter: number
+  width: number
+  pad: number
+  view: number
+  total: number
+  stops: number[]
+}): number {
+  const target = itemCenter - width / 2 - pad
+  const end = stops.find((s) => s >= total - view - 0.5) ?? total - view
+  return Math.max(0, Math.min(target, end))
+}

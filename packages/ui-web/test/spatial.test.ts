@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 import { describe, expect, test } from 'bun:test'
-import { type Box, isCandidate, pickBest, score, trackOffset } from '../src/focus/spatial.ts'
+import {
+  type Box,
+  isCandidate,
+  pickBest,
+  score,
+  trackOffset,
+  trackStart,
+} from '../src/focus/spatial.ts'
 
 const box = (left: number, top: number, width = 100, height = 150): Box => ({
   left,
@@ -60,5 +67,22 @@ describe('spatial focus model', () => {
     expect(trackOffset({ itemCenter: 100, view: 1000, total: 3000, keep: 0.5, clamp: false })).toBe(
       -400,
     )
+  })
+})
+
+describe('trackStart', () => {
+  // 200px items 50px apart after 100px of padding: item n sits in the first slot at 250n
+  const stops = Array.from({ length: 12 }, (_, n) => n * 250)
+  const at = (n: number, total = 3000) =>
+    trackStart({ itemCenter: 100 + n * 250 + 100, width: 200, pad: 100, view: 1000, total, stops })
+  test('keeps the item in the first slot', () => {
+    expect(at(0)).toBe(0)
+    expect(at(4)).toBe(1000)
+  })
+  test('stops at the first slot that shows the end, so an item is always flush', () => {
+    // the end shows from 2000: item 8's slot
+    expect(at(10)).toBe(2000)
+    // from 1900, between items 7 and 8: it goes on to 8 rather than stopping partway through 7
+    expect(at(10, 2900)).toBe(2000)
   })
 })

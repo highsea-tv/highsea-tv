@@ -5,10 +5,11 @@
 //   [data-isolate]             a region entered only through a focus guide (a nav rail)
 //   [data-go-up|down|left|right="group"]  a focus guide on an ancestor
 //   [data-scroll="x|y"]        a track that moves by transform to keep focus in view
-//   [data-keep="0.3"]          where in the viewport the track keeps focus (default 0.5)
+//   [data-keep="0.3"]          where in the viewport the track keeps focus (default 0.5); "start"
+//                              keeps it in the track's first slot, an item always flush there
 //   [data-center]              don't clamp the track at its ends
 import { choreography, durations } from '@highsea-tv/tokens'
-import { type Box, type Direction, isAhead, pickBest, trackOffset } from './spatial.ts'
+import { type Box, type Direction, isAhead, pickBest, trackOffset, trackStart } from './spatial.ts'
 
 export type NavigatorOptions = {
   /** Focus moved by an arrow key. Play `navigate` here. */
@@ -89,13 +90,33 @@ export function createSpatialNavigator(
       const tr = box(track)
       const parent = track.parentElement
       if (!parent) continue
-      const offset = trackOffset({
-        itemCenter: x ? er.left + er.width / 2 - tr.left : er.top + er.height / 2 - tr.top,
-        view: x ? parent.clientWidth : parent.clientHeight,
-        total: x ? track.scrollWidth : track.scrollHeight,
-        keep: Number(track.dataset.keep ?? 0.5),
-        clamp: !('center' in track.dataset),
-      })
+      const itemCenter = x ? er.left + er.width / 2 - tr.left : er.top + er.height / 2 - tr.top
+      const view = x ? parent.clientWidth : parent.clientHeight
+      const total = x ? track.scrollWidth : track.scrollHeight
+      const style = getComputedStyle(track)
+      const pad = Number.parseFloat(x ? style.paddingLeft : style.paddingTop) || 0
+      const stops = () =>
+        Array.from(track.children, (c) => {
+          const b = box(c as HTMLElement)
+          return (x ? b.left - tr.left : b.top - tr.top) - pad
+        })
+      const offset =
+        track.dataset.keep === 'start'
+          ? trackStart({
+              itemCenter,
+              width: x ? el.offsetWidth : el.offsetHeight,
+              pad,
+              view,
+              total,
+              stops: stops(),
+            })
+          : trackOffset({
+              itemCenter,
+              view,
+              total,
+              keep: Number(track.dataset.keep ?? 0.5),
+              clamp: !('center' in track.dataset),
+            })
       track.style.transition = reduced() ? 'none' : ''
       track.style.transform = x ? `translateX(${-offset}px)` : `translateY(${-offset}px)`
     }
