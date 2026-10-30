@@ -110,6 +110,29 @@
       "made": "2026-10-30"
     },
     {
+      "collection": "crew",
+      "slug": "navigator",
+      "file": "crew/navigator.jpg",
+      "name": "Navigator",
+      "background": "teal",
+      "prompt": "Stylized 2D animated-series character portrait of a bright-eyed young ship's navigator with light brown skin and a short black bob, head and shoulders facing the viewer, square composition with the face centred and the shoulders running off the bottom edge. Clean confident line work, flat cel shading with a single soft shadow tone, bold simplified shapes, an expressive friendly face. A red headscarf tied over her hair, round brass spectacles, and a small gold compass pendant on a cord around her neck. Solid teal background, no gradient, no scenery.",
+      "flowMedia": "a14bae5b-8df3-4ebc-9d26-f2244120d4cc",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    },
+    {
+      "collection": "crew",
+      "slug": "cook",
+      "file": "crew/cook.jpg",
+      "name": "Cook",
+      "background": "emerald",
+      "prompt": "Stylized 2D animated-series character portrait of a jolly stout ship's cook with pale freckled skin and a bushy ginger beard, head and shoulders facing the viewer, square composition with the face centred and the shoulders running off the bottom edge. Clean confident line work, flat cel shading with a single soft shadow tone, bold simplified shapes, an expressive friendly face. A white kerchief knotted over his head, rosy round cheeks, and a striped apron over a rolled-sleeve shirt. Solid emerald background, no gradient, no scenery. Match the drawing style of the attached image, not its character.",
+      "references": ["navigator"],
+      "flowMedia": "3d9a4fdb-7d4e-4cb7-862a-4a8e8e0c74fa",
+      "model": "Nano Banana 2.1",
+      "made": "2026-10-30"
+    },
+    {
       "collection": "harbour",
       "slug": "puffin",
       "file": "harbour/puffin.jpg",

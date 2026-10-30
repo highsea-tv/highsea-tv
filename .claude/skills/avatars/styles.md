@@ -74,7 +74,7 @@ Bold flat graphic icon of {subject}, a minimal face that fills a square frame, b
 Each is `<collection>`: style, theme, then the subjects kept and ideas for more. A collection's files live in `design/assets/avatars/<collection>/`. Approved on 2026-10-30, from the first sampler.
 
 - **`sea`**: `sticker`, sea creatures. Kept: octopus, crab, whale, pufferfish, seagull.
-- **`crew`**: `illustrated`, a pirate ship's crew. Kept: captain. Ideas: captain, navigator, cook, lookout, carpenter, cabin kid, quartermaster, ship's doctor.
+- **`crew`**: `illustrated`, a pirate ship's crew. Kept: captain, navigator, cook. The navigator sets the collection's look (the owner, 2026-10-30): attach it as the reference for new crew. Ideas: lookout, carpenter, cabin kid, quartermaster, ship's doctor.
 - **`harbour`**: `clay`, harbour animals. Kept: puffin. Ideas: seal, pelican, hermit crab, lobster, gull, sea otter.
 - **`ocean`**: `wildlife`, ocean wildlife. Kept: sea otter. Ideas: harbour seal, sea turtle, puffin, octopus, manatee, walrus, penguin.
 - **`disguises`**: `icon`, masks and headgear. Kept: diving helmet. Ideas: eye patch and tricorn, bandit mask, aviator goggles, captain's cap and beard.
