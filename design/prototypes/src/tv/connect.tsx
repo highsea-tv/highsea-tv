@@ -136,7 +136,7 @@ function Keyboard({
 export function TvConnect() {
   const [, navigate] = useLocation()
   const pairing = useQuery('client:pairing', (c) => c.connect.startPairing())
-  const flow = useSignIn(() => navigate('/'))
+  const flow = useSignIn(() => navigate('/start'))
   const { servers, scanning } = useDiscovery()
   const [mode, setMode] = useState<'code' | 'password' | 'servers'>('code')
   const [approved, setApproved] = useState(false)
@@ -151,7 +151,8 @@ export function TvConnect() {
   }, [mode, pairing.status])
   useEffect(() => {
     if (!approved) return
-    const t = setTimeout(() => navigate('/'), 1200)
+    // signed in, the TV opens as it does when highsea starts: on who's watching
+    const t = setTimeout(() => navigate('/start'), 1200)
     return () => clearTimeout(t)
   }, [approved, navigate])
 

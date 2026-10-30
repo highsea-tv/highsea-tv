@@ -24,7 +24,7 @@ mkdirSync(out, { recursive: true })
 /** One screen: its shot's name in DpadWalk.swift's screens, and the prototype's route. */
 type Pair = { name: string; screen: string; prototype: string; note?: string }
 const PAIRS: Pair[] = [
-  { name: 'home', screen: 'C2 Home', prototype: '/tv' },
+  { name: 'home', screen: 'C2 Home', prototype: '/tv?launch=done' },
   { name: 'details', screen: 'C4 A movie', prototype: '/tv/movies/4' },
   { name: 'search', screen: 'C6 Search', prototype: '/tv/search' },
   { name: 'library', screen: 'C3 Library', prototype: '/tv/library' },

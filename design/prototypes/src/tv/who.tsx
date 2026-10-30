@@ -1,16 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Who's watching, TV (the owner, 2026-10-30): the account's profiles, large, with Add a profile
 // at the end. Choosing one watches as it; if it has a PIN it's asked for first, on a number pad
-// the D-pad moves over, or with the remote's number keys. The TV opens here when the account has
-// more than one profile, and the profile page's row opens a profile's PIN here too (`/who/{id}`).
+// the D-pad moves over, or with the remote's number keys. The TV opens on it (`/start`, TvLaunch, under a bloom in the focused profile's colour)
+// when the account has more than one profile; the head's avatar and the profile page's row switch
+// from it too (`/who`, and `/who/{id}` for a profile's PIN).
 // Adding a profile asks only for a name and a colour (`/who/new`): it's the account's, so nobody
 // signs in.
 import { cn, Icon, useSound } from '@highsea-tv/ui-web'
 import { useReducedMotion } from 'motion/react'
-import { Fragment, useEffect, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useBack } from './back.ts'
-import { focusFrom, ServerIdentity, TvAvatar, TvButton, tvKey, useInitialFocus } from './kit.tsx'
+import {
+  BloomGlow,
+  focusFrom,
+  ServerIdentity,
+  TvAvatar,
+  TvButton,
+  tvKey,
+  useInitialFocus,
+} from './kit.tsx'
 import { MAX_PROFILES, type Tone, type TvPerson, tones, usePeople } from './people.ts'
 
 /** How many wrong PINs in a row before the pad rests for a minute. */
@@ -25,21 +34,25 @@ export function PersonTile({
   person,
   size,
   current = false,
+  note,
   initial = false,
   onChoose,
 }: {
   person: TvPerson
   size: number
   current?: boolean
+  /** A line under the name; the current profile's is Watching now. */
+  note?: string
   initial?: boolean
   onChoose: () => void
 }) {
+  const under = note ?? (current ? 'Watching now' : undefined)
   return (
     <button
       type="button"
       data-focusable=""
       {...(initial ? { 'data-initial': '' } : {})}
-      aria-label={`${person.name}${person.pin ? ', has a PIN' : ''}${current ? ', watching now' : ''}`}
+      aria-label={`${person.name}${person.pin ? ', has a PIN' : ''}${under ? `, ${under.toLowerCase()}` : ''}`}
       aria-current={current ? 'true' : undefined}
       onClick={onChoose}
       className="group/person grid justify-items-center gap-[0.8cqw] outline-none"
@@ -53,8 +66,8 @@ export function PersonTile({
         {person.name}
         {person.pin && <Icon name="lock" size={20} className="size-[0.95cqw] text-text-3" />}
       </span>
-      {current && (
-        <span className="-mt-[0.6cqw] text-(length:--tv-text-pill) text-text-3">Watching now</span>
+      {under && (
+        <span className="-mt-[0.6cqw] text-(length:--tv-text-pill) text-text-3">{under}</span>
       )}
     </button>
   )
@@ -215,12 +228,12 @@ export function PinPad({
   )
 }
 
-/** Asks for someone's PIN, then watches as them. */
-function AskPin({ person, onCancel }: { person: TvPerson; onCancel: () => void }) {
+/** Asks for someone's PIN, then watches as them. With no `onCancel`, Back does nothing. */
+function AskPin({ person, onCancel }: { person: TvPerson; onCancel?: () => void }) {
   const { people, switchTo } = usePeople()
   const main = people.find((p) => p.main)
   const [, navigate] = useLocation()
-  useBack(onCancel)
+  useBack(() => onCancel?.())
   return (
     <main className="grid h-full place-items-center">
       <ServerIdentity className="absolute top-(--tv-safe-y) left-(--tv-safe-x)" />
@@ -301,6 +314,101 @@ export function TvWho() {
       </div>
     </main>
   )
+}
+
+/**
+ * The TV opening (the owner, 2026-10-30): who's watching, large, over the featured film's
+ * backdrop, with focus on the profile last used on this TV. Nobody is watching yet, so every
+ * profile with a PIN asks for it, the last one too. With one profile, or when this TV doesn't ask
+ * (Settings › Profiles), it opens as the last profile, asking for its PIN if it has one. Back does
+ * nothing here: on a TV it leaves the app, which the TV does itself.
+ */
+export function TvLaunch() {
+  const { people, me, askOnLaunch, switchTo } = usePeople()
+  const [, navigate] = useLocation()
+  const ask = askOnLaunch && people.length > 1
+  const [asking, setAsking] = useState<TvPerson | null>(null)
+  const [last, setLast] = useState(me.id)
+  // the bloom takes the focused profile's colour, and fades out while Add a profile has focus,
+  // keeping that colour as it goes
+  const [glow, setGlow] = useState({ id: me.id, shown: true })
+  useInitialFocus(ask && !asking, last, `[data-person="${last}"] [data-focusable]`)
+  useBack(() => {})
+  // not asking: straight in as the last profile, unless it has a PIN
+  useEffect(() => {
+    if (!ask && !me.pin) navigate('/', { replace: true })
+  }, [ask, me.pin, navigate])
+  const bloom = useMemo(
+    () => ({
+      colors: people.map((p) => bloomColors[p.tone]),
+      active: Math.max(
+        0,
+        people.findIndex((p) => p.id === glow.id),
+      ),
+      shown: glow.shown,
+    }),
+    [people, glow],
+  )
+
+  const choose = (p: TvPerson) => {
+    setLast(p.id)
+    if (p.pin) setAsking(p)
+    else {
+      switchTo(p.id)
+      navigate('/')
+    }
+  }
+  if (!ask) return me.pin ? <AskPin person={me} /> : null
+  if (asking) return <AskPin person={asking} onCancel={() => setAsking(null)} />
+  return (
+    <main className="relative grid h-full place-items-center overflow-hidden">
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        <BloomGlow bloom={bloom} at="50% 58%" />
+      </div>
+      <ServerIdentity className="absolute top-(--tv-safe-y) left-(--tv-safe-x)" />
+      <div className="relative grid justify-items-center gap-[4cqw]">
+        <h1 className="font-semibold text-[3.6cqw] leading-none tracking-display">
+          Who’s watching?
+        </h1>
+        <ul
+          data-group="people"
+          aria-label="Profiles"
+          onFocus={(e) => {
+            const id = (e.target as HTMLElement).closest<HTMLElement>('[data-person]')?.dataset
+              .person
+            setGlow((g) => (id ? { id, shown: true } : { ...g, shown: false }))
+          }}
+          className="flex items-start gap-[3cqw]"
+        >
+          {people.map((p) => (
+            <li key={p.id} data-person={p.id} className="contents">
+              <PersonTile
+                person={p}
+                size={11}
+                note={p.id === me.id ? 'Last here' : undefined}
+                onChoose={() => choose(p)}
+              />
+            </li>
+          ))}
+          <li className="contents">
+            <AddTile size={11} />
+          </li>
+        </ul>
+      </div>
+    </main>
+  )
+}
+
+/**
+ * Each profile colour's bloom: the soft pair's strong half, as Home's bloom takes the art's, mixed
+ * toward the background, since those halves are light enough for text and would wash the screen.
+ */
+const bloomColors: Record<Tone, string> = {
+  accent: 'color-mix(in oklab, var(--color-accent) 60%, var(--color-bg))',
+  info: 'color-mix(in oklab, var(--color-badge-info) 60%, var(--color-bg))',
+  success: 'color-mix(in oklab, var(--color-badge-success) 60%, var(--color-bg))',
+  warning: 'color-mix(in oklab, var(--color-badge-warning) 60%, var(--color-bg))',
+  danger: 'color-mix(in oklab, var(--color-badge-danger) 60%, var(--color-bg))',
 }
 
 const LETTERS = 'abcdefghijklmnopqrstuvwxyz'.split('')

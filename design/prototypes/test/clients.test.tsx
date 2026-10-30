@@ -13,7 +13,8 @@ import { DISCOVERY_MS } from '../src/client/connect.ts'
 import { createMock } from '../src/mock/client.ts'
 import { type Connection, defaultState } from '../src/proto/state.ts'
 import { ScreenApp } from '../src/screen/screen.tsx'
-import { resetPeople } from '../src/tv/people.ts'
+import { resetPeople, setAskOnLaunch } from '../src/tv/people.ts'
+import { skipLaunch } from '../src/tv/tv-app.tsx'
 import { classes, collect, unknownClasses, violations } from './check.ts'
 
 beforeEach(() => localStorage.clear())
@@ -101,6 +102,7 @@ describe('C1 connect', () => {
     await open('/mobile', 'offline')
     expect(page().getByRole('link', { name: 'Watch downloads' })).toBeTruthy()
     cleanup()
+    skipLaunch()
     await open('/tv', 'offline')
     expect(page().getByRole('heading', { name: 'Can’t reach Harbor' })).toBeTruthy()
   })
@@ -143,6 +145,7 @@ describe('C2 home', () => {
   })
 
   test('TV: acknowledge, then the featured cards and the global navigation', async () => {
+    skipLaunch()
     const { user } = await open('/tv')
     await user.click(page().getByRole('button', { name: 'Got it' }))
     await settle()
@@ -156,6 +159,7 @@ describe('C2 home', () => {
   })
 
   test('TV: the featured titles are cards of their own, not a row as well', async () => {
+    skipLaunch()
     const { user } = await open('/tv')
     await user.click(page().getByRole('button', { name: 'Got it' }))
     await settle()
@@ -299,6 +303,26 @@ describe('TV: the account’s profiles', () => {
     await settle()
     // Home, as Theo (Home opens on the announcement to acknowledge, without the head)
     expect(location.history.at(-1)).toBe('/tv/')
+  })
+
+  test('the TV opens on who’s watching, or as the last profile when it doesn’t ask', async () => {
+    const { location, user } = await open('/tv/start')
+    const people = within(page().getByRole('list', { name: 'Profiles' }))
+      .getAllByRole('button')
+      .map((b) => b.getAttribute('aria-label'))
+    expect(people).toEqual(['Ines, last here', 'Theo, has a PIN', 'Ruth', 'Kids', 'Add a profile'])
+    await clean()
+    // a PIN is asked for at launch, and Back from it returns to the profiles
+    await user.click(page().getByRole('button', { name: 'Theo, has a PIN' }))
+    await settle()
+    expect(page().getByRole('heading', { name: 'Enter Theo’s PIN' })).toBeTruthy()
+    for (const d of '2580') await user.click(page().getByRole('button', { name: d }))
+    await settle()
+    expect(location.history.at(-1)).toBe('/tv/')
+    // not asking, it opens as Theo, who has a PIN
+    act(() => setAskOnLaunch(false))
+    await open('/tv/start')
+    expect(page().getByRole('heading', { name: 'Enter Theo’s PIN' })).toBeTruthy()
   })
 
   test('the profile: the profiles first, then a PIN set twice', async () => {

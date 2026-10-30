@@ -518,5 +518,6 @@ export const platformHome: Record<Platform, string> = {
   admin: '/admin',
   web: '/web',
   mobile: '/mobile',
-  tv: '/tv',
+  // the TV opens on who's watching (the owner, 2026-10-30)
+  tv: '/tv/start',
 }

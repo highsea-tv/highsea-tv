@@ -326,7 +326,14 @@ export type Bloom = { colors: (string | null)[]; active: number; shown: boolean 
  * fading into the background. One element: its colour is `--bloom`, registered as a <color>
  * (prototypes.css), so moving between cards turns it from one colour to the next in place.
  */
-export function BloomGlow({ bloom }: { bloom: Bloom }) {
+export function BloomGlow({
+  bloom,
+  at = '42% 45%',
+}: {
+  bloom: Bloom
+  /** Where the glow comes from: Home's featured cards, or the centre of who's watching. */
+  at?: string
+}) {
   const color = bloom.colors[bloom.active]
   return (
     <div
@@ -335,8 +342,7 @@ export function BloomGlow({ bloom }: { bloom: Bloom }) {
         {
           '--bloom': color ?? 'transparent',
           opacity: bloom.shown && color ? 1 : 0,
-          background:
-            'radial-gradient(ellipse 75% 85% at 42% 45%, color-mix(in oklab, var(--bloom) 70%, transparent), color-mix(in oklab, var(--bloom) 30%, transparent) 50%, transparent 85%)',
+          background: `radial-gradient(ellipse 75% 85% at ${at}, color-mix(in oklab, var(--bloom) 70%, transparent), color-mix(in oklab, var(--bloom) 30%, transparent) 50%, transparent 85%)`,
         } as CSSProperties
       }
     />

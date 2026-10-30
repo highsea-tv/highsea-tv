@@ -128,7 +128,8 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/mobile/offline?downloads=later',
   ],
   tv: [
-    '/tv',
+    '/tv/start',
+    '/tv?launch=done',
     '/tv/connect',
     '/tv/library',
     '/tv/movies/4',

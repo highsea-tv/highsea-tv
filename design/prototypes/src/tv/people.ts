@@ -20,8 +20,11 @@ export type TvPerson = {
   main: boolean
 }
 
-/** The account's profiles (Theo's PIN is 2580), and the one this TV watches as. */
-type State = { profiles: TvPerson[]; current: string }
+/**
+ * The account's profiles (Theo's PIN is 2580), the one this TV watches as, and whether this TV
+ * asks who's watching when highsea opens: the TV's own setting, not the account's.
+ */
+type State = { profiles: TvPerson[]; current: string; askOnLaunch: boolean }
 
 const seed = (): State => ({
   profiles: [
@@ -31,6 +34,7 @@ const seed = (): State => ({
     { id: 'p-kids', name: 'Kids', tone: 'warning', pin: null, main: false },
   ],
   current: 'p-ines',
+  askOnLaunch: true,
 })
 
 /** How many profiles an account may have. */
@@ -48,12 +52,17 @@ const subscribe = (l: () => void) => {
   return () => listeners.delete(l)
 }
 
+/** Whether this TV asks who's watching when highsea opens. */
+export const setAskOnLaunch = (askOnLaunch: boolean) => set({ ...state, askOnLaunch })
+
 export function usePeople() {
   const s = useSyncExternalStore(subscribe, () => state)
   const me = s.profiles.find((p) => p.id === s.current) ?? s.profiles[0]
   return {
     people: s.profiles,
     me: me as TvPerson,
+    askOnLaunch: s.askOnLaunch,
+    setAskOnLaunch,
     /** Watch as another profile; its PIN, if it has one, was asked for first. */
     switchTo: (id: string) => set({ ...state, current: id }),
     /** Sets the current profile's PIN, or turns it off with null. */
@@ -67,6 +76,7 @@ export function usePeople() {
       count += 1
       const id = `p-new-${count}`
       set({
+        ...state,
         profiles: [...state.profiles, { id, name, tone, pin: null, main: false }],
         current: id,
       })
@@ -77,7 +87,11 @@ export function usePeople() {
       const p = state.profiles.find((x) => x.id === id)
       if (!p || p.main) return
       const profiles = state.profiles.filter((x) => x.id !== id)
-      set({ profiles, current: state.current === id ? (profiles[0]?.id ?? '') : state.current })
+      set({
+        ...state,
+        profiles,
+        current: state.current === id ? (profiles[0]?.id ?? '') : state.current,
+      })
     },
   }
 }

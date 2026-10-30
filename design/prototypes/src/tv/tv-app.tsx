@@ -2,11 +2,12 @@
 // The TV client (C1–C7), in screen units with D-pad focus: sign-in, home, library, item detail,
 // the player, search and settings. Back goes up a level: each screen says what that means (close
 // a panel, hide the player's chrome), else Home.
-import { useMemo, useState } from 'react'
-import { Route, Switch, useLocation } from 'wouter'
+import { useLayoutEffect, useMemo, useState } from 'react'
+import { Route, Switch, useLocation, useSearch } from 'wouter'
 import { useConnection, useServer } from '../client/data.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { TvRoot } from '../kit/tv/tv-root.tsx'
+import { useProto } from '../screen/screen.tsx'
 import { BackContext, type BackRegistry, useBack } from './back.ts'
 import { TvCollection } from './collection.tsx'
 import { TvCollections } from './collections.tsx'
@@ -19,7 +20,7 @@ import { TvLibrary } from './library.tsx'
 import { TvPlayer } from './player.tsx'
 import { TvSearch } from './search.tsx'
 import { TvProfile } from './settings.tsx'
-import { TvNewProfile, TvWho } from './who.tsx'
+import { TvLaunch, TvNewProfile, TvWho } from './who.tsx'
 
 function Detail() {
   const [panel, setPanel] = useState(false)
@@ -79,9 +80,32 @@ function NotFound() {
   )
 }
 
+/**
+ * Whether the TV has opened yet in this page. It opens on who's watching (the owner, 2026-10-30):
+ * the first time the prototype loads the TV at Home, it goes to `/start` instead, as the app does
+ * when it launches. `?launch=done` opens Home itself, for the sweeps (the tests call `skipLaunch`), and so does the
+ * admin's curation preview (`?preview`), which shows Home as a profile sees it.
+ */
+let launched = false
+
+/** For the tests: the TV has opened already, so `/tv` is Home. */
+export const skipLaunch = () => {
+  launched = true
+}
+
 function Screens() {
   const connection = useConnection()
-  const [location] = useLocation()
+  const [location, navigate] = useLocation()
+  const search = useSearch()
+  const { preview } = useProto()
+  // in an effect, so React's second render in development doesn't see the flag already set
+  // biome-ignore lint/correctness/useExhaustiveDependencies: once, when the TV first opens
+  useLayoutEffect(() => {
+    if (launched) return
+    launched = true
+    if (location === '/' && !preview && !new URLSearchParams(search).has('launch'))
+      navigate('/start', { replace: true })
+  }, [])
   if (connection === 'offline' && location !== '/connect') return <Unreachable />
   return (
     <Switch>
@@ -120,6 +144,10 @@ function Screens() {
       </Route>
       {/* Settings is on the profile (the owner, 2026-10-30); its old address opens it too */}
       {/* who's watching, a profile's PIN, and adding a profile (the owner, 2026-10-30) */}
+      {/* where the TV opens (the owner, 2026-10-30): who's watching, or straight in */}
+      <Route path="/start">
+        <TvLaunch />
+      </Route>
       <Route path="/who/new">
         <TvNewProfile />
       </Route>

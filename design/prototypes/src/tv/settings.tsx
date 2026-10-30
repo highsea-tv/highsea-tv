@@ -261,7 +261,7 @@ function Pin({ openPin }: SectionProps) {
 }
 
 function Profiles({ askDelete }: SectionProps) {
-  const { people, me } = usePeople()
+  const { people, me, askOnLaunch, setAskOnLaunch } = usePeople()
   const [, navigate] = useLocation()
   return (
     <div className="grid gap-[1.2cqw]">
@@ -285,6 +285,16 @@ function Profiles({ askDelete }: SectionProps) {
           </li>
         ))}
       </ul>
+      <div className="grid justify-items-start gap-[0.6cqw]">
+        <TvButton primary={askOnLaunch} onClick={() => setAskOnLaunch(!askOnLaunch)}>
+          Ask who’s watching when highsea opens: {askOnLaunch ? 'On' : 'Off'}
+        </TvButton>
+        <p className="text-(length:--tv-text-meta) text-text-3">
+          {askOnLaunch
+            ? 'Only this TV. With one profile, it opens straight in.'
+            : 'Only this TV. It opens as whoever watched last, asking for their PIN if they have one.'}
+        </p>
+      </div>
       {people.length < MAX_PROFILES ? (
         <div className="flex">
           <TvButton icon="add" onClick={() => navigate('/who/new')}>
