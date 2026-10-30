@@ -110,7 +110,8 @@ The repeated workflows are project skills in `.claude/skills/`, which either of 
 
 - the gate loop: `/scope`, `/questions`, `/checkpoint-report` and `/signoff` (owner-only: it commits and pushes);
 - `/checks` (quick or full, under Node 26.11);
-- `/guide`, `/adr`, `/add-dependency`, `/port-screen` and `/handoff`.
+- `/guide`, `/adr`, `/add-dependency`, `/port-screen` and `/handoff`;
+- `/avatars`: profile avatars from Nano Banana 2.1 in the owner's Google Flow project, through the built-in browser, kept in `design/assets/avatars/`.
 
 When a rule here changes, update the skill that repeats it.
 
