@@ -10,16 +10,9 @@ import { cn, Icon, useSound } from '@highsea-tv/ui-web'
 import { useReducedMotion } from 'motion/react'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
+import { BloomGlow } from '../client/bloom.tsx'
 import { useBack } from './back.ts'
-import {
-  BloomGlow,
-  focusFrom,
-  ServerIdentity,
-  TvAvatar,
-  TvButton,
-  tvKey,
-  useInitialFocus,
-} from './kit.tsx'
+import { focusFrom, ServerIdentity, TvAvatar, TvButton, tvKey, useInitialFocus } from './kit.tsx'
 import { MAX_PROFILES, type Tone, type TvPerson, tones, usePeople } from './people.ts'
 
 /** How many wrong PINs in a row before the pad rests for a minute. */

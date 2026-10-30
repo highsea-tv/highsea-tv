@@ -2,11 +2,12 @@
 // The web/desktop client (C1–C8): connect, home, library, item detail, the player,
 // search, settings, the profile and downloads. The device's own theme and sound apply over all.
 import { Button, EmptyState } from '@highsea-tv/ui-web'
-import { Route, Switch, useLocation } from 'wouter'
+import { Redirect, Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { WebCollection } from './collection.tsx'
 import { WebCollections } from './collections.tsx'
+import { WebComing } from './coming.tsx'
 import { WebDetail } from './detail.tsx'
 import { WebHome } from './home.tsx'
 import { WebLibrary } from './library.tsx'
@@ -46,19 +47,37 @@ function Routes() {
         <WebPlayer />
       </Route>
       <Route path="/">
-        <WebShell overHero>
+        <WebShell overHero="bloom" banner>
           <WebHome />
         </WebShell>
       </Route>
-      <Route path="/library/collections">
+      {/* the TV's destinations (the owner, 2026-10-30): Collections, Movies, Shows and Music */}
+      <Route path="/collections">
         <WebShell>
           <WebCollections />
         </WebShell>
       </Route>
-      <Route path="/library">
+      <Route path="/movies">
         <WebShell>
           <WebLibrary />
         </WebShell>
+      </Route>
+      <Route path="/shows">
+        <WebShell>
+          <WebComing kind="shows" />
+        </WebShell>
+      </Route>
+      <Route path="/music">
+        <WebShell>
+          <WebComing kind="music" />
+        </WebShell>
+      </Route>
+      {/* the library's old addresses */}
+      <Route path="/library/collections">
+        <Redirect to="/collections" replace />
+      </Route>
+      <Route path="/library">
+        <Redirect to="/movies" replace />
       </Route>
       <Route path="/movies/:id">
         <WebShell overHero>

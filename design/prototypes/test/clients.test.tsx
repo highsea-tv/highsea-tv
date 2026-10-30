@@ -115,16 +115,27 @@ describe('C1 connect', () => {
 })
 
 describe('C2 home', () => {
-  test('web: acknowledge, pick a featured title, dismiss the banner', async () => {
+  test('web: acknowledge, the featured card, a film row, dismiss the banner', async () => {
     const { mock, user } = await open('/web')
     await acknowledge(user)
     expect(mock.servers.populated.state.seen['u-ines']).toContain('an-new-address')
-    expect(page().getByRole('heading', { name: 'Sintel' })).toBeTruthy()
+    const [featured] = page().getAllByRole('link', { name: /^Sintel, / })
+    if (!featured) throw new Error('no featured card')
+    expect(featured.getAttribute('href')).toBe('#/web/movies/1')
+    expect(within(featured).getByRole('heading', { level: 2, name: 'Sintel' })).toBeTruthy()
     expect(page().getByRole('heading', { name: 'Continue watching' })).toBeTruthy()
     await clean()
-    await user.click(page().getByRole('button', { name: 'Show Spring' }))
-    expect(page().getByRole('heading', { name: 'Spring' })).toBeTruthy()
-    const banners = page().getByRole('region', { name: 'Announcements' })
+    // a film row's card changes film with Right while it has focus
+    const [row] = page()
+      .getAllByRole('region')
+      .filter((r) => r.querySelector('[aria-describedby]'))
+    if (!row) throw new Error('no film row')
+    const card = row.querySelector<HTMLAnchorElement>('a[aria-describedby]')
+    const before = card?.getAttribute('href')
+    card?.focus()
+    await user.keyboard('{ArrowRight}')
+    expect(card?.getAttribute('href')).not.toBe(before)
+    const banners = page().getByRole('region', { name: 'Announcement' })
     await user.click(within(banners).getByRole('button', { name: 'Dismiss' }))
     await settle()
     expect(page().queryByText('Movie night is Friday')).toBeNull()

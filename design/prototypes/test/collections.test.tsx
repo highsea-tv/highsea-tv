@@ -313,10 +313,10 @@ describe('A19 collections', () => {
 })
 
 describe('C9 collections in the apps', () => {
-  test('web: Library › Collections, then a smart one’s page', async () => {
-    const { location, user } = await open('/web/library/collections')
+  test('web: Collections, then a smart one’s page', async () => {
+    const { location, user } = await open('/web/collections')
     await acknowledge(user)
-    expect(page().getByRole('link', { name: 'Collections', current: 'page' })).toBeTruthy()
+    expect(page().getAllByRole('link', { name: 'Collections', current: 'page' })).toHaveLength(2)
     const grid = within(page().getByRole('list', { name: 'Collections' }))
     expect(
       grid.getByRole('link', {

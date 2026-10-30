@@ -28,7 +28,7 @@ export function WebCollection() {
           title={found.error.message}
           action={
             <Button variant="primary" asChild>
-              <a href={webHref('/library/collections')}>Collections</a>
+              <a href={webHref('/collections')}>Collections</a>
             </Button>
           }
         >

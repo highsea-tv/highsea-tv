@@ -1,18 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The web/desktop client's frame (desktop-web.md#structure): a slim top bar, translucent over the
-// hero, with the server switcher, the destinations (Home, Search, Library, Downloads) and the
-// profile; then the page. The owner's acknowledge-required announcement opens over everything,
+// hero, with the server switcher at the left, the TV's destinations centred (Search as its icon,
+// Home, Collections, Movies, Shows and Music; the owner, 2026-10-30) and the profile at the right;
+// then the page. Unlike the TV's head it stays at the top as the page scrolls: in the desktop app
+// it's the window's title bar. The owner's acknowledge-required announcement opens over everything,
 // and an unreachable server replaces the page with what to do about it.
 
 import { relative } from '@highsea-tv/core/format'
 import {
-  Banner,
   Button,
   cn,
   Dialog,
   DialogContent,
   EmptyState,
   Icon,
+  type IconName,
   Mark,
   Menu,
   MenuContent,
@@ -44,11 +46,15 @@ export const webHref = (path: string) => clientHref('web', path)
 /** Content width: 1680px on wide screens, gutters per breakpoint. */
 export const gutter = 'px-4 medium:px-8 wide:px-16'
 
-const destinations = [
+// the TV's (tv/kit.tsx): Search as its icon, then a destination per kind of media, Collections
+// first; Downloads is in the profile's menu
+const destinations: { path: string; label: string; icon?: IconName }[] = [
+  { path: '/search', label: 'Search', icon: 'search' },
   { path: '/', label: 'Home' },
-  { path: '/search', label: 'Search' },
-  { path: '/library', label: 'Library' },
-  { path: '/downloads', label: 'Downloads' },
+  { path: '/collections', label: 'Collections' },
+  { path: '/movies', label: 'Movies' },
+  { path: '/shows', label: 'Shows' },
+  { path: '/music', label: 'Music' },
 ]
 
 const isCurrent = (path: string, location: string) =>
@@ -138,6 +144,9 @@ function Profile() {
         <MenuItem icon="user" onSelect={() => navigate('/profile')}>
           Account
         </MenuItem>
+        <MenuItem icon="download" onSelect={() => navigate('/downloads')}>
+          Downloads
+        </MenuItem>
         <MenuItem icon="settings" onSelect={() => navigate('/settings')}>
           Settings
         </MenuItem>
@@ -162,13 +171,25 @@ function Profile() {
   )
 }
 
-/** The top bar. Over a hero it starts clear and turns to glass once the page scrolls. */
-export function TopBar({ overHero }: { overHero: boolean }) {
+/**
+ * The top bar. Over a hero it starts clear, fading the backdrop into the page's background behind
+ * it, and turns to glass once the page scrolls; over Home's bloom it starts with nothing behind it,
+ * as the TV's head stands on the bloom.
+ */
+export function TopBar({ overHero }: { overHero: boolean | 'bloom' }) {
   const [location] = useLocation()
   const chrome = useWindowChrome()
   const [scrolled, setScrolled] = useState(false)
+  const bar = useRef<HTMLElement>(null)
   useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 8)
+    // glass once the page scrolls under the bar: with a banner above it, only once it has scrolled
+    // the banner away and the bar has stuck
+    const on = () => {
+      const el = bar.current
+      const stuck =
+        !el || el.getBoundingClientRect().top <= Number.parseFloat(getComputedStyle(el).top) + 0.5
+      setScrolled(window.scrollY > 8 && stuck)
+    }
     on()
     window.addEventListener('scroll', on, { passive: true })
     return () => window.removeEventListener('scroll', on)
@@ -176,6 +197,7 @@ export function TopBar({ overHero }: { overHero: boolean }) {
   const clear = overHero && !scrolled
   return (
     <header
+      ref={bar}
       // in the desktop app the bar moves the window, as a title bar does
       data-tauri-drag-region={chrome === 'none' ? undefined : true}
       className={cn(
@@ -183,9 +205,11 @@ export function TopBar({ overHero }: { overHero: boolean }) {
         // Tailwind's default `currentColor` (https://tailwindcss.com/docs/upgrade-guide#default-border-color)
         'sticky z-30 border-b bg-origin-border transition-tint',
         chrome === 'bar' ? 'top-8' : 'top-0',
-        clear
-          ? 'border-transparent bg-[linear-gradient(var(--color-bg),transparent)]'
-          : 'glass-bar border-line',
+        !clear
+          ? 'glass-bar border-line'
+          : overHero === 'bloom'
+            ? 'border-transparent'
+            : 'border-transparent bg-[linear-gradient(var(--color-bg),transparent)]',
       )}
     >
       <div className={cn('mx-auto w-full flex h-16 max-w-[1680px] items-center gap-3', gutter)}>
@@ -202,12 +226,14 @@ export function TopBar({ overHero }: { overHero: boolean }) {
                 key={d.path}
                 href={webHref(d.path)}
                 aria-current={active ? 'page' : undefined}
+                aria-label={d.icon ? d.label : undefined}
                 className={cn(
                   'shrink-0 rounded-sm px-3 py-1.5 text-ui outline-none transition-tint hover:text-text focus-visible:ring-focus',
-                  active ? 'font-semibold text-text' : 'text-text-2',
+                  // unselected, the text colour with alpha, as on the TV, so the bloom's colour shows through
+                  active ? 'font-semibold text-text' : 'text-text/65',
                 )}
               >
-                {d.label}
+                {d.icon ? <Icon name={d.icon} size={18} className="block" /> : d.label}
               </a>
             )
           })}
@@ -216,7 +242,7 @@ export function TopBar({ overHero }: { overHero: boolean }) {
           <a
             href={webHref('/search')}
             aria-label="Search"
-            className="grid size-9 place-items-center rounded-full text-text-2 outline-none hover:text-text focus-visible:ring-focus medium:hidden"
+            className="grid size-9 place-items-center rounded-full text-text/65 outline-none hover:text-text focus-visible:ring-focus medium:hidden"
           >
             <Icon name="search" size={18} />
           </a>
@@ -227,41 +253,65 @@ export function TopBar({ overHero }: { overHero: boolean }) {
         aria-label="Main"
         className={cn('relative flex gap-1 overflow-x-auto pb-2 medium:hidden', gutter)}
       >
-        {destinations.map((d) => (
-          <a
-            key={d.path}
-            href={webHref(d.path)}
-            aria-current={isCurrent(d.path, location) ? 'page' : undefined}
-            className="shrink-0 rounded-full px-3 py-1 text-text-2 text-ui outline-none aria-[current=page]:bg-text/10 aria-[current=page]:text-text focus-visible:ring-focus"
-          >
-            {d.label}
-          </a>
-        ))}
+        {/* Search is the icon at the bar's right */}
+        {destinations
+          .filter((d) => !d.icon)
+          .map((d) => (
+            <a
+              key={d.path}
+              href={webHref(d.path)}
+              aria-current={isCurrent(d.path, location) ? 'page' : undefined}
+              className="shrink-0 rounded-full px-3 py-1 text-text/65 text-ui outline-none hover:text-text aria-[current=page]:bg-text/10 aria-[current=page]:text-text focus-visible:ring-focus"
+            >
+              {d.label}
+            </a>
+          ))}
       </nav>
     </header>
   )
 }
 
-/** Banners from the owner, in the page's content width. */
+/**
+ * The newest banner from the owner, as the TV shows it (the owner, 2026-10-30): a strip across the
+ * page's top, above the bar, scrolling away as the bar sticks; its title then its message on one
+ * line, with a button to dismiss it. In a Mac window the buttons sit over it, so it leaves them room
+ * and moves the window, as the bar does.
+ */
 export function Banners() {
   const a = useAnnouncements('web')
-  if (!a.banners.length) return null
+  const chrome = useWindowChrome()
+  const b = a.banners[0]
+  if (!b) return null
   return (
     <section
-      aria-label="Announcements"
-      className={cn('mx-auto w-full grid max-w-[1680px] gap-2', gutter)}
+      aria-label="Announcement"
+      data-tauri-drag-region={chrome === 'mac' ? true : undefined}
+      className="relative z-10 bg-[color-mix(in_oklab,var(--color-bg)_80%,black)]"
     >
-      {a.banners.map((b) => (
-        <Banner
-          key={b.id}
-          title={b.title}
-          tone={b.severity === 'warning' ? 'warning' : 'announcement'}
-          onDismiss={() => a.dismiss(b.id)}
-          action={b.cta ? <Cta cta={b.cta} /> : undefined}
-        >
+      <div className={cn('mx-auto flex min-h-12 w-full max-w-[1680px] items-center gap-3', gutter)}>
+        {chrome === 'mac' && <span aria-hidden className={trafficLightRoom} />}
+        <Icon
+          name="announcement"
+          size={18}
+          className={cn(
+            'shrink-0',
+            b.severity === 'warning' ? 'text-badge-warning' : 'text-accent-text',
+          )}
+        />
+        <p className="min-w-0 flex-1 py-2 text-text-2 text-ui">
+          <span className="me-3 font-semibold text-text">{b.title}</span>
           <Inline text={b.body} />
-        </Banner>
-      ))}
+        </p>
+        {b.cta && <Cta cta={b.cta} />}
+        <button
+          type="button"
+          aria-label="Dismiss"
+          onClick={() => a.dismiss(b.id)}
+          className="grid size-8 shrink-0 place-items-center rounded-full text-text-3 outline-none hover:bg-text/8 hover:text-text focus-visible:ring-focus"
+        >
+          <Icon name="close" size={16} />
+        </button>
+      </div>
     </section>
   )
 }
@@ -350,16 +400,20 @@ function AnnouncementToasts() {
 export function WebShell({
   children,
   overHero = false,
+  banner = false,
 }: {
   children: ReactNode
-  overHero?: boolean
+  overHero?: boolean | 'bloom'
+  /** The owner's newest banner above the bar (Home). */
+  banner?: boolean
 }) {
   const connection = useConnection()
   // in a Mac window the handle keeps clear of the rounded corners
   const chrome = useWindowChrome()
   return (
-    <div className="min-h-screen bg-bg text-text">
-      <TopBar overHero={overHero && connection !== 'offline'} />
+    <div className="relative min-h-screen bg-bg text-text">
+      {banner && connection !== 'offline' && <Banners />}
+      <TopBar overHero={connection !== 'offline' && overHero} />
       <PageScrollbar inset={chrome === 'mac' ? 10 : 6} />
       {connection === 'offline' ? <Unreachable /> : children}
       {connection !== 'offline' && (

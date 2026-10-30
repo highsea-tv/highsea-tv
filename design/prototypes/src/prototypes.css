@@ -21,7 +21,7 @@
   --scale-button: 1;
 }
 
-/* Home's bloom on the TV (tv/kit.tsx's BloomGlow): a registered colour, so it can be
+/* Home's bloom (client/bloom.tsx's BloomGlow): a registered colour, so it can be
    transitioned from one card's colour to the next on one element. */
 @property --bloom {
   syntax: "<color>";

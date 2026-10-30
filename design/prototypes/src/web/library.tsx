@@ -7,7 +7,6 @@ import { useState } from 'react'
 import { useLibrary } from '../client/data.ts'
 import { MediaPoster } from '../client/media-card.tsx'
 import type { ClientItem } from '../mock/types.ts'
-import { LibraryNav } from './collections.tsx'
 import { gutter, webHref } from './shell.tsx'
 
 export type Sort = 'title' | 'added' | 'year' | 'rating'
@@ -55,7 +54,6 @@ export function WebLibrary() {
   const shown = arrange(items, genre, sort, show === 'unwatched')
   return (
     <main className={cn('mx-auto w-full grid max-w-[1680px] gap-6 pt-6 pb-16', gutter)}>
-      <LibraryNav current="movies" />
       <div className="flex flex-wrap items-end gap-3">
         <div className="grid gap-1">
           <h1 className="text-heading">Movies</h1>

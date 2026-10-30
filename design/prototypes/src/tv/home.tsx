@@ -10,6 +10,7 @@
 import { Icon, QualityTag } from '@highsea-tv/ui-web'
 import { useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { BloomGlow } from '../client/bloom.tsx'
 import { meta, qualityTags, useAnnouncements, useHome } from '../client/data.ts'
 import { useVibrant } from '../client/vibrant.ts'
 import { Inline } from '../kit/inline.tsx'
@@ -17,7 +18,6 @@ import type { ClientItem, HomeSection } from '../mock/types.ts'
 import { TvFilmRow } from './film-row.tsx'
 import {
   AnnouncementBanner,
-  BloomGlow,
   pageTop,
   ServerIdentity,
   TvButton,

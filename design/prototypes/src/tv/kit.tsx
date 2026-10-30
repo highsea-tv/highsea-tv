@@ -318,37 +318,6 @@ const destinations: { path: string; label: string; icon: IconName }[] = [
   // right (the owner, 2026-10-30)
 ]
 
-/** Home's bloom: a glow colour for each featured card, the one focus is on, and whether it shows. */
-export type Bloom = { colors: (string | null)[]; active: number; shown: boolean }
-
-/**
- * The bloom, the screen's size: the focused card's colour as a glow from where the cards sit,
- * fading into the background. One element: its colour is `--bloom`, registered as a <color>
- * (prototypes.css), so moving between cards turns it from one colour to the next in place.
- */
-export function BloomGlow({
-  bloom,
-  at = '42% 45%',
-}: {
-  bloom: Bloom
-  /** Where the glow comes from: Home's featured cards, or the centre of who's watching. */
-  at?: string
-}) {
-  const color = bloom.colors[bloom.active]
-  return (
-    <div
-      className="absolute inset-0 transition-[--bloom,opacity] duration-700 ease-out motion-reduce:transition-none"
-      style={
-        {
-          '--bloom': color ?? 'transparent',
-          opacity: bloom.shown && color ? 1 : 0,
-          background: `radial-gradient(ellipse 75% 85% at ${at}, color-mix(in oklab, var(--bloom) 70%, transparent), color-mix(in oklab, var(--bloom) 30%, transparent) 50%, transparent 85%)`,
-        } as CSSProperties
-      }
-    />
-  )
-}
-
 /** Where Home lifts a row's title to when focus moves below the hero: the top safe area. */
 export const pageTop = tv.safe.y
 
@@ -395,7 +364,7 @@ export function TvHead({ down = 'hero', className }: { down?: string; className?
               aria-label={icon ? d.label : undefined}
               aria-current={active(d.path) ? 'page' : undefined}
               className={cn(
-                'flex h-[2.6cqw] items-center justify-center rounded-full font-semibold text-(length:--tv-text-button) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text',
+                'flex h-[2.6cqw] items-center justify-center rounded-full font-semibold text-(length:--tv-text-button) text-text/65 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text',
                 icon ? 'w-[2.6cqw]' : 'px-[1.4cqw]',
               )}
             >

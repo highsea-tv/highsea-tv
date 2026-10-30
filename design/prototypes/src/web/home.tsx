@@ -1,40 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// C2 Home, web/desktop (docs/product/client-home.md): a full-bleed hero, the TV's Hero + rows
-// adapted for a pointer (desktop-web.md#structure; chosen over a contained hero in ADR 0017),
-// then Continue watching, curated rows, spotlights and Recently added.
-import {
-  BackdropHero,
-  Button,
-  CarouselRow,
-  cn,
-  EmptyState,
-  Icon,
-  QualityTag,
-  Skeleton,
-} from '@highsea-tv/ui-web'
-import { type ReactNode, useState } from 'react'
+// C2 Home, web/desktop (docs/product/client-home.md), brought over from the TV (the owner,
+// 2026-10-30): the featured title as one large card with a bloom in its colour behind the bar and
+// the card, then Continue watching, and every other row with its first slot fixed (film-row.tsx).
+import { Button, CarouselRow, cn, EmptyState, Icon, QualityTag, Skeleton } from '@highsea-tv/ui-web'
+import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { BloomGlow } from '../client/bloom.tsx'
 import { meta, qualityTags, useHome } from '../client/data.ts'
 import { MediaPoster } from '../client/media-card.tsx'
+import { useVibrant } from '../client/vibrant.ts'
 import type { ClientItem, HomeSection } from '../mock/types.ts'
-import { Banners, gutter, webHref } from './shell.tsx'
+import { WebFilmRow } from './film-row.tsx'
+import { gutter, webHref } from './shell.tsx'
 
 // ---------------------------------------------------------------- shared pieces
-
-function PlayButton({ item, className }: { item: ClientItem; className?: string }) {
-  return (
-    <Button variant="primary" icon="play" asChild className={className}>
-      <a href={webHref(`/play/${item.id}`)}>{item.progress !== null ? 'Resume' : 'Play'}</a>
-    </Button>
-  )
-}
-
-function DetailsButton({ item }: { item: ClientItem }) {
-  return (
-    <Button icon="info" asChild>
-      <a href={webHref(`/movies/${item.id}`)}>Details</a>
-    </Button>
-  )
-}
 
 function Meta({ item }: { item: ClientItem }) {
   return (
@@ -102,37 +80,6 @@ function ContinueRow({ section }: { section: HomeSection }) {
   )
 }
 
-/** A spotlight: wider cards with the synopsis, for a curated theme. */
-function SpotlightRow({ section }: { section: HomeSection }) {
-  return (
-    <CarouselRow
-      title={section.title}
-      suffix={section.suffix}
-      itemClassName="w-[clamp(17rem,30vw,26rem)]"
-    >
-      {section.items.map((m) => (
-        <a
-          key={m.id}
-          href={webHref(`/movies/${m.id}`)}
-          className="group/spot grid gap-3 rounded-lg border border-line bg-s1 p-3 outline-none transition-tint hover:bg-s2 focus-visible:ring-focus"
-        >
-          <img
-            src={m.art.still}
-            alt=""
-            loading="lazy"
-            className="aspect-still w-full rounded-md object-cover"
-          />
-          <span className="grid gap-1">
-            <span className="font-semibold text-text text-title">{m.title}</span>
-            <span className="text-caption text-text-3">{meta(m)}</span>
-            <span className="line-clamp-2 text-body text-text-2">{m.synopsis}</span>
-          </span>
-        </a>
-      ))}
-    </CarouselRow>
-  )
-}
-
 function Rows({ sections }: { sections: HomeSection[] }) {
   return (
     <div className="mx-auto w-full grid max-w-[1680px] gap-8 pb-16">
@@ -142,10 +89,14 @@ function Rows({ sections }: { sections: HomeSection[] }) {
           <div key={s.id} data-section={s.id} className="grid">
             {s.layout === 'continue' ? (
               <ContinueRow section={s} />
-            ) : s.layout === 'spotlight' ? (
-              <SpotlightRow section={s} />
             ) : (
-              <PosterRow title={s.title} suffix={s.suffix} items={s.items} wide />
+              <WebFilmRow
+                title={s.title}
+                suffix={s.suffix}
+                items={s.items}
+                hrefOf={(m) => webHref(`/movies/${m.id}`)}
+                loop
+              />
             )}
           </div>
         ),
@@ -195,59 +146,99 @@ function HomeStates({ children }: { children: (sections: HomeSection[]) => React
   return <>{children(home.data)}</>
 }
 
-// ---------------------------------------------------------------- the hero and rows
+// ---------------------------------------------------------------- the featured card and rows
 
-function FullBleed({ sections }: { sections: HomeSection[] }) {
-  const hero = sections.find((s) => s.layout === 'hero')
-  const [index, setIndex] = useState(0)
-  const item = hero?.items[index] ?? hero?.items[0]
+/**
+ * The featured title as one large card inside the page's gutters, as on the TV (the owner,
+ * 2026-10-30): its backdrop, with the title's logo, the details and the tagline low on the left.
+ * The card opens the movie, where Play is.
+ */
+function FeaturedCard({ item }: { item: ClientItem }) {
   return (
+    <a
+      href={webHref(`/movies/${item.id}`)}
+      aria-label={`${item.title}, ${meta(item)}`}
+      className="relative block h-[clamp(18rem,min(62svh,42vw),44rem)] overflow-hidden rounded-[1.25rem] bg-s2 outline-none transition-lift hover:scale-[1.01] focus-visible:ring-focus"
+    >
+      <img src={item.art.backdrop} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(0_0_0/0.7),transparent_55%),linear-gradient(0deg,rgb(0_0_0/0.6),transparent_45%)]" />
+      <div className="absolute inset-x-5 bottom-5 grid max-w-[38rem] gap-3 medium:inset-x-10 medium:bottom-9">
+        {/* the title's logo in place of its name, as the streaming apps set it; the name when TMDB
+        has no logo */}
+        <h2 className="text-balance text-display">
+          {item.art.logo ? (
+            <img
+              src={item.art.logo}
+              alt={item.title}
+              className="max-h-[clamp(4rem,9vw,8rem)] max-w-[min(26rem,70%)] object-contain object-left drop-shadow-[0_2px_10px_rgb(0_0_0/0.5)]"
+            />
+          ) : (
+            item.title
+          )}
+        </h2>
+        <p className="flex flex-wrap items-center gap-2 text-text-2 text-ui">
+          <Meta item={item} />
+        </p>
+        <p className="line-clamp-2 text-body text-text-2">{item.tagline ?? item.synopsis}</p>
+      </div>
+    </a>
+  )
+}
+
+/**
+ * The featured card's bloom, in its most vibrant colour, from the page's top to past the card. It
+ * fades out once the card has mostly scrolled out of view.
+ */
+function Bloom({ item, shown }: { item: ClientItem; shown: boolean }) {
+  const found = useVibrant([item.art.backdrop])
+  const color = found[item.art.backdrop] ?? null
+  const bloom = useMemo(() => ({ colors: [color], active: 0, shown }), [color, shown])
+  return (
+    <div
+      aria-hidden
+      className="pointer-events-none absolute inset-x-0 top-0 h-[calc(clamp(18rem,min(62svh,42vw),44rem)+24rem)] [mask-image:linear-gradient(black_55%,transparent)]"
+    >
+      <BloomGlow bloom={bloom} at="40% 50%" />
+    </div>
+  )
+}
+
+/** Whether most of the element is in view. */
+function useMostlyInView() {
+  const ref = useRef<HTMLDivElement>(null)
+  const [inView, setInView] = useState(true)
+  useEffect(() => {
+    const el = ref.current
+    if (!el || typeof IntersectionObserver === 'undefined') return
+    const io = new IntersectionObserver(([e]) => setInView((e?.intersectionRatio ?? 1) >= 0.4), {
+      threshold: [0, 0.4, 1],
+    })
+    io.observe(el)
+    return () => io.disconnect()
+  }, [])
+  return { ref, inView }
+}
+
+function Home({ sections }: { sections: HomeSection[] }) {
+  const hero = sections.find((s) => s.layout === 'hero')
+  // the featured section's first title; the others wait until the card is designed again, as on
+  // the TV (the owner, 2026-10-30)
+  const item = hero?.items[0]
+  const { ref, inView } = useMostlyInView()
+  return (
+    // not positioned: the bloom is placed from the page's top, behind the banner and the bar
     <main>
-      {hero && item && (
-        <div data-section={hero.id} className="medium:-mt-16">
-          <BackdropHero
-            item={{
-              id: item.id,
-              title: item.title,
-              backdrop: item.art.backdrop,
-              eyebrow: hero.title,
-              meta: <Meta item={item} />,
-              synopsis: item.tagline ?? item.synopsis,
-            }}
-            actions={
-              <>
-                <PlayButton item={item} />
-                <DetailsButton item={item} />
-                {hero.items.length > 1 && (
-                  // on desktop the hero changes only on selection, never on hover
-                  <div className="ms-auto flex items-center gap-1.5 self-center">
-                    {hero.items.map((h, i) => (
-                      <button
-                        key={h.id}
-                        type="button"
-                        aria-label={`Show ${h.title}`}
-                        aria-pressed={i === index}
-                        onClick={() => setIndex(i)}
-                        className="grid size-6 cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-focus"
-                      >
-                        <span
-                          className={cn(
-                            'h-1.5 rounded-full transition-tint',
-                            i === index ? 'w-5 bg-text' : 'w-1.5 bg-text/40',
-                          )}
-                        />
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </>
-            }
-            className="medium:h-[min(58svh,56.25vw)] [&>div:last-child]:mx-auto [&>div:last-child]:w-full [&>div:last-child]:max-w-[1680px]"
-          />
-        </div>
-      )}
-      <div className="grid gap-8 pt-2">
-        <Banners />
+      {item && <Bloom item={item} shown={inView} />}
+      <div className="relative grid gap-8">
+        {hero && item && (
+          <div
+            ref={ref}
+            data-section={hero.id}
+            className={cn('mx-auto w-full max-w-[1680px] pt-2', gutter)}
+          >
+            <FeaturedCard item={item} />
+          </div>
+        )}
         <Rows sections={sections} />
       </div>
     </main>
@@ -255,5 +246,5 @@ function FullBleed({ sections }: { sections: HomeSection[] }) {
 }
 
 export function WebHome() {
-  return <HomeStates>{(sections) => <FullBleed sections={sections} />}</HomeStates>
+  return <HomeStates>{(sections) => <Home sections={sections} />}</HomeStates>
 }

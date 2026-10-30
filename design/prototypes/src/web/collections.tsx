@@ -1,35 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Library › Collections, web and desktop (docs/product/collections.md#in-the-apps): the owner's
+// Collections, web and desktop, a destination of its own since the TV's nav came to the web (the
+// owner, 2026-10-30) (docs/product/collections.md#in-the-apps): the owner's
 // collections this person sees, marked smart, then TMDB's, as a grid of posters and mosaics.
 import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui-web'
 import { collectionCaption, useCollections } from '../client/data.ts'
 import { CollectionTile } from '../kit/collection-art.tsx'
 import { gutter, webHref } from './shell.tsx'
-
-const link =
-  'rounded-full px-3.5 py-1.5 text-text-2 text-ui outline-none hover:text-text focus-visible:ring-focus aria-[current=page]:bg-text aria-[current=page]:text-bg'
-
-/** Movies or Collections: the library's two views. */
-export function LibraryNav({ current }: { current: 'movies' | 'collections' }) {
-  return (
-    <nav aria-label="Library" className="flex gap-1">
-      <a
-        href={webHref('/library')}
-        aria-current={current === 'movies' ? 'page' : undefined}
-        className={link}
-      >
-        Movies
-      </a>
-      <a
-        href={webHref('/library/collections')}
-        aria-current={current === 'collections' ? 'page' : undefined}
-        className={link}
-      >
-        Collections
-      </a>
-    </nav>
-  )
-}
 
 export function WebCollections() {
   const list = useCollections('web')
@@ -37,7 +13,6 @@ export function WebCollections() {
   return (
     <main className={cn('mx-auto w-full grid max-w-[1680px] gap-6 pt-6 pb-16', gutter)}>
       <div className="grid gap-3">
-        <LibraryNav current="collections" />
         <div className="grid gap-1">
           <h1 className="text-heading">Collections</h1>
           {list.status === 'success' && (
