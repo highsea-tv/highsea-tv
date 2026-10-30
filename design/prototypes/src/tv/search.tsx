@@ -18,6 +18,7 @@ import {
   TvTile,
   tvHref,
   tvKey,
+  tvTitleTop,
   useInitialFocus,
 } from './kit.tsx'
 
@@ -59,10 +60,16 @@ export function TvSearch() {
   return (
     <>
       <GlobalNav down="keys" />
-      <div className="absolute inset-0 grid grid-cols-[30cqw_minmax(0,1fr)] gap-[3cqw] px-(--tv-safe-x) pt-[calc(7cqw-var(--tv-head,0px))] pb-(--tv-safe-y)">
+      <div
+        className={`absolute inset-0 grid grid-cols-[30cqw_minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-[3cqw] gap-y-[1.2cqw] px-(--tv-safe-x) ${tvTitleTop} pb-(--tv-safe-y)`}
+      >
         <ServerIdentity />
+        {/* the title across both columns, as the other screens head theirs (the owner,
+        2026-10-30), so the field and the results start level under it */}
+        <h1 className="col-span-full font-semibold text-[2.6cqw] leading-none tracking-display">
+          Search
+        </h1>
         <div className="grid content-start gap-[1.2cqw]">
-          <h1 className="sr-only">Search</h1>
           <p
             aria-live="polite"
             className="flex h-[3.4cqw] items-center rounded-[0.5cqw] border-[0.15cqw] border-text px-[1cqw] text-(length:--tv-text-button)"

@@ -16,6 +16,7 @@ import {
   TvMessage,
   TvPoster,
   tvHref,
+  tvTitleTop,
   useInitialFocus,
   useTvNav,
 } from './kit.tsx'
@@ -173,7 +174,7 @@ export function TvLibrary() {
         <div
           data-scroll="y"
           data-keep="0.35"
-          className="relative grid grid-cols-1 gap-[1.6cqw] px-(--tv-safe-x) pt-[calc(7cqw-var(--tv-head,0px))] pb-[4cqw] transition-lift"
+          className={`relative grid grid-cols-1 gap-[1.6cqw] px-(--tv-safe-x) ${tvTitleTop} pb-[4cqw] transition-lift`}
         >
           {/* in the track, so it scrolls away rather than covering the grid */}
           <ServerIdentity />

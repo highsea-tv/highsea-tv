@@ -5,7 +5,15 @@
 import { Icon } from '@highsea-tv/ui-web'
 import { collectionCaption, useCollections } from '../client/data.ts'
 import { CollectionTile } from '../kit/collection-art.tsx'
-import { GlobalNav, ServerIdentity, TvButton, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
+import {
+  GlobalNav,
+  ServerIdentity,
+  TvButton,
+  TvMessage,
+  tvHref,
+  tvTitleTop,
+  useInitialFocus,
+} from './kit.tsx'
 
 export const pill =
   'rounded-full px-[1.2cqw] py-[0.45cqw] font-semibold text-(length:--tv-text-pill) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:shadow-(--tv-focus-shadow) aria-[current=page]:bg-text/12 aria-[current=page]:text-text'
@@ -73,7 +81,7 @@ export function TvCollections() {
         <div
           data-scroll="y"
           data-keep="0.35"
-          className="relative grid grid-cols-1 gap-[1.6cqw] px-(--tv-safe-x) pt-[calc(7cqw-var(--tv-head,0px))] pb-[4cqw] transition-lift"
+          className={`relative grid grid-cols-1 gap-[1.6cqw] px-(--tv-safe-x) ${tvTitleTop} pb-[4cqw] transition-lift`}
         >
           <ServerIdentity />
           <div className="flex items-end gap-[2cqw]">

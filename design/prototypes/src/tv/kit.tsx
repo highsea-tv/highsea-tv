@@ -325,6 +325,14 @@ export const RailContext = createContext<RailHost | null>(null)
 export const backdropReach =
   '-translate-x-(--tv-shift) transition-[translate] duration-300 ease-out motion-reduce:transition-none'
 
+/**
+ * Where a screen's header row starts, so its title's capitals centre on the rail's mark (the
+ * owner, 2026-10-30). The mark's centre is 4.7cqw down (the safe area's 3.2, its 0.4 padding and
+ * half its 2.2); Geist's capitals are 0.71em tall, so a 2.6cqw title set without leading centres
+ * them 1.275cqw below its top, which is then 3.425cqw down: 7.225cqw less the rail's head.
+ */
+export const tvTitleTop = 'pt-[calc(7.225cqw-var(--tv-head,0px))]'
+
 export const pageTop = (nav: TvNav) => (nav === 'band' ? 7.6 : 3.2)
 
 /**
