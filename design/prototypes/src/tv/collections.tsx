@@ -84,7 +84,7 @@ export function TvCollections() {
   const shown = families.filter((f) => show === 'all' || show === f.value)
   return (
     <>
-      <main className="absolute inset-0 overflow-hidden [mask-image:linear-gradient(transparent,black_var(--tv-safe-y))]">
+      <main className="absolute inset-0 overflow-hidden">
         <div
           data-scroll="y"
           data-keep="0.35"

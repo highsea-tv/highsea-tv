@@ -3,7 +3,7 @@
 // screen and the title's logo low on the left, here beside the poster and with the fuller details
 // (the owner, 2026-10-30); then the cast and More like this as rows, which scroll the hero away. Audio and subtitles opens the shared panel; Back closes it, then leaves.
 import { Icon, Poster, QualityTag, Rating } from '@highsea-tv/ui-web'
-import { type KeyboardEvent, useEffect, useRef, useState } from 'react'
+import { type KeyboardEvent, useRef, useState } from 'react'
 import { useParams } from 'wouter'
 import { left, runtime, useItem } from '../client/data.ts'
 import { useMarkWatched } from '../client/item-more.tsx'
@@ -29,17 +29,6 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
   const [focusKey, setFocusKey] = useState(0)
   const [options, setOptions] = useState(false)
   const hold = useHold(() => setOptions(true))
-  // below the hero, the row above fades out under the top edge rather than being cut
-  const [lifted, setLifted] = useState(false)
-  useEffect(() => {
-    const onFocus = (e: FocusEvent) => {
-      const el = e.target as HTMLElement
-      if (el.closest('[data-scroll="y"]'))
-        setLifted(!el.closest('[data-group="actions"], [data-group="nav"]'))
-    }
-    document.addEventListener('focusin', onFocus)
-    return () => document.removeEventListener('focusin', onFocus)
-  }, [])
   useInitialFocus(detail.status === 'success' && !panel && !options, `${id}:${focusKey}`)
   // Up and Down go row by row: the actions, the cast, then More like this
   const rows = useRef<HTMLDivElement>(null)
@@ -77,7 +66,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
     <>
       <div
         {...(panel || options ? { 'data-isolate': '' } : {})}
-        className={`absolute inset-0 overflow-hidden ${lifted ? '[mask-image:linear-gradient(transparent,black_var(--tv-safe-y))]' : ''}`}
+        className="absolute inset-0 overflow-hidden"
       >
         <div
           ref={rows}

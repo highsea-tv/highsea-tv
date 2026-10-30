@@ -149,10 +149,7 @@ export function TvLibrary() {
           ))}
         </nav>
       )}
-      <main
-        ref={index.main}
-        className="absolute inset-0 overflow-hidden [mask-image:linear-gradient(transparent,black_var(--tv-safe-y))]"
-      >
+      <main ref={index.main} className="absolute inset-0 overflow-hidden">
         <div
           data-scroll="y"
           data-keep="0.4"

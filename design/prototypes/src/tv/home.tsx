@@ -185,36 +185,31 @@ function Home({ sections }: { sections: HomeSection[] }) {
   useInitialFocus(true)
   useRowNavigation(rowsRef)
   return (
-    <>
-      {/* lifted, the row above fades out under the top edge rather than being cut */}
-      <div
-        className={`absolute inset-0 overflow-hidden ${lifted ? '[mask-image:linear-gradient(transparent,black_var(--tv-safe-y))]' : ''}`}
-      >
-        {hero && <Bloom items={hero.items.slice(0, 1)} active={0} shown={!lifted} />}
-        <div ref={page} style={style} className="relative transition-lift">
-          {/* the announcement across the very top, then the head, both scrolling away with the
+    <div className="absolute inset-0 overflow-hidden">
+      {hero && <Bloom items={hero.items.slice(0, 1)} active={0} shown={!lifted} />}
+      <div ref={page} style={style} className="relative transition-lift">
+        {/* the announcement across the very top, then the head, both scrolling away with the
           page (the owner, 2026-10-30) */}
-          <AnnouncementBanner />
-          <TvHead className="px-(--tv-safe-x)" />
-          <div
-            ref={rowsRef}
-            data-rows=""
-            className="relative grid grid-cols-1 gap-[1.6cqw] pt-[1.6cqw] pb-(--tv-safe-y)"
-          >
-            {hero && (
-              <div data-row={0} data-section={hero.id} className="grid grid-cols-1">
-                <Featured section={hero} />
-              </div>
-            )}
-            {rows.map((s, i) => (
-              <div key={s.id} data-row={i + 1} data-section={s.id} className="grid grid-cols-1">
-                <Row section={s} goUp={i === 0 && hero ? 'hero' : undefined} />
-              </div>
-            ))}
-          </div>
+        <AnnouncementBanner />
+        <TvHead className="px-(--tv-safe-x)" />
+        <div
+          ref={rowsRef}
+          data-rows=""
+          className="relative grid grid-cols-1 gap-[1.6cqw] pt-[1.6cqw] pb-(--tv-safe-y)"
+        >
+          {hero && (
+            <div data-row={0} data-section={hero.id} className="grid grid-cols-1">
+              <Featured section={hero} />
+            </div>
+          )}
+          {rows.map((s, i) => (
+            <div key={s.id} data-row={i + 1} data-section={s.id} className="grid grid-cols-1">
+              <Row section={s} goUp={i === 0 && hero ? 'hero' : undefined} />
+            </div>
+          ))}
         </div>
       </div>
-    </>
+    </div>
   )
 }
 
