@@ -9,6 +9,13 @@
 
 @source "./";
 
+/*
+ * Focus styles wait while an item's row slides it into place: the spatial navigator marks the
+ * item [data-settling] until the slide ends (focus/navigator.ts). Every `focus-visible:` and
+ * `group-focus-visible:` utility goes through this variant (Tailwind's @custom-variant).
+ */
+@custom-variant focus-visible (&:focus-visible:not([data-settling]));
+
 /* ---------- motion ---------- */
 
 @theme {
@@ -120,7 +127,7 @@
 
 /* The focus ring for elements whose own outline is clipped: drawn inside the box. */
 @utility focus-ring-inset {
-  &:focus-visible {
+  &:focus-visible:not([data-settling]) {
     outline: var(--focus-ring-width) solid var(--color-focus);
     outline-offset: calc(var(--focus-ring-width) * -1);
   }
@@ -186,7 +193,7 @@
   }
 
   /* the one focus ring: 2px `focus`, 2px offset (accessibility.md#operable) */
-  :focus-visible {
+  :focus-visible:not([data-settling]) {
     outline: var(--focus-ring-width) solid var(--color-focus);
     outline-offset: var(--focus-ring-offset);
   }

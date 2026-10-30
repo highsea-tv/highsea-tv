@@ -18,6 +18,7 @@ import { createPortal } from 'react-dom'
 import { useLocation } from 'wouter'
 import { clientHref, useAnnouncements, useConnection, useServer } from '../client/data.ts'
 import { mediaCard } from '../client/media-card.tsx'
+import { Inline } from '../kit/inline.tsx'
 import type { ClientItem } from '../mock/types.ts'
 import type { TvNav } from '../proto/state.ts'
 import { useProto } from '../screen/screen.tsx'
@@ -110,14 +111,26 @@ export function ServerIdentity({ always = false }: { always?: boolean }) {
   )
 }
 
-/** Top right: the owner's newest announcement, as a pill. It scrolls with the page too. */
-export function AnnouncementPill() {
+/**
+ * The owner's newest announcement, as a full-width block at the top of Home, before every section
+ * (the owner, 2026-10-30): in the page's flow, so nothing covers it, and it scrolls away with the
+ * page. Not a focus stop: the TV can't follow its link, so a call to action stays on the other
+ * apps.
+ */
+export function AnnouncementBanner() {
   const a = useAnnouncements('tv')
   if (!a.latest || a.latest.acknowledgement === 'require') return null
   return (
-    <div className="absolute top-(--tv-safe-y) right-(--tv-safe-x) flex max-w-[30cqw] items-center gap-[0.6cqw] rounded-full bg-s2/75 px-[1.2cqw] py-[0.5cqw] text-(length:--tv-text-pill) text-text-2 backdrop-blur-pill">
-      <Icon name="announcement" size={24} className="size-[1.1cqw] shrink-0" />
-      <span className="truncate">{a.latest.title}</span>
+    <div className="px-(--tv-safe-x)">
+      <div className="flex items-center gap-[1.2cqw] rounded-[1cqw] bg-s2 px-[1.6cqw] py-[1cqw]">
+        <Icon name="announcement" size={32} className="size-[1.6cqw] shrink-0 text-accent-text" />
+        <div className="grid min-w-0 gap-[0.2cqw]">
+          <p className="truncate font-semibold text-(length:--tv-text-meta)">{a.latest.title}</p>
+          <p className="truncate text-(length:--tv-text-pill) text-text-2">
+            <Inline text={a.latest.body} />
+          </p>
+        </div>
+      </div>
     </div>
   )
 }
@@ -331,9 +344,9 @@ export function GlobalNav({ down = 'hero', lifted }: { down?: string; lifted?: b
             aria-hidden
             className="pointer-events-none absolute inset-x-0 top-0 h-[8.6cqw] bg-[linear-gradient(var(--color-bg)_80%,transparent)]"
           />
-          {/* the band covers the page's own top, so it carries what sits there */}
+          {/* the band covers the page's own top, so it carries the server's mark; Home's
+          announcement sits in the page's flow, below it */}
           <ServerIdentity />
-          {location === '/' && <AnnouncementPill />}
         </>
       )}
       <div className="relative flex gap-[0.6cqw] rounded-full bg-s2/85 p-[0.4cqw] backdrop-blur-pill">
@@ -434,7 +447,8 @@ function Rail({ down }: { down: string }) {
               className="flex items-center gap-[0.9cqw] rounded-full font-semibold text-(length:--tv-text-button) text-text-3 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text"
             >
               <Icon name={d.icon} size={24} className="size-[1.4cqw] shrink-0" />
-              {open && <span className="pe-[0.8cqw]">{d.label}</span>}
+              {/* a line no taller than the icon, so opening adds only width */}
+              {open && <span className="pe-[0.8cqw] leading-[1.4cqw]">{d.label}</span>}
             </a>
           ))}
         </div>
@@ -459,7 +473,7 @@ function RailServer({ open }: { open: boolean }) {
     <div style={{ padding: railArtPad }} className="flex items-center gap-[0.9cqw] self-start">
       <Mark size={32} className="size-[2.2cqw] shrink-0" />
       {open && (
-        <span className="grid pe-[0.8cqw]">
+        <span className="grid h-[2.2cqw] content-center pe-[0.8cqw]">
           <span className="whitespace-nowrap font-semibold text-(length:--tv-text-button) leading-[1.15]">
             {server.data?.name ?? 'Harbor'}
           </span>
@@ -491,7 +505,7 @@ function RailAccount({ open }: { open: boolean }) {
       <span className="grid size-[2.2cqw] shrink-0 place-items-center rounded-full bg-accent-soft text-(length:--tv-text-pill) text-accent-text group-focus-visible/account:bg-bg group-focus-visible/account:text-text">
         I
       </span>
-      {open && <span className="pe-[0.8cqw]">Ines</span>}
+      {open && <span className="pe-[0.8cqw] leading-[2.2cqw]">Ines</span>}
     </button>
   )
 }

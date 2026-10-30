@@ -1,19 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C2 Home, TV (docs/product/client-home.md#tv): the locked Hero + rows layout (tv.md#layout).
-// The hero fills the screen behind the featured row, its copy low on the left under the title's
-// logo, so the backdrop has the room (the owner, 2026-10-30). It follows focus through the featured row after a 220 ms dwell and cross-fades; the rows
-// below it don't bind it: focus there lifts the page past the hero. Up from the featured row goes
-// to the hero actions, and Up from those opens the global navigation. Rows remember their spot.
+// The featured titles lead as a row of large 16:9 cards, the next one showing at the right edge
+// (the owner, 2026-10-30); OK on one opens the movie. The rows follow: focus there lifts the page
+// past the featured cards, Up from the first row comes back to them, and Up from those opens the
+// global navigation. Rows remember their spot.
 // An announcement that must be acknowledged comes first, on its own.
-import { durations } from '@highsea-tv/tokens'
-import { Icon, QualityTag, springBase, useDwell } from '@highsea-tv/ui-web'
-import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import { Icon, QualityTag } from '@highsea-tv/ui-web'
+import { useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
-import { left, meta, qualityTags, useAnnouncements, useHome } from '../client/data.ts'
+import { meta, qualityTags, useAnnouncements, useHome } from '../client/data.ts'
 import { Inline } from '../kit/inline.tsx'
 import type { ClientItem, HomeSection } from '../mock/types.ts'
 import {
-  AnnouncementPill,
+  AnnouncementBanner,
   GlobalNav,
   pageTop,
   ServerIdentity,
@@ -26,103 +25,88 @@ import {
   useTvNav,
 } from './kit.tsx'
 
-function HeroCopy({ item }: { item: ClientItem }) {
+/**
+ * A featured title as one large 16:9 card, which lifts only slightly on focus: at this size the
+ * posters' zoom would push it under the rail: its backdrop, with the title's logo, the details and
+ * the tagline low on the left. OK opens the movie, where Play is (the owner, 2026-10-30).
+ */
+function FeaturedCard({ item, initial }: { item: ClientItem; initial: boolean }) {
   return (
-    <motion.div
-      key={item.id}
-      initial={{ opacity: 0, y: -6 }}
-      animate={{ opacity: 1, y: 0, transition: springBase }}
-      exit={{
-        opacity: 0,
-        y: 4,
-        transition: { duration: durations.fadeOut / 1000, ease: 'linear' },
-      }}
-      className="grid gap-[0.8cqw]"
+    <a
+      href={tvHref(`/movies/${item.id}`)}
+      data-focusable=""
+      {...(initial ? { 'data-initial': '' } : {})}
+      aria-label={`${item.title}, ${meta(item)}`}
+      className="relative block h-[40.5cqw] overflow-hidden rounded-[1.4cqw] bg-s2 outline-none transition-lift focus-visible:scale-[1.015] focus-visible:shadow-(--tv-focus-shadow)"
     >
-      {/* the title's logo in place of its name, as the streaming apps set it; the name when TMDB
-      has no logo */}
-      <h1 className="font-semibold text-(length:--tv-text-hero-title) leading-[0.95] tracking-display">
-        {item.art.logo ? (
-          <img
-            src={item.art.logo}
-            alt={item.title}
-            className="max-h-[7.5cqw] max-w-[28cqw] object-contain object-left drop-shadow-[0_0.2cqw_0.8cqw_rgb(0_0_0/0.5)]"
-          />
-        ) : (
-          item.title
-        )}
-      </h1>
-      <p className="flex items-center gap-[1cqw] text-(length:--tv-text-meta) text-text-2">
-        {meta(item)}
-        {item.progress !== null && <span>· {left(item)}</span>}
-        {qualityTags(item).map((q) => (
-          <QualityTag key={q} overlay className="text-(length:--tv-text-quality)">
-            {q}
-          </QualityTag>
-        ))}
-      </p>
-      <p className="line-clamp-2 max-w-[34cqw] text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
-        {item.tagline ?? item.synopsis}
-      </p>
-    </motion.div>
+      <img src={item.art.backdrop} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(0_0_0/0.7),transparent_55%),linear-gradient(0deg,rgb(0_0_0/0.6),transparent_45%)]" />
+      <div className="absolute bottom-[2.8cqw] left-[2.8cqw] grid max-w-[34cqw] gap-[0.8cqw]">
+        {/* the title's logo in place of its name, as the streaming apps set it; the name when TMDB
+        has no logo */}
+        <h2 className="font-semibold text-(length:--tv-text-hero-title) leading-[0.95] tracking-display">
+          {item.art.logo ? (
+            <img
+              src={item.art.logo}
+              alt={item.title}
+              className="max-h-[7cqw] max-w-[26cqw] object-contain object-left drop-shadow-[0_0.2cqw_0.8cqw_rgb(0_0_0/0.5)]"
+            />
+          ) : (
+            item.title
+          )}
+        </h2>
+        <p className="flex items-center gap-[1cqw] text-(length:--tv-text-meta) text-text-2">
+          {meta(item)}
+          {qualityTags(item).map((q) => (
+            <QualityTag key={q} overlay className="text-(length:--tv-text-quality)">
+              {q}
+            </QualityTag>
+          ))}
+        </p>
+        <p className="line-clamp-2 text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
+          {item.tagline ?? item.synopsis}
+        </p>
+      </div>
+    </a>
   )
 }
 
-function Backdrop({ src }: { src: string }) {
-  // two layers, cross-fading: the new one loads behind, then comes forward
-  const [layers, setLayers] = useState({ a: src, b: '', front: 'a' as 'a' | 'b' })
-  useEffect(() => {
-    setLayers((l) =>
-      l[l.front] === src
-        ? l
-        : { ...l, [l.front === 'a' ? 'b' : 'a']: src, front: l.front === 'a' ? 'b' : 'a' },
-    )
-  }, [src])
-  // the whole 16:9 screen (56.25cqw tall), fading into the background at the left, under the
-  // copy (solid as far as the rail's background reaches, so its edge doesn't show), and at the
-  // foot, under the featured row
+/**
+ * The featured titles as a row of large cards, the first whole and the next showing at the right
+ * edge so there's more to see; it keeps focus in the first slot, as the rows do.
+ */
+function Featured({ section }: { section: HomeSection }) {
   return (
-    <>
-      {(['a', 'b'] as const).map((k) =>
-        layers[k] ? (
-          <img
-            key={k}
-            src={layers[k]}
-            alt=""
-            className={`absolute inset-x-0 top-0 h-[56.25cqw] w-full object-cover transition-opacity duration-700 ${layers.front === k ? 'opacity-100' : 'opacity-0'}`}
-          />
-        ) : null,
-      )}
-      <div className="absolute inset-x-0 top-0 h-[56.25cqw] bg-[linear-gradient(90deg,var(--color-bg)_7%,transparent_50%),linear-gradient(0deg,var(--color-bg)_8%,transparent_45%)]" />
-    </>
+    <section
+      data-group="hero"
+      data-go-up="nav"
+      aria-label={section.title}
+      className="grid grid-cols-1"
+    >
+      <div className="grid grid-cols-1">
+        <ul
+          data-scroll="x"
+          data-keep="start"
+          className="flex w-max gap-[2cqw] px-(--tv-safe-x) py-[1cqw] transition-lift"
+        >
+          {section.items.map((m, i) => (
+            <li key={m.id} className="w-[72cqw] shrink-0">
+              <FeaturedCard item={m} initial={i === 0} />
+            </li>
+          ))}
+        </ul>
+      </div>
+    </section>
   )
 }
 
-function Row({
-  section,
-  featured,
-  onFocusItem,
-}: {
-  section: HomeSection
-  featured: boolean
-  onFocusItem: (m: ClientItem) => void
-}) {
+function Row({ section, goUp }: { section: HomeSection; goUp?: string }) {
   // every card on Home is 16:9; Continue watching's resume, the rest open the movie
   const resume = section.layout === 'continue'
   return (
-    <TvRow
-      group={section.id}
-      title={section.title}
-      suffix={section.suffix}
-      goUp={featured ? 'hero' : undefined}
-    >
+    <TvRow group={section.id} title={section.title} suffix={section.suffix} goUp={goUp}>
       {section.items.map((m) => (
-        <li
-          key={m.id}
-          className="w-[17cqw] shrink-0"
-          // only the featured titles bind the hero
-          onFocus={featured ? () => onFocusItem(m) : undefined}
-        >
+        <li key={m.id} className="w-[17cqw] shrink-0">
           <TvPoster
             item={m}
             wide
@@ -172,16 +156,9 @@ function usePageOffset(clear: number) {
 
 function Home({ sections }: { sections: HomeSection[] }) {
   const hero = sections.find((s) => s.layout === 'hero')
-  const first = hero?.items[0] ?? sections[0]?.items[0]
-  const [focused, setFocused] = useState<ClientItem | undefined>(first)
-  const shown = useDwell(focused) ?? first
+  const rows = sections.filter((s) => s !== hero)
   const { page, style, lifted } = usePageOffset(pageTop(useTvNav()))
   useInitialFocus(true)
-  // the hero's own titles lead the rows, so focus can reach every featured title
-  const rows: HomeSection[] = sections.map((s) =>
-    s.layout === 'hero' ? { ...s, layout: 'row' } : s,
-  )
-  if (!shown) return null
   return (
     <>
       <GlobalNav lifted={lifted} />
@@ -190,33 +167,20 @@ function Home({ sections }: { sections: HomeSection[] }) {
         className={`absolute inset-0 overflow-hidden ${lifted ? '[mask-image:linear-gradient(transparent,black_3.2cqw)]' : ''}`}
       >
         <div ref={page} style={style} className="relative transition-lift">
-          <Backdrop src={shown.art.backdrop} />
           <ServerIdentity />
-          <AnnouncementPill />
-          {/* the copy sits low, just above the featured row, leaving the top to the backdrop */}
-          <div className="absolute top-0 left-(--tv-safe-x) grid h-[calc(35cqw-var(--tv-head,0px))] max-w-[36cqw] content-end gap-[1.6cqw]">
-            <AnimatePresence mode="wait">
-              <HeroCopy item={shown} />
-            </AnimatePresence>
-            {/* Play acts on what the hero shows (tv.md#hero-behavior) */}
-            <div data-group="hero" data-go-up="nav" className="flex gap-[1cqw]">
-              <TvButton primary initial icon="play" href={tvHref(`/play/${shown.id}`)}>
-                {shown.progress !== null ? 'Resume' : 'Play'}
-              </TvButton>
-              <TvButton icon="info" href={tvHref(`/movies/${shown.id}`)}>
-                Details
-              </TvButton>
-            </div>
-          </div>
-          {/* the rows start two thirds of the way down, so the featured row sits at the screen's
-          foot with the next row's title under it; positioned, so they paint over the backdrop */}
           <div
             data-rows=""
-            className="relative grid grid-cols-1 gap-[1.6cqw] pt-[calc(37.5cqw-var(--tv-head,0px))] pb-(--tv-safe-y)"
+            className="relative grid grid-cols-1 gap-[1.6cqw] pt-[calc(6cqw-var(--tv-head,0px))] pb-(--tv-safe-y)"
           >
+            <AnnouncementBanner />
+            {hero && (
+              <div data-row={0} data-section={hero.id} className="grid grid-cols-1">
+                <Featured section={hero} />
+              </div>
+            )}
             {rows.map((s, i) => (
-              <div key={s.id} data-row={i} data-section={s.id} className="grid grid-cols-1">
-                <Row section={s} featured={s.id === hero?.id} onFocusItem={setFocused} />
+              <div key={s.id} data-row={i + 1} data-section={s.id} className="grid grid-cols-1">
+                <Row section={s} goUp={i === 0 && hero ? 'hero' : undefined} />
               </div>
             ))}
           </div>

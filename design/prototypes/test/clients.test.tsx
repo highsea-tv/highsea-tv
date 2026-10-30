@@ -141,27 +141,24 @@ describe('C2 home', () => {
     await clean()
   })
 
-  test('TV: acknowledge, then the hero with Play and the global navigation', async () => {
+  test('TV: acknowledge, then the featured cards and the global navigation', async () => {
     const { user } = await open('/tv')
     await user.click(page().getByRole('button', { name: 'Got it' }))
     await settle()
-    expect(page().getByRole('heading', { level: 1, name: 'Sintel' })).toBeTruthy()
-    expect(page().getByRole('link', { name: /Play/ }).getAttribute('href')).toBe('#/tv/play/1')
+    const featured = within(page().getByRole('region', { name: 'Featured on Harbor' }))
+    const [first] = featured.getAllByRole('link')
+    if (!first) throw new Error('no featured card')
+    expect(first.getAttribute('href')).toBe('#/tv/movies/1')
+    expect(within(first).getByRole('heading', { level: 2, name: 'Sintel' })).toBeTruthy()
     expect(page().getByRole('navigation', { name: 'Main' }).dataset.isolate).toBe('')
     await clean()
   })
 
-  test('TV: only the featured row binds the hero', async () => {
+  test('TV: the featured titles are cards of their own, not a row as well', async () => {
     const { user } = await open('/tv')
     await user.click(page().getByRole('button', { name: 'Got it' }))
     await settle()
-    const row = (name: string) => within(page().getByRole('region', { name }))
-    act(() => row('Recently added').getByRole('link', { name: 'Agent 327, 2017' }).focus())
-    await act(() => new Promise((r) => setTimeout(r, 300)))
-    expect(page().getByRole('heading', { level: 1, name: 'Sintel' })).toBeTruthy()
-    act(() => row('Featured on Harbor').getByRole('link', { name: 'Spring, 2019' }).focus())
-    await act(() => new Promise((r) => setTimeout(r, 300)))
-    expect(page().getByRole('heading', { level: 1, name: 'Spring' })).toBeTruthy()
+    expect(page().getAllByRole('region', { name: 'Featured on Harbor' })).toHaveLength(1)
     await clean()
   })
 })
