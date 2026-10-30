@@ -9,9 +9,9 @@
 //                              keeps it in the track's first slot, an item always flush there
 //   [data-center]              don't clamp the track at its ends
 // A row's items that have passed out at its left, before its first visible slot, carry
-// [data-past], which styles.css fades out (the owner, 2026-10-30).
-// While a row slides to bring focus into place, the focused item carries [data-settling], which
-// holds back its focus styles (styles.css's focus-visible variant) until the slide ends.
+// [data-past], for a page to fade them.
+// The item focus leaves drops its ring at once rather than easing it out, while its scale and
+// colours ease back as before and the item gaining focus eases in (the owner, 2026-10-30).
 import { choreography, durations } from '@highsea-tv/tokens'
 import { type Box, type Direction, isAhead, pickBest, trackOffset, trackStart } from './spatial.ts'
 
@@ -83,30 +83,6 @@ export function createSpatialNavigator(
     return best
   }
 
-  // the item whose focus styles wait for its row to finish sliding (the owner, 2026-10-30)
-  let settling: { el: HTMLElement; timer: ReturnType<typeof setTimeout> } | null = null
-  const settle = () => {
-    if (!settling) return
-    clearTimeout(settling.timer)
-    delete settling.el.dataset.settling
-    settling = null
-  }
-  const holdFocusStyles = (el: HTMLElement, track: HTMLElement) => {
-    settle()
-    const style = getComputedStyle(track)
-    const props = style.transitionProperty.split(',').map((p) => p.trim())
-    const durations = style.transitionDuration.split(',').map((d) => d.trim())
-    const i = props.findIndex((p) => p === 'transform' || p === 'all')
-    const ms = i < 0 ? 0 : parseTime(durations[i % durations.length] ?? '0s')
-    if (ms <= 0) return
-    el.dataset.settling = ''
-    settling = { el, timer: setTimeout(settle, ms) }
-  }
-
-  // where each track was last put, and whether focus is moving along a row (only then does it wait)
-  const offsets = new WeakMap<HTMLElement, number>()
-  let sideways = false
-
   const scrollInto = (el: HTMLElement) => {
     for (
       let track = el.closest<HTMLElement>('[data-scroll]');
@@ -151,18 +127,13 @@ export function createSpatialNavigator(
         : x
           ? 'transform var(--duration-spring-quick) var(--ease-spring-quick)'
           : ''
-      // Left or Right that slides the row holds the item's focus styles back until it stops; a row
-      // already at its end, and moving between rows, show focus at once
-      const moved = Math.abs(offset - (offsets.get(track) ?? 0)) >= 1
-      if (x && sideways && moved && !reduced()) holdFocusStyles(el, track)
-      offsets.set(track, offset)
-      track.style.transform = x ? `translateX(${-offset}px)` : `translateY(${-offset}px)`
       if (x)
         for (const c of track.children as HTMLCollectionOf<HTMLElement>) {
           const start = box(c).left - tr.left - pad
           if (start < offset - 1) c.dataset.past = ''
           else delete c.dataset.past
         }
+      track.style.transform = x ? `translateX(${-offset}px)` : `translateY(${-offset}px)`
     }
   }
 
@@ -192,12 +163,9 @@ export function createSpatialNavigator(
       return null
     }
     memory.set(groupOf(from), from)
-    settle()
-    // focus() runs focusin's scrollInto before this returns
-    sideways = dir === 'left' || dir === 'right'
     to.focus({ preventScroll: true })
     scrollInto(to)
-    sideways = false
+    dropRing(from)
     options.onMove?.(to, from)
     return to
   }
@@ -225,16 +193,22 @@ export function createSpatialNavigator(
       if (el) scrollInto(el)
     },
     destroy() {
-      settle()
       root.removeEventListener('keydown', onKeyDown)
       root.removeEventListener('focusin', onFocusIn)
     },
   }
 }
 
-/** A CSS time (`0.3s`, `300ms`) in milliseconds. */
-const parseTime = (t: string) =>
-  (t.endsWith('ms') ? Number.parseFloat(t) : Number.parseFloat(t) * 1000) || 0
+/**
+ * Ends the ring's fade on an item focus has left, so it goes at once. The ring is a box-shadow
+ * (`--tv-focus-shadow`, `ring-focus`), on the item or inside it; reading its transitions
+ * (`getAnimations`) flushes the blur's style change first, and finishing one jumps to its end.
+ */
+function dropRing(el: HTMLElement) {
+  if (typeof el.getAnimations !== 'function') return
+  for (const a of el.getAnimations({ subtree: true }))
+    if (a instanceof CSSTransition && a.transitionProperty === 'box-shadow') a.finish()
+}
 
 /** Plays the select pulse (brightness 1 → 1.35 → 1 over `duration.pulse`). */
 export function pulse(el: HTMLElement, reducedMotion = false): void {

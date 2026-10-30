@@ -10,12 +10,12 @@ import { useMarkWatched } from '../client/item-more.tsx'
 import { useAction } from '../mock/hooks.tsx'
 import type { ClientItem, PlaybackPrefs } from '../mock/types.ts'
 import { useBack } from './back.ts'
+import { TvFilmRow } from './film-row.tsx'
 import {
   GlobalNav,
   ServerIdentity,
   TvButton,
   TvMessage,
-  TvPoster,
   TvRow,
   tvHref,
   useInitialFocus,
@@ -191,14 +191,14 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
             </TvRow>
           )}
           {d.related.length > 0 && (
-            <TvRow group="related" title="More like this" goUp="actions" className="relative">
-              {d.related.map((r) => (
-                // Home's 16:9 cards
-                <li key={r.id} className="w-[17cqw] shrink-0">
-                  <TvPoster item={r} wide href={tvHref(`/movies/${r.id}`)} />
-                </li>
-              ))}
-            </TvRow>
+            <TvFilmRow
+              group="related"
+              title="More like this"
+              goUp="actions"
+              className="relative"
+              items={d.related}
+              hrefOf={(r) => tvHref(`/movies/${r.id}`)}
+            />
           )}
         </div>
       </div>

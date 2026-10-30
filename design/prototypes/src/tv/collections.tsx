@@ -1,10 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Library › Collections, TV (docs/product/collections.md#in-the-apps): Movies and Collections as a
-// pair of choices under the global nav, then the collections as a poster grid, smart ones marked.
-// Up from the grid reaches the choices, Up again the nav; focus starts on the first collection.
+// Collections, TV (docs/product/collections.md#in-the-apps): a destination of its own in the
+// global nav (the owner, 2026-10-30). A collection holds one family of media, video (movies and
+// shows) or audio (music), in any mix within it, so the page has three choices beside its title:
+// All, the default, with Video and Audio as two sections, then each family on its own. The
+// collections are a poster grid, smart ones marked. Up from the grid reaches the choices, Up again
+// the nav; focus starts on the first collection.
 import { Icon } from '@highsea-tv/ui-web'
+import { useState } from 'react'
 import { collectionCaption, useCollections } from '../client/data.ts'
 import { CollectionTile } from '../kit/collection-art.tsx'
+import type { ClientCollection } from '../mock/types.ts'
 import {
   GlobalNav,
   ServerIdentity,
@@ -15,50 +20,60 @@ import {
   useInitialFocus,
 } from './kit.tsx'
 
-export const pill =
-  'rounded-full px-[1.2cqw] py-[0.45cqw] font-semibold text-(length:--tv-text-pill) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:shadow-(--tv-focus-shadow) aria-[current=page]:bg-text/12 aria-[current=page]:text-text'
+type Family = 'video' | 'audio'
+type Show = 'all' | Family
 
-/** Movies or Collections: the library's two views, a D-pad group of their own. */
-export function LibraryKind({
-  current,
-  down,
-  right,
-}: {
-  current: 'movies' | 'collections'
-  down: string
-  right?: string
-}) {
+const choices: { value: Show; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'video', label: 'Video' },
+  { value: 'audio', label: 'Audio' },
+]
+
+const families: { value: Family; label: string; none: string }[] = [
+  {
+    value: 'video',
+    label: 'Video',
+    none: 'No video collections yet. When the server’s owner makes them, they show up here.',
+  },
+  {
+    value: 'audio',
+    label: 'Audio',
+    none: 'Audio collections show up here once highsea plays music, in a later version.',
+  },
+]
+
+/**
+ * A collection's family. The server will send it with each collection; until shows and music
+ * come, every collection holds movies, so every one is video.
+ */
+const familyOf = (_c: ClientCollection): Family => 'video'
+
+const choice =
+  'rounded-full px-[1.2cqw] py-[0.45cqw] font-semibold text-(length:--tv-text-pill) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:shadow-(--tv-focus-shadow) aria-pressed:bg-text/12 aria-pressed:text-text'
+
+function Grid({ label, xs }: { label: string; xs: ClientCollection[] }) {
   return (
-    <nav
-      aria-label="Library"
-      data-group="kind"
-      data-go-up="nav"
-      data-go-down={down}
-      data-go-right={right}
-      className="flex gap-[0.8cqw]"
-    >
-      <a
-        href={tvHref('/library')}
-        data-focusable=""
-        aria-current={current === 'movies' ? 'page' : undefined}
-        className={pill}
-      >
-        Movies
-      </a>
-      <a
-        href={tvHref('/library/collections')}
-        data-focusable=""
-        aria-current={current === 'collections' ? 'page' : undefined}
-        className={pill}
-      >
-        Collections
-      </a>
-    </nav>
+    <ul aria-label={label} className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]">
+      {xs.map((c) => (
+        <li key={c.id}>
+          <CollectionTile
+            tv
+            href={tvHref(`/collections/${c.id}`)}
+            name={c.name}
+            caption={collectionCaption(c)}
+            poster={c.art.poster}
+            mosaic={c.smart?.mosaic}
+            smart={!!c.smart?.words}
+          />
+        </li>
+      ))}
+    </ul>
   )
 }
 
 export function TvCollections() {
   const list = useCollections('tv')
+  const [show, setShow] = useState<Show>('all')
   useInitialFocus(list.status === 'success', null, '[data-group="grid"] [data-focusable]')
   if (list.status === 'error')
     return (
@@ -74,6 +89,7 @@ export function TvCollections() {
       </TvMessage>
     )
   const xs = list.data ?? []
+  const shown = families.filter((f) => show === 'all' || show === f.value)
   return (
     <>
       <GlobalNav down="kind" />
@@ -88,37 +104,51 @@ export function TvCollections() {
             <h1 className="font-semibold text-[2.6cqw] leading-none tracking-display">
               Collections
             </h1>
-            <LibraryKind current="collections" down="grid" />
+            <div
+              data-group="kind"
+              data-go-up="nav"
+              data-go-down="grid"
+              className="flex gap-[0.8cqw]"
+            >
+              {choices.map((c) => (
+                <button
+                  key={c.value}
+                  type="button"
+                  data-focusable=""
+                  aria-pressed={show === c.value}
+                  onClick={() => setShow(c.value)}
+                  className={choice}
+                >
+                  {c.label}
+                </button>
+              ))}
+            </div>
           </div>
           {list.status === 'loading' ? (
             <div aria-busy className="grid place-items-center py-[6cqw]">
               <Icon name="loading" size={48} className="size-[3cqw] animate-spin text-text-3" />
             </div>
-          ) : xs.length === 0 ? (
-            <p className="text-(length:--tv-text-synopsis) text-text-2">
-              No collections yet. When the server’s owner makes collections, they show up here.
-            </p>
           ) : (
-            <ul
-              aria-label="Collections"
-              data-group="grid"
-              data-go-up="kind"
-              className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]"
-            >
-              {xs.map((c) => (
-                <li key={c.id}>
-                  <CollectionTile
-                    tv
-                    href={tvHref(`/collections/${c.id}`)}
-                    name={c.name}
-                    caption={collectionCaption(c)}
-                    poster={c.art.poster}
-                    mosaic={c.smart?.mosaic}
-                    smart={!!c.smart?.words}
-                  />
-                </li>
-              ))}
-            </ul>
+            // one D-pad group across the sections, so Down from the last video row reaches the
+            // first audio one
+            <div data-group="grid" data-go-up="kind" className="grid gap-[2.4cqw]">
+              {shown.map((f) => {
+                const mine = xs.filter((c) => familyOf(c) === f.value)
+                return (
+                  <section key={f.value} aria-label={f.label} className="grid gap-[1cqw]">
+                    {/* All names each section; a family on its own is already named by its choice */}
+                    {show === 'all' && (
+                      <h2 className="font-semibold text-(length:--tv-text-row-title)">{f.label}</h2>
+                    )}
+                    {mine.length === 0 ? (
+                      <p className="text-(length:--tv-text-synopsis) text-text-2">{f.none}</p>
+                    ) : (
+                      <Grid label={`${f.label} collections`} xs={mine} />
+                    )}
+                  </section>
+                )
+              })}
+            </div>
           )}
         </div>
       </main>

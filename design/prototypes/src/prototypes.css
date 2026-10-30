@@ -60,3 +60,23 @@ html[data-chrome] #root {
 html[data-chrome] body {
   margin: 0;
 }
+
+/*
+ * The TV's rows beside the rail (tv/kit.tsx): the rail has no background, so nothing may pass
+ * under its icons. Each row is cut off a cqw short of the page's inset, the room a focused card's
+ * zoom needs, and a card leaving at the left fades out quickly, in about the first third of the
+ * row's slide, so it's gone by the time it reaches that line; one coming back eases in on the
+ * slide's own spring (the owner, 2026-10-30). The cut reaches past the row above and below, so
+ * the focused card's ring and shadow aren't clipped. The navigator marks a leaving card [data-past].
+ */
+[data-rail] :has(> [data-scroll="x"]) {
+  clip-path: inset(-4cqw 0 -4cqw calc(var(--tv-safe-x) - 1cqw));
+}
+[data-rail] [data-scroll="x"] > * {
+  transition: opacity var(--duration-spring-quick) var(--ease-spring-quick);
+}
+[data-rail] [data-scroll="x"] > [data-past] {
+  opacity: 0;
+  transition-duration: var(--duration-fade-out);
+  transition-timing-function: var(--ease-out);
+}

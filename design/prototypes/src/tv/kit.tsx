@@ -256,7 +256,12 @@ export function TvRow({
 const destinations: { path: string; label: string; icon: IconName }[] = [
   { path: '/', label: 'Home', icon: 'home' },
   { path: '/search', label: 'Search', icon: 'search' },
-  { path: '/library', label: 'Library', icon: 'library' },
+  // a destination per kind of media, Collections first since one can hold several kinds of the
+  // same family, video or audio (the owner, 2026-10-30); the admin keeps them in one Library
+  { path: '/collections', label: 'Collections', icon: 'library' },
+  { path: '/movies', label: 'Movies', icon: 'movie' },
+  { path: '/shows', label: 'Shows', icon: 'series' },
+  { path: '/music', label: 'Music', icon: 'music' },
   { path: '/settings', label: 'Settings', icon: 'settings' },
 ]
 
@@ -275,15 +280,12 @@ export const railInset = railGap * 2 + railIcon
 /**
  * What the app hands the rail: the slot it's drawn into, outside the page so the page can move
  * aside for it; `push`, which moves the page right by that many pixels while the rail is open;
- * `leave`, which puts focus back where it was in the page; and Home's bloom, which the rail paints
- * over its background too, so the glow carries on behind the icons.
+ * and `leave`, which puts focus back where it was in the page.
  */
 export type RailHost = {
   slot: HTMLElement | null
   push: (px: number) => void
   leave: (fallback: string) => void
-  bloom: Bloom | null
-  setBloom: (bloom: Bloom | null) => void
 }
 
 /** Home's bloom: a glow colour for each featured card, the one focus is on, and whether it shows. */
@@ -413,8 +415,6 @@ function Rail({ down }: { down: string }) {
   const host = useContext(RailContext)
   const [location] = useLocation()
   const [open, setOpen] = useState(false)
-  // how far the page is pushed right, which the rail's background follows
-  const [reach, setReach] = useState(0)
   const list = useRef<HTMLDivElement>(null)
   const active = (path: string) => (path === '/' ? location === '/' : location.startsWith(path))
   useLayoutEffect(() => {
@@ -426,7 +426,6 @@ function Rail({ down }: { down: string }) {
     const right = el.getBoundingClientRect().right - root.getBoundingClientRect().left
     const px = Math.round(open ? right + (railGap - railPad) * unit - railInset * unit : 0)
     host.push(px)
-    setReach(px)
   }, [open, host])
   useEffect(() => () => host?.push(0), [host])
   if (!host?.slot) return null
@@ -437,7 +436,14 @@ function Rail({ down }: { down: string }) {
       data-group="rail"
       data-isolate=""
       data-go-left=""
-      onFocus={() => setOpen(true)}
+      onFocus={(e) => {
+        setOpen(true)
+        // arriving from the page, start on the page's own destination, as Menu does, rather than
+        // wherever the navigator would land (the first, or the last one used)
+        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+        const current = e.currentTarget.querySelector<HTMLElement>('[aria-current="page"]')
+        if (current && current !== e.target) current.focus({ preventScroll: true })
+      }}
       onBlur={(e) => {
         if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false)
       }}
@@ -452,30 +458,6 @@ function Rail({ down }: { down: string }) {
       }}
       className="absolute inset-y-0 left-0 z-20 flex"
     >
-      {/* a solid background up to just short of the page's inset (room for a focused item's zoom),
-      so rows scrolled left pass under the rail rather than through its icons (the owner,
-      2026-10-30); it moves with the page, as a translation timed like the page's, so the two
-      edges never part */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 overflow-hidden bg-bg transition-transform duration-300 ease-out motion-reduce:transition-none"
-        style={{
-          width: '100cqw',
-          left: `calc(${railInset - 1}cqw - 100cqw)`,
-          transform: `translateX(${reach}px)`,
-        }}
-      >
-        {/* Home's bloom, laid where it is on the screen: moved back by as much as the background
-        moves, with the same timing, so it stays still */}
-        {host.bloom && (
-          <div
-            className="absolute inset-y-0 w-[100cqw] transition-transform duration-300 ease-out motion-reduce:transition-none"
-            style={{ left: `${101 - railInset}cqw`, transform: `translateX(${-reach}px)` }}
-          >
-            <BloomGlow bloom={host.bloom} />
-          </div>
-        )}
-      </div>
       {/* the server's mark at the top, the destinations under it, the account at the foot */}
       <div
         ref={list}

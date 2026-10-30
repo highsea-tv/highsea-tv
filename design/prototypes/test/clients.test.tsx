@@ -177,7 +177,7 @@ describe('C3 library', () => {
   })
 
   test('TV: the alphabet rail has only letters with titles', async () => {
-    await open('/tv/library')
+    await open('/tv/movies')
     const rail = page().getByRole('navigation', { name: 'Jump to a letter' })
     expect((within(rail).getByRole('button', { name: 'C' }) as HTMLButtonElement).disabled).toBe(
       false,
@@ -187,6 +187,22 @@ describe('C3 library', () => {
     )
     // every poster carries its title and year
     expect(page().getByRole('link', { name: 'Charade, 1963' })).toBeTruthy()
+    await clean()
+  })
+
+  test('TV: the nav has a destination per kind of media, Shows and Music still to come', async () => {
+    await open('/tv/shows')
+    const nav = page().getByRole('navigation', { name: 'Main' })
+    expect(
+      within(nav)
+        .getAllByRole('link')
+        .map((a) => a.textContent),
+    ).toEqual(['Home', 'Search', 'Collections', 'Movies', 'Shows', 'Music', 'Settings'])
+    expect(page().getByRole('heading', { level: 1, name: 'Shows' })).toBeTruthy()
+    expect(page().getByText(/Shows come to highsea in a later version/)).toBeTruthy()
+    const go = page().getAllByRole('link', { name: 'Movies' }).at(-1)
+    expect(go?.hasAttribute('data-initial')).toBe(true)
+    expect(go?.getAttribute('href')).toBe('#/tv/movies')
     await clean()
   })
 })

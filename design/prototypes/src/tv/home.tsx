@@ -1,26 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C2 Home, TV (docs/product/client-home.md#tv): the locked Hero + rows layout (tv.md#layout).
-// The featured titles lead as a row of large 16:9 cards, the next one showing at the right edge
-// (the owner, 2026-10-30); OK on one opens the movie. The rows follow: focus there lifts the page
-// past the featured cards, Up from the first row comes back to them, and Up from those opens the
-// global navigation. Rows remember their spot.
-// Behind the featured cards, a bloom in the focused one's most vibrant colour fills the screen and
-// fades into the background (the owner, 2026-10-30).
+// The featured title leads as one large card across the page, the first of the featured section's
+// for now (the owner, 2026-10-30); OK opens the movie. The rows follow, each but Continue watching
+// with its first slot fixed (film-row.tsx): focus there lifts the page past the featured card, Up from the first row
+// comes back to it, and Up from that opens the global navigation.
+// Behind the featured card, a bloom in its most vibrant colour fills the screen and fades into the
+// background (the owner, 2026-10-30).
 // An announcement that must be acknowledged comes first, on its own.
 import { Icon, QualityTag } from '@highsea-tv/ui-web'
 import { useReducedMotion } from 'motion/react'
-import { useContext, useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { meta, qualityTags, useAnnouncements, useHome } from '../client/data.ts'
 import { useVibrant } from '../client/vibrant.ts'
 import { Inline } from '../kit/inline.tsx'
 import type { ClientItem, HomeSection } from '../mock/types.ts'
+import { TvFilmRow } from './film-row.tsx'
 import {
   AnnouncementBanner,
   BloomGlow,
   backdropReach,
   GlobalNav,
   pageTop,
-  RailContext,
   ServerIdentity,
   TvButton,
   TvMessage,
@@ -32,17 +32,17 @@ import {
 } from './kit.tsx'
 
 /**
- * A featured title as one large 16:9 card, which lifts only slightly on focus: at this size the
- * posters' zoom would push it under the rail: its backdrop, with the title's logo, the details and
- * the tagline low on the left. OK opens the movie, where Play is (the owner, 2026-10-30).
+ * The featured title as one large card across the page, which lifts only slightly on focus: at
+ * this size the posters' zoom would push it under the rail: its backdrop, with the title's logo,
+ * the details and the tagline low on the left. OK opens the movie, where Play is (the owner,
+ * 2026-10-30).
  */
-function FeaturedCard({ item, index }: { item: ClientItem; index: number }) {
+function FeaturedCard({ item }: { item: ClientItem }) {
   return (
     <a
       href={tvHref(`/movies/${item.id}`)}
       data-focusable=""
-      data-featured={index}
-      {...(index === 0 ? { 'data-initial': '' } : {})}
+      data-initial=""
       aria-label={`${item.title}, ${meta(item)}`}
       className="relative block h-[40.5cqw] overflow-hidden rounded-[1.4cqw] bg-s2 outline-none transition-lift focus-visible:scale-[1.015] focus-visible:shadow-(--tv-focus-shadow)"
     >
@@ -79,41 +79,30 @@ function FeaturedCard({ item, index }: { item: ClientItem; index: number }) {
 }
 
 /**
- * The featured titles as a row of large cards, the first whole and the next showing at the right
- * edge so there's more to see; it keeps focus in the first slot, as the rows do.
+ * The featured section's first title, across the page. The others wait until the featured card is
+ * designed again (the owner, 2026-10-30).
  */
 function Featured({ section }: { section: HomeSection }) {
+  const item = section.items[0]
+  if (!item) return null
   return (
     <section
       data-group="hero"
       data-go-up="nav"
       aria-label={section.title}
-      className="grid grid-cols-1"
+      className="grid grid-cols-1 px-(--tv-safe-x) py-[1cqw]"
     >
-      <div className="grid grid-cols-1">
-        <ul
-          data-scroll="x"
-          data-keep="start"
-          className="flex w-max gap-[2cqw] px-(--tv-safe-x) py-[1cqw] transition-lift"
-        >
-          {section.items.map((m, i) => (
-            <li key={m.id} className="w-[72cqw] shrink-0">
-              <FeaturedCard item={m} index={i} />
-            </li>
-          ))}
-        </ul>
-      </div>
+      <FeaturedCard item={item} />
     </section>
   )
 }
 
 /**
  * The featured cards' bloom, in each card's most vibrant colour: still on the screen while the
- * rail pushes the page, and handed to the rail, which paints it over its background too. It fades
+ * rail pushes the page, and the screen's size, so it carries on behind the rail's icons. It fades
  * out once the page lifts to the rows.
  */
 function Bloom({ items, active, shown }: { items: ClientItem[]; active: number; shown: boolean }) {
-  const host = useContext(RailContext)
   const found = useVibrant(items.map((m) => m.art.backdrop))
   const colors = items.map((m) => found[m.art.backdrop] ?? null)
   const key = colors.join()
@@ -121,11 +110,6 @@ function Bloom({ items, active, shown }: { items: ClientItem[]; active: number; 
     () => ({ colors: key.split(',').map((c) => c || null), active, shown }),
     [key, active, shown],
   )
-  const setBloom = host?.setBloom
-  useEffect(() => {
-    setBloom?.(bloom)
-  }, [setBloom, bloom])
-  useEffect(() => () => setBloom?.(null), [setBloom])
   return (
     <div aria-hidden className={`pointer-events-none absolute inset-0 ${backdropReach}`}>
       <BloomGlow bloom={bloom} />
@@ -133,36 +117,29 @@ function Bloom({ items, active, shown }: { items: ClientItem[]; active: number; 
   )
 }
 
-/** Which featured card focus is on, or was last on. */
-function useActiveFeatured() {
-  const [active, setActive] = useState(0)
-  useEffect(() => {
-    const onFocus = (e: FocusEvent) => {
-      const card = (e.target as HTMLElement).closest<HTMLElement>('[data-featured]')
-      if (card) setActive(Number(card.dataset.featured))
-    }
-    document.addEventListener('focusin', onFocus)
-    return () => document.removeEventListener('focusin', onFocus)
-  }, [])
-  return active
-}
-
 function Row({ section, goUp }: { section: HomeSection; goUp?: string }) {
-  // every card on Home is 16:9; Continue watching's resume, the rest open the movie
-  const resume = section.layout === 'continue'
+  // Continue watching keeps its row of 16:9 cards, larger now, each resuming (the owner,
+  // 2026-10-30); the
+  // other rows have their first slot fixed, and open the movie
+  if (section.layout === 'continue')
+    return (
+      <TvRow group={section.id} title={section.title} suffix={section.suffix} goUp={goUp}>
+        {section.items.map((m) => (
+          <li key={m.id} className="w-[22cqw] shrink-0">
+            <TvPoster item={m} wide resume href={tvHref(`/play/${m.id}`)} />
+          </li>
+        ))}
+      </TvRow>
+    )
   return (
-    <TvRow group={section.id} title={section.title} suffix={section.suffix} goUp={goUp}>
-      {section.items.map((m) => (
-        <li key={m.id} className="w-[17cqw] shrink-0">
-          <TvPoster
-            item={m}
-            wide
-            resume={resume}
-            href={tvHref(resume ? `/play/${m.id}` : `/movies/${m.id}`)}
-          />
-        </li>
-      ))}
-    </TvRow>
+    <TvFilmRow
+      group={section.id}
+      title={section.title}
+      suffix={section.suffix}
+      goUp={goUp}
+      items={section.items}
+      hrefOf={(m) => tvHref(`/movies/${m.id}`)}
+    />
   )
 }
 
@@ -205,7 +182,6 @@ function Home({ sections }: { sections: HomeSection[] }) {
   const hero = sections.find((s) => s.layout === 'hero')
   const rows = sections.filter((s) => s !== hero)
   const { page, style, lifted } = usePageOffset(pageTop(useTvNav()))
-  const active = useActiveFeatured()
   useInitialFocus(true)
   return (
     <>
@@ -214,7 +190,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
       <div
         className={`absolute inset-0 overflow-hidden ${lifted ? '[mask-image:linear-gradient(transparent,black_3.2cqw)]' : ''}`}
       >
-        {hero && <Bloom items={hero.items} active={active} shown={!lifted} />}
+        {hero && <Bloom items={hero.items.slice(0, 1)} active={0} shown={!lifted} />}
         <div ref={page} style={style} className="relative transition-lift">
           <ServerIdentity />
           <div
@@ -303,8 +279,8 @@ export function TvHome() {
         <TvMessage
           title="Nothing to watch yet"
           actions={
-            <TvButton initial icon="library" href={tvHref('/library')}>
-              Library
+            <TvButton initial icon="movie" href={tvHref('/movies')}>
+              Movies
             </TvButton>
           }
         >

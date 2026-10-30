@@ -10,11 +10,11 @@ import { TvRoot } from '../kit/tv/tv-root.tsx'
 import { BackContext, type BackRegistry, useBack } from './back.ts'
 import { TvCollection } from './collection.tsx'
 import { TvCollections } from './collections.tsx'
+import { TvComing } from './coming.tsx'
 import { TvConnect } from './connect.tsx'
 import { TvDetail } from './detail.tsx'
 import { TvHome } from './home.tsx'
 import {
-  type Bloom,
   GlobalNav,
   RailContext,
   type RailHost,
@@ -107,11 +107,17 @@ function Screens() {
       <Route path="/">
         <TvHome />
       </Route>
-      <Route path="/library/collections">
+      <Route path="/collections">
         <TvCollections />
       </Route>
-      <Route path="/library">
+      <Route path="/movies">
         <TvLibrary />
+      </Route>
+      <Route path="/shows">
+        <TvComing kind="shows" />
+      </Route>
+      <Route path="/music">
+        <TvComing kind="music" />
       </Route>
       <Route path="/movies/:id">
         <Detail />
@@ -145,7 +151,6 @@ export function TvApp() {
     : undefined
   const [slot, setSlot] = useState<HTMLElement | null>(null)
   const [shift, setShift] = useState(0)
-  const [bloom, setBloom] = useState<Bloom | null>(null)
   // where focus was in the page, for Right out of the rail
   const last = useRef<HTMLElement | null>(null)
   useEffect(() => {
@@ -169,10 +174,8 @@ export function TvApp() {
             )
         back?.focus({ preventScroll: true })
       },
-      bloom,
-      setBloom,
     }),
-    [slot, bloom],
+    [slot],
   )
   return (
     <BackContext.Provider value={registry}>
@@ -211,6 +214,7 @@ export function TvApp() {
               } as CSSProperties
             }
             data-go-left={rail ? 'rail' : undefined}
+            data-rail={rail ? '' : undefined}
           >
             <Screens />
           </div>
