@@ -6,6 +6,7 @@
 import { cn, Icon, type IconName, Mark, Poster } from '@highsea-tv/ui-web'
 import {
   type ComponentProps,
+  type CSSProperties,
   createContext,
   type ReactNode,
   useContext,
@@ -273,13 +274,41 @@ export const railInset = railGap * 2 + railIcon
 
 /**
  * What the app hands the rail: the slot it's drawn into, outside the page so the page can move
- * aside for it; `push`, which moves the page right by that many pixels while the rail is open; and
- * `leave`, which puts focus back where it was in the page.
+ * aside for it; `push`, which moves the page right by that many pixels while the rail is open;
+ * `leave`, which puts focus back where it was in the page; and Home's bloom, which the rail paints
+ * over its background too, so the glow carries on behind the icons.
  */
 export type RailHost = {
   slot: HTMLElement | null
   push: (px: number) => void
   leave: (fallback: string) => void
+  bloom: Bloom | null
+  setBloom: (bloom: Bloom | null) => void
+}
+
+/** Home's bloom: a glow colour for each featured card, the one focus is on, and whether it shows. */
+export type Bloom = { colors: (string | null)[]; active: number; shown: boolean }
+
+/**
+ * The bloom, the screen's size: the focused card's colour as a glow from where the cards sit,
+ * fading into the background. One element: its colour is `--bloom`, registered as a <color>
+ * (prototypes.css), so moving between cards turns it from one colour to the next in place.
+ */
+export function BloomGlow({ bloom }: { bloom: Bloom }) {
+  const color = bloom.colors[bloom.active]
+  return (
+    <div
+      className="absolute inset-0 transition-[--bloom,opacity] duration-700 ease-out motion-reduce:transition-none"
+      style={
+        {
+          '--bloom': color ?? 'transparent',
+          opacity: bloom.shown && color ? 1 : 0,
+          background:
+            'radial-gradient(ellipse 75% 85% at 42% 45%, color-mix(in oklab, var(--bloom) 70%, transparent), color-mix(in oklab, var(--bloom) 30%, transparent) 50%, transparent 85%)',
+        } as CSSProperties
+      }
+    />
+  )
 }
 export const RailContext = createContext<RailHost | null>(null)
 
@@ -421,13 +450,24 @@ function Rail({ down }: { down: string }) {
       edges never part */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-y-0 bg-bg transition-transform duration-300 ease-out motion-reduce:transition-none"
+        className="pointer-events-none absolute inset-y-0 overflow-hidden bg-bg transition-transform duration-300 ease-out motion-reduce:transition-none"
         style={{
           width: '100cqw',
           left: `calc(${railInset - 1}cqw - 100cqw)`,
           transform: `translateX(${reach}px)`,
         }}
-      />
+      >
+        {/* Home's bloom, laid where it is on the screen: moved back by as much as the background
+        moves, with the same timing, so it stays still */}
+        {host.bloom && (
+          <div
+            className="absolute inset-y-0 w-[100cqw] transition-transform duration-300 ease-out motion-reduce:transition-none"
+            style={{ left: `${101 - railInset}cqw`, transform: `translateX(${-reach}px)` }}
+          >
+            <BloomGlow bloom={host.bloom} />
+          </div>
+        )}
+      </div>
       {/* the server's mark at the top, the destinations under it, the account at the foot */}
       <div
         ref={list}
@@ -443,8 +483,10 @@ function Rail({ down }: { down: string }) {
               data-focusable=""
               aria-label={d.label}
               aria-current={active(d.path) ? 'page' : undefined}
+              // white at 60%, not the flat grey, so it takes the colour of Home's bloom beneath
+              // rather than sitting grey on it
               style={{ padding: `${railPad}cqw` }}
-              className="flex items-center gap-[0.9cqw] rounded-full font-semibold text-(length:--tv-text-button) text-text-3 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text"
+              className="flex items-center gap-[0.9cqw] rounded-full font-semibold text-(length:--tv-text-button) text-text/60 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text"
             >
               <Icon name={d.icon} size={24} className="size-[1.4cqw] shrink-0" />
               {/* a line no taller than the icon, so opening adds only width */}
@@ -499,7 +541,7 @@ function RailAccount({ open }: { open: boolean }) {
       data-focusable=""
       aria-label="Ines: switch account or sign out"
       style={{ padding: railArtPad }}
-      className="group/account flex items-center gap-[0.9cqw] self-end rounded-full font-semibold text-(length:--tv-text-button) text-text-3 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg"
+      className="group/account flex items-center gap-[0.9cqw] self-end rounded-full font-semibold text-(length:--tv-text-button) text-text/60 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg"
     >
       {/* on the focused pill the circle turns dark, so the initial still reads */}
       <span className="grid size-[2.2cqw] shrink-0 place-items-center rounded-full bg-accent-soft text-(length:--tv-text-pill) text-accent-text group-focus-visible/account:bg-bg group-focus-visible/account:text-text">

@@ -14,6 +14,7 @@ import { TvConnect } from './connect.tsx'
 import { TvDetail } from './detail.tsx'
 import { TvHome } from './home.tsx'
 import {
+  type Bloom,
   GlobalNav,
   RailContext,
   type RailHost,
@@ -144,6 +145,7 @@ export function TvApp() {
     : undefined
   const [slot, setSlot] = useState<HTMLElement | null>(null)
   const [shift, setShift] = useState(0)
+  const [bloom, setBloom] = useState<Bloom | null>(null)
   // where focus was in the page, for Right out of the rail
   const last = useRef<HTMLElement | null>(null)
   useEffect(() => {
@@ -167,8 +169,10 @@ export function TvApp() {
             )
         back?.focus({ preventScroll: true })
       },
+      bloom,
+      setBloom,
     }),
-    [slot],
+    [slot, bloom],
   )
   return (
     <BackContext.Provider value={registry}>

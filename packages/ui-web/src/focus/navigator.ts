@@ -8,6 +8,8 @@
 //   [data-keep="0.3"]          where in the viewport the track keeps focus (default 0.5); "start"
 //                              keeps it in the track's first slot, an item always flush there
 //   [data-center]              don't clamp the track at its ends
+// A row's items that have passed out at its left, before its first visible slot, carry
+// [data-past], which styles.css fades out (the owner, 2026-10-30).
 // While a row slides to bring focus into place, the focused item carries [data-settling], which
 // holds back its focus styles (styles.css's focus-visible variant) until the slide ends.
 import { choreography, durations } from '@highsea-tv/tokens'
@@ -143,13 +145,24 @@ export function createSpatialNavigator(
               keep: Number(track.dataset.keep ?? 0.5),
               clamp: !('center' in track.dataset),
             })
-      track.style.transition = reduced() ? 'none' : ''
+      // a row slides with spring.quick, snappier than the page's spring.base (the owner, 2026-10-30)
+      track.style.transition = reduced()
+        ? 'none'
+        : x
+          ? 'transform var(--duration-spring-quick) var(--ease-spring-quick)'
+          : ''
       // Left or Right that slides the row holds the item's focus styles back until it stops; a row
       // already at its end, and moving between rows, show focus at once
       const moved = Math.abs(offset - (offsets.get(track) ?? 0)) >= 1
       if (x && sideways && moved && !reduced()) holdFocusStyles(el, track)
       offsets.set(track, offset)
       track.style.transform = x ? `translateX(${-offset}px)` : `translateY(${-offset}px)`
+      if (x)
+        for (const c of track.children as HTMLCollectionOf<HTMLElement>) {
+          const start = box(c).left - tr.left - pad
+          if (start < offset - 1) c.dataset.past = ''
+          else delete c.dataset.past
+        }
     }
   }
 

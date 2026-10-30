@@ -218,6 +218,7 @@ ADR 0008's second implementation, on `@highsea-tv/tokens/native`:
   - tvOS doesn't apply local-network privacy, so there's no prompt (TN3179).
   - A TV's sign-in lasts until it's revoked (answer 9).
 - **Screens:** Home's hero and rows, with the hero bound to the featured row after 220 ms of dwell and its two layers cross-fading (ADR 0015), plus Library, the item page, Search with the system's dictation (answer 9), Collections and Settings.
+- **Home's bloom** (the owner, 2026-10-30): behind the featured cards, a glow in the focused card's most vibrant colour fills the screen and fades into the background. The prototype reads the colour from the backdrop in the page (`design/prototypes/src/client/vibrant.ts`); in the apps **the server works it out once**, when it caches the artwork, and sends it with the item, so every client shows the same colour without reading the image.
 - **The D-pad walk:** Maestro, Expo's documented end-to-end tool, has no tvOS support yet (its tvOS pull request is open), and neither does Detox. So the walk is an XCUITest that drives `XCUIRemote` on the tvOS simulator ([Apple › XCUIRemote](https://developer.apple.com/documentation/xctest/xcuiremote)). It is added to the generated project by a config plugin, and it checks every focusable is reachable on each screen, as `dpad.ts` does for the prototype ([question 6](#open-questions-for-the-owner)).
 
 ## The player on Apple's platforms (4.5a and 4.5b)

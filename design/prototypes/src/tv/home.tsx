@@ -4,17 +4,23 @@
 // (the owner, 2026-10-30); OK on one opens the movie. The rows follow: focus there lifts the page
 // past the featured cards, Up from the first row comes back to them, and Up from those opens the
 // global navigation. Rows remember their spot.
+// Behind the featured cards, a bloom in the focused one's most vibrant colour fills the screen and
+// fades into the background (the owner, 2026-10-30).
 // An announcement that must be acknowledged comes first, on its own.
 import { Icon, QualityTag } from '@highsea-tv/ui-web'
 import { useReducedMotion } from 'motion/react'
-import { useEffect, useRef, useState } from 'react'
+import { useContext, useEffect, useMemo, useRef, useState } from 'react'
 import { meta, qualityTags, useAnnouncements, useHome } from '../client/data.ts'
+import { useVibrant } from '../client/vibrant.ts'
 import { Inline } from '../kit/inline.tsx'
 import type { ClientItem, HomeSection } from '../mock/types.ts'
 import {
   AnnouncementBanner,
+  BloomGlow,
+  backdropReach,
   GlobalNav,
   pageTop,
+  RailContext,
   ServerIdentity,
   TvButton,
   TvMessage,
@@ -30,12 +36,13 @@ import {
  * posters' zoom would push it under the rail: its backdrop, with the title's logo, the details and
  * the tagline low on the left. OK opens the movie, where Play is (the owner, 2026-10-30).
  */
-function FeaturedCard({ item, initial }: { item: ClientItem; initial: boolean }) {
+function FeaturedCard({ item, index }: { item: ClientItem; index: number }) {
   return (
     <a
       href={tvHref(`/movies/${item.id}`)}
       data-focusable=""
-      {...(initial ? { 'data-initial': '' } : {})}
+      data-featured={index}
+      {...(index === 0 ? { 'data-initial': '' } : {})}
       aria-label={`${item.title}, ${meta(item)}`}
       className="relative block h-[40.5cqw] overflow-hidden rounded-[1.4cqw] bg-s2 outline-none transition-lift focus-visible:scale-[1.015] focus-visible:shadow-(--tv-focus-shadow)"
     >
@@ -91,13 +98,53 @@ function Featured({ section }: { section: HomeSection }) {
         >
           {section.items.map((m, i) => (
             <li key={m.id} className="w-[72cqw] shrink-0">
-              <FeaturedCard item={m} initial={i === 0} />
+              <FeaturedCard item={m} index={i} />
             </li>
           ))}
         </ul>
       </div>
     </section>
   )
+}
+
+/**
+ * The featured cards' bloom, in each card's most vibrant colour: still on the screen while the
+ * rail pushes the page, and handed to the rail, which paints it over its background too. It fades
+ * out once the page lifts to the rows.
+ */
+function Bloom({ items, active, shown }: { items: ClientItem[]; active: number; shown: boolean }) {
+  const host = useContext(RailContext)
+  const found = useVibrant(items.map((m) => m.art.backdrop))
+  const colors = items.map((m) => found[m.art.backdrop] ?? null)
+  const key = colors.join()
+  const bloom = useMemo(
+    () => ({ colors: key.split(',').map((c) => c || null), active, shown }),
+    [key, active, shown],
+  )
+  const setBloom = host?.setBloom
+  useEffect(() => {
+    setBloom?.(bloom)
+  }, [setBloom, bloom])
+  useEffect(() => () => setBloom?.(null), [setBloom])
+  return (
+    <div aria-hidden className={`pointer-events-none absolute inset-0 ${backdropReach}`}>
+      <BloomGlow bloom={bloom} />
+    </div>
+  )
+}
+
+/** Which featured card focus is on, or was last on. */
+function useActiveFeatured() {
+  const [active, setActive] = useState(0)
+  useEffect(() => {
+    const onFocus = (e: FocusEvent) => {
+      const card = (e.target as HTMLElement).closest<HTMLElement>('[data-featured]')
+      if (card) setActive(Number(card.dataset.featured))
+    }
+    document.addEventListener('focusin', onFocus)
+    return () => document.removeEventListener('focusin', onFocus)
+  }, [])
+  return active
 }
 
 function Row({ section, goUp }: { section: HomeSection; goUp?: string }) {
@@ -158,6 +205,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
   const hero = sections.find((s) => s.layout === 'hero')
   const rows = sections.filter((s) => s !== hero)
   const { page, style, lifted } = usePageOffset(pageTop(useTvNav()))
+  const active = useActiveFeatured()
   useInitialFocus(true)
   return (
     <>
@@ -166,6 +214,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
       <div
         className={`absolute inset-0 overflow-hidden ${lifted ? '[mask-image:linear-gradient(transparent,black_3.2cqw)]' : ''}`}
       >
+        {hero && <Bloom items={hero.items} active={active} shown={!lifted} />}
         <div ref={page} style={style} className="relative transition-lift">
           <ServerIdentity />
           <div

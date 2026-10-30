@@ -198,6 +198,15 @@
     outline-offset: var(--focus-ring-offset);
   }
 
+  /* a row's items fade as they pass out at its left, and back as they return, on the row's own
+     spring.quick, in time with the slide (focus/navigator.ts marks them) */
+  [data-scroll="x"] > * {
+    transition: opacity var(--duration-spring-quick) var(--ease-spring-quick);
+  }
+  [data-scroll="x"] > [data-past] {
+    opacity: 0;
+  }
+
   ::selection {
     background: var(--color-accent-soft);
     color: var(--color-text);
