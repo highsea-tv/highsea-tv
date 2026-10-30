@@ -45,7 +45,7 @@ function Unreachable() {
   const name = server.data?.name ?? 'Harbor'
   return (
     <>
-      <ServerIdentity />
+      <ServerIdentity always />
       <TvMessage
         title={`Can’t reach ${name}`}
         actions={
@@ -136,9 +136,12 @@ export function TvApp() {
   const [location, navigate] = useLocation()
   const nav = useTvNav()
   // with the left rail, the screens' inset is the rail's (kit.tsx), and Left at any screen's edge
-  // focuses it; the player keeps the whole screen
+  // focuses it; the player keeps the whole screen. The server's mark moves into the rail, so the
+  // screens rise by the head it took (from 7cqw to the safe area's 3.2cqw): --tv-head
   const rail = nav === 'rail' && !location.startsWith('/play/')
-  const inset = rail ? ({ '--tv-safe-x': `${railInset}cqw` } as CSSProperties) : undefined
+  const inset = rail
+    ? ({ '--tv-safe-x': `${railInset}cqw`, '--tv-head': '3.8cqw' } as CSSProperties)
+    : undefined
   const [slot, setSlot] = useState<HTMLElement | null>(null)
   const [shift, setShift] = useState(0)
   // where focus was in the page, for Right out of the rail
@@ -154,7 +157,8 @@ export function TvApp() {
   const host = useMemo<RailHost>(
     () => ({
       slot,
-      push: setShift,
+      // whole pixels: a fractional shift leaves a hairline at the page's edge
+      push: (px) => setShift(Math.round(px)),
       leave: (fallback) => {
         const back = last.current?.isConnected
           ? last.current
@@ -191,10 +195,17 @@ export function TvApp() {
       >
         <ApplyDevicePrefs platform="tv" />
         <RailContext.Provider value={host}>
-          {/* the page, which moves right while the rail is open */}
+          {/* the page, which moves right while the rail is open; --tv-shift lets a full-screen
+          backdrop reach back over the strip it leaves (kit.tsx's backdropReach) */}
           <div
             className="absolute inset-0 transition-transform duration-300 ease-out motion-reduce:transition-none"
-            style={{ ...inset, transform: shift ? `translateX(${shift}px)` : undefined }}
+            style={
+              {
+                ...inset,
+                '--tv-shift': `${shift}px`,
+                transform: shift ? `translateX(${shift}px)` : undefined,
+              } as CSSProperties
+            }
             data-go-left={rail ? 'rail' : undefined}
           >
             <Screens />

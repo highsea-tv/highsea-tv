@@ -59,7 +59,7 @@ export function TvSearch() {
   return (
     <>
       <GlobalNav down="keys" />
-      <div className="absolute inset-0 grid grid-cols-[30cqw_minmax(0,1fr)] gap-[3cqw] px-(--tv-safe-x) pt-[7cqw] pb-(--tv-safe-y)">
+      <div className="absolute inset-0 grid grid-cols-[30cqw_minmax(0,1fr)] gap-[3cqw] px-(--tv-safe-x) pt-[calc(7cqw-var(--tv-head,0px))] pb-(--tv-safe-y)">
         <ServerIdentity />
         <div className="grid content-start gap-[1.2cqw]">
           <h1 className="sr-only">Search</h1>

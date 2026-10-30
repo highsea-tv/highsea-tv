@@ -85,9 +85,13 @@ export const tvKey =
  * Top left: the server's mark and name; "Connected remotely" under it when that's how. It sits at
  * the top of the page and scrolls away with it, so it never covers the rows.
  */
-export function ServerIdentity() {
+export function ServerIdentity({ always = false }: { always?: boolean }) {
   const server = useServer()
   const connection = useConnection()
+  // with the left rail, the server's mark heads the rail instead; `always` keeps it on a screen
+  // without the rail (Unreachable)
+  const rail = useTvNav() === 'rail'
+  if (rail && !always) return null
   return (
     <div className="absolute top-(--tv-safe-y) left-(--tv-safe-x) flex items-center gap-[0.8cqw]">
       <Mark size={32} className="size-[2cqw]" />
@@ -267,6 +271,15 @@ export const RailContext = createContext<RailHost | null>(null)
  * Where Home lifts a row's title to when focus moves below the hero: under the top safe area, or
  * under the band when the band holds the navigation.
  */
+/**
+ * For a screen's full-screen backdrop: while the rail pushes the page right, it moves back left by
+ * as much, so it stays still on the screen and only the content moves. Both are translations with
+ * the same timing, so they cancel on every frame (a layout property such as left runs a frame
+ * apart from the page's composited transform, and the backdrop showed through as it caught up).
+ */
+export const backdropReach =
+  '-translate-x-(--tv-shift) transition-[translate] duration-300 ease-out motion-reduce:transition-none'
+
 export const pageTop = (nav: TvNav) => (nav === 'band' ? 7.6 : 3.2)
 
 /**
@@ -380,30 +393,86 @@ function Rail({ down }: { down: string }) {
         else return
         e.preventDefault()
       }}
-      className="absolute inset-y-0 left-0 z-20 flex items-center"
+      className="absolute inset-y-0 left-0 z-20 flex"
     >
+      {/* the server's mark at the top, the destinations in the middle, the account at the foot */}
       <div
         ref={list}
-        className="grid gap-[0.5cqw]"
+        className="grid grid-rows-[auto_1fr_auto] items-center gap-[0.5cqw] py-(--tv-safe-y)"
         style={{ marginLeft: `${railGap - railPad}cqw` }}
       >
-        {destinations.map((d) => (
-          <a
-            key={d.path}
-            href={tvHref(d.path)}
-            data-focusable=""
-            aria-label={d.label}
-            aria-current={active(d.path) ? 'page' : undefined}
-            style={{ padding: `${railPad}cqw` }}
-            className="flex items-center gap-[0.9cqw] rounded-full font-semibold text-(length:--tv-text-button) text-text-3 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text"
-          >
-            <Icon name={d.icon} size={24} className="size-[1.4cqw] shrink-0" />
-            {open && <span className="pe-[0.8cqw]">{d.label}</span>}
-          </a>
-        ))}
+        <RailServer open={open} />
+        <div className="grid gap-[0.5cqw]">
+          {destinations.map((d) => (
+            <a
+              key={d.path}
+              href={tvHref(d.path)}
+              data-focusable=""
+              aria-label={d.label}
+              aria-current={active(d.path) ? 'page' : undefined}
+              style={{ padding: `${railPad}cqw` }}
+              className="flex items-center gap-[0.9cqw] rounded-full font-semibold text-(length:--tv-text-button) text-text-3 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text"
+            >
+              <Icon name={d.icon} size={24} className="size-[1.4cqw] shrink-0" />
+              {open && <span className="pe-[0.8cqw]">{d.label}</span>}
+            </a>
+          ))}
+        </div>
+        <RailAccount open={open} />
       </div>
     </nav>,
     host.slot,
+  )
+}
+
+/**
+ * Round art in the rail (the mark, the avatar): 2.2cqw, the icon and its padding less 0.4cqw a
+ * side, so it sits in the icons' column and reads larger than an icon.
+ */
+const railArtPad = '0.4cqw'
+
+/** The rail's head: the server's mark, with its name (and Connected remotely) while open. */
+function RailServer({ open }: { open: boolean }) {
+  const server = useServer()
+  const connection = useConnection()
+  return (
+    <div style={{ padding: railArtPad }} className="flex items-center gap-[0.9cqw] self-start">
+      <Mark size={32} className="size-[2.2cqw] shrink-0" />
+      {open && (
+        <span className="grid pe-[0.8cqw]">
+          <span className="whitespace-nowrap font-semibold text-(length:--tv-text-button) leading-[1.15]">
+            {server.data?.name ?? 'Harbor'}
+          </span>
+          {connection === 'remote' && (
+            <span className="whitespace-nowrap text-(length:--tv-text-pill) text-text-2 leading-[1.15]">
+              Connected remotely
+            </span>
+          )}
+        </span>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The rail's foot: the signed-in person's avatar, the last stop Down reaches. It will open
+ * switching accounts and signing out; for now it's only a focus stop.
+ */
+function RailAccount({ open }: { open: boolean }) {
+  return (
+    <button
+      type="button"
+      data-focusable=""
+      aria-label="Ines: switch account or sign out"
+      style={{ padding: railArtPad }}
+      className="group/account flex items-center gap-[0.9cqw] self-end rounded-full font-semibold text-(length:--tv-text-button) text-text-3 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg"
+    >
+      {/* on the focused pill the circle turns dark, so the initial still reads */}
+      <span className="grid size-[2.2cqw] shrink-0 place-items-center rounded-full bg-accent-soft text-(length:--tv-text-pill) text-accent-text group-focus-visible/account:bg-bg group-focus-visible/account:text-text">
+        I
+      </span>
+      {open && <span className="pe-[0.8cqw]">Ines</span>}
+    </button>
   )
 }
 

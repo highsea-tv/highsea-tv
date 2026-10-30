@@ -240,7 +240,7 @@ export function TvSettings() {
   return (
     <>
       <GlobalNav down="menu" />
-      <div className="absolute inset-0 grid grid-cols-[24cqw_minmax(0,1fr)] gap-[4cqw] px-(--tv-safe-x) pt-[7cqw] pb-(--tv-safe-y)">
+      <div className="absolute inset-0 grid grid-cols-[24cqw_minmax(0,1fr)] gap-[4cqw] px-(--tv-safe-x) pt-[calc(7cqw-var(--tv-head,0px))] pb-(--tv-safe-y)">
         <ServerIdentity />
         <nav aria-label="Settings" className="grid content-start gap-[1.2cqw]">
           <h1 className="font-semibold text-[2.6cqw] leading-none tracking-display">Settings</h1>

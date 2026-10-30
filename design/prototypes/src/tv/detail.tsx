@@ -11,6 +11,7 @@ import { useAction } from '../mock/hooks.tsx'
 import type { ClientItem, PlaybackPrefs } from '../mock/types.ts'
 import { useBack } from './back.ts'
 import {
+  backdropReach,
   GlobalNav,
   ServerIdentity,
   TvButton,
@@ -64,9 +65,11 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
       <img
         src={m.art.backdrop}
         alt=""
-        className="absolute inset-0 size-full scale-110 object-cover blur-[2.6cqw] brightness-[0.45]"
+        className={`absolute inset-0 h-full w-full scale-110 object-cover blur-[2.6cqw] brightness-[0.45] ${backdropReach}`}
       />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,var(--color-bg)_10%,transparent_70%)]" />
+      <div
+        className={`absolute inset-0 bg-[linear-gradient(90deg,var(--color-bg)_10%,transparent_70%)] ${backdropReach}`}
+      />
       <div
         {...(panel || options ? { 'data-isolate': '' } : {})}
         className="absolute inset-0 overflow-hidden [mask-image:linear-gradient(transparent,black_3.2cqw)]"
@@ -74,7 +77,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
         <div
           data-scroll="y"
           data-keep="0.4"
-          className="relative grid grid-cols-1 gap-[2.4cqw] pt-[8cqw] pb-[4cqw] transition-lift"
+          className="relative grid grid-cols-1 gap-[2.4cqw] pt-[calc(8cqw-var(--tv-head,0px))] pb-[4cqw] transition-lift"
         >
           <ServerIdentity />
           <section

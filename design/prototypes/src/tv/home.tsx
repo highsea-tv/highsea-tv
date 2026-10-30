@@ -183,7 +183,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
           <Backdrop src={shown.art.backdrop} />
           <ServerIdentity />
           <AnnouncementPill />
-          <div className="absolute top-[7.5cqw] left-(--tv-safe-x) grid max-w-[38cqw] gap-[1.6cqw]">
+          <div className="absolute top-[calc(7.5cqw-var(--tv-head,0px))] left-(--tv-safe-x) grid max-w-[38cqw] gap-[1.6cqw]">
             <AnimatePresence mode="wait">
               <HeroCopy item={shown} eyebrow={hero?.title ?? 'On Harbor'} />
             </AnimatePresence>
@@ -201,7 +201,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
           one; positioned, so they paint over the backdrop */}
           <div
             data-rows=""
-            className="relative grid grid-cols-1 gap-[1.6cqw] pt-[28.5cqw] pb-(--tv-safe-y)"
+            className="relative grid grid-cols-1 gap-[1.6cqw] pt-[calc(28.5cqw-var(--tv-head,0px))] pb-(--tv-safe-y)"
           >
             {rows.map((s, i) => (
               <div key={s.id} data-row={i} data-section={s.id} className="grid grid-cols-1">

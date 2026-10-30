@@ -6,6 +6,7 @@ import { Icon } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
 import { useCollection } from '../client/data.ts'
 import {
+  backdropReach,
   GlobalNav,
   ServerIdentity,
   TvButton,
@@ -45,10 +46,12 @@ export function TvCollection() {
       <img
         src={c.art.backdrop}
         alt=""
-        className="absolute inset-0 size-full scale-110 object-cover blur-[2.6cqw] brightness-[0.45]"
+        className={`absolute inset-0 h-full w-full scale-110 object-cover blur-[2.6cqw] brightness-[0.45] ${backdropReach}`}
       />
-      <div className="absolute inset-0 bg-[linear-gradient(90deg,var(--color-bg)_10%,transparent_70%)]" />
-      <main className="absolute inset-0 grid content-start gap-[2.4cqw] overflow-hidden pt-[8cqw]">
+      <div
+        className={`absolute inset-0 bg-[linear-gradient(90deg,var(--color-bg)_10%,transparent_70%)] ${backdropReach}`}
+      />
+      <main className="absolute inset-0 grid content-start gap-[2.4cqw] overflow-hidden pt-[calc(8cqw-var(--tv-head,0px))]">
         <ServerIdentity />
         <section aria-labelledby="title" className="grid max-w-[60cqw] gap-[1cqw] px-(--tv-safe-x)">
           <p className="text-(length:--tv-text-meta) text-text-3">
