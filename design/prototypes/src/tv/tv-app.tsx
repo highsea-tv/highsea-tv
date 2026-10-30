@@ -18,7 +18,8 @@ import { ServerIdentity, TvButton, TvHead, TvMessage, tvHref } from './kit.tsx'
 import { TvLibrary } from './library.tsx'
 import { TvPlayer } from './player.tsx'
 import { TvSearch } from './search.tsx'
-import { TvSettings } from './settings.tsx'
+import { TvProfile } from './settings.tsx'
+import { TvNewProfile, TvWho } from './who.tsx'
 
 function Detail() {
   const [panel, setPanel] = useState(false)
@@ -117,8 +118,22 @@ function Screens() {
       <Route path="/search">
         <TvSearch />
       </Route>
+      {/* Settings is on the profile (the owner, 2026-10-30); its old address opens it too */}
+      {/* who's watching, a profile's PIN, and adding a profile (the owner, 2026-10-30) */}
+      <Route path="/who/new">
+        <TvNewProfile />
+      </Route>
+      <Route path="/who">
+        <TvWho />
+      </Route>
+      <Route path="/who/:id">
+        <TvWho />
+      </Route>
+      <Route path="/profile">
+        <TvProfile />
+      </Route>
       <Route path="/settings">
-        <TvSettings />
+        <TvProfile />
       </Route>
       <Route>
         <NotFound />

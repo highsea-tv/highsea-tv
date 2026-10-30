@@ -28,7 +28,7 @@ const PAIRS: Pair[] = [
   { name: 'details', screen: 'C4 A movie', prototype: '/tv/movies/4' },
   { name: 'search', screen: 'C6 Search', prototype: '/tv/search' },
   { name: 'library', screen: 'C3 Library', prototype: '/tv/library' },
-  { name: 'settings', screen: 'C7 Settings', prototype: '/tv/settings' },
+  { name: 'settings', screen: 'C7 Settings', prototype: '/tv/profile' },
   {
     name: 'player',
     screen: 'C5 The player',

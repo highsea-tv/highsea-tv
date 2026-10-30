@@ -11,6 +11,7 @@ import { clientHref, useAnnouncements, useConnection, useServer } from '../clien
 import { mediaCard } from '../client/media-card.tsx'
 import { Inline } from '../kit/inline.tsx'
 import type { ClientItem } from '../mock/types.ts'
+import { type Tone, type TvPerson, usePeople } from './people.ts'
 
 export const tvHref = (path: string) => clientHref('tv', path)
 
@@ -335,29 +336,60 @@ export function TvHead({ down = 'hero', className }: { down?: string; className?
           )
         })}
       </div>
-      <Account current={active('/settings')} />
+      <Account current={active('/profile') || active('/settings')} />
     </nav>
   )
 }
 
+// literal classes, so Tailwind finds them: the tokens' soft pairs
+const tones: Record<Tone, string> = {
+  accent: 'bg-accent-soft text-accent-text',
+  info: 'bg-badge-info-bg text-badge-info',
+  success: 'bg-badge-success-bg text-badge-success',
+  warning: 'bg-badge-warning-bg text-badge-warning',
+  danger: 'bg-badge-danger-bg text-badge-danger',
+}
+
+/** A person's circle: their initial on their colour, sized by the caller's width. */
+export function TvAvatar({
+  person,
+  className,
+  style,
+}: {
+  person: TvPerson
+  className?: string
+  style?: CSSProperties
+}) {
+  return (
+    <span
+      aria-hidden
+      style={style}
+      className={cn(
+        'grid aspect-square place-items-center rounded-full font-semibold text-[length:inherit] [container-type:inline-size]',
+        tones[person.tone],
+        className,
+      )}
+    >
+      <span className="text-[45cqw] leading-none">{person.name.charAt(0)}</span>
+    </span>
+  )
+}
+
 /**
- * The signed-in person's avatar, at the head's right: their profile, which is where the TV's
- * Settings are (the owner, 2026-10-30). For now it opens Settings; switching accounts and signing
- * out join it there.
+ * The avatar of whoever is watching, at the head's right: it opens their profile, with the people
+ * on this TV, switching between them, and the TV's Settings (the owner, 2026-10-30).
  */
 function Account({ current }: { current: boolean }) {
+  const { me } = usePeople()
   return (
     <a
-      href={tvHref('/settings')}
+      href={tvHref('/profile')}
       data-focusable=""
-      aria-label="Ines: profile and settings"
+      aria-label={`${me.name}: profile and settings`}
       aria-current={current ? 'page' : undefined}
       className="group/account grid size-[3cqw] place-items-center justify-self-end rounded-full outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text"
     >
-      {/* on the focused ring the circle turns dark, so the initial still reads */}
-      <span className="grid size-[2.2cqw] place-items-center rounded-full bg-accent-soft font-semibold text-(length:--tv-text-pill) text-accent-text group-focus-visible/account:bg-bg group-focus-visible/account:text-text">
-        I
-      </span>
+      <TvAvatar person={me} className="w-[2.2cqw]" />
     </a>
   )
 }

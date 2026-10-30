@@ -13,6 +13,7 @@ import { DISCOVERY_MS } from '../src/client/connect.ts'
 import { createMock } from '../src/mock/client.ts'
 import { type Connection, defaultState } from '../src/proto/state.ts'
 import { ScreenApp } from '../src/screen/screen.tsx'
+import { resetPeople } from '../src/tv/people.ts'
 import { classes, collect, unknownClasses, violations } from './check.ts'
 
 beforeEach(() => localStorage.clear())
@@ -209,7 +210,7 @@ describe('C3 library', () => {
     // Settings is reached through the profile, the avatar, not as a destination
     expect(
       within(nav).getByRole('link', { name: 'Ines: profile and settings' }).getAttribute('href'),
-    ).toBe('#/tv/settings')
+    ).toBe('#/tv/profile')
     expect(page().getByRole('heading', { level: 1, name: 'Shows' })).toBeTruthy()
     expect(page().getByText(/Shows come to highsea in a later version/)).toBeTruthy()
     const go = page().getAllByRole('link', { name: 'Movies' }).at(-1)
@@ -272,5 +273,89 @@ describe('stylesheet', () => {
   test('every class the client flows render is a real utility', async () => {
     expect(classes.size).toBeGreaterThan(50)
     expect(await unknownClasses()).toEqual([])
+  })
+})
+
+describe('TV: the account’s profiles', () => {
+  afterEach(() => act(() => resetPeople()))
+
+  test("who's watching: every profile, Add a profile, and a PIN asked for first", async () => {
+    const { location, user } = await open('/tv/who')
+    expect(page().getByRole('heading', { level: 1, name: 'Who’s watching?' })).toBeTruthy()
+    const people = within(page().getByRole('list', { name: 'Profiles' }))
+      .getAllByRole('button')
+      .map((b) => b.getAttribute('aria-label'))
+    expect(people).toEqual(['Ines', 'Theo, has a PIN', 'Ruth', 'Kids', 'Add a profile'])
+    await clean()
+    await user.click(page().getByRole('button', { name: 'Theo, has a PIN' }))
+    await settle()
+    expect(page().getByRole('heading', { name: 'Enter Theo’s PIN' })).toBeTruthy()
+    await clean()
+    for (const d of '1111') await user.click(page().getByRole('button', { name: d }))
+    await settle()
+    expect(page().getByRole('alert').textContent).toBe('That isn’t Theo’s PIN. Try again.')
+    await wait(400)
+    for (const d of '2580') await user.click(page().getByRole('button', { name: d }))
+    await settle()
+    // Home, as Theo (Home opens on the announcement to acknowledge, without the head)
+    expect(location.history.at(-1)).toBe('/tv/')
+  })
+
+  test('the profile: the profiles first, then a PIN set twice', async () => {
+    const { user } = await open('/tv/profile')
+    const row = within(page().getByRole('banner'))
+    expect(row.getByRole('button', { name: 'Ines, watching now' })).toBeTruthy()
+    await user.click(page().getByRole('button', { name: 'PIN' }))
+    page().getByRole('button', { name: 'PIN' }).focus()
+    await settle()
+    await user.click(page().getByRole('button', { name: 'Set a PIN' }))
+    await settle()
+    for (const d of '1234') await user.click(page().getByRole('button', { name: d }))
+    await settle()
+    expect(page().getByRole('dialog', { name: 'Enter it again' })).toBeTruthy()
+    for (const d of '1234') await user.click(page().getByRole('button', { name: d }))
+    await settle()
+    expect(page().getByText('On. Every device asks for it before watching as Ines.')).toBeTruthy()
+    expect(row.getByRole('button', { name: 'Ines, has a PIN, watching now' })).toBeTruthy()
+  })
+
+  test('adding a profile watches as it, and deleting one asks first', async () => {
+    const { location, user } = await open('/tv/who/new')
+    const add = () => page().getByRole('button', { name: 'Add profile' }) as HTMLButtonElement
+    expect(add().disabled).toBe(true)
+    const key = (k: string) => user.click(page().getByRole('button', { name: k }))
+    // Shift is on at the start; twice in a row is caps lock, and a third press turns it off
+    await key('S')
+    await key('a')
+    await key('Shift')
+    await key('Shift')
+    expect(page().getByRole('button', { name: 'Caps lock' }).getAttribute('aria-pressed')).toBe(
+      'true',
+    )
+    await key('M')
+    await key('Caps lock')
+    expect(page().getByRole('button', { name: 'Shift' }).getAttribute('aria-pressed')).toBe('false')
+    await key('i')
+    await key('Space')
+    await key('J')
+    expect(page().getByText('SaMi J', { selector: '[aria-live]' })).toBeTruthy()
+    await user.click(page().getByRole('radio', { name: 'Red' }))
+    await settle()
+    expect(add().disabled).toBe(false)
+    await user.click(add())
+    await settle()
+    expect(location.history.at(-1)).toBe('/tv/')
+    await clean()
+    await open('/tv/profile')
+    expect(page().getByRole('button', { name: 'SaMi J, watching now' })).toBeTruthy()
+    await user.click(page().getByRole('button', { name: 'Profiles' }))
+    await settle()
+    await user.click(page().getByRole('button', { name: 'Delete Ruth’s profile' }))
+    await settle()
+    expect(page().getByRole('dialog', { name: 'Delete Ruth’s profile?' })).toBeTruthy()
+    await user.click(page().getByRole('button', { name: 'Delete profile' }))
+    await settle()
+    expect(page().queryByRole('button', { name: 'Ruth' })).toBeNull()
+    expect(page().queryByRole('button', { name: 'Delete Ines’s profile' })).toBeNull()
   })
 })
