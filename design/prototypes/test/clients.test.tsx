@@ -196,8 +196,8 @@ describe('C3 library', () => {
     expect(
       within(nav)
         .getAllByRole('link')
-        .map((a) => a.textContent),
-    ).toEqual(['Home', 'Search', 'Collections', 'Movies', 'Shows', 'Music', 'Settings'])
+        .map((a) => a.getAttribute('aria-label') ?? a.textContent),
+    ).toEqual(['Search', 'Home', 'Collections', 'Movies', 'Shows', 'Music', 'Settings'])
     expect(page().getByRole('heading', { level: 1, name: 'Shows' })).toBeTruthy()
     expect(page().getByText(/Shows come to highsea in a later version/)).toBeTruthy()
     const go = page().getAllByRole('link', { name: 'Movies' }).at(-1)

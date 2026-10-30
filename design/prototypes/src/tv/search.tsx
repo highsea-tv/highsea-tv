@@ -10,17 +10,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { searchKinds, searchSuggestions, useSearch, useSearchQuery } from '../client/data.ts'
 import type { SearchSection } from '../mock/types.ts'
-import {
-  GlobalNav,
-  ServerIdentity,
-  TvButton,
-  TvPoster,
-  TvTile,
-  tvHref,
-  tvKey,
-  tvTitleTop,
-  useInitialFocus,
-} from './kit.tsx'
+import { TvButton, TvHead, TvPoster, TvTile, tvHref, tvKey, useInitialFocus } from './kit.tsx'
 
 const LAYOUTS = {
   letters: "abcdefghijklmnopqrstuvwxyz-'".split(''),
@@ -59,11 +49,10 @@ export function TvSearch() {
   }
   return (
     <>
-      <GlobalNav down="keys" />
       <div
-        className={`absolute inset-0 grid grid-cols-[30cqw_minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-[3cqw] gap-y-[1.2cqw] px-(--tv-safe-x) ${tvTitleTop} pb-(--tv-safe-y)`}
+        className={`absolute inset-0 grid grid-cols-[30cqw_minmax(0,1fr)] grid-rows-[auto_auto_minmax(0,1fr)] gap-x-[3cqw] gap-y-[1.6cqw] px-(--tv-safe-x) pb-(--tv-safe-y)`}
       >
-        <ServerIdentity />
+        <TvHead down="keys" className="col-span-full" />
         {/* the title across both columns, as the other screens head theirs (the owner,
         2026-10-30), so the field and the results start level under it */}
         <h1 className="col-span-full font-semibold text-[2.6cqw] leading-none tracking-display">

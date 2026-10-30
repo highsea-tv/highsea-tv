@@ -18,22 +18,20 @@ import { TvFilmRow } from './film-row.tsx'
 import {
   AnnouncementBanner,
   BloomGlow,
-  backdropReach,
-  GlobalNav,
   pageTop,
   ServerIdentity,
   TvButton,
+  TvHead,
   TvMessage,
   TvPoster,
   TvRow,
   tvHref,
   useInitialFocus,
-  useTvNav,
 } from './kit.tsx'
 
 /**
  * The featured title as one large card across the page, which lifts only slightly on focus: at
- * this size the posters' zoom would push it under the rail: its backdrop, with the title's logo,
+ * this size the posters' zoom would push it off the screen: its backdrop, with the title's logo,
  * the details and the tagline low on the left. OK opens the movie, where Play is (the owner,
  * 2026-10-30).
  */
@@ -98,9 +96,8 @@ function Featured({ section }: { section: HomeSection }) {
 }
 
 /**
- * The featured cards' bloom, in each card's most vibrant colour: still on the screen while the
- * rail pushes the page, and the screen's size, so it carries on behind the rail's icons. It fades
- * out once the page lifts to the rows.
+ * The featured card's bloom, in its most vibrant colour, the screen's size. It fades out once the
+ * page lifts to the rows.
  */
 function Bloom({ items, active, shown }: { items: ClientItem[]; active: number; shown: boolean }) {
   const found = useVibrant(items.map((m) => m.art.backdrop))
@@ -111,7 +108,7 @@ function Bloom({ items, active, shown }: { items: ClientItem[]; active: number; 
     [key, active, shown],
   )
   return (
-    <div aria-hidden className={`pointer-events-none absolute inset-0 ${backdropReach}`}>
+    <div aria-hidden className="pointer-events-none absolute inset-0">
       <BloomGlow bloom={bloom} />
     </div>
   )
@@ -181,23 +178,24 @@ function usePageOffset(clear: number) {
 function Home({ sections }: { sections: HomeSection[] }) {
   const hero = sections.find((s) => s.layout === 'hero')
   const rows = sections.filter((s) => s !== hero)
-  const { page, style, lifted } = usePageOffset(pageTop(useTvNav()))
+  const { page, style, lifted } = usePageOffset(pageTop)
   useInitialFocus(true)
   return (
     <>
-      <GlobalNav lifted={lifted} />
       {/* lifted, the row above fades out under the top edge rather than being cut */}
       <div
-        className={`absolute inset-0 overflow-hidden ${lifted ? '[mask-image:linear-gradient(transparent,black_3.2cqw)]' : ''}`}
+        className={`absolute inset-0 overflow-hidden ${lifted ? '[mask-image:linear-gradient(transparent,black_var(--tv-safe-y))]' : ''}`}
       >
         {hero && <Bloom items={hero.items.slice(0, 1)} active={0} shown={!lifted} />}
         <div ref={page} style={style} className="relative transition-lift">
-          <ServerIdentity />
+          {/* the announcement across the very top, then the head, both scrolling away with the
+          page (the owner, 2026-10-30) */}
+          <AnnouncementBanner />
+          <TvHead className="px-(--tv-safe-x)" />
           <div
             data-rows=""
-            className="relative grid grid-cols-1 gap-[1.6cqw] pt-[calc(6cqw-var(--tv-head,0px))] pb-(--tv-safe-y)"
+            className="relative grid grid-cols-1 gap-[1.6cqw] pt-[1.6cqw] pb-(--tv-safe-y)"
           >
-            <AnnouncementBanner />
             {hero && (
               <div data-row={0} data-section={hero.id} className="grid grid-cols-1">
                 <Featured section={hero} />
@@ -275,7 +273,7 @@ export function TvHome() {
   if (home.data.length === 0)
     return (
       <>
-        <ServerIdentity />
+        <ServerIdentity className="absolute top-(--tv-safe-y) left-(--tv-safe-x)" />
         <TvMessage
           title="Nothing to watch yet"
           actions={

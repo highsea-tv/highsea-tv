@@ -2,7 +2,7 @@
 // Shows and Music, TV: destinations in the global nav ahead of the media they'll hold (the owner,
 // 2026-10-30, to be prototyped soon). Each has its title where the other screens head theirs and
 // a calm note below, with Movies to go to instead, so the remote has somewhere to land.
-import { GlobalNav, ServerIdentity, TvButton, tvHref, tvTitleTop, useInitialFocus } from './kit.tsx'
+import { TvButton, TvHead, tvHref, useInitialFocus } from './kit.tsx'
 
 const pages = {
   shows: {
@@ -20,11 +20,10 @@ export function TvComing({ kind }: { kind: keyof typeof pages }) {
   useInitialFocus(true, kind)
   return (
     <>
-      <GlobalNav down="coming" />
       <main
-        className={`absolute inset-0 grid grid-rows-[auto_minmax(0,1fr)] px-(--tv-safe-x) ${tvTitleTop} pb-(--tv-safe-y)`}
+        className={`absolute inset-0 grid grid-rows-[auto_auto_minmax(0,1fr)] gap-y-[1.6cqw] px-(--tv-safe-x) pb-(--tv-safe-y)`}
       >
-        <ServerIdentity />
+        <TvHead down="coming" />
         <h1 className="font-semibold text-[2.6cqw] leading-none tracking-display">{page.title}</h1>
         <div className="grid place-items-center">
           <div

@@ -3,26 +3,14 @@
 // posters with their titles, rows that scroll by focus, the server identity, the announcement
 // pill, and the global navigation, a top tab row on every screen but the player
 // (client-home.md#tv), with the alternatives the owner asked to compare.
+import { tv } from '@highsea-tv/tokens'
 import { cn, Icon, type IconName, Mark, Poster } from '@highsea-tv/ui-web'
-import {
-  type ComponentProps,
-  type CSSProperties,
-  createContext,
-  type ReactNode,
-  useContext,
-  useEffect,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from 'react'
-import { createPortal } from 'react-dom'
+import { type ComponentProps, type CSSProperties, type ReactNode, useEffect } from 'react'
 import { useLocation } from 'wouter'
 import { clientHref, useAnnouncements, useConnection, useServer } from '../client/data.ts'
 import { mediaCard } from '../client/media-card.tsx'
 import { Inline } from '../kit/inline.tsx'
 import type { ClientItem } from '../mock/types.ts'
-import type { TvNav } from '../proto/state.ts'
-import { useProto } from '../screen/screen.tsx'
 
 export const tvHref = (path: string) => clientHref('tv', path)
 
@@ -85,18 +73,14 @@ export const tvKey =
   'grid h-[3cqw] place-items-center rounded-[0.4cqw] bg-text/10 font-semibold text-(length:--tv-text-button) outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg'
 
 /**
- * Top left: the server's mark and name; "Connected remotely" under it when that's how. It sits at
- * the top of the page and scrolls away with it, so it never covers the rows.
+ * The server's mark and name; "Connected remotely" under it when that's how. The head's left end,
+ * and on a full-screen message the screen's top left.
  */
-export function ServerIdentity({ always = false }: { always?: boolean }) {
+export function ServerIdentity({ className }: { className?: string }) {
   const server = useServer()
   const connection = useConnection()
-  // with the left rail, the server's mark heads the rail instead; `always` keeps it on a screen
-  // without the rail (Unreachable)
-  const rail = useTvNav() === 'rail'
-  if (rail && !always) return null
   return (
-    <div className="absolute top-(--tv-safe-y) left-(--tv-safe-x) flex items-center gap-[0.8cqw]">
+    <div className={cn('flex h-[3cqw] items-center gap-[0.8cqw]', className)}>
       <Mark size={32} className="size-[2cqw]" />
       <span className="grid">
         <span className="font-semibold text-(length:--tv-text-server-name) leading-[1.15]">
@@ -112,26 +96,30 @@ export function ServerIdentity({ always = false }: { always?: boolean }) {
   )
 }
 
+/** The owner's newest announcement for the TV, unless it must be acknowledged (that comes first, on its own). */
+export function useBanner() {
+  const a = useAnnouncements('tv')
+  return a.latest && a.latest.acknowledgement !== 'require' ? a.latest : null
+}
+
 /**
- * The owner's newest announcement, as a full-width block at the top of Home, before every section
- * (the owner, 2026-10-30): in the page's flow, so nothing covers it, and it scrolls away with the
- * page. Not a focus stop: the TV can't follow its link, so a call to action stays on the other
- * apps.
+ * The owner's newest announcement, as a strip across the very top of Home, the screen's whole
+ * width, above the head (the owner, 2026-10-30): in the page's flow, so nothing covers it, and it
+ * scrolls away with the page. Not a focus stop: the TV can't follow its link, so a call to action
+ * stays on the other apps.
  */
 export function AnnouncementBanner() {
-  const a = useAnnouncements('tv')
-  if (!a.latest || a.latest.acknowledgement === 'require') return null
+  const latest = useBanner()
+  if (!latest) return null
   return (
-    <div className="px-(--tv-safe-x)">
-      <div className="flex items-center gap-[1.2cqw] rounded-[1cqw] bg-s2 px-[1.6cqw] py-[1cqw]">
-        <Icon name="announcement" size={32} className="size-[1.6cqw] shrink-0 text-accent-text" />
-        <div className="grid min-w-0 gap-[0.2cqw]">
-          <p className="truncate font-semibold text-(length:--tv-text-meta)">{a.latest.title}</p>
-          <p className="truncate text-(length:--tv-text-pill) text-text-2">
-            <Inline text={a.latest.body} />
-          </p>
-        </div>
-      </div>
+    <div className="flex h-[4.2cqw] items-center gap-[1cqw] bg-s2 px-(--tv-safe-x)">
+      <Icon name="announcement" size={32} className="size-[1.4cqw] shrink-0 text-accent-text" />
+      <p className="min-w-0 truncate text-(length:--tv-text-pill) text-text-2">
+        <span className="me-[1cqw] font-semibold text-(length:--tv-text-meta) text-text">
+          {latest.title}
+        </span>
+        <Inline text={latest.body} />
+      </p>
     </div>
   )
 }
@@ -254,8 +242,9 @@ export function TvRow({
 }
 
 const destinations: { path: string; label: string; icon: IconName }[] = [
-  { path: '/', label: 'Home', icon: 'home' },
+  // Search first, as its icon alone (the owner, 2026-10-30)
   { path: '/search', label: 'Search', icon: 'search' },
+  { path: '/', label: 'Home', icon: 'home' },
   // a destination per kind of media, Collections first since one can hold several kinds of the
   // same family, video or audio (the owner, 2026-10-30); the admin keeps them in one Library
   { path: '/collections', label: 'Collections', icon: 'library' },
@@ -264,29 +253,6 @@ const destinations: { path: string; label: string; icon: IconName }[] = [
   { path: '/music', label: 'Music', icon: 'music' },
   { path: '/settings', label: 'Settings', icon: 'settings' },
 ]
-
-/** Which global navigation the prototype shows (the toolbar's TV nav; the owner, 2026-10-30). */
-export const useTvNav = () => useProto().tvNav
-
-/**
- * The left rail's spacing, in screen units (the owner, 2026-10-30): its icons sit `railGap` from
- * the screen's edge and the page `railGap` from the icons, so the page's inset is the sum.
- */
-export const railGap = 3
-const railIcon = 1.4
-const railPad = 0.8
-export const railInset = railGap * 2 + railIcon
-
-/**
- * What the app hands the rail: the slot it's drawn into, outside the page so the page can move
- * aside for it; `push`, which moves the page right by that many pixels while the rail is open;
- * and `leave`, which puts focus back where it was in the page.
- */
-export type RailHost = {
-  slot: HTMLElement | null
-  push: (px: number) => void
-  leave: (fallback: string) => void
-}
 
 /** Home's bloom: a glow colour for each featured card, the one focus is on, and whether it shows. */
 export type Bloom = { colors: (string | null)[]; active: number; shown: boolean }
@@ -312,254 +278,85 @@ export function BloomGlow({ bloom }: { bloom: Bloom }) {
     />
   )
 }
-export const RailContext = createContext<RailHost | null>(null)
+
+/** Where Home lifts a row's title to when focus moves below the hero: the top safe area. */
+export const pageTop = tv.safe.y
 
 /**
- * Where Home lifts a row's title to when focus moves below the hero: under the top safe area, or
- * under the band when the band holds the navigation.
+ * The head, on every screen but the player: the server's mark at the left, the global navigation
+ * centred, and the account at the right, all on one line. It's the first thing in the page's flow
+ * and scrolls away with it (the owner, 2026-10-30), so nothing ever passes under it; the floating
+ * bar and its alternatives (a pill, a fade, a band, a bar that slid away) are gone. Focus moves Up
+ * into it from the hero actions or a screen's top row (a focus guide); it's isolated, so focus
+ * enters it only that way, starting on the page's own destination, and Down returns to `down`.
+ * A screen whose content is inset passes no `className`; one that runs to the edges insets it.
  */
-/**
- * For a screen's full-screen backdrop: while the rail pushes the page right, it moves back left by
- * as much, so it stays still on the screen and only the content moves. Both are translations with
- * the same timing, so they cancel on every frame (a layout property such as left runs a frame
- * apart from the page's composited transform, and the backdrop showed through as it caught up).
- */
-export const backdropReach =
-  '-translate-x-(--tv-shift) transition-[translate] duration-300 ease-out motion-reduce:transition-none'
-
-/**
- * Where a screen's header row starts, so its title's capitals centre on the rail's mark (the
- * owner, 2026-10-30). The mark's centre is 4.7cqw down (the safe area's 3.2, its 0.4 padding and
- * half its 2.2); Geist's capitals are 0.71em tall, so a 2.6cqw title set without leading centres
- * them 1.275cqw below its top, which is then 3.425cqw down: 7.225cqw less the rail's head.
- */
-export const tvTitleTop = 'pt-[calc(7.225cqw-var(--tv-head,0px))]'
-
-export const pageTop = (nav: TvNav) => (nav === 'band' ? 7.6 : 3.2)
-
-/**
- * The global navigation, on every screen but the player. The owner had it always shown on
- * 2026-10-30 (it was hidden until focus moved Up), then asked for alternatives to compare once the
- * rows were seen scrolling under it:
- * - `pill`: a tab row floating at the top, as built;
- * - `scrim`: the same over a fade from the background, so it stays readable over posters;
- * - `band`: a solid strip of the background holding the tabs and the server's name, with the
- *   page's rows scrolling under it, so nothing focusable is ever covered;
- * - `rail`: icons down the left edge that open with their labels when focus moves Left into them,
- *   pushing the page aside (Max, Hulu, Disney+, Plex, and tvOS 18's sidebar); the owner chose it
- *   on 2026-10-30, since it's reachable from anywhere, however far a page has scrolled;
- * - `scroll`: Apple's tab bar (HIG, Tab bars): shown at the top of a page, sliding away once focus
- *   goes below the page's first group, and back with Up or Back.
- * Focus moves Up into it from the hero actions or a screen's top row (a focus guide), or Left into
- * the rail; it's isolated, so focus enters it only that way, and Down (Right from the rail)
- * returns to `down`. `lifted` says Home has moved past its hero.
- */
-export function GlobalNav({ down = 'hero', lifted }: { down?: string; lifted?: boolean }) {
+export function TvHead({ down = 'hero', className }: { down?: string; className?: string }) {
   const [location] = useLocation()
-  const nav = useTvNav()
-  const away = useAway(nav === 'scroll', down, lifted)
   const active = (path: string) => (path === '/' ? location === '/' : location.startsWith(path))
-  if (nav === 'rail') return <Rail down={down} />
   return (
     <nav
       aria-label="Main"
       data-group="nav"
       data-isolate=""
       data-go-down={down}
+      onFocus={(e) => {
+        // arriving from the page, start on the page's own destination, as Menu does, rather than
+        // wherever the navigator would land (Search, at the bar's left)
+        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
+        const current = e.currentTarget.querySelector<HTMLElement>('[aria-current="page"]')
+        if (current && current !== e.target) current.focus({ preventScroll: true })
+      }}
       className={cn(
-        'group/nav absolute inset-x-0 top-0 z-20 flex justify-center pt-(--tv-safe-y) transition-[translate,opacity] duration-300',
-        away && '-translate-y-full opacity-0',
+        'relative grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center pt-(--tv-safe-y)',
+        className,
       )}
     >
-      {nav === 'scrim' && (
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-x-0 top-0 h-[11cqw] bg-[linear-gradient(var(--color-bg)_25%,transparent)]"
-        />
-      )}
-      {nav === 'band' && (
-        <>
-          <div
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-[8.6cqw] bg-[linear-gradient(var(--color-bg)_80%,transparent)]"
-          />
-          {/* the band covers the page's own top, so it carries the server's mark; Home's
-          announcement sits in the page's flow, below it */}
-          <ServerIdentity />
-        </>
-      )}
-      <div className="relative flex gap-[0.6cqw] rounded-full bg-s2/85 p-[0.4cqw] backdrop-blur-pill">
-        {destinations.map((d) => (
-          <a
-            key={d.path}
-            href={tvHref(d.path)}
-            data-focusable=""
-            aria-current={active(d.path) ? 'page' : undefined}
-            className="rounded-full px-[1.4cqw] py-[0.5cqw] font-semibold text-(length:--tv-text-button) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text"
-          >
-            {d.label}
-          </a>
-        ))}
+      <ServerIdentity />
+      {/* no background of its own (the owner, 2026-10-30): the tabs stand on the page */}
+      <div className="flex h-[3cqw] items-center gap-[0.6cqw]">
+        {destinations.map((d) => {
+          const icon = d.path === '/search'
+          return (
+            <a
+              key={d.path}
+              href={tvHref(d.path)}
+              data-focusable=""
+              aria-label={icon ? d.label : undefined}
+              aria-current={active(d.path) ? 'page' : undefined}
+              className={cn(
+                'flex h-[2.6cqw] items-center justify-center rounded-full font-semibold text-(length:--tv-text-button) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text',
+                icon ? 'w-[2.6cqw]' : 'px-[1.4cqw]',
+              )}
+            >
+              {icon ? <Icon name="search" size={24} className="size-[1.4cqw]" /> : d.label}
+            </a>
+          )
+        })}
       </div>
+      <Account />
     </nav>
   )
 }
 
 /**
- * The left rail: a transparent column the screen's height, with the destinations' icons under the
- * server's mark (the owner, 2026-10-30). Left from any screen's edge focuses it, and it opens with its labels, pushing the page
- * right to make room rather than covering it; Right, or leaving it, closes it and returns focus to
- * where it was in the page (or to `down`). Up and Down stay inside it.
+ * The signed-in person's avatar, at the head's right. It will open switching accounts and signing
+ * out; for now it's only a focus stop.
  */
-function Rail({ down }: { down: string }) {
-  const host = useContext(RailContext)
-  const [location] = useLocation()
-  const [open, setOpen] = useState(false)
-  const list = useRef<HTMLDivElement>(null)
-  const active = (path: string) => (path === '/' ? location === '/' : location.startsWith(path))
-  useLayoutEffect(() => {
-    const el = list.current
-    const root = el?.closest<HTMLElement>('[data-platform="tv"]')
-    if (!host || !el || !root) return
-    const unit = root.clientWidth / 100
-    // open, the page starts as far from the widest label as it does from the icons when closed
-    const right = el.getBoundingClientRect().right - root.getBoundingClientRect().left
-    const px = Math.round(open ? right + (railGap - railPad) * unit - railInset * unit : 0)
-    host.push(px)
-  }, [open, host])
-  useEffect(() => () => host?.push(0), [host])
-  if (!host?.slot) return null
-  const items = () => [...(list.current?.querySelectorAll<HTMLElement>('[data-focusable]') ?? [])]
-  return createPortal(
-    <nav
-      aria-label="Main"
-      data-group="rail"
-      data-isolate=""
-      data-go-left=""
-      onFocus={(e) => {
-        setOpen(true)
-        // arriving from the page, start on the page's own destination, as Menu does, rather than
-        // wherever the navigator would land (the first, or the last one used)
-        if (e.currentTarget.contains(e.relatedTarget as Node | null)) return
-        const current = e.currentTarget.querySelector<HTMLElement>('[aria-current="page"]')
-        if (current && current !== e.target) current.focus({ preventScroll: true })
-      }}
-      onBlur={(e) => {
-        if (!e.currentTarget.contains(e.relatedTarget as Node | null)) setOpen(false)
-      }}
-      onKeyDown={(e) => {
-        const all = items()
-        const at = all.indexOf(document.activeElement as HTMLElement)
-        if (e.key === 'ArrowRight') host.leave(down)
-        else if (e.key === 'ArrowUp') all[at - 1]?.focus()
-        else if (e.key === 'ArrowDown') all[at + 1]?.focus()
-        else return
-        e.preventDefault()
-      }}
-      className="absolute inset-y-0 left-0 z-20 flex"
-    >
-      {/* the server's mark at the top, the destinations under it, the account at the foot */}
-      <div
-        ref={list}
-        className="relative grid grid-rows-[auto_1fr_auto] items-center gap-[0.5cqw] py-(--tv-safe-y)"
-        style={{ marginLeft: `${railGap - railPad}cqw` }}
-      >
-        <RailServer open={open} />
-        <div className="grid gap-[0.5cqw] self-start pt-[2cqw]">
-          {destinations.map((d) => (
-            <a
-              key={d.path}
-              href={tvHref(d.path)}
-              data-focusable=""
-              aria-label={d.label}
-              aria-current={active(d.path) ? 'page' : undefined}
-              // white at 60%, not the flat grey, so it takes the colour of Home's bloom beneath
-              // rather than sitting grey on it
-              style={{ padding: `${railPad}cqw` }}
-              className="flex items-center gap-[0.9cqw] rounded-full font-semibold text-(length:--tv-text-button) text-text/60 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text"
-            >
-              <Icon name={d.icon} size={24} className="size-[1.4cqw] shrink-0" />
-              {/* a line no taller than the icon, so opening adds only width */}
-              {open && <span className="pe-[0.8cqw] leading-[1.4cqw]">{d.label}</span>}
-            </a>
-          ))}
-        </div>
-        <RailAccount open={open} />
-      </div>
-    </nav>,
-    host.slot,
-  )
-}
-
-/**
- * Round art in the rail (the mark, the avatar): 2.2cqw, the icon and its padding less 0.4cqw a
- * side, so it sits in the icons' column and reads larger than an icon.
- */
-const railArtPad = '0.4cqw'
-
-/** The rail's head: the server's mark, with its name (and Connected remotely) while open. */
-function RailServer({ open }: { open: boolean }) {
-  const server = useServer()
-  const connection = useConnection()
-  return (
-    <div style={{ padding: railArtPad }} className="flex items-center gap-[0.9cqw] self-start">
-      <Mark size={32} className="size-[2.2cqw] shrink-0" />
-      {open && (
-        <span className="grid h-[2.2cqw] content-center pe-[0.8cqw]">
-          <span className="whitespace-nowrap font-semibold text-(length:--tv-text-button) leading-[1.15]">
-            {server.data?.name ?? 'Harbor'}
-          </span>
-          {connection === 'remote' && (
-            <span className="whitespace-nowrap text-(length:--tv-text-pill) text-text-2 leading-[1.15]">
-              Connected remotely
-            </span>
-          )}
-        </span>
-      )}
-    </div>
-  )
-}
-
-/**
- * The rail's foot: the signed-in person's avatar, the last stop Down reaches. It will open
- * switching accounts and signing out; for now it's only a focus stop.
- */
-function RailAccount({ open }: { open: boolean }) {
+function Account() {
   return (
     <button
       type="button"
       data-focusable=""
       aria-label="Ines: switch account or sign out"
-      style={{ padding: railArtPad }}
-      className="group/account flex items-center gap-[0.9cqw] self-end rounded-full font-semibold text-(length:--tv-text-button) text-text/60 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg"
+      className="group/account grid size-[3cqw] place-items-center justify-self-end rounded-full outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text"
     >
-      {/* on the focused pill the circle turns dark, so the initial still reads */}
-      <span className="grid size-[2.2cqw] shrink-0 place-items-center rounded-full bg-accent-soft text-(length:--tv-text-pill) text-accent-text group-focus-visible/account:bg-bg group-focus-visible/account:text-text">
+      {/* on the focused ring the circle turns dark, so the initial still reads */}
+      <span className="grid size-[2.2cqw] place-items-center rounded-full bg-accent-soft font-semibold text-(length:--tv-text-pill) text-accent-text group-focus-visible/account:bg-bg group-focus-visible/account:text-text">
         I
       </span>
-      {open && <span className="pe-[0.8cqw] leading-[2.2cqw]">Ines</span>}
     </button>
   )
-}
-
-/**
- * For the bar that scrolls away: away once focus is below the page's first group (`down`), or,
- * on Home, once the page has lifted past its hero.
- */
-function useAway(enabled: boolean, top: string, lifted: boolean | undefined) {
-  const [below, setBelow] = useState(false)
-  useEffect(() => {
-    if (!enabled || lifted !== undefined) return
-    const onFocus = (e: FocusEvent) => {
-      const el = e.target as HTMLElement
-      setBelow(
-        !el.closest('[data-group="nav"]') && !el.closest(`[data-group="${CSS.escape(top)}"]`),
-      )
-    }
-    document.addEventListener('focusin', onFocus)
-    return () => document.removeEventListener('focusin', onFocus)
-  }, [enabled, top, lifted])
-  return enabled && (lifted ?? below)
 }
 
 /** A full-screen message (unreachable, nothing here yet), with its actions. */

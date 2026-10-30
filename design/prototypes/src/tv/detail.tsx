@@ -11,15 +11,7 @@ import { useAction } from '../mock/hooks.tsx'
 import type { ClientItem, PlaybackPrefs } from '../mock/types.ts'
 import { useBack } from './back.ts'
 import { TvFilmRow } from './film-row.tsx'
-import {
-  GlobalNav,
-  ServerIdentity,
-  TvButton,
-  TvMessage,
-  TvRow,
-  tvHref,
-  useInitialFocus,
-} from './kit.tsx'
+import { TvButton, TvHead, TvMessage, TvRow, tvHref, useInitialFocus } from './kit.tsx'
 import { TvTracksPanel } from './tracks.tsx'
 
 export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: boolean) => void }) {
@@ -34,7 +26,8 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
   useEffect(() => {
     const onFocus = (e: FocusEvent) => {
       const el = e.target as HTMLElement
-      if (el.closest('[data-scroll="y"]')) setLifted(!el.closest('[data-group="actions"]'))
+      if (el.closest('[data-scroll="y"]'))
+        setLifted(!el.closest('[data-group="actions"], [data-group="nav"]'))
     }
     document.addEventListener('focusin', onFocus)
     return () => document.removeEventListener('focusin', onFocus)
@@ -73,12 +66,12 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
     <>
       <div
         {...(panel || options ? { 'data-isolate': '' } : {})}
-        className={`absolute inset-0 overflow-hidden ${lifted ? '[mask-image:linear-gradient(transparent,black_3.2cqw)]' : ''}`}
+        className={`absolute inset-0 overflow-hidden ${lifted ? '[mask-image:linear-gradient(transparent,black_var(--tv-safe-y))]' : ''}`}
       >
         <div
           data-scroll="y"
           data-keep="0.4"
-          className="relative grid grid-cols-1 gap-[2.4cqw] pb-[4cqw] transition-lift"
+          className="relative grid grid-cols-1 gap-[1.6cqw] pb-(--tv-safe-y) transition-lift"
         >
           {/* the whole 16:9 screen, as on Home, fading into the background at the left and foot */}
           <img
@@ -87,12 +80,14 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
             className="absolute inset-x-0 top-0 h-[56.25cqw] w-full object-cover"
           />
           <div className="absolute inset-x-0 top-0 h-[56.25cqw] bg-[linear-gradient(90deg,var(--color-bg)_7%,transparent_55%),linear-gradient(0deg,var(--color-bg)_8%,transparent_45%)]" />
-          <ServerIdentity />
-          {/* the hero sits low on the first screen, leaving the top to the backdrop, with the cast's
-          title showing under it */}
+          <TvHead down="actions" className="px-(--tv-safe-x)" />
+          {/* the hero sits low on the first screen, leaving the top to the backdrop and the head,
+          with the cast's title showing under it; it stays put while focus is in it (its keep is
+          past its foot), and the page scrolls only for the rows below */}
           <section
             aria-labelledby="title"
-            className="relative grid h-[calc(46cqw-var(--tv-head,0px))] max-w-[66cqw] grid-cols-[11cqw_1fr] items-end gap-[2.4cqw] px-(--tv-safe-x)"
+            data-keep="1"
+            className="relative grid h-[39cqw] max-w-[66cqw] grid-cols-[11cqw_1fr] items-end gap-[2.4cqw] px-(--tv-safe-x)"
           >
             <img
               src={m.art.poster}
@@ -202,7 +197,6 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
           )}
         </div>
       </div>
-      <GlobalNav down="actions" />
       {options && (
         <TvOptions
           item={m}

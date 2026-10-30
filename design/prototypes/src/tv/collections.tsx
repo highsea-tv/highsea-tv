@@ -10,15 +10,7 @@ import { useState } from 'react'
 import { collectionCaption, useCollections } from '../client/data.ts'
 import { CollectionTile } from '../kit/collection-art.tsx'
 import type { ClientCollection } from '../mock/types.ts'
-import {
-  GlobalNav,
-  ServerIdentity,
-  TvButton,
-  TvMessage,
-  tvHref,
-  tvTitleTop,
-  useInitialFocus,
-} from './kit.tsx'
+import { TvButton, TvHead, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
 
 type Family = 'video' | 'audio'
 type Show = 'all' | Family
@@ -92,14 +84,14 @@ export function TvCollections() {
   const shown = families.filter((f) => show === 'all' || show === f.value)
   return (
     <>
-      <GlobalNav down="kind" />
-      <main className="absolute inset-0 overflow-hidden [mask-image:linear-gradient(transparent,black_3.2cqw)]">
+      <main className="absolute inset-0 overflow-hidden [mask-image:linear-gradient(transparent,black_var(--tv-safe-y))]">
         <div
           data-scroll="y"
           data-keep="0.35"
-          className={`relative grid grid-cols-1 gap-[1.6cqw] px-(--tv-safe-x) ${tvTitleTop} pb-[4cqw] transition-lift`}
+          className={`relative grid grid-cols-1 gap-[1.6cqw] px-(--tv-safe-x) pb-(--tv-safe-y) transition-lift`}
         >
-          <ServerIdentity />
+          {/* in the track, so it scrolls away with the page */}
+          <TvHead down="kind" />
           <div className="flex items-end gap-[2cqw]">
             <h1 className="font-semibold text-[2.6cqw] leading-none tracking-display">
               Collections

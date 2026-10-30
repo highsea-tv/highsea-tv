@@ -6,15 +6,7 @@ import { Icon } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
 import { useCollection } from '../client/data.ts'
 import { TvFilmRow } from './film-row.tsx'
-import {
-  backdropReach,
-  GlobalNav,
-  ServerIdentity,
-  TvButton,
-  TvMessage,
-  tvHref,
-  useInitialFocus,
-} from './kit.tsx'
+import { TvButton, TvHead, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
 
 export function TvCollection() {
   const { id } = useParams<{ id: string }>()
@@ -45,13 +37,13 @@ export function TvCollection() {
       <img
         src={c.art.backdrop}
         alt=""
-        className={`absolute inset-0 h-full w-full scale-110 object-cover blur-[2.6cqw] brightness-[0.45] ${backdropReach}`}
+        className={`absolute inset-0 h-full w-full scale-110 object-cover blur-[2.6cqw] brightness-[0.45]`}
       />
       <div
-        className={`absolute inset-0 bg-[linear-gradient(90deg,var(--color-bg)_10%,transparent_70%)] ${backdropReach}`}
+        className={`absolute inset-0 bg-[linear-gradient(90deg,var(--color-bg)_10%,transparent_70%)]`}
       />
-      <main className="absolute inset-0 grid content-start gap-[2.4cqw] overflow-hidden pt-[calc(8cqw-var(--tv-head,0px))]">
-        <ServerIdentity />
+      <main className="absolute inset-0 grid content-start gap-[1.6cqw] overflow-hidden">
+        <TvHead down="parts" className="px-(--tv-safe-x)" />
         <section aria-labelledby="title" className="grid max-w-[60cqw] gap-[1cqw] px-(--tv-safe-x)">
           <p className="text-(length:--tv-text-meta) text-text-3">
             {c.smart?.words ? 'Smart collection' : 'Collection'}
@@ -79,7 +71,6 @@ export function TvCollection() {
           hrefOf={(m) => tvHref(`/movies/${m.id}`)}
         />
       </main>
-      <GlobalNav down="parts" />
     </>
   )
 }

@@ -4,9 +4,10 @@
 // of the films after it follow at the right. The fixed card is the row's one focus stop. Right
 // hands it the next film: the first poster fades out as its film crossfades into the card, and
 // the posters slide left one place behind it; Left gives the previous one back. Nothing ever
-// leaves the row at its left, so nothing passes under the rail. Under every row, the card's film
-// is described, no wider than the card and two gaps, so nothing moves as focus does (the owner,
-// 2026-10-30).
+// leaves the row at its left. Under every row, the card's film
+// is described, no wider than the card and two gaps, its synopsis at most two lines and wrapped
+// with text-wrap: pretty so no line is left with one word, so nothing moves as focus does (the
+// owner, 2026-10-30).
 import { Poster, QualityTag, useSound } from '@highsea-tv/ui-web'
 import { useEffect, useRef, useState } from 'react'
 import { meta, qualityTags } from '../client/data.ts'
@@ -146,7 +147,7 @@ export function TvFilmRow({
             </QualityTag>
           ))}
         </p>
-        <p className="line-clamp-3 text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
+        <p className="line-clamp-2 text-pretty text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
           {item.synopsis}
         </p>
       </div>

@@ -17,7 +17,7 @@ import {
 } from '../client/settings.ts'
 import { CustomThemeStyles } from '../client/settings-sections.tsx'
 import { useProto } from '../screen/screen.tsx'
-import { GlobalNav, ServerIdentity, TvButton, tvTitleTop, useInitialFocus } from './kit.tsx'
+import { TvButton, TvHead, useInitialFocus } from './kit.tsx'
 
 const option =
   'flex w-full items-center gap-[1cqw] rounded-[0.5cqw] px-[1.2cqw] py-[0.8cqw] text-start text-(length:--tv-text-button) text-text-2 outline-none transition-lift focus-visible:scale-[1.03] focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-checked:text-text'
@@ -239,11 +239,10 @@ export function TvSettings() {
   const current = settingsSections.find((s) => s.id === section)
   return (
     <>
-      <GlobalNav down="menu" />
       <div
-        className={`absolute inset-0 grid grid-cols-[24cqw_minmax(0,1fr)] gap-[4cqw] px-(--tv-safe-x) ${tvTitleTop} pb-(--tv-safe-y)`}
+        className={`absolute inset-0 grid grid-cols-[24cqw_minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)] gap-x-[4cqw] gap-y-[1.6cqw] px-(--tv-safe-x) pb-(--tv-safe-y)`}
       >
-        <ServerIdentity />
+        <TvHead down="menu" className="col-span-full" />
         <nav aria-label="Settings" className="grid content-start gap-[1.2cqw]">
           <h1 className="font-semibold text-[2.6cqw] leading-none tracking-display">Settings</h1>
           <ul

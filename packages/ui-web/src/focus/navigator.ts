@@ -6,10 +6,10 @@
 //   [data-go-up|down|left|right="group"]  a focus guide on an ancestor
 //   [data-scroll="x|y"]        a track that moves by transform to keep focus in view
 //   [data-keep="0.3"]          where in the viewport the track keeps focus (default 0.5); "start"
-//                              keeps it in the track's first slot, an item always flush there
+//                              keeps it in the track's first slot, an item always flush there. A
+//                              group inside a y track may set its own, so a page's top can stay
+//                              put while the rows below it scroll
 //   [data-center]              don't clamp the track at its ends
-// A row's items that have passed out at its left, before its first visible slot, carry
-// [data-past], for a page to fade them.
 // The item focus leaves drops its ring at once rather than easing it out, while its scale and
 // colours ease back as before and the item gaining focus eases in (the owner, 2026-10-30).
 import { choreography, durations } from '@highsea-tv/tokens'
@@ -118,7 +118,7 @@ export function createSpatialNavigator(
               itemCenter,
               view,
               total,
-              keep: Number(track.dataset.keep ?? 0.5),
+              keep: Number(keepFor(el, track) ?? 0.5),
               clamp: !('center' in track.dataset),
             })
       // a row slides with spring.quick, snappier than the page's spring.base (the owner, 2026-10-30)
@@ -127,12 +127,6 @@ export function createSpatialNavigator(
         : x
           ? 'transform var(--duration-spring-quick) var(--ease-spring-quick)'
           : ''
-      if (x)
-        for (const c of track.children as HTMLCollectionOf<HTMLElement>) {
-          const start = box(c).left - tr.left - pad
-          if (start < offset - 1) c.dataset.past = ''
-          else delete c.dataset.past
-        }
       track.style.transform = x ? `translateX(${-offset}px)` : `translateY(${-offset}px)`
     }
   }
@@ -197,6 +191,16 @@ export function createSpatialNavigator(
       root.removeEventListener('focusin', onFocusIn)
     },
   }
+}
+
+/**
+ * The nearest [data-keep] from the item up to its track, the track's own included; a nested
+ * track's keep is its own, so it's passed over.
+ */
+function keepFor(el: HTMLElement, track: HTMLElement): string | undefined {
+  for (let at: HTMLElement | null = el; at && at !== track; at = at.parentElement)
+    if (at.dataset.keep && !at.dataset.scroll) return at.dataset.keep
+  return track.dataset.keep
 }
 
 /**

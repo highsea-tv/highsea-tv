@@ -219,8 +219,8 @@
   --blur-bar-saturate: 1.4;
   --blur-fallback-opacity: 0.96;
   --u: 1cqw;
-  --tv-safe-x: 4.5cqw;
-  --tv-safe-y: 3.2cqw;
+  --tv-safe-x: 2.4cqw;
+  --tv-safe-y: 2.4cqw;
   --tv-poster-width: 10.5cqw;
   --tv-poster-gap: 1.2cqw;
   --tv-radius-poster: 0.5cqw;

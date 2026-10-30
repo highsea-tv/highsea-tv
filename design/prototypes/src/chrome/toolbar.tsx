@@ -17,7 +17,6 @@ import {
   streamStates,
   themes,
   timeModes,
-  tvNavs,
   type Width,
   webApps,
   widths,
@@ -333,25 +332,6 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
               onChange={(e) => update('lan', e.target.value as ProtoState['lan'])}
             >
               {localNetworks.map((x) => (
-                <option key={x.id} value={x.id}>
-                  {x.label}
-                </option>
-              ))}
-            </select>
-          )}
-        </Group>
-      )}
-
-      {platform === 'tv' && !/\/play\//.test(path) && (
-        <Group label="TV nav">
-          {(id) => (
-            <select
-              id={id}
-              className={control}
-              value={state.tvNav}
-              onChange={(e) => update('tvNav', e.target.value as ProtoState['tvNav'])}
-            >
-              {tvNavs.map((x) => (
                 <option key={x.id} value={x.id}>
                   {x.label}
                 </option>

@@ -8,17 +8,7 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { useLibrary } from '../client/data.ts'
 import { arrange, type Sort } from '../web/library.tsx'
-import {
-  GlobalNav,
-  ServerIdentity,
-  TvButton,
-  TvMessage,
-  TvPoster,
-  tvHref,
-  tvTitleTop,
-  useInitialFocus,
-  useTvNav,
-} from './kit.tsx'
+import { TvButton, TvHead, TvMessage, TvPoster, tvHref, useInitialFocus } from './kit.tsx'
 
 const LETTERS = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ']
 const letterOf = (sortTitle: string) => {
@@ -102,7 +92,6 @@ export function TvLibrary() {
   const library = useLibrary()
   const [sort, setSort] = useState<Sort>('title')
   const [unwatched, setUnwatched] = useState(false)
-  const rail = useTvNav() === 'rail'
   // after an error the grid isn't there, and the index only shows sorted by title, so both
   // re-measure it once they're back
   const index = useIndexBox(`${library.status}:${sort}`)
@@ -134,21 +123,15 @@ export function TvLibrary() {
   }
   return (
     <>
-      <GlobalNav down="sort" />
       {sort === 'title' && (
         <nav
           ref={index.nav}
           aria-label="Jump to a letter"
           data-group="alpha"
           data-isolate=""
-          data-go-right={rail ? undefined : 'grid'}
-          data-go-left={rail ? 'grid' : undefined}
-          // from the first row's top to the safe area's foot, centred in its gutter; the left gutter is
-          // the rail's, so with it the letters move to the right one
-          style={{
-            top: index.top,
-            [rail ? 'right' : 'left']: `calc((var(--tv-safe-x) - ${index.size}px) / 2)`,
-          }}
+          data-go-right="grid"
+          // from the first row's top to the safe area's foot, centred in the left gutter
+          style={{ top: index.top, left: `calc((var(--tv-safe-x) - ${index.size}px) / 2)` }}
           className={`absolute bottom-(--tv-safe-y) z-10 grid content-start ${index.placed ? '' : 'invisible'}`}
         >
           {LETTERS.map((l) => (
@@ -168,15 +151,15 @@ export function TvLibrary() {
       )}
       <main
         ref={index.main}
-        className="absolute inset-0 overflow-hidden [mask-image:linear-gradient(transparent,black_3.2cqw)]"
+        className="absolute inset-0 overflow-hidden [mask-image:linear-gradient(transparent,black_var(--tv-safe-y))]"
       >
         <div
           data-scroll="y"
-          data-keep="0.35"
-          className={`relative grid grid-cols-1 gap-[1.6cqw] px-(--tv-safe-x) ${tvTitleTop} pb-[4cqw] transition-lift`}
+          data-keep="0.4"
+          className={`relative grid grid-cols-1 gap-[1.6cqw] px-(--tv-safe-x) pb-(--tv-safe-y) transition-lift`}
         >
-          {/* in the track, so it scrolls away rather than covering the grid */}
-          <ServerIdentity />
+          {/* in the track, so it scrolls away with the page */}
+          <TvHead down="sort" />
           <div className="flex items-end gap-[2cqw]">
             <h1 className="font-semibold text-[2.6cqw] leading-none tracking-display">Movies</h1>
             <div
@@ -212,8 +195,7 @@ export function TvLibrary() {
           <ul
             ref={index.grid}
             data-group="grid"
-            data-go-left={sort === 'title' && !rail ? 'alpha' : undefined}
-            data-go-right={sort === 'title' && rail ? 'alpha' : undefined}
+            data-go-left={sort === 'title' ? 'alpha' : undefined}
             data-go-up="sort"
             className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]"
           >
