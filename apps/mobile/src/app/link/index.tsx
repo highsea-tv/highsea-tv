@@ -3,12 +3,15 @@
 // signed off 2026-10-29): the camera looks for the TV's QR code, which is the server's /link
 // address with the code in it, or the code is typed. The camera is expo-camera's CameraView with
 // QR codes only (https://docs.expo.dev/versions/latest/sdk/camera/); its permission is asked for
-// the first time here, and a refusal says where to change it.
+// the first time here, and a refusal says where to change it. The TV's QR is
+// highsea://link?server=…&code=… (connectivity.md#where), which the camera app opens here: that
+// goes straight to the question, on the server it names when this phone knows it.
 import { useT } from '@highsea-tv/i18n/react'
+import { useServers } from '@highsea-tv/native/servers'
 import { Button, Field, Icon, Input, Text, tokens } from '@highsea-tv/ui-native'
 import { CameraView, useCameraPermissions } from 'expo-camera'
-import { router } from 'expo-router'
-import { useRef, useState } from 'react'
+import { router, useLocalSearchParams } from 'expo-router'
+import { useEffect, useRef, useState } from 'react'
 import { Linking, View } from 'react-native'
 import { Back, GUTTER, Screen, Title } from '../../kit.tsx'
 import { pair as messages } from '../../messages.ts'
@@ -34,6 +37,18 @@ export default function LinkScan() {
   const [code, setCode] = useState('')
   const found = useRef(false)
   const go = (c: string) => router.replace(`/link/${c}`)
+  const linked = useLocalSearchParams<{ code?: string; server?: string }>()
+  const { known, current, use } = useServers()
+  // biome-ignore lint/correctness/useExhaustiveDependencies: each link that opens it, once
+  useEffect(() => {
+    const c = linked.code ? codeFrom(linked.code) : null
+    if (!c) return
+    const other =
+      linked.server && linked.server !== current?.server.id
+        ? known.find((k) => k.id === linked.server && k.signedIn)
+        : undefined
+    void (other ? use(other.id) : Promise.resolve()).then(() => go(c))
+  }, [linked.code, linked.server])
   const refused = permission?.granted === false && !permission.canAskAgain
 
   return (

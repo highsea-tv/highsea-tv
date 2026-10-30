@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C1's Choose a server on the phone (connectivity.md › Web and mobile), from the prototype's
 // client/connect-flow.tsx with `?app=mobile`: the servers this phone has used, the servers
-// answering on this network as Bonjour finds them (lib/nearby.ts), and an address field.
+// answering on this network as Bonjour finds them (@highsea-tv/native/nearby), and an address field.
 // Choosing one makes it the server in use, and the gate opens its sign-in, or Home when this
 // phone is still signed in there. A `highsea://connect?address=` link fills the address in.
 // A server of yours is forgotten by swiping its row left or pressing it long (the owner's answer
@@ -11,16 +11,16 @@ import type { PublicInfo } from '@highsea-tv/api-contract'
 import { normalize } from '@highsea-tv/client/servers'
 import { relative } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { useNearby } from '@highsea-tv/native/nearby'
+import { publicInfoAt, useServers } from '@highsea-tv/native/servers'
 import { Button, Field, Icon, Input, Mark, Text, useTheme } from '@highsea-tv/ui-native'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useRef, useState } from 'react'
 import { Pressable, View } from 'react-native'
 import Swipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable'
 import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated'
+import { useForget } from '../forget.ts'
 import { Alert, Back, Group, Label, Row, Screen, Title } from '../kit.tsx'
-import { useForget } from '../lib/forget.ts'
-import { useNearby } from '../lib/nearby.ts'
-import { publicInfoAt, useServers } from '../lib/servers.tsx'
 import { forget as forgetMessages, connect as messages } from '../messages.ts'
 
 /**

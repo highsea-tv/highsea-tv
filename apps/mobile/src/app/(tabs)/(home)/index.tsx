@@ -8,6 +8,7 @@ import type { ClientItem, HomeSection } from '@highsea-tv/api-contract'
 import { useHome } from '@highsea-tv/client/data'
 import { createFormat } from '@highsea-tv/client/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { useMedia } from '@highsea-tv/native/media'
 import {
   Button,
   EmptyState,
@@ -24,7 +25,6 @@ import { router } from 'expo-router'
 import { useMemo } from 'react'
 import { ActivityIndicator, FlatList, View } from 'react-native'
 import { GUTTER, Screen } from '../../../kit.tsx'
-import { useMedia } from '../../../lib/media.ts'
 import { home as messages } from '../../../messages.ts'
 import { AnnouncementCard, Header, Reachable } from '../../../shell.tsx'
 

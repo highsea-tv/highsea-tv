@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The player's engine on the phone (C5; ADR 0051, 0052, 0055, 0059): expo-video's player
+// The player's engine in the native apps (C5; ADR 0051, 0052, 0055, 0059): expo-video's player
 // (AVPlayer underneath) driven by `@highsea-tv/client/player`'s reducer, as the web's
 // `usePlayback` drives a `<video>` (apps/web/src/playback.ts). It asks the server for a session
-// with the person's picks and the `ios` built-in profile, and plays its URL with this device's
+// with the person's picks and the app's built-in profile (`ios` or `tvos`), and plays its URL with this device's
 // token in a header (https://docs.expo.dev/versions/latest/sdk/video/#videosource): the file for
 // direct play, HLS otherwise, which AVPlayer plays itself. Changing the version or the sound
 // starts a new session at the same place; subtitles and their timing never do. The position goes
 // to the session every 10 s while playing and on pause and seek; leaving saves it and ends the
 // session, which stops its ffmpeg. Now Playing and the lock screen's controls come from the
 // player's `showNowPlayingNotification`, with the title and artwork in the source's `metadata`;
-// AirPlay from `allowsExternalPlayback`
-// (https://docs.expo.dev/versions/latest/sdk/video/#videoplayer).
+// AirPlay from `allowsExternalPlayback`, all three on the phone only: the docs list none of them
+// for tvOS (https://docs.expo.dev/versions/latest/sdk/video/#videoplayer).
 import type { PlaySession } from '@highsea-tv/api-contract'
 import { useItem, usePicks } from '@highsea-tv/client/data'
 import {
@@ -28,6 +28,8 @@ import { useClient } from '@highsea-tv/sdk/react'
 import { useEventListener } from 'expo'
 import { useVideoPlayer } from 'expo-video'
 import { useCallback, useEffect, useReducer, useRef, useState } from 'react'
+import { Platform } from 'react-native'
+import { playbackProfile } from './device.ts'
 import { useMedia } from './media.ts'
 
 /** The player's error when the server is transcoding all it's allowed to, and this one gave up. */
@@ -69,6 +71,7 @@ export function usePlayback(id: number, fromStart: boolean) {
 
   const player = useVideoPlayer(null, (p) => {
     p.timeUpdateEventInterval = 0.25
+    if (Platform.isTV) return
     p.showNowPlayingNotification = true
     p.staysActiveInBackground = true
     p.allowsExternalPlayback = true
@@ -153,7 +156,7 @@ export function usePlayback(id: number, fromStart: boolean) {
             ...choice,
             subtitleId: subtitleRef.current,
             ...(start === undefined ? {} : { start }),
-            profile: 'ios',
+            profile: playbackProfile,
           },
         })
       } catch (e) {

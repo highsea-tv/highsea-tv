@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C1's sign-in on the phone, from the prototype's client/connect-flow.tsx and the web's
 // sign-in.tsx: a username and password sent with this phone as the device, so the server answers
-// with a device token the app keeps in the keychain (lib/servers.tsx); then a 6-digit code or a
+// with a device token the app keeps in the keychain (@highsea-tv/native/servers); then a 6-digit code or a
 // recovery code when the account has two-step verification. Single sign-on opens the server's
 // OIDC start in an authentication session (ASWebAuthenticationSession through expo-web-browser,
 // https://docs.expo.dev/versions/latest/sdk/webbrowser/#webbrowseropenauthsessionasyncurl-redirecturl-options)
@@ -11,6 +11,8 @@
 import type { SignInResult } from '@highsea-tv/api-contract'
 import { usePublicInfo } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
+import { deviceInput, pkce } from '@highsea-tv/native/device'
+import { useCurrent, useServers } from '@highsea-tv/native/servers'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useClient } from '@highsea-tv/sdk/react'
 import { Button, Field, Input, Mark, Text, tokens, useTheme } from '@highsea-tv/ui-native'
@@ -18,10 +20,8 @@ import { router } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { type ComponentRef, useRef, useState } from 'react'
 import { ActivityIndicator, type TextInput, View } from 'react-native'
+import { useForget } from '../forget.ts'
 import { Alert, Back, Screen, Title } from '../kit.tsx'
-import { deviceInput, pkce } from '../lib/device.ts'
-import { useForget } from '../lib/forget.ts'
-import { useCurrent, useServers } from '../lib/servers.tsx'
 import { forget as forgetMessages, signIn as messages } from '../messages.ts'
 
 type Step =

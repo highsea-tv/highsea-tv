@@ -82,10 +82,11 @@ public class HighseaDiscoveryModule: Module {
       switch state {
       case .ready:
         if case .hostPort(let host, let port) = connection.currentPath?.remoteEndpoint {
-          var address = "\(host)"
-          // an IPv6 literal keeps its zone out of the URL and goes in brackets
+          // a literal's zone (192.168.1.2%en1, fe80::1%en0) names the interface, which a URL can't
+          // carry; an IPv6 literal also goes in brackets
+          var address = String("\(host)".split(separator: "%").first ?? "")
           if case .ipv6 = host {
-            address = "[\(address.split(separator: "%").first ?? "")]"
+            address = "[\(address)]"
           }
           self.sendEvent("onFound", [
             "id": id, "name": name, "host": address, "port": Int(port.rawValue),

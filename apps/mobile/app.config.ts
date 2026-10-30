@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The phone app's Expo config (ADR 0059): the native project is generated from this by
 // `expo prebuild` (https://docs.expo.dev/workflow/continuous-native-generation/), so ios/ is never
-// committed and anything native goes in here, in a config plugin, or in modules/.
+// committed and anything native goes in here, in a config plugin, or in @highsea-tv/native.
 import type { ExpoConfig } from 'expo/config'
+import { withReactNativeDir } from '../../packages/native/plugins/index.ts'
 import pkg from './package.json'
 
 const brand = '../../packages/brand/assets/icons'
@@ -68,4 +69,5 @@ const config: ExpoConfig = {
   ],
 }
 
-export default config
+// Bun's isolated store hides react-native from the Podfile's scripts (packages/native/plugins)
+export default withReactNativeDir(config)

@@ -6,6 +6,10 @@
 // Babel with the packages in it that ship untranspiled code; the workspace's own packages are
 // raw TypeScript outside node_modules, which the preset transforms anyway. Packages that load as
 // .mjs under React Native's export condition (lucide-react-native) go through the same Babel.
+// `react-native` is react-native-tvos under an alias (ADR 0059), which Bun's shared fallback folder
+// lists by its real name, so @react-native/jest-preset, which requires `react-native` without
+// declaring it, wouldn't find it; `bun run test` sets NODE_PATH to this app's node_modules, where
+// the alias is (https://nodejs.org/api/modules.html#loading-from-the-global-folders).
 const path = require('node:path')
 const preset = require('jest-expo/ios/jest-preset')
 

@@ -6,7 +6,8 @@
   "type": "module",
   "exports": {
     ".": "./src/index.ts",
-    "./styles.css": "./src/styles.css"
+    "./styles.css": "./src/styles.css",
+    "./focus": "./src/focus/spatial.ts"
   },
   "scripts": {
     "build": "bun scripts/icons.ts",

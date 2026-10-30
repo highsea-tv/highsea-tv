@@ -3,11 +3,11 @@
 // signed in and on which server, the settings sections, Downloads, and signing out of this server
 // (which forgets its token here and keeps the server in the list).
 import { useT } from '@highsea-tv/i18n/react'
+import { useSessionData } from '@highsea-tv/native/session'
 import { Avatar, Text } from '@highsea-tv/ui-native'
 import { router } from 'expo-router'
 import { View } from 'react-native'
 import { Group, Row, Screen } from '../../../kit.tsx'
-import { useSessionData } from '../../../lib/session.tsx'
 import { you as messages } from '../../../messages.ts'
 import { SECTIONS, SignOutRow } from '../../../settings.tsx'
 import { Header, useServerName } from '../../../shell.tsx'

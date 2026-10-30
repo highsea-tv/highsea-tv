@@ -8,6 +8,8 @@
 import type { ClientDetail } from '@highsea-tv/api-contract'
 import { useItem, useMarkWatched, usePicks } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
+import { useFormat } from '@highsea-tv/native/format'
+import { useMedia } from '@highsea-tv/native/media'
 import {
   Badge,
   Button,
@@ -26,8 +28,6 @@ import { router, useLocalSearchParams } from 'expo-router'
 import { ActionSheetIOS, ActivityIndicator, Alert, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Center, Group, GUTTER, TAB_BAR } from '../../../../kit.tsx'
-import { useFormat } from '../../../../lib/format.ts'
-import { useMedia } from '../../../../lib/media.ts'
 import { detail as messages } from '../../../../messages.ts'
 import { PosterRow } from '../../(home)/index.tsx'
 

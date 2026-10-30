@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The servers answering on this network, as the Bonjour browser finds them (modules/discovery),
+// The servers answering on this network, as the Bonjour browser finds them (discovery.ts),
 // each asked for its public info at the address it resolved to.
 //
 // iOS asks the person before an app may browse, and until they answer, browsing waits as it does
-// once they've refused (Apple TN3179). So the first time it's refused, the app takes it for the
+// once they've refused (Apple TN3179); tvOS never asks, so a TV only ever sees `allowed`. So the first time it's refused, the app takes it for the
 // question being asked; the browser goes on by itself once they choose Allow. After that first
 // minute, a refusal is one, and the screen says where to allow it.
 import type { PublicInfo } from '@highsea-tv/api-contract'
 import { File, Paths } from 'expo-file-system'
 import { useEffect, useRef, useState } from 'react'
-import { browse } from '../../modules/discovery/src/index.ts'
+import { browse } from './discovery.ts'
 import { publicInfoAt } from './servers.tsx'
 
 export type Nearby = { info: PublicInfo; base: string }

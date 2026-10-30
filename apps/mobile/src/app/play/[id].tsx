@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C5 Player on the phone (docs/product/player.md#mobile), ported from the prototype's
-// mobile/player.tsx onto expo-video (`lib/playback.ts`). It opens as a full-screen modal that
+// mobile/player.tsx onto expo-video (`@highsea-tv/native/playback`). It opens as a full-screen modal that
 // turns with the phone. A tap shows or hides the chrome; Back, the title, AirPlay, picture in
 // picture and Audio and subtitles along the top; skip back, Play and skip forward in the middle;
 // the times and the scrubber, with its trickplay frame while dragging, at the bottom. Subtitles
@@ -26,6 +26,8 @@ import {
   trickplayTile,
 } from '@highsea-tv/client/player'
 import { useT } from '@highsea-tv/i18n/react'
+import { useMedia } from '@highsea-tv/native/media'
+import { type Playback, TRANSCODE_LIMIT, usePlayback } from '@highsea-tv/native/playback'
 import { useQuery } from '@highsea-tv/sdk/react'
 import type { ColorRole } from '@highsea-tv/tokens'
 import {
@@ -47,8 +49,6 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, type LayoutChangeEvent, Pressable, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Center } from '../../kit.tsx'
-import { useMedia } from '../../lib/media.ts'
-import { type Playback, TRANSCODE_LIMIT, usePlayback } from '../../lib/playback.ts'
 import { player as messages } from '../../messages.ts'
 
 const { clock } = createFormat()

@@ -6,6 +6,9 @@
 import { useAnnouncements, useServer } from '@highsea-tv/client/data'
 import { relative } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { useMedia } from '@highsea-tv/native/media'
+import { useCurrent, useServers } from '@highsea-tv/native/servers'
+import { useMaybeSession, useReachableState } from '@highsea-tv/native/session'
 import {
   Avatar,
   Banner,
@@ -28,9 +31,6 @@ import { View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Cta, Inline } from './inline.tsx'
 import { Center, GUTTER, Row, TAB_BAR, tabBarBottom } from './kit.tsx'
-import { useMedia } from './lib/media.ts'
-import { useCurrent, useServers } from './lib/servers.tsx'
-import { useMaybeSession, useReachableState } from './lib/session.tsx'
 import { shell as messages } from './messages.ts'
 
 const TABS: Record<

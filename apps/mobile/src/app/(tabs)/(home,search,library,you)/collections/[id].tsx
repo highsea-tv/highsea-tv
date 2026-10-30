@@ -5,14 +5,14 @@
 // its rules in words.
 import { useCollection } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
+import { useFormat } from '@highsea-tv/native/format'
+import { useMedia } from '@highsea-tv/native/media'
 import { Button, EmptyState, Icon, Poster, Press, Text, useTheme } from '@highsea-tv/ui-native'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Center, Grid, GUTTER, TAB_BAR } from '../../../../kit.tsx'
-import { useFormat } from '../../../../lib/format.ts'
-import { useMedia } from '../../../../lib/media.ts'
 import { library as messages } from '../../../../messages.ts'
 
 export default function Collection() {

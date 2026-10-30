@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The Bonjour browser's JavaScript side (ios/HighseaDiscoveryModule.swift): start, stop, and the
+// The Bonjour browser's JavaScript side (../ios/HighseaDiscoveryModule.swift, on iOS and tvOS): start, stop, and the
 // servers and states it sends as it goes.
 import { type EventSubscription, requireNativeModule } from 'expo-modules-core'
 

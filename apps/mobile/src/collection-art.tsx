@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A collection's poster, or a mosaic of its first four (collections.md#artwork), and its tile in a
 // grid, as the web's kit.tsx draws them: a smart collection carries its badge over the art.
+
+import { useMedia } from '@highsea-tv/native/media'
 import { Badge, Press, Text, tokens, useTheme } from '@highsea-tv/ui-native'
 import { Image } from 'expo-image'
 import { View } from 'react-native'
-import { useMedia } from './lib/media.ts'
 
 export function CollectionArt({ poster, mosaic }: { poster?: string | null; mosaic: string[] }) {
   const theme = useTheme()

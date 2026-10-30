@@ -10,6 +10,9 @@ import { useAppearance, useHomeLayout, useMyDevices, useServer } from '@highsea-
 import { SERVER_THEME, useDevicePrefs } from '@highsea-tv/client/prefs'
 import { relative } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
+import { appVersion } from '@highsea-tv/native/device'
+import { useCurrent, useServers } from '@highsea-tv/native/servers'
+import { useSessionData } from '@highsea-tv/native/session'
 import { useAction } from '@highsea-tv/sdk/react'
 import { builtInThemes, createTheme } from '@highsea-tv/tokens'
 import { type NativeTheme, nativeTokens, toNativeTheme } from '@highsea-tv/tokens/native'
@@ -27,11 +30,8 @@ import {
 import { router } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { Alert, Switch, View } from 'react-native'
+import { useForget } from './forget.ts'
 import { Group, Row } from './kit.tsx'
-import { appVersion } from './lib/device.ts'
-import { useForget } from './lib/forget.ts'
-import { useCurrent, useServers } from './lib/servers.tsx'
-import { useSessionData } from './lib/session.tsx'
 import {
   forget as forgetMessages,
   home as homeMessages,

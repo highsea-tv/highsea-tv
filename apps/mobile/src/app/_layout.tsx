@@ -5,10 +5,18 @@
 // until its guard holds, and send anyone there to the first screen that is
 // (https://docs.expo.dev/router/advanced/protected/). Choose a server stays open to everyone, for
 // Add a server. Each server gets its own client, so switching starts the app again on it.
-import '../lib/intl.ts'
+import '@highsea-tv/native/intl'
 import type { CurrentSession } from '@highsea-tv/api-contract'
 import { useSession } from '@highsea-tv/client/data'
 import { I18nProvider } from '@highsea-tv/i18n/react'
+import { ServersProvider, useServers } from '@highsea-tv/native/servers'
+import {
+  ReachableContext,
+  SessionContext,
+  unreachable,
+  useReachable,
+} from '@highsea-tv/native/session'
+import { useAppTheme } from '@highsea-tv/native/theme'
 import { ApiError } from '@highsea-tv/sdk'
 import { ClientProvider } from '@highsea-tv/sdk/react'
 import { ThemeProvider, tokens } from '@highsea-tv/ui-native'
@@ -18,9 +26,6 @@ import { StatusBar } from 'expo-status-bar'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { ServersProvider, useServers } from '../lib/servers.tsx'
-import { ReachableContext, SessionContext, unreachable, useReachable } from '../lib/session.tsx'
-import { useAppTheme } from '../lib/theme.ts'
 
 void SplashScreen.preventAutoHideAsync()
 

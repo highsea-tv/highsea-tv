@@ -1,0 +1,65 @@
+{
+  "name": "@highsea-tv/tv",
+  "version": "0.3.0",
+  "private": true,
+  "license": "AGPL-3.0-only",
+  "main": "expo-router/entry",
+  "scripts": {
+    "dev": "expo start",
+    "ios": "expo run:ios",
+    "prebuild": "EXPO_TV=1 expo prebuild --platform ios --clean",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@expo/metro-runtime": "58.0.14",
+    "@formatjs/intl-locale": "5.3.12",
+    "@formatjs/intl-numberformat": "9.4.3",
+    "@formatjs/intl-pluralrules": "6.3.15",
+    "@highsea-tv/api-contract": "workspace:*",
+    "@highsea-tv/brand": "workspace:*",
+    "@highsea-tv/client": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
+    "@highsea-tv/i18n": "workspace:*",
+    "@highsea-tv/native": "workspace:*",
+    "@highsea-tv/sdk": "workspace:*",
+    "@highsea-tv/tokens": "workspace:*",
+    "@highsea-tv/ui-native": "workspace:*",
+    "expo": "58.0.11",
+    "expo-audio": "58.0.9",
+    "expo-constants": "58.0.12",
+    "expo-crypto": "58.0.6",
+    "expo-device": "58.0.5",
+    "expo-file-system": "58.0.9",
+    "expo-font": "58.0.8",
+    "expo-haptics": "58.0.6",
+    "expo-image": "58.0.15",
+    "expo-linking": "58.0.13",
+    "expo-modules-core": "58.0.19",
+    "expo-router": "58.0.20",
+    "expo-secure-store": "58.0.2",
+    "expo-splash-screen": "58.0.9",
+    "expo-status-bar": "58.0.3",
+    "expo-system-ui": "58.0.6",
+    "expo-video": "58.0.11",
+    "lucide-react-native": "1.57.0",
+    "react": "19.3.0",
+    "react-native": "npm:react-native-tvos@0.88.0-0",
+    "react-native-reanimated": "4.7.1",
+    "react-native-safe-area-context": "5.10.1",
+    "react-native-screens": "4.30.0",
+    "react-native-svg": "15.16.0",
+    "react-native-worklets": "0.13.0"
+  },
+  "devDependencies": {
+    "@highsea-tv/config": "workspace:*",
+    "@react-native-tvos/config-tv": "0.1.7",
+    "@types/react": "19.3.0"
+  },
+  "expo": {
+    "install": {
+      "exclude": [
+        "react-native"
+      ]
+    }
+  }
+}
