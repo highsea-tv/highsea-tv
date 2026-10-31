@@ -2,6 +2,7 @@
 // The mobile client (C1–C8), drawn inside the phone's safe areas: connect, the five tabs (Home,
 // Search, Library, Offline, You), item detail, the player, settings under You, and signing in a
 // TV (4.5a).
+
 import { EmptyState } from '@highsea-tv/ui-web'
 import { Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
@@ -13,6 +14,7 @@ import { MobileDetail } from './detail.tsx'
 import { MobileHome } from './home.tsx'
 import { MobileLibrary } from './library.tsx'
 import { MobileOffline, MobileSearch, MobileSettingsScreen, MobileYou } from './more.tsx'
+import { MobileMusic } from './music.tsx'
 import { MobileLinkConfirm, MobileLinkScan } from './pair.tsx'
 import { MobilePerson } from './person.tsx'
 import { MobilePlayer } from './player.tsx'
@@ -61,6 +63,16 @@ function Routes() {
       <Route path="/">
         <MobileShell>
           <MobileHome />
+        </MobileShell>
+      </Route>
+      <Route path="/library/music/artists">
+        <MobileShell>
+          <MobileMusic view="artists" />
+        </MobileShell>
+      </Route>
+      <Route path="/library/music">
+        <MobileShell>
+          <MobileMusic view="albums" />
         </MobileShell>
       </Route>
       <Route path="/library/collections">

@@ -11,7 +11,7 @@ const link =
   'grid min-h-9 place-items-center rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus aria-[current=page]:border-transparent aria-[current=page]:bg-text aria-[current=page]:text-bg'
 
 /** Movies or Collections: the library's two views. */
-export function LibraryNav({ current }: { current: 'movies' | 'collections' }) {
+export function LibraryNav({ current }: { current: 'movies' | 'collections' | 'music' }) {
   return (
     <nav aria-label="Library" className={cn('flex gap-2', gutter)}>
       <a
@@ -27,6 +27,13 @@ export function LibraryNav({ current }: { current: 'movies' | 'collections' }) {
         className={link}
       >
         Collections
+      </a>
+      <a
+        href={mobileHref('/library/music')}
+        aria-current={current === 'music' ? 'page' : undefined}
+        className={link}
+      >
+        Music
       </a>
     </nav>
   )

@@ -18,6 +18,7 @@ import { TvDetail } from './detail.tsx'
 import { TvHome } from './home.tsx'
 import { ServerIdentity, TvButton, TvHead, TvMessage, tvHref } from './kit.tsx'
 import { TvLibrary } from './library.tsx'
+import { TvMusic } from './music.tsx'
 import { TvPerson } from './person.tsx'
 import { TvPlayer } from './player.tsx'
 import { TvSearch } from './search.tsx'
@@ -138,7 +139,7 @@ function Screens() {
         <TvComing kind="shows" />
       </Route>
       <Route path="/music">
-        <TvComing kind="music" />
+        <TvMusic />
       </Route>
       <Route path="/movies/:id">
         <Detail />

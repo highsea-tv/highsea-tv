@@ -109,6 +109,9 @@ export const useCollection = (id: string, platform: ClientPlatform = 'web') =>
 export const usePerson = (id: string) =>
   useQuery(`client:person:${id}`, (c) => c.library.person(id), ['movies.updated', 'watch.updated'])
 
+/** The music library: artists and albums. */
+export const useMusic = () => useQuery('client:music', (c) => c.library.music(), ['music.updated'])
+
 /** "6 movies · 2010–2020". */
 export const collectionCaption = (c: { count: number; years: string }) => format.caption(c)
 

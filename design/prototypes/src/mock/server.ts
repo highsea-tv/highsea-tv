@@ -19,6 +19,7 @@ import {
   person,
   recommendations,
 } from './metadata.ts'
+import { musicLibrary } from './music.ts'
 import { type AccelerationPath, finishCheck, playbackStatus } from './playback.ts'
 import { GB, MB, type ServerState, seed } from './seed.ts'
 import { advanceSessions, type NowPlaying, type SessionView, type WatchView } from './sessions.ts'
@@ -35,6 +36,7 @@ import type {
   ClientCollection,
   ClientDetail,
   ClientItem,
+  ClientMusic,
   ClientPerson,
   ClientTrack,
   ClientType,
@@ -664,6 +666,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
   const { state } = srv
   const storage = ctx.storage ?? memoryStorage()
   const now = () => srv.clock.now()
+  let music: ClientMusic | undefined
   const me = (): User => {
     const u = state.users.find((x) => x.id === ctx.userId) ?? state.users[0]
     if (!u) throw new ApiError(401, 'unauthenticated', 'Sign in to continue.')
@@ -2616,6 +2619,8 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         if (!found) throw new ApiError(404, 'not-found', 'That collection isn’t on this server.')
         return found
       },
+      /** Every artist and album the household can play; none on a server without music. */
+      music: (): ClientMusic => (music ??= musicLibrary(srv.kind, now())),
       /**
        * A person and the films here they're in, by department: the one they're known for first,
        * then TMDB's order; in each, newest first, with every role they had in the film.

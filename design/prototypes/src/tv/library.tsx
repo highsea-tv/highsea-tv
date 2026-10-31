@@ -26,8 +26,8 @@ import {
  * (CSS Grid 1 § 7.2, https://www.w3.org/TR/css-grid-1/#track-sizing).
  */
 const rail = 'w-[2cqw]'
-const motion = 'duration-(--duration-spring-quick) ease-(--ease-spring-quick)'
-const room = {
+export const motion = 'duration-(--duration-spring-quick) ease-(--ease-spring-quick)'
+export const room = {
   open: 'grid-cols-[2cqw_minmax(0,1fr)] gap-x-(--tv-poster-gap)',
   shut: 'grid-cols-[0cqw_minmax(0,1fr)] gap-x-0',
 }
@@ -49,7 +49,7 @@ const shiftOf = (transform: string) =>
  * following the first row off the screen. It's hidden until focus first reaches the first row, so
  * it shows once, in place, rather than at the grid's resting spot and then moving.
  */
-function useIndexBox(ready: unknown) {
+export function useIndexBox(ready: unknown) {
   const main = useRef<HTMLElement>(null)
   const nav = useRef<HTMLElement>(null)
   const grid = useRef<HTMLUListElement>(null)
@@ -103,6 +103,57 @@ function useIndexBox(ready: unknown) {
   return { main, nav, grid, ...box }
 }
 
+/**
+ * The alphabet rail: isolated, Up and Down run through the letters with titles, and OK focuses the
+ * grid's first title under that letter (its `<li data-letter>`). Right goes back to the grid.
+ */
+export function TvLetterRail({
+  index,
+  shown,
+  present,
+}: {
+  index: ReturnType<typeof useIndexBox>
+  shown: boolean
+  present: Set<string>
+}) {
+  const jump = (letter: string) => {
+    const el = document.querySelector<HTMLElement>(
+      `[data-platform="tv"] [data-letter="${letter}"] [data-focusable]`,
+    )
+    el?.focus({ preventScroll: true })
+  }
+  return (
+    <nav
+      ref={index.nav}
+      aria-label="Jump to a letter"
+      aria-hidden={!shown || undefined}
+      inert={!shown}
+      data-group="alpha"
+      data-isolate=""
+      data-go-right="grid"
+      // from the first row's top to the safe area's foot, in its column at the container's
+      // left edge; the grid moves under focus and the rail stays, so it's outside the track
+      style={{ top: index.top }}
+      className={`absolute start-(--tv-safe-x) bottom-(--tv-safe-y) z-10 grid content-start justify-items-center transition-opacity ${motion} ${rail} ${shown && index.placed ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
+    >
+      {LETTERS.map((l) => (
+        <button
+          key={l}
+          type="button"
+          disabled={!present.has(l)}
+          {...(shown && present.has(l) ? { 'data-focusable': '' } : {})}
+          onClick={() => jump(l)}
+          // square: a 27th of the height, or the column's width if that's less
+          style={{ width: `min(${index.size}px, 2cqw)`, height: `min(${index.size}px, 2cqw)` }}
+          className="grid place-items-center rounded-[0.3cqw] font-semibold text-(length:--tv-text-quality) text-text-2 outline-none transition-lift focus-visible:scale-125 focus-visible:bg-text focus-visible:text-bg disabled:text-text-3/40"
+        >
+          {l}
+        </button>
+      ))}
+    </nav>
+  )
+}
+
 export function TvLibrary() {
   const library = useLibrary()
   const [sort, setSort] = useState<Sort>('title')
@@ -110,11 +161,9 @@ export function TvLibrary() {
   // after an error the grid isn't there, so it re-measures once it's back
   const index = useIndexBox(library.status)
   const titled = sort === 'title'
-  useInitialFocus(
-    library.status === 'success',
-    `${sort}:${unwatched}`,
-    '[data-group="grid"] [data-focusable]',
-  )
+  // the grid's first title once it loads; after that, choosing a sort or view keeps focus on the
+  // choice, so the next one is a press away (the owner, 2026-10-31, for every library)
+  useInitialFocus(library.status === 'success', null, '[data-group="grid"] [data-focusable]')
   if (library.status === 'error')
     return (
       <TvMessage
@@ -130,42 +179,9 @@ export function TvLibrary() {
     )
   const items = arrange(library.data ?? [], 'all', sort, unwatched)
   const present = new Set(items.map((m) => letterOf(m.sortTitle)))
-  const jump = (letter: string) => {
-    const el = document.querySelector<HTMLElement>(
-      `[data-platform="tv"] [data-letter="${letter}"] [data-focusable]`,
-    )
-    el?.focus({ preventScroll: true })
-  }
   return (
     <>
-      <nav
-        ref={index.nav}
-        aria-label="Jump to a letter"
-        aria-hidden={!titled || undefined}
-        inert={!titled}
-        data-group="alpha"
-        data-isolate=""
-        data-go-right="grid"
-        // from the first row's top to the safe area's foot, in its column at the container's
-        // left edge; the grid moves under focus and the rail stays, so it's outside the track
-        style={{ top: index.top }}
-        className={`absolute start-(--tv-safe-x) bottom-(--tv-safe-y) z-10 grid content-start justify-items-center transition-opacity ${motion} ${rail} ${titled && index.placed ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
-      >
-        {LETTERS.map((l) => (
-          <button
-            key={l}
-            type="button"
-            disabled={!present.has(l)}
-            {...(titled && present.has(l) ? { 'data-focusable': '' } : {})}
-            onClick={() => jump(l)}
-            // square: a 27th of the height, or the column's width if that's less
-            style={{ width: `min(${index.size}px, 2cqw)`, height: `min(${index.size}px, 2cqw)` }}
-            className="grid place-items-center rounded-[0.3cqw] font-semibold text-(length:--tv-text-quality) text-text-2 outline-none transition-lift focus-visible:scale-125 focus-visible:bg-text focus-visible:text-bg disabled:text-text-3/40"
-          >
-            {l}
-          </button>
-        ))}
-      </nav>
+      <TvLetterRail index={index} shown={titled} present={present} />
       <main ref={index.main} className="absolute inset-0 overflow-hidden">
         <div
           data-scroll="y"

@@ -42,6 +42,44 @@ export const posterArt = (title: string) => scene(title, 400, 600)
 export const stillArt = (title: string) => scene(`${title} still`, 640, 360)
 export const backdropArt = (title: string) => scene(`${title} backdrop`, 1920, 1080)
 
+/**
+ * An album's cover, square: a muted ground on the title's palette with one of a few abstract
+ * motifs (rings, a disc over a band, stripes), so albums read as records rather than film posters.
+ */
+export function coverArt(title: string): string {
+  const n = hash(`${title} cover`)
+  const hue = n % 360
+  const hue2 = (hue + 40 + ((n >> 7) % 80)) % 360
+  const s = 600
+  const ground =
+    `<defs><linearGradient id="c" x1="0" y1="0" x2="1" y2="1">` +
+    `<stop offset="0" stop-color="oklch(34% 0.06 ${hue})"/>` +
+    `<stop offset="1" stop-color="oklch(20% 0.04 ${hue2})"/></linearGradient></defs>` +
+    `<rect width="${s}" height="${s}" fill="url(#c)"/>`
+  const ink = (light: number, o = 0.85) => `fill="oklch(${light}% 0.07 ${hue2})" opacity="${o}"`
+  const cx = s * (0.35 + ((n >> 3) % 30) / 100)
+  const cy = s * (0.35 + ((n >> 5) % 30) / 100)
+  const motifs = [
+    // rings
+    [0.42, 0.32, 0.22, 0.12]
+      .map(
+        (r, i) =>
+          `<circle cx="${cx}" cy="${cy}" r="${s * r}" fill="none" stroke="oklch(${78 - i * 8}% 0.06 ${hue2})" stroke-width="${s * 0.035}" opacity="0.7"/>`,
+      )
+      .join(''),
+    // a disc over a band
+    `<rect y="${s * 0.58}" width="${s}" height="${s * 0.16}" ${ink(48, 0.7)}/>` +
+      `<circle cx="${cx}" cy="${s * 0.5}" r="${s * 0.24}" ${ink(84)}/>`,
+    // stripes
+    Array.from(
+      { length: 6 },
+      (_, i) =>
+        `<rect x="${s * (0.1 + i * 0.14)}" y="${s * (0.18 + ((n >> i) % 4) * 0.05)}" width="${s * 0.07}" height="${s * 0.64}" rx="${s * 0.035}" ${ink(60 + i * 4, 0.75)}/>`,
+    ).join(''),
+  ]
+  return svg(s, s, ground + motifs[n % motifs.length])
+}
+
 const xml = (s: string) =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
 

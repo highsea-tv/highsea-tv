@@ -199,6 +199,7 @@ export function TvTile({
   src,
   href,
   wide = false,
+  square = false,
   progress = null,
   progressBelow = false,
 }: {
@@ -207,6 +208,8 @@ export function TvTile({
   src: string
   href: string
   wide?: boolean
+  /** An album's cover. */
+  square?: boolean
   progress?: number | null
   progressBelow?: boolean
 }) {
@@ -220,7 +223,7 @@ export function TvTile({
       <Poster
         title={title}
         src={src}
-        aspect={wide ? 'still' : 'poster'}
+        aspect={square ? 'square' : wide ? 'still' : 'poster'}
         progress={progress !== null ? progress * 100 : undefined}
         progressBelow={progressBelow}
       />
@@ -237,18 +240,28 @@ export function TvTile({
 /** A tile while its screen loads, laid out as `TvTile`: the art, then its title and caption. */
 export function TvTileSkeleton({
   wide = false,
+  square = false,
+  round = false,
   resume = false,
 }: {
   wide?: boolean
+  square?: boolean
+  /** An artist's round photo, its lines centred under it. */
+  round?: boolean
   resume?: boolean
 }) {
   return (
     <div aria-hidden>
       <Skeleton
-        className={cn('rounded-(--tv-radius-poster)', wide ? 'aspect-still' : 'aspect-poster')}
+        className={cn(
+          round ? 'rounded-full' : 'rounded-(--tv-radius-poster)',
+          square || round ? 'aspect-square' : wide ? 'aspect-still' : 'aspect-poster',
+        )}
       />
       {resume && <Skeleton className="mt-3.5 h-1 rounded-full" />}
-      <div className="mt-[1cqw] grid gap-[0.5cqw] py-[0.2cqw]">
+      <div
+        className={cn('mt-[1cqw] grid gap-[0.5cqw] py-[0.2cqw]', round && 'justify-items-center')}
+      >
         <Skeleton className="h-[1.05cqw] w-4/5" />
         <Skeleton className="h-[0.95cqw] w-2/5" />
       </div>

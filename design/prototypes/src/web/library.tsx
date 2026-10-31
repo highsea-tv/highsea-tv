@@ -21,7 +21,7 @@ export const letterOf = (sortTitle: string) => {
 // under the sticky top bar (80px and its border, and the desktop app's title bar above it), with
 // the page's gap; a letter's first title scrolls to the same line. The letters are square, 1.5rem
 // or a 27th of the height left under the bar, whichever is less
-const stuck = {
+export const stuck = {
   top: { under: 'top-[calc(5rem+1px+1.5rem)]', bar: 'top-[calc(7rem+1px+1.5rem)]' },
   size: {
     under: 'w-[min(1.5rem,calc((100svh-5rem-1px-3rem)/27))]',
@@ -42,7 +42,7 @@ const stuck = {
  * snapping (the owner, 2026-10-30); its letters' focus ring is drawn inside them, as the column
  * clips.
  */
-function LetterIndex({
+export function LetterIndex({
   shown,
   present,
   place,

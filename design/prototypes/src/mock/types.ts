@@ -308,6 +308,36 @@ export type MovieMetadata = DiscoverMovie & {
 /** A title in a person's filmography, with their part in it. */
 export type PersonCredit = DiscoverMovie & { role: string; department: Department }
 
+/** An artist in the music library, with how many of their albums are here. */
+export type ClientArtist = {
+  id: string
+  name: string
+  /** For A–Z: the name without a leading "The". */
+  sortName: string
+  photo: string
+  albums: number
+  genres: string[]
+  addedAt: string
+}
+
+/** An album in the music library: square cover art, its artist, year and tracks. */
+export type ClientAlbum = {
+  id: string
+  title: string
+  sortTitle: string
+  artist: { id: string; name: string }
+  year: number
+  cover: string
+  genres: string[]
+  tracks: number
+  /** Album, EP, single, soundtrack or compilation, as Plexamp groups them. */
+  kind: 'album' | 'ep' | 'single' | 'soundtrack' | 'compilation'
+  addedAt: string
+}
+
+/** `GET /api/v1/library/music`: every artist and album the household can play. */
+export type ClientMusic = { artists: ClientArtist[]; albums: ClientAlbum[] }
+
 /**
  * `GET /api/v1/library/people/{id}`: a person on the clients, with only what they're in on this
  * server, by department (the one they're known for first), newest first in each.
@@ -1031,6 +1061,7 @@ export type ServerEvent =
   | { type: 'queue.updated' }
   | { type: 'item.updated'; id: string }
   | { type: 'movies.updated' }
+  | { type: 'music.updated' }
   | { type: 'history.updated' }
   | { type: 'jobs.updated' }
   | { type: 'indexers.updated' }

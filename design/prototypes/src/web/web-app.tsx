@@ -11,6 +11,7 @@ import { WebComing } from './coming.tsx'
 import { WebDetail } from './detail.tsx'
 import { WebHome } from './home.tsx'
 import { WebLibrary } from './library.tsx'
+import { WebMusic } from './music.tsx'
 import { WebPerson } from './person.tsx'
 import { WebPlayer } from './player.tsx'
 import { WebSearch } from './search.tsx'
@@ -68,9 +69,14 @@ function Routes() {
           <WebComing kind="shows" />
         </WebShell>
       </Route>
+      <Route path="/music/artists">
+        <WebShell>
+          <WebMusic view="artists" />
+        </WebShell>
+      </Route>
       <Route path="/music">
         <WebShell>
-          <WebComing kind="music" />
+          <WebMusic view="albums" />
         </WebShell>
       </Route>
       {/* the library's old addresses */}
