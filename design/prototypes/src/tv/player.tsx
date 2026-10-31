@@ -45,9 +45,9 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
   const scrubber = useRef<HTMLDivElement>(null)
   const ready = player.detail.status === 'success'
   // a message or Next up takes the focus (its first button, inside its isolated region); the
-  // scrubber has it otherwise
+  // scrubber has it otherwise (the tracks panel hands it back to its button itself)
   const asking = ['failed', 'stopped', 'next-up'].includes(player.stream)
-  useInitialFocus(ready && !panel && !asking, `${panel}:${asking}`, '[data-player-scrubber]')
+  useInitialFocus(ready && !asking, asking, '[data-player-scrubber]')
   useInitialFocus(ready && asking, player.stream, '[data-isolate] [data-initial]')
 
   const wake = useCallback(() => {
@@ -222,8 +222,9 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
           </div>
         </div>
       </div>
-      {panel && player.version && (
+      {player.version && (
         <TvTracksPanel
+          open={panel}
           versions={d?.versions ?? []}
           version={player.version}
           audio={player.audio}

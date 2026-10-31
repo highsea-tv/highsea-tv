@@ -40,13 +40,13 @@ await pool([...prototypeRoutes().tv, '/tv/nowhere'], WORKERS, async (r) => {
   while (queue.length) {
     const k = queue.shift() as string
     for (const key of ['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight']) {
-      await page.evaluate(
-        (k) =>
-          (document.querySelector(`[data-k="${k}"]`) as HTMLElement | null)?.focus({
-            preventScroll: true,
-          }),
-        k,
-      )
+      await page.evaluate((k) => {
+        const el = document.querySelector<HTMLElement>(`[data-k="${k}"]`)
+        el?.focus({ preventScroll: true })
+        // a region may send focus arriving from outside to its own start (the TV's nav starts on
+        // the current page): focus again from where it landed, as a press inside it would
+        if (el && document.activeElement !== el) el.focus({ preventScroll: true })
+      }, k)
       await page.keyboard.press(key)
       await page.waitForTimeout(30)
       const n = await page.evaluate(() => document.activeElement?.getAttribute('data-k') ?? null)

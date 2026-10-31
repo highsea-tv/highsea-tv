@@ -545,6 +545,8 @@ export function TvNewProfile() {
           role="radiogroup"
           aria-label="Colour"
           data-group="colours"
+          // the swatches right of Cancel have nothing straight below them
+          data-go-down="actions"
           className="flex items-center gap-[1cqw]"
         >
           <span className="me-[0.6cqw] text-(length:--tv-text-meta) text-text-2">Colour</span>

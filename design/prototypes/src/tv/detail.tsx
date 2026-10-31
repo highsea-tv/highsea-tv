@@ -56,7 +56,8 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
   // another film's page is the same screen, so its trailer closes
   // biome-ignore lint/correctness/useExhaustiveDependencies: closes when the film changes
   useEffect(() => setTrailer(null), [id])
-  useInitialFocus(detail.status === 'success' && !panel && !trailer, `${id}:${focusKey}`)
+  // the tracks panel hands focus back to its button itself
+  useInitialFocus(detail.status === 'success' && !trailer, `${id}:${focusKey}`)
   // Up and Down go row by row: the actions, More like this, the collections, the extras, the people, then About
   const rows = useRef<HTMLDivElement>(null)
   useRowNavigation(rows, detail.status === 'success' && id)
@@ -320,8 +321,9 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
           }}
         />
       )}
-      {panel && v && (
+      {v && (
         <TvTracksPanel
+          open={panel}
           versions={d.versions}
           version={v}
           audio={audio}
@@ -331,7 +333,6 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
           onSubtitle={(subtitleId) => {
             save.run({ subtitleId })
             onPanel(false)
-            refocus()
           }}
         />
       )}

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Audio and subtitles on TV: a panel from the right, isolated so the D-pad stays inside it until
-// Back closes it. The item detail and the player share it; the player adds the subtitle timing
-// nudge (±50 ms on Left and Right) with its live preview line.
+// Audio and subtitles on TV: a dialog at the right, inside the safe area, isolated so the D-pad
+// stays inside it until Back closes it. The item detail and the player share it; the player adds
+// the subtitle timing nudge (±50 ms on Left and Right) with its live preview line.
 import { cn, Icon } from '@highsea-tv/ui-web'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NUDGE_MS, offsetHint, offsetLabel, PICTURE_TIMING } from '../client/player.ts'
 import type { ClientTrack, ClientVersion } from '../mock/types.ts'
 import { NudgePreview } from '../web/player.tsx'
@@ -56,6 +56,7 @@ function Group<T extends { id: string; label: string }>({
 }
 
 export function TvTracksPanel({
+  open,
   versions,
   version,
   audio,
@@ -65,6 +66,8 @@ export function TvTracksPanel({
   onSubtitle,
   timing,
 }: {
+  /** Shown. It stays mounted while it slides out, then unmounts. */
+  open: boolean
   versions: ClientVersion[]
   version: ClientVersion
   audio: ClientTrack | null
@@ -77,9 +80,27 @@ export function TvTracksPanel({
 }) {
   const root = useRef<HTMLElement>(null)
   const nudger = useRef<HTMLDivElement>(null)
+  // mounted while open and while it slides out after closing
+  const [present, setPresent] = useState(open)
+  if (open && !present) setPresent(true)
+  // focus moves in when it opens, and back to what opened it when it closes
+  const opener = useRef<HTMLElement | null>(null)
   useEffect(() => {
+    if (!open || !present) return
+    opener.current = document.activeElement instanceof HTMLElement ? document.activeElement : null
     root.current?.querySelector<HTMLElement>('[data-panel-first]')?.focus({ preventScroll: true })
-  }, [])
+  }, [open, present])
+  useEffect(() => {
+    if (open || !opener.current) return
+    if (opener.current.isConnected) opener.current.focus({ preventScroll: true })
+    opener.current = null
+  }, [open])
+  // unmount when the exit's transition ends; the timer covers one that never fires (a hidden page)
+  useEffect(() => {
+    if (open || !present) return
+    const t = window.setTimeout(() => setPresent(false), 600)
+    return () => window.clearTimeout(t)
+  }, [open, present])
   // Left and Right on the timing row nudge, instead of moving focus
   useEffect(() => {
     const el = nudger.current
@@ -93,13 +114,22 @@ export function TvTracksPanel({
     el.addEventListener('keydown', onKey)
     return () => el.removeEventListener('keydown', onKey)
   }, [timing])
+  if (!present) return null
   return (
     <aside
       ref={root}
+      // closing: out of the D-pad's and the screen reader's reach while it slides away
+      inert={!open}
+      data-closing={open ? undefined : ''}
+      onTransitionEnd={(e) => {
+        if (!open && e.target === e.currentTarget && e.propertyName === 'opacity') setPresent(false)
+      }}
       aria-label="Audio and subtitles"
       data-isolate=""
       data-group="tracks"
-      className="absolute inset-y-0 right-0 z-30 grid w-[32cqw] content-start gap-[1.6cqw] overflow-hidden bg-s1/95 px-[2.4cqw] py-(--tv-safe-y) backdrop-blur-pill"
+      // a dialog at half the safe area's inset (the owner, 2026-10-31): it slides in from the right
+      // and back out when closed, at once with reduced motion (the token is 1 ms)
+      className="absolute inset-y-[calc(var(--tv-safe-y)/2)] right-[calc(var(--tv-safe-x)/2)] z-30 grid w-[32cqw] content-start gap-[1.6cqw] overflow-hidden rounded-[1cqw] bg-s1/95 p-[2.4cqw] shadow-[0_1cqw_3cqw_rgb(0_0_0/0.45)] backdrop-blur-pill transition-[translate,opacity] duration-(--duration-spring-quick) ease-(--ease-spring-quick) starting:translate-x-[3cqw] starting:opacity-0 data-closing:translate-x-[3cqw] data-closing:opacity-0"
     >
       <h2 className="font-semibold text-(length:--tv-text-row-title)">Audio and subtitles</h2>
       {versions.length > 1 && (

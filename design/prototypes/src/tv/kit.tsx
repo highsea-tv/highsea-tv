@@ -118,7 +118,10 @@ export function TvButton({
       {children}
     </>
   )
-  const focus = { 'data-focusable': '', ...(initial ? { 'data-initial': '' } : {}) }
+  // a disabled button can't take focus, so it isn't a D-pad stop (or a focus guide's target)
+  const focus = props.disabled
+    ? {}
+    : { 'data-focusable': '', ...(initial ? { 'data-initial': '' } : {}) }
   return href ? (
     <a href={href} className={classes} {...focus}>
       {inner}
