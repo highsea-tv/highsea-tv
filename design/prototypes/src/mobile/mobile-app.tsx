@@ -6,6 +6,7 @@
 import { EmptyState } from '@highsea-tv/ui-web'
 import { Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
+import { SeedMusic } from '../client/music-player.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { MobileScreen } from '../kit/mobile/device.tsx'
 import { MobileAlbum } from './album.tsx'
@@ -17,6 +18,7 @@ import { MobileHome } from './home.tsx'
 import { MobileLibrary } from './library.tsx'
 import { MobileOffline, MobileSearch, MobileSettingsScreen, MobileYou } from './more.tsx'
 import { MobileMusic } from './music.tsx'
+import { MobileNowPlaying } from './now-playing.tsx'
 import { MobileLinkConfirm, MobileLinkScan } from './pair.tsx'
 import { MobilePerson } from './person.tsx'
 import { MobilePlayer } from './player.tsx'
@@ -39,6 +41,7 @@ export function MobileApp() {
   return (
     <>
       <ApplyDevicePrefs platform="mobile" />
+      <SeedMusic />
       <Routes />
     </>
   )
@@ -55,6 +58,9 @@ function Routes() {
       </Route>
       <Route path="/link/:code">
         <MobileLinkConfirm />
+      </Route>
+      <Route path="/now-playing">
+        <MobileNowPlaying />
       </Route>
       <Route path="/play/:id/start">
         <MobilePlayer fromStart />

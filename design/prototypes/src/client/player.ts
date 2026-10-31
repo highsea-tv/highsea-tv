@@ -8,6 +8,7 @@ import { useAction, useQuery } from '../mock/hooks.tsx'
 import type { ClientDetail, PlaybackPrefs } from '../mock/types.ts'
 import type { StreamState } from '../proto/state.ts'
 import { useStreamState } from './data.ts'
+import { musicPlayer } from './music-player.ts'
 
 /** One nudge of the subtitle timing, matching the admin's (movies.md#decisions). */
 export const NUDGE_MS = 50
@@ -47,6 +48,11 @@ export function usePlayer(id: string, fromStart: boolean) {
       setPlaying(true)
     }
   }, [picked, duration])
+
+  // a film playing pauses the music, as one player on a device does; it waits in its bar
+  useEffect(() => {
+    if (musicPlayer.get().playing) musicPlayer.toggle()
+  }, [])
 
   // the clock: one second a second while playing, stopping at the end
   useEffect(() => {

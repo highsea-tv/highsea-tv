@@ -38,10 +38,12 @@ import {
   useKnownServers,
   useServer,
 } from '../client/data.ts'
+import { useMusicPlayer } from '../client/music-player.ts'
 import { APP_VERSION, NEXT_APP_VERSION } from '../client/settings.ts'
 import { restartToUpdate } from '../client/settings-sections.tsx'
 import { Cta, Inline } from '../kit/inline.tsx'
 import { useNow } from '../mock/hooks.tsx'
+import { MUSIC_BAR, MusicBar } from './music-bar.tsx'
 import { trafficLightInset, useWindowChrome } from './window.tsx'
 
 export const webHref = (path: string) => clientHref('web', path)
@@ -442,13 +444,16 @@ export function WebShell({
   const connection = useConnection()
   // in a Mac window the handle keeps clear of the rounded corners
   const chrome = useWindowChrome()
+  // the page's foot stays clear of the music player while it shows
+  const music = useMusicPlayer().song !== null && connection !== 'offline'
   return (
-    <div className="relative min-h-screen bg-bg text-text">
+    <div className={cn('relative min-h-screen bg-bg text-text', music && MUSIC_BAR)}>
       <TopBar overHero={connection !== 'offline' && overHero} />
       <PageScrollbar inset={chrome === 'mac' ? 10 : 6} />
       {connection === 'offline' ? <Unreachable /> : children}
       {connection !== 'offline' && (
         <>
+          <MusicBar />
           <AnnouncementModal />
           <AnnouncementToasts />
         </>

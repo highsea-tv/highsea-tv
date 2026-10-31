@@ -16,6 +16,7 @@ import {
 import { useParams } from 'wouter'
 import { useArtist } from '../client/data.ts'
 import { albumMeta, albumsCount, discographyTitle, songsCount } from '../client/music.ts'
+import { useMusicPlayer } from '../client/music-player.ts'
 import { ArtistCard, MusicCardSkeleton } from './music.tsx'
 import { Bio } from './person.tsx'
 import { gutter, webHref } from './shell.tsx'
@@ -23,6 +24,7 @@ import { gutter, webHref } from './shell.tsx'
 export function WebArtist() {
   const { id } = useParams<{ id: string }>()
   const found = useArtist(id)
+  const player = useMusicPlayer()
   if (found.status === 'loading') return <ArtistSkeleton />
   if (found.status === 'error')
     return (
@@ -68,10 +70,19 @@ export function WebArtist() {
               {a.genres.join(' · ')} · {albumsCount(a.albums)}, {songsCount(songs)}
             </p>
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <Button variant="primary" icon="play" className="min-w-32 justify-center">
+              <Button
+                variant="primary"
+                icon="play"
+                className="min-w-32 justify-center"
+                onClick={() => player.play({ artist: a.id })}
+              >
                 Play
               </Button>
-              <Button icon="shuffle" className="min-w-32 justify-center">
+              <Button
+                icon="shuffle"
+                className="min-w-32 justify-center"
+                onClick={() => player.play({ artist: a.id }, { shuffle: true })}
+              >
                 Shuffle
               </Button>
               {person && (
@@ -84,29 +95,31 @@ export function WebArtist() {
           </div>
         </div>
       </header>
-      {sections.map(({ kind, albums }) => (
-        <CarouselRow key={kind} title={discographyTitle[kind]}>
-          {albums.map((x) => (
-            <Poster
-              key={x.id}
-              aspect="square"
-              title={x.title}
-              src={x.cover}
-              href={webHref(`/music/albums/${x.id}`)}
-              showTitle
-              titleSize="body"
-              caption={kind === 'singles' ? albumMeta(x) : String(x.year)}
-            />
-          ))}
-        </CarouselRow>
-      ))}
-      {similar.length > 0 && (
-        <CarouselRow title="Similar artists">
-          {similar.map((x) => (
-            <ArtistCard key={x.id} artist={x} />
-          ))}
-        </CarouselRow>
-      )}
+      <div className="mx-auto grid w-full max-w-[1680px] grid-cols-[minmax(0,1fr)] gap-10">
+        {sections.map(({ kind, albums }) => (
+          <CarouselRow key={kind} title={discographyTitle[kind]}>
+            {albums.map((x) => (
+              <Poster
+                key={x.id}
+                aspect="square"
+                title={x.title}
+                src={x.cover}
+                href={webHref(`/music/albums/${x.id}`)}
+                showTitle
+                titleSize="body"
+                caption={kind === 'singles' ? albumMeta(x) : String(x.year)}
+              />
+            ))}
+          </CarouselRow>
+        ))}
+        {similar.length > 0 && (
+          <CarouselRow title="Similar artists">
+            {similar.map((x) => (
+              <ArtistCard key={x.id} artist={x} />
+            ))}
+          </CarouselRow>
+        )}
+      </div>
     </main>
   )
 }

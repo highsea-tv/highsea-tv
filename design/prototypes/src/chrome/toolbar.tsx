@@ -9,6 +9,7 @@ import {
   dataStates,
   desktopOses,
   localNetworks,
+  musicStates,
   type Platform,
   type ProtoState,
   phoneDownloads,
@@ -332,6 +333,25 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
               onChange={(e) => update('lan', e.target.value as ProtoState['lan'])}
             >
               {localNetworks.map((x) => (
+                <option key={x.id} value={x.id}>
+                  {x.label}
+                </option>
+              ))}
+            </select>
+          )}
+        </Group>
+      )}
+
+      {platform !== 'admin' && !/\/play\//.test(path) && (
+        <Group label="Music">
+          {(id) => (
+            <select
+              id={id}
+              className={control}
+              value={state.music}
+              onChange={(e) => update('music', e.target.value as ProtoState['music'])}
+            >
+              {musicStates.map((x) => (
                 <option key={x.id} value={x.id}>
                   {x.label}
                 </option>

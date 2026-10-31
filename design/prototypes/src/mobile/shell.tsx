@@ -27,9 +27,11 @@ import {
   useKnownServers,
   useServer,
 } from '../client/data.ts'
+import { useMusicPlayer } from '../client/music-player.ts'
 import { Cta, Inline } from '../kit/inline.tsx'
 import { MobileScreen, safeArea } from '../kit/mobile/device.tsx'
 import { useNow } from '../mock/hooks.tsx'
+import { MINI_PLAYER, MiniPlayer } from './now-playing.tsx'
 
 export const mobileHref = (path: string) => clientHref('mobile', path)
 
@@ -254,9 +256,20 @@ function Unreachable() {
 /** A tab's screen: content scrolls under the status bar and clear of the tab bar. */
 export function MobileShell({ children }: { children: ReactNode }) {
   const connection = useConnection()
+  const music = useMusicPlayer().song !== null && connection !== 'offline'
   return (
-    <MobileScreen tabBar={<TabBar />}>
-      <div style={{ paddingBottom: TAB_BAR + 24 }} className="min-h-full">
+    <MobileScreen
+      tabBar={
+        <>
+          {music && <MiniPlayer bottom={safeArea.bottom + TAB_BAR} />}
+          <TabBar />
+        </>
+      }
+    >
+      <div
+        style={{ paddingBottom: TAB_BAR + 24 + (music ? MINI_PLAYER : 0) }}
+        className="min-h-full"
+      >
         {connection === 'offline' ? <Unreachable /> : children}
       </div>
       {connection !== 'offline' && <AnnouncementDialog />}

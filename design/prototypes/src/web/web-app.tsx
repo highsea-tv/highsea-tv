@@ -4,6 +4,7 @@
 import { Button, EmptyState } from '@highsea-tv/ui-web'
 import { Redirect, Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
+import { SeedMusic } from '../client/music-player.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { WebAlbum } from './album.tsx'
 import { WebArtist } from './artist.tsx'
@@ -31,6 +32,7 @@ export function WebApp() {
   return (
     <>
       <ApplyDevicePrefs platform="web" />
+      <SeedMusic />
       {/* the desktop app's window chrome; the player draws its own, over the film */}
       {!location.startsWith('/play/') && <WindowFrame />}
       <Routes />
@@ -72,12 +74,12 @@ function Routes() {
         </WebShell>
       </Route>
       <Route path="/music/albums/:id">
-        <WebShell>
+        <WebShell overHero>
           <WebAlbum />
         </WebShell>
       </Route>
       <Route path="/music/artists/:id">
-        <WebShell>
+        <WebShell overHero>
           <WebArtist />
         </WebShell>
       </Route>
@@ -104,7 +106,7 @@ function Routes() {
         </WebShell>
       </Route>
       <Route path="/people/:id">
-        <WebShell>
+        <WebShell overHero>
           <WebPerson />
         </WebShell>
       </Route>

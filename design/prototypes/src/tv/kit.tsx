@@ -17,6 +17,7 @@ import { useLocation } from 'wouter'
 import { clientHref, useAnnouncements, useConnection, useServer } from '../client/data.ts'
 import { mediaCard } from '../client/media-card.tsx'
 import type { ClientItem } from '../mock/types.ts'
+import { NowPlayingTab } from './now-playing.tsx'
 import { type Tone, type TvPerson, usePeople } from './people.ts'
 
 export const tvHref = (path: string) => clientHref('tv', path)
@@ -377,7 +378,7 @@ export function TvHead({
 }: {
   down?: string
   /**
-   * Down always goes to `down`'s first stop. Without it the navigator takes what's nearest under
+   * Down always goes to `down`'s initial stop, or its first. Without it the navigator takes what's nearest under
    * the tabs, which on a page with its actions at the left is a row's tile (an album, an artist).
    */
   exact?: boolean
@@ -393,9 +394,10 @@ export function TvHead({
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== 'ArrowDown' || e.defaultPrevented) return
       const group = `[data-group="${CSS.escape(down)}"]`
-      const to = document.querySelector<HTMLElement>(
-        `${group} [data-focusable], ${group}[data-focusable]`,
-      )
+      // the group's initial stop when it has one (Play among Previous and Next), else its first
+      const to =
+        document.querySelector<HTMLElement>(`${group} [data-focusable][data-initial]`) ??
+        document.querySelector<HTMLElement>(`${group} [data-focusable], ${group}[data-focusable]`)
       if (!to) return
       e.preventDefault()
       focusFrom(e.target as Element, to, play)
@@ -446,6 +448,7 @@ export function TvHead({
         })}
       </div>
       <div className="flex items-center gap-[0.6cqw] justify-self-end">
+        <NowPlayingTab current={active('/now-playing')} />
         <Alerts current={active('/alerts')} />
         <Account current={active('/profile') || active('/settings')} />
       </div>

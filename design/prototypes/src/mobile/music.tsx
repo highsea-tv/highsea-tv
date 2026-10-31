@@ -62,7 +62,7 @@ export function MobileMusic({ view }: { view: MusicView }) {
       onValueChange={(v) => navigate(v === 'artists' ? '/library/music/artists' : '/library/music')}
       asChild
     >
-      <div className="grid gap-4 pt-1">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 pt-1">
         <Header title="Library" />
         <LibraryNav current="music" />
         <div className={gutter}>

@@ -30,6 +30,11 @@ export type LocalNetwork = 'allowed' | 'asking' | 'refused'
 export type AirPlay = 'off' | 'on'
 /** Downloads on the phone: built (4.6), or not yet, as the app has them until then (4.5a). */
 export type PhoneDownloads = 'built' | 'later'
+/**
+ * The music player (the universal player): nothing playing, or a song from Sintel's score playing
+ * from wherever the screen is, so every page can be reviewed with the bar showing.
+ */
+export type MusicState = 'none' | 'playing'
 export type StreamState = 'normal' | 'preparing' | 'buffering' | 'failed' | 'stopped' | 'next-up'
 
 export type ProtoState = {
@@ -51,6 +56,7 @@ export type ProtoState = {
   lan: LocalNetwork
   airplay: AirPlay
   downloads: PhoneDownloads
+  music: MusicState
   /** A client preview inside the admin (`?preview`): no prototype affordances. */
   preview: boolean
 }
@@ -72,6 +78,7 @@ export const defaultState: ProtoState = {
   lan: 'allowed',
   airplay: 'off',
   downloads: 'built',
+  music: 'none',
   preview: false,
 }
 
@@ -137,6 +144,11 @@ export const airplays: { id: AirPlay; label: string }[] = [
   { id: 'on', label: 'Living room TV' },
 ]
 
+export const musicStates: { id: MusicState; label: string }[] = [
+  { id: 'none', label: 'Nothing playing' },
+  { id: 'playing', label: 'A song playing' },
+]
+
 export const phoneDownloads: { id: PhoneDownloads; label: string }[] = [
   { id: 'built', label: 'Built (4.6)' },
   { id: 'later', label: 'Not yet' },
@@ -190,7 +202,7 @@ export function saveState(state: ProtoState): void {
  * `?screen&data=empty&theme=oled&role=admin&motion=reduced&text=200&time=pause&connection=remote`
  * (and `&stream=buffering` on a player, `&app=desktop` for the desktop app, with `&os=windows`,
  * `&update=ready` and `&lan=refused`; on the phone `&lan=asking`, `&airplay=on` and
- * `&downloads=later`; on the TV `&nav=band`);
+ * `&downloads=later`; on the TV `&nav=band`; on any client `&music=playing`);
  * `&preview` marks a client preview inside the admin.
  */
 export function stateFromParams(params: URLSearchParams, base: ProtoState): ProtoState {
@@ -241,6 +253,11 @@ export function stateFromParams(params: URLSearchParams, base: ProtoState): Prot
         'downloads',
         phoneDownloads.map((x) => x.id),
       ) ?? base.downloads,
+    music:
+      pick(
+        'music',
+        musicStates.map((x) => x.id),
+      ) ?? base.music,
     reducedMotion: params.has('motion') ? params.get('motion') === 'reduced' : base.reducedMotion,
     largeText: params.has('text') ? params.get('text') === '200' : base.largeText,
     preview: params.has('preview'),

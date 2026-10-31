@@ -5,6 +5,7 @@
 import { useLayoutEffect, useMemo, useState } from 'react'
 import { Route, Switch, useLocation, useSearch } from 'wouter'
 import { useConnection, useServer } from '../client/data.ts'
+import { SeedMusic } from '../client/music-player.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { TvRoot } from '../kit/tv/tv-root.tsx'
 import { useProto } from '../screen/screen.tsx'
@@ -21,6 +22,7 @@ import { TvHome } from './home.tsx'
 import { ServerIdentity, TvButton, TvHead, TvMessage, tvHref } from './kit.tsx'
 import { TvLibrary } from './library.tsx'
 import { TvMusic } from './music.tsx'
+import { TvNowPlaying, useMusicKeys } from './now-playing.tsx'
 import { TvPerson } from './person.tsx'
 import { TvPlayer } from './player.tsx'
 import { TvSearch } from './search.tsx'
@@ -51,6 +53,11 @@ function Album() {
 function Artist() {
   useBack(() => history.back())
   return <TvArtist />
+}
+
+function NowPlaying() {
+  useBack(() => history.back())
+  return <TvNowPlaying />
 }
 
 function Unreachable() {
@@ -118,6 +125,7 @@ function Screens() {
   const [location, navigate] = useLocation()
   const search = useSearch()
   const { preview } = useProto()
+  useMusicKeys()
   // in an effect, so React's second render in development doesn't see the flag already set
   // biome-ignore lint/correctness/useExhaustiveDependencies: once, when the TV first opens
   useLayoutEffect(() => {
@@ -149,6 +157,9 @@ function Screens() {
       </Route>
       <Route path="/shows">
         <TvComing kind="shows" />
+      </Route>
+      <Route path="/now-playing">
+        <NowPlaying />
       </Route>
       <Route path="/music/albums/:id">
         <Album />
@@ -227,6 +238,7 @@ export function TvApp() {
         }}
       >
         <ApplyDevicePrefs platform="tv" />
+        <SeedMusic />
         <Screens />
       </TvRoot>
     </BackContext.Provider>

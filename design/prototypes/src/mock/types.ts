@@ -349,6 +349,16 @@ export type ClientSong = {
 }
 
 /**
+ * A song in the player's queue: the song, its album, and its loudness from the server's analysis
+ * of the file (as Plex's loudness analysis gives Plexamp its waveform), drawn as the scrubber.
+ */
+export type QueuedSong = ClientSong & {
+  album: ClientAlbum
+  /** The song's loudness from start to end in even steps, each 0 to 1. */
+  loudness: number[]
+}
+
+/**
  * `GET /api/v1/library/music/albums/{id}`: an album with its songs, its length, when and by whom
  * it was released, the film here it scores, and the artist's other albums.
  */

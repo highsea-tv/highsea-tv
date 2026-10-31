@@ -22,7 +22,7 @@ export function MobileLibrary() {
   const shown = arrange(items, genre, sort, show === 'unwatched')
   const filtered = genre !== ALL || sort !== 'title' || show !== 'all'
   return (
-    <div className="grid gap-4 pt-1">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 pt-1">
       <Header title="Library" />
       <LibraryNav current="movies" />
       <div className={cn('flex items-center gap-2', gutter)}>

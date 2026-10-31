@@ -5,11 +5,13 @@
 // Shuffle under it and buttons to the artist and the film it scores; the songs fill the right,
 // scrolling under focus while the column stays. Focus starts on Play; Right reaches the songs and
 // Left comes back.
-import { Skeleton, useSound } from '@highsea-tv/ui-web'
+import { cn, Skeleton, useSound } from '@highsea-tv/ui-web'
 import { type RefObject, useEffect, useRef } from 'react'
 import { useParams } from 'wouter'
 import { useAlbum } from '../client/data.ts'
 import { albumKind, albumSummary, songTime } from '../client/music.ts'
+import { useAlbumPlaying, useMusicPlayer } from '../client/music-player.ts'
+import { PlayingBars } from '../client/waveform.tsx'
 import { focusFrom, TvButton, TvHead, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
 
 const song =
@@ -18,6 +20,9 @@ const song =
 export function TvAlbum() {
   const { id } = useParams<{ id: string }>()
   const found = useAlbum(id)
+  const player = useMusicPlayer()
+  const current = useAlbumPlaying(id)
+  const playingId = current ? (current.queue[current.index]?.id ?? null) : null
   const actions = useRef<HTMLDivElement>(null)
   const list = useRef<HTMLOListElement>(null)
   useInitialFocus(found.status === 'success', id)
@@ -99,10 +104,20 @@ export function TvAlbum() {
               data-go-right="songs"
               className="flex flex-wrap gap-[0.8cqw] pt-[0.6cqw]"
             >
-              <TvButton primary initial icon="play">
-                Play
+              <TvButton
+                primary
+                initial
+                icon={current?.playing ? 'pause' : 'play'}
+                onClick={() => (current ? player.toggle() : player.play({ album: a.id }))}
+              >
+                {current?.playing ? 'Pause' : 'Play'}
               </TvButton>
-              <TvButton icon="shuffle">Shuffle</TvButton>
+              <TvButton
+                icon="shuffle"
+                onClick={() => player.play({ album: a.id }, { shuffle: true })}
+              >
+                Shuffle
+              </TvButton>
               <TvButton icon="user" href={tvHref(`/music/artists/${a.artist.id}`)}>
                 Artist
               </TvButton>
@@ -125,23 +140,37 @@ export function TvAlbum() {
               data-keep="0.4"
               className="grid gap-[0.2cqw] py-[1cqw] pb-(--tv-safe-y) transition-lift"
             >
-              {songs.map((s) => (
-                <li key={s.id}>
-                  {/* nothing plays yet: the music player comes with its own prototype */}
-                  <button
-                    type="button"
-                    data-focusable=""
-                    aria-label={`Play ${s.title}, ${songTime(s.duration)}`}
-                    className={song}
-                  >
-                    <span className="tabular-nums opacity-70">{s.number}</span>
-                    <span className="truncate">{s.title}</span>
-                    <span className="text-(length:--tv-text-pill) tabular-nums opacity-70">
-                      {songTime(s.duration)}
-                    </span>
-                  </button>
-                </li>
-              ))}
+              {songs.map((s, i) => {
+                const here = s.id === playingId
+                return (
+                  <li key={s.id}>
+                    <button
+                      type="button"
+                      data-focusable=""
+                      aria-label={
+                        here && current?.playing
+                          ? `Pause ${s.title}`
+                          : `Play ${s.title}, ${songTime(s.duration)}`
+                      }
+                      aria-current={here ? 'true' : undefined}
+                      onClick={() =>
+                        here ? player.toggle() : player.play({ album: a.id }, { start: i })
+                      }
+                      className={cn(song, here && 'text-accent-text')}
+                    >
+                      {here ? (
+                        <PlayingBars playing={!!current?.playing} />
+                      ) : (
+                        <span className="tabular-nums opacity-70">{s.number}</span>
+                      )}
+                      <span className="truncate">{s.title}</span>
+                      <span className="text-(length:--tv-text-pill) tabular-nums opacity-70">
+                        {songTime(s.duration)}
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
             </ol>
           </div>
         </div>

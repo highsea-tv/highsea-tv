@@ -19,7 +19,7 @@ import {
   person,
   recommendations,
 } from './metadata.ts'
-import { albumDetail, artistDetail, musicLibrary, scoreOf } from './music.ts'
+import { albumDetail, artistDetail, musicLibrary, queueOf, scoreOf } from './music.ts'
 import { type AccelerationPath, finishCheck, playbackStatus } from './playback.ts'
 import { GB, MB, type ServerState, seed } from './seed.ts'
 import { advanceSessions, type NowPlaying, type SessionView, type WatchView } from './sessions.ts'
@@ -66,6 +66,7 @@ import type {
   Pairing,
   PlaybackPrefs,
   ProbeResult,
+  QueuedSong,
   QueueItem,
   Release,
   RuleFieldInfo,
@@ -2634,6 +2635,15 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         const title = scoreOf(d.album)
         const film = title ? watchable().find((m) => m.title === title) : undefined
         return { ...d, film: film ? clientItem(film) : null }
+      },
+      /**
+       * The songs to play: an album's in order, or an artist's, newest album first, shuffled when
+       * asked; each with its loudness for the player's scrubber.
+       */
+      queue: (source: { album: string } | { artist: string }, shuffle = false): QueuedSong[] => {
+        const q = queueOf(library(), source, shuffle)
+        if (!q) throw new ApiError(404, 'not-found', 'There’s nothing here to play.')
+        return q
       },
       /** An artist with their albums by kind; their person page when they're in a film here. */
       artist: (id: string): ClientArtistDetail => {

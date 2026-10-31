@@ -74,21 +74,24 @@ export function WebPerson() {
           </div>
         </div>
       </header>
-      {p.departments.map(({ department, credits }) => (
-        <CarouselRow key={department} title={departmentTitle[department]}>
-          {credits.map(({ item: m, role }) => (
-            <Poster
-              key={m.id}
-              title={m.title}
-              src={m.art.poster}
-              href={webHref(`/movies/${m.id}`)}
-              showTitle
-              titleSize="body"
-              caption={`${roleNames(role)} · ${m.year}`}
-            />
-          ))}
-        </CarouselRow>
-      ))}
+      {/* the rows keep to the page's width, as the film page's do */}
+      <div className="mx-auto grid w-full max-w-[1680px] grid-cols-[minmax(0,1fr)] gap-10">
+        {p.departments.map(({ department, credits }) => (
+          <CarouselRow key={department} title={departmentTitle[department]}>
+            {credits.map(({ item: m, role }) => (
+              <Poster
+                key={m.id}
+                title={m.title}
+                src={m.art.poster}
+                href={webHref(`/movies/${m.id}`)}
+                showTitle
+                titleSize="body"
+                caption={`${roleNames(role)} · ${m.year}`}
+              />
+            ))}
+          </CarouselRow>
+        ))}
+      </div>
     </main>
   )
 }

@@ -18,12 +18,16 @@ import {
 import { useParams } from 'wouter'
 import { useAlbum } from '../client/data.ts'
 import { albumKind, albumMeta, albumSummary, releasedOn, songTime } from '../client/music.ts'
+import { useAlbumPlaying, useMusicPlayer } from '../client/music-player.ts'
+import { PlayingBars } from '../client/waveform.tsx'
 import type { ClientSong } from '../mock/types.ts'
 import { gutter, webHref } from './shell.tsx'
 
 export function WebAlbum() {
   const { id } = useParams<{ id: string }>()
   const found = useAlbum(id)
+  const player = useMusicPlayer()
+  const current = useAlbumPlaying(id)
   if (found.status === 'loading') return <AlbumSkeleton />
   if (found.status === 'error')
     return (
@@ -79,10 +83,20 @@ export function WebAlbum() {
             </p>
             {about && <p className="max-w-[65ch] text-body text-text">{about}</p>}
             <div className="flex flex-wrap items-center gap-2 pt-1">
-              <Button variant="primary" icon="play" className="min-w-32 justify-center">
-                Play
+              {/* while this album plays, Play is Pause, as Apple Music's is */}
+              <Button
+                variant="primary"
+                icon={current?.playing ? 'pause' : 'play'}
+                className="min-w-32 justify-center"
+                onClick={() => (current ? player.toggle() : player.play({ album: a.id }))}
+              >
+                {current?.playing ? 'Pause' : 'Play'}
               </Button>
-              <Button icon="shuffle" className="min-w-32 justify-center">
+              <Button
+                icon="shuffle"
+                className="min-w-32 justify-center"
+                onClick={() => player.play({ album: a.id }, { shuffle: true })}
+              >
                 Shuffle
               </Button>
             </div>
@@ -102,7 +116,16 @@ export function WebAlbum() {
         aria-label="Songs"
         className={cn('mx-auto grid w-full max-w-[1680px] gap-4', gutter)}
       >
-        <SongList songs={songs} />
+        <SongList
+          songs={songs}
+          current={current ? (current.queue[current.index]?.id ?? null) : null}
+          playing={!!current?.playing}
+          onPlay={(i) =>
+            current?.queue[current.index]?.id === songs[i]?.id
+              ? player.toggle()
+              : player.play({ album: a.id }, { start: i })
+          }
+        />
         <div className="grid gap-0.5 text-caption text-text-3">
           <p>{releasedOn(released)}</p>
           <p>{albumSummary(songs.length, duration)}</p>
@@ -112,27 +135,29 @@ export function WebAlbum() {
         </div>
       </section>
       {more.length > 0 && (
-        <CarouselRow
-          title={`More by ${a.artist.name}`}
-          action={
-            <Button variant="ghost" size="sm" asChild>
-              <a href={webHref(`/music/artists/${a.artist.id}`)}>See all</a>
-            </Button>
-          }
-        >
-          {more.map((x) => (
-            <Poster
-              key={x.id}
-              aspect="square"
-              title={x.title}
-              src={x.cover}
-              href={webHref(`/music/albums/${x.id}`)}
-              showTitle
-              titleSize="body"
-              caption={albumMeta(x)}
-            />
-          ))}
-        </CarouselRow>
+        <div className="mx-auto grid w-full max-w-[1680px] grid-cols-[minmax(0,1fr)] gap-10">
+          <CarouselRow
+            title={`More by ${a.artist.name}`}
+            action={
+              <Button variant="ghost" size="sm" asChild>
+                <a href={webHref(`/music/artists/${a.artist.id}`)}>See all</a>
+              </Button>
+            }
+          >
+            {more.map((x) => (
+              <Poster
+                key={x.id}
+                aspect="square"
+                title={x.title}
+                src={x.cover}
+                href={webHref(`/music/albums/${x.id}`)}
+                showTitle
+                titleSize="body"
+                caption={albumMeta(x)}
+              />
+            ))}
+          </CarouselRow>
+        </div>
       )}
     </main>
   )
@@ -140,28 +165,67 @@ export function WebAlbum() {
 
 /**
  * The songs, numbered, with their lengths at the right, as Apple Music's and Plexamp's lists are.
- * The number turns to a play icon under the pointer. Nothing plays yet: the music player comes
- * with its own prototype.
+ * The number turns to a play icon under the pointer; the song playing has the playing mark in its
+ * place and its title in the accent, and choosing it again pauses it.
  */
-function SongList({ songs }: { songs: ClientSong[] }) {
+function SongList({
+  songs,
+  current,
+  playing,
+  onPlay,
+}: {
+  songs: ClientSong[]
+  current: string | null
+  playing: boolean
+  onPlay: (index: number) => void
+}) {
   return (
     <ol className="grid border-line border-t">
-      {songs.map((s) => (
-        <li key={s.id} className="border-line border-b">
-          <button
-            type="button"
-            aria-label={`Play ${s.title}, ${songTime(s.duration)}`}
-            className="group/song grid min-h-12 w-full cursor-pointer grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-sm px-2 text-start outline-none hover:bg-s1 focus-visible:ring-focus"
-          >
-            <span className="grid place-items-center text-body text-text-3 tabular-nums">
-              <span className="group-hover/song:hidden">{s.number}</span>
-              <Icon name="play" size={14} className="hidden text-text group-hover/song:block" />
-            </span>
-            <span className="truncate text-body text-text">{s.title}</span>
-            <span className="text-caption text-text-3 tabular-nums">{songTime(s.duration)}</span>
-          </button>
-        </li>
-      ))}
+      {songs.map((s, i) => {
+        const here = s.id === current
+        return (
+          <li key={s.id} className="border-line border-b">
+            <button
+              type="button"
+              aria-label={
+                here && playing ? `Pause ${s.title}` : `Play ${s.title}, ${songTime(s.duration)}`
+              }
+              aria-current={here ? 'true' : undefined}
+              onClick={() => onPlay(i)}
+              className="group/song grid min-h-12 w-full cursor-pointer grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-sm px-2 text-start outline-none hover:bg-s1 focus-visible:ring-focus"
+            >
+              <span className="grid place-items-center text-body text-text-3 tabular-nums">
+                {here ? (
+                  <>
+                    <PlayingBars
+                      playing={playing}
+                      className="text-accent-text group-hover/song:hidden"
+                    />
+                    <Icon
+                      name={playing ? 'pause' : 'play'}
+                      size={14}
+                      className="hidden text-text group-hover/song:block"
+                    />
+                  </>
+                ) : (
+                  <>
+                    <span className="group-hover/song:hidden">{s.number}</span>
+                    <Icon
+                      name="play"
+                      size={14}
+                      className="hidden text-text group-hover/song:block"
+                    />
+                  </>
+                )}
+              </span>
+              <span className={cn('truncate text-body', here ? 'text-accent-text' : 'text-text')}>
+                {s.title}
+              </span>
+              <span className="text-caption text-text-3 tabular-nums">{songTime(s.duration)}</span>
+            </button>
+          </li>
+        )
+      })}
     </ol>
   )
 }

@@ -11,6 +11,7 @@ import type {
   ClientMusic,
   ClientSong,
   DiscographyKind,
+  QueuedSong,
 } from './types.ts'
 
 type Kind = ClientAlbum['kind']
@@ -375,6 +376,62 @@ function songsOf(a: ClientAlbum): ClientSong[] {
       duration: (spread[0] as number) + (n % ((spread[1] as number) - (spread[0] as number))),
     }
   })
+}
+
+/** How many loudness steps a track carries: enough for the widest scrubber's bars. */
+export const LOUDNESS_STEPS = 160
+
+/**
+ * A song's loudness, the same on every load: a soft start, sections that rise and fall (a song's
+ * verses and choruses, a cue's swells) and a fade at the end, with the grain of a real envelope.
+ * Scores and classical pieces move more slowly and sit quieter.
+ */
+function loudnessOf(a: ClientAlbum, s: ClientSong): number[] {
+  const h = hash(s.id)
+  const calm =
+    a.kind === 'soundtrack' || a.genres.includes('Classical') || a.genres.includes('Ambient')
+  const sections = 3 + (h % 4)
+  // a level per section, between quiet and loud
+  const levels = Array.from({ length: sections }, (_, i) => {
+    const n = hash(`${s.id}:section:${i}`)
+    return (calm ? 0.3 : 0.55) + ((n % 1000) / 1000) * (calm ? 0.55 : 0.4)
+  })
+  return Array.from({ length: LOUDNESS_STEPS }, (_, i) => {
+    const t = i / (LOUDNESS_STEPS - 1)
+    // between sections the level eases from one to the next
+    const at = t * (sections - 1)
+    const k = Math.floor(at)
+    const f = at - k
+    const ease = f * f * (3 - 2 * f)
+    const from = levels[k] as number
+    const to = (levels[Math.min(k + 1, sections - 1)] as number) ?? from
+    const level = from + (to - from) * ease
+    const edge = Math.min(1, t / 0.04, (1 - t) / (calm ? 0.12 : 0.06))
+    const grain = ((hash(`${s.id}:${i}`) % 1000) / 1000 - 0.5) * (calm ? 0.16 : 0.3)
+    return Math.round(Math.max(0.06, Math.min(1, level * edge + grain)) * 100) / 100
+  })
+}
+
+/**
+ * What the player queues: an album's songs in order, or an artist's, newest album first;
+ * shuffled, the same songs in an order that's the same every time for the prototype's reviews.
+ */
+export function queueOf(
+  music: ClientMusic,
+  source: { album: string } | { artist: string },
+  shuffle: boolean,
+): QueuedSong[] | null {
+  const albums =
+    'album' in source
+      ? music.albums.filter((a) => a.id === source.album)
+      : music.albums
+          .filter((a) => a.artist.id === source.artist)
+          .sort((a, b) => b.year - a.year || a.sortTitle.localeCompare(b.sortTitle))
+  if (albums.length === 0) return null
+  const tracks = albums.flatMap((album) =>
+    songsOf(album).map((s) => ({ ...s, album, loudness: loudnessOf(album, s) })),
+  )
+  return shuffle ? tracks.sort((a, b) => hash(`shuffle:${a.id}`) - hash(`shuffle:${b.id}`)) : tracks
 }
 
 /** The film an album scores, by title: "Sintel (Original Score)" scores Sintel. */

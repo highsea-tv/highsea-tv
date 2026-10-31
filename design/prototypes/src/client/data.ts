@@ -184,6 +184,8 @@ export const useLocalNetwork = (platform: 'web' | 'mobile' = 'web') => {
   return { lan: device ? p.lan : ('allowed' as const), device }
 }
 /** The phone's player on an AirPlay screen: its name, or null while it plays on the phone. */
+/** The toolbar's music state: a song seeded into the player when the screen opens. */
+export const useMusicState = () => useProto().music
 export const useAirPlay = () => (useProto().airplay === 'on' ? 'Living room TV' : null)
 /** Downloads on the phone aren't built until 4.6; until then Offline says so. */
 export const usePhoneDownloadsLater = () => useProto().downloads === 'later'

@@ -8,12 +8,15 @@ import { CollectionTile } from '../kit/collection-art.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
 
 const link =
-  'grid min-h-9 place-items-center rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus aria-[current=page]:border-transparent aria-[current=page]:bg-text aria-[current=page]:text-bg'
+  'grid min-h-9 shrink-0 place-items-center rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus aria-[current=page]:border-transparent aria-[current=page]:bg-text aria-[current=page]:text-bg'
 
-/** Movies or Collections: the library's two views. */
+/** Movies, Collections or Music: the library's views, scrolling sideways when large text needs it. */
 export function LibraryNav({ current }: { current: 'movies' | 'collections' | 'music' }) {
   return (
-    <nav aria-label="Library" className={cn('flex gap-2', gutter)}>
+    <nav
+      aria-label="Library"
+      className={cn('-my-1 flex gap-2 overflow-x-auto py-1 [scrollbar-width:none]', gutter)}
+    >
       <a
         href={mobileHref('/library')}
         aria-current={current === 'movies' ? 'page' : undefined}
@@ -43,7 +46,7 @@ export function MobileCollections() {
   const list = useCollections('mobile')
   const xs = list.data ?? []
   return (
-    <div className="grid gap-4 pt-1">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 pt-1">
       <Header title="Library" />
       <LibraryNav current="collections" />
       {list.status === 'loading' ? (

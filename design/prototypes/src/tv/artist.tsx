@@ -9,6 +9,7 @@ import { useRef } from 'react'
 import { useParams } from 'wouter'
 import { useArtist } from '../client/data.ts'
 import { albumMeta, albumsCount, discographyTitle, songsCount } from '../client/music.ts'
+import { useMusicPlayer } from '../client/music-player.ts'
 import { LONG_BIO } from '../web/person.tsx'
 import {
   TvButton,
@@ -27,6 +28,7 @@ import { Bio } from './person.tsx'
 export function TvArtist() {
   const { id } = useParams<{ id: string }>()
   const found = useArtist(id)
+  const player = useMusicPlayer()
   const rows = useRef<HTMLDivElement>(null)
   useInitialFocus(found.status === 'success', id)
   useRowNavigation(rows, found.status === 'success' && id)
@@ -108,10 +110,15 @@ export function TvArtist() {
                 data-go-down={long ? 'bio' : groups[0]}
                 className="flex gap-[0.8cqw]"
               >
-                <TvButton primary initial icon="play">
+                <TvButton primary initial icon="play" onClick={() => player.play({ artist: a.id })}>
                   Play
                 </TvButton>
-                <TvButton icon="shuffle">Shuffle</TvButton>
+                <TvButton
+                  icon="shuffle"
+                  onClick={() => player.play({ artist: a.id }, { shuffle: true })}
+                >
+                  Shuffle
+                </TvButton>
                 {person && (
                   <TvButton icon="movie" href={tvHref(`/people/${person}`)}>
                     Their films

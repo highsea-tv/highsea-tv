@@ -7,6 +7,7 @@ import { Button, cn, EmptyState, Icon, Poster, Skeleton, SkeletonText } from '@h
 import { useParams } from 'wouter'
 import { useArtist } from '../client/data.ts'
 import { albumMeta, albumsCount, discographyTitle, songsCount } from '../client/music.ts'
+import { useMusicPlayer } from '../client/music-player.ts'
 import { MobileRow, MobileRowSkeleton } from './home.tsx'
 import { Bio } from './person.tsx'
 import { gutter, mobileHref } from './shell.tsx'
@@ -33,6 +34,7 @@ export function BackBadge({ fallback }: { fallback: string }) {
 export function MobileArtist() {
   const { id } = useParams<{ id: string }>()
   const found = useArtist(id)
+  const player = useMusicPlayer()
   const back = <BackBadge fallback="/library/music/artists" />
   if (found.status === 'loading')
     return (
@@ -91,10 +93,19 @@ export function MobileArtist() {
           </p>
         </div>
         <div className={cn('grid grid-cols-2 gap-3 pt-3', gutter)}>
-          <Button variant="primary" icon="play" className="justify-center">
+          <Button
+            variant="primary"
+            icon="play"
+            className="justify-center"
+            onClick={() => player.play({ artist: a.id })}
+          >
             Play
           </Button>
-          <Button icon="shuffle" className="justify-center">
+          <Button
+            icon="shuffle"
+            className="justify-center"
+            onClick={() => player.play({ artist: a.id }, { shuffle: true })}
+          >
             Shuffle
           </Button>
         </div>

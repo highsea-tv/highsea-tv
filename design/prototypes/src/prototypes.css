@@ -60,3 +60,32 @@ html[data-chrome] #root {
 html[data-chrome] body {
   margin: 0;
 }
+
+/* The music player's playing mark (client/waveform.tsx's PlayingBars): three bars rising and
+   falling at odd speeds, held still while paused and with reduced motion. */
+@keyframes playing-bar {
+  0%,
+  100% {
+    scale: 1 0.3;
+  }
+  50% {
+    scale: 1 1;
+  }
+}
+.playing-bar {
+  transform-origin: bottom;
+  animation: playing-bar 900ms ease-in-out infinite;
+}
+.playing-bar[data-paused] {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .playing-bar {
+    animation: none;
+    scale: 1 0.6;
+  }
+}
+:root[data-reduced-motion] .playing-bar {
+  animation: none;
+  scale: 1 0.6;
+}

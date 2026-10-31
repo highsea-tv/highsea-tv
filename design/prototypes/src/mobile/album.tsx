@@ -8,6 +8,8 @@ import { Button, cn, EmptyState, Icon, Poster, Skeleton, SkeletonText } from '@h
 import { useParams } from 'wouter'
 import { useAlbum } from '../client/data.ts'
 import { albumKind, albumMeta, albumSummary, releasedOn, songTime } from '../client/music.ts'
+import { useAlbumPlaying, useMusicPlayer } from '../client/music-player.ts'
+import { PlayingBars } from '../client/waveform.tsx'
 import { BackBadge } from './artist.tsx'
 import { MobileRow } from './home.tsx'
 import { gutter, mobileHref } from './shell.tsx'
@@ -15,6 +17,9 @@ import { gutter, mobileHref } from './shell.tsx'
 export function MobileAlbum() {
   const { id } = useParams<{ id: string }>()
   const found = useAlbum(id)
+  const player = useMusicPlayer()
+  const current = useAlbumPlaying(id)
+  const playingId = current ? (current.queue[current.index]?.id ?? null) : null
   const back = <BackBadge fallback="/library/music" />
   if (found.status === 'loading')
     return (
@@ -79,10 +84,19 @@ export function MobileAlbum() {
           </p>
         </div>
         <div className={cn('grid grid-cols-2 gap-3 pt-3', gutter)}>
-          <Button variant="primary" icon="play" className="justify-center">
-            Play
+          <Button
+            variant="primary"
+            icon={current?.playing ? 'pause' : 'play'}
+            className="justify-center"
+            onClick={() => (current ? player.toggle() : player.play({ album: a.id }))}
+          >
+            {current?.playing ? 'Pause' : 'Play'}
           </Button>
-          <Button icon="shuffle" className="justify-center">
+          <Button
+            icon="shuffle"
+            className="justify-center"
+            onClick={() => player.play({ album: a.id }, { shuffle: true })}
+          >
             Shuffle
           </Button>
         </div>
@@ -104,19 +118,43 @@ export function MobileAlbum() {
       )}
       <section aria-label="Songs" className={cn('grid gap-3', gutter)}>
         <ol className="grid">
-          {songs.map((s) => (
-            <li key={s.id} className="border-line border-b last:border-b-0">
-              <button
-                type="button"
-                aria-label={`Play ${s.title}, ${songTime(s.duration)}`}
-                className="grid min-h-12 w-full grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded-sm text-start outline-none focus-visible:ring-focus"
-              >
-                <span className="text-[15px] text-text-3 tabular-nums">{s.number}</span>
-                <span className="truncate text-[15px] text-text">{s.title}</span>
-                <span className="text-[13px] text-text-3 tabular-nums">{songTime(s.duration)}</span>
-              </button>
-            </li>
-          ))}
+          {songs.map((s, i) => {
+            const here = s.id === playingId
+            return (
+              <li key={s.id} className="border-line border-b last:border-b-0">
+                <button
+                  type="button"
+                  aria-label={
+                    here && current?.playing
+                      ? `Pause ${s.title}`
+                      : `Play ${s.title}, ${songTime(s.duration)}`
+                  }
+                  aria-current={here ? 'true' : undefined}
+                  onClick={() =>
+                    here ? player.toggle() : player.play({ album: a.id }, { start: i })
+                  }
+                  className="grid min-h-12 w-full cursor-pointer grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded-sm text-start outline-none focus-visible:ring-focus"
+                >
+                  {here ? (
+                    <PlayingBars
+                      playing={!!current?.playing}
+                      className="text-[15px] text-accent-text"
+                    />
+                  ) : (
+                    <span className="text-[15px] text-text-3 tabular-nums">{s.number}</span>
+                  )}
+                  <span
+                    className={cn('truncate text-[15px]', here ? 'text-accent-text' : 'text-text')}
+                  >
+                    {s.title}
+                  </span>
+                  <span className="text-[13px] text-text-3 tabular-nums">
+                    {songTime(s.duration)}
+                  </span>
+                </button>
+              </li>
+            )
+          })}
         </ol>
         <div className="grid gap-0.5 text-[13px] text-text-3">
           <p>{releasedOn(released)}</p>
