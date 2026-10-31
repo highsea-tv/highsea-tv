@@ -338,6 +338,55 @@ export type ClientAlbum = {
 /** `GET /api/v1/library/music`: every artist and album the household can play. */
 export type ClientMusic = { artists: ClientArtist[]; albums: ClientAlbum[] }
 
+/** A song on an album, in its order there. */
+export type ClientSong = {
+  id: string
+  /** Its place on the album, from 1. */
+  number: number
+  title: string
+  /** Seconds. */
+  duration: number
+}
+
+/**
+ * `GET /api/v1/library/music/albums/{id}`: an album with its songs, its length, when and by whom
+ * it was released, the film here it scores, and the artist's other albums.
+ */
+export type ClientAlbumDetail = {
+  album: ClientAlbum
+  songs: ClientSong[]
+  /** Seconds, every song together. */
+  duration: number
+  /** The release date, YYYY-MM-DD. */
+  released: string
+  label: string
+  /** The album's note from its metadata, when there is one. */
+  about: string | null
+  /** The film here this album is the score of. */
+  film: ClientItem | null
+  /** The artist's other albums here, newest first. */
+  more: ClientAlbum[]
+}
+
+/** How an artist's albums are grouped on their page, as Apple Music and Plexamp group them. */
+export type DiscographyKind = 'albums' | 'singles' | 'soundtracks' | 'compilations'
+
+/**
+ * `GET /api/v1/library/music/artists/{id}`: an artist, their albums here grouped by kind (newest
+ * first in each), and artists who share a genre with them.
+ */
+export type ClientArtistDetail = {
+  artist: ClientArtist
+  bio: string | null
+  /** The newest album's cover, blurred behind the page. */
+  backdrop: string
+  songs: number
+  /** Their person page, when they're credited on a film here. */
+  person: string | null
+  sections: { kind: DiscographyKind; albums: ClientAlbum[] }[]
+  similar: ClientArtist[]
+}
+
 /**
  * `GET /api/v1/library/people/{id}`: a person on the clients, with only what they're in on this
  * server, by department (the one they're known for first), newest first in each.

@@ -9,7 +9,6 @@ import { useState } from 'react'
 import { useParams } from 'wouter'
 import { usePerson } from '../client/data.ts'
 import { departmentTitle, lifeOf, roleNames } from '../client/detail-facts.ts'
-import type { ClientPerson } from '../mock/types.ts'
 import { LONG_BIO } from '../web/person.tsx'
 import { MobileRow, MobileRowSkeleton } from './home.tsx'
 import { gutter, mobileHref } from './shell.tsx'
@@ -90,7 +89,7 @@ export function MobilePerson() {
           {life && <p className="text-[13px] text-text-3">{life}</p>}
         </div>
       </header>
-      {p.bio && <Bio person={p} />}
+      {p.bio && <Bio text={p.bio} />}
       {p.departments.map(({ department, credits }) => (
         <MobileRow key={department} title={departmentTitle[department]}>
           {credits.map(({ item: m, role }) => (
@@ -110,17 +109,17 @@ export function MobilePerson() {
   )
 }
 
-/** The biography, cut at four lines with More when it's long. */
-function Bio({ person: p }: { person: ClientPerson }) {
+/** A biography, cut at four lines with More when it's long; an artist's page shares it. */
+export function Bio({ text }: { text: string }) {
   const [open, setOpen] = useState(false)
-  const long = (p.bio?.length ?? 0) >= LONG_BIO
+  const long = text.length >= LONG_BIO
   return (
     <div className={cn('grid justify-items-start gap-2', gutter)}>
       <p
         id="bio"
         className={cn('text-[15px] text-text-2 leading-[1.45]', long && !open && 'line-clamp-4')}
       >
-        {p.bio}
+        {text}
       </p>
       {long && (
         <Button

@@ -2,7 +2,7 @@
 // The music library's views on every client: Albums and Artists, each with its own sorts, as Apple
 // Music, Plex and Navidrome give them. Albums filter by genre; both sort by name by default, which
 // is when the A–Z index shows.
-import type { ClientAlbum, ClientArtist } from '../mock/types.ts'
+import type { ClientAlbum, ClientArtist, DiscographyKind } from '../mock/types.ts'
 
 export type MusicView = 'albums' | 'artists'
 
@@ -67,3 +67,45 @@ export function albumMeta(a: ClientAlbum) {
 
 export const albumsCount = (n: number) => `${n} ${n === 1 ? 'album' : 'albums'}`
 export const artistsCount = (n: number) => `${n} ${n === 1 ? 'artist' : 'artists'}`
+
+export const songsCount = (n: number) => `${n} ${n === 1 ? 'song' : 'songs'}`
+
+/** "3:42": a song's length, as every music app shows it. */
+export const songTime = (seconds: number) =>
+  `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
+
+/** "48 min", "1 hr 12 min": an album's length, as Apple Music writes it. */
+export function albumLength(seconds: number) {
+  const minutes = Math.round(seconds / 60)
+  const hours = Math.floor(minutes / 60)
+  return hours > 0 ? `${hours} hr ${minutes % 60} min` : `${minutes} min`
+}
+
+/** "12 songs, 48 min". */
+export const albumSummary = (songs: number, seconds: number) =>
+  `${songsCount(songs)}, ${albumLength(seconds)}`
+
+/** "14 March 2010". */
+export const releasedOn = (date: string) =>
+  new Date(`${date}T12:00:00Z`).toLocaleDateString('en-GB', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  })
+
+/** Each group's heading on an artist's page. */
+export const discographyTitle: Record<DiscographyKind, string> = {
+  albums: 'Albums',
+  singles: 'Singles and EPs',
+  soundtracks: 'Soundtracks',
+  compilations: 'Compilations',
+}
+
+/** "Album", "EP", "Soundtrack": the eyebrow over an album's title. */
+export const albumKind: Record<ClientAlbum['kind'], string> = {
+  album: 'Album',
+  ep: 'EP',
+  single: 'Single',
+  soundtrack: 'Soundtrack',
+  compilation: 'Compilation',
+}

@@ -207,7 +207,7 @@ export function ArtistCard({ artist: a }: { artist: ClientArtist }) {
   )
 }
 
-function MusicCardSkeleton({ round }: { round: boolean }) {
+export function MusicCardSkeleton({ round }: { round: boolean }) {
   return (
     <div aria-hidden className="min-w-0">
       <Skeleton className={cn('aspect-square', round ? 'rounded-full' : 'rounded-poster')} />

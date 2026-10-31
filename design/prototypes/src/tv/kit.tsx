@@ -11,6 +11,7 @@ import {
   type ReactNode,
   type RefObject,
   useEffect,
+  useRef,
 } from 'react'
 import { useLocation } from 'wouter'
 import { clientHref, useAnnouncements, useConnection, useServer } from '../client/data.ts'
@@ -369,11 +370,43 @@ export const pageTop = tv.safe.y
  * enters it only that way, starting on the page's own destination, and Down returns to `down`.
  * A screen whose content is inset passes no `className`; one that runs to the edges insets it.
  */
-export function TvHead({ down = 'hero', className }: { down?: string; className?: string }) {
+export function TvHead({
+  down = 'hero',
+  exact = false,
+  className,
+}: {
+  down?: string
+  /**
+   * Down always goes to `down`'s first stop. Without it the navigator takes what's nearest under
+   * the tabs, which on a page with its actions at the left is a row's tile (an album, an artist).
+   */
+  exact?: boolean
+  className?: string
+}) {
   const [location] = useLocation()
+  const nav = useRef<HTMLElement>(null)
+  const play = useSound()
+  // on the head itself, so it runs before the navigator on the TV's root
+  useEffect(() => {
+    const el = nav.current
+    if (!el || !exact) return
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'ArrowDown' || e.defaultPrevented) return
+      const group = `[data-group="${CSS.escape(down)}"]`
+      const to = document.querySelector<HTMLElement>(
+        `${group} [data-focusable], ${group}[data-focusable]`,
+      )
+      if (!to) return
+      e.preventDefault()
+      focusFrom(e.target as Element, to, play)
+    }
+    el.addEventListener('keydown', onKey)
+    return () => el.removeEventListener('keydown', onKey)
+  }, [exact, down, play])
   const active = (path: string) => (path === '/' ? location === '/' : location.startsWith(path))
   return (
     <nav
+      ref={nav}
       aria-label="Main"
       data-group="nav"
       data-isolate=""

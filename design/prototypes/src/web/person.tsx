@@ -70,7 +70,7 @@ export function WebPerson() {
           <div className="grid max-w-[44rem] gap-3">
             <h1 className="text-balance text-display">{p.name}</h1>
             <Facts person={p} className="text-body text-text-2" />
-            <Bio person={p} />
+            {p.bio && <Bio text={p.bio} />}
           </div>
         </div>
       </header>
@@ -106,18 +106,17 @@ export function Facts({ person: p, className }: { person: ClientPerson; classNam
   )
 }
 
-/** The biography, cut at three lines with More when it's long. */
-function Bio({ person: p }: { person: ClientPerson }) {
+/** A biography, cut at three lines with More when it's long; an artist's page shares it. */
+export function Bio({ text }: { text: string }) {
   const [open, setOpen] = useState(false)
-  if (!p.bio) return null
-  const long = p.bio.length >= LONG_BIO
+  const long = text.length >= LONG_BIO
   return (
     <div className="grid justify-items-start gap-2 pt-1">
       <p
         id="bio"
         className={cn('max-w-[65ch] text-body text-text', long && !open && 'line-clamp-3')}
       >
-        {p.bio}
+        {text}
       </p>
       {long && (
         <Button

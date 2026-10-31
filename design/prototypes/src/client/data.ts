@@ -112,6 +112,14 @@ export const usePerson = (id: string) =>
 /** The music library: artists and albums. */
 export const useMusic = () => useQuery('client:music', (c) => c.library.music(), ['music.updated'])
 
+/** An album with its songs. */
+export const useAlbum = (id: string) =>
+  useQuery(`client:album:${id}`, (c) => c.library.album(id), ['music.updated', 'movies.updated'])
+
+/** An artist with their albums by kind. */
+export const useArtist = (id: string) =>
+  useQuery(`client:artist:${id}`, (c) => c.library.artist(id), ['music.updated', 'movies.updated'])
+
 /** "6 movies · 2010–2020". */
 export const collectionCaption = (c: { count: number; years: string }) => format.caption(c)
 

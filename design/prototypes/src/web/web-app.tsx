@@ -5,6 +5,8 @@ import { Button, EmptyState } from '@highsea-tv/ui-web'
 import { Redirect, Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
+import { WebAlbum } from './album.tsx'
+import { WebArtist } from './artist.tsx'
 import { WebCollection } from './collection.tsx'
 import { WebCollections } from './collections.tsx'
 import { WebComing } from './coming.tsx'
@@ -67,6 +69,16 @@ function Routes() {
       <Route path="/shows">
         <WebShell>
           <WebComing kind="shows" />
+        </WebShell>
+      </Route>
+      <Route path="/music/albums/:id">
+        <WebShell>
+          <WebAlbum />
+        </WebShell>
+      </Route>
+      <Route path="/music/artists/:id">
+        <WebShell>
+          <WebArtist />
         </WebShell>
       </Route>
       <Route path="/music/artists">

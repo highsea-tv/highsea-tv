@@ -208,7 +208,7 @@ export function TvMusic() {
 }
 
 /** An artist: the round photo, lifted and ringed with focus as a poster is, and the lines centred. */
-function TvArtistTile({ artist: a }: { artist: ClientArtist }) {
+export function TvArtistTile({ artist: a }: { artist: ClientArtist }) {
   return (
     <a
       href={tvHref(`/music/artists/${a.id}`)}

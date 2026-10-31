@@ -19,7 +19,7 @@ import {
   person,
   recommendations,
 } from './metadata.ts'
-import { musicLibrary } from './music.ts'
+import { albumDetail, artistDetail, musicLibrary, scoreOf } from './music.ts'
 import { type AccelerationPath, finishCheck, playbackStatus } from './playback.ts'
 import { GB, MB, type ServerState, seed } from './seed.ts'
 import { advanceSessions, type NowPlaying, type SessionView, type WatchView } from './sessions.ts'
@@ -33,6 +33,8 @@ import type {
   Appearance,
   Audience,
   Backup,
+  ClientAlbumDetail,
+  ClientArtistDetail,
   ClientCollection,
   ClientDetail,
   ClientItem,
@@ -667,6 +669,10 @@ export function createApi(srv: MockServer, ctx: Ctx) {
   const storage = ctx.storage ?? memoryStorage()
   const now = () => srv.clock.now()
   let music: ClientMusic | undefined
+  const library = () => {
+    music ??= musicLibrary(srv.kind, now())
+    return music
+  }
   const me = (): User => {
     const u = state.users.find((x) => x.id === ctx.userId) ?? state.users[0]
     if (!u) throw new ApiError(401, 'unauthenticated', 'Sign in to continue.')
@@ -2620,7 +2626,24 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         return found
       },
       /** Every artist and album the household can play; none on a server without music. */
-      music: (): ClientMusic => (music ??= musicLibrary(srv.kind, now())),
+      music: (): ClientMusic => library(),
+      /** An album with its songs, and the film here it scores, matched by title. */
+      album: (id: string): ClientAlbumDetail => {
+        const d = albumDetail(library(), id)
+        if (!d) throw new ApiError(404, 'not-found', 'That album isn’t on this server.')
+        const title = scoreOf(d.album)
+        const film = title ? watchable().find((m) => m.title === title) : undefined
+        return { ...d, film: film ? clientItem(film) : null }
+      },
+      /** An artist with their albums by kind; their person page when they're in a film here. */
+      artist: (id: string): ClientArtistDetail => {
+        const d = artistDetail(library(), id)
+        if (!d) throw new ApiError(404, 'not-found', 'That artist isn’t on this server.')
+        const credited = watchable().some((m) =>
+          [...(movieMetadata(state, m.id, now())?.crew ?? [])].some((c) => c.personId === id),
+        )
+        return { ...d, person: credited ? id : null }
+      },
       /**
        * A person and the films here they're in, by department: the one they're known for first,
        * then TMDB's order; in each, newest first, with every role they had in the film.

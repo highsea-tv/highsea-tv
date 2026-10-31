@@ -11,7 +11,6 @@ import { useRef, useState } from 'react'
 import { useParams } from 'wouter'
 import { usePerson } from '../client/data.ts'
 import { departmentTitle, lifeOf, roleNames } from '../client/detail-facts.ts'
-import type { ClientPerson } from '../mock/types.ts'
 import { LONG_BIO } from '../web/person.tsx'
 import { TvFilmRow, TvFilmRowSkeleton } from './film-row.tsx'
 import { TvButton, TvHead, TvMessage, tvHref, useInitialFocus, useRowNavigation } from './kit.tsx'
@@ -93,7 +92,7 @@ export function TvPerson() {
                 {departmentTitle[p.knownFor]} · {p.count} {p.count === 1 ? 'movie' : 'movies'} here
               </p>
               {life && <p className="text-(length:--tv-text-pill) text-text-3">{life}</p>}
-              {p.bio && <Bio person={p} long={long} />}
+              {p.bio && <Bio text={p.bio} long={long} />}
             </div>
           </section>
           {p.departments.map(({ department, credits }, i) => {
@@ -125,8 +124,8 @@ export function TvPerson() {
   )
 }
 
-/** The biography, cut at four lines; More shows the rest in place. */
-function Bio({ person: p, long }: { person: ClientPerson; long: boolean }) {
+/** A biography, cut at four lines; More shows the rest in place. An artist's page shares it. */
+export function Bio({ text, long }: { text: string; long: boolean }) {
   const [open, setOpen] = useState(false)
   return (
     <div data-group="bio" className="grid justify-items-start gap-[1.1cqw] pt-[0.4cqw]">
@@ -134,7 +133,7 @@ function Bio({ person: p, long }: { person: ClientPerson; long: boolean }) {
         id="bio"
         className={`text-(length:--tv-text-synopsis) text-text-2 leading-[1.45] ${long && !open ? 'line-clamp-4' : ''}`}
       >
-        {p.bio}
+        {text}
       </p>
       {long && (
         <TvButton aria-expanded={open} aria-controls="bio" onClick={() => setOpen(!open)}>

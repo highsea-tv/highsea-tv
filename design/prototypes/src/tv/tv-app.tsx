@@ -8,7 +8,9 @@ import { useConnection, useServer } from '../client/data.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { TvRoot } from '../kit/tv/tv-root.tsx'
 import { useProto } from '../screen/screen.tsx'
+import { TvAlbum } from './album.tsx'
 import { TvAlerts } from './alerts.tsx'
+import { TvArtist } from './artist.tsx'
 import { BackContext, type BackRegistry, useBack } from './back.ts'
 import { TvCollection } from './collection.tsx'
 import { TvCollections } from './collections.tsx'
@@ -39,6 +41,16 @@ function Collection() {
 function Person() {
   useBack(() => history.back())
   return <TvPerson />
+}
+
+function Album() {
+  useBack(() => history.back())
+  return <TvAlbum />
+}
+
+function Artist() {
+  useBack(() => history.back())
+  return <TvArtist />
 }
 
 function Unreachable() {
@@ -137,6 +149,12 @@ function Screens() {
       </Route>
       <Route path="/shows">
         <TvComing kind="shows" />
+      </Route>
+      <Route path="/music/albums/:id">
+        <Album />
+      </Route>
+      <Route path="/music/artists/:id">
+        <Artist />
       </Route>
       <Route path="/music">
         <TvMusic />
