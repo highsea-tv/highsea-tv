@@ -2633,7 +2633,13 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           versions,
           cast: meta?.cast ?? [],
           directors: meta?.crew.filter((c) => c.job === 'Director') ?? [],
+          crew: meta?.crew.filter((c) => c.job !== 'Director' && c.job !== 'Producer') ?? [],
           related,
+          originalTitle: meta?.originalTitle ?? m.title,
+          certification: meta?.certification ?? null,
+          studios: meta?.studios ?? [],
+          videos: meta?.videos ?? [],
+          collection: meta?.collection ?? null,
           defaults: {
             versionId: version?.id ?? '',
             audioId:

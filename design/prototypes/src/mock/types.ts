@@ -1137,7 +1137,15 @@ export type ClientDetail = {
   versions: ClientVersion[]
   cast: Credit[]
   directors: Credit[]
+  /** The rest of the crew who matter on a title's page: writers, then music, camera and editing. */
+  crew: Credit[]
   related: ClientItem[]
+  /** From the metadata (client-detail.md › Data): for the page's About and its trailers. */
+  originalTitle: string
+  certification: string | null
+  studios: string[]
+  videos: Video[]
+  collection: CollectionRef | null
   /** This user's remembered picks for the title, or the server's defaults. */
   defaults: { versionId: string; audioId: string | null; subtitleId: string | null }
 }
