@@ -71,7 +71,7 @@ export function MobileSearch() {
                 {searchKinds[section.kind].title}{' '}
                 <span className="font-normal text-text-3">{section.items.length}</span>
               </h2>
-              <MobileResults section={section} onPerson={setQ} />
+              <MobileResults section={section} />
             </section>
           ))}
         </div>
@@ -80,13 +80,7 @@ export function MobileSearch() {
   )
 }
 
-function MobileResults({
-  section,
-  onPerson,
-}: {
-  section: SearchSection
-  onPerson: (name: string) => void
-}) {
+function MobileResults({ section }: { section: SearchSection }) {
   switch (section.kind) {
     case 'movies':
       return (
@@ -119,14 +113,13 @@ function MobileResults({
         <ul className="flex gap-3 overflow-x-auto px-4 [scrollbar-width:none]">
           {section.items.map((p) => (
             <li key={p.id} className="w-18 shrink-0">
-              <button
-                type="button"
-                onClick={() => onPerson(p.name)}
+              <a
+                href={mobileHref(`/people/${p.id}`)}
                 className="grid w-full justify-items-center gap-1 text-center outline-none focus-visible:ring-focus"
               >
                 <img src={p.photo} alt="" className="size-16 rounded-full object-cover" />
                 <span className="line-clamp-2 text-[12px] text-text-2 leading-[1.2]">{p.name}</span>
-              </button>
+              </a>
             </li>
           ))}
         </ul>

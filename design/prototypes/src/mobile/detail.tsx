@@ -260,17 +260,19 @@ export function MobileDetail() {
       {people.length > 0 && (
         <MobileRow title="Cast and crew">
           {people.map((c) => (
-            <li
-              key={`${c.personId}:${c.job ?? 'cast'}`}
-              className="grid w-[24%] shrink-0 snap-start text-center"
-            >
-              <img
-                src={c.photo}
-                alt=""
-                className="aspect-square w-full rounded-full bg-s1 object-cover"
-              />
-              <p className="mt-1.5 truncate font-semibold text-[12px]">{c.name}</p>
-              <p className="truncate text-[12px] text-text-3">{role(c)}</p>
+            <li key={`${c.personId}:${c.job ?? 'cast'}`} className="w-[24%] shrink-0 snap-start">
+              <a
+                href={mobileHref(`/people/${c.personId}`)}
+                className="grid rounded-lg text-center outline-none focus-visible:ring-focus"
+              >
+                <img
+                  src={c.photo}
+                  alt=""
+                  className="aspect-square w-full rounded-full bg-s1 object-cover"
+                />
+                <p className="mt-1.5 truncate font-semibold text-[12px]">{c.name}</p>
+                <p className="truncate text-[12px] text-text-3">{role(c)}</p>
+              </a>
             </li>
           ))}
         </MobileRow>

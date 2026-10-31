@@ -11,6 +11,7 @@ import { WebComing } from './coming.tsx'
 import { WebDetail } from './detail.tsx'
 import { WebHome } from './home.tsx'
 import { WebLibrary } from './library.tsx'
+import { WebPerson } from './person.tsx'
 import { WebPlayer } from './player.tsx'
 import { WebSearch } from './search.tsx'
 import { WebDownloads, WebProfile, WebSettings } from './settings.tsx'
@@ -82,6 +83,11 @@ function Routes() {
       <Route path="/movies/:id">
         <WebShell overHero>
           <WebDetail />
+        </WebShell>
+      </Route>
+      <Route path="/people/:id">
+        <WebShell>
+          <WebPerson />
         </WebShell>
       </Route>
       <Route path="/collections/:id">

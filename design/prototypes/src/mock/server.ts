@@ -35,6 +35,7 @@ import type {
   ClientCollection,
   ClientDetail,
   ClientItem,
+  ClientPerson,
   ClientTrack,
   ClientType,
   ClientVersion,
@@ -45,6 +46,7 @@ import type {
   CurationPreview,
   CurationStatus,
   CustomTheme,
+  Department,
   FeaturedSection,
   HardlinkCheck,
   HomeLayout,
@@ -2613,6 +2615,64 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         const found = clientCollections(client).find((c) => c.collection.id === id)
         if (!found) throw new ApiError(404, 'not-found', 'That collection isn’t on this server.')
         return found
+      },
+      /**
+       * A person and the films here they're in, by department: the one they're known for first,
+       * then TMDB's order; in each, newest first, with every role they had in the film.
+       */
+      person: (id: string): ClientPerson => {
+        const order: Department[] = [
+          'Acting',
+          'Directing',
+          'Writing',
+          'Production',
+          'Sound',
+          'Camera',
+          'Editing',
+        ]
+        const p = person(state, id)
+        const groups = new Map<Department, { item: ClientItem; role: string }[]>()
+        const here: MediaItem[] = []
+        for (const m of watchable()) {
+          const meta = movieMetadata(state, m.id, now())
+          const mine = [...(meta?.cast ?? []), ...(meta?.crew ?? [])].filter(
+            (c) => c.personId === id,
+          )
+          if (mine.length === 0) continue
+          here.push(m)
+          for (const department of order) {
+            const roles = mine.filter((c) => c.department === department)
+            if (roles.length === 0) continue
+            const list = groups.get(department) ?? []
+            list.push({
+              item: clientItem(m),
+              role: roles.map((c) => c.character ?? c.job).join(', '),
+            })
+            groups.set(department, list)
+          }
+        }
+        if (!p || here.length === 0)
+          throw new ApiError(404, 'not-found', 'Nobody by that name is in a film here.')
+        const best = [...here].sort((a, b) => b.rating - a.rating)[0] as MediaItem
+        return {
+          id,
+          name: p.name,
+          photo: p.photo,
+          knownFor: p.knownFor,
+          bio: p.bio,
+          born: p.born,
+          died: p.died,
+          backdrop: clientItem(best).art.backdrop,
+          count: here.length,
+          departments: [p.knownFor, ...order.filter((x) => x !== p.knownFor)].flatMap(
+            (department) => {
+              const credits = groups.get(department)
+              return credits
+                ? [{ department, credits: credits.sort((a, b) => b.item.year - a.item.year) }]
+                : []
+            },
+          ),
+        }
       },
       item: (id: string, client: ClientType = 'web'): ClientDetail => {
         const m = state.items.find((x) => x.id === id)

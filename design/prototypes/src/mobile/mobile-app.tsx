@@ -14,6 +14,7 @@ import { MobileHome } from './home.tsx'
 import { MobileLibrary } from './library.tsx'
 import { MobileOffline, MobileSearch, MobileSettingsScreen, MobileYou } from './more.tsx'
 import { MobileLinkConfirm, MobileLinkScan } from './pair.tsx'
+import { MobilePerson } from './person.tsx'
 import { MobilePlayer } from './player.tsx'
 import { MobileShell } from './shell.tsx'
 
@@ -75,6 +76,11 @@ function Routes() {
       <Route path="/movies/:id">
         <MobileShell>
           <MobileDetail />
+        </MobileShell>
+      </Route>
+      <Route path="/people/:id">
+        <MobileShell>
+          <MobilePerson />
         </MobileShell>
       </Route>
       <Route path="/collections/:id">

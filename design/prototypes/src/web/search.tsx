@@ -62,7 +62,7 @@ export function WebSearch() {
                 {searchKinds[section.kind].title}{' '}
                 <span className="font-normal text-text-3">{section.items.length}</span>
               </h2>
-              <Results section={section} onPerson={setQ} />
+              <Results section={section} />
             </section>
           ))}
         </div>
@@ -77,13 +77,7 @@ export function WebSearch() {
 
 const grid = 'grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-x-4 gap-y-6'
 
-function Results({
-  section,
-  onPerson,
-}: {
-  section: SearchSection
-  onPerson: (name: string) => void
-}) {
+function Results({ section }: { section: SearchSection }) {
   switch (section.kind) {
     case 'movies':
       return (
@@ -116,19 +110,19 @@ function Results({
         <ul className="flex flex-wrap gap-2">
           {section.items.map((p) => (
             <li key={p.id}>
-              <button
-                type="button"
-                onClick={() => onPerson(p.name)}
+              <a
+                href={webHref(`/people/${p.id}`)}
+                aria-label={`${p.name}, ${p.titles} ${p.titles === 1 ? 'movie' : 'movies'} on this server`}
                 className="flex items-center gap-2.5 rounded-full border border-line bg-s1 py-1 ps-1 pe-3.5 text-start outline-none hover:bg-s2 focus-visible:ring-focus"
               >
                 <img src={p.photo} alt="" className="size-8 rounded-full object-cover" />
                 <span className="grid">
                   <span className="text-text text-body">{p.name}</span>
                   <span className="text-caption text-text-3">
-                    {p.titles} {p.titles === 1 ? 'movie' : 'movies'} here
+                    {`${p.titles} ${p.titles === 1 ? 'movie' : 'movies'} here`}
                   </span>
                 </span>
-              </button>
+              </a>
             </li>
           ))}
         </ul>

@@ -18,6 +18,7 @@ import { TvDetail } from './detail.tsx'
 import { TvHome } from './home.tsx'
 import { ServerIdentity, TvButton, TvHead, TvMessage, tvHref } from './kit.tsx'
 import { TvLibrary } from './library.tsx'
+import { TvPerson } from './person.tsx'
 import { TvPlayer } from './player.tsx'
 import { TvSearch } from './search.tsx'
 import { TvProfile } from './settings.tsx'
@@ -32,6 +33,11 @@ function Detail() {
 function Collection() {
   useBack(() => history.back())
   return <TvCollection />
+}
+
+function Person() {
+  useBack(() => history.back())
+  return <TvPerson />
 }
 
 function Unreachable() {
@@ -136,6 +142,9 @@ function Screens() {
       </Route>
       <Route path="/movies/:id">
         <Detail />
+      </Route>
+      <Route path="/people/:id">
+        <Person />
       </Route>
       <Route path="/collections/:id">
         <Collection />

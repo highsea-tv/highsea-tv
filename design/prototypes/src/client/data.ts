@@ -105,6 +105,10 @@ export const useCollection = (id: string, platform: ClientPlatform = 'web') =>
     ['movies.updated', 'watch.updated', 'collections.updated'],
   )
 
+/** A person and the films here they're in (client-people.md). */
+export const usePerson = (id: string) =>
+  useQuery(`client:person:${id}`, (c) => c.library.person(id), ['movies.updated', 'watch.updated'])
+
 /** "6 movies · 2010–2020". */
 export const collectionCaption = (c: { count: number; years: string }) => format.caption(c)
 

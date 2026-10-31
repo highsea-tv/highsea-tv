@@ -66,6 +66,7 @@ export function TvFilmRow({
   goUp,
   items,
   hrefOf,
+  noteOf,
   loop = false,
   className,
 }: {
@@ -75,6 +76,8 @@ export function TvFilmRow({
   goUp?: string
   items: ClientItem[]
   hrefOf: (item: ClientItem) => string
+  /** A line about the film for this row, under its title: a person's role in it. */
+  noteOf?: (item: ClientItem) => string
   /** Past the last film comes the first again, either way. */
   loop?: boolean
   className?: string
@@ -135,7 +138,7 @@ export function TvFilmRow({
             ref={card}
             href={hrefOf(item)}
             data-focusable=""
-            aria-label={`${item.title}, ${meta(item)}`}
+            aria-label={`${item.title}, ${noteOf ? `${noteOf(item)}, ` : ''}${meta(item)}`}
             style={{ width: `${wide}cqw`, height: `${height}cqw` }}
             className="relative z-10 block overflow-hidden rounded-(--tv-radius-poster) bg-s2 outline-none transition-lift focus-visible:scale-[1.04] focus-visible:shadow-(--tv-focus-shadow)"
           >
@@ -209,6 +212,9 @@ export function TvFilmRow({
             </QualityTag>
           ))}
         </p>
+        {noteOf && (
+          <p className="truncate text-(length:--tv-text-meta) text-text">{noteOf(item)}</p>
+        )}
         <p className="line-clamp-2 text-pretty text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
           {item.synopsis}
         </p>

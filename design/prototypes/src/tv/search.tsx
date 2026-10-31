@@ -164,7 +164,7 @@ export function TvSearch() {
                   <h2 className="font-semibold text-(length:--tv-text-row-title)">
                     {searchKinds[section.kind].title}
                   </h2>
-                  <TvResults section={section} onPerson={pick} />
+                  <TvResults section={section} />
                 </section>
               ))}
             </div>
@@ -175,13 +175,7 @@ export function TvSearch() {
   )
 }
 
-function TvResults({
-  section,
-  onPerson,
-}: {
-  section: SearchSection
-  onPerson: (name: string) => void
-}) {
+function TvResults({ section }: { section: SearchSection }) {
   const grid = 'grid grid-cols-5 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]'
   switch (section.kind) {
     case 'movies':
@@ -214,7 +208,7 @@ function TvResults({
         <ul className="flex flex-wrap gap-[0.8cqw]">
           {section.items.map((p) => (
             <li key={p.id}>
-              <TvButton onClick={() => onPerson(p.name)} className="ps-[0.6cqw]">
+              <TvButton href={tvHref(`/people/${p.id}`)} className="ps-[0.6cqw]">
                 <img src={p.photo} alt="" className="size-[2.2cqw] rounded-full object-cover" />
                 {p.name}
               </TvButton>

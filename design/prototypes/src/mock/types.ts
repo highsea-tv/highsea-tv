@@ -308,6 +308,24 @@ export type MovieMetadata = DiscoverMovie & {
 /** A title in a person's filmography, with their part in it. */
 export type PersonCredit = DiscoverMovie & { role: string; department: Department }
 
+/**
+ * `GET /api/v1/library/people/{id}`: a person on the clients, with only what they're in on this
+ * server, by department (the one they're known for first), newest first in each.
+ */
+export type ClientPerson = {
+  id: string
+  name: string
+  photo: string
+  knownFor: Department
+  bio: string | null
+  born: { date: string; place: string } | null
+  died: { date: string; place: string } | null
+  /** The best-rated film here, whose art sits behind the page. */
+  backdrop: string
+  count: number
+  departments: { department: Department; credits: { item: ClientItem; role: string }[] }[]
+}
+
 /** `GET /api/v1/metadata/people/{id}`. */
 export type Person = {
   id: string

@@ -9,7 +9,7 @@
 //   icon buttons whose name shows under them on focus: From the start, Trailer, Audio and
 //   subtitles, Mark as watched;
 // - the next row's title peeking at the foot, so Down is plainly where more is: More like this,
-//   the Collections it's in, Trailers and extras, Cast and crew (round portraits), then About,
+//   the Collections it's in, Trailers and extras, Cast and crew (round portraits, each opening the person's page), then About,
 //   Information and Languages as three cards, the long text kept off the first screen.
 // Back closes the panel or the trailer, then leaves.
 import { cn, Icon, type IconName, QualityTag, Rating, Skeleton } from '@highsea-tv/ui-web'
@@ -283,11 +283,9 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
               <TvRow group="people" title="Cast and crew" goUp="actions">
                 {people.map((c) => (
                   <li key={`${c.personId}:${c.job ?? 'cast'}`} className="w-[8cqw] shrink-0">
-                    {/* focus stops, so the row can be read by D-pad; people aren't linked on the
-                    clients (client-detail.md › Decisions) */}
-                    <div
+                    <a
+                      href={tvHref(`/people/${c.personId}`)}
                       data-focusable=""
-                      tabIndex={-1}
                       className="group/link grid justify-items-center text-center outline-none"
                     >
                       <img
@@ -301,7 +299,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
                       <p className="w-full truncate text-(length:--tv-text-pill) text-text-3 leading-[1.3]">
                         {role(c)}
                       </p>
-                    </div>
+                    </a>
                   </li>
                 ))}
               </TvRow>

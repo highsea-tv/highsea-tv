@@ -301,20 +301,20 @@ export function WebDetail() {
         {people.length > 0 && (
           <CarouselRow title="Cast and crew" itemClassName="w-[clamp(6.5rem,9vw,8rem)]">
             {people.map((c) => (
-              <figure
+              <a
                 key={`${c.personId}:${c.job ?? 'cast'}`}
-                tabIndex={-1}
+                href={webHref(`/people/${c.personId}`)}
                 aria-label={`${c.name}, ${role(c)}`}
-                className="grid rounded-lg text-center outline-none focus-visible:ring-focus"
+                className="group/person grid rounded-lg text-center outline-none focus-visible:ring-focus"
               >
                 <img
                   src={c.photo}
                   alt=""
-                  className="aspect-square w-full rounded-full bg-s1 object-cover"
+                  className="aspect-square w-full rounded-full bg-s1 object-cover transition-transform duration-300 group-hover/person:scale-105"
                 />
                 <p className="mt-2 truncate font-semibold text-caption text-text">{c.name}</p>
                 <p className="truncate text-caption text-text-3">{role(c)}</p>
-              </figure>
+              </a>
             ))}
           </CarouselRow>
         )}

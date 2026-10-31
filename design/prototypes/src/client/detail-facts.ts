@@ -2,7 +2,14 @@
 // What the film page says about a title, the same on web, desktop, the phone and the TV
 // (client-detail.md): the people by name and role, the trailer to offer, the facts for the
 // Information card and the languages for Languages and quality.
-import type { ClientDetail, ClientTrack, Credit, Video } from '../mock/types.ts'
+import type {
+  ClientDetail,
+  ClientPerson,
+  ClientTrack,
+  Credit,
+  Department,
+  Video,
+} from '../mock/types.ts'
 import { runtime } from './data.ts'
 
 export const names = (people: Credit[]) => people.map((x) => x.name).join(', ')
@@ -21,8 +28,35 @@ const roles: Record<string, string> = {
 }
 export const role = (c: Credit) => c.character ?? (c.job ? (roles[c.job] ?? c.job) : '')
 
+/** A person's roles in one film, as the page names them ("Director, Writer"). */
+export const roleNames = (joined: string) =>
+  joined
+    .split(', ')
+    .map((x) => roles[x] ?? x)
+    .join(', ')
+
 const longDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+
+/** Each department's row on a person's page, named by what they did. */
+export const departmentTitle: Record<Department, string> = {
+  Acting: 'Acting',
+  Directing: 'Directing',
+  Writing: 'Writing',
+  Production: 'Producing',
+  Sound: 'Music and sound',
+  Camera: 'Cinematography',
+  Editing: 'Editing',
+}
+
+/** "Born 4 October 1895 in Piqua, Kansas, USA · Died 1 February 1966", as much as is known. */
+export function lifeOf(p: ClientPerson): string | null {
+  const parts = [
+    p.born && `Born ${longDate(p.born.date)}${p.born.place ? ` in ${p.born.place}` : ''}`,
+    p.died && `Died ${longDate(p.died.date)}`,
+  ].filter(Boolean)
+  return parts.length > 0 ? parts.join(' · ') : null
+}
 
 /** The trailer the page's Trailer button plays: the first trailer, or a teaser before release. */
 export const previewOf = (d: ClientDetail): Video | undefined =>
