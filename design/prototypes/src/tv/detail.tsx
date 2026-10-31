@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C4 Item detail, TV (docs/product/client-detail.md#tv): Home's hero, with the backdrop filling the
 // screen and the title's logo low on the left, here beside the poster and with the fuller details
-// (the owner, 2026-10-30); then the cast and More like this as rows, which scroll the hero away. Audio and subtitles opens the shared panel; Back closes it, then leaves.
+// (the owner, 2026-10-30). The poster is 18cqw, and the details are at least as tall: the title at
+// its top and the rest down to its foot (the owner, 2026-10-30). Then the cast and More like this
+// as rows, which scroll the hero away. Audio and subtitles opens the shared panel; Back closes it,
+// then leaves.
 import { Poster, QualityTag, Rating, Skeleton } from '@highsea-tv/ui-web'
 import { type KeyboardEvent, useRef, useState } from 'react'
 import { useParams } from 'wouter'
@@ -43,23 +46,25 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
           <div className="absolute inset-x-0 top-0 h-[56.25cqw] bg-s1" />
           <div className="absolute inset-x-0 top-0 h-[56.25cqw] bg-[linear-gradient(90deg,var(--color-bg)_7%,transparent_55%),linear-gradient(0deg,var(--color-bg)_8%,transparent_45%)]" />
           <TvHead className="px-(--tv-safe-x)" />
-          <div className="relative grid h-[39cqw] max-w-[66cqw] grid-cols-[11cqw_1fr] items-end gap-[2.4cqw] px-(--tv-safe-x)">
+          <div className="relative grid h-[39cqw] max-w-[70cqw] grid-cols-[18cqw_minmax(0,1fr)] items-end gap-[2.4cqw] px-(--tv-safe-x)">
             <Skeleton className="aspect-poster rounded-(--tv-radius-poster)" />
-            <div className="grid content-end gap-[1cqw]">
+            <div className="flex min-h-[27cqw] flex-col justify-between gap-[1cqw]">
               <Skeleton className="h-[6.5cqw] w-[24cqw] rounded-[0.6cqw]" />
-              <Skeleton className="my-[0.15cqw] h-[1.05cqw] w-[20cqw]" />
-              <div className="grid max-w-[44cqw] gap-[0.6cqw] py-[0.2cqw]">
-                <Skeleton className="h-[1.1cqw] w-full" />
-                <Skeleton className="h-[1.1cqw] w-full" />
-                <Skeleton className="h-[1.1cqw] w-3/5" />
+              <div className="grid gap-[1cqw]">
+                <Skeleton className="my-[0.15cqw] h-[1.05cqw] w-[20cqw]" />
+                <div className="grid max-w-[44cqw] gap-[0.6cqw] py-[0.2cqw]">
+                  <Skeleton className="h-[1.1cqw] w-full" />
+                  <Skeleton className="h-[1.1cqw] w-full" />
+                  <Skeleton className="h-[1.1cqw] w-3/5" />
+                </div>
+                <Skeleton className="my-[0.15cqw] h-[1.05cqw] w-[12cqw]" />
+                <div className="mt-[0.6cqw] flex gap-[1cqw]">
+                  <Skeleton className="h-[2.9cqw] w-[13cqw] rounded-(--tv-radius-button)" />
+                  <Skeleton className="h-[2.9cqw] w-[12cqw] rounded-(--tv-radius-button)" />
+                  <Skeleton className="h-[2.9cqw] w-[15cqw] rounded-(--tv-radius-button)" />
+                </div>
+                <Skeleton className="my-[0.15cqw] h-[0.95cqw] w-[18cqw]" />
               </div>
-              <Skeleton className="my-[0.15cqw] h-[1.05cqw] w-[12cqw]" />
-              <div className="mt-[0.6cqw] flex gap-[1cqw]">
-                <Skeleton className="h-[2.9cqw] w-[13cqw] rounded-(--tv-radius-button)" />
-                <Skeleton className="h-[2.9cqw] w-[12cqw] rounded-(--tv-radius-button)" />
-                <Skeleton className="h-[2.9cqw] w-[15cqw] rounded-(--tv-radius-button)" />
-              </div>
-              <Skeleton className="my-[0.15cqw] h-[0.95cqw] w-[18cqw]" />
             </div>
           </div>
           <TvRowSkeleton width="w-[8cqw]" count={11} />
@@ -114,14 +119,15 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
           <section
             aria-labelledby="title"
             data-keep="1"
-            className="relative grid h-[39cqw] max-w-[66cqw] grid-cols-[11cqw_1fr] items-end gap-[2.4cqw] px-(--tv-safe-x)"
+            className="relative grid h-[39cqw] max-w-[70cqw] grid-cols-[18cqw_minmax(0,1fr)] items-end gap-[2.4cqw] px-(--tv-safe-x)"
           >
             <img
               src={m.art.poster}
               alt=""
-              className="aspect-poster w-full rounded-(--tv-radius-poster) object-cover shadow-4"
+              className="aspect-poster w-full self-end rounded-(--tv-radius-poster) object-cover shadow-4"
             />
-            <div className="grid content-end gap-[1cqw]">
+            {/* as tall as the poster at least: the title at its top, the rest down to its foot */}
+            <div className="flex min-h-[27cqw] flex-col justify-between gap-[1cqw]">
               <h1
                 id="title"
                 className="font-semibold text-(length:--tv-text-hero-title) leading-[0.95] tracking-display"
@@ -136,59 +142,61 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
                   m.title
                 )}
               </h1>
-              <p className="flex items-center gap-[1cqw] text-(length:--tv-text-meta) text-text-2">
-                {m.year} · {runtime(m.runtimeMinutes)} · {m.genres.slice(0, 2).join(', ')}
-                {m.rating > 0 && <Rating value={m.rating} size={20} />}
-                {m.quality.map((q) => (
-                  <QualityTag key={q} overlay className="text-(length:--tv-text-quality)">
-                    {q}
-                  </QualityTag>
-                ))}
-              </p>
-              {m.tagline && (
-                <p className="font-semibold text-(length:--tv-text-synopsis) leading-[1.45]">
-                  {m.tagline}
+              <div className="grid gap-[1cqw]">
+                <p className="flex items-center gap-[1cqw] text-(length:--tv-text-meta) text-text-2">
+                  {m.year} · {runtime(m.runtimeMinutes)} · {m.genres.slice(0, 2).join(', ')}
+                  {m.rating > 0 && <Rating value={m.rating} size={20} />}
+                  {m.quality.map((q) => (
+                    <QualityTag key={q} overlay className="text-(length:--tv-text-quality)">
+                      {q}
+                    </QualityTag>
+                  ))}
                 </p>
-              )}
-              <p className="line-clamp-3 max-w-[44cqw] text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
-                {m.synopsis}
-              </p>
-              {d.directors.length > 0 && (
-                <p className="text-(length:--tv-text-meta) text-text-3">
-                  Directed by {d.directors.map((x) => x.name).join(' and ')}
-                </p>
-              )}
-              <div
-                data-row=""
-                data-group="actions"
-                data-go-up="nav"
-                className="mt-[0.6cqw] flex gap-[1cqw]"
-                onKeyDownCapture={hold.down}
-                onKeyUpCapture={hold.up}
-              >
-                <TvButton primary initial icon="play" href={tvHref(`/play/${m.id}`)}>
-                  {resuming ? `Resume · ${left(m)}` : 'Play'}
-                </TvButton>
-                {resuming && (
-                  <TvButton icon="replay" href={tvHref(`/play/${m.id}/start`)}>
-                    From the start
-                  </TvButton>
+                {m.tagline && (
+                  <p className="font-semibold text-(length:--tv-text-synopsis) leading-[1.45]">
+                    {m.tagline}
+                  </p>
                 )}
-                <TvButton icon="subtitles" onClick={() => onPanel(true)}>
-                  Audio and subtitles
-                </TvButton>
-              </div>
-              {v && (
-                <p className="text-(length:--tv-text-pill) text-text-3">
-                  {v.label} ·{' '}
-                  {v.audio.find((a) => a.id === d.defaults.audioId)?.label ?? 'Default audio'} ·{' '}
-                  {v.subtitles.find((t) => t.id === d.defaults.subtitleId)?.label ??
-                    'Subtitles off'}
+                <p className="line-clamp-3 max-w-[44cqw] text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
+                  {m.synopsis}
                 </p>
-              )}
-              <p className="text-(length:--tv-text-pill) text-text-3">
-                {m.watched ? 'Watched · ' : ''}Hold OK for more
-              </p>
+                {d.directors.length > 0 && (
+                  <p className="text-(length:--tv-text-meta) text-text-3">
+                    Directed by {d.directors.map((x) => x.name).join(' and ')}
+                  </p>
+                )}
+                <div
+                  data-row=""
+                  data-group="actions"
+                  data-go-up="nav"
+                  className="mt-[0.6cqw] flex gap-[1cqw]"
+                  onKeyDownCapture={hold.down}
+                  onKeyUpCapture={hold.up}
+                >
+                  <TvButton primary initial icon="play" href={tvHref(`/play/${m.id}`)}>
+                    {resuming ? `Resume · ${left(m)}` : 'Play'}
+                  </TvButton>
+                  {resuming && (
+                    <TvButton icon="replay" href={tvHref(`/play/${m.id}/start`)}>
+                      From the start
+                    </TvButton>
+                  )}
+                  <TvButton icon="subtitles" onClick={() => onPanel(true)}>
+                    Audio and subtitles
+                  </TvButton>
+                </div>
+                {v && (
+                  <p className="text-(length:--tv-text-pill) text-text-3">
+                    {v.label} ·{' '}
+                    {v.audio.find((a) => a.id === d.defaults.audioId)?.label ?? 'Default audio'} ·{' '}
+                    {v.subtitles.find((t) => t.id === d.defaults.subtitleId)?.label ??
+                      'Subtitles off'}
+                  </p>
+                )}
+                <p className="text-(length:--tv-text-pill) text-text-3">
+                  {m.watched ? 'Watched · ' : ''}Hold OK for more
+                </p>
+              </div>
             </div>
           </section>
           {d.cast.length > 0 && (

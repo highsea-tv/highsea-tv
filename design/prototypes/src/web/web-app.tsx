@@ -47,7 +47,7 @@ function Routes() {
         <WebPlayer />
       </Route>
       <Route path="/">
-        <WebShell overHero="bloom" banner>
+        <WebShell overHero="bloom">
           <WebHome />
         </WebShell>
       </Route>

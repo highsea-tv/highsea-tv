@@ -17,7 +17,6 @@ import { Inline } from '../kit/inline.tsx'
 import type { ClientItem, HomeSection } from '../mock/types.ts'
 import { TvFilmRow, TvFilmRowSkeleton } from './film-row.tsx'
 import {
-  AnnouncementBanner,
   pageTop,
   ServerIdentity,
   TvButton,
@@ -189,9 +188,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
     <div className="absolute inset-0 overflow-hidden">
       {hero && <Bloom items={hero.items.slice(0, 1)} active={0} shown={!lifted} />}
       <div ref={page} style={style} className="relative transition-lift">
-        {/* the announcement across the very top, then the head, both scrolling away with the
-          page (the owner, 2026-10-30) */}
-        <AnnouncementBanner />
+        {/* the head scrolls away with the page */}
         <TvHead className="px-(--tv-safe-x)" />
         <div
           ref={rowsRef}
@@ -221,7 +218,6 @@ function Home({ sections }: { sections: HomeSection[] }) {
 function HomeSkeleton() {
   return (
     <main aria-busy className="absolute inset-0 overflow-hidden">
-      <AnnouncementBanner />
       <TvHead className="px-(--tv-safe-x)" />
       <div className="grid grid-cols-1 gap-[1.6cqw] pt-[1.6cqw]">
         <div className="px-(--tv-safe-x) py-[1cqw]">

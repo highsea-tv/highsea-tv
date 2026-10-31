@@ -118,13 +118,21 @@ export function useAnnouncements(platform: ClientPlatform) {
     ['announcements.updated'],
   )
   const done = useAction((c, id: string) => c.announcements.dismiss(id))
-  const unseen = (list.data ?? []).filter((a) => !a.seen)
+  // newest first, by when each went live
+  const all = [...(list.data ?? [])].sort((a, b) =>
+    b.schedule.start.localeCompare(a.schedule.start),
+  )
+  const unseen = all.filter((a) => !a.seen)
   return {
+    /** Every live announcement, newest first: what Alerts lists (the owner, 2026-10-30). */
+    all,
+    /**
+     * The new ones Alerts counts as seen when it opens: its dot. The acknowledge-required ones are
+     * the modal's to count.
+     */
+    unread: unseen.filter((a) => a.acknowledgement === 'dismiss'),
     /** Acknowledge-required ones, shown one at a time before anything else. */
     modal: unseen.find((a) => a.acknowledgement === 'require' && a.placements.includes('modal')),
-    banners: unseen.filter(
-      (a) => a.placements.includes('banner') && a.acknowledgement === 'dismiss',
-    ),
     cards: unseen.filter((a) => a.placements.includes('card') && a.acknowledgement === 'dismiss'),
     /** Shown once as a toast on the web and desktop, then marked seen. */
     toasts: unseen.filter((a) => a.placements.includes('toast') && a.acknowledgement === 'dismiss'),

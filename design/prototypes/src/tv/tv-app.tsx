@@ -8,6 +8,7 @@ import { useConnection, useServer } from '../client/data.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { TvRoot } from '../kit/tv/tv-root.tsx'
 import { useProto } from '../screen/screen.tsx'
+import { TvAlerts } from './alerts.tsx'
 import { BackContext, type BackRegistry, useBack } from './back.ts'
 import { TvCollection } from './collection.tsx'
 import { TvCollections } from './collections.tsx'
@@ -156,6 +157,9 @@ function Screens() {
       </Route>
       <Route path="/who/:id">
         <TvWho />
+      </Route>
+      <Route path="/alerts">
+        <TvAlerts />
       </Route>
       <Route path="/profile">
         <TvProfile />

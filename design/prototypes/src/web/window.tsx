@@ -23,7 +23,7 @@ export function useWindowChrome(): WindowChrome {
 export const trafficLightRoom = 'w-[68px] shrink-0 medium:w-[52px] wide:w-[20px]'
 
 /**
- * The same room for a bar centred at 1680px (the top bar and the banner), as its start padding in
+ * The same room for a bar centred at 1680px (the top bar), as its start padding in
  * place of the gutter's: the gutter, or as much as reaches 84px from the window's edge, whichever
  * is more. A wide window's margin already clears the buttons, so the content stays in line with
  * the page's.

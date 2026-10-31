@@ -142,6 +142,7 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/tv/collections/caminandes',
     '/tv/library/collections',
     '/tv/collections/sc-2010s',
+    '/tv/alerts',
     '/tv/profile',
     '/tv/who',
     '/tv/who/p-theo',

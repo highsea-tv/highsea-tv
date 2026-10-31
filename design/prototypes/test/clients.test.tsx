@@ -115,7 +115,7 @@ describe('C1 connect', () => {
 })
 
 describe('C2 home', () => {
-  test('web: acknowledge, the featured card, a film row, dismiss the banner', async () => {
+  test('web: acknowledge, the featured card, a film row, then Alerts', async () => {
     const { mock, user } = await open('/web')
     await acknowledge(user)
     expect(mock.servers.populated.state.seen['u-ines']).toContain('an-new-address')
@@ -135,10 +135,16 @@ describe('C2 home', () => {
     card?.focus()
     await user.keyboard('{ArrowRight}')
     expect(card?.getAttribute('href')).not.toBe(before)
-    const banners = page().getByRole('region', { name: 'Announcement' })
-    await user.click(within(banners).getByRole('button', { name: 'Dismiss' }))
+    // the new announcement is a dot on the bell; opening Alerts lists it and counts it as seen
+    await user.click(page().getByRole('button', { name: 'Alerts, 1 new' }))
     await settle()
-    expect(page().queryByText('Movie night is Friday')).toBeNull()
+    const alerts = page().getByRole('dialog')
+    expect(within(alerts).getByText('Movie night is Friday')).toBeTruthy()
+    expect(within(alerts).getByText('New')).toBeTruthy()
+    expect(mock.servers.populated.state.seen['u-ines']).toContain('an-movie-night')
+    await user.keyboard('{Escape}')
+    await settle()
+    expect(page().getByRole('button', { name: 'Alerts' })).toBeTruthy()
   })
 
   test('mobile: the card, the featured carousel and the tabs', async () => {
@@ -206,6 +212,23 @@ describe('C3 library', () => {
     await clean()
   })
 
+  test('TV: Alerts lists the announcements and counts the new ones as seen', async () => {
+    skipLaunch()
+    const { mock, location, user } = await open('/tv')
+    await user.click(page().getByRole('button', { name: 'Got it' }))
+    await settle()
+    const bell = page().getByRole('link', { name: 'Alerts, 1 new' })
+    expect(bell.getAttribute('href')).toBe('#/tv/alerts')
+    await act(async () => location.navigate('/tv/alerts'))
+    await settle()
+    expect(page().getByRole('heading', { level: 1, name: 'Alerts' })).toBeTruthy()
+    expect(page().getByRole('heading', { level: 2, name: /Movie night is Friday/ })).toBeTruthy()
+    expect(page().getByText('New')).toBeTruthy()
+    expect(mock.servers.populated.state.seen['u-ines']).toContain('an-movie-night')
+    expect(page().getByRole('link', { name: 'Alerts' }).getAttribute('aria-current')).toBe('page')
+    await clean()
+  })
+
   test('TV: the nav has a destination per kind of media, Shows and Music still to come', async () => {
     await open('/tv/shows')
     const nav = page().getByRole('navigation', { name: 'Main' })
@@ -220,6 +243,7 @@ describe('C3 library', () => {
       'Movies',
       'Shows',
       'Music',
+      expect.stringMatching(/^Alerts/),
       'Ines: profile and settings',
     ])
     // Settings is reached through the profile, the avatar, not as a destination

@@ -265,7 +265,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
   const item = hero?.items[0]
   const { ref, inView } = useMostlyInView()
   return (
-    // not positioned: the bloom is placed from the page's top, behind the banner and the bar;
+    // not positioned: the bloom is placed from the page's top, behind the bar;
     // clipped across, as the film rows reach into the page's margins
     <main className="overflow-x-clip">
       {item && <Bloom item={item} shown={inView} />}

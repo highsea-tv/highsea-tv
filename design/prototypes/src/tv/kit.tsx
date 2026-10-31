@@ -15,7 +15,6 @@ import {
 import { useLocation } from 'wouter'
 import { clientHref, useAnnouncements, useConnection, useServer } from '../client/data.ts'
 import { mediaCard } from '../client/media-card.tsx'
-import { Inline } from '../kit/inline.tsx'
 import type { ClientItem } from '../mock/types.ts'
 import { type Tone, type TvPerson, usePeople } from './people.ts'
 
@@ -155,34 +154,6 @@ export function ServerIdentity({ className }: { className?: string }) {
           </span>
         )}
       </span>
-    </div>
-  )
-}
-
-/** The owner's newest announcement for the TV, unless it must be acknowledged (that comes first, on its own). */
-export function useBanner() {
-  const a = useAnnouncements('tv')
-  return a.latest && a.latest.acknowledgement !== 'require' ? a.latest : null
-}
-
-/**
- * The owner's newest announcement, as a strip across the very top of Home, the screen's whole
- * width, above the head (the owner, 2026-10-30): in the page's flow, so nothing covers it, and it
- * scrolls away with the page. Not a focus stop: the TV can't follow its link, so a call to action
- * stays on the other apps.
- */
-export function AnnouncementBanner() {
-  const latest = useBanner()
-  if (!latest) return null
-  return (
-    <div className="flex h-[4.2cqw] items-center gap-[1cqw] bg-s2 px-(--tv-safe-x)">
-      <Icon name="announcement" size={32} className="size-[1.4cqw] shrink-0 text-accent-text" />
-      <p className="min-w-0 truncate text-(length:--tv-text-pill) text-text-2">
-        <span className="me-[1cqw] font-semibold text-(length:--tv-text-meta) text-text">
-          {latest.title}
-        </span>
-        <Inline text={latest.body} />
-      </p>
     </div>
   )
 }
@@ -425,7 +396,10 @@ export function TvHead({ down = 'hero', className }: { down?: string; className?
           )
         })}
       </div>
-      <Account current={active('/profile') || active('/settings')} />
+      <div className="flex items-center gap-[0.6cqw] justify-self-end">
+        <Alerts current={active('/alerts')} />
+        <Account current={active('/profile') || active('/settings')} />
+      </div>
     </nav>
   )
 }
@@ -468,6 +442,29 @@ export function TvAvatar({
  * The avatar of whoever is watching, at the head's right: it opens their profile, with the people
  * on this TV, switching between them, and the TV's Settings (the owner, 2026-10-30).
  */
+/**
+ * Alerts, just left of the avatar (the owner, 2026-10-30): a bell, with a dot while any
+ * announcement is new, opening every live one (tv/alerts.tsx).
+ */
+function Alerts({ current }: { current: boolean }) {
+  const a = useAnnouncements('tv')
+  const count = a.unread.length
+  return (
+    <a
+      href={tvHref('/alerts')}
+      data-focusable=""
+      aria-label={count ? `Alerts, ${count} new` : 'Alerts'}
+      aria-current={current ? 'page' : undefined}
+      className="relative grid size-[2.6cqw] place-items-center rounded-full text-text/65 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg not-focus-visible:aria-[current=page]:text-text"
+    >
+      <Icon name="notification" size={24} className="size-[1.4cqw]" />
+      {count > 0 && (
+        <span className="absolute end-[0.45cqw] top-[0.45cqw] size-[0.6cqw] rounded-full bg-accent" />
+      )}
+    </a>
+  )
+}
+
 function Account({ current }: { current: boolean }) {
   const { me } = usePeople()
   return (
@@ -476,7 +473,7 @@ function Account({ current }: { current: boolean }) {
       data-focusable=""
       aria-label={`${me.name}: profile and settings`}
       aria-current={current ? 'page' : undefined}
-      className="group/account grid size-[3cqw] place-items-center justify-self-end rounded-full outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text"
+      className="group/account grid size-[3cqw] place-items-center rounded-full outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text"
     >
       <TvAvatar person={me} className="w-[2.2cqw]" />
     </a>

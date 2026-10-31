@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The web/desktop client's frame (desktop-web.md#structure): a slim top bar, translucent over the
 // hero, with the server switcher at the left, the TV's destinations centred (Search as its icon,
-// Home, Collections, Movies, Shows and Music; the owner, 2026-10-30) and the profile at the right;
-// then the page. Unlike the TV's head it stays at the top as the page scrolls: in the desktop app
-// it's the window's title bar. The owner's acknowledge-required announcement opens over everything,
-// and an unreachable server replaces the page with what to do about it.
+// Home, Collections, Movies, Shows and Music; the owner, 2026-10-30), then Alerts and the profile
+// at the right; then the page. Unlike the TV's head it stays at the top as the page scrolls: in
+// the desktop app it's the window's title bar. The owner's acknowledge-required announcement opens
+// over everything, and an unreachable server replaces the page with what to do about it.
 
 import { relative } from '@highsea-tv/core/format'
 import {
@@ -23,6 +23,9 @@ import {
   MenuSeparator,
   MenuTrigger,
   PageScrollbar,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   toast,
 } from '@highsea-tv/ui-web'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
@@ -182,8 +185,7 @@ export function TopBar({ overHero }: { overHero: boolean | 'bloom' }) {
   const [scrolled, setScrolled] = useState(false)
   const bar = useRef<HTMLElement>(null)
   useEffect(() => {
-    // glass once the page scrolls under the bar: with a banner above it, only once it has scrolled
-    // the banner away and the bar has stuck
+    // glass once the page scrolls under the bar and the bar has stuck
     const on = () => {
       const el = bar.current
       const stuck =
@@ -255,6 +257,7 @@ export function TopBar({ overHero }: { overHero: boolean | 'bloom' }) {
           >
             <Icon name="search" size={18} strokeWidth={2.25} />
           </a>
+          <Alerts />
           <Profile />
         </div>
       </div>
@@ -281,52 +284,70 @@ export function TopBar({ overHero }: { overHero: boolean | 'bloom' }) {
 }
 
 /**
- * The newest banner from the owner, as the TV shows it (the owner, 2026-10-30): a strip across the
- * page's top, above the bar, scrolling away as the bar sticks; its title then its message on one
- * line, with a button to dismiss it. In a Mac window the buttons sit over it, so it leaves them room
- * and moves the window, as the bar does.
+ * Alerts, just left of the profile, in place of the banners (the owner, 2026-10-30): a bell with a
+ * dot while any announcement is new, opening every live one, newest first. Opening it counts the new
+ * ones as seen; they keep their mark until it closes.
  */
-export function Banners() {
+function Alerts() {
   const a = useAnnouncements('web')
-  const chrome = useWindowChrome()
-  const b = a.banners[0]
-  if (!b) return null
+  const [fresh, setFresh] = useState<string[]>([])
+  const count = a.unread.length
+  const open = (next: boolean) => {
+    if (!next) return setFresh([])
+    const read = a.unread
+    setFresh(read.map((x) => x.id))
+    for (const x of read) a.dismiss(x.id)
+  }
   return (
-    <section
-      aria-label="Announcement"
-      data-tauri-drag-region={chrome === 'mac' ? true : undefined}
-      className="relative z-10 bg-[color-mix(in_oklab,var(--color-bg)_80%,black)]"
-    >
-      <div
-        className={cn(
-          'mx-auto flex min-h-12 w-full max-w-[1680px] items-center gap-3',
-          gutter,
-          chrome === 'mac' && trafficLightInset,
-        )}
-      >
-        <Icon
-          name="announcement"
-          size={18}
-          className={cn(
-            'shrink-0',
-            b.severity === 'warning' ? 'text-badge-warning' : 'text-accent-text',
-          )}
-        />
-        <p className="min-w-0 flex-1 py-2 text-text-2 text-body">
-          <span className="me-3 font-semibold text-text">{b.title}</span>
-          <Inline text={b.body} />
-        </p>
-        {b.cta && <Cta cta={b.cta} />}
+    <Popover onOpenChange={open}>
+      <PopoverTrigger asChild>
         <button
           type="button"
-          aria-label="Dismiss"
-          onClick={() => a.dismiss(b.id)}
-          className="grid size-8 shrink-0 place-items-center rounded-full text-text-3 outline-none hover:bg-text/8 hover:text-text focus-visible:ring-focus"
+          aria-label={count ? `Alerts, ${count} new` : 'Alerts'}
+          className="relative grid size-9 place-items-center rounded-full text-text/65 outline-none transition-tint hover:text-text focus-visible:ring-focus data-[state=open]:text-text"
         >
-          <Icon name="close" size={16} />
+          <Icon name="notification" size={18} strokeWidth={2.25} />
+          {count > 0 && (
+            <span className="absolute end-1.5 top-1.5 size-2.5 rounded-full border-2 border-bg bg-accent" />
+          )}
         </button>
-      </div>
-    </section>
+      </PopoverTrigger>
+      <PopoverContent align="end" className="w-96 p-0">
+        <h2 className="border-line border-b px-4 py-3 font-semibold text-body">Alerts</h2>
+        {a.all.length === 0 ? (
+          <p className="px-4 py-6 text-center text-text-3">No announcements right now.</p>
+        ) : (
+          <ul className="grid max-h-[min(28rem,70svh)] overflow-y-auto">
+            {a.all.map((x) => (
+              <li key={x.id} className="flex gap-3 border-line border-b px-4 py-3 last:border-b-0">
+                <Icon
+                  name="announcement"
+                  size={18}
+                  className={cn(
+                    'mt-0.5 shrink-0',
+                    x.severity === 'warning' ? 'text-badge-warning' : 'text-accent-text',
+                  )}
+                />
+                <div className="grid min-w-0 flex-1 gap-1">
+                  <p className="flex items-center gap-2 font-semibold text-text">
+                    <span className="min-w-0">{x.title}</span>
+                    {fresh.includes(x.id) && (
+                      <span className="shrink-0 rounded-full bg-accent-soft px-1.5 font-normal text-accent-text text-caption">
+                        New
+                      </span>
+                    )}
+                  </p>
+                  <p className="text-text-2">
+                    <Inline text={x.body} />
+                  </p>
+                  {x.cta && <Cta cta={x.cta} className="mt-1 justify-self-start" />}
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </PopoverContent>
+    </Popover>
   )
 }
 
@@ -414,19 +435,15 @@ function AnnouncementToasts() {
 export function WebShell({
   children,
   overHero = false,
-  banner = false,
 }: {
   children: ReactNode
   overHero?: boolean | 'bloom'
-  /** The owner's newest banner above the bar (Home). */
-  banner?: boolean
 }) {
   const connection = useConnection()
   // in a Mac window the handle keeps clear of the rounded corners
   const chrome = useWindowChrome()
   return (
     <div className="relative min-h-screen bg-bg text-text">
-      {banner && connection !== 'offline' && <Banners />}
       <TopBar overHero={connection !== 'offline' && overHero} />
       <PageScrollbar inset={chrome === 'mac' ? 10 : 6} />
       {connection === 'offline' ? <Unreachable /> : children}
