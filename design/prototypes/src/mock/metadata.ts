@@ -681,7 +681,7 @@ function videos(t: DiscoverMovie, upcoming: boolean): Video[] {
     kind,
     site: 'YouTube',
     key: `mock-${slug(t.title)}-${n}`,
-    lengthSeconds: 60 + ((h >> (n * 4)) % 120),
+    lengthSeconds: 60 + ((h >>> (n * 4)) % 120),
     publishedAt: iso(published),
     still: stillArt(`${t.title} ${name}`),
   })

@@ -31,8 +31,12 @@ export const useHome = (platform: ClientPlatform) =>
 export const useLibrary = () =>
   useQuery('client:library', (c) => c.library.list(), ['movies.updated', 'watch.updated'])
 
-export const useItem = (id: string) =>
-  useQuery(`client:item:${id}`, (c) => c.library.item(id), ['movies.updated', 'watch.updated'])
+export const useItem = (id: string, platform: ClientPlatform) =>
+  useQuery(`client:item:${id}:${platform}`, (c) => c.library.item(id, clientType[platform]), [
+    'movies.updated',
+    'watch.updated',
+    'collections.updated',
+  ])
 
 /** Search (C6): results for the query once it settles, so typing doesn't flood the server. */
 export function useSearch(query: string) {

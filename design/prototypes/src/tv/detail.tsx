@@ -9,16 +9,27 @@
 //   icon buttons whose name shows under them on focus: From the start, Trailer, Audio and
 //   subtitles, Mark as watched;
 // - the next row's title peeking at the foot, so Down is plainly where more is: More like this,
-//   Trailers and extras, Cast and crew (round portraits), then About, Information and Languages as
-//   three cards, the long text kept off the first screen.
+//   the Collections it's in, Trailers and extras, Cast and crew (round portraits), then About,
+//   Information and Languages as three cards, the long text kept off the first screen.
 // Back closes the panel or the trailer, then leaves.
 import { cn, Icon, type IconName, QualityTag, Rating, Skeleton } from '@highsea-tv/ui-web'
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'wouter'
-import { left, runtime, useItem } from '../client/data.ts'
+import { collectionCaption, left, runtime, useItem } from '../client/data.ts'
+import {
+  type Fact,
+  informationOf,
+  languagesOf,
+  names,
+  peopleOf,
+  previewOf,
+  role,
+  videoLength,
+} from '../client/detail-facts.ts'
 import { useMarkWatched } from '../client/item-more.tsx'
+import { CollectionTile } from '../kit/collection-art.tsx'
 import { useAction } from '../mock/hooks.tsx'
-import type { ClientDetail, ClientTrack, Credit, PlaybackPrefs, Video } from '../mock/types.ts'
+import type { ClientDetail, PlaybackPrefs, Video } from '../mock/types.ts'
 import { useBack } from './back.ts'
 import { TvFilmRow, TvFilmRowSkeleton } from './film-row.tsx'
 import {
@@ -38,7 +49,7 @@ const scrim =
 
 export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: boolean) => void }) {
   const { id } = useParams<{ id: string }>()
-  const detail = useItem(id)
+  const detail = useItem(id, 'tv')
   const save = useAction((c, patch: PlaybackPrefs) => c.playback.setPrefs(id, patch))
   const [focusKey, setFocusKey] = useState(0)
   const [trailer, setTrailer] = useState<Video | null>(null)
@@ -46,7 +57,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
   // biome-ignore lint/correctness/useExhaustiveDependencies: closes when the film changes
   useEffect(() => setTrailer(null), [id])
   useInitialFocus(detail.status === 'success' && !panel && !trailer, `${id}:${focusKey}`)
-  // Up and Down go row by row: the actions, More like this, the extras, the people, then About
+  // Up and Down go row by row: the actions, More like this, the collections, the extras, the people, then About
   const rows = useRef<HTMLDivElement>(null)
   useRowNavigation(rows, detail.status === 'success' && id)
 
@@ -71,12 +82,8 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
   const audio = v?.audio.find((a) => a.id === d.defaults.audioId) ?? null
   const subtitle = v?.subtitles.find((t) => t.id === d.defaults.subtitleId) ?? null
   const resuming = m.progress !== null
-  const preview = d.videos.find((x) => x.kind === 'Trailer' || x.kind === 'Teaser')
-  const people = [
-    ...d.cast,
-    ...d.directors,
-    ...d.crew.filter((c) => !d.directors.some((x) => x.personId === c.personId)),
-  ]
+  const preview = previewOf(d)
+  const people = peopleOf(d)
   const refocus = () => setFocusKey((k) => k + 1)
   return (
     <>
@@ -218,6 +225,25 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
               />
             </div>
           )}
+          {d.collections.length > 0 && (
+            <div data-row="" className="relative grid grid-cols-1">
+              <TvRow group="collections" title="Collections" goUp="actions">
+                {d.collections.map((c) => (
+                  <li key={c.id} className="w-[12cqw] shrink-0">
+                    <CollectionTile
+                      tv
+                      href={tvHref(`/collections/${c.id}`)}
+                      name={c.name}
+                      caption={collectionCaption(c)}
+                      poster={c.art.poster}
+                      mosaic={c.smart?.mosaic}
+                      smart={!!c.smart?.words}
+                    />
+                  </li>
+                ))}
+              </TvRow>
+            </div>
+          )}
           {d.videos.length > 0 && (
             <div data-row="" className="relative grid grid-cols-1">
               <TvRow group="extras" title="Trailers and extras" goUp="actions">
@@ -226,7 +252,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
                     <button
                       type="button"
                       data-focusable=""
-                      aria-label={`${x.name}, ${x.kind}, ${length(x.lengthSeconds)}`}
+                      aria-label={`${x.name}, ${x.kind}, ${videoLength(x.lengthSeconds)}`}
                       onClick={() => setTrailer(x)}
                       className="relative isolate block aspect-still w-full overflow-hidden rounded-(--tv-radius-poster) text-start outline-none transition-lift focus-visible:scale-(--tv-scale-poster) focus-visible:shadow-(--tv-focus-shadow)"
                     >
@@ -242,7 +268,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
                         </span>
                         <span className="flex items-center gap-[0.4cqw] text-(length:--tv-text-pill) text-text-2">
                           <Icon name="play" size={16} className="size-[0.8cqw]" />
-                          {x.kind} · {length(x.lengthSeconds)}
+                          {x.kind} · {videoLength(x.lengthSeconds)}
                         </span>
                       </span>
                     </button>
@@ -313,25 +339,6 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
   )
 }
 
-const names = (people: Credit[]) => people.map((x) => x.name).join(', ')
-
-/** "2:04". */
-const length = (s: number) => `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`
-
-const languageNames = new Intl.DisplayNames(['en'], { type: 'language' })
-const languageName = (code: string) => languageNames.of(code) ?? code
-
-/** A crew member's job as the page names it: plainer than TMDB's titles. */
-const roles: Record<string, string> = {
-  Screenplay: 'Writer',
-  'Original Music Composer': 'Music',
-  'Director of Photography': 'Cinematography',
-}
-const role = (c: Credit) => c.character ?? (c.job ? (roles[c.job] ?? c.job) : '')
-
-const longDate = (iso: string) =>
-  new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
-
 /**
  * A secondary action as a round icon button, its name under it while it has focus (and always to
  * a screen reader). A link when it goes somewhere, a button otherwise.
@@ -396,28 +403,8 @@ function WatchedAction({ detail }: { detail: ClientDetail }) {
 /** About, Information, and Languages and quality: three cards, each a focus stop. */
 function About({ detail: d }: { detail: ClientDetail }) {
   const m = d.item
-  const writers = d.crew.filter((c) => c.job === 'Screenplay')
-  const info: [string, string][] = [
-    ['Released', longDate(m.releaseDate)],
-    ['Runtime', runtime(m.runtimeMinutes)],
-    ['Rated', d.certification ?? 'Not rated'],
-    ['Genres', m.genres.join(', ')],
-    ...(d.directors.length > 0 ? [['Directed by', names(d.directors)] as [string, string]] : []),
-    ...(writers.length > 0 ? [['Written by', names(writers)] as [string, string]] : []),
-    ...(d.studios.length > 0 ? [['Studio', d.studios.join(', ')] as [string, string]] : []),
-    ...(d.originalTitle !== m.title
-      ? [['Original title', d.originalTitle] as [string, string]]
-      : []),
-    ...(d.collection ? [['Collection', d.collection.name] as [string, string]] : []),
-  ]
-  // each language once, by name, whichever versions and kinds of track it comes in
-  const spoken = (tracks: ClientTrack[]) =>
-    [...new Set(tracks.map((t) => languageName(t.language)))].join(', ')
-  const languages: [string, string][] = [
-    ['Versions', d.versions.map((v) => v.label).join(', ')],
-    ['Audio', spoken(d.versions.flatMap((v) => v.audio)) || 'None listed'],
-    ['Subtitles', spoken(d.versions.flatMap((v) => v.subtitles)) || 'None'],
-  ]
+  const info = informationOf(d)
+  const languages = languagesOf(d)
   const card =
     'grid content-start gap-[0.9cqw] rounded-(--tv-radius-poster) bg-s1/80 p-[1.6cqw] outline-none transition-lift focus-visible:scale-[1.015] focus-visible:bg-s2 focus-visible:shadow-(--tv-focus-shadow)'
   const heading = 'font-semibold text-(length:--tv-text-row-title)'
@@ -452,7 +439,7 @@ function Facts({
   heading,
 }: {
   title: string
-  rows: [string, string][]
+  rows: Fact[]
   className: string
   heading: string
 }) {
@@ -493,7 +480,7 @@ function TvTrailer({ video: x, onClose }: { video: Video; onClose: () => void })
       />
       <div className="grid max-w-[40cqw] justify-items-center gap-[1.2cqw] text-center">
         <p className="font-semibold text-(length:--tv-text-row-title)">
-          {x.name} · {length(x.lengthSeconds)}
+          {x.name} · {videoLength(x.lengthSeconds)}
         </p>
         <p className="text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
           In highsea this plays from youtube-nocookie.com, and only once you choose it. The

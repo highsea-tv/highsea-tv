@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// More on the item page (client-detail.md#mark-as-watched, checkpoint 4.0b), web and mobile:
-// Mark as watched, or Mark as unwatched once it is. Watched means played to the end, for this
-// person only; marking it unwatched starts it again from the beginning. TV has the same through a
-// long press of OK.
-import { Button, Menu, MenuContent, MenuItem, MenuTrigger, toast } from '@highsea-tv/ui-web'
+// Mark as watched on the item page (client-detail.md#mark-as-watched, checkpoint 4.0b), or Mark as
+// unwatched once it is: a toggle among the film page's round buttons on every app since the
+// redesign of 2026-10-30, in place of the More menu and the TV's long press of OK. Watched means
+// played to the end, for this person only; marking it unwatched starts it again from the beginning.
+import { toast } from '@highsea-tv/ui-web'
 import { useAction } from '../mock/hooks.tsx'
 import type { ClientItem } from '../mock/types.ts'
 
@@ -20,20 +20,4 @@ export function useMarkWatched(item: ClientItem) {
       })
     },
   }
-}
-
-export function ItemMore({ item, className }: { item: ClientItem; className?: string }) {
-  const mark = useMarkWatched(item)
-  return (
-    <Menu>
-      <MenuTrigger asChild>
-        <Button iconOnly icon="more" aria-label="More" className={className} />
-      </MenuTrigger>
-      <MenuContent align="start">
-        <MenuItem icon={item.watched ? 'replay' : 'check'} onSelect={mark.run}>
-          {mark.label}
-        </MenuItem>
-      </MenuContent>
-    </Menu>
-  )
 }

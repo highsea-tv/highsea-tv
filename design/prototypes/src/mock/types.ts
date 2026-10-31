@@ -1146,6 +1146,11 @@ export type ClientDetail = {
   studios: string[]
   videos: Video[]
   collection: CollectionRef | null
+  /**
+   * The collections holding the title that this person and app see, smart ones first, then
+   * TMDB's: the page's Collections row.
+   */
+  collections: ClientCollection[]
   /** This user's remembered picks for the title, or the server's defaults. */
   defaults: { versionId: string; audioId: string | null; subtitleId: string | null }
 }

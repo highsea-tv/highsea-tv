@@ -2614,7 +2614,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         if (!found) throw new ApiError(404, 'not-found', 'That collection isn’t on this server.')
         return found
       },
-      item: (id: string): ClientDetail => {
+      item: (id: string, client: ClientType = 'web'): ClientDetail => {
         const m = state.items.find((x) => x.id === id)
         if (!m || !playable(m))
           throw new ApiError(404, 'not-found', 'That title isn’t on this server.')
@@ -2640,6 +2640,9 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           studios: meta?.studios ?? [],
           videos: meta?.videos ?? [],
           collection: meta?.collection ?? null,
+          collections: clientCollections(client)
+            .filter((c) => c.items.some((x) => x.id === id))
+            .map((c) => c.collection),
           defaults: {
             versionId: version?.id ?? '',
             audioId:
