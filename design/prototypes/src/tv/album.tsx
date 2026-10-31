@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // An album on the TV, as the Apple TV's Music app and Plex's TV app lay one out: the cover blurred
 // and dimmed behind everything, the cover and what's known about the album in a column at the
-// left (the kind, the title, the artist, the genre, year and length, and the note), with Play and
-// Shuffle under it and buttons to the artist and the film it scores; the songs fill the right,
+// left (the kind, the title, the artist's name as a link, the genre, year and length, and the
+// note), with Play and Shuffle under it as a pair the cover's width and the film it scores as a
+// line under them, as the web's album page has it; the songs fill the right,
 // scrolling under focus while the column stays. Focus starts on Play; Right reaches the songs and
 // Left comes back.
-import { cn, Skeleton, useSound } from '@highsea-tv/ui-web'
+import { cn, Icon, Skeleton, useSound } from '@highsea-tv/ui-web'
 import { type RefObject, useEffect, useRef } from 'react'
 import { useParams } from 'wouter'
 import { useAlbum } from '../client/data.ts'
@@ -13,6 +14,10 @@ import { albumKind, albumSummary, songTime } from '../client/music.ts'
 import { useAlbumPlaying, useMusicPlayer } from '../client/music-player.ts'
 import { PlayingBars } from '../client/waveform.tsx'
 import { focusFrom, TvButton, TvHead, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
+
+/** The artist's name and the film's line: text that takes focus as a button would, lifting and filling. */
+const quiet =
+  '-mx-[0.6cqw] rounded-[0.4cqw] px-[0.6cqw] py-[0.2cqw] outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg'
 
 const song =
   'grid w-full grid-cols-[2.6cqw_minmax(0,1fr)_auto] items-center gap-[1cqw] rounded-[0.5cqw] px-[1cqw] py-[0.8cqw] text-start text-(length:--tv-text-button) text-text-2 outline-none transition-lift focus-visible:scale-[1.02] focus-visible:bg-text focus-visible:text-bg'
@@ -71,8 +76,14 @@ export function TvAlbum() {
       <main className="absolute inset-0 grid grid-rows-[auto_minmax(0,1fr)]">
         <TvHead down="actions" exact className="px-(--tv-safe-x)" />
         <div className="grid min-h-0 grid-cols-[24cqw_minmax(0,1fr)] gap-[4cqw] ps-(--tv-safe-x) pt-[2cqw]">
+          {/* one group: the artist's name above, Play and Shuffle as a pair the cover's width, and the
+          film under them; the navigator moves among them spatially, so Up from Play is the artist */}
           <section
+            ref={actions}
             aria-labelledby="title"
+            data-group="actions"
+            data-go-up="nav"
+            data-go-right="songs"
             className="grid content-start justify-items-start gap-[0.9cqw]"
           >
             <img
@@ -86,7 +97,13 @@ export function TvAlbum() {
             <h1 id="title" className="font-semibold text-[2.4cqw] leading-[1.05] tracking-display">
               {a.title}
             </h1>
-            <p className="text-(length:--tv-text-meta) text-text">{a.artist.name}</p>
+            <a
+              href={tvHref(`/music/artists/${a.artist.id}`)}
+              data-focusable=""
+              className={cn(quiet, 'text-(length:--tv-text-meta) text-text')}
+            >
+              {a.artist.name}
+            </a>
             <p className="text-(length:--tv-text-pill) text-text-2">
               {[a.genres[0], a.year, albumSummary(songs.length, duration)]
                 .filter(Boolean)
@@ -97,13 +114,7 @@ export function TvAlbum() {
                 {about}
               </p>
             )}
-            <div
-              ref={actions}
-              data-group="actions"
-              data-go-up="nav"
-              data-go-right="songs"
-              className="flex flex-wrap gap-[0.8cqw] pt-[0.6cqw]"
-            >
+            <div className="grid w-[18cqw] grid-cols-2 gap-[0.8cqw] pt-[0.6cqw] *:justify-center">
               <TvButton
                 primary
                 initial
@@ -118,18 +129,23 @@ export function TvAlbum() {
               >
                 Shuffle
               </TvButton>
-              <TvButton icon="user" href={tvHref(`/music/artists/${a.artist.id}`)}>
-                Artist
-              </TvButton>
-              {film && (
-                <TvButton icon="movie" href={tvHref(`/movies/${film.id}`)}>
-                  Film
-                </TvButton>
-              )}
             </div>
+            {film && (
+              <a
+                href={tvHref(`/movies/${film.id}`)}
+                data-focusable=""
+                className={cn(
+                  quiet,
+                  'flex items-center gap-[0.5cqw] text-(length:--tv-text-pill) text-text-2',
+                )}
+              >
+                <Icon name="movie" size={24} className="size-[1.1cqw]" />
+                The score for {film.title}
+              </a>
+            )}
           </section>
-          {/* the songs' own frame, so they scroll under focus and the column at the left stays; they fade out at its top rather than meeting the head with a cut */}
-          <div className="relative min-h-0 overflow-hidden pe-(--tv-safe-x) [mask-image:linear-gradient(transparent,black_2cqw)]">
+          {/* the songs' own frame, so they scroll under focus and the column at the left stays; they fade out at its top rather than meeting the head with a cut, and it reaches a little into the gap at the left, so a focused song's lift isn't clipped */}
+          <div className="relative -ms-[1cqw] min-h-0 overflow-hidden ps-[1cqw] pe-(--tv-safe-x) [mask-image:linear-gradient(transparent,black_2cqw)]">
             <ol
               ref={list}
               aria-label="Songs"
