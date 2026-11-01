@@ -4,11 +4,15 @@
 // peeking, never auto-advancing), then rows of 16:9 cards (Continue watching's at 62%, the rest
 // at 46%, two and a peek), with the title under the art; only Continue watching has a watched
 // bar, between the two.
-import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui-web'
-import type { ReactNode } from 'react'
+import { Button, cn, EmptyState, Icon, Sheet, SheetContent, Skeleton } from '@highsea-tv/ui-web'
+import { type ReactNode, useState } from 'react'
+import { useLocation } from 'wouter'
+import { useContinueMenu, useLongPress } from '../client/continue-menu.ts'
 import { useHome } from '../client/data.ts'
 import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
-import type { ClientItem, HomeSection } from '../mock/types.ts'
+import { homeMusicCard } from '../client/music.ts'
+import { ShowPoster } from '../client/show-card.tsx'
+import type { ClientItem, FilmSection, HomeMusic } from '../mock/types.ts'
 import { PullToRefresh } from './pull.tsx'
 import { AnnouncementCard, gutter, Header, mobileHref } from './shell.tsx'
 
@@ -56,7 +60,7 @@ export function PosterItems({ items, wide = false }: { items: ClientItem[]; wide
   )
 }
 
-function Featured({ section }: { section: HomeSection }) {
+function Featured({ section }: { section: FilmSection }) {
   return (
     <section aria-label={section.title} className="min-w-0">
       <ul
@@ -91,6 +95,90 @@ function Featured({ section }: { section: HomeSection }) {
         ))}
       </ul>
     </section>
+  )
+}
+
+const sheetAction =
+  'flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-md px-3 text-start text-[16px] outline-none transition-press focus-visible:ring-focus active:bg-text/8'
+
+/**
+ * A Continue watching card: a tap resumes, a long press opens a sheet to go to the title, mark it
+ * watched, or take it off the row (client-home.md › Continue watching).
+ */
+function ContinueCard({ item }: { item: ClientItem }) {
+  const [open, setOpen] = useState(false)
+  const [, navigate] = useLocation()
+  const menu = useContinueMenu(item)
+  const press = useLongPress(() => setOpen(true))
+  const act = (run: () => unknown) => () => {
+    setOpen(false)
+    run()
+  }
+  return (
+    <li className="w-[62%] shrink-0 snap-start" {...press}>
+      <MediaPoster item={item} resume href={mobileHref(`/play/${item.id}`)} />
+      <Sheet open={open} onOpenChange={setOpen}>
+        <SheetContent
+          title={item.show?.title ?? item.title}
+          description={item.show ? `${item.show.code} · ${item.show.episode}` : undefined}
+        >
+          <div className="-mx-3 grid">
+            <button
+              type="button"
+              onClick={act(() => navigate(menu.goTo.path))}
+              className={sheetAction}
+            >
+              <Icon name={item.show ? 'series' : 'movie'} size={20} />
+              {menu.goTo.label}
+            </button>
+            <button type="button" onClick={act(menu.markWatched)} className={sheetAction}>
+              <Icon name="check" size={20} />
+              Mark as watched
+            </button>
+            <button type="button" onClick={act(menu.remove)} className={sheetAction}>
+              <Icon name="remove" size={20} />
+              Remove from Continue watching
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
+    </li>
+  )
+}
+
+/** An album's square cover or an artist's round photo, with the name under it. */
+function MusicItems({ items }: { items: HomeMusic[] }) {
+  return (
+    <>
+      {items.map((x) => {
+        const c = homeMusicCard(x)
+        return (
+          <li key={c.id} className="w-[30%] shrink-0 snap-start">
+            <a
+              href={mobileHref(c.path)}
+              className={cn(
+                'grid gap-1.5 outline-none transition-press focus-visible:ring-focus active:scale-97',
+                c.round && 'justify-items-center text-center',
+              )}
+            >
+              <img
+                src={c.src}
+                alt=""
+                loading="lazy"
+                className={cn(
+                  'aspect-square w-full bg-s2 object-cover',
+                  c.round ? 'rounded-full' : 'rounded-poster',
+                )}
+              />
+              <span className="grid min-w-0">
+                <span className="truncate font-semibold text-[13px]">{c.title}</span>
+                <span className="truncate text-[12px] text-text-3">{c.caption}</span>
+              </span>
+            </a>
+          </li>
+        )
+      })}
+    </>
   )
 }
 
@@ -170,7 +258,7 @@ export function MobileHome() {
         ) : home.data.length === 0 ? (
           <div className={gutter}>
             <EmptyState icon="movie" title="Nothing to watch yet">
-              When the server’s owner adds movies, they show up here.
+              When the server’s owner adds films, shows or music, they show up here.
             </EmptyState>
           </div>
         ) : (
@@ -182,10 +270,29 @@ export function MobileHome() {
             ) : s.layout === 'continue' ? (
               <MobileRow key={s.id} title={s.title} section={s.id}>
                 {s.items.map((m) => (
+                  <ContinueCard key={m.id} item={m} />
+                ))}
+              </MobileRow>
+            ) : s.layout === 'episodes' ? (
+              // Next up and New episodes play the episode, as Continue watching resumes
+              <MobileRow key={s.id} title={s.title} suffix={s.suffix} section={s.id}>
+                {s.items.map((m) => (
                   <li key={m.id} className="w-[62%] shrink-0 snap-start">
-                    <MediaPoster item={m} resume href={mobileHref(`/play/${m.id}`)} />
+                    <MediaPoster item={m} wide href={mobileHref(`/play/${m.id}`)} />
                   </li>
                 ))}
+              </MobileRow>
+            ) : s.layout === 'shows' ? (
+              <MobileRow key={s.id} title={s.title} suffix={s.suffix} section={s.id}>
+                {s.items.map((x) => (
+                  <li key={x.id} className="w-[30%] shrink-0 snap-start">
+                    <ShowPoster show={x} href={mobileHref(`/shows/${x.id}`)} />
+                  </li>
+                ))}
+              </MobileRow>
+            ) : s.layout === 'music' ? (
+              <MobileRow key={s.id} title={s.title} suffix={s.suffix} section={s.id}>
+                <MusicItems items={s.items} />
               </MobileRow>
             ) : (
               // spotlights read as rows on a phone: there's no room for a synopsis beside the art

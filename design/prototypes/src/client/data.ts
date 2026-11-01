@@ -4,7 +4,14 @@
 import { createFormat } from '@highsea-tv/client/format'
 import { useEffect, useState } from 'react'
 import { useAction, useQuery } from '../mock/hooks.tsx'
-import type { ClientItem, ClientType, SearchKind } from '../mock/types.ts'
+import type {
+  ClientItem,
+  ClientType,
+  FilmSection,
+  HomeSection,
+  SearchKind,
+  SearchPerson,
+} from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'
 
 export type ClientPlatform = 'web' | 'mobile' | 'tv'
@@ -87,9 +94,26 @@ export function useSearchQuery() {
 /** Each kind's heading, singular and plural. */
 export const searchKinds: Record<SearchKind, { title: string; one: string; many: string }> = {
   movies: { title: 'Movies', one: 'movie', many: 'movies' },
-  collections: { title: 'Collections', one: 'collection', many: 'collections' },
+  shows: { title: 'Shows', one: 'show', many: 'shows' },
+  episodes: { title: 'Episodes', one: 'episode', many: 'episodes' },
   people: { title: 'People', one: 'person', many: 'people' },
+  collections: { title: 'Collections', one: 'collection', many: 'collections' },
+  artists: { title: 'Artists', one: 'artist', many: 'artists' },
+  albums: { title: 'Albums', one: 'album', many: 'albums' },
+  songs: { title: 'Songs', one: 'song', many: 'songs' },
 }
+
+/** The search field's words on every app (client-search.md). */
+export const searchPlaceholder = 'Films, shows, music and people'
+
+/** "3 movies · 1 show": what a person Search found is in here. */
+export const personCredits = (p: SearchPerson) =>
+  [
+    p.films > 0 && `${p.films} ${p.films === 1 ? 'movie' : 'movies'}`,
+    p.shows > 0 && `${p.shows} ${p.shows === 1 ? 'show' : 'shows'}`,
+  ]
+    .filter(Boolean)
+    .join(' · ')
 
 /** Library › Collections: the owner's collections this person and app see, then TMDB's. */
 export const useCollections = (platform: ClientPlatform) =>
@@ -139,8 +163,20 @@ export const useMarkEpisodes = () => ({
 /** "6 movies · 2010–2020". */
 export const collectionCaption = (c: { count: number; years: string }) => format.caption(c)
 
+/** Narrows a Home row to one of films (and episodes): every row but shows' and music's. */
+export const isFilmSection = (s: HomeSection): s is FilmSection =>
+  s.layout !== 'shows' && s.layout !== 'music'
+
 /** Quick picks for an empty search. */
-export const searchSuggestions = ['Comedy', 'Horror', 'Animation', 'Science fiction', 'Fritz Lang']
+export const searchSuggestions = [
+  'Comedy',
+  'Animation',
+  'Science fiction',
+  'Fritz Lang',
+  'Saltmarsh',
+  'Jazz',
+  'Jan Morgenstern',
+]
 
 export const useServer = () => useQuery('server', (c) => c.system.server(), ['server.updated'])
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A movie's card, the same on every client (the owner, 2026-10-30): the poster, or Home's 16:9
-// still, with the title and year under it. Only Home's Continue watching shows how far you got,
+// still, with the title and year under it; an episode's is its still, its show and "S2, E6". Only Home's Continue watching shows how far you got,
 // as the bar under the art and the time left; nowhere else does a card show progress. The TV draws
 // its own focus stop around these props (tv/kit.tsx's TvPoster).
 import { cn, Poster, type PosterProps, Skeleton } from '@highsea-tv/ui-web'
@@ -16,11 +16,20 @@ export type MediaCardOptions = {
 
 export function mediaCard(item: ClientItem, { wide = false, resume = false }: MediaCardOptions) {
   const still = wide || resume
+  // an episode is its show's name over its place: "S2, E6 · 21 min left", or its title
+  const { show } = item
   return {
-    title: item.title,
+    title: show ? show.title : item.title,
     src: still ? item.art.still : item.art.poster,
     aspect: still ? ('still' as const) : ('poster' as const),
-    caption: resume && item.progress !== null ? left(item) : String(item.year),
+    caption:
+      resume && item.progress !== null
+        ? show
+          ? `${show.code} · ${left(item)}`
+          : left(item)
+        : show
+          ? `${show.code} · ${show.episode}`
+          : String(item.year),
     progress: resume ? (item.progress ?? 0) : null,
     progressBelow: resume,
   }

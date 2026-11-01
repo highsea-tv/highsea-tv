@@ -2,10 +2,10 @@
 // The player's stream states (player.md#states; checkpoint 4.0b), drawn over the frame the same
 // way on every platform: Getting it ready and Buffering as a spinner with the chrome showing; a
 // stream that didn't start, and one stopped from Now playing, over a scrim with what to do next;
-// Next up in a film's last seconds. Each platform passes its own button, so TV's take the D-pad.
-import { cn, Icon } from '@highsea-tv/ui-web'
+// Next up as the credits start, and Skip intro and Skip credits over an episode's. Each platform passes its own button, so TV's take the D-pad.
+import { cn, Icon, Poster } from '@highsea-tv/ui-web'
 import { type ReactNode, useEffect, useState } from 'react'
-import type { ClientItem } from '../mock/types.ts'
+import type { UpNext } from '../mock/types.ts'
 import type { Player } from './player.ts'
 
 export type StreamAction = (props: {
@@ -144,7 +144,11 @@ export function StreamMessage({
   )
 }
 
-/** Next up: in a film's last seconds, the next one in its collection, counting down. */
+/**
+ * Next up (player.md › Next up), as the credits start: the next episode, or the next season's
+ * first, or a film's collection's next part, each counting down; otherwise three films that play
+ * only when picked, as Netflix and the Apple TV app offer them.
+ */
 export function NextUp({
   player,
   next,
@@ -153,80 +157,151 @@ export function NextUp({
   onPlay,
 }: {
   player: Player
-  next: ClientItem | undefined
+  next: UpNext | null | undefined
   size: Size
   action: StreamAction
   onPlay: (id: string) => void
 }) {
   const t = text[size]
   const active = player.stream === 'next-up' && !!next
+  const counts = active && next.kind !== 'choices'
   const [left, setLeft] = useState(NEXT_UP_S)
   useEffect(() => {
-    if (!active) return
+    if (!counts) return
     setLeft(NEXT_UP_S)
     const timer = setInterval(() => setLeft((n) => Math.max(0, n - 1)), 1000)
     return () => clearInterval(timer)
-  }, [active])
+  }, [counts])
   useEffect(() => {
-    if (active && left === 0 && next) onPlay(next.id)
-  }, [active, left, next, onPlay])
+    if (counts && left === 0) onPlay(next.id)
+  }, [counts, left, next, onPlay])
   if (!active || !next) return null
+  const tv = size === 'tv'
+  const titleText = cn(
+    'truncate font-semibold text-text',
+    tv ? 'text-(length:--tv-text-button)' : size === 'web' ? 'text-body' : 'text-ui',
+  )
   return (
     <section
       aria-labelledby="next-up"
       data-isolate=""
       className={cn(
         'glass-scrim absolute z-30 grid rounded-lg border border-line bg-bg/80 shadow-4',
-        size === 'tv'
-          ? 'right-(--tv-safe-x) bottom-[14cqw] w-[30cqw] gap-[1cqw] p-[1.4cqw]'
+        tv
+          ? cn(
+              'right-(--tv-safe-x) bottom-[14cqw] gap-[1cqw] p-[1.4cqw]',
+              next.kind === 'choices' ? 'w-[46cqw]' : 'w-[30cqw]',
+            )
           : size === 'mobile'
-            ? 'right-12 bottom-16 w-72 gap-3 p-3'
-            : 'right-8 bottom-28 w-80 gap-3 p-4',
+            ? cn('right-12 bottom-16 gap-3 p-3', next.kind === 'choices' ? 'w-96' : 'w-72')
+            : cn(
+                'right-8 bottom-28 gap-3 p-4',
+                next.kind === 'choices' ? 'w-[min(32rem,calc(100%-4rem))]' : 'w-80',
+              ),
       )}
     >
-      <div
-        className={cn(
-          'grid grid-cols-[auto_minmax(0,1fr)] items-center',
-          size === 'tv' ? 'gap-[1cqw]' : 'gap-3',
-        )}
-      >
-        <img
-          src={next.art.still}
-          alt=""
-          className={cn(
-            'aspect-still rounded-sm object-cover',
-            size === 'tv' ? 'w-[10cqw]' : 'w-24',
-          )}
-        />
-        <div className="grid min-w-0">
+      {next.kind === 'choices' ? (
+        <>
           <h2 id="next-up" className={cn('font-mono uppercase', t.small)}>
-            Next up
+            More like this
           </h2>
-          <span
+          <ul className={cn('grid grid-cols-3', tv ? 'gap-[1cqw]' : 'gap-3')}>
+            {next.items.map((item, i) => (
+              <li key={item.id} className="min-w-0">
+                <button
+                  type="button"
+                  onClick={() => onPlay(item.id)}
+                  {...(tv
+                    ? { 'data-focusable': '', ...(i === 0 ? { 'data-initial': '' } : {}) }
+                    : {})}
+                  className="group/link grid w-full min-w-0 gap-1.5 rounded-sm text-left outline-none"
+                >
+                  <Poster title={item.title} src={item.art.still} aspect="still" />
+                  <span className={cn(t.small, 'truncate group-focus-visible/link:text-text')}>
+                    {item.title}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="flex">{action({ onClick: player.clearStream, children: 'Close' })}</div>
+        </>
+      ) : (
+        <>
+          <div
             className={cn(
-              'truncate font-semibold text-text',
-              size === 'tv'
-                ? 'text-(length:--tv-text-button)'
-                : size === 'web'
-                  ? 'text-body'
-                  : 'text-ui',
+              'grid grid-cols-[auto_minmax(0,1fr)] items-center',
+              tv ? 'gap-[1cqw]' : 'gap-3',
             )}
           >
-            {next.title}
-          </span>
-          <span className={t.small}>Starts in {left} s</span>
-        </div>
-      </div>
-      <div className={cn('flex', size === 'tv' ? 'gap-[1cqw]' : 'gap-2')}>
-        {action({
-          primary: true,
-          // on TV the remote needs a focus; elsewhere Space during the credits still pauses
-          initial: size === 'tv',
-          onClick: () => onPlay(next.id),
-          children: 'Play now',
-        })}
-        {action({ onClick: player.clearStream, children: 'Cancel' })}
-      </div>
+            <img
+              src={next.still}
+              alt=""
+              className={cn('aspect-still rounded-sm object-cover', tv ? 'w-[10cqw]' : 'w-24')}
+            />
+            <div className="grid min-w-0">
+              <h2 id="next-up" className={cn('font-mono uppercase', t.small)}>
+                {next.kind === 'episode'
+                  ? next.season !== null
+                    ? `Season ${next.season} starts`
+                    : 'Next episode'
+                  : 'Next up'}
+              </h2>
+              <span className={titleText}>{next.title}</span>
+              <span className={cn(t.small, 'truncate')}>
+                {next.line} · Starts in {left} s
+              </span>
+            </div>
+          </div>
+          <div className={cn('flex', tv ? 'gap-[1cqw]' : 'gap-2')}>
+            {action({
+              primary: true,
+              // on TV the remote needs a focus; elsewhere Space during the credits still pauses
+              initial: tv,
+              onClick: () => onPlay(next.id),
+              children: 'Play now',
+            })}
+            {action({ onClick: player.clearStream, children: 'Cancel' })}
+          </div>
+        </>
+      )}
     </section>
+  )
+}
+
+/**
+ * Skip intro while an episode's intro plays, and Skip credits while its credits play with Next up
+ * put away, at the bottom right (player.md › Episodes).
+ */
+export function SkipButton({
+  player,
+  size,
+  action,
+}: {
+  player: Player
+  size: Size
+  action: StreamAction
+}) {
+  const intro = player.intro
+  if (player.stream !== 'normal' || (!intro && !player.credits)) return null
+  return (
+    <div
+      data-skip=""
+      className={cn(
+        'absolute z-20',
+        size === 'tv'
+          ? 'right-(--tv-safe-x) bottom-[14cqw]'
+          : size === 'mobile'
+            ? 'right-12 bottom-24'
+            : 'right-8 bottom-32',
+      )}
+    >
+      {action({
+        // on TV it takes the focus while it shows, as the Apple TV app's does, so OK skips
+        initial: size === 'tv',
+        onClick: intro ? () => player.seekTo(intro.end) : player.skipCredits,
+        children: intro ? 'Skip intro' : 'Skip credits',
+      })}
+    </div>
   )
 }

@@ -161,6 +161,9 @@ function Screens() {
       <Route path="/movies">
         <TvLibrary />
       </Route>
+      <Route path="/shows/:id/episodes/:episode">
+        <Show />
+      </Route>
       <Route path="/shows/:id">
         <Show />
       </Route>

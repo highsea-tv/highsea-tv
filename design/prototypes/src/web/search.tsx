@@ -1,10 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C6 Search on the web and desktop (reference, docs/product/client-search.md): instant results
-// as you type, in a section per kind (movies, collections, people), the best-matching kind first.
+// as you type, in a section per kind (movies, shows, episodes, people, collections, artists,
+// albums and songs), the best-matching kind first. An episode opens its show at it; a song plays.
 import { cn, Icon, Input, Poster } from '@highsea-tv/ui-web'
-import { searchKinds, searchSuggestions, useSearch, useSearchQuery } from '../client/data.ts'
+import {
+  personCredits,
+  searchKinds,
+  searchPlaceholder,
+  searchSuggestions,
+  useSearch,
+  useSearchQuery,
+} from '../client/data.ts'
 import { MediaPoster } from '../client/media-card.tsx'
-import type { SearchSection } from '../mock/types.ts'
+import { songTime } from '../client/music.ts'
+import { useMusicPlayer } from '../client/music-player.ts'
+import { ShowPoster } from '../client/show-card.tsx'
+import type { SearchSection, SearchSong } from '../mock/types.ts'
+import { ArtistCard } from './music.tsx'
 import { gutter, webHref } from './shell.tsx'
 
 export function WebSearch() {
@@ -17,8 +29,8 @@ export function WebSearch() {
       <Input
         type="search"
         icon="search"
-        aria-label="Search titles, genres and people"
-        placeholder="Titles, genres and people"
+        aria-label={`Search: ${searchPlaceholder.toLowerCase()}`}
+        placeholder={searchPlaceholder}
         value={q}
         autoFocus
         onChange={(e) => setQ(e.target.value)}
@@ -89,6 +101,64 @@ function Results({ section }: { section: SearchSection }) {
           ))}
         </ul>
       )
+    case 'shows':
+      return (
+        <ul className={grid}>
+          {section.items.map((x) => (
+            <li key={x.id}>
+              <ShowPoster show={x} titleSize="body" href={webHref(`/shows/${x.id}`)} />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'episodes':
+      return (
+        <ul className="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] gap-x-4 gap-y-6">
+          {section.items.map((e) => (
+            <li key={e.id}>
+              <Poster
+                aspect="still"
+                title={e.title}
+                src={e.still}
+                href={webHref(`/shows/${e.show.id}/episodes/${e.id}`)}
+                showTitle
+                titleSize="body"
+                caption={`${e.show.title} · ${e.code}`}
+              />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'artists':
+      return (
+        <ul className={grid}>
+          {section.items.map((a) => (
+            <li key={a.id}>
+              <ArtistCard artist={a} />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'albums':
+      return (
+        <ul className={grid}>
+          {section.items.map((a) => (
+            <li key={a.id}>
+              <Poster
+                aspect="square"
+                title={a.title}
+                src={a.cover}
+                href={webHref(`/music/albums/${a.id}`)}
+                showTitle
+                titleSize="body"
+                caption={a.artist.name}
+              />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'songs':
+      return <Songs songs={section.items} />
     case 'collections':
       return (
         <ul className={grid}>
@@ -112,15 +182,13 @@ function Results({ section }: { section: SearchSection }) {
             <li key={p.id}>
               <a
                 href={webHref(`/people/${p.id}`)}
-                aria-label={`${p.name}, ${p.titles} ${p.titles === 1 ? 'movie' : 'movies'} on this server`}
+                aria-label={`${p.name}, ${personCredits(p)} on this server`}
                 className="flex items-center gap-2.5 rounded-full border border-line bg-s1 py-1 ps-1 pe-3.5 text-start outline-none hover:bg-s2 focus-visible:ring-focus"
               >
                 <img src={p.photo} alt="" className="size-8 rounded-full object-cover" />
                 <span className="grid">
                   <span className="text-text text-body">{p.name}</span>
-                  <span className="text-caption text-text-3">
-                    {`${p.titles} ${p.titles === 1 ? 'movie' : 'movies'} here`}
-                  </span>
+                  <span className="text-caption text-text-3">{`${personCredits(p)} here`}</span>
                 </span>
               </a>
             </li>
@@ -128,4 +196,39 @@ function Results({ section }: { section: SearchSection }) {
         </ul>
       )
   }
+}
+
+/** Songs: each plays its album from it, as a song's row on the album's page does. */
+function Songs({ songs }: { songs: SearchSong[] }) {
+  const music = useMusicPlayer()
+  return (
+    <ul className="grid max-w-[48rem] gap-1">
+      {songs.map((x) => (
+        <li key={x.id}>
+          <button
+            type="button"
+            onClick={() => music.play({ album: x.album.id }, { start: x.number - 1 })}
+            aria-label={`Play ${x.title}, by ${x.album.artist.name}, from ${x.album.title}`}
+            className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md p-1.5 text-start outline-none hover:bg-s1 focus-visible:ring-focus"
+          >
+            <img src={x.album.cover} alt="" className="size-11 rounded-sm bg-s2 object-cover" />
+            <span className="grid min-w-0">
+              <span
+                className={cn(
+                  'truncate text-body',
+                  music.song?.id === x.id ? 'text-accent-text' : 'text-text',
+                )}
+              >
+                {x.title}
+              </span>
+              <span className="truncate text-caption text-text-3">
+                {x.album.artist.name} · {x.album.title}
+              </span>
+            </span>
+            <span className="font-mono text-caption text-text-3">{songTime(x.duration)}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
 }

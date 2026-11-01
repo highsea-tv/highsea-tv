@@ -6,7 +6,9 @@ import { cn, EmptyState, Field, Icon, Input, Poster, Switch } from '@highsea-tv/
 import { useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import {
+  personCredits,
   searchKinds,
+  searchPlaceholder,
   searchSuggestions,
   usePhoneDownloadsLater,
   useSearch,
@@ -14,10 +16,13 @@ import {
   useServer,
 } from '../client/data.ts'
 import { MediaPoster } from '../client/media-card.tsx'
+import { songTime } from '../client/music.ts'
+import { useMusicPlayer } from '../client/music-player.ts'
 import { OfflineList } from '../client/offline-list.tsx'
 import { type SettingsSectionId, settingsSections } from '../client/settings.ts'
 import { SettingsSectionBody } from '../client/settings-sections.tsx'
-import type { SearchSection } from '../mock/types.ts'
+import { ShowPoster } from '../client/show-card.tsx'
+import type { SearchSection, SearchSong } from '../mock/types.ts'
 import { gutter, Header, mobileHref } from './shell.tsx'
 
 const chip =
@@ -36,8 +41,8 @@ export function MobileSearch() {
         <Input
           type="search"
           icon="search"
-          aria-label="Search titles, genres and people"
-          placeholder="Titles, genres and people"
+          aria-label={`Search: ${searchPlaceholder.toLowerCase()}`}
+          placeholder={searchPlaceholder}
           value={q}
           onChange={(e) => setQ(e.target.value)}
           className="h-11 text-[16px]"
@@ -92,6 +97,78 @@ function MobileResults({ section }: { section: SearchSection }) {
           ))}
         </ul>
       )
+    case 'shows':
+      return (
+        <ul className={row}>
+          {section.items.map((x) => (
+            <li key={x.id} className={third}>
+              <ShowPoster show={x} href={mobileHref(`/shows/${x.id}`)} />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'episodes':
+      return (
+        <ul className={cn('grid gap-3', gutter)}>
+          {section.items.map((e) => (
+            <li key={e.id}>
+              <a
+                href={mobileHref(`/shows/${e.show.id}/episodes/${e.id}`)}
+                className="grid grid-cols-[42%_minmax(0,1fr)] items-center gap-3 rounded-md outline-none transition-press focus-visible:ring-focus active:scale-97"
+              >
+                <img
+                  src={e.still}
+                  alt=""
+                  className="aspect-still w-full rounded-md bg-s2 object-cover"
+                />
+                <span className="grid min-w-0 gap-0.5">
+                  <span className="line-clamp-2 font-semibold text-[15px] text-text">
+                    {e.title}
+                  </span>
+                  <span className="truncate text-[13px] text-text-3">
+                    {e.show.title} · {e.code}
+                  </span>
+                </span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    case 'artists':
+      return (
+        <ul className="flex gap-3 overflow-x-auto px-4 [scrollbar-width:none]">
+          {section.items.map((a) => (
+            <li key={a.id} className="w-18 shrink-0">
+              <a
+                href={mobileHref(`/music/artists/${a.id}`)}
+                className="grid w-full justify-items-center gap-1 text-center outline-none focus-visible:ring-focus"
+              >
+                <img src={a.photo} alt="" className="size-16 rounded-full bg-s2 object-cover" />
+                <span className="line-clamp-2 text-[12px] text-text-2 leading-[1.2]">{a.name}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      )
+    case 'albums':
+      return (
+        <ul className={row}>
+          {section.items.map((a) => (
+            <li key={a.id} className={third}>
+              <Poster
+                aspect="square"
+                title={a.title}
+                src={a.cover}
+                href={mobileHref(`/music/albums/${a.id}`)}
+                showTitle
+                caption={a.artist.name}
+              />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'songs':
+      return <Songs songs={section.items} />
     case 'collections':
       return (
         <ul className="flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]">
@@ -119,12 +196,51 @@ function MobileResults({ section }: { section: SearchSection }) {
               >
                 <img src={p.photo} alt="" className="size-16 rounded-full object-cover" />
                 <span className="line-clamp-2 text-[12px] text-text-2 leading-[1.2]">{p.name}</span>
+                <span className="sr-only">{personCredits(p)}</span>
               </a>
             </li>
           ))}
         </ul>
       )
   }
+}
+
+const row = 'flex gap-2 overflow-x-auto px-4 [scrollbar-width:none]'
+const third = 'w-[calc((100%-1rem)/3)] shrink-0'
+
+/** Songs: each plays its album from it, as a song's row on the album's page does. */
+function Songs({ songs }: { songs: SearchSong[] }) {
+  const music = useMusicPlayer()
+  return (
+    <ul className={cn('grid gap-1', gutter)}>
+      {songs.map((x) => (
+        <li key={x.id}>
+          <button
+            type="button"
+            onClick={() => music.play({ album: x.album.id }, { start: x.number - 1 })}
+            aria-label={`Play ${x.title}, by ${x.album.artist.name}, from ${x.album.title}`}
+            className="grid min-h-11 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md py-1 text-start outline-none focus-visible:ring-focus"
+          >
+            <img src={x.album.cover} alt="" className="size-11 rounded-sm bg-s2 object-cover" />
+            <span className="grid min-w-0">
+              <span
+                className={cn(
+                  'truncate text-[15px]',
+                  music.song?.id === x.id ? 'text-accent-text' : 'text-text',
+                )}
+              >
+                {x.title}
+              </span>
+              <span className="truncate text-[13px] text-text-3">
+                {x.album.artist.name} · {x.album.title}
+              </span>
+            </span>
+            <span className="font-mono text-[12px] text-text-3">{songTime(x.duration)}</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 // ---------------------------------------------------------------- offline

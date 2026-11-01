@@ -32,6 +32,19 @@ A **full-bleed hero** (the TV's Hero + rows, adapted; chosen in [ADR 0017](../ad
   - **Rows:** posters with the quality tag; hover or focus shows a Play button over the art.
   - **Spotlight:** wider cards (still, title, meta, two lines of synopsis), for a curated theme.
 
+### Shows, episodes and music (prototype-gaps stage 2, 2026-11-01)
+
+Home is for every kind, not just films, on every app:
+
+- **Continue watching** has a card per show as well as each film part way: the episode the show resumes at, its still, the show's name and "S2, E6 · 32 min left".
+- **Next up**, right after it: for each show you're watching, the next episode after the last one you finished. Stills that open the player at that episode, with no progress bar.
+- After the owner's rows:
+  - **New episodes:** the newest episode of each still-airing show you've watched, when you haven't seen it and it isn't already on a card above;
+  - **Recently added shows:** posters with the unwatched count on the art, opening the show;
+  - **Recently played:** the albums and artists you last played, squares and circles, opening their pages.
+- Each is a row in Settings › Home screen, to move or hide.
+- On the phone: the stills are 62% wide, and posters and music 30%. On the TV: wide tiles, poster tiles and square or round tiles.
+
 ### Mobile (locked)
 
 Header (server switcher, avatar) · the announcement card · the featured carousel (78% wide 4:5 cards, the next peeking, kicker "New · 2010 · Fantasy" and the title; never auto-advancing) · Continue watching (62% wide stills) · poster rows (30% wide, three and a peek; spotlights become rows) · the tab bar (Home, Search, Library, Offline, You; translucent, the active tab in `accent-text`).
@@ -62,7 +75,7 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 ## States
 
 - **Loading:** web: a hero block and a row of poster skeletons; mobile: two carousel cards and a row; TV: a spinner in the centre.
-- **Empty:** "Nothing to watch yet" · When the server's owner adds movies, they show up here. (TV adds **Library**.)
+- **Empty:** "Nothing to watch yet" · When the server's owner adds films, shows or music, they show up here. (TV adds **Library**.)
 - **Error:** "Couldn't load the home screen" with the server's message and **Try again**.
 - **Live:** Continue watching follows playback; a new announcement arrives over SSE.
 - **Connection:** Connected remotely and unreachable as in [connectivity.md](connectivity.md#states).
@@ -70,7 +83,11 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 ## Interactions
 
 - **Play** on the hero plays what the hero shows (TV: the dwelled title). **Resume** when there's progress.
-- **Continue watching** items open the player directly; everything else opens the item's page (C4).
+- **Continue watching**, Next up and New episodes open the player directly; everything else opens the item's page (C4).
+- **Continue watching's menu (stage 2):** **Go to the show** (at the episode, its season chosen) or **Go to the film**, **Mark as watched**, and **Remove from Continue watching**, which forgets the place without marking it watched; a toast says which. A show taken off comes back when an episode of it is played again.
+  - **Web and desktop:** ⋯ over the card's art, shown on hover and focus, opening a menu.
+  - **Phone:** a long press (0.6 s) opens a sheet with the title and episode; the tap that ends it doesn't play.
+  - **TV:** OK held for 0.6 s opens the menu over the page, as the Apple TV app's does; a short OK plays. Back closes it, and focus goes back to the card, or to the next one when the card has gone.
 - **Pointer:** hover lifts posters to 1.02 and shows Play over the art; rows scroll by wheel and trackpad, with paging arrows on hover.
 - **Keyboard (web):** Tab moves between regions; arrows move inside a row.
 - **D-pad (TV):** the spatial model ([tv.md](../design-language/platforms/tv.md#spatial-focus-model)); rows remember their last item; Up from any row goes to the hero actions; at the home root, Back returns to the top row's first item.
@@ -85,13 +102,19 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 | Hero eyebrow | The section's title ("Featured on Harbor") |
 | Continue watching | {n} min left · {h}h {m}m left |
 | Acknowledge | Got it |
-| Empty | Nothing to watch yet · When the server's owner adds movies, they show up here. |
+| Continue watching, an episode | S2, E6 · 32 min left |
+| Next up, New episodes | S2, E7 · The Crossing |
+| Menu | Go to the show · Go to the film · Mark as watched · Remove from Continue watching |
+| Removed | {Show}, S2, E6 removed from Continue watching · It isn’t marked as watched. |
+| Marked | {Show}, S2, E6 marked as watched |
+| Empty | Nothing to watch yet · When the server's owner adds films, shows or music, they show up here. |
 
 ## Data
 
-- `home.sections(client)` → `GET /api/v1/home?client=`: `HomeSection[]` (`hero`, `row`, `spotlight`, `continue`), resolved per user and app: audience and schedule applied, rule sources evaluated, overrides merged, only playable titles, then the person's own order and hidden rows.
+- `home.sections(client)` → `GET /api/v1/home?client=`: `HomeSection[]` (`hero`, `row`, `spotlight`, `continue`, and since stage 2 `episodes`, `shows` and `music`; an episode on a card is a `ClientItem` with `show` set), resolved per user and app: audience and schedule applied, rule sources evaluated, overrides merged, only playable titles, then the person's own order and hidden rows.
 - `announcements.active(client)` → `GET /api/v1/announcements?client=`: live ones for this person and this client type, with `seen`.
 - `announcements.dismiss(id)` → `POST /api/v1/announcements/{id}/seen` (dismiss and acknowledge alike, tracked per user).
+- `playback.dismiss(id)` → `DELETE /api/v1/watch/{id}/continue`: Remove from Continue watching (the plan named it `watch.dismiss`); `playback.setWatched` and `library.setEpisodeWatched` for Mark as watched.
 - `system.server()` for the name and branding.
 - Events: `announcements.updated`, `curation.updated`, `watch.updated`, `movies.updated`.
 

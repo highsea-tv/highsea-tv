@@ -31,6 +31,16 @@ export const leavePlayer = (navigate: Navigate, to: string) =>
 export const playNext = (navigate: Navigate, id: string) =>
   navigate(`/play/${id}`, { replace: true })
 
+/** The title's page, where leaving a player opened directly goes: an episode's show. */
+export const titlePage = (d: ClientDetail | undefined, id: string) =>
+  d?.episode ? `/shows/${d.episode.show.id}` : `/movies/${id}`
+
+/** The player's title and the line under it: an episode is its show, then "S1, E1 · Pilot". */
+export const titleLines = (d: ClientDetail | undefined) =>
+  d?.episode
+    ? { title: d.episode.show.title, line: `${d.episode.code} · ${d.episode.title}` }
+    : { title: d?.item.title ?? '', line: null }
+
 export function usePlayer(id: string, fromStart: boolean) {
   const detail = useQuery(`client:item:${id}`, (c) => c.library.item(id))
   const prefs = useQuery(`client:prefs:${id}`, (c) => c.playback.prefs(id))
@@ -50,17 +60,22 @@ export function usePlayer(id: string, fromStart: boolean) {
   // Start again set it back to normal until the toolbar picks another
   const picked = useStreamState()
   const [cleared, setCleared] = useState<StreamState | null>(null)
-  const stream: StreamState = cleared === picked ? 'normal' : picked
+  // Next up comes in by itself where the credits start (a film's last 20 s), until Cancel
+  const endsAt = d?.episode?.credits ?? duration - 20
+  const [dismissed, setDismissed] = useState(false)
+  const chosen: StreamState = cleared === picked ? 'normal' : picked
+  const arrived = !!d?.upNext && !dismissed && duration > 0 && pos >= endsAt
+  const stream: StreamState = chosen === 'normal' && arrived ? 'next-up' : chosen
   // waiting for segments, or no stream at all: the position holds
   const held =
     stream === 'preparing' || stream === 'buffering' || stream === 'failed' || stream === 'stopped'
-  // Next up shows in a film's last seconds, so the review starts 20 s from the end
+  // Next up shows as the credits start, so the review starts there
   useEffect(() => {
     if (picked === 'next-up' && duration) {
-      setPosition(duration - 20)
+      setPosition(endsAt)
       setPlaying(true)
     }
-  }, [picked, duration])
+  }, [picked, duration, endsAt])
 
   // a film playing pauses the music, as one player on a device does; it waits in its bar
   useEffect(() => {
@@ -128,7 +143,22 @@ export function usePlayer(id: string, fromStart: boolean) {
     /** Back to a normal stream: Try again, Start again, or Cancel on Next up. */
     clearStream: () => {
       setCleared(picked)
-      if (picked !== 'next-up') setPlaying(true)
+      if (stream === 'next-up') setDismissed(true)
+      else setPlaying(true)
+    },
+    /** While the intro plays, Skip intro jumps to its end (player.md › Episodes). */
+    intro:
+      d?.episode?.intro && pos >= d.episode.intro.start && pos < d.episode.intro.end
+        ? d.episode.intro
+        : null,
+    /**
+     * While an episode's credits play with Next up put away, or nothing next: Skip credits hands
+     * back to Next up, or ends the episode (player.md › Episodes).
+     */
+    credits: !!d?.episode?.credits && duration > 0 && pos >= endsAt && pos < duration,
+    skipCredits: () => {
+      if (d?.upNext) setDismissed(false)
+      else setPosition(duration)
     },
     version,
     audio: version?.audio.find((a) => a.id === audioId) ?? null,

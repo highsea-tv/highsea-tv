@@ -22,11 +22,14 @@ import {
   SCRUB_MS,
   SEEK_S,
   sampleCue,
+  titleLines,
+  titlePage,
   trickplayAt,
   usePlayer,
 } from '../client/player.ts'
 import {
   NextUp,
+  SkipButton,
   type StreamAction,
   StreamMessage,
   StreamWaiting,
@@ -219,7 +222,8 @@ export function TracksPanel({ player, onClose }: { player: Player; onClose: () =
           </div>
           <NudgePreview offsetMs={player.offsetMs} />
           <p className="text-caption text-text-3">
-            {offsetHint(player.offsetMs)} Saved for this movie.
+            {offsetHint(player.offsetMs)} Saved for this{' '}
+            {player.detail.data?.episode ? 'episode' : 'movie'}.
           </p>
         </section>
       )}
@@ -335,7 +339,7 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
     return () => clearTimeout(timer.current)
   }, [wake])
 
-  const exit = () => leavePlayer(navigate, `/movies/${id}`)
+  const exit = () => leavePlayer(navigate, titlePage(player.detail.data, id))
 
   const onKey = (e: React.KeyboardEvent) => {
     wake()
@@ -375,6 +379,7 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
     )
 
   const d = player.detail.data
+  const lines = titleLines(d)
   const waiting = player.stream === 'preparing' || player.stream === 'buffering'
   const chrome = shown || !player.playing || panel || waiting
   return (
@@ -392,7 +397,10 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
       {d && (
         <img src={d.item.art.still} alt="" className="absolute inset-0 size-full object-cover" />
       )}
-      <h1 className="sr-only">Playing {d?.item.title ?? ''}</h1>
+      <h1 className="sr-only">
+        Playing {lines.title}
+        {lines.line && `, ${lines.line}`}
+      </h1>
       {/* macOS's window buttons stay; a title bar comes and goes with the controls (below) */}
       {windowChrome === 'mac' && <WindowFrame />}
 
@@ -436,9 +444,11 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
             <Icon name="arrow-left" size={20} />
           </button>
           <div className="grid min-w-0">
-            <span className="truncate font-semibold text-title">{d?.item.title}</span>
-            {player.version && (
-              <span className="truncate text-caption text-text-2">{player.version.detail}</span>
+            <span className="truncate font-semibold text-title">{lines.title}</span>
+            {(lines.line || player.version) && (
+              <span className="truncate text-caption text-text-2">
+                {[lines.line, player.version?.detail].filter(Boolean).join(' · ')}
+              </span>
             )}
           </div>
           {player.version && (
@@ -535,10 +545,11 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
       </div>
       {panel && <TracksPanel player={player} onClose={() => setPanel(false)} />}
       <StreamWaiting player={player} size="web" />
+      <SkipButton player={player} size="web" action={webStreamAction} />
       <StreamMessage player={player} size="web" action={webStreamAction} onBack={exit} />
       <NextUp
         player={player}
-        next={d?.related[0]}
+        next={d?.upNext}
         size="web"
         action={webStreamAction}
         onPlay={(next) => playNext(navigate, next)}

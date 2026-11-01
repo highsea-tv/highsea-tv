@@ -105,6 +105,11 @@ function Routes() {
           <MobileDetail />
         </MobileShell>
       </Route>
+      <Route path="/shows/:id/episodes/:episode">
+        <MobileShell>
+          <MobileShow />
+        </MobileShell>
+      </Route>
       <Route path="/shows/:id">
         <MobileShell>
           <MobileShow />

@@ -1264,19 +1264,58 @@ export type ClientItem = MediaItem & {
   tagline: string | null
   /** Played to the end, or marked as watched (client-detail.md#mark-as-watched, checkpoint 4.0b). */
   watched: boolean
+  /**
+   * An episode on Home's cards: its show, its place and its own title. Its card is the show's
+   * name over "S2, E6", and Go to opens the show at it. Null for a film.
+   */
+  show: { id: string; title: string; code: string; episode: string } | null
 }
 
+/** Recently played on Home: an album, or an artist played as a whole. */
+export type HomeMusic =
+  | { kind: 'album'; album: ClientAlbum }
+  | { kind: 'artist'; artist: ClientArtist }
+
+/**
+ * A row on Home. Featured sections hold films; Continue watching holds films and episodes, one
+ * card per show; Next up and New episodes hold episodes; Recently added shows holds shows, and
+ * Recently played albums and artists.
+ */
 export type HomeSection = {
   id: string
   title: string
   /** A curated-by suffix ("by Ines") or a tagline. */
   suffix: string | null
-  layout: 'hero' | 'row' | 'spotlight' | 'continue'
-  items: ClientItem[]
+} & (
+  | { layout: 'hero' | 'row' | 'spotlight' | 'continue' | 'episodes'; items: ClientItem[] }
+  | { layout: 'shows'; items: ClientShow[] }
+  | { layout: 'music'; items: HomeMusic[] }
+)
+
+/** A Home row of films (or films and episodes): the featured sections, Continue watching, Next up. */
+export type FilmSection = Extract<HomeSection, { items: ClientItem[] }>
+
+/** Someone credited on what's here, with how many films and shows they're in. */
+export type SearchPerson = { id: string; name: string; photo: string; films: number; shows: number }
+
+/** An episode found by its title: its still, its show and its place, to open the show at it. */
+export type SearchEpisode = {
+  id: string
+  show: { id: string; title: string }
+  /** "S1, E2". */
+  code: string
+  title: string
+  still: string
 }
 
-/** A person in search results, with how many titles here they're in. */
-export type SearchPerson = { id: string; name: string; photo: string; titles: number }
+/** A song found by its title, on its album: choosing it plays the album from it. */
+export type SearchSong = {
+  id: string
+  title: string
+  number: number
+  duration: number
+  album: ClientAlbum
+}
 
 /** A collection as clients see it: only its parts on this server count. */
 export type ClientCollection = {
@@ -1299,8 +1338,13 @@ export type ClientCollection = {
  */
 export type SearchSection =
   | { kind: 'movies'; items: ClientItem[] }
-  | { kind: 'collections'; items: ClientCollection[] }
+  | { kind: 'shows'; items: ClientShow[] }
+  | { kind: 'episodes'; items: SearchEpisode[] }
   | { kind: 'people'; items: SearchPerson[] }
+  | { kind: 'collections'; items: ClientCollection[] }
+  | { kind: 'artists'; items: ClientArtist[] }
+  | { kind: 'albums'; items: ClientAlbum[] }
+  | { kind: 'songs'; items: SearchSong[] }
 
 export type SearchKind = SearchSection['kind']
 
@@ -1356,7 +1400,41 @@ export type ClientDetail = {
   collections: ClientCollection[]
   /** This user's remembered picks for the title, or the server's defaults. */
   defaults: { versionId: string; audioId: string | null; subtitleId: string | null }
+  /** An episode's show and place, for the player's title lines and its way back; null for a film. */
+  episode: EpisodePlace | null
+  /** What Next up offers as the title ends (player.md › Next up), or null when nothing follows. */
+  upNext: UpNext | null
 }
+
+export type EpisodePlace = {
+  show: { id: string; title: string }
+  season: number
+  number: number
+  title: string
+  /** "S1, E1", or "Special 2". */
+  code: string
+  /** The intro, in seconds, from the server's markers: Skip intro shows while it plays. */
+  intro: { start: number; end: number } | null
+  /** Where the credits start, in seconds: Next up comes in there. */
+  credits: number | null
+}
+
+/**
+ * Next up (player.md › Next up): the next episode, the next season's first, or a film's
+ * collection's next part, each counting down; otherwise a few choices that play only when picked.
+ */
+export type UpNext =
+  | {
+      kind: 'episode' | 'part'
+      id: string
+      title: string
+      /** "S1, E2 · The Long Night", or the collection's name. */
+      line: string
+      still: string
+      /** The next season's first episode: the card says the season starts. */
+      season: number | null
+    }
+  | { kind: 'choices'; items: ClientItem[] }
 
 /** This user's per-title player settings, saved as they change. */
 export type PlaybackPrefs = {

@@ -2,7 +2,9 @@
 // What the shows pages share on every client: the library's filter and sorts (as Movies has them),
 // and the words for a show's years, its seasons, an episode's place and what Play plays, as the
 // Apple TV app writes them ("Resume S2, E6").
-import type { ClientEpisode, ClientShow, NextEpisode } from '../mock/types.ts'
+import { useEffect } from 'react'
+import { useParams } from 'wouter'
+import type { ClientEpisode, ClientShow, ClientShowDetail, NextEpisode } from '../mock/types.ts'
 
 export type ShowSort = 'title' | 'added' | 'year' | 'rating'
 export const showSorts: { value: ShowSort; label: string }[] = [
@@ -91,3 +93,24 @@ export const airedDate = (date: string) =>
 /** "3 seasons · 2019–present · Drama": the line under a show's title. */
 export const showMeta = (s: ClientShow) =>
   [seasonsCount(s.seasons), showYears(s), s.genres[0]].filter(Boolean).join(' · ')
+
+/**
+ * A show opened at an episode (`/shows/{id}/episodes/{episode}`, from Search or Continue watching's
+ * menu): its season is the one shown, and its row is scrolled to once drawn. Otherwise the season
+ * is `fallback`, Play's.
+ */
+export function useEpisodeTarget(d: ClientShowDetail, fallback: number) {
+  const { episode } = useParams<{ episode?: string }>()
+  const season = episode
+    ? d.seasons.find((x) => x.episodes.some((e) => e.id === episode))?.number
+    : undefined
+  const found = season !== undefined
+  useEffect(() => {
+    if (!found) return
+    const t = requestAnimationFrame(() =>
+      document.querySelector(`[data-episode="${episode}"]`)?.scrollIntoView({ block: 'center' }),
+    )
+    return () => cancelAnimationFrame(t)
+  }, [episode, found])
+  return { episode: found ? (episode ?? null) : null, season: season ?? fallback }
+}

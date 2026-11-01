@@ -2,7 +2,7 @@
 // The music library's views on every client: Albums and Artists, each with its own sorts, as Apple
 // Music, Plex and Navidrome give them. Albums filter by genre; both sort by name by default, which
 // is when the A–Z index shows.
-import type { ClientAlbum, ClientArtist, DiscographyKind } from '../mock/types.ts'
+import type { ClientAlbum, ClientArtist, DiscographyKind, HomeMusic } from '../mock/types.ts'
 
 export type MusicView = 'albums' | 'artists'
 
@@ -109,3 +109,23 @@ export const albumKind: Record<ClientAlbum['kind'], string> = {
   soundtrack: 'Soundtrack',
   compilation: 'Compilation',
 }
+
+/** A Recently played card on Home: an album's square cover, or an artist's round photo. */
+export const homeMusicCard = (x: HomeMusic) =>
+  x.kind === 'album'
+    ? {
+        id: x.album.id,
+        title: x.album.title,
+        caption: x.album.artist.name,
+        src: x.album.cover,
+        path: `/music/albums/${x.album.id}`,
+        round: false,
+      }
+    : {
+        id: x.artist.id,
+        title: x.artist.name,
+        caption: 'Artist',
+        src: x.artist.photo,
+        path: `/music/artists/${x.artist.id}`,
+        round: true,
+      }

@@ -65,6 +65,7 @@ export function TvTracksPanel({
   onAudio,
   onSubtitle,
   timing,
+  episode = false,
 }: {
   /** Shown. It stays mounted while it slides out, then unmounts. */
   open: boolean
@@ -77,6 +78,8 @@ export function TvTracksPanel({
   onSubtitle: (id: string | null) => void
   /** The player's subtitle nudge. */
   timing?: { offsetMs: number; nudge: (dir: 1 | -1 | 0) => void }
+  /** Playing an episode: the choices are saved for it rather than for a movie. */
+  episode?: boolean
 }) {
   const root = useRef<HTMLElement>(null)
   const nudger = useRef<HTMLDivElement>(null)
@@ -179,7 +182,9 @@ export function TvTracksPanel({
           <p className="text-(length:--tv-text-pill) text-text-2">{offsetHint(timing.offsetMs)}</p>
         </section>
       )}
-      <p className="text-(length:--tv-text-pill) text-text-3">Back closes. Saved for this movie.</p>
+      <p className="text-(length:--tv-text-pill) text-text-3">
+        Back closes. Saved for this {episode ? 'episode' : 'movie'}.
+      </p>
     </aside>
   )
 }

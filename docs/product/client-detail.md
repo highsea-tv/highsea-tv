@@ -11,6 +11,7 @@ Decide to watch, and how: Play or Resume, with the version, audio and subtitles 
 ## Entry points
 
 - Posters on Home, Library and More like this; **Details** on the hero.
+- **An episode** (prototype-gaps stage 2, 2026-11-01) opens its show's page at it, `/shows/{id}/episodes/{episode}`: the episode's season chosen and its row scrolled into view (on the TV, focused). Search's episodes and Continue watching's **Go to the show** use it.
 
 ## Layout
 

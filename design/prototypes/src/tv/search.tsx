@@ -5,12 +5,23 @@
 // alphabetical rows of seven, with numbers and symbols on a second layout behind &123, so every
 // row starts in the same column and nothing moves between them. Typing never moves focus off the
 // keys; picking a suggestion or a person does go into the results, since its button goes away.
-// Results come in a section per kind, the best-matching first. Back from a result returns to the
+// Results come in a section per kind (movies, shows, episodes, people, collections, artists,
+// albums and songs), the best-matching first; an episode opens its show at it, a song plays. Back from a result returns to the
 // same query with the remote on that result.
 import { useEffect, useRef, useState } from 'react'
-import { searchKinds, searchSuggestions, useSearch, useSearchQuery } from '../client/data.ts'
-import type { SearchSection } from '../mock/types.ts'
+import {
+  searchKinds,
+  searchPlaceholder,
+  searchSuggestions,
+  useSearch,
+  useSearchQuery,
+} from '../client/data.ts'
+import { useMusicPlayer } from '../client/music-player.ts'
+import { UnwatchedCount } from '../client/show-card.tsx'
+import { seasonsCount } from '../client/shows.ts'
+import type { SearchSection, SearchSong } from '../mock/types.ts'
 import { TvButton, TvHead, TvPoster, TvTile, tvHref, tvKey, useInitialFocus } from './kit.tsx'
+import { TvArtistTile } from './music.tsx'
 
 const LAYOUTS = {
   letters: "abcdefghijklmnopqrstuvwxyz-'".split(''),
@@ -63,7 +74,7 @@ export function TvSearch() {
             aria-live="polite"
             className="flex h-[3.4cqw] items-center rounded-[0.5cqw] border-[0.15cqw] border-text px-[1cqw] text-(length:--tv-text-button)"
           >
-            {q || <span className="text-text-3">Titles, genres and people</span>}
+            {q || <span className="text-text-3">{searchPlaceholder}</span>}
             <span aria-hidden className="text-text-3">
               |
             </span>
@@ -188,6 +199,66 @@ function TvResults({ section }: { section: SearchSection }) {
           ))}
         </ul>
       )
+    case 'shows':
+      return (
+        <ul className={grid}>
+          {section.items.map((x) => (
+            <li key={x.id}>
+              <TvTile
+                title={x.title}
+                caption={seasonsCount(x.seasons)}
+                src={x.art.poster}
+                href={tvHref(`/shows/${x.id}`)}
+                status={<UnwatchedCount show={x} />}
+              />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'episodes':
+      return (
+        <ul className="grid grid-cols-3 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]">
+          {section.items.map((e) => (
+            <li key={e.id}>
+              <TvTile
+                wide
+                title={e.title}
+                caption={`${e.show.title} · ${e.code}`}
+                src={e.still}
+                href={tvHref(`/shows/${e.show.id}/episodes/${e.id}`)}
+              />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'artists':
+      return (
+        <ul className={grid}>
+          {section.items.map((a) => (
+            <li key={a.id}>
+              <TvArtistTile artist={a} />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'albums':
+      return (
+        <ul className={grid}>
+          {section.items.map((a) => (
+            <li key={a.id}>
+              <TvTile
+                square
+                title={a.title}
+                caption={a.artist.name}
+                src={a.cover}
+                href={tvHref(`/music/albums/${a.id}`)}
+              />
+            </li>
+          ))}
+        </ul>
+      )
+    case 'songs':
+      return <TvSongs songs={section.items} />
     case 'collections':
       return (
         <ul className={grid}>
@@ -217,4 +288,30 @@ function TvResults({ section }: { section: SearchSection }) {
         </ul>
       )
   }
+}
+
+/** Songs as buttons: each plays its album from it, as a song's row on the album's page does. */
+function TvSongs({ songs }: { songs: SearchSong[] }) {
+  const music = useMusicPlayer()
+  return (
+    <ul className="flex flex-wrap gap-[0.8cqw]">
+      {songs.map((x) => (
+        <li key={x.id}>
+          <TvButton
+            aria-label={`Play ${x.title}, by ${x.album.artist.name}, from ${x.album.title}`}
+            onClick={() => music.play({ album: x.album.id }, { start: x.number - 1 })}
+            className="ps-[0.6cqw]"
+          >
+            <img
+              src={x.album.cover}
+              alt=""
+              className="size-[2.2cqw] rounded-[0.3cqw] object-cover"
+            />
+            {x.title}
+            <span className="font-normal text-text-3">{x.album.artist.name}</span>
+          </TvButton>
+        </li>
+      ))}
+    </ul>
+  )
 }

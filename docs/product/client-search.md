@@ -14,9 +14,10 @@ Find something on the server by what you remember: part of a title, a genre, a c
 
 ## Layout
 
-Results come in a **section per kind**, the best-matching kind first: **Movies**, **Collections** and **People** today, with shows, episodes and music joining as sections once the server has them. Each section is headed by its kind (and, on web and mobile, its count).
+Results come in a **section per kind**, the best-matching kind first: **Movies**, **Shows**, **Episodes**, **People**, **Collections**, **Artists**, **Albums** and **Songs** (shows, episodes and music since prototype-gaps stage 2, 2026-11-01). Each section is headed by its kind (and, on web and mobile, its count).
 
-- **Web:** one wide field ("Titles, genres and people"), focused on arrival; with nothing typed, **Try** and a few quick picks (Comedy, Horror, Animation, Science fiction, Fritz Lang). Movies and Collections as posters with a title and caption (the year; for a collection, "3 movies · 2013–2016"); People as chips (photo, name, "3 movies here").
+- **Every app, the new kinds:** shows as posters with the unwatched count on the art, opening the show; episodes as stills with "{Show} · S2, E1", opening the show at that episode with its season chosen and the row in view (`/shows/{id}/episodes/{episode}`); artists as round photos and albums as square covers, opening their pages; songs as a list (number, title, album and artist, length), where picking one plays it from its album. A person's line counts what they're in here: "3 movies · 1 show".
+- **Web:** one wide field ("Films, shows, music and people"), focused on arrival; with nothing typed, **Try** and a few quick picks (Comedy, Animation, Science fiction, Fritz Lang, Saltmarsh, Jazz, Jan Morgenstern). Movies and Collections as posters with a title and caption (the year; for a collection, "3 movies · 2013–2016"); People as chips (photo, name, "3 movies · 1 show").
 - **Mobile:** the large title "Search", the field (16pt, so iOS doesn't zoom), the quick picks as chips; Movies three a row; Collections as a sideways row of posters; People as a row of portraits.
 - **TV:** the field and an on-screen keyboard (seven columns: a–z, - and ' in alphabetical rows; **&123** swaps in a second layout with the digits as a keypad on the left and common symbols beside them; under it &123, Space, Delete, Clear) on the left; on the right the quick picks, then the sections: Movies and Collections five a row (title and caption under each), People as buttons with a photo.
 
@@ -46,13 +47,16 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `library
 - `library.search({ query: { query } })` → `GET /api/v1/search?query=`: `SearchResults`, `sections` in ranked order, each `{ kind, items }`, up to 20 items a section:
   - `movies`: library `ClientItem`s by title, genre or person (cast or crew), title matches first. Each says whether it's `playable`; none is until files arrive (checkpoint 6);
   - `collections`: `ClientCollection`s (`id`, `name`, `overview`, `art`, `count` here, `years`) by name or a part's title, counting only the parts here;
-  - `people`: `SearchPerson`s (`id`, `name`, `photo`, `titles` here) whose names match;
+  - `shows`: `ClientShow`s by title or genre;
+  - `episodes`: `SearchEpisode`s (`id`, `show` `{id, title}`, `code`, `title`, `still`) by title, up to 12;
+  - `people`: `SearchPerson`s (`id`, `name`, `photo`, `films` and `shows` here) whose names match, from films' and shows' credits;
+  - `artists`: `ClientArtist`s by name or genre; `albums`: `ClientAlbum`s by title or artist; `songs`: `SearchSong`s (`id`, `title`, `number`, `duration`, `album`) by title, up to 12;
   - `discover`: for people who may ask for titles (the owner and admins always, a user with **Ask for titles**), TMDB's matches that aren't here, as `DiscoverMovie`s marked for a request, after the rest; left out when TMDB can't be reached or no key is set. The request flow comes with its own checkpoint, so until then the server leaves this section out for everyone ([ADR 0032](../adr/0032-administrative-and-normal-access.md)). Apps skip kinds they don't know.
 - **Clients are for watching.** Search behaves the same for everyone, staff included, and never offers an administrative action such as adding a title.
 - **Ranking:** a kind with a name that starts with the query (at a word) comes first, then one with a name containing it, then the rest; ties keep the order above. Empty kinds are left out.
 - **A collection's page** reads `metadata.collection({ params: { id } })` → `GET /api/v1/collections/{id}`, the media pages' route ([media-pages.md › Data](media-pages.md#data)): the collection and all its parts, oldest first, each with `inLibrary`. The page shows the parts here.
 - The query lives in the page's history entry (the prototype keeps it in `history.state`), not in storage.
-- Events: `movies.updated`.
+- Events: `movies.updated`, `shows.updated`, `music.updated`.
 
 ## Decisions
 

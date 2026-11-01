@@ -69,6 +69,11 @@ function Routes() {
           <WebLibrary />
         </WebShell>
       </Route>
+      <Route path="/shows/:id/episodes/:episode">
+        <WebShell overHero>
+          <WebShow />
+        </WebShell>
+      </Route>
       <Route path="/shows/:id">
         <WebShell overHero>
           <WebShow />

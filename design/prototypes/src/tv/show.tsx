@@ -24,6 +24,7 @@ import {
   playLabel,
   seasonsCount,
   showYears,
+  useEpisodeTarget,
 } from '../client/shows.ts'
 import type { ClientEpisode, ClientShowDetail } from '../mock/types.ts'
 import { informationOf } from '../web/show.tsx'
@@ -44,9 +45,14 @@ const choice =
   'rounded-full px-[1.2cqw] py-[0.45cqw] font-semibold text-(length:--tv-text-pill) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:shadow-(--tv-focus-shadow) aria-pressed:bg-text/12 aria-pressed:text-text'
 
 export function TvShow() {
-  const { id } = useParams<{ id: string }>()
+  const { id, episode } = useParams<{ id: string; episode?: string }>()
   const detail = useShow(id)
-  useInitialFocus(detail.status === 'success', id)
+  // opened at an episode, focus starts on it; otherwise on Play
+  useInitialFocus(
+    detail.status === 'success',
+    `${id}/${episode}`,
+    episode ? `[data-episode="${episode}"]` : '[data-initial]',
+  )
   if (detail.status === 'loading') return <ShowSkeleton />
   if (detail.status === 'error')
     return (
@@ -69,7 +75,8 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
   const s = d.show
   const next = s.next
   const mark = useMarkEpisodes()
-  const [season, setSeason] = useState(next?.episode.season ?? d.seasons[0]?.number ?? 1)
+  const target = useEpisodeTarget(d, next?.episode.season ?? d.seasons[0]?.number ?? 1)
+  const [season, setSeason] = useState(target.season)
   const shown = d.seasons.find((x) => x.number === season) ?? d.seasons[0]
   const seasonWatched = !!shown && shown.episodes.every((e) => e.watched)
   const people = showPeopleOf(d)
@@ -305,6 +312,7 @@ function Episode({ episode: e, entry }: { episode: ClientEpisode; entry: boolean
     <a
       href={tvHref(`/play/${e.id}`)}
       data-focusable=""
+      data-episode={e.id}
       {...(entry ? { 'data-entry': '' } : {})}
       aria-label={`Play ${episodePlace(e)}, ${e.title}, ${episodeTime(e)}${e.watched ? ', watched' : ''}`}
       className="group/link grid gap-[0.3cqw] outline-none"

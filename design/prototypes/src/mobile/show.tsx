@@ -25,6 +25,7 @@ import {
   playLabel,
   seasonsCount,
   showYears,
+  useEpisodeTarget,
 } from '../client/shows.ts'
 import type { ClientEpisode, ClientSeason, ClientShowDetail } from '../mock/types.ts'
 import { informationOf } from '../web/show.tsx'
@@ -115,7 +116,8 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
   const next = s.next
   const people = showPeopleOf(d)
   const mark = useMarkEpisodes()
-  const [season, setSeason] = useState(next?.episode.season ?? d.seasons[0]?.number ?? 1)
+  const target = useEpisodeTarget(d, next?.episode.season ?? d.seasons[0]?.number ?? 1)
+  const [season, setSeason] = useState(target.season)
   const shown = d.seasons.find((x) => x.number === season) ?? d.seasons[0]
   return (
     <article aria-labelledby="title" className="relative grid grid-cols-[minmax(0,1fr)] gap-5 pb-6">
@@ -321,7 +323,7 @@ function Episode({ episode: e }: { episode: ClientEpisode }) {
   const mark = useMarkEpisodes()
   const label = e.watched ? 'Mark as unwatched' : 'Mark as watched'
   return (
-    <div className="grid gap-2">
+    <div data-episode={e.id} className="grid gap-2">
       <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
         <a
           href={mobileHref(`/play/${e.id}`)}

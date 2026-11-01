@@ -60,7 +60,18 @@ Prototyped on all three platforms; the prototype's toolbar picks one under **Str
 - **Buffering:** the spinner alone, in a glass circle, with the chrome showing and the position held. In the product it shows only after the wait passes a short delay (1 s), so a brief stall shows nothing; screen readers hear "Buffering".
 - **Didn't start:** over a scrim, "This film didn't start", "highsea couldn't read the file. Try again, or choose another version in Audio and subtitles.", with **Try again** (focused) and **Back**. The owner sees why in System › Logs.
 - **Stopped by the server:** an owner or admin's **Stop** in Now playing ([now-playing.md](now-playing.md)). Over a scrim, "{name} stopped this stream", their message in quotes when they wrote one, "You can start it again from where you were.", with **Start again** (focused) and **Back**. On mobile the chrome steps aside, so the message has the screen.
-- **Next up:** in a film's last seconds, a glass card at the bottom right with the next film in its collection (the prototype uses the first related title), "Starts in 10 s" counting down, **Play now** and **Cancel**. At zero the next film plays. On TV, Play now takes the focus; on web and mobile it doesn't, so Space during the credits still pauses. Cancel lets the film end as before.
+- **Next up:** where the credits start (an episode's credits mark; a film's last 20 s), a glass card at the bottom right with what comes next, "Starts in 10 s" counting down, **Play now** and **Cancel**. At zero it plays. On TV, Play now takes the focus; on web and mobile it doesn't, so Space during the credits still pauses. Cancel lets the title end as before. What comes next (stage 2):
+  - an episode: the show's next one, headed **Next episode**, or **Season 3 starts** when it's the next season's first;
+  - a film in a collection: the collection's next part, headed **Next up**;
+  - any other film: no countdown, but **More like this** with three related titles as stills and **Close**; on TV the first takes the focus.
+
+### Episodes (prototype-gaps stage 2, 2026-11-01)
+
+- **The title is the show's,** with "S1, E1 · Pilot" under it in the top bar (and the TV's info panel); screen readers hear "Playing The Lantern Keepers, S1, E1 · Pilot". Leaving a player opened directly goes to the show's page, not a film's.
+- **Skip intro:** while an episode's intro plays (the server's intro marks; the pilot and specials have none), a glass button over the frame at the bottom right, **Skip intro**, seeks to the intro's end. On TV it takes the focus while it shows, and focus goes back to the scrubber after.
+- **Skip credits:** during the credits once Next up has been cancelled, or when nothing comes next, **Skip credits** brings Next up back, or ends the episode.
+- The tracks panel says "Saved for this episode."
+- Both show only while the stream is normal, never over the stream's other states or the tracks panel.
 
 ## Interactions
 
@@ -75,7 +86,7 @@ Prototyped on all three platforms; the prototype's toolbar picks one under **Str
 | Mute | M, or the button from the medium breakpoint | The device's buttons | The TV's volume |
 
 - **Saving:** the position is reported on pause, on seeking and on leaving (Resume, Continue watching). The version, audio, subtitles and the subtitle offset are saved as they change, per person and title.
-- **Skip intro:** left out. It needs intro detection, which is a later feature; a greyed button would promise something that doesn't work.
+- **Skip intro and Skip credits:** episodes only, from the server's markers (see Episodes above).
 - **Sound:** none over playback.
 
 ## Copy
@@ -84,18 +95,21 @@ Prototyped on all three platforms; the prototype's toolbar picks one under **Str
 | --- | --- |
 | Timing | On time · +{n} ms · −{n} ms |
 | Timing hint | Subtitles match the audio track's timing. · Subtitles appear {n} ms later. · Subtitles appear {n} ms earlier. |
-| Saved | Saved for this movie. |
+| Saved | Saved for this movie. · Saved for this episode. |
+| Title line, an episode | {Show} · S1, E1 · Pilot |
+| Skip | Skip intro · Skip credits |
 | TV legend | ◀ ▶ Seek 10 s · OK Pause · ▼ Audio and subtitles · Back Hide |
 | Getting it ready | Getting it ready · Making the first minute for your connection. |
 | Drawn into the picture | This subtitle is drawn into the picture, so its timing can’t be changed. |
 | Didn't start | This film didn't start · highsea couldn't read the file. Try again, or choose another version in Audio and subtitles. · Try again · Back |
 | Stopped | {name} stopped this stream · "{message}" · You can start it again from where you were. · Start again · Back |
-| Next up | Next up · {title} · Starts in {n} s · Play now · Cancel |
+| Next up | Next up · Next episode · Season {n} starts · {title} · Starts in {n} s · Play now · Cancel |
+| More like this | More like this · Close |
 | Picture in picture | Picture in picture · Playing in picture in picture · Back to this tab |
 
 ## Data
 
-- `library.item(id)` for the versions and tracks; `playback.prefs(id)` and `playback.setPrefs(id, patch)` (`PlaybackPrefs`: version, audio, subtitles, `subtitleOffsetMs`) → `GET|PUT /api/v1/items/{id}/prefs`.
+- `library.item(id)` for the versions and tracks, and since stage 2 `episode` (the show, code, title, the `intro` marks and the `credits` start) and `upNext` (`{kind: 'episode' | 'part', item, season?}` or `{kind: 'choices', items}`); `playback.prefs(id)` and `playback.setPrefs(id, patch)` (`PlaybackPrefs`: version, audio, subtitles, `subtitleOffsetMs`) → `GET|PUT /api/v1/items/{id}/prefs`.
 - `playback.progress(id, seconds)` → `POST /api/v1/items/{id}/progress`.
 - Trickplay frames: `GET /api/v1/items/{id}/trickplay/{n}.jpg` (BIF-style tiles) in the product; the still in the prototype.
 - Events: `watch.updated`.
@@ -104,7 +118,7 @@ Prototyped on all three platforms; the prototype's toolbar picks one under **Str
 
 - **The nudge is 50 ms,** the same step as the admin's subtitle offset ([movies.md](movies.md#decisions)), and it's saved per person and title, not on the track: the admin's offset fixes the file for everyone; this fixes it for you.
 - **A preview line, not a test clip.** Moving a bar under a cue shows the direction at once; replaying a line of dialogue is the product's job when real video exists.
-- **No skip intro** until intro detection exists (decided here, as the plan asked).
+- **No skip intro** until intro detection exists (decided here, as the plan asked). Superseded on 2026-11-01 by prototype-gaps stage 2: episodes carry the server's intro and credits marks, so the buttons only show where a mark exists.
 - **Mobile is landscape,** like every phone video player; portrait playback isn't designed.
 - **Picture in picture is a button on the web** (approved by the owner on 2026-10-27, at the start of 4.2b): Chromium and Safari otherwise offer it only from a menu. To leave it room at 390, Mute shows from the medium breakpoint up; phones and tablets have their own volume buttons, and M still mutes.
 - **AirPlay is iOS's own picker** (expo-video's `VideoAirPlayButton`), not a list highsea draws: iOS knows the screens and asks for codes. Added on the owner's answer 9 of 2026-10-29 ([phase-4-checkpoint-5.md](../plans/phase-4-checkpoint-5.md#the-owners-answers)).

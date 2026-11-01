@@ -51,6 +51,7 @@ import type {
   CollectionRef,
   CollectionSummary,
   CreatedApiKey,
+  Credit,
   CurationPreview,
   CurationStatus,
   CustomTheme,
@@ -58,6 +59,7 @@ import type {
   FeaturedSection,
   HardlinkCheck,
   HomeLayout,
+  HomeMusic,
   HomeSection,
   ImportCandidate,
   Indexer,
@@ -678,6 +680,19 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     music ??= musicLibrary(srv.kind, now())
     return music
   }
+  /** Home's Recently played, newest first: what library.queue was asked for, seeded with three. */
+  let played: ({ album: string } | { artist: string })[] | undefined
+  const recentlyPlayed = () => {
+    played ??= library()
+      .albums.slice(0, 3)
+      .map((a) => ({ album: a.id }))
+    return played
+  }
+  /**
+   * Titles and shows taken off Continue watching (watch.dismiss), per person, until they play
+   * them again.
+   */
+  const dismissed = new Set<string>()
   let shows: ShowSeed[] | undefined
   /** People whose seeded watch state for the shows is laid down: once each, on their first read. */
   const seededShows = new Set<string>()
@@ -749,10 +764,43 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       }
     return null
   }
+  const episodeCode = (e: { season: number; number: number }) =>
+    e.season === 0 ? `Special ${e.number}` : `S${e.season}, E${e.number}`
+  /**
+   * The episode after this one: the next in its season, then the next season's first. Specials
+   * follow only each other.
+   */
+  const episodeAfter = (s: ShowSeed, e: EpisodeSeed): EpisodeSeed | null => {
+    const run = s.seasons
+      .filter((x) => (e.season === 0 ? x.number === 0 : x.number !== 0))
+      .flatMap((x) => x.episodes)
+    return run[run.findIndex((x) => x.id === e.id) + 1] ?? null
+  }
+  /** An episode as a title, for the player and Home's cards: the show's art, its own still. */
+  const episodeItem = (s: ShowSeed, e: EpisodeSeed): ClientItem => {
+    const donor = watchable()[0]
+    if (!donor) throw new ApiError(404, 'not-found', 'That episode can’t play here.')
+    const code = episodeCode(e)
+    return {
+      ...clientItem({
+        ...donor,
+        id: e.id,
+        title: `${s.show.title} · ${code} · ${e.title}`,
+        sortTitle: s.show.sortTitle,
+        year: Number(e.aired.slice(0, 4)),
+        runtimeMinutes: e.runtimeMinutes,
+        genres: s.show.genres,
+        synopsis: e.synopsis,
+        rating: s.show.rating,
+        art: { poster: s.show.art.poster, backdrop: s.show.art.backdrop, still: e.still },
+      }),
+      show: { id: s.show.id, title: s.show.title, code, episode: e.title },
+    }
+  }
   /**
    * An episode as the player reads a title: the prototype's episodes have no files of their own,
-   * so it plays with the first film's versions and tracks, named for the show and the episode. The
-   * episode player's own parts (the episode's line, Next episode, Skip intro) come after the pages.
+   * so it plays with the first film's versions and tracks, named for the show and the episode,
+   * with its intro and credits marked as the server's detection would mark them.
    */
   const episodeDetail = (s: ShowSeed, e: EpisodeSeed): ClientDetail => {
     const donor = watchable()[0]
@@ -760,19 +808,13 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     const versions = versionsOf(donor)
     const prefs = state.prefs[`${me().id}:${e.id}`] ?? {}
     const version = versions.find((v) => v.id === prefs.versionId) ?? versions[0]
-    const code = e.season === 0 ? `Special ${e.number}` : `S${e.season}, E${e.number}`
-    const item = clientItem({
-      ...donor,
-      id: e.id,
-      title: `${s.show.title} · ${code} · ${e.title}`,
-      sortTitle: s.show.sortTitle,
-      year: Number(e.aired.slice(0, 4)),
-      runtimeMinutes: e.runtimeMinutes,
-      genres: s.show.genres,
-      synopsis: e.synopsis,
-      rating: s.show.rating,
-      art: { poster: s.show.art.poster, backdrop: s.show.art.backdrop, still: e.still },
-    })
+    const code = episodeCode(e)
+    const length = e.runtimeMinutes * 60
+    // a cold open, then the titles; a pilot and the specials open on the story itself
+    const opens = e.season > 0 && !(e.season === 1 && e.number === 1)
+    const introStart = 40 + ((e.season * 31 + e.number * 17) % 80)
+    const after = episodeAfter(s, e)
+    const item = episodeItem(s, e)
     return {
       item,
       versions,
@@ -791,6 +833,25 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         audioId: prefs.audioId ?? version?.audio.find((a) => a.default)?.id ?? null,
         subtitleId: prefs.subtitleId !== undefined ? prefs.subtitleId : null,
       },
+      episode: {
+        show: { id: s.show.id, title: s.show.title },
+        season: e.season,
+        number: e.number,
+        title: e.title,
+        code,
+        intro: opens ? { start: introStart, end: introStart + 52 } : null,
+        credits: length - 75,
+      },
+      upNext: after
+        ? {
+            kind: 'episode',
+            id: after.id,
+            title: after.title,
+            line: episodeCode(after),
+            still: after.still,
+            season: after.season !== e.season ? after.season : null,
+          }
+        : null,
     }
   }
   const setEpisodes = (episodes: EpisodeSeed[], watched: boolean) => {
@@ -947,6 +1008,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       progress: progress !== null && progress < 0.95 ? progress : null,
       tagline,
       watched,
+      show: null,
     }
   }
   const watchable = () => state.items.filter(playable)
@@ -2630,27 +2692,99 @@ export function createApi(srv: MockServer, ctx: Ctx) {
             }),
           )
           .filter((x) => x.items.length > 0)
-        const continuing = state.watch
-          .filter((w) => w.userId === me().id)
-          .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))
-          .flatMap((w) => {
+        const u = me().id
+        const seeds = showSeeds()
+        // newest first: films part way, and each show once, at the episode it's on
+        const continuing: ClientItem[] = []
+        const nextUp: ClientItem[] = []
+        const seen = new Set<string>()
+        for (const w of state.watch
+          .filter((x) => x.userId === u)
+          .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))) {
+          const found = episodeSeed(w.itemId)
+          if (!found) {
             const m = state.items.find((x) => x.id === w.itemId)
-            return m && playable(m) ? [clientItem(m)] : []
+            if (!m || !playable(m) || dismissed.has(`${u}:${m.id}`)) continue
+            const item = clientItem(m)
+            if (item.progress !== null) continuing.push(item)
+            continue
+          }
+          const id = found.show.show.id
+          if (seen.has(id) || dismissed.has(`${u}:${id}`)) continue
+          seen.add(id)
+          const next = showOf(found.show).next
+          const e =
+            next &&
+            found.show.seasons.flatMap((x) => x.episodes).find((x) => x.id === next.episode.id)
+          if (!next || !e) continue
+          if (next.kind === 'resume') continuing.push(episodeItem(found.show, e))
+          else if (next.kind === 'next') nextUp.push(episodeItem(found.show, e))
+        }
+        // still airing, watched before: the newest episode, when it isn't watched or already on a card
+        const fresh = seeds
+          .filter((x) => x.show.endYear === null && seen.has(x.show.id))
+          .flatMap((x) => {
+            const newest = x.seasons
+              .filter((season) => season.number !== 0)
+              .flatMap((season) => season.episodes)
+              .sort((a, b) => b.aired.localeCompare(a.aired))[0]
+            if (!newest || episodeOf(newest).watched) return []
+            const item = episodeItem(x, newest)
+            return [...continuing, ...nextUp].some((c) => c.id === item.id) ? [] : [item]
           })
-          .filter((m) => m.progress !== null)
-        const resume: HomeSection[] = continuing.length
-          ? [
-              {
-                id: 'continue',
-                title: 'Continue watching',
-                suffix: null,
-                layout: 'continue',
-                items: continuing,
-              },
-            ]
-          : []
+        const row = (
+          id: string,
+          title: string,
+          layout: 'continue' | 'episodes',
+          items: ClientItem[],
+        ): HomeSection[] => (items.length ? [{ id, title, suffix: null, layout, items }] : [])
+        const watching = [
+          ...row('continue', 'Continue watching', 'continue', continuing),
+          ...row('next-up', 'Next up', 'episodes', nextUp),
+        ]
+        const added = [...seeds]
+          .sort((a, b) => b.show.addedAt.localeCompare(a.show.addedAt))
+          .slice(0, 12)
+          .map(showOf)
+        const music = library()
+        const recent = recentlyPlayed().flatMap((x): HomeMusic[] => {
+          if ('album' in x) {
+            const album = music.albums.find((a) => a.id === x.album)
+            return album ? [{ kind: 'album', album }] : []
+          }
+          const artist = music.artists.find((a) => a.id === x.artist)
+          return artist ? [{ kind: 'artist', artist }] : []
+        })
+        const later: HomeSection[] = [
+          ...row('new-episodes', 'New episodes', 'episodes', fresh),
+          ...(added.length
+            ? [
+                {
+                  id: 'recent-shows',
+                  title: 'Recently added shows',
+                  suffix: null,
+                  layout: 'shows' as const,
+                  items: added,
+                },
+              ]
+            : []),
+          ...(recent.length
+            ? [
+                {
+                  id: 'recent-music',
+                  title: 'Recently played',
+                  suffix: null,
+                  layout: 'music' as const,
+                  items: recent,
+                },
+              ]
+            : []),
+        ]
         const [first, ...rest] = live
-        const all = first?.layout === 'hero' ? [first, ...resume, ...rest] : [...resume, ...live]
+        const all =
+          first?.layout === 'hero'
+            ? [first, ...watching, ...rest, ...later]
+            : [...watching, ...live, ...later]
         // the person's own order and hidden rows; the hero stays on top
         const mine = state.homeLayouts[me().id]
         if (!mine) return all
@@ -2670,10 +2804,14 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         const mine = state.homeLayouts[me().id] ?? { order: [], hidden: [] }
         const rows = [
           { id: 'continue', title: 'Continue watching' },
+          { id: 'next-up', title: 'Next up' },
           ...[...state.featured]
             .filter((f) => f.layout !== 'hero' && curationStatus(f.schedule, now()) === 'live')
             .sort((a, b) => a.order - b.order)
             .map((f) => ({ id: f.id, title: f.title })),
+          { id: 'new-episodes', title: 'New episodes' },
+          { id: 'recent-shows', title: 'Recently added shows' },
+          { id: 'recent-music', title: 'Recently played' },
         ]
         const pos = (id: string) => {
           const i = mine.order.indexOf(id)
@@ -2692,50 +2830,100 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       /** Everything the household can watch. */
       list: () => watchable().map((m) => clientItem(m)),
       /**
-       * Movies by name, genre or person; collections by name or a part's name; the people whose
-       * names match. A kind whose names start with the query (at a word) ranks first, then one
-       * whose names contain it, then the rest, in the order below.
+       * Everything here by name: movies by name, genre or person; shows by name or genre, and
+       * episodes by title; the people credited on a film or a show; collections by name or a
+       * part's name; artists, albums and songs by name. A kind whose names start with the query
+       * (at a word) ranks first, then one whose names contain it, then the rest, in the order
+       * below.
        */
       search: (query: string): SearchResults => {
         const q = query.trim().toLowerCase()
         if (!q) return { sections: [] }
+        const has = (text: string) => text.toLowerCase().includes(q)
         const people = new Map<string, SearchPerson>()
+        const credit = (c: Credit, kind: 'films' | 'shows') => {
+          if (!has(c.name)) return
+          const p = people.get(c.personId) ?? {
+            id: c.personId,
+            name: c.name,
+            photo: c.photo,
+            films: 0,
+            shows: 0,
+          }
+          people.set(c.personId, { ...p, [kind]: p[kind] + 1 })
+        }
         const titles = watchable().filter((m) => {
           const meta = movieMetadata(state, m.id, now())
           const credits = [...(meta?.cast ?? []), ...(meta?.crew ?? [])]
-          for (const c of credits)
-            if (c.name.toLowerCase().includes(q)) {
-              const p = people.get(c.personId)
-              people.set(c.personId, {
-                id: c.personId,
-                name: c.name,
-                photo: c.photo,
-                titles: (p?.titles ?? 0) + 1,
-              })
-            }
+          // each person once per film, however many roles they had
+          for (const c of new Map(credits.map((c) => [c.personId, c])).values()) credit(c, 'films')
           return (
-            m.title.toLowerCase().includes(q) ||
+            has(m.title) ||
             m.genres.some((g) => g.toLowerCase().startsWith(q)) ||
-            credits.some((c) => c.name.toLowerCase().includes(q))
+            credits.some((c) => has(c.name))
           )
         })
         // titles whose name matches come first
-        const named = (m: MediaItem) => (m.title.toLowerCase().includes(q) ? 0 : 1)
+        const named = (m: MediaItem) => (has(m.title) ? 0 : 1)
+        const shows = showSeeds().filter((x) => {
+          const credits = [...x.cast, ...x.creators, ...x.crew]
+          for (const c of new Map(credits.map((c) => [c.personId, c])).values()) credit(c, 'shows')
+          return has(x.show.title) || x.show.genres.some((g) => g.toLowerCase().startsWith(q))
+        })
+        const episodes = showSeeds()
+          .flatMap((x) =>
+            x.seasons.flatMap((season) =>
+              season.episodes
+                .filter((e) => has(e.title))
+                .map((e) => ({
+                  id: e.id,
+                  show: { id: x.show.id, title: x.show.title },
+                  code: episodeCode(e),
+                  title: e.title,
+                  still: e.still,
+                })),
+            ),
+          )
+          .slice(0, 12)
         const collections = clientCollections().filter(
-          ({ collection: c, items }) =>
-            c.name.toLowerCase().includes(q) ||
-            items.some((m) => m.title.toLowerCase().includes(q)),
+          ({ collection: c, items }) => has(c.name) || items.some((m) => has(m.title)),
         )
+        const music = library()
+        const songs = music.albums
+          .flatMap((album) =>
+            (albumDetail(music, album.id)?.songs ?? [])
+              .filter((x) => has(x.title))
+              .map((x) => ({ ...x, album })),
+          )
+          .slice(0, 12)
         const sections: SearchSection[] = [
           {
             kind: 'movies',
             items: titles.sort((a, b) => named(a) - named(b)).map((m) => clientItem(m)),
           },
-          { kind: 'collections', items: collections.map((c) => c.collection) },
+          {
+            kind: 'shows',
+            items: shows
+              .map(showOf)
+              .sort((a, b) => (has(a.title) ? 0 : 1) - (has(b.title) ? 0 : 1)),
+          },
+          { kind: 'episodes', items: episodes },
           {
             kind: 'people',
-            items: [...people.values()].sort((a, b) => b.titles - a.titles).slice(0, 8),
+            items: [...people.values()]
+              .sort((a, b) => b.films + b.shows - (a.films + a.shows))
+              .slice(0, 8),
           },
+          { kind: 'collections', items: collections.map((c) => c.collection) },
+          {
+            kind: 'artists',
+            items: music.artists.filter((a) => has(a.name) || a.genres.some((g) => has(g))),
+          },
+          {
+            kind: 'albums',
+            items: music.albums.filter((a) => has(a.title) || has(a.artist.name)),
+          },
+          { kind: 'songs', items: songs },
         ]
         const nameOf = (x: { title: string } | { name: string }) =>
           ('title' in x ? x.title : x.name).toLowerCase()
@@ -2818,6 +3006,12 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       queue: (source: { album: string } | { artist: string }, shuffle = false): QueuedSong[] => {
         const q = queueOf(library(), source, shuffle)
         if (!q) throw new ApiError(404, 'not-found', 'There’s nothing here to play.')
+        const key = 'album' in source ? source.album : source.artist
+        played = [
+          source,
+          ...recentlyPlayed().filter((x) => ('album' in x ? x.album : x.artist) !== key),
+        ].slice(0, 12)
+        srv.events.emit({ type: 'music.updated' })
         return q
       },
       /** An artist with their albums by kind; their person page when they're in a film or show here. */
@@ -2937,6 +3131,22 @@ export function createApi(srv: MockServer, ctx: Ctx) {
             return x && playable(x) ? [clientItem(x)] : []
           })
           .slice(0, 12)
+        // Next up: the collection's next part, else a few choices that wait to be picked
+        const parts = tmdbCollections().find((c) => c.collection.id === meta?.collection?.id)
+        const part = parts?.items[parts.items.findIndex((x) => x.id === id) + 1]
+        const upNext: ClientDetail['upNext'] =
+          parts && part
+            ? {
+                kind: 'part',
+                id: part.id,
+                title: part.title,
+                line: parts.collection.name,
+                still: part.art.still,
+                season: null,
+              }
+            : related.length
+              ? { kind: 'choices', items: related.slice(0, 3) }
+              : null
         return {
           item: clientItem(m),
           versions,
@@ -2964,6 +3174,8 @@ export function createApi(srv: MockServer, ctx: Ctx) {
                 ? prefs.subtitleId
                 : (version?.subtitles.find((t) => t.default)?.id ?? null),
           },
+          episode: null,
+          upNext,
         }
       },
     },
@@ -2985,6 +3197,10 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           w.position = position
           w.updatedAt = iso(now())
         } else state.watch.push({ userId: u, itemId: id, position, updatedAt: iso(now()) })
+        // playing it again puts it back on Continue watching
+        dismissed.delete(`${u}:${id}`)
+        const show = episodeSeed(id)?.show.show.id
+        if (show) dismissed.delete(`${u}:${show}`)
         srv.events.emit({ type: 'watch.updated' })
       },
       /** Mark as watched (to the end) or unwatched (from the start), for this user. */
@@ -3000,6 +3216,16 @@ export function createApi(srv: MockServer, ctx: Ctx) {
             position: m.runtimeMinutes * 60,
             updatedAt: iso(now()),
           })
+        srv.events.emit({ type: 'watch.updated' })
+      },
+      /**
+       * Remove from Continue watching: forgets the place without marking it watched. For an
+       * episode the show leaves Continue watching and Next up until it's played again.
+       */
+      dismiss: (id: string) => {
+        const u = me().id
+        state.watch = state.watch.filter((x) => !(x.userId === u && x.itemId === id))
+        dismissed.add(`${u}:${episodeSeed(id)?.show.show.id ?? id}`)
         srv.events.emit({ type: 'watch.updated' })
       },
     },

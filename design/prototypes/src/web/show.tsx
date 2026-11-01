@@ -41,6 +41,7 @@ import {
   playLabel,
   seasonsCount,
   showYears,
+  useEpisodeTarget,
 } from '../client/shows.ts'
 import type { ClientEpisode, ClientSeason, ClientShowDetail } from '../mock/types.ts'
 import { Facts, heroHeight, Round, RoundButton, scrim } from './detail.tsx'
@@ -78,7 +79,8 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
   const next = s.next
   const people = showPeopleOf(d)
   const mark = useMarkEpisodes()
-  const [season, setSeason] = useState(String(next?.episode.season ?? d.seasons[0]?.number ?? 1))
+  const target = useEpisodeTarget(d, next?.episode.season ?? d.seasons[0]?.number ?? 1)
+  const [season, setSeason] = useState(String(target.season))
   return (
     <main className="pb-16">
       <section aria-labelledby="title" className={heroHeight}>
@@ -318,7 +320,10 @@ function EpisodeRow({ episode: e }: { episode: ClientEpisode }) {
   const mark = useMarkEpisodes()
   const label = e.watched ? 'Mark as unwatched' : 'Mark as watched'
   return (
-    <div className="group/episode relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg p-2 transition-tint hover:bg-s1 has-[a:focus-visible]:bg-s1">
+    <div
+      data-episode={e.id}
+      className="group/episode relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg p-2 transition-tint hover:bg-s1 has-[a:focus-visible]:bg-s1"
+    >
       <a
         href={webHref(`/play/${e.id}`)}
         aria-label={`Play ${episodePlace(e)}, ${e.title}, ${episodeTime(e)}${e.watched ? ', watched' : ''}`}

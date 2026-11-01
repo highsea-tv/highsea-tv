@@ -65,6 +65,31 @@ Eight stages, each reviewed by the owner before the next starts, as the owner's 
 
 ## Progress
 
+- **2026-11-01, stage 2 (shows and music where people start), for the owner's review:**
+  - **2.1, the episode player:**
+    - The title is the show's, with "S1, E1 · Pilot" under it on every app's player. Leaving a player opened directly goes to the show (`titlePage` and `titleLines` in `client/player.ts`).
+    - **Skip intro** (from the mock's intro marks; none for pilots and specials) and **Skip credits** (`SkipButton` in `client/stream-states.tsx`) show over the frame. On the TV, Skip intro takes the focus while it shows.
+    - Next up's card follows `upNext` on the item: **Next episode**, **Season 2 starts** after a finale, a collection's next part, or **More like this** with three choices and no countdown (2.5). The tracks panel says "Saved for this episode."
+  - **2.2, Search:**
+    - Search covers eight kinds in the plan's order: movies, shows, episodes, people (from films' and shows' credits, "3 movies · 1 show"), collections, artists, albums and songs. Picking a song plays it from its album.
+    - An episode opens its show at it: the new route `/shows/{id}/episodes/{episode}` on the web, phone and TV chooses its season and brings its row into view.
+    - The placeholder is "Films, shows, music and people", with new suggestions.
+  - **2.3, Home:**
+    - Continue watching has a card per show, for the episode it resumes.
+    - New rows: Next up, then after the owner's rows New episodes, Recently added shows and Recently played (albums and artists). Each is in Home screen settings.
+    - An empty Home says "films, shows or music".
+  - **2.4, Continue watching's menu** (`client/continue-menu.ts`): Go to the show or the film, Mark as watched, and Remove from Continue watching, with a toast.
+    - ⋯ on the card on the web and desktop.
+    - A 0.6 s long press on the phone opens a sheet.
+    - On the TV, OK held for 0.6 s opens the menu over the page, the same hold as the film page's; Back closes it and focus returns to the card, or to the next one when the card has gone.
+    - A key-up only counts on the card where the key went down. Without that, OK on Remove played the next card.
+  - **Calls I made, for review:**
+    - The mock's call is `playback.dismiss`, not the plan's `watch.dismiss`, beside the other playback calls. A show removed comes back when one of its episodes is played again.
+    - A collection's next part is headed **Next up**.
+    - The "play next" setting the plan cites as 2.6 doesn't exist, so the countdown always runs; Cancel stops it.
+    - `apps/web`'s search wasn't changed: it reads the server's `titles`, and the server has no shows or music yet.
+  - **Specs:** player.md (Episodes, Skip intro and credits, Next up's kinds), client-search.md, client-home.md (the new rows and the menu) and client-detail.md (an episode's address).
+  - **Checks (Node 26.11.1):** Biome and tsc on the prototypes; the pages sweep on the web (1,152), phone (336) and TV (288); the keyboard walks on the web (96) and phone (42); and the TV's D-pad walk. All clean.
 - **2026-11-01, stage 1 (the bugs), for the owner's review:**
   - **1.1, Back loops:** the prototype's players leave through `leavePlayer` in `client/player.ts` (back to the page they were opened from, or the film's page in the player's place when opened directly), and Next up replaces the player with `playNext`. Checked on the phone: Home, the film, Play, Back, then Back reaches Home.
     - **In the apps:** `apps/mobile` and `apps/tv` already went back (`router.canGoBack()`), so only `apps/web` had the loop. Its links now mark their history entry (`state: { inApp: true }` in `useLinks`), and the player goes back when it was opened from inside the app, or replaces itself with the film's page when not. Next up replaces it, keeping that mark. A new test in `apps/web/test/screens.test.tsx` fails without the fix.

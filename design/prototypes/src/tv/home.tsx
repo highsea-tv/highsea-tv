@@ -7,14 +7,20 @@
 // Behind the featured card, a bloom in its most vibrant colour fills the screen and fades into the
 // background (the owner, 2026-10-30).
 // An announcement that must be acknowledged comes first, on its own.
-import { Icon, QualityTag, Skeleton } from '@highsea-tv/ui-web'
+import { cn, Icon, QualityTag, Skeleton } from '@highsea-tv/ui-web'
 import { useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation } from 'wouter'
 import { BloomGlow } from '../client/bloom.tsx'
-import { meta, qualityTags, useAnnouncements, useHome } from '../client/data.ts'
+import { useContinueMenu, useLongPress } from '../client/continue-menu.ts'
+import { isFilmSection, meta, qualityTags, useAnnouncements, useHome } from '../client/data.ts'
+import { homeMusicCard } from '../client/music.ts'
+import { UnwatchedCount } from '../client/show-card.tsx'
+import { seasonsCount } from '../client/shows.ts'
 import { useVibrant } from '../client/vibrant.ts'
 import { Inline } from '../kit/inline.tsx'
-import type { ClientItem, HomeSection } from '../mock/types.ts'
+import type { ClientItem, FilmSection, HomeSection } from '../mock/types.ts'
+import { useBack } from './back.ts'
 import { TvFilmRow, TvFilmRowSkeleton } from './film-row.tsx'
 import {
   pageTop,
@@ -25,10 +31,12 @@ import {
   TvPoster,
   TvRow,
   TvRowSkeleton,
+  TvTile,
   tvHref,
   useInitialFocus,
   useRowNavigation,
 } from './kit.tsx'
+import { TvArtistTile } from './music.tsx'
 
 /**
  * The featured title as one large card across the page, which lifts only slightly on focus: at
@@ -81,7 +89,7 @@ function FeaturedCard({ item }: { item: ClientItem }) {
  * The featured section's first title, across the page. The others wait until the featured card is
  * designed again (the owner, 2026-10-30).
  */
-function Featured({ section }: { section: HomeSection }) {
+function Featured({ section }: { section: FilmSection }) {
   const item = section.items[0]
   if (!item) return null
   return (
@@ -115,7 +123,86 @@ function Bloom({ items, active, shown }: { items: ClientItem[]; active: number; 
   )
 }
 
-function Row({ section, goUp }: { section: HomeSection; goUp?: string }) {
+/** A Continue watching card: OK resumes, OK held opens its menu. */
+function ContinueCard({ item, onMenu }: { item: ClientItem; onMenu: (item: ClientItem) => void }) {
+  const press = useLongPress(() => onMenu(item))
+  return (
+    <li className="w-[22cqw] shrink-0" data-continue={item.id} {...press}>
+      <TvPoster item={item} wide resume href={tvHref(`/play/${item.id}`)} />
+    </li>
+  )
+}
+
+/**
+ * Continue watching's menu over the page, from OK held on a card, as the Apple TV app's: go to the
+ * title, mark it watched, or take it off the row (client-home.md › Continue watching). Back closes
+ * it, and focus goes back to the card, or to the row's next one when the card has gone.
+ */
+function ContinueMenu({ item, onClose }: { item: ClientItem; onClose: (gone: boolean) => void }) {
+  const [, navigate] = useLocation()
+  const menu = useContinueMenu(item)
+  useBack(() => onClose(false))
+  useInitialFocus(true, item.id, '[data-continue-menu] [data-initial]')
+  return (
+    <div
+      data-isolate=""
+      data-continue-menu=""
+      role="dialog"
+      aria-label={item.show?.title ?? item.title}
+      className="absolute inset-0 z-10 grid place-items-center bg-[rgb(0_0_0/0.72)]"
+    >
+      <div className="grid w-[30cqw] gap-[1.2cqw]">
+        <div className="grid gap-[0.3cqw]">
+          <h2 className="font-semibold text-(length:--tv-text-row-title)">
+            {item.show?.title ?? item.title}
+          </h2>
+          {item.show && (
+            <p className="text-(length:--tv-text-meta) text-text-2">
+              {item.show.code} · {item.show.episode}
+            </p>
+          )}
+        </div>
+        <div data-group="continue-menu" className="grid gap-[0.6cqw]">
+          <TvButton
+            initial
+            icon={item.show ? 'series' : 'movie'}
+            onClick={() => navigate(menu.goTo.path)}
+          >
+            {menu.goTo.label}
+          </TvButton>
+          <TvButton
+            icon="check"
+            onClick={() => {
+              onClose(true)
+              menu.markWatched()
+            }}
+          >
+            Mark as watched
+          </TvButton>
+          <TvButton
+            icon="remove"
+            onClick={() => {
+              onClose(true)
+              menu.remove()
+            }}
+          >
+            Remove from Continue watching
+          </TvButton>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function Row({
+  section,
+  goUp,
+  onMenu,
+}: {
+  section: HomeSection
+  goUp?: string
+  onMenu: (item: ClientItem) => void
+}) {
   // Continue watching keeps its row of 16:9 cards, larger now, each resuming (the owner,
   // 2026-10-30); the
   // other rows have their first slot fixed, loop (the owner, 2026-10-30), and open the movie
@@ -123,10 +210,58 @@ function Row({ section, goUp }: { section: HomeSection; goUp?: string }) {
     return (
       <TvRow group={section.id} title={section.title} suffix={section.suffix} goUp={goUp}>
         {section.items.map((m) => (
+          <ContinueCard key={m.id} item={m} onMenu={onMenu} />
+        ))}
+      </TvRow>
+    )
+  // Next up and New episodes are the same cards, playing the episode without the watched bar
+  if (section.layout === 'episodes')
+    return (
+      <TvRow group={section.id} title={section.title} suffix={section.suffix} goUp={goUp}>
+        {section.items.map((m) => (
           <li key={m.id} className="w-[22cqw] shrink-0">
-            <TvPoster item={m} wide resume href={tvHref(`/play/${m.id}`)} />
+            <TvPoster item={m} wide href={tvHref(`/play/${m.id}`)} />
           </li>
         ))}
+      </TvRow>
+    )
+  if (section.layout === 'shows')
+    return (
+      <TvRow group={section.id} title={section.title} suffix={section.suffix} goUp={goUp}>
+        {section.items.map((x) => (
+          <li key={x.id} className="w-[12cqw] shrink-0">
+            <TvTile
+              title={x.title}
+              caption={seasonsCount(x.seasons)}
+              src={x.art.poster}
+              href={tvHref(`/shows/${x.id}`)}
+              status={<UnwatchedCount show={x} />}
+            />
+          </li>
+        ))}
+      </TvRow>
+    )
+  if (section.layout === 'music')
+    return (
+      <TvRow group={section.id} title={section.title} suffix={section.suffix} goUp={goUp}>
+        {section.items.map((x) => {
+          const c = homeMusicCard(x)
+          return (
+            <li key={c.id} className={cn('shrink-0', c.round ? 'w-[10cqw]' : 'w-[12cqw]')}>
+              {x.kind === 'artist' ? (
+                <TvArtistTile artist={x.artist} />
+              ) : (
+                <TvTile
+                  square
+                  title={c.title}
+                  caption={c.caption}
+                  src={c.src}
+                  href={tvHref(c.path)}
+                />
+              )}
+            </li>
+          )
+        })}
       </TvRow>
     )
   return (
@@ -178,12 +313,21 @@ function usePageOffset(clear: number) {
 }
 
 function Home({ sections }: { sections: HomeSection[] }) {
-  const hero = sections.find((s) => s.layout === 'hero')
+  const hero = sections.find((s): s is FilmSection => isFilmSection(s) && s.layout === 'hero')
   const rows = sections.filter((s) => s !== hero)
   const { page, style, lifted } = usePageOffset(pageTop)
   const rowsRef = useRef<HTMLDivElement>(null)
   useInitialFocus(true)
   useRowNavigation(rowsRef)
+  const [menu, setMenu] = useState<ClientItem | null>(null)
+  // closing the menu, focus goes back to its card; to the row's next card once it has gone
+  const closeMenu = (gone: boolean) => {
+    if (!menu) return
+    const card = document.querySelector<HTMLElement>(`[data-continue="${menu.id}"]`)
+    const to = gone ? (card?.nextElementSibling ?? card?.previousElementSibling) : card
+    setMenu(null)
+    requestAnimationFrame(() => to?.querySelector<HTMLElement>('[data-focusable]')?.focus())
+  }
   return (
     <div className="absolute inset-0 overflow-hidden">
       {hero && <Bloom items={hero.items.slice(0, 1)} active={0} shown={!lifted} />}
@@ -202,11 +346,12 @@ function Home({ sections }: { sections: HomeSection[] }) {
           )}
           {rows.map((s, i) => (
             <div key={s.id} data-row={i + 1} data-section={s.id} className="grid grid-cols-1">
-              <Row section={s} goUp={i === 0 && hero ? 'hero' : undefined} />
+              <Row section={s} goUp={i === 0 && hero ? 'hero' : undefined} onMenu={setMenu} />
             </div>
           ))}
         </div>
       </div>
+      {menu && <ContinueMenu item={menu} onClose={closeMenu} />}
     </div>
   )
 }
@@ -303,7 +448,7 @@ export function TvHome() {
             </TvButton>
           }
         >
-          When the server’s owner adds movies, they show up here.
+          When the server’s owner adds films, shows or music, they show up here.
         </TvMessage>
       </>
     )

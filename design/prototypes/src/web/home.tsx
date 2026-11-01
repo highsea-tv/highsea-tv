@@ -8,17 +8,26 @@ import {
   cn,
   EmptyState,
   Icon,
+  Menu,
+  MenuContent,
+  MenuItem,
+  MenuTrigger,
+  Poster,
   QualityTag,
   Skeleton,
   SkeletonText,
 } from '@highsea-tv/ui-web'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { useLocation } from 'wouter'
 import { BloomGlow } from '../client/bloom.tsx'
-import { meta, qualityTags, useHome } from '../client/data.ts'
+import { useContinueMenu } from '../client/continue-menu.ts'
+import { isFilmSection, meta, qualityTags, useHome } from '../client/data.ts'
 import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
+import { ShowPoster } from '../client/show-card.tsx'
 import { useVibrant } from '../client/vibrant.ts'
-import type { ClientItem, HomeSection } from '../mock/types.ts'
+import type { ClientItem, FilmSection, HomeSection } from '../mock/types.ts'
 import { WebFilmRow, WebFilmRowSkeleton } from './film-row.tsx'
+import { ArtistCard } from './music.tsx'
 import { gutter, webHref } from './shell.tsx'
 
 // ---------------------------------------------------------------- shared pieces
@@ -79,14 +88,99 @@ export function PosterRow({
   )
 }
 
-/** Continue watching: stills that resume where you left off. */
-function ContinueRow({ section }: { section: HomeSection }) {
+/** ⋯ on a Continue watching card: go to the title, mark it watched, or take it off the row. */
+function ContinueMenu({ item }: { item: ClientItem }) {
+  const menu = useContinueMenu(item)
+  const [, navigate] = useLocation()
   return (
-    <CarouselRow title={section.title} itemClassName={cardWidth}>
+    <Menu>
+      <MenuTrigger asChild>
+        <button
+          type="button"
+          aria-label={`More for ${item.show?.title ?? item.title}`}
+          className="glass-badge grid size-9 cursor-pointer place-items-center rounded-full text-text outline-none focus-visible:ring-focus"
+        >
+          <Icon name="more" size={16} />
+        </button>
+      </MenuTrigger>
+      <MenuContent align="end" className="w-72">
+        <MenuItem icon={item.show ? 'series' : 'movie'} onSelect={() => navigate(menu.goTo.path)}>
+          {menu.goTo.label}
+        </MenuItem>
+        <MenuItem icon="check" onSelect={menu.markWatched}>
+          Mark as watched
+        </MenuItem>
+        <MenuItem icon="remove" onSelect={menu.remove}>
+          Remove from Continue watching
+        </MenuItem>
+      </MenuContent>
+    </Menu>
+  )
+}
+
+/**
+ * Continue watching: stills that resume where you left off. Next up and New episodes are stills
+ * too, of the episode each plays, without the progress bar.
+ */
+function StillRow({ section, resume }: { section: FilmSection; resume: boolean }) {
+  return (
+    <CarouselRow title={section.title} suffix={section.suffix} itemClassName={cardWidth}>
       {section.items.map((m) => (
-        <MediaPoster key={m.id} item={m} resume href={webHref(`/play/${m.id}`)} titleSize="body" />
+        <MediaPoster
+          key={m.id}
+          item={m}
+          wide
+          resume={resume}
+          href={webHref(`/play/${m.id}`)}
+          titleSize="body"
+          actions={resume ? <ContinueMenu item={m} /> : undefined}
+        />
       ))}
     </CarouselRow>
+  )
+}
+
+/** A row of shows or of music: posters with the unwatched count, or square covers and artists. */
+function Row({ section: s }: { section: HomeSection }) {
+  if (s.layout === 'shows')
+    return (
+      <CarouselRow title={s.title} suffix={s.suffix}>
+        {s.items.map((x) => (
+          <ShowPoster key={x.id} show={x} titleSize="body" href={webHref(`/shows/${x.id}`)} />
+        ))}
+      </CarouselRow>
+    )
+  if (s.layout === 'music')
+    return (
+      <CarouselRow title={s.title} suffix={s.suffix}>
+        {s.items.map((x) =>
+          x.kind === 'artist' ? (
+            <ArtistCard key={x.artist.id} artist={x.artist} />
+          ) : (
+            <Poster
+              key={x.album.id}
+              aspect="square"
+              title={x.album.title}
+              src={x.album.cover}
+              href={webHref(`/music/albums/${x.album.id}`)}
+              showTitle
+              titleSize="body"
+              caption={x.album.artist.name}
+            />
+          ),
+        )}
+      </CarouselRow>
+    )
+  if (s.layout === 'continue' || s.layout === 'episodes')
+    return <StillRow section={s} resume={s.layout === 'continue'} />
+  return (
+    <WebFilmRow
+      title={s.title}
+      suffix={s.suffix}
+      items={s.items}
+      hrefOf={(m) => webHref(`/movies/${m.id}`)}
+      loop
+    />
   )
 }
 
@@ -97,17 +191,7 @@ function Rows({ sections }: { sections: HomeSection[] }) {
         s.layout === 'hero' ? null : (
           // data-section: a curation preview scrolls to the section being edited
           <div key={s.id} data-section={s.id} className="grid">
-            {s.layout === 'continue' ? (
-              <ContinueRow section={s} />
-            ) : (
-              <WebFilmRow
-                title={s.title}
-                suffix={s.suffix}
-                items={s.items}
-                hrefOf={(m) => webHref(`/movies/${m.id}`)}
-                loop
-              />
-            )}
+            <Row section={s} />
           </div>
         ),
       )}
@@ -178,7 +262,7 @@ function HomeStates({ children }: { children: (sections: HomeSection[]) => React
         className={cn('mx-auto w-full grid min-h-[60vh] max-w-[1680px] place-items-center', gutter)}
       >
         <EmptyState icon="movie" title="Nothing to watch yet">
-          When the server’s owner adds movies, they show up here.
+          When the server’s owner adds films, shows or music, they show up here.
         </EmptyState>
       </main>
     )
@@ -259,7 +343,7 @@ function useMostlyInView() {
 }
 
 function Home({ sections }: { sections: HomeSection[] }) {
-  const hero = sections.find((s) => s.layout === 'hero')
+  const hero = sections.find((s): s is FilmSection => isFilmSection(s) && s.layout === 'hero')
   // the featured section's first title; the others wait until the card is designed again, as on
   // the TV (the owner, 2026-10-30)
   const item = hero?.items[0]

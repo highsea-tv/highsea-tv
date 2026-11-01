@@ -15,11 +15,14 @@ import {
   playNext,
   SCRUB_MS,
   SEEK_S,
+  titleLines,
+  titlePage,
   trickplayAt,
   usePlayer,
 } from '../client/player.ts'
 import {
   NextUp,
+  SkipButton,
   type StreamAction,
   StreamMessage,
   StreamWaiting,
@@ -55,12 +58,16 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
   // a message or Next up takes the focus (its first button, inside its isolated region); the
   // scrubber has it otherwise (the tracks panel hands it back to its button itself)
   // Next up asks only when there's something next; at the end of the last, the chrome stays
-  const next = player.detail.data?.related[0]
+  const next = player.detail.data?.upNext
+  const back = () => leavePlayer(navigate, titlePage(player.detail.data, id))
   const asking =
     player.stream === 'failed' ||
     player.stream === 'stopped' ||
     (player.stream === 'next-up' && !!next)
-  useInitialFocus(ready && !asking, asking, '[data-player-scrubber]')
+  // Skip intro or Skip credits takes it while it shows, and hands it back to the scrubber after
+  const skip = (!!player.intro || player.credits) && player.stream === 'normal' && !panel
+  useInitialFocus(ready && !asking && !skip, asking || skip, '[data-player-scrubber]')
+  useInitialFocus(ready && skip, skip, '[data-skip] [data-initial]')
   useInitialFocus(ready && asking, player.stream, '[data-isolate] [data-initial]')
 
   const wake = useCallback(() => {
@@ -75,7 +82,7 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
   useBack(() => {
     if (panel) setPanel(false)
     else if (shown && player.playing) setShown(false)
-    else leavePlayer(navigate, `/movies/${id}`)
+    else back()
   })
 
   // any key but Back wakes the chrome, so Back can hide it or leave (useBack above); Play/Pause
@@ -129,6 +136,7 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
     )
 
   const d = player.detail.data
+  const lines = titleLines(d)
   const waiting = player.stream === 'preparing' || player.stream === 'buffering'
   const chrome = shown || !player.playing || panel || waiting
   const fraction = player.position / Math.max(1, player.duration)
@@ -137,7 +145,10 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
       {d && (
         <img src={d.item.art.still} alt="" className="absolute inset-0 size-full object-cover" />
       )}
-      <h1 className="sr-only">Playing {d?.item.title ?? ''}</h1>
+      <h1 className="sr-only">
+        Playing {lines.title}
+        {lines.line && `, ${lines.line}`}
+      </h1>
       <div
         className={cn(
           'absolute inset-x-0 transition-[bottom] duration-200',
@@ -159,9 +170,11 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
       >
         <div className="absolute inset-x-0 top-0 flex items-start gap-[1.2cqw] bg-[linear-gradient(rgb(0_0_0/0.7),transparent)] px-(--tv-safe-x) pt-(--tv-safe-y) pb-[4cqw]">
           <div className="grid gap-[0.3cqw]">
-            <p className="font-semibold text-[2.2cqw] leading-[1.15]">{d?.item.title}</p>
-            {player.version && (
-              <p className="text-(length:--tv-text-meta) text-text-2">{player.version.detail}</p>
+            <p className="font-semibold text-[2.2cqw] leading-[1.15]">{lines.title}</p>
+            {(lines.line || player.version) && (
+              <p className="text-(length:--tv-text-meta) text-text-2">
+                {[lines.line, player.version?.detail].filter(Boolean).join(' · ')}
+              </p>
             )}
           </div>
           {player.version && (
@@ -248,15 +261,12 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
           onAudio={player.setAudio}
           onSubtitle={player.setSubtitle}
           timing={{ offsetMs: player.offsetMs, nudge: player.nudge }}
+          episode={!!d?.episode}
         />
       )}
+      <SkipButton player={player} size="tv" action={tvStreamAction} />
       <StreamWaiting player={player} size="tv" />
-      <StreamMessage
-        player={player}
-        size="tv"
-        action={tvStreamAction}
-        onBack={() => leavePlayer(navigate, `/movies/${id}`)}
-      />
+      <StreamMessage player={player} size="tv" action={tvStreamAction} onBack={back} />
       <NextUp
         player={player}
         next={next}

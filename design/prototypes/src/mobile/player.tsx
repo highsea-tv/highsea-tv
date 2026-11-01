@@ -9,8 +9,16 @@ import { Button, cn, EmptyState, Icon } from '@highsea-tv/ui-web'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock, useAirPlay } from '../client/data.ts'
-import { HIDE_MS, leavePlayer, playNext, SEEK_S, usePlayer } from '../client/player.ts'
-import { NextUp, StreamMessage, StreamWaiting } from '../client/stream-states.tsx'
+import {
+  HIDE_MS,
+  leavePlayer,
+  playNext,
+  SEEK_S,
+  titleLines,
+  titlePage,
+  usePlayer,
+} from '../client/player.ts'
+import { NextUp, SkipButton, StreamMessage, StreamWaiting } from '../client/stream-states.tsx'
 import { PHONE } from '../kit/mobile/device.tsx'
 import { CueLine, Scrubber, TracksPanel, webStreamAction } from '../web/player.tsx'
 import { mobileHref } from './shell.tsx'
@@ -60,6 +68,8 @@ export function MobilePlayer({ fromStart = false }: { fromStart?: boolean }) {
     )
 
   const d = player.detail.data
+  const lines = titleLines(d)
+  const back = () => leavePlayer(navigate, titlePage(d, id))
   const waiting = player.stream === 'preparing' || player.stream === 'buffering'
   // a message over the frame has the screen to itself
   const message = player.stream === 'failed' || player.stream === 'stopped'
@@ -89,7 +99,10 @@ export function MobilePlayer({ fromStart = false }: { fromStart?: boolean }) {
             />
           )}
         </button>
-        <h1 className="sr-only">Playing {d?.item.title ?? ''}</h1>
+        <h1 className="sr-only">
+          Playing {lines.title}
+          {lines.line && `, ${lines.line}`}
+        </h1>
         {screen ? (
           <p className="pointer-events-none absolute inset-x-0 top-[19%] grid justify-items-center gap-1 text-center text-[#ededee]">
             <span className="flex items-center gap-2 font-semibold text-[17px]">
@@ -112,13 +125,18 @@ export function MobilePlayer({ fromStart = false }: { fromStart?: boolean }) {
               <button
                 type="button"
                 aria-label="Back to details"
-                onClick={() => leavePlayer(navigate, `/movies/${id}`)}
+                onClick={back}
                 className={`${round} size-11`}
               >
                 <Icon name="chevron-down" size={24} />
               </button>
-              <span className="truncate font-semibold text-[#ededee] text-[17px]">
-                {d?.item.title}
+              <span className="grid min-w-0">
+                <span className="truncate font-semibold text-[#ededee] text-[17px]">
+                  {lines.title}
+                </span>
+                {lines.line && (
+                  <span className="truncate text-[#ededee]/70 text-[13px]">{lines.line}</span>
+                )}
               </span>
               <button
                 type="button"
@@ -195,16 +213,12 @@ export function MobilePlayer({ fromStart = false }: { fromStart?: boolean }) {
             onClose={() => setPicker(false)}
           />
         )}
+        <SkipButton player={player} size="mobile" action={webStreamAction} />
         <StreamWaiting player={player} size="mobile" />
-        <StreamMessage
-          player={player}
-          size="mobile"
-          action={webStreamAction}
-          onBack={() => leavePlayer(navigate, `/movies/${id}`)}
-        />
+        <StreamMessage player={player} size="mobile" action={webStreamAction} onBack={back} />
         <NextUp
           player={player}
-          next={d?.related[0]}
+          next={d?.upNext}
           size="mobile"
           action={webStreamAction}
           onPlay={(next) => playNext(navigate, next)}
