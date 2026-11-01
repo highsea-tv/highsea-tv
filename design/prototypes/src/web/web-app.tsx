@@ -143,7 +143,7 @@ function Routes() {
       </Route>
       <Route>
         <WebShell>
-          <main className="grid min-h-[70vh] place-items-center px-4">
+          <main data-not-found="" className="grid min-h-[70vh] place-items-center px-4">
             <EmptyState
               icon="search"
               title="There’s nothing at this address"

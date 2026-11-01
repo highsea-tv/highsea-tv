@@ -486,6 +486,22 @@ describe('the player', () => {
     expect(window.location.pathname).toBe('/web/movies/45745')
   })
 
+  test('opened from a title’s page, leaving goes back to it rather than opening it again', async () => {
+    const { page, user } = await open('/movies/45745')
+    const before = window.history.length
+    await user.click(page.getByRole('link', { name: /Resume/ }))
+    await settle()
+    expect(window.location.pathname).toBe('/web/play/45745')
+    await user.click(page.getByRole('button', { name: 'Back to details' }))
+    await settle()
+    await new Promise((r) => setTimeout(r, 50))
+    await settle()
+    expect(window.location.pathname).toBe('/web/movies/45745')
+    // the page it was opened from, not a new entry for it, so Back there doesn't reach the player
+    expect(window.history.state?.inApp).toBeUndefined()
+    expect(window.history.length).toBe(before + 1)
+  })
+
   test('one that isn’t here says so, with Go home', async () => {
     const { page } = await open('/play/19')
     expect(page.getByText('That title isn’t on this server.')).toBeTruthy()

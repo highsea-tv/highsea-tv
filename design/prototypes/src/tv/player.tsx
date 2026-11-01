@@ -9,7 +9,15 @@ import { cn, Icon, QualityTag } from '@highsea-tv/ui-web'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock } from '../client/data.ts'
-import { HIDE_MS, SCRUB_MS, SEEK_S, trickplayAt, usePlayer } from '../client/player.ts'
+import {
+  HIDE_MS,
+  leavePlayer,
+  playNext,
+  SCRUB_MS,
+  SEEK_S,
+  trickplayAt,
+  usePlayer,
+} from '../client/player.ts'
 import {
   NextUp,
   type StreamAction,
@@ -46,7 +54,12 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
   const ready = player.detail.status === 'success'
   // a message or Next up takes the focus (its first button, inside its isolated region); the
   // scrubber has it otherwise (the tracks panel hands it back to its button itself)
-  const asking = ['failed', 'stopped', 'next-up'].includes(player.stream)
+  // Next up asks only when there's something next; at the end of the last, the chrome stays
+  const next = player.detail.data?.related[0]
+  const asking =
+    player.stream === 'failed' ||
+    player.stream === 'stopped' ||
+    (player.stream === 'next-up' && !!next)
   useInitialFocus(ready && !asking, asking, '[data-player-scrubber]')
   useInitialFocus(ready && asking, player.stream, '[data-isolate] [data-initial]')
 
@@ -62,12 +75,14 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
   useBack(() => {
     if (panel) setPanel(false)
     else if (shown && player.playing) setShown(false)
-    else navigate(`/movies/${id}`)
+    else leavePlayer(navigate, `/movies/${id}`)
   })
 
-  // any key wakes the chrome; Play/Pause works from anywhere
+  // any key but Back wakes the chrome, so Back can hide it or leave (useBack above); Play/Pause
+  // works from anywhere
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') return
       wake()
       if (e.key === 'MediaPlayPause') player.toggle()
     }
@@ -240,14 +255,14 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
         player={player}
         size="tv"
         action={tvStreamAction}
-        onBack={() => navigate(`/movies/${id}`)}
+        onBack={() => leavePlayer(navigate, `/movies/${id}`)}
       />
       <NextUp
         player={player}
-        next={d?.related[0]}
+        next={next}
         size="tv"
         action={tvStreamAction}
-        onPlay={(next) => navigate(`/play/${next}`)}
+        onPlay={(next) => playNext(navigate, next)}
       />
     </div>
   )

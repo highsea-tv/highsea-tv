@@ -566,15 +566,22 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
     root.current?.focus()
   }, [])
 
-  const exit = () => navigate(`/movies/${id}`)
+  // back to the page it was opened from, so Back there doesn't return to the player; opened
+  // from outside the app, its film's page takes the player's place
+  const exit = () => {
+    if (history.state?.inApp) history.back()
+    else navigate(`/movies/${id}`, { replace: true })
+  }
+  // the next film takes this one's place, keeping where it was opened from
   const playNext = () => {
-    if (next) navigate(`/play/${next.id}`)
+    if (next) navigate(`/play/${next.id}`, { replace: true, state: history.state })
   }
 
   // at zero the next film plays; Cancel lets this one end as before
   const left = nextUpIn(state)
   useEffect(() => {
-    if (stream === 'next-up' && left === 0 && next) navigate(`/play/${next.id}`)
+    if (stream === 'next-up' && left === 0 && next)
+      navigate(`/play/${next.id}`, { replace: true, state: history.state })
   }, [stream, left, next, navigate])
 
   // muting and picture in picture follow the video, whichever control changed them

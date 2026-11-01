@@ -149,7 +149,10 @@ function useLinks() {
       if (leaves) return
       if (url.pathname !== BASE && !url.pathname.startsWith(`${BASE}/`)) return
       e.preventDefault()
-      navigate(url.pathname.slice(BASE.length) + url.search + url.hash || '/')
+      // the entry says it was opened from inside the app, so the player can go back to it
+      navigate(url.pathname.slice(BASE.length) + url.search + url.hash || '/', {
+        state: { inApp: true },
+      })
     }
     document.addEventListener('click', on)
     return () => document.removeEventListener('click', on)

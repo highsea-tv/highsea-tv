@@ -704,11 +704,13 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     const w = state.watch.find((x) => x.userId === me().id && x.itemId === e.id)
     const length = e.runtimeMinutes * 60
     const progress = w && length ? w.position / length : null
+    const watched = progress !== null && progress >= 0.95
     return {
       ...e,
-      position: w?.position ?? 0,
+      // a watched title plays from the start, as the server clears its place (ADR 0054)
+      position: watched ? 0 : (w?.position ?? 0),
       progress: progress !== null && progress > 0 && progress < 0.95 ? progress : null,
-      watched: progress !== null && progress >= 0.95,
+      watched,
     }
   }
   const showOf = (s: ShowSeed): ClientShow => {
@@ -936,13 +938,15 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     const w = state.watch.find((x) => x.userId === me().id && x.itemId === m.id)
     const length = m.runtimeMinutes * 60
     const progress = w && length ? w.position / length : null
+    const watched = progress !== null && progress >= 0.95
     return {
       ...m,
-      position: w?.position ?? 0,
+      // a watched title plays from the start, as the server clears its place (ADR 0054)
+      position: watched ? 0 : (w?.position ?? 0),
       // nearly at the end counts as watched, not as something to resume
       progress: progress !== null && progress < 0.95 ? progress : null,
       tagline,
-      watched: progress !== null && progress >= 0.95,
+      watched,
     }
   }
   const watchable = () => state.items.filter(playable)

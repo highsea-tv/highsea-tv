@@ -97,7 +97,7 @@ function NotFound() {
   return (
     <>
       <TvHead down="message" className="absolute inset-x-0 top-0 z-10 px-(--tv-safe-x)" />
-      <div data-group="message" data-go-up="nav" className="h-full">
+      <div data-group="message" data-go-up="nav" data-not-found="" className="h-full">
         <TvMessage
           title="There’s nothing here"
           actions={

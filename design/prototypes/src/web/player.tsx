@@ -12,11 +12,13 @@ import { useLocation, useParams } from 'wouter'
 import { clock } from '../client/data.ts'
 import {
   HIDE_MS,
+  leavePlayer,
   NUDGE_MS,
   offsetHint,
   offsetLabel,
   PICTURE_TIMING,
   type Player,
+  playNext,
   SCRUB_MS,
   SEEK_S,
   sampleCue,
@@ -333,7 +335,7 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
     return () => clearTimeout(timer.current)
   }, [wake])
 
-  const exit = () => navigate(`/movies/${id}`)
+  const exit = () => leavePlayer(navigate, `/movies/${id}`)
 
   const onKey = (e: React.KeyboardEvent) => {
     wake()
@@ -539,7 +541,7 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
         next={d?.related[0]}
         size="web"
         action={webStreamAction}
-        onPlay={(next) => navigate(`/play/${next}`)}
+        onPlay={(next) => playNext(navigate, next)}
       />
     </div>
   )

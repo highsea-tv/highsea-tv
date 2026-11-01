@@ -9,7 +9,7 @@ import { Button, cn, EmptyState, Icon } from '@highsea-tv/ui-web'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock, useAirPlay } from '../client/data.ts'
-import { HIDE_MS, SEEK_S, usePlayer } from '../client/player.ts'
+import { HIDE_MS, leavePlayer, playNext, SEEK_S, usePlayer } from '../client/player.ts'
 import { NextUp, StreamMessage, StreamWaiting } from '../client/stream-states.tsx'
 import { PHONE } from '../kit/mobile/device.tsx'
 import { CueLine, Scrubber, TracksPanel, webStreamAction } from '../web/player.tsx'
@@ -112,7 +112,7 @@ export function MobilePlayer({ fromStart = false }: { fromStart?: boolean }) {
               <button
                 type="button"
                 aria-label="Back to details"
-                onClick={() => navigate(`/movies/${id}`)}
+                onClick={() => leavePlayer(navigate, `/movies/${id}`)}
                 className={`${round} size-11`}
               >
                 <Icon name="chevron-down" size={24} />
@@ -200,14 +200,14 @@ export function MobilePlayer({ fromStart = false }: { fromStart?: boolean }) {
           player={player}
           size="mobile"
           action={webStreamAction}
-          onBack={() => navigate(`/movies/${id}`)}
+          onBack={() => leavePlayer(navigate, `/movies/${id}`)}
         />
         <NextUp
           player={player}
           next={d?.related[0]}
           size="mobile"
           action={webStreamAction}
-          onPlay={(next) => navigate(`/play/${next}`)}
+          onPlay={(next) => playNext(navigate, next)}
         />
       </div>
     </div>

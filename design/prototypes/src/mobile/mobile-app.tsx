@@ -152,7 +152,7 @@ function Routes() {
       </Route>
       <Route>
         <MobileShell>
-          <div className="grid min-h-[60vh] place-items-center px-4">
+          <div data-not-found="" className="grid min-h-[60vh] place-items-center px-4">
             <EmptyState icon="search" title="There’s nothing here">
               It may have moved. The tabs below lead everywhere.
             </EmptyState>

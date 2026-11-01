@@ -57,6 +57,9 @@ await pool(jobs, WORKERS, async ({ r, w, q }) => {
     await settleAnimations(page)
     const o = await overflow(page)
     const v = await axe(page)
+    // a route the list names must draw its page; only the ones meant to miss may say not found
+    if (!r.includes('nowhere') && (await page.locator('[data-not-found]').count()))
+      errors.push('draws the not-found page')
     if (o > 0 || v.length || errors.length)
       problems.push(
         `${r} ${w} ${q}: ${o > 0 ? `overflow=${o} ${(await escapes(page)).join(' | ')} ` : ''}${[...v, ...errors].join(' ; ')}`,

@@ -35,6 +35,7 @@ import {
   useAnnouncements,
   useAppUpdateReady,
   useConnection,
+  useDesktopApp,
   useKnownServers,
   useServer,
 } from '../client/data.ts'
@@ -396,6 +397,8 @@ export function Unreachable() {
   const server = useServer()
   const [, navigate] = useLocation()
   const name = server.data?.name ?? 'Harbor'
+  // only the desktop app keeps downloads; a browser has none to fall back on
+  const desktop = useDesktopApp()
   return (
     <main
       className={cn('mx-auto w-full grid min-h-[70vh] max-w-[1680px] place-items-center', gutter)}
@@ -408,12 +411,17 @@ export function Unreachable() {
             <Button variant="primary" icon="refresh" onClick={() => window.location.reload()}>
               Try again
             </Button>
+            {desktop && (
+              <Button icon="download" asChild>
+                <a href={webHref('/downloads')}>Watch downloads</a>
+              </Button>
+            )}
             <Button onClick={() => navigate('/connect')}>Switch server</Button>
           </div>
         }
       >
         highsea tried {name} on this network and at its remote address. It may be off, or the
-        network may be down. Downloads still play.
+        network may be down.{desktop && ' Your downloads still play.'}
       </EmptyState>
     </main>
   )
@@ -446,11 +454,15 @@ export function WebShell({
   const chrome = useWindowChrome()
   // the page's foot stays clear of the music player while it shows
   const music = useMusicPlayer().song !== null && connection !== 'offline'
+  const [location] = useLocation()
+  const desktop = useDesktopApp()
+  // the desktop app's Downloads keeps working without the server
+  const unreachable = connection === 'offline' && !(desktop && location.startsWith('/downloads'))
   return (
     <div className={cn('relative min-h-screen bg-bg text-text', music && MUSIC_BAR)}>
       <TopBar overHero={connection !== 'offline' && overHero} />
       <PageScrollbar inset={chrome === 'mac' ? 10 : 6} />
-      {connection === 'offline' ? <Unreachable /> : children}
+      {unreachable ? <Unreachable /> : children}
       {connection !== 'offline' && (
         <>
           <MusicBar />

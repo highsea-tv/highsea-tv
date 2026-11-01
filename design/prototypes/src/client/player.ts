@@ -18,6 +18,19 @@ export const SCRUB_MS = 1000
 /** The chrome hides after this long without input while playing. */
 export const HIDE_MS = 3000
 
+type Navigate = (to: string, options?: { replace?: boolean }) => void
+
+/**
+ * Leaves the player for the page it was opened from, so Back there doesn't return to the player.
+ * Opened directly, `to` takes the player's place.
+ */
+export const leavePlayer = (navigate: Navigate, to: string) =>
+  history.length > 1 ? history.back() : navigate(to, { replace: true })
+
+/** The next title takes the player's place, so leaving it still goes back where this began. */
+export const playNext = (navigate: Navigate, id: string) =>
+  navigate(`/play/${id}`, { replace: true })
+
 export function usePlayer(id: string, fromStart: boolean) {
   const detail = useQuery(`client:item:${id}`, (c) => c.library.item(id))
   const prefs = useQuery(`client:prefs:${id}`, (c) => c.playback.prefs(id))

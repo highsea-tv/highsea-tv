@@ -61,13 +61,15 @@ function NotFound() {
   const [, navigate] = useLocation()
   return (
     <AdminPage title="Page not found">
-      <EmptyState
-        icon="search"
-        title="There’s nothing at this address"
-        action={<Button onClick={() => navigate('/')}>Go to the dashboard</Button>}
-      >
-        It may have moved. The search above finds pages, movies and actions.
-      </EmptyState>
+      <div data-not-found="" className="contents">
+        <EmptyState
+          icon="search"
+          title="There’s nothing at this address"
+          action={<Button onClick={() => navigate('/')}>Go to the dashboard</Button>}
+        >
+          It may have moved. The search above finds pages, movies and actions.
+        </EmptyState>
+      </div>
     </AdminPage>
   )
 }

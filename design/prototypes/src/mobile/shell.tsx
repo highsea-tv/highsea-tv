@@ -256,6 +256,9 @@ function Unreachable() {
 /** A tab's screen: content scrolls under the status bar and clear of the tab bar. */
 export function MobileShell({ children }: { children: ReactNode }) {
   const connection = useConnection()
+  const [location] = useLocation()
+  // Offline keeps working without the server: what's downloaded plays from the phone
+  const unreachable = connection === 'offline' && !location.startsWith('/offline')
   const music = useMusicPlayer().song !== null && connection !== 'offline'
   return (
     <MobileScreen
@@ -270,7 +273,7 @@ export function MobileShell({ children }: { children: ReactNode }) {
         style={{ paddingBottom: TAB_BAR + 24 + (music ? MINI_PLAYER : 0) }}
         className="min-h-full"
       >
-        {connection === 'offline' ? <Unreachable /> : children}
+        {unreachable ? <Unreachable /> : children}
       </div>
       {connection !== 'offline' && <AnnouncementDialog />}
     </MobileScreen>
