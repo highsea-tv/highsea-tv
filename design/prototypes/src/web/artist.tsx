@@ -16,7 +16,7 @@ import {
 import { useParams } from 'wouter'
 import { useArtist } from '../client/data.ts'
 import { albumMeta, albumsCount, discographyTitle, songsCount } from '../client/music.ts'
-import { useMusicPlayer } from '../client/music-player.ts'
+import { useMusicPlayer, usePlayingFrom } from '../client/music-player.ts'
 import { ArtistCard, MusicCardSkeleton } from './music.tsx'
 import { Bio } from './person.tsx'
 import { gutter, webHref } from './shell.tsx'
@@ -25,6 +25,7 @@ export function WebArtist() {
   const { id } = useParams<{ id: string }>()
   const found = useArtist(id)
   const player = useMusicPlayer()
+  const current = usePlayingFrom(`/music/artists/${id}`)
   if (found.status === 'loading') return <ArtistSkeleton />
   if (found.status === 'error')
     return (
@@ -72,11 +73,11 @@ export function WebArtist() {
             <div className="flex flex-wrap items-center gap-2 pt-1">
               <Button
                 variant="primary"
-                icon="play"
+                icon={current?.playing ? 'pause' : 'play'}
                 className="min-w-32 justify-center"
-                onClick={() => player.play({ artist: a.id })}
+                onClick={() => (current ? player.toggle() : player.play({ artist: a.id }))}
               >
-                Play
+                {current?.playing ? 'Pause' : 'Play'}
               </Button>
               <Button
                 icon="shuffle"
@@ -138,8 +139,8 @@ function ArtistSkeleton() {
           <Skeleton className="my-1 h-9 w-[min(22rem,80%)]" />
           <Skeleton className="my-1 h-4 w-48" />
           <div className="flex gap-2 pt-1">
-            <Skeleton className="h-10 w-32 rounded-button" />
-            <Skeleton className="h-10 w-32 rounded-button" />
+            <Skeleton className="h-10 w-32 rounded-sm" />
+            <Skeleton className="h-10 w-32 rounded-sm" />
           </div>
           <SkeletonText lines={2} className="max-w-[60ch] pt-1" />
         </div>

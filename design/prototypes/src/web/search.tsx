@@ -2,14 +2,17 @@
 // C6 Search on the web and desktop (reference, docs/product/client-search.md): instant results
 // as you type, in a section per kind (movies, shows, episodes, people, collections, artists,
 // albums and songs), the best-matching kind first. An episode opens its show at it; a song plays.
+
 import { cn, Icon, Input, Poster } from '@highsea-tv/ui-web'
 import {
   personCredits,
+  searchedFor,
   searchKinds,
   searchPlaceholder,
   searchSuggestions,
   useSearch,
   useSearchQuery,
+  useServerName,
 } from '../client/data.ts'
 import { MediaPoster } from '../client/media-card.tsx'
 import { songTime } from '../client/music.ts'
@@ -22,6 +25,7 @@ import { gutter, webHref } from './shell.tsx'
 export function WebSearch() {
   const { q, setQ } = useSearchQuery()
   const { results, settled } = useSearch(q)
+  const server = useServerName()
   const r = results.data
   return (
     <main className={cn('mx-auto w-full grid max-w-[1680px] content-start gap-8 py-8', gutter)}>
@@ -60,7 +64,7 @@ export function WebSearch() {
         </p>
       ) : r.sections.length === 0 ? (
         <p className="text-text-2 text-body">
-          Nothing on Harbor matches “{settled}”. Try part of a title, a genre or a name.
+          Nothing on {server} matches “{settled}”. Try part of a title, a genre or a name.
         </p>
       ) : (
         <div aria-live="polite" className="grid gap-8">
@@ -81,7 +85,7 @@ export function WebSearch() {
       )}
       <p className="flex items-center gap-1.5 text-caption text-text-3">
         <Icon name="info" size={14} />
-        Searches what’s on Harbor. Asking for something new comes with requests, later.
+        Searches what’s on {server}. Asking for something new comes with requests, later.
       </p>
     </main>
   )
@@ -207,7 +211,12 @@ function Songs({ songs }: { songs: SearchSong[] }) {
         <li key={x.id}>
           <button
             type="button"
-            onClick={() => music.play({ album: x.album.id }, { start: x.number - 1 })}
+            onClick={() =>
+              music.play(
+                { album: x.album.id },
+                { start: x.number - 1, from: { kind: 'search', name: searchedFor(), to: null } },
+              )
+            }
             aria-label={`Play ${x.title}, by ${x.album.artist.name}, from ${x.album.title}`}
             className="grid w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md p-1.5 text-start outline-none hover:bg-s1 focus-visible:ring-focus"
           >

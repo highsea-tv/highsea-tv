@@ -28,6 +28,8 @@ import {
   useServer,
 } from '../client/data.ts'
 import { useMusicPlayer } from '../client/music-player.ts'
+import { toneClass } from '../client/profiles.ts'
+import { useMe } from '../client/who.tsx'
 import { Cta, Inline } from '../kit/inline.tsx'
 import { MobileScreen, safeArea } from '../kit/mobile/device.tsx'
 import { useNow } from '../mock/hooks.tsx'
@@ -140,6 +142,7 @@ export function Header({ title }: { title?: string }) {
   const server = useServer()
   const connection = useConnection()
   const [open, setOpen] = useState(false)
+  const me = useMe()
   return (
     <header className={cn('flex h-12 items-center gap-2', gutter)}>
       {title ? (
@@ -154,7 +157,7 @@ export function Header({ title }: { title?: string }) {
           <Mark size={26} />
           <span className="grid min-w-0 text-start">
             <span className="truncate font-semibold text-[17px] leading-[1.15]">
-              {server.data?.name ?? 'Harbor'}
+              {server.data?.name ?? 'this server'}
             </span>
             {connection === 'remote' && (
               <span className="text-[11px] text-text-3 leading-[1.15]">Connected remotely</span>
@@ -165,10 +168,13 @@ export function Header({ title }: { title?: string }) {
       )}
       <a
         href={mobileHref('/you')}
-        aria-label="Ines: profile and settings"
-        className="ms-auto grid size-9 place-items-center rounded-full bg-accent-soft font-semibold text-[15px] text-accent-text outline-none focus-visible:ring-focus"
+        aria-label={`${me.name}: profile and settings`}
+        className={cn(
+          'ms-auto grid size-9 place-items-center rounded-full font-semibold text-[15px] outline-none focus-visible:ring-focus',
+          toneClass[me.tone],
+        )}
       >
-        I
+        {me.name.charAt(0)}
       </a>
       <ServerSheet open={open} onOpenChange={setOpen} />
     </header>
@@ -232,7 +238,7 @@ function AnnouncementDialog() {
 function Unreachable() {
   const server = useServer()
   const [, navigate] = useLocation()
-  const name = server.data?.name ?? 'Harbor'
+  const name = server.data?.name ?? 'this server'
   return (
     <div className={cn('grid min-h-full place-items-center py-10', gutter)}>
       <EmptyState

@@ -6,7 +6,7 @@
 import { bytes } from '@highsea-tv/core/format'
 import { Button, ConfirmDialog, Field, Progress, toast } from '@highsea-tv/ui-web'
 import { useEffect, useState } from 'react'
-import { useDesktopOs, useLibrary } from '../client/data.ts'
+import { useDesktopOs } from '../client/data.ts'
 import { useDownloads } from '../client/downloads.ts'
 import type { DesktopOs } from '../proto/state.ts'
 
@@ -25,8 +25,7 @@ const chosen: Partial<Record<DesktopOs, string>> = {}
 
 export function KeptIn() {
   const os = useDesktopOs()
-  const library = useLibrary()
-  const d = useDownloads('desktop', library.data)
+  const d = useDownloads('desktop')
   const [folder, setFolder] = useState(chosen[os] ?? folders[os].first)
   const [asking, setAsking] = useState<string | null>(null)
   const [moving, setMoving] = useState<{ to: string; started: number } | null>(null)

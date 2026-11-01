@@ -173,6 +173,7 @@ export function General() {
 }
 
 export function Network() {
+  const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
   return (
     <Area id="network" section="network">
       {(v, set) => {
@@ -242,7 +243,7 @@ export function Network() {
             <Group title="Discovery">
               <Field
                 inline
-                label="Let apps on this network find Harbor"
+                label={`Let apps on this network find ${server.data?.name ?? 'this server'}`}
                 hint="Answers UDP broadcasts and mDNS. In Docker it needs host networking or the published UDP port 7359."
               >
                 <Switch checked={v.discovery} onCheckedChange={(discovery) => set({ discovery })} />

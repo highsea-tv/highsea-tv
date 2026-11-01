@@ -8,13 +8,16 @@
 // Results come in a section per kind (movies, shows, episodes, people, collections, artists,
 // albums and songs), the best-matching first; an episode opens its show at it, a song plays. Back from a result returns to the
 // same query with the remote on that result.
+
 import { useEffect, useRef, useState } from 'react'
 import {
+  searchedFor,
   searchKinds,
   searchPlaceholder,
   searchSuggestions,
   useSearch,
   useSearchQuery,
+  useServerName,
 } from '../client/data.ts'
 import { useMusicPlayer } from '../client/music-player.ts'
 import { UnwatchedCount } from '../client/show-card.tsx'
@@ -33,6 +36,7 @@ export function TvSearch() {
   const { q, setQ, returnTo, leaving } = useSearchQuery()
   const [layout, setLayout] = useState<keyof typeof LAYOUTS>('letters')
   const { results, settled } = useSearch(q)
+  const server = useServerName()
   const r = results.data
   const ready = !!r && settled === q
   useInitialFocus(!returnTo, null, '[data-group="keys"] [data-focusable]')
@@ -153,7 +157,7 @@ export function TvSearch() {
             <p className="text-(length:--tv-text-meta) text-text-3">Searching…</p>
           ) : r.sections.length === 0 ? (
             <p className="text-(length:--tv-text-synopsis) text-text-2">
-              Nothing on Harbor matches “{settled}”.
+              Nothing on {server} matches “{settled}”.
             </p>
           ) : (
             <div
@@ -299,7 +303,12 @@ function TvSongs({ songs }: { songs: SearchSong[] }) {
         <li key={x.id}>
           <TvButton
             aria-label={`Play ${x.title}, by ${x.album.artist.name}, from ${x.album.title}`}
-            onClick={() => music.play({ album: x.album.id }, { start: x.number - 1 })}
+            onClick={() =>
+              music.play(
+                { album: x.album.id },
+                { start: x.number - 1, from: { kind: 'search', name: searchedFor(), to: null } },
+              )
+            }
             className="ps-[0.6cqw]"
           >
             <img

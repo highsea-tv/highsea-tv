@@ -9,6 +9,7 @@ import type { ClientDetail, PlaybackPrefs } from '../mock/types.ts'
 import type { StreamState } from '../proto/state.ts'
 import { useStreamState } from './data.ts'
 import { musicPlayer } from './music-player.ts'
+import { usePlaybackSettings } from './prefs.tsx'
 
 /** One nudge of the subtitle timing, matching the admin's (movies.md#decisions). */
 export const NUDGE_MS = 50
@@ -47,6 +48,8 @@ export function usePlayer(id: string, fromStart: boolean) {
   const savePrefs = useAction((c, patch: PlaybackPrefs) => c.playback.setPrefs(id, patch))
   const report = useAction((c, position: number) => c.playback.progress(id, position))
 
+  // the person's Playback settings (client-settings.md#playback): what plays next, and intros
+  const [settings] = usePlaybackSettings()
   const d = detail.data
   const duration = d ? d.item.runtimeMinutes * 60 : 0
   const [position, setPosition] = useState<number | null>(null)
@@ -76,6 +79,13 @@ export function usePlayer(id: string, fromStart: boolean) {
       setPlaying(true)
     }
   }, [picked, duration, endsAt])
+
+  // Skip intros automatically jumps to the intro's end as it starts, as Netflix's setting does
+  const intro = d?.episode?.intro
+  useEffect(() => {
+    if (settings.skipIntros && intro && pos >= intro.start && pos < intro.end)
+      setPosition(intro.end)
+  }, [settings.skipIntros, intro, pos])
 
   // a film playing pauses the music, as one player on a device does; it waits in its bar
   useEffect(() => {
@@ -146,6 +156,8 @@ export function usePlayer(id: string, fromStart: boolean) {
       if (stream === 'next-up') setDismissed(true)
       else setPlaying(true)
     },
+    /** Next up counts down to play by itself only with Play the next episode automatically on. */
+    autoplay: settings.autoplayNext,
     /** While the intro plays, Skip intro jumps to its end (player.md › Episodes). */
     intro:
       d?.episode?.intro && pos >= d.episode.intro.start && pos < d.episode.intro.end

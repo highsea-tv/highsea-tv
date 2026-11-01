@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Music on the phone: Library's third section beside Movies and Collections, with the view as a
-// segmented control under it, as Apple Music and Spotify switch theirs. Albums are two covers a
-// row with the title and artist, as Apple Music's phone grid is; artists are a list with round
-// photos, as Apple Music, Spotify and Plexamp list them. One Sort and filter button opens a sheet,
-// as Movies' does.
+// Music on the phone: Library's section beside Movies, Shows and Collections, with the view as a
+// segmented control under it, as Apple Music and Spotify switch theirs: Albums, Artists, Songs and
+// Playlists (prototype-gaps.md › 3.8). Albums are two covers a row with the title and artist, as
+// Apple Music's phone grid is; artists are a list with round photos, as Apple Music, Spotify and
+// Plexamp list them; songs and playlists are lists (mobile/music-lists.tsx). One Sort and filter
+// button opens a sheet, as Movies' does; Playlists have none.
 import {
   Button,
   cn,
@@ -28,11 +29,20 @@ import {
   albumsCount,
   arrangeAlbums,
   arrangeArtists,
+  arrangeSongs,
   artistSorts,
   type MusicView,
   musicGenresOf,
+  musicViews,
+  playlistsCount,
+  type SongSort,
+  songGenresOf,
+  songSorts,
 } from '../client/music.ts'
+import { useSongs } from '../client/playlists.ts'
+import { usePlaylists } from '../client/song-menu.ts'
 import { LibraryNav } from './collections.tsx'
+import { MobilePlaylistList, MobileSongList } from './music-lists.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
 
 const chip =
@@ -40,26 +50,52 @@ const chip =
 
 export function MobileMusic({ view }: { view: MusicView }) {
   const music = useMusic()
+  const songs = useSongs()
+  const lists = usePlaylists()
   const [, navigate] = useLocation()
   const [genre, setGenre] = useState(ALL_GENRES)
   const [albumSort, setAlbumSort] = useState<AlbumSort>('title')
   const [artistSort, setArtistSort] = useState<ArtistSort>('name')
+  const [songSort, setSongSort] = useState<SongSort>('title')
   const [open, setOpen] = useState(false)
   const albums = music.data?.albums ?? []
   const artists = music.data?.artists ?? []
+  const allSongs = songs.data ?? []
+  const playlists = lists.data ?? []
+  // the view's own query, for its loading and error states
+  const query = view === 'songs' ? songs : view === 'playlists' ? lists : music
   const shownAlbums = arrangeAlbums(albums, genre, albumSort)
   const shownArtists = arrangeArtists(artists, artistSort)
+  const shownSongs = arrangeSongs(allSongs, genre, songSort)
   const filtered =
-    view === 'albums' ? genre !== ALL_GENRES || albumSort !== 'title' : artistSort !== 'name'
-  const count =
     view === 'albums'
-      ? `${shownAlbums.length} of ${albums.length} albums`
-      : `${artists.length} ${artists.length === 1 ? 'artist' : 'artists'}`
+      ? genre !== ALL_GENRES || albumSort !== 'title'
+      : view === 'songs'
+        ? genre !== ALL_GENRES || songSort !== 'title'
+        : artistSort !== 'name'
+  const count = {
+    albums: `${shownAlbums.length} of ${albums.length} albums`,
+    artists: `${artists.length} ${artists.length === 1 ? 'artist' : 'artists'}`,
+    songs: `${shownSongs.length} of ${allSongs.length} songs`,
+    playlists: playlistsCount(playlists.length),
+  }[view]
+  const filters = view === 'albums' || view === 'songs'
+  const sorts = view === 'albums' ? albumSorts : view === 'songs' ? songSorts : artistSorts
+  const sort = view === 'albums' ? albumSort : view === 'songs' ? songSort : artistSort
+  const setSort = (v: string) =>
+    view === 'albums'
+      ? setAlbumSort(v as AlbumSort)
+      : view === 'songs'
+        ? setSongSort(v as SongSort)
+        : setArtistSort(v as ArtistSort)
   return (
     // the whole page is the tabs' root, so each view's list is its panel
     <Tabs
       value={view}
-      onValueChange={(v) => navigate(v === 'artists' ? '/library/music/artists' : '/library/music')}
+      onValueChange={(v) => {
+        const to = musicViews.find((x) => x.value === v)?.path ?? '/music'
+        navigate(to.replace('/music', '/library/music'))
+      }}
       asChild
     >
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 pt-1">
@@ -67,32 +103,37 @@ export function MobileMusic({ view }: { view: MusicView }) {
         <LibraryNav current="music" />
         <div className={gutter}>
           <TabsList aria-label="View" className="flex w-full *:flex-1">
-            <TabsTrigger value="albums" className="h-8 justify-center text-[13px]">
-              Albums
-            </TabsTrigger>
-            <TabsTrigger value="artists" className="h-8 justify-center text-[13px]">
-              Artists
-            </TabsTrigger>
+            {musicViews.map((v) => (
+              <TabsTrigger
+                key={v.value}
+                value={v.value}
+                className="h-8 justify-center px-1 text-[13px]"
+              >
+                {v.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
         </div>
         <div className={cn('flex items-center gap-2', gutter)}>
-          {music.status === 'loading' ? (
+          {query.status === 'loading' ? (
             <Skeleton className="h-3 w-24" />
           ) : (
-            <p className="text-[13px] text-text-3">{music.status === 'success' ? count : ' '}</p>
+            <p className="text-[13px] text-text-3">{query.status === 'success' ? count : ' '}</p>
           )}
-          <Button
-            size="sm"
-            icon="filter"
-            className="ms-auto"
-            onClick={() => setOpen(true)}
-            aria-haspopup="dialog"
-          >
-            {filtered ? 'Sorted and filtered' : view === 'albums' ? 'Sort and filter' : 'Sort'}
-          </Button>
+          {view !== 'playlists' && (
+            <Button
+              size="sm"
+              icon="filter"
+              className="ms-auto"
+              onClick={() => setOpen(true)}
+              aria-haspopup="dialog"
+            >
+              {filtered ? 'Sorted and filtered' : filters ? 'Sort and filter' : 'Sort'}
+            </Button>
+          )}
         </div>
         <TabsContent value={view} className={gutter}>
-          {music.status === 'loading' ? (
+          {query.status === 'loading' ? (
             view === 'albums' ? (
               <div aria-busy className="grid grid-cols-2 gap-x-3 gap-y-5">
                 {Array.from({ length: 6 }, (_, i) => (
@@ -120,16 +161,18 @@ export function MobileMusic({ view }: { view: MusicView }) {
                 ))}
               </div>
             )
-          ) : music.status === 'error' ? (
+          ) : query.status === 'error' ? (
             <EmptyState
               tone="error"
               icon="alert"
               title="Couldn’t load the music"
-              action={<Button onClick={music.refetch}>Try again</Button>}
+              action={<Button onClick={query.refetch}>Try again</Button>}
             >
-              {music.error.message}
+              {query.error.message}
             </EmptyState>
-          ) : albums.length === 0 ? (
+          ) : view === 'playlists' ? (
+            <MobilePlaylistList playlists={playlists} />
+          ) : albums.length === 0 && allSongs.length === 0 ? (
             <EmptyState icon="library" title="No music yet">
               When the server’s owner adds music, it shows up here.
             </EmptyState>
@@ -137,6 +180,12 @@ export function MobileMusic({ view }: { view: MusicView }) {
             <EmptyState icon="filter" title="No albums match">
               Try another genre.
             </EmptyState>
+          ) : view === 'songs' && shownSongs.length === 0 ? (
+            <EmptyState icon="filter" title="No songs match">
+              Try another genre.
+            </EmptyState>
+          ) : view === 'songs' ? (
+            <MobileSongList songs={shownSongs} />
           ) : view === 'albums' ? (
             <ul aria-label="Albums" className="grid grid-cols-2 gap-x-3 gap-y-5">
               {shownAlbums.map((a) => (
@@ -177,7 +226,7 @@ export function MobileMusic({ view }: { view: MusicView }) {
         </TabsContent>
         <Sheet open={open} onOpenChange={setOpen}>
           <SheetContent
-            title={view === 'albums' ? 'Sort and filter' : 'Sort'}
+            title={filters ? 'Sort and filter' : 'Sort'}
             footer={
               <>
                 <Button
@@ -186,12 +235,17 @@ export function MobileMusic({ view }: { view: MusicView }) {
                     setGenre(ALL_GENRES)
                     setAlbumSort('title')
                     setArtistSort('name')
+                    setSongSort('title')
                   }}
                 >
                   Reset
                 </Button>
                 <Button variant="primary" onClick={() => setOpen(false)}>
-                  {view === 'albums' ? `Show ${shownAlbums.length} albums` : 'Done'}
+                  {view === 'albums'
+                    ? `Show ${shownAlbums.length} albums`
+                    : view === 'songs'
+                      ? `Show ${shownSongs.length} songs`
+                      : 'Done'}
                 </Button>
               </>
             }
@@ -200,36 +254,27 @@ export function MobileMusic({ view }: { view: MusicView }) {
               <fieldset className="grid gap-2">
                 <legend className="mb-2 font-mono text-label text-text-3 uppercase">Sort by</legend>
                 <div className="flex flex-wrap gap-2">
-                  {view === 'albums'
-                    ? albumSorts.map((s) => (
-                        <button
-                          key={s.value}
-                          type="button"
-                          aria-pressed={albumSort === s.value}
-                          onClick={() => setAlbumSort(s.value)}
-                          className={chip}
-                        >
-                          {s.label}
-                        </button>
-                      ))
-                    : artistSorts.map((s) => (
-                        <button
-                          key={s.value}
-                          type="button"
-                          aria-pressed={artistSort === s.value}
-                          onClick={() => setArtistSort(s.value)}
-                          className={chip}
-                        >
-                          {s.label}
-                        </button>
-                      ))}
+                  {sorts.map((x) => (
+                    <button
+                      key={x.value}
+                      type="button"
+                      aria-pressed={sort === x.value}
+                      onClick={() => setSort(x.value)}
+                      className={chip}
+                    >
+                      {x.label}
+                    </button>
+                  ))}
                 </div>
               </fieldset>
-              {view === 'albums' && (
+              {filters && (
                 <fieldset className="grid gap-2">
                   <legend className="mb-2 font-mono text-label text-text-3 uppercase">Genre</legend>
                   <div className="flex flex-wrap gap-2">
-                    {[ALL_GENRES, ...musicGenresOf(albums)].map((g) => (
+                    {[
+                      ALL_GENRES,
+                      ...(view === 'songs' ? songGenresOf(allSongs) : musicGenresOf(albums)),
+                    ].map((g) => (
                       <button
                         key={g}
                         type="button"

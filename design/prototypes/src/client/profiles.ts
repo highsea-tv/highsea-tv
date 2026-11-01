@@ -3,14 +3,25 @@
 // profiles for the people who watch with it, each with its own name, colour, watch history and
 // Home, and an optional PIN. They're the account's, kept by the server, so any client can add or
 // switch them without signing in again, and every client asks for a profile's PIN. The account's
-// own profile is the first, and can't be deleted. The prototype keeps all of this in memory.
+// own profile is the first, and can't be deleted. The prototype keeps all of this in memory, one
+// store for every app, so switching on the web or the phone (prototype-gaps.md › 3.6) is seen on
+// the TV too.
 import { useSyncExternalStore } from 'react'
 
 /** A profile's colour, from the tokens' soft pairs. */
 export type Tone = 'accent' | 'info' | 'success' | 'warning' | 'danger'
 export const tones: Tone[] = ['accent', 'info', 'success', 'warning', 'danger']
 
-export type TvPerson = {
+/** Each colour's soft pair from the tokens, as literal classes so Tailwind finds them. */
+export const toneClass: Record<Tone, string> = {
+  accent: 'bg-accent-soft text-accent-text',
+  info: 'bg-badge-info-bg text-badge-info',
+  success: 'bg-badge-success-bg text-badge-success',
+  warning: 'bg-badge-warning-bg text-badge-warning',
+  danger: 'bg-badge-danger-bg text-badge-danger',
+}
+
+export type Profile = {
   id: string
   name: string
   tone: Tone
@@ -24,7 +35,7 @@ export type TvPerson = {
  * The account's profiles (Theo's PIN is 2580), the one this TV watches as, and whether this TV
  * asks who's watching when highsea opens: the TV's own setting, not the account's.
  */
-type State = { profiles: TvPerson[]; current: string; askOnLaunch: boolean }
+type State = { profiles: Profile[]; current: string; askOnLaunch: boolean }
 
 const seed = (): State => ({
   profiles: [
@@ -60,7 +71,7 @@ export function usePeople() {
   const me = s.profiles.find((p) => p.id === s.current) ?? s.profiles[0]
   return {
     people: s.profiles,
-    me: me as TvPerson,
+    me: me as Profile,
     askOnLaunch: s.askOnLaunch,
     setAskOnLaunch,
     /** Watch as another profile; its PIN, if it has one, was asked for first. */

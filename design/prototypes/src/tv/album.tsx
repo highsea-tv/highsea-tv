@@ -5,21 +5,24 @@
 // note), with Play and Shuffle under it as a pair the cover's width and the film it scores as a
 // line under them, as the web's album page has it; the songs fill the right,
 // scrolling under focus while the column stays. Focus starts on Play; Right reaches the songs and
-// Left comes back.
+// Left comes back. OK held on a song opens its menu, and on Play the album's (tv/song-menu.tsx).
 import { cn, Icon, Skeleton, useSound } from '@highsea-tv/ui-web'
-import { type RefObject, useEffect, useRef } from 'react'
+import { type RefObject, useEffect, useRef, useState } from 'react'
 import { useParams } from 'wouter'
+import { useLongPress } from '../client/continue-menu.ts'
 import { useAlbum } from '../client/data.ts'
 import { albumKind, albumSummary, songTime } from '../client/music.ts'
-import { useAlbumPlaying, useMusicPlayer } from '../client/music-player.ts'
+import { useAlbumPlaying, useMusicPlayer, usePlayingFrom } from '../client/music-player.ts'
 import { PlayingBars } from '../client/waveform.tsx'
+import type { ClientSong } from '../mock/types.ts'
 import { focusFrom, TvButton, TvHead, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
+import { TvSongMenu } from './song-menu.tsx'
 
 /** The artist's name and the film's line: text that takes focus as a button would, lifting and filling. */
-const quiet =
+export const quiet =
   '-mx-[0.6cqw] rounded-[0.4cqw] px-[0.6cqw] py-[0.2cqw] outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg'
 
-const song =
+export const song =
   'grid w-full grid-cols-[2.6cqw_minmax(0,1fr)_auto] items-center gap-[1cqw] rounded-[0.5cqw] px-[1cqw] py-[0.8cqw] text-start text-(length:--tv-text-button) text-text-2 outline-none transition-lift focus-visible:scale-[1.02] focus-visible:bg-text focus-visible:text-bg'
 
 export function TvAlbum() {
@@ -27,9 +30,12 @@ export function TvAlbum() {
   const found = useAlbum(id)
   const player = useMusicPlayer()
   const current = useAlbumPlaying(id)
+  const whole = usePlayingFrom(`/music/albums/${id}`)
   const playingId = current ? (current.queue[current.index]?.id ?? null) : null
   const actions = useRef<HTMLDivElement>(null)
   const list = useRef<HTMLOListElement>(null)
+  const [menu, setMenu] = useState<ClientSong | 'album' | null>(null)
+  const playPress = useLongPress(() => setMenu('album'))
   useInitialFocus(found.status === 'success', id)
   useSongsEntry(actions, list, found.status === 'success' && id)
   if (found.status === 'loading')
@@ -118,10 +124,11 @@ export function TvAlbum() {
               <TvButton
                 primary
                 initial
-                icon={current?.playing ? 'pause' : 'play'}
-                onClick={() => (current ? player.toggle() : player.play({ album: a.id }))}
+                icon={whole?.playing ? 'pause' : 'play'}
+                onClick={() => (whole ? player.toggle() : player.play({ album: a.id }))}
+                {...playPress}
               >
-                {current?.playing ? 'Pause' : 'Play'}
+                {whole?.playing ? 'Pause' : 'Play'}
               </TvButton>
               <TvButton
                 icon="shuffle"
@@ -156,42 +163,79 @@ export function TvAlbum() {
               data-keep="0.4"
               className="grid gap-[0.2cqw] py-[1cqw] pb-(--tv-safe-y) transition-lift"
             >
-              {songs.map((s, i) => {
-                const here = s.id === playingId
-                return (
-                  <li key={s.id}>
-                    <button
-                      type="button"
-                      data-focusable=""
-                      aria-label={
-                        here && current?.playing
-                          ? `Pause ${s.title}`
-                          : `Play ${s.title}, ${songTime(s.duration)}`
-                      }
-                      aria-current={here ? 'true' : undefined}
-                      onClick={() =>
-                        here ? player.toggle() : player.play({ album: a.id }, { start: i })
-                      }
-                      className={cn(song, here && 'text-accent-text')}
-                    >
-                      {here ? (
-                        <PlayingBars playing={!!current?.playing} />
-                      ) : (
-                        <span className="tabular-nums opacity-70">{s.number}</span>
-                      )}
-                      <span className="truncate">{s.title}</span>
-                      <span className="text-(length:--tv-text-pill) tabular-nums opacity-70">
-                        {songTime(s.duration)}
-                      </span>
-                    </button>
-                  </li>
-                )
-              })}
+              {songs.map((s, i) => (
+                <TvSong
+                  key={s.id}
+                  song={s}
+                  here={s.id === playingId}
+                  playing={!!current?.playing}
+                  onPlay={() =>
+                    s.id === playingId
+                      ? player.toggle()
+                      : player.play({ album: a.id }, { start: i })
+                  }
+                  onMenu={() => setMenu(s)}
+                />
+              ))}
             </ol>
           </div>
         </div>
       </main>
+      {menu && (
+        <TvSongMenu
+          target={
+            menu === 'album'
+              ? { songs: songs.map((x) => x.id), name: a.title, album: a }
+              : { songs: [menu.id], name: menu.title, album: a }
+          }
+          line={menu === 'album' ? a.artist.name : `${a.artist.name} · ${a.title}`}
+          on="album"
+          onClose={() => setMenu(null)}
+        />
+      )}
     </>
+  )
+}
+
+/** A song: OK plays it, or pauses it when it's the one playing; OK held opens its menu. */
+function TvSong({
+  song: s,
+  here,
+  playing,
+  onPlay,
+  onMenu,
+}: {
+  song: ClientSong
+  here: boolean
+  playing: boolean
+  onPlay: () => void
+  onMenu: () => void
+}) {
+  const press = useLongPress(onMenu)
+  return (
+    <li>
+      <button
+        type="button"
+        data-focusable=""
+        aria-label={
+          here && playing ? `Pause ${s.title}` : `Play ${s.title}, ${songTime(s.duration)}`
+        }
+        aria-current={here ? 'true' : undefined}
+        onClick={onPlay}
+        {...press}
+        className={cn(song, here && 'text-accent-text')}
+      >
+        {here ? (
+          <PlayingBars playing={playing} />
+        ) : (
+          <span className="tabular-nums opacity-70">{s.number}</span>
+        )}
+        <span className="truncate">{s.title}</span>
+        <span className="text-(length:--tv-text-pill) tabular-nums opacity-70">
+          {songTime(s.duration)}
+        </span>
+      </button>
+    </li>
   )
 }
 
@@ -199,7 +243,7 @@ export function TvAlbum() {
  * Right from the actions' last stop on a line enters the songs at the one left, or the first:
  * the navigator's nearest would land level with the button, mid-list or on the last song.
  */
-function useSongsEntry(
+export function useSongsEntry(
   actions: RefObject<HTMLElement | null>,
   list: RefObject<HTMLElement | null>,
   ready: unknown,

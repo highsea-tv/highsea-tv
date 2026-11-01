@@ -4,7 +4,7 @@
 // TV (4.5a).
 
 import { EmptyState } from '@highsea-tv/ui-web'
-import { Route, Switch, useLocation } from 'wouter'
+import { Redirect, Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
 import { SeedMusic } from '../client/music-player.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
@@ -22,6 +22,7 @@ import { MobileNowPlaying } from './now-playing.tsx'
 import { MobileLinkConfirm, MobileLinkScan } from './pair.tsx'
 import { MobilePerson } from './person.tsx'
 import { MobilePlayer } from './player.tsx'
+import { MobilePlaylist } from './playlist.tsx'
 import { MobileShell } from './shell.tsx'
 import { MobileShow } from './show.tsx'
 import { MobileShows } from './shows.tsx'
@@ -79,6 +80,28 @@ function Routes() {
         <MobileShell>
           <MobileMusic view="artists" />
         </MobileShell>
+      </Route>
+      <Route path="/library/music/songs">
+        <MobileShell>
+          <MobileMusic view="songs" />
+        </MobileShell>
+      </Route>
+      <Route path="/library/music/playlists">
+        <MobileShell>
+          <MobileMusic view="playlists" />
+        </MobileShell>
+      </Route>
+      {/* Music's own addresses, as "Playing from" names them, are Library's views on the phone */}
+      <Route path="/music/songs">
+        <Redirect to="/library/music/songs" replace />
+      </Route>
+      <Route path="/music/playlists/:id">
+        <MobileShell>
+          <MobilePlaylist />
+        </MobileShell>
+      </Route>
+      <Route path="/music/playlists">
+        <Redirect to="/library/music/playlists" replace />
       </Route>
       <Route path="/library/music">
         <MobileShell>
@@ -148,6 +171,11 @@ function Routes() {
       <Route path="/you">
         <MobileShell>
           <MobileYou />
+        </MobileShell>
+      </Route>
+      <Route path="/you/who">
+        <MobileShell>
+          <MobileYou who />
         </MobileShell>
       </Route>
       <Route path="/you/:section">

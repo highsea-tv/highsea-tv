@@ -11,9 +11,9 @@ import { useReducedMotion } from 'motion/react'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { BloomGlow } from '../client/bloom.tsx'
+import { MAX_PROFILES, type Profile, type Tone, tones, usePeople } from '../client/profiles.ts'
 import { useBack } from './back.ts'
 import { focusFrom, ServerIdentity, TvAvatar, TvButton, tvKey, useInitialFocus } from './kit.tsx'
-import { MAX_PROFILES, type Tone, type TvPerson, tones, usePeople } from './people.ts'
 
 /** How many wrong PINs in a row before the pad rests for a minute. */
 const TRIES = 5
@@ -31,7 +31,7 @@ export function PersonTile({
   initial = false,
   onChoose,
 }: {
-  person: TvPerson
+  person: Profile
   size: number
   current?: boolean
   /** A line under the name; the current profile's is Watching now. */
@@ -103,7 +103,7 @@ export function PinPad({
   hint,
   check,
 }: {
-  person: TvPerson
+  person: Profile
   title: string
   hint?: string
   check: (pin: string) => string | null
@@ -222,7 +222,7 @@ export function PinPad({
 }
 
 /** Asks for someone's PIN, then watches as them. With no `onCancel`, Back does nothing. */
-function AskPin({ person, onCancel }: { person: TvPerson; onCancel?: () => void }) {
+function AskPin({ person, onCancel }: { person: Profile; onCancel?: () => void }) {
   const { people, switchTo } = usePeople()
   const main = people.find((p) => p.main)
   const [, navigate] = useLocation()
@@ -260,7 +260,7 @@ export function TvWho() {
   useInitialFocus(!asking, `${asking?.id}:${last}`, `[data-person="${last}"] [data-focusable]`)
   useBack(() => (history.length > 1 ? history.back() : undefined))
 
-  const choose = (p: TvPerson) => {
+  const choose = (p: Profile) => {
     setLast(p.id)
     if (p.pin && p.id !== me.id) navigate(`/who/${p.id}`)
     else {
@@ -320,7 +320,7 @@ export function TvLaunch() {
   const { people, me, askOnLaunch, switchTo } = usePeople()
   const [, navigate] = useLocation()
   const ask = askOnLaunch && people.length > 1
-  const [asking, setAsking] = useState<TvPerson | null>(null)
+  const [asking, setAsking] = useState<Profile | null>(null)
   const [last, setLast] = useState(me.id)
   // the bloom takes the focused profile's colour, and fades out while Add a profile has focus,
   // keeping that colour as it goes
@@ -343,7 +343,7 @@ export function TvLaunch() {
     [people, glow],
   )
 
-  const choose = (p: TvPerson) => {
+  const choose = (p: Profile) => {
     setLast(p.id)
     if (p.pin) setAsking(p)
     else {
@@ -463,7 +463,7 @@ export function TvNewProfile() {
     return () => el?.removeEventListener('keydown', onKey)
   }, [play])
   const pressShift = () => setShift((s) => (s === 'off' ? 'once' : s === 'once' ? 'lock' : 'off'))
-  const preview: TvPerson = { id: 'new', name: name || '?', tone, pin: null, main: false }
+  const preview: Profile = { id: 'new', name: name || '?', tone, pin: null, main: false }
   const taken = people.some((p) => p.name.toLowerCase() === name.trim().toLowerCase())
   return (
     <main className="grid h-full grid-cols-[auto_minmax(0,1fr)] items-center gap-[5cqw] px-[8cqw]">

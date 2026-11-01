@@ -350,10 +350,21 @@ export function Facts({ title, rows }: { title: string; rows: Fact[] }) {
     <article className="grid gap-2 rounded-lg bg-s1 p-4">
       <h2 className="font-semibold text-[17px]">{title}</h2>
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1 text-[14px]">
-        {rows.map(([k, val]) => (
+        {rows.map(([k, val, to]) => (
           <div key={k} className="contents">
             <dt className="text-text-3">{k}</dt>
-            <dd className="text-text-2">{val}</dd>
+            <dd className="text-text-2">
+              {to ? (
+                <a
+                  href={mobileHref(to)}
+                  className="rounded-[4px] text-text underline decoration-text-3 underline-offset-4 outline-none focus-visible:ring-focus"
+                >
+                  {val}
+                </a>
+              ) : (
+                val
+              )}
+            </dd>
           </div>
         ))}
       </dl>

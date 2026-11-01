@@ -3,14 +3,24 @@
 // the head's right opens it, since Settings isn't one of the TV's destinations (the owner,
 // 2026-10-30). The account's profiles lead, so switching is a press or two away (who.tsx asks for
 // a PIN); Settings follows, the sections down the left and the chosen one on the right, with the
-// profile's PIN and the account's Profiles. Focus moving down the list
+// profile's PIN and the account's Profiles, and Playback (the person's languages, what plays next
+// and the quality, as on the other apps). Focus moving down the list
 // shows each section (as tvOS does); Right enters it, Left returns to the list. Theme and sound
 // apply to this TV; the home layout follows the person.
 import { cn } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { useServer } from '../client/data.ts'
-import { useDevicePrefs, useThemeEverywhere } from '../client/prefs.tsx'
+import {
+  audioLanguages,
+  type PlaybackSettings,
+  qualityCaps,
+  subtitleLanguages,
+  useDevicePrefs,
+  usePlaybackSettings,
+  useThemeEverywhere,
+} from '../client/prefs.tsx'
+import { MAX_PROFILES, type Profile, usePeople } from '../client/profiles.ts'
 import {
   APP_VERSION,
   type SettingsSectionId,
@@ -23,7 +33,6 @@ import { CustomThemeStyles } from '../client/settings-sections.tsx'
 import { useProto } from '../screen/screen.tsx'
 import { useBack } from './back.ts'
 import { TvAvatar, TvButton, TvHead, useInitialFocus } from './kit.tsx'
-import { MAX_PROFILES, type TvPerson, usePeople } from './people.ts'
 import { AddTile, PersonTile, PinPad } from './who.tsx'
 
 const option =
@@ -123,6 +132,107 @@ function Sounds() {
   )
 }
 
+const pill =
+  'rounded-full px-[1.1cqw] py-[0.45cqw] font-semibold text-(length:--tv-text-pill) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg focus-visible:shadow-(--tv-focus-shadow) not-focus-visible:aria-checked:bg-text/12 not-focus-visible:aria-checked:text-text'
+
+/** One setting as a row of choices, as the show page's seasons are: Left and Right move along. */
+function Choices({
+  name,
+  label,
+  options,
+  value,
+  onPick,
+}: {
+  name: string
+  label: string
+  options: { value: string; label: string; short?: string }[]
+  value: string
+  onPick: (v: string) => void
+}) {
+  return (
+    <div className="grid grid-cols-[11cqw_minmax(0,1fr)] items-center gap-[1cqw]">
+      <span className="text-(length:--tv-text-meta) text-text-2">{label}</span>
+      <div
+        role="radiogroup"
+        aria-label={label}
+        data-group={`playback-${name}`}
+        className="flex flex-wrap gap-[0.4cqw]"
+      >
+        {options.map((o) => (
+          // biome-ignore lint/a11y/useSemanticElements: a D-pad row, focused by the spatial navigator
+          <button
+            key={o.value}
+            type="button"
+            role="radio"
+            aria-checked={o.value === value}
+            data-focusable=""
+            onClick={() => onPick(o.value)}
+            className={pill}
+          >
+            {o.short ?? o.label}
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+/** Playback, as on the other apps: the choices follow the person to every device. */
+function Playback() {
+  const [p, set] = usePlaybackSettings()
+  const toggle = (key: keyof PlaybackSettings, label: string, on: boolean) => (
+    <TvButton primary={on} aria-pressed={on} onClick={() => set({ [key]: !on })}>
+      {label}: {on ? 'On' : 'Off'}
+    </TvButton>
+  )
+  return (
+    <div className="grid gap-[0.9cqw]">
+      <Choices
+        name="audio"
+        label="Audio"
+        options={audioLanguages.map((x) => ({
+          ...x,
+          short: x.value === 'original' ? 'Original' : undefined,
+        }))}
+        value={p.audio}
+        onPick={(audio) => set({ audio })}
+      />
+      <Choices
+        name="subtitles"
+        label="Subtitles"
+        options={subtitleLanguages}
+        value={p.subtitles}
+        onPick={(subtitles) => set({ subtitles })}
+      />
+      <div data-group="playback-toggles" className="flex flex-wrap gap-[0.8cqw] ps-[12cqw]">
+        {p.subtitles !== 'off' &&
+          toggle('onlyForeign', 'Only when the audio isn’t in my language', p.onlyForeign)}
+      </div>
+      <div className="grid grid-cols-[11cqw_minmax(0,1fr)] items-center gap-[1cqw]">
+        <span className="text-(length:--tv-text-meta) text-text-2">Episodes</span>
+        <div data-group="playback-next" className="flex flex-wrap gap-[0.8cqw]">
+          {toggle('autoplayNext', 'Play the next one automatically', p.autoplayNext)}
+          {toggle('skipIntros', 'Skip intros', p.skipIntros)}
+        </div>
+      </div>
+      <Choices
+        name="home"
+        label="At home"
+        options={qualityCaps}
+        value={p.qualityHome}
+        onPick={(qualityHome) => set({ qualityHome })}
+      />
+      <Choices
+        name="away"
+        label="Away"
+        options={qualityCaps}
+        value={p.qualityAway}
+        onPick={(qualityAway) => set({ qualityAway })}
+      />
+    </div>
+  )
+}
+
 function Home() {
   const home = useHomeLayout()
   return (
@@ -202,7 +312,7 @@ function About() {
       <dd>highsea {APP_VERSION}</dd>
       <dt className="text-text-3">Server</dt>
       <dd>
-        {server.data?.name ?? 'Harbor'} {server.data?.version}
+        {server.data?.name ?? 'this server'} {server.data?.version}
       </dd>
       <dt className="text-text-3">Licence</dt>
       <dd>AGPL-3.0, free software</dd>
@@ -218,8 +328,8 @@ function Servers() {
   return (
     <div className="grid gap-[1.2cqw]">
       <p className="text-(length:--tv-text-synopsis) text-text-2">
-        Signed in to {server.data?.name ?? 'Harbor'} as {main?.name ?? 'Ines'}. Signing out signs
-        out every profile on this TV.
+        Signed in to {server.data?.name ?? 'this server'} as {main?.name ?? 'Ines'}. Signing out
+        signs out every profile on this TV.
       </p>
       <div className="flex gap-[1cqw]">
         <TvButton icon="server" onClick={() => navigate('/connect')}>
@@ -310,12 +420,13 @@ function Profiles({ askDelete }: SectionProps) {
   )
 }
 
-type SectionProps = { openPin: (flow: PinFlow) => void; askDelete: (p: TvPerson) => void }
+type SectionProps = { openPin: (flow: PinFlow) => void; askDelete: (p: Profile) => void }
 type TvSectionId = SettingsSectionId | 'pin' | 'people'
 
 const bodies: Record<TvSectionId, (props: SectionProps) => React.JSX.Element> = {
   appearance: Theme,
   sounds: Sounds,
+  playback: Playback,
   home: Home,
   pin: Pin,
   people: Profiles,
@@ -335,6 +446,7 @@ const shared = (id: SettingsSectionId) =>
 const sections: { id: TvSectionId; label: string; hint: string }[] = [
   shared('appearance'),
   shared('sounds'),
+  shared('playback'),
   shared('home'),
   { id: 'pin', label: 'PIN', hint: 'Asked for before anyone watches as this profile.' },
   { id: 'people', label: 'Profiles', hint: 'Each with its own watch history, on every device.' },
@@ -404,7 +516,7 @@ function PinSteps({ flow, onClose }: { flow: PinFlow; onClose: () => void }) {
 }
 
 /** Deleting a profile asks first: its watch history goes with it, everywhere. */
-function ConfirmDelete({ person, onClose }: { person: TvPerson; onClose: () => void }) {
+function ConfirmDelete({ person, onClose }: { person: Profile; onClose: () => void }) {
   const { remove } = usePeople()
   useBack(onClose)
   useInitialFocus(true, person.id, '[data-confirm] [data-initial]')
@@ -448,7 +560,7 @@ export function TvProfile() {
   const [, navigate] = useLocation()
   const [section, setSection] = useState<TvSectionId>('appearance')
   const [pinFlow, setPinFlow] = useState<PinFlow | null>(null)
-  const [deleting, setDeleting] = useState<TvPerson | null>(null)
+  const [deleting, setDeleting] = useState<Profile | null>(null)
   const [focusKey, setFocusKey] = useState(0)
   useInitialFocus(!pinFlow && !deleting, focusKey, '[data-group="profile"] [aria-current="true"]')
   const Body = bodies[section]

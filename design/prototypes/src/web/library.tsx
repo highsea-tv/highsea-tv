@@ -56,7 +56,7 @@ export function LetterIndex({
     if (!li) return
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
     li.scrollIntoView({ block: 'start', behavior: reduced ? 'auto' : 'smooth' })
-    li.querySelector<HTMLElement>('a')?.focus({ preventScroll: true })
+    li.querySelector<HTMLElement>('a, button')?.focus({ preventScroll: true })
   }
   return (
     <nav

@@ -30,6 +30,7 @@ import { useMarkWatched } from '../client/item-more.tsx'
 import { CollectionTile } from '../kit/collection-art.tsx'
 import { useAction } from '../mock/hooks.tsx'
 import type { ClientDetail, PlaybackPrefs, Video } from '../mock/types.ts'
+import { quiet } from './album.tsx'
 import { useBack } from './back.ts'
 import { TvFilmRow, TvFilmRowSkeleton } from './film-row.tsx'
 import {
@@ -446,10 +447,23 @@ export function Facts({
     <article tabIndex={-1} data-focusable="" aria-label={title} className={className}>
       <h2 className={heading}>{title}</h2>
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-[1.2cqw] gap-y-[0.5cqw] text-(length:--tv-text-meta) leading-[1.35]">
-        {rows.map(([k, v]) => (
+        {rows.map(([k, v, to]) => (
           <div key={k} className="contents">
             <dt className="text-text-3">{k}</dt>
-            <dd className="text-text-2">{v}</dd>
+            <dd className="min-w-0 text-text-2">
+              {/* a stop of its own inside the card, as the album page's film line is */}
+              {to ? (
+                <a
+                  href={tvHref(to)}
+                  data-focusable=""
+                  className={cn(quiet, 'inline-block text-text')}
+                >
+                  {v}
+                </a>
+              ) : (
+                v
+              )}
+            </dd>
           </div>
         ))}
       </dl>
@@ -461,7 +475,7 @@ export function Facts({
  * A trailer over the page. The product plays it from youtube-nocookie.com only once it's chosen,
  * as the admin does; the prototype stays offline, so the still and a note stand in. Back closes it.
  */
-function TvTrailer({ video: x, onClose }: { video: Video; onClose: () => void }) {
+export function TvTrailer({ video: x, onClose }: { video: Video; onClose: () => void }) {
   useBack(onClose)
   useInitialFocus(true, x.id, '[data-trailer] [data-initial]')
   return (

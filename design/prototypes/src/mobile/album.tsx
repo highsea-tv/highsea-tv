@@ -1,25 +1,34 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // An album on the phone, as Apple Music's iPhone album page lays one out: Back over the cover
 // blurred, the cover centred, the title, the artist (a link to their page), the genre, year and
-// length, Play and Shuffle side by side, and the album's note. The film it scores, when it's here,
-// is a link under them. Then the songs, numbered, each with its length; the release date and
-// label; and the artist's other albums in a row.
+// length, Play and Shuffle side by side, Download and ⋯ under them, and the album's note. The film
+// it scores, when it's here, is a link under them. Then the songs, numbered, each with its length
+// and ⋯ (mobile/song-menu.tsx; a long press opens it too); the release date and label; and the
+// artist's other albums in a row.
 import { Button, cn, EmptyState, Icon, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
+import { useState } from 'react'
 import { useParams } from 'wouter'
+import { useLongPress } from '../client/continue-menu.ts'
 import { useAlbum } from '../client/data.ts'
+import { GroupDownload } from '../client/download-button.tsx'
+import { songSource } from '../client/downloads.ts'
 import { albumKind, albumMeta, albumSummary, releasedOn, songTime } from '../client/music.ts'
-import { useAlbumPlaying, useMusicPlayer } from '../client/music-player.ts'
+import { useAlbumPlaying, useMusicPlayer, usePlayingFrom } from '../client/music-player.ts'
 import { PlayingBars } from '../client/waveform.tsx'
+import type { ClientAlbum, ClientSong } from '../mock/types.ts'
 import { BackBadge } from './artist.tsx'
 import { MobileRow } from './home.tsx'
 import { gutter, mobileHref } from './shell.tsx'
+import { MobileSongMenu, MoreButton } from './song-menu.tsx'
 
 export function MobileAlbum() {
   const { id } = useParams<{ id: string }>()
   const found = useAlbum(id)
   const player = useMusicPlayer()
   const current = useAlbumPlaying(id)
+  const whole = usePlayingFrom(`/music/albums/${id}`)
   const playingId = current ? (current.queue[current.index]?.id ?? null) : null
+  const [albumMenu, setAlbumMenu] = useState(false)
   const back = <BackBadge fallback="/library/music" />
   if (found.status === 'loading')
     return (
@@ -86,11 +95,11 @@ export function MobileAlbum() {
         <div className={cn('grid grid-cols-2 gap-3 pt-3', gutter)}>
           <Button
             variant="primary"
-            icon={current?.playing ? 'pause' : 'play'}
+            icon={whole?.playing ? 'pause' : 'play'}
             className="justify-center"
-            onClick={() => (current ? player.toggle() : player.play({ album: a.id }))}
+            onClick={() => (whole ? player.toggle() : player.play({ album: a.id }))}
           >
-            {current?.playing ? 'Pause' : 'Play'}
+            {whole?.playing ? 'Pause' : 'Play'}
           </Button>
           <Button
             icon="shuffle"
@@ -99,6 +108,22 @@ export function MobileAlbum() {
           >
             Shuffle
           </Button>
+          <div className="col-span-2 grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+            <GroupDownload
+              app="mobile"
+              name={a.title}
+              sources={songs.map((x) => songSource(x, a))}
+              wide
+              className="justify-center"
+            />
+            <MoreButton name={a.title} onClick={() => setAlbumMenu(true)} />
+          </div>
+          <MobileSongMenu
+            target={{ songs: songs.map((x) => x.id), name: a.title, album: a }}
+            on="album"
+            open={albumMenu}
+            onOpenChange={setAlbumMenu}
+          />
         </div>
       </header>
       {(about || film) && (
@@ -118,43 +143,18 @@ export function MobileAlbum() {
       )}
       <section aria-label="Songs" className={cn('grid gap-3', gutter)}>
         <ol className="grid">
-          {songs.map((s, i) => {
-            const here = s.id === playingId
-            return (
-              <li key={s.id} className="border-line border-b last:border-b-0">
-                <button
-                  type="button"
-                  aria-label={
-                    here && current?.playing
-                      ? `Pause ${s.title}`
-                      : `Play ${s.title}, ${songTime(s.duration)}`
-                  }
-                  aria-current={here ? 'true' : undefined}
-                  onClick={() =>
-                    here ? player.toggle() : player.play({ album: a.id }, { start: i })
-                  }
-                  className="grid min-h-12 w-full cursor-pointer grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded-sm text-start outline-none focus-visible:ring-focus"
-                >
-                  {here ? (
-                    <PlayingBars
-                      playing={!!current?.playing}
-                      className="text-[15px] text-accent-text"
-                    />
-                  ) : (
-                    <span className="text-[15px] text-text-3 tabular-nums">{s.number}</span>
-                  )}
-                  <span
-                    className={cn('truncate text-[15px]', here ? 'text-accent-text' : 'text-text')}
-                  >
-                    {s.title}
-                  </span>
-                  <span className="text-[13px] text-text-3 tabular-nums">
-                    {songTime(s.duration)}
-                  </span>
-                </button>
-              </li>
-            )
-          })}
+          {songs.map((s, i) => (
+            <SongRow
+              key={s.id}
+              song={s}
+              album={a}
+              here={s.id === playingId}
+              playing={!!current?.playing}
+              onPlay={() =>
+                s.id === playingId ? player.toggle() : player.play({ album: a.id }, { start: i })
+              }
+            />
+          ))}
         </ol>
         <div className="grid gap-0.5 text-[13px] text-text-3">
           <p>{releasedOn(released)}</p>
@@ -181,5 +181,54 @@ export function MobileAlbum() {
         </MobileRow>
       )}
     </article>
+  )
+}
+
+/** A song: a tap plays it (or pauses it, when it's the one playing); ⋯ or a long press, its menu. */
+function SongRow({
+  song: s,
+  album,
+  here,
+  playing,
+  onPlay,
+}: {
+  song: ClientSong
+  album: ClientAlbum
+  here: boolean
+  playing: boolean
+  onPlay: () => void
+}) {
+  const [menu, setMenu] = useState(false)
+  const press = useLongPress(() => setMenu(true))
+  return (
+    <li className="grid grid-cols-[minmax(0,1fr)_auto] items-center border-line border-b last:border-b-0">
+      <button
+        type="button"
+        aria-label={
+          here && playing ? `Pause ${s.title}` : `Play ${s.title}, ${songTime(s.duration)}`
+        }
+        aria-current={here ? 'true' : undefined}
+        onClick={onPlay}
+        {...press}
+        className="grid min-h-12 w-full cursor-pointer grid-cols-[1.75rem_minmax(0,1fr)_auto] items-center gap-2 rounded-sm text-start outline-none focus-visible:ring-focus"
+      >
+        {here ? (
+          <PlayingBars playing={playing} className="text-[15px] text-accent-text" />
+        ) : (
+          <span className="text-[15px] text-text-3 tabular-nums">{s.number}</span>
+        )}
+        <span className={cn('truncate text-[15px]', here ? 'text-accent-text' : 'text-text')}>
+          {s.title}
+        </span>
+        <span className="text-[13px] text-text-3 tabular-nums">{songTime(s.duration)}</span>
+      </button>
+      <MoreButton name={s.title} onClick={() => setMenu(true)} />
+      <MobileSongMenu
+        target={{ songs: [s.id], name: s.title, album }}
+        on="album"
+        open={menu}
+        onOpenChange={setMenu}
+      />
+    </li>
   )
 }

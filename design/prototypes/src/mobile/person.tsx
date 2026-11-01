@@ -91,7 +91,25 @@ export function MobilePerson() {
           {life && <p className="text-[13px] text-text-3">{life}</p>}
         </div>
       </header>
-      {p.bio && <Bio text={p.bio} />}
+      {(p.bio || p.artist) && (
+        <div className="grid gap-2">
+          {p.bio && <Bio text={p.bio} />}
+          {/* the reverse of the artist page's Their films and shows (prototype-gaps.md › 3.5) */}
+          {p.artist && (
+            <a
+              href={mobileHref(`/music/artists/${p.artist}`)}
+              className={cn(
+                'flex min-h-11 items-center gap-1.5 rounded-sm text-[14px] text-text outline-none focus-visible:ring-focus',
+                gutter,
+              )}
+            >
+              <Icon name="music" size={16} />
+              Their music
+              <Icon name="chevron-right" size={16} className="text-text-3" />
+            </a>
+          )}
+        </div>
+      )}
       {p.departments.map(({ department, credits }) => (
         <MobileRow key={department} title={departmentTitle[department]}>
           {credits.map(({ item: m, role }) => (

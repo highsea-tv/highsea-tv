@@ -72,20 +72,18 @@ html[data-chrome] body {
     scale: 1 1;
   }
 }
-.playing-bar {
+@utility playing-bar {
   transform-origin: bottom;
   animation: playing-bar 900ms ease-in-out infinite;
-}
-.playing-bar[data-paused] {
-  animation-play-state: paused;
-}
-@media (prefers-reduced-motion: reduce) {
-  .playing-bar {
+  &[data-paused] {
+    animation-play-state: paused;
+  }
+  @media (prefers-reduced-motion: reduce) {
     animation: none;
     scale: 1 0.6;
   }
-}
-:root[data-reduced-motion] .playing-bar {
-  animation: none;
-  scale: 1 0.6;
+  :root[data-reduced-motion] & {
+    animation: none;
+    scale: 1 0.6;
+  }
 }

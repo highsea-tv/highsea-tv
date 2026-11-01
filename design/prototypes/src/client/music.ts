@@ -1,10 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The music library's views on every client: Albums and Artists, each with its own sorts, as Apple
-// Music, Plex and Navidrome give them. Albums filter by genre; both sort by name by default, which
-// is when the A–Z index shows.
-import type { ClientAlbum, ClientArtist, DiscographyKind, HomeMusic } from '../mock/types.ts'
+// The music library's views on every client: Albums, Artists, Songs and Playlists, as Apple Music,
+// Plex and Navidrome give them (prototype-gaps.md › 3.8). Albums and Songs filter by genre; the
+// first three sort by name by default, which is when the A–Z index shows. Playlists are the
+// person's own, the most recently changed first.
+import type {
+  ClientAlbum,
+  ClientArtist,
+  ClientLibrarySong,
+  DiscographyKind,
+  HomeMusic,
+} from '../mock/types.ts'
 
-export type MusicView = 'albums' | 'artists'
+export type MusicView = 'albums' | 'artists' | 'songs' | 'playlists'
+
+/** Each view, its name and its address. */
+export const musicViews: { value: MusicView; label: string; path: string }[] = [
+  { value: 'albums', label: 'Albums', path: '/music' },
+  { value: 'artists', label: 'Artists', path: '/music/artists' },
+  { value: 'songs', label: 'Songs', path: '/music/songs' },
+  { value: 'playlists', label: 'Playlists', path: '/music/playlists' },
+]
 
 export type AlbumSort = 'title' | 'artist' | 'added' | 'year'
 export const albumSorts: { value: AlbumSort; label: string }[] = [
@@ -41,6 +56,52 @@ export function arrangeAlbums(albums: ClientAlbum[], genre: string, sort: AlbumS
 
 const artistKey = (a: ClientAlbum) => a.artist.name.replace(/^(the|a)\s+/i, '')
 
+export type SongSort = 'title' | 'artist' | 'album' | 'added' | 'plays'
+export const songSorts: { value: SongSort; label: string }[] = [
+  { value: 'title', label: 'Title' },
+  { value: 'artist', label: 'Artist' },
+  { value: 'album', label: 'Album' },
+  { value: 'added', label: 'Recently added' },
+  { value: 'plays', label: 'Most played' },
+]
+
+/** A song's title as the index files it: "The Gate" under G, as Apple Music does. */
+const titleKey = (s: ClientLibrarySong) => s.title.replace(/^(the|a)\s+/i, '')
+
+/** The genres of the songs' albums. */
+export const songGenresOf = (songs: ClientLibrarySong[]) =>
+  musicGenresOf([...new Map(songs.map((s) => [s.album.id, s.album])).values()])
+
+/** Songs in a genre, sorted; by artist or album, each album's songs in their order. */
+export function arrangeSongs(songs: ClientLibrarySong[], genre: string, sort: SongSort) {
+  const shown = songs.filter((s) => genre === ALL_GENRES || s.album.genres.includes(genre))
+  const inAlbum = (a: ClientLibrarySong, b: ClientLibrarySong) =>
+    a.album.sortTitle.localeCompare(b.album.sortTitle) || a.number - b.number
+  return [...shown].sort((a, b) =>
+    sort === 'added'
+      ? Date.parse(b.album.addedAt) - Date.parse(a.album.addedAt) || inAlbum(a, b)
+      : sort === 'plays'
+        ? b.plays - a.plays || titleKey(a).localeCompare(titleKey(b))
+        : sort === 'artist'
+          ? artistKey(a.album).localeCompare(artistKey(b.album)) ||
+            a.album.year - b.album.year ||
+            inAlbum(a, b)
+          : sort === 'album'
+            ? inAlbum(a, b)
+            : titleKey(a).localeCompare(titleKey(b)),
+  )
+}
+
+/** The key the A–Z index reads, when the sort is by name. */
+export const songIndexKey = (s: ClientLibrarySong, sort: SongSort) =>
+  sort === 'title'
+    ? titleKey(s)
+    : sort === 'artist'
+      ? artistKey(s.album)
+      : sort === 'album'
+        ? s.album.sortTitle
+        : null
+
 export function arrangeArtists(artists: ClientArtist[], sort: ArtistSort) {
   return [...artists].sort((a, b) =>
     sort === 'added'
@@ -69,6 +130,7 @@ export const albumsCount = (n: number) => `${n} ${n === 1 ? 'album' : 'albums'}`
 export const artistsCount = (n: number) => `${n} ${n === 1 ? 'artist' : 'artists'}`
 
 export const songsCount = (n: number) => `${n} ${n === 1 ? 'song' : 'songs'}`
+export const playlistsCount = (n: number) => `${n} ${n === 1 ? 'playlist' : 'playlists'}`
 
 /** "3:42": a song's length, as every music app shows it. */
 export const songTime = (seconds: number) =>

@@ -3,28 +3,63 @@
 // player floating above the tab bar on every tab while music is queued (the cover, the song and
 // the artist, Play or Pause and Next, with the song's progress along its foot), and tapping it
 // opens Now playing over everything: the cover large, shrinking a little while paused as Apple
-// Music's does, the song and the artist, the waveform to scrub, Previous, Play or Pause and Next,
-// the volume, and what's up next.
-import { cn, Icon } from '@highsea-tv/ui-web'
+// Music's does, the song and the artist, the waveform to scrub, Shuffle, Previous, Play or Pause,
+// Next and Repeat, the volume, then AirPlay and the queue (prototype-gaps.md › 3.4). ⋯ goes to the
+// album or the artist, or stops the music; so does swiping the mini player down, as Spotify's.
+import { cn, Icon, Sheet, SheetContent, toast } from '@highsea-tv/ui-web'
+import { useRef, useState } from 'react'
 import { useLocation } from 'wouter'
-import { clock } from '../client/data.ts'
-import { useMusicPlayer } from '../client/music-player.ts'
+import { clock, useAirPlay } from '../client/data.ts'
+import { playingFromLabel, repeatButton, useMusicPlayer } from '../client/music-player.ts'
+import { MusicQueue } from '../client/music-queue.tsx'
 import { Waveform } from '../client/waveform.tsx'
 import { MobileScreen } from '../kit/mobile/device.tsx'
+import { AirPlayPicker } from './player.tsx'
 import { gutter, mobileHref } from './shell.tsx'
+
+/** How far the mini player is swiped down before letting go stops the music, in px. */
+const SWIPE_STOP = 40
 
 /** The mini player's height and the space under it, so a tab's content scrolls clear of it. */
 export const MINI_PLAYER = 64
 
 export function MiniPlayer({ bottom }: { bottom: number }) {
   const p = useMusicPlayer()
+  // swiped down past SWIPE_STOP and let go, the music stops; short of it, the player springs back
+  const start = useRef<number | null>(null)
+  const [drag, setDrag] = useState(0)
   const song = p.song
   if (!song) return null
+  const end = () => {
+    if (drag > SWIPE_STOP) {
+      p.stop()
+      toast({ title: 'Music stopped' })
+    }
+    start.current = null
+    setDrag(0)
+  }
   return (
     <section
       aria-label="Music player"
-      style={{ bottom: bottom + 8, height: MINI_PLAYER - 8 }}
-      className="glass-bar absolute inset-x-2 z-20 overflow-hidden rounded-[14px] border border-line shadow-3"
+      style={{
+        bottom: bottom + 8,
+        height: MINI_PLAYER - 8,
+        translate: `0 ${drag}px`,
+        opacity: 1 - Math.min(drag, 80) / 120,
+      }}
+      onPointerDown={(e) => {
+        if (e.pointerType !== 'mouse') start.current = e.clientY
+      }}
+      onPointerMove={(e) => {
+        if (start.current !== null) setDrag(Math.max(0, e.clientY - start.current))
+      }}
+      onPointerUp={end}
+      onPointerCancel={end}
+      className={cn(
+        'glass-bar absolute inset-x-2 z-20 touch-pan-x overflow-hidden rounded-[14px] border border-line shadow-3',
+        drag === 0 &&
+          'transition-[translate,opacity] duration-(--duration-spring) ease-(--ease-spring)',
+      )}
     >
       <div className="grid h-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1 ps-2 pe-1">
         <a
@@ -34,8 +69,8 @@ export function MiniPlayer({ bottom }: { bottom: number }) {
         >
           <img src={song.album.cover} alt="" className="size-10 rounded-[6px] bg-s2 object-cover" />
           <span className="grid min-w-0">
-            <span className="truncate font-semibold text-[15px] leading-tight">{song.title}</span>
-            <span className="truncate text-[13px] text-text-2 leading-tight">
+            <span className="truncate font-semibold text-[15px] leading-[1.2]">{song.title}</span>
+            <span className="truncate text-[13px] text-text-2 leading-[1.2]">
               {song.album.artist.name}
             </span>
           </span>
@@ -71,10 +106,22 @@ export function MiniPlayer({ bottom }: { bottom: number }) {
 
 const control =
   'grid cursor-pointer place-items-center rounded-full outline-none transition-press focus-visible:ring-focus active:scale-90 disabled:opacity-40'
+/** Shuffle and Repeat; on, in the accent with a dot under them, so it isn't colour alone. */
+const toggle = cn(control, 'relative size-11 text-text-2')
+const on =
+  'text-accent-text after:absolute after:bottom-0.5 after:size-1 after:rounded-full after:bg-current'
+export const sheetAction =
+  'flex min-h-12 w-full cursor-pointer items-center gap-3 rounded-md px-3 text-start text-[16px] outline-none transition-press focus-visible:ring-focus active:bg-text/8'
 
 export function MobileNowPlaying() {
   const p = useMusicPlayer()
   const [, navigate] = useLocation()
+  const [more, setMore] = useState(false)
+  const [queue, setQueue] = useState(false)
+  const toolbarScreen = useAirPlay()
+  const [speaker, setSpeaker] = useState<string | null | undefined>(undefined)
+  const [picker, setPicker] = useState(false)
+  const playingOn = speaker === undefined ? toolbarScreen : speaker
   const song = p.song
   const close = () => (history.length > 1 ? history.back() : navigate('/'))
   if (!song)
@@ -117,13 +164,32 @@ export function MobileNowPlaying() {
           >
             <Icon name="chevron-down" size={26} />
           </button>
-          <a
-            href={mobileHref(`/music/albums/${song.album.id}`)}
-            className="grid min-w-0 rounded-sm text-center outline-none focus-visible:ring-focus"
+          {p.from?.to ? (
+            <a
+              href={mobileHref(p.from.to)}
+              aria-label={playingFromLabel(p.from)}
+              className="grid min-w-0 rounded-sm text-center outline-none focus-visible:ring-focus"
+            >
+              <span className="font-mono text-label text-text-3 uppercase">Playing from</span>
+              <span className="truncate font-semibold text-[13px]">{p.from.name}</span>
+            </a>
+          ) : (
+            <span className="grid min-w-0 text-center">
+              <span className="font-mono text-label text-text-3 uppercase">Playing from</span>
+              <span className="truncate font-semibold text-[13px]">
+                {p.from?.kind === 'search' ? `Search: “${p.from.name}”` : song.album.title}
+              </span>
+            </span>
+          )}
+          <button
+            type="button"
+            aria-label="More"
+            aria-haspopup="dialog"
+            onClick={() => setMore(true)}
+            className={cn(control, 'size-11')}
           >
-            <span className="font-mono text-label text-text-3 uppercase">Playing from</span>
-            <span className="truncate font-semibold text-[13px]">{song.album.title}</span>
-          </a>
+            <Icon name="more" size={24} />
+          </button>
         </header>
         <div className={cn('grid place-items-center py-4', gutter)}>
           <img
@@ -137,7 +203,7 @@ export function MobileNowPlaying() {
         </div>
         <div className={cn('grid gap-4 pb-4', gutter)}>
           <div className="grid min-w-0">
-            <h1 className="truncate font-semibold text-[22px] leading-tight">{song.title}</h1>
+            <h1 className="truncate font-semibold text-[22px] leading-[1.2]">{song.title}</h1>
             <a
               href={mobileHref(`/music/artists/${song.album.artist.id}`)}
               className="justify-self-start truncate rounded-sm text-[18px] text-text-2 outline-none focus-visible:ring-focus"
@@ -162,7 +228,16 @@ export function MobileNowPlaying() {
               <span>−{clock(song.duration - p.position)}</span>
             </div>
           </div>
-          <div className="flex items-center justify-center gap-8">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              aria-label="Shuffle"
+              aria-pressed={p.shuffle}
+              onClick={p.toggleShuffle}
+              className={cn(toggle, p.shuffle && on)}
+            >
+              <Icon name="shuffle" size={22} />
+            </button>
             <button
               type="button"
               aria-label="Previous"
@@ -189,6 +264,15 @@ export function MobileNowPlaying() {
             >
               <Icon name="next" size={34} className="fill-current" />
             </button>
+            <button
+              type="button"
+              aria-label={repeatButton[p.repeat].label}
+              aria-pressed={p.repeat !== 'off'}
+              onClick={p.cycleRepeat}
+              className={cn(toggle, p.repeat !== 'off' && on)}
+            >
+              <Icon name={repeatButton[p.repeat].icon} size={22} />
+            </button>
           </div>
           <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 text-text-3">
             <Icon name="mute" size={16} />
@@ -208,11 +292,83 @@ export function MobileNowPlaying() {
             />
             <Icon name="sound" size={16} />
           </div>
-          <p className="truncate text-center text-[13px] text-text-3">
-            {p.upNext ? `Up next: ${p.upNext.title}` : 'The last song in the queue'}
-          </p>
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              aria-label={playingOn ? `AirPlay: playing on ${playingOn}` : 'AirPlay'}
+              aria-haspopup="dialog"
+              onClick={() => setPicker(true)}
+              className={cn(control, 'size-11', playingOn ? 'text-accent-text' : 'text-text-2')}
+            >
+              <Icon name="airplay" size={22} />
+            </button>
+            {playingOn && (
+              <span className="truncate text-[13px] text-accent-text">{playingOn}</span>
+            )}
+            <button
+              type="button"
+              aria-label={
+                p.upNext[0] ? `Queue, up next: ${p.upNext[0].title}` : 'Queue, nothing up next'
+              }
+              aria-haspopup="dialog"
+              onClick={() => setQueue(true)}
+              className={cn(control, 'size-11 text-text-2')}
+            >
+              <Icon name="queue" size={22} />
+            </button>
+          </div>
         </div>
+        {picker && (
+          <AirPlayPicker
+            music
+            current={playingOn}
+            onPick={(next) => {
+              setSpeaker(next)
+              setPicker(false)
+            }}
+            onClose={() => setPicker(false)}
+          />
+        )}
       </article>
+      <Sheet open={queue} onOpenChange={setQueue}>
+        <SheetContent title="Queue">
+          <MusicQueue href={mobileHref} size="mobile" onGo={() => setQueue(false)} />
+        </SheetContent>
+      </Sheet>
+      <Sheet open={more} onOpenChange={setMore}>
+        <SheetContent title={song.title} description={song.album.artist.name}>
+          <div className="-mx-3 grid">
+            <a
+              href={mobileHref(`/music/albums/${song.album.id}`)}
+              onClick={() => setMore(false)}
+              className={sheetAction}
+            >
+              <Icon name="music" size={20} />
+              Go to the album
+            </a>
+            <a
+              href={mobileHref(`/music/artists/${song.album.artist.id}`)}
+              onClick={() => setMore(false)}
+              className={sheetAction}
+            >
+              <Icon name="user" size={20} />
+              Go to the artist
+            </a>
+            <button
+              type="button"
+              onClick={() => {
+                setMore(false)
+                p.stop()
+                close()
+              }}
+              className={sheetAction}
+            >
+              <Icon name="close" size={20} />
+              Stop
+            </button>
+          </div>
+        </SheetContent>
+      </Sheet>
     </MobileScreen>
   )
 }

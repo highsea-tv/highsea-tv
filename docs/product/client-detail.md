@@ -32,7 +32,7 @@ Checkpoint 4.0b, on mobile and in the desktop app (not in a browser, which can't
 - **Waiting to download** (another is downloading) or **Waiting for Wi-Fi**, with **Cancel**;
 - the bar with its percentage, "Downloading · {speed}/s · {left} to go" and **Pause**; paused, "Paused · {done} of {size}" and **Resume**;
 - **The download stopped** with **Try again**;
-- "Downloaded · plays offline for {n} more days" with **Remove**; expired, "Downloaded · connect to Harbor to keep watching it".
+- "Downloaded · plays offline for {n} more days" with **Remove**; expired, "Downloaded · connect to {server} to keep watching it".
 
 The list of every download is [client-settings.md › Offline](client-settings.md#offline).
 
@@ -42,6 +42,13 @@ Phase 4's answer 9. On web and mobile, **More** (an icon button after the play a
 
 - Watched means played to the end, for this person only. Marking it watched removes it from Continue watching; marking it unwatched starts it from the beginning next time ("It plays from the start next time.").
 - The toast says "{title} marked as watched" or "marked as unwatched".
+
+### Shows, people and soundtracks (prototype-gaps stage 3, 2026-11-01)
+
+- **A show's page has the film page's round buttons** beside Play: From the start (of the episode Play plays), **Trailer** when the show has one, **Audio and subtitles** (the show's languages, picked once and applied to every episode; the TV's panel says "Back closes. Saved for every episode."), **Mark show as watched**, drawn on its own so it stays when no episode is left, and in the desktop app and on the phone, **Download** for that episode.
+- **Download for episodes, seasons and albums** (the screens 4.6 builds): an episode's row has a download icon with the progress ring, each season **Download season** beside Mark season as watched, and an album Download beside Play and Shuffle. The phone's stays in the prototype as 4.6's design; `apps/mobile` hides it until 4.6.
+- **Soundtrack:** a film whose score is an album here has a **Soundtrack** line in Information, the album's title as a link to it. On the TV it's a stop of its own inside the card.
+- **Their music:** a person who is also an artist here has **Their music** on their page, opening the artist page, as the artist page has **Their films and shows**. It sits under the facts on the web, under the biography on the phone, and as a button under the facts on the TV, between the head and the first row.
 
 ## States
 

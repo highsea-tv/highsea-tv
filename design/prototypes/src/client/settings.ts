@@ -9,7 +9,14 @@ import type { HomeLayout } from '../mock/types.ts'
 import { useServer } from './data.ts'
 import { useAppearance } from './prefs.tsx'
 
-export type SettingsSectionId = 'appearance' | 'sounds' | 'home' | 'servers' | 'devices' | 'about'
+export type SettingsSectionId =
+  | 'appearance'
+  | 'sounds'
+  | 'playback'
+  | 'home'
+  | 'servers'
+  | 'devices'
+  | 'about'
 
 export const settingsSections: {
   id: SettingsSectionId
@@ -19,6 +26,12 @@ export const settingsSections: {
 }[] = [
   { id: 'appearance', label: 'Theme', icon: 'palette', hint: 'How this device looks.' },
   { id: 'sounds', label: 'Sounds', icon: 'sound', hint: 'Interface sounds on this device.' },
+  {
+    id: 'playback',
+    label: 'Playback',
+    icon: 'play',
+    hint: 'Languages, what plays next, and quality, on every device.',
+  },
   {
     id: 'home',
     label: 'Home screen',
@@ -40,7 +53,7 @@ export function useThemeChoices() {
   const appearance = useAppearance()
   const server = useServer()
   const a = appearance.data
-  const name = server.data?.name ?? 'Harbor'
+  const name = server.data?.name ?? 'this server'
   const builtIn = Object.values(builtInThemes)
   const defaultName =
     builtIn.find((t) => t.id === a?.defaultTheme)?.name ??

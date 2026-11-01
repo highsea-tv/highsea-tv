@@ -69,6 +69,16 @@ const remember = (patch: Record<string, string>) => {
   } catch {}
 }
 
+/** What Search last looked for, for "Playing from" when a song plays from the results. */
+export function searchedFor() {
+  try {
+    const v = (history.state as Record<string, unknown> | null)?.hsSearch
+    return typeof v === 'string' ? v.trim() : ''
+  } catch {
+    return ''
+  }
+}
+
 export function useSearchQuery() {
   const saved = (key: string) => {
     try {
@@ -179,6 +189,9 @@ export const searchSuggestions = [
 ]
 
 export const useServer = () => useQuery('server', (c) => c.system.server(), ['server.updated'])
+
+/** The server's name as its owner set it, and "this server" until it's known (prototype-gaps.md › 3.7). */
+export const useServerName = () => useServer().data?.name ?? 'this server'
 
 export const useKnownServers = () => useQuery('client:known', (c) => c.connect.known())
 

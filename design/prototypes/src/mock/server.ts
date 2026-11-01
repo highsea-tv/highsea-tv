@@ -19,7 +19,16 @@ import {
   person,
   recommendations,
 } from './metadata.ts'
-import { albumDetail, artistDetail, musicLibrary, queueOf, scoreOf } from './music.ts'
+import {
+  albumDetail,
+  allSongs,
+  artistDetail,
+  musicLibrary,
+  queueOf,
+  scoreOf,
+  shuffled,
+  trackOf,
+} from './music.ts'
 import { type AccelerationPath, finishCheck, playbackStatus } from './playback.ts'
 import { GB, MB, type ServerState, seed } from './seed.ts'
 import { advanceSessions, type NowPlaying, type SessionView, type WatchView } from './sessions.ts'
@@ -40,8 +49,11 @@ import type {
   ClientDetail,
   ClientEpisode,
   ClientItem,
+  ClientLibrarySong,
   ClientMusic,
   ClientPerson,
+  ClientPlaylist,
+  ClientPlaylistDetail,
   ClientShow,
   ClientShowDetail,
   ClientTrack,
@@ -69,6 +81,7 @@ import type {
   LogEntry,
   MediaFile,
   MediaItem,
+  MusicSource,
   Pairing,
   PlaybackPrefs,
   ProbeResult,
@@ -515,6 +528,21 @@ export function createServer(
   return { kind, state, clock, events, step, dispose: unsubscribe }
 }
 
+/** The languages every show's episodes have here, as the show's page offers them. */
+const showTracks: ClientShowDetail['tracks'] = {
+  audio: [
+    { id: 'en', label: 'English' },
+    { id: 'en-ad', label: 'English (audio description)' },
+    { id: 'de', label: 'German' },
+  ],
+  subtitles: [
+    { id: 'en', label: 'English' },
+    { id: 'en-sdh', label: 'English (SDH)' },
+    { id: 'de', label: 'German' },
+    { id: 'fr', label: 'French' },
+  ],
+}
+
 // ---------------------------------------------------------------- the API
 
 export type Ctx = { userId: string; storage?: Storage }
@@ -689,6 +717,87 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     return played
   }
   /**
+   * Each person's own playlists (prototype-gaps.md › 3.8), seeded with two on their first read,
+   * the same on every load: a quiet one from the scores and the classical albums, and one from
+   * the rest.
+   */
+  type PlaylistSeed = {
+    id: string
+    name: string
+    entries: { entry: string; song: string }[]
+    updatedAt: string
+  }
+  const playlistsOf = new Map<string, PlaylistSeed[]>()
+  let entries = 0
+  const entry = (song: string) => ({ entry: `e${++entries}`, song })
+  const myPlaylists = () => {
+    const id = me().id
+    let mine = playlistsOf.get(id)
+    if (!mine) {
+      const songs = allSongs(library())
+      const quiet = songs.filter(
+        (s) => s.album.kind === 'soundtrack' || s.album.genres.includes('Classical'),
+      )
+      const rest = songs.filter((s) => !quiet.includes(s))
+      const every = <T>(xs: T[], n: number) =>
+        xs.length === 0
+          ? []
+          : Array.from({ length: Math.min(n, xs.length) }, (_, i) => xs[(i * 7) % xs.length] as T)
+      mine =
+        songs.length === 0
+          ? []
+          : [
+              {
+                id: `${id}-late`,
+                name: 'Late night',
+                entries: every(quiet, 9).map((s) => entry(s.id)),
+                updatedAt: iso(now() - 2 * 86_400_000),
+              },
+              {
+                id: `${id}-weekend`,
+                name: 'Weekend mornings',
+                entries: every(rest, 12).map((s) => entry(s.id)),
+                updatedAt: iso(now() - 9 * 86_400_000),
+              },
+            ]
+      playlistsOf.set(id, mine)
+    }
+    return mine
+  }
+  const playlistSeed = (id: string) => {
+    const p = myPlaylists().find((x) => x.id === id)
+    if (!p) throw new ApiError(404, 'not-found', 'That playlist isn’t yours, or has been deleted.')
+    return p
+  }
+  const playlistSongs = (p: PlaylistSeed) => {
+    const songs = new Map(allSongs(library()).map((s) => [s.id, s]))
+    return p.entries.flatMap((e) => {
+      const s = songs.get(e.song)
+      return s ? [{ ...s, entry: e.entry }] : []
+    })
+  }
+  const playlistOf = (p: PlaylistSeed): ClientPlaylist => {
+    const songs = playlistSongs(p)
+    return {
+      id: p.id,
+      name: p.name,
+      songs: songs.length,
+      duration: songs.reduce((t, s) => t + s.duration, 0),
+      covers: [...new Set(songs.map((s) => s.album.cover))].slice(0, 4),
+      updatedAt: p.updatedAt,
+    }
+  }
+  const touched = (p: PlaylistSeed) => {
+    p.updatedAt = iso(now())
+    srv.events.emit({ type: 'playlists.updated' })
+  }
+  const playlistName = (name: string) => {
+    const n = name.trim()
+    if (!n) throw new ApiError(400, 'invalid', 'A playlist needs a name.')
+    return n.slice(0, 100)
+  }
+
+  /**
    * Titles and shows taken off Continue watching (watch.dismiss), per person, until they play
    * them again.
    */
@@ -842,6 +951,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         intro: opens ? { start: introStart, end: introStart + 52 } : null,
         credits: length - 75,
       },
+      soundtrack: null,
       upNext: after
         ? {
             kind: 'episode',
@@ -2620,10 +2730,14 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     },
 
     connect: {
-      /** Servers this device has signed in to, for the switcher. */
-      known: () => state.known,
+      /** Servers this device has signed in to, for the switcher; this one by its current name. */
+      known: () =>
+        state.known.map((k) => (k.id === state.server.id ? { ...k, name: state.server.name } : k)),
       /** LAN discovery (UDP broadcast and mDNS); answers arrive over a second or two. */
-      discover: () => state.discovered,
+      discover: () =>
+        state.discovered.map((d) =>
+          d.id === state.server.id ? { ...d, name: state.server.name } : d,
+        ),
       /** What an address answers before signing in. */
       probe: (address: string): ProbeResult => {
         const a = address
@@ -2956,6 +3070,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       show: (id: string): ClientShowDetail => {
         const s = showSeed(id)
         const show = showOf(s)
+        const prefs = state.prefs[`${me().id}:${id}`] ?? {}
         const seasons = [...s.seasons].sort(
           (a, b) => (a.number === 0 ? 1 : 0) - (b.number === 0 ? 1 : 0) || a.number - b.number,
         )
@@ -2971,6 +3086,27 @@ export function createApi(srv: MockServer, ctx: Ctx) {
             .sort((a, b) => b.n - a.n || b.x.show.rating - a.x.show.rating)
             .slice(0, 12)
             .map(({ x }) => showOf(x)),
+          // a trailer for shows first aired since 2015, as TMDB has for most newer series
+          videos:
+            show.year >= 2015
+              ? [
+                  {
+                    id: `${id}-trailer`,
+                    name: 'Official trailer',
+                    kind: 'Trailer',
+                    site: 'YouTube',
+                    key: `mock-${id}-trailer`,
+                    lengthSeconds: 96 + (show.title.length % 60),
+                    publishedAt: `${show.year}-01-15`,
+                    still: show.art.backdrop,
+                  },
+                ]
+              : [],
+          tracks: showTracks,
+          defaults: {
+            audioId: prefs.audioId ?? 'en',
+            subtitleId: prefs.subtitleId !== undefined ? prefs.subtitleId : null,
+          },
         }
       },
       /** Mark an episode watched (to the end) or unwatched (from the start), for this person. */
@@ -3003,7 +3139,16 @@ export function createApi(srv: MockServer, ctx: Ctx) {
        * The songs to play: an album's in order, or an artist's, newest album first, shuffled when
        * asked; each with its loudness for the player's scrubber.
        */
-      queue: (source: { album: string } | { artist: string }, shuffle = false): QueuedSong[] => {
+      queue: (source: MusicSource, shuffle = false): QueuedSong[] => {
+        if ('songs' in source || 'playlist' in source) {
+          const ids =
+            'songs' in source
+              ? source.songs
+              : playlistSongs(playlistSeed(source.playlist)).map((s) => s.id)
+          const q = ids.flatMap((id) => trackOf(library(), id) ?? [])
+          if (q.length === 0) throw new ApiError(404, 'not-found', 'There’s nothing here to play.')
+          return shuffle ? shuffled(q) : q
+        }
         const q = queueOf(library(), source, shuffle)
         if (!q) throw new ApiError(404, 'not-found', 'There’s nothing here to play.')
         const key = 'album' in source ? source.album : source.artist
@@ -3013,6 +3158,22 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         ].slice(0, 12)
         srv.events.emit({ type: 'music.updated' })
         return q
+      },
+      /**
+       * Songs for the queue by id, for a song's Play next and Add to queue; unlike `queue`, these
+       * aren't recorded as played.
+       */
+      tracks: (ids: string[]): QueuedSong[] => ids.flatMap((id) => trackOf(library(), id) ?? []),
+      /** Every song here, for Music's Songs; sorted and filtered by the client. */
+      songs: (): ClientLibrarySong[] => allSongs(library()),
+      /** The person's own playlists, the most recently changed first. */
+      playlists: (): ClientPlaylist[] =>
+        myPlaylists()
+          .map(playlistOf)
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+      playlist: (id: string): ClientPlaylistDetail => {
+        const p = playlistSeed(id)
+        return { playlist: playlistOf(p), songs: playlistSongs(p) }
       },
       /** An artist with their albums by kind; their person page when they're in a film or show here. */
       artist: (id: string): ClientArtistDetail => {
@@ -3176,10 +3337,60 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           },
           episode: null,
           upNext,
+          soundtrack: (() => {
+            const a = library().albums.find((x) => scoreOf(x) === m.title)
+            return a ? { id: a.id, title: a.title } : null
+          })(),
         }
       },
     },
 
+    /**
+     * The person's own playlists (prototype-gaps.md › 3.8): made, renamed, added to, reordered
+     * and deleted on the web, desktop and phone; the TV only plays them.
+     */
+    playlists: {
+      create: (name: string, songs: string[] = []): ClientPlaylist => {
+        const p: PlaylistSeed = {
+          id: `pl-${Math.round(now()).toString(36)}-${++entries}`,
+          name: playlistName(name),
+          entries: songs.map(entry),
+          updatedAt: iso(now()),
+        }
+        myPlaylists().push(p)
+        touched(p)
+        return playlistOf(p)
+      },
+      rename: (id: string, name: string) => {
+        const p = playlistSeed(id)
+        p.name = playlistName(name)
+        touched(p)
+      },
+      /** Songs at the end, in the order given. */
+      add: (id: string, songs: string[]) => {
+        const p = playlistSeed(id)
+        p.entries.push(...songs.map(entry))
+        touched(p)
+      },
+      remove: (id: string, entry: string) => {
+        const p = playlistSeed(id)
+        p.entries = p.entries.filter((e) => e.entry !== entry)
+        touched(p)
+      },
+      /** The playlist's entries in their new order. */
+      reorder: (id: string, order: string[]) => {
+        const p = playlistSeed(id)
+        const by = new Map(p.entries.map((e) => [e.entry, e]))
+        p.entries = order.flatMap((e) => by.get(e) ?? [])
+        touched(p)
+      },
+      delete: (id: string) => {
+        const p = playlistSeed(id)
+        const mine = myPlaylists()
+        mine.splice(mine.indexOf(p), 1)
+        srv.events.emit({ type: 'playlists.updated' })
+      },
+    },
     playback: {
       prefs: (id: string): PlaybackPrefs => state.prefs[`${me().id}:${id}`] ?? {},
       /** Remembers the picks for this title, for this user. */

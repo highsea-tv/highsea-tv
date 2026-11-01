@@ -4,9 +4,11 @@
 // synopsis, the leading cast and who created it). Where a film has Play, a show has the episode
 // Play plays, as the Apple TV app and Netflix name it: what's next and its place over the button
 // ("Up next · S2, E6 · The Visitor", with the progress part way), "Resume S2, E6" on it, and round
-// buttons beside it: From the start of that episode, and Mark the show as watched. Then the
+// buttons beside it, as a film's page has them: From the start of that episode, Trailer, Audio and
+// subtitles for every episode, Mark the show as watched (there with or without an episode to play)
+// and, in the desktop app, Download for that episode. Then the
 // episodes: the seasons as line tabs that scroll sideways when there are many, the season's year
-// and count with Mark season as watched, and the episodes as a list, as Netflix, Infuse and the
+// and count with Mark season as watched and Download season (in the desktop app), and the episodes as a list, as Netflix, Infuse and the
 // Apple TV app's own pages list them: the still with its progress, the number and title, the
 // length and air date, and two lines of synopsis, two to a row on a wide window, with the watched
 // check at the end. The season opens on the episode Play plays. Then More like this, Cast and
@@ -16,8 +18,13 @@ import {
   CarouselRow,
   cn,
   EmptyState,
+  Field,
   Icon,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
   Rating,
+  Select,
   Skeleton,
   SkeletonText,
   Tabs,
@@ -28,8 +35,10 @@ import {
 } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useParams } from 'wouter'
-import { useMarkEpisodes, useShow } from '../client/data.ts'
+import { useDesktopApp, useMarkEpisodes, useShow } from '../client/data.ts'
 import { type Fact, names, role, showPeopleOf } from '../client/detail-facts.ts'
+import { EpisodeDownload, GroupDownload } from '../client/download-button.tsx'
+import { episodeSource, type OfflineSource, seasonGroup } from '../client/downloads.ts'
 import { ShowPoster } from '../client/show-card.tsx'
 import {
   airedDate,
@@ -43,7 +52,16 @@ import {
   showYears,
   useEpisodeTarget,
 } from '../client/shows.ts'
-import type { ClientEpisode, ClientSeason, ClientShowDetail } from '../mock/types.ts'
+import { TrailerDialog } from '../client/trailer.tsx'
+import { useAction } from '../mock/hooks.tsx'
+import type {
+  ClientEpisode,
+  ClientSeason,
+  ClientShow,
+  ClientShowDetail,
+  PlaybackPrefs,
+  Video,
+} from '../mock/types.ts'
 import { Facts, heroHeight, Round, RoundButton, scrim } from './detail.tsx'
 import { gutter, webHref } from './shell.tsx'
 
@@ -81,6 +99,11 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
   const mark = useMarkEpisodes()
   const target = useEpisodeTarget(d, next?.episode.season ?? d.seasons[0]?.number ?? 1)
   const [season, setSeason] = useState(String(target.season))
+  const [trailer, setTrailer] = useState<Video | null>(null)
+  const desktop = useDesktopApp()
+  const preview = d.videos[0]
+  const nextSeason = next && d.seasons.find((x) => x.number === next.episode.season)
+  const markLabel = s.watched ? 'Mark the show as unwatched' : 'Mark the show as watched'
   return (
     <main className="pb-16">
       <section aria-labelledby="title" className={heroHeight}>
@@ -126,8 +149,8 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
               )}
             </div>
           </div>
-          {next && (
-            <div className="grid gap-2.5">
+          <div className="grid gap-2.5">
+            {next && (
               <div className="grid gap-1.5">
                 <p className="truncate text-caption text-text-2">
                   <span className="text-text-3">{nextLine(next)} · </span>
@@ -152,7 +175,9 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
                   </div>
                 )}
               </div>
-              <div className="flex flex-wrap items-center gap-2">
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {next && (
                 <Button variant="primary" icon="play" asChild className="min-w-32 justify-center">
                   <a
                     href={webHref(`/play/${next.episode.id}`)}
@@ -161,33 +186,44 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
                     {playLabel(next)}
                   </a>
                 </Button>
-                {next.kind === 'resume' && (
-                  <Round label="Play the episode from the start">
-                    <Button iconOnly icon="replay" asChild className="rounded-full">
-                      <a href={webHref(`/play/${next.episode.id}/start`)}>
-                        <span className="sr-only">Play the episode from the start</span>
-                      </a>
-                    </Button>
-                  </Round>
-                )}
-                <Round
-                  label={s.watched ? 'Mark the show as unwatched' : 'Mark the show as watched'}
-                >
-                  <RoundButton
-                    icon="check"
-                    label={s.watched ? 'Mark the show as unwatched' : 'Mark the show as watched'}
-                    pressed={s.watched}
-                    onClick={() => void mark.season.run(s.id, null, !s.watched)}
-                  />
+              )}
+              {next?.kind === 'resume' && (
+                <Round label="Play the episode from the start">
+                  <Button iconOnly icon="replay" asChild className="rounded-full">
+                    <a href={webHref(`/play/${next.episode.id}/start`)}>
+                      <span className="sr-only">Play the episode from the start</span>
+                    </a>
+                  </Button>
                 </Round>
-              </div>
+              )}
+              {preview && (
+                <Round label="Trailer">
+                  <RoundButton icon="trailer" label="Trailer" onClick={() => setTrailer(preview)} />
+                </Round>
+              )}
+              <ShowTracks detail={d} />
+              <Round label={markLabel}>
+                <RoundButton
+                  icon="check"
+                  label={markLabel}
+                  pressed={s.watched}
+                  onClick={() => void mark.season.run(s.id, null, !s.watched)}
+                />
+              </Round>
+              {desktop && next && nextSeason && (
+                <EpisodeDownload
+                  app="desktop"
+                  source={episodeSource(next.episode, seasonGroup(s, nextSeason))}
+                  round
+                />
+              )}
             </div>
-          )}
+          </div>
         </div>
       </section>
 
       <div className="mx-auto grid w-full max-w-[1680px] grid-cols-[minmax(0,1fr)] gap-10 pt-2">
-        <Episodes detail={d} season={season} onSeason={setSeason} />
+        <Episodes detail={d} season={season} onSeason={setSeason} desktop={desktop} />
         {d.related.length > 0 && (
           <CarouselRow title="More like this">
             {d.related.map((x) => (
@@ -229,7 +265,62 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
           <Facts title="Information" rows={informationOf(d)} />
         </section>
       </div>
+      <TrailerDialog video={trailer} onOpenChange={(o) => !o && setTrailer(null)} />
     </main>
+  )
+}
+
+/**
+ * Audio and subtitles for the show, as a film's page has them: picked once, they're the languages
+ * every episode starts in, saved as they change.
+ */
+function ShowTracks({ detail: d }: { detail: ClientShowDetail }) {
+  return (
+    <Popover>
+      <Round label="Audio and subtitles">
+        <PopoverTrigger asChild>
+          <Button
+            iconOnly
+            icon="subtitles"
+            aria-label="Audio and subtitles"
+            className="rounded-full"
+          />
+        </PopoverTrigger>
+      </Round>
+      <PopoverContent className="grid w-80 gap-3 p-4">
+        <ShowTracksFields detail={d} />
+      </PopoverContent>
+    </Popover>
+  )
+}
+
+/** The show's Audio and Subtitles, saved as they change; the phone's sheet has them too. */
+export function ShowTracksFields({ detail: d }: { detail: ClientShowDetail }) {
+  const save = useAction((c, patch: PlaybackPrefs) => c.playback.setPrefs(d.show.id, patch))
+  const OFF = 'off'
+  return (
+    <>
+      <Field label="Audio">
+        <Select
+          value={d.defaults.audioId ?? d.tracks.audio[0]?.id ?? ''}
+          onValueChange={(audioId) => save.run({ audioId })}
+          options={d.tracks.audio.map((a) => ({ value: a.id, label: a.label }))}
+        />
+      </Field>
+      <Field label="Subtitles">
+        <Select
+          value={d.defaults.subtitleId ?? OFF}
+          onValueChange={(v) => save.run({ subtitleId: v === OFF ? null : v })}
+          options={[
+            { value: OFF, label: 'Off' },
+            ...d.tracks.subtitles.map((t) => ({ value: t.id, label: t.label })),
+          ]}
+        />
+      </Field>
+      <p className="text-caption text-text-3">
+        For every episode of this show, on all your devices.
+      </p>
+    </>
   )
 }
 
@@ -253,10 +344,12 @@ function Episodes({
   detail: d,
   season,
   onSeason,
+  desktop,
 }: {
   detail: ClientShowDetail
   season: string
   onSeason: (s: string) => void
+  desktop: boolean
 }) {
   return (
     <section aria-labelledby="episodes" className={cn('grid gap-4', gutter)}>
@@ -273,7 +366,7 @@ function Episodes({
         </TabsList>
         {d.seasons.map((x) => (
           <TabsContent key={x.number} value={String(x.number)} className="grid gap-4">
-            <SeasonPanel show={d.show.id} season={x} />
+            <SeasonPanel show={d.show} season={x} desktop={desktop} />
           </TabsContent>
         ))}
       </Tabs>
@@ -281,9 +374,18 @@ function Episodes({
   )
 }
 
-function SeasonPanel({ show, season: x }: { show: string; season: ClientSeason }) {
+function SeasonPanel({
+  show,
+  season: x,
+  desktop,
+}: {
+  show: ClientShow
+  season: ClientSeason
+  desktop: boolean
+}) {
   const mark = useMarkEpisodes()
   const watched = x.episodes.length > 0 && x.episodes.every((e) => e.watched)
+  const group = seasonGroup(show, x)
   return (
     <>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
@@ -296,15 +398,24 @@ function SeasonPanel({ show, season: x }: { show: string; season: ClientSeason }
           icon="check"
           className="ms-auto"
           aria-pressed={watched}
-          onClick={() => void mark.season.run(show, x.number, !watched)}
+          onClick={() => void mark.season.run(show.id, x.number, !watched)}
         >
           {watched ? 'Mark season as unwatched' : 'Mark season as watched'}
         </Button>
+        {desktop && (
+          <GroupDownload
+            app="desktop"
+            label="Download season"
+            ghost
+            name={`${x.title} of ${show.title}`}
+            sources={x.episodes.map((e) => episodeSource(e, group))}
+          />
+        )}
       </div>
       <ol aria-label={x.title} className="grid gap-x-6 gap-y-2 wide:grid-cols-2">
         {x.episodes.map((e) => (
           <li key={e.id}>
-            <EpisodeRow episode={e} />
+            <EpisodeRow episode={e} download={desktop ? episodeSource(e, group) : null} />
           </li>
         ))}
       </ol>
@@ -316,13 +427,20 @@ function SeasonPanel({ show, season: x }: { show: string; season: ClientSeason }
  * An episode: the still (Play on hover and focus, its progress along the foot) and its words, the
  * whole row playing it; Mark as watched at the end, as its own button, filled once it's watched.
  */
-function EpisodeRow({ episode: e }: { episode: ClientEpisode }) {
+function EpisodeRow({
+  episode: e,
+  download,
+}: {
+  episode: ClientEpisode
+  /** In the desktop app, Download before Mark as watched. */
+  download: OfflineSource | null
+}) {
   const mark = useMarkEpisodes()
   const label = e.watched ? 'Mark as unwatched' : 'Mark as watched'
   return (
     <div
       data-episode={e.id}
-      className="group/episode relative grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 rounded-lg p-2 transition-tint hover:bg-s1 has-[a:focus-visible]:bg-s1"
+      className="group/episode relative grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-2 rounded-lg p-2 transition-tint hover:bg-s1 has-[a:focus-visible]:bg-s1"
     >
       <a
         href={webHref(`/play/${e.id}`)}
@@ -363,6 +481,7 @@ function EpisodeRow({ episode: e }: { episode: ClientEpisode }) {
           </span>
         </span>
       </a>
+      {download ? <EpisodeDownload app="desktop" source={download} /> : <span />}
       <Tooltip content={label}>
         <Button
           variant="ghost"

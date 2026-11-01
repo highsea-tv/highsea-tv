@@ -13,6 +13,7 @@ import {
   Icon,
   type IconName,
   Mark,
+  Select,
   SortableList,
   Switch,
   toast,
@@ -33,9 +34,18 @@ import {
   useDesktopOs,
   useKnownServers,
   useServer,
+  useServerName,
 } from './data.ts'
 import { GetTheAppsDialog } from './get-the-apps.tsx'
-import { useAppearance, useDevicePrefs, useThemeEverywhere } from './prefs.tsx'
+import {
+  audioLanguages,
+  qualityCaps,
+  subtitleLanguages,
+  useAppearance,
+  useDevicePrefs,
+  usePlaybackSettings,
+  useThemeEverywhere,
+} from './prefs.tsx'
 import {
   APP_VERSION,
   NEXT_APP_VERSION,
@@ -145,8 +155,9 @@ function SoundSection({ platform }: { platform: ClientPlatform }) {
   const appearance = useAppearance()
   const player = useSoundPlayer()
   const fallback = proto.sound[platform]
+  const serverName = useServerName()
   const on = prefs.sound ?? fallback
-  const server = appearance.data?.branding.name ?? 'Harbor'
+  const server = appearance.data?.branding.name ?? serverName
   return (
     <div className="grid gap-4">
       <Field
@@ -189,6 +200,74 @@ function SoundSection({ platform }: { platform: ClientPlatform }) {
           Follow {server} again
         </Button>
       )}
+    </div>
+  )
+}
+
+/**
+ * Playback: the languages a film or episode starts in, what happens when an episode ends, and how
+ * much the server sends at home and away. Saved to the person, so every device follows.
+ */
+function PlaybackSection() {
+  const [p, set] = usePlaybackSettings()
+  return (
+    <div className="grid max-w-[32rem] gap-5">
+      <Field label="Audio language" hint="What a film or episode starts in, when it has it.">
+        <Select
+          value={p.audio}
+          onValueChange={(audio) => set({ audio })}
+          options={audioLanguages}
+        />
+      </Field>
+      <Field label="Subtitle language">
+        <Select
+          value={p.subtitles}
+          onValueChange={(subtitles) => set({ subtitles })}
+          options={subtitleLanguages}
+        />
+      </Field>
+      <Field
+        inline
+        label="Only when the audio isn’t in my language"
+        hint="Subtitles stay off when you understand what’s said."
+      >
+        <Switch
+          checked={p.onlyForeign}
+          disabled={p.subtitles === 'off'}
+          onCheckedChange={(onlyForeign) => set({ onlyForeign })}
+        />
+      </Field>
+      <Field
+        inline
+        label="Play the next episode automatically"
+        hint="After a countdown, which you can stop."
+      >
+        <Switch
+          checked={p.autoplayNext}
+          onCheckedChange={(autoplayNext) => set({ autoplayNext })}
+        />
+      </Field>
+      <Field inline label="Skip intros automatically" hint="Otherwise Skip intro is offered.">
+        <Switch checked={p.skipIntros} onCheckedChange={(skipIntros) => set({ skipIntros })} />
+      </Field>
+      <Field label="Quality at home" hint="On the same network as the server.">
+        <Select
+          value={p.qualityHome}
+          onValueChange={(qualityHome) => set({ qualityHome })}
+          options={qualityCaps}
+        />
+      </Field>
+      <Field label="Quality away from home" hint="Lower uses less data and starts sooner.">
+        <Select
+          value={p.qualityAway}
+          onValueChange={(qualityAway) => set({ qualityAway })}
+          options={qualityCaps}
+        />
+      </Field>
+      <p className="text-caption text-text-3">
+        These follow you to every device you’re signed in on. A film’s or show’s own choices win
+        over them.
+      </p>
     </div>
   )
 }
@@ -245,6 +324,7 @@ function ServersSection({ platform }: { platform: ClientPlatform }) {
   const connection = useConnection()
   const now = useNow()
   const [, navigate] = useLocation()
+  const name = useServerName()
   return (
     <div className="grid gap-3">
       <ul aria-label="Servers" className="grid gap-2">
@@ -292,13 +372,13 @@ function ServersSection({ platform }: { platform: ClientPlatform }) {
           className={wraps}
           onClick={() => {
             toast({
-              title: 'Signed out of Harbor',
+              title: `Signed out of ${name}`,
               description: 'Your downloads stay on this device.',
             })
             navigate('/connect')
           }}
         >
-          Sign out of Harbor
+          Sign out of {name}
         </Button>
       </div>
       {platform === 'web' && (
@@ -379,7 +459,7 @@ function AboutSection({ platform }: { platform: ClientPlatform }) {
   const desktop = useDesktopApp()
   const os = useDesktopOs()
   const [apps, setApps] = useState(false)
-  const name = server.data?.name ?? 'Harbor'
+  const name = server.data?.name ?? 'this server'
   const address = server.data?.addresses.public ?? server.data?.addresses.local[0] ?? ''
   return (
     <div className="grid gap-4">
@@ -391,7 +471,7 @@ function AboutSection({ platform }: { platform: ClientPlatform }) {
         </dd>
         <dt className="text-text-3">Server</dt>
         <dd className="font-mono text-figure text-text">
-          {server.data?.name ?? 'Harbor'} {server.data?.version ?? ''}
+          {server.data?.name ?? 'this server'} {server.data?.version ?? ''}
         </dd>
         <dt className="text-text-3">Licence</dt>
         <dd className="text-text">AGPL-3.0, free software</dd>
@@ -421,6 +501,7 @@ export function SettingsSectionBody({
 }) {
   if (id === 'appearance') return <ThemeSection platform={platform} />
   if (id === 'sounds') return <SoundSection platform={platform} />
+  if (id === 'playback') return <PlaybackSection />
   if (id === 'home') return <HomeSection />
   if (id === 'servers') return <ServersSection platform={platform} />
   if (id === 'devices') return <DevicesSection platform={platform} />

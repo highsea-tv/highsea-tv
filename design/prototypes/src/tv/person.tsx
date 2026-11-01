@@ -75,7 +75,7 @@ export function TvPerson() {
   ]
   const above = (group: string) => {
     const i = groups.indexOf(group)
-    return i > 0 ? (groups[i - 1] ?? 'nav') : long ? 'bio' : 'nav'
+    return i > 0 ? (groups[i - 1] ?? 'nav') : long ? 'bio' : p.artist ? 'artist' : 'nav'
   }
   // the first row sits low, so the name above stays on screen while it's focused
   const firstRow = (group: string) =>
@@ -95,7 +95,10 @@ export function TvPerson() {
           data-keep="0.4"
           className="relative grid grid-cols-1 gap-[1.6cqw] pb-(--tv-safe-y) transition-lift"
         >
-          <TvHead down={long ? 'bio' : groups[0]} className="px-(--tv-safe-x)" />
+          <TvHead
+            down={p.artist ? 'artist' : long ? 'bio' : groups[0]}
+            className="px-(--tv-safe-x)"
+          />
           <section
             aria-labelledby="name"
             data-row=""
@@ -115,6 +118,14 @@ export function TvPerson() {
                 {departmentTitle[p.knownFor]} · {hereOf(p)}
               </p>
               {life && <p className="text-(length:--tv-text-pill) text-text-3">{life}</p>}
+              {/* the reverse of the artist page's Their films and shows (prototype-gaps.md › 3.5) */}
+              {p.artist && (
+                <div data-group="artist" data-go-up="nav" data-go-down={long ? 'bio' : groups[0]}>
+                  <TvButton icon="music" href={tvHref(`/music/artists/${p.artist}`)}>
+                    Their music
+                  </TvButton>
+                </div>
+              )}
               {p.bio && <Bio text={p.bio} long={long} />}
             </div>
           </section>

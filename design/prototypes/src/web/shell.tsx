@@ -38,8 +38,10 @@ import {
   useDesktopApp,
   useKnownServers,
   useServer,
+  useServerName,
 } from '../client/data.ts'
 import { useMusicPlayer } from '../client/music-player.ts'
+import { toneClass, usePeople } from '../client/profiles.ts'
 import { APP_VERSION, NEXT_APP_VERSION } from '../client/settings.ts'
 import { restartToUpdate } from '../client/settings-sections.tsx'
 import { Cta, Inline } from '../kit/inline.tsx'
@@ -72,7 +74,7 @@ function ServerSwitcher() {
   const connection = useConnection()
   const now = useNow()
   const [, navigate] = useLocation()
-  const name = server.data?.name ?? 'Harbor'
+  const name = server.data?.name ?? 'this server'
   return (
     <Menu>
       <MenuTrigger asChild>
@@ -127,6 +129,8 @@ function ServerSwitcher() {
 function Profile() {
   const [, navigate] = useLocation()
   const update = useAppUpdateReady()
+  const { people, me } = usePeople()
+  const server = useServerName()
   return (
     <Menu>
       <MenuTrigger asChild>
@@ -134,19 +138,28 @@ function Profile() {
           type="button"
           aria-label={
             update
-              ? 'Ines: profile and settings. An update is ready.'
-              : 'Ines: profile and settings'
+              ? `${me.name}: profile and settings. An update is ready.`
+              : `${me.name}: profile and settings`
           }
-          className="relative grid size-8 place-items-center rounded-full bg-accent-soft font-semibold text-accent-text text-body outline-none focus-visible:ring-focus"
+          className={cn(
+            'relative grid size-8 place-items-center rounded-full font-semibold text-body outline-none focus-visible:ring-focus',
+            toneClass[me.tone],
+          )}
         >
-          I{/* the desktop app's update, waiting quietly for a restart */}
+          {me.name.charAt(0)}
+          {/* the desktop app's update, waiting quietly for a restart */}
           {update && (
             <span className="absolute -end-0.5 -top-0.5 size-2.5 rounded-full border-2 border-bg bg-accent" />
           )}
         </button>
       </MenuTrigger>
       <MenuContent>
-        <MenuLabel>Ines</MenuLabel>
+        <MenuLabel>{me.name}</MenuLabel>
+        {people.length > 1 && (
+          <MenuItem icon="users" onSelect={() => navigate('/who')}>
+            Switch profile
+          </MenuItem>
+        )}
         <MenuItem icon="user" onSelect={() => navigate('/profile')}>
           Account
         </MenuItem>
@@ -157,7 +170,7 @@ function Profile() {
           Settings
         </MenuItem>
         <MenuItem icon="sign-out" onSelect={() => navigate('/connect')}>
-          Sign out of Harbor
+          Sign out of {server}
         </MenuItem>
         {update && (
           <>
@@ -396,7 +409,7 @@ function AnnouncementModal() {
 export function Unreachable() {
   const server = useServer()
   const [, navigate] = useLocation()
-  const name = server.data?.name ?? 'Harbor'
+  const name = server.data?.name ?? 'this server'
   // only the desktop app keeps downloads; a browser has none to fall back on
   const desktop = useDesktopApp()
   return (

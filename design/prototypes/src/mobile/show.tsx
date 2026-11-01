@@ -2,18 +2,32 @@
 // A show on the phone, laid out as a film's page is so the two read as one app: the show's art
 // across the top with Back over it and the logo low on it, a meta line, what's next with its
 // progress, Play across the width naming the episode ("Resume S2, E6"), three lines of synopsis,
-// the leading cast and who created it, and named icon buttons: From the start of that episode, and
-// Mark the show as watched. Then the episodes, as the Apple TV app and Netflix lay them out on a
-// phone: the seasons as pills that scroll sideways, the season's year and count with Mark season
-// as watched, and the episodes one under another, each its still with the progress, the number,
-// title and length, and two lines of synopsis under them, with the watched check at the end. The
+// Download for that episode under it, the leading cast and who created it, and named icon buttons
+// as a film's page has them: From the start of that episode, Trailer, Audio and subtitles (for
+// every episode, in a sheet) and Mark the show as watched. Then the episodes, as the Apple TV app
+// and Netflix lay them out on a phone: the seasons as pills that scroll sideways, the season's
+// year and count with Mark season as watched and Download season, and the episodes one under
+// another, each its still with the progress, the number, title and length, and two lines of
+// synopsis under them, with Download and the watched check at the end. The
 // season opens on the episode Play plays. Then More like this, Cast and crew, and About and
 // Information as cards.
-import { Button, cn, EmptyState, Icon, Rating, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
+import {
+  Button,
+  cn,
+  EmptyState,
+  Icon,
+  Rating,
+  Sheet,
+  SheetContent,
+  Skeleton,
+  SkeletonText,
+} from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { useMarkEpisodes, useShow } from '../client/data.ts'
 import { names, role, showPeopleOf } from '../client/detail-facts.ts'
+import { EpisodeDownload, GroupDownload } from '../client/download-button.tsx'
+import { episodeSource, type OfflineSource, seasonGroup } from '../client/downloads.ts'
 import { ShowPoster } from '../client/show-card.tsx'
 import {
   airedDate,
@@ -27,8 +41,15 @@ import {
   showYears,
   useEpisodeTarget,
 } from '../client/shows.ts'
-import type { ClientEpisode, ClientSeason, ClientShowDetail } from '../mock/types.ts'
-import { informationOf } from '../web/show.tsx'
+import { TrailerDialog } from '../client/trailer.tsx'
+import type {
+  ClientEpisode,
+  ClientSeason,
+  ClientShow,
+  ClientShowDetail,
+  Video,
+} from '../mock/types.ts'
+import { informationOf, ShowTracksFields } from '../web/show.tsx'
 import { Facts, fade, Named } from './detail.tsx'
 import { MobileRow } from './home.tsx'
 import { gutter, mobileHref } from './shell.tsx'
@@ -119,6 +140,10 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
   const target = useEpisodeTarget(d, next?.episode.season ?? d.seasons[0]?.number ?? 1)
   const [season, setSeason] = useState(target.season)
   const shown = d.seasons.find((x) => x.number === season) ?? d.seasons[0]
+  const [trailer, setTrailer] = useState<Video | null>(null)
+  const [tracks, setTracks] = useState(false)
+  const preview = d.videos[0]
+  const nextSeason = next && d.seasons.find((x) => x.number === next.episode.season)
   return (
     <article aria-labelledby="title" className="relative grid grid-cols-[minmax(0,1fr)] gap-5 pb-6">
       <div className="relative">
@@ -183,6 +208,16 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
                 {playLabel(next)}
               </a>
             </Button>
+            {nextSeason && (
+              <GroupDownload
+                app="mobile"
+                label={`Download ${episodeCode(next.episode)}`}
+                name={`${episodeCode(next.episode)}, ${next.episode.title}`}
+                sources={[episodeSource(next.episode, seasonGroup(s, nextSeason))]}
+                wide
+                className="justify-center"
+              />
+            )}
           </>
         )}
         <p className="line-clamp-3 text-[15px] leading-[1.55]">{s.synopsis}</p>
@@ -210,6 +245,8 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
               href={mobileHref(`/play/${next.episode.id}/start`)}
             />
           )}
+          {preview && <Named icon="trailer" label="Trailer" onClick={() => setTrailer(preview)} />}
+          <Named icon="subtitles" label="Audio and subtitles" onClick={() => setTracks(true)} />
           <Named
             icon="check"
             label="Watched"
@@ -244,7 +281,7 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
             ))}
           </fieldset>
         )}
-        {shown && <Season show={s.id} season={shown} />}
+        {shown && <Season show={s} season={shown} />}
       </section>
 
       {d.related.length > 0 && (
@@ -283,13 +320,22 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
         </article>
         <Facts title="Information" rows={informationOf(d)} />
       </section>
+      <TrailerDialog video={trailer} onOpenChange={(o) => !o && setTrailer(null)} />
+      <Sheet open={tracks} onOpenChange={setTracks}>
+        <SheetContent title="Audio and subtitles">
+          <div className="grid gap-3">
+            <ShowTracksFields detail={d} />
+          </div>
+        </SheetContent>
+      </Sheet>
     </article>
   )
 }
 
-function Season({ show, season: x }: { show: string; season: ClientSeason }) {
+function Season({ show, season: x }: { show: ClientShow; season: ClientSeason }) {
   const mark = useMarkEpisodes()
   const watched = x.episodes.length > 0 && x.episodes.every((e) => e.watched)
+  const group = seasonGroup(show, x)
   return (
     <div className={cn('grid gap-3', gutter)}>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
@@ -302,15 +348,23 @@ function Season({ show, season: x }: { show: string; season: ClientSeason }) {
           icon="check"
           className="-me-2 ms-auto"
           aria-pressed={watched}
-          onClick={() => void mark.season.run(show, x.number, !watched)}
+          onClick={() => void mark.season.run(show.id, x.number, !watched)}
         >
           {watched ? 'Mark season as unwatched' : 'Mark season as watched'}
         </Button>
+        <GroupDownload
+          app="mobile"
+          label="Download season"
+          ghost
+          name={`${x.title} of ${show.title}`}
+          sources={x.episodes.map((e) => episodeSource(e, group))}
+          className="-ms-2"
+        />
       </div>
       <ol aria-label={x.title} className="grid gap-4">
         {x.episodes.map((e) => (
           <li key={e.id}>
-            <Episode episode={e} />
+            <Episode episode={e} download={episodeSource(e, group)} />
           </li>
         ))}
       </ol>
@@ -319,12 +373,12 @@ function Season({ show, season: x }: { show: string; season: ClientSeason }) {
 }
 
 /** An episode: its still and words play it; the check beside them marks it watched. */
-function Episode({ episode: e }: { episode: ClientEpisode }) {
+function Episode({ episode: e, download }: { episode: ClientEpisode; download: OfflineSource }) {
   const mark = useMarkEpisodes()
   const label = e.watched ? 'Mark as unwatched' : 'Mark as watched'
   return (
     <div data-episode={e.id} className="grid gap-2">
-      <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+      <div className="grid grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1">
         <a
           href={mobileHref(`/play/${e.id}`)}
           aria-label={`Play ${episodePlace(e)}, ${e.title}, ${episodeTime(e)}${e.watched ? ', watched' : ''}`}
@@ -359,6 +413,7 @@ function Episode({ episode: e }: { episode: ClientEpisode }) {
             <span className="text-[12px] text-text-3">{airedDate(e.aired)}</span>
           </span>
         </a>
+        <EpisodeDownload app="mobile" source={download} className="size-10" />
         <button
           type="button"
           aria-label={`${label}: ${e.title}`}

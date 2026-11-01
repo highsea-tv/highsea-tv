@@ -517,12 +517,13 @@ function ThemeEditor({
 /** The product in miniature, in the theme being edited. */
 function ThemeSample() {
   const titles = useQuery('appearance:titles', (c) => c.library.list())
+  const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
   return (
     <div data-theme="editor" className="rounded-md">
       <div className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-md bg-bg p-4 text-text">
         <div className="flex flex-wrap items-center gap-2">
           <Mark size={22} />
-          <span className="font-semibold text-ui">Harbor</span>
+          <span className="font-semibold text-ui">{server.data?.name ?? 'highsea'}</span>
           <span className="flex-1" />
           <Badge tone="accent">New</Badge>
         </div>

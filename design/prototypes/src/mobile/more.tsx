@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import {
   personCredits,
+  searchedFor,
   searchKinds,
   searchPlaceholder,
   searchSuggestions,
@@ -14,16 +15,20 @@ import {
   useSearch,
   useSearchQuery,
   useServer,
+  useServerName,
 } from '../client/data.ts'
 import { MediaPoster } from '../client/media-card.tsx'
 import { songTime } from '../client/music.ts'
 import { useMusicPlayer } from '../client/music-player.ts'
 import { OfflineList } from '../client/offline-list.tsx'
+import { usePeople } from '../client/profiles.ts'
 import { type SettingsSectionId, settingsSections } from '../client/settings.ts'
 import { SettingsSectionBody } from '../client/settings-sections.tsx'
 import { ShowPoster } from '../client/show-card.tsx'
+import { ProfileAvatar } from '../client/who.tsx'
 import type { SearchSection, SearchSong } from '../mock/types.ts'
 import { gutter, Header, mobileHref } from './shell.tsx'
+import { MobileWhoSheet } from './who-sheet.tsx'
 
 const chip =
   'min-h-9 cursor-pointer rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus active:scale-97'
@@ -33,6 +38,7 @@ const chip =
 export function MobileSearch() {
   const { q, setQ } = useSearchQuery()
   const { results, settled } = useSearch(q)
+  const server = useServerName()
   const r = results.data
   return (
     <div className="grid gap-4 pt-1">
@@ -62,7 +68,7 @@ export function MobileSearch() {
         </p>
       ) : r.sections.length === 0 ? (
         <p className={cn('text-[15px] text-text-2', gutter)}>
-          Nothing on Harbor matches “{settled}”.
+          Nothing on {server} matches “{settled}”.
         </p>
       ) : (
         <div aria-live="polite" className="grid gap-6">
@@ -217,7 +223,12 @@ function Songs({ songs }: { songs: SearchSong[] }) {
         <li key={x.id}>
           <button
             type="button"
-            onClick={() => music.play({ album: x.album.id }, { start: x.number - 1 })}
+            onClick={() =>
+              music.play(
+                { album: x.album.id },
+                { start: x.number - 1, from: { kind: 'search', name: searchedFor(), to: null } },
+              )
+            }
             aria-label={`Play ${x.title}, by ${x.album.artist.name}, from ${x.album.title}`}
             className="grid min-h-11 w-full grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md py-1 text-start outline-none focus-visible:ring-focus"
           >
@@ -266,7 +277,7 @@ export function MobileOffline() {
       <div className={gutter}>
         <OfflineList
           app="mobile"
-          href={(id) => mobileHref(`/play/${id}`)}
+          href={(x) => (x.kind === 'song' ? undefined : mobileHref(`/play/${x.id}`))}
           settings={
             <Field inline label="Download on Wi-Fi only">
               <Switch checked={wifi} onCheckedChange={setWifi} />
@@ -280,25 +291,24 @@ export function MobileOffline() {
 
 // ---------------------------------------------------------------- you
 
-export function MobileYou() {
+/** You; at `/you/who`, with Switch profile's sheet open over it. */
+export function MobileYou({ who = false }: { who?: boolean }) {
   const server = useServer()
   const [, navigate] = useLocation()
-  const name = server.data?.name ?? 'Harbor'
+  const name = server.data?.name ?? 'this server'
+  const { people, me } = usePeople()
   const row =
     'flex min-h-13 items-center gap-3 px-4 py-2.5 text-[15px] outline-none active:bg-s2 focus-visible:focus-ring-inset'
   return (
     <div className="grid gap-6 pt-1">
       <Header title="You" />
       <div className={cn('flex items-center gap-3', gutter)}>
-        <span
-          aria-hidden
-          className="grid size-14 place-items-center rounded-full bg-accent-soft font-semibold text-[22px] text-accent-text"
-        >
-          I
-        </span>
+        <ProfileAvatar profile={me} className="size-14 text-[22px]" />
         <div className="grid">
-          <p className="font-semibold text-[20px]">Ines</p>
-          <p className="text-[13px] text-text-3">@ines · owner of {name}</p>
+          <p className="font-semibold text-[20px]">{me.name}</p>
+          <p className="text-[13px] text-text-3">
+            {me.main ? `@ines · owner of ${name}` : 'A profile on @ines’s account'}
+          </p>
         </div>
       </div>
       <nav
@@ -318,6 +328,19 @@ export function MobileYou() {
         </ul>
       </nav>
       <ul className="mx-4 divide-y divide-line overflow-hidden rounded-lg border border-line bg-s1">
+        {people.length > 1 && (
+          <li>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => navigate('/you/who', { replace: true })}
+              className={cn(row, 'w-full cursor-pointer text-start')}
+            >
+              <Icon name="users" size={20} className="text-text-3" />
+              <span className="flex-1">Switch profile</span>
+            </button>
+          </li>
+        )}
         <li>
           <a href={mobileHref('/offline')} className={row}>
             <Icon name="download" size={20} className="text-text-3" />
@@ -336,6 +359,11 @@ export function MobileYou() {
           </button>
         </li>
       </ul>
+      <MobileWhoSheet
+        open={who}
+        // the sheet's open state is in the address, without an entry of its own in the history
+        onOpenChange={(open) => navigate(open ? '/you/who' : '/you', { replace: true })}
+      />
     </div>
   )
 }

@@ -163,7 +163,7 @@ export function TvConnect() {
         <div className="flex items-center gap-[0.8cqw]">
           <Mark size={32} className="size-[2.4cqw]" />
           <span className="font-semibold text-(length:--tv-text-server-name)">
-            {server?.name ?? 'Harbor'}
+            {server?.name ?? 'this server'}
           </span>
         </div>
         {mode === 'code' && (
@@ -214,7 +214,7 @@ export function TvConnect() {
         {mode === 'password' && (
           <>
             <h1 className="font-semibold text-[3cqw] leading-[1] tracking-display">
-              Sign in to {server?.name ?? 'Harbor'}
+              Sign in to {server?.name ?? 'this server'}
             </h1>
             <Keyboard
               pending={flow.signIn.pending}

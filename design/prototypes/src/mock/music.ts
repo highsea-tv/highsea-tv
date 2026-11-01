@@ -8,6 +8,7 @@ import type {
   ClientAlbumDetail,
   ClientArtist,
   ClientArtistDetail,
+  ClientLibrarySong,
   ClientMusic,
   ClientSong,
   DiscographyKind,
@@ -275,6 +276,53 @@ const songWords = [
   'Overpass',
   'Homecoming',
 ]
+// pairs of these widen the pool, so a library's Songs doesn't list the same title over and over
+const titleFirst = [
+  'Quiet',
+  'Paper',
+  'Golden',
+  'Northern',
+  'Silver',
+  'Slow',
+  'Late',
+  'Hollow',
+  'Bright',
+  'Low',
+  'Open',
+  'Little',
+  'Salt',
+  'Second',
+  'Small',
+  'Wild',
+  'Distant',
+  'Electric',
+  'Borrowed',
+  'Winter',
+]
+const titleSecond = [
+  'Harbour',
+  'Lanterns',
+  'Rooms',
+  'Weather',
+  'Light',
+  'Roads',
+  'Water',
+  'Fields',
+  'Hours',
+  'Signals',
+  'Houses',
+  'Rivers',
+  'Satellites',
+  'Lines',
+  'Boats',
+  'Gardens',
+  'Echoes',
+  'Motion',
+  'Ground',
+  'Windows',
+]
+const popTitles = [...songWords, ...titleFirst.flatMap((a) => titleSecond.map((b) => `${a} ${b}`))]
+
 const cueWords = [
   'The Gate',
   'First Light',
@@ -331,7 +379,7 @@ function hash(s: string) {
 }
 
 /** An album's songs: a single is its own title; an album has its title song third, as many do. */
-function songsOf(a: ClientAlbum): ClientSong[] {
+export function songsOf(a: ClientAlbum): ClientSong[] {
   const h = hash(a.id)
   const classical = a.genres.includes('Classical')
   const pool = classical
@@ -347,7 +395,7 @@ function songsOf(a: ClientAlbum): ClientSong[] {
       : pieces
     : a.kind === 'soundtrack'
       ? cueWords
-      : songWords
+      : popTitles
   // a step that shares no factor with the pool's size, so no title comes round twice
   let step = 7
   while (pool.length % step === 0) step += 2
@@ -431,7 +479,28 @@ export function queueOf(
   const tracks = albums.flatMap((album) =>
     songsOf(album).map((s) => ({ ...s, album, loudness: loudnessOf(album, s) })),
   )
-  return shuffle ? tracks.sort((a, b) => hash(`shuffle:${a.id}`) - hash(`shuffle:${b.id}`)) : tracks
+  return shuffle ? shuffled(tracks) : tracks
+}
+
+/** Songs in an order that's the same every time, for the prototype's reviews. */
+export const shuffled = <T extends { id: string }>(xs: T[]) =>
+  [...xs].sort((a, b) => hash(`shuffle:${a.id}`) - hash(`shuffle:${b.id}`))
+
+/** One song for the queue, by its id (`{album}-{number}`), with its album and loudness. */
+export function trackOf(music: ClientMusic, id: string): QueuedSong | null {
+  const album = music.albums.find((a) => id.startsWith(`${a.id}-`))
+  const song = album && songsOf(album).find((s) => s.id === id)
+  return album && song ? { ...song, album, loudness: loudnessOf(album, song) } : null
+}
+
+/**
+ * Every song here, for Music's Songs: each with its album and how often it's been played, a
+ * number that's the same on every load.
+ */
+export function allSongs(music: ClientMusic): ClientLibrarySong[] {
+  return music.albums.flatMap((album) =>
+    songsOf(album).map((s) => ({ ...s, album, plays: hash(`plays:${s.id}`) % 40 })),
+  )
 }
 
 /** The film an album scores, by title: "Sintel (Original Score)" scores Sintel. */

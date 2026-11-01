@@ -1,11 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The web/desktop client (C1–C8): connect, home, library, item detail, the player,
 // search, settings, the profile and downloads. The device's own theme and sound apply over all.
+
 import { Button, EmptyState } from '@highsea-tv/ui-web'
 import { Redirect, Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
+import { useServerName } from '../client/data.ts'
 import { SeedMusic } from '../client/music-player.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
+import { WhoPage } from '../client/who.tsx'
 import { WebAlbum } from './album.tsx'
 import { WebArtist } from './artist.tsx'
 import { WebCollection } from './collection.tsx'
@@ -16,6 +19,7 @@ import { WebLibrary } from './library.tsx'
 import { WebMusic } from './music.tsx'
 import { WebPerson } from './person.tsx'
 import { WebPlayer } from './player.tsx'
+import { WebPlaylist } from './playlist.tsx'
 import { WebSearch } from './search.tsx'
 import { WebDownloads, WebProfile, WebSettings } from './settings.tsx'
 import { WebShell, webHref } from './shell.tsx'
@@ -42,10 +46,14 @@ export function WebApp() {
 }
 
 function Routes() {
+  const server = useServerName()
   return (
     <Switch>
       <Route path="/connect">
         <Connect />
+      </Route>
+      <Route path="/who">
+        <WhoPage />
       </Route>
       <Route path="/play/:id/start">
         <WebPlayer fromStart />
@@ -94,9 +102,24 @@ function Routes() {
           <WebArtist />
         </WebShell>
       </Route>
+      <Route path="/music/playlists/:id">
+        <WebShell overHero>
+          <WebPlaylist />
+        </WebShell>
+      </Route>
       <Route path="/music/artists">
         <WebShell>
           <WebMusic view="artists" />
+        </WebShell>
+      </Route>
+      <Route path="/music/songs">
+        <WebShell>
+          <WebMusic view="songs" />
+        </WebShell>
+      </Route>
+      <Route path="/music/playlists">
+        <WebShell>
+          <WebMusic view="playlists" />
         </WebShell>
       </Route>
       <Route path="/music">
@@ -158,7 +181,7 @@ function Routes() {
                 </Button>
               }
             >
-              It may have moved. Search finds every title on Harbor.
+              It may have moved. Search finds every title on {server}.
             </EmptyState>
           </main>
         </WebShell>

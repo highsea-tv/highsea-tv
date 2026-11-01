@@ -16,9 +16,9 @@ import {
 import { useLocation } from 'wouter'
 import { clientHref, useAnnouncements, useConnection, useServer } from '../client/data.ts'
 import { mediaCard } from '../client/media-card.tsx'
+import { type Profile, toneClass, usePeople } from '../client/profiles.ts'
 import type { ClientItem } from '../mock/types.ts'
 import { NowPlayingTab } from './now-playing.tsx'
-import { type Tone, type TvPerson, usePeople } from './people.ts'
 
 export const tvHref = (path: string) => clientHref('tv', path)
 
@@ -155,7 +155,7 @@ export function ServerIdentity({ className }: { className?: string }) {
       <Mark size={32} className="size-[2cqw]" />
       <span className="grid">
         <span className="font-semibold text-(length:--tv-text-server-name) leading-[1.15]">
-          {server.data?.name ?? 'Harbor'}
+          {server.data?.name ?? 'this server'}
         </span>
         {connection === 'remote' && (
           <span className="text-(length:--tv-text-pill) text-text-2 leading-[1.15]">
@@ -464,22 +464,13 @@ export function TvHead({
   )
 }
 
-// literal classes, so Tailwind finds them: the tokens' soft pairs
-const tones: Record<Tone, string> = {
-  accent: 'bg-accent-soft text-accent-text',
-  info: 'bg-badge-info-bg text-badge-info',
-  success: 'bg-badge-success-bg text-badge-success',
-  warning: 'bg-badge-warning-bg text-badge-warning',
-  danger: 'bg-badge-danger-bg text-badge-danger',
-}
-
 /** A person's circle: their initial on their colour, sized by the caller's width. */
 export function TvAvatar({
   person,
   className,
   style,
 }: {
-  person: TvPerson
+  person: Profile
   className?: string
   style?: CSSProperties
 }) {
@@ -489,7 +480,7 @@ export function TvAvatar({
       style={style}
       className={cn(
         'grid aspect-square place-items-center rounded-full font-semibold text-[length:inherit] [container-type:inline-size]',
-        tones[person.tone],
+        toneClass[person.tone],
         className,
       )}
     >

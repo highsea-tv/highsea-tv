@@ -89,7 +89,8 @@ export const showPeopleOf = (d: Pick<ClientShowDetail, 'cast' | 'creators' | 'cr
   ...d.crew,
 ]
 
-export type Fact = [label: string, value: string]
+/** A line of facts; with a path, its value opens that page (Soundtrack opens the album). */
+export type Fact = [label: string, value: string, to?: string]
 
 /** Information: when, how long, the rating, the genres and who made it. */
 export function informationOf(d: ClientDetail): Fact[] {
@@ -104,6 +105,7 @@ export function informationOf(d: ClientDetail): Fact[] {
     writers.length > 0 && ['Written by', names(writers)],
     d.studios.length > 0 && ['Studio', d.studios.join(', ')],
     d.originalTitle !== m.title && ['Original title', d.originalTitle],
+    !!d.soundtrack && ['Soundtrack', d.soundtrack.title, `/music/albums/${d.soundtrack.id}`],
   ]
   return facts.filter((x) => x !== false)
 }

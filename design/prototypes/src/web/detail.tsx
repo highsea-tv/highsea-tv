@@ -417,10 +417,21 @@ export function Facts({ title, rows }: { title: string; rows: Fact[] }) {
     <article className="grid content-start gap-3 rounded-lg bg-s1 p-5">
       <h2 className="text-title">{title}</h2>
       <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-4 gap-y-1.5 text-body">
-        {rows.map(([k, v]) => (
+        {rows.map(([k, v, to]) => (
           <div key={k} className="contents">
             <dt className="text-text-3">{k}</dt>
-            <dd className="text-text-2 [overflow-wrap:anywhere]">{v}</dd>
+            <dd className="text-text-2 [overflow-wrap:anywhere]">
+              {to ? (
+                <a
+                  href={webHref(to)}
+                  className="rounded-[4px] text-text underline decoration-text-3 underline-offset-4 outline-none hover:decoration-text focus-visible:ring-focus"
+                >
+                  {v}
+                </a>
+              ) : (
+                v
+              )}
+            </dd>
           </div>
         ))}
       </dl>

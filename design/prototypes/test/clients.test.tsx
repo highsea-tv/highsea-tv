@@ -10,10 +10,10 @@ import { act, cleanup, render, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { memoryLocation } from 'wouter/memory-location'
 import { DISCOVERY_MS } from '../src/client/connect.ts'
+import { resetPeople, setAskOnLaunch } from '../src/client/profiles.ts'
 import { createMock } from '../src/mock/client.ts'
 import { type Connection, defaultState } from '../src/proto/state.ts'
 import { ScreenApp } from '../src/screen/screen.tsx'
-import { resetPeople, setAskOnLaunch } from '../src/tv/people.ts'
 import { skipLaunch } from '../src/tv/tv-app.tsx'
 import { classes, collect, unknownClasses, violations } from './check.ts'
 
@@ -229,7 +229,7 @@ describe('C3 library', () => {
     await clean()
   })
 
-  test('TV: the nav has a destination per kind of media, Shows and Music still to come', async () => {
+  test('TV: the nav has a destination per kind of media, Shows among them', async () => {
     await open('/tv/shows')
     const nav = page().getByRole('navigation', { name: 'Main' })
     expect(
@@ -251,10 +251,11 @@ describe('C3 library', () => {
       within(nav).getByRole('link', { name: 'Ines: profile and settings' }).getAttribute('href'),
     ).toBe('#/tv/profile')
     expect(page().getByRole('heading', { level: 1, name: 'Shows' })).toBeTruthy()
-    expect(page().getByText(/Shows come to highsea in a later version/)).toBeTruthy()
-    const go = page().getAllByRole('link', { name: 'Movies' }).at(-1)
-    expect(go?.hasAttribute('data-initial')).toBe(true)
-    expect(go?.getAttribute('href')).toBe('#/tv/movies')
+    // Shows is a library of its own since stage 2 of the prototypes' gaps
+    const show = page()
+      .getAllByRole('link')
+      .find((a) => a.getAttribute('href')?.startsWith('#/tv/shows/'))
+    expect(show).toBeTruthy()
     await clean()
   })
 })

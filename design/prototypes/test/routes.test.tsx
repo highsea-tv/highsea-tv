@@ -56,8 +56,12 @@ for (const [platform, routes] of Object.entries(screenRoutes) as [Platform, stri
             expect(container?.childElementCount).toBeGreaterThan(0)
             collect()
             // an acknowledge-required announcement opens over the clients' home: behind a modal
-            // dialog the page is hidden, so the dialog is what's checked
-            const modal = document.querySelector('[role="dialog"]') ?? undefined
+            // dialog the page is hidden, so the dialog is what's checked; with two open (a sheet in
+            // the address, as /mobile/you/who), the one on top, which Radix leaves unhidden
+            const modal =
+              [...document.querySelectorAll('[role="dialog"]')].find(
+                (d) => !d.closest('[aria-hidden="true"]'),
+              ) ?? undefined
             expect(await violations(modal)).toEqual([])
           })
   })

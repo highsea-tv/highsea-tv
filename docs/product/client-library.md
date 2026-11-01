@@ -24,6 +24,26 @@ Everything the household can watch on this server, to browse rather than search:
 
 Phase 4's answer 9, prototyped at 4.0b: one filter that hides what this person has watched ([client-detail.md › Mark as watched](client-detail.md#mark-as-watched)). On the web, a **Show** select (All movies, Unwatched) before Genre; on mobile, a **Show** group of chips at the top of the sheet, which counts as filtered and which **Reset** clears; on TV, an **Unwatched** choice after the sorts, past a divider, that turns on and off. With nothing left to show: "No movies match" · You've watched everything here. Try another genre, or show all movies.
 
+### Music's views (prototype-gaps stage 3, 2026-11-01)
+
+Music has four views: **Albums**, **Artists**, **Songs** and **Playlists**. On the web and desktop they're the segmented control (`/music`, `/music/artists`, `/music/songs`, `/music/playlists`), on the phone the pills under Library's Music (`/library/music/…`; `/music/songs` and `/music/playlists` go there), and on the TV the choices beside the title, with each view's sorts on the right. They fit on one line at 1280 × 720.
+
+- **Songs** is one list: the cover, the title and artist, the album (from medium widths on the web) and the length. It's sorted by Title, Artist, Album, Recently added or Most played (the TV's choices are A–Z, Artist, Album, Recently added and Most played), and on the web and phone filtered by genre. Titles sort without a leading "The" or "A". A row plays the list from there, "Playing from Songs"; the song playing shows moving bars over its cover. Each row has the song's ⋯ menu ([player.md › The music player](player.md#the-music-player-prototype-gaps-stage-3-2026-11-01)); on the phone a long press opens it too, and on the TV holding OK. The web and TV keep the A–Z index while sorted by title, artist or album.
+- **Playlists** are each person's own: a grid of tiles on the web and TV, a list on the phone, each with a mosaic of its first four covers, its name and how many songs. The web's **New playlist** sits beside the view's control, and the phone's is the list's first row; both ask for a name and open the new playlist. The TV has no New playlist: playlists are made and changed on the other apps.
+- **A playlist's page** is laid out as an album's: the first cover blurred behind, the mosaic, "Playlist", the name, "{n} songs, {length}", **Play** (Pause while it plays) and **Shuffle**, then its songs in its order, each with its cover, since they come from many albums. On the web, desktop and phone, ⋯ beside Shuffle has **Rename** and **Delete playlist**; the songs drag by their handles to reorder (Space picks one up from the keyboard, the arrows move it, Space drops it), and each song's ⋯ ends with **Remove from this playlist**. Delete asks first. On the TV the page only plays.
+- **Add to playlist** is in a song's and an album's ⋯ menu: the person's playlists, with **New playlist** first. On the web it's a dialog, as ui-web's Menu has no submenu; on the phone, a sheet; on the TV, the menu's next step.
+
+| Where | Text |
+| --- | --- |
+| No playlists (web, phone) | No playlists yet · Make one here, or choose Add to playlist in a song's or an album's menu. |
+| No playlists (TV) | No playlists yet. Make them in highsea on the web or your phone, and they show up here to play. |
+| Empty playlist | Nothing here yet · Add songs with Add to playlist, in a song's or an album's menu. |
+| Delete | Delete {name}? · Its songs stay in the library. This can't be undone. · Cancel · Delete playlist |
+| Toasts | Added to {playlist} · Renamed {name} · {song} removed, From {playlist}. · {name} deleted |
+| Not found | This playlist isn't here · It may have been deleted. |
+
+Data, from the mock (the music phase builds it on the server, and its scope checks this design against what the server can keep): `library.songs` (every song with its album and play count), `library.playlists`, `library.playlist(id)` (the playlist and its songs, each with an `entry` that tells two of the same song apart), and `playlists.create`, `rename`, `reorder`, `add`, `remove` and `delete`, with a `playlists.updated` event. Each person starts with two playlists, the same on every load. A reorder shows at once, before the server answers.
+
 ## States
 
 - **Loading:** poster skeletons in the grid's shape.

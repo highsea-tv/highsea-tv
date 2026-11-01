@@ -132,9 +132,13 @@ describe('A11 curation', () => {
     expect(home.map((s) => s.title)).toEqual([
       'Featured on Harbor',
       'Continue watching',
+      'Next up',
       'Staff picks',
       'Recently added',
       'The silent era',
+      'New episodes',
+      'Recently added shows',
+      'Recently played',
     ])
 
     // a collection rule picks only that collection's parts
@@ -392,7 +396,8 @@ describe('C6–C8 clients', () => {
     expect(people?.items.some((p) => 'name' in p && p.name === 'Fritz Lang')).toBe(true)
     const movies = lang.sections.find((s) => s.kind === 'movies')
     expect(movies?.items.some((m) => 'title' in m && m.title === 'Metropolis')).toBe(true)
-    expect(await kinds('caminandes')).toEqual(['movies', 'collections'])
+    // the films' scores are albums here, so their album matches too
+    expect(await kinds('caminandes')).toEqual(['movies', 'collections', 'albums'])
     expect(await kinds('zzzz')).toEqual([])
     const { collection, items } = await client(mock).library.collection('caminandes')
     expect(collection.count).toBe(items.length)
@@ -451,7 +456,7 @@ describe('C6–C8 clients', () => {
     const { user } = await open('/web/search')
     await user.click(page().getByRole('button', { name: 'Got it' }))
     await settle()
-    await user.click(page().getByRole('button', { name: 'Horror' }))
+    await user.click(page().getByRole('button', { name: 'Comedy' }))
     await act(() => new Promise((r) => setTimeout(r, 200)))
     await settle()
     expect(

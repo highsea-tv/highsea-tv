@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // An album on the web and desktop, from Apple Music's and Plexamp's album pages: the cover blurred
 // behind the header, the square cover beside the kind, the title, the artist (a link to their
-// page), the genre, year and length, the album's note, and Play and Shuffle. The film it scores,
+// page), the genre, year and length, the album's note, and Play, Shuffle and ⋯ (Play next, Add to
+// queue, Add to playlist; with Download in the desktop app). The film it scores,
 // when it's here, is a link under them, so a score leads back to its film as the film's Music
 // credit leads to the composer. Then the songs, numbered, each with its length, as every music app
-// lists them; the release date and label under them; and the artist's other albums.
+// lists them, each with its ⋯ menu (web/song-menu.tsx); the release date and label under them; and the artist's other albums.
 import {
   Button,
   CarouselRow,
@@ -16,18 +17,23 @@ import {
   SkeletonText,
 } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
-import { useAlbum } from '../client/data.ts'
+import { useAlbum, useDesktopApp } from '../client/data.ts'
+import { GroupDownload } from '../client/download-button.tsx'
+import { songSource } from '../client/downloads.ts'
 import { albumKind, albumMeta, albumSummary, releasedOn, songTime } from '../client/music.ts'
-import { useAlbumPlaying, useMusicPlayer } from '../client/music-player.ts'
+import { useAlbumPlaying, useMusicPlayer, usePlayingFrom } from '../client/music-player.ts'
 import { PlayingBars } from '../client/waveform.tsx'
-import type { ClientSong } from '../mock/types.ts'
+import type { ClientAlbum, ClientSong } from '../mock/types.ts'
 import { gutter, webHref } from './shell.tsx'
+import { WebSongMenu } from './song-menu.tsx'
 
 export function WebAlbum() {
   const { id } = useParams<{ id: string }>()
   const found = useAlbum(id)
   const player = useMusicPlayer()
   const current = useAlbumPlaying(id)
+  const whole = usePlayingFrom(`/music/albums/${id}`)
+  const desktop = useDesktopApp()
   if (found.status === 'loading') return <AlbumSkeleton />
   if (found.status === 'error')
     return (
@@ -86,11 +92,11 @@ export function WebAlbum() {
               {/* while this album plays, Play is Pause, as Apple Music's is */}
               <Button
                 variant="primary"
-                icon={current?.playing ? 'pause' : 'play'}
+                icon={whole?.playing ? 'pause' : 'play'}
                 className="min-w-32 justify-center"
-                onClick={() => (current ? player.toggle() : player.play({ album: a.id }))}
+                onClick={() => (whole ? player.toggle() : player.play({ album: a.id }))}
               >
-                {current?.playing ? 'Pause' : 'Play'}
+                {whole?.playing ? 'Pause' : 'Play'}
               </Button>
               <Button
                 icon="shuffle"
@@ -99,6 +105,19 @@ export function WebAlbum() {
               >
                 Shuffle
               </Button>
+              <WebSongMenu
+                target={{ songs: songs.map((x) => x.id), name: a.title, album: a }}
+                on="album"
+                round
+              />
+              {desktop && (
+                <GroupDownload
+                  app="desktop"
+                  name={a.title}
+                  sources={songs.map((x) => songSource(x, a))}
+                  className="ms-2"
+                />
+              )}
             </div>
             {film && (
               <a
@@ -117,6 +136,7 @@ export function WebAlbum() {
         className={cn('mx-auto grid w-full max-w-[1680px] gap-4', gutter)}
       >
         <SongList
+          album={a}
           songs={songs}
           current={current ? (current.queue[current.index]?.id ?? null) : null}
           playing={!!current?.playing}
@@ -169,11 +189,13 @@ export function WebAlbum() {
  * place and its title in the accent, and choosing it again pauses it.
  */
 function SongList({
+  album,
   songs,
   current,
   playing,
   onPlay,
 }: {
+  album: ClientAlbum
   songs: ClientSong[]
   current: string | null
   playing: boolean
@@ -184,7 +206,10 @@ function SongList({
       {songs.map((s, i) => {
         const here = s.id === current
         return (
-          <li key={s.id} className="border-line border-b">
+          <li
+            key={s.id}
+            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 border-line border-b pe-1"
+          >
             <button
               type="button"
               aria-label={
@@ -223,6 +248,7 @@ function SongList({
               </span>
               <span className="text-caption text-text-3 tabular-nums">{songTime(s.duration)}</span>
             </button>
+            <WebSongMenu target={{ songs: [s.id], name: s.title, album }} on="album" />
           </li>
         )
       })}
@@ -246,8 +272,8 @@ function AlbumSkeleton() {
           <Skeleton className="my-1 h-5 w-40" />
           <Skeleton className="h-4 w-56" />
           <div className="flex gap-2 pt-1">
-            <Skeleton className="h-10 w-32 rounded-button" />
-            <Skeleton className="h-10 w-32 rounded-button" />
+            <Skeleton className="h-10 w-32 rounded-sm" />
+            <Skeleton className="h-10 w-32 rounded-sm" />
           </div>
         </div>
       </div>

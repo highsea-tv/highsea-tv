@@ -2,6 +2,7 @@
 // C7 Settings and C8 Profile on the web and desktop (docs/product/client-settings.md): the
 // sections beside each other from medium widths, an index on a phone-width window; the account
 // page; and Downloads, which needs the desktop app.
+
 import { Button, cn, EmptyState, Icon } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useParams } from 'wouter'
@@ -10,6 +11,7 @@ import { GetTheAppsDialog } from '../client/get-the-apps.tsx'
 import { OfflineList } from '../client/offline-list.tsx'
 import { type SettingsSectionId, settingsSections } from '../client/settings.ts'
 import { SettingsSectionBody } from '../client/settings-sections.tsx'
+import { ProfileAvatar, useMe } from '../client/who.tsx'
 import { Soon } from '../kit/soon.tsx'
 import { KeptIn } from './kept-in.tsx'
 import { gutter, webHref } from './shell.tsx'
@@ -80,7 +82,8 @@ export function WebSettings() {
 /** C8: who you are on this server. */
 export function WebProfile() {
   const server = useServer()
-  const name = server.data?.name ?? 'Harbor'
+  const name = server.data?.name ?? 'this server'
+  const me = useMe()
   return (
     <main
       className={cn(
@@ -89,15 +92,12 @@ export function WebProfile() {
       )}
     >
       <div className="flex items-center gap-4">
-        <span
-          aria-hidden
-          className="grid size-16 place-items-center rounded-full bg-accent-soft font-semibold text-heading text-accent-text"
-        >
-          I
-        </span>
+        <ProfileAvatar profile={me} className="size-16 text-heading" />
         <div className="grid">
-          <h1 className="text-heading">Ines</h1>
-          <p className="text-text-2 text-body">@ines · owner of {name}</p>
+          <h1 className="text-heading">{me.name}</h1>
+          <p className="text-text-2 text-body">
+            {me.main ? `@ines · owner of ${name}` : 'A profile on @ines’s account'}
+          </p>
         </div>
       </div>
       <section aria-label="Account" className="grid gap-3 rounded-lg border border-line bg-s1 p-5">
@@ -187,7 +187,7 @@ export function WebDownloads() {
         plane, a train, or anywhere the server can’t be reached.
       </EmptyState>
       <GetTheAppsDialog
-        server={server.data?.name ?? 'Harbor'}
+        server={server.data?.name ?? 'this server'}
         address={server.data?.addresses.public ?? server.data?.addresses.local[0] ?? ''}
         open={apps}
         onOpenChange={setApps}
@@ -206,7 +206,11 @@ function DesktopDownloads() {
       )}
     >
       <h1 className="text-heading">Downloads</h1>
-      <OfflineList app="desktop" href={(id) => webHref(`/play/${id}`)} settings={<KeptIn />} />
+      <OfflineList
+        app="desktop"
+        href={(x) => (x.kind === 'song' ? undefined : webHref(`/play/${x.id}`))}
+        settings={<KeptIn />}
+      />
     </main>
   )
 }

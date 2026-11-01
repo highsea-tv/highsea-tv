@@ -24,6 +24,7 @@ import { TvMusic } from './music.tsx'
 import { TvNowPlaying, useMusicKeys } from './now-playing.tsx'
 import { TvPerson } from './person.tsx'
 import { TvPlayer } from './player.tsx'
+import { TvPlaylist } from './playlist.tsx'
 import { TvSearch } from './search.tsx'
 import { TvProfile } from './settings.tsx'
 import { TvShow } from './show.tsx'
@@ -52,8 +53,9 @@ function Album() {
 }
 
 function Show() {
-  useBack(() => history.back())
-  return <TvShow />
+  const [panel, setPanel] = useState(false)
+  useBack(() => (panel ? setPanel(false) : history.back()))
+  return <TvShow panel={panel} onPanel={setPanel} />
 }
 
 function Artist() {
@@ -68,7 +70,7 @@ function NowPlaying() {
 
 function Unreachable() {
   const server = useServer()
-  const name = server.data?.name ?? 'Harbor'
+  const name = server.data?.name ?? 'this server'
   return (
     <>
       <ServerIdentity className="absolute top-(--tv-safe-y) left-(--tv-safe-x)" />
@@ -178,6 +180,18 @@ function Screens() {
       </Route>
       <Route path="/music/artists/:id">
         <Artist />
+      </Route>
+      <Route path="/music/playlists/:id">
+        <TvPlaylist />
+      </Route>
+      <Route path="/music/songs">
+        <TvMusic key="songs" initial="songs" />
+      </Route>
+      <Route path="/music/playlists">
+        <TvMusic key="playlists" initial="playlists" />
+      </Route>
+      <Route path="/music/artists">
+        <TvMusic key="artists" initial="artists" />
       </Route>
       <Route path="/music">
         <TvMusic />

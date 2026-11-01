@@ -230,20 +230,23 @@ export function MobilePlayer({ fromStart = false }: { fromStart?: boolean }) {
 
 /**
  * Stands in for iOS's own AirPlay list (AVRoutePickerView), which the app doesn't draw: the
- * phone, then the screens on the network.
+ * phone, then the screens on the network, and for music the speakers too.
  */
-function AirPlayPicker({
+export function AirPlayPicker({
   current,
   onPick,
   onClose,
+  music = false,
 }: {
   current: string | null
   onPick: (screen: string | null) => void
   onClose: () => void
+  music?: boolean
 }) {
-  const screens: { name: string | null; label: string; icon: 'phone' | 'tv' }[] = [
+  const screens: { name: string | null; label: string; icon: 'phone' | 'tv' | 'sound' }[] = [
     { name: null, label: 'iPhone', icon: 'phone' },
     { name: 'Living room TV', label: 'Living room TV', icon: 'tv' },
+    ...(music ? [{ name: 'Kitchen', label: 'Kitchen', icon: 'sound' as const }] : []),
   ]
   return (
     <div className="absolute inset-0 grid place-items-center bg-[rgb(0_0_0/0.5)]">

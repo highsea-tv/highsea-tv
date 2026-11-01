@@ -358,6 +358,42 @@ export type QueuedSong = ClientSong & {
   loudness: number[]
 }
 
+/** `GET /api/v1/library/music/songs`: a song with its album, as Music's Songs lists it. */
+export type ClientLibrarySong = ClientSong & {
+  album: ClientAlbum
+  /** How many times the household has played it, for Most played. */
+  plays: number
+}
+
+/** What the player was asked to play, for "Playing from". */
+export type MusicSource =
+  | { album: string }
+  | { artist: string }
+  | { playlist: string }
+  | { songs: string[] }
+
+/**
+ * `GET /api/v1/library/music/playlists`: one of the person's own playlists. Each person's are
+ * their own (prototype-gaps.md, question 11); smart and shared playlists come later.
+ */
+export type ClientPlaylist = {
+  id: string
+  name: string
+  /** How many songs, and their length in seconds. */
+  songs: number
+  duration: number
+  /** The first four albums' covers, for the mosaic; fewer when the playlist has fewer albums. */
+  covers: string[]
+  updatedAt: string
+}
+
+/** `GET /api/v1/library/music/playlists/{id}`: a playlist and its songs, in its order. */
+export type ClientPlaylistDetail = {
+  playlist: ClientPlaylist
+  /** `entry` tells two of the same song apart, for reordering and removing. */
+  songs: (ClientLibrarySong & { entry: string })[]
+}
+
 /**
  * `GET /api/v1/library/music/albums/{id}`: an album with its songs, its length, when and by whom
  * it was released, the film here it scores, and the artist's other albums.
@@ -482,6 +518,15 @@ export type ClientShowDetail = {
   crew: Credit[]
   /** Shows here that share a genre, closest first. */
   related: ClientShow[]
+  /** Its trailers from the metadata, newest first; none for some shows. */
+  videos: Video[]
+  /**
+   * The languages its episodes have, for Audio and subtitles on the show's page: picked once for
+   * the show, they apply to every episode, as a film's picks apply to the film.
+   */
+  tracks: { audio: { id: string; label: string }[]; subtitles: { id: string; label: string }[] }
+  /** This person's picks for the show, or the server's defaults. */
+  defaults: { audioId: string | null; subtitleId: string | null }
 }
 
 /**
@@ -1215,6 +1260,7 @@ export type ServerEvent =
   | { type: 'item.updated'; id: string }
   | { type: 'movies.updated' }
   | { type: 'music.updated' }
+  | { type: 'playlists.updated' }
   | { type: 'shows.updated' }
   | { type: 'history.updated' }
   | { type: 'jobs.updated' }
@@ -1404,6 +1450,8 @@ export type ClientDetail = {
   episode: EpisodePlace | null
   /** What Next up offers as the title ends (player.md › Next up), or null when nothing follows. */
   upNext: UpNext | null
+  /** The album here that's its score, for Information's Soundtrack line; null for most. */
+  soundtrack: { id: string; title: string } | null
 }
 
 export type EpisodePlace = {

@@ -4,15 +4,24 @@
 // Now playing joins the head beside Alerts (the song's cover with the playing mark), and it opens
 // a screen of its own: the cover blurred behind everything, the cover large at the left, the
 // song, the artist and the album, the waveform to scrub with Left and Right, Previous, Play or
-// Pause and Next, and what's up next. Play/Pause on the remote plays and pauses the music from
-// anywhere but the film player.
+// Pause and Next between Shuffle and Repeat, the album, the artist and Stop, and Up next as a row
+// under them (prototype-gaps.md › 3.4): OK plays a song there now, OK held offers Remove.
+// Play/Pause on the remote plays and pauses the music from anywhere but the film player.
 import { cn, Icon, type IconName } from '@highsea-tv/ui-web'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
+import { useLongPress } from '../client/continue-menu.ts'
 import { clock } from '../client/data.ts'
-import { musicPlayer, useMusicPlayer } from '../client/music-player.ts'
+import {
+  musicPlayer,
+  playingFromLabel,
+  type QueueEntry,
+  repeatButton,
+  useMusicPlayer,
+} from '../client/music-player.ts'
 import { PlayingBars, Waveform } from '../client/waveform.tsx'
 import { TvButton, TvHead, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
+import { TvMenu } from './song-menu.tsx'
 
 /** Left and Right on the TV's scrubber, in seconds: further than a pointer's, as the film's is. */
 const TV_SEEK_S = 10
@@ -59,12 +68,15 @@ function Control({
   label,
   big = false,
   initial = false,
+  pressed,
   ...props
 }: {
   icon: IconName
   label: string
   big?: boolean
   initial?: boolean
+  /** Shuffle and Repeat: on, in the accent with a dot under it, so it isn't colour alone. */
+  pressed?: boolean
   disabled?: boolean
   onClick: () => void
 }) {
@@ -72,17 +84,32 @@ function Control({
     <button
       type="button"
       aria-label={label}
+      aria-pressed={pressed}
       {...(props.disabled
         ? {}
         : { 'data-focusable': '', ...(initial ? { 'data-initial': '' } : {}) })}
-      className={cn(round, big ? 'size-[5cqw] bg-text/12' : 'size-[3.6cqw] text-text')}
+      className={cn(
+        round,
+        'relative',
+        big ? 'size-[5cqw] bg-text/12' : 'size-[3.6cqw] text-text',
+        pressed && 'text-accent-text',
+      )}
       {...props}
     >
       <Icon
         name={icon}
         size={32}
-        className={cn('fill-current', big ? 'size-[2cqw]' : 'size-[1.6cqw]')}
+        className={cn(
+          pressed === undefined && 'fill-current',
+          big ? 'size-[2cqw]' : 'size-[1.6cqw]',
+        )}
       />
+      {pressed && (
+        <span
+          aria-hidden
+          className="absolute bottom-[0.3cqw] size-[0.3cqw] rounded-full bg-current"
+        />
+      )}
     </button>
   )
 }
@@ -91,7 +118,12 @@ export function TvNowPlaying() {
   const p = useMusicPlayer()
   const song = p.song
   const scrubber = useRef<HTMLDivElement>(null)
+  const [, navigate] = useLocation()
   useInitialFocus(!!song)
+  const stop = () => {
+    musicPlayer.stop()
+    history.length > 1 ? history.back() : navigate('/music')
+  }
 
   // the scrubber keeps Left and Right for seeking, and OK for play/pause, as the film's does; on
   // the element, so it runs before the navigator on the TV's root
@@ -141,10 +173,10 @@ export function TvNowPlaying() {
       <div className="absolute inset-0 bg-[linear-gradient(90deg,var(--color-bg)_0%,transparent_70%)] opacity-70" />
       <main
         aria-label="Now playing"
-        className="absolute inset-0 grid grid-rows-[auto_minmax(0,1fr)]"
+        className="absolute inset-0 grid grid-rows-[auto_minmax(0,1fr)_auto]"
       >
         <TvHead down="controls" exact className="px-(--tv-safe-x)" />
-        <div className="grid grid-cols-[30cqw_minmax(0,1fr)] items-center gap-[4cqw] px-(--tv-safe-x) pb-(--tv-safe-y)">
+        <div className="grid min-h-0 grid-cols-[24cqw_minmax(0,1fr)] items-center gap-[4cqw] px-(--tv-safe-x) pb-[1.6cqw]">
           <img
             src={song.album.cover}
             alt=""
@@ -205,8 +237,15 @@ export function TvNowPlaying() {
             <div
               data-group="controls"
               data-go-up="scrub"
-              className="flex items-center gap-[1.4cqw]"
+              {...(p.upNext.length > 0 ? { 'data-go-down': 'upnext' } : {})}
+              className="flex items-center gap-[1.2cqw]"
             >
+              <Control
+                icon="shuffle"
+                label="Shuffle"
+                pressed={p.shuffle}
+                onClick={p.toggleShuffle}
+              />
               <Control
                 icon="previous"
                 label="Previous"
@@ -221,6 +260,12 @@ export function TvNowPlaying() {
                 onClick={p.toggle}
               />
               <Control icon="next" label="Next" disabled={!p.hasNext} onClick={p.next} />
+              <Control
+                icon={repeatButton[p.repeat].icon}
+                label={repeatButton[p.repeat].label}
+                pressed={p.repeat !== 'off'}
+                onClick={p.cycleRepeat}
+              />
               <span className="ms-[1cqw] flex gap-[0.8cqw]">
                 <TvButton icon="music" href={tvHref(`/music/albums/${song.album.id}`)}>
                   Album
@@ -228,14 +273,101 @@ export function TvNowPlaying() {
                 <TvButton icon="user" href={tvHref(`/music/artists/${song.album.artist.id}`)}>
                   Artist
                 </TvButton>
+                {/* Stop closes the player: Now playing leaves the head */}
+                <TvButton icon="close" onClick={stop}>
+                  Stop
+                </TvButton>
               </span>
             </div>
-            <p className="truncate text-(length:--tv-text-pill) text-text-3">
-              {p.upNext ? `Up next: ${p.upNext.title}` : 'The last song in the queue'}
-            </p>
           </div>
         </div>
+        <UpNext />
       </main>
     </>
+  )
+}
+
+/** Up next, as a row of covers under the controls; OK plays a song now, OK held offers Remove. */
+function UpNext() {
+  const p = useMusicPlayer()
+  const [menu, setMenu] = useState<QueueEntry | null>(null)
+  if (p.upNext.length === 0)
+    return (
+      <p className="px-(--tv-safe-x) pb-(--tv-safe-y) text-(length:--tv-text-pill) text-text-3">
+        {p.from ? `${playingFromLabel(p.from)} · ` : ''}The last song in the queue
+      </p>
+    )
+  return (
+    <section aria-label="Up next" className="grid gap-[0.8cqw] pb-(--tv-safe-y)">
+      <p className="px-(--tv-safe-x) font-mono text-(length:--tv-text-pill) text-text-3 uppercase">
+        Up next{p.from ? ` · ${playingFromLabel(p.from)}` : ''}
+      </p>
+      <ul
+        data-group="upnext"
+        data-go-up="controls"
+        className="flex gap-[1.2cqw] overflow-hidden px-(--tv-safe-x) py-[0.4cqw]"
+      >
+        {p.upNext.slice(0, 10).map((x) => (
+          <UpNextSong key={x.key} song={x} onMenu={setMenu} />
+        ))}
+      </ul>
+      {menu && (
+        <TvMenu
+          name={menu.title}
+          line={`${menu.album.artist.name} · ${menu.album.title}`}
+          items={[
+            {
+              icon: 'play',
+              label: 'Play now',
+              run: () => musicPlayer.jump(p.queue.findIndex((e) => e.key === menu.key)),
+            },
+            {
+              icon: 'remove',
+              label: 'Remove from the queue',
+              run: () => {
+                // focus goes to the song after it, or before it, or to the controls
+                const tile = document.querySelector(`[data-queue="${menu.key}"]`)
+                const to = tile?.nextElementSibling ?? tile?.previousElementSibling
+                musicPlayer.remove(menu.key)
+                requestAnimationFrame(() =>
+                  (
+                    to?.querySelector<HTMLElement>('[data-focusable]') ??
+                    document.querySelector<HTMLElement>('[data-group="controls"] [data-initial]')
+                  )?.focus({ preventScroll: true }),
+                )
+              },
+            },
+          ]}
+          onClose={() => setMenu(null)}
+        />
+      )}
+    </section>
+  )
+}
+
+function UpNextSong({ song, onMenu }: { song: QueueEntry; onMenu: (s: QueueEntry) => void }) {
+  const press = useLongPress(() => onMenu(song))
+  return (
+    <li data-queue={song.key} className="w-[9cqw] shrink-0">
+      <button
+        type="button"
+        data-focusable=""
+        aria-label={`${song.title}, ${song.album.artist.name}. Hold OK for more.`}
+        onClick={() =>
+          musicPlayer.jump(musicPlayer.get().queue.findIndex((e) => e.key === song.key))
+        }
+        {...press}
+        className="group/song grid w-full gap-[0.5cqw] text-start outline-none"
+      >
+        <img
+          src={song.album.cover}
+          alt=""
+          className="aspect-square w-full rounded-(--tv-radius-poster) bg-s1 object-cover transition-lift group-focus-visible/song:scale-(--scale-poster) group-focus-visible/song:ring-focus"
+        />
+        <span className="truncate text-(length:--tv-text-pill) text-text-2 group-focus-visible/song:text-text">
+          {song.title}
+        </span>
+      </button>
+    </li>
   )
 }

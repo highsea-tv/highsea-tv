@@ -73,6 +73,14 @@ export function WebPerson() {
           <div className="grid max-w-[44rem] gap-3">
             <h1 className="text-balance text-display">{p.name}</h1>
             <Facts person={p} className="text-body text-text-2" />
+            {/* the reverse of the artist page's Their films and shows (prototype-gaps.md › 3.5) */}
+            {p.artist && (
+              <div className="flex">
+                <Button variant="ghost" icon="music" asChild>
+                  <a href={webHref(`/music/artists/${p.artist}`)}>Their music</a>
+                </Button>
+              </div>
+            )}
             {p.bio && <Bio text={p.bio} />}
           </div>
         </div>

@@ -171,7 +171,7 @@ function Status() {
                 </button>
               </div>
               <GetTheAppsDialog
-                server={server.data?.name ?? 'Harbor'}
+                server={server.data?.name ?? 'this server'}
                 address={server.data?.addresses.public ?? server.data?.addresses.local[0] ?? ''}
                 open={apps}
                 onOpenChange={setApps}
@@ -519,6 +519,8 @@ const backupDate = new Intl.DateTimeFormat('en-GB', {
 })
 
 function Backups() {
+  const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
+  const name = server.data?.name ?? 'The server'
   const backups = useQuery('system:backups', (c) => c.system.backups(), ['jobs.updated'])
   const make = useAction((c) => c.system.backupNow())
   const restore = useAction((c, id: string) => c.system.restore(id))
@@ -590,7 +592,7 @@ function Backups() {
             open={!!restoring}
             onOpenChange={(o) => !o && setRestoring(null)}
             title={`Restore the backup from ${restoring ? backupDate.format(new Date(restoring.createdAt)) : ''}?`}
-            description="Harbor restarts on it: settings, users and history go back to that moment, and anything since is lost. Media files aren’t touched. Apps reconnect on their own."
+            description={`${name} restarts on it: settings, users and history go back to that moment, and anything since is lost. Media files aren’t touched. Apps reconnect on their own.`}
             confirmLabel="Restore and restart"
             destructive
             onConfirm={() => {
@@ -599,7 +601,7 @@ function Backups() {
                 restore.run(b.id).then(() =>
                   toast({
                     title: 'Restoring',
-                    description: 'Harbor is restarting. It’s back in about a minute.',
+                    description: `${name} is restarting. It’s back in about a minute.`,
                   }),
                 )
             }}

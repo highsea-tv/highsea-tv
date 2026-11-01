@@ -73,6 +73,18 @@ Prototyped on all three platforms; the prototype's toolbar picks one under **Str
 - The tracks panel says "Saved for this episode."
 - Both show only while the stream is normal, never over the stream's other states or the tracks panel.
 
+### The music player (prototype-gaps stage 3, 2026-11-01)
+
+What stage 2 drew (the bar on the web and desktop, the mini player and Now playing on the phone, Now playing in the TV's head) gains:
+
+- **The queue:** **Playing from** (the album, artist, playlist, Songs, a search or a single song's album, as a link), the song playing, then **Up next**, each with **Remove** and played from there, and **Clear**. On the web and desktop it's a panel from the bar's queue button; on the phone the sheet from Now playing, reordered by its handles; on the TV a row under the controls, where Remove moves focus to a neighbour.
+- **Shuffle and Repeat** on every Now playing. Repeat goes off, the queue, then this song ("Repeat: off", "Repeat: the queue", "Repeat: this song"), pressed while on.
+- **Stop:** on the phone in Now playing's ⋯ (with Go to the album and Go to the artist) and by swiping the mini player down; on the TV a button in Now playing. Stop closes the bar or the mini player: "Music stopped".
+- **A song's ⋯ menu** on album, artist, Songs and playlist pages: **Play next**, **Add to queue**, **Add to playlist…**, then **Go to the album** and **Go to the artist** where the page isn't already that, and on a playlist's page **Remove from this playlist**. An album's header has the same menu for the whole album. On the TV it's holding OK on a song, or on the album's Play.
+- **The artist page's Play** becomes Pause while the artist plays, on the phone as on the web.
+- **AirPlay** on the phone's Now playing, as on its film player.
+- **Icons:** ui-web and ui-native gain `repeat`, `repeat-one` and `queue` (Lucide's Repeat, Repeat1 and ListMusic), for the owner's approval.
+
 ## Interactions
 
 | Input | Web | Mobile | TV |

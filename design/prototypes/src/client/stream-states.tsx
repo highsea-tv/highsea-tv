@@ -164,7 +164,7 @@ export function NextUp({
 }) {
   const t = text[size]
   const active = player.stream === 'next-up' && !!next
-  const counts = active && next.kind !== 'choices'
+  const counts = active && next.kind !== 'choices' && player.autoplay
   const [left, setLeft] = useState(NEXT_UP_S)
   useEffect(() => {
     if (!counts) return
@@ -249,7 +249,7 @@ export function NextUp({
               </h2>
               <span className={titleText}>{next.title}</span>
               <span className={cn(t.small, 'truncate')}>
-                {next.line} · Starts in {left} s
+                {player.autoplay ? `${next.line} · Starts in ${left} s` : next.line}
               </span>
             </div>
           </div>

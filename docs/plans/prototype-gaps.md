@@ -65,6 +65,38 @@ Eight stages, each reviewed by the owner before the next starts, as the owner's 
 
 ## Progress
 
+- **2026-11-01, stage 3 (parity), for the owner's review:**
+  - **3.1, the show page:** the film page's round buttons beside Play: From the start, Trailer when the show has one, Audio and subtitles (picked once for every episode), Mark show as watched (drawn on its own, so it stays when no episode is left) and, in the desktop app and on the phone, Download.
+  - **3.2, downloads:** an episode's row has the download icon with its progress ring, each season **Download season**, and an album Download beside Play and Shuffle. Offline and Downloads group episodes under their show and season and songs under their album, each with its size and Remove; the copy says "films, episodes and music".
+  - **3.3, Playback settings** in every app's Settings, the TV's in the same order: the audio and subtitle languages, Play the next episode automatically, Skip intros automatically, and the quality at home and away.
+  - **3.4, the music player:** Playing from, Up next with Remove and Clear (a panel on the web, the reorderable sheet on the phone, a row on the TV), Shuffle and Repeat on every Now playing, Stop (the phone's ⋯ and a swipe down on the mini player, a button on the TV), a song's and an album's ⋯ menu, the artist page's Pause on the phone, and AirPlay on the phone's Now playing.
+  - **3.8, Songs and Playlists:** Music's four views on every app; Songs as one list, sorted five ways, with the A–Z index on the web and TV; Playlists as tiles or a list, with New playlist on the web and phone; a playlist's page laid out as an album's, renamed, reordered by dragging (Space and the arrows from the keyboard), its songs removed and the playlist deleted on the web and phone, and only played on the TV (`tv/playlist.tsx`). Add to playlist is a dialog on the web, a sheet on the phone and the menu's next step on the TV. The mock gains `library.songs`, `library.playlists`, `library.playlist` and the six `playlists.*` calls with `playlists.updated`.
+  - **3.5, people and their music:** **Their music** on a person's page when they're an artist here, and a **Soundtrack** fact on a film whose score is an album here, as a link (`Fact`'s third item in `client/detail-facts.ts`; the mock's `ClientDetail.soundtrack`).
+  - **3.6, profiles:** **Switch profile** in the web's account menu, opening Who's watching at `/who` (`client/who.tsx`), drawn as the TV's, with the PIN in one field. On the phone, after the owner's review on 2026-11-01 (the TV's page shrunk down didn't suit it), You's Switch profile opens a sheet of rows instead (`mobile/who-sheet.tsx`, at `/you/who`), as phones switch accounts, with the PIN asked in the same sheet. The profile store moved from `tv/people.ts` to `client/profiles.ts`, and the account menu, the phone's header and You, and the web's Account page read the profile's name and colour.
+  - **3.7, the server's name:** `useServerName` in `client/data.ts`, read in every client and admin place that named Harbor, with "this server" until it's known. Renaming the mock's server to Lighthouse left no Harbor in the clients or the admin outside the data below.
+  - **Additions to the design system, for approval:** ui-web's and ui-native's icons `repeat`, `repeat-one` and `queue` (Lucide's Repeat, Repeat1 and ListMusic). The new rows and buttons on signed-off screens are the ones listed above.
+  - **Calls I made, for review:**
+    - The album's ⋯ sits in the album's header, beside Shuffle.
+    - Add to playlist on the web is a dialog, since ui-web's Menu has no submenu.
+    - The TV has no New playlist, and plays playlists only.
+    - Remove from this playlist is the last item in a song's ⋯ on a playlist's page.
+    - The phone's `/music/songs` and `/music/playlists` go to Library's Music views.
+    - The mock's song titles were widened, so the lists have long titles to truncate.
+    - Profiles are still added and deleted only on the TV.
+    - The PIN is one four-digit field on the web and phone, not a pad.
+    - A profile that isn't the account's own says "A profile on @ines’s account".
+    - Kept as data, not the server's name: "Featured on Harbor" (a section's title the owner typed), the Harbor theme, the setup form's placeholder, the email samples and the mock's seed.
+    - The remembered servers follow the current server's name.
+    - On the TV, Soundtrack is a focus stop of its own inside the Information card.
+  - **Tests:** six prototype tests failed when this stage's checks ran. Two were classes the theme doesn't have (`rounded-xs` from this stage; `rounded-button`, `text-white`, `leading-tight` and the plain CSS `playing-bar` from stage 2), now the theme's own and `playing-bar` an `@utility`. Four had kept stage 2's earlier expectations: the TV's Shows page, Home's new rows, Caminandes's score in Search, and Horror, which left the suggestions. Stage 2's checks were Biome, tsc and the sweeps, not the prototype's tests, which is how those slipped through; all 1,403 pass now, and each stage's checks include them from here on.
+  - **Specs:** client-library.md (Music's views), client-detail.md (shows, people and soundtracks), client-settings.md (Playback, Offline, Switch profile, the profile's and the server's names) and player.md (the music player).
+  - **Fixed from the sweeps:**
+    - Downloads and Offline threw while the server couldn't be reached, because the downloads' seed read the library without catching. The seed now waits until the server answers.
+  - **Checks (Node 26.11.1):**
+    - Biome and tsc on the prototypes, and the prototype's 1,403 tests;
+    - the pages sweep on the web (1,272), phone (376) and TV (320);
+    - the keyboard walks on the web (106) and phone (47), and the TV's D-pad walk;
+    - all clean.
 - **2026-11-01, stage 2 (shows and music where people start), for the owner's review:**
   - **2.1, the episode player:**
     - The title is the show's, with "S1, E1 · Pilot" under it on every app's player. Leaving a player opened directly goes to the show (`titlePage` and `titleLines` in `client/player.ts`).

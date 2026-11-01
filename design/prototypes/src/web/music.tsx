@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Music on the web and desktop: the music library in two views, Albums and Artists, as Apple Music,
-// Spotify, Plex and Navidrome split theirs. The page is Movies' (C3) with square covers in place of
-// posters: the title and count, the view as a segmented control beside it, the filters at the
-// right, and the A–Z index when it's sorted by name. Albums show the title and artist under the
-// cover; artists are round photos with how many albums are here, as people are on the cast rows
-// and their own pages, so the two views read apart at a glance. Each view has its own address
-// (/music and /music/artists), so Back returns to the one you were on.
+// Music on the web and desktop: the music library in four views, Albums, Artists, Songs and
+// Playlists, as Apple Music, Spotify, Plex and Navidrome split theirs. The page is Movies' (C3)
+// with square covers in place of posters: the title and count, the view as a segmented control
+// beside it, the filters at the right, and the A–Z index when it's sorted by name. Albums show the
+// title and artist under the cover; artists are round photos with how many albums are here, as
+// people are on the cast rows and their own pages, so the two views read apart at a glance. Songs
+// are a list (web/music-lists.tsx), and Playlists the person's own, with New playlist at the
+// right. Each view has its own address (/music, /music/artists, /music/songs, /music/playlists),
+// so Back returns to the one you were on.
 import {
   Button,
   cn,
@@ -30,13 +32,24 @@ import {
   albumsCount,
   arrangeAlbums,
   arrangeArtists,
+  arrangeSongs,
   artistSorts,
   artistsCount,
   type MusicView,
   musicGenresOf,
+  musicViews,
+  playlistsCount,
+  type SongSort,
+  songGenresOf,
+  songIndexKey,
+  songSorts,
+  songsCount,
 } from '../client/music.ts'
+import { useSongs } from '../client/playlists.ts'
+import { usePlaylists } from '../client/song-menu.ts'
 import type { ClientArtist } from '../mock/types.ts'
 import { LetterIndex, letterOf, stuck } from './library.tsx'
+import { NewPlaylist, WebPlaylistGrid, WebSongList } from './music-lists.tsx'
 import { gutter, webHref } from './shell.tsx'
 import { useWindowChrome } from './window.tsx'
 
@@ -44,66 +57,93 @@ const grid = 'grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-x-4 gap-y-
 
 export function WebMusic({ view }: { view: MusicView }) {
   const music = useMusic()
+  const songs = useSongs()
+  const lists = usePlaylists()
   const [, navigate] = useLocation()
   const [genre, setGenre] = useState(ALL_GENRES)
   const [albumSort, setAlbumSort] = useState<AlbumSort>('title')
   const [artistSort, setArtistSort] = useState<ArtistSort>('name')
+  const [songSort, setSongSort] = useState<SongSort>('title')
   const place = useWindowChrome() === 'bar' ? 'bar' : 'under'
   const albums = music.data?.albums ?? []
   const artists = music.data?.artists ?? []
+  const allSongs = songs.data ?? []
+  const playlists = lists.data ?? []
+  // the view's own query, for its loading and error states
+  const query = view === 'songs' ? songs : view === 'playlists' ? lists : music
 
   const shownAlbums = arrangeAlbums(albums, genre, albumSort)
   const shownArtists = arrangeArtists(artists, artistSort)
-  // the key each card files under in A–Z, or null when the sort isn't by name
+  const shownSongs = arrangeSongs(allSongs, genre, songSort)
+  // the key each card or row files under in A–Z, or null when the sort isn't by name
   const keys =
     view === 'albums'
       ? shownAlbums.map((a) => albumIndexKey(a, albumSort))
-      : shownArtists.map((a) => (artistSort === 'name' ? a.sortName : null))
+      : view === 'artists'
+        ? shownArtists.map((a) => (artistSort === 'name' ? a.sortName : null))
+        : view === 'songs'
+          ? shownSongs.map((s) => songIndexKey(s, songSort))
+          : []
   const byName =
-    view === 'albums' ? albumIndexKey(albums[0] ?? null, albumSort) !== null : artistSort === 'name'
-  const indexed = byName && music.status === 'success' && keys.length > 0
+    view === 'albums'
+      ? albumIndexKey(albums[0] ?? null, albumSort) !== null
+      : view === 'artists'
+        ? artistSort === 'name'
+        : view === 'songs' && ['title', 'artist', 'album'].includes(songSort)
+  const indexed = byName && query.status === 'success' && keys.length > 0
   const present = new Set(keys.map((k) => letterOf(k ?? '')))
   const first = (i: number) => {
     if (!indexed) return {}
     const l = letterOf(keys[i] ?? '')
     return i === 0 || letterOf(keys[i - 1] ?? '') !== l ? { 'data-letter': l } : {}
   }
+  const genres = (
+    <Select
+      aria-label="Genre"
+      value={genre}
+      onValueChange={setGenre}
+      options={[
+        { value: ALL_GENRES, label: 'All genres' },
+        ...(view === 'songs' ? songGenresOf(allSongs) : musicGenresOf(albums)).map((g) => ({
+          value: g,
+          label: g,
+        })),
+      ]}
+      className="w-44"
+    />
+  )
+  const count = {
+    albums: albumsCount(albums.length),
+    artists: artistsCount(artists.length),
+    songs: songsCount(allSongs.length),
+    playlists: playlistsCount(playlists.length),
+  }[view]
 
   return (
     // the whole page is the tabs' root, so each view's grid is its panel
     <Tabs
       value={view}
-      onValueChange={(v) => navigate(v === 'artists' ? '/music/artists' : '/music')}
+      onValueChange={(v) => navigate(musicViews.find((x) => x.value === v)?.path ?? '/music')}
       asChild
     >
       <main className={cn('mx-auto w-full grid max-w-[1680px] gap-6 pt-6 pb-16', gutter)}>
         <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
           <div className="grid gap-1">
             <h1 className="text-heading">Music</h1>
-            {music.status === 'loading' && <Skeleton className="my-0.5 h-3 w-28" />}
-            {music.status === 'success' && (
-              <p className="text-caption text-text-3">
-                {view === 'albums' ? albumsCount(albums.length) : artistsCount(artists.length)}
-              </p>
-            )}
+            {query.status === 'loading' && <Skeleton className="my-0.5 h-3 w-28" />}
+            {query.status === 'success' && <p className="text-caption text-text-3">{count}</p>}
           </div>
           <TabsList aria-label="View" className="mb-0.5">
-            <TabsTrigger value="albums">Albums</TabsTrigger>
-            <TabsTrigger value="artists">Artists</TabsTrigger>
+            {musicViews.map((v) => (
+              <TabsTrigger key={v.value} value={v.value}>
+                {v.label}
+              </TabsTrigger>
+            ))}
           </TabsList>
           <div className="ms-auto flex flex-wrap gap-2">
             {view === 'albums' ? (
               <>
-                <Select
-                  aria-label="Genre"
-                  value={genre}
-                  onValueChange={setGenre}
-                  options={[
-                    { value: ALL_GENRES, label: 'All genres' },
-                    ...musicGenresOf(albums).map((g) => ({ value: g, label: g })),
-                  ]}
-                  className="w-44"
-                />
+                {genres}
                 <Select
                   aria-label="Sort"
                   value={albumSort}
@@ -112,7 +152,7 @@ export function WebMusic({ view }: { view: MusicView }) {
                   className="w-44"
                 />
               </>
-            ) : (
+            ) : view === 'artists' ? (
               <Select
                 aria-label="Sort"
                 value={artistSort}
@@ -120,33 +160,57 @@ export function WebMusic({ view }: { view: MusicView }) {
                 options={artistSorts}
                 className="w-44"
               />
+            ) : view === 'songs' ? (
+              <>
+                {genres}
+                <Select
+                  aria-label="Sort"
+                  value={songSort}
+                  onValueChange={(v) => setSongSort(v as SongSort)}
+                  options={songSorts}
+                  className="w-44"
+                />
+              </>
+            ) : (
+              lists.status === 'success' && playlists.length > 0 && <NewPlaylist />
             )}
           </div>
         </div>
         <div className="flex items-start">
           <LetterIndex
-            shown={indexed || (byName && music.status === 'loading')}
+            shown={indexed || (byName && query.status === 'loading')}
             present={present}
             place={place}
           />
           <TabsContent value={view} className="min-w-0 flex-1">
-            {music.status === 'loading' ? (
-              <div aria-busy className={grid}>
-                {Array.from({ length: 14 }, (_, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
-                  <MusicCardSkeleton key={i} round={view === 'artists'} />
-                ))}
-              </div>
-            ) : music.status === 'error' ? (
+            {query.status === 'loading' ? (
+              view === 'songs' ? (
+                <div aria-busy className="grid gap-1">
+                  {Array.from({ length: 12 }, (_, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
+                    <Skeleton key={i} className="h-12" />
+                  ))}
+                </div>
+              ) : (
+                <div aria-busy className={grid}>
+                  {Array.from({ length: 14 }, (_, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
+                    <MusicCardSkeleton key={i} round={view === 'artists'} />
+                  ))}
+                </div>
+              )
+            ) : query.status === 'error' ? (
               <EmptyState
                 tone="error"
                 icon="alert"
                 title="Couldn’t load the music"
-                action={<Button onClick={music.refetch}>Try again</Button>}
+                action={<Button onClick={query.refetch}>Try again</Button>}
               >
-                {music.error.message}
+                {query.error.message}
               </EmptyState>
-            ) : albums.length === 0 ? (
+            ) : view === 'playlists' ? (
+              <WebPlaylistGrid playlists={playlists} />
+            ) : albums.length === 0 && allSongs.length === 0 ? (
               <EmptyState icon="library" title="No music yet">
                 When the server’s owner adds music, it shows up here.
               </EmptyState>
@@ -154,6 +218,12 @@ export function WebMusic({ view }: { view: MusicView }) {
               <EmptyState icon="filter" title="No albums match">
                 Try another genre.
               </EmptyState>
+            ) : view === 'songs' && shownSongs.length === 0 ? (
+              <EmptyState icon="filter" title="No songs match">
+                Try another genre.
+              </EmptyState>
+            ) : view === 'songs' ? (
+              <WebSongList songs={shownSongs} first={first} itemClassName={stuck.margin[place]} />
             ) : view === 'albums' ? (
               <ul aria-label="Albums" className={grid}>
                 {shownAlbums.map((a, i) => (
