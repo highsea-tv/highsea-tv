@@ -99,7 +99,20 @@ function RadioRow({
   )
 }
 
-export function TracksPanel({ player, onClose }: { player: Player; onClose: () => void }) {
+/** The speeds the web player offers, as YouTube's and Netflix's do. */
+export const speeds = [0.5, 0.75, 1, 1.25, 1.5, 2]
+const speedLabel = (x: number) => (x === 1 ? 'Normal' : `${x}×`)
+
+export function TracksPanel({
+  player,
+  onClose,
+  speed = false,
+}: {
+  player: Player
+  onClose: () => void
+  /** Offer the playback speed (the web and desktop player). */
+  speed?: boolean
+}) {
   const v = player.version
   const d = player.detail.data
   if (!v || !d) return null
@@ -178,6 +191,25 @@ export function TracksPanel({ player, onClose }: { player: Player; onClose: () =
           })}
         </div>
       </section>
+      {speed && (
+        <section aria-labelledby="p-speed" className="grid gap-1">
+          <h3 id="p-speed" className="font-mono text-label text-text-3 uppercase">
+            Speed
+          </h3>
+          <div role="radiogroup" aria-labelledby="p-speed">
+            {speeds.map((x) => (
+              <RadioRow
+                key={x}
+                name="speed"
+                checked={x === player.rate}
+                onChange={() => player.setRate(x)}
+              >
+                {speedLabel(x)}
+              </RadioRow>
+            ))}
+          </div>
+        </section>
+      )}
       {player.subtitle?.picture && (
         <section aria-labelledby="p-timing" className="grid gap-2">
           <h3 id="p-timing" className="font-mono text-label text-text-3 uppercase">
@@ -321,6 +353,17 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
   const player = usePlayer(id, fromStart)
   const [panel, setPanel] = useState(false)
   const [muted, setMuted] = useState(false)
+  const [volume, setVolume] = useState(1)
+  const [full, setFull] = useState(false)
+  useEffect(() => {
+    const changed = () => setFull(!!document.fullscreenElement)
+    document.addEventListener('fullscreenchange', changed)
+    return () => document.removeEventListener('fullscreenchange', changed)
+  }, [])
+  const toggleFull = () => {
+    if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
+    else root.current?.requestFullscreen?.().catch(() => {})
+  }
   const [shown, setShown] = useState(true)
   const [pip, setPip] = useState(false)
   // Firefox has no API, only its own toggle on the video, so the button is left out there
@@ -351,10 +394,8 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
     } else if (e.key === 'ArrowLeft' && !inControl) player.seekBy(-SEEK_S)
     else if (e.key === 'ArrowRight' && !inControl) player.seekBy(SEEK_S)
     else if (e.key === 'm' || e.key === 'M') setMuted((m) => !m)
-    else if (e.key === 'f' || e.key === 'F') {
-      if (document.fullscreenElement) document.exitFullscreen().catch(() => {})
-      else root.current?.requestFullscreen?.().catch(() => {})
-    } else if (e.key === 'Escape') {
+    else if (e.key === 'f' || e.key === 'F') toggleFull()
+    else if (e.key === 'Escape') {
       if (panel) setPanel(false)
       else exit()
     }
@@ -498,17 +539,37 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
             >
               <Icon name="replay" size={20} className="-scale-x-100" />
             </button>
-            <button
-              type="button"
-              aria-label={muted ? 'Unmute' : 'Mute'}
-              aria-pressed={muted}
-              onClick={() => setMuted((m) => !m)}
-              // phones and tablets set the volume with their own buttons; this leaves Picture in
-              // picture and Full screen room at 390
-              className={cn(glassButton, 'hidden medium:grid')}
-            >
-              <Icon name={muted ? 'mute' : 'sound'} size={20} />
-            </button>
+            {/* phones and tablets set the volume with their own buttons; this leaves Picture in
+                picture and Full screen room at 390. The slider opens beside Mute on hover or
+                focus, as YouTube's and Netflix's do */}
+            <div className="group/volume hidden items-center medium:flex">
+              <button
+                type="button"
+                aria-label={muted ? 'Unmute' : 'Mute'}
+                aria-pressed={muted}
+                onClick={() => setMuted((m) => !m)}
+                className={glassButton}
+              >
+                <Icon name={muted || volume === 0 ? 'mute' : 'sound'} size={20} />
+              </button>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={muted ? 0 : Math.round(volume * 100)}
+                onChange={(e) => {
+                  setVolume(Number(e.target.value) / 100)
+                  setMuted(Number(e.target.value) === 0)
+                }}
+                aria-label="Volume"
+                aria-valuetext={muted ? 'Muted' : `${Math.round(volume * 100)}%`}
+                className="h-1.5 w-0 cursor-pointer appearance-none rounded-full opacity-0 outline-none transition-[width,opacity,margin] duration-200 focus-visible:ring-focus group-hover/volume:mx-2 group-hover/volume:w-20 group-hover/volume:opacity-100 group-focus-within/volume:mx-2 group-focus-within/volume:w-20 group-focus-within/volume:opacity-100 motion-reduce:transition-none"
+                style={{
+                  background: `linear-gradient(90deg, var(--color-text) ${muted ? 0 : volume * 100}%, rgb(255 255 255 / 0.25) 0)`,
+                }}
+              />
+            </div>
             <span className="ms-2 text-mono text-text-2">
               {clock(player.position)} / {clock(player.duration)}
             </span>
@@ -534,8 +595,8 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
             )}
             <button
               type="button"
-              aria-label="Full screen"
-              onClick={() => root.current?.requestFullscreen?.().catch(() => {})}
+              aria-label={full ? 'Exit full screen' : 'Full screen'}
+              onClick={toggleFull}
               className={glassButton}
             >
               <Icon name="view" size={20} />
@@ -543,7 +604,7 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
           </div>
         </div>
       </div>
-      {panel && <TracksPanel player={player} onClose={() => setPanel(false)} />}
+      {panel && <TracksPanel player={player} speed onClose={() => setPanel(false)} />}
       <StreamWaiting player={player} size="web" />
       <SkipButton player={player} size="web" action={webStreamAction} />
       <StreamMessage player={player} size="web" action={webStreamAction} onBack={exit} />

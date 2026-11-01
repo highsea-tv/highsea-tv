@@ -69,8 +69,8 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
       <TvMessage
         title={detail.error.message}
         actions={
-          <TvButton primary initial href={tvHref('/')}>
-            Go home
+          <TvButton primary initial href={tvHref('/movies')}>
+            Movies
           </TvButton>
         }
       >

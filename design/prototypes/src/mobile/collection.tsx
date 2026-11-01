@@ -2,30 +2,17 @@
 // A collection on mobile (reference, docs/product/client-search.md#collections): the first part's
 // backdrop with Back over it, the name, years and overview, then its titles here, oldest first. A smart one
 // (docs/product/collections.md) says so and gives its rules in words.
-import { Button, cn, EmptyState, Icon, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
-import { useCollection } from '../client/data.ts'
+import { titlesHere, titlesRow, useCollection } from '../client/data.ts'
 import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
-import { gutter, mobileHref } from './shell.tsx'
+import { ShowPoster } from '../client/show-card.tsx'
+import { BackBadge, gutter, mobileHref } from './shell.tsx'
 
 export function MobileCollection() {
   const { id } = useParams<{ id: string }>()
   const found = useCollection(id, 'mobile')
-  const back = (
-    <a
-      href={mobileHref('/library/collections')}
-      onClick={(e) => {
-        if (history.length > 1) {
-          e.preventDefault()
-          history.back()
-        }
-      }}
-      aria-label="Back"
-      className="glass-badge absolute top-2 left-3 z-10 grid size-10 place-items-center rounded-full outline-none focus-visible:ring-focus"
-    >
-      <Icon name="chevron-left" size={20} />
-    </a>
-  )
+  const back = <BackBadge fallback="/library/collections" />
   if (found.status === 'loading')
     return (
       <div aria-busy className="relative grid gap-5 pb-6">
@@ -64,7 +51,7 @@ export function MobileCollection() {
         </EmptyState>
       </div>
     )
-  const { collection: c, items } = found.data
+  const { collection: c, items, shows } = found.data
   return (
     <article aria-labelledby="title" className="relative grid gap-5 pb-6">
       {back}
@@ -80,15 +67,23 @@ export function MobileCollection() {
           {c.name}
         </h1>
         <p className="text-[14px] text-text-3">
-          {c.count} {c.count === 1 ? 'movie' : 'movies'} here · {c.years}
+          {titlesHere(items.length, shows.length)} here · {c.years}
         </p>
         {c.smart?.words && <p className="text-[13px] text-text-3">{c.smart.words}</p>}
         {c.overview && <p className="text-[15px] text-text-2 leading-[1.45]">{c.overview}</p>}
       </div>
-      <ul aria-label="Movies" className={cn('grid grid-cols-3 gap-x-2 gap-y-4', gutter)}>
+      <ul
+        aria-label={titlesRow(items.length, shows.length)}
+        className={cn('grid grid-cols-3 gap-x-2 gap-y-4', gutter)}
+      >
         {items.map((m) => (
           <li key={m.id}>
             <MediaPoster item={m} href={mobileHref(`/movies/${m.id}`)} />
+          </li>
+        ))}
+        {shows.map((m) => (
+          <li key={`show-${m.id}`}>
+            <ShowPoster show={m} href={mobileHref(`/shows/${m.id}`)} />
           </li>
         ))}
       </ul>

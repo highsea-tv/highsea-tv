@@ -5,21 +5,12 @@
 import { Button, cn, EmptyState, Field, Icon, Input } from '@highsea-tv/ui-web'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
+import { normalCode, waiting } from '../client/pairing.ts'
 import { MobileScreen } from '../kit/mobile/device.tsx'
 import { gutter } from './shell.tsx'
 
 /** In the prototype, the camera finds the TV's code after this long. */
 export const SCAN_MS = 3000
-
-/** The TV waiting with its code (the TV prototype's), as the pairing route would find it. */
-const waiting = {
-  code: 'KQ7-4PM',
-  device: 'Living room TV',
-  app: 'highsea for Apple TV',
-  address: '192.168.1.42',
-}
-
-const normal = (code: string) => code.replace(/[^a-z0-9]/gi, '').toUpperCase()
 
 function Back({ to, label }: { to: string; label: string }) {
   const [, navigate] = useLocation()
@@ -66,7 +57,7 @@ export function MobileLinkScan() {
             className={cn('grid gap-4', gutter)}
             onSubmit={(e: FormEvent) => {
               e.preventDefault()
-              navigate(`/link/${normal(code)}`)
+              navigate(`/link/${normalCode(code)}`)
             }}
           >
             <Field label="Code">
@@ -79,7 +70,7 @@ export function MobileLinkScan() {
                 className="h-12 font-mono text-[20px] tracking-[0.12em]"
               />
             </Field>
-            <Button type="submit" variant="primary" disabled={normal(code).length < 6}>
+            <Button type="submit" variant="primary" disabled={normalCode(code).length < 6}>
               Continue
             </Button>
             <Button variant="ghost" icon="scan" onClick={() => setTyping(false)}>
@@ -120,7 +111,7 @@ export function MobileLinkConfirm() {
   const { code } = useParams<{ code: string }>()
   const [, navigate] = useLocation()
   const [state, setState] = useState<'asking' | 'signing' | 'done'>('asking')
-  const found = normal(code ?? '') === normal(waiting.code)
+  const found = normalCode(code ?? '') === normalCode(waiting.code)
 
   if (!found)
     return (

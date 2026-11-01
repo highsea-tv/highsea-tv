@@ -1370,9 +1370,11 @@ export type ClientCollection = {
   overview: string
   /** The first part's art. */
   art: { poster: string; backdrop: string }
-  /** How many of its titles are here. */
+  /** How many of its films are here. */
   count: number
-  /** "2010–2016", or one year. */
+  /** How many of its shows are here, when it holds any. */
+  shows?: number
+  /** "2010–2016", or one year: its films' release years and its shows' first. */
   years: string
   /** A smart collection (`sc-…`): its rules in words, and up to four posters for its mosaic. */
   smart?: { words: string | null; mosaic: string[] }

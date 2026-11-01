@@ -132,7 +132,7 @@ export function WebDetail() {
             </Button>
           }
         >
-          It may have been removed. Library lists everything you can watch.
+          It may have been removed. Search finds everything you can watch.
         </EmptyState>
       </main>
     )

@@ -99,7 +99,20 @@ export function WebShows() {
               When the server’s owner adds shows, they show up here.
             </EmptyState>
           ) : shown.length === 0 ? (
-            <EmptyState icon="filter" title="No shows match">
+            <EmptyState
+              icon="filter"
+              title="Nothing matches"
+              action={
+                <Button
+                  onClick={() => {
+                    setGenre(ALL_SHOW_GENRES)
+                    setFilter('all')
+                  }}
+                >
+                  Show everything
+                </Button>
+              }
+            >
               {filter === 'unwatched' ? 'You’ve watched every episode here. ' : ''}Try another genre
               {filter === 'unwatched' ? ', or show all shows' : ''}.
             </EmptyState>

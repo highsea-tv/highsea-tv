@@ -63,6 +63,7 @@ import type {
   Video,
 } from '../mock/types.ts'
 import { Facts, heroHeight, Round, RoundButton, scrim } from './detail.tsx'
+import { cardWidth } from './home.tsx'
 import { gutter, webHref } from './shell.tsx'
 
 export function WebShow() {
@@ -225,9 +226,16 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
       <div className="mx-auto grid w-full max-w-[1680px] grid-cols-[minmax(0,1fr)] gap-10 pt-2">
         <Episodes detail={d} season={season} onSeason={setSeason} desktop={desktop} />
         {d.related.length > 0 && (
-          <CarouselRow title="More like this">
+          // 16:9 stills, as on a film's page (the owner's answer 10, prototype-gaps.md)
+          <CarouselRow title="More like this" itemClassName={cardWidth}>
             {d.related.map((x) => (
-              <ShowPoster key={x.id} show={x} titleSize="body" href={webHref(`/shows/${x.id}`)} />
+              <ShowPoster
+                key={x.id}
+                show={x}
+                wide
+                titleSize="body"
+                href={webHref(`/shows/${x.id}`)}
+              />
             ))}
           </CarouselRow>
         )}

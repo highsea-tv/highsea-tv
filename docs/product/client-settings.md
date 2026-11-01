@@ -70,6 +70,12 @@ Under the themes, off by default (Phase 4's answer 9). Turned on, the theme this
 - **The profile's name and colour** replace the hard-coded "Ines" in the account menu's button and label, the phone's header and You, and the web's Account page. A profile that isn't the account's own says "A profile on @ines's account" under its name.
 - **The server's name** is read from the server everywhere a client or the admin names it ("Sign out of {server}", "Nothing on {server} matches", Search's hint, Get the apps, the restore dialog, Discovery's label, the theme sample), and "this server" until it's known. The remembered servers name this one by its current name.
 
+### Stage 4 of the prototypes' gaps (2026-11-01)
+
+- **Sign out asks first** in every app. On the phone's You and in Settings › Servers: "Sign out of {server}?" · "Your downloads stay on this phone. You can sign in again later." ("on this device" on the web and desktop), with **Cancel** focused and **Sign out**. Then the toast "Signed out of {server}" · "Your downloads stay on this device." and the sign-in screen.
+- **The TV's Servers** list every server the TV has signed in to, the one in use marked "· in use", each other with **Switch** or **Sign in**, and **Another server**. Its sign out asks "Sign out of {server}?" · "Every profile on this TV signs out. You can sign in again with a code." and lands on the sign-in screen, so Back doesn't return to a server signed out of.
+- **Signing a device out** from the TV's Devices asks "Sign out {device}?" · "It needs a code or password to come back."
+
 ## States
 
 - **Loading:** "Loading your rows…" in Home screen.

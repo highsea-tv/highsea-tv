@@ -14,7 +14,8 @@ import { Poster, QualityTag, Skeleton, useSound } from '@highsea-tv/ui-web'
 import { useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { meta, qualityTags } from '../client/data.ts'
-import type { ClientItem } from '../mock/types.ts'
+import { showMeta } from '../client/shows.ts'
+import type { ClientItem, ClientShow } from '../mock/types.ts'
 
 /** The posters' width; the fixed card is as tall as they are, at 16:9. */
 const poster = 10.5
@@ -59,7 +60,15 @@ const AHEAD = 9
 const BEHIND = 2
 const mod = (a: number, n: number) => ((a % n) + n) % n
 
-export function TvFilmRow({
+/** A row's title: a film, or a show where a row holds both (a collection's). */
+type RowTitle = ClientItem | ClientShow
+
+const isShow = (x: RowTitle): x is ClientShow => 'seasons' in x
+/** The line beside the title: a film's year, length and genre, or a show's seasons and years. */
+const metaOf = (x: RowTitle) => (isShow(x) ? showMeta(x) : meta(x))
+const tagsOf = (x: RowTitle) => (isShow(x) ? [] : qualityTags(x))
+
+export function TvFilmRow<T extends RowTitle = ClientItem>({
   group,
   title,
   suffix,
@@ -74,10 +83,10 @@ export function TvFilmRow({
   title: string
   suffix?: string | null
   goUp?: string
-  items: ClientItem[]
-  hrefOf: (item: ClientItem) => string
+  items: T[]
+  hrefOf: (item: T) => string
   /** A line about the film for this row, under its title: a person's role in it. */
-  noteOf?: (item: ClientItem) => string
+  noteOf?: (item: T) => string
   /** Past the last film comes the first again, either way. */
   loop?: boolean
   className?: string
@@ -138,7 +147,7 @@ export function TvFilmRow({
             ref={card}
             href={hrefOf(item)}
             data-focusable=""
-            aria-label={`${item.title}, ${noteOf ? `${noteOf(item)}, ` : ''}${meta(item)}`}
+            aria-label={`${item.title}, ${noteOf ? `${noteOf(item)}, ` : ''}${metaOf(item)}`}
             style={{ width: `${wide}cqw`, height: `${height}cqw` }}
             className="relative z-10 block overflow-hidden rounded-(--tv-radius-poster) bg-s2 outline-none transition-lift focus-visible:scale-[1.04] focus-visible:shadow-(--tv-focus-shadow)"
           >
@@ -177,7 +186,7 @@ export function TvFilmRow({
           the card takes the next or the previous */}
           <ul ref={strip} aria-hidden className="absolute inset-y-0 left-0">
             {slots.map((v) => {
-              const m = items[mod(v, n)] as ClientItem
+              const m = items[mod(v, n)] as T
               return (
                 <li
                   key={v}
@@ -205,8 +214,8 @@ export function TvFilmRow({
       >
         <p className="flex flex-wrap items-center gap-x-[1cqw] gap-y-[0.3cqw] font-semibold text-(length:--tv-text-meta)">
           {item.title}
-          <span className="font-normal text-text-2">{meta(item)}</span>
-          {qualityTags(item).map((q) => (
+          <span className="font-normal text-text-2">{metaOf(item)}</span>
+          {tagsOf(item).map((q) => (
             <QualityTag key={q} className="text-(length:--tv-text-quality)">
               {q}
             </QualityTag>

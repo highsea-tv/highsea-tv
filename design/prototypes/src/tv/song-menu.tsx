@@ -10,20 +10,39 @@ import { type SongMenuTarget, useSongMenu } from '../client/song-menu.ts'
 import { useBack } from './back.ts'
 import { TvButton, useInitialFocus } from './kit.tsx'
 
-export type TvMenuItem = { icon: IconName; label: string; run: () => void }
+export type TvMenuItem = {
+  icon?: IconName
+  label: string
+  run: () => void
+  /** The choice in force (a library's genre): focused first, and marked. */
+  current?: boolean
+}
 
-/** A menu over the page: the name, a line under it, and its choices, the first focused. */
+/** The menu's width, and its choices in columns for a long list (a library's genres). */
+const widths = { 1: 'w-[30cqw]', 3: 'w-[54cqw]' } as const
+const columns = { 1: '', 3: 'grid-cols-3' } as const
+
+/**
+ * A menu over the page: the name, a line under it, and its choices, the current one focused, or
+ * the first.
+ */
 export function TvMenu({
   name,
   line,
   items,
+  cols = 1,
   onClose,
 }: {
   name: string
   line?: string
   items: TvMenuItem[]
+  cols?: keyof typeof widths
   onClose: () => void
 }) {
+  const first = Math.max(
+    0,
+    items.findIndex((x) => x.current),
+  )
   // focus goes back where OK was held, when that's still there
   const from = useRef(document.activeElement as HTMLElement | null)
   const close = () => {
@@ -42,17 +61,18 @@ export function TvMenu({
       aria-label={name}
       className="absolute inset-0 z-20 grid place-items-center bg-[rgb(0_0_0/0.72)]"
     >
-      <div className="grid w-[30cqw] gap-[1.2cqw]">
+      <div className={`grid gap-[1.2cqw] ${widths[cols]}`}>
         <div className="grid gap-[0.3cqw]">
           <h2 className="font-semibold text-(length:--tv-text-row-title)">{name}</h2>
           {line && <p className="text-(length:--tv-text-meta) text-text-2">{line}</p>}
         </div>
-        <div data-group="tv-menu" className="grid gap-[0.6cqw]">
+        <div data-group="tv-menu" className={`grid gap-[0.6cqw] ${columns[cols]}`}>
           {items.map((x, i) => (
             <TvButton
               key={x.label}
-              initial={i === 0}
-              icon={x.icon}
+              initial={i === first}
+              icon={x.icon ?? (x.current ? 'check' : undefined)}
+              aria-current={x.current || undefined}
               onClick={() => {
                 close()
                 x.run()

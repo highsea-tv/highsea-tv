@@ -445,7 +445,7 @@ describe('C6–C8 clients', () => {
     expect(page().getByRole('heading', { level: 1, name: 'Caminandes Collection' })).toBeTruthy()
     // the row's fixed card holds the first film; every film is a poster on the strip behind it,
     // the card's own hidden under it
-    const row = within(page().getByRole('region', { name: 'Movies' }))
+    const row = within(page().getByRole('region', { name: 'Films' }))
     const [card, ...more] = row.getAllByRole('link')
     expect(more).toHaveLength(0)
     expect(card?.getAttribute('aria-label')).toStartWith('Caminandes')

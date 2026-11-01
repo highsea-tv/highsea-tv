@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Pull to refresh on Home (client-home.md#interactions, checkpoint 4.0b): from the top of the
-// page, pull down past the line and let go, and Home asks the server again. Touch on a phone; a
-// mouse drag does the same in the prototype, so it can be reviewed on a desktop.
+// Pull to refresh (client-home.md#interactions, checkpoint 4.0b): from the top of the page, pull
+// down past the line and let go, and the page asks the server again. Home had it first; the
+// library's views, a show's page and Offline have it too (prototype-gaps.md › 4.2). Touch on a
+// phone; a mouse drag does the same in the prototype, so it can be reviewed on a desktop.
 import { cn, Icon } from '@highsea-tv/ui-web'
 import { type ReactNode, useRef, useState } from 'react'
 
@@ -10,7 +11,7 @@ const LINE = 72
 /** Pulling moves the page at this fraction of the finger, as iOS and Android do. */
 const DRAG = 0.5
 
-/** The nearest ancestor that scrolls: Home's screen. */
+/** The nearest ancestor that scrolls: the phone's screen. */
 const scroller = (el: HTMLElement | null) => {
   for (let e = el?.parentElement; e; e = e.parentElement)
     if (e.scrollHeight > e.clientHeight && getComputedStyle(e).overflowY !== 'visible') return e

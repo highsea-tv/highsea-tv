@@ -2,7 +2,17 @@
 // The mobile tabs after Library: Search (C6, reference), Offline (C8, reference), and You (C8),
 // which leads to the settings (C7). docs/product/client-search.md, client-settings.md.
 
-import { cn, EmptyState, Field, Icon, Input, Poster, Switch } from '@highsea-tv/ui-web'
+import {
+  ConfirmDialog,
+  cn,
+  EmptyState,
+  Field,
+  Icon,
+  Input,
+  Poster,
+  Switch,
+  toast,
+} from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import {
@@ -11,12 +21,14 @@ import {
   searchKinds,
   searchPlaceholder,
   searchSuggestions,
+  useConnection,
   usePhoneDownloadsLater,
   useSearch,
   useSearchQuery,
   useServer,
   useServerName,
 } from '../client/data.ts'
+import { useDownloads } from '../client/downloads.ts'
 import { MediaPoster } from '../client/media-card.tsx'
 import { songTime } from '../client/music.ts'
 import { useMusicPlayer } from '../client/music-player.ts'
@@ -26,12 +38,16 @@ import { type SettingsSectionId, settingsSections } from '../client/settings.ts'
 import { SettingsSectionBody } from '../client/settings-sections.tsx'
 import { ShowPoster } from '../client/show-card.tsx'
 import { ProfileAvatar } from '../client/who.tsx'
+import { hitSlop } from '../kit/mobile/device.tsx'
 import type { SearchSection, SearchSong } from '../mock/types.ts'
+import { PullToRefresh } from './pull.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
 import { MobileWhoSheet } from './who-sheet.tsx'
 
-const chip =
-  'min-h-9 cursor-pointer rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus active:scale-97'
+const chip = cn(
+  'relative min-h-9 cursor-pointer rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus active:scale-97',
+  hitSlop,
+)
 
 // ---------------------------------------------------------------- search
 
@@ -258,6 +274,14 @@ function Songs({ songs }: { songs: SearchSong[] }) {
 
 export function MobileOffline() {
   const [wifi, setWifi] = useState(true)
+  const downloads = useDownloads('mobile')
+  const connection = useConnection()
+  // pulling asks the server again, which renews what had expired (client-settings.md#offline);
+  // while it can't be reached, nothing changes and what's kept still plays
+  const refresh = () => {
+    if (connection === 'offline') return
+    for (const x of downloads.items) if (x.state === 'expired') downloads.renew(x.id)
+  }
   // the app until 4.6 builds downloads: the tab stays, and says what's coming (4.5a)
   const later = usePhoneDownloadsLater()
   if (later)
@@ -272,20 +296,22 @@ export function MobileOffline() {
       </div>
     )
   return (
-    <div className="grid gap-5 pt-1">
-      <Header title="Offline" />
-      <div className={gutter}>
-        <OfflineList
-          app="mobile"
-          href={(x) => (x.kind === 'song' ? undefined : mobileHref(`/play/${x.id}`))}
-          settings={
-            <Field inline label="Download on Wi-Fi only">
-              <Switch checked={wifi} onCheckedChange={setWifi} />
-            </Field>
-          }
-        />
+    <PullToRefresh onRefresh={refresh}>
+      <div className="grid gap-5 pt-1">
+        <Header title="Offline" />
+        <div className={gutter}>
+          <OfflineList
+            app="mobile"
+            href={(x) => (x.kind === 'song' ? undefined : mobileHref(`/play/${x.id}`))}
+            settings={
+              <Field inline label="Download on Wi-Fi only">
+                <Switch checked={wifi} onCheckedChange={setWifi} />
+              </Field>
+            }
+          />
+        </div>
       </div>
-    </div>
+    </PullToRefresh>
   )
 }
 
@@ -349,14 +375,26 @@ export function MobileYou({ who = false }: { who?: boolean }) {
           </a>
         </li>
         <li>
-          <button
-            type="button"
-            className={cn(row, 'w-full text-badge-danger')}
-            onClick={() => navigate('/connect')}
-          >
-            <Icon name="sign-out" size={20} />
-            Sign out of {name}
-          </button>
+          {/* asks first, as Forget this server does on the sign-in screen (connect-flow.tsx) */}
+          <ConfirmDialog
+            trigger={
+              <button type="button" className={cn(row, 'w-full cursor-pointer text-badge-danger')}>
+                <Icon name="sign-out" size={20} />
+                Sign out of {name}
+              </button>
+            }
+            title={`Sign out of ${name}?`}
+            description="Your downloads stay on this phone. You can sign in again later."
+            confirmLabel="Sign out"
+            destructive
+            onConfirm={() => {
+              toast({
+                title: `Signed out of ${name}`,
+                description: 'Your downloads stay on this device.',
+              })
+              navigate('/connect')
+            }}
+          />
         </li>
       </ul>
       <MobileWhoSheet

@@ -29,13 +29,13 @@ const families: { value: Family; label: string; none: string }[] = [
   {
     value: 'audio',
     label: 'Audio',
-    none: 'Audio collections show up here once highsea plays music, in a later version.',
+    none: 'No audio collections yet. When the server’s owner makes them, they show up here.',
   },
 ]
 
 /**
- * A collection's family. The server will send it with each collection; until shows and music
- * come, every collection holds movies, so every one is video.
+ * A collection's family. The server will send it with each collection; until the owner can make
+ * collections of music, every collection holds films and shows, so every one is video.
  */
 const familyOf = (_c: ClientCollection): Family => 'video'
 

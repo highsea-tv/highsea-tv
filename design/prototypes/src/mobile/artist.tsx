@@ -10,26 +10,7 @@ import { albumMeta, albumsCount, discographyTitle, songsCount } from '../client/
 import { useMusicPlayer, usePlayingFrom } from '../client/music-player.ts'
 import { MobileRow, MobileRowSkeleton } from './home.tsx'
 import { Bio } from './person.tsx'
-import { gutter, mobileHref } from './shell.tsx'
-
-/** Back, over the page's header: to where it was opened from, or `fallback` when it was opened first. */
-export function BackBadge({ fallback }: { fallback: string }) {
-  return (
-    <a
-      href={mobileHref(fallback)}
-      onClick={(e) => {
-        if (history.length > 1) {
-          e.preventDefault()
-          history.back()
-        }
-      }}
-      aria-label="Back"
-      className="glass-badge absolute top-2 left-3 z-10 grid size-10 place-items-center rounded-full outline-none focus-visible:ring-focus"
-    >
-      <Icon name="chevron-left" size={20} />
-    </a>
-  )
-}
+import { BackBadge, gutter, mobileHref } from './shell.tsx'
 
 export function MobileArtist() {
   const { id } = useParams<{ id: string }>()

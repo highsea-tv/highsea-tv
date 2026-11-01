@@ -19,10 +19,9 @@ import { useLocation, useParams } from 'wouter'
 import { useMusicPlayer, usePlayingFrom } from '../client/music-player.ts'
 import { PlaylistMosaic, PlaylistNameForm } from '../client/playlist-picker.tsx'
 import { playlistSummary, usePlaylist, usePlaylistEdits } from '../client/playlists.ts'
-import { BackBadge } from './artist.tsx'
 import { MobileSongRow } from './music-lists.tsx'
 import { sheetAction } from './now-playing.tsx'
-import { gutter, mobileHref } from './shell.tsx'
+import { BackBadge, gutter, mobileHref } from './shell.tsx'
 import { MoreButton } from './song-menu.tsx'
 
 export function MobilePlaylist() {

@@ -8,6 +8,7 @@ import { createTheme, SOUND_EVENTS, themeCss } from '@highsea-tv/tokens'
 import {
   Badge,
   Button,
+  ConfirmDialog,
   cn,
   Field,
   Icon,
@@ -366,20 +367,29 @@ function ServersSection({ platform }: { platform: ClientPlatform }) {
             Sign in a TV
           </Button>
         )}
-        <Button
-          variant="ghost"
-          icon="sign-out"
-          className={wraps}
-          onClick={() => {
+        {/* asks first, as You › Sign out does on the phone (more.tsx) */}
+        <ConfirmDialog
+          trigger={
+            <Button variant="ghost" icon="sign-out" className={wraps}>
+              Sign out of {name}
+            </Button>
+          }
+          title={`Sign out of ${name}?`}
+          description={
+            platform === 'mobile'
+              ? 'Your downloads stay on this phone. You can sign in again later.'
+              : 'Your downloads stay on this device. You can sign in again later.'
+          }
+          confirmLabel="Sign out"
+          destructive
+          onConfirm={() => {
             toast({
               title: `Signed out of ${name}`,
               description: 'Your downloads stay on this device.',
             })
             navigate('/connect')
           }}
-        >
-          Sign out of {name}
-        </Button>
+        />
       </div>
       {platform === 'web' && (
         <p className="text-caption text-text-3">

@@ -11,7 +11,8 @@
 // episodes at the one Play plays. Then More like this, Cast and crew, and About and Information.
 import { cn, Icon, Rating, Skeleton } from '@highsea-tv/ui-web'
 import { useRef, useState } from 'react'
-import { useParams } from 'wouter'
+import { useLocation, useParams } from 'wouter'
+import { useLongPress } from '../client/continue-menu.ts'
 import { useMarkEpisodes, useShow } from '../client/data.ts'
 import { names, role, showPeopleOf } from '../client/detail-facts.ts'
 import { UnwatchedCount } from '../client/show-card.tsx'
@@ -49,6 +50,7 @@ import {
   useInitialFocus,
   useRowNavigation,
 } from './kit.tsx'
+import { TvMenu } from './song-menu.tsx'
 import { TvTracksPanel } from './tracks.tsx'
 
 const choice =
@@ -122,6 +124,9 @@ function ShowPage({
   const trailerButton = useRef<HTMLElement | null>(null)
   const seasonWatched = !!shown && shown.episodes.every((e) => e.watched)
   const people = showPeopleOf(d)
+  // the episode OK was held on, whose menu is open
+  const [held, setHeld] = useState<ClientEpisode | null>(null)
+  const [, navigate] = useLocation()
   // Up and Down go row by row: the actions, the seasons, the episodes, More like this, the people, About
   const rows = useRef<HTMLDivElement>(null)
   useRowNavigation(rows, s.id)
@@ -305,7 +310,11 @@ function ShowPage({
               >
                 {shown.episodes.map((e) => (
                   <li key={e.id} className="w-[24cqw] shrink-0">
-                    <Episode episode={e} entry={e.id === next?.episode.id} />
+                    <Episode
+                      episode={e}
+                      entry={e.id === next?.episode.id}
+                      onMenu={() => setHeld(e)}
+                    />
                   </li>
                 ))}
               </TvRow>
@@ -364,6 +373,31 @@ function ShowPage({
           </div>
         </div>
       </div>
+      {held && (
+        // OK held on an episode: mark it watched, or unwatched once it is, as a film's page has it
+        // (client-detail.md › Mark as watched); From the start when it's partway
+        <TvMenu
+          name={`${episodeCode(held)} · ${held.title}`}
+          line={s.title}
+          items={[
+            {
+              icon: 'check',
+              label: held.watched ? 'Mark as unwatched' : 'Mark as watched',
+              run: () => void mark.episode.run(held.id, !held.watched),
+            },
+            ...(held.progress !== null
+              ? [
+                  {
+                    icon: 'replay' as const,
+                    label: 'From the start',
+                    run: () => navigate(`/play/${held.id}/start`),
+                  },
+                ]
+              : []),
+          ]}
+          onClose={() => setHeld(null)}
+        />
+      )}
       {trailer && (
         <TvTrailer
           video={trailer}
@@ -395,14 +429,25 @@ function ShowPage({
  * An episode: its still lifts on focus, with the progress along its foot and a check once it's
  * watched, and its words under it, as the Apple TV app lists a season's episodes.
  */
-function Episode({ episode: e, entry }: { episode: ClientEpisode; entry: boolean }) {
+function Episode({
+  episode: e,
+  entry,
+  onMenu,
+}: {
+  episode: ClientEpisode
+  entry: boolean
+  /** OK held: the episode's menu, to mark it watched. */
+  onMenu: () => void
+}) {
+  const press = useLongPress(onMenu)
   return (
     <a
       href={tvHref(`/play/${e.id}`)}
       data-focusable=""
       data-episode={e.id}
       {...(entry ? { 'data-entry': '' } : {})}
-      aria-label={`Play ${episodePlace(e)}, ${e.title}, ${episodeTime(e)}${e.watched ? ', watched' : ''}`}
+      {...press}
+      aria-label={`Play ${episodePlace(e)}, ${e.title}, ${episodeTime(e)}${e.watched ? ', watched' : ''}. Hold OK for more.`}
       className="group/link grid gap-[0.3cqw] outline-none"
     >
       <span className="relative isolate mb-[0.7cqw] block aspect-still overflow-hidden rounded-(--tv-radius-poster) bg-s1 transition-lift group-focus-visible/link:scale-(--tv-scale-poster) group-focus-visible/link:shadow-(--tv-focus-shadow)">

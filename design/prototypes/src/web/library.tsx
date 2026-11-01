@@ -202,7 +202,20 @@ export function WebLibrary() {
               When the server’s owner adds movies, they show up here.
             </EmptyState>
           ) : shown.length === 0 ? (
-            <EmptyState icon="filter" title="No movies match">
+            <EmptyState
+              icon="filter"
+              title="Nothing matches"
+              action={
+                <Button
+                  onClick={() => {
+                    setGenre(ALL)
+                    setShow('all')
+                  }}
+                >
+                  Show everything
+                </Button>
+              }
+            >
               {show === 'unwatched' ? 'You’ve watched everything here. ' : ''}Try another genre
               {show === 'unwatched' ? ', or show all movies' : ''}.
             </EmptyState>

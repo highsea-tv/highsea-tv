@@ -1,7 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C2 Home, web/desktop (docs/product/client-home.md), brought over from the TV (the owner,
 // 2026-10-30): the featured title as one large card with a bloom in its colour behind the bar and
-// the card, then Continue watching, and every other row with its first slot fixed (film-row.tsx).
+// the card, Play or Resume and More info on it, and the featured section's other titles paged
+// with the arrows and dots at its bottom right (the owner's answer 9, prototype-gaps.md); then
+// Continue watching, a spotlight's wider cards with their synopsis, and every other row with its
+// first slot fixed (film-row.tsx).
 import {
   Button,
   CarouselRow,
@@ -46,7 +49,7 @@ function Meta({ item }: { item: ClientItem }) {
 }
 
 /** 16:9 cards on Home: Continue watching's width, so every row lines up. */
-const cardWidth = 'w-[clamp(15rem,24vw,21rem)]'
+export const cardWidth = 'w-[clamp(15rem,24vw,21rem)]'
 
 /**
  * Posters, with Play over the art on hover and focus; `wide` makes them 16:9 stills, as on Home
@@ -173,6 +176,7 @@ function Row({ section: s }: { section: HomeSection }) {
     )
   if (s.layout === 'continue' || s.layout === 'episodes')
     return <StillRow section={s} resume={s.layout === 'continue'} />
+  if (s.layout === 'spotlight') return <SpotlightRow section={s} />
   return (
     <WebFilmRow
       title={s.title}
@@ -181,6 +185,37 @@ function Row({ section: s }: { section: HomeSection }) {
       hrefOf={(m) => webHref(`/movies/${m.id}`)}
       loop
     />
+  )
+}
+
+/**
+ * A spotlight, for a curated theme: wider cards than a row's, each with its still, title, meta and
+ * two lines of synopsis (client-home.md › Web and desktop).
+ */
+function SpotlightRow({ section }: { section: FilmSection }) {
+  return (
+    <CarouselRow
+      title={section.title}
+      suffix={section.suffix}
+      itemClassName="w-[clamp(17rem,30vw,27rem)]"
+    >
+      {section.items.map((m) => (
+        <a
+          key={m.id}
+          href={webHref(`/movies/${m.id}`)}
+          className="group/spot grid min-w-0 content-start gap-3 rounded-poster outline-none"
+        >
+          <span className="block aspect-still overflow-hidden rounded-poster bg-s2 transition-lift group-hover/spot:scale-(--scale-poster) group-focus-visible/spot:scale-(--scale-poster) group-focus-visible/spot:ring-focus">
+            <img src={m.art.still} alt="" className="size-full object-cover" />
+          </span>
+          <span className="grid gap-1">
+            <span className="truncate font-semibold text-body">{m.title}</span>
+            <span className="truncate text-caption text-text-3">{meta(m)}</span>
+            <span className="line-clamp-2 text-body text-text-2">{m.synopsis}</span>
+          </span>
+        </a>
+      ))}
+    </CarouselRow>
   )
 }
 
@@ -213,6 +248,10 @@ function HomeSkeleton() {
               <Skeleton className="h-[clamp(3rem,6vw,5.5rem)] w-[min(22rem,70%)] rounded-md" />
               <Skeleton className="h-4 w-56" />
               <SkeletonText lines={2} className="max-w-[30rem]" />
+              <div className="flex gap-2 pt-1">
+                <Skeleton className="h-10 w-24 rounded-sm" />
+                <Skeleton className="h-10 w-32 rounded-sm" />
+              </div>
             </div>
           </div>
         </div>
@@ -273,19 +312,49 @@ function HomeStates({ children }: { children: (sections: HomeSection[]) => React
 
 /**
  * The featured title as one large card inside the page's gutters, as on the TV (the owner,
- * 2026-10-30): its backdrop, with the title's logo, the details and the tagline low on the left.
- * The card opens the movie, where Play is.
+ * 2026-10-30): its backdrop, with the title's logo, the details, the tagline, **Play** or
+ * **Resume** and **More info** low on the left. The card opens the movie. With more than one title
+ * in the section, the arrows and a dot per title at the bottom right page through them; it never
+ * moves by itself (client-home.md).
  */
-function FeaturedCard({ item }: { item: ClientItem }) {
+function FeaturedCard({
+  items,
+  at,
+  onAt,
+}: {
+  items: ClientItem[]
+  at: number
+  onAt: (i: number) => void
+}) {
+  const [, navigate] = useLocation()
+  const item = items[at]
+  if (!item) return null
+  const resuming = item.progress !== null
+  const step = (by: number) => onAt((at + by + items.length) % items.length)
   return (
-    <a
-      href={webHref(`/movies/${item.id}`)}
-      aria-label={`${item.title}, ${meta(item)}`}
-      className="relative block h-[clamp(18rem,min(62svh,42vw),44rem)] overflow-hidden rounded-[1.25rem] bg-s2 outline-none transition-lift hover:scale-[1.01] focus-visible:ring-focus"
+    <section
+      aria-roledescription="carousel"
+      aria-label="Featured"
+      className="relative h-[clamp(18rem,min(62svh,42vw),44rem)] overflow-hidden rounded-[1.25rem] bg-s2"
     >
-      <img src={item.art.backdrop} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      <img
+        key={item.id}
+        src={item.art.backdrop}
+        alt=""
+        className="absolute inset-0 h-full w-full animate-fade-in object-cover"
+      />
       <div className="absolute inset-0 bg-[linear-gradient(90deg,rgb(0_0_0/0.7),transparent_55%),linear-gradient(0deg,rgb(0_0_0/0.6),transparent_45%)]" />
-      <div className="absolute inset-x-5 bottom-5 grid max-w-[38rem] gap-3 medium:inset-x-10 medium:bottom-9">
+      {/* a click anywhere on the card opens the movie, as More info does for the keyboard and
+          screen readers; the buttons sit above it */}
+      <div
+        aria-hidden
+        onClick={() => navigate(`/movies/${item.id}`)}
+        className="absolute inset-0 cursor-pointer"
+      />
+      <div
+        aria-live="polite"
+        className="pointer-events-none absolute inset-x-5 bottom-5 grid max-w-[38rem] gap-3 medium:inset-x-10 medium:bottom-9"
+      >
         {/* the title's logo in place of its name, as the streaming apps set it; the name when TMDB
         has no logo */}
         <h2 className="text-balance text-display">
@@ -303,8 +372,50 @@ function FeaturedCard({ item }: { item: ClientItem }) {
           <Meta item={item} />
         </p>
         <p className="line-clamp-2 text-body text-text-2">{item.tagline ?? item.synopsis}</p>
+        <div className="pointer-events-auto flex flex-wrap gap-2 pt-1">
+          <Button variant="primary" icon="play" asChild>
+            <a href={webHref(`/play/${item.id}`)}>{resuming ? 'Resume' : 'Play'}</a>
+          </Button>
+          <Button variant="secondary" icon="info" asChild>
+            <a href={webHref(`/movies/${item.id}`)}>More info</a>
+          </Button>
+        </div>
       </div>
-    </a>
+      {items.length > 1 && (
+        <div className="absolute end-5 bottom-5 hidden items-center gap-1 medium:end-10 medium:bottom-9 medium:flex">
+          <button
+            type="button"
+            aria-label="Previous featured title"
+            onClick={() => step(-1)}
+            className="glass-badge grid size-9 cursor-pointer place-items-center rounded-full text-text outline-none focus-visible:ring-focus"
+          >
+            <Icon name="chevron-left" size={18} />
+          </button>
+          <div className="flex items-center">
+            {items.map((x, i) => (
+              <button
+                key={x.id}
+                type="button"
+                aria-label={`Show ${x.title}`}
+                aria-current={i === at ? 'true' : undefined}
+                onClick={() => onAt(i)}
+                className="group/dot grid size-6 cursor-pointer place-items-center rounded-full outline-none focus-visible:ring-focus"
+              >
+                <span className="block size-2 rounded-full bg-text/40 transition-[width,background-color] duration-200 group-hover/dot:bg-text/70 group-aria-[current=true]/dot:w-5 group-aria-[current=true]/dot:bg-text motion-reduce:transition-none" />
+              </button>
+            ))}
+          </div>
+          <button
+            type="button"
+            aria-label="Next featured title"
+            onClick={() => step(1)}
+            className="glass-badge grid size-9 cursor-pointer place-items-center rounded-full text-text outline-none focus-visible:ring-focus"
+          >
+            <Icon name="chevron-right" size={18} />
+          </button>
+        </div>
+      )}
+    </section>
   )
 }
 
@@ -344,9 +455,9 @@ function useMostlyInView() {
 
 function Home({ sections }: { sections: HomeSection[] }) {
   const hero = sections.find((s): s is FilmSection => isFilmSection(s) && s.layout === 'hero')
-  // the featured section's first title; the others wait until the card is designed again, as on
-  // the TV (the owner, 2026-10-30)
-  const item = hero?.items[0]
+  // the featured title the pager is on
+  const [at, setAt] = useState(0)
+  const item = hero?.items[at] ?? hero?.items[0]
   const { ref, inView } = useMostlyInView()
   return (
     // not positioned: the bloom is placed from the page's top, behind the bar;
@@ -360,7 +471,7 @@ function Home({ sections }: { sections: HomeSection[] }) {
             data-section={hero.id}
             className={cn('mx-auto w-full max-w-[1680px]', gutter)}
           >
-            <FeaturedCard item={item} />
+            <FeaturedCard items={hero.items} at={hero.items.indexOf(item)} onAt={setAt} />
           </div>
         )}
         <Rows sections={sections} />

@@ -11,28 +11,15 @@ import { usePerson } from '../client/data.ts'
 import { departmentTitle, hereOf, lifeOf, roleNames } from '../client/detail-facts.ts'
 import { ShowPoster } from '../client/show-card.tsx'
 import { showYears } from '../client/shows.ts'
+import { hitSlop } from '../kit/mobile/device.tsx'
 import { LONG_BIO } from '../web/person.tsx'
 import { MobileRow, MobileRowSkeleton } from './home.tsx'
-import { gutter, mobileHref } from './shell.tsx'
+import { BackBadge, gutter, mobileHref } from './shell.tsx'
 
 export function MobilePerson() {
   const { id } = useParams<{ id: string }>()
   const found = usePerson(id)
-  const back = (
-    <a
-      href={mobileHref('/search')}
-      onClick={(e) => {
-        if (history.length > 1) {
-          e.preventDefault()
-          history.back()
-        }
-      }}
-      aria-label="Back"
-      className="glass-badge absolute top-2 left-3 z-10 grid size-10 place-items-center rounded-full outline-none focus-visible:ring-focus"
-    >
-      <Icon name="chevron-left" size={20} />
-    </a>
-  )
+  const back = <BackBadge fallback="/search" />
   if (found.status === 'loading')
     return (
       <div aria-busy className="relative grid gap-7 pb-6">
@@ -177,7 +164,7 @@ export function Bio({ text }: { text: string }) {
           aria-expanded={open}
           aria-controls="bio"
           onClick={() => setOpen(!open)}
-          className="-ms-2"
+          className={cn('-ms-2 relative', hitSlop)}
         >
           {open ? 'Less' : 'More'}
         </Button>

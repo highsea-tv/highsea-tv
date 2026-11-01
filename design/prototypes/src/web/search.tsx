@@ -2,8 +2,13 @@
 // C6 Search on the web and desktop (reference, docs/product/client-search.md): instant results
 // as you type, in a section per kind (movies, shows, episodes, people, collections, artists,
 // albums and songs), the best-matching kind first. An episode opens its show at it; a song plays.
+// The text is kept in the address as it settles (prototype-gaps.md › 4.1), so a search can be
+// linked and Back returns to it: the web client's `/web/search?q=…`, and `/web/search/{text}` in the
+// prototype, whose hash can't carry a query.
 
 import { cn, Icon, Input, Poster } from '@highsea-tv/ui-web'
+import { useEffect } from 'react'
+import { useLocation, useParams } from 'wouter'
 import {
   personCredits,
   searchedFor,
@@ -23,8 +28,18 @@ import { ArtistCard } from './music.tsx'
 import { gutter, webHref } from './shell.tsx'
 
 export function WebSearch() {
-  const { q, setQ } = useSearchQuery()
+  const { q: linked } = useParams<{ q?: string }>()
+  const { q, setQ } = useSearchQuery(linked === undefined ? undefined : decodeURIComponent(linked))
   const { results, settled } = useSearch(q)
+  const [, navigate] = useLocation()
+  useEffect(() => {
+    const text = settled.trim()
+    // replacing, so typing isn't a step for Back; the entry keeps what Search remembers in it
+    navigate(text ? `/search/${encodeURIComponent(text)}` : '/search', {
+      replace: true,
+      state: history.state,
+    })
+  }, [settled, navigate])
   const server = useServerName()
   const r = results.data
   return (

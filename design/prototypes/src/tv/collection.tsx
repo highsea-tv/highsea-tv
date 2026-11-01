@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A collection on the TV (reference, docs/product/client-search.md#collections): the ambient
 // backdrop, the name, years and overview, then its titles here as a row, oldest first; a smart one says so and gives its rules in words. Focus
-// starts on the first title; Back goes back to wherever it was opened from.
+// starts on the first title; Back goes back to wherever it was opened from. A collection holds
+// films and shows in any mix, so the row is named by what's in it: Films, Shows, or Films and
+// shows, the films first.
 import { Skeleton } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
-import { useCollection } from '../client/data.ts'
+import { titlesHere, titlesRow, useCollection } from '../client/data.ts'
+import type { ClientItem, ClientShow } from '../mock/types.ts'
 import { TvFilmRow, TvFilmRowSkeleton } from './film-row.tsx'
 import { TvButton, TvHead, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
 
@@ -33,15 +36,17 @@ export function TvCollection() {
       <TvMessage
         title={found.error.message}
         actions={
-          <TvButton primary initial href={tvHref('/search')}>
-            Search
+          <TvButton primary initial href={tvHref('/collections')}>
+            Collections
           </TvButton>
         }
       >
         It may have been removed.
       </TvMessage>
     )
-  const { collection: c, items } = found.data
+  const { collection: c, items, shows } = found.data
+  const titles: (ClientItem | ClientShow)[] = [...items, ...shows]
+  const row = titlesRow(items.length, shows.length)
   return (
     <>
       <img
@@ -62,7 +67,7 @@ export function TvCollection() {
             {c.name}
           </h1>
           <p className="text-(length:--tv-text-meta) text-text-2">
-            {c.count} {c.count === 1 ? 'movie' : 'movies'} here · {c.years}
+            {titlesHere(items.length, shows.length)} here · {c.years}
           </p>
           {c.smart?.words && (
             <p className="text-(length:--tv-text-pill) text-text-3">{c.smart.words}</p>
@@ -75,10 +80,10 @@ export function TvCollection() {
         </section>
         <TvFilmRow
           group="parts"
-          title="Movies"
+          title={row}
           goUp="nav"
-          items={items}
-          hrefOf={(m) => tvHref(`/movies/${m.id}`)}
+          items={titles}
+          hrefOf={(m) => tvHref('seasons' in m ? `/shows/${m.id}` : `/movies/${m.id}`)}
         />
       </main>
     </>

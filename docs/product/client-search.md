@@ -25,6 +25,8 @@ Results come in a **section per kind**, the best-matching kind first: **Movies**
 
 A collection opens a page of its own: "Collection", its name, "3 movies here · 2013–2016" and its overview over the first part's backdrop (blurred on the TV), then its titles on this server, oldest first (a grid on web and mobile, a row on the TV). Only the parts on this server count; a collection with none here isn't shown.
 
+A collection holds films and shows in any mix (prototype-gaps stage 4, 2026-11-01). Its line counts both, leaving out a kind it has none of ("4 movies and 1 show here · 2006–2019"), as do the captions wherever a collection is listed, and its row is named by what's in it: **Films**, **Shows**, or **Films and shows**, the films first. A show opens its own page. On the TV, Collections' audio view says "No audio collections yet. When the server’s owner makes them, they show up here."
+
 ## States
 
 - **Empty query:** the quick picks.
@@ -55,7 +57,7 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `library
 - **Clients are for watching.** Search behaves the same for everyone, staff included, and never offers an administrative action such as adding a title.
 - **Ranking:** a kind with a name that starts with the query (at a word) comes first, then one with a name containing it, then the rest; ties keep the order above. Empty kinds are left out.
 - **A collection's page** reads `metadata.collection({ params: { id } })` → `GET /api/v1/collections/{id}`, the media pages' route ([media-pages.md › Data](media-pages.md#data)): the collection and all its parts, oldest first, each with `inLibrary`. The page shows the parts here.
-- The query lives in the page's history entry (the prototype keeps it in `history.state`), not in storage.
+- The query lives in the page's history entry (the prototype keeps it in `history.state`), not in storage. On the web and desktop it's also in the address as it settles (prototype-gaps stage 4, 2026-11-01): `/web/search?q=…`, so a search can be linked and opened again; the prototype's hash can't carry a query, so there it's `#/web/search/{query}`. Typing replaces the entry rather than adding one, so Back still leaves Search.
 - Events: `movies.updated`, `shows.updated`, `music.updated`.
 
 ## Decisions

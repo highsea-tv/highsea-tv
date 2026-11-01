@@ -119,10 +119,20 @@ describe('C2 home', () => {
     const { mock, user } = await open('/web')
     await acknowledge(user)
     expect(mock.servers.populated.state.seen['u-ines']).toContain('an-new-address')
-    const [featured] = page().getAllByRole('link', { name: /^Sintel, / })
-    if (!featured) throw new Error('no featured card')
-    expect(featured.getAttribute('href')).toBe('#/web/movies/1')
+    const featured = page().getByRole('region', { name: 'Featured' })
     expect(within(featured).getByRole('heading', { level: 2, name: 'Sintel' })).toBeTruthy()
+    expect(within(featured).getByRole('link', { name: 'Play' }).getAttribute('href')).toBe(
+      '#/web/play/1',
+    )
+    expect(within(featured).getByRole('link', { name: 'More info' }).getAttribute('href')).toBe(
+      '#/web/movies/1',
+    )
+    // the pager moves to the section's next title, and the dots say which
+    await user.click(within(featured).getByRole('button', { name: 'Next featured title' }))
+    expect(within(featured).getByRole('heading', { level: 2, name: 'Spring' })).toBeTruthy()
+    expect(
+      within(featured).getByRole('button', { name: 'Show Spring' }).getAttribute('aria-current'),
+    ).toBe('true')
     expect(page().getByRole('heading', { name: 'Continue watching' })).toBeTruthy()
     await clean()
     // a film row's card changes film with Right while it has focus

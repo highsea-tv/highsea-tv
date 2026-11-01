@@ -21,16 +21,16 @@ The sections come from the server in the owner's order: featured sections (hero,
 
 ### Web and desktop
 
-A **full-bleed hero** (the TV's Hero + rows, adapted; chosen in [ADR 0017](../adr/0017-web-home-full-bleed-hero.md)):
+A **featured card** (the TV's hero brought to the desktop as a card, the owner, 2026-10-30; kept, with Play and paging added, by the owner's answer 9 at prototype-gaps stage 4, 2026-11-01; [ADR 0017](../adr/0017-web-home-full-bleed-hero.md)'s dated section):
 
-- the hero spans the window, 58% of the viewport tall from medium, under the translucent top bar: eyebrow (the section's title), title, meta (year, runtime, genre, quality tags), tagline or synopsis, **Play** or **Resume**, **Details**;
-- the hero's titles are chosen with a pager (bottom right); on desktop the hero changes only on selection, never on hover;
-- then the owner's banners, then the rows.
-- On a phone-width window, the hero sits under the top bar rather than behind it.
+- one large card inside the page's gutters, up to 1680px, `clamp(18rem, min(62svh, 42vw), 44rem)` tall with 20px corners, its backdrop under a dark gradient from the left and the bottom, and a bloom in its most vibrant colour behind the top bar and the card that fades once the card has mostly scrolled away;
+- low on the left: the title's logo (its name when there's none), meta (year, runtime, genre, quality tags), the tagline or two lines of synopsis, then **Play** or **Resume** (primary) and **More info**. A click anywhere else on the card opens the title too;
+- at the bottom right, from medium, when the featured section has more than one title: Previous and Next arrows with a dot for each title between them, the current one a wider bar. It changes only when chosen, never by itself or on hover, and the bloom follows it;
+- then the rows. On a phone-width window the card sits under the top bar rather than behind it.
+- **Spotlight:** a curated theme's row of wider cards (about 30% of the window): the still, the title, the meta and two lines of synopsis, opening the title.
 - **Rows** (max 1680px, rows bleed to the right edge):
   - **Continue watching:** 16:9 stills with the progress bar, the title and "8 min left"; they open the player directly.
   - **Rows:** posters with the quality tag; hover or focus shows a Play button over the art.
-  - **Spotlight:** wider cards (still, title, meta, two lines of synopsis), for a curated theme.
 
 ### Shows, episodes and music (prototype-gaps stage 2, 2026-11-01)
 
@@ -120,7 +120,7 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 
 ## Decisions
 
-- **A full-bleed hero on the web** ([ADR 0017](../adr/0017-web-home-full-bleed-hero.md)): two options were built at checkpoint 3, this one and a contained card with the other featured titles beside it. The owner chose the full-bleed hero, which carries the TV's hero to the desktop.
+- **A full-bleed hero on the web** ([ADR 0017](../adr/0017-web-home-full-bleed-hero.md)): two options were built at checkpoint 3, this one and a contained card with the other featured titles beside it. The owner chose the full-bleed hero, which carries the TV's hero to the desktop. On 2026-10-30 the owner brought the TV's card to the web in its place, and at prototype-gaps stage 4 (answer 9, 2026-11-01) kept it, with Play and paging added.
 - **Continue watching goes after the hero,** whatever the owner's order: it's the most personal row and the most used.
 - **The hero's titles are also the first TV row,** so every featured title can be reached and bound by focus, and **only that row binds the hero** (the owner's call at the checkpoint 3 review): the hero is the featured section's, and other rows shouldn't repaint it while it's scrolled away.
 - **Only the navigation is pinned on TV.** The server identity and the pill scroll with the page, so they never sit over a poster; the navigation stays at the top on its own pill (the owner, 2026-10-30), so it passes over the rows as the page scrolls.

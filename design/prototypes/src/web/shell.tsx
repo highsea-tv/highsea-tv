@@ -47,7 +47,7 @@ import { restartToUpdate } from '../client/settings-sections.tsx'
 import { Cta, Inline } from '../kit/inline.tsx'
 import { useNow } from '../mock/hooks.tsx'
 import { MUSIC_BAR, MusicBar } from './music-bar.tsx'
-import { trafficLightInset, useWindowChrome } from './window.tsx'
+import { HistoryButtons, trafficLightInset, useWindowChrome } from './window.tsx'
 
 export const webHref = (path: string) => clientHref('web', path)
 
@@ -237,6 +237,7 @@ export function TopBar({ overHero }: { overHero: boolean | 'bloom' }) {
           chrome === 'mac' && trafficLightInset,
         )}
       >
+        {chrome !== 'none' && <HistoryButtons />}
         <ServerSwitcher />
         <nav
           aria-label="Main"

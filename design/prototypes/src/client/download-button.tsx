@@ -4,6 +4,7 @@
 // Download: a page can't keep a film for offline (client-settings.md#offline).
 import { bytes } from '@highsea-tv/core/format'
 import { Button, cn, Icon, Progress, Tooltip, toast } from '@highsea-tv/ui-web'
+import { hitSlop } from '../kit/mobile/device.tsx'
 import type { ClientItem } from '../mock/types.ts'
 import { useServerName } from './data.ts'
 import {
@@ -237,6 +238,8 @@ export function GroupDownload({
   const server = useServerName()
   const g = groupState(sources.map((x) => d.get(x.id)))
   const ids = sources.map((x) => x.id)
+  // the phone's small buttons reach 44 points for a finger (mobile.md)
+  const slop = app === 'mobile' && cn('relative', hitSlop)
   const remove = () => {
     d.remove(ids)
     toast({ title: `${name} removed`, description: `It still plays from ${server}.` })
@@ -254,7 +257,7 @@ export function GroupDownload({
         <span className="text-caption text-text-3">
           {g.done} of {sources.length}
         </span>
-        <Button size="sm" variant="ghost" onClick={remove}>
+        <Button size="sm" variant="ghost" className={slop || undefined} onClick={remove}>
           Cancel
         </Button>
       </div>
@@ -266,7 +269,13 @@ export function GroupDownload({
           <Icon name="check" size={16} className="text-accent-text" />
           Downloaded · {bytes(g.kept.reduce((s, x) => s + x.bytes, 0))}
         </span>
-        <Button size="sm" variant="ghost" icon="delete" onClick={remove}>
+        <Button
+          size="sm"
+          variant="ghost"
+          icon="delete"
+          className={slop || undefined}
+          onClick={remove}
+        >
           Remove
         </Button>
       </div>
@@ -277,7 +286,7 @@ export function GroupDownload({
       size="sm"
       variant={ghost ? 'ghost' : undefined}
       icon="download"
-      className={cn(wide && 'h-auto min-h-11 w-full whitespace-normal py-2', className)}
+      className={cn(slop, wide && 'h-auto min-h-11 w-full whitespace-normal py-2', className)}
       onClick={() => {
         d.start(rest)
         toast({

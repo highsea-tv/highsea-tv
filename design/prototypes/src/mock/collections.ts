@@ -19,6 +19,16 @@ import type {
 
 const DAY = 86_400_000
 
+/**
+ * Shows in the seeded collections, by collection: a collection holds any mix of one family, so
+ * films and shows sit together (collections.md › In the apps). The editor's rules and picks are
+ * films' until the admin has shows (prototype-gaps.md › stage 6), so the clients' view adds these.
+ */
+export const collectionShows: Record<string, string[]> = {
+  'sc-morgenstern': ['the-lantern-keepers'],
+  'sc-staff': ['saltmarsh'],
+}
+
 function hash(s: string): number {
   let h = 2166136261
   for (const c of s) h = Math.imul(h ^ (c.codePointAt(0) ?? 0), 16777619)

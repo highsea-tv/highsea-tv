@@ -10,7 +10,7 @@ import {
   qualityProfileSchema,
 } from '@highsea-tv/quality'
 import { type Clock, createEmitter, createRandom, type Emitter, iso } from './clock.ts'
-import { describe, evaluate, type Facts, fields, preview } from './collections.ts'
+import { collectionShows, describe, evaluate, type Facts, fields, preview } from './collections.ts'
 import {
   collection,
   collectionRefs,
@@ -1131,29 +1131,39 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       now(),
       state.collections.filter((x) => x.id !== except).map((x) => ({ id: x.id, name: x.name })),
     )
-  /** A smart collection as the apps see it: playable titles only, in its own order. */
+  /** A collection's shows here, in its order (collectionShows). */
+  const shownIn = (id: string): ClientShow[] =>
+    (collectionShows[id] ?? []).flatMap((x) => {
+      const s = showSeeds().find((y) => y.show.id === x)
+      return s ? [showOf(s)] : []
+    })
+  /** A smart collection as the apps see it: playable titles only, in its own order, then its shows. */
   const clientSmart = (c: SmartCollection) => {
     const items = smartFacts(c)
       .filter((f) => playable(f.item))
       .map((f) => f.item)
-    const first = items[0]
-    if (!first) return null
-    const years = items.map((m) => m.year)
+    const shows = shownIn(c.id)
+    const art = items[0]?.art ?? shows[0]?.art
+    if (!art) return null
+    const years = [...items.map((m) => m.year), ...shows.map((s) => s.year)]
     const lo = Math.min(...years)
     const hi = Math.max(...years)
     const collection: ClientCollection = {
       id: c.id,
       name: c.name,
       overview: c.summary,
-      art: { poster: c.artwork ?? first.art.poster, backdrop: first.art.backdrop },
+      art: { poster: c.artwork ?? art.poster, backdrop: art.backdrop },
       count: items.length,
+      ...(shows.length > 0 ? { shows: shows.length } : {}),
       years: lo === hi ? String(lo) : `${lo}–${hi}`,
       smart: {
         words: describe(c.rules, smartFields()),
-        mosaic: c.artwork ? [] : items.slice(0, 4).map((m) => m.art.poster),
+        mosaic: c.artwork
+          ? []
+          : [...items.map((m) => m.art.poster), ...shows.map((s) => s.art.poster)].slice(0, 4),
       },
     }
-    return { collection, items: items.map((m) => clientItem(m)) }
+    return { collection, items: items.map((m) => clientItem(m)), shows }
   }
   /** Does a collection's rule tree name the collection itself? */
   const namesItself = (g: RuleGroup, id: string): boolean =>
@@ -1196,7 +1206,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         count: sorted.length,
         years: first.year === last.year ? String(first.year) : `${first.year}–${last.year}`,
       }
-      return { collection: c, items: sorted.map((m) => clientItem(m)) }
+      return { collection: c, items: sorted.map((m) => clientItem(m)), shows: [] as ClientShow[] }
     })
   }
 
@@ -3058,7 +3068,10 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       /** Collections on this server for this app: smart ones first, then TMDB's. */
       collections: (client: ClientType = 'web'): ClientCollection[] =>
         clientCollections(client).map((c) => c.collection),
-      /** A collection's titles on this server: a smart one's in its order, TMDB's oldest first. */
+      /**
+       * A collection's titles on this server: a smart one's in its order, TMDB's oldest first, and
+       * its shows.
+       */
       collection: (id: string, client: ClientType = 'web') => {
         const found = clientCollections(client).find((c) => c.collection.id === id)
         if (!found) throw new ApiError(404, 'not-found', 'That collection isn’t on this server.')

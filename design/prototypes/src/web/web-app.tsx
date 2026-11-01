@@ -16,6 +16,7 @@ import { WebCollections } from './collections.tsx'
 import { WebDetail } from './detail.tsx'
 import { WebHome } from './home.tsx'
 import { WebLibrary } from './library.tsx'
+import { WebLink, WebLinkConfirm } from './link.tsx'
 import { WebMusic } from './music.tsx'
 import { WebPerson } from './person.tsx'
 import { WebPlayer } from './player.tsx'
@@ -149,7 +150,7 @@ function Routes() {
           <WebCollection />
         </WebShell>
       </Route>
-      <Route path="/search">
+      <Route path="/search/:q?">
         <WebShell>
           <WebSearch />
         </WebShell>
@@ -157,6 +158,16 @@ function Routes() {
       <Route path="/settings/:section?">
         <WebShell>
           <WebSettings />
+        </WebShell>
+      </Route>
+      <Route path="/link/:code">
+        <WebShell>
+          <WebLinkConfirm />
+        </WebShell>
+      </Route>
+      <Route path="/link">
+        <WebShell>
+          <WebLink />
         </WebShell>
       </Route>
       <Route path="/profile">

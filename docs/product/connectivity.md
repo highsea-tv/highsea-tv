@@ -77,6 +77,19 @@ Added at checkpoint 4.5a, so nobody types on the TV. The words are the server's 
 - **The camera:** iOS asks once for the camera (`NSCameraUsageDescription`: "highsea uses the camera to scan the code a TV shows."). Refused, the screen opens on the code field with "highsea can't use the camera. Allow it in Settings › highsea, or type the code." Not drawn: it's the field state with that line.
 - **Data:** `auth.pairingRequest` with the scanned or typed code, then `auth.approvePairing`, as the `/link` page does.
 
+### Connect a device on the web
+
+Added at prototype-gaps stage 4 (2026-11-01): the page the TV's code screen sends a computer to, in the web client and the desktop app, with the phone's words.
+
+- **Connect a device** (`#/web/link`): the title; "Type the code your TV or app shows. It works for 10 minutes."; the **Code** field and **Continue**. A computer has no camera to point, so there's no scanning.
+- **Sign in {device}?** (`#/web/link/KQ7-4PM`): as on the phone, with "Settings › Devices" for where it's signed out; **Sign it in** and **Cancel**, then "{device} is signed in" and **Done** (Home).
+- **A code that isn't waiting** (`#/web/link/ABC-123`): as on the phone.
+- The server's `/link?code=…` opens the question at once. The prototype's hash can't carry a query, so there the code is in the path.
+
+### Can't reach on the phone
+
+Added at prototype-gaps stage 4 (2026-11-01). When the phone can reach its server neither on this network nor at its remote address, it says so in the page's place: "Can’t reach {server}" · "highsea tried {server} on this network and at its remote address. It may be off, or the network may be down. Your downloads still play." Then **Watch downloads** (Offline), **Try again** and **Switch server**, one under the other.
+
 ## Copy
 
 | Where | Text |

@@ -18,7 +18,7 @@ import {
   Sheet,
   SheetContent,
 } from '@highsea-tv/ui-web'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useEffect, useState } from 'react'
 import { useLocation } from 'wouter'
 import {
   clientHref,
@@ -31,7 +31,7 @@ import { useMusicPlayer } from '../client/music-player.ts'
 import { toneClass } from '../client/profiles.ts'
 import { useMe } from '../client/who.tsx'
 import { Cta, Inline } from '../kit/inline.tsx'
-import { MobileScreen, safeArea } from '../kit/mobile/device.tsx'
+import { hitSlop, MobileScreen, safeArea } from '../kit/mobile/device.tsx'
 import { useNow } from '../mock/hooks.tsx'
 import { MINI_PLAYER, MiniPlayer } from './now-playing.tsx'
 
@@ -51,10 +51,50 @@ const tabs: { path: string; label: string; icon: IconName }[] = [
   { path: '/you', label: 'You', icon: 'user' },
 ]
 
-function TabBar() {
+const tabAt = (location: string) =>
+  tabs.find((t) =>
+    t.path === '/' ? location === '/' : location === t.path || location.startsWith(`${t.path}/`),
+  )?.path
+
+/** The tab last shown, for a page opened from it. */
+let lastTab: string | null = null
+
+/** A title opened before any tab, from a link: its kind's tab, as the iOS apps open deep links. */
+const tabFor = (location: string) =>
+  /^\/(movies|shows|music|collections)\//.test(location) ? '/library' : '/'
+
+const savedTab = () => {
+  try {
+    const v = (history.state as Record<string, unknown> | null)?.hsMobileTab
+    return typeof v === 'string' ? v : null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * The tab to mark (prototype-gaps.md › 4.2): a tab's own pages mark it, and a page outside them (a
+ * film, show, album, artist, person or collection) marks the tab it was opened from, as an iOS
+ * app's tab stays lit down its stack. That tab is kept in the page's history entry, so Back and
+ * Forward find it again whichever tab was used since.
+ */
+function useCurrentTab() {
   const [location] = useLocation()
-  const active = (p: string) =>
-    p === '/' ? location === '/' : location === p || location.startsWith(`${p}/`)
+  const own = tabAt(location)
+  const tab = own ?? savedTab() ?? lastTab ?? tabFor(location)
+  useEffect(() => {
+    lastTab = tab
+    if (own || savedTab() === tab) return
+    try {
+      history.replaceState({ ...(history.state as object | null), hsMobileTab: tab }, '')
+    } catch {}
+  }, [own, tab])
+  return tab
+}
+
+function TabBar() {
+  const current = useCurrentTab()
+  const active = (p: string) => p === current
   return (
     <nav
       aria-label="Main"
@@ -170,7 +210,8 @@ export function Header({ title }: { title?: string }) {
         href={mobileHref('/you')}
         aria-label={`${me.name}: profile and settings`}
         className={cn(
-          'ms-auto grid size-9 place-items-center rounded-full font-semibold text-[15px] outline-none focus-visible:ring-focus',
+          'relative ms-auto grid size-9 place-items-center rounded-full font-semibold text-[15px] outline-none focus-visible:ring-focus',
+          hitSlop,
           toneClass[me.tone],
         )}
       >
@@ -178,6 +219,28 @@ export function Header({ title }: { title?: string }) {
       </a>
       <ServerSheet open={open} onOpenChange={setOpen} />
     </header>
+  )
+}
+
+/** Back, over the page's header: to where it was opened from, or `fallback` when it was opened first. */
+export function BackBadge({ fallback }: { fallback: string }) {
+  return (
+    <a
+      href={mobileHref(fallback)}
+      onClick={(e) => {
+        if (history.length > 1) {
+          e.preventDefault()
+          history.back()
+        }
+      }}
+      aria-label="Back"
+      className={cn(
+        'glass-badge absolute top-2 left-3 z-10 grid size-10 place-items-center rounded-full outline-none focus-visible:ring-focus',
+        hitSlop,
+      )}
+    >
+      <Icon name="chevron-left" size={20} />
+    </a>
   )
 }
 
@@ -249,11 +312,15 @@ function Unreachable() {
             <Button variant="primary" icon="download" asChild>
               <a href={mobileHref('/offline')}>Watch downloads</a>
             </Button>
+            <Button icon="refresh" onClick={() => window.location.reload()}>
+              Try again
+            </Button>
             <Button onClick={() => navigate('/connect')}>Switch server</Button>
           </div>
         }
       >
-        highsea tried {name} on this network and at its remote address. Your downloads still play.
+        highsea tried {name} on this network and at its remote address. It may be off, or the
+        network may be down. Your downloads still play.
       </EmptyState>
     </div>
   )

@@ -10,7 +10,7 @@ Decide to watch, and how: Play or Resume, with the version, audio and subtitles 
 
 ## Entry points
 
-- Posters on Home, Library and More like this; **Details** on the hero.
+- Posters on Home and Library, stills in More like this; **More info** on the web's featured card and **Details** on the TV's hero.
 - **An episode** (prototype-gaps stage 2, 2026-11-01) opens its show's page at it, `/shows/{id}/episodes/{episode}`: the episode's season chosen and its row scrolled into view (on the TV, focused). Search's episodes and Continue watching's **Go to the show** use it.
 
 ## Layout
@@ -19,7 +19,7 @@ Decide to watch, and how: Play or Resume, with the version, audio and subtitles 
   - a backdrop header (68% of the viewport from medium) behind the translucent top bar: the title, meta (year, runtime, genres, rating, quality tags), the synopsis, "Directed by", then **Play** or **Resume**, **Play from the start** and "8 min left" when started, and the progress bar;
   - **Watch with:** Version (a select when there are several, otherwise the version's description), Audio, Subtitles (Off first), in three columns from medium, and "Remembered for this movie, on all your devices.";
   - **Cast:** portraits with the name and character, up to twelve, in a wrapping grid;
-  - **More like this:** a poster row.
+  - **More like this:** 16:9 stills, as Continue watching's, on a film's page and a show's alike (the owner's answer 10, prototype-gaps stage 4).
 - **Mobile:** the backdrop across the top with **Back** over it (glass); the title (28pt), meta, **Resume · 8 min left** across the width (48pt), **Play from the start**, the synopsis, "Directed by"; Watch with as stacked fields; Cast and More like this as rows.
 - **TV:** the ambient backdrop (the artwork blurred 2.6u and dimmed); the poster (13u) beside the title (3.6u), meta, synopsis and "Directed by"; actions **Resume · 8 min left**, **From the start**, **Audio and subtitles**; the current picks in one line ("4K · English · 5.1 · Subtitles off"); Cast (the name and character under each portrait) and More like this (title and year under each poster) as rows below, scrolled into view by focus; the server identity scrolls away with the page.
 - **TV Audio and subtitles:** a panel from the right (32u): Version (when several), Audio, Subtitles, "Back closes. Saved for this movie." It's an isolated focus region; picking subtitles closes it.
@@ -49,6 +49,13 @@ Phase 4's answer 9. On web and mobile, **More** (an icon button after the play a
 - **Download for episodes, seasons and albums** (the screens 4.6 builds): an episode's row has a download icon with the progress ring, each season **Download season** beside Mark season as watched, and an album Download beside Play and Shuffle. The phone's stays in the prototype as 4.6's design; `apps/mobile` hides it until 4.6.
 - **Soundtrack:** a film whose score is an album here has a **Soundtrack** line in Information, the album's title as a link to it. On the TV it's a stop of its own inside the card.
 - **Their music:** a person who is also an artist here has **Their music** on their page, opening the artist page, as the artist page has **Their films and shows**. It sits under the facts on the web, under the biography on the phone, and as a button under the facts on the TV, between the head and the first row.
+
+### Stage 4 of the prototypes' gaps (2026-11-01)
+
+- **The phone's tab bar** keeps the tab a page was opened from: a film opened from Search keeps Search marked, and from Home, Home. A page opened before any tab, from a link, marks Library for a film, show or album and Home otherwise.
+- **The TV's episodes:** holding OK on an episode opens a menu with **Mark as watched** (or **Mark as unwatched**) and **From the start**; a short press plays. Each episode's label ends "Hold OK for more."
+- **The TV's errors** name the way out: the player's error has **Home**, a film's page **Movies** and a collection's **Collections**.
+- **The web's error** for a film that's gone: "It may have been removed. Search finds everything you can watch."
 
 ## States
 

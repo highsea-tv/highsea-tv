@@ -261,7 +261,7 @@ function AlbumSkeleton() {
     <main aria-busy className="grid grid-cols-[minmax(0,1fr)] gap-10 pb-16">
       <div
         className={cn(
-          'mx-auto grid w-full max-w-[1680px] items-end gap-x-10 gap-y-6 pt-8 pb-10 medium:grid-cols-[auto_minmax(0,1fr)]',
+          'mx-auto grid w-full max-w-[1680px] items-end gap-x-10 gap-y-6 pt-28 pb-10 medium:grid-cols-[auto_minmax(0,1fr)] medium:pt-8',
           gutter,
         )}
       >

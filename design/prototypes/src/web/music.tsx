@@ -215,11 +215,19 @@ export function WebMusic({ view }: { view: MusicView }) {
                 When the server’s owner adds music, it shows up here.
               </EmptyState>
             ) : view === 'albums' && shownAlbums.length === 0 ? (
-              <EmptyState icon="filter" title="No albums match">
+              <EmptyState
+                icon="filter"
+                title="Nothing matches"
+                action={<Button onClick={() => setGenre(ALL_GENRES)}>Show everything</Button>}
+              >
                 Try another genre.
               </EmptyState>
             ) : view === 'songs' && shownSongs.length === 0 ? (
-              <EmptyState icon="filter" title="No songs match">
+              <EmptyState
+                icon="filter"
+                title="Nothing matches"
+                action={<Button onClick={() => setGenre(ALL_GENRES)}>Show everything</Button>}
+              >
                 Try another genre.
               </EmptyState>
             ) : view === 'songs' ? (

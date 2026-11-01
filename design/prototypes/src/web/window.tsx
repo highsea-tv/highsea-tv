@@ -4,7 +4,9 @@
 // them and is the window's drag region (Tauri's `titleBarStyle: "Overlay"`). On Windows and Linux
 // the window has no system frame (`decorations: false`) and highsea draws a title bar in `bg`, with
 // the platform's own minimise, maximise and close. In a browser there's none of it.
-import { cn, Mark } from '@highsea-tv/ui-web'
+import { cn, Icon, Mark } from '@highsea-tv/ui-web'
+import { useEffect, useSyncExternalStore } from 'react'
+import { useLocation } from 'wouter'
 import { useDesktopApp, useDesktopOs } from '../client/data.ts'
 
 export type WindowChrome = 'none' | 'mac' | 'bar'
@@ -131,4 +133,97 @@ export function WindowFrame({ overlay = false }: { overlay?: boolean }) {
   if (chrome === 'mac') return <TrafficLights />
   if (chrome === 'bar') return <TitleBar overlay={overlay} />
   return null
+}
+
+// Back and Forward (prototype-gaps.md › 4.1). A browser has its own; the desktop app's webview has
+// none, so highsea draws them, as Spotify's, Slack's and Music's windows do: two chevrons at the
+// start of the top bar, after macOS's buttons, with the platform's keys (Cmd+[ and Cmd+] on a Mac,
+// Alt with the arrows on Windows and Linux, as their browsers have it) and the mouse's back and
+// forward buttons. The app keeps where it is in its own history, so each is off when there's
+// nowhere to go.
+const trail = { entries: [] as string[], at: -1 }
+const listeners = new Set<() => void>()
+let version = 0
+
+function visit(location: string) {
+  const { entries, at } = trail
+  if (entries[at] === location) return
+  // Back and Forward land on a neighbour; anything else is a new step, dropping what was ahead
+  if (entries[at - 1] === location) trail.at--
+  else if (entries[at + 1] === location) trail.at++
+  else {
+    trail.entries = [...entries.slice(0, at + 1), location]
+    trail.at = trail.entries.length - 1
+  }
+  version++
+  for (const l of listeners) l()
+}
+
+function useTrail(location: string) {
+  useEffect(() => visit(location), [location])
+  useSyncExternalStore(
+    (l) => {
+      listeners.add(l)
+      return () => listeners.delete(l)
+    },
+    () => version,
+  )
+  return { back: trail.at > 0, forward: trail.at < trail.entries.length - 1 }
+}
+
+export function HistoryButtons() {
+  const [location] = useLocation()
+  const os = useDesktopOs()
+  const can = useTrail(location)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const mac = os === 'mac'
+      const back = mac ? e.metaKey && e.key === '[' : e.altKey && e.key === 'ArrowLeft'
+      const forward = mac ? e.metaKey && e.key === ']' : e.altKey && e.key === 'ArrowRight'
+      if (!back && !forward) return
+      e.preventDefault()
+      if (back) history.back()
+      else history.forward()
+    }
+    // the mouse's side buttons: 3 is back and 4 is forward (https://developer.mozilla.org/en-US/docs/Web/API/MouseEvent/button)
+    const onMouse = (e: MouseEvent) => {
+      if (e.button === 3) history.back()
+      else if (e.button === 4) history.forward()
+    }
+    window.addEventListener('keydown', onKey)
+    window.addEventListener('mouseup', onMouse)
+    return () => {
+      window.removeEventListener('keydown', onKey)
+      window.removeEventListener('mouseup', onMouse)
+    }
+  }, [os])
+  const keys = os === 'mac' ? ['⌘[', '⌘]'] : ['Alt+Left', 'Alt+Right']
+  const button =
+    'grid size-8 cursor-pointer place-items-center rounded-sm text-text-2 outline-none hover:bg-text/8 hover:text-text focus-visible:ring-focus disabled:cursor-default disabled:text-text-3 disabled:opacity-50 disabled:hover:bg-transparent'
+  return (
+    // a window narrower than medium has no room for them beside the server's name; the keys and
+    // the mouse's buttons still work there
+    <div className="hidden shrink-0 items-center medium:flex">
+      <button
+        type="button"
+        aria-label="Back"
+        title={`Back (${keys[0]})`}
+        disabled={!can.back}
+        onClick={() => history.back()}
+        className={button}
+      >
+        <Icon name="chevron-left" size={18} />
+      </button>
+      <button
+        type="button"
+        aria-label="Forward"
+        title={`Forward (${keys[1]})`}
+        disabled={!can.forward}
+        onClick={() => history.forward()}
+        className={button}
+      >
+        <Icon name="chevron-right" size={18} />
+      </button>
+    </div>
+  )
 }

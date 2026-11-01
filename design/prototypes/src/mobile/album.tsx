@@ -16,9 +16,8 @@ import { albumKind, albumMeta, albumSummary, releasedOn, songTime } from '../cli
 import { useAlbumPlaying, useMusicPlayer, usePlayingFrom } from '../client/music-player.ts'
 import { PlayingBars } from '../client/waveform.tsx'
 import type { ClientAlbum, ClientSong } from '../mock/types.ts'
-import { BackBadge } from './artist.tsx'
 import { MobileRow } from './home.tsx'
-import { gutter, mobileHref } from './shell.tsx'
+import { BackBadge, gutter, mobileHref } from './shell.tsx'
 import { MobileSongMenu, MoreButton } from './song-menu.tsx'
 
 export function MobileAlbum() {

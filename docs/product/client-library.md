@@ -44,11 +44,20 @@ Music has four views: **Albums**, **Artists**, **Songs** and **Playlists**. On t
 
 Data, from the mock (the music phase builds it on the server, and its scope checks this design against what the server can keep): `library.songs` (every song with its album and play count), `library.playlists`, `library.playlist(id)` (the playlist and its songs, each with an `entry` that tells two of the same song apart), and `playlists.create`, `rename`, `reorder`, `add`, `remove` and `delete`, with a `playlists.updated` event. Each person starts with two playlists, the same on every load. A reorder shows at once, before the server answers.
 
+### Stage 4 of the prototypes' gaps (2026-11-01)
+
+- **Jump to a letter** on the phone: an A–Z scrubber at the edge of Movies and Shows while sorted by title (# and A to Z, a letter with nothing under it dimmed), which scrolls as a finger slides down it, as iOS's index does. The web's and the TV's rails have the same name.
+- **Pull to refresh** on the phone's lists: "Pull to refresh", "Let go to refresh", then "Refreshing". On Offline it also renews downloads whose 30 days have run out, when the server can be reached.
+- **The phone's Shows sheet** starts with the legend "Shows" (it said "Show"); Movies' keeps "Show".
+- **Empty libraries on the TV:** "No movies yet" · "When the server’s owner adds movies, they show up here.", and "No shows yet" with the same words for shows.
+- **Nothing matches** in every app when a filter leaves nothing: the title, a body naming what's set (the genre, Unwatched), and **Show everything**, which clears them.
+- **The TV's genre** is a choice beside the sort, "All genres" or the genre picked, opening a menu named "Genre".
+
 ## States
 
 - **Loading:** poster skeletons in the grid's shape.
 - **Empty:** "No movies yet" · When the server's owner adds movies, they show up here.
-- **No match:** "No movies match" · Try another genre.
+- **No match:** "Nothing matches" · Try another genre. · **Show everything**, which clears the filter (on the web since prototype-gaps stage 4; Movies, Shows and Music's albums and songs alike).
 - **Error:** "Couldn't load the library" with **Try again**.
 - **Live:** a title appears as soon as it's playable; progress bars follow playback.
 

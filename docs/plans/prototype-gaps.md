@@ -65,6 +65,58 @@ Eight stages, each reviewed by the owner before the next starts, as the owner's 
 
 ## Progress
 
+- **2026-11-01, stage 4 (each app's own list), for the owner's review:**
+  - **4.1, the web and desktop app:**
+    - **Back and Forward** in the desktop app's top bar, after macOS's buttons (`HistoryButtons` in `web/window.tsx`). They work with Cmd+[ and Cmd+] on a Mac, Alt with the arrows on Windows and Linux, and the mouse's side buttons. Each is off when there's nowhere to go. A window narrower than medium leaves the chevrons out, since the sweep found the top bar overflowing at 390px with 200% text; the keys and the mouse's buttons still work there.
+    - **Connect a device** at `/web/link` (`web/link.tsx`): the code typed, then the phone's question in the phone's words. The waiting TV and the code's rules are shared with the phone in `client/pairing.ts`.
+    - **Home's featured card** pages through the featured section's titles with arrows and dots, and offers Play (or Resume) and More info. The Bloom follows the title shown. The `spotlight` layout is drawn as wide cards with a still and a synopsis (`SpotlightRow`). See client-home.md and ADR 0017's dated section.
+    - **The player:**
+      - a volume slider that opens beside Mute on hover or focus;
+      - Full screen becomes Exit full screen;
+      - Speed (0.5× to 2×, "Normal" at 1×) in Audio and subtitles' panel.
+    - **Search's text is in the address** (`/web/search/{text}` in the prototype), so a search can be linked, and Back from a result returns to it.
+    - **More like this** is 16:9 stills on a show's page too (`ShowPoster`'s `wide`).
+    - **Small fixes:**
+      - the film page's error no longer says "Library";
+      - "Nothing matches" with **Show everything** in Movies, Shows and Music;
+      - the album's skeleton has the page's padding.
+  - **4.2, the phone:**
+    - **The tab bar** keeps the tab a page was opened from, kept in the page's history entry.
+    - **An A–Z scrubber** (`mobile/letter-index.tsx`) runs down Movies, Shows and Music's lists when they're sorted by name. It uses the web's and the TV's letters.
+    - **44-point touch targets** through `hitSlop` (`kit/mobile/device.tsx`), so the drawing stays as it is. It covers the episode's check and download, the Back badges (now one `BackBadge`), the chips, the sort buttons, Mark season, a person's More, Music's tabs, the header's avatar, and the group download's buttons.
+    - **Can't reach** has the spec's second sentence and **Try again**.
+    - **Pull to refresh** on Movies, Shows, Collections, Music, a show's page and Offline. On Offline it also renews downloads that ran out.
+    - **Sign out** asks first, on You and in Settings › Servers on every app.
+    - The Shows sheet's legend says "Shows".
+  - **4.3, the TV:**
+    - **Episodes:** holding OK on an episode opens Mark as watched (or unwatched) and From the start.
+    - **Empty libraries:** "No movies yet" and "No shows yet". "Nothing matches" offers **Show everything**, reached by Down from the choices.
+    - **A genre choice** after Unwatched, opening a menu named "Genre".
+    - **Collections:**
+      - the audio view's line is "No audio collections yet…";
+      - a collection holds shows, its row is named Films, Shows, or Films and shows, and its line counts both.
+    - **Settings › Servers** lists every server, the current one "· in use". Sign out asks first and lands on the sign-in screen, and signing a device out asks first.
+    - **Copy:** the player's error says "Home", a film's error offers Movies and a collection's offers Collections.
+  - **Shows in collections on every app:** the mock's `library.collection` returns the shows too, and `ClientCollection.shows` counts them. The web's and the phone's collection pages list them after the films, linking to the show. `collectionCaption` in `client/data.ts` counts both everywhere ("6 movies and 1 show · 2006–2019"), with `titlesHere` and `titlesRow` beside it in place of the TV's own copies.
+  - **Additions to the design system:** none. The TV kit's `TvMenu` gained a three-column layout and a current item, and `hitSlop` is the phone kit's.
+  - **Calls I made, for review:**
+    - Alt with the arrows for Back and Forward on Windows and Linux, as their browsers have it.
+    - In the prototype, Search's text and the link's code are in the path (`/web/search/{text}`, `/web/link/{code}`). The toolbar's state is in the query, and wouter's hash navigation overwrites it. The server keeps `?q=` and `?code=`.
+    - Exit full screen keeps the `view` icon. A Maximize and Minimize pair would mean new icons, so it waits for the owner.
+    - The speed goes back to Normal for each play.
+    - The phone's scrubber letters are 16 points tall, as iOS's index is: it's a column you drag along.
+    - The TV's genre menu has three columns, since every genre doesn't fit in one.
+    - An empty TV library hides its choices and puts focus on the nav's tab.
+    - A collection's row says "Films" while its counts say "movies", as the captions already did.
+    - The TV player's error says "Home", since a missing title gives no library to offer.
+  - **Tests:** the web Home test checks the featured card's paging. Three collection tests now expect the row named "Films" and the audio view's new line. All 1,419 pass.
+  - **Specs:** player.md, client-search.md (the address, and collections with shows), client-detail.md, client-library.md, client-home.md, client-settings.md, connectivity.md (Connect a device on the web, and Can't reach on the phone) and desktop-app.md.
+  - **Fixed from the sweeps:** in the desktop app at 390px with 200% text, Back and Forward pushed the top bar 66px to 122px past the window's edge. They're left out below medium (see 4.1).
+  - **Checks (Node 26.11.1):**
+    - Biome and tsc on the prototypes, and the prototype's 1,419 tests;
+    - the pages sweep on the web (1,368, with the new link and search routes), phone (376) and TV (320);
+    - the keyboard walks on the web (114) and phone (47), and the TV's D-pad walk;
+    - all clean.
 - **2026-11-01, stage 3 (parity), for the owner's review:**
   - **3.1, the show page:** the film page's round buttons beside Play: From the start, Trailer when the show has one, Audio and subtitles (picked once for every episode), Mark show as watched (drawn on its own, so it stays when no episode is left) and, in the desktop app and on the phone, Download.
   - **3.2, downloads:** an episode's row has the download icon with its progress ring, each season **Download season**, and an album Download beside Play and Shuffle. Offline and Downloads group episodes under their show and season and songs under their album, each with its size and Remove; the copy says "films, episodes and music".

@@ -22,13 +22,20 @@ export function ShowPoster({
   show,
   href,
   caption,
+  wide = false,
   ...rest
-}: { show: ClientShow; href: string } & Pick<PosterProps, 'className' | 'titleSize' | 'caption'>) {
+}: {
+  show: ClientShow
+  href: string
+  /** A 16:9 still (the backdrop), as More like this has on a film's page and a show's. */
+  wide?: boolean
+} & Pick<PosterProps, 'className' | 'titleSize' | 'caption'>) {
   return (
     <Poster
       {...rest}
       title={show.title}
-      src={show.art.poster}
+      src={wide ? show.art.backdrop : show.art.poster}
+      aspect={wide ? 'still' : 'poster'}
       href={href}
       status={<UnwatchedCount show={show} />}
       showTitle

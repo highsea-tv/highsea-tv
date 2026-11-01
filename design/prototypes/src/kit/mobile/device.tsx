@@ -12,6 +12,15 @@ export const PHONE = { w: 390, h: 844 }
 /** Safe-area insets of a current notched phone, in pt. */
 export const safeArea = { top: 54, bottom: 34 }
 
+/**
+ * A touch target of 44 pt at least around a smaller drawing (prototype-gaps.md › 4.2, as Apple's
+ * Human Interface Guidelines ask): a pseudo-element grows the area a tap lands on, as React
+ * Native's `hitSlop` does, and the drawing stays as it is. It only ever grows, so a larger target
+ * is left alone. The element must be positioned (`relative`, or already `absolute`), and nothing
+ * around it may clip the extra room.
+ */
+export const hitSlop = 'after:absolute after:inset-[min(0px,calc((100%_-_44px)/2))]'
+
 const time = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
 
 function StatusBar() {

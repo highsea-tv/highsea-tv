@@ -127,7 +127,7 @@ export function TvPlayer({ fromStart = false }: { fromStart?: boolean }) {
         title={player.detail.error.message}
         actions={
           <TvButton primary initial href={tvHref('/')}>
-            Go home
+            Home
           </TvButton>
         }
       >

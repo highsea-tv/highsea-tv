@@ -54,6 +54,8 @@ export function usePlayer(id: string, fromStart: boolean) {
   const duration = d ? d.item.runtimeMinutes * 60 : 0
   const [position, setPosition] = useState<number | null>(null)
   const [playing, setPlaying] = useState(true)
+  // the playback speed (the web player's Speed, prototype-gaps.md › 4.1)
+  const [rate, setRate] = useState(1)
   const [local, setLocal] = useState<PlaybackPrefs>({})
   const pos = position ?? (d && !fromStart ? d.item.position : 0)
   const posRef = useRef(pos)
@@ -92,15 +94,16 @@ export function usePlayer(id: string, fromStart: boolean) {
     if (musicPlayer.get().playing) musicPlayer.toggle()
   }, [])
 
-  // the clock: one second a second while playing, stopping at the end
+  // the clock: one second a second while playing (more or less at another speed), stopping at
+  // the end
   useEffect(() => {
     if (!playing || !duration || held) return
     const t = setInterval(
-      () => setPosition((p) => Math.min(duration, (p ?? posRef.current) + 1)),
+      () => setPosition((p) => Math.min(duration, (p ?? posRef.current) + rate)),
       1000,
     )
     return () => clearInterval(t)
-  }, [playing, duration, held])
+  }, [playing, duration, held, rate])
   useEffect(() => {
     if (playing && duration && pos >= duration) setPlaying(false)
   }, [playing, duration, pos])
@@ -184,6 +187,8 @@ export function usePlayer(id: string, fromStart: boolean) {
     },
     seekBy: (s: number) => seekTo(posRef.current + s),
     seekTo,
+    rate,
+    setRate,
     setVersion: (versionId: string) => set({ versionId }),
     setAudio: (audioId: string) => set({ audioId }),
     setSubtitle: (subtitleId: string | null) => set({ subtitleId }),

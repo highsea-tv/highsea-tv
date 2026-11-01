@@ -11,6 +11,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import {
+  collectionCaption,
   searchedFor,
   searchKinds,
   searchPlaceholder,
@@ -270,7 +271,7 @@ function TvResults({ section }: { section: SearchSection }) {
             <li key={c.id}>
               <TvTile
                 title={c.name}
-                caption={`${c.count} ${c.count === 1 ? 'movie' : 'movies'} · ${c.years}`}
+                caption={collectionCaption(c)}
                 src={c.art.poster}
                 href={tvHref(`/collections/${c.id}`)}
               />

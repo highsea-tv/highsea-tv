@@ -5,10 +5,14 @@ import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui-web'
 import { collectionCaption, useCollections } from '../client/data.ts'
 import { MediaPosterSkeleton } from '../client/media-card.tsx'
 import { CollectionTile } from '../kit/collection-art.tsx'
+import { hitSlop } from '../kit/mobile/device.tsx'
+import { PullToRefresh } from './pull.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
 
-const link =
-  'grid min-h-9 shrink-0 place-items-center rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus aria-[current=page]:border-transparent aria-[current=page]:bg-text aria-[current=page]:text-bg'
+const link = cn(
+  'relative grid min-h-9 shrink-0 place-items-center rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus aria-[current=page]:border-transparent aria-[current=page]:bg-text aria-[current=page]:text-bg',
+  hitSlop,
+)
 
 /** Movies, Shows, Collections or Music: the library's views, scrolling sideways when large text needs it. */
 export function LibraryNav({ current }: { current: 'movies' | 'shows' | 'collections' | 'music' }) {
@@ -53,59 +57,61 @@ export function MobileCollections() {
   const list = useCollections('mobile')
   const xs = list.data ?? []
   return (
-    <div className="grid grid-cols-[minmax(0,1fr)] gap-4 pt-1">
-      <Header title="Library" />
-      <LibraryNav current="collections" />
-      {list.status === 'loading' ? (
-        <div className={gutter}>
-          <Skeleton className="my-1 h-3 w-20" />
-        </div>
-      ) : (
-        <p className={cn('text-[13px] text-text-3', gutter)}>
-          {list.status === 'success'
-            ? `${xs.length} ${xs.length === 1 ? 'collection' : 'collections'}`
-            : ' '}
-        </p>
-      )}
-      <div className={gutter}>
+    <PullToRefresh onRefresh={list.refetch}>
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-4 pt-1">
+        <Header title="Library" />
+        <LibraryNav current="collections" />
         {list.status === 'loading' ? (
-          <div aria-busy className="grid grid-cols-3 gap-x-2 gap-y-4">
-            {Array.from({ length: 6 }, (_, i) => (
-              // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
-              <MediaPosterSkeleton key={i} />
-            ))}
+          <div className={gutter}>
+            <Skeleton className="my-1 h-3 w-20" />
           </div>
-        ) : list.status === 'error' ? (
-          <EmptyState
-            tone="error"
-            icon="alert"
-            title="Couldn’t load the collections"
-            action={<Button onClick={list.refetch}>Try again</Button>}
-          >
-            {list.error.message}
-          </EmptyState>
-        ) : xs.length === 0 ? (
-          <EmptyState icon="library" title="No collections yet">
-            When the server’s owner makes collections, or films here belong to one, they show up
-            here.
-          </EmptyState>
         ) : (
-          <ul aria-label="Collections" className="grid grid-cols-3 gap-x-2 gap-y-4">
-            {xs.map((c) => (
-              <li key={c.id}>
-                <CollectionTile
-                  href={mobileHref(`/collections/${c.id}`)}
-                  name={c.name}
-                  caption={collectionCaption(c)}
-                  poster={c.art.poster}
-                  mosaic={c.smart?.mosaic}
-                  smart={!!c.smart?.words}
-                />
-              </li>
-            ))}
-          </ul>
+          <p className={cn('text-[13px] text-text-3', gutter)}>
+            {list.status === 'success'
+              ? `${xs.length} ${xs.length === 1 ? 'collection' : 'collections'}`
+              : ' '}
+          </p>
         )}
+        <div className={gutter}>
+          {list.status === 'loading' ? (
+            <div aria-busy className="grid grid-cols-3 gap-x-2 gap-y-4">
+              {Array.from({ length: 6 }, (_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
+                <MediaPosterSkeleton key={i} />
+              ))}
+            </div>
+          ) : list.status === 'error' ? (
+            <EmptyState
+              tone="error"
+              icon="alert"
+              title="Couldn’t load the collections"
+              action={<Button onClick={list.refetch}>Try again</Button>}
+            >
+              {list.error.message}
+            </EmptyState>
+          ) : xs.length === 0 ? (
+            <EmptyState icon="library" title="No collections yet">
+              When the server’s owner makes collections, or films here belong to one, they show up
+              here.
+            </EmptyState>
+          ) : (
+            <ul aria-label="Collections" className="grid grid-cols-3 gap-x-2 gap-y-4">
+              {xs.map((c) => (
+                <li key={c.id}>
+                  <CollectionTile
+                    href={mobileHref(`/collections/${c.id}`)}
+                    name={c.name}
+                    caption={collectionCaption(c)}
+                    poster={c.art.poster}
+                    mosaic={c.smart?.mosaic}
+                    smart={!!c.smart?.words}
+                  />
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
-    </div>
+    </PullToRefresh>
   )
 }

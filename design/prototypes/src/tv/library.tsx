@@ -5,10 +5,12 @@
 // the rest (the owner, 2026-10-30). The rail is isolated: Left from the grid's first column enters it, Up and Down
 // run through the letters (only the ones with titles), and OK jumps the grid to that letter.
 // Movies is its own destination in the global nav (the owner, 2026-10-30), so the title stands
-// alone, with the sort as a row of choices on its right; Up from the grid reaches the sort.
-import { useLayoutEffect, useRef, useState } from 'react'
+// alone, with the sort, Unwatched and the genre as a row of choices on its right; Up from the grid
+// reaches them. An empty library says so, and choices that match nothing offer Show everything.
+import { cn, Icon } from '@highsea-tv/ui-web'
+import { type ReactNode, useLayoutEffect, useRef, useState } from 'react'
 import { useLibrary } from '../client/data.ts'
-import { arrange, LETTERS, letterOf, type Sort } from '../web/library.tsx'
+import { ALL, arrange, genresOf, LETTERS, letterOf, type Sort } from '../web/library.tsx'
 import {
   TvButton,
   TvHead,
@@ -18,6 +20,7 @@ import {
   tvHref,
   useInitialFocus,
 } from './kit.tsx'
+import { TvMenu } from './song-menu.tsx'
 
 /**
  * The rail's column: the letters' width, and the room the grid leaves for it. Another sort closes
@@ -37,6 +40,112 @@ const sortChoices: { value: Sort; label: string }[] = [
   { value: 'added', label: 'Recently added' },
   { value: 'year', label: 'Newest' },
 ]
+
+/** A choice beside a library's title: a sort, Unwatched, the genre. */
+export const choice =
+  'rounded-full px-[1.2cqw] py-[0.45cqw] font-semibold text-(length:--tv-text-pill) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:shadow-(--tv-focus-shadow) aria-pressed:bg-text/12 aria-pressed:text-text'
+
+/**
+ * The genre, the last of a library's choices, as the web and phone have it: OK opens the genres
+ * over the page, in columns, with the one in force focused; choosing one closes them and focus
+ * stays on this choice, as it does on the sorts (the owner, 2026-10-31).
+ */
+export function TvGenreChoice({
+  genres,
+  value,
+  all,
+  onPick,
+}: {
+  genres: string[]
+  value: string
+  /** The value that means every genre. */
+  all: string
+  onPick: (genre: string) => void
+}) {
+  const [open, setOpen] = useState(false)
+  const label = value === all ? 'All genres' : value
+  return (
+    <>
+      <button
+        type="button"
+        data-focusable=""
+        aria-haspopup="dialog"
+        aria-pressed={value !== all}
+        aria-label={`Genre: ${label}`}
+        onClick={() => setOpen(true)}
+        className={cn(choice, 'flex items-center gap-[0.4cqw]')}
+      >
+        {label}
+        <Icon name="chevron-down" size={20} className="size-[1cqw]" />
+      </button>
+      {open && (
+        <TvMenu
+          name="Genre"
+          cols={3}
+          items={[all, ...genres].map((g) => ({
+            label: g === all ? 'All genres' : g,
+            current: g === value,
+            run: () => onPick(g),
+          }))}
+          onClose={() => setOpen(false)}
+        />
+      )}
+    </>
+  )
+}
+
+/**
+ * A library with nothing in it (client-library.md › States): said in the page, under the head,
+ * whose own destination takes the focus, since there's nothing else to choose.
+ */
+export function TvEmptyLibrary({ title, children }: { title: string; children: ReactNode }) {
+  return (
+    <div className="grid max-w-[46cqw] gap-[0.8cqw] pt-[2cqw]">
+      <h2 className="font-semibold text-(length:--tv-text-row-title)">{title}</h2>
+      <p className="text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">{children}</p>
+    </div>
+  )
+}
+
+/**
+ * The choices matched nothing: said where the grid was, with Show everything, which clears the
+ * genre and Unwatched, so Down from the choices always has somewhere to go.
+ */
+export function TvNothingMatches({
+  children,
+  onClear,
+}: {
+  children: ReactNode
+  onClear: () => void
+}) {
+  return (
+    <div
+      data-group="grid"
+      data-go-up="sort"
+      className="grid max-w-[46cqw] justify-items-start gap-[0.8cqw] pt-[2cqw]"
+    >
+      <h2 className="font-semibold text-(length:--tv-text-row-title)">Nothing matches</h2>
+      <p className="text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">{children}</p>
+      <TvButton className="mt-[0.6cqw]" onClick={onClear}>
+        Show everything
+      </TvButton>
+    </div>
+  )
+}
+
+/**
+ * Focus on arrival: the grid's first title once it loads, or the head's own destination when the
+ * library is empty; after that, choosing a sort or view keeps focus on the choice, so the next one
+ * is a press away (the owner, 2026-10-31, for every library). Show everything (`key`) focuses
+ * the grid again, since the button it was on has gone.
+ */
+export function useLibraryFocus(ready: boolean, empty: boolean, key: number) {
+  useInitialFocus(
+    ready,
+    `${empty}:${key}`,
+    empty ? '[data-group="nav"] [aria-current="page"]' : '[data-group="grid"] [data-focusable]',
+  )
+}
 
 /** A track's translation down the page, from a transform (`none` and '' are none). */
 const shiftOf = (transform: string) =>
@@ -158,12 +267,14 @@ export function TvLibrary() {
   const library = useLibrary()
   const [sort, setSort] = useState<Sort>('title')
   const [unwatched, setUnwatched] = useState(false)
-  // after an error the grid isn't there, so it re-measures once it's back
-  const index = useIndexBox(library.status)
-  const titled = sort === 'title'
-  // the grid's first title once it loads; after that, choosing a sort or view keeps focus on the
-  // choice, so the next one is a press away (the owner, 2026-10-31, for every library)
-  useInitialFocus(library.status === 'success', null, '[data-group="grid"] [data-focusable]')
+  const [genre, setGenre] = useState(ALL)
+  const [cleared, setCleared] = useState(0)
+  const all = library.data ?? []
+  const none = library.status === 'success' && all.length === 0
+  const items = arrange(all, genre, sort, unwatched)
+  // after an error, or while nothing matches, the grid isn't there, so it re-measures once it's back
+  const index = useIndexBox(`${library.status}:${items.length > 0}`)
+  useLibraryFocus(library.status === 'success', none, cleared)
   if (library.status === 'error')
     return (
       <TvMessage
@@ -177,7 +288,7 @@ export function TvLibrary() {
         {library.error.message}
       </TvMessage>
     )
-  const items = arrange(library.data ?? [], 'all', sort, unwatched)
+  const titled = sort === 'title' && items.length > 0
   const present = new Set(items.map((m) => letterOf(m.sortTitle)))
   return (
     <>
@@ -192,67 +303,91 @@ export function TvLibrary() {
           <TvHead down="sort" />
           <div className="flex items-end gap-[2cqw]">
             <h1 className="font-semibold text-[2.6cqw] leading-none tracking-display">Movies</h1>
-            <div
-              data-group="sort"
-              data-go-up="nav"
-              data-go-down="grid"
-              className="ms-auto flex gap-[0.8cqw]"
-            >
-              {sortChoices.map((s) => (
+            {/* nothing to sort or filter in an empty library */}
+            {!none && (
+              <div
+                data-group="sort"
+                data-go-up="nav"
+                data-go-down="grid"
+                className="ms-auto flex gap-[0.8cqw]"
+              >
+                {sortChoices.map((s) => (
+                  <button
+                    key={s.value}
+                    type="button"
+                    data-focusable=""
+                    aria-pressed={sort === s.value}
+                    onClick={() => setSort(s.value)}
+                    className={choice}
+                  >
+                    {s.label}
+                  </button>
+                ))}
+                <span aria-hidden className="mx-[0.4cqw] w-px self-stretch bg-text/20" />
                 <button
-                  key={s.value}
                   type="button"
                   data-focusable=""
-                  aria-pressed={sort === s.value}
-                  onClick={() => setSort(s.value)}
-                  className="rounded-full px-[1.2cqw] py-[0.45cqw] font-semibold text-(length:--tv-text-pill) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:shadow-(--tv-focus-shadow) aria-pressed:bg-text/12 aria-pressed:text-text"
+                  aria-pressed={unwatched}
+                  onClick={() => setUnwatched((u) => !u)}
+                  className={choice}
                 >
-                  {s.label}
+                  Unwatched
                 </button>
-              ))}
-              <span aria-hidden className="mx-[0.4cqw] w-px self-stretch bg-text/20" />
-              <button
-                type="button"
-                data-focusable=""
-                aria-pressed={unwatched}
-                onClick={() => setUnwatched((u) => !u)}
-                className="rounded-full px-[1.2cqw] py-[0.45cqw] font-semibold text-(length:--tv-text-pill) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:shadow-(--tv-focus-shadow) aria-pressed:bg-text/12 aria-pressed:text-text"
-              >
-                Unwatched
-              </button>
-            </div>
-          </div>
-          <div
-            className={`grid transition-[grid-template-columns,column-gap] ${motion} ${titled ? room.open : room.shut}`}
-          >
-            {/* the rail's room; the rail itself stays put outside the moving track */}
-            <div aria-hidden />
-            {library.status === 'loading' && (
-              <div aria-busy className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]">
-                {Array.from({ length: 14 }, (_, i) => (
-                  // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
-                  <TvTileSkeleton key={i} />
-                ))}
+                <TvGenreChoice genres={genresOf(all)} value={genre} all={ALL} onPick={setGenre} />
               </div>
             )}
-            <ul
-              ref={index.grid}
-              data-group="grid"
-              data-go-left={titled ? 'alpha' : undefined}
-              data-go-up="sort"
-              className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]"
-            >
-              {items.map((m, i) => {
-                const l = letterOf(m.sortTitle)
-                const firstOfLetter = i === 0 || letterOf(items[i - 1]?.sortTitle ?? '') !== l
-                return (
-                  <li key={m.id} {...(firstOfLetter && titled ? { 'data-letter': l } : {})}>
-                    <TvPoster item={m} href={tvHref(`/movies/${m.id}`)} />
-                  </li>
-                )
-              })}
-            </ul>
           </div>
+          {none ? (
+            <TvEmptyLibrary title="No movies yet">
+              When the server’s owner adds movies, they show up here.
+            </TvEmptyLibrary>
+          ) : library.status === 'success' && items.length === 0 ? (
+            <TvNothingMatches
+              onClear={() => {
+                setGenre(ALL)
+                setUnwatched(false)
+                setCleared((c) => c + 1)
+              }}
+            >
+              {genre === ALL
+                ? 'You’ve watched everything here.'
+                : unwatched
+                  ? `You’ve watched everything in ${genre}.`
+                  : `There’s nothing in ${genre} here.`}
+            </TvNothingMatches>
+          ) : (
+            <div
+              className={`grid transition-[grid-template-columns,column-gap] ${motion} ${titled ? room.open : room.shut}`}
+            >
+              {/* the rail's room; the rail itself stays put outside the moving track */}
+              <div aria-hidden />
+              {library.status === 'loading' && (
+                <div aria-busy className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]">
+                  {Array.from({ length: 14 }, (_, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: placeholders have no identity
+                    <TvTileSkeleton key={i} />
+                  ))}
+                </div>
+              )}
+              <ul
+                ref={index.grid}
+                data-group="grid"
+                data-go-left={titled ? 'alpha' : undefined}
+                data-go-up="sort"
+                className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]"
+              >
+                {items.map((m, i) => {
+                  const l = letterOf(m.sortTitle)
+                  const firstOfLetter = i === 0 || letterOf(items[i - 1]?.sortTitle ?? '') !== l
+                  return (
+                    <li key={m.id} {...(firstOfLetter && titled ? { 'data-letter': l } : {})}>
+                      <TvPoster item={m} href={tvHref(`/movies/${m.id}`)} />
+                    </li>
+                  )
+                })}
+              </ul>
+            </div>
+          )}
         </div>
       </main>
     </>

@@ -42,6 +42,7 @@ import {
   useEpisodeTarget,
 } from '../client/shows.ts'
 import { TrailerDialog } from '../client/trailer.tsx'
+import { hitSlop } from '../kit/mobile/device.tsx'
 import type {
   ClientEpisode,
   ClientSeason,
@@ -52,29 +53,18 @@ import type {
 import { informationOf, ShowTracksFields } from '../web/show.tsx'
 import { Facts, fade, Named } from './detail.tsx'
 import { MobileRow } from './home.tsx'
-import { gutter, mobileHref } from './shell.tsx'
+import { PullToRefresh } from './pull.tsx'
+import { BackBadge, gutter, mobileHref } from './shell.tsx'
 
-const pill =
-  'grid min-h-9 shrink-0 cursor-pointer place-items-center rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus aria-pressed:border-transparent aria-pressed:bg-text aria-pressed:text-bg'
+const pill = cn(
+  'relative grid min-h-9 shrink-0 cursor-pointer place-items-center rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus aria-pressed:border-transparent aria-pressed:bg-text aria-pressed:text-bg',
+  hitSlop,
+)
 
 export function MobileShow() {
   const { id } = useParams<{ id: string }>()
   const detail = useShow(id)
-  const back = (
-    <a
-      href={mobileHref('/library/shows')}
-      onClick={(e) => {
-        if (history.length > 1) {
-          e.preventDefault()
-          history.back()
-        }
-      }}
-      aria-label="Back"
-      className="glass-badge absolute top-2 left-3 z-10 grid size-10 place-items-center rounded-full outline-none focus-visible:ring-focus"
-    >
-      <Icon name="chevron-left" size={20} />
-    </a>
-  )
+  const back = <BackBadge fallback="/library/shows" />
   if (detail.status === 'loading')
     return (
       <div aria-busy className="relative grid gap-5">
@@ -126,8 +116,11 @@ export function MobileShow() {
   return (
     <>
       {back}
-      {/* keyed by the show, so the season picked resets to Play's when another show opens */}
-      <ShowPage key={id} detail={detail.data} />
+      {/* Back stays where it is while the page is pulled, as a navigation bar does */}
+      <PullToRefresh onRefresh={detail.refetch}>
+        {/* keyed by the show, so the season picked resets to Play's when another show opens */}
+        <ShowPage key={id} detail={detail.data} />
+      </PullToRefresh>
     </>
   )
 }
@@ -346,7 +339,7 @@ function Season({ show, season: x }: { show: ClientShow; season: ClientSeason })
           variant="ghost"
           size="sm"
           icon="check"
-          className="-me-2 ms-auto"
+          className={cn('-me-2 relative ms-auto', hitSlop)}
           aria-pressed={watched}
           onClick={() => void mark.season.run(show.id, x.number, !watched)}
         >
@@ -413,14 +406,15 @@ function Episode({ episode: e, download }: { episode: ClientEpisode; download: O
             <span className="text-[12px] text-text-3">{airedDate(e.aired)}</span>
           </span>
         </a>
-        <EpisodeDownload app="mobile" source={download} className="size-10" />
+        <EpisodeDownload app="mobile" source={download} className={cn('size-10', hitSlop)} />
         <button
           type="button"
           aria-label={`${label}: ${e.title}`}
           aria-pressed={e.watched}
           onClick={() => void mark.episode.run(e.id, !e.watched)}
           className={cn(
-            'grid size-10 cursor-pointer place-items-center rounded-full outline-none transition-tint focus-visible:ring-focus',
+            'relative grid size-10 cursor-pointer place-items-center rounded-full outline-none transition-tint focus-visible:ring-focus',
+            hitSlop,
             e.watched ? 'bg-accent-soft text-accent-text' : 'text-text-3',
           )}
         >

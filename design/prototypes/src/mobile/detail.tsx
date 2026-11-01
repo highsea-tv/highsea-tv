@@ -39,7 +39,7 @@ import { CollectionTile } from '../kit/collection-art.tsx'
 import type { ClientDetail, Video } from '../mock/types.ts'
 import { WatchWith } from '../web/detail.tsx'
 import { MobileRow, PosterItems } from './home.tsx'
-import { gutter, mobileHref } from './shell.tsx'
+import { BackBadge, gutter, mobileHref } from './shell.tsx'
 
 /** The fade from the art into the page, under the logo. */
 export const fade = 'absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg)_2%,transparent_55%)]'
@@ -49,21 +49,7 @@ export function MobileDetail() {
   const detail = useItem(id, 'mobile')
   const [trailer, setTrailer] = useState<Video | null>(null)
   const [tracks, setTracks] = useState(false)
-  const back = (
-    <a
-      href={mobileHref('/')}
-      onClick={(e) => {
-        if (history.length > 1) {
-          e.preventDefault()
-          history.back()
-        }
-      }}
-      aria-label="Back"
-      className="glass-badge absolute top-2 left-3 z-10 grid size-10 place-items-center rounded-full outline-none focus-visible:ring-focus"
-    >
-      <Icon name="chevron-left" size={20} />
-    </a>
-  )
+  const back = <BackBadge fallback="/" />
   if (detail.status === 'loading')
     return (
       <div aria-busy className="relative grid gap-5">

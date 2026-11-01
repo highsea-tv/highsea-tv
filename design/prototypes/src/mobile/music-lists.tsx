@@ -19,7 +19,14 @@ import { MobileSongMenu, MoreButton } from './song-menu.tsx'
 
 const fromSongs: PlayingFrom = { kind: 'songs', name: 'Songs', to: '/music/songs' }
 
-export function MobileSongList({ songs }: { songs: ClientLibrarySong[] }) {
+export function MobileSongList({
+  songs,
+  mark,
+}: {
+  songs: ClientLibrarySong[]
+  /** The A–Z scrubber's mark on the first song of each letter. */
+  mark?: (i: number) => { 'data-letter'?: string }
+}) {
   const player = useMusicPlayer()
   const ids = songs.map((s) => s.id)
   return (
@@ -32,6 +39,7 @@ export function MobileSongList({ songs }: { songs: ClientLibrarySong[] }) {
             song={s}
             here={here}
             playing={player.playing}
+            letter={mark?.(i)['data-letter']}
             onPlay={() =>
               here ? player.toggle() : player.play({ songs: ids }, { start: i, from: fromSongs })
             }
@@ -50,6 +58,7 @@ export function MobileSongRow({
   onPlay,
   onRemove,
   handle,
+  letter,
   as: Row = 'li',
 }: {
   song: ClientLibrarySong
@@ -60,12 +69,15 @@ export function MobileSongRow({
   onRemove?: () => void
   /** On a playlist's page: the handle that reorders it. */
   handle?: ReactNode
+  /** In Songs sorted by name: the letter this song is the first of, for the A–Z scrubber. */
+  letter?: string
   as?: 'li' | 'div'
 }) {
   const [menu, setMenu] = useState(false)
   const press = useLongPress(() => setMenu(true))
   return (
     <Row
+      data-letter={letter}
       className={cn(
         'grid items-center gap-1',
         handle ? 'grid-cols-[auto_minmax(0,1fr)_auto]' : 'grid-cols-[minmax(0,1fr)_auto]',

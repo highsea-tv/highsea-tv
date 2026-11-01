@@ -7,10 +7,11 @@
 // and the quality, as on the other apps). Focus moving down the list
 // shows each section (as tvOS does); Right enters it, Left returns to the list. Theme and sound
 // apply to this TV; the home layout follows the person.
-import { cn } from '@highsea-tv/ui-web'
-import { useState } from 'react'
+import { relative } from '@highsea-tv/core/format'
+import { cn, type IconName, Mark } from '@highsea-tv/ui-web'
+import { type ReactNode, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
-import { useServer } from '../client/data.ts'
+import { useConnection, useKnownServers, useServer } from '../client/data.ts'
 import {
   audioLanguages,
   type PlaybackSettings,
@@ -30,6 +31,7 @@ import {
   useThemeChoices,
 } from '../client/settings.ts'
 import { CustomThemeStyles } from '../client/settings-sections.tsx'
+import { useNow } from '../mock/hooks.tsx'
 import { useProto } from '../screen/screen.tsx'
 import { useBack } from './back.ts'
 import { TvAvatar, TvButton, TvHead, useInitialFocus } from './kit.tsx'
@@ -285,7 +287,7 @@ function Home() {
   )
 }
 
-function Devices() {
+function Devices({ ask }: SectionProps) {
   const { devices, revoke } = useMyDevices()
   return (
     <ul className="grid gap-[0.4cqw]">
@@ -296,7 +298,21 @@ function Devices() {
             {d.client === 'tvos' && <span className="text-text-3"> · this TV</span>}
           </span>
           {d.client !== 'tvos' && d.client !== 'admin' && (
-            <TvButton onClick={() => revoke(d.id)}>Sign out</TvButton>
+            // asks first, as the other apps do: it needs a code or password to come back
+            <TvButton
+              aria-label={`Sign out ${d.name}`}
+              onClick={() =>
+                ask({
+                  title: `Sign out ${d.name}?`,
+                  body: 'It needs a code or password to come back.',
+                  icon: 'sign-out',
+                  label: 'Sign out',
+                  run: () => void revoke(d.id),
+                })
+              }
+            >
+              Sign out
+            </TvButton>
           )}
         </li>
       ))}
@@ -320,23 +336,74 @@ function About() {
   )
 }
 
-function Servers() {
+/**
+ * Every server this TV has signed in to, the one in use marked, as the other apps list them; another
+ * server is picked on the sign-in screen. Signing out asks first, then goes there.
+ */
+function Servers({ ask }: SectionProps) {
   const server = useServer()
+  const known = useKnownServers()
+  const connection = useConnection()
+  const now = useNow()
   const { people } = usePeople()
   const main = people.find((p) => p.main)
+  const name = server.data?.name ?? 'this server'
   const [, navigate] = useLocation()
   return (
     <div className="grid gap-[1.2cqw]">
-      <p className="text-(length:--tv-text-synopsis) text-text-2">
-        Signed in to {server.data?.name ?? 'this server'} as {main?.name ?? 'Ines'}. Signing out
-        signs out every profile on this TV.
+      <ul aria-label="Servers" className="grid max-w-[44cqw] gap-[0.6cqw]">
+        {(known.data ?? []).map((k) => {
+          const current = k.id === server.data?.id
+          return (
+            <li key={k.id} className="flex min-h-[3cqw] items-center gap-[1cqw]">
+              <Mark size={32} className="size-[2cqw] shrink-0" />
+              <span className="grid flex-1">
+                <span className="text-(length:--tv-text-button)">
+                  {k.name}
+                  {current && <span className="text-text-3"> · in use</span>}
+                </span>
+                <span className="text-(length:--tv-text-pill) text-text-3">
+                  {current
+                    ? connection === 'remote'
+                      ? `Connected remotely · ${k.addresses.remote}`
+                      : `On this network · ${k.addresses.local}`
+                    : `${k.signedIn ? 'Signed in' : 'Signed out'} · last used ${relative(k.lastSeen, now)}`}
+                </span>
+              </span>
+              {!current && (
+                <TvButton
+                  aria-label={`${k.signedIn ? 'Switch to' : 'Sign in to'} ${k.name}`}
+                  onClick={() => navigate('/connect')}
+                >
+                  {k.signedIn ? 'Switch' : 'Sign in'}
+                </TvButton>
+              )}
+            </li>
+          )
+        })}
+      </ul>
+      <p className="max-w-[44cqw] text-(length:--tv-text-meta) text-text-3">
+        Signed in to {name} as {main?.name ?? 'Ines'}. Signing out signs out every profile on this
+        TV.
       </p>
       <div className="flex gap-[1cqw]">
         <TvButton icon="server" onClick={() => navigate('/connect')}>
           Another server
         </TvButton>
-        <TvButton icon="sign-out" onClick={() => navigate('/connect')}>
-          Sign out
+        <TvButton
+          icon="sign-out"
+          onClick={() =>
+            ask({
+              title: `Sign out of ${name}?`,
+              body: 'Every profile on this TV signs out. You can sign in again with a code.',
+              icon: 'sign-out',
+              label: 'Sign out',
+              // the sign-in screen in Settings' place, so Back doesn't return to a server signed out of
+              run: () => navigate('/connect', { replace: true }),
+            })
+          }
+        >
+          Sign out of {name}
         </TvButton>
       </div>
     </div>
@@ -420,7 +487,14 @@ function Profiles({ askDelete }: SectionProps) {
   )
 }
 
-type SectionProps = { openPin: (flow: PinFlow) => void; askDelete: (p: Profile) => void }
+/** A question before something that can't be taken back: signing out, a device or this TV. */
+type Ask = { title: string; body: string; icon: IconName; label: string; run: () => void }
+
+type SectionProps = {
+  openPin: (flow: PinFlow) => void
+  askDelete: (p: Profile) => void
+  ask: (q: Ask) => void
+}
 type TvSectionId = SettingsSectionId | 'pin' | 'people'
 
 const bodies: Record<TvSectionId, (props: SectionProps) => React.JSX.Element> = {
@@ -515,43 +589,98 @@ function PinSteps({ flow, onClose }: { flow: PinFlow; onClose: () => void }) {
   )
 }
 
-/** Deleting a profile asks first: its watch history goes with it, everywhere. */
-function ConfirmDelete({ person, onClose }: { person: Profile; onClose: () => void }) {
-  const { remove } = usePeople()
+/** A question over the page: Cancel first, so OK by accident changes nothing. Back cancels. */
+function Confirm({
+  title,
+  body,
+  art,
+  action,
+  onClose,
+}: {
+  title: string
+  body: string
+  art?: ReactNode
+  action: ReactNode
+  onClose: () => void
+}) {
   useBack(onClose)
-  useInitialFocus(true, person.id, '[data-confirm] [data-initial]')
+  useInitialFocus(true, title, '[data-confirm] [data-initial]')
   return (
     <div
       data-isolate=""
       data-confirm=""
       role="dialog"
-      aria-label={`Delete ${person.name}’s profile?`}
+      aria-label={title}
       className="absolute inset-0 z-20 grid place-items-center bg-bg/80"
     >
       <div className="grid max-w-[40cqw] justify-items-center gap-[1.4cqw] rounded-[1cqw] bg-s1 p-[2.4cqw] text-center">
-        <TvAvatar person={person} style={{ width: '5.6cqw' }} />
-        <h1 className="font-semibold text-[2.2cqw] leading-[1.15]">
-          Delete {person.name}’s profile?
-        </h1>
-        <p className="text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">
-          Its watch history and Home go with it, on every device.
-        </p>
+        {art}
+        <h1 className="font-semibold text-[2.2cqw] leading-[1.15]">{title}</h1>
+        <p className="text-(length:--tv-text-synopsis) text-text-2 leading-[1.45]">{body}</p>
         <div data-group="confirm" className="flex gap-[1cqw]">
           <TvButton initial onClick={onClose}>
             Cancel
           </TvButton>
-          <TvButton
-            icon="delete"
-            onClick={() => {
-              remove(person.id)
-              onClose()
-            }}
-          >
-            Delete profile
-          </TvButton>
+          {action}
         </div>
       </div>
     </div>
+  )
+}
+
+/** Deleting a profile asks first: its watch history goes with it, everywhere. */
+function ConfirmDelete({ person, onClose }: { person: Profile; onClose: () => void }) {
+  const { remove } = usePeople()
+  return (
+    <Confirm
+      title={`Delete ${person.name}’s profile?`}
+      body="Its watch history and Home go with it, on every device."
+      art={<TvAvatar person={person} style={{ width: '5.6cqw' }} />}
+      onClose={onClose}
+      action={
+        <TvButton
+          icon="delete"
+          onClick={() => {
+            remove(person.id)
+            onClose()
+          }}
+        >
+          Delete profile
+        </TvButton>
+      }
+    />
+  )
+}
+
+/** Signing out, a device or this TV, asks first; focus goes back where it was, or to the section. */
+function ConfirmAsk({ q, onClose }: { q: Ask; onClose: () => void }) {
+  const from = useRef(document.activeElement as HTMLElement | null)
+  const close = () => {
+    onClose()
+    requestAnimationFrame(() =>
+      (from.current?.isConnected
+        ? from.current
+        : document.querySelector<HTMLElement>('[data-group="menu"] [aria-current="true"]')
+      )?.focus({ preventScroll: true }),
+    )
+  }
+  return (
+    <Confirm
+      title={q.title}
+      body={q.body}
+      onClose={close}
+      action={
+        <TvButton
+          icon={q.icon}
+          onClick={() => {
+            close()
+            q.run()
+          }}
+        >
+          {q.label}
+        </TvButton>
+      }
+    />
   )
 }
 
@@ -561,6 +690,7 @@ export function TvProfile() {
   const [section, setSection] = useState<TvSectionId>('appearance')
   const [pinFlow, setPinFlow] = useState<PinFlow | null>(null)
   const [deleting, setDeleting] = useState<Profile | null>(null)
+  const [asking, setAsking] = useState<Ask | null>(null)
   const [focusKey, setFocusKey] = useState(0)
   useInitialFocus(!pinFlow && !deleting, focusKey, '[data-group="profile"] [aria-current="true"]')
   const Body = bodies[section]
@@ -568,7 +698,7 @@ export function TvProfile() {
   return (
     <>
       <div
-        {...(pinFlow || deleting ? { 'data-isolate': '' } : {})}
+        {...(pinFlow || deleting || asking ? { 'data-isolate': '' } : {})}
         className="absolute inset-0 grid grid-cols-[24cqw_minmax(0,1fr)] grid-rows-[auto_auto_minmax(0,1fr)] gap-x-[4cqw] gap-y-[2cqw] px-(--tv-safe-x) pb-(--tv-safe-y)"
       >
         <TvHead down="profile" className="col-span-full" />
@@ -630,9 +760,10 @@ export function TvProfile() {
           className="grid content-start gap-[1.4cqw] pt-[calc(var(--tv-text-row-title)+1cqw)]"
         >
           <p className="text-(length:--tv-text-meta) text-text-3">{current?.hint}</p>
-          <Body openPin={setPinFlow} askDelete={setDeleting} />
+          <Body openPin={setPinFlow} askDelete={setDeleting} ask={setAsking} />
         </section>
       </div>
+      {asking && <ConfirmAsk q={asking} onClose={() => setAsking(null)} />}
       {deleting && (
         <ConfirmDelete
           person={deleting}

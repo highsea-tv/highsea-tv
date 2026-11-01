@@ -5,8 +5,9 @@
 // says so and gives its rules in words.
 import { Button, cn, EmptyState, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
 import { useParams } from 'wouter'
-import { useCollection } from '../client/data.ts'
+import { titlesHere, titlesRow, useCollection } from '../client/data.ts'
 import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
+import { ShowPoster } from '../client/show-card.tsx'
 import { gutter, webHref } from './shell.tsx'
 
 export function WebCollection() {
@@ -51,7 +52,7 @@ export function WebCollection() {
         </EmptyState>
       </main>
     )
-  const { collection: c, items } = found.data
+  const { collection: c, items, shows } = found.data
   return (
     <main className="grid grid-cols-[minmax(0,1fr)] gap-8 pb-16">
       <header className="relative">
@@ -67,14 +68,14 @@ export function WebCollection() {
           </p>
           <h1 className="text-display">{c.name}</h1>
           <p className="text-text-2 text-body">
-            {c.count} {c.count === 1 ? 'movie' : 'movies'} here · {c.years}
+            {titlesHere(items.length, shows.length)} here · {c.years}
           </p>
           {c.smart?.words && <p className="text-caption text-text-3">{c.smart.words}</p>}
           {c.overview && <p className="max-w-[60ch] text-body text-text-2">{c.overview}</p>}
         </div>
       </header>
       <ul
-        aria-label="Movies"
+        aria-label={titlesRow(items.length, shows.length)}
         className={cn(
           'mx-auto grid w-full max-w-[1680px] grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-x-4 gap-y-6',
           gutter,
@@ -83,6 +84,11 @@ export function WebCollection() {
         {items.map((m) => (
           <li key={m.id}>
             <MediaPoster item={m} titleSize="body" href={webHref(`/movies/${m.id}`)} />
+          </li>
+        ))}
+        {shows.map((m) => (
+          <li key={`show-${m.id}`}>
+            <ShowPoster show={m} titleSize="body" href={webHref(`/shows/${m.id}`)} />
           </li>
         ))}
       </ul>

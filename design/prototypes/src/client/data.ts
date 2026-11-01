@@ -79,7 +79,7 @@ export function searchedFor() {
   }
 }
 
-export function useSearchQuery() {
+export function useSearchQuery(linked?: string) {
   const saved = (key: string) => {
     try {
       const v = (history.state as Record<string, unknown> | null)?.[key]
@@ -88,7 +88,8 @@ export function useSearchQuery() {
       return ''
     }
   }
-  const [q, setQ] = useState(() => saved('hsSearch'))
+  // a search opened from its address (the web's) starts with that address's text
+  const [q, setQ] = useState(() => linked ?? saved('hsSearch'))
   const [returnTo] = useState(() => saved('hsSearchFocus'))
   useEffect(() => remember({ hsSearch: q }), [q])
   return {
@@ -171,7 +172,22 @@ export const useMarkEpisodes = () => ({
 })
 
 /** "6 movies · 2010–2020". */
-export const collectionCaption = (c: { count: number; years: string }) => format.caption(c)
+/** "4 movies and 1 show", leaving out a kind it has none of. */
+export const titlesHere = (movies: number, shows: number) =>
+  [
+    movies ? `${movies} ${movies === 1 ? 'movie' : 'movies'}` : '',
+    shows ? `${shows} ${shows === 1 ? 'show' : 'shows'}` : '',
+  ]
+    .filter(Boolean)
+    .join(' and ')
+
+/** A collection's row, named by what's in it, the films first. */
+export const titlesRow = (movies: number, shows: number) =>
+  movies && shows ? 'Films and shows' : shows ? 'Shows' : 'Films'
+
+/** "4 movies and 1 show · 2006–2019"; with no shows, the shared caption every client has. */
+export const collectionCaption = (c: { count: number; years: string; shows?: number }) =>
+  c.shows ? `${titlesHere(c.count, c.shows)} · ${c.years}` : format.caption(c)
 
 /** Narrows a Home row to one of films (and episodes): every row but shows' and music's. */
 export const isFilmSection = (s: HomeSection): s is FilmSection =>
