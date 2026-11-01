@@ -10,7 +10,6 @@ import { WebAlbum } from './album.tsx'
 import { WebArtist } from './artist.tsx'
 import { WebCollection } from './collection.tsx'
 import { WebCollections } from './collections.tsx'
-import { WebComing } from './coming.tsx'
 import { WebDetail } from './detail.tsx'
 import { WebHome } from './home.tsx'
 import { WebLibrary } from './library.tsx'
@@ -20,6 +19,8 @@ import { WebPlayer } from './player.tsx'
 import { WebSearch } from './search.tsx'
 import { WebDownloads, WebProfile, WebSettings } from './settings.tsx'
 import { WebShell, webHref } from './shell.tsx'
+import { WebShow } from './show.tsx'
+import { WebShows } from './shows.tsx'
 import { WindowFrame } from './window.tsx'
 
 function Connect() {
@@ -68,9 +69,14 @@ function Routes() {
           <WebLibrary />
         </WebShell>
       </Route>
+      <Route path="/shows/:id">
+        <WebShell overHero>
+          <WebShow />
+        </WebShell>
+      </Route>
       <Route path="/shows">
         <WebShell>
-          <WebComing kind="shows" />
+          <WebShows />
         </WebShell>
       </Route>
       <Route path="/music/albums/:id">

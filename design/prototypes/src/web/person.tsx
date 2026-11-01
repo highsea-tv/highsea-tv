@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A person on the web and desktop (docs/product/client-people.md), from the streaming apps' common
 // choices (the owner, 2026-10-31): their best-rated film's art blurred behind a round portrait, the
-// name, what they're known for and how many films here, born and died, and the biography cut at
-// three lines with More. Then a row of posters for each department they worked in here, the one
-// they're known for first, each poster with their role and the year. Only what's on this server,
-// as Jellyfin and Infuse do: the household browses what it can play.
+// name, what they're known for and how much of theirs is here, born and died, and the biography
+// cut at three lines with More. Then a row of posters for each department they worked in on the
+// films here, the one they're known for first, each poster with their role and the year; then the
+// shows they're in, and their albums when they're an artist here. Only what's on this server, as
+// Jellyfin and Infuse do: the household browses what it can play.
 import {
   Button,
   CarouselRow,
@@ -17,8 +18,10 @@ import {
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { usePerson } from '../client/data.ts'
-import { departmentTitle, lifeOf, roleNames } from '../client/detail-facts.ts'
+import { departmentTitle, hereOf, lifeOf, roleNames } from '../client/detail-facts.ts'
 import { MediaPosterSkeleton } from '../client/media-card.tsx'
+import { ShowPoster } from '../client/show-card.tsx'
+import { showYears } from '../client/shows.ts'
 import type { ClientPerson } from '../mock/types.ts'
 import { gutter, webHref } from './shell.tsx'
 
@@ -42,7 +45,7 @@ export function WebPerson() {
             </Button>
           }
         >
-          Their films may have been removed.
+          What they were part of may have been removed.
         </EmptyState>
       </main>
     )
@@ -91,18 +94,47 @@ export function WebPerson() {
             ))}
           </CarouselRow>
         ))}
+        {p.shows.length > 0 && (
+          <CarouselRow title="Shows">
+            {p.shows.map(({ show, role }) => (
+              <ShowPoster
+                key={show.id}
+                show={show}
+                href={webHref(`/shows/${show.id}`)}
+                titleSize="body"
+                caption={`${roleNames(role)} · ${showYears(show)}`}
+              />
+            ))}
+          </CarouselRow>
+        )}
+        {p.albums.length > 0 && (
+          <CarouselRow title="Albums">
+            {p.albums.map((a) => (
+              <Poster
+                key={a.id}
+                aspect="square"
+                title={a.title}
+                src={a.cover}
+                href={webHref(`/music/albums/${a.id}`)}
+                showTitle
+                titleSize="body"
+                caption={String(a.year)}
+              />
+            ))}
+          </CarouselRow>
+        )}
       </div>
     </main>
   )
 }
 
-/** "Acting · 4 movies here", then born and died. */
+/** "Acting · 3 movies, 2 shows and 4 albums here", then born and died. */
 export function Facts({ person: p, className }: { person: ClientPerson; className?: string }) {
   const life = lifeOf(p)
   return (
     <div className={cn('grid gap-1', className)}>
       <p>
-        {departmentTitle[p.knownFor]} · {p.count} {p.count === 1 ? 'movie' : 'movies'} here
+        {departmentTitle[p.knownFor]} · {hereOf(p)}
       </p>
       {life && <p className="text-text-3">{life}</p>}
     </div>

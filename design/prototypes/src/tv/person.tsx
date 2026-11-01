@@ -1,25 +1,36 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A person on the TV (docs/product/client-people.md), as Plex's and the Apple TV app's TV pages
 // lay one out: the ambient backdrop (their best-rated film here, blurred and dimmed), the round
-// portrait beside the name, what they're known for and how many films here, born and died, and the
-// biography cut at four lines, with More when it's longer. Then a film row for each department
-// they worked in here, the one they're known for first, each film with their role under its
-// title. Focus starts on the first row's film; Up and Down go row by row; Back goes back to
-// wherever it was opened from.
+// portrait beside the name, what they're known for and how much of theirs is here, born and died,
+// and the biography cut at four lines, with More when it's longer. Then a film row for each
+// department they worked in on the films here, the one they're known for first, each film with
+// their role under its title; then their shows and their albums. Focus starts on the first row;
+// Up and Down go row by row; Back goes back to wherever it was opened from.
 import { Skeleton } from '@highsea-tv/ui-web'
 import { useRef, useState } from 'react'
 import { useParams } from 'wouter'
 import { usePerson } from '../client/data.ts'
-import { departmentTitle, lifeOf, roleNames } from '../client/detail-facts.ts'
+import { departmentTitle, hereOf, lifeOf, roleNames } from '../client/detail-facts.ts'
+import { UnwatchedCount } from '../client/show-card.tsx'
+import { showYears } from '../client/shows.ts'
 import { LONG_BIO } from '../web/person.tsx'
 import { TvFilmRow, TvFilmRowSkeleton } from './film-row.tsx'
-import { TvButton, TvHead, TvMessage, tvHref, useInitialFocus, useRowNavigation } from './kit.tsx'
+import {
+  TvButton,
+  TvHead,
+  TvMessage,
+  TvRow,
+  TvTile,
+  tvHref,
+  useInitialFocus,
+  useRowNavigation,
+} from './kit.tsx'
 
 export function TvPerson() {
   const { id } = useParams<{ id: string }>()
   const found = usePerson(id)
   const rows = useRef<HTMLDivElement>(null)
-  useInitialFocus(found.status === 'success', id, '[data-films] [data-focusable]')
+  useInitialFocus(found.status === 'success', id, '[data-first] [data-focusable]')
   useRowNavigation(rows, found.status === 'success' && id)
   if (found.status === 'loading')
     return (
@@ -50,13 +61,25 @@ export function TvPerson() {
           </TvButton>
         }
       >
-        Their films may have been removed.
+        What they were part of may have been removed.
       </TvMessage>
     )
   const p = found.data
   const life = lifeOf(p)
   const long = (p.bio?.length ?? 0) >= LONG_BIO
-  const first = p.departments[0]?.department
+  // the rows in order, so each knows the one above it: the films by department, the shows, the music
+  const groups = [
+    ...p.departments.map((x) => `films-${x.department}`),
+    ...(p.shows.length > 0 ? ['shows'] : []),
+    ...(p.albums.length > 0 ? ['music'] : []),
+  ]
+  const above = (group: string) => {
+    const i = groups.indexOf(group)
+    return i > 0 ? (groups[i - 1] ?? 'nav') : long ? 'bio' : 'nav'
+  }
+  // the first row sits low, so the name above stays on screen while it's focused
+  const firstRow = (group: string) =>
+    group === groups[0] ? { 'data-first': '', 'data-keep': '0.72' } : {}
   return (
     <>
       <img
@@ -72,7 +95,7 @@ export function TvPerson() {
           data-keep="0.4"
           className="relative grid grid-cols-1 gap-[1.6cqw] pb-(--tv-safe-y) transition-lift"
         >
-          <TvHead down={long ? 'bio' : `films-${first}`} className="px-(--tv-safe-x)" />
+          <TvHead down={long ? 'bio' : groups[0]} className="px-(--tv-safe-x)" />
           <section
             aria-labelledby="name"
             data-row=""
@@ -89,28 +112,26 @@ export function TvPerson() {
                 {p.name}
               </h1>
               <p className="text-(length:--tv-text-meta) text-text-2">
-                {departmentTitle[p.knownFor]} · {p.count} {p.count === 1 ? 'movie' : 'movies'} here
+                {departmentTitle[p.knownFor]} · {hereOf(p)}
               </p>
               {life && <p className="text-(length:--tv-text-pill) text-text-3">{life}</p>}
               {p.bio && <Bio text={p.bio} long={long} />}
             </div>
           </section>
-          {p.departments.map(({ department, credits }, i) => {
+          {p.departments.map(({ department, credits }) => {
             const roles = new Map(credits.map((c) => [c.item.id, roleNames(c.role)]))
+            const group = `films-${department}`
             return (
               <div
                 key={department}
                 data-row=""
-                // the first row sits low, so the name above stays on screen while it's focused
-                {...(i === 0 ? { 'data-films': '', 'data-keep': '0.72' } : {})}
+                {...firstRow(group)}
                 className="relative grid grid-cols-1"
               >
                 <TvFilmRow
-                  group={`films-${department}`}
+                  group={group}
                   title={departmentTitle[department]}
-                  goUp={
-                    i === 0 ? (long ? 'bio' : 'nav') : `films-${p.departments[i - 1]?.department}`
-                  }
+                  goUp={above(group)}
                   items={credits.map((c) => c.item)}
                   hrefOf={(m) => tvHref(`/movies/${m.id}`)}
                   noteOf={(m) => roles.get(m.id) ?? ''}
@@ -118,6 +139,40 @@ export function TvPerson() {
               </div>
             )
           })}
+          {p.shows.length > 0 && (
+            <div data-row="" {...firstRow('shows')} className="relative grid grid-cols-1">
+              <TvRow group="shows" title="Shows" goUp={above('shows')}>
+                {p.shows.map(({ show, role }) => (
+                  <li key={show.id} className="w-[12cqw] shrink-0">
+                    <TvTile
+                      title={show.title}
+                      caption={`${roleNames(role)} · ${showYears(show)}`}
+                      src={show.art.poster}
+                      href={tvHref(`/shows/${show.id}`)}
+                      status={<UnwatchedCount show={show} />}
+                    />
+                  </li>
+                ))}
+              </TvRow>
+            </div>
+          )}
+          {p.albums.length > 0 && (
+            <div data-row="" {...firstRow('music')} className="relative grid grid-cols-1">
+              <TvRow group="music" title="Albums" goUp={above('music')}>
+                {p.albums.map((a) => (
+                  <li key={a.id} className="w-[12cqw] shrink-0">
+                    <TvTile
+                      square
+                      title={a.title}
+                      caption={String(a.year)}
+                      src={a.cover}
+                      href={tvHref(`/music/albums/${a.id}`)}
+                    />
+                  </li>
+                ))}
+              </TvRow>
+            </div>
+          )}
         </div>
       </main>
     </>

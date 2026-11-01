@@ -53,7 +53,8 @@ export function focusFrom(from: Element | null, to: HTMLElement, play: (e: 'navi
 
 /**
  * Up and Down between a page's rows (`[data-row]` inside `ref`, in order) go to the next row with
- * something to focus, landing on the item it was left on, or its first. The navigator's nearest
+ * something to focus, landing on the item it was left on, or the one marked `data-entry` (a
+ * show's next episode), or its first. The navigator's nearest
  * centre would land mid-row, or pass over a film row, whose one stop sits at its left, from a card
  * far to the right (the owner, 2026-10-30). Past the first or last row, the navigator carries on.
  * It listens on `ref` itself, so it runs before the navigator on the TV's root; a screen that
@@ -81,7 +82,10 @@ export function useRowNavigation(ref: RefObject<HTMLElement | null>, ready: unkn
       const row = rows[i]
       if (!row) return
       const was = left.get(row)
-      const to = was?.isConnected ? was : row.querySelector<HTMLElement>('[data-focusable]')
+      const to = was?.isConnected
+        ? was
+        : (row.querySelector<HTMLElement>('[data-focusable][data-entry]') ??
+          row.querySelector<HTMLElement>('[data-focusable]'))
       if (!to) return
       e.preventDefault()
       focusFrom(e.target as Element, to, play)
@@ -204,6 +208,7 @@ export function TvTile({
   square = false,
   progress = null,
   progressBelow = false,
+  status,
 }: {
   title: string
   caption: string
@@ -214,6 +219,8 @@ export function TvTile({
   square?: boolean
   progress?: number | null
   progressBelow?: boolean
+  /** A count or mark on the art (a show's unwatched episodes), as Poster draws it. */
+  status?: ReactNode
 }) {
   return (
     <a
@@ -228,6 +235,7 @@ export function TvTile({
         aspect={square ? 'square' : wide ? 'still' : 'poster'}
         progress={progress !== null ? progress * 100 : undefined}
         progressBelow={progressBelow}
+        status={status}
       />
       <span className="mt-[1cqw] block truncate font-semibold text-(length:--tv-text-meta) text-text-2 leading-[1.3] transition-lift group-focus-visible/link:text-text">
         {title}

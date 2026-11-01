@@ -87,7 +87,7 @@ export function WebArtist() {
               </Button>
               {person && (
                 <Button variant="ghost" icon="movie" asChild>
-                  <a href={webHref(`/people/${person}`)}>Their films</a>
+                  <a href={webHref(`/people/${person}`)}>Their films and shows</a>
                 </Button>
               )}
             </div>

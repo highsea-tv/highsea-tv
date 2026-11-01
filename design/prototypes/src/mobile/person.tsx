@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A person on mobile (docs/product/client-people.md), as the Apple TV app's iPhone page lays one
 // out: Back over their best-rated film's art, blurred; the round portrait centred, the name, what
-// they're known for and how many films here, born and died, and the biography cut at four lines
-// with More. Then a row of posters for each department they worked in here, the one they're known
-// for first, each with their role and the year.
+// they're known for and how much of theirs is here, born and died, and the biography cut at four
+// lines with More. Then a row of posters for each department they worked in on the films here, the
+// one they're known for first, each with their role and the year; then their shows and albums.
 import { Button, cn, EmptyState, Icon, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { usePerson } from '../client/data.ts'
-import { departmentTitle, lifeOf, roleNames } from '../client/detail-facts.ts'
+import { departmentTitle, hereOf, lifeOf, roleNames } from '../client/detail-facts.ts'
+import { ShowPoster } from '../client/show-card.tsx'
+import { showYears } from '../client/shows.ts'
 import { LONG_BIO } from '../web/person.tsx'
 import { MobileRow, MobileRowSkeleton } from './home.tsx'
 import { gutter, mobileHref } from './shell.tsx'
@@ -58,7 +60,7 @@ export function MobilePerson() {
             </Button>
           }
         >
-          Their films may have been removed.
+          What they were part of may have been removed.
         </EmptyState>
       </div>
     )
@@ -84,7 +86,7 @@ export function MobilePerson() {
             {p.name}
           </h1>
           <p className="text-[14px] text-text-2">
-            {departmentTitle[p.knownFor]} · {p.count} {p.count === 1 ? 'movie' : 'movies'} here
+            {departmentTitle[p.knownFor]} · {hereOf(p)}
           </p>
           {life && <p className="text-[13px] text-text-3">{life}</p>}
         </div>
@@ -105,6 +107,35 @@ export function MobilePerson() {
           ))}
         </MobileRow>
       ))}
+      {p.shows.length > 0 && (
+        <MobileRow title="Shows">
+          {p.shows.map(({ show, role }) => (
+            <li key={show.id} className="w-[30%] shrink-0 snap-start">
+              <ShowPoster
+                show={show}
+                href={mobileHref(`/shows/${show.id}`)}
+                caption={`${roleNames(role)} · ${showYears(show)}`}
+              />
+            </li>
+          ))}
+        </MobileRow>
+      )}
+      {p.albums.length > 0 && (
+        <MobileRow title="Albums">
+          {p.albums.map((a) => (
+            <li key={a.id} className="w-[40%] shrink-0 snap-start">
+              <Poster
+                aspect="square"
+                title={a.title}
+                src={a.cover}
+                href={mobileHref(`/music/albums/${a.id}`)}
+                showTitle
+                caption={String(a.year)}
+              />
+            </li>
+          ))}
+        </MobileRow>
+      )}
     </article>
   )
 }

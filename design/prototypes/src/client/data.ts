@@ -120,6 +120,22 @@ export const useAlbum = (id: string) =>
 export const useArtist = (id: string) =>
   useQuery(`client:artist:${id}`, (c) => c.library.artist(id), ['music.updated', 'movies.updated'])
 
+/** The shows library, with this person's place in each show. */
+export const useShows = () =>
+  useQuery('client:shows', (c) => c.library.shows(), ['shows.updated', 'watch.updated'])
+
+/** A show with its seasons and episodes. */
+export const useShow = (id: string) =>
+  useQuery(`client:show:${id}`, (c) => c.library.show(id), ['shows.updated', 'watch.updated'])
+
+/** Mark an episode, or a season (or the whole show, with no season), watched or not. */
+export const useMarkEpisodes = () => ({
+  episode: useAction((c, id: string, watched: boolean) => c.library.setEpisodeWatched(id, watched)),
+  season: useAction((c, show: string, season: number | null, watched: boolean) =>
+    c.library.setSeasonWatched(show, season, watched),
+  ),
+})
+
 /** "6 movies · 2010–2020". */
 export const collectionCaption = (c: { count: number; years: string }) => format.caption(c)
 

@@ -24,6 +24,7 @@ import { type AccelerationPath, finishCheck, playbackStatus } from './playback.t
 import { GB, MB, type ServerState, seed } from './seed.ts'
 import { advanceSessions, type NowPlaying, type SessionView, type WatchView } from './sessions.ts'
 import type { Settings, SettingsSection } from './settings.ts'
+import { type EpisodeSeed, type ShowSeed, showsLibrary } from './shows.ts'
 import type {
   AddMovieInput,
   AddTorrentInput,
@@ -37,9 +38,12 @@ import type {
   ClientArtistDetail,
   ClientCollection,
   ClientDetail,
+  ClientEpisode,
   ClientItem,
   ClientMusic,
   ClientPerson,
+  ClientShow,
+  ClientShowDetail,
   ClientTrack,
   ClientType,
   ClientVersion,
@@ -673,6 +677,134 @@ export function createApi(srv: MockServer, ctx: Ctx) {
   const library = () => {
     music ??= musicLibrary(srv.kind, now())
     return music
+  }
+  let shows: ShowSeed[] | undefined
+  /** People whose seeded watch state for the shows is laid down: once each, on their first read. */
+  const seededShows = new Set<string>()
+  const showSeeds = () => {
+    shows ??= showsLibrary(srv.kind, now())
+    const u = me().id
+    if (!seededShows.has(u)) {
+      seededShows.add(u)
+      for (const s of shows)
+        for (const season of s.seasons)
+          for (const e of season.episodes)
+            if (e.seeded !== null)
+              state.watch.push({
+                userId: u,
+                itemId: e.id,
+                position: e.seeded,
+                updatedAt: iso(now()),
+              })
+    }
+    return shows
+  }
+  /** An episode with this person's watch state, as clientItem gives a film's. */
+  const episodeOf = ({ seeded: _, ...e }: EpisodeSeed): ClientEpisode => {
+    const w = state.watch.find((x) => x.userId === me().id && x.itemId === e.id)
+    const length = e.runtimeMinutes * 60
+    const progress = w && length ? w.position / length : null
+    return {
+      ...e,
+      position: w?.position ?? 0,
+      progress: progress !== null && progress > 0 && progress < 0.95 ? progress : null,
+      watched: progress !== null && progress >= 0.95,
+    }
+  }
+  const showOf = (s: ShowSeed): ClientShow => {
+    const episodes = s.seasons
+      .filter((x) => x.number !== 0)
+      .flatMap((x) => x.episodes.map(episodeOf))
+    const unwatched = episodes.filter((e) => !e.watched).length
+    const partway = episodes.find((e) => e.progress !== null)
+    let last = -1
+    episodes.forEach((e, i) => {
+      if (e.watched) last = i
+    })
+    const after = episodes.slice(last + 1).find((e) => !e.watched)
+    const first = episodes[0]
+    const next: ClientShow['next'] = partway
+      ? { episode: partway, kind: 'resume' }
+      : after
+        ? { episode: after, kind: last === -1 ? 'start' : 'next' }
+        : unwatched > 0
+          ? { episode: episodes.find((e) => !e.watched) as ClientEpisode, kind: 'next' }
+          : first
+            ? { episode: first, kind: 'again' }
+            : null
+    return { ...s.show, unwatched, watched: episodes.length > 0 && unwatched === 0, next }
+  }
+  const showSeed = (id: string) => {
+    const s = showSeeds().find((x) => x.show.id === id)
+    if (!s) throw new ApiError(404, 'not-found', 'That show isn’t on this server.')
+    return s
+  }
+  const episodeSeed = (id: string) => {
+    for (const s of showSeeds())
+      for (const season of s.seasons) {
+        const e = season.episodes.find((x) => x.id === id)
+        if (e) return { show: s, episode: e }
+      }
+    return null
+  }
+  /**
+   * An episode as the player reads a title: the prototype's episodes have no files of their own,
+   * so it plays with the first film's versions and tracks, named for the show and the episode. The
+   * episode player's own parts (the episode's line, Next episode, Skip intro) come after the pages.
+   */
+  const episodeDetail = (s: ShowSeed, e: EpisodeSeed): ClientDetail => {
+    const donor = watchable()[0]
+    if (!donor) throw new ApiError(404, 'not-found', 'That episode can’t play here.')
+    const versions = versionsOf(donor)
+    const prefs = state.prefs[`${me().id}:${e.id}`] ?? {}
+    const version = versions.find((v) => v.id === prefs.versionId) ?? versions[0]
+    const code = e.season === 0 ? `Special ${e.number}` : `S${e.season}, E${e.number}`
+    const item = clientItem({
+      ...donor,
+      id: e.id,
+      title: `${s.show.title} · ${code} · ${e.title}`,
+      sortTitle: s.show.sortTitle,
+      year: Number(e.aired.slice(0, 4)),
+      runtimeMinutes: e.runtimeMinutes,
+      genres: s.show.genres,
+      synopsis: e.synopsis,
+      rating: s.show.rating,
+      art: { poster: s.show.art.poster, backdrop: s.show.art.backdrop, still: e.still },
+    })
+    return {
+      item,
+      versions,
+      cast: s.cast,
+      directors: [],
+      crew: s.creators,
+      related: [],
+      originalTitle: s.show.title,
+      certification: s.show.certification,
+      studios: [],
+      videos: [],
+      collection: null,
+      collections: [],
+      defaults: {
+        versionId: version?.id ?? '',
+        audioId: prefs.audioId ?? version?.audio.find((a) => a.default)?.id ?? null,
+        subtitleId: prefs.subtitleId !== undefined ? prefs.subtitleId : null,
+      },
+    }
+  }
+  const setEpisodes = (episodes: EpisodeSeed[], watched: boolean) => {
+    const u = me().id
+    const ids = new Set(episodes.map((e) => e.id))
+    state.watch = state.watch.filter((x) => !(x.userId === u && ids.has(x.itemId)))
+    if (watched)
+      for (const e of episodes)
+        state.watch.push({
+          userId: u,
+          itemId: e.id,
+          position: e.runtimeMinutes * 60,
+          updatedAt: iso(now()),
+        })
+    srv.events.emit({ type: 'shows.updated' })
+    srv.events.emit({ type: 'watch.updated' })
   }
   const me = (): User => {
     const u = state.users.find((x) => x.id === ctx.userId) ?? state.users[0]
@@ -2626,6 +2758,45 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         if (!found) throw new ApiError(404, 'not-found', 'That collection isn’t on this server.')
         return found
       },
+      /** Every show the household can watch, with this person's place in each. */
+      shows: (): ClientShow[] => showSeeds().map(showOf),
+      /** A show with its seasons (specials last), its people, and shows that share a genre. */
+      show: (id: string): ClientShowDetail => {
+        const s = showSeed(id)
+        const show = showOf(s)
+        const seasons = [...s.seasons].sort(
+          (a, b) => (a.number === 0 ? 1 : 0) - (b.number === 0 ? 1 : 0) || a.number - b.number,
+        )
+        return {
+          show,
+          seasons: seasons.map((x) => ({ ...x, episodes: x.episodes.map(episodeOf) })),
+          cast: s.cast,
+          creators: s.creators,
+          crew: s.crew,
+          related: showSeeds()
+            .filter((x) => x.show.id !== id && x.show.genres.some((g) => show.genres.includes(g)))
+            .map((x) => ({ x, n: x.show.genres.filter((g) => show.genres.includes(g)).length }))
+            .sort((a, b) => b.n - a.n || b.x.show.rating - a.x.show.rating)
+            .slice(0, 12)
+            .map(({ x }) => showOf(x)),
+        }
+      },
+      /** Mark an episode watched (to the end) or unwatched (from the start), for this person. */
+      setEpisodeWatched: (id: string, watched: boolean) => {
+        const found = episodeSeed(id)
+        if (!found) throw new ApiError(404, 'not-found', 'That episode is no longer here.')
+        setEpisodes([found.episode], watched)
+      },
+      /** Mark every episode of a season, or of the show when no season is given. */
+      setSeasonWatched: (show: string, season: number | null, watched: boolean) => {
+        const s = showSeed(show)
+        setEpisodes(
+          s.seasons
+            .filter((x) => (season === null ? x.number !== 0 : x.number === season))
+            .flatMap((x) => x.episodes),
+          watched,
+        )
+      },
       /** Every artist and album the household can play; none on a server without music. */
       music: (): ClientMusic => library(),
       /** An album with its songs, and the film here it scores, matched by title. */
@@ -2645,18 +2816,23 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         if (!q) throw new ApiError(404, 'not-found', 'There’s nothing here to play.')
         return q
       },
-      /** An artist with their albums by kind; their person page when they're in a film here. */
+      /** An artist with their albums by kind; their person page when they're in a film or show here. */
       artist: (id: string): ClientArtistDetail => {
         const d = artistDetail(library(), id)
         if (!d) throw new ApiError(404, 'not-found', 'That artist isn’t on this server.')
-        const credited = watchable().some((m) =>
-          [...(movieMetadata(state, m.id, now())?.crew ?? [])].some((c) => c.personId === id),
-        )
+        const credited =
+          watchable().some((m) =>
+            [...(movieMetadata(state, m.id, now())?.crew ?? [])].some((c) => c.personId === id),
+          ) ||
+          showSeeds().some((x) =>
+            [...x.cast, ...x.creators, ...x.crew].some((c) => c.personId === id),
+          )
         return { ...d, person: credited ? id : null }
       },
       /**
-       * A person and the films here they're in, by department: the one they're known for first,
-       * then TMDB's order; in each, newest first, with every role they had in the film.
+       * A person and everything here they're part of: the films by department (the one they're
+       * known for first, then TMDB's order; in each, newest first, with every role they had in the
+       * film), the shows newest first, and the albums when they're an artist here.
        */
       person: (id: string): ClientPerson => {
         const order: Department[] = [
@@ -2689,30 +2865,61 @@ export function createApi(srv: MockServer, ctx: Ctx) {
             groups.set(department, list)
           }
         }
-        if (!p || here.length === 0)
-          throw new ApiError(404, 'not-found', 'Nobody by that name is in a film here.')
-        const best = [...here].sort((a, b) => b.rating - a.rating)[0] as MediaItem
+        const shows = showSeeds().flatMap((x) => {
+          const mine = [...x.cast, ...x.creators, ...x.crew].filter((c) => c.personId === id)
+          return mine.length === 0 ? [] : [{ seed: x, mine }]
+        })
+        const music = library()
+        const artist = artistDetail(music, id)
+        const albums = artist
+          ? music.albums
+              .filter((a) => a.artist.id === id)
+              .sort((a, b) => b.year - a.year || a.sortTitle.localeCompare(b.sortTitle))
+          : []
+        const credit = shows[0]?.mine[0]
+        const name = p?.name ?? credit?.name ?? artist?.artist.name
+        if (!name) throw new ApiError(404, 'not-found', 'Nobody by that name is in anything here.')
+        // known for: TMDB's answer from the films, else what they did most in the shows, else music
+        const showDepartments = shows.flatMap((x) => x.mine.map((c) => c.department))
+        const knownFor: Department =
+          p?.knownFor ??
+          order.find((d) => showDepartments.filter((x) => x === d).length > 0) ??
+          'Sound'
+        const best = [...here].sort((a, b) => b.rating - a.rating)[0]
+        const bestShow = [...shows].sort((a, b) => b.seed.show.rating - a.seed.show.rating)[0]
         return {
           id,
-          name: p.name,
-          photo: p.photo,
-          knownFor: p.knownFor,
-          bio: p.bio,
-          born: p.born,
-          died: p.died,
-          backdrop: clientItem(best).art.backdrop,
-          count: here.length,
-          departments: [p.knownFor, ...order.filter((x) => x !== p.knownFor)].flatMap(
-            (department) => {
-              const credits = groups.get(department)
-              return credits
-                ? [{ department, credits: credits.sort((a, b) => b.item.year - a.item.year) }]
-                : []
-            },
-          ),
+          name,
+          photo: p?.photo ?? credit?.photo ?? artist?.artist.photo ?? '',
+          knownFor,
+          bio: p?.bio ?? artist?.bio ?? null,
+          born: p?.born ?? null,
+          died: p?.died ?? null,
+          backdrop: best
+            ? clientItem(best).art.backdrop
+            : bestShow
+              ? bestShow.seed.show.art.backdrop
+              : (albums[0]?.cover ?? ''),
+          counts: { films: here.length, shows: shows.length, albums: albums.length },
+          departments: [knownFor, ...order.filter((x) => x !== knownFor)].flatMap((department) => {
+            const credits = groups.get(department)
+            return credits
+              ? [{ department, credits: credits.sort((a, b) => b.item.year - a.item.year) }]
+              : []
+          }),
+          shows: shows
+            .map(({ seed, mine }) => ({
+              show: showOf(seed),
+              role: mine.map((c) => c.character ?? c.job).join(', '),
+            }))
+            .sort((a, b) => b.show.year - a.show.year),
+          albums,
+          artist: artist ? id : null,
         }
       },
       item: (id: string, client: ClientType = 'web'): ClientDetail => {
+        const episode = episodeSeed(id)
+        if (episode) return episodeDetail(episode.show, episode.episode)
         const m = state.items.find((x) => x.id === id)
         if (!m || !playable(m))
           throw new ApiError(404, 'not-found', 'That title isn’t on this server.')

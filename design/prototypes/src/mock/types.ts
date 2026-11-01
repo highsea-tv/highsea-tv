@@ -398,8 +398,96 @@ export type ClientArtistDetail = {
 }
 
 /**
- * `GET /api/v1/library/people/{id}`: a person on the clients, with only what they're in on this
- * server, by department (the one they're known for first), newest first in each.
+ * A show in the shows library: a series, its years on air, how many seasons and episodes are here,
+ * and this person's place in it (how many episodes they haven't watched, and the one to play next).
+ */
+export type ClientShow = {
+  id: string
+  title: string
+  /** For A–Z: the title without a leading "The" or "A". */
+  sortTitle: string
+  /** The year it first aired. */
+  year: number
+  /** The year it ended, or null while it's still airing. */
+  endYear: number | null
+  genres: string[]
+  /** Community rating out of 5. */
+  rating: number
+  certification: string
+  synopsis: string
+  /** An episode's usual length, in minutes. */
+  runtimeMinutes: number
+  /** Seasons here, specials not counted. */
+  seasons: number
+  /** Episodes here, specials not counted. */
+  episodes: number
+  addedAt: string
+  art: { poster: string; backdrop: string; logo: string }
+  /** Episodes this person hasn't watched, specials not counted: the poster's count. */
+  unwatched: number
+  /** Every episode watched. */
+  watched: boolean
+  /** What Play plays, and how it's named; null when nothing here can play. */
+  next: NextEpisode | null
+}
+
+/** An episode, with this person's watch state as a film has it (ClientItem). */
+export type ClientEpisode = {
+  id: string
+  /** The show's id. */
+  show: string
+  /** Its season, 0 for specials. */
+  season: number
+  /** Its place in the season, from 1. */
+  number: number
+  title: string
+  synopsis: string
+  runtimeMinutes: number
+  /** First aired, YYYY-MM-DD. */
+  aired: string
+  still: string
+  /** 0–1 through the episode, or null if not started (or finished). */
+  progress: number | null
+  /** Seconds in, for Resume. */
+  position: number
+  watched: boolean
+}
+
+/**
+ * The episode Play plays, as the Apple TV app, Netflix and Plex choose it: the one part way
+ * through; else the one after the last watched; else the first. `resume` part way, `next` after
+ * one watched, `start` before any, `again` once every episode is watched.
+ */
+export type NextEpisode = { episode: ClientEpisode; kind: 'resume' | 'next' | 'start' | 'again' }
+
+export type ClientSeason = {
+  /** 0 for specials. */
+  number: number
+  /** "Season 2", or "Specials". */
+  title: string
+  /** The year it aired; null for specials. */
+  year: number | null
+  poster: string
+  episodes: ClientEpisode[]
+}
+
+/** `GET /api/v1/library/shows/{id}`: a show with its seasons, episodes, people and like shows. */
+export type ClientShowDetail = {
+  show: ClientShow
+  /** Seasons in order, specials last, as Plex and the Apple TV app place them. */
+  seasons: ClientSeason[]
+  cast: Credit[]
+  creators: Credit[]
+  /** The rest of the crew: who wrote the score. */
+  crew: Credit[]
+  /** Shows here that share a genre, closest first. */
+  related: ClientShow[]
+}
+
+/**
+ * `GET /api/v1/library/people/{id}`: a person on the clients, with everything they're part of on
+ * this server: films by department (the one they're known for first), newest first in each, then
+ * shows, then the albums they're the artist of.
  */
 export type ClientPerson = {
   id: string
@@ -409,10 +497,16 @@ export type ClientPerson = {
   bio: string | null
   born: { date: string; place: string } | null
   died: { date: string; place: string } | null
-  /** The best-rated film here, whose art sits behind the page. */
+  /** The best-rated film here (or show, or the newest album), whose art sits behind the page. */
   backdrop: string
-  count: number
+  /** How many films, shows and albums here they're part of. */
+  counts: { films: number; shows: number; albums: number }
   departments: { department: Department; credits: { item: ClientItem; role: string }[] }[]
+  /** Their shows, newest first, with every role they had in each. */
+  shows: { show: ClientShow; role: string }[]
+  /** Their albums here, newest first, and their artist page, when they're an artist here. */
+  albums: ClientAlbum[]
+  artist: string | null
 }
 
 /** `GET /api/v1/metadata/people/{id}`. */
@@ -1121,6 +1215,7 @@ export type ServerEvent =
   | { type: 'item.updated'; id: string }
   | { type: 'movies.updated' }
   | { type: 'music.updated' }
+  | { type: 'shows.updated' }
   | { type: 'history.updated' }
   | { type: 'jobs.updated' }
   | { type: 'indexers.updated' }

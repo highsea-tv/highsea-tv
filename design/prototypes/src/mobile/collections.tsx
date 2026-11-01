@@ -10,8 +10,8 @@ import { gutter, Header, mobileHref } from './shell.tsx'
 const link =
   'grid min-h-9 shrink-0 place-items-center rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus aria-[current=page]:border-transparent aria-[current=page]:bg-text aria-[current=page]:text-bg'
 
-/** Movies, Collections or Music: the library's views, scrolling sideways when large text needs it. */
-export function LibraryNav({ current }: { current: 'movies' | 'collections' | 'music' }) {
+/** Movies, Shows, Collections or Music: the library's views, scrolling sideways when large text needs it. */
+export function LibraryNav({ current }: { current: 'movies' | 'shows' | 'collections' | 'music' }) {
   return (
     <nav
       aria-label="Library"
@@ -23,6 +23,13 @@ export function LibraryNav({ current }: { current: 'movies' | 'collections' | 'm
         className={link}
       >
         Movies
+      </a>
+      <a
+        href={mobileHref('/library/shows')}
+        aria-current={current === 'shows' ? 'page' : undefined}
+        className={link}
+      >
+        Shows
       </a>
       <a
         href={mobileHref('/library/collections')}

@@ -15,7 +15,6 @@ import { TvArtist } from './artist.tsx'
 import { BackContext, type BackRegistry, useBack } from './back.ts'
 import { TvCollection } from './collection.tsx'
 import { TvCollections } from './collections.tsx'
-import { TvComing } from './coming.tsx'
 import { TvConnect } from './connect.tsx'
 import { TvDetail } from './detail.tsx'
 import { TvHome } from './home.tsx'
@@ -27,6 +26,8 @@ import { TvPerson } from './person.tsx'
 import { TvPlayer } from './player.tsx'
 import { TvSearch } from './search.tsx'
 import { TvProfile } from './settings.tsx'
+import { TvShow } from './show.tsx'
+import { TvShows } from './shows.tsx'
 import { TvLaunch, TvNewProfile, TvWho } from './who.tsx'
 
 function Detail() {
@@ -48,6 +49,11 @@ function Person() {
 function Album() {
   useBack(() => history.back())
   return <TvAlbum />
+}
+
+function Show() {
+  useBack(() => history.back())
+  return <TvShow />
 }
 
 function Artist() {
@@ -155,8 +161,11 @@ function Screens() {
       <Route path="/movies">
         <TvLibrary />
       </Route>
+      <Route path="/shows/:id">
+        <Show />
+      </Route>
       <Route path="/shows">
-        <TvComing kind="shows" />
+        <TvShows />
       </Route>
       <Route path="/now-playing">
         <NowPlaying />

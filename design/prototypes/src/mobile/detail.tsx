@@ -42,7 +42,7 @@ import { MobileRow, PosterItems } from './home.tsx'
 import { gutter, mobileHref } from './shell.tsx'
 
 /** The fade from the art into the page, under the logo. */
-const fade = 'absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg)_2%,transparent_55%)]'
+export const fade = 'absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg)_2%,transparent_55%)]'
 
 export function MobileDetail() {
   const { id } = useParams<{ id: string }>()
@@ -298,7 +298,7 @@ export function MobileDetail() {
 }
 
 /** An icon with its name under it, as the phone's streaming apps lay out their secondary actions. */
-function Named({
+export function Named({
   icon,
   label,
   href,
@@ -345,7 +345,7 @@ function Watched({ detail }: { detail: ClientDetail }) {
   )
 }
 
-function Facts({ title, rows }: { title: string; rows: Fact[] }) {
+export function Facts({ title, rows }: { title: string; rows: Fact[] }) {
   return (
     <article className="grid gap-2 rounded-lg bg-s1 p-4">
       <h2 className="font-semibold text-[17px]">{title}</h2>

@@ -23,6 +23,8 @@ import { MobileLinkConfirm, MobileLinkScan } from './pair.tsx'
 import { MobilePerson } from './person.tsx'
 import { MobilePlayer } from './player.tsx'
 import { MobileShell } from './shell.tsx'
+import { MobileShow } from './show.tsx'
+import { MobileShows } from './shows.tsx'
 
 function Connect() {
   const [, navigate] = useLocation()
@@ -88,6 +90,11 @@ function Routes() {
           <MobileCollections />
         </MobileShell>
       </Route>
+      <Route path="/library/shows">
+        <MobileShell>
+          <MobileShows />
+        </MobileShell>
+      </Route>
       <Route path="/library">
         <MobileShell>
           <MobileLibrary />
@@ -96,6 +103,11 @@ function Routes() {
       <Route path="/movies/:id">
         <MobileShell>
           <MobileDetail />
+        </MobileShell>
+      </Route>
+      <Route path="/shows/:id">
+        <MobileShell>
+          <MobileShow />
         </MobileShell>
       </Route>
       <Route path="/music/albums/:id">

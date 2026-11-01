@@ -122,7 +122,7 @@ export function MobileArtist() {
               )}
             >
               <Icon name="movie" size={16} />
-              Their films
+              Their films and shows
               <Icon name="chevron-right" size={16} className="text-text-3" />
             </a>
           )}

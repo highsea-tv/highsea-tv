@@ -5,6 +5,7 @@
 import type {
   ClientDetail,
   ClientPerson,
+  ClientShowDetail,
   ClientTrack,
   Credit,
   Department,
@@ -38,6 +39,18 @@ export const roleNames = (joined: string) =>
 const longDate = (iso: string) =>
   new Date(iso).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 
+/** "3 movies, 2 shows and 4 albums here": what a person's page has, leaving out what's none. */
+export function hereOf(p: Pick<ClientPerson, 'counts'>): string {
+  const { films, shows, albums } = p.counts
+  const parts = [
+    films > 0 && `${films} ${films === 1 ? 'movie' : 'movies'}`,
+    shows > 0 && `${shows} ${shows === 1 ? 'show' : 'shows'}`,
+    albums > 0 && `${albums} ${albums === 1 ? 'album' : 'albums'}`,
+  ].filter((x): x is string => typeof x === 'string')
+  const list = parts.length > 1 ? `${parts.slice(0, -1).join(', ')} and ${parts.at(-1)}` : parts[0]
+  return `${list} here`
+}
+
 /** Each department's row on a person's page, named by what they did. */
 export const departmentTitle: Record<Department, string> = {
   Acting: 'Acting',
@@ -67,6 +80,13 @@ export const peopleOf = (d: ClientDetail): Credit[] => [
   ...d.cast,
   ...d.directors,
   ...d.crew.filter((c) => !d.directors.some((x) => x.personId === c.personId)),
+]
+
+/** A show's cast and crew in one row: the cast in billing order, its creators, then who scored it. */
+export const showPeopleOf = (d: Pick<ClientShowDetail, 'cast' | 'creators' | 'crew'>): Credit[] => [
+  ...d.cast,
+  ...d.creators,
+  ...d.crew,
 ]
 
 export type Fact = [label: string, value: string]

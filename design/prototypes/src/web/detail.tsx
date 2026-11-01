@@ -103,11 +103,11 @@ export function WatchWith({
 }
 
 /** The hero's height: the first screen, less the next row's title peeking under it. */
-const heroHeight =
+export const heroHeight =
   'relative isolate flex min-h-[32rem] items-end overflow-hidden medium:-mt-20 medium:h-[min(82svh,56.25vw)]'
 
 /** The fades over the art: the words' side and the foot, so the right half stays the picture's. */
-const scrim =
+export const scrim =
   '-z-10 absolute inset-0 bg-[linear-gradient(90deg,var(--color-bg)_0%,color-mix(in_srgb,var(--color-bg)_80%,transparent)_25%,transparent_62%),linear-gradient(0deg,var(--color-bg)_2%,transparent_42%)]'
 
 export function WebDetail() {
@@ -326,11 +326,11 @@ export function WebDetail() {
 }
 
 /** A round icon button's name, on hover and focus. */
-function Round({ label, children }: { label: string; children: ReactElement }) {
+export function Round({ label, children }: { label: string; children: ReactElement }) {
   return <Tooltip content={label}>{children}</Tooltip>
 }
 
-function RoundButton({
+export function RoundButton({
   icon,
   label,
   pressed,
@@ -412,7 +412,7 @@ function About({ detail: d }: { detail: ClientDetail }) {
   )
 }
 
-function Facts({ title, rows }: { title: string; rows: Fact[] }) {
+export function Facts({ title, rows }: { title: string; rows: Fact[] }) {
   return (
     <article className="grid content-start gap-3 rounded-lg bg-s1 p-5">
       <h2 className="text-title">{title}</h2>

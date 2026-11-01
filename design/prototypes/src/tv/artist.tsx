@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // An artist on the TV, laid out as a person's page is: their newest cover blurred and dimmed
 // behind everything, the round photo beside the name, the genres and counts, Play, Shuffle and
-// (for a composer credited on a film here) Their films, and the note cut at four lines with More.
-// Then a row of square covers for each kind of album, newest first, and a row of artists who share
+// (for a composer credited on a film or show here) Their films and shows, and the note cut at four
+// lines with More. Then a row of square covers for each kind of album, newest first, and a row of artists who share
 // a genre with them. Focus starts on Play; Up and Down go row by row.
 import { Skeleton } from '@highsea-tv/ui-web'
 import { useRef } from 'react'
@@ -121,7 +121,7 @@ export function TvArtist() {
                 </TvButton>
                 {person && (
                   <TvButton icon="movie" href={tvHref(`/people/${person}`)}>
-                    Their films
+                    Their films and shows
                   </TvButton>
                 )}
               </div>

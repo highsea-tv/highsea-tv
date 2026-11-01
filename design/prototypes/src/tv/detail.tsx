@@ -44,7 +44,7 @@ import {
 import { TvTracksPanel } from './tracks.tsx'
 
 /** The fades over the art: the words' side and the foot, so the right half stays the picture's. */
-const scrim =
+export const scrim =
   'bg-[linear-gradient(90deg,var(--color-bg)_0%,rgb(from_var(--color-bg)_r_g_b/0.85)_22%,transparent_58%),linear-gradient(0deg,var(--color-bg)_4%,transparent_40%)]'
 
 export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: boolean) => void }) {
@@ -342,7 +342,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
  * A secondary action as a round icon button, its name under it while it has focus (and always to
  * a screen reader). A link when it goes somewhere, a button otherwise.
  */
-function RoundAction({
+export function RoundAction({
   icon,
   label,
   href,
@@ -431,7 +431,7 @@ function About({ detail: d }: { detail: ClientDetail }) {
   )
 }
 
-function Facts({
+export function Facts({
   title,
   rows,
   className,
