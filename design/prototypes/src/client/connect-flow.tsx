@@ -6,7 +6,17 @@
 // (the owner, 2026-10-29), which asks first.
 
 import { relative } from '@highsea-tv/core/format'
-import { Button, ConfirmDialog, cn, Field, Icon, Input, Lockup, Mark } from '@highsea-tv/ui-web'
+import {
+  Button,
+  ConfirmDialog,
+  cn,
+  Disclosure,
+  Field,
+  Icon,
+  Input,
+  Lockup,
+  Mark,
+} from '@highsea-tv/ui'
 import { type FormEvent, useState } from 'react'
 import { useNow } from '../mock/hooks.tsx'
 import type { ProbeResult } from '../mock/types.ts'
@@ -102,13 +112,9 @@ function Choose({
                 {lan === 'asking' ? `Waiting for your ${mine}…` : 'Looking…'}
               </>
             ) : (
-              <button
-                type="button"
-                onClick={rescan}
-                className="cursor-pointer underline-offset-2 hover:underline"
-              >
+              <Button variant="ghost" size="sm" onClick={rescan}>
                 Look again
-              </button>
+              </Button>
             )}
           </span>
         </div>
@@ -183,24 +189,19 @@ function Choose({
         </Button>
       </form>
 
-      <div className="grid gap-2 border-line border-t px-3 pt-4">
-        <button
-          type="button"
-          aria-expanded={cloud}
-          onClick={() => setCloud((c) => !c)}
-          className="flex cursor-pointer items-center gap-2 text-start text-text-2 text-body outline-none hover:text-text focus-visible:ring-focus"
+      <div className="border-line border-t pt-4">
+        <Disclosure
+          icon="globe"
+          title="Find my servers with a highsea account"
+          open={cloud}
+          onOpenChange={setCloud}
         >
-          <Icon name="globe" size={16} />
-          Find my servers with a highsea account
-          <Icon name={cloud ? 'chevron-up' : 'chevron-down'} size={14} className="ms-auto" />
-        </button>
-        {cloud && (
           <p className="text-caption text-text-3">
             Optional. If your server’s owner turned on highsea cloud, signing in with your highsea
             account lists every server shared with you, and connects through the relay when there’s
             no other way in. Your media never passes through it unless that’s the only route.
           </p>
-        )}
+        </Disclosure>
       </div>
     </div>
   )
@@ -326,7 +327,11 @@ export function ConnectFlow({
         : 'Two-step verification'
   return (
     <main
-      className={cn('grid min-h-full grid-rows-[minmax(0,1fr)_auto] bg-bg text-text', className)}
+      className={cn(
+        // one column no wider than the screen, so a title that truncates can't widen it
+        'grid min-h-full grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto] bg-bg text-text',
+        className,
+      )}
     >
       <div className="grid w-full max-w-[28rem] gap-6 place-self-center p-4">
         <Lockup size={20} className="justify-self-center" />

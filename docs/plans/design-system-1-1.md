@@ -244,3 +244,43 @@ On 2026-11-01 the owner took every recommendation for questions 1 to 8 except 3 
 8. One package, `@highsea-tv/ui`, in which each component has one props type and a web and a React Native renderer, chosen by the `react-native` export condition.
 
 ## Progress
+
+### 2026-11-01: parts A to C built, waiting for the owner's review
+
+On the owner's word of 2026-11-01 ("do not stop until the new design system plan has been fully implemented"), the three parts were built together and are reviewed together.
+
+- **Part A, the spec:**
+  - `packages/tokens/src/controls.ts`: the two sizes (36 and 30, each with its padding, gap, icon, text and the `radius-sm` corner), the looks as colour roles, and `controlMetrics`, the rule for each platform (pointer, touch, the TV at 1.75 times in screen units). The tokens' CSS writes `--control-*` for a pointer, for `@media (pointer: coarse)` and for any element with `data-platform`. `--size-input` is gone.
+  - The derived roles `control-edge` and `control-selected` (and a custom accent's ring), lightened only as far as 3:1 needs. The theme audit checks a field's edge, a chosen segment and its label, and the focus ring on every surface, in every built-in theme and any custom one.
+  - [controls.md](../design-language/controls.md) in the design language. The platform guides, spacing-layout.md's radius table and accessibility.md link to it.
+- **Part B, the components:**
+  - `@highsea-tv/ui` joins ui-web and ui-native: `src/web` and `src/native`, one props type each in `src/shared/controls.ts`, the renderer picked by the `react-native` condition. `@highsea-tv/ui/tv` is the TV rule of the same components. `src/shared/parity.ts` lists what each side draws, and `test/parity.test.ts` checks it, with the icons.
+  - Every control on the spec: Button (icon buttons and the `overlay` and `danger-ghost` looks), Input, Textarea, Select, SearchField, SegmentedControl, Tabs, Chip, Checkbox, Radio and Switch, each marked `data-control`. On touch each keeps its drawn size inside a 44 hit area (`--control-hit` on the web, `hitSlop` in React Native).
+  - The three wishes from stage 6: Disclosure, the square TitleCell and MultiSelect, in both renderers.
+  - The guides' Fumadocs controls on the same variables (`apps/docs/app/globals.css`): search 36, icon buttons 30, sidebar items 36, every corner `radius-sm`.
+  - Storybook's Controls page: every control at both sizes in one row, for each platform's rule and each built-in theme.
+  - The checks: the sweeps' row check (`mixedRows` in `scripts/sweeps/lib.ts`), the source test (`scripts/controls.ts`, with its reasons in `scripts/control-exceptions.json`), and the bundle test (`scripts/bundles.ts`, in `ci.yml` and `native.yml`).
+- **Part C, every app:** the admin (prototype and `apps/server`), the web client and the desktop app (prototype, `apps/web` and `apps/desktop`), the phone (prototype and `apps/mobile`), the TV (prototype and `apps/tv`) and the guides draw only the library's controls. The phone and TV prototypes' frames set `touch` and `tv` through `PlatformScope`. `TvButton` is a thin wrapper over Button that keeps the TV's focus attributes, and the prototypes' `hitSlop` helper is gone.
+- **Exceptions:** 110 in `scripts/control-exceptions.json`, each with its reason. They are rows of a list (a sheet's actions, songs, servers, settings options), tiles, keyboard and PIN keys, letter rails, and the players' own controls (`data-player-controls`).
+- **Gaps in the library, for later:** no slider (volume and scrubbers) and no colour field; no link-look button; no pressed look for an icon toggle; Chip has no `asChild`, no trailing icon and no radio mode, since its chosen look reads `aria-pressed`; no look over the picture that stays light in a light theme; Tabs have no fill mode for four tabs at 16px on a phone; no large code or PIN field (`/link` and the PIN step are 36 now); Button and Chip have no TV focus shadow or scale of their own (the TV adds them); the switch keeps its own 24 × 40 track; and in a scrolling segmented control or tabs, the touch hit area is clipped by the scroller.
+- **The sweeps' first full run** found 333 problems, fixed on 2026-11-01:
+  - **Mixed rows:**
+    - the admin's search trigger at 13px;
+    - Movies' and Shows' View and Save as smart collection at 30 (the owner's screenshot), and other small controls beside 36s: Preview on, Encoder, Privacy, and the Remove buttons in rules, format conditions and subtitle profiles;
+    - the web's avatar at 32;
+    - segmented tracks and fields with an icon that took the page's text size rather than the control's.
+  - **Overflows at 390 with 200% text:** the owner's banners, the editors, the calendar, Appearance, VPN and the imports in the admin; the connect screen (Disclosure's title now wraps), the music tabs (segmented tabs scroll when too wide) and the desktop app's top bar (it wraps) in the clients.
+  - **Contrast:** a tab's count on the chosen tab, now `text` there.
+- **The row check now:**
+  - counts text only where a control shows it;
+  - lets chips and avatars be round;
+  - leaves out switches, `data-item` (a list's items, tiles and keys) and `data-player-controls`;
+  - groups only controls on the same layer, so a sticky save bar isn't a row with the page behind it.
+- **Checks on 2026-11-01:** lint, typecheck and 12,721 tests pass (8 skipped); smoke, licences, audit and the docs build pass. The controls scan and both bundle checks are clean. Every sweep is clean: the pages sweep (3,408 pages), the keyboard walk (329 pages), the D-pad walk, the server's pages and keyboard, and playback in Chromium and Firefox. `phone.ts`, `tv.ts` and the phone and TV compare sheets weren't run: they need the apps built and signed in on a simulator, and `apps/tv` isn't built until 4.5b.
+
+### 2026-11-01: after the build, the phone and TV on the simulators
+
+- **The missing padding and gaps** the owner saw were stale dev servers started before `@highsea-tv/ui`, whose Tailwind never scanned the library. Restarting them, and rebuilding the desktop build and Storybook, brought them back; nothing in the code changed for it.
+- **The phone crashed at launch** ("Tried to register two views with the same name RCTText"): Bun's isolated installs gave `@highsea-tv/ui` its own copy of `react-native-tvos`, for its web side's React 19.3.1, so the bundle had two. `apps/mobile/metro.config.js` and `apps/tv/metro.config.js` resolve `react-native` from the app wherever it's imported (Metro's `resolveRequest`; Expo doesn't support duplicate React Native copies). The bundle has no duplicate packages now, and `phone.ts` signs in and plays Sintel.
+- **The admin's sidebar sat off the left edge:** the skip link's Button `relative` overrode `sr-only` (tailwind-merge doesn't group them), so it took room in the row. It's now fixed above the screen and slides in when focused, in the prototype and `apps/server`.
+- **The phone and TV compare sheets** were run. The apps are behind the prototypes' stages 2 to 6, which they haven't been brought up to yet; their controls are drawn to the spec. One TV bug beyond that: Library's tab bar covers its header and the letter rail sits on the first column of posters.

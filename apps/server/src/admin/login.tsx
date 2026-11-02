@@ -9,7 +9,7 @@ import type { SignInResult } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Button, EmptyState, Field, Icon, Input, Skeleton } from '@highsea-tv/ui-web'
+import { Button, EmptyState, Field, Icon, Input, Skeleton } from '@highsea-tv/ui'
 import {
   browserSupportsWebAuthn,
   type PublicKeyCredentialRequestOptionsJSON,
@@ -287,12 +287,10 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
       {((passkeys && server.auth.passkeys) || server.auth.oidc) && (
         <>
           <Divider>{t('or')}</Divider>
-          {/* both wrap rather than widening a phone at 200% text */}
           <div className="grid gap-2">
             {passkeys && server.auth.passkeys && (
               <Button
                 icon="key"
-                className="h-auto min-h-9 whitespace-normal py-1.5"
                 loading={passkey.pending}
                 onClick={() =>
                   passkey.run().then(after, (e: Error) =>
@@ -311,7 +309,6 @@ export function Login({ next, oidcError }: { next?: string; oidcError?: string }
             {server.auth.oidc && (
               <Button
                 icon="shield"
-                className="h-auto min-h-9 whitespace-normal py-1.5"
                 onClick={() => {
                   setStep({ kind: 'sso' })
                   window.location.assign('/api/v1/auth/oidc/start')

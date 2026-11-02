@@ -6,8 +6,8 @@ import { useCollections } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
-import { tokens, useTheme } from '@highsea-tv/ui-native'
-import { TvButton, TvMessage, TvTile } from '@highsea-tv/ui-native/tv'
+import { Button, tokens, useTheme } from '@highsea-tv/ui'
+import { TvMessage, TvTile } from '@highsea-tv/ui/tv'
 import { router } from 'expo-router'
 import { ActivityIndicator, View } from 'react-native'
 import {
@@ -35,9 +35,9 @@ export default function Collections() {
       <TvMessage
         title={t('collectionsFailed')}
         actions={
-          <TvButton primary preferred onPress={list.refetch}>
+          <Button variant="primary" hasTVPreferredFocus onPress={list.refetch}>
             {t('tryAgain')}
-          </TvButton>
+          </Button>
         }
       >
         {list.error.message}

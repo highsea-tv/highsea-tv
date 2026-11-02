@@ -3,7 +3,7 @@
 // the round photo centred, the name, the genres and counts, Play and Shuffle side by side, and the
 // note cut with More. A composer credited on a film here links to their person page. Then a row
 // for each kind of album, newest first, and artists who share a genre with them.
-import { Button, cn, EmptyState, Icon, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Icon, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui'
 import { useParams } from 'wouter'
 import { useArtist } from '../client/data.ts'
 import { albumMeta, albumsCount, discographyTitle, songsCount } from '../client/music.ts'

@@ -3,7 +3,7 @@
 // card on the web and desktop, a long press on the phone, a long press of OK on the TV. Go to the
 // film or the show (at the episode), Mark as watched, and Remove from Continue watching, which
 // forgets the place without marking the title watched.
-import { toast } from '@highsea-tv/ui-web'
+import { toast } from '@highsea-tv/ui'
 import { useRef } from 'react'
 import { useAction } from '../mock/hooks.tsx'
 import type { ClientItem } from '../mock/types.ts'

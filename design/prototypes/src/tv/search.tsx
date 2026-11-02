@@ -64,130 +64,138 @@ export function TvSearch() {
     setQ(text.toLowerCase())
   }
   return (
-    <>
-      <div
-        className={`absolute inset-0 grid grid-cols-[30cqw_minmax(0,1fr)] grid-rows-[auto_auto_minmax(0,1fr)] gap-x-[3cqw] gap-y-[1.6cqw] px-(--tv-safe-x) pb-(--tv-safe-y)`}
-      >
-        <TvHead down="keys" className="col-span-full" />
-        {/* the title across both columns, as the other screens head theirs (the owner,
+    <div
+      className={`absolute inset-0 grid grid-cols-[30cqw_minmax(0,1fr)] grid-rows-[auto_auto_minmax(0,1fr)] gap-x-[3cqw] gap-y-[1.6cqw] px-(--tv-safe-x) pb-(--tv-safe-y)`}
+    >
+      <TvHead down="keys" className="col-span-full" />
+      {/* the title across both columns, as the other screens head theirs (the owner,
         2026-10-30), so the field and the results start level under it */}
-        <h1 className="col-span-full font-semibold text-[2.6cqw] leading-none tracking-display">
-          Search
-        </h1>
-        <div className="grid content-start gap-[1.2cqw]">
-          <p
-            aria-live="polite"
-            className="flex h-[3.4cqw] items-center rounded-[0.5cqw] border-[0.15cqw] border-text px-[1cqw] text-(length:--tv-text-button)"
-          >
-            {q || <span className="text-text-3">{searchPlaceholder}</span>}
-            <span aria-hidden className="text-text-3">
-              |
-            </span>
-          </p>
-          <div
-            data-group="keys"
-            data-go-up="nav"
-            data-go-right="results"
-            className="grid grid-cols-7 gap-[0.5cqw]"
-          >
-            {LAYOUTS[layout].map((k) => (
-              <button
-                key={k}
-                type="button"
-                data-focusable=""
-                onClick={() => setQ((v) => v + k)}
-                className={tvKey}
-              >
-                {k}
-              </button>
-            ))}
-          </div>
-          <div
-            data-group="key-actions"
-            data-go-right="results"
-            className="grid grid-cols-4 gap-[0.5cqw]"
-          >
-            <button
-              type="button"
-              data-focusable=""
-              aria-label={layout === 'letters' ? 'Numbers and symbols' : 'Letters'}
-              className={tvKey}
-              onClick={() => setLayout((l) => (l === 'letters' ? 'symbols' : 'letters'))}
-            >
-              {layout === 'letters' ? '&123' : 'abc'}
-            </button>
-            <button
-              type="button"
-              data-focusable=""
-              className={tvKey}
-              onClick={() => setQ((v) => `${v} `)}
-            >
-              Space
-            </button>
-            <button
-              type="button"
-              data-focusable=""
-              className={tvKey}
-              onClick={() => setQ((v) => v.slice(0, -1))}
-            >
-              Delete
-            </button>
-            <button type="button" data-focusable="" className={tvKey} onClick={() => setQ('')}>
-              Clear
-            </button>
-          </div>
-        </div>
-        {/* the clip reaches past the column by the focus lift, so a lifted poster isn't cut */}
-        <div
-          data-group="results"
-          data-go-left="keys"
-          className="-m-[2cqw] min-h-0 overflow-hidden p-[2cqw]"
+      <h1 className="col-span-full font-semibold text-[2.6cqw] leading-none tracking-display">
+        Search
+      </h1>
+      <div className="grid content-start gap-[1.2cqw]">
+        <p
+          aria-live="polite"
+          className="flex h-[3.4cqw] items-center rounded-[0.5cqw] border-[0.15cqw] border-text px-[1cqw] text-(length:--tv-text-button)"
         >
-          {!settled.trim() ? (
-            <div className="grid content-start gap-[1cqw]">
-              <h2 className="font-semibold text-(length:--tv-text-row-title)">Try</h2>
-              <div className="flex flex-wrap gap-[0.8cqw]">
-                {searchSuggestions.map((s) => (
-                  <TvButton key={s} onClick={() => pick(s)}>
-                    {s}
-                  </TvButton>
-                ))}
-              </div>
-            </div>
-          ) : !r ? (
-            <p className="text-(length:--tv-text-meta) text-text-3">Searching…</p>
-          ) : r.sections.length === 0 ? (
-            <p className="text-(length:--tv-text-synopsis) text-text-2">
-              Nothing on {server} matches “{settled}”.
-            </p>
-          ) : (
-            <div
-              data-scroll="y"
-              data-keep="0.4"
-              // note which result is opening, so Back can return to it
-              onClickCapture={(e) => {
-                const href = (e.target as HTMLElement).closest('a')?.getAttribute('href')
-                if (href) leaving(href)
-              }}
-              className="grid content-start gap-[2.4cqw] transition-lift"
+          {q || <span className="text-text-3">{searchPlaceholder}</span>}
+          <span aria-hidden className="text-text-3">
+            |
+          </span>
+        </p>
+        <div
+          data-group="keys"
+          data-go-up="nav"
+          data-go-right="results"
+          className="grid grid-cols-7 gap-[0.5cqw]"
+        >
+          {LAYOUTS[layout].map((k) => (
+            <button
+              data-item=""
+              key={k}
+              type="button"
+              data-focusable=""
+              onClick={() => setQ((v) => v + k)}
+              className={tvKey}
             >
-              {r.sections.map((section) => (
-                <section
-                  key={section.kind}
-                  aria-label={searchKinds[section.kind].title}
-                  className="grid gap-[0.8cqw]"
-                >
-                  <h2 className="font-semibold text-(length:--tv-text-row-title)">
-                    {searchKinds[section.kind].title}
-                  </h2>
-                  <TvResults section={section} />
-                </section>
-              ))}
-            </div>
-          )}
+              {k}
+            </button>
+          ))}
+        </div>
+        <div
+          data-group="key-actions"
+          data-go-right="results"
+          className="grid grid-cols-4 gap-[0.5cqw]"
+        >
+          <button
+            data-item=""
+            type="button"
+            data-focusable=""
+            aria-label={layout === 'letters' ? 'Numbers and symbols' : 'Letters'}
+            className={tvKey}
+            onClick={() => setLayout((l) => (l === 'letters' ? 'symbols' : 'letters'))}
+          >
+            {layout === 'letters' ? '&123' : 'abc'}
+          </button>
+          <button
+            data-item=""
+            type="button"
+            data-focusable=""
+            className={tvKey}
+            onClick={() => setQ((v) => `${v} `)}
+          >
+            Space
+          </button>
+          <button
+            data-item=""
+            type="button"
+            data-focusable=""
+            className={tvKey}
+            onClick={() => setQ((v) => v.slice(0, -1))}
+          >
+            Delete
+          </button>
+          <button
+            data-item=""
+            type="button"
+            data-focusable=""
+            className={tvKey}
+            onClick={() => setQ('')}
+          >
+            Clear
+          </button>
         </div>
       </div>
-    </>
+      {/* the clip reaches past the column by the focus lift, so a lifted poster isn't cut */}
+      <div
+        data-group="results"
+        data-go-left="keys"
+        className="-m-[2cqw] min-h-0 overflow-hidden p-[2cqw]"
+      >
+        {!settled.trim() ? (
+          <div className="grid content-start gap-[1cqw]">
+            <h2 className="font-semibold text-(length:--tv-text-row-title)">Try</h2>
+            <div className="flex flex-wrap gap-[0.8cqw]">
+              {searchSuggestions.map((s) => (
+                <TvButton key={s} onClick={() => pick(s)}>
+                  {s}
+                </TvButton>
+              ))}
+            </div>
+          </div>
+        ) : !r ? (
+          <p className="text-(length:--tv-text-meta) text-text-3">Searching…</p>
+        ) : r.sections.length === 0 ? (
+          <p className="text-(length:--tv-text-synopsis) text-text-2">
+            Nothing on {server} matches “{settled}”.
+          </p>
+        ) : (
+          <div
+            data-scroll="y"
+            data-keep="0.4"
+            // note which result is opening, so Back can return to it
+            onClickCapture={(e) => {
+              const href = (e.target as HTMLElement).closest('a')?.getAttribute('href')
+              if (href) leaving(href)
+            }}
+            className="grid content-start gap-[2.4cqw] transition-lift"
+          >
+            {r.sections.map((section) => (
+              <section
+                key={section.kind}
+                aria-label={searchKinds[section.kind].title}
+                className="grid gap-[0.8cqw]"
+              >
+                <h2 className="font-semibold text-(length:--tv-text-row-title)">
+                  {searchKinds[section.kind].title}
+                </h2>
+                <TvResults section={section} />
+              </section>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
   )
 }
 

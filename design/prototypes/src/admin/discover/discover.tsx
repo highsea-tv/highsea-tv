@@ -4,15 +4,7 @@
 // it's in the library or not (ADR 0014). Add opens the add dialog. Since stage 6 a Movies and
 // Shows choice beside the search finds shows too, at `/discover/shows`, with Add a show
 // (shows.md#discover).
-import {
-  Badge,
-  Button,
-  EmptyState,
-  Input,
-  Poster,
-  Rating,
-  SegmentedControl,
-} from '@highsea-tv/ui-web'
+import { Badge, Button, EmptyState, Input, Poster, Rating, SegmentedControl } from '@highsea-tv/ui'
 import { useDeferredValue, useState } from 'react'
 import { useQuery } from '../../mock/hooks.tsx'
 import type { DiscoverMovie, DiscoverShow } from '../../mock/types.ts'

@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { Soon } from '../../kit/soon.tsx'
 import { useQuery } from '../../mock/hooks.tsx'

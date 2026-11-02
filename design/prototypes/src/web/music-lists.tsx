@@ -4,7 +4,7 @@
 // song's ⋯ menu; a row plays the list from there on. Playlists are the person's own, as square
 // mosaics of their first four covers, with New playlist at the right of the page's head, or in
 // the empty view, which says how to make one.
-import { Button, cn, Dialog, DialogContent, EmptyState, Icon } from '@highsea-tv/ui-web'
+import { Button, cn, Dialog, DialogContent, EmptyState, Icon } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { songsCount, songTime } from '../client/music.ts'
@@ -85,6 +85,8 @@ export function SongButton({
       }
       aria-current={here ? 'true' : undefined}
       onClick={onPlay}
+      // a song's row: the whole row plays it, an item of the list, not a control in a row
+      data-item
       className="group/song grid min-h-14 w-full min-w-0 cursor-pointer grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-sm px-2 text-start outline-none hover:bg-s1 focus-visible:ring-focus medium:grid-cols-[2.5rem_minmax(0,3fr)_minmax(0,2fr)_auto]"
     >
       <span className="relative grid size-10 place-items-center">

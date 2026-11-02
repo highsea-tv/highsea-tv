@@ -68,7 +68,7 @@ import {
   TableHeader,
   TableRow,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
@@ -783,13 +783,13 @@ function FormatForm({ loaded, isNew }: { loaded: CustomFormat; isNew: boolean })
             {general}
           </p>
         )}
-        <ol aria-label="Conditions" className="grid gap-2">
+        <ol aria-label="Conditions" className="grid grid-cols-[minmax(0,1fr)] gap-2">
           {f.conditions.map((c, at) => (
             <li
               // conditions have no ids; the list only grows at the end or loses one row
               // biome-ignore lint/suspicious/noArrayIndexKey: see above
               key={at}
-              className="grid gap-3 rounded-md border border-line bg-s2 p-3"
+              className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-md border border-line bg-s2 p-3"
             >
               <ConditionRow
                 condition={c}
@@ -840,7 +840,7 @@ function ConditionRow({
   const n = index + 1
   return (
     <>
-      <div className="grid gap-3 medium:grid-cols-[12rem_minmax(0,1fr)_auto] medium:items-end">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 medium:grid-cols-[12rem_minmax(0,1fr)_auto] medium:items-end">
         <Field label={`Condition ${n}`}>
           <Select
             value={c.kind}
@@ -850,7 +850,6 @@ function ConditionRow({
         </Field>
         <ConditionValue condition={c} index={n} error={error} onChange={onChange} />
         <Button
-          size="sm"
           variant="ghost"
           iconOnly
           icon="delete"
@@ -871,7 +870,7 @@ function ConditionRow({
             onCheckedChange={(v) => onChange({ ...c, required: v === true })}
           />
         </Field>
-        <span className="ms-auto font-mono text-figure text-text-3">
+        <span className="ms-auto min-w-0 font-mono text-figure text-text-3 [overflow-wrap:anywhere]">
           {error ? '' : describeCondition(c)}
         </span>
       </div>

@@ -27,7 +27,8 @@ export default {
     {
       name: 'stop',
       path: '/now-playing',
-      act: (p) => p.getByRole('button', { name: 'Stop', exact: true }).click(),
+      // the first stream's Stop: another area's stream may still be listed
+      act: (p) => p.getByRole('button', { name: 'Stop', exact: true }).first().click(),
       crop: (p) => p.getByRole('dialog'),
     },
   ],

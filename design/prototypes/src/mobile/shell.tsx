@@ -9,6 +9,7 @@ import {
   Banner,
   Button,
   cn,
+  controlHit,
   Dialog,
   DialogContent,
   EmptyState,
@@ -17,7 +18,7 @@ import {
   Mark,
   Sheet,
   SheetContent,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useEffect, useState } from 'react'
 import { useLocation } from 'wouter'
 import {
@@ -31,7 +32,7 @@ import { useMusicPlayer } from '../client/music-player.ts'
 import { toneClass } from '../client/profiles.ts'
 import { useMe } from '../client/who.tsx'
 import { Cta, Inline } from '../kit/inline.tsx'
-import { hitSlop, MobileScreen, safeArea } from '../kit/mobile/device.tsx'
+import { MobileScreen, safeArea } from '../kit/mobile/device.tsx'
 import { useNow } from '../mock/hooks.tsx'
 import { MINI_PLAYER, MiniPlayer } from './now-playing.tsx'
 
@@ -210,8 +211,9 @@ export function Header({ title }: { title?: string }) {
         href={mobileHref('/you')}
         aria-label={`${me.name}: profile and settings`}
         className={cn(
-          'relative ms-auto grid size-9 place-items-center rounded-full font-semibold text-[15px] outline-none focus-visible:ring-focus',
-          hitSlop,
+          'ms-auto grid size-9 place-items-center rounded-full font-semibold text-[15px] outline-none focus-visible:ring-focus',
+          // an avatar, not a control: it takes the touch rule's hit area from the library
+          controlHit,
           toneClass[me.tone],
         )}
       >
@@ -225,22 +227,27 @@ export function Header({ title }: { title?: string }) {
 /** Back, over the page's header: to where it was opened from, or `fallback` when it was opened first. */
 export function BackBadge({ fallback }: { fallback: string }) {
   return (
-    <a
-      href={mobileHref(fallback)}
-      onClick={(e) => {
-        if (history.length > 1) {
-          e.preventDefault()
-          history.back()
-        }
-      }}
-      aria-label="Back"
-      className={cn(
-        'glass-badge absolute top-2 left-3 z-10 grid size-10 place-items-center rounded-full outline-none focus-visible:ring-focus',
-        hitSlop,
-      )}
+    // an icon button over the artwork: the overlay look (controls.md › Looks)
+    <Button
+      variant="overlay"
+      icon="chevron-left"
+      iconOnly
+      asChild
+      className="absolute top-2 left-3 z-10"
     >
-      <Icon name="chevron-left" size={20} />
-    </a>
+      <a
+        href={mobileHref(fallback)}
+        onClick={(e) => {
+          if (history.length > 1) {
+            e.preventDefault()
+            history.back()
+          }
+        }}
+        aria-label="Back"
+      >
+        <span className="sr-only">Back</span>
+      </a>
+    </Button>
   )
 }
 

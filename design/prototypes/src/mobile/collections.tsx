@@ -1,17 +1,31 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Library › Collections, mobile (docs/product/collections.md#in-the-apps): the same large title
 // as Movies with a switch between the two, then the collections three a row, smart ones marked.
-import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui-web'
+import {
+  Button,
+  cn,
+  controlHit,
+  controlPress,
+  controlSizes,
+  EmptyState,
+  Skeleton,
+} from '@highsea-tv/ui'
 import { collectionCaption, useCollections } from '../client/data.ts'
 import { MediaPosterSkeleton } from '../client/media-card.tsx'
 import { CollectionTile } from '../kit/collection-art.tsx'
-import { hitSlop } from '../kit/mobile/device.tsx'
 import { PullToRefresh } from './pull.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
 
+// the library's chip as a link (controls.md › Looks, Chip): its size, hit area and press from the
+// control spec; the library's Chip is a button element with no `asChild`, so its look is named here, the
+// current page taking the chosen chip's
 const link = cn(
-  'relative grid min-h-9 shrink-0 place-items-center rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus aria-[current=page]:border-transparent aria-[current=page]:bg-text aria-[current=page]:text-bg',
-  hitSlop,
+  'grid shrink-0 place-items-center whitespace-nowrap rounded-full border border-line-strong bg-s2 font-medium text-text-2 outline-none transition-press focus-visible:ring-focus aria-[current=page]:border-transparent aria-[current=page]:bg-control-selected aria-[current=page]:font-semibold aria-[current=page]:text-text',
+  controlSizes.md.h,
+  controlSizes.md.pad,
+  controlSizes.md.text,
+  controlHit,
+  controlPress,
 )
 
 /** Movies, Shows, Collections or Music: the library's views, scrolling sideways when large text needs it. */

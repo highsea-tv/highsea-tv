@@ -28,7 +28,7 @@ import {
   toast,
   useCommandPaletteShortcut,
   useSidebarMode,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { usePathname, useRouter } from 'next/navigation'
 import {
   createContext,
@@ -481,13 +481,13 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
       {/* biome-ignore lint/a11y/noStaticElementInteractions: delegates link clicks, not a control */}
       {/* biome-ignore lint/a11y/useKeyWithClickEvents: links keep their own keyboard behaviour */}
       <div className="flex h-screen bg-bg text-text" onClick={onClick}>
-        <button
-          type="button"
+        {/* fixed above the screen until focused: in the row, even sr-only, it pushed the sidebar along */}
+        <Button
           onClick={() => main.current?.focus()}
-          className="sr-only z-50 rounded-sm bg-s3 px-3 py-2 text-ui focus:not-sr-only focus:fixed focus:start-3 focus:top-3"
+          className="fixed start-3 top-3 z-50 -translate-y-20 focus:translate-y-0"
         >
           {t('skip')}
-        </button>
+        </Button>
         <Navigation />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="relative min-h-0 flex-1 overflow-y-auto">

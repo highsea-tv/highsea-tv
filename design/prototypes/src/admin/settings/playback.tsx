@@ -18,7 +18,7 @@ import {
   Select,
   Switch,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import {
   type AccelerationPath,
@@ -296,7 +296,6 @@ function TranscodingGroup({ v, set }: GroupProps) {
         >
           <SegmentedControl
             aria-label="Encoder"
-            size="sm"
             value={v.preset}
             onValueChange={(preset) => set({ preset: preset as PlaybackSettings['preset'] })}
             options={[

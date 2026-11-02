@@ -23,7 +23,7 @@
     "@highsea-tv/native": "workspace:*",
     "@highsea-tv/sdk": "workspace:*",
     "@highsea-tv/tokens": "workspace:*",
-    "@highsea-tv/ui-native": "workspace:*",
+    "@highsea-tv/ui": "workspace:*",
     "expo": "58.0.11",
     "expo-audio": "58.0.9",
     "expo-constants": "58.0.12",

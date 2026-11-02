@@ -2,7 +2,7 @@
 // Audio and subtitles on TV: a dialog at the right, inside the safe area, isolated so the D-pad
 // stays inside it until Back closes it. The item detail and the player share it; the player adds
 // the subtitle timing nudge (±50 ms on Left and Right) with its live preview line.
-import { cn, Icon } from '@highsea-tv/ui-web'
+import { cn, Icon } from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
 import { NUDGE_MS, offsetHint, offsetLabel, PICTURE_TIMING } from '../client/player.ts'
 import type { ClientTrack, ClientVersion } from '../mock/types.ts'

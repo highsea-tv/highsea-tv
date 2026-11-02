@@ -4,15 +4,15 @@
 // first, then Go to the album and Go to the artist where the page isn't already that. On a
 // playlist's page, Remove from this playlist ends it, as Apple Music's does.
 import {
+  Button,
   Dialog,
   DialogContent,
-  Icon,
   Menu,
   MenuContent,
   MenuItem,
   MenuSeparator,
   MenuTrigger,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { PlaylistPicker } from '../client/playlist-picker.tsx'
@@ -27,7 +27,7 @@ export function WebSongMenu({
   target: SongMenuTarget
   /** The page it's on, so it doesn't offer to go there. */
   on?: 'album' | 'artist'
-  /** In a header beside Play and Shuffle: a round button as the film page's are. */
+  /** In a header beside Play and Shuffle: a button as theirs are, rather than a row's quiet icon. */
   round?: boolean
   /** On a playlist's page: takes the song out of it. */
   onRemove?: () => void
@@ -39,17 +39,12 @@ export function WebSongMenu({
     <>
       <Menu>
         <MenuTrigger asChild>
-          <button
-            type="button"
+          <Button
+            variant={round ? 'secondary' : 'ghost'}
+            iconOnly
+            icon="more"
             aria-label={`More for ${target.name}`}
-            className={
-              round
-                ? 'grid size-(--size-control) cursor-pointer place-items-center rounded-full border border-line-strong bg-s2 text-text outline-none transition-tint hover:bg-s3 focus-visible:ring-focus'
-                : 'grid size-9 cursor-pointer place-items-center rounded-full text-text-3 outline-none transition-tint hover:bg-s2 hover:text-text focus-visible:ring-focus data-[state=open]:text-text'
-            }
-          >
-            <Icon name="more" size={18} />
-          </button>
+          />
         </MenuTrigger>
         <MenuContent align="end" className="w-60">
           <MenuItem icon="next" onSelect={menu.playNext}>

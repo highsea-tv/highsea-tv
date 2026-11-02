@@ -34,7 +34,7 @@ import {
   TableRow,
   TableToolbar,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { manualImport as messages } from './import-messages.ts'
 import { clashes, defaultVersion, VersionSelect } from './import-versions.tsx'

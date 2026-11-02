@@ -33,7 +33,7 @@ import {
   Rating,
   Skeleton,
   SkeletonText,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useRouter } from 'next/navigation'
 import { Fragment, type ReactNode, useState } from 'react'
 import { Loadable } from './loadable.tsx'

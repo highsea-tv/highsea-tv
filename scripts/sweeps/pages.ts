@@ -8,6 +8,7 @@ import {
   escapes,
   heightFor,
   launch,
+  mixedRows,
   overflow,
   type Platform,
   pool,
@@ -57,6 +58,8 @@ await pool(jobs, WORKERS, async ({ r, w, q }) => {
     await settleAnimations(page)
     const o = await overflow(page)
     const v = await axe(page)
+    // controls in one row share one size (controls.md); the default theme is enough to measure
+    if (q === VARIANTS[0]) for (const row of await mixedRows(page)) v.push(`mixed row: ${row}`)
     // a route the list names must draw its page; only the ones meant to miss may say not found
     if (!r.includes('nowhere') && (await page.locator('[data-not-found]').count()))
       errors.push('draws the not-found page')

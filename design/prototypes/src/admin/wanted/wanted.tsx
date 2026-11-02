@@ -24,7 +24,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import type { HighseaClient } from '../../mock/client.ts'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
@@ -331,7 +331,7 @@ function Calendar() {
           .sort(byDate)
         const on = (day: number) => inMonth.filter((x) => x.date.getDate() === day)
         return (
-          <div className="grid gap-4">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
             <div className="flex flex-wrap items-center gap-2">
               <Button
                 size="sm"
@@ -342,7 +342,7 @@ function Calendar() {
                 onClick={() => setOffset(offset - 1)}
               />
               <h2
-                className="min-w-40 text-center font-semibold text-text text-title"
+                className="min-w-[min(10rem,100%)] text-center font-semibold text-text text-title"
                 aria-live="polite"
               >
                 {monthName.format(first)}

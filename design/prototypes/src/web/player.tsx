@@ -6,7 +6,7 @@
 // Picture in picture (4.2b) sits beside Full screen where the browser has the Picture-in-Picture
 // API (https://developer.mozilla.org/docs/Web/API/Picture-in-Picture_API); the prototype has no
 // video to hand it, so the frame shows what the tab shows while the film plays in its window.
-import { Button, cn, EmptyState, Icon, QualityTag } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Icon, QualityTag } from '@highsea-tv/ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock } from '../client/data.ts'
@@ -466,7 +466,9 @@ export function WebPlayer({ fromStart = false }: { fromStart?: boolean }) {
         {!pip && <CueLine player={player} />}
       </div>
 
+      {/* the player's own controls over the picture, which may stay round (controls.md › Rules) */}
       <div
+        data-player-controls
         className={cn(
           'transition-opacity duration-200',
           chrome ? 'opacity-100' : 'pointer-events-none opacity-0',

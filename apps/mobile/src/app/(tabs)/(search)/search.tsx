@@ -9,12 +9,12 @@ import { useSearch } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
-import { Icon, Input, Poster, Press, Text, usePosterWidth } from '@highsea-tv/ui-native'
+import { Chip, Poster, Press, SearchField, Text, usePosterWidth } from '@highsea-tv/ui'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import { ScrollView, View } from 'react-native'
-import { Chip, Grid, GUTTER, Screen } from '../../../kit.tsx'
+import { Grid, GUTTER, Screen } from '../../../kit.tsx'
 import { search as messages } from '../../../messages.ts'
 import { Header, Reachable, useServerName } from '../../../shell.tsx'
 
@@ -116,28 +116,21 @@ export default function Search() {
       <Screen tabs padded={false} gap={20}>
         <View style={{ paddingHorizontal: GUTTER, gap: 16 }}>
           <Header title={t('title')} />
-          <View style={{ justifyContent: 'center' }}>
-            <Input
-              value={q}
-              onChangeText={setQ}
-              placeholder={t('placeholder')}
-              accessibilityLabel={t('field')}
-              returnKeyType="search"
-              autoCorrect={false}
-              clearButtonMode="while-editing"
-              style={{ paddingStart: 40 }}
-            />
-            <View pointerEvents="none" style={{ position: 'absolute', start: 12 }}>
-              <Icon name="search" size={18} color="text-3" />
-            </View>
-          </View>
+          <SearchField
+            value={q}
+            onChangeText={setQ}
+            placeholder={t('placeholder')}
+            label={t('field')}
+            clearLabel={t('clear')}
+            autoCorrect={false}
+          />
         </View>
         {!settled.trim() ? (
           <View
             style={{ paddingHorizontal: GUTTER, flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}
           >
             {SUGGESTIONS.map((s) => (
-              <Chip key={s} pressed={false} onPress={() => setQ(s)}>
+              <Chip key={s} onPress={() => setQ(s)}>
                 {s}
               </Chip>
             ))}

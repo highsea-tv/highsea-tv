@@ -7,7 +7,7 @@ import { useAppearance } from '@highsea-tv/client/data'
 import { useDevicePrefs } from '@highsea-tv/client/prefs'
 import { useClient } from '@highsea-tv/sdk/react'
 import { createTheme, defaultSoundPack, type SoundPack, themeCss } from '@highsea-tv/tokens'
-import { useSoundPlayer } from '@highsea-tv/ui-web'
+import { useSoundPlayer } from '@highsea-tv/ui'
 import { useEffect } from 'react'
 
 /** The server's custom themes as CSS, so a theme and its swatches show their own colours. */

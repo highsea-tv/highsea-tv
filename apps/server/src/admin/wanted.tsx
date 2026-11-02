@@ -42,7 +42,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
@@ -265,7 +265,7 @@ function Calendar() {
   )
   const kind = (e: CalendarEntry) => t(`kind.${e.kind}`)
   return (
-    <div className="grid gap-4">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-4">
       <div className="flex flex-wrap items-center gap-2">
         <Button
           size="sm"
@@ -275,7 +275,10 @@ function Calendar() {
           aria-label={t('calendar.previous')}
           onClick={() => setOffset(offset - 1)}
         />
-        <h2 className="min-w-40 text-center font-semibold text-text text-title" aria-live="polite">
+        <h2
+          className="min-w-[min(10rem,100%)] text-center font-semibold text-text text-title"
+          aria-live="polite"
+        >
           {monthName}
         </h2>
         <Button

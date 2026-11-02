@@ -5,7 +5,7 @@
 // reach; Audio and subtitles opens the same panel as the web, sized for touch. AirPlay (4.5a)
 // sends the film to another screen: iOS lists the screens, and while it plays there the phone
 // shows where, over the artwork, with the controls kept up.
-import { Button, cn, EmptyState, Icon } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Icon } from '@highsea-tv/ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock, useAirPlay } from '../client/data.ts'
@@ -120,7 +120,9 @@ export function MobilePlayer({ fromStart = false }: { fromStart?: boolean }) {
         )}
 
         {chrome && (
-          <div className="absolute inset-0 bg-[rgb(0_0_0/0.45)]">
+          // the player's own controls over the picture (controls.md › Rules): round, and light
+          // whatever the theme, since the picture is
+          <div data-player-controls="" className="absolute inset-0 bg-[rgb(0_0_0/0.45)]">
             <div className="absolute inset-x-0 top-0 flex items-center gap-2 px-12 pt-4">
               <button
                 type="button"

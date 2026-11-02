@@ -22,7 +22,7 @@
     "@highsea-tv/personalization": "workspace:*",
     "@highsea-tv/quality": "workspace:*",
     "@highsea-tv/tokens": "workspace:*",
-    "@highsea-tv/ui-web": "workspace:*",
+    "@highsea-tv/ui": "workspace:*",
     "mjml-browser": "5.4.1",
     "motion": "14.3.0",
     "react": "19.3.1",

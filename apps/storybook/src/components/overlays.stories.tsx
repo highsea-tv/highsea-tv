@@ -24,7 +24,7 @@ import {
   SheetTrigger,
   Switch,
   Tooltip,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useState } from 'react'
 import { fn } from 'storybook/test'

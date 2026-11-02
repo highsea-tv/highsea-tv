@@ -4,7 +4,7 @@
 // go of without signing in. It asks first; forgetting drops the server's device token from the
 // keychain and the server from the list (servers.rs' `forget`), then the app is back at C1.
 import { useT } from '@highsea-tv/i18n/react'
-import { Button, ConfirmDialog } from '@highsea-tv/ui-web'
+import { Button, ConfirmDialog } from '@highsea-tv/ui'
 import { desktop as messages } from '../messages.ts'
 
 export function ForgetServer({ name, onForget }: { name: string; onForget: () => void }) {

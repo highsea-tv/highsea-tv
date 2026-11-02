@@ -3,7 +3,7 @@
 // Search, Library, Offline, You), item detail, the player, settings under You, and signing in a
 // TV (4.5a).
 
-import { EmptyState } from '@highsea-tv/ui-web'
+import { EmptyState } from '@highsea-tv/ui'
 import { Redirect, Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
 import { SeedMusic } from '../client/music-player.ts'

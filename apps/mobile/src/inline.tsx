@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Announcement bodies' inline markdown and their call to action, as the web's kit.tsx draws them:
 // **bold**, _italic_ and [links](https://…), which open in Safari's sheet, away from the app.
-import { Button, Text } from '@highsea-tv/ui-native'
+import { Button, Text } from '@highsea-tv/ui'
 import * as WebBrowser from 'expo-web-browser'
 import type { ReactNode } from 'react'
 

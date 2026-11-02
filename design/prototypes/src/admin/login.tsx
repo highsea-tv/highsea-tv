@@ -2,7 +2,7 @@
 // A18 Login (docs/product/login.md). Username and password, then a 6-digit code
 // when the account has two-factor on, or the server's single sign-on provider. The OIDC redirect
 // is simulated: a short wait stands in for the round trip to the provider.
-import { Button, EmptyState, Field, Icon, Input, Lockup, Skeleton } from '@highsea-tv/ui-web'
+import { Button, EmptyState, Field, Icon, Input, Lockup, Skeleton } from '@highsea-tv/ui'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../mock/hooks.tsx'
@@ -235,12 +235,7 @@ export function Login() {
             or
             <span className="h-px flex-1 bg-line" />
           </div>
-          {/* it wraps rather than widening a phone at 200% text */}
-          <Button
-            icon="shield"
-            className="h-auto min-h-9 whitespace-normal py-1.5"
-            onClick={() => setSso(true)}
-          >
+          <Button icon="shield" onClick={() => setSso(true)}>
             Sign in with {server.auth.oidc.name}
           </Button>
         </>

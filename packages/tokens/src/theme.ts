@@ -40,8 +40,29 @@ export function resolveTheme(spec: ThemeSpec): ResolvedTheme {
     colors[`badge-${s}`] = formatHex(mix(c(s), c('text'), share))
     colors[`badge-${s}-bg`] = formatCss(withAlpha(c(s), 0.14))
   }
+  // A field's edge starts from the theme's own strong line, a chosen segment from its highest
+  // surface; each is lightened only as far as 3:1 on every surface a control sits on, so a theme
+  // that already passes keeps its colours (controls.md › Theming).
+  const bg = c('bg')
+  const surfaces = CONTROL_SURFACES.map((r) => (r === 'bg' ? bg : composite(bg, c(r))))
+  const reach = (start: Rgba) =>
+    formatHex(
+      seek(start, 0.0025, (x) =>
+        surfaces.every((on) => wcagRatio(x, on) >= NON_TEXT_RATIO + 0.05),
+      ) ?? c('text'),
+    )
+  colors['control-edge'] = reach(composite(composite(bg, c('s1')), c('line-strong')))
+  colors['control-selected'] = reach(composite(bg, c('s4')))
+  colors['control-overlay'] = formatCss(withAlpha(c('text'), 0.12))
+  colors['control-overlay-hover'] = formatCss(withAlpha(c('text'), 0.18))
   return { ...spec, colors }
 }
+
+/** WCAG 2.2 1.4.11: what identifies a control, and its state, reaches 3:1 on what's beside it. */
+export const NON_TEXT_RATIO = 3
+
+/** The surfaces a control sits on, from the page to a raised panel. */
+const CONTROL_SURFACES: BaseRole[] = ['bg', 's1', 's2', 's3']
 
 // ---- contrast audit: docs/design-language/color.md#contrast-policy
 
@@ -90,6 +111,40 @@ export const CONTRAST_POLICY: readonly Check[] = [
       min: 60,
     }),
   ),
+  // non-text contrast (controls.md › Theming): an APCA minimum of 0 and WCAG's 3:1
+  {
+    id: 'control-edge',
+    label: 'Field edge',
+    fg: 'control-edge',
+    on: CONTROL_SURFACES,
+    min: 0,
+    minRatio: NON_TEXT_RATIO,
+  },
+  {
+    id: 'control-selected',
+    label: 'Chosen segment',
+    fg: 'control-selected',
+    on: CONTROL_SURFACES,
+    min: 0,
+    minRatio: NON_TEXT_RATIO,
+  },
+  {
+    id: 'focus-ring',
+    label: 'Focus ring',
+    fg: 'focus',
+    on: CONTROL_SURFACES,
+    min: 0,
+    minRatio: NON_TEXT_RATIO,
+  },
+  {
+    id: 'control-label',
+    label: 'Chosen segment label',
+    fg: 'text',
+    fill: 'control-selected',
+    on: ['s2'],
+    min: 45,
+    minRatio: 4.5,
+  },
 ]
 
 export type ContrastResult = {
@@ -119,7 +174,11 @@ export function auditTheme(theme: ResolvedTheme): ThemeAudit {
       const backdrop = check.fill ? composite(surface(on), col(check.fill)) : surface(on)
       const fg = composite(backdrop, col(check.fg))
       const lc = apcaLc(fg, backdrop)
-      if (!worst || lc < worst.lc) {
+      const ratio = wcagRatio(fg, backdrop)
+      // a non-text check is decided by its ratio, a text check by Lc
+      const weaker =
+        check.min === 0 ? ratio < (worst?.ratio ?? Infinity) : lc < (worst?.lc ?? Infinity)
+      if (!worst || weaker) {
         worst = {
           id: check.id,
           label: check.label,
@@ -127,7 +186,7 @@ export function auditTheme(theme: ResolvedTheme): ThemeAudit {
           on,
           ...(check.fill ? { fill: check.fill } : {}),
           lc,
-          ratio: wcagRatio(fg, backdrop),
+          ratio,
           min: Math.max(check.min, theme.minimums?.[check.id] ?? 0),
           ...(check.minRatio ? { minRatio: check.minRatio } : {}),
         }
@@ -238,7 +297,16 @@ export function deriveAccent(
     'accent-text': formatHex(accentText),
     'accent-fill': formatHex(pair.fill),
     'on-accent': formatHex(pair.label),
-    focus: formatHex(a),
+    // the ring is the accent, lightened only as far as 3:1 on every surface (controls.md)
+    focus: formatHex(
+      seek(a, 0.005, (x) =>
+        CONTROL_SURFACES.every(
+          (r) =>
+            wcagRatio(x, r === 'bg' ? bg : composite(bg, parseColor(base.colors[r]))) >=
+            NON_TEXT_RATIO + 0.05,
+        ),
+      ) ?? a,
+    ),
   }
 }
 

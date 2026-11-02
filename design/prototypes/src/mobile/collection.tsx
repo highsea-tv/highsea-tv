@@ -2,7 +2,7 @@
 // A collection on mobile (reference, docs/product/client-search.md#collections): the first part's
 // backdrop with Back over it, the name, years and overview, then its titles here, oldest first. A smart one
 // (docs/product/collections.md) says so and gives its rules in words.
-import { Button, cn, EmptyState, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Skeleton, SkeletonText } from '@highsea-tv/ui'
 import { useParams } from 'wouter'
 import { titlesHere, titlesRow, useCollection } from '../client/data.ts'
 import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'

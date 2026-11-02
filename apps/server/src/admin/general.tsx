@@ -36,7 +36,7 @@ import {
   Select,
   Switch,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { general as messages } from './general-messages.ts'
 import { Loadable } from './loadable.tsx'
@@ -292,7 +292,7 @@ function Metadata({
               </span>
             )}
             {loaded.key.set && owner && draft.key === null && (
-              <span className="ms-auto flex gap-2">
+              <span className="ms-auto flex flex-wrap gap-2">
                 <Button size="sm" onClick={() => setDraft({ ...draft, key: '' })}>
                   {t('key.replace')}
                 </Button>

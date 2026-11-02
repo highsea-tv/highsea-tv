@@ -90,7 +90,7 @@ import {
   TitleCell,
   Tooltip,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useRouter } from 'next/navigation'
 import { Fragment, useCallback, useEffect, useState } from 'react'
 import { AddMovieDialog } from './add-dialog.tsx'
@@ -710,8 +710,8 @@ function Versions({
     <>
       <ul className="grid gap-1">
         {m.versions.map((v) => (
-          <li key={v.id} className="flex min-w-0 items-center gap-1">
-            <span className="min-w-0 flex-1">
+          <li key={v.id} className="flex min-w-0 flex-wrap items-center gap-1">
+            <span className="min-w-0 flex-1 basis-24 [overflow-wrap:anywhere]">
               {t('version', { label: v.label, profile: profile(v.qualityProfileId) })}
             </span>
             <span className="flex shrink-0">
@@ -1068,11 +1068,13 @@ function FileStreams({ file: f }: { file: MediaFile }) {
       <p className="truncate font-mono text-release text-text-3" title={f.path}>
         {f.path}
       </p>
-      <ul className="grid gap-1 text-ui">
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-1 text-ui">
         {f.streams.map((s) => (
           <li key={s.index} className="flex gap-3">
             <span className="w-16 shrink-0 text-text-3">{t(`stream.${s.type}`)}</span>
-            <span className="min-w-0 font-mono text-figure text-text-2">{line(s)}</span>
+            <span className="min-w-0 font-mono text-figure text-text-2 [overflow-wrap:anywhere]">
+              {line(s)}
+            </span>
           </li>
         ))}
       </ul>

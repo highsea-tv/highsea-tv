@@ -11,7 +11,7 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui-web')
+const { TooltipProvider } = await import('@highsea-tv/ui')
 const { Setup } = await import('../src/admin/setup.tsx')
 const { metadataLocale } = await import('../src/admin/metadata-locale.ts')
 

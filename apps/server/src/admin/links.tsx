@@ -7,7 +7,7 @@
 import { useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Button, EmptyState, Field, Input, Skeleton } from '@highsea-tv/ui-web'
+import { Button, EmptyState, Field, Input, Skeleton } from '@highsea-tv/ui'
 import { type FormEvent, useState } from 'react'
 import { Card, FormAlert, Heading } from './auth-card.tsx'
 import { login as messages } from './login-messages.ts'
@@ -124,19 +124,13 @@ export function AccountLinkPage({ token }: { token: string }) {
           />
         </Field>
         {alert && <FormAlert>{alert}</FormAlert>}
-        <Button
-          type="submit"
-          variant="primary"
-          loading={accept.pending}
-          className="h-auto min-h-9 whitespace-normal py-1.5"
-        >
+        <Button type="submit" variant="primary" loading={accept.pending}>
           {invite ? t('link.join') : t('link.reset')}
         </Button>
       </form>
       {invite && oidc && (
         <Button
           icon="shield"
-          className="h-auto min-h-9 whitespace-normal py-1.5"
           onClick={() =>
             window.location.assign(`/api/v1/auth/oidc/start?invite=${encodeURIComponent(token)}`)
           }

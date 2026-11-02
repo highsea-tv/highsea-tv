@@ -1,6 +1,6 @@
 # @highsea-tv/storybook
 
-highsea's living style guide: the design system's foundations, every [`@highsea-tv/ui-web`](../../packages/ui-web/README.md) component, and the compositions they build. Everything here renders the real tokens and components; nothing is redrawn for the guide. The rules behind it are in [`docs/design-language/`](../../docs/design-language/README.md).
+highsea's living style guide: the design system's foundations, every [`@highsea-tv/ui`](../../packages/ui/README.md) component, and the compositions they build. Everything here renders the real tokens and components; nothing is redrawn for the guide. The rules behind it are in [`docs/design-language/`](../../docs/design-language/README.md).
 
 ## Run it
 

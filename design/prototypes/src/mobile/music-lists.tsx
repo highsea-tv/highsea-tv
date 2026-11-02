@@ -4,7 +4,7 @@
 // opens the menu too); a tap plays the list from there on. Playlists start with New playlist,
 // which asks for a name in a sheet and opens the new one, then the person's own with their mosaic
 // and count.
-import { cn, EmptyState, Icon, Sheet, SheetContent } from '@highsea-tv/ui-web'
+import { cn, EmptyState, Icon, Sheet, SheetContent } from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useLongPress } from '../client/continue-menu.ts'

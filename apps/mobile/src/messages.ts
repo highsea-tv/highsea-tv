@@ -196,6 +196,7 @@ export const search = defineMessages({
   title: 'Search',
   field: 'Search titles, genres and people',
   placeholder: 'Titles, genres and people',
+  clear: 'Clear search',
   failed: 'Search didn’t work. {message}',
   searching: 'Searching…',
   nothing: 'Nothing on {name} matches “{query}”.',

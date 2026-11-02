@@ -15,13 +15,13 @@ import { deviceInput, pkce } from '@highsea-tv/native/device'
 import { useCurrent, useServers } from '@highsea-tv/native/servers'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useClient } from '@highsea-tv/sdk/react'
-import { Button, Field, Input, Mark, Text, tokens, useTheme } from '@highsea-tv/ui-native'
+import { Button, Field, Input, Mark, Text, tokens, useTheme } from '@highsea-tv/ui'
 import { router } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
 import { type ComponentRef, useRef, useState } from 'react'
 import { ActivityIndicator, type TextInput, View } from 'react-native'
 import { useForget } from '../forget.ts'
-import { Alert, Back, Screen, Title } from '../kit.tsx'
+import { Alert, Screen, Title } from '../kit.tsx'
 import { forget as forgetMessages, signIn as messages } from '../messages.ts'
 
 type Step =
@@ -161,7 +161,9 @@ export default function SignIn() {
   if (info.status === 'error')
     return (
       <Screen gap={20} footer={forgetButton}>
-        <Back label={t('otherAccount')} onPress={() => router.push('/connect')} />
+        <Button variant="ghost" icon="chevron-left" onPress={() => router.push('/connect')}>
+          {t('otherAccount')}
+        </Button>
         <Title>{t('signIn')}</Title>
         <Alert>{t('failed', { message: info.error.message })}</Alert>
         <Button variant="primary" icon="refresh" block onPress={info.refetch}>
@@ -235,7 +237,7 @@ export default function SignIn() {
             autoFocus
             mono
             invalid={!!fieldError}
-            style={{ letterSpacing: recovery ? 2 : 6, fontSize: 20 }}
+            style={{ letterSpacing: recovery ? 2 : 6 }}
           />
         </Field>
         {alert && <Alert>{alert}</Alert>}
@@ -276,7 +278,9 @@ export default function SignIn() {
 
   return (
     <Screen gap={20} footer={forgetButton}>
-      <Back label={t('servers')} onPress={choose} />
+      <Button variant="ghost" icon="chevron-left" onPress={choose}>
+        {t('servers')}
+      </Button>
       <Title>{t('title', { name: server.name })}</Title>
       <View
         style={{

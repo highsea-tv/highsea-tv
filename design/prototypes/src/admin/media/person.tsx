@@ -21,7 +21,7 @@ import {
   TabsList,
   TabsTrigger,
   TitleCell,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useQuery } from '../../mock/hooks.tsx'

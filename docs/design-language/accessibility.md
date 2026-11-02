@@ -5,6 +5,7 @@
 ## Perceivable
 
 - **Contrast:** every text and fill pairing meets the contrast policy, measured over the backdrop it actually sits on. Gradients are checked at each stop.
+- **Non-text contrast** (WCAG 1.4.11): a field's edge, a chosen segment, tab or chip, and the focus ring reach 3:1 against every surface they sit on, in every theme ([controls](controls.md#contrast)).
 - **Not color alone:**
   - status badges pair a dot with a label;
   - progress bars show a percentage;

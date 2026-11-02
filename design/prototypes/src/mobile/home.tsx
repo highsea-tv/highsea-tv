@@ -4,7 +4,7 @@
 // peeking, never auto-advancing), then rows of 16:9 cards (Continue watching's at 62%, the rest
 // at 46%, two and a peek), with the title under the art; only Continue watching has a watched
 // bar, between the two.
-import { Button, cn, EmptyState, Icon, Sheet, SheetContent, Skeleton } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Icon, Sheet, SheetContent, Skeleton } from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useContinueMenu, useLongPress } from '../client/continue-menu.ts'

@@ -3,7 +3,7 @@
 // prototype's now-playing/delivery.ts; docs/product/now-playing.md#how-its-sent). The labels are in
 // now-playing-messages.ts; this holds the tones, icons and the sums.
 import type { ClientType, DeliveryMethod, StreamSession } from '@highsea-tv/api-contract'
-import type { BadgeTone, IconName } from '@highsea-tv/ui-web'
+import type { BadgeTone, IconName } from '@highsea-tv/ui'
 
 export const methodTone: Record<DeliveryMethod, BadgeTone> = {
   'direct-play': 'success',

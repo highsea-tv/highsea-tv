@@ -23,13 +23,14 @@ import {
   type IconName,
   Mark,
   Press,
+  Switch,
   SwitchRow,
   Text,
   useTheme,
-} from '@highsea-tv/ui-native'
+} from '@highsea-tv/ui'
 import { router } from 'expo-router'
 import * as WebBrowser from 'expo-web-browser'
-import { Alert, Switch, View } from 'react-native'
+import { Alert, View } from 'react-native'
 import { useForget } from './forget.ts'
 import { Group, Row } from './kit.tsx'
 import {
@@ -204,7 +205,6 @@ function SoundSection() {
 function HomeSection() {
   const t = useT(messages)
   const h = useT(homeMessages)
-  const theme = useTheme()
   const home = useHomeLayout()
   const failed = useSaveFailed()
   if (home.status !== 'success') return <Quiet>{t('loading')}</Quiet>
@@ -223,7 +223,8 @@ function HomeSection() {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                gap: 4,
+                // controls in a row keep 8 apart (controls.md › One rule per platform)
+                gap: 8,
                 paddingStart: 12,
                 paddingEnd: 12,
                 minHeight: 56,
@@ -238,44 +239,27 @@ function HomeSection() {
               >
                 {title(r)}
               </Text>
-              <Press
-                onPress={() => void home.move(r.id, -1)?.catch(failed)}
-                disabled={i === 0}
-                accessibilityRole="button"
+              <Button
+                variant="ghost"
+                iconOnly
+                icon="chevron-up"
                 accessibilityLabel={t('moveUp', { title: title(r) })}
-                style={{
-                  width: 40,
-                  height: 44,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: i === 0 ? 0.35 : 1,
-                }}
-              >
-                <Icon name="chevron-up" size={18} color="text-2" />
-              </Press>
-              <Press
-                onPress={() => void home.move(r.id, 1)?.catch(failed)}
-                disabled={i === home.rows.length - 1}
-                accessibilityRole="button"
+                disabled={i === 0}
+                onPress={() => void home.move(r.id, -1)?.catch(failed)}
+              />
+              <Button
+                variant="ghost"
+                iconOnly
+                icon="chevron-down"
                 accessibilityLabel={t('moveDown', { title: title(r) })}
-                style={{
-                  width: 40,
-                  height: 44,
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  opacity: i === home.rows.length - 1 ? 0.35 : 1,
-                }}
-              >
-                <Icon name="chevron-down" size={18} color="text-2" />
-              </Press>
+                disabled={i === home.rows.length - 1}
+                onPress={() => void home.move(r.id, 1)?.catch(failed)}
+              />
               <Switch
-                accessibilityLabel={t('showRow', { title: title(r) })}
-                value={shown}
-                trackColor={{ true: theme.colors['accent-fill'] }}
-                onValueChange={(on) => void home.toggle(r.id, on).catch(failed)}
-                // React Native's iOS Switch sets alignSelf: 'flex-start' (Switch.js), which beats
-                // the row's centring and lifts it out of the row
-                style={{ alignSelf: 'center' }}
+                label={t('showRow', { title: title(r) })}
+                hideLabel
+                checked={shown}
+                onCheckedChange={(on) => void home.toggle(r.id, on).catch(failed)}
               />
             </View>
           )
@@ -320,19 +304,13 @@ function ServersSection() {
                 inUse ? (
                   <Badge tone="accent">{t('inUse')}</Badge>
                 ) : (
-                  <Press
-                    onPress={() => forget(k.id, k.name)}
-                    accessibilityRole="button"
+                  <Button
+                    variant="ghost"
+                    iconOnly
+                    icon="delete"
                     accessibilityLabel={f('forget', { name: k.name })}
-                    style={{
-                      width: 44,
-                      height: 44,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Icon name="delete" size={18} color="text-3" />
-                  </Press>
+                    onPress={() => forget(k.id, k.name)}
+                  />
                 )
               }
               onPress={inUse ? undefined : () => void servers.use(k.id)}

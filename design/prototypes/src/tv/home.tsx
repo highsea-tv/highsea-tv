@@ -7,7 +7,7 @@
 // Behind the featured card, a bloom in its most vibrant colour fills the screen and fades into the
 // background (the owner, 2026-10-30).
 // An announcement that must be acknowledged comes first, on its own.
-import { cn, Icon, QualityTag, Skeleton } from '@highsea-tv/ui-web'
+import { cn, Icon, QualityTag, Skeleton } from '@highsea-tv/ui'
 import { useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'wouter'

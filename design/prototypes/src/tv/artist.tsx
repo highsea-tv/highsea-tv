@@ -4,7 +4,7 @@
 // (for a composer credited on a film or show here) Their films and shows, and the note cut at four
 // lines with More. Then a row of square covers for each kind of album, newest first, and a row of artists who share
 // a genre with them. Focus starts on Play; Up and Down go row by row.
-import { Skeleton } from '@highsea-tv/ui-web'
+import { Skeleton } from '@highsea-tv/ui'
 import { useRef } from 'react'
 import { useParams } from 'wouter'
 import { useArtist } from '../client/data.ts'

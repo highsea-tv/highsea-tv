@@ -14,12 +14,14 @@ import {
   Icon,
   type IconName,
   Mark,
+  Radio,
+  RadioGroup,
   Select,
   SortableList,
   Switch,
   toast,
   useSoundPlayer,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
 import { Soon } from '../kit/soon.tsx'
@@ -57,7 +59,7 @@ import {
 } from './settings.ts'
 
 /** A button whose label wraps at 200% text rather than running off a phone (WCAG 1.4.4). */
-const wraps = 'h-auto min-h-(--size-control) max-w-full whitespace-normal py-2 text-start'
+const wraps = 'h-auto min-h-(--control-h) max-w-full whitespace-normal py-2 text-start'
 
 const deviceIcon = (c: ClientType): IconName =>
   c === 'ios' || c === 'android'
@@ -102,35 +104,32 @@ function ThemeSection({ platform }: { platform: ClientPlatform }) {
             ? 'Only this device changes. Everyone else keeps their own.'
             : 'All your devices change. Everyone else keeps their own.'}
         </legend>
-        {choices.map((t) => (
-          <label
-            key={t.id}
-            className="flex min-h-14 cursor-pointer items-center gap-3 rounded-md border border-line bg-s1 px-3 py-2.5 has-checked:border-accent has-focus-visible:ring-focus"
-          >
-            <input
-              type="radio"
-              name={`theme-${platform}`}
-              checked={prefs.theme === t.id}
-              onChange={() => choose(t.id)}
-              className="size-4 accent-accent-fill"
-            />
-            <span className="grid min-w-0 flex-1">
-              <span className="truncate text-text text-body">{t.name}</span>
-              <span className="text-caption text-text-3">{t.detail}</span>
-            </span>
-            {t.id !== 'server' && (
-              <span className="flex gap-1" data-theme={t.id}>
-                {(['bg', 's2', 'accent'] as const).map((r) => (
-                  <span
-                    key={r}
-                    className="size-4 rounded-full ring-1 ring-line-strong"
-                    style={{ background: `var(--color-${r})` }}
-                  />
-                ))}
+        <RadioGroup value={prefs.theme} onValueChange={choose}>
+          {choices.map((t) => (
+            // biome-ignore lint/a11y/noLabelWithoutControl: the control is its child, Radix's radio (a button, which is labelable)
+            <label
+              key={t.id}
+              className="flex min-h-14 cursor-pointer items-center gap-3 rounded-md border border-line bg-s1 px-3 py-2.5 has-data-[state=checked]:border-accent has-focus-visible:ring-focus"
+            >
+              <Radio value={t.id} />
+              <span className="grid min-w-0 flex-1">
+                <span className="truncate text-text text-body">{t.name}</span>
+                <span className="text-caption text-text-3">{t.detail}</span>
               </span>
-            )}
-          </label>
-        ))}
+              {t.id !== 'server' && (
+                <span className="flex gap-1" data-theme={t.id}>
+                  {(['bg', 's2', 'accent'] as const).map((r) => (
+                    <span
+                      key={r}
+                      className="size-4 rounded-full ring-1 ring-line-strong"
+                      style={{ background: `var(--color-${r})` }}
+                    />
+                  ))}
+                </span>
+              )}
+            </label>
+          ))}
+        </RadioGroup>
       </fieldset>
       <Field
         inline

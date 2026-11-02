@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The pieces every phone screen shares (mobile.md#layout): the screen itself, scrolling under a
-// strip of the page's colour behind the status bar, with 16pt gutters; a large title; Back; an
-// alert; a section's mono label; and a list row as the prototype's are drawn (a mark or icon, two
-// lines, a chevron).
-import { Icon, type IconName, Press, Text, tokens, useTheme } from '@highsea-tv/ui-native'
+// strip of the page's colour behind the status bar, with 16pt gutters; a large title; where Back
+// goes (the button itself is the library's ghost Button); an alert; a section's mono label; and a
+// list row as the prototype's are drawn (a mark or icon, two lines, a chevron).
+import { Icon, type IconName, Press, Text, tokens, useTheme } from '@highsea-tv/ui'
 import { router } from 'expo-router'
 import type { ReactNode } from 'react'
 import {
@@ -129,20 +129,10 @@ export function Title({ children }: { children: string }) {
   )
 }
 
-export function Back({ label, onPress }: { label: string; onPress?: () => void }) {
-  return (
-    <Press
-      onPress={onPress ?? (() => (router.canGoBack() ? router.back() : router.replace('/')))}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      style={{ minHeight: 44, flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start' }}
-    >
-      <Icon name="chevron-left" size={20} color="accent-text" />
-      <Text variant="body" size={15} color="accent-text">
-        {label}
-      </Text>
-    </Press>
-  )
+/** Back, for a screen's Back button: the screen before, or Home when there's none. */
+export function goBack() {
+  if (router.canGoBack()) router.back()
+  else router.replace('/')
 }
 
 export function Alert({ children }: { children: string }) {
@@ -301,42 +291,6 @@ export function Center({ children }: { children?: ReactNode }) {
     >
       {children ?? <ActivityIndicator color={theme.colors['text-3']} />}
     </View>
-  )
-}
-
-/** A choice among a few (the prototype's chips): the chosen one is text on bg. */
-export function Chip({
-  children,
-  pressed,
-  onPress,
-}: {
-  children: string
-  pressed: boolean
-  onPress: () => void
-}) {
-  const theme = useTheme()
-  return (
-    <Press
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected: pressed }}
-      // drawn 36pt high as prototyped, touched over 44pt; the padding is for Dynamic Type's sizes
-      hitSlop={{ top: 4, bottom: 4 }}
-      style={{
-        minHeight: 36,
-        justifyContent: 'center',
-        paddingHorizontal: 14,
-        paddingVertical: 6,
-        borderRadius: 999,
-        borderWidth: 1,
-        borderColor: pressed ? 'transparent' : theme.colors.line,
-        backgroundColor: pressed ? theme.colors.text : 'transparent',
-      }}
-    >
-      <Text variant="callout" color={pressed ? 'bg' : 'text-2'}>
-        {children}
-      </Text>
-    </Press>
   )
 }
 

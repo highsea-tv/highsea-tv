@@ -1,6 +1,6 @@
 # @highsea-tv/prototypes
 
-The Phase 2 design prototypes: every admin and client flow, built with [`@highsea-tv/ui-web`](../../packages/ui-web/README.md) against an in-browser mock server, so the owner can review the product before any of it is built for real. The plan is [phase-2-prototypes.md](../../docs/plans/phase-2-prototypes.md). Each flow has a written spec under [docs/product](../../docs/product/).
+The Phase 2 design prototypes: every admin and client flow, built with [`@highsea-tv/ui`](../../packages/ui/README.md) against an in-browser mock server, so the owner can review the product before any of it is built for real. The plan is [phase-2-prototypes.md](../../docs/plans/phase-2-prototypes.md). Each flow has a written spec under [docs/product](../../docs/product/).
 
 Nothing here ships. Phase 3 rebuilds these screens in `apps/server` against the real API, and the mock's types are the draft of that API.
 

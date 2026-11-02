@@ -4,6 +4,7 @@
 
 export * from './color.ts'
 export * from './contrast.ts'
+export * from './controls.ts'
 export * from './css.ts'
 export * from './motion.ts'
 export * from './roles.ts'

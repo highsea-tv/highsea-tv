@@ -22,7 +22,7 @@ import {
   Sheet,
   Text,
   useTheme,
-} from '@highsea-tv/ui-native'
+} from '@highsea-tv/ui'
 import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import type { BottomTabBarProps } from 'expo-router/tabs'

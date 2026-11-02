@@ -30,15 +30,8 @@ import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
 import { type Playback, TRANSCODE_LIMIT, usePlayback } from '@highsea-tv/native/playback'
 import { useQuery } from '@highsea-tv/sdk/react'
-import { family, Icon, Text, ThemeProvider, tokens, useTheme } from '@highsea-tv/ui-native'
-import {
-  alpha,
-  Focusable,
-  focusOn,
-  TvButton,
-  TvMessage,
-  type ViewHandle,
-} from '@highsea-tv/ui-native/tv'
+import { Button, family, Icon, Text, ThemeProvider, tokens, useTheme } from '@highsea-tv/ui'
+import { alpha, Focusable, focusOn, TvMessage, type ViewHandle } from '@highsea-tv/ui/tv'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { VideoView } from 'expo-video'
@@ -351,12 +344,12 @@ function StreamMessage({ p, onBack }: { p: Playback; onBack: () => void }) {
         title={failed ? t('failed') : t('stopped', { name: by?.name ?? '' })}
         actions={
           <>
-            <TvButton ref={first} primary icon="refresh" onPress={p.retry}>
+            <Button ref={first} variant="primary" icon="refresh" onPress={p.retry}>
               {failed ? t('tryAgain') : t('startAgain')}
-            </TvButton>
-            <TvButton icon="chevron-left" onPress={onBack}>
+            </Button>
+            <Button variant="overlay" icon="chevron-left" onPress={onBack}>
               {t('back')}
-            </TvButton>
+            </Button>
           </>
         }
       >
@@ -422,10 +415,12 @@ function NextUp({
         </View>
       </View>
       <View style={{ flexDirection: 'row', gap: 1 * u }}>
-        <TvButton ref={first} primary icon="play" onPress={onPlay}>
+        <Button ref={first} variant="primary" icon="play" onPress={onPlay}>
           {t('playNow')}
-        </TvButton>
-        <TvButton onPress={onCancel}>{t('cancel')}</TvButton>
+        </Button>
+        <Button variant="overlay" onPress={onCancel}>
+          {t('cancel')}
+        </Button>
       </View>
     </Ask>
   )
@@ -542,9 +537,14 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
       <TvMessage
         title={t('missing')}
         actions={
-          <TvButton primary preferred icon="home" onPress={() => router.replace('/')}>
+          <Button
+            variant="primary"
+            hasTVPreferredFocus
+            icon="home"
+            onPress={() => router.replace('/')}
+          >
             {t('goHome')}
-          </TvButton>
+          </Button>
         }
       >
         {t('gone')}
@@ -759,7 +759,8 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
             <View
               style={{ opacity: shown, flexDirection: 'row', alignItems: 'center', gap: 1 * u }}
             >
-              <TvButton
+              <Button
+                variant="overlay"
                 icon="subtitles"
                 disabled={!v}
                 onPress={() => {
@@ -768,7 +769,7 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
                 }}
               >
                 {t('tracks')}
-              </TvButton>
+              </Button>
               <View
                 accessibilityElementsHidden
                 importantForAccessibility="no-hide-descendants"

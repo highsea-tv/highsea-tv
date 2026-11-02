@@ -26,7 +26,7 @@ import {
   SegmentedControl,
   Select,
   Switch,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useMemo, useState } from 'react'
 import { Page, Section } from './page.tsx'
@@ -128,7 +128,7 @@ export const Editor: StoryObj = {
                   aria-label="Accent color"
                   value={hex(input.accent ?? '#d6cfc2')}
                   onChange={(e) => setInput((i) => ({ ...i, accent: e.target.value, colors: {} }))}
-                  className="h-(--size-input) w-12 cursor-pointer rounded-md border border-line-strong bg-s2 p-1"
+                  className="h-(--control-h) w-12 cursor-pointer rounded-md border border-line-strong bg-s2 p-1"
                 />
                 <Input
                   aria-label="Accent value"
@@ -150,7 +150,7 @@ export const Editor: StoryObj = {
                   onChange={(e) =>
                     setInput((i) => ({ ...i, colors: { ...i.colors, 'text-3': e.target.value } }))
                   }
-                  className="h-(--size-input) w-12 cursor-pointer rounded-md border border-line-strong bg-s2 p-1"
+                  className="h-(--control-h) w-12 cursor-pointer rounded-md border border-line-strong bg-s2 p-1"
                 />
                 <Button variant="ghost" onClick={() => setInput(({ colors, ...rest }) => rest)}>
                   Reset overrides

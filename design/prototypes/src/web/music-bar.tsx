@@ -8,7 +8,7 @@
 // shared client/music-queue.tsx). Narrow, Shuffle, Repeat and the volume go and the waveform runs
 // the bar's width under the song. The bar is glass, as the top bar is when the page scrolls under
 // it.
-import { Button, cn, Icon, Sheet, SheetContent } from '@highsea-tv/ui-web'
+import { Button, cn, Icon, Sheet, SheetContent } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { clock } from '../client/data.ts'
 import { repeatButton, useMusicPlayer } from '../client/music-player.ts'
@@ -86,7 +86,9 @@ export function MusicBar() {
           </div>
         </div>
 
-        <div className="flex items-center justify-end gap-1">
+        {/* the player's own end: Queue, the volume and Close, sized as the bar's transport is
+            (controls.md › Rules), not a row of the page's controls */}
+        <div data-player-controls className="flex items-center justify-end gap-1">
           <Controls className="flex medium:hidden" />
           <Button
             variant="ghost"
@@ -96,12 +98,12 @@ export function MusicBar() {
             aria-label="Queue"
             aria-expanded={queue}
             onClick={() => setQueue(true)}
-            className={cn(queue && 'text-accent-text')}
           />
           <div className="hidden items-center gap-1 medium:flex">
             <Button
               variant="ghost"
               size="sm"
+              iconOnly
               icon={volume === 0 ? 'mute' : 'sound'}
               aria-label={p.muted ? 'Unmute' : 'Mute'}
               onClick={p.toggleMute}
@@ -126,6 +128,7 @@ export function MusicBar() {
           <Button
             variant="ghost"
             size="sm"
+            iconOnly
             icon="close"
             aria-label="Close the player"
             onClick={p.stop}
@@ -186,7 +189,8 @@ function RepeatButton() {
 function Controls({ className, wide = false }: { className?: string; wide?: boolean }) {
   const p = useMusicPlayer()
   return (
-    <div className={cn('items-center gap-2', className)}>
+    // the player's own transport, which may stay round (controls.md › Rules)
+    <div data-player-controls className={cn('items-center gap-2', className)}>
       {wide && <ShuffleButton />}
       <button
         type="button"

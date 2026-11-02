@@ -27,7 +27,7 @@ import {
   PopoverContent,
   PopoverTrigger,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import {
@@ -78,10 +78,7 @@ function ServerSwitcher() {
   return (
     <Menu>
       <MenuTrigger asChild>
-        <button
-          type="button"
-          className="flex min-w-0 items-center gap-2 rounded-sm px-1.5 py-1 font-semibold text-body outline-none hover:bg-text/8 focus-visible:ring-focus"
-        >
+        <Button variant="ghost" className="min-w-0 shrink">
           <Mark size={24} />
           <span className="truncate">{name}</span>
           {connection === 'remote' && (
@@ -90,7 +87,7 @@ function ServerSwitcher() {
             </span>
           )}
           <Icon name="chevron-down" size={15} className="text-text-3" />
-        </button>
+        </Button>
       </MenuTrigger>
       <MenuContent align="start" className="w-72">
         <MenuLabel>Servers</MenuLabel>
@@ -136,13 +133,14 @@ function Profile() {
       <MenuTrigger asChild>
         <button
           type="button"
+          data-control="avatar"
           aria-label={
             update
               ? `${me.name}: profile and settings. An update is ready.`
               : `${me.name}: profile and settings`
           }
           className={cn(
-            'relative grid size-8 place-items-center rounded-full font-semibold text-body outline-none focus-visible:ring-focus',
+            'relative grid size-(--control-h) place-items-center rounded-full font-semibold text-body outline-none focus-visible:ring-focus',
             toneClass[me.tone],
           )}
         >
@@ -232,7 +230,9 @@ export function TopBar({ overHero }: { overHero: boolean | 'bloom' }) {
     >
       <div
         className={cn(
-          'mx-auto w-full flex h-20 max-w-[1680px] items-center gap-3',
+          // the bar wraps its end onto a second line when a narrow window can't hold it (200%
+          // text on the desktop app at 390, WCAG 1.4.10), so nothing runs past the edge
+          'mx-auto flex min-h-20 w-full max-w-[1680px] flex-wrap items-center gap-x-3 gap-y-2 py-2',
           gutter,
           chrome === 'mac' && trafficLightInset,
         )}
@@ -266,14 +266,12 @@ export function TopBar({ overHero }: { overHero: boolean | 'bloom' }) {
             )
           })}
         </nav>
-        <div className="ms-auto flex items-center gap-1 medium:ms-0">
-          <a
-            href={webHref('/search')}
-            aria-label="Search"
-            className="grid size-9 place-items-center rounded-full text-text/65 outline-none hover:text-text focus-visible:ring-focus medium:hidden"
-          >
-            <Icon name="search" size={18} strokeWidth={2.25} />
-          </a>
+        <div className="ms-auto flex items-center gap-2 medium:ms-0">
+          <Button variant="ghost" iconOnly icon="search" asChild className="medium:hidden">
+            <a href={webHref('/search')}>
+              <span className="sr-only">Search</span>
+            </a>
+          </Button>
           <Alerts />
           <Profile />
         </div>
@@ -318,16 +316,16 @@ function Alerts() {
   return (
     <Popover onOpenChange={open}>
       <PopoverTrigger asChild>
-        <button
-          type="button"
+        <Button
+          variant="ghost"
+          iconOnly
+          icon="notification"
           aria-label={count ? `Alerts, ${count} new` : 'Alerts'}
-          className="relative grid size-9 place-items-center rounded-full text-text/65 outline-none transition-tint hover:text-text focus-visible:ring-focus data-[state=open]:text-text"
         >
-          <Icon name="notification" size={18} strokeWidth={2.25} />
           {count > 0 && (
             <span className="absolute end-1.5 top-1.5 size-2.5 rounded-full border-2 border-bg bg-accent" />
           )}
-        </button>
+        </Button>
       </PopoverTrigger>
       <PopoverContent align="end" className="w-96 p-0">
         <h2 className="border-line border-b px-4 py-3 font-semibold text-body">Alerts</h2>

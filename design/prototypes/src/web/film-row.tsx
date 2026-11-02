@@ -7,7 +7,7 @@
 // hover, or by clicking a poster, which brings that film into the card. Under the row, the card's
 // film is described, no wider than the card, so nothing moves as the film changes. Home's rows
 // loop: past the last film comes the first again, either way.
-import { cn, Icon, Poster, QualityTag, Skeleton, SkeletonText, useSound } from '@highsea-tv/ui-web'
+import { cn, Icon, Poster, QualityTag, Skeleton, SkeletonText, useSound } from '@highsea-tv/ui'
 import { useReducedMotion } from 'motion/react'
 import {
   type CSSProperties,

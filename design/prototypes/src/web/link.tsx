@@ -4,7 +4,7 @@
 // once; the prototype's hash can't carry a query (the toolbar's state is there), so it's
 // `/web/link/{code}`. A computer has no camera to point, so it asks for the code, then the same
 // question the phone asks, in the same words.
-import { Button, EmptyState, Field, Icon, Input } from '@highsea-tv/ui-web'
+import { Button, EmptyState, Field, Icon, Input } from '@highsea-tv/ui'
 import { type FormEvent, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { normalCode, waiting } from '../client/pairing.ts'
@@ -47,7 +47,7 @@ export function WebLink() {
             autoComplete="one-time-code"
             spellCheck={false}
             placeholder="KQ7-4PM"
-            className="h-12 font-mono text-[20px] tracking-[0.12em]"
+            className="font-mono tracking-[0.12em]"
           />
         </Field>
         <div className="flex flex-wrap gap-2">

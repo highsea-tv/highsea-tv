@@ -4,7 +4,7 @@
 // Play and Shuffle under them, and the songs in its order filling the right. The TV only plays a
 // playlist; it's made, renamed and reordered on the web, desktop and phone. OK held on a song
 // opens its menu, as on an album.
-import { cn, Skeleton } from '@highsea-tv/ui-web'
+import { cn, Skeleton } from '@highsea-tv/ui'
 import { useRef, useState } from 'react'
 import { useParams } from 'wouter'
 import { useLongPress } from '../client/continue-menu.ts'

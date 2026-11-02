@@ -4,7 +4,7 @@
 // them and is the window's drag region (Tauri's `titleBarStyle: "Overlay"`). On Windows and Linux
 // the window has no system frame (`decorations: false`) and highsea draws a title bar in `bg`, with
 // the platform's own minimise, maximise and close. In a browser there's none of it.
-import { cn, Icon, Mark } from '@highsea-tv/ui-web'
+import { Button, cn, Mark } from '@highsea-tv/ui'
 import { useEffect, useSyncExternalStore } from 'react'
 import { useLocation } from 'wouter'
 import { useDesktopApp, useDesktopOs } from '../client/data.ts'
@@ -198,32 +198,28 @@ export function HistoryButtons() {
     }
   }, [os])
   const keys = os === 'mac' ? ['⌘[', '⌘]'] : ['Alt+Left', 'Alt+Right']
-  const button =
-    'grid size-8 cursor-pointer place-items-center rounded-sm text-text-2 outline-none hover:bg-text/8 hover:text-text focus-visible:ring-focus disabled:cursor-default disabled:text-text-3 disabled:opacity-50 disabled:hover:bg-transparent'
   return (
     // a window narrower than medium has no room for them beside the server's name; the keys and
     // the mouse's buttons still work there
-    <div className="hidden shrink-0 items-center medium:flex">
-      <button
-        type="button"
+    <div className="hidden shrink-0 items-center gap-2 medium:flex">
+      <Button
+        variant="ghost"
+        iconOnly
+        icon="chevron-left"
         aria-label="Back"
         title={`Back (${keys[0]})`}
         disabled={!can.back}
         onClick={() => history.back()}
-        className={button}
-      >
-        <Icon name="chevron-left" size={18} />
-      </button>
-      <button
-        type="button"
+      />
+      <Button
+        variant="ghost"
+        iconOnly
+        icon="chevron-right"
         aria-label="Forward"
         title={`Forward (${keys[1]})`}
         disabled={!can.forward}
         onClick={() => history.forward()}
-        className={button}
-      >
-        <Icon name="chevron-right" size={18} />
-      </button>
+      />
     </div>
   )
 }

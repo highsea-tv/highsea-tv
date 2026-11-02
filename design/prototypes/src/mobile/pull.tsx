@@ -3,7 +3,7 @@
 // down past the line and let go, and the page asks the server again. Home had it first; the
 // library's views, a show's page and Offline have it too (prototype-gaps.md › 4.2). Touch on a
 // phone; a mouse drag does the same in the prototype, so it can be reviewed on a desktop.
-import { cn, Icon } from '@highsea-tv/ui-web'
+import { cn, Icon } from '@highsea-tv/ui'
 import { type ReactNode, useRef, useState } from 'react'
 
 /** How far to pull before letting go refreshes, in px. */

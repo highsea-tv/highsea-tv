@@ -13,7 +13,7 @@ import {
   useDwell,
   useSound,
   useSpatialNavigation,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'

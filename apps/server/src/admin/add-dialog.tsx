@@ -29,7 +29,7 @@ import {
   Select,
   Switch,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { addDialog as messages } from './add-dialog-messages.ts'

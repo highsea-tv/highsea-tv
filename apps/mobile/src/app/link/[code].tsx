@@ -5,11 +5,11 @@
 import type { ClientType } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Button, EmptyState, Icon, successHaptic, Text, useTheme } from '@highsea-tv/ui-native'
+import { Button, EmptyState, Icon, successHaptic, Text, useTheme } from '@highsea-tv/ui'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { View } from 'react-native'
-import { Back, Center, Screen, Title } from '../../kit.tsx'
+import { Center, Screen, Title } from '../../kit.tsx'
 import { pair as messages } from '../../messages.ts'
 import { normal } from './index.tsx'
 
@@ -36,7 +36,9 @@ export default function LinkConfirm() {
   if (request.status === 'error')
     return (
       <Screen gap={16}>
-        <Back label={t('title')} onPress={() => router.replace('/link')} />
+        <Button variant="ghost" icon="chevron-left" onPress={() => router.replace('/link')}>
+          {t('title')}
+        </Button>
         <View style={{ paddingVertical: 32 }}>
           <EmptyState
             icon="tv"
@@ -72,7 +74,9 @@ export default function LinkConfirm() {
   const minutes = Math.max(1, Math.round((Date.parse(r.expiresAt) - Date.now()) / 60_000))
   return (
     <Screen gap={20}>
-      <Back label={t('title')} onPress={() => router.replace('/link')} />
+      <Button variant="ghost" icon="chevron-left" onPress={() => router.replace('/link')}>
+        {t('title')}
+      </Button>
       <View style={{ gap: 12, alignItems: 'flex-start' }}>
         <View
           style={{

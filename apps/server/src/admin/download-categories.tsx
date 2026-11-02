@@ -9,7 +9,7 @@ import { useT } from '@highsea-tv/i18n/react'
 // `downloads.saveCategory` and `removeCategory`, not the page's save bar.
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Badge, Button, ConfirmDialog, Field, Icon, Input, toast } from '@highsea-tv/ui-web'
+import { Badge, Button, ConfirmDialog, Field, Icon, Input, toast } from '@highsea-tv/ui'
 import { type FormEvent, useState } from 'react'
 import { categories as messages } from './download-categories-messages.ts'
 import { Loadable } from './loadable.tsx'

@@ -7,7 +7,7 @@
 // the cast rows; songs are one list (tv/music-lists.tsx), and playlists the person's own, which
 // the TV plays. Up from the grid reaches the sort; Left and Right cross between the view and the
 // sort.
-import { cn, Skeleton } from '@highsea-tv/ui-web'
+import { Chip, cn, Skeleton } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useMusic } from '../client/data.ts'
 import {
@@ -34,15 +34,13 @@ import {
   TvMessage,
   TvTile,
   TvTileSkeleton,
+  tvChip,
   tvHref,
   useInitialFocus,
 } from './kit.tsx'
 import { motion, room, TvLetterRail, useIndexBox } from './library.tsx'
 import { TvPlaylistTile, TvSongRow } from './music-lists.tsx'
 import { TvSongMenu } from './song-menu.tsx'
-
-const choice =
-  'rounded-full px-[1.2cqw] py-[0.45cqw] font-semibold text-(length:--tv-text-pill) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:shadow-(--tv-focus-shadow) aria-pressed:bg-text/12 aria-pressed:text-text'
 
 const albumChoices: { value: AlbumSort; label: string }[] = [
   { value: 'title', label: 'A–Z' },
@@ -155,16 +153,15 @@ export function TvMusic({ initial = 'albums' }: { initial?: MusicView }) {
               className="flex gap-[0.8cqw]"
             >
               {musicViews.map((v) => (
-                <button
+                <Chip
                   key={v.value}
-                  type="button"
                   data-focusable=""
-                  aria-pressed={view === v.value}
+                  selected={view === v.value}
                   onClick={() => setView(v.value)}
-                  className={choice}
+                  className={tvChip}
                 >
                   {v.label}
-                </button>
+                </Chip>
               ))}
             </div>
             {sort && (
@@ -176,17 +173,16 @@ export function TvMusic({ initial = 'albums' }: { initial?: MusicView }) {
                 className="ms-auto flex gap-[0.8cqw]"
               >
                 {sort.choices.map((x) => (
-                  <button
+                  <Chip
                     key={x.value}
-                    type="button"
                     data-focusable=""
-                    aria-pressed={sort.value === x.value}
+                    selected={sort.value === x.value}
                     // biome-ignore lint/suspicious/noExplicitAny: each view's own sort type
                     onClick={() => (sort.set as (v: any) => void)(x.value)}
-                    className={choice}
+                    className={tvChip}
                   >
                     {x.label}
-                  </button>
+                  </Chip>
                 ))}
               </div>
             )}

@@ -4,15 +4,7 @@
 // Apple Music's and Plexamp's artist pages have. A composer credited on a film here links to their
 // person page. Then their albums here in rows by kind, newest first, as Apple Music groups them
 // (Albums, Singles and EPs, Soundtracks, Compilations), and artists who share a genre with them.
-import {
-  Button,
-  CarouselRow,
-  cn,
-  EmptyState,
-  Poster,
-  Skeleton,
-  SkeletonText,
-} from '@highsea-tv/ui-web'
+import { Button, CarouselRow, cn, EmptyState, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui'
 import { useParams } from 'wouter'
 import { useArtist } from '../client/data.ts'
 import { albumMeta, albumsCount, discographyTitle, songsCount } from '../client/music.ts'

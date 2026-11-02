@@ -38,7 +38,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
@@ -173,7 +173,6 @@ export function ShowsLibrary() {
     <>
       <SegmentedControl
         aria-label="View"
-        size="sm"
         value={view}
         onValueChange={(v) => setView(v as typeof view)}
         options={[

@@ -15,7 +15,7 @@ import {
   Poster,
   Skeleton,
   SkeletonText,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useParams } from 'wouter'
 import { useAlbum, useDesktopApp } from '../client/data.ts'
 import { GroupDownload } from '../client/download-button.tsx'
@@ -115,6 +115,7 @@ export function WebAlbum() {
                   app="desktop"
                   name={a.title}
                   sources={songs.map((x) => songSource(x, a))}
+                  size="md"
                   className="ms-2"
                 />
               )}
@@ -217,6 +218,8 @@ function SongList({
               }
               aria-current={here ? 'true' : undefined}
               onClick={() => onPlay(i)}
+              // a song's row: the whole row plays it, an item of the list, not a control in a row
+              data-item
               className="group/song grid min-h-12 w-full cursor-pointer grid-cols-[2.5rem_minmax(0,1fr)_auto] items-center gap-3 rounded-sm px-2 text-start outline-none hover:bg-s1 focus-visible:ring-focus"
             >
               <span className="grid place-items-center text-body text-text-3 tabular-nums">

@@ -33,7 +33,7 @@ import {
   Select,
   Switch,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { connections as messages } from './connections-messages.ts'
 import { Loadable } from './loadable.tsx'

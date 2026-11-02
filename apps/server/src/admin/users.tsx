@@ -40,7 +40,7 @@ import {
   TabsList,
   TabsTrigger,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { clientIcon } from './delivery.ts'
 import { Loadable } from './loadable.tsx'

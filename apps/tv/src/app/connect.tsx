@@ -13,8 +13,8 @@ import { useNearby } from '@highsea-tv/native/nearby'
 import { useServers } from '@highsea-tv/native/servers'
 import { ApiError } from '@highsea-tv/sdk'
 import { useClient } from '@highsea-tv/sdk/react'
-import { Icon, Mark, QrCode, Text, tokens, useTheme } from '@highsea-tv/ui-native'
-import { alpha, Focusable, TvButton, TvKey } from '@highsea-tv/ui-native/tv'
+import { Button, Icon, Mark, QrCode, Text, tokens, useControl, useTheme } from '@highsea-tv/ui'
+import { alpha, Focusable, TvKey } from '@highsea-tv/ui/tv'
 import { router } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, View } from 'react-native'
@@ -168,12 +168,12 @@ function Code({ onPassword, onServers }: { onPassword: () => void; onServers: ()
           </Text>
         </View>
         <View style={{ flexDirection: 'row', gap: 1 * u }}>
-          <TvButton preferred icon="lock" onPress={onPassword}>
+          <Button variant="overlay" hasTVPreferredFocus icon="lock" onPress={onPassword}>
             {t('usePassword')}
-          </TvButton>
-          <TvButton icon="server" onPress={onServers}>
+          </Button>
+          <Button variant="overlay" icon="server" onPress={onServers}>
             {t('anotherServer')}
-          </TvButton>
+          </Button>
         </View>
       </View>
       <View style={{ width: 22 * u, gap: 1 * u }}>
@@ -186,9 +186,13 @@ function Code({ onPassword, onServers }: { onPassword: () => void; onServers: ()
       </View>
       {current ? (
         <Foot>
-          <TvButton icon="delete" onPress={() => forget(current.server.id, current.server.name)}>
+          <Button
+            variant="overlay"
+            icon="delete"
+            onPress={() => forget(current.server.id, current.server.name)}
+          >
             {f('thisServer')}
-          </TvButton>
+          </Button>
         </Foot>
       ) : null}
     </>
@@ -205,6 +209,7 @@ function Password({ onCancel }: { onCancel: () => void }) {
   const t = useT(messages)
   const theme = useTheme()
   const u = theme.u
+  const control = useControl()
   const client = useClient()
   const servers = useServers()
   const name = servers.current?.server.name ?? ''
@@ -275,10 +280,12 @@ function Password({ onCancel }: { onCancel: () => void }) {
               style={{
                 flex: 1,
                 gap: 0.3 * u,
-                borderRadius: 0.5 * u,
+                // a labelled field at the TV rule's corner and padding, filled by the on-screen keys
+                borderRadius: control.radius,
                 borderWidth: 0.15 * u,
-                borderColor: field === f ? theme.colors.text : theme.colors.line,
-                paddingHorizontal: 1 * u,
+                borderColor:
+                  field === f ? theme.colors.text : theme.colors[tokens.controls.looks.field.edge],
+                paddingHorizontal: control.fieldPad,
                 paddingVertical: 0.6 * u,
               }}
             >
@@ -305,19 +312,21 @@ function Password({ onCancel }: { onCancel: () => void }) {
           ))}
         </View>
         <View style={{ flexDirection: 'row', gap: 1 * u }}>
-          <TvButton icon="arrow-left" onPress={del}>
+          <Button variant="overlay" icon="arrow-left" onPress={del}>
             {t('delete')}
-          </TvButton>
+          </Button>
           {field === 'username' ? (
-            <TvButton primary onPress={() => setField('password')}>
+            <Button variant="primary" onPress={() => setField('password')}>
               {t('next')}
-            </TvButton>
+            </Button>
           ) : (
-            <TvButton primary disabled={pending} onPress={submit}>
+            <Button variant="primary" disabled={pending} onPress={submit}>
               {pending ? t('signingIn') : challenge ? t('verify') : t('signIn')}
-            </TvButton>
+            </Button>
           )}
-          <TvButton onPress={onCancel}>{t('useCode')}</TvButton>
+          <Button variant="overlay" onPress={onCancel}>
+            {t('useCode')}
+          </Button>
         </View>
       </View>
     </View>

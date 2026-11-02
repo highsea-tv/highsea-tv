@@ -37,7 +37,7 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { toast, TooltipProvider } = await import('@highsea-tv/ui-web')
+const { toast, TooltipProvider } = await import('@highsea-tv/ui')
 const { Activity } = await import('../src/admin/activity.tsx')
 const { ManualImport } = await import('../src/admin/import.tsx')
 

@@ -6,7 +6,7 @@
 // from it too (`/who`, and `/who/{id}` for a profile's PIN).
 // Adding a profile asks only for a name and a colour (`/who/new`): it's the account's, so nobody
 // signs in.
-import { cn, Icon, useSound } from '@highsea-tv/ui-web'
+import { cn, Icon, useSound } from '@highsea-tv/ui'
 import { useReducedMotion } from 'motion/react'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
@@ -194,6 +194,7 @@ export function PinPad({
       <div data-group="pin" className="grid w-[17cqw] grid-cols-3 gap-[0.8cqw]">
         {['1', '2', '3', '4', '5', '6', '7', '8', '9'].map((d) => (
           <button
+            data-item=""
             key={d}
             type="button"
             data-focusable=""
@@ -206,6 +207,7 @@ export function PinPad({
         ))}
         <span />
         <button
+          data-item=""
           type="button"
           data-focusable=""
           onClick={() => type('0')}
@@ -213,7 +215,13 @@ export function PinPad({
         >
           0
         </button>
-        <button type="button" data-focusable="" onClick={erase} className={cn(tvKey, 'h-[3.6cqw]')}>
+        <button
+          data-item=""
+          type="button"
+          data-focusable=""
+          onClick={erase}
+          className={cn(tvKey, 'h-[3.6cqw]')}
+        >
           Delete
         </button>
       </div>
@@ -493,6 +501,7 @@ export function TvNewProfile() {
             <Fragment key={k}>
               {i === 20 && (
                 <button
+                  data-item=""
                   type="button"
                   data-focusable=""
                   data-above-space=""
@@ -512,6 +521,7 @@ export function TvNewProfile() {
                 </button>
               )}
               <button
+                data-item=""
                 type="button"
                 data-focusable=""
                 {...(i >= 20 ? { 'data-above-space': '' } : {})}
@@ -523,6 +533,7 @@ export function TvNewProfile() {
             </Fragment>
           ))}
           <button
+            data-item=""
             type="button"
             data-focusable=""
             data-above-space=""
@@ -532,6 +543,7 @@ export function TvNewProfile() {
             Delete
           </button>
           <button
+            data-item=""
             ref={spaceKey}
             type="button"
             data-focusable=""

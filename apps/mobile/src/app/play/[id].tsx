@@ -41,7 +41,7 @@ import {
   Text,
   ThemeProvider,
   useTheme,
-} from '@highsea-tv/ui-native'
+} from '@highsea-tv/ui'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { VideoAirPlayButton, VideoView } from 'expo-video'
@@ -381,7 +381,7 @@ function Tracks({ p, open, onClose }: { p: Playback; open: boolean; onClose: () 
                   <Button
                     icon="chevron-left"
                     onPress={() => p.nudge(-1)}
-                    label={`${t('earlier')} ${NUDGE_MS} ms`}
+                    accessibilityLabel={`${t('earlier')} ${NUDGE_MS} ms`}
                   >
                     {t('earlier')}
                   </Button>
@@ -396,7 +396,7 @@ function Tracks({ p, open, onClose }: { p: Playback; open: boolean; onClose: () 
                   <Button
                     icon="chevron-right"
                     onPress={() => p.nudge(1)}
-                    label={`${t('later')} ${NUDGE_MS} ms`}
+                    accessibilityLabel={`${t('later')} ${NUDGE_MS} ms`}
                   >
                     {t('later')}
                   </Button>

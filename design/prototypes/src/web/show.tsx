@@ -17,6 +17,7 @@ import {
   Button,
   CarouselRow,
   cn,
+  controlSizes,
   EmptyState,
   Field,
   Icon,
@@ -32,7 +33,7 @@ import {
   TabsList,
   TabsTrigger,
   Tooltip,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { useDesktopApp, useMarkEpisodes, useShow } from '../client/data.ts'
@@ -62,7 +63,7 @@ import type {
   PlaybackPrefs,
   Video,
 } from '../mock/types.ts'
-import { Facts, heroHeight, Round, RoundButton, scrim } from './detail.tsx'
+import { Facts, heroHeight, Round, scrim } from './detail.tsx'
 import { cardWidth } from './home.tsx'
 import { gutter, webHref } from './shell.tsx'
 
@@ -190,7 +191,7 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
               )}
               {next?.kind === 'resume' && (
                 <Round label="Play the episode from the start">
-                  <Button iconOnly icon="replay" asChild className="rounded-full">
+                  <Button variant="overlay" iconOnly icon="replay" asChild>
                     <a href={webHref(`/play/${next.episode.id}/start`)}>
                       <span className="sr-only">Play the episode from the start</span>
                     </a>
@@ -199,15 +200,23 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
               )}
               {preview && (
                 <Round label="Trailer">
-                  <RoundButton icon="trailer" label="Trailer" onClick={() => setTrailer(preview)} />
+                  <Button
+                    variant="overlay"
+                    iconOnly
+                    icon="trailer"
+                    aria-label="Trailer"
+                    onClick={() => setTrailer(preview)}
+                  />
                 </Round>
               )}
               <ShowTracks detail={d} />
               <Round label={markLabel}>
-                <RoundButton
+                <Button
+                  variant="overlay"
+                  iconOnly
                   icon="check"
-                  label={markLabel}
-                  pressed={s.watched}
+                  aria-label={markLabel}
+                  aria-pressed={s.watched}
                   onClick={() => void mark.season.run(s.id, null, !s.watched)}
                 />
               </Round>
@@ -287,12 +296,7 @@ function ShowTracks({ detail: d }: { detail: ClientShowDetail }) {
     <Popover>
       <Round label="Audio and subtitles">
         <PopoverTrigger asChild>
-          <Button
-            iconOnly
-            icon="subtitles"
-            aria-label="Audio and subtitles"
-            className="rounded-full"
-          />
+          <Button variant="overlay" iconOnly icon="subtitles" aria-label="Audio and subtitles" />
         </PopoverTrigger>
       </Round>
       <PopoverContent className="grid w-80 gap-3 p-4">
@@ -433,7 +437,7 @@ function SeasonPanel({
 
 /**
  * An episode: the still (Play on hover and focus, its progress along the foot) and its words, the
- * whole row playing it; Mark as watched at the end, as its own button, filled once it's watched.
+ * whole row playing it; Mark as watched at the end, as its own button, its check in the accent once it's watched.
  */
 function EpisodeRow({
   episode: e,
@@ -493,18 +497,17 @@ function EpisodeRow({
       <Tooltip content={label}>
         <Button
           variant="ghost"
+          size="sm"
           iconOnly
-          icon="check"
           aria-label={`${label}: ${e.title}`}
           aria-pressed={e.watched}
           onClick={() => void mark.episode.run(e.id, !e.watched)}
-          className={cn(
-            'rounded-full',
-            e.watched
-              ? 'bg-accent-soft text-accent-text hover:bg-accent-soft'
-              : 'text-text-3 hover:text-text',
-          )}
-        />
+        >
+          <Icon
+            name="check"
+            className={cn(controlSizes.sm.icon, e.watched && 'text-accent-text')}
+          />
+        </Button>
       </Tooltip>
     </div>
   )
@@ -529,8 +532,8 @@ function ShowSkeleton() {
           </div>
           <Skeleton className="h-3 w-60" />
           <div className="flex flex-wrap items-center gap-2">
-            <Skeleton className="h-(--size-control) w-40 rounded-md" />
-            <Skeleton className="size-(--size-control) rounded-full" />
+            <Skeleton className="h-(--control-h) w-40 rounded-md" />
+            <Skeleton className="size-(--control-h) rounded-(--control-radius)" />
           </div>
         </div>
       </div>

@@ -38,7 +38,7 @@ import {
   TabsList,
   TabsTrigger,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type {

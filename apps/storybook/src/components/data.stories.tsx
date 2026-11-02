@@ -22,7 +22,7 @@ import {
   TabsList,
   TabsTrigger,
   TitleCell,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 
 const meta = { title: 'Components/Data display' } satisfies Meta

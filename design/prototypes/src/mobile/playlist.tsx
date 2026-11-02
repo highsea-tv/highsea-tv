@@ -13,7 +13,7 @@ import {
   SheetContent,
   Skeleton,
   SortableList,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useMusicPlayer, usePlayingFrom } from '../client/music-player.ts'

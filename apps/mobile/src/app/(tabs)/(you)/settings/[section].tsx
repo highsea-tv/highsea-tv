@@ -2,10 +2,10 @@
 // One settings section as its own screen, with a way back to You (the prototype's
 // MobileSettingsScreen).
 import { useT } from '@highsea-tv/i18n/react'
-import { EmptyState } from '@highsea-tv/ui-native'
+import { Button, EmptyState } from '@highsea-tv/ui'
 import { useLocalSearchParams } from 'expo-router'
 import { View } from 'react-native'
-import { Back, Screen, Title } from '../../../../kit.tsx'
+import { goBack, Screen, Title } from '../../../../kit.tsx'
 import { you as messages } from '../../../../messages.ts'
 import { SECTIONS, SectionBody } from '../../../../settings.tsx'
 
@@ -15,7 +15,9 @@ export default function SettingsScreen() {
   const s = SECTIONS.find((x) => x.id === section)
   return (
     <Screen tabs gap={16}>
-      <Back label={t('title')} />
+      <Button variant="ghost" icon="chevron-left" onPress={goBack}>
+        {t('title')}
+      </Button>
       {s ? (
         <>
           <Title>{t(`section.${s.id}`)}</Title>

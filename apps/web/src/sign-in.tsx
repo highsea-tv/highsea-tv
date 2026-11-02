@@ -16,7 +16,7 @@ import { usePublicInfo } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { ApiError } from '@highsea-tv/sdk'
 import { useAction } from '@highsea-tv/sdk/react'
-import { Button, Field, Icon, Input, Lockup, Mark, Skeleton } from '@highsea-tv/ui-web'
+import { Button, Field, Icon, Input, Lockup, Mark, Skeleton } from '@highsea-tv/ui'
 import { openUrl } from '@tauri-apps/plugin-opener'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { ForgetServer } from './desktop/forget.tsx'
@@ -65,7 +65,7 @@ function Card({
 }) {
   const c = useT(connectMessages)
   return (
-    <main className="grid min-h-screen grid-rows-[minmax(0,1fr)_auto] bg-bg text-text">
+    <main className="grid min-h-screen grid-cols-[minmax(0,1fr)] grid-rows-[minmax(0,1fr)_auto] bg-bg text-text">
       <div className="grid w-full max-w-[28rem] gap-6 place-self-center p-4">
         <Lockup size={20} className="justify-self-center" />
         <section
@@ -372,7 +372,6 @@ export function SignIn({ onSignedIn }: { onSignedIn: () => void }) {
           {/* it wraps rather than widening a phone at 200% text */}
           <Button
             icon="shield"
-            className="h-auto min-h-9 whitespace-normal py-1.5"
             onClick={() => {
               setSsoError(null)
               setStep({ kind: 'sso' })

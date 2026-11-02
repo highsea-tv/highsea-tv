@@ -1,9 +1,0 @@
-{
-  "extends": "@highsea-tv/config/tsconfig/base.json",
-  "compilerOptions": {
-    "jsx": "react-jsx",
-    "lib": ["ES2023"],
-    "types": ["bun"]
-  },
-  "include": ["src", "test"]
-}

@@ -6,7 +6,7 @@
 // the screen's other modes don't carry it.
 import type { Movie } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
-import { Select } from '@highsea-tv/ui-web'
+import { Select } from '@highsea-tv/ui'
 import { manualImport as messages } from './import-messages.ts'
 
 /** The first version without a file, else the first: what the scan picks (ADR 0012). */

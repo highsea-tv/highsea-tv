@@ -3,7 +3,7 @@
 // grid, as the web's kit.tsx draws them: a smart collection carries its badge over the art.
 
 import { useMedia } from '@highsea-tv/native/media'
-import { Badge, Press, Text, tokens, useTheme } from '@highsea-tv/ui-native'
+import { Badge, Press, Text, tokens, useTheme } from '@highsea-tv/ui'
 import { Image } from 'expo-image'
 import { View } from 'react-native'
 

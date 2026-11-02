@@ -3,7 +3,7 @@
 // (prototype-gaps.md › 3.4: Play next, Add to queue, Go to the album, Go to the artist; the TV
 // leaves playlists to the other apps) and a song's in Up next on Now playing (Play now, Remove
 // from the queue). Back closes them, and focus goes back to where OK was held.
-import type { IconName } from '@highsea-tv/ui-web'
+import type { IconName } from '@highsea-tv/ui'
 import { useRef } from 'react'
 import { useLocation } from 'wouter'
 import { type SongMenuTarget, useSongMenu } from '../client/song-menu.ts'

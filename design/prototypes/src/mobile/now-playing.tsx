@@ -6,7 +6,7 @@
 // Music's does, the song and the artist, the waveform to scrub, Shuffle, Previous, Play or Pause,
 // Next and Repeat, the volume, then AirPlay and the queue (prototype-gaps.md › 3.4). ⋯ goes to the
 // album or the artist, or stops the music; so does swiping the mini player down, as Spotify's.
-import { cn, Icon, Sheet, SheetContent, toast } from '@highsea-tv/ui-web'
+import { Button, cn, Icon, Sheet, SheetContent, toast } from '@highsea-tv/ui'
 import { useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { clock, useAirPlay } from '../client/data.ts'
@@ -61,7 +61,10 @@ export function MiniPlayer({ bottom }: { bottom: number }) {
           'transition-[translate,opacity] duration-(--duration-spring) ease-(--ease-spring)',
       )}
     >
-      <div className="grid h-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1 ps-2 pe-1">
+      <div
+        data-player-controls=""
+        className="grid h-full grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-1 ps-2 pe-1"
+      >
         <a
           href={mobileHref('/now-playing')}
           aria-label={`Now playing: ${song.title}, ${song.album.artist.name}`}
@@ -156,14 +159,13 @@ export function MobileNowPlaying() {
         <header
           className={cn('grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem] items-center', gutter)}
         >
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            icon="chevron-down"
+            iconOnly
             aria-label="Close Now playing"
             onClick={close}
-            className={cn(control, 'size-11')}
-          >
-            <Icon name="chevron-down" size={26} />
-          </button>
+          />
           {p.from?.to ? (
             <a
               href={mobileHref(p.from.to)}
@@ -181,15 +183,14 @@ export function MobileNowPlaying() {
               </span>
             </span>
           )}
-          <button
-            type="button"
+          <Button
+            variant="ghost"
+            icon="more"
+            iconOnly
             aria-label="More"
             aria-haspopup="dialog"
             onClick={() => setMore(true)}
-            className={cn(control, 'size-11')}
-          >
-            <Icon name="more" size={24} />
-          </button>
+          />
         </header>
         <div className={cn('grid place-items-center py-4', gutter)}>
           <img
@@ -228,7 +229,8 @@ export function MobileNowPlaying() {
               <span>−{clock(song.duration - p.position)}</span>
             </div>
           </div>
-          <div className="flex items-center justify-between">
+          {/* the player's own transport (controls.md › Rules): round, over the cover's colour */}
+          <div data-player-controls="" className="flex items-center justify-between">
             <button
               type="button"
               aria-label="Shuffle"
@@ -274,7 +276,10 @@ export function MobileNowPlaying() {
               <Icon name={repeatButton[p.repeat].icon} size={22} />
             </button>
           </div>
-          <div className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 text-text-3">
+          <div
+            data-player-controls=""
+            className="grid grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 text-text-3"
+          >
             <Icon name="mute" size={16} />
             <input
               type="range"
@@ -293,29 +298,28 @@ export function MobileNowPlaying() {
             <Icon name="sound" size={16} />
           </div>
           <div className="flex items-center justify-between">
-            <button
-              type="button"
+            {/* where it plays shows in the accent beside it: the library's Button has no active look */}
+            <Button
+              variant="ghost"
+              icon="airplay"
+              iconOnly
               aria-label={playingOn ? `AirPlay: playing on ${playingOn}` : 'AirPlay'}
               aria-haspopup="dialog"
               onClick={() => setPicker(true)}
-              className={cn(control, 'size-11', playingOn ? 'text-accent-text' : 'text-text-2')}
-            >
-              <Icon name="airplay" size={22} />
-            </button>
+            />
             {playingOn && (
               <span className="truncate text-[13px] text-accent-text">{playingOn}</span>
             )}
-            <button
-              type="button"
+            <Button
+              variant="ghost"
+              icon="queue"
+              iconOnly
               aria-label={
                 p.upNext[0] ? `Queue, up next: ${p.upNext[0].title}` : 'Queue, nothing up next'
               }
               aria-haspopup="dialog"
               onClick={() => setQueue(true)}
-              className={cn(control, 'size-11 text-text-2')}
-            >
-              <Icon name="queue" size={22} />
-            </button>
+            />
           </div>
         </div>
         {picker && (

@@ -6,7 +6,7 @@
 // nearest letter that has titles. From the keyboard each letter is a button, the dimmed ones
 // skipped, and a letter focuses its first title, as the web's index does. The letters are the
 // web's and the TV's (`LETTERS` and `letterOf` in web/library.tsx).
-import { cn } from '@highsea-tv/ui-web'
+import { cn } from '@highsea-tv/ui'
 import { type ReactNode, type PointerEvent as ReactPointerEvent, useRef, useState } from 'react'
 import { LETTERS, letterOf } from '../web/library.tsx'
 

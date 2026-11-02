@@ -7,7 +7,7 @@
 // Pause and Next between Shuffle and Repeat, the album, the artist and Stop, and Up next as a row
 // under them (prototype-gaps.md › 3.4): OK plays a song there now, OK held offers Remove.
 // Play/Pause on the remote plays and pauses the music from anywhere but the film player.
-import { cn, Icon, type IconName } from '@highsea-tv/ui-web'
+import { cn, Icon, type IconName } from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useLongPress } from '../client/continue-menu.ts'
@@ -234,8 +234,10 @@ export function TvNowPlaying() {
                 <span>−{clock(song.duration - p.position)}</span>
               </div>
             </div>
+            {/* the player's own transport, which stays round (controls.md › Rules) */}
             <div
               data-group="controls"
+              data-player-controls=""
               data-go-up="scrub"
               {...(p.upNext.length > 0 ? { 'data-go-down': 'upnext' } : {})}
               className="flex items-center gap-[1.2cqw]"

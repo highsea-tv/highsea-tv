@@ -22,7 +22,7 @@ import {
   TableHeader,
   TableRow,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import {

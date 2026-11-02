@@ -17,7 +17,7 @@ import {
   Rating,
   Skeleton,
   SkeletonText,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { Fragment, type ReactNode, useState } from 'react'
 import { useNow, useQuery } from '../../mock/hooks.tsx'
 import type { Credit, Department, DiscoverMovie, MovieMetadata, Video } from '../../mock/types.ts'

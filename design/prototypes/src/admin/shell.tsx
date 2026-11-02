@@ -25,7 +25,7 @@ import {
   toast,
   useCommandPaletteShortcut,
   useSidebarMode,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import {
   createContext,
   type ReactNode,
@@ -317,8 +317,10 @@ function Announcements() {
   ])
   const banners = (active.data ?? []).filter((a) => !a.seen && a.placements.includes('banner'))
   if (!banners.length) return null
+  // one column at the page's width: an auto column would grow to a banner's widest word and
+  // buttons at 200% text, past a phone's edge
   return (
-    <div className="grid gap-2">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-2">
       {banners.map((a) => {
         const done = () => client.announcements.dismiss(a.id)
         return (
@@ -454,13 +456,13 @@ function StaffShell({ role, children }: { role: StaffRole; children: ReactNode }
   return (
     <ShellContext.Provider value={shell}>
       <div className="flex h-screen bg-bg text-text">
-        <button
-          type="button"
+        {/* fixed above the screen until focused: in the row, even sr-only, it pushed the sidebar along */}
+        <Button
           onClick={() => main.current?.focus()}
-          className="sr-only z-50 rounded-sm bg-s3 px-3 py-2 text-ui focus:not-sr-only focus:fixed focus:start-3 focus:top-3"
+          className="fixed start-3 top-3 z-50 -translate-y-20 focus:translate-y-0"
         >
           Skip to content
-        </button>
+        </Button>
         <Navigation />
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="relative min-h-0 flex-1 overflow-y-auto">

@@ -36,7 +36,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
@@ -187,7 +187,6 @@ export function MoviesLibrary() {
     <>
       <SegmentedControl
         aria-label="View"
-        size="sm"
         value={view}
         onValueChange={(v) => setView(v as typeof view)}
         options={[
@@ -252,7 +251,7 @@ export function MoviesLibrary() {
                       }))}
                       className="w-36"
                     />
-                    <Button size="sm" icon="library" onClick={saveAsCollection}>
+                    <Button icon="library" onClick={saveAsCollection}>
                       Save as smart collection
                     </Button>
                   </div>

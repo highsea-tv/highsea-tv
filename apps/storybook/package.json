@@ -13,7 +13,7 @@
     "@highsea-tv/brand": "workspace:*",
     "@highsea-tv/fixtures": "workspace:*",
     "@highsea-tv/tokens": "workspace:*",
-    "@highsea-tv/ui-web": "workspace:*",
+    "@highsea-tv/ui": "workspace:*",
     "motion": "14.3.0",
     "react": "19.3.1",
     "react-dom": "19.3.1"

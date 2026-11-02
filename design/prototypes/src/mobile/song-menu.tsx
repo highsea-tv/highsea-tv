@@ -3,7 +3,7 @@
 // row, as Apple Music's iPhone app opens one: a sheet of Play next, Add to queue, Add to playlist
 // (the person's playlists, New playlist first, in the same sheet), Go to the album and Go to the
 // artist where the page isn't already that; on a playlist's page, Remove from this playlist.
-import { Icon, Sheet, SheetContent } from '@highsea-tv/ui-web'
+import { Button, Icon, Sheet, SheetContent } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { PlaylistPicker } from '../client/playlist-picker.tsx'
@@ -100,14 +100,13 @@ export function MobileSongMenu({
 /** ⋯ at a row's end, for the menu. */
 export function MoreButton({ name, onClick }: { name: string; onClick: () => void }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="ghost"
+      icon="more"
+      iconOnly
       aria-label={`More for ${name}`}
       aria-haspopup="dialog"
       onClick={onClick}
-      className="grid size-11 cursor-pointer place-items-center rounded-full text-text-3 outline-none transition-press focus-visible:ring-focus active:scale-90"
-    >
-      <Icon name="more" size={20} />
-    </button>
+    />
   )
 }

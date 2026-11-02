@@ -4,7 +4,7 @@
 // and the Apple TV app. One row per profile: its circle, its name, "Watching now" and a check
 // under the current one, a lock when it has a PIN. A profile with a PIN asks for it in the same
 // sheet (client/who.tsx's PinStep); then Home, as that profile.
-import { cn, Icon, Sheet, SheetContent } from '@highsea-tv/ui-web'
+import { cn, Icon, Sheet, SheetContent } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { type Profile, usePeople } from '../client/profiles.ts'

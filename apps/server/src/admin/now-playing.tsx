@@ -48,7 +48,7 @@ import {
   Textarea,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { behind, clientIcon, mbps, methodTone, timecode } from './delivery.ts'
 import { Loadable } from './loadable.tsx'

@@ -9,17 +9,8 @@ import { useLibrary } from '@highsea-tv/client/data'
 import { arrange, type Sort, sortTitle } from '@highsea-tv/client/library'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
-import { Text, tokens, useTheme } from '@highsea-tv/ui-native'
-import {
-  alpha,
-  Focusable,
-  focusOn,
-  TvButton,
-  TvChip,
-  TvMessage,
-  TvTile,
-  type ViewHandle,
-} from '@highsea-tv/ui-native/tv'
+import { Button, Chip, Text, tokens, useTheme } from '@highsea-tv/ui'
+import { alpha, Focusable, focusOn, TvMessage, TvTile, type ViewHandle } from '@highsea-tv/ui/tv'
 import { router } from 'expo-router'
 import { useRef, useState } from 'react'
 import { ActivityIndicator, TVFocusGuideView, View } from 'react-native'
@@ -52,9 +43,9 @@ export default function Library() {
       <TvMessage
         title={t('failed')}
         actions={
-          <TvButton primary preferred onPress={library.refetch}>
+          <Button variant="primary" hasTVPreferredFocus onPress={library.refetch}>
             {t('tryAgain')}
-          </TvButton>
+          </Button>
         }
       >
         {library.error.message}
@@ -93,7 +84,9 @@ export default function Library() {
             <Words title={t('emptyTitle')}>{t('emptyBody')}</Words>
           ) : items.length === 0 ? (
             <Words title={t('noUnwatched')}>
-              <TvButton onPress={() => setUnwatched(false)}>{t('allMovies')}</TvButton>
+              <Button variant="overlay" onPress={() => setUnwatched(false)}>
+                {t('allMovies')}
+              </Button>
             </Words>
           ) : (
             <Grid items={items} sort={sort} firsts={firsts.current} onLetter={setAt} />
@@ -130,9 +123,9 @@ function Choices({
   return (
     <View style={{ marginLeft: 'auto', flexDirection: 'row', alignItems: 'center', gap: 0.8 * u }}>
       {SORTS.map((s) => (
-        <TvChip key={s} chosen={sort === s} onPress={() => onSort(s)}>
+        <Chip key={s} selected={sort === s} onPress={() => onSort(s)}>
           {t(`sort.${s}`)}
-        </TvChip>
+        </Chip>
       ))}
       <View
         style={{
@@ -142,9 +135,9 @@ function Choices({
           backgroundColor: alpha(theme.colors.text, 0.2),
         }}
       />
-      <TvChip chosen={unwatched} onPress={onUnwatched}>
+      <Chip selected={unwatched} onPress={onUnwatched}>
         {t('unwatched')}
-      </TvChip>
+      </Chip>
     </View>
   )
 }

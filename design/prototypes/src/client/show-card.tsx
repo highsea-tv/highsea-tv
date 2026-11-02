@@ -3,7 +3,7 @@
 // Plex and Infuse count them on the art, and the title with its seasons under it. A show you've
 // watched through has no count, as a film you've watched has no mark. The TV draws its own focus
 // stop around the same props.
-import { Badge, Poster, type PosterProps } from '@highsea-tv/ui-web'
+import { Badge, Poster, type PosterProps } from '@highsea-tv/ui'
 import type { ClientShow } from '../mock/types.ts'
 import { seasonsCount } from './shows.ts'
 

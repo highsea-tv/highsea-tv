@@ -11,7 +11,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0005](0005-in-process-torrent-engine.md) | In-process TypeScript torrent engine | Accepted; amended by 0037 |
 | [0006](0006-public-api-openapi-sdk.md) | Public API: Hono + OpenAPI, typed SDK | Accepted |
 | [0007](0007-signed-independent-catalogs.md) | Signed catalogs released independently of apps | Accepted |
-| [0008](0008-clients-react-everywhere.md) | Clients: React everywhere | Accepted |
+| [0008](0008-clients-react-everywhere.md) | Clients: React everywhere | Accepted; amended 2026-11-01 |
 | [0009](0009-license-agpl.md) | License: AGPL-3.0-only | Accepted; amended 2026-10-29 (twice) |
 | [0010](0010-optional-highsea-cloud.md) | Optional highsea cloud | Accepted |
 | [0011](0011-no-compatibility-apis.md) | No compatibility APIs | Accepted |
@@ -62,6 +62,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0056](0056-hardware-acceleration.md) | Hardware acceleration: four paths, each used only once a check on this host passes | Accepted; amended 2026-10-28 |
 | [0057](0057-installing-without-configuration.md) | Installing without configuration: graphics handed over by default, the user, time zone, folders and address detected, and highsea's own TMDB key | Accepted; amended 2026-10-29 |
 | [0058](0058-desktop-app.md) | The desktop app: Tauri around the web build, with the server reached through Rust | Accepted; amended 2026-10-29 |
-| [0059](0059-native-apps.md) | The native apps: Expo on React Native, two apps sharing ui-native and the client | Proposed; amended 2026-10-29 |
+| [0059](0059-native-apps.md) | The native apps: Expo on React Native, two apps sharing ui-native and the client | Proposed; amended 2026-10-29 and 2026-11-01 |
+| [0060](0060-one-design-system-one-library.md) | One design system and one component library, adaptive to the app it's in | Proposed |
 
 Template: copy [`template.md`](template.md).

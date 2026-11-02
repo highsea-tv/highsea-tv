@@ -3,6 +3,7 @@
 // which leads to the settings (C7). docs/product/client-search.md, client-settings.md.
 
 import {
+  Chip,
   ConfirmDialog,
   cn,
   EmptyState,
@@ -12,7 +13,7 @@ import {
   Poster,
   Switch,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import {
@@ -38,16 +39,10 @@ import { type SettingsSectionId, settingsSections } from '../client/settings.ts'
 import { SettingsSectionBody } from '../client/settings-sections.tsx'
 import { ShowPoster } from '../client/show-card.tsx'
 import { ProfileAvatar } from '../client/who.tsx'
-import { hitSlop } from '../kit/mobile/device.tsx'
 import type { SearchSection, SearchSong } from '../mock/types.ts'
 import { PullToRefresh } from './pull.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
 import { MobileWhoSheet } from './who-sheet.tsx'
-
-const chip = cn(
-  'relative min-h-9 cursor-pointer rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus active:scale-97',
-  hitSlop,
-)
 
 // ---------------------------------------------------------------- search
 
@@ -67,15 +62,14 @@ export function MobileSearch() {
           placeholder={searchPlaceholder}
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          className="h-11 text-[16px]"
         />
       </div>
       {!settled.trim() ? (
         <div className={cn('flex flex-wrap gap-2', gutter)}>
           {searchSuggestions.map((s) => (
-            <button key={s} type="button" className={chip} onClick={() => setQ(s)}>
+            <Chip key={s} onClick={() => setQ(s)}>
               {s}
-            </button>
+            </Chip>
           ))}
         </div>
       ) : !r ? (

@@ -2,7 +2,7 @@
 // The web/desktop client (C1–C8): connect, home, library, item detail, the player,
 // search, settings, the profile and downloads. The device's own theme and sound apply over all.
 
-import { Button, EmptyState } from '@highsea-tv/ui-web'
+import { Button, EmptyState } from '@highsea-tv/ui'
 import { Redirect, Route, Switch, useLocation } from 'wouter'
 import { ConnectFlow } from '../client/connect-flow.tsx'
 import { useServerName } from '../client/data.ts'

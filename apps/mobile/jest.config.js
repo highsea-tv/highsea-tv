@@ -22,9 +22,17 @@ module.exports = {
   resolver: 'react-native-reanimated/jest/resolver',
   setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   transform: { ...preset.transform, '\\.mjs$': babel },
-  // Babel's helpers, for the workspace's packages too, which don't depend on them themselves
   moduleNameMapper: {
+    // Babel's helpers, for the workspace's packages too, which don't depend on them themselves
     '^@babel/runtime/(.*)$': `${path.dirname(require.resolve('@babel/runtime/package.json'))}/$1`,
+    // one React, the app's: Expo's Metro does the same in a workspace (its autolinking resolver
+    // keeps react "sticky" to the app, @expo/cli's createExpoAutolinkingResolver), but Jest
+    // resolves from each file, and @highsea-tv/ui keeps the web's React for its own tests
+    '^react$': require.resolve('react'),
+    '^react/(.*)$': `${path.dirname(require.resolve('react/package.json'))}/$1`,
+    // and one safe area context, the app's, for the same reason: @highsea-tv/ui's Sheet reads the
+    // insets from the provider the app (or a test) puts around it
+    '^react-native-safe-area-context$': require.resolve('react-native-safe-area-context'),
   },
   transformIgnorePatterns: [
     '/node_modules/(?!(\\.bun|(jest-)?react-native|@react-native(-community)?|expo(nent)?|@expo(nent)?/.*|expo-.*|react-navigation|@react-navigation/.*|lucide-react-native|react-native-svg|intl-messageformat|@formatjs/.*|standard-navigation))',

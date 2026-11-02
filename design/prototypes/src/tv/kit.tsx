@@ -4,7 +4,7 @@
 // pill, and the global navigation, a top tab row on every screen but the player
 // (client-home.md#tv), with the alternatives the owner asked to compare.
 import { tv } from '@highsea-tv/tokens'
-import { cn, Icon, type IconName, Mark, Poster, Skeleton, useSound } from '@highsea-tv/ui-web'
+import { Button, cn, Icon, type IconName, Mark, Poster, Skeleton, useSound } from '@highsea-tv/ui'
 import {
   type ComponentProps,
   type CSSProperties,
@@ -99,10 +99,20 @@ export function useRowNavigation(ref: RefObject<HTMLElement | null>, ready: unkn
   }, [ref, play, ready])
 }
 
-const buttonBase =
-  'flex items-center gap-[0.6cqw] rounded-(--tv-radius-button) px-[1.6cqw] py-[0.8cqw] font-semibold text-(length:--tv-text-button) whitespace-nowrap outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:shadow-(--tv-focus-shadow)'
+/**
+ * The TV's focus on a library control (tv.md › Focus appearance): the ring and the scale come from
+ * the TV rule; the soft drop shadow under the ring is the TV's own.
+ */
+export const tvFocus = 'focus-visible:shadow-(--tv-focus-shadow)'
 
-/** Primary: a solid `text` fill. Secondary: `text` at 12%. Focus adds the ring and the scale. */
+/** A chip as a D-pad stop: the library's Chip has no focus scale of its own, so the TV adds it. */
+export const tvChip =
+  'focus-visible:scale-(--scale-button) focus-visible:shadow-(--tv-focus-shadow)'
+
+/**
+ * The library's Button at the TV rule (controls.md), as a D-pad stop: primary for the view's main
+ * action, overlay for the rest (tv.md › Hero buttons). Size, corner and colours are the library's.
+ */
 export function TvButton({
   primary = false,
   icon,
@@ -117,29 +127,33 @@ export function TvButton({
   initial?: boolean
   href?: string
 }) {
-  const classes = cn(buttonBase, primary ? 'bg-text text-bg' : 'bg-text/12 text-text', className)
-  const inner = (
-    <>
-      {icon && <Icon name={icon} size={24} className="size-[1.2cqw]" />}
-      {children}
-    </>
-  )
+  const variant = primary ? 'primary' : 'overlay'
   // a disabled button can't take focus, so it isn't a D-pad stop (or a focus guide's target)
   const focus = props.disabled
     ? {}
     : { 'data-focusable': '', ...(initial ? { 'data-initial': '' } : {}) }
   return href ? (
-    <a href={href} className={classes} {...focus}>
-      {inner}
-    </a>
+    <Button
+      asChild
+      variant={variant}
+      icon={icon}
+      className={cn(tvFocus, className)}
+      {...focus}
+      {...props}
+    >
+      <a href={href}>{children}</a>
+    </Button>
   ) : (
-    <button type="button" className={classes} {...focus} {...props}>
-      {inner}
-    </button>
+    <Button variant={variant} icon={icon} className={cn(tvFocus, className)} {...focus} {...props}>
+      {children}
+    </Button>
   )
 }
 
-/** A key on an on-screen keyboard (sign-in, search): a grid cell that fills with `text` on focus. */
+/**
+ * A key on an on-screen keyboard (sign-in, search) or the PIN pad: a grid cell that fills with
+ * `text` on focus. Its button carries `data-item`: a key, not a control in a row (controls.md).
+ */
 export const tvKey =
   'grid h-[3cqw] place-items-center rounded-[0.4cqw] bg-text/10 font-semibold text-(length:--tv-text-button) outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg'
 

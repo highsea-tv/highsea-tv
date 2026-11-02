@@ -37,7 +37,7 @@ import {
   Select,
   Switch,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { lists as messages } from './lists-messages.ts'
 import { Loadable } from './loadable.tsx'
@@ -119,7 +119,7 @@ export function ImportLists() {
                 {t('noneBody')}
               </EmptyState>
             ) : (
-              <ul aria-label={t('title')} className="grid gap-2">
+              <ul aria-label={t('title')} className="grid grid-cols-[minmax(0,1fr)] gap-2">
                 {ls.map((l) => (
                   <Row
                     key={l.id}
@@ -206,8 +206,8 @@ function Row({
       .then(onChanged, (e: Error) => toast.error(t('saveFailed'), { description: e.message }))
   const r = l.lastResult
   return (
-    <li className="grid gap-3 rounded-md border border-line bg-s2 p-3">
-      <div className="grid gap-3 medium:grid-cols-[auto_minmax(0,1fr)_14rem] medium:items-center">
+    <li className="grid grid-cols-[minmax(0,1fr)] gap-3 rounded-md border border-line bg-s2 p-3">
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-3 medium:grid-cols-[auto_minmax(0,1fr)_min(14rem,40%)] medium:items-center">
         <Switch
           aria-label={t('enabled', { name: l.name })}
           checked={l.enabled}

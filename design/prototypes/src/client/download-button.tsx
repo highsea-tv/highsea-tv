@@ -3,8 +3,16 @@
 // desktop app: Download, then where it's got to, then Downloaded with Remove. The browser has no
 // Download: a page can't keep a film for offline (client-settings.md#offline).
 import { bytes } from '@highsea-tv/core/format'
-import { Button, cn, Icon, Progress, Tooltip, toast } from '@highsea-tv/ui-web'
-import { hitSlop } from '../kit/mobile/device.tsx'
+import {
+  Button,
+  type ControlSize,
+  cn,
+  controlSizes,
+  Icon,
+  Progress,
+  Tooltip,
+  toast,
+} from '@highsea-tv/ui'
 import type { ClientItem } from '../mock/types.ts'
 import { useServerName } from './data.ts'
 import {
@@ -42,7 +50,8 @@ export function DownloadButton({
     return (
       <Button
         icon="download"
-        className={cn(wide && 'h-auto min-h-11 w-full whitespace-normal py-2', className)}
+        block={wide}
+        className={className}
         onClick={() => {
           d.start(filmSource(item))
           toast({ title: `Downloading ${item.title}`, description: `To ${where}.` })
@@ -61,14 +70,14 @@ export function DownloadButton({
           tone={x.state === 'paused' ? 'neutral' : 'accent'}
           aria-label={`Downloading ${item.title}`}
         />
-        <div className="flex items-center justify-between gap-2">
+        {/* Pause wraps under the line when both don't fit (200% text on a phone) */}
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <p className="text-caption text-text-3">
             {x.state === 'paused'
               ? `Paused · ${bytes(x.bytes * x.progress)} of ${bytes(x.bytes)}`
               : `Downloading · ${bytes(x.speed)}/s · ${bytes(x.bytes * (1 - x.progress))} to go`}
           </p>
           <Button
-            size="sm"
             variant="ghost"
             icon={x.state === 'paused' ? 'download' : 'pause'}
             onClick={() => (x.state === 'paused' ? d.resume(x.id) : d.pause(x.id))}
@@ -81,11 +90,11 @@ export function DownloadButton({
 
   if (x.state === 'queued' || x.state === 'waiting-wifi')
     return (
-      <div className={cn('flex items-center gap-2', className)}>
+      <div className={cn('flex flex-wrap items-center gap-2', className)}>
         <span className="text-body text-text-2">
           {x.state === 'queued' ? 'Waiting to download' : 'Waiting for Wi-Fi'}
         </span>
-        <Button size="sm" variant="ghost" onClick={() => d.remove(x.id)}>
+        <Button variant="ghost" onClick={() => d.remove(x.id)}>
           Cancel
         </Button>
       </div>
@@ -95,7 +104,7 @@ export function DownloadButton({
     return (
       <div className={cn('flex flex-wrap items-center gap-2', className)}>
         <span className="text-body text-danger">The download stopped</span>
-        <Button size="sm" icon="download" onClick={() => d.retry(x.id)}>
+        <Button icon="download" onClick={() => d.retry(x.id)}>
           Try again
         </Button>
       </div>
@@ -109,7 +118,6 @@ export function DownloadButton({
           : `Downloaded · plays offline for ${x.daysLeft} more days`}
       </span>
       <Button
-        size="sm"
         variant="ghost"
         icon="delete"
         onClick={() => {
@@ -135,7 +143,7 @@ export function EpisodeDownload({
 }: {
   source: OfflineSource
   app: OfflineApp
-  /** Drawn as the hero's round buttons are, rather than as a row's quiet icon. */
+  /** Drawn as the hero's buttons over the artwork are, rather than as a row's quiet icon. */
   round?: boolean
   className?: string
 }) {
@@ -164,26 +172,32 @@ export function EpisodeDownload({
     }
   }
   const moving = x && x.state !== 'done' && x.state !== 'expired' && x.state !== 'failed'
+  // the hero's is the size of the buttons beside it; a row's is the row's small size
+  const size = round ? 'md' : 'sm'
   return (
     <Tooltip content={label}>
-      <button
-        type="button"
+      <Button
+        variant={round ? 'overlay' : 'ghost'}
+        size={size}
+        iconOnly
         aria-label={label}
         onClick={onClick}
-        className={cn(
-          'relative grid size-(--size-control-sm) shrink-0 cursor-pointer place-items-center rounded-full text-text-2 outline-none transition-press hover:bg-s2 hover:text-text focus-visible:ring-focus active:scale-97',
-          round && 'size-(--size-control) border border-line-strong bg-s2 text-text hover:bg-s3',
-          x?.state === 'done' && 'text-accent-text',
-          x?.state === 'failed' && 'text-danger',
-          className,
-        )}
+        className={className}
       >
         {moving ? (
           <Ring value={x.progress} paused={x.state !== 'downloading'} />
         ) : (
-          <Icon name={!x ? 'download' : x.state === 'failed' ? 'refresh' : 'check'} size={18} />
+          // its state in the icon's colour: the accent once it's kept, danger when it stopped
+          <Icon
+            name={!x ? 'download' : x.state === 'failed' ? 'refresh' : 'check'}
+            className={cn(
+              controlSizes[size].icon,
+              x?.state === 'done' && 'text-accent-text',
+              x?.state === 'failed' && 'text-danger',
+            )}
+          />
         )}
-      </button>
+      </Button>
     </Tooltip>
   )
 }
@@ -223,6 +237,7 @@ export function GroupDownload({
   className,
   wide = false,
   ghost = false,
+  size = wide ? 'md' : 'sm',
 }: {
   sources: OfflineSource[]
   /** "Season 2 of The Long Way North", or the album's title. */
@@ -233,13 +248,13 @@ export function GroupDownload({
   wide?: boolean
   /** Quiet, beside a season's Mark season as watched. */
   ghost?: boolean
+  /** The size of the buttons beside it: `md` in a page's header, `sm` in a season's (controls.md). */
+  size?: ControlSize
 }) {
   const d = useDownloads(app)
   const server = useServerName()
   const g = groupState(sources.map((x) => d.get(x.id)))
   const ids = sources.map((x) => x.id)
-  // the phone's small buttons reach 44 points for a finger (mobile.md)
-  const slop = app === 'mobile' && cn('relative', hitSlop)
   const remove = () => {
     d.remove(ids)
     toast({ title: `${name} removed`, description: `It still plays from ${server}.` })
@@ -257,7 +272,7 @@ export function GroupDownload({
         <span className="text-caption text-text-3">
           {g.done} of {sources.length}
         </span>
-        <Button size="sm" variant="ghost" className={slop || undefined} onClick={remove}>
+        <Button size={size} variant="ghost" onClick={remove}>
           Cancel
         </Button>
       </div>
@@ -269,13 +284,7 @@ export function GroupDownload({
           <Icon name="check" size={16} className="text-accent-text" />
           Downloaded · {bytes(g.kept.reduce((s, x) => s + x.bytes, 0))}
         </span>
-        <Button
-          size="sm"
-          variant="ghost"
-          icon="delete"
-          className={slop || undefined}
-          onClick={remove}
-        >
+        <Button size={size} variant="ghost" icon="delete" onClick={remove}>
           Remove
         </Button>
       </div>
@@ -283,10 +292,11 @@ export function GroupDownload({
   const rest = sources.filter((x) => !d.get(x.id))
   return (
     <Button
-      size="sm"
+      size={size}
       variant={ghost ? 'ghost' : undefined}
       icon="download"
-      className={cn(slop, wide && 'h-auto min-h-11 w-full whitespace-normal py-2', className)}
+      block={wide}
+      className={className}
       onClick={() => {
         d.start(rest)
         toast({

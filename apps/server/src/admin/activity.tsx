@@ -38,7 +38,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ComponentProps, useRef, useState } from 'react'
 import { activity as messages } from './activity-messages.ts'
 import { type QueueFilter, queueFilters, torrentTone } from './downloads-status.ts'

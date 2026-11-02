@@ -13,6 +13,7 @@
 // Information as cards.
 import {
   Button,
+  Chip,
   cn,
   EmptyState,
   Icon,
@@ -21,7 +22,7 @@ import {
   SheetContent,
   Skeleton,
   SkeletonText,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { useMarkEpisodes, useShow } from '../client/data.ts'
@@ -42,7 +43,6 @@ import {
   useEpisodeTarget,
 } from '../client/shows.ts'
 import { TrailerDialog } from '../client/trailer.tsx'
-import { hitSlop } from '../kit/mobile/device.tsx'
 import type {
   ClientEpisode,
   ClientSeason,
@@ -55,11 +55,6 @@ import { Facts, fade, Named } from './detail.tsx'
 import { MobileRow } from './home.tsx'
 import { PullToRefresh } from './pull.tsx'
 import { BackBadge, gutter, mobileHref } from './shell.tsx'
-
-const pill = cn(
-  'relative grid min-h-9 shrink-0 cursor-pointer place-items-center rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus aria-pressed:border-transparent aria-pressed:bg-text aria-pressed:text-bg',
-  hitSlop,
-)
 
 export function MobileShow() {
   const { id } = useParams<{ id: string }>()
@@ -188,12 +183,7 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
                 </div>
               )}
             </div>
-            <Button
-              variant="primary"
-              icon="play"
-              asChild
-              className="h-auto min-h-12 w-full whitespace-normal py-2 text-[16px]"
-            >
+            <Button variant="primary" icon="play" asChild block>
               <a
                 href={mobileHref(`/play/${next.episode.id}`)}
                 aria-label={`${next.kind === 'resume' ? 'Resume' : 'Play'} ${episodePlace(next.episode)}, ${next.episode.title}`}
@@ -262,15 +252,13 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
           >
             <legend className="sr-only">Season</legend>
             {d.seasons.map((x) => (
-              <button
+              <Chip
                 key={x.number}
-                type="button"
-                aria-pressed={x.number === shown?.number}
+                selected={x.number === shown?.number}
                 onClick={() => setSeason(x.number)}
-                className={pill}
               >
                 {x.title}
-              </button>
+              </Chip>
             ))}
           </fieldset>
         )}
@@ -339,7 +327,7 @@ function Season({ show, season: x }: { show: ClientShow; season: ClientSeason })
           variant="ghost"
           size="sm"
           icon="check"
-          className={cn('-me-2 relative ms-auto', hitSlop)}
+          className="-me-2 ms-auto"
           aria-pressed={watched}
           onClick={() => void mark.season.run(show.id, x.number, !watched)}
         >
@@ -406,20 +394,18 @@ function Episode({ episode: e, download }: { episode: ClientEpisode; download: O
             <span className="text-[12px] text-text-3">{airedDate(e.aired)}</span>
           </span>
         </a>
-        <EpisodeDownload app="mobile" source={download} className={cn('size-10', hitSlop)} />
-        <button
-          type="button"
+        <EpisodeDownload app="mobile" source={download} />
+        {/* watched shows as the secondary look's fill: the library's Button has no pressed look */}
+        <Button
+          variant={e.watched ? 'secondary' : 'ghost'}
+          // the size of the episode's download beside it: controls in a row share one size
+          size="sm"
+          icon="check"
+          iconOnly
           aria-label={`${label}: ${e.title}`}
           aria-pressed={e.watched}
           onClick={() => void mark.episode.run(e.id, !e.watched)}
-          className={cn(
-            'relative grid size-10 cursor-pointer place-items-center rounded-full outline-none transition-tint focus-visible:ring-focus',
-            hitSlop,
-            e.watched ? 'bg-accent-soft text-accent-text' : 'text-text-3',
-          )}
-        >
-          <Icon name="check" size={18} />
-        </button>
+        />
       </div>
       <p className="line-clamp-2 text-[14px] text-text-2 leading-[1.5]">{e.synopsis}</p>
     </div>

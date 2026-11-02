@@ -83,6 +83,11 @@ jobs:
       # dates in scripts/audit-exceptions.json
       - name: Dependency check
         run: bun run audit
+      # the web client's build draws with ui's web renderer only (ADR 0060)
+      - name: Build the web client
+        run: bun run --filter @highsea-tv/web build
+      - name: The web client carries no React Native
+        run: bun scripts/bundles.ts web
       - name: Build the admin
         run: bun run --filter @highsea-tv/server build
         env:

@@ -8,12 +8,12 @@ import { ALL, arrange, genresOf, type Show, SORTS, type Sort } from '@highsea-tv
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
-import { Button, EmptyState, Poster, Sheet, Text, useTheme } from '@highsea-tv/ui-native'
+import { Button, Chip, EmptyState, Poster, Sheet, Text, useTheme } from '@highsea-tv/ui'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 import { CollectionTile } from '../../../collection-art.tsx'
-import { Chip, Grid, Label, Screen } from '../../../kit.tsx'
+import { Grid, Label, Screen } from '../../../kit.tsx'
 import { library as messages } from '../../../messages.ts'
 import { Header, Reachable } from '../../../shell.tsx'
 
@@ -94,10 +94,10 @@ function Movies() {
           <View style={{ gap: 8 }}>
             <Label>{t('show')}</Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-              <Chip pressed={show === 'all'} onPress={() => setShow('all')}>
+              <Chip selected={show === 'all'} onPress={() => setShow('all')}>
                 {t('allMovies')}
               </Chip>
-              <Chip pressed={show === 'unwatched'} onPress={() => setShow('unwatched')}>
+              <Chip selected={show === 'unwatched'} onPress={() => setShow('unwatched')}>
                 {t('unwatched')}
               </Chip>
             </View>
@@ -106,7 +106,7 @@ function Movies() {
             <Label>{t('sortBy')}</Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {SORTS.map((s) => (
-                <Chip key={s} pressed={sort === s} onPress={() => setSort(s)}>
+                <Chip key={s} selected={sort === s} onPress={() => setSort(s)}>
                   {t(`sort.${s}`)}
                 </Chip>
               ))}
@@ -116,7 +116,7 @@ function Movies() {
             <Label>{t('genre')}</Label>
             <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
               {[ALL, ...genresOf(items)].map((g) => (
-                <Chip key={g} pressed={genre === g} onPress={() => setGenre(g)}>
+                <Chip key={g} selected={genre === g} onPress={() => setGenre(g)}>
                   {g === ALL ? t('all') : g}
                 </Chip>
               ))}
@@ -204,10 +204,10 @@ export default function Library() {
       <Screen tabs>
         <Header title={t('title')} />
         <View accessibilityRole="tablist" style={{ flexDirection: 'row', gap: 8 }}>
-          <Chip pressed={view === 'movies'} onPress={() => setView('movies')}>
+          <Chip selected={view === 'movies'} onPress={() => setView('movies')}>
             {t('movies')}
           </Chip>
-          <Chip pressed={view === 'collections'} onPress={() => setView('collections')}>
+          <Chip selected={view === 'collections'} onPress={() => setView('collections')}>
             {t('collections')}
           </Chip>
         </View>

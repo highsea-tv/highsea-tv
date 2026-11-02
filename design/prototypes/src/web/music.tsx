@@ -19,7 +19,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { useMusic } from '../client/data.ts'
@@ -126,7 +126,12 @@ export function WebMusic({ view }: { view: MusicView }) {
       onValueChange={(v) => navigate(musicViews.find((x) => x.value === v)?.path ?? '/music')}
       asChild
     >
-      <main className={cn('mx-auto w-full grid max-w-[1680px] gap-6 pt-6 pb-16', gutter)}>
+      <main
+        className={cn(
+          'mx-auto grid w-full max-w-[1680px] grid-cols-[minmax(0,1fr)] gap-6 pt-6 pb-16',
+          gutter,
+        )}
+      >
         <div className="flex flex-wrap items-end gap-x-6 gap-y-3">
           <div className="grid gap-1">
             <h1 className="text-heading">Music</h1>

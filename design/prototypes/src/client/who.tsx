@@ -6,7 +6,7 @@
 // does with the remote's number keys; five wrong in a row rest it for a minute. The phone switches
 // in a sheet of rows instead (mobile/who-sheet.tsx), sharing the PIN step. Profiles are added and
 // deleted on the TV for now.
-import { Button, cn, Icon } from '@highsea-tv/ui-web'
+import { Button, cn, Icon, Input } from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { type Profile, toneClass, usePeople } from './profiles.ts'
@@ -164,22 +164,20 @@ export function PinStep({
         className={sheet ? 'size-[64px] text-[28px]' : 'size-24 text-[40px]'}
       />
       {!sheet && <h1 className="text-heading">Enter {p.name}’s PIN</h1>}
-      <label className="grid justify-items-center gap-3">
-        <span className="sr-only">{p.name}’s PIN, four digits</span>
-        <input
-          ref={field}
-          type="password"
-          inputMode="numeric"
-          autoComplete="off"
-          maxLength={4}
-          value={digits}
-          disabled={resting}
-          aria-invalid={error ? true : undefined}
-          aria-describedby="pin-error"
-          onChange={(e) => type(e.target.value)}
-          className="w-44 rounded-md border border-line bg-s1 py-3 text-center font-mono text-[28px] tracking-[0.6em] outline-none focus-visible:ring-focus disabled:opacity-50"
-        />
-      </label>
+      <Input
+        aria-label={`${p.name}’s PIN, four digits`}
+        ref={field}
+        type="password"
+        inputMode="numeric"
+        autoComplete="off"
+        maxLength={4}
+        value={digits}
+        disabled={resting}
+        aria-invalid={error ? true : undefined}
+        aria-describedby="pin-error"
+        onChange={(e) => type(e.target.value)}
+        className="w-44 text-center font-mono tracking-[0.6em]"
+      />
       <p id="pin-error" role="alert" className="min-h-6 text-body text-danger">
         {error}
       </p>

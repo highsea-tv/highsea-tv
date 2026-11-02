@@ -29,7 +29,7 @@ import {
   TabsList,
   TabsTrigger,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { GetTheAppsDialog } from '../../client/get-the-apps.tsx'
 import { Soon } from '../../kit/soon.tsx'

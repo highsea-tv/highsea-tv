@@ -9,7 +9,7 @@
 // each with its number, title, two lines of synopsis, and length and air date under it. Choosing a
 // season keeps focus on the choice (the owner, 2026-10-31); Down from the seasons enters the
 // episodes at the one Play plays. Then More like this, Cast and crew, and About and Information.
-import { cn, Icon, Rating, Skeleton } from '@highsea-tv/ui-web'
+import { Chip, cn, Icon, Rating, Skeleton } from '@highsea-tv/ui'
 import { useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useLongPress } from '../client/continue-menu.ts'
@@ -46,15 +46,13 @@ import {
   TvMessage,
   TvRow,
   TvTile,
+  tvChip,
   tvHref,
   useInitialFocus,
   useRowNavigation,
 } from './kit.tsx'
 import { TvMenu } from './song-menu.tsx'
 import { TvTracksPanel } from './tracks.tsx'
-
-const choice =
-  'rounded-full px-[1.2cqw] py-[0.45cqw] font-semibold text-(length:--tv-text-pill) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:shadow-(--tv-focus-shadow) aria-pressed:bg-text/12 aria-pressed:text-text'
 
 export function TvShow({ panel, onPanel }: { panel: boolean; onPanel: (open: boolean) => void }) {
   const { id, episode } = useParams<{ id: string; episode?: string }>()
@@ -271,29 +269,27 @@ function ShowPage({
               className="-ms-[1.2cqw] flex items-center gap-[0.8cqw] px-(--tv-safe-x)"
             >
               {d.seasons.map((x) => (
-                <button
+                <Chip
                   key={x.number}
-                  type="button"
                   data-focusable=""
-                  aria-pressed={x.number === shown?.number}
+                  selected={x.number === shown?.number}
                   onClick={() => setSeason(x.number)}
-                  className={choice}
+                  className={tvChip}
                 >
                   {x.title}
-                </button>
+                </Chip>
               ))}
               <span aria-hidden className="mx-[0.4cqw] h-[1.8cqw] w-px bg-text/20" />
               {shown && (
-                <button
-                  type="button"
+                <Chip
                   data-focusable=""
-                  aria-pressed={seasonWatched}
+                  icon="check"
+                  selected={seasonWatched}
                   onClick={() => void mark.season.run(s.id, shown.number, !seasonWatched)}
-                  className={cn(choice, 'flex items-center gap-[0.5cqw]')}
+                  className={tvChip}
                 >
-                  <Icon name="check" size={20} className="size-[1cqw]" />
                   {seasonWatched ? 'Mark season as unwatched' : 'Mark season as watched'}
-                </button>
+                </Chip>
               )}
             </div>
           </div>

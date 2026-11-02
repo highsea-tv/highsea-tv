@@ -12,7 +12,7 @@
 //   the Collections it's in, Trailers and extras, Cast and crew (round portraits, each opening the person's page), then About,
 //   Information and Languages as three cards, the long text kept off the first screen.
 // Back closes the panel or the trailer, then leaves.
-import { cn, Icon, type IconName, QualityTag, Rating, Skeleton } from '@highsea-tv/ui-web'
+import { Button, cn, Icon, type IconName, QualityTag, Rating, Skeleton } from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'wouter'
 import { collectionCaption, left, runtime, useItem } from '../client/data.ts'
@@ -38,6 +38,7 @@ import {
   TvHead,
   TvMessage,
   TvRow,
+  tvFocus,
   tvHref,
   useInitialFocus,
   useRowNavigation,
@@ -340,8 +341,9 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
 }
 
 /**
- * A secondary action as a round icon button, its name under it while it has focus (and always to
- * a screen reader). A link when it goes somewhere, a button otherwise.
+ * A secondary action as an icon button beside Play, the same size and shape (controls.md › Rules:
+ * controls in one row share one size), its name under it while it has focus (and always to a
+ * screen reader). A link when it goes somewhere, a button otherwise.
  */
 export function RoundAction({
   icon,
@@ -356,26 +358,32 @@ export function RoundAction({
   pressed?: boolean
   onClick?: () => void
 }) {
-  const classes =
-    'grid size-[2.9cqw] place-items-center rounded-full bg-text/12 text-text outline-none transition-lift focus-visible:scale-(--tv-scale-button) focus-visible:bg-text focus-visible:text-bg focus-visible:shadow-(--tv-focus-shadow)'
-  const inner = <Icon name={icon} size={24} className="size-[1.3cqw]" />
   return (
     <div className="group/action relative grid justify-items-center">
       {href ? (
-        <a href={href} aria-label={label} data-focusable="" className={classes}>
-          {inner}
-        </a>
+        <Button
+          asChild
+          variant="overlay"
+          icon={icon}
+          iconOnly
+          data-focusable=""
+          className={tvFocus}
+        >
+          <a href={href}>
+            <span className="sr-only">{label}</span>
+          </a>
+        </Button>
       ) : (
-        <button
-          type="button"
+        <Button
+          variant="overlay"
+          icon={icon}
+          iconOnly
           aria-label={label}
           aria-pressed={pressed}
           data-focusable=""
           onClick={onClick}
-          className={classes}
-        >
-          {inner}
-        </button>
+          className={tvFocus}
+        />
       )}
       <span
         aria-hidden

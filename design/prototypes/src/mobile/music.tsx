@@ -7,6 +7,7 @@
 // button opens a sheet, as Movies' does; Playlists have none.
 import {
   Button,
+  Chip,
   cn,
   EmptyState,
   Poster,
@@ -17,7 +18,7 @@ import {
   TabsContent,
   TabsList,
   TabsTrigger,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { useMusic } from '../client/data.ts'
@@ -43,17 +44,11 @@ import {
 } from '../client/music.ts'
 import { useSongs } from '../client/playlists.ts'
 import { usePlaylists } from '../client/song-menu.ts'
-import { hitSlop } from '../kit/mobile/device.tsx'
 import { LibraryNav } from './collections.tsx'
 import { LetterIndexed, useLetters } from './letter-index.tsx'
 import { MobilePlaylistList, MobileSongList } from './music-lists.tsx'
 import { PullToRefresh } from './pull.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
-
-const chip = cn(
-  'relative min-h-9 cursor-pointer rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus aria-pressed:border-transparent aria-pressed:bg-text aria-pressed:text-bg',
-  hitSlop,
-)
 
 export function MobileMusic({ view }: { view: MusicView }) {
   const music = useMusic()
@@ -125,11 +120,7 @@ export function MobileMusic({ view }: { view: MusicView }) {
           <div className={gutter}>
             <TabsList aria-label="View" className="flex w-full *:flex-1">
               {musicViews.map((v) => (
-                <TabsTrigger
-                  key={v.value}
-                  value={v.value}
-                  className={cn('h-8 justify-center px-1 text-[13px]', hitSlop)}
-                >
+                <TabsTrigger key={v.value} value={v.value} className="justify-center px-1">
                   {v.label}
                 </TabsTrigger>
               ))}
@@ -145,7 +136,7 @@ export function MobileMusic({ view }: { view: MusicView }) {
               <Button
                 size="sm"
                 icon="filter"
-                className={cn('relative ms-auto', hitSlop)}
+                className="ms-auto"
                 onClick={() => setOpen(true)}
                 aria-haspopup="dialog"
               >
@@ -286,15 +277,13 @@ export function MobileMusic({ view }: { view: MusicView }) {
                   </legend>
                   <div className="flex flex-wrap gap-2">
                     {sorts.map((x) => (
-                      <button
+                      <Chip
                         key={x.value}
-                        type="button"
-                        aria-pressed={sort === x.value}
+                        selected={sort === x.value}
                         onClick={() => setSort(x.value)}
-                        className={chip}
                       >
                         {x.label}
-                      </button>
+                      </Chip>
                     ))}
                   </div>
                 </fieldset>
@@ -308,15 +297,9 @@ export function MobileMusic({ view }: { view: MusicView }) {
                         ALL_GENRES,
                         ...(view === 'songs' ? songGenresOf(allSongs) : musicGenresOf(albums)),
                       ].map((g) => (
-                        <button
-                          key={g}
-                          type="button"
-                          aria-pressed={genre === g}
-                          onClick={() => setGenre(g)}
-                          className={chip}
-                        >
+                        <Chip key={g} selected={genre === g} onClick={() => setGenre(g)}>
                           {g === ALL_GENRES ? 'All' : g}
-                        </button>
+                        </Chip>
                       ))}
                     </div>
                   </fieldset>

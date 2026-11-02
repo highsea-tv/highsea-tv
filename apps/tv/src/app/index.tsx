@@ -13,18 +13,17 @@ import { createFormat } from '@highsea-tv/client/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
 import { useServers } from '@highsea-tv/native/servers'
-import { Icon, Text, tokens, useTheme } from '@highsea-tv/ui-native'
+import { Button, Icon, Text, tokens, useTheme } from '@highsea-tv/ui'
 import {
   focusOn,
   HERO_DWELL_MS,
   homeBack,
   homeRowAt,
-  TvButton,
   TvMessage,
   TvRow,
   TvTile,
   type ViewHandle,
-} from '@highsea-tv/ui-native/tv'
+} from '@highsea-tv/ui/tv'
 import { Image } from 'expo-image'
 import { router, useIsFocused } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -69,9 +68,9 @@ export default function HomeScreen() {
       <TvMessage
         title={t('failed')}
         actions={
-          <TvButton primary preferred onPress={home.refetch}>
+          <Button variant="primary" hasTVPreferredFocus onPress={home.refetch}>
             {t('tryAgain')}
-          </TvButton>
+          </Button>
         }
       >
         {home.error.message}
@@ -90,9 +89,14 @@ function Empty() {
       <TvMessage
         title={t('emptyTitle')}
         actions={
-          <TvButton preferred icon="library" onPress={() => router.push('/library')}>
+          <Button
+            variant="overlay"
+            hasTVPreferredFocus
+            icon="library"
+            onPress={() => router.push('/library')}
+          >
             {s('library')}
-          </TvButton>
+          </Button>
         }
       >
         {t('emptyBody')}
@@ -189,23 +193,24 @@ function Home({ sections }: { sections: HomeSection[] }) {
           </Animated.View>
           {/* Play acts on what the hero shows (tv.md#hero-behavior) */}
           <View style={{ flexDirection: 'row', gap: 1 * u }}>
-            <TvButton
-              primary
-              preferred
+            <Button
+              variant="primary"
+              hasTVPreferredFocus
               icon="play"
-              label={`${playLabel}, ${shown.title}`}
+              accessibilityLabel={`${playLabel}, ${shown.title}`}
               onFocus={toHero}
               onPress={() => router.push(`/play/${shown.id}`)}
             >
               {playLabel}
-            </TvButton>
-            <TvButton
+            </Button>
+            <Button
+              variant="overlay"
               icon="info"
               onFocus={toHero}
               onPress={() => router.push(`/movies/${shown.id}`)}
             >
               {t('details')}
-            </TvButton>
+            </Button>
           </View>
         </View>
         {/* the rows start about half way down, so the next row's title shows under the featured
@@ -344,9 +349,9 @@ function Acknowledge() {
           {m.body}
         </Text>
         <View style={{ flexDirection: 'row' }}>
-          <TvButton primary preferred onPress={() => void a.dismiss(m.id)}>
+          <Button variant="primary" hasTVPreferredFocus onPress={() => void a.dismiss(m.id)}>
             {s('gotIt')}
-          </TvButton>
+          </Button>
         </View>
       </View>
     </View>

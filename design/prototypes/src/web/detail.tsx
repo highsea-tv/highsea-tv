@@ -14,7 +14,6 @@ import {
   EmptyState,
   Field,
   Icon,
-  type IconName,
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -24,7 +23,7 @@ import {
   Skeleton,
   SkeletonText,
   Tooltip,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactElement, useState } from 'react'
 import { useParams } from 'wouter'
 import { collectionCaption, left, runtime, useDesktopApp, useItem } from '../client/data.ts'
@@ -75,7 +74,7 @@ export function WatchWith({
             }))}
           />
         ) : (
-          <p className="flex h-(--size-control) items-center text-text-2 text-body">
+          <p className="flex h-(--control-h) items-center text-text-2 text-body">
             {version.detail}
           </p>
         )}
@@ -233,7 +232,7 @@ export function WebDetail() {
               </Button>
               {resuming && (
                 <Round label="Play from the start">
-                  <Button iconOnly icon="replay" asChild className="rounded-full">
+                  <Button variant="overlay" iconOnly icon="replay" asChild>
                     <a href={webHref(`/play/${m.id}/start`)}>
                       <span className="sr-only">Play from the start</span>
                     </a>
@@ -242,7 +241,13 @@ export function WebDetail() {
               )}
               {preview && (
                 <Round label="Trailer">
-                  <RoundButton icon="trailer" label="Trailer" onClick={() => setTrailer(preview)} />
+                  <Button
+                    variant="overlay"
+                    iconOnly
+                    icon="trailer"
+                    aria-label="Trailer"
+                    onClick={() => setTrailer(preview)}
+                  />
                 </Round>
               )}
               <TracksPopover detail={d} />
@@ -325,32 +330,9 @@ export function WebDetail() {
   )
 }
 
-/** A round icon button's name, on hover and focus. */
+/** An icon button's name, on hover and focus. */
 export function Round({ label, children }: { label: string; children: ReactElement }) {
   return <Tooltip content={label}>{children}</Tooltip>
-}
-
-export function RoundButton({
-  icon,
-  label,
-  pressed,
-  onClick,
-}: {
-  icon: IconName
-  label: string
-  pressed?: boolean
-  onClick?: () => void
-}) {
-  return (
-    <Button
-      iconOnly
-      icon={icon}
-      aria-label={label}
-      aria-pressed={pressed}
-      onClick={onClick}
-      className="rounded-full"
-    />
-  )
 }
 
 /** Audio and subtitles: Watch with in a popover, saved as it changes. */
@@ -359,12 +341,7 @@ function TracksPopover({ detail }: { detail: ClientDetail }) {
     <Popover>
       <Round label="Audio and subtitles">
         <PopoverTrigger asChild>
-          <Button
-            iconOnly
-            icon="subtitles"
-            aria-label="Audio and subtitles"
-            className="rounded-full"
-          />
+          <Button variant="overlay" iconOnly icon="subtitles" aria-label="Audio and subtitles" />
         </PopoverTrigger>
       </Round>
       <PopoverContent className="grid w-80 gap-3 p-4">
@@ -380,10 +357,12 @@ function WatchedButton({ detail }: { detail: ClientDetail }) {
   const mark = useMarkWatched(detail.item)
   return (
     <Round label={mark.label}>
-      <RoundButton
+      <Button
+        variant="overlay"
+        iconOnly
         icon="check"
-        label={mark.label}
-        pressed={detail.item.watched}
+        aria-label={mark.label}
+        aria-pressed={detail.item.watched}
         onClick={() => void mark.run()}
       />
     </Round>
@@ -458,10 +437,10 @@ function DetailSkeleton() {
             <Skeleton className="my-0.5 h-3 w-52" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Skeleton className="h-(--size-control) w-32 rounded-md" />
-            <Skeleton className="size-(--size-control) rounded-full" />
-            <Skeleton className="size-(--size-control) rounded-full" />
-            <Skeleton className="size-(--size-control) rounded-full" />
+            <Skeleton className="h-(--control-h) w-32 rounded-md" />
+            <Skeleton className="size-(--control-h) rounded-(--control-radius)" />
+            <Skeleton className="size-(--control-h) rounded-(--control-radius)" />
+            <Skeleton className="size-(--control-h) rounded-(--control-radius)" />
           </div>
         </div>
       </div>

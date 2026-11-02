@@ -11,7 +11,7 @@
 import type { SecurityInput, SecuritySettings } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Button, Field, Input, Select, Switch, toast } from '@highsea-tv/ui-web'
+import { Button, Field, Input, Select, Switch, toast } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { security as messages } from './security-messages.ts'

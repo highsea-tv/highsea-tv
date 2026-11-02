@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The phone screen: a 390 × 844 pt viewport with the status bar and home indicator drawn in (the
 // safe areas), and a momentum-scrolling content area between them. React Native comes in Phase 4;
-// these approximate it with web primitives (pt ≈ px).
-import { Icon } from '@highsea-tv/ui-web'
-import type { ReactNode } from 'react'
+// these approximate it with web primitives (pt ≈ px). It draws the library's controls at the touch
+// rule (controls.md › One rule per platform): the spec's sizes, 16px text and an invisible 44 hit
+// area, as apps/mobile does with ui-native.
+import { Icon, PlatformScope } from '@highsea-tv/ui'
+import { type ReactNode, useLayoutEffect } from 'react'
 import { useNow } from '../../mock/hooks.tsx'
 
 /** The phone's screen, in pt. */
@@ -13,13 +15,21 @@ export const PHONE = { w: 390, h: 844 }
 export const safeArea = { top: 54, bottom: 34 }
 
 /**
- * A touch target of 44 pt at least around a smaller drawing (prototype-gaps.md › 4.2, as Apple's
- * Human Interface Guidelines ask): a pseudo-element grows the area a tap lands on, as React
- * Native's `hitSlop` does, and the drawing stays as it is. It only ever grows, so a larger target
- * is left alone. The element must be positioned (`relative`, or already `absolute`), and nothing
- * around it may clip the extra room.
+ * Sets the touch rule on the document too while the phone is shown, so what Radix portals to the
+ * body (sheets, menus) is drawn at it as well. Each screen is its own iframe (chrome/stage.tsx),
+ * so the document is the phone's alone.
  */
-export const hitSlop = 'after:absolute after:inset-[min(0px,calc((100%_-_44px)/2))]'
+function useDocumentPlatform() {
+  useLayoutEffect(() => {
+    const root = document.documentElement
+    const was = root.dataset.platform
+    root.dataset.platform = 'touch'
+    return () => {
+      if (was === undefined) delete root.dataset.platform
+      else root.dataset.platform = was
+    }
+  }, [])
+}
 
 const time = new Intl.DateTimeFormat('en-GB', { hour: '2-digit', minute: '2-digit' })
 
@@ -43,8 +53,12 @@ function StatusBar() {
 }
 
 export function MobileScreen({ children, tabBar }: { children: ReactNode; tabBar?: ReactNode }) {
+  useDocumentPlatform()
   return (
-    <div className="relative flex h-screen flex-col overflow-hidden bg-bg text-text">
+    <PlatformScope
+      platform="touch"
+      className="relative flex h-screen flex-col overflow-hidden bg-bg text-text"
+    >
       <StatusBar />
       <div className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
       {tabBar}
@@ -55,6 +69,6 @@ export function MobileScreen({ children, tabBar }: { children: ReactNode; tabBar
       >
         <span className="h-[5px] w-[134px] rounded-full bg-text" />
       </div>
-    </div>
+    </PlatformScope>
   )
 }

@@ -39,7 +39,7 @@ import {
   TitleCell,
   Tooltip,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { Fragment, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
@@ -485,11 +485,13 @@ function FileStreams({ file: f }: { file: MediaFile }) {
       <p className="truncate font-mono text-release text-text-3" title={f.path}>
         {f.path}
       </p>
-      <ul className="grid gap-1 text-ui">
+      <ul className="grid grid-cols-[minmax(0,1fr)] gap-1 text-ui">
         {f.streams.map((s) => (
           <li key={s.index} className="flex gap-3">
             <span className="w-16 shrink-0 text-text-3 capitalize">{s.type}</span>
-            <span className="min-w-0 font-mono text-figure text-text-2">{streamLine(s)}</span>
+            <span className="min-w-0 font-mono text-figure text-text-2 [overflow-wrap:anywhere]">
+              {streamLine(s)}
+            </span>
           </li>
         ))}
       </ul>

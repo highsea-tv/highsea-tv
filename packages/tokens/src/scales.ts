@@ -46,11 +46,11 @@ export const blur = {
   fallbackOpacity: 0.96,
 } as const
 
-/** Admin density (docs/design-language/platforms/admin.md#density), px. */
+/**
+ * Admin density (docs/design-language/platforms/admin.md#density), px. Controls' sizes are the
+ * control spec's (`controls.ts`, `--control-*`), not density's.
+ */
 export const density = {
-  control: 36,
-  controlSm: 30,
-  input: 38,
   badge: 22,
   row: 60,
   rowSingle: 40,

@@ -3,7 +3,7 @@
 // phone's sheet from Now playing, as Apple Music's and Spotify's are: what it's playing from, the
 // song playing, then Up next, reordered by its handles and each with Remove, and Clear. A song in
 // Up next plays from there.
-import { Button, cn, SortableList } from '@highsea-tv/ui-web'
+import { Button, cn, SortableList } from '@highsea-tv/ui'
 import { clock } from './data.ts'
 import { playingFromLabel, type QueueEntry, useMusicPlayer } from './music-player.ts'
 

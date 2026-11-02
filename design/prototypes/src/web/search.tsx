@@ -6,7 +6,7 @@
 // linked and Back returns to it: the web client's `/web/search?q=…`, and `/web/search/{text}` in the
 // prototype, whose hash can't carry a query.
 
-import { cn, Icon, Input, Poster } from '@highsea-tv/ui-web'
+import { Chip, cn, Icon, Input, Poster } from '@highsea-tv/ui'
 import { useEffect } from 'react'
 import { useLocation, useParams } from 'wouter'
 import {
@@ -53,21 +53,15 @@ export function WebSearch() {
         value={q}
         autoFocus
         onChange={(e) => setQ(e.target.value)}
-        className="h-12 text-body"
       />
       {!settled.trim() ? (
         <section aria-label="Try" className="grid gap-3">
           <h2 className="font-mono text-label text-text-3 uppercase">Try</h2>
           <div className="flex flex-wrap gap-2">
             {searchSuggestions.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setQ(s)}
-                className="rounded-full border border-line-strong px-3.5 py-1.5 text-text-2 text-body outline-none hover:bg-s2 hover:text-text focus-visible:ring-focus"
-              >
+              <Chip key={s} onClick={() => setQ(s)}>
                 {s}
-              </button>
+              </Chip>
             ))}
           </div>
         </section>

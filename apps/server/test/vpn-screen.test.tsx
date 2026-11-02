@@ -36,7 +36,7 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui-web')
+const { TooltipProvider } = await import('@highsea-tv/ui')
 const { Vpn } = await import('../src/admin/vpn.tsx')
 
 // ---------------------------------------------------------------- the fake API
@@ -198,10 +198,11 @@ describe('Settings › VPN', () => {
     const status = page.getByRole('status')
     expect(within(status).getByText('No VPN')).toBeTruthy()
     expect(page.queryByRole('button', { name: 'Check now' })).toBeNull()
-    const builtin = page.getByRole('radio', { name: /highsea connects/ }) as HTMLInputElement
+    // the library's Radio is Radix's <button role="radio">, so its state is aria-checked
+    const builtin = page.getByRole('radio', { name: /highsea connects/ }) as HTMLButtonElement
     expect(builtin.disabled).toBe(false)
     expect(page.queryByText(/Arrives in a later update/)).toBeNull()
-    expect((page.getByRole('radio', { name: /^Off/ }) as HTMLInputElement).checked).toBe(true)
+    expect(page.getByRole('radio', { name: /^Off/ }).getAttribute('aria-checked')).toBe('true')
     // nothing to behave with while it's off
     expect(page.queryByRole('region', { name: 'Behaviour' })).toBeNull()
   })

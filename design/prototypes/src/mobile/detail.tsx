@@ -18,7 +18,7 @@ import {
   SheetContent,
   Skeleton,
   SkeletonText,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { collectionCaption, left, runtime, useItem } from '../client/data.ts'
@@ -153,12 +153,7 @@ export function MobileDetail() {
             {left(m)}
           </div>
         )}
-        <Button
-          variant="primary"
-          icon="play"
-          asChild
-          className="h-auto min-h-12 w-full whitespace-normal py-2 text-[16px]"
-        >
+        <Button variant="primary" icon="play" asChild block>
           <a href={mobileHref(`/play/${m.id}`)}>{resuming ? 'Resume' : 'Play'}</a>
         </Button>
         <DownloadButton item={m} app="mobile" wide />

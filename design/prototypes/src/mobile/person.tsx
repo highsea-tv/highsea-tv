@@ -4,14 +4,13 @@
 // they're known for and how much of theirs is here, born and died, and the biography cut at four
 // lines with More. Then a row of posters for each department they worked in on the films here, the
 // one they're known for first, each with their role and the year; then their shows and albums.
-import { Button, cn, EmptyState, Icon, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Icon, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { usePerson } from '../client/data.ts'
 import { departmentTitle, hereOf, lifeOf, roleNames } from '../client/detail-facts.ts'
 import { ShowPoster } from '../client/show-card.tsx'
 import { showYears } from '../client/shows.ts'
-import { hitSlop } from '../kit/mobile/device.tsx'
 import { LONG_BIO } from '../web/person.tsx'
 import { MobileRow, MobileRowSkeleton } from './home.tsx'
 import { BackBadge, gutter, mobileHref } from './shell.tsx'
@@ -164,7 +163,7 @@ export function Bio({ text }: { text: string }) {
           aria-expanded={open}
           aria-controls="bio"
           onClick={() => setOpen(!open)}
-          className={cn('-ms-2 relative', hitSlop)}
+          className="-ms-2"
         >
           {open ? 'Less' : 'More'}
         </Button>

@@ -9,7 +9,7 @@ import {
   SOUND_EVENTS,
   type SoundEvent,
 } from '@highsea-tv/tokens'
-import { Badge, Button, createSoundPlayer, dbToGain, Kbd } from '@highsea-tv/ui-web'
+import { Badge, Button, createSoundPlayer, dbToGain, Kbd } from '@highsea-tv/ui'
 import type { Meta, StoryObj } from '@storybook/react-vite'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Page, Section } from './page.tsx'

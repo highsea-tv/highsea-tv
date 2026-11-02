@@ -20,7 +20,7 @@ import {
   SheetContent,
   Skeleton,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import {
   browserSupportsWebAuthn,
   type PublicKeyCredentialCreationOptionsJSON,

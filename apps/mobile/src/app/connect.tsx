@@ -13,14 +13,14 @@ import { relative } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { useNearby } from '@highsea-tv/native/nearby'
 import { publicInfoAt, useServers } from '@highsea-tv/native/servers'
-import { Button, Field, Icon, Input, Mark, Text, useTheme } from '@highsea-tv/ui-native'
+import { Button, Disclosure, Field, Input, Mark, Text, useTheme } from '@highsea-tv/ui'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useRef, useState } from 'react'
-import { Pressable, View } from 'react-native'
+import { View } from 'react-native'
 import Swipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable'
 import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated'
 import { useForget } from '../forget.ts'
-import { Alert, Back, Group, Label, Row, Screen, Title } from '../kit.tsx'
+import { Alert, Group, goBack, Label, Row, Screen, Title } from '../kit.tsx'
 import { forget as forgetMessages, connect as messages } from '../messages.ts'
 
 /**
@@ -144,7 +144,11 @@ export default function Connect() {
 
   return (
     <Screen gap={24}>
-      {servers.current && <Back label={t('back')} />}
+      {servers.current && (
+        <Button variant="ghost" icon="chevron-left" onPress={goBack}>
+          {t('back')}
+        </Button>
+      )}
       <View style={{ gap: 12, alignItems: 'center', paddingTop: servers.current ? 0 : 24 }}>
         <Mark size={40} />
       </View>
@@ -216,11 +220,9 @@ export default function Connect() {
                 {lan === 'asking' ? t('waiting') : t('looking')}
               </Text>
             ) : (
-              <Pressable onPress={rescan} accessibilityRole="button" hitSlop={12}>
-                <Text variant="caption" color="accent-text">
-                  {t('lookAgain')}
-                </Text>
-              </Pressable>
+              <Button variant="ghost" size="sm" onPress={rescan}>
+                {t('lookAgain')}
+              </Button>
             )
           }
         >
@@ -258,7 +260,7 @@ export default function Connect() {
       </View>
 
       <View style={{ gap: 12 }}>
-        <Field label={t('addLabel')} hint={t('addHint')} error={error}>
+        <Field label={t('addLabel')} hint={t('addHint')} error={error ?? undefined}>
           <Input
             value={address}
             onChangeText={setAddress}
@@ -296,33 +298,19 @@ export default function Connect() {
 function Cloud() {
   const t = useT(messages)
   const theme = useTheme()
-  const [open, setOpen] = useState(false)
   return (
     <View
       style={{
-        gap: 8,
         paddingTop: 16,
         borderTopWidth: 1,
         borderTopColor: theme.colors.line,
       }}
     >
-      <Pressable
-        onPress={() => setOpen((o) => !o)}
-        accessibilityRole="button"
-        accessibilityState={{ expanded: open }}
-        style={{ flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 44 }}
-      >
-        <Icon name="globe" size={16} color="text-2" />
-        <Text variant="callout" color="text-2" style={{ flex: 1 }}>
-          {t('cloud')}
-        </Text>
-        <Icon name={open ? 'chevron-up' : 'chevron-down'} size={14} color="text-2" />
-      </Pressable>
-      {open ? (
+      <Disclosure icon="globe" title={t('cloud')}>
         <Text variant="caption" color="text-3">
           {t('cloudDetail')}
         </Text>
-      ) : null}
+      </Disclosure>
     </View>
   )
 }

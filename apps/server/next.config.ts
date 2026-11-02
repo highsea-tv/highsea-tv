@@ -13,7 +13,7 @@ const config: NextConfig = {
     '@highsea-tv/quality',
     '@highsea-tv/sdk',
     '@highsea-tv/tokens',
-    '@highsea-tv/ui-web',
+    '@highsea-tv/ui',
   ],
   // native or Node-only: loaded at run time, never bundled
   serverExternalPackages: [

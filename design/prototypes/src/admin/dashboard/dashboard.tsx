@@ -18,7 +18,7 @@ import {
   SheetContent,
   toast,
   WidgetEditor,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { StaffRole, WidgetKind, WidgetPlacement } from '../../mock/types.ts'

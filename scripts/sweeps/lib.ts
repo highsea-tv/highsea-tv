@@ -234,6 +234,112 @@ export const escapes = (page: Page) =>
     return [...new Set(found)].slice(0, 3)
   })
 
+/**
+ * Rows of controls that mix sizes (design system 1.1, controls.md: controls in one row share one
+ * height, one corner and one text size). A row is the boxed controls whose centres line up within
+ * 4px and that sit within 32px of each other. Chips are pills by design, so their corner isn't
+ * compared, and the media players' own controls (`data-player-controls`) are left out. Returns each
+ * mixed row as `name:height/corner/text | …`, at most five.
+ */
+export const mixedRows = (page: Page) =>
+  page.evaluate(() => {
+    type C = {
+      name: string
+      kind: string
+      h: number
+      r: string
+      t: string
+      x: number
+      w: number
+      y: number
+      layer: Element | null
+    }
+    // a bar fixed or stuck over the page (a save bar, a toolbar) isn't a row with what's behind it
+    const layerOf = (e: Element) => {
+      for (let a: Element | null = e; a; a = a.parentElement) {
+        const p = getComputedStyle(a).position
+        if (p === 'fixed' || p === 'sticky') return a
+      }
+      return null
+    }
+    const sel =
+      '[data-control], button, a[class*="rounded"], input:not([type=hidden]):not([type=checkbox]):not([type=radio]):not([type=range]), select, textarea, [role=radiogroup], [role=tablist], [role=switch]'
+    const out: C[] = []
+    for (const e of document.querySelectorAll<HTMLElement>(sel)) {
+      // the players' own controls, and a list's items, tiles and keys (`data-item`), aren't controls
+      // in a row (controls.md), so they're left out
+      if (e.closest('[aria-hidden=true],[inert],[data-player-controls],[data-item]')) continue
+      // a control inside a control (a segment, a tab, a field's clear button) is the outer one's
+      const outer = e.parentElement?.closest('[data-control],[role=radiogroup],[role=tablist]')
+      if (outer) continue
+      const cs = getComputedStyle(e)
+      const b = e.getBoundingClientRect()
+      if (!b.width || !b.height || cs.visibility === 'hidden' || Number(cs.opacity) === 0) continue
+      const boxed =
+        e.hasAttribute('data-control') ||
+        (Number.parseFloat(cs.borderTopWidth) > 0 && !cs.borderTopColor.endsWith(', 0)')) ||
+        cs.backgroundColor !== 'rgba(0, 0, 0, 0)' ||
+        e.matches('input,select,textarea,[role=radiogroup],[role=tablist],[role=switch]')
+      if (!boxed || e.offsetHeight < 18 || e.offsetHeight > 96) continue
+      const kind = e.dataset.control ?? e.getAttribute('role') ?? e.tagName.toLowerCase()
+      // a switch keeps its own track (controls.md › Looks), so it's measured against nothing
+      if (kind === 'switch') continue
+      const rr = Number.parseFloat(cs.borderTopLeftRadius)
+      const r =
+        rr >= Math.min(e.offsetHeight, e.offsetWidth) / 2 - 0.5 && rr > 0
+          ? 'pill'
+          : String(Math.round(rr))
+      const name =
+        (e.getAttribute('aria-label') || e.innerText || (e as HTMLInputElement).placeholder || kind)
+          .trim()
+          .split('\n')[0]
+          ?.slice(0, 24) ?? kind
+      out.push({
+        name,
+        kind,
+        h: e.offsetHeight,
+        r,
+        // an icon-only control shows no text, so its text size can't differ
+        t: e.innerText.trim() || e.matches('input,select,textarea') ? cs.fontSize : '',
+        x: b.left,
+        w: b.width,
+        y: b.top + b.height / 2,
+        layer: layerOf(e),
+      })
+    }
+    out.sort((a, b) => a.y - b.y || a.x - b.x)
+    const used = new Set<number>()
+    const mixed: string[] = []
+    out.forEach((c, i) => {
+      if (used.has(i)) return
+      const row = [c]
+      used.add(i)
+      out.forEach((d, j) => {
+        if (used.has(j) || d.layer !== c.layer || Math.abs(d.y - c.y) > 4) return
+        if (
+          row.some((e) => Math.abs(d.x - (e.x + e.w)) <= 32 || Math.abs(e.x - (d.x + d.w)) <= 32)
+        ) {
+          row.push(d)
+          used.add(j)
+        }
+      })
+      if (row.length < 2) return
+      // chips are pills and an avatar is round, by the spec; an avatar's initials aren't a label
+      const corners = new Set(
+        row.filter((e) => e.kind !== 'chip' && e.kind !== 'avatar').map((e) => e.r),
+      )
+      const texts = new Set(
+        row
+          .filter((e) => e.t && e.kind !== 'avatar')
+          .filter((e) => e.kind !== 'chip' || row.every((f) => f.kind === 'chip'))
+          .map((e) => e.t),
+      )
+      if (new Set(row.map((e) => e.h)).size > 1 || corners.size > 1 || texts.size > 1)
+        mixed.push(row.map((e) => `${e.name}:${e.h}/${e.r}/${e.t}`).join(' | '))
+    })
+    return mixed.slice(0, 5)
+  })
+
 /** Runs `jobs` with `n` at a time. */
 export async function pool<T>(jobs: T[], n: number, run: (job: T) => Promise<void>) {
   const queue = [...jobs]

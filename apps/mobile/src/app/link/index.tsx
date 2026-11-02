@@ -8,12 +8,12 @@
 // goes straight to the question, on the server it names when this phone knows it.
 import { useT } from '@highsea-tv/i18n/react'
 import { useServers } from '@highsea-tv/native/servers'
-import { Button, Field, Icon, Input, Text, tokens } from '@highsea-tv/ui-native'
+import { Button, Field, Icon, Input, Text, tokens } from '@highsea-tv/ui'
 import { CameraView, useCameraPermissions } from 'expo-camera'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useEffect, useRef, useState } from 'react'
 import { Linking, View } from 'react-native'
-import { Back, GUTTER, Screen, Title } from '../../kit.tsx'
+import { GUTTER, goBack, Screen, Title } from '../../kit.tsx'
 import { pair as messages } from '../../messages.ts'
 
 export const normal = (code: string) => code.replace(/[^a-z0-9]/gi, '').toUpperCase()
@@ -53,7 +53,9 @@ export default function LinkScan() {
 
   return (
     <Screen gap={16}>
-      <Back label={t('servers')} />
+      <Button variant="ghost" icon="chevron-left" onPress={goBack}>
+        {t('servers')}
+      </Button>
       <View style={{ gap: 4 }}>
         <Title>{t('title')}</Title>
         <Text variant="body" size={15} color="text-2">
@@ -74,7 +76,7 @@ export default function LinkScan() {
               mono
               returnKeyType="go"
               onSubmitEditing={() => normal(code).length >= 6 && go(normal(code))}
-              style={{ fontSize: 20, letterSpacing: 2.4 }}
+              style={{ letterSpacing: 2.4 }}
             />
           </Field>
           <Button

@@ -7,7 +7,7 @@
 import type { ClientAnnouncement } from '@highsea-tv/api-contract'
 import { CURATION_TOPICS } from '@highsea-tv/api-contract'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Banner, type BannerTone, toast } from '@highsea-tv/ui-web'
+import { Banner, type BannerTone, toast } from '@highsea-tv/ui'
 import { useCurationT } from './curation-shared.tsx'
 import { Cta, Inline } from './inline.tsx'
 
@@ -25,8 +25,10 @@ export function AnnouncementBanners() {
   const seen = useAction((c, id: string) => c.announcements.seen({ params: { id } }))
   const banners = (active.data ?? []).filter((a) => !a.seen && a.placements.includes('banner'))
   if (!banners.length) return null
+  // one column at the page's width: an auto column would grow to a banner's widest word and
+  // buttons at 200% text, past a phone's edge
   return (
-    <div className="grid gap-2">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-2">
       {banners.map((a) => {
         const done = () =>
           seen.run(a.id).catch((e: Error) => toast.error(t('failed'), { description: e.message }))

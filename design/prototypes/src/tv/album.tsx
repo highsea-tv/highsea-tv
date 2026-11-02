@@ -6,7 +6,7 @@
 // line under them, as the web's album page has it; the songs fill the right,
 // scrolling under focus while the column stays. Focus starts on Play; Right reaches the songs and
 // Left comes back. OK held on a song opens its menu, and on Play the album's (tv/song-menu.tsx).
-import { cn, Icon, Skeleton, useSound } from '@highsea-tv/ui-web'
+import { cn, Icon, Skeleton, useSound } from '@highsea-tv/ui'
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import { useParams } from 'wouter'
 import { useLongPress } from '../client/continue-menu.ts'

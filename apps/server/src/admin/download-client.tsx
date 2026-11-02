@@ -16,7 +16,7 @@ import { useT } from '@highsea-tv/i18n/react'
 // watch folder, saved with the rest, and the categories, which save at once (download-categories).
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Button, Field, Input, Select, Switch, toast } from '@highsea-tv/ui-web'
+import { Button, Field, Input, Select, Switch, toast } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { CATEGORY_TOPICS, Categories } from './download-categories.tsx'
 import { watchFolder as watchMessages } from './download-categories-messages.ts'

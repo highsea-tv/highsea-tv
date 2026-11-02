@@ -4,7 +4,7 @@
 // (which forgets its token here and keeps the server in the list).
 import { useT } from '@highsea-tv/i18n/react'
 import { useSessionData } from '@highsea-tv/native/session'
-import { Avatar, Text } from '@highsea-tv/ui-native'
+import { Avatar, Text } from '@highsea-tv/ui'
 import { router } from 'expo-router'
 import { View } from 'react-native'
 import { Group, Row, Screen } from '../../../kit.tsx'

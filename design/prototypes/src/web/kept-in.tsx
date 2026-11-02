@@ -4,7 +4,7 @@
 // already downloaded then moves there, playing from where it is until it has moved. The prototype
 // can't open a system dialog, so Change picks a folder on another drive at once.
 import { bytes } from '@highsea-tv/core/format'
-import { Button, ConfirmDialog, Field, Progress, toast } from '@highsea-tv/ui-web'
+import { Button, ConfirmDialog, Field, Progress, toast } from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { useDesktopOs } from '../client/data.ts'
 import { useDownloads } from '../client/downloads.ts'

@@ -32,7 +32,7 @@ import {
 import { useT } from '@highsea-tv/i18n/react'
 import { ApiError } from '@highsea-tv/sdk'
 import { useQuery } from '@highsea-tv/sdk/react'
-import { Button, cn, EmptyState, Icon, QualityTag } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Icon, QualityTag } from '@highsea-tv/ui'
 import { type ReactNode, type RefObject, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { trafficLightRoom, WindowFrame, windowChrome } from './desktop/window.tsx'
@@ -748,7 +748,9 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
         {!pip && <Cues video={p.video} track={track} url={p.subtitleUrl} offsetMs={p.offsetMs} />}
       </div>
 
+      {/* the player's own controls over the picture, which may stay round (controls.md › Rules) */}
       <div
+        data-player-controls
         className={cn(
           'transition-opacity duration-200',
           chrome ? 'opacity-100' : 'pointer-events-none opacity-0',

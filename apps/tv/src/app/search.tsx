@@ -13,8 +13,8 @@ import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
 import { useServers } from '@highsea-tv/native/servers'
-import { Text, tokens, useTheme } from '@highsea-tv/ui-native'
-import { focusOn, TvButton, TvKey, TvTile, type ViewHandle } from '@highsea-tv/ui-native/tv'
+import { Button, Text, tokens, useControl, useTheme } from '@highsea-tv/ui'
+import { focusOn, TvKey, TvTile, type ViewHandle } from '@highsea-tv/ui/tv'
 import { router } from 'expo-router'
 import { type Ref, useCallback, useEffect, useRef, useState } from 'react'
 import { TVFocusGuideView, useWindowDimensions, View } from 'react-native'
@@ -44,6 +44,7 @@ export default function Search() {
   const t = useT(messages)
   const theme = useTheme()
   const u = theme.u
+  const field = useControl()
   const { width } = useWindowDimensions()
   const name = useServers().current?.server.name ?? ''
   const [q, setQ] = useState('')
@@ -119,13 +120,15 @@ export default function Search() {
             accessibilityLabel={t('title')}
             accessibilityLiveRegion="polite"
             style={{
-              height: 3.4 * u,
+              // a text field at the TV rule (controls.md), shown rather than typed into: the
+              // on-screen keys fill it, so it's no TextInput and never brings up tvOS's keyboard
+              height: field.height,
               flexDirection: 'row',
               alignItems: 'center',
-              borderRadius: 0.5 * u,
+              borderRadius: field.radius,
               borderWidth: 0.15 * u,
               borderColor: theme.colors.text,
-              paddingHorizontal: 1 * u,
+              paddingHorizontal: field.fieldPad,
             }}
           >
             <Text variant="button" weight={400} color={q ? 'text' : 'text-3'} numberOfLines={1}>
@@ -190,9 +193,14 @@ export default function Search() {
               </Text>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 0.8 * u }}>
                 {SUGGESTIONS.map((s, i) => (
-                  <TvButton key={s} ref={i === 0 ? firstResult : undefined} onPress={() => pick(s)}>
+                  <Button
+                    variant="overlay"
+                    key={s}
+                    ref={i === 0 ? firstResult : undefined}
+                    onPress={() => pick(s)}
+                  >
                     {s}
-                  </TvButton>
+                  </Button>
                 ))}
               </View>
             </View>
@@ -306,16 +314,17 @@ function Results({
       return (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 0.8 * u }}>
           {section.items.map((p, i) => (
-            <TvButton
+            <Button
+              variant="overlay"
               key={p.id}
               ref={i === 0 ? first : undefined}
-              preferred={arrive && i === 0}
+              hasTVPreferredFocus={arrive && i === 0}
               image={media(p.photo) ?? null}
-              label={`${p.name}, ${f.moviesHere(p.titles)}`}
+              accessibilityLabel={`${p.name}, ${f.moviesHere(p.titles)}`}
               onPress={() => onPerson(p.name)}
             >
               {p.name}
-            </TvButton>
+            </Button>
           ))}
         </View>
       )

@@ -32,7 +32,7 @@ import {
   toast,
   WidgetEditor,
   type WidgetEditorMessages,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useMemo, useState } from 'react'
 import { dashboard as messages } from './dashboard-messages.ts'
 import { shell } from './messages.ts'

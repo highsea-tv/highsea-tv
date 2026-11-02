@@ -15,8 +15,8 @@ import { useSessionData } from '@highsea-tv/native/session'
 import { useAction } from '@highsea-tv/sdk/react'
 import { builtInThemes, createTheme } from '@highsea-tv/tokens'
 import { type NativeTheme, nativeTokens, toNativeTheme } from '@highsea-tv/tokens/native'
-import { Text, tokens, useTheme } from '@highsea-tv/ui-native'
-import { alpha, Focusable, TvButton, type ViewHandle } from '@highsea-tv/ui-native/tv'
+import { Button, Text, tokens, useTheme } from '@highsea-tv/ui'
+import { alpha, Focusable, type ViewHandle } from '@highsea-tv/ui/tv'
 import { router } from 'expo-router'
 import { type ReactNode, useState } from 'react'
 import { Alert, ScrollView, TVFocusGuideView, View } from 'react-native'
@@ -304,13 +304,13 @@ function ThemeSection() {
         ))}
       </View>
       <View style={{ alignItems: 'flex-start', gap: 0.6 * u }}>
-        <TvButton
-          primary={everywhere}
+        <Button
+          variant={everywhere ? 'primary' : 'overlay'}
           disabled={prefs.pending}
           onPress={() => void prefs.setEverywhere(!everywhere).catch(failed)}
         >
           {everywhere ? t('everywhereOn') : t('everywhereOff')}
-        </TvButton>
+        </Button>
         <Quiet>{everywhere ? t('themeEverywhere') : t('themeTv')}</Quiet>
       </View>
     </View>
@@ -330,20 +330,23 @@ function SoundSection() {
       .catch(failed)
   return (
     <View style={{ gap: 1.2 * u, alignItems: 'flex-start' }}>
-      <TvButton primary={p.sound} onPress={() => void prefs.setSound(!p.sound).catch(failed)}>
+      <Button
+        variant={p.sound ? 'primary' : 'overlay'}
+        onPress={() => void prefs.setSound(!p.sound).catch(failed)}
+      >
         {p.sound ? t('soundsOn') : t('soundsOff')}
-      </TvButton>
+      </Button>
       <View style={{ gap: 0.6 * u }}>
         <Text variant="meta" color="text-2">
           {t('volume', { percent: Math.round(p.volume * 100) })}
         </Text>
         <View style={{ flexDirection: 'row', gap: 1 * u }}>
-          <TvButton disabled={p.volume <= 0} onPress={() => step(-0.1)}>
+          <Button variant="overlay" disabled={p.volume <= 0} onPress={() => step(-0.1)}>
             {t('quieter')}
-          </TvButton>
-          <TvButton disabled={p.volume >= 1} onPress={() => step(0.1)}>
+          </Button>
+          <Button variant="overlay" disabled={p.volume >= 1} onPress={() => step(0.1)}>
             {t('louder')}
-          </TvButton>
+          </Button>
         </View>
       </View>
     </View>
@@ -385,20 +388,22 @@ function HomeSection() {
                   {title(r)}
                 </Option>
               </View>
-              <TvButton
-                label={t('moveUp', { title: title(r) })}
+              <Button
+                variant="overlay"
+                accessibilityLabel={t('moveUp', { title: title(r) })}
                 disabled={i === 0}
                 onPress={() => void home.move(r.id, -1)?.catch(failed)}
               >
                 {t('up')}
-              </TvButton>
-              <TvButton
-                label={t('moveDown', { title: title(r) })}
+              </Button>
+              <Button
+                variant="overlay"
+                accessibilityLabel={t('moveDown', { title: title(r) })}
                 disabled={i === home.rows.length - 1}
                 onPress={() => void home.move(r.id, 1)?.catch(failed)}
               >
                 {t('down')}
-              </TvButton>
+              </Button>
             </TVFocusGuideView>
           )
         })}
@@ -420,10 +425,11 @@ function ServersSection() {
         {t('watching', { name, person: session.user.displayName })}
       </Text>
       <View style={{ flexDirection: 'row', gap: 1 * u }}>
-        <TvButton icon="server" onPress={() => router.push('/connect')}>
+        <Button variant="overlay" icon="server" onPress={() => router.push('/connect')}>
           {t('anotherServer')}
-        </TvButton>
-        <TvButton
+        </Button>
+        <Button
+          variant="overlay"
           icon="sign-out"
           disabled={out.pending}
           // the token is forgotten here whether or not the server heard, since it's this TV's
@@ -436,7 +442,7 @@ function ServersSection() {
           }
         >
           {t('signOut')}
-        </TvButton>
+        </Button>
       </View>
     </View>
   )
@@ -473,7 +479,8 @@ function DevicesSection() {
               ) : null}
             </Text>
             {here || d.client === 'admin' ? null : (
-              <TvButton
+              <Button
+                variant="overlay"
                 onPress={() =>
                   revoke(d.id).then(
                     () => {
@@ -485,7 +492,7 @@ function DevicesSection() {
                 }
               >
                 {t('signOut')}
-              </TvButton>
+              </Button>
             )}
           </View>
         )

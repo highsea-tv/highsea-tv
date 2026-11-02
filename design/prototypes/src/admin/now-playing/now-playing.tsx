@@ -33,7 +33,7 @@ import {
   Textarea,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { SessionView } from '../../mock/sessions.ts'

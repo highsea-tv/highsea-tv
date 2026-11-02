@@ -31,7 +31,7 @@ import {
   Select,
   Switch,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { playback as messages } from './playback-messages.ts'
@@ -139,7 +139,6 @@ function Form({
           <Field label={t('encoder')} hint={t(`encoder.${v.preset}.hint`)}>
             <SegmentedControl
               aria-label={t('encoder')}
-              size="sm"
               value={v.preset}
               onValueChange={(preset) => set({ preset: preset as EncoderPreset })}
               options={ENCODER_PRESETS.map((p) => ({ value: p, label: t(`encoder.${p}`) }))}

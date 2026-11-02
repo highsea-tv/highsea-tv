@@ -124,13 +124,13 @@ Everything later depends on this, so it comes first and is finalized before any 
    - **default sound pack**: short UI sounds, procedurally synthesized or CC0, with sources in `design/assets/sounds`.
 
    **✅ Done (2026-10-16).** See [`packages/brand`](../packages/brand/README.md) and [logo and app icons](brand/logo.md). The custom icon glyphs moved to `ui-web` (step 6).
-6. **`@highsea-tv/ui-web` core** on Radix + Tailwind v4 + `motion/react`:
+6. **`@highsea-tv/ui` core** on Radix + Tailwind v4 + `motion/react`:
    - primitives: Button, Input, Select, Dialog, Sheet, Popover, Tabs, Table, Badge, Toast, Tooltip, Skeleton, Progress;
    - media components: Poster, Backdrop hero, Carousel row, Rating;
    - shell components: Sidebar, CommandPalette, WidgetFrame, Banner;
    - focus-complete, with reduced-motion support.
 
-   **✅ Done (2026-10-16).** See [`packages/ui-web`](../packages/ui-web/README.md). It also has Menu, Switch, Checkbox, SegmentedControl, the `Icon` set with the custom glyphs, browser UI sound, and the TV spatial navigator. Behavior, axe and stylesheet tests run with `bun test`.
+   **✅ Done (2026-10-16).** See [`packages/ui`](../packages/ui/README.md). It also has Menu, Switch, Checkbox, SegmentedControl, the `Icon` set with the custom glyphs, browser UI sound, and the TV spatial navigator. Behavior, axe and stylesheet tests run with `bun test`.
 7. **`apps/storybook`**: the living style guide for tokens, themes, components, motion and a sound board, with a theme switcher and a11y addon.
 
    **✅ Done (2026-10-16).** See [`apps/storybook`](../apps/storybook/README.md) (`bun run storybook`). Foundations pages for brand, color with the contrast audit, icons, layout, motion, the sound board, a theme editor and typography; every component; the media and admin shell compositions; and a TV home with D-pad focus. Every story renders and passes axe under `bun test`.

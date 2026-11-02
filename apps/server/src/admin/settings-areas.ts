@@ -2,7 +2,7 @@
 // Settings' areas in their six groups (System and its Migration area came with 6b, Playback with
 // 4.3a) (the prototype's settings.tsx). Plain data, so the
 // `/settings/{area}` route can check an id on the server.
-import type { IconName } from '@highsea-tv/ui-web'
+import type { IconName } from '@highsea-tv/ui'
 
 export type AreaId =
   | 'general'

@@ -6,15 +6,7 @@
 // films here, the one they're known for first, each poster with their role and the year; then the
 // shows they're in, and their albums when they're an artist here. Only what's on this server, as
 // Jellyfin and Infuse do: the household browses what it can play.
-import {
-  Button,
-  CarouselRow,
-  cn,
-  EmptyState,
-  Poster,
-  Skeleton,
-  SkeletonText,
-} from '@highsea-tv/ui-web'
+import { Button, CarouselRow, cn, EmptyState, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { usePerson } from '../client/data.ts'

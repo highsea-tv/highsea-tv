@@ -27,7 +27,7 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 | Rows | Bottom 47% of the screen, left inset 4.5u, bleeding off the right edge; below the featured row they continue down the page |
 | Poster | 10.5u wide (2:3), with a 1.2u gap; the title (1.05u, 600) and the year (0.95u, `text-3`) under the art |
 | Wide tile (continue watching) | 16:9 with a progress bar 7% in from the edges |
-| Radii | Posters and buttons 0.5u (≈ 10px at 1080p); quality pills 0.3u |
+| Radii | Posters 0.5u (≈ 10px at 1080p); controls by the TV rule, `radius-sm` at 1.75 times (≈ 0.73u, [controls](../controls.md)); quality pills 0.3u |
 
 **Safe area.**
 - Text and focusable items stay at least 4.5u (≈ 86px) from the left and right edges, and 3.2u (≈ 61px) from the top and bottom. This meets the tvOS guideline of 80 × 60px.
@@ -56,13 +56,13 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 
 - **Ring:** 0.2u (≈ 4px at 1080p) in `text` (`#ededee`), with a soft dark drop shadow. There is no colored halo.
 - **Scale:** focused posters scale to 1.05 and buttons to 1.07, both with `spring.base`. The focused item rises above its neighbors.
-- **Hero buttons:** the primary action (Play) is a solid `text` fill with a `bg` label. Secondary actions (Details) are a translucent `text` fill at 12% with a `text` label. Focus adds the ring and scale; it doesn't change the fill.
+- **Hero buttons:** the primary action (Play) is the primary look. Secondary actions (Details) take the overlay look, `control-overlay` (`text` at 12%) with a `text` label. Every button in the row is the same size ([controls](../controls.md)). Focus adds the ring and scale; it doesn't change the fill.
 - **Select feedback:** a brightness pulse (1 → 1.35 → 1, 280ms) plus the `select` sound.
 - **Focus leaving the app:** the visible focus state is removed when the app loses focus, and restored to the same item when it returns.
 
 ## Spatial focus model
 
-The reference implementation is the focus engine in `design/explorations/shared/board.js`. `@highsea-tv/ui-web` (TV web builds) and `ui-native` must behave identically.
+The reference implementation is the focus engine in `design/explorations/shared/board.js`. `@highsea-tv/ui` (TV web builds) and `ui-native` must behave identically.
 
 ### Picking the next item
 

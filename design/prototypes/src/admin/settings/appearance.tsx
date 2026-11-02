@@ -23,11 +23,13 @@ import {
   Icon,
   Input,
   Mark,
+  Radio,
+  RadioGroup,
   Select,
   Switch,
   toast,
   useSoundPlayer,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useMemo, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { Appearance as AppearanceData, CustomTheme, SoundDefaults } from '../../mock/types.ts'
@@ -156,7 +158,7 @@ function Identity({
                   aria-label="Accent color"
                   value={hex(audit === undefined ? '#8fbfb7' : draft.accent)}
                   onChange={(e) => set({ accent: e.target.value })}
-                  className="h-(--size-input) w-12 cursor-pointer rounded-md border border-line-strong bg-s2 p-1"
+                  className="h-(--control-h) w-12 cursor-pointer rounded-(--control-radius) border border-control-edge bg-s1 p-1 text-(length:--control-text)"
                 />
                 <Input
                   aria-label="Accent value"
@@ -175,7 +177,7 @@ function Identity({
             )}
           </div>
         </div>
-        <figure className="grid content-start gap-2">
+        <figure className="grid grid-cols-[minmax(0,1fr)] content-start gap-2">
           <figcaption className="font-mono text-label text-text-3 uppercase">
             In the apps
           </figcaption>
@@ -202,7 +204,7 @@ const builtIns = Object.values(builtInThemes).map((t) => ({ id: t.id, name: t.na
 
 function swatches(id: string) {
   return (
-    <span className="flex gap-1" data-theme={id}>
+    <span className="flex flex-wrap justify-end gap-1" data-theme={id}>
       {(['bg', 's2', 'text-2', 'accent'] as const).map((r) => (
         <span
           key={r}
@@ -248,22 +250,20 @@ function Themes({
       description="The apps start in the default theme. Anyone can pick another on their own device."
     >
       <style>{css}</style>
-      <fieldset className="grid gap-2">
-        <legend className="sr-only">Default theme</legend>
-        <div className="grid gap-2 medium:grid-cols-2 wide:grid-cols-3">
+      <RadioGroup
+        aria-label="Default theme"
+        value={value}
+        onValueChange={onChange}
+        className="grid-cols-[minmax(0,1fr)]"
+      >
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-2 medium:grid-cols-2 wide:grid-cols-3">
           {all.map((t) => (
+            // biome-ignore lint/a11y/noLabelWithoutControl: the control is its child, the library’s Radio, a button with the radio role and so a labelable element
             <label
               key={t.id}
-              className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-line bg-s2 p-3 has-checked:border-accent has-focus-visible:ring-focus"
+              className="grid cursor-pointer grid-cols-[auto_minmax(0,1fr)_auto] items-center gap-3 rounded-md border border-line bg-s2 p-3 has-[[aria-checked=true]]:border-accent has-focus-visible:ring-focus"
             >
-              <input
-                type="radio"
-                name="default-theme"
-                value={t.id}
-                checked={value === t.id}
-                onChange={() => onChange(t.id)}
-                className="size-4 accent-accent-fill"
-              />
+              <Radio value={t.id} />
               <span className="grid min-w-0">
                 <span className="truncate text-text text-ui">{t.name}</span>
                 <span className="text-caption text-text-3">
@@ -274,7 +274,7 @@ function Themes({
             </label>
           ))}
         </div>
-      </fieldset>
+      </RadioGroup>
       {themes.length > 0 && (
         <ul aria-label="Custom themes" className="grid gap-2">
           {themes.map((t) => (
@@ -368,10 +368,10 @@ function ThemeEditor({
   return (
     <section
       aria-label={isNew ? 'New theme' : `Edit ${theme.name}`}
-      className="grid gap-4 rounded-md border border-line-strong bg-s2 p-4 expanded:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]"
+      className="grid grid-cols-[minmax(0,1fr)] gap-4 rounded-md border border-line-strong bg-s2 p-4 expanded:grid-cols-[minmax(0,20rem)_minmax(0,1fr)]"
     >
       {build && <style>{themeCss(build.theme, '[data-theme="editor"]')}</style>}
-      <div className="grid content-start gap-4">
+      <div className="grid grid-cols-[minmax(0,1fr)] content-start gap-4">
         <Field label="Name" error={nameError}>
           <Input
             value={input.name}
@@ -392,7 +392,7 @@ function ThemeEditor({
               aria-label="Theme accent color"
               value={hex(build ? input.accent : '#d6cfc2')}
               onChange={(e) => setInput({ ...input, accent: e.target.value, colors: undefined })}
-              className="h-(--size-input) w-12 cursor-pointer rounded-md border border-line-strong bg-s1 p-1"
+              className="h-(--control-h) w-12 cursor-pointer rounded-(--control-radius) border border-control-edge bg-s1 p-1 text-(length:--control-text)"
             />
             <Input
               aria-label="Theme accent value"
@@ -414,7 +414,7 @@ function ThemeEditor({
               onChange={(e) =>
                 setInput({ ...input, colors: { ...input.colors, 'text-3': e.target.value } })
               }
-              className="h-(--size-input) w-12 cursor-pointer rounded-md border border-line-strong bg-s1 p-1"
+              className="h-(--control-h) w-12 cursor-pointer rounded-(--control-radius) border border-control-edge bg-s1 p-1 text-(length:--control-text)"
             />
             <Button
               variant="ghost"
@@ -425,8 +425,11 @@ function ThemeEditor({
             </Button>
           </div>
         </Field>
-        <div className="grid gap-2 rounded-md bg-s1 p-3" aria-live="polite">
-          <div className="flex items-center justify-between">
+        <div
+          className="grid grid-cols-[minmax(0,1fr)] gap-2 rounded-md bg-s1 p-3"
+          aria-live="polite"
+        >
+          <div className="flex flex-wrap items-center justify-between gap-2">
             <span className="font-medium text-text text-ui">Contrast</span>
             {build ? (
               <Badge tone={build.audit.pass ? 'success' : 'danger'}>
@@ -437,7 +440,10 @@ function ThemeEditor({
             )}
           </div>
           {failing.map((r) => (
-            <div key={r.label} className="flex items-center justify-between gap-2 text-ui">
+            <div
+              key={r.label}
+              className="flex flex-wrap items-center justify-between gap-2 text-ui"
+            >
               <span>
                 {r.label}{' '}
                 <span className="font-mono text-figure text-text-3">
@@ -459,12 +465,12 @@ function ThemeEditor({
         </div>
         <div className="grid gap-2">
           <Field label="Load a share code" error={codeError ?? undefined}>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Input
                 placeholder="hs1.…"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                className="font-mono"
+                className="min-w-0 flex-1 basis-48 font-mono"
               />
               <Button
                 onClick={() => {
@@ -602,7 +608,7 @@ function Sounds({
             step={0.05}
             value={value.volume}
             onChange={(e) => onChange({ ...value, volume: Number(e.target.value) })}
-            className="h-(--size-input) w-full cursor-pointer accent-accent-fill"
+            className="h-(--control-h) w-full cursor-pointer accent-accent-fill"
           />
         </Field>
         <Field label="Sound pack" hint="More packs come with the catalog.">

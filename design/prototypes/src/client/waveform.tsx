@@ -6,7 +6,7 @@
 // now. With reduced motion they hold still. On the web and the phone a range input lies over the
 // bars, so dragging, tapping and the arrow keys seek as any slider's do; the TV wraps it in its own
 // slider for the remote.
-import { cn } from '@highsea-tv/ui-web'
+import { cn } from '@highsea-tv/ui'
 import { useReducedMotion } from 'motion/react'
 import { type CSSProperties, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { clock } from './data.ts'

@@ -7,7 +7,7 @@ import { useCollection } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
-import { Button, EmptyState, Icon, Poster, Press, Text, useTheme } from '@highsea-tv/ui-native'
+import { Button, EmptyState, Poster, Text, useTheme } from '@highsea-tv/ui'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, ScrollView, View } from 'react-native'
@@ -24,28 +24,19 @@ export default function Collection() {
   const { id } = useLocalSearchParams<{ id: string }>()
   const found = useCollection(id, 'ios')
 
+  // Back over the backdrop, in the overlay look (controls.md › Looks)
   const back = (
-    <Press
-      onPress={() =>
-        router.canGoBack() ? router.back() : router.replace('/library?view=collections')
-      }
-      accessibilityRole="button"
-      accessibilityLabel={t('back')}
-      style={{
-        position: 'absolute',
-        top: insets.top + 8,
-        left: 12,
-        zIndex: 10,
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(11,11,12,0.62)',
-      }}
-    >
-      <Icon name="chevron-left" size={20} color="text" />
-    </Press>
+    <View style={{ position: 'absolute', top: insets.top + 8, left: 12, zIndex: 10 }}>
+      <Button
+        variant="overlay"
+        iconOnly
+        icon="chevron-left"
+        accessibilityLabel={t('back')}
+        onPress={() =>
+          router.canGoBack() ? router.back() : router.replace('/library?view=collections')
+        }
+      />
+    </View>
   )
 
   if (found.status === 'loading')

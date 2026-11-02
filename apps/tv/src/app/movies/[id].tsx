@@ -9,16 +9,8 @@ import { useItem, useMarkWatched, usePicks } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
-import { Text, tokens, useTheme } from '@highsea-tv/ui-native'
-import {
-  alpha,
-  focusOn,
-  TvButton,
-  TvMessage,
-  TvRow,
-  TvTile,
-  type ViewHandle,
-} from '@highsea-tv/ui-native/tv'
+import { Button, Text, tokens, useTheme } from '@highsea-tv/ui'
+import { alpha, focusOn, TvMessage, TvRow, TvTile, type ViewHandle } from '@highsea-tv/ui/tv'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useCallback, useRef, useState } from 'react'
@@ -46,9 +38,9 @@ export default function Detail() {
       <TvMessage
         title={detail.error.message}
         actions={
-          <TvButton primary preferred onPress={() => router.dismissTo('/')}>
+          <Button variant="primary" hasTVPreferredFocus onPress={() => router.dismissTo('/')}>
             {t('goHome')}
-          </TvButton>
+          </Button>
         }
       >
         {t('gone')}
@@ -157,40 +149,48 @@ function Item({ d, refresh }: { d: ClientDetail; refresh: () => void }) {
               ) : null}
               <Actions reach={POSTER + GAP} onEnter={() => setAtTop(true)}>
                 {version ? (
-                  <TvButton
+                  <Button
                     ref={playRef}
-                    primary
-                    preferred
+                    variant="primary"
+                    hasTVPreferredFocus
                     icon="play"
                     onPress={() => router.push(`/play/${m.id}`)}
                     onLongPress={hold}
                   >
                     {resuming ? t('resume', { left: f.left(m) ?? '' }) : t('play')}
-                  </TvButton>
+                  </Button>
                 ) : null}
                 {version && resuming ? (
-                  <TvButton
+                  <Button
+                    variant="overlay"
                     icon="replay"
                     onPress={() => router.push(`/play/${m.id}?start=1`)}
                     onLongPress={hold}
                   >
                     {t('fromStart')}
-                  </TvButton>
+                  </Button>
                 ) : null}
                 {version ? (
-                  <TvButton
+                  <Button
+                    variant="overlay"
                     ref={tracksButton}
                     icon="subtitles"
                     onPress={() => setPanel(true)}
                     onLongPress={hold}
                   >
                     {t('tracks')}
-                  </TvButton>
+                  </Button>
                 ) : (
                   // nothing to play, so OK alone opens what a long press would
-                  <TvButton ref={setFirst} preferred icon="more" onPress={hold}>
+                  <Button
+                    variant="overlay"
+                    ref={setFirst}
+                    hasTVPreferredFocus
+                    icon="more"
+                    onPress={hold}
+                  >
                     {t('more')}
-                  </TvButton>
+                  </Button>
                 )}
               </Actions>
               {version ? (
@@ -384,9 +384,9 @@ function Options({
         }}
       >
         <Text variant="button">{title}</Text>
-        <TvButton
-          primary
-          preferred
+        <Button
+          variant="primary"
+          hasTVPreferredFocus
           icon={watched ? 'replay' : 'check'}
           onPress={() =>
             mark.run(!watched).then(
@@ -396,8 +396,10 @@ function Options({
           }
         >
           {watched ? t('markUnwatched') : t('markWatched')}
-        </TvButton>
-        <TvButton onPress={() => onDone(null)}>{t('cancel')}</TvButton>
+        </Button>
+        <Button variant="overlay" onPress={() => onDone(null)}>
+          {t('cancel')}
+        </Button>
       </TVFocusGuideView>
     </View>
   )

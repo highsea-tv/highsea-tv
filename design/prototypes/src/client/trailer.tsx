@@ -2,7 +2,7 @@
 // A trailer or extra on the film page, web, desktop and the phone. The product plays it from
 // `https://www.youtube-nocookie.com/embed/{key}?autoplay=1`, only once it's chosen, as the admin
 // does; the prototype stays offline, so the still and a note stand in for the player.
-import { Dialog, DialogContent } from '@highsea-tv/ui-web'
+import { Dialog, DialogContent } from '@highsea-tv/ui'
 import type { Video } from '../mock/types.ts'
 import { videoLength } from './detail-facts.ts'
 

@@ -16,7 +16,7 @@ import {
   Progress,
   Select,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import type { ReactNode } from 'react'
 import { useServerName } from './data.ts'
 import {
@@ -279,7 +279,7 @@ function Row({
   const actions = (
     <div
       className={cn(
-        'flex flex-wrap items-center gap-1 [&>*]:h-auto [&>*]:min-h-(--size-control-sm) [&>*]:max-w-full [&>*]:whitespace-normal [&>*]:py-1 [&>*]:text-start',
+        'flex flex-wrap items-center gap-1 [&>*]:h-auto [&>*]:min-h-(--control-h-sm) [&>*]:max-w-full [&>*]:whitespace-normal [&>*]:py-1 [&>*]:text-start',
         compact ? 'justify-end' : '-ms-2',
       )}
     >

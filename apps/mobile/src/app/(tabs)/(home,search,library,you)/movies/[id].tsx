@@ -22,7 +22,7 @@ import {
   Text,
   usePosterWidth,
   useTheme,
-} from '@highsea-tv/ui-native'
+} from '@highsea-tv/ui'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ActionSheetIOS, ActivityIndicator, Alert, ScrollView, View } from 'react-native'
@@ -168,26 +168,17 @@ export default function Detail() {
   const mark = useMarkWatched(id)
   const castWidth = usePosterWidth(0.26)
 
+  // Back over the backdrop, in the overlay look (controls.md › Looks)
   const back = (
-    <Press
-      onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
-      accessibilityRole="button"
-      accessibilityLabel={t('back')}
-      style={{
-        position: 'absolute',
-        top: insets.top + 8,
-        left: 12,
-        zIndex: 10,
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: 'rgba(11,11,12,0.62)',
-      }}
-    >
-      <Icon name="chevron-left" size={20} color="text" />
-    </Press>
+    <View style={{ position: 'absolute', top: insets.top + 8, left: 12, zIndex: 10 }}>
+      <Button
+        variant="overlay"
+        iconOnly
+        icon="chevron-left"
+        accessibilityLabel={t('back')}
+        onPress={() => (router.canGoBack() ? router.back() : router.replace('/'))}
+      />
+    </View>
   )
 
   if (detail.status === 'loading')
@@ -282,7 +273,7 @@ export default function Detail() {
             </Text>
           )}
           <View style={{ flexDirection: 'row' }}>
-            <Button icon="more" label={t('more')} onPress={() => void more()} />
+            <Button icon="more" accessibilityLabel={t('more')} onPress={() => void more()} />
           </View>
           {m.synopsis ? (
             <Text variant="body" size={15} color="text-2" style={{ lineHeight: 23 }}>

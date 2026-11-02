@@ -2,7 +2,7 @@
 // Library › Shows, mobile: laid out as Movies is, a large title with the library's views, the count
 // and one Sort and filter button that opens a sheet; then three posters a row, each with how many
 // episodes are left to watch.
-import { Button, cn, EmptyState, Sheet, SheetContent, Skeleton } from '@highsea-tv/ui-web'
+import { Button, Chip, cn, EmptyState, Sheet, SheetContent, Skeleton } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useShows } from '../client/data.ts'
 import { MediaPosterSkeleton } from '../client/media-card.tsx'
@@ -16,16 +16,10 @@ import {
   showGenresOf,
   showSorts,
 } from '../client/shows.ts'
-import { hitSlop } from '../kit/mobile/device.tsx'
 import { LibraryNav } from './collections.tsx'
 import { LetterIndexed, useLetters } from './letter-index.tsx'
 import { PullToRefresh } from './pull.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
-
-const chip = cn(
-  'relative min-h-9 cursor-pointer rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus aria-pressed:border-transparent aria-pressed:bg-text aria-pressed:text-bg',
-  hitSlop,
-)
 
 export function MobileShows() {
   const library = useShows()
@@ -56,7 +50,7 @@ export function MobileShows() {
           <Button
             size="sm"
             icon="filter"
-            className={cn('relative ms-auto', hitSlop)}
+            className="ms-auto"
             onClick={() => setOpen(true)}
             aria-haspopup="dialog"
           >
@@ -127,15 +121,13 @@ export function MobileShows() {
                 <legend className="mb-2 font-mono text-label text-text-3 uppercase">Shows</legend>
                 <div className="flex flex-wrap gap-2">
                   {showFilters.map((x) => (
-                    <button
+                    <Chip
                       key={x.value}
-                      type="button"
-                      aria-pressed={show === x.value}
+                      selected={show === x.value}
                       onClick={() => setShow(x.value)}
-                      className={chip}
                     >
                       {x.label}
-                    </button>
+                    </Chip>
                   ))}
                 </div>
               </fieldset>
@@ -143,15 +135,13 @@ export function MobileShows() {
                 <legend className="mb-2 font-mono text-label text-text-3 uppercase">Sort by</legend>
                 <div className="flex flex-wrap gap-2">
                   {showSorts.map((s) => (
-                    <button
+                    <Chip
                       key={s.value}
-                      type="button"
-                      aria-pressed={sort === s.value}
+                      selected={sort === s.value}
                       onClick={() => setSort(s.value)}
-                      className={chip}
                     >
                       {s.label}
-                    </button>
+                    </Chip>
                   ))}
                 </div>
               </fieldset>
@@ -159,15 +149,9 @@ export function MobileShows() {
                 <legend className="mb-2 font-mono text-label text-text-3 uppercase">Genre</legend>
                 <div className="flex flex-wrap gap-2">
                   {[ALL, ...showGenresOf(items)].map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      aria-pressed={genre === g}
-                      onClick={() => setGenre(g)}
-                      className={chip}
-                    >
+                    <Chip key={g} selected={genre === g} onClick={() => setGenre(g)}>
                       {g === ALL ? 'All' : g}
-                    </button>
+                    </Chip>
                   ))}
                 </div>
               </fieldset>

@@ -7,7 +7,7 @@
 // Movies is its own destination in the global nav (the owner, 2026-10-30), so the title stands
 // alone, with the sort, Unwatched and the genre as a row of choices on its right; Up from the grid
 // reaches them. An empty library says so, and choices that match nothing offer Show everything.
-import { cn, Icon } from '@highsea-tv/ui-web'
+import { Chip, Icon } from '@highsea-tv/ui'
 import { type ReactNode, useLayoutEffect, useRef, useState } from 'react'
 import { useLibrary } from '../client/data.ts'
 import { ALL, arrange, genresOf, LETTERS, letterOf, type Sort } from '../web/library.tsx'
@@ -17,6 +17,7 @@ import {
   TvMessage,
   TvPoster,
   TvTileSkeleton,
+  tvChip,
   tvHref,
   useInitialFocus,
 } from './kit.tsx'
@@ -41,10 +42,6 @@ const sortChoices: { value: Sort; label: string }[] = [
   { value: 'year', label: 'Newest' },
 ]
 
-/** A choice beside a library's title: a sort, Unwatched, the genre. */
-export const choice =
-  'rounded-full px-[1.2cqw] py-[0.45cqw] font-semibold text-(length:--tv-text-pill) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:shadow-(--tv-focus-shadow) aria-pressed:bg-text/12 aria-pressed:text-text'
-
 /**
  * The genre, the last of a library's choices, as the web and phone have it: OK opens the genres
  * over the page, in columns, with the one in force focused; choosing one closes them and focus
@@ -66,18 +63,22 @@ export function TvGenreChoice({
   const label = value === all ? 'All genres' : value
   return (
     <>
-      <button
-        type="button"
+      <Chip
         data-focusable=""
         aria-haspopup="dialog"
-        aria-pressed={value !== all}
+        selected={value !== all}
         aria-label={`Genre: ${label}`}
         onClick={() => setOpen(true)}
-        className={cn(choice, 'flex items-center gap-[0.4cqw]')}
+        className={tvChip}
       >
         {label}
-        <Icon name="chevron-down" size={20} className="size-[1cqw]" />
-      </button>
+        {/* the Chip's icon leads, so the chevron rides in its label, at the control's icon size */}
+        <Icon
+          name="chevron-down"
+          size={20}
+          className="ms-(--control-gap) inline size-(--control-icon) align-[-0.15em]"
+        />
+      </Chip>
       {open && (
         <TvMenu
           name="Genre"
@@ -312,27 +313,25 @@ export function TvLibrary() {
                 className="ms-auto flex gap-[0.8cqw]"
               >
                 {sortChoices.map((s) => (
-                  <button
+                  <Chip
                     key={s.value}
-                    type="button"
                     data-focusable=""
-                    aria-pressed={sort === s.value}
+                    selected={sort === s.value}
                     onClick={() => setSort(s.value)}
-                    className={choice}
+                    className={tvChip}
                   >
                     {s.label}
-                  </button>
+                  </Chip>
                 ))}
                 <span aria-hidden className="mx-[0.4cqw] w-px self-stretch bg-text/20" />
-                <button
-                  type="button"
+                <Chip
                   data-focusable=""
-                  aria-pressed={unwatched}
+                  selected={unwatched}
                   onClick={() => setUnwatched((u) => !u)}
-                  className={choice}
+                  className={tvChip}
                 >
                   Unwatched
-                </button>
+                </Chip>
                 <TvGenreChoice genres={genresOf(all)} value={genre} all={ALL} onPick={setGenre} />
               </div>
             )}

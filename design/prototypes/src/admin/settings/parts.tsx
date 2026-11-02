@@ -14,7 +14,7 @@ import {
   MenuTrigger,
   toast,
   useFieldControl,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import type { ReactNode } from 'react'
 import { useLocation } from 'wouter'
 import { useNow, useQuery } from '../../mock/hooks.tsx'

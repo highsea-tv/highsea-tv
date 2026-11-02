@@ -65,7 +65,7 @@ import {
   useClip,
   useWidth,
   WidgetFrame,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useState } from 'react'
 import { widgets as messages } from './dashboard-messages.ts'

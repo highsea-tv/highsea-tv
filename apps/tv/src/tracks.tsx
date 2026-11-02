@@ -6,8 +6,8 @@
 // The movie page shares it now; the player adds the subtitle timing nudge.
 import type { ClientAudio, ClientSubtitle, ClientVersion } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
-import { Icon, Text, useTheme } from '@highsea-tv/ui-native'
-import { alpha, Focusable, focusOn, type ViewHandle } from '@highsea-tv/ui-native/tv'
+import { Icon, Text, useTheme } from '@highsea-tv/ui'
+import { alpha, Focusable, focusOn, type ViewHandle } from '@highsea-tv/ui/tv'
 import { type ReactNode, type Ref, useEffect, useRef } from 'react'
 import { TVFocusGuideView, View } from 'react-native'
 import { useBack } from './back.ts'

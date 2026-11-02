@@ -5,7 +5,7 @@
 // it scores, when it's here, is a link under them. Then the songs, numbered, each with its length
 // and ⋯ (mobile/song-menu.tsx; a long press opens it too); the release date and label; and the
 // artist's other albums in a row.
-import { Button, cn, EmptyState, Icon, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Icon, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { useLongPress } from '../client/continue-menu.ts'

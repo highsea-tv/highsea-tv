@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // How a stream is sent, in the words the page and the dashboard's widget share
 // (docs/product/now-playing.md#how-its-sent).
-import type { BadgeTone, IconName } from '@highsea-tv/ui-web'
+import type { BadgeTone, IconName } from '@highsea-tv/ui'
 import { pathLabel } from '../../mock/playback.ts'
 import type { DeliveryMethod, SessionView } from '../../mock/sessions.ts'
 import type { ClientType } from '../../mock/types.ts'

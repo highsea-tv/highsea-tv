@@ -20,8 +20,8 @@ import {
 import { useAppTheme } from '@highsea-tv/native/theme'
 import { ApiError } from '@highsea-tv/sdk'
 import { ClientProvider } from '@highsea-tv/sdk/react'
-import { ThemeProvider, tokens, useTheme } from '@highsea-tv/ui-native'
-import { TvButton, TvMessage } from '@highsea-tv/ui-native/tv'
+import { Button, ThemeProvider, tokens, useTheme } from '@highsea-tv/ui'
+import { TvMessage } from '@highsea-tv/ui/tv'
 import { type Href, router, Stack, usePathname, useRootNavigationState } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
@@ -213,21 +213,21 @@ function Unreachable() {
         title={t('unreachableTitle', { name })}
         actions={
           <>
-            <TvButton primary preferred icon="refresh" onPress={retry}>
+            <Button variant="primary" hasTVPreferredFocus icon="refresh" onPress={retry}>
               {t('tryAgain')}
-            </TvButton>
-            <TvButton icon="server" onPress={() => router.push('/connect')}>
+            </Button>
+            <Button variant="overlay" icon="server" onPress={() => router.push('/connect')}>
               {t('anotherServer')}
-            </TvButton>
+            </Button>
           </>
         }
       >
         {t('unreachableBody', { name })}
       </TvMessage>
       <Foot>
-        <TvButton icon="delete" onPress={() => forget(current.server.id, name)}>
+        <Button variant="overlay" icon="delete" onPress={() => forget(current.server.id, name)}>
           {f('thisServer')}
-        </TvButton>
+        </Button>
       </Foot>
     </View>
   )

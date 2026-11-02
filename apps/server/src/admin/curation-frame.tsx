@@ -17,7 +17,7 @@ import {
   CarouselRow,
   Lockup,
   Poster,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { useCurationT } from './curation-shared.tsx'
 import { Cta, Inline } from './inline.tsx'

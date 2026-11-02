@@ -2,7 +2,7 @@
 // Add to playlist (prototype-gaps.md › 3.8), in the web's dialog and the phone's sheet: New
 // playlist first, then the person's own, the most recently changed first, each with its mosaic
 // and count. New playlist asks for a name in place, and the songs go into it.
-import { Button, cn, Field, Icon, Input } from '@highsea-tv/ui-web'
+import { Button, cn, Field, Icon, Input } from '@highsea-tv/ui'
 import { type FormEvent, useEffect, useRef, useState } from 'react'
 import type { ClientPlaylist } from '../mock/types.ts'
 import { usePlaylists } from './song-menu.ts'

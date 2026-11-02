@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The TV screen's root: the 16:9 container (cqw screen units), spatial navigation and the remote's
-// OK and Back. The frame sizes the viewport to 16:9, so the root just fills it.
-import { useSound, useSpatialNavigation } from '@highsea-tv/ui-web'
-import { type ReactNode, useEffect, useRef } from 'react'
+// OK and Back. The frame sizes the viewport to 16:9, so the root just fills it. It draws the
+// library's controls at the TV rule (controls.md › One rule per platform): the `--control-*`
+// variables in cqw, which resolve against this root's inline-size container (1cqw = 1u, 19.2px at
+// 1080p), so a 36 control is 3.28u.
+import { PlatformScope, useSound, useSpatialNavigation } from '@highsea-tv/ui'
+import { type ReactNode, useEffect, useLayoutEffect, useRef } from 'react'
 
 export function TvRoot({ children, onBack }: { children: ReactNode; onBack?: () => void }) {
   const root = useRef<HTMLDivElement>(null)
@@ -11,6 +14,18 @@ export function TvRoot({ children, onBack }: { children: ReactNode; onBack?: () 
   const back = useRef(onBack)
   back.current = onBack
   useSpatialNavigation(root)
+
+  // the document too, so anything portalled to the body is drawn at the TV rule; outside the
+  // container, cqw falls back to the iframe's own 16:9 viewport (chrome/stage.tsx), the same width
+  useLayoutEffect(() => {
+    const doc = document.documentElement
+    const was = doc.dataset.platform
+    doc.dataset.platform = 'tv'
+    return () => {
+      if (was === undefined) delete doc.dataset.platform
+      else doc.dataset.platform = was
+    }
+  }, [])
 
   // focus starts inside the root, where the navigator listens (data-initial picks the item)
   useEffect(() => root.current?.focus({ preventScroll: true }), [])
@@ -29,14 +44,14 @@ export function TvRoot({ children, onBack }: { children: ReactNode; onBack?: () 
   }, [play])
 
   return (
-    <div
+    <PlatformScope
+      platform="tv"
       ref={root}
-      data-platform="tv"
       // a click on the frame gives it focus, so the first arrow key lands on data-initial
       tabIndex={-1}
       className="relative h-screen w-full overflow-hidden bg-bg text-text outline-none [container-type:inline-size]"
     >
       {children}
-    </div>
+    </PlatformScope>
   )
 }

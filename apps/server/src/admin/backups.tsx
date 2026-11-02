@@ -9,7 +9,7 @@ import { BACKUP_SCHEDULES, type BackupSettings, OPERATIONS_TOPICS } from '@highs
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import type { ApiError } from '@highsea-tv/sdk'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
-import { Field, Input, Select, toast } from '@highsea-tv/ui-web'
+import { Field, Input, Select, toast } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { backups as messages } from './backups-messages.ts'
 import { Loadable } from './loadable.tsx'

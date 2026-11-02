@@ -3,7 +3,7 @@
 // smart or picked by hand, with its mosaic, what it holds now (films and shows, counted as the apps
 // count them) and who sees it. Each opens the editor, where rules, exceptions and the live result
 // sit side by side.
-import { Badge, Button, ConfirmDialog, EmptyState, toast } from '@highsea-tv/ui-web'
+import { Badge, Button, ConfirmDialog, EmptyState, toast } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { titlesHere } from '../../client/data.ts'
@@ -81,7 +81,7 @@ function CollectionRow({ c }: { c: CollectionSummary }) {
   return (
     <li className="grid grid-cols-[3.5rem_minmax(0,1fr)] gap-x-4 gap-y-3 rounded-lg border border-line bg-s1 p-4 medium:grid-cols-[3.5rem_minmax(0,1fr)_auto] medium:items-center">
       <CollectionArt poster={c.artwork} mosaic={c.mosaic} className="w-14 rounded-[6px]" />
-      <div className="grid min-w-0 gap-1">
+      <div className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-1 [overflow-wrap:anywhere]">
         <p className="flex flex-wrap items-center gap-2">
           <a
             href={adminHref(`/collections/${c.id}`)}

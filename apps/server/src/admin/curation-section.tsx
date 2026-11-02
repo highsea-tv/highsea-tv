@@ -25,7 +25,7 @@ import {
   Select,
   SortableList,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useRouter } from 'next/navigation'
 import { useMemo, useState } from 'react'
 import { useRuleOptions } from './curation.tsx'
@@ -149,7 +149,7 @@ function Composer({ initial }: { initial: FeaturedSection | null }) {
   }
 
   return (
-    <div className="grid gap-6 expanded:grid-cols-[minmax(22rem,28rem)_minmax(0,1fr)] expanded:items-start">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 expanded:grid-cols-[minmax(min(22rem,50%),min(28rem,50%))_minmax(0,1fr)] expanded:items-start">
       <form
         aria-label={t('section.form')}
         className="grid gap-6"
@@ -218,9 +218,9 @@ function Composer({ initial }: { initial: FeaturedSection | null }) {
           {initial && (
             <Button
               type="button"
-              variant="ghost"
+              variant="danger-ghost"
               icon="delete"
-              className="ms-auto text-danger"
+              className="ms-auto"
               onClick={() => setConfirm(true)}
             >
               {t('delete')}

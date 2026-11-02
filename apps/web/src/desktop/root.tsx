@@ -5,7 +5,7 @@
 // Unreachable, with Try again and Switch server. Each server gets its own SDK client, made afresh
 // when the server changes, so nothing one server answered shows for another.
 import { useT } from '@highsea-tv/i18n/react'
-import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui'
 import { createContext, type ReactNode, useCallback, useContext, useEffect, useState } from 'react'
 import { type AppDevice, type AppServer, type CurrentServer, desktop } from '../host.ts'
 import { desktop as messages, shell as shellMessages } from '../messages.ts'

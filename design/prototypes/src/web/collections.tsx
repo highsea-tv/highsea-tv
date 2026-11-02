@@ -2,7 +2,7 @@
 // Collections, web and desktop, a destination of its own since the TV's nav came to the web (the
 // owner, 2026-10-30) (docs/product/collections.md#in-the-apps): the owner's
 // collections this person sees, marked smart, then TMDB's, as a grid of posters and mosaics.
-import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Skeleton } from '@highsea-tv/ui'
 import { collectionCaption, useCollections } from '../client/data.ts'
 import { MediaPosterSkeleton } from '../client/media-card.tsx'
 import { CollectionTile } from '../kit/collection-art.tsx'

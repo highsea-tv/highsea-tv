@@ -4,7 +4,7 @@
 // once the server has them; in M1 it's movies only, so there are no tabs. Sorted by title, an A–Z
 // index stands in its own column at the container's left, sticky under the top bar, and the grid
 // fills the rest (the owner, 2026-10-30).
-import { Button, cn, EmptyState, Select, Skeleton } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Select, Skeleton } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLibrary } from '../client/data.ts'
 import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'

@@ -2,6 +2,13 @@
 // Tokens shaped for React Native (Expo, react-native-tvos): plain numbers, hex colors with alpha,
 // raw spring parameters for Reanimated, and box-shadow strings (RN ≥ 0.76).
 import { formatHex, parseColor } from './color.ts'
+import {
+  buttonLooks,
+  CONTROL_DISABLED_OPACITY,
+  CONTROL_PRESS_SCALE,
+  controlLooks,
+  controlMetrics,
+} from './controls.ts'
 import { choreography, durations, springs } from './motion.ts'
 import { COLOR_ROLES, type ColorRole } from './roles.ts'
 import {
@@ -61,6 +68,15 @@ export const nativeTokens = {
   focus,
   icon,
   targets,
+  /** The control spec (controls.md): touch in points, the TV in screen units. */
+  controls: {
+    touch: { md: controlMetrics('touch'), sm: controlMetrics('touch', 'sm') },
+    tv: { md: controlMetrics('tv'), sm: controlMetrics('tv', 'sm') },
+    buttonLooks,
+    looks: controlLooks,
+    disabledOpacity: CONTROL_DISABLED_OPACITY,
+    pressScale: CONTROL_PRESS_SCALE,
+  },
   aspect,
   mobile,
   /** TV values are screen units: multiply by `width / 100`. */

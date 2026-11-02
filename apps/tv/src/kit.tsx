@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Pieces every TV screen shares (the prototype's kit.tsx, tv.md): the server identity, the
-// announcement pill, the global navigation, a screen's foot and the ambient backdrop. ui-native's
-// tv/ has the focus stops, buttons and rows.
+// announcement pill, the global navigation (tabs, at the TV rule), a screen's foot and the
+// ambient backdrop. @highsea-tv/ui/tv has the focus stops and rows; the controls are the library's.
 import { useAnnouncements } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import type { useMedia } from '@highsea-tv/native/media'
 import { useServers } from '@highsea-tv/native/servers'
 import { useMaybeSession } from '@highsea-tv/native/session'
-import { Icon, Mark, Text, tokens, useTheme } from '@highsea-tv/ui-native'
-import { alpha, Focusable, keptAt, TvChip, type ViewHandle } from '@highsea-tv/ui-native/tv'
+import { Chip, Icon, Mark, Text, tokens, useControl, useTheme } from '@highsea-tv/ui'
+import { alpha, Focusable, keptAt, type ViewHandle } from '@highsea-tv/ui/tv'
 import { Image } from 'expo-image'
 import { type Href, router, usePathname } from 'expo-router'
 import { createContext, type ReactNode, useContext, useState } from 'react'
@@ -120,6 +120,7 @@ export function GlobalNav({
   const t = useT(shell)
   const theme = useTheme()
   const u = theme.u
+  const tab = useControl()
   const pathname = usePathname()
   const [inside, setInside] = useState(false)
   const [current, setCurrent] = useState<ViewHandle | null>(null)
@@ -145,10 +146,12 @@ export function GlobalNav({
     >
       <View
         style={{
+          // the global navigation is tabs, so it takes the segmented control's geometry at the TV
+          // rule (controls.md): the track's corner and inset, each tab the corner less the inset
           flexDirection: 'row',
           gap: 0.6 * u,
-          borderRadius: 999,
-          padding: 0.4 * u,
+          borderRadius: tab.radius,
+          padding: tab.inset,
           backgroundColor: alpha(theme.colors.s2, 0.85),
         }}
       >
@@ -162,16 +165,17 @@ export function GlobalNav({
               selected={here}
               label={t(d.label)}
               ring={false}
-              radius={999}
+              radius={tab.radius - tab.inset}
               disabled={!reachable}
               onPress={() => (here ? null : router.replace(d.path as Href))}
             >
               {(focused) => (
                 <View
                   style={{
-                    borderRadius: 999,
-                    paddingHorizontal: 1.4 * u,
-                    paddingVertical: 0.5 * u,
+                    minHeight: tab.height - tab.inset * 2,
+                    justifyContent: 'center',
+                    borderRadius: tab.radius - tab.inset,
+                    paddingHorizontal: tab.pad,
                     backgroundColor: focused ? theme.colors.text : 'transparent',
                   }}
                 >
@@ -350,14 +354,14 @@ export function LibraryHeader({
         </Text>
         <View accessibilityLabel={t('kind')} style={{ flexDirection: 'row', gap: 0.8 * u }}>
           {(['movies', 'collections'] as const).map((k) => (
-            <TvChip
+            <Chip
               key={k}
               ref={current === k ? setChosen : undefined}
-              chosen={current === k}
+              selected={current === k}
               onPress={() => go(k)}
             >
               {t(k)}
-            </TvChip>
+            </Chip>
           ))}
         </View>
         {children}

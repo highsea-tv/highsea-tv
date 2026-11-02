@@ -40,7 +40,7 @@ import {
   useClip,
   useWidth,
   WidgetFrame,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
 import type { HighseaClient } from '../../mock/client.ts'

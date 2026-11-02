@@ -36,7 +36,7 @@ const { act, cleanup, render, within } = await import('@testing-library/react')
 const { default: userEvent } = await import('@testing-library/user-event')
 const { createClient } = await import('@highsea-tv/sdk')
 const { ClientProvider } = await import('@highsea-tv/sdk/react')
-const { TooltipProvider } = await import('@highsea-tv/ui-web')
+const { TooltipProvider } = await import('@highsea-tv/ui')
 const { Downloads } = await import('../src/admin/downloads.tsx')
 
 // ---------------------------------------------------------------- the fake API

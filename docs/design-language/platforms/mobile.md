@@ -31,7 +31,7 @@ This layout is locked in [direction.md](../../brand/direction.md#layouts). From 
 
 ## Touch
 
-- **Targets:** at least 44 × 44pt. Posters are their own target.
+- **Targets:** at least 44 × 44pt. Controls keep their drawn size (36) and reach 44 with an invisible hit area (`hitSlop`), 8pt apart ([controls](../controls.md)). Posters are their own target.
 - **Feedback:** press feedback is a 0.97 scale with `spring.quick`, with no highlight color.
 - **Haptics:** a light haptic on `select`-class actions and a success haptic on `success`, following the platform's haptics setting. Haptics are independent of UI sound.
 - **Gestures:**

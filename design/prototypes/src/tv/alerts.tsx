@@ -3,7 +3,7 @@
 // Home's top (the owner, 2026-10-30). Every live announcement, newest first, each a focus stop the
 // D-pad moves down through. Opening it counts the new ones as seen; they keep their mark while it's
 // open. The TV can't follow a link, so a call to action stays on the other apps.
-import { cn, Icon } from '@highsea-tv/ui-web'
+import { cn, Icon } from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
 import { useAnnouncements } from '../client/data.ts'
 import { Inline } from '../kit/inline.tsx'

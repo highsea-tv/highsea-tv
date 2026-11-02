@@ -19,7 +19,7 @@ import {
   QualityTag,
   Skeleton,
   SkeletonText,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { BloomGlow } from '../client/bloom.tsx'
@@ -98,13 +98,12 @@ function ContinueMenu({ item }: { item: ClientItem }) {
   return (
     <Menu>
       <MenuTrigger asChild>
-        <button
-          type="button"
+        <Button
+          variant="overlay"
+          iconOnly
+          icon="more"
           aria-label={`More for ${item.show?.title ?? item.title}`}
-          className="glass-badge grid size-9 cursor-pointer place-items-center rounded-full text-text outline-none focus-visible:ring-focus"
-        >
-          <Icon name="more" size={16} />
-        </button>
+        />
       </MenuTrigger>
       <MenuContent align="end" className="w-72">
         <MenuItem icon={item.show ? 'series' : 'movie'} onSelect={() => navigate(menu.goTo.path)}>
@@ -383,14 +382,13 @@ function FeaturedCard({
       </div>
       {items.length > 1 && (
         <div className="absolute end-5 bottom-5 hidden items-center gap-1 medium:end-10 medium:bottom-9 medium:flex">
-          <button
-            type="button"
+          <Button
+            variant="overlay"
+            iconOnly
+            icon="chevron-left"
             aria-label="Previous featured title"
             onClick={() => step(-1)}
-            className="glass-badge grid size-9 cursor-pointer place-items-center rounded-full text-text outline-none focus-visible:ring-focus"
-          >
-            <Icon name="chevron-left" size={18} />
-          </button>
+          />
           <div className="flex items-center">
             {items.map((x, i) => (
               <button
@@ -405,14 +403,13 @@ function FeaturedCard({
               </button>
             ))}
           </div>
-          <button
-            type="button"
+          <Button
+            variant="overlay"
+            iconOnly
+            icon="chevron-right"
             aria-label="Next featured title"
             onClick={() => step(1)}
-            className="glass-badge grid size-9 cursor-pointer place-items-center rounded-full text-text outline-none focus-visible:ring-focus"
-          >
-            <Icon name="chevron-right" size={18} />
-          </button>
+          />
         </div>
       )}
     </section>

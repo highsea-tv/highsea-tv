@@ -55,7 +55,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useState } from 'react'
 import { hoursText, minutesOf, ratioOf, ratioText } from './download-client-seeding.ts'
 import { indexers as messages } from './indexers-messages.ts'
@@ -490,7 +490,6 @@ function Catalog() {
               />
               <SegmentedControl
                 aria-label={t('catalog.privacy')}
-                size="sm"
                 value={privacy}
                 onValueChange={(v) => setPrivacy(v as typeof privacy)}
                 options={[

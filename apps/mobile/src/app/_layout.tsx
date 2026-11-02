@@ -19,7 +19,7 @@ import {
 import { useAppTheme } from '@highsea-tv/native/theme'
 import { ApiError } from '@highsea-tv/sdk'
 import { ClientProvider } from '@highsea-tv/sdk/react'
-import { ThemeProvider, tokens } from '@highsea-tv/ui-native'
+import { ThemeProvider, tokens } from '@highsea-tv/ui'
 import { type Href, router, Stack, usePathname, useRootNavigationState } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'

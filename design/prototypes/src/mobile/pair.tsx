@@ -2,7 +2,7 @@
 // Signing in a TV from the phone (connectivity.md#pairing-a-tv-from-the-phone, checkpoint 4.5a):
 // the TV shows a code and a QR code; the phone, already signed in, scans it (or takes the code
 // typed), asks once, and the TV is in. The words are the server's /link page's, so the two agree.
-import { Button, cn, EmptyState, Field, Icon, Input } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Field, Icon, Input } from '@highsea-tv/ui'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { normalCode, waiting } from '../client/pairing.ts'
@@ -15,17 +15,11 @@ export const SCAN_MS = 3000
 function Back({ to, label }: { to: string; label: string }) {
   const [, navigate] = useLocation()
   return (
-    <button
-      type="button"
-      onClick={() => navigate(to)}
-      className={cn(
-        'flex min-h-11 cursor-pointer items-center gap-1 text-[15px] text-accent-text outline-none focus-visible:ring-focus',
-        gutter,
-      )}
-    >
-      <Icon name="chevron-left" size={20} />
-      {label}
-    </button>
+    <div className={gutter}>
+      <Button variant="ghost" icon="chevron-left" className="-ms-3" onClick={() => navigate(to)}>
+        {label}
+      </Button>
+    </div>
   )
 }
 
@@ -67,7 +61,7 @@ export function MobileLinkScan() {
                 autoCapitalize="characters"
                 autoComplete="one-time-code"
                 placeholder="KQ7-4PM"
-                className="h-12 font-mono text-[20px] tracking-[0.12em]"
+                className="font-mono tracking-[0.12em]"
               />
             </Field>
             <Button type="submit" variant="primary" disabled={normalCode(code).length < 6}>

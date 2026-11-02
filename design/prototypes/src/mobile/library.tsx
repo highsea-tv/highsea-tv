@@ -1,21 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C3 Library browse, mobile (docs/product/client-library.md#mobile): a large title, the count and
 // one Sort and filter button that opens a sheet; then three posters a row.
-import { Button, cn, EmptyState, Sheet, SheetContent, Skeleton } from '@highsea-tv/ui-web'
+import { Button, Chip, cn, EmptyState, Sheet, SheetContent, Skeleton } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLibrary } from '../client/data.ts'
 import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
-import { hitSlop } from '../kit/mobile/device.tsx'
 import { ALL, arrange, genresOf, type Show, type Sort, shows, sorts } from '../web/library.tsx'
 import { LibraryNav } from './collections.tsx'
 import { LetterIndexed, useLetters } from './letter-index.tsx'
 import { PullToRefresh } from './pull.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
-
-const chip = cn(
-  'relative min-h-9 cursor-pointer rounded-full border border-line px-3.5 text-[14px] text-text-2 outline-none focus-visible:ring-focus aria-pressed:border-transparent aria-pressed:bg-text aria-pressed:text-bg',
-  hitSlop,
-)
 
 export function MobileLibrary() {
   const library = useLibrary()
@@ -46,7 +40,7 @@ export function MobileLibrary() {
           <Button
             size="sm"
             icon="filter"
-            className={cn('relative ms-auto', hitSlop)}
+            className="ms-auto"
             onClick={() => setOpen(true)}
             aria-haspopup="dialog"
           >
@@ -117,15 +111,13 @@ export function MobileLibrary() {
                 <legend className="mb-2 font-mono text-label text-text-3 uppercase">Show</legend>
                 <div className="flex flex-wrap gap-2">
                   {shows.map((x) => (
-                    <button
+                    <Chip
                       key={x.value}
-                      type="button"
-                      aria-pressed={show === x.value}
+                      selected={show === x.value}
                       onClick={() => setShow(x.value)}
-                      className={chip}
                     >
                       {x.label}
-                    </button>
+                    </Chip>
                   ))}
                 </div>
               </fieldset>
@@ -133,15 +125,13 @@ export function MobileLibrary() {
                 <legend className="mb-2 font-mono text-label text-text-3 uppercase">Sort by</legend>
                 <div className="flex flex-wrap gap-2">
                   {sorts.map((s) => (
-                    <button
+                    <Chip
                       key={s.value}
-                      type="button"
-                      aria-pressed={sort === s.value}
+                      selected={sort === s.value}
                       onClick={() => setSort(s.value)}
-                      className={chip}
                     >
                       {s.label}
-                    </button>
+                    </Chip>
                   ))}
                 </div>
               </fieldset>
@@ -149,15 +139,9 @@ export function MobileLibrary() {
                 <legend className="mb-2 font-mono text-label text-text-3 uppercase">Genre</legend>
                 <div className="flex flex-wrap gap-2">
                   {[ALL, ...genresOf(items)].map((g) => (
-                    <button
-                      key={g}
-                      type="button"
-                      aria-pressed={genre === g}
-                      onClick={() => setGenre(g)}
-                      className={chip}
-                    >
+                    <Chip key={g} selected={genre === g} onClick={() => setGenre(g)}>
                       {g === ALL ? 'All' : g}
-                    </button>
+                    </Chip>
                   ))}
                 </div>
               </fieldset>

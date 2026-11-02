@@ -26,12 +26,12 @@ These values are locked in [direction.md](../brand/direction.md#shape).
 
 | Token | px | Use |
 | --- | --- | --- |
-| `radius-sm` | 8 | Buttons, inputs, nav items, small controls |
+| `radius-sm` | 8 | Every control on every platform: buttons, icon buttons, inputs, selects, segmented controls, tabs, nav items ([controls](controls.md)) |
 | `radius-md` | 12 | Widgets, popovers, menus |
 | `radius-lg` | 16 | Cards, panels, the admin frame |
 | `radius-xl` | 28 | Sheets, large modals |
 | `radius-poster` | 10 | Posters and stills (scaled on TV, see platform guide) |
-| *(pill)* | 999 | Badges, chips, segmented controls, announcement pills |
+| *(pill)* | 999 | Badges, chips (at the control's height), announcement pills, and the media players' own controls |
 
 **Nesting rule:** an inner radius equals the outer radius minus the padding between them, and is never less than 4px.
 

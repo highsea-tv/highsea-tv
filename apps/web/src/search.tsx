@@ -6,7 +6,7 @@
 import type { SearchSection } from '@highsea-tv/api-contract'
 import { useSearch } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
-import { cn, Icon, Input, Poster } from '@highsea-tv/ui-web'
+import { Chip, cn, Icon, Input, Poster } from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { media } from './host.ts'
 import { search as messages } from './messages.ts'
@@ -57,21 +57,15 @@ export function WebSearch() {
         value={q}
         autoFocus
         onChange={(e) => setQ(e.target.value)}
-        className="h-12 text-body"
       />
       {!settled.trim() ? (
         <section aria-label={t('try')} className="grid gap-3">
           <h2 className="font-mono text-label text-text-3 uppercase">{t('try')}</h2>
           <div className="flex flex-wrap gap-2">
             {SUGGESTIONS.map((s) => (
-              <button
-                key={s}
-                type="button"
-                onClick={() => setQ(s)}
-                className="rounded-full border border-line-strong px-3.5 py-1.5 text-text-2 text-ui outline-none hover:bg-s2 hover:text-text focus-visible:ring-focus"
-              >
+              <Chip key={s} onClick={() => setQ(s)}>
                 {s}
-              </button>
+              </Chip>
             ))}
           </div>
         </section>

@@ -3,7 +3,7 @@
 // unwatched once it is: a toggle among the film page's round buttons on every app since the
 // redesign of 2026-10-30, in place of the More menu and the TV's long press of OK. Watched means
 // played to the end, for this person only; marking it unwatched starts it again from the beginning.
-import { toast } from '@highsea-tv/ui-web'
+import { toast } from '@highsea-tv/ui'
 import { useAction } from '../mock/hooks.tsx'
 import type { ClientItem } from '../mock/types.ts'
 

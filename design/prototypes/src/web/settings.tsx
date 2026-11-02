@@ -3,7 +3,7 @@
 // sections beside each other from medium widths, an index on a phone-width window; the account
 // page; and Downloads, which needs the desktop app.
 
-import { Button, cn, EmptyState, Icon } from '@highsea-tv/ui-web'
+import { Button, cn, EmptyState, Icon } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { useDesktopApp, useServer } from '../client/data.ts'
@@ -173,12 +173,7 @@ export function WebDownloads() {
         title="Downloads live in the desktop app"
         // it wraps rather than widening a phone at 200% text
         action={
-          <Button
-            variant="primary"
-            icon="laptop"
-            className="h-auto min-h-9 whitespace-normal py-1.5"
-            onClick={() => setApps(true)}
-          >
+          <Button variant="primary" icon="laptop" onClick={() => setApps(true)}>
             Get the desktop app
           </Button>
         }

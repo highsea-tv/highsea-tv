@@ -16,6 +16,7 @@ import {
   escapes,
   heightFor,
   launch,
+  mixedRows,
   overflow,
   pool,
   ROOT,
@@ -133,6 +134,9 @@ async function sweep(visits: Visit[], context: () => Promise<BrowserContext>) {
             })
           const o = await overflow(page)
           const found = await axe(page)
+          // controls in one row share one size (controls.md); the default theme is enough to measure
+          if (q === VARIANTS[0])
+            for (const row of await mixedRows(page)) found.push(`mixed row: ${row}`)
           if (o > 0 || found.length || errors.length)
             problems.push(
               `${v.name} ${w} ${q}: ${o > 0 ? `overflow=${o} ${(await escapes(page)).join(' | ')} ` : ''}${[...found, ...errors].join(' ; ')}`,

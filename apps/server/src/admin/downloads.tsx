@@ -53,7 +53,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useState } from 'react'
 import { toBase64 } from './base64.ts'

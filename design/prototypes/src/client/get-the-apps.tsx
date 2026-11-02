@@ -3,7 +3,7 @@
 // this computer's first, and the address to type when the app can't find the server by itself.
 // In the web client's Settings › About and its Downloads page, and in the admin's System › Status
 // and command palette. The phone and TV apps join the list when they exist (4.5, 4.6).
-import { Button, Dialog, DialogContent, Icon, toast } from '@highsea-tv/ui-web'
+import { Button, Dialog, DialogContent, Icon, toast } from '@highsea-tv/ui'
 
 /** The latest stable release's files; the build links each installer by name. */
 const RELEASES = 'https://github.com/highsea-tv/highsea-tv/releases/latest'

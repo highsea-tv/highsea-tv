@@ -7,8 +7,8 @@ import { useCollection } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
-import { Text, tokens, useTheme } from '@highsea-tv/ui-native'
-import { TvButton, TvMessage, TvRow, TvTile, type ViewHandle } from '@highsea-tv/ui-native/tv'
+import { Button, Text, tokens, useTheme } from '@highsea-tv/ui'
+import { TvMessage, TvRow, TvTile, type ViewHandle } from '@highsea-tv/ui/tv'
 import { router, useLocalSearchParams } from 'expo-router'
 import { useState } from 'react'
 import { ActivityIndicator, View } from 'react-native'
@@ -41,9 +41,9 @@ export default function Collection() {
       <TvMessage
         title={found.error.message}
         actions={
-          <TvButton primary preferred onPress={() => router.replace('/search')}>
+          <Button variant="primary" hasTVPreferredFocus onPress={() => router.replace('/search')}>
             {t('search')}
-          </TvButton>
+          </Button>
         }
       >
         {t('gone')}

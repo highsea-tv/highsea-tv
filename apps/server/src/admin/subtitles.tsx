@@ -54,7 +54,7 @@ import {
   TabsTrigger,
   TitleCell,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
@@ -701,7 +701,6 @@ function ProfileEditor({
                   className="col-span-3 medium:col-span-1"
                 />
                 <Button
-                  size="sm"
                   variant="ghost"
                   iconOnly
                   icon="close"

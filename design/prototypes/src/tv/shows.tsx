@@ -3,6 +3,7 @@
 // the posters seven a row with each one's seasons under it and how many episodes are left on the
 // art, and the alphabet rail at the left while sorted by title. Choosing a sort keeps focus on the
 // choice, as on every library (the owner, 2026-10-31).
+import { Chip } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useShows } from '../client/data.ts'
 import { UnwatchedCount } from '../client/show-card.tsx'
@@ -14,9 +15,8 @@ import {
   showGenresOf,
 } from '../client/shows.ts'
 import { letterOf } from '../web/library.tsx'
-import { TvButton, TvHead, TvMessage, TvTile, TvTileSkeleton, tvHref } from './kit.tsx'
+import { TvButton, TvHead, TvMessage, TvTile, TvTileSkeleton, tvChip, tvHref } from './kit.tsx'
 import {
-  choice,
   motion,
   room,
   TvEmptyLibrary,
@@ -79,27 +79,25 @@ export function TvShows() {
                 className="ms-auto flex gap-[0.8cqw]"
               >
                 {sortChoices.map((s) => (
-                  <button
+                  <Chip
                     key={s.value}
-                    type="button"
                     data-focusable=""
-                    aria-pressed={sort === s.value}
+                    selected={sort === s.value}
                     onClick={() => setSort(s.value)}
-                    className={choice}
+                    className={tvChip}
                   >
                     {s.label}
-                  </button>
+                  </Chip>
                 ))}
                 <span aria-hidden className="mx-[0.4cqw] w-px self-stretch bg-text/20" />
-                <button
-                  type="button"
+                <Chip
                   data-focusable=""
-                  aria-pressed={unwatched}
+                  selected={unwatched}
                   onClick={() => setUnwatched((u) => !u)}
-                  className={choice}
+                  className={tvChip}
                 >
                   Unwatched
-                </button>
+                </Chip>
                 <TvGenreChoice
                   genres={showGenresOf(all)}
                   value={genre}

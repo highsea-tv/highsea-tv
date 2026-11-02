@@ -13,7 +13,7 @@
 // takes the press.
 import { useDevicePrefs } from '@highsea-tv/client/prefs'
 import { useSounds } from '@highsea-tv/native/sound'
-import { focusedPlay, remoteKey } from '@highsea-tv/ui-native/tv'
+import { focusedPlay, remoteKey } from '@highsea-tv/ui/tv'
 import { router, usePathname } from 'expo-router'
 import { type ReactNode, useCallback, useEffect, useMemo } from 'react'
 import { BackHandler, Platform, TVEventControl, useTVEventHandler } from 'react-native'

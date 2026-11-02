@@ -19,11 +19,13 @@ import {
   Icon,
   type IconName,
   Mark,
+  Radio,
+  RadioGroup,
   SortableList,
   Switch,
   toast,
   useSoundPlayer,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import type { ReactNode } from 'react'
 import { useParams } from 'wouter'
 import { useDesktop } from './desktop/root.tsx'
@@ -51,7 +53,7 @@ const SECTIONS = [
 type SectionId = (typeof SECTIONS)[number]['id']
 
 /** A button whose label wraps at 200% text rather than running off a phone (WCAG 1.4.4). */
-const wraps = 'h-auto min-h-(--size-control) max-w-full whitespace-normal py-2 text-start'
+const wraps = 'h-auto min-h-(--control-h) max-w-full whitespace-normal py-2 text-start'
 
 const deviceIcon = (c: ClientType): IconName =>
   c === 'ios' || c === 'android'
@@ -115,36 +117,36 @@ function ThemeSection() {
         <legend className="mb-1 text-caption text-text-3">
           {everywhere ? t('themeEverywhere') : t('themeDevice')}
         </legend>
-        {choices.map((c) => (
-          <label
-            key={c.id}
-            className="flex min-h-14 cursor-pointer items-center gap-3 rounded-md border border-line bg-s1 px-3 py-2.5 has-checked:border-accent has-focus-visible:ring-focus"
-          >
-            <input
-              type="radio"
-              name="theme"
-              checked={p.chosen === c.id}
-              disabled={prefs.pending}
-              onChange={() => prefs.setTheme(c.id).catch(failed)}
-              className="size-4 accent-accent-fill"
-            />
-            <span className="grid min-w-0 flex-1">
-              <span className="truncate text-text text-ui">{c.name}</span>
-              {c.detail && <span className="text-caption text-text-3">{c.detail}</span>}
-            </span>
-            {c.id !== SERVER_THEME && (
-              <span className="flex gap-1" data-theme={c.id}>
-                {(['bg', 's2', 'accent'] as const).map((r) => (
-                  <span
-                    key={r}
-                    className="size-4 rounded-full ring-1 ring-line-strong"
-                    style={{ background: `var(--color-${r})` }}
-                  />
-                ))}
+        <RadioGroup
+          value={p.chosen}
+          onValueChange={(id: string) => prefs.setTheme(id).catch(failed)}
+          disabled={prefs.pending}
+        >
+          {choices.map((c) => (
+            // biome-ignore lint/a11y/noLabelWithoutControl: the control is its child, Radix's radio (a button, which is labelable)
+            <label
+              key={c.id}
+              className="flex min-h-14 cursor-pointer items-center gap-3 rounded-md border border-line bg-s1 px-3 py-2.5 has-data-[state=checked]:border-accent has-focus-visible:ring-focus"
+            >
+              <Radio value={c.id} />
+              <span className="grid min-w-0 flex-1">
+                <span className="truncate text-text text-ui">{c.name}</span>
+                {c.detail && <span className="text-caption text-text-3">{c.detail}</span>}
               </span>
-            )}
-          </label>
-        ))}
+              {c.id !== SERVER_THEME && (
+                <span className="flex gap-1" data-theme={c.id}>
+                  {(['bg', 's2', 'accent'] as const).map((r) => (
+                    <span
+                      key={r}
+                      className="size-4 rounded-full ring-1 ring-line-strong"
+                      style={{ background: `var(--color-${r})` }}
+                    />
+                  ))}
+                </span>
+              )}
+            </label>
+          ))}
+        </RadioGroup>
       </fieldset>
       <Field
         inline

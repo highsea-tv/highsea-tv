@@ -3,15 +3,7 @@
 // what carries it, Rename and Remove, and a field to add one. Changes are immediate actions, as
 // root folders are; removing asks first and says what the tag comes off. A refused label shows the
 // server's sentence under its field.
-import {
-  Button,
-  ConfirmDialog,
-  Dialog,
-  DialogContent,
-  Field,
-  Input,
-  toast,
-} from '@highsea-tv/ui-web'
+import { Button, ConfirmDialog, Dialog, DialogContent, Field, Input, toast } from '@highsea-tv/ui'
 import { type FormEvent, useState } from 'react'
 import { useAction } from '../../mock/hooks.tsx'
 import type { Tag } from '../../mock/settings.ts'
@@ -130,13 +122,13 @@ function AddTag() {
   return (
     <form onSubmit={submit} noValidate className="grid gap-2">
       <Field label="New tag" error={error ?? undefined}>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <Input
             value={label}
             maxLength={40}
             placeholder="kids"
             autoCapitalize="none"
-            className="flex-1"
+            className="min-w-0 flex-1 basis-48"
             onChange={(e) => {
               setError(null)
               setLabel(e.target.value)

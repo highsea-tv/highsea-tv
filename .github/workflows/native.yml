@@ -58,6 +58,9 @@ jobs:
         run: |
           bun run typecheck
           bun run test --ci
+      # the phone's bundle draws with ui's native renderer only (ADR 0060)
+      - name: The bundle carries no web renderer
+        run: bun scripts/bundles.ts phone
       # the generated project, with its pods installed (prebuild runs `pod install`)
       - name: The iOS project
         working-directory: apps/mobile

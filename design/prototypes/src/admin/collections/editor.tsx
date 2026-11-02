@@ -14,7 +14,7 @@ import {
   SortableList,
   Textarea,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { CollectionArt } from '../../kit/collection-art.tsx'
@@ -136,16 +136,16 @@ function Editor({ initial }: { initial: SmartCollection | null }) {
   const direction = sortLabels[draft.sort]
 
   return (
-    <div className="grid gap-6 expanded:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] expanded:items-start">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 expanded:grid-cols-[minmax(0,1fr)_minmax(18rem,22rem)] expanded:items-start">
       <form
         aria-label="Collection"
-        className="grid min-w-0 gap-8"
+        className="grid min-w-0 grid-cols-[minmax(0,1fr)] gap-8"
         onSubmit={(e) => {
           e.preventDefault()
           submit()
         }}
       >
-        <div className="grid gap-4 medium:grid-cols-[minmax(0,1fr)_auto]">
+        <div className="grid grid-cols-[minmax(0,1fr)] gap-4 medium:grid-cols-[minmax(0,1fr)_auto]">
           <div className="grid gap-4">
             <Field label="Name" error={show(errors.name)}>
               <Input
@@ -325,9 +325,9 @@ function Editor({ initial }: { initial: SmartCollection | null }) {
           {initial && (
             <Button
               type="button"
-              variant="ghost"
+              variant="danger-ghost"
               icon="delete"
-              className="ms-auto text-danger"
+              className="ms-auto"
               onClick={() => setConfirm(true)}
             >
               Delete
@@ -374,7 +374,7 @@ function Artwork({
 }) {
   const input = useRef<HTMLInputElement>(null)
   return (
-    <div className="grid content-start justify-items-start gap-2">
+    <div className="grid grid-cols-[minmax(0,1fr)] content-start justify-items-start gap-2">
       <span className="font-medium text-text text-ui">Artwork</span>
       <CollectionArt poster={draft.artwork} mosaic={mosaic.slice(0, 4)} className="w-28" />
       <input

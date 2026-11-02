@@ -25,7 +25,7 @@ import {
   TableRow,
   TableToolbar,
   toast,
-} from '@highsea-tv/ui-web'
+} from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { useAction, useClient, useQuery } from '../../mock/hooks.tsx'
 import type { AdminShowDetail, ImportCandidate, MediaItem } from '../../mock/types.ts'
@@ -157,8 +157,12 @@ export function ManualImport() {
             error={error ?? undefined}
             hint="A folder on the server. highsea looks inside it, and one level down."
           >
-            <div className="flex gap-2">
-              <Input value={path} onChange={(e) => setPath(e.target.value)} className="font-mono" />
+            <div className="flex flex-wrap gap-2">
+              <Input
+                value={path}
+                onChange={(e) => setPath(e.target.value)}
+                className="min-w-0 flex-1 basis-48 font-mono"
+              />
               <Button variant="primary" icon="search" loading={scanning} onClick={scan}>
                 Look inside
               </Button>

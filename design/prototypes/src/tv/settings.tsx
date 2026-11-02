@@ -8,7 +8,7 @@
 // shows each section (as tvOS does); Right enters it, Left returns to the list. Theme and sound
 // apply to this TV; the home layout follows the person.
 import { relative } from '@highsea-tv/core/format'
-import { cn, type IconName, Mark } from '@highsea-tv/ui-web'
+import { Chip, cn, type IconName, Mark } from '@highsea-tv/ui'
 import { type ReactNode, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useConnection, useKnownServers, useServer } from '../client/data.ts'
@@ -34,7 +34,7 @@ import { CustomThemeStyles } from '../client/settings-sections.tsx'
 import { useNow } from '../mock/hooks.tsx'
 import { useProto } from '../screen/screen.tsx'
 import { useBack } from './back.ts'
-import { TvAvatar, TvButton, TvHead, useInitialFocus } from './kit.tsx'
+import { TvAvatar, TvButton, TvHead, tvChip, useInitialFocus } from './kit.tsx'
 import { AddTile, PersonTile, PinPad } from './who.tsx'
 
 const option =
@@ -134,9 +134,6 @@ function Sounds() {
   )
 }
 
-const pill =
-  'rounded-full px-[1.1cqw] py-[0.45cqw] font-semibold text-(length:--tv-text-pill) text-text-2 outline-none transition-lift focus-visible:scale-(--scale-button) focus-visible:bg-text focus-visible:text-bg focus-visible:shadow-(--tv-focus-shadow) not-focus-visible:aria-checked:bg-text/12 not-focus-visible:aria-checked:text-text'
-
 /** One setting as a row of choices, as the show page's seasons are: Left and Right move along. */
 function Choices({
   name,
@@ -154,27 +151,25 @@ function Choices({
   return (
     <div className="grid grid-cols-[11cqw_minmax(0,1fr)] items-center gap-[1cqw]">
       <span className="text-(length:--tv-text-meta) text-text-2">{label}</span>
-      <div
-        role="radiogroup"
+      {/* chips that toggle (aria-pressed), the one chosen pressed: the library's Chip marks its
+          chosen look on aria-pressed, so these are a group of toggles rather than radios */}
+      <fieldset
         aria-label={label}
         data-group={`playback-${name}`}
-        className="flex flex-wrap gap-[0.4cqw]"
+        className="flex min-w-0 flex-wrap gap-[0.4cqw]"
       >
         {options.map((o) => (
-          // biome-ignore lint/a11y/useSemanticElements: a D-pad row, focused by the spatial navigator
-          <button
+          <Chip
             key={o.value}
-            type="button"
-            role="radio"
-            aria-checked={o.value === value}
+            selected={o.value === value}
             data-focusable=""
             onClick={() => onPick(o.value)}
-            className={pill}
+            className={tvChip}
           >
             {o.short ?? o.label}
-          </button>
+          </Chip>
         ))}
-      </div>
+      </fieldset>
     </div>
   )
 }
