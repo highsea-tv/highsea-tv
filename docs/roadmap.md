@@ -386,6 +386,9 @@ Approved with the owner's answers of 2026-10-28: A to C are checkpoint 4.3c, aft
 
 Checkpoint 4.3c (A to C) was signed off by the owner on 2026-10-28.
 
+## Follow-up: one client platform (Phase 4)
+The owner asked on 2026-11-02 for every client and its prototype to share one design system, one set of tokens, one component library and one copy of each screen, on React Native, so nothing is defined in two places. The admin is the only exception, and it shares all it can. The scope is [plans/one-client-platform.md](plans/one-client-platform.md): one Expo project for the phone, the TV and the web (and so the desktop app), react-native-web on the web, the prototypes as the client itself on the mock server, and checks that fail on drift.
+
 ## Phase 4 (later): clients
 `ui-native`, then `apps/web` → `apps/desktop` (Tauri) → `apps/mobile` + `apps/tv` (Expo / react-native-tvos), built from the Phase 2 prototypes. Alongside them: `stream` (playback/transcode, WebSockets), TV/music/books domains, Usenet, requests, and the optional Connect relay.
 
