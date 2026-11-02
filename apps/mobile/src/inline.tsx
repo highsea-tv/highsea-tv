@@ -1,41 +1,39 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Announcement bodies' inline markdown and their call to action, as the web's kit.tsx draws them:
-// **bold**, _italic_ and [links](https://…), which open in Safari's sheet, away from the app.
+// **bold**, _italic_ and [links](https://…) from the shared `inlineParts`, the links opening in
+// Safari's sheet, away from the app.
+import { type InlinePart, inlineParts } from '@highsea-tv/client/format'
 import { Button, Text } from '@highsea-tv/ui'
 import * as WebBrowser from 'expo-web-browser'
 import type { ReactNode } from 'react'
 
-const TOKENS = /(\*\*[^*]+\*\*|_[^_]+_|\[[^\]]+\]\([^)\s]+\))/
-
-function Part({ part }: { part: string }): ReactNode {
-  if (part.startsWith('**') && part.endsWith('**') && part.length > 4)
+function Part({ part }: { part: InlinePart }): ReactNode {
+  if (part.kind === 'bold')
     return (
       <Text weight={600} color="text">
-        {part.slice(2, -2)}
+        {part.text}
       </Text>
     )
-  if (part.startsWith('_') && part.endsWith('_') && part.length > 2)
-    return <Text style={{ fontStyle: 'italic' }}>{part.slice(1, -1)}</Text>
-  const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(part)
-  if (link)
+  if (part.kind === 'italic') return <Text style={{ fontStyle: 'italic' }}>{part.text}</Text>
+  if (part.kind === 'link')
     return (
       <Text
         color="text"
         accessibilityRole="link"
         style={{ textDecorationLine: 'underline' }}
-        onPress={() => void WebBrowser.openBrowserAsync(link[2] as string)}
+        onPress={() => void WebBrowser.openBrowserAsync(part.url)}
       >
-        {link[1]}
+        {part.text}
       </Text>
     )
-  return part
+  return part.text
 }
 
 export function Inline({ text }: { text: string }) {
   return (
     <>
-      {text.split(TOKENS).map((part, i) => (
-        // biome-ignore lint/suspicious/noArrayIndexKey: the split is stable for a given text
+      {inlineParts(text).map((part, i) => (
+        // biome-ignore lint/suspicious/noArrayIndexKey: the runs are stable for a given text
         <Part key={i} part={part} />
       ))}
     </>

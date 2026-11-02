@@ -7,7 +7,8 @@
 // https://docs.expo.dev/versions/latest/sdk/webbrowser/#webbrowseropenauthsessionasyncurl-redirecturl-options)
 // with a PKCE challenge, and the code that comes back to `highsea://oidc` is exchanged for the
 // token (RFC 8252, ADR 0024). Passkeys and setting up two-step verification stay on the server's
-// sign-in page, which opens in Safari.
+// sign-in page, which opens in Safari. Each step is drawn in C1's frame (Flow), as the prototype's
+// connect flow is: the Lockup over a card with the step's title, Back as an arrow beside it.
 import type { SignInResult } from '@highsea-tv/api-contract'
 import { usePublicInfo } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
@@ -21,7 +22,7 @@ import * as WebBrowser from 'expo-web-browser'
 import { type ComponentRef, useRef, useState } from 'react'
 import { ActivityIndicator, type TextInput, View } from 'react-native'
 import { useForget } from '../forget.ts'
-import { Alert, Screen, Title } from '../kit.tsx'
+import { Alert, Flow, Screen } from '../kit.tsx'
 import { forget as forgetMessages, signIn as messages } from '../messages.ts'
 
 type Step =
@@ -47,13 +48,11 @@ export default function SignIn() {
   // at the foot of the screen, also when the server doesn't answer (the owner, 2026-10-29): a
   // server that's gone, or whose address changed, can be let go of from here
   const forgetButton = (
-    <Button
-      variant="danger-ghost"
-      block
-      onPress={() => forget(current.server.id, current.server.name)}
-    >
-      {f('thisServer')}
-    </Button>
+    <View style={{ alignItems: 'center' }}>
+      <Button variant="danger-ghost" onPress={() => forget(current.server.id, current.server.name)}>
+        {f('thisServer')}
+      </Button>
+    </View>
   )
   const info = usePublicInfo()
   const [step, setStep] = useState<Step>({ kind: 'form' })
@@ -160,16 +159,16 @@ export default function SignIn() {
 
   if (info.status === 'error')
     return (
-      <Screen gap={20} footer={forgetButton}>
-        <Button variant="ghost" icon="chevron-left" onPress={() => router.push('/connect')}>
-          {t('otherAccount')}
-        </Button>
-        <Title>{t('signIn')}</Title>
+      <Flow
+        title={t('signIn')}
+        back={{ label: t('servers'), run: () => router.push('/connect') }}
+        footer={forgetButton}
+      >
         <Alert>{t('failed', { message: info.error.message })}</Alert>
         <Button variant="primary" icon="refresh" block onPress={info.refetch}>
           {t('signIn')}
         </Button>
-      </Screen>
+      </Flow>
     )
 
   const server = info.data
@@ -182,21 +181,22 @@ export default function SignIn() {
 
   if (step.kind === 'sso')
     return (
-      <Screen gap={20}>
-        <Title>{t('oidc', { provider })}</Title>
+      <Flow title={t('oidc', { provider })}>
         <View style={{ flexDirection: 'row', gap: 8, alignItems: 'center' }}>
           <ActivityIndicator size="small" color={theme.colors['text-3']} />
           <Text variant="callout" color="text-2" style={{ flex: 1 }}>
             {t('oidcWait', { provider })}
           </Text>
         </View>
-      </Screen>
+      </Flow>
     )
 
   if (step.kind === 'setup')
     return (
-      <Screen gap={20}>
-        <Title>{t('setupTitle')}</Title>
+      <Flow
+        title={t('setupTitle')}
+        back={{ label: t('otherAccount'), run: () => setStep({ kind: 'form' }) }}
+      >
         <Text variant="body" color="text-2">
           {t('setupDetail', { name: server.name })}
         </Text>
@@ -211,14 +211,23 @@ export default function SignIn() {
         <Button variant="ghost" block onPress={() => setStep({ kind: 'form' })}>
           {t('otherAccount')}
         </Button>
-      </Screen>
+      </Flow>
     )
 
   if (step.kind === 'code') {
     const recovery = step.recovery
     return (
-      <Screen gap={20}>
-        <Title>{recovery ? t('recoveryTitle') : t('codeTitle')}</Title>
+      <Flow
+        title={recovery ? t('recoveryTitle') : t('codeTitle')}
+        back={{
+          label: t('otherAccount'),
+          run: () => {
+            setStep({ kind: 'form' })
+            setCode('')
+            setError(null)
+          },
+        }}
+      >
         <Text variant="body" color="text-2">
           {recovery ? t('recoveryDetail') : t('codeDetail')}
         </Text>
@@ -272,16 +281,16 @@ export default function SignIn() {
         >
           {t('otherAccount')}
         </Button>
-      </Screen>
+      </Flow>
     )
   }
 
   return (
-    <Screen gap={20} footer={forgetButton}>
-      <Button variant="ghost" icon="chevron-left" onPress={choose}>
-        {t('servers')}
-      </Button>
-      <Title>{t('title', { name: server.name })}</Title>
+    <Flow
+      title={t('title', { name: server.name })}
+      back={{ label: t('servers'), run: choose }}
+      footer={forgetButton}
+    >
       <View
         style={{
           flexDirection: 'row',
@@ -362,6 +371,6 @@ export default function SignIn() {
           </Button>
         </>
       )}
-    </Screen>
+    </Flow>
   )
 }

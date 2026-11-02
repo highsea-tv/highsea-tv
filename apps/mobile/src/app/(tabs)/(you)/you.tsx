@@ -9,7 +9,7 @@ import { router } from 'expo-router'
 import { View } from 'react-native'
 import { Group, Row, Screen } from '../../../kit.tsx'
 import { you as messages } from '../../../messages.ts'
-import { SECTIONS, SignOutRow } from '../../../settings.tsx'
+import { SignOutRow, useSections } from '../../../settings.tsx'
 import { Header, useServerName } from '../../../shell.tsx'
 
 export default function You() {
@@ -17,6 +17,7 @@ export default function You() {
   const session = useSessionData()
   const name = useServerName()
   const u = session.user
+  const sections = useSections()
   return (
     <Screen tabs gap={24}>
       <Header title={t('title')} />
@@ -33,11 +34,11 @@ export default function You() {
       </View>
       <View accessibilityLabel={t('settings')}>
         <Group>
-          {SECTIONS.map((s) => (
+          {sections.map((s) => (
             <Row
               key={s.id}
               icon={s.icon}
-              title={t(`section.${s.id}`)}
+              title={s.label}
               onPress={() => router.push(`/settings/${s.id}`)}
             />
           ))}

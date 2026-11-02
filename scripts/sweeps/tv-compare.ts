@@ -4,13 +4,14 @@
 // remote and saves the simulator's screen, since Maestro can't press a tvOS remote, and Playwright
 // takes the prototype's same screens at 1920 × 1080 points at 2×, the Apple TV 4K's. The films
 // differ (the prototype's mock, the server's library), so a pair is compared for layout, not data.
-// Writes the pairs, index.html and checklist.md to a folder outside the repository.
+// Writes the pairs, index.html and checklist.md to a folder outside the repository; index.html
+// carries its images inline, so it opens anywhere on its own (a viewer showing only that file).
 //
 // `bun scripts/sweeps/tv-compare.ts [folder]`, with the app installed and signed in as tv.ts's
 // header says. The prototypes come from `bun run prototypes`, started here if nothing answers on
 // :4500. TV_SIMULATOR picks the simulator by UDID.
 import { type ChildProcess, spawn } from 'node:child_process'
-import { existsSync, mkdirSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { acknowledge, BASE, launch, ROOT, screenUrl, settle, settleAnimations } from './lib.ts'
@@ -133,7 +134,12 @@ ${r.note ? `<p>${html(r.note)}</p>` : ''}
 )
 
 function fig(label: string, file: string | null, where: string) {
-  return `<figure><figcaption>${label} · ${html(where)}</figcaption>${file ? `<img src="${file}" loading="lazy" alt="${label}">` : '<div class="none">Nothing to show</div>'}</figure>`
+  return `<figure><figcaption>${label} · ${html(where)}</figcaption>${file ? `<img src="${inline(file)}" alt="${label}">` : '<div class="none">Nothing to show</div>'}</figure>`
+}
+
+/** A shot as a data URL, so the sheet needs nothing beside it. */
+function inline(file: string) {
+  return `data:image/png;base64,${readFileSync(join(out, file)).toString('base64')}`
 }
 
 const missing = rows.filter((r) => !r.tv || !r.proto)

@@ -72,19 +72,32 @@ export function Badge({
   )
 }
 
-/** A quality marker on artwork (4K, HDR), as ui-web's QualityTag. */
-export function QualityTag({ children }: { children: string }) {
+/**
+ * A quality marker (4K, HDR), as ui-web's QualityTag: 20 tall, mono semibold 11 in capitals with
+ * the web's 0.04em tracking, on glass over artwork (`overlay`, as posters have it) or edged in
+ * `line-strong` on the page.
+ */
+export function QualityTag({ children, overlay = true }: { children: string; overlay?: boolean }) {
   const theme = useTheme()
   return (
     <View
       style={{
-        paddingHorizontal: 5 * theme.u,
-        paddingVertical: 1 * theme.u,
-        borderRadius: 4 * theme.u,
-        backgroundColor: glass,
+        height: 20 * theme.u,
+        justifyContent: 'center',
+        paddingHorizontal: 6 * theme.u,
+        borderRadius: 5 * theme.u,
+        borderWidth: overlay ? 0 : 1,
+        borderColor: theme.colors['line-strong'],
+        backgroundColor: overlay ? glass : 'transparent',
       }}
     >
-      <Text variant="caption" size={10} weight={600} color="text">
+      <Text
+        size={11}
+        mono
+        weight={600}
+        color={overlay ? 'text' : 'text-2'}
+        style={{ textTransform: 'uppercase', letterSpacing: 0.44 * theme.u }}
+      >
         {children}
       </Text>
     </View>

@@ -20,4 +20,9 @@ describe('bundle check', () => {
     expect(offences('phone', 'twMerge(a,b)')).toEqual(['tailwind-merge'])
     expect(offences('phone', 'var a=1')).toEqual([])
   })
+
+  test('holds the TV’s bundle to the phone’s rule', () => {
+    expect(offences('tv', 'ReactDOMSharedInternals')).toEqual(['react-dom'])
+    expect(offences('tv', 'var a=1')).toEqual([])
+  })
 })

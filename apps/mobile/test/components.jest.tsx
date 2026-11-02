@@ -7,9 +7,14 @@ import {
   Chip,
   Disclosure,
   EmptyState,
+  FactsCard,
   Field,
   Input,
+  LetterIndex,
   MultiSelect,
+  NamedAction,
+  nearestLetter,
+  PersonTile,
   SearchField,
   SegmentedControl,
   Select,
@@ -282,5 +287,100 @@ describe('EmptyState', () => {
     expect(screen.getByText('Nothing downloaded')).toBeTruthy()
     expect(screen.getByText('Downloads come later.')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Go home' })).toBeTruthy()
+  })
+})
+
+describe('NamedAction', () => {
+  test('is named by its words, and a tap runs it', async () => {
+    const onPress = jest.fn()
+    await themed(<NamedAction icon="replay" label="From the start" onPress={onPress} />)
+    await fireEvent.press(screen.getByRole('button', { name: 'From the start' }))
+    expect(onPress).toHaveBeenCalledTimes(1)
+  })
+
+  test('with `pressed` it is a toggle that says whether it is on', async () => {
+    await themed(<NamedAction icon="check" label="Watched" pressed onPress={() => {}} />)
+    // the library's checked query takes only checkbox, radio and switch roles, so the state is read
+    expect(screen.getByRole('togglebutton', { name: 'Watched' }).props.accessibilityState).toEqual({
+      checked: true,
+    })
+  })
+})
+
+describe('PersonTile', () => {
+  test('is a link named by the person, with their role under it', async () => {
+    const onPress = jest.fn()
+    await themed(
+      // biome-ignore lint/a11y/useValidAriaRole: `role` is the person's role in the film
+      <PersonTile
+        name="Ada Byron"
+        role="Director"
+        photo={undefined}
+        width={90}
+        onPress={onPress}
+      />,
+    )
+    expect(screen.getByText('Director')).toBeTruthy()
+    await fireEvent.press(screen.getByRole('link', { name: /Ada Byron/ }))
+    expect(onPress).toHaveBeenCalledTimes(1)
+  })
+})
+
+describe('FactsCard', () => {
+  test('shows its title and each fact beside its label', async () => {
+    await themed(
+      <FactsCard
+        title="Information"
+        facts={[
+          ['Runtime', '1h 52m'],
+          ['Studio', 'Blender'],
+        ]}
+      />,
+    )
+    expect(screen.getByText('Information')).toBeTruthy()
+    expect(screen.getByText('Runtime')).toBeTruthy()
+    expect(screen.getByText('Blender')).toBeTruthy()
+  })
+})
+
+describe('LetterIndex', () => {
+  test('a dimmed letter lands on the nearest one that has titles', () => {
+    const present = new Set(['B', 'M'])
+    expect(nearestLetter(['A', 'B', 'C', 'M', 'Z'], 'C', present)).toBe('M')
+    expect(nearestLetter(['A', 'B', 'C', 'M', 'Z'], 'Z', present)).toBe('M')
+    expect(nearestLetter(['A', 'B', 'C', 'M', 'Z'], 'A', present)).toBe('B')
+    expect(nearestLetter(['A', 'B'], 'A', new Set())).toBeNull()
+  })
+
+  test('VoiceOver adjusts it a letter at a time, among those with titles', async () => {
+    const onLetter = jest.fn()
+    await themed(
+      <LetterIndex
+        letters={['A', 'B', 'C', 'D']}
+        present={new Set(['A', 'C', 'D'])}
+        label="Jump to a letter"
+        onLetter={onLetter}
+      />,
+    )
+    const index = screen.getByRole('adjustable', { name: 'Jump to a letter' })
+    await fireEvent(index, 'accessibilityAction', { nativeEvent: { actionName: 'decrement' } })
+    expect(onLetter).toHaveBeenLastCalledWith('C')
+    await fireEvent(index, 'accessibilityAction', { nativeEvent: { actionName: 'increment' } })
+    expect(onLetter).toHaveBeenLastCalledWith('A')
+  })
+
+  test('a touch jumps to the letter under the finger', async () => {
+    const onLetter = jest.fn()
+    await themed(
+      <LetterIndex
+        letters={['A', 'B', 'C']}
+        present={new Set(['A', 'B', 'C'])}
+        label="Jump to a letter"
+        onLetter={onLetter}
+      />,
+    )
+    const index = screen.getByRole('adjustable', { name: 'Jump to a letter' })
+    await fireEvent(index, 'responderGrant', { nativeEvent: { locationY: 20 } })
+    expect(onLetter).toHaveBeenLastCalledWith('B')
   })
 })

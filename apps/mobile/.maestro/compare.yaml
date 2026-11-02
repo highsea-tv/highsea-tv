@@ -83,6 +83,12 @@ env:
 - tapOn:
     text: You
     index: 0
+- tapOn: Playback
+- waitForAnimationToEnd
+- takeScreenshot: you-playback
+- tapOn:
+    text: You
+    index: 0
 
 # a film's page and its player
 - tapOn: Search
@@ -93,12 +99,24 @@ env:
 - tapOn:
     text: Sintel, .*
     retryTapIfNoChange: false
+# Theo is part way into Sintel (the compare's seed), so the page offers Resume
 - extendedWaitUntil:
-    visible: Play
+    visible: Resume.*
     timeout: 20000
 - waitForAnimationToEnd
 - takeScreenshot: movie
-- tapOn: Play
+# down its page to the cast, and a person's page (Colin Levy: the replayed TMDB has his), then back up to Resume
+- scrollUntilVisible:
+    element: Colin Levy.*
+    direction: DOWN
+- tapOn: Colin Levy.*
+- waitForAnimationToEnd
+- takeScreenshot: person
+- tapOn: Back
+- scrollUntilVisible:
+    element: Resume.*
+    direction: UP
+- tapOn: Resume.*
 - extendedWaitUntil:
     visible: Pause
     timeout: 60000

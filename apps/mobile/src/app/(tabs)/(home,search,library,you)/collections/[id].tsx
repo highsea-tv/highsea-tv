@@ -2,16 +2,17 @@
 // A collection on the phone (client-search.md#collections), from the prototype's
 // mobile/collection.tsx: the backdrop with Back over it, the name, how many are here and their
 // years, the overview, then its titles three a row, oldest first. A smart one says so and gives
-// its rules in words.
+// its rules in words. Its posters are the film's card everywhere: title and year, no progress.
 import { useCollection } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
-import { Button, EmptyState, Poster, Text, useTheme } from '@highsea-tv/ui'
+import { Button, EmptyState, Text, useTheme } from '@highsea-tv/ui'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
 import { ActivityIndicator, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { FilmPoster } from '../../../../cards.tsx'
 import { Center, Grid, GUTTER, TAB_BAR } from '../../../../kit.tsx'
 import { library as messages } from '../../../../messages.ts'
 
@@ -108,23 +109,7 @@ export default function Collection() {
           <Grid
             items={items}
             keyOf={(m) => String(m.id)}
-            render={(m, width) => (
-              <Poster
-                title={m.title}
-                src={media(m.art.poster)}
-                width={width}
-                onPress={() => router.push(`/movies/${m.id}`)}
-                progress={m.progress !== null ? m.progress * 100 : undefined}
-                showTitle
-                caption={
-                  m.progress !== null
-                    ? (f.left(m) ?? undefined)
-                    : m.year
-                      ? String(m.year)
-                      : undefined
-                }
-              />
-            )}
+            render={(m, width) => <FilmPoster item={m} width={width} />}
           />
         </View>
       </ScrollView>

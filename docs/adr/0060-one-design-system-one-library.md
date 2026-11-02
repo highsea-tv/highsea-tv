@@ -41,3 +41,15 @@ The owner's goal is one design system that works with theming, and one shared co
 ## 2026-11-02: the TV's own parts, and Chip's end icon (apps-catch-up.md › part B)
 
 The TV's page parts (the head, the page that scrolls by focus, the rows, a title's page and the side dialog; [ADR 0059's 2026-11-02 section](0059-native-apps.md)) are in the library as the React Native renderer's `tv` subpath, listed in `parity.ts` as native-only with their reasons. They draw their controls with the library's `Button` and `Chip`, at the TV rule's sizes, so the control spec still holds on the TV. `Chip` gains `iconEnd` on both renderers, for a choice that opens a menu (the TV library's Genre). It's drawn after the label, at the chip's icon size.
+
+## 2026-11-02: the phone's page parts (apps-catch-up.md › part C)
+
+The phone's page parts join the React Native renderer as the TV's did: `NamedAction` (a round icon named under it, a toggle with `pressed`), `PersonTile` (a round portrait, the name and the role), `FactsCard` (a title's facts under a heading) and `LetterIndex` (the A–Z index down a list sorted by name, as iOS's section index, VoiceOver reading it as an adjustable control). They take data and callbacks only, so any touch app (CarPlay's and the Watch's included, when they come) can use them. They are native-only in `parity.ts`, with their reasons: the web draws these pages with its own layouts. `Poster` gains `longPressLabel`, `longPressMs` and `progressBelow`, for Continue watching's menu and its bar under the art. `scripts/bundles.ts` checks the TV's bundle as it does the phone's.
+
+At part C's review the owner found the phone still drawn as an iOS grouped list where the prototype draws the web's controls, so the native renderer caught up with the web's in these, each by the same name and props:
+
+- **`Switch` is drawn, not iOS's UISwitch:** the web's round 40 × 24 track in `control-edge`, `accent-fill` when on, with an 18 thumb 3 in, before its words, as the prototype's `Field inline` puts it. The TV draws the same at its rule's size. `SwitchRow` stays as its old name.
+- **`SortableList`, `Lockup` and `Rating` join `BOTH`** in `parity.ts`. The native `SortableList` is built on React Native's own PanResponder and Animated (no gesture library, so the TV's bundle can carry it), with a drag handle that VoiceOver moves by Move up and Move down. `Lockup` is the mark and wordmark, as on the web. `Rating` draws five stars, cut to the value.
+- **`QualityTag`** is the web's pill (mono, uppercase, a `line-strong` edge, or glass over art); `Mark` takes `paint: 'mono'` for a nearby server, as the web's does; `Icon` takes `filled`.
+
+Settings' rows and Choose a server are drawn as the prototype draws them, as separate cards on `s1` with their controls first, inside the kit's `Flow` card for C1's steps.

@@ -4,15 +4,26 @@
 // installed fresh on the booted simulator, and Maestro's apps/mobile/.maestro/compare.yaml signing
 // Theo in and taking a screenshot of each main screen. The prototype's same screens come from
 // Playwright at the simulator's size in points and scale, so the pairs line up. The prototype's
-// films are its mock's and the app's are the seed's, so a pair is compared for layout, not data.
-// Writes the pairs, index.html and checklist.md to a folder outside the repository.
+// films are its mock's and the app's are the seed's, so a pair is compared for layout, not data;
+// the seed has the shelves' films, a featured hero and Theo's Continue watching, so Home's rows
+// are all there to compare.
+// Writes the pairs, index.html and checklist.md to a folder outside the repository; index.html
+// carries its images inline, so it opens anywhere on its own (a viewer showing only that file).
 //
 // `bun scripts/sweeps/phone-compare.ts [folder] [path/to/highsea.app]`, with a simulator booted,
 // Maestro on the PATH and the app built as phone.ts's header says. The prototypes come from
 // `bun run prototypes`, started here if nothing answers on :4500. PHONE_PORT moves the server
 // (3170 by default, so phone.ts can run beside it); PHONE_SIMULATOR picks the simulator by UDID.
 import { type ChildProcess, execFileSync, spawn } from 'node:child_process'
-import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import {
+  copyFileSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  writeFileSync,
+} from 'node:fs'
 import { tmpdir } from 'node:os'
 import { basename, join } from 'node:path'
 import { acknowledge, BASE, launch, ROOT, screenUrl, settle, settleAnimations } from './lib.ts'
@@ -52,6 +63,7 @@ const PAIRS: Pair[] = [
     prototype: '/mobile/library/collections',
   },
   { name: 'movie', screen: 'C4 A movie', prototype: '/mobile/movies/4' },
+  { name: 'person', screen: 'A person', prototype: '/mobile/people/colin-levy' },
   {
     name: 'player',
     screen: 'C5 The player',
@@ -63,6 +75,7 @@ const PAIRS: Pair[] = [
   { name: 'you-appearance', screen: 'C8 Theme', prototype: '/mobile/you/appearance' },
   { name: 'you-home', screen: 'C8 Home screen', prototype: '/mobile/you/home' },
   { name: 'you-servers', screen: 'C8 Servers', prototype: '/mobile/you/servers' },
+  { name: 'you-playback', screen: 'C8 Playback', prototype: '/mobile/you/playback' },
 ]
 
 const udid = process.env.PHONE_SIMULATOR ?? booted()
@@ -103,7 +116,8 @@ try {
 execFileSync('bun', ['run', 'build'], { cwd: join(ROOT, 'apps/server'), stdio: 'inherit' })
 const server = await boot(PORT, { production: true })
 try {
-  await seed(server, OWNER, 'Phone compare script')
+  const { token } = await seed(server, OWNER, 'Phone compare script', { shelves: true })
+  await homeAsPrototyped(server, token)
   // each run's shots only: Maestro adds a folder per run, and an older one would win the copy
   rmSync(join(out, 'maestro'), { recursive: true, force: true })
   execFileSync('xcrun', ['simctl', 'uninstall', udid, 'tv.highsea.mobile'])
@@ -191,7 +205,12 @@ ${r.note ? `<p>${html(r.note)}</p>` : ''}
 )
 
 function fig(label: string, file: string | null, where: string) {
-  return `<figure><figcaption>${label} · ${html(where)}</figcaption>${file ? `<img src="${file}" loading="lazy" alt="${label}">` : '<div class="none">Nothing to show</div>'}</figure>`
+  return `<figure><figcaption>${label} · ${html(where)}</figcaption>${file ? `<img src="${inline(file)}" alt="${label}">` : '<div class="none">Nothing to show</div>'}</figure>`
+}
+
+/** A shot as a data URL, so the sheet needs nothing beside it. */
+function inline(file: string) {
+  return `data:image/png;base64,${readFileSync(join(out, file)).toString('base64')}`
 }
 
 const missing = rows.filter((r) => !r.phone || (r.prototype && !r.proto))
@@ -199,6 +218,52 @@ console.log(`${rows.length} pairs in ${out} (index.html, checklist.md)`)
 for (const r of missing) console.log(`not captured: ${r.n} ${r.screen}`)
 for (const p of problems) console.error(`✗ ${p}`)
 if (problems.length) process.exit(1)
+
+/**
+ * What the prototype's Home has that the seed doesn't: a featured hero (the first `hero` section
+ * leads Home, ADR 0048), and films Theo has started, about 40% in, so Continue watching shows.
+ */
+async function homeAsPrototyped(server: Awaited<ReturnType<typeof boot>>, owner: string) {
+  await server.api(
+    'POST',
+    '/curation/sections',
+    {
+      audience: { kind: 'everyone' },
+      schedule: { start: new Date().toISOString(), end: null },
+      title: 'Featured',
+      tagline: null,
+      layout: 'hero',
+      source: { kind: 'manual', itemIds: [45745, 10378, 253777, 669] },
+      overrides: [],
+    },
+    owner,
+  )
+  const { token } = await server.api<{ token: string }>('POST', '/auth/sign-in', {
+    ...THEO,
+    device: { name: 'Phone compare script', client: 'ios', appVersion: '0.0.0' },
+  })
+  for (const id of [45745, 653, 669]) {
+    const movie = await server.api<{ item: { runtimeMinutes: number | null } }>(
+      'GET',
+      `/items/movie/${id}`,
+      undefined,
+      token,
+    )
+    const session = await server.api<{ id: string }>(
+      'POST',
+      `/items/movie/${id}/play`,
+      { profile: 'ios' },
+      token,
+    )
+    await server.api(
+      'POST',
+      `/playback/sessions/${session.id}/progress`,
+      { position: Math.round((movie.item.runtimeMinutes ?? 10) * 60 * 0.4), paused: true },
+      token,
+    )
+    await server.api('DELETE', `/playback/sessions/${session.id}`, undefined, token)
+  }
+}
 
 /** The booted simulator's UDID: exactly one should be booted. */
 function booted(): string {

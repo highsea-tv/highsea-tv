@@ -1,14 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The highsea mark (docs/brand/logo.md), drawn live from @highsea-tv/brand's geometry so it takes
-// the theme's accent, and the avatar: the person's initial on accent-soft.
+// the theme's accent; the lockup, the mark beside `highsea tv` in live text as the web's
+// (web/components/brand.tsx); and the avatar: the person's initial on accent-soft.
 import { MARK_GRID, MARK_SMALL_BELOW, markGeometry } from '@highsea-tv/brand'
 import { useId } from 'react'
 import { View } from 'react-native'
 import Svg, { Circle, Defs, LinearGradient, Mask, Path, Rect, Stop } from 'react-native-svg'
 import { Text } from './text.tsx'
-import { useTheme } from './theme.tsx'
+import { tokens, useTheme } from './theme.tsx'
 
-export function Mark({ size = 24, label }: { size?: number; label?: string }) {
+export function Mark({
+  size = 24,
+  label,
+  paint = 'brand',
+}: {
+  size?: number
+  label?: string
+  /** `brand`: the accent gradient. `mono`: the text colour, as the web's currentColor. */
+  paint?: 'brand' | 'mono'
+}) {
   const theme = useTheme()
   const id = useId().replace(/[^a-zA-Z0-9-]/g, '')
   const g = markGeometry
@@ -45,10 +55,36 @@ export function Mark({ size = 24, label }: { size?: number; label?: string }) {
         cx={g.disc.cx}
         cy={g.disc.cy}
         r={g.disc.r}
-        fill={`url(#${id}g)`}
+        fill={paint === 'mono' ? theme.colors.text : `url(#${id}g)`}
         mask={`url(#${id}m)`}
       />
     </Svg>
+  )
+}
+
+/**
+ * The lockup from live text, as the web's: the mark in a 1.15em box, 0.42em before `highsea tv`,
+ * the name semibold with the wordmark's tracking and ` tv` medium in text-3.
+ */
+export function Lockup({ size = 17 }: { size?: number }) {
+  const theme = useTheme()
+  const px = size * theme.u
+  const tracking = tokens.tracking.wordmark * px
+  return (
+    <View
+      accessible
+      accessibilityRole="image"
+      accessibilityLabel="highsea tv"
+      style={{ flexDirection: 'row', alignItems: 'center', gap: px * 0.42 }}
+    >
+      <Mark size={Math.round(size * 1.15)} />
+      <Text size={size} weight={600} style={{ letterSpacing: tracking, lineHeight: px * 1.15 }}>
+        highsea
+        <Text size={size} weight={500} color="text-3" style={{ letterSpacing: tracking }}>
+          {' tv'}
+        </Text>
+      </Text>
+    </View>
   )
 }
 

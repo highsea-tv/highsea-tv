@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The pieces every phone screen shares (mobile.md#layout): the screen itself, scrolling under a
 // strip of the page's colour behind the status bar, with 16pt gutters; a large title; where Back
-// goes (the button itself is the library's ghost Button); an alert; a section's mono label; and a
-// list row as the prototype's are drawn (a mark or icon, two lines, a chevron).
-import { Icon, type IconName, Press, Text, tokens, useTheme } from '@highsea-tv/ui'
+// goes (the button itself is the library's ghost Button); C1's frame (the Lockup over a card); an
+// alert; a section's mono label; and a list row as the prototype's are drawn (a mark or icon, two
+// lines, a chevron).
+import { Button, Icon, type IconName, Lockup, Press, Text, tokens, useTheme } from '@highsea-tv/ui'
 import { router } from 'expo-router'
-import type { ReactNode } from 'react'
+import type { ComponentRef, ReactNode, Ref } from 'react'
 import {
   ActivityIndicator,
   RefreshControl,
@@ -21,30 +22,36 @@ export const GUTTER = tokens.mobile.gutter
 
 /**
  * A screen that scrolls; `tabs` leaves room for the tab bar, and `footer` stays at the bottom,
- * above the home indicator, while the rest scrolls.
+ * above the home indicator, while the rest scrolls. `aside` stays put over the right edge while
+ * the page scrolls under it (Library's A–Z index).
  */
 export function Screen({
   children,
   footer,
+  aside,
   tabs,
   gap = 16,
   refreshing,
   onRefresh,
   padded = true,
+  scrollRef,
 }: {
   children: ReactNode
   footer?: ReactNode
+  aside?: ReactNode
   tabs?: boolean
   gap?: number
   refreshing?: boolean
   onRefresh?: () => void
   /** Gutters on the content; off for screens whose rows scroll edge to edge. */
   padded?: boolean
+  scrollRef?: Ref<ComponentRef<typeof ScrollView>>
 }) {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const scroller = (
     <ScrollView
+      ref={scrollRef}
       style={{ flex: 1, backgroundColor: theme.colors.bg }}
       contentContainerStyle={{
         paddingTop: insets.top + 4,
@@ -85,11 +92,26 @@ export function Screen({
       }}
     />
   )
+  const side = aside ? (
+    <View
+      pointerEvents="box-none"
+      style={{
+        position: 'absolute',
+        top: insets.top,
+        bottom: (tabs ? TAB_BAR : 0) + insets.bottom,
+        right: 0,
+        justifyContent: 'center',
+      }}
+    >
+      {aside}
+    </View>
+  ) : null
   if (!footer)
     return (
       <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
         {scroller}
         {bar}
+        {side}
       </View>
     )
   return (
@@ -126,6 +148,66 @@ export function Title({ children }: { children: string }) {
     <Text variant="largeTitle" accessibilityRole="header" size={28}>
       {children}
     </Text>
+  )
+}
+
+/**
+ * C1's frame, as the prototype's connect-flow.tsx draws it: the Lockup centred over a card (s1,
+ * `line`, radius-lg, shadow-2, 12 across and 20 down) with the step's title in `title` (20pt
+ * semibold) and, past the first step, Back as an arrow beside it. `flush` leaves the content's
+ * sides to it, for rows that carry their own 12pt inset (Choose a server's lists).
+ */
+export function Flow({
+  title,
+  back,
+  footer,
+  flush,
+  children,
+}: {
+  title: string
+  back?: { label: string; run: () => void }
+  footer?: ReactNode
+  flush?: boolean
+  children: ReactNode
+}) {
+  const theme = useTheme()
+  return (
+    <Screen gap={24} footer={footer}>
+      <View style={{ alignItems: 'center', paddingTop: 16 }}>
+        <Lockup size={20} />
+      </View>
+      <View
+        style={{
+          gap: 20,
+          paddingHorizontal: 12,
+          paddingVertical: 20,
+          borderRadius: tokens.radius.lg,
+          borderWidth: 1,
+          borderColor: theme.colors.line,
+          backgroundColor: theme.colors.s1,
+          boxShadow: tokens.elevation[2].boxShadow,
+        }}
+      >
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 12 }}>
+          {back ? (
+            <View style={{ marginStart: -8 }}>
+              <Button
+                variant="ghost"
+                size="sm"
+                iconOnly
+                icon="arrow-left"
+                accessibilityLabel={back.label}
+                onPress={back.run}
+              />
+            </View>
+          ) : null}
+          <Text variant="title" weight={600} accessibilityRole="header" style={{ flex: 1 }}>
+            {title}
+          </Text>
+        </View>
+        <View style={{ gap: 16, paddingHorizontal: flush ? 0 : 12 }}>{children}</View>
+      </View>
+    </Screen>
   )
 }
 
@@ -182,6 +264,7 @@ export function Row({
   trailing,
   danger,
   disabled,
+  mono,
   style,
 }: {
   lead?: ReactNode
@@ -197,6 +280,8 @@ export function Row({
   trailing?: ReactNode
   danger?: boolean
   disabled?: boolean
+  /** The detail in mono, for an address. */
+  mono?: boolean
   style?: StyleProp<ViewStyle>
 }) {
   const theme = useTheme()
@@ -234,7 +319,7 @@ export function Row({
           {title}
         </Text>
         {detail ? (
-          <Text variant="callout" size={13} color="text-3" numberOfLines={2}>
+          <Text variant="callout" size={13} color="text-3" mono={mono} numberOfLines={2}>
             {detail}
           </Text>
         ) : null}
@@ -294,18 +379,25 @@ export function Center({ children }: { children?: ReactNode }) {
   )
 }
 
-/** Three a row on the gutter, 8pt apart (mobile.md › Layout). */
+/**
+ * Three a row on the gutter, 8pt apart (mobile.md › Layout). `inset` keeps the right edge clear
+ * (for the A–Z index), and `onCell` says where each cell's top sits in the grid.
+ */
 export function Grid<T>({
   items,
   keyOf,
   render,
+  inset = 0,
+  onCell,
 }: {
   items: readonly T[]
   keyOf: (item: T) => string
   render: (item: T, width: number) => ReactNode
+  inset?: number
+  onCell?: (item: T, y: number) => void
 }) {
   const { width } = useWindowDimensions()
-  const cell = Math.floor((width - GUTTER * 2 - tokens.mobile.posterGap * 2) / 3)
+  const cell = Math.floor((width - GUTTER * 2 - inset - tokens.mobile.posterGap * 2) / 3)
   return (
     <View
       style={{
@@ -316,7 +408,11 @@ export function Grid<T>({
       }}
     >
       {items.map((item) => (
-        <View key={keyOf(item)} style={{ width: cell }}>
+        <View
+          key={keyOf(item)}
+          onLayout={onCell ? (e) => onCell(item, e.nativeEvent.layout.y) : undefined}
+          style={{ width: cell }}
+        >
           {render(item, cell)}
         </View>
       ))}

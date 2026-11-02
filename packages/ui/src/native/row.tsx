@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A row (mobile.md › Layout): its title, then items scrolling edge to edge with the first one on
-// the 16pt gutter, 8pt apart; posters about 30% of the screen's width, so three show and a peek.
+// the 16pt gutter, 8pt apart; posters about 30% of the row's width, so three show and a peek.
 import type { ReactNode } from 'react'
 import { FlatList, useWindowDimensions, View } from 'react-native'
 import { Text } from './text.tsx'
@@ -8,9 +8,12 @@ import { tokens } from './theme.tsx'
 
 const { gutter, posterGap } = tokens.mobile
 
-/** The width of one poster in a row on this screen. */
+/**
+ * The width of one poster in a row on this screen: a share of the row inside its gutters, as the
+ * prototype's `w-[30%]` is of its padded list.
+ */
 export function usePosterWidth(share = 0.3) {
-  return Math.round(useWindowDimensions().width * share)
+  return Math.round((useWindowDimensions().width - gutter * 2) * share)
 }
 
 export function Row<T>({

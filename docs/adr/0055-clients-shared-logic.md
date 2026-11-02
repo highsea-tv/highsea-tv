@@ -62,3 +62,7 @@ The TV's person page and Alerts added two rules every app needs, both with tests
 
 - `library`: `filmographyOf`, a person's films grouped by department. What they're known for comes first, then TMDB's order, then any other department. Each group is newest first, with a role list joined in words, and only what's in the library. `LONG_BIO` is the length at which a biography gets More and Less. `departmentTitle` takes any department TMDB names.
 - `format`: `inlineParts`, an announcement's text split into plain, bold and link runs, so each app can draw them with its own text. A TV can't follow a link, so it shows the link's words. The phone's own parser moves to it in part C.
+
+## 2026-11-02: the phone on the shared rules (apps-catch-up.md › part C)
+
+Part C added no rules; the phone took up the ones parts A and B made. Its announcements are drawn from `inlineParts`, its player leaves with `leavePlayer` and `titlePage` and offers Next up through `filmUpNext` and `countsDown` (three of More like this when nothing comes next by itself, and a countdown only with Autoplay on), and its Settings take their sections from `settingsSections` and Playback from `usePlaybackPrefs`, as the TV's do.

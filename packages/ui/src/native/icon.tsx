@@ -12,9 +12,11 @@ export type IconProps = {
   color?: ColorRole
   /** Names the icon for VoiceOver. Without it the icon is hidden from it. */
   label?: string
+  /** Solid in its colour with no stroke, as the web's `fill="currentColor" strokeWidth={0}`. */
+  filled?: boolean
 }
 
-export function Icon({ name, size, color = 'text', label }: IconProps) {
+export function Icon({ name, size, color = 'text', label, filled }: IconProps) {
   const theme = useTheme()
   const Glyph = icons[name]
   const tv = theme.platform === 'tv'
@@ -23,7 +25,8 @@ export function Icon({ name, size, color = 'text', label }: IconProps) {
     <Glyph
       size={px}
       color={theme.colors[color]}
-      strokeWidth={tv ? tokens.icon.strokeTv : tokens.icon.stroke}
+      fill={filled ? theme.colors[color] : 'none'}
+      strokeWidth={filled ? 0 : tv ? tokens.icon.strokeTv : tokens.icon.stroke}
       accessible={!!label}
       accessibilityLabel={label}
       accessibilityElementsHidden={!label}

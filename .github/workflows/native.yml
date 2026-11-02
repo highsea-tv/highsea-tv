@@ -91,6 +91,9 @@ jobs:
       - name: Types
         working-directory: apps/tv
         run: bun run typecheck
+      # the TV's bundle draws with ui's native renderer only (ADR 0060)
+      - name: The bundle carries no web renderer
+        run: bun scripts/bundles.ts tv
       - name: The tvOS project
         working-directory: apps/tv
         env:

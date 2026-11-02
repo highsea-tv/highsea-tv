@@ -241,19 +241,18 @@ export function AnnouncementCard() {
       onDismiss={() => void a.dismiss(card.id)}
       action={card.cta ? <Cta cta={card.cta} /> : undefined}
     >
-      <Text variant="callout" color="text-2">
-        <Inline text={card.body} />
-      </Text>
+      <Inline text={card.body} />
     </Banner>
   )
 }
 
-/** An announcement that must be acknowledged: it stays until Got it. */
+/** An announcement that must be acknowledged: it stays until Got it, and waits while the server can't be reached. */
 export function AnnouncementDialog() {
   const t = useT(messages)
   const a = useAnnouncements('ios')
   const media = useMedia()
-  const m = a.modal
+  const { offline } = useReachableState()
+  const m = offline ? null : a.modal
   return (
     <Dialog
       open={!!m}

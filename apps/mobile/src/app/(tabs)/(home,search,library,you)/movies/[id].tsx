@@ -1,57 +1,50 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// C4 Item detail on the phone (client-detail.md#mobile), from the prototype's mobile/detail.tsx:
-// the backdrop with Back over it; the title, Play or Resume across the width, Play from the start,
-// More (Mark as watched); then Watch with, the synopsis, the cast and More like this. Picks are
-// remembered per title, across devices. Choices open iOS's action sheet
-// (https://reactnative.dev/docs/actionsheetios). Downloading waits for 4.6, so there's no
-// Download button yet.
+// C4 Item detail on the phone (client-detail.md#mobile), from the prototype's mobile/detail.tsx,
+// laid out as the TV's: the film's art across the top with Back over it, the title low on it, a
+// meta line, Play or Resume across the width with the progress bar above it, three lines of
+// synopsis, the leading cast and the director, the picks it plays with, and a row of named round
+// actions: From the start, Audio and subtitles (Watch with, in a sheet) and Watched. Then More like
+// this as stills, the collection it's in, Cast and crew (each opening the person's page), and
+// About, Information, and Languages and quality as cards. Picks are remembered per title, across
+// devices; their choices open iOS's action sheet. Download waits for 4.6 and trailers for the
+// server to fetch files the phone's player can play (the owner's answers at part B's review).
 import type { ClientDetail } from '@highsea-tv/api-contract'
-import { useItem, useMarkWatched, usePicks } from '@highsea-tv/client/data'
-import { useT } from '@highsea-tv/i18n/react'
+import { useCollections, useItem, useMarkWatched, usePicks } from '@highsea-tv/client/data'
+import { createLibraryText, peopleOf } from '@highsea-tv/client/library'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
 import {
-  Badge,
   Button,
   EmptyState,
+  FactsCard,
   Icon,
-  Poster,
+  NamedAction,
+  PersonTile,
   Press,
+  ProgressBar,
+  QualityTag,
+  Rating,
   Row,
+  Sheet,
   successHaptic,
   Text,
+  tokens,
   usePosterWidth,
   useTheme,
 } from '@highsea-tv/ui'
 import { Image } from 'expo-image'
 import { router, useLocalSearchParams } from 'expo-router'
-import { ActionSheetIOS, ActivityIndicator, Alert, ScrollView, View } from 'react-native'
+import { type ReactNode, useMemo, useState } from 'react'
+import { ActivityIndicator, Alert, ScrollView, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { FilmRow } from '../../../../cards.tsx'
+import { choose } from '../../../../choose.ts'
+import { CollectionTile } from '../../../../collection-art.tsx'
 import { Center, Group, GUTTER, TAB_BAR } from '../../../../kit.tsx'
 import { detail as messages } from '../../../../messages.ts'
-import { PosterRow } from '../../(home)/index.tsx'
 
 const OFF = 'off'
-
-/** An action sheet of choices; resolves with the chosen value, or nothing on Cancel. */
-export function choose(
-  title: string,
-  options: { value: string; label: string }[],
-  cancel: string,
-  chosen?: string,
-): Promise<string | undefined> {
-  return new Promise((resolve) =>
-    ActionSheetIOS.showActionSheetWithOptions(
-      {
-        title,
-        options: [...options.map((o) => (o.value === chosen ? `${o.label} ✓` : o.label)), cancel],
-        cancelButtonIndex: options.length,
-        userInterfaceStyle: 'dark',
-      },
-      (i) => resolve(options[i]?.value),
-    ),
-  )
-}
 
 function Pick({ label, value, onPress }: { label: string; value: string; onPress?: () => void }) {
   return (
@@ -79,26 +72,25 @@ function Pick({ label, value, onPress }: { label: string; value: string; onPress
   )
 }
 
-function WatchWith({ detail }: { detail: ClientDetail }) {
-  const t = useT(messages)
-  const { picks, save } = usePicks(detail.item.id)
+/** What a title plays with: its version, sound and subtitles, each from the person's picks. */
+function useWatchWith(d: ClientDetail) {
+  const { picks, save } = usePicks(d.item.id)
   const p = picks.data
-  const playable = detail.versions.filter((v) => v.playable)
+  const playable = d.versions.filter((v) => v.playable)
   const version = playable.find((v) => v.id === p?.versionId) ?? playable[0]
-  if (!version)
-    return (
-      <Text variant="callout" color="text-3">
-        {t('notPlayable')}
-      </Text>
-    )
-  const run = (patch: Parameters<typeof save.run>[0]) =>
-    save
-      .run(patch)
-      .then(() => picks.refresh())
-      .catch((e: Error) => Alert.alert(t('saveFailed', { message: e.message })))
   const audio =
-    version.audio.find((a) => a.id === p?.audioId) ?? version.audio.find((a) => a.default)
-  const subtitle = version.subtitles.find((s) => s.id === p?.subtitleId)
+    version?.audio.find((a) => a.id === p?.audioId) ?? version?.audio.find((a) => a.default)
+  const subtitle = version?.subtitles.find((s) => s.id === p?.subtitleId)
+  const run = (patch: Parameters<typeof save.run>[0]) => save.run(patch).then(() => picks.refresh())
+  return { playable, version, audio, subtitle, run }
+}
+
+function WatchWith({ w }: { w: ReturnType<typeof useWatchWith> }) {
+  const t = useT(messages)
+  const { playable, version, audio, subtitle } = w
+  if (!version) return null
+  const run = (patch: Parameters<typeof w.run>[0]) =>
+    w.run(patch).catch((e: Error) => Alert.alert(t('saveFailed', { message: e.message })))
   return (
     <Group>
       <Pick
@@ -161,12 +153,8 @@ export default function Detail() {
   const t = useT(messages)
   const theme = useTheme()
   const insets = useSafeAreaInsets()
-  const f = useFormat()
-  const media = useMedia()
   const id = Number(useLocalSearchParams<{ id: string }>().id)
   const detail = useItem(id)
-  const mark = useMarkWatched(id)
-  const castWidth = usePosterWidth(0.26)
 
   // Back over the backdrop, in the overlay look (controls.md › Looks)
   const back = (
@@ -202,25 +190,40 @@ export default function Detail() {
         </EmptyState>
       </Center>
     )
+  // another film's page is a new page: its sheet starts closed
+  return <Item key={id} d={detail.data} refresh={detail.refresh} back={back} />
+}
 
-  const d = detail.data
+function Item({ d, refresh, back }: { d: ClientDetail; refresh: () => void; back: ReactNode }) {
+  const t = useT(messages)
+  const locale = useLocale()
+  const facts = useMemo(() => createLibraryText(locale), [locale])
+  const theme = useTheme()
+  const insets = useSafeAreaInsets()
+  const f = useFormat()
+  const media = useMedia()
   const m = d.item
+  const mark = useMarkWatched(m.id)
+  const w = useWatchWith(d)
+  const [tracks, setTracks] = useState(false)
+  const personWidth = usePosterWidth(0.24)
+  const collectionWidth = usePosterWidth(0.3)
+  // the film's collection, with its art when Library › Collections lists it
+  const collections = useCollections('ios')
   const resuming = m.progress !== null
-  const more = async () => {
-    const v = await choose(
-      m.title,
-      [{ value: 'mark', label: m.watched ? t('markUnwatched') : t('markWatched') }],
-      t('cancel'),
-    )
-    if (v !== 'mark') return
+  const people = peopleOf(d)
+  const collection = d.collection
+    ? (collections.data?.find((c) => String(c.id) === String(d.collection?.id)) ?? null)
+    : null
+
+  const toggleWatched = () =>
     mark.run(!m.watched).then(
       () => {
         successHaptic()
-        detail.refresh()
+        refresh()
       },
       (e: Error) => Alert.alert(t('markFailed', { message: e.message })),
     )
-  }
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
@@ -237,85 +240,213 @@ export default function Detail() {
             style={{
               position: 'absolute',
               inset: 0,
-              backgroundImage: `linear-gradient(0deg, ${theme.colors.bg}, transparent 60%)`,
+              backgroundImage: `linear-gradient(0deg, ${theme.colors.bg} 2%, transparent 55%)`,
             }}
           />
         </View>
-        <View style={{ marginTop: -48, paddingHorizontal: GUTTER, gap: 12 }}>
+        <View style={{ marginTop: -64, paddingHorizontal: GUTTER, gap: 12 }}>
+          {/* the title, where the prototype has its logo: no server has logos yet */}
           <Text variant="largeTitle" size={28} accessibilityRole="header">
             {m.title}
           </Text>
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-            <Text variant="callout" color="text-2">
-              {f.meta(m)}
-            </Text>
-            {m.watched && <Badge tone="success">{t('watched')}</Badge>}
-          </View>
-          {m.playable ? (
-            <>
-              <Button
-                variant="primary"
-                icon="play"
-                block
-                onPress={() => router.push(`/play/${m.id}`)}
-              >
-                {resuming ? `${t('resume')} · ${f.left(m) ?? ''}` : t('play')}
-              </Button>
-              {resuming && (
-                <Button icon="replay" block onPress={() => router.push(`/play/${m.id}?start=1`)}>
-                  {t('fromStart')}
-                </Button>
-              )}
-            </>
+          <Meta d={d} />
+          {resuming ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+              <View style={{ flex: 1 }}>
+                <ProgressBar value={(m.progress ?? 0) * 100} label={t('watched')} />
+              </View>
+              <Text variant="caption" size={13} color="text-2">
+                {f.left(m) ?? ''}
+              </Text>
+            </View>
+          ) : null}
+          {w.version ? (
+            <Button
+              variant="primary"
+              icon="play"
+              block
+              onPress={() => router.push(`/play/${m.id}`)}
+            >
+              {resuming ? t('resume') : t('play')}
+            </Button>
           ) : (
             <Text variant="callout" color="text-3">
               {t('notPlayable')}
             </Text>
           )}
-          <View style={{ flexDirection: 'row' }}>
-            <Button icon="more" accessibilityLabel={t('more')} onPress={() => void more()} />
-          </View>
           {m.synopsis ? (
-            <Text variant="body" size={15} color="text-2" style={{ lineHeight: 23 }}>
+            <Text variant="body" size={15} numberOfLines={3} style={{ lineHeight: 23 }}>
               {m.synopsis}
             </Text>
           ) : null}
-          {d.directors.length > 0 && (
-            <Text variant="caption" size={13} color="text-3">
-              {t('directedBy', { names: d.directors.map((x) => x.name).join(' · ') })}
+          {d.cast.length > 0 || d.directors.length > 0 ? (
+            <View style={{ gap: 2 }}>
+              {d.cast.length > 0 ? (
+                <Text variant="caption" size={13} color="text-2" numberOfLines={2}>
+                  <Text variant="caption" size={13} color="text-3">
+                    {t('starring')}
+                  </Text>
+                  {facts.names(d.cast.slice(0, 3))}
+                </Text>
+              ) : null}
+              {d.directors.length > 0 ? (
+                <Text variant="caption" size={13} color="text-2" numberOfLines={1}>
+                  <Text variant="caption" size={13} color="text-3">
+                    {t('directedBy')}
+                  </Text>
+                  {facts.names(d.directors)}
+                </Text>
+              ) : null}
+            </View>
+          ) : null}
+          {w.version ? (
+            <Text variant="caption" color="text-3">
+              {[
+                w.version.label,
+                w.audio?.label ?? t('defaultAudio'),
+                w.subtitle?.label ?? t('subtitlesOff'),
+              ].join(' · ')}
             </Text>
-          )}
-        </View>
-        {m.playable && (
-          <View style={{ paddingHorizontal: GUTTER, gap: 12 }}>
-            <Text variant="title" size={17} accessibilityRole="header">
-              {t('watchWith')}
-            </Text>
-            <WatchWith detail={d} />
-            <Text variant="caption" size={13} color="text-3">
-              {t('remembered')}
-            </Text>
+          ) : null}
+          <View style={{ flexDirection: 'row', justifyContent: 'space-around', paddingTop: 4 }}>
+            {w.version && resuming ? (
+              <NamedAction
+                icon="replay"
+                label={t('fromStart')}
+                onPress={() => router.push(`/play/${m.id}?start=1`)}
+              />
+            ) : null}
+            {w.version ? (
+              <NamedAction icon="subtitles" label={t('tracks')} onPress={() => setTracks(true)} />
+            ) : null}
+            <NamedAction
+              icon="check"
+              label={t('watched')}
+              pressed={m.watched}
+              onPress={() => void toggleWatched()}
+            />
           </View>
-        )}
-        {d.cast.length > 0 && (
+        </View>
+        {d.related.length > 0 && <FilmRow title={t('moreLike')} items={d.related} />}
+        {d.collection ? (
           <Row
-            title={t('cast')}
-            items={d.cast}
-            itemWidth={castWidth}
-            keyOf={(c) => `${c.personId}:${c.character}`}
+            title={t('collections')}
+            items={[d.collection]}
+            itemWidth={collectionWidth}
+            keyOf={(c) => String(c.id)}
+            render={(c) => {
+              const caption = collection ? f.caption(collection) : ''
+              return (
+                <View style={{ width: collectionWidth }}>
+                  <CollectionTile
+                    name={c.name}
+                    caption={caption}
+                    label={caption ? `${c.name}, ${caption}` : c.name}
+                    poster={collection?.art.poster ?? null}
+                    mosaic={collection?.smart?.mosaic}
+                    smart={null}
+                    onPress={() => router.push(`/collections/${c.id}`)}
+                  />
+                </View>
+              )
+            }}
+          />
+        ) : null}
+        {people.length > 0 && (
+          <Row
+            title={t('people')}
+            items={people}
+            itemWidth={personWidth}
+            keyOf={(c) => c.id}
             render={(c) => (
-              <Poster
-                title={c.name}
-                src={media(c.photo)}
-                width={castWidth}
-                showTitle
-                caption={c.character ?? undefined}
+              <PersonTile
+                name={c.name}
+                role={facts.role(c)}
+                photo={media(c.photo)}
+                width={personWidth}
+                onPress={() => router.push(`/people/${c.personId}`)}
               />
             )}
           />
         )}
-        {d.related.length > 0 && <PosterRow title={t('moreLike')} items={d.related} />}
+        <View style={{ paddingHorizontal: GUTTER, gap: 12 }}>
+          <FactsCard title={t('about')}>
+            {d.tagline ? (
+              <Text variant="body" size={15} weight={600}>
+                {d.tagline}
+              </Text>
+            ) : null}
+            {m.synopsis ? (
+              <Text variant="body" size={15} color="text-2" style={{ lineHeight: 23 }}>
+                {m.synopsis}
+              </Text>
+            ) : null}
+          </FactsCard>
+          <FactsCard title={t('information')} facts={facts.informationOf(d)} />
+          <FactsCard title={t('languages')} facts={facts.languagesOf(d)} />
+        </View>
       </ScrollView>
+      <Sheet open={tracks} onClose={() => setTracks(false)} title={t('tracks')}>
+        <View style={{ gap: 12 }}>
+          <WatchWith w={w} />
+          <Text variant="caption" size={13} color="text-3">
+            {t('remembered')}
+          </Text>
+        </View>
+      </Sheet>
+    </View>
+  )
+}
+
+/**
+ * The prototype's meta line: year and length, the certification in a box, the first genre, the
+ * rating in stars, and a pill for each playable version's quality (as the web's page takes them).
+ */
+function Meta({ d }: { d: ClientDetail }) {
+  const f = useFormat()
+  const theme = useTheme()
+  const m = d.item
+  const lead = [m.year, m.runtimeMinutes ? f.runtime(m.runtimeMinutes) : null]
+    .filter(Boolean)
+    .join(' · ')
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        alignItems: 'center',
+        columnGap: 8,
+        rowGap: 4,
+      }}
+    >
+      {lead ? (
+        <Text variant="callout" color="text-2">
+          {lead}
+        </Text>
+      ) : null}
+      {d.certification ? (
+        <View
+          style={{
+            borderWidth: 1,
+            borderColor: theme.colors['text-3'],
+            borderRadius: tokens.radius.sm,
+            paddingHorizontal: 4,
+          }}
+        >
+          <Text variant="caption" color="text-2">
+            {d.certification}
+          </Text>
+        </View>
+      ) : null}
+      {m.genres[0] ? (
+        <Text variant="callout" color="text-2">
+          {m.genres[0]}
+        </Text>
+      ) : null}
+      {m.rating > 0 ? <Rating value={m.rating} size={12} /> : null}
+      {[...new Set(d.versions.filter((v) => v.playable).map((v) => v.label))].map((q) => (
+        <QualityTag key={q}>{q}</QualityTag>
+      ))}
     </View>
   )
 }

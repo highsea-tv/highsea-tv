@@ -6,7 +6,8 @@
 // phone is still signed in there. A `highsea://connect?address=` link fills the address in.
 // A server of yours is forgotten by swiping its row left or pressing it long (the owner's answer
 // of 2026-10-29), so one that no longer answers needn't stay listed. Find my servers with a
-// highsea account stays collapsed and explained, as C1 prototypes it.
+// highsea account stays collapsed and explained, as C1 prototypes it. Drawn in C1's frame (Flow):
+// the Lockup over a card, the rows on the card itself, and Connect sized to its word.
 import type { PublicInfo } from '@highsea-tv/api-contract'
 import { normalize } from '@highsea-tv/client/servers'
 import { relative } from '@highsea-tv/core/format'
@@ -20,7 +21,7 @@ import { View } from 'react-native'
 import Swipeable, { type SwipeableMethods } from 'react-native-gesture-handler/ReanimatedSwipeable'
 import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reanimated'
 import { useForget } from '../forget.ts'
-import { Alert, Group, goBack, Label, Row, Screen, Title } from '../kit.tsx'
+import { Alert, Flow, goBack, Label, Row } from '../kit.tsx'
 import { forget as forgetMessages, connect as messages } from '../messages.ts'
 
 /**
@@ -143,22 +144,23 @@ export default function Connect() {
   }
 
   return (
-    <Screen gap={24}>
-      {servers.current && (
-        <Button variant="ghost" icon="chevron-left" onPress={goBack}>
-          {t('back')}
-        </Button>
-      )}
-      <View style={{ gap: 12, alignItems: 'center', paddingTop: servers.current ? 0 : 24 }}>
-        <Mark size={40} />
-      </View>
-      <Title>{t('title')}</Title>
-      {rowError && <Alert>{rowError}</Alert>}
+    <Flow
+      title={t('title')}
+      flush
+      back={servers.current ? { label: t('back'), run: goBack } : undefined}
+    >
+      <View style={{ gap: 24 }}>
+        {rowError && (
+          <View style={{ paddingHorizontal: 12 }}>
+            <Alert>{rowError}</Alert>
+          </View>
+        )}
 
-      {servers.known.length > 0 && (
-        <View style={{ gap: 8 }}>
-          <Label>{t('yourServers')}</Label>
-          <Group>
+        {servers.known.length > 0 && (
+          <View style={{ gap: 4 }}>
+            <View style={{ paddingHorizontal: 12 }}>
+              <Label>{t('yourServers')}</Label>
+            </View>
             {servers.known.map((k) => (
               // Swiping a row open asks to forget it, as Mail's full swipe does, and the row closes
               // again (https://docs.swmansion.com/react-native-gesture-handler/docs/components/reanimated_swipeable).
@@ -172,6 +174,7 @@ export default function Connect() {
                 }}
                 friction={2}
                 rightThreshold={40}
+                containerStyle={{ borderRadius: 8 }}
                 onSwipeableOpenStartDrag={() => {
                   swiped.current = k.id
                 }}
@@ -208,88 +211,87 @@ export default function Connect() {
                 />
               </Swipeable>
             ))}
-          </Group>
-        </View>
-      )}
+          </View>
+        )}
 
-      <View style={{ gap: 8 }}>
-        <Label
-          aside={
-            lan === 'refused' ? null : scanning ? (
-              <Text variant="caption" color="text-3" accessibilityLiveRegion="polite">
-                {lan === 'asking' ? t('waiting') : t('looking')}
-              </Text>
-            ) : (
-              <Button variant="ghost" size="sm" onPress={rescan}>
-                {t('lookAgain')}
-              </Button>
-            )
-          }
-        >
-          {t('nearby')}
-        </Label>
-        {lan === 'allowed' && nearby.length > 0 && (
-          <Group>
-            {nearby.map((s) => (
+        <View style={{ gap: 4 }}>
+          <View style={{ paddingHorizontal: 12 }}>
+            <Label
+              aside={
+                lan === 'refused' ? null : scanning ? (
+                  <Text variant="caption" color="text-3" accessibilityLiveRegion="polite">
+                    {lan === 'asking' ? t('waiting') : t('looking')}
+                  </Text>
+                ) : (
+                  <Button variant="ghost" size="sm" onPress={rescan}>
+                    {t('lookAgain')}
+                  </Button>
+                )
+              }
+            >
+              {t('nearby')}
+            </Label>
+          </View>
+          {lan === 'allowed' &&
+            nearby.map((s) => (
               <Row
                 key={s.info.id}
-                lead={<Mark size={28} />}
+                lead={<Mark size={28} paint="mono" />}
                 title={s.info.name}
                 detail={hostOf(s.base)}
+                mono
                 disabled={pending !== null}
                 onPress={() => openNearby(s)}
               />
             ))}
-          </Group>
-        )}
-        {lan === 'asking' && (
-          <Text variant="callout" color="text-3">
-            {t('asking')}
-          </Text>
-        )}
-        {lan === 'refused' && (
-          <Text variant="callout" color="text-3">
-            {t('refused')}
-          </Text>
-        )}
-        {lan === 'allowed' && !scanning && nearby.length === 0 && (
-          <Text variant="callout" color="text-3">
-            {found.length > 0 ? t('onlyKnown') : t('none')}
-          </Text>
-        )}
-      </View>
+          {lan === 'asking' && <Note>{t('asking')}</Note>}
+          {lan === 'refused' && <Note>{t('refused')}</Note>}
+          {lan === 'allowed' && !scanning && nearby.length === 0 && (
+            <Note>{found.length > 0 ? t('onlyKnown') : t('none')}</Note>
+          )}
+        </View>
 
-      <View style={{ gap: 12 }}>
-        <Field label={t('addLabel')} hint={t('addHint')} error={error ?? undefined}>
-          <Input
-            value={address}
-            onChangeText={setAddress}
-            placeholder="harbor.example.net"
-            autoCapitalize="none"
-            autoCorrect={false}
-            spellCheck={false}
-            keyboardType="url"
-            textContentType="URL"
-            returnKeyType="go"
-            // the field's own text: state can be a keystroke behind when Return follows at once
-            onSubmitEditing={(e) => void add(e.nativeEvent.text)}
-            mono
-            invalid={!!error}
-          />
-        </Field>
-        <Button
-          variant="primary"
-          block
-          loading={pending === 'typed'}
-          disabled={pending !== null && pending !== 'typed'}
-          onPress={() => void add(address)}
-        >
-          {t('connect')}
-        </Button>
-      </View>
+        <View style={{ gap: 12, paddingHorizontal: 12, alignItems: 'flex-start' }}>
+          <View style={{ alignSelf: 'stretch' }}>
+            <Field label={t('addLabel')} hint={t('addHint')} error={error ?? undefined}>
+              <Input
+                value={address}
+                onChangeText={setAddress}
+                placeholder="harbor.example.net"
+                autoCapitalize="none"
+                autoCorrect={false}
+                spellCheck={false}
+                keyboardType="url"
+                textContentType="URL"
+                returnKeyType="go"
+                // the field's own text: state can be a keystroke behind when Return follows at once
+                onSubmitEditing={(e) => void add(e.nativeEvent.text)}
+                mono
+                invalid={!!error}
+              />
+            </Field>
+          </View>
+          <Button
+            loading={pending === 'typed'}
+            disabled={pending !== null && pending !== 'typed'}
+            onPress={() => void add(address)}
+          >
+            {t('connect')}
+          </Button>
+        </View>
 
-      <Cloud />
-    </Screen>
+        <Cloud />
+      </View>
+    </Flow>
+  )
+}
+
+/** A line under a section's label: what discovery is doing, or why it found nothing. */
+function Note({ children }: { children: string }) {
+  return (
+    <Text variant="caption" color="text-3" style={{ paddingHorizontal: 12, paddingVertical: 8 }}>
+      {children}
+    </Text>
   )
 }
 
@@ -301,6 +303,7 @@ function Cloud() {
   return (
     <View
       style={{
+        marginHorizontal: 12,
         paddingTop: 16,
         borderTopWidth: 1,
         borderTopColor: theme.colors.line,

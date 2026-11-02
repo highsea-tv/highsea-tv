@@ -1,17 +1,44 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C3 Library on the phone (client-library.md#mobile), from the prototype's mobile/library.tsx and
 // collections.tsx: a large title, Movies or Collections, then for Movies the count and one Sort
-// and filter button that opens a sheet (Show, Sort by, Genre), and three posters a row; for
-// Collections, the collections three a row with smart ones marked.
+// and filter button that opens a sheet (Show, Sort by, Genre), and three posters a row, each with
+// its title and year; sorted by title, the A–Z index stands at the right edge (letter-index.tsx).
+// For Collections, the collections three a row with smart ones marked. Pull to refresh on both.
+import type { ClientItem } from '@highsea-tv/api-contract'
 import { useCollections, useLibrary } from '@highsea-tv/client/data'
-import { ALL, arrange, genresOf, type Show, SORTS, type Sort } from '@highsea-tv/client/library'
+import {
+  ALL,
+  arrange,
+  genresOf,
+  LETTERS,
+  letterOf,
+  type Show,
+  SORTS,
+  type Sort,
+} from '@highsea-tv/client/library'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
-import { useMedia } from '@highsea-tv/native/media'
-import { Button, Chip, EmptyState, Poster, Sheet, Text, useTheme } from '@highsea-tv/ui'
+import {
+  Button,
+  Chip,
+  EmptyState,
+  LETTER_INDEX_WIDTH,
+  LetterIndex,
+  Sheet,
+  Text,
+  useTheme,
+} from '@highsea-tv/ui'
 import { router, useLocalSearchParams } from 'expo-router'
-import { useState } from 'react'
-import { ActivityIndicator, View } from 'react-native'
+import {
+  type ComponentRef,
+  type ReactNode,
+  type RefObject,
+  useEffect,
+  useRef,
+  useState,
+} from 'react'
+import { ActivityIndicator, type ScrollView, View } from 'react-native'
+import { FilmPoster } from '../../../cards.tsx'
 import { CollectionTile } from '../../../collection-art.tsx'
 import { Grid, Label, Screen } from '../../../kit.tsx'
 import { library as messages } from '../../../messages.ts'
@@ -26,10 +53,14 @@ function Loading() {
   )
 }
 
-function Movies() {
+/** What the page above the grid hands Movies: its scroller, and the slot for the A–Z index. */
+type Page = {
+  scroll: RefObject<ComponentRef<typeof ScrollView> | null>
+  setAside: (aside: ReactNode) => void
+}
+
+function Movies({ page }: { page: Page }) {
   const t = useT(messages)
-  const f = useFormat()
-  const media = useMedia()
   const library = useLibrary()
   const [genre, setGenre] = useState(ALL)
   const [sort, setSort] = useState<Sort>('title')
@@ -38,6 +69,36 @@ function Movies() {
   const items = library.data ?? []
   const shown = arrange(items, genre, sort, show === 'unwatched')
   const filtered = genre !== ALL || sort !== 'title' || show !== 'all'
+  // where the grid starts in the page, and where each letter's first title starts in the grid
+  const gridTop = useRef(0)
+  const starts = useRef(new Map<string, number>())
+  const titled = sort === 'title' && library.status === 'success' && shown.length > 0
+  const present = titled ? [...new Set(shown.map((m) => letterOf(m.title)))].join('') : ''
+  const firstOf = (i: number) =>
+    i === 0 || letterOf(shown[i - 1]?.title ?? '') !== letterOf(shown[i]?.title ?? '')
+  const firsts = new Set(shown.filter((_, i) => titled && firstOf(i)).map((m) => m.id))
+  const { setAside, scroll } = page
+  useEffect(() => {
+    setAside(
+      present ? (
+        <LetterIndex
+          letters={LETTERS}
+          present={new Set(present)}
+          label={t('letters')}
+          onLetter={(l) =>
+            scroll.current?.scrollTo({
+              y: gridTop.current + (starts.current.get(l) ?? 0) - 16,
+              animated: false,
+            })
+          }
+        />
+      ) : null,
+    )
+  }, [present, setAside, scroll, t])
+  useEffect(() => () => setAside(null), [setAside])
+  const onCell = (m: ClientItem, y: number) => {
+    if (firsts.has(m.id)) starts.current.set(letterOf(m.title), y)
+  }
 
   return (
     <>
@@ -71,23 +132,19 @@ function Movies() {
           {show === 'unwatched' ? t('noMatchUnwatched') : t('noMatch')}
         </EmptyState>
       ) : (
-        <Grid
-          items={shown}
-          keyOf={(m) => String(m.id)}
-          render={(m, width) => (
-            <Poster
-              title={m.title}
-              src={media(m.art.poster)}
-              width={width}
-              onPress={() => router.push(`/movies/${m.id}`)}
-              progress={m.progress !== null ? m.progress * 100 : undefined}
-              showTitle
-              caption={
-                m.progress !== null ? (f.left(m) ?? undefined) : m.year ? String(m.year) : undefined
-              }
-            />
-          )}
-        />
+        <View
+          onLayout={(e) => {
+            gridTop.current = e.nativeEvent.layout.y
+          }}
+        >
+          <Grid
+            items={shown}
+            keyOf={(m) => String(m.id)}
+            inset={titled ? LETTER_INDEX_WIDTH - 8 : 0}
+            onCell={titled ? onCell : undefined}
+            render={(m, width) => <FilmPoster item={m} width={width} />}
+          />
+        </View>
       )}
       <Sheet open={open} onClose={() => setOpen(false)} title={t('sortFilter')}>
         <View style={{ gap: 20 }}>
@@ -199,9 +256,19 @@ export default function Library() {
   const [view, setView] = useState<'movies' | 'collections'>(
     params.view === 'collections' ? 'collections' : 'movies',
   )
+  const library = useLibrary()
+  const collections = useCollections('ios')
+  const scroll = useRef<ComponentRef<typeof ScrollView>>(null)
+  const [aside, setAside] = useState<ReactNode>(null)
   return (
     <Reachable>
-      <Screen tabs>
+      <Screen
+        tabs
+        scrollRef={scroll}
+        aside={view === 'movies' ? aside : null}
+        refreshing={false}
+        onRefresh={view === 'movies' ? library.refetch : collections.refetch}
+      >
         <Header title={t('title')} />
         <View accessibilityRole="tablist" style={{ flexDirection: 'row', gap: 8 }}>
           <Chip selected={view === 'movies'} onPress={() => setView('movies')}>
@@ -211,7 +278,7 @@ export default function Library() {
             {t('collections')}
           </Chip>
         </View>
-        {view === 'movies' ? <Movies /> : <Collections />}
+        {view === 'movies' ? <Movies page={{ scroll, setAside }} /> : <Collections />}
       </Screen>
     </Reachable>
   )

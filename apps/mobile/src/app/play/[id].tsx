@@ -14,17 +14,25 @@ import type { ClientItem, TrickplayManifest } from '@highsea-tv/api-contract'
 import { createFormat } from '@highsea-tv/client/format'
 import {
   chromeShown,
+  countsDown,
   createPlayerText,
   cuesAt,
   cueText,
+  filmUpNext,
   HIDE_MS,
+  leavePlayer,
   NUDGE_MS,
   nextChange,
   nextUpIn,
+  playNext,
   SEEK_S,
   streamState,
+  titleLines,
+  titlePage,
   trickplayTile,
+  type UpNext,
 } from '@highsea-tv/client/player'
+import { usePlaybackPrefs } from '@highsea-tv/client/prefs'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
 import { type Playback, TRANSCODE_LIMIT, usePlayback } from '@highsea-tv/native/playback'
@@ -66,8 +74,6 @@ export default function PlayRoute() {
     </ThemeProvider>
   )
 }
-
-const leave = (id: number) => (router.canGoBack() ? router.back() : router.replace(`/movies/${id}`))
 
 function Round({
   icon,
@@ -471,39 +477,93 @@ function StreamMessage({ p, onBack }: { p: Playback; onBack: () => void }) {
   )
 }
 
-/** Next up: in a film's last seconds, the next one in its collection, counting down with it. */
+type FilmUpNext = UpNext<ClientItem, number, string | null>
+
+/**
+ * Next up (player.md › Next up), in a film's last seconds: its collection's next part, counting
+ * down with it when the person has Autoplay on, otherwise three of More like this, which play only
+ * when picked (filmUpNext in @highsea-tv/client/player).
+ */
 function NextUp({
   next,
   seconds,
+  counting,
   onPlay,
   onCancel,
 }: {
-  next: ClientItem
+  next: FilmUpNext
   seconds: number
-  onPlay: () => void
+  counting: boolean
+  onPlay: (id: number) => void
   onCancel: () => void
 }) {
   const t = useT(messages)
   const theme = useTheme()
   const media = useMedia()
-  return (
-    <View
-      style={{
-        position: 'absolute',
-        right: 48,
-        bottom: 72,
-        width: 300,
-        gap: 12,
-        padding: 14,
-        borderRadius: 12,
-        borderWidth: 1,
-        borderColor: theme.colors.line,
-        backgroundColor: 'rgba(11,11,12,0.86)',
-      }}
+  const insets = useSafeAreaInsets()
+  const box = {
+    position: 'absolute',
+    right: Math.max(insets.right, 16) + 32,
+    bottom: Math.max(insets.bottom, 16) + 56,
+    width: next.kind === 'choices' ? 420 : 300,
+    maxWidth: '90%',
+    gap: 12,
+    padding: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: theme.colors.line,
+    backgroundColor: 'rgba(11,11,12,0.86)',
+  } as const
+  const eyebrow = (text: string) => (
+    <Text
+      variant="caption"
+      size={12}
+      color="text-2"
+      style={{ fontFamily: family(400, 'mono') }}
+      accessibilityRole="header"
     >
+      {text.toUpperCase()}
+    </Text>
+  )
+  if (next.kind === 'choices')
+    return (
+      <View style={box}>
+        {eyebrow(t('moreLike'))}
+        <View style={{ flexDirection: 'row', gap: 10 }}>
+          {next.items.map((item) => (
+            <Press
+              key={item.id}
+              accessibilityRole="button"
+              accessibilityLabel={item.title}
+              onPress={() => onPlay(item.id)}
+              style={{ flex: 1, minWidth: 0, gap: 6 }}
+            >
+              <Image
+                source={media(item.art.backdrop)}
+                style={{
+                  width: '100%',
+                  aspectRatio: 16 / 9,
+                  borderRadius: 4,
+                  backgroundColor: theme.colors.s2,
+                }}
+                contentFit="cover"
+              />
+              <Text variant="caption" size={13} color="text-2" numberOfLines={1}>
+                {item.title}
+              </Text>
+            </Press>
+          ))}
+        </View>
+        <View style={{ flexDirection: 'row' }}>
+          <Button onPress={onCancel}>{t('close')}</Button>
+        </View>
+      </View>
+    )
+  return (
+    <View style={box}>
       <View style={{ flexDirection: 'row', gap: 12, alignItems: 'center' }}>
         <Image
-          source={media(next.art.backdrop)}
+          source={next.still ? media(next.still) : undefined}
           style={{
             width: 88,
             aspectRatio: 16 / 9,
@@ -513,25 +573,17 @@ function NextUp({
           contentFit="cover"
         />
         <View style={{ flex: 1, minWidth: 0 }}>
-          <Text
-            variant="caption"
-            size={12}
-            color="text-2"
-            style={{ fontFamily: family(400, 'mono') }}
-            accessibilityRole="header"
-          >
-            {t('nextUp').toUpperCase()}
-          </Text>
+          {eyebrow(t('nextUp'))}
           <Text variant="body" size={15} weight={600} numberOfLines={1}>
             {next.title}
           </Text>
-          <Text variant="caption" size={13} color="text-2">
-            {t('startsIn', { seconds })}
+          <Text variant="caption" size={13} color="text-2" numberOfLines={1}>
+            {[next.line, counting ? t('startsIn', { seconds }) : null].filter(Boolean).join(' · ')}
           </Text>
         </View>
       </View>
       <View style={{ flexDirection: 'row', gap: 8 }}>
-        <Button variant="primary" onPress={onPlay}>
+        <Button variant="primary" icon="play" onPress={() => onPlay(next.id)}>
           {t('playNow')}
         </Button>
         <Button onPress={onCancel}>{t('cancel')}</Button>
@@ -561,7 +613,23 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
   const nextUp = useQuery(`client:next:${id}`, (c) =>
     c.playback.next({ params: { type: 'movie', id } }),
   )
-  const next = nextUp.data?.item ?? null
+  const d0 = p.detail.data
+  const next: FilmUpNext | null = nextUp.data
+    ? filmUpNext(
+        nextUp.data.item
+          ? {
+              id: nextUp.data.item.id,
+              title: nextUp.data.item.title,
+              still: nextUp.data.item.art.backdrop,
+            }
+          : null,
+        d0?.collection?.name ?? null,
+        d0?.related ?? [],
+      )
+    : null
+  const autoplay = usePlaybackPrefs().current?.autoplayNext ?? true
+  const counting = countsDown(next) && autoplay
+  const leave = () => leavePlayer(router, titlePage(d0, id))
   const stream = streamState(state, now, !!next)
 
   const wake = () => {
@@ -581,14 +649,12 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
     return () => clearTimeout(timer)
   }, [state])
 
-  const playNext = () => {
-    if (next) router.replace(`/play/${next.id}`)
-  }
-  // at zero the next film plays; Cancel lets this one end as before
+  // at zero the next part plays; Cancel lets this one end as before. Choices never count down
   const left = nextUpIn(state)
   useEffect(() => {
-    if (stream === 'next-up' && left === 0 && next) router.replace(`/play/${next.id}`)
-  }, [stream, left, next])
+    if (stream === 'next-up' && left === 0 && counting && next?.kind === 'part')
+      playNext(router, next.id)
+  }, [stream, left, counting, next])
 
   if (p.detail.status === 'error')
     return (
@@ -694,12 +760,7 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
               paddingHorizontal: side,
             }}
           >
-            <Round
-              icon="chevron-down"
-              label={t('backToDetails')}
-              iconSize={24}
-              onPress={() => leave(id)}
-            />
+            <Round icon="chevron-down" label={t('backToDetails')} iconSize={24} onPress={leave} />
             <Text
               variant="body"
               size={17}
@@ -708,7 +769,7 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
               style={{ flex: 1, color: ON_BLACK }}
               accessibilityRole="header"
             >
-              {d?.item.title ?? ''}
+              {titleLines(d).title}
             </Text>
             <View
               accessibilityLabel={p.external ? t('airplayOn') : t('airplay')}
@@ -844,12 +905,13 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
           )}
         </View>
       )}
-      {message && <StreamMessage p={p} onBack={() => leave(id)} />}
+      {message && <StreamMessage p={p} onBack={leave} />}
       {stream === 'next-up' && next && !pip && (
         <NextUp
           next={next}
           seconds={left}
-          onPlay={playNext}
+          counting={counting}
+          onPlay={(to) => playNext(router, to)}
           onCancel={() => dispatch({ type: 'cancel-next' })}
         />
       )}

@@ -12,10 +12,14 @@ export const BOTH = [
   'Disclosure',
   'EmptyState',
   'Icon',
+  'Lockup',
   'MultiSelect',
   'Poster',
   'ProgressBar',
   'QrCode',
+  'Rating',
+  // each renderer takes its own messages: the web's keyboard model, VoiceOver's actions
+  'SortableList',
   'TitleCell',
 ] as const
 
@@ -50,7 +54,6 @@ export const WEB_ONLY: Record<string, string> = {
   Sparkline: 'A chart in an admin widget, browser only',
   StatusBar: "The admin's status bar, browser only",
   StatusItem: "Part of the admin's StatusBar",
-  SortableList: 'Drag to reorder in the admin (dnd-kit, DOM only)',
   Stepper: "The admin's setup steps, browser only",
   Skeleton:
     "A loading placeholder in the web's layouts; native screens show the platform's activity indicator",
@@ -89,11 +92,8 @@ export const WEB_ONLY: Record<string, string> = {
   Tooltip: 'Shown on hover and keyboard focus; touch and the TV have no hover',
   TooltipProvider: "The web's Tooltip delay",
   Toaster: "The web's toast stack (motion); native apps show the platform's own notices",
-  Lockup:
-    "The wordmark beside the mark, on the web's sidebar and sign-in; native apps show the Mark",
   BackdropHero: "The web client's hero; the TV draws its own with TvTile and the phone a Poster",
   CarouselRow: "The web's poster rows with arrow keys; native rows are the platform's FlatList",
-  Rating: "The admin's star rating, browser only",
   RatingInput: "The admin's star rating, browser only",
   Progress: 'The old name of ProgressBar, kept until part C moves the apps',
   // the web's roots
@@ -113,7 +113,13 @@ export const NATIVE_ONLY: Record<string, string> = {
   Text: 'React Native draws text only inside <Text>; the web styles its elements with the tokens’ classes.',
   ThemeProvider:
     'Passes the resolved theme and the platform’s rule down; on the web the tokens’ CSS variables do.',
-  SwitchRow: 'A settings row with a switch and a hint, as iOS lays one out.',
+  SwitchRow: 'A switch with its words and hint, the old shape of Switch kept for settings rows.',
+  // the phone's page parts (touch.tsx), as the TV's are below; the web draws its pages from the DOM
+  NamedAction: 'An icon in a circle with its name under it, a title’s actions on the phone.',
+  PersonTile: 'A person’s round portrait with their role, a title’s Cast and crew on the phone.',
+  FactsCard: 'A card of facts at a phone page’s foot; the web lays out its own as a grid.',
+  LetterIndex:
+    'The phone’s A to Z index by touch, as iOS’s section index; the web’s list scrolls by pointer.',
   TvKey: 'A key on the TV’s on-screen keyboard; the web has the device’s keyboard.',
   TvMessage: 'A message that fills the TV’s screen with its actions.',
   StopScope: 'Names the TV’s focus stops for the D-pad walk (apps/tv/uitest).',

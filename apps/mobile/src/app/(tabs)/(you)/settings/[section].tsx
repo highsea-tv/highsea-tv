@@ -7,12 +7,12 @@ import { useLocalSearchParams } from 'expo-router'
 import { View } from 'react-native'
 import { goBack, Screen, Title } from '../../../../kit.tsx'
 import { you as messages } from '../../../../messages.ts'
-import { SECTIONS, SectionBody } from '../../../../settings.tsx'
+import { SectionBody, useSections } from '../../../../settings.tsx'
 
 export default function SettingsScreen() {
   const t = useT(messages)
   const { section } = useLocalSearchParams<{ section: string }>()
-  const s = SECTIONS.find((x) => x.id === section)
+  const s = useSections().find((x) => x.id === section)
   return (
     <Screen tabs gap={16}>
       <Button variant="ghost" icon="chevron-left" onPress={goBack}>
@@ -20,7 +20,7 @@ export default function SettingsScreen() {
       </Button>
       {s ? (
         <>
-          <Title>{t(`section.${s.id}`)}</Title>
+          <Title>{s.label}</Title>
           <SectionBody id={s.id} />
         </>
       ) : (

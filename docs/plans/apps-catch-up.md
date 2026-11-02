@@ -1,6 +1,6 @@
 # The apps catch up with the prototypes
 
-- **Status:** Written on 2026-11-01 at the owner's request ("a plan for a new agent to begin bringing all of the prototype changes over into the actual apps"), and approved with [the owner's answers](#the-owners-answers) of 2026-11-01: every recommendation. Part A was approved by the owner on 2026-11-01, with its calls as made; part B has begun.
+- **Status:** Written on 2026-11-01 at the owner's request ("a plan for a new agent to begin bringing all of the prototype changes over into the actual apps"), and approved with [the owner's answers](#the-owners-answers) of 2026-11-01: every recommendation. Part A was approved by the owner on 2026-11-01, with its calls as made; part B was signed off on 2026-11-02. Part C was built, and at its review on 2026-11-02 the owner found the phone still drifting from its prototype. They asked for every client and its prototype on one React Native codebase, scoped in [one-client-platform.md](one-client-platform.md), which replaces parts C to E.
 - **Parent plans:** [phase-4-checkpoint-5.md](phase-4-checkpoint-5.md) (4.5b, the TV), [prototype-gaps.md](prototype-gaps.md) (stages 1 to 6, the prototype work this ports) and [design-system-1-1.md](design-system-1-1.md) (the controls every app now draws with).
 - **Gate:** Each part below stops for the owner's review, as the standing rules ask.
 
@@ -179,6 +179,58 @@ Calls made (for the owner's review):
 9. **The phone's own announcement parser** moves to `inlineParts` in part C.
 10. **With no featured card, Home lifts its first row** to the safe area's top, so the head scrolls away until Up takes focus to it. The prototype does the same (its `usePageOffset` keeps the page at rest only for the hero).
 11. **A play session an app was killed in lasts until it's idle for five minutes** (`IDLE_MS`), as `packages/stream` intends. The walk killed the player many times, and the compare sheet taken right after it showed "This film didn't start" over a playing picture; taken again later, the player was right. No change now; on 2026-11-02 the owner had a later server part end a device's earlier sessions when it starts a new one.
+
+**Part C (2026-11-02), built and waiting for the owner's review.** `apps/mobile` follows the phone prototype, films only.
+
+- **Shared parts, not copies.** The phone's page parts are in `@highsea-tv/ui`'s React Native renderer as data-only components, as the TV's are in `ui/tv`, so any touch app can use them (CarPlay's and the Watch's among them, when they come). They are native-only in `parity.ts`, with their reasons, and have Jest tests (`apps/mobile/test/components.jest.tsx`, 29 now):
+  - `NamedAction`: a round icon with its name under it, a toggle with `pressed`.
+  - `PersonTile`: a round portrait, the name and the role.
+  - `FactsCard`: facts under a heading.
+  - `LetterIndex`: the A–Z index, with `nearestLetter`.
+  - `Poster` gains `longPressLabel`, `longPressMs` and `progressBelow`.
+  - The app's own card rules are in `src/cards.tsx`: `FilmPoster`, `FilmRow` and `ContinuePoster`. A film's card shows its title and year, and only Continue watching shows progress.
+- **Home:** the featured carousel, Continue watching's menu on a 0.6-second long press, the film rows from Home screen settings as 16:9 stills, and the prototype's empty words.
+- **Library:** Movies and Collections. Sorted by title, the A–Z index stands at the right edge (`LetterIndex`, through the kit's new `Screen` `aside`), and dragging along it jumps letter by letter. Both views pull to refresh.
+- **The film page, rewritten to the prototype:** the meta line with its certification and ★ rating, Play or Resume with the time left, the synopsis, Starring and Directed by, and the picks line. Then the round actions (From the start, Audio and subtitles in a sheet, and Watched as a toggle), More like this as stills, the Collections row, Cast and crew linked to a person's page, and About, Information, and Languages and quality.
+- **A person's page (`people/[id].tsx`), new:** Back over their best-rated film's art, blurred, then the round portrait, name, known for, how many are here, born and died, and the biography with More. Then a row of posters for each department (`filmographyOf`).
+- **Search:** films as posters, and people opening their page. The query is kept on Back, since the screen stays mounted under the page it pushed.
+- **You and Settings:** the sections from the shared `settingsSections`. Playback has the audio and subtitle languages, Only when the audio isn't in my language, quality at home and away, and the closing note, on `usePlaybackPrefs`. Sign out asks first.
+- **The shell:** it already followed the prototype (the tab's own stack keeps its tab lit, Can't reach has its second sentence and Try again, and Offline stays open). The announcement dialog now waits while the server can't be reached, as the prototype's does. Announcements are drawn from the shared `inlineParts` (part B's call 9).
+- **The player:** it leaves with `leavePlayer` and `titlePage`, and its title is `titleLines`. Next up comes from `filmUpNext`: the collection's next part counts down when Autoplay is on, otherwise three of More like this wait to be picked, with Close.
+- **The collection page:** its posters are the film's card, with no progress.
+- **Redone after the owner's first look (2026-11-02).** The owner found the compare sheet showed glaring differences, and named Choose a server, Home, and Settings' Home screen, Servers and Playback. The first report's claim that the phone followed the prototype was wrong: those screens were drawn as iOS grouped lists with iOS's switch, where the prototype draws cards with the web's controls. They're redrawn from the prototype's own code:
+  - **Choose a server and its sign-in** sit in the prototype's card (the kit's `Flow`): the lockup over it, the title with an icon-only Back beside it on later steps, nearby servers with the mono mark, Connect as a default button at the start, and Forget as a danger-ghost button under the card.
+  - **Home:** the featured card's kicker is the prototype's, "New · year · genre", on the first card when it came in the last 30 days (`addedAt`), so call 3 below is changed. The compare's seed now has a featured hero and Theo's Continue watching (`homeAsPrototyped` in `phone-compare.ts`), so Home's rows are there to compare.
+  - **Settings:** each row is a card on `s1` with its control first, as the prototype's: Theme's radios and swatches, the switch before its words on Sound and Playback, Home screen reordered by a drag handle (`SortableList`, now in the native renderer too), Servers with the mark, In use or Switch and Sign in, and Add a server, Sign in a TV and Sign out as buttons, Devices as cards, and About as a two-column list.
+  - **The library's controls,** as ADR 0060's dated section lists: the drawn `Switch`, `SortableList`, `Lockup`, `Rating` and the web's `QualityTag`. The film page's meta line has the stars and a quality tag per version, as the web's.
+- **Checks:**
+  - `scripts/bundles.ts` builds and checks the TV's bundle too, and `native.yml` runs it in the `tvos` job.
+  - `phone-compare.ts` pairs a person's page (Colin Levy, whom the replayed TMDB has) and Settings › Playback: 16 pairs now.
+- **Results, under Node 26.11.1:**
+
+  | Check | Result |
+  | --- | --- |
+  | Lint, typecheck | clean |
+  | Tests | 12,752 pass, 8 skip, 0 fail |
+  | The phone's Jest tests | 29 pass |
+  | Smoke | ok |
+  | Licences, audit | clean (1,508 packages, 562 crates, 128 pods; zod's advisory excepted until 2026-11-29) |
+  | Controls | clean |
+  | Bundles | phone and TV clean (web clean at part B; its code is unchanged) |
+  | The phone's walk (`phone.ts`) | signed in by address, found Sintel, played it 7 s and closed the player, in 48 s |
+  | The phone compare | 16 pairs, gone through; the differences are the seed's data and the calls below |
+  | The prototypes' and server's sweeps, playback | not rerun: part C changed neither the prototypes, the web renderer nor any page they serve; all clean at part B |
+
+Calls made (for the owner's review):
+
+1. **No Trailer button on the phone either.** The server has no trailer files a native player can play, as on the TV.
+2. **Continue watching's menu is iOS's action sheet** (`ActionSheetIOS`), not the prototype's own sheet, as iOS apps do for a short list of actions.
+3. **The featured card is the prototype's:** it has no Play or More info buttons (the whole card opens the film). Its "New ·" kicker is shown on the first card when the film came in the last 30 days, from `addedAt`, since the server has no other word for new.
+4. **Playback leaves out the episode rows** (Play the next episode automatically, Skip intros) until shows come, as on the TV.
+5. **The Collections row's art** comes from matching the film's collection against the phone's collections list, since the detail's `collection` has only its id and name.
+6. **No Show everything under Nothing matches:** the prototype's phone has none, and Reset in the sheet does it.
+7. **The disabled Only when the audio isn't in my language** stays drawn, dimmed, while subtitles are off, so the setting doesn't move as the person changes the one above it.
+8. **The person page's error** says TMDB's message and "What they were part of may have been removed," with Search. The compare found it at first on Halina Reijn, whose person the replayed TMDB has no recording of.
 
 ## How to port a screen (every part)
 

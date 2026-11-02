@@ -19,10 +19,16 @@ export type PosterProps = {
   aspect?: 'poster' | 'still'
   onPress?: () => void
   onLongPress?: () => void
+  /** What the long press does, which VoiceOver offers among the poster's actions. */
+  longPressLabel?: string
+  /** How long the press is held, in ms (React Native's default is 500). */
+  longPressMs?: number
   quality?: string[]
   status?: ReactNode
   /** 0–100. */
   progress?: number
+  /** The bar under the art, between it and the title, as Continue watching has it. */
+  progressBelow?: boolean
   showTitle?: boolean
   caption?: string
   /** The width it's drawn at; the height follows the aspect. */
@@ -35,9 +41,12 @@ export function Poster({
   aspect = 'poster',
   onPress,
   onLongPress,
+  longPressLabel,
+  longPressMs,
   quality,
   status,
   progress,
+  progressBelow = false,
   showTitle,
   caption,
   width,
@@ -94,23 +103,29 @@ export function Poster({
             position: 'absolute',
             left: '7%',
             right: '7%',
-            bottom: progress === undefined ? '7%' : '14%',
+            bottom: progress === undefined || progressBelow ? '7%' : '14%',
             flexDirection: 'row',
           }}
         >
           {status}
         </View>
       ) : null}
-      {progress !== undefined && (
+      {progress !== undefined && !progressBelow && (
         <View style={{ position: 'absolute', left: '7%', right: '7%', bottom: '7%' }}>
           <ProgressBar value={progress} />
         </View>
       )}
     </View>
   )
+  const below =
+    progress !== undefined && progressBelow ? (
+      <View style={{ marginTop: 10 }}>
+        <ProgressBar value={progress} />
+      </View>
+    ) : null
   const label = showTitle ? (
     <View style={{ marginTop: 8, gap: 2 }}>
-      <Text variant="callout" numberOfLines={2}>
+      <Text variant="callout" weight={600} numberOfLines={2}>
         {title}
       </Text>
       {caption ? (
@@ -124,6 +139,7 @@ export function Poster({
     return (
       <View style={{ width }} accessible accessibilityLabel={title}>
         {art}
+        {below}
         {label}
       </View>
     )
@@ -131,11 +147,21 @@ export function Poster({
     <Press
       onPress={onPress}
       onLongPress={onLongPress}
+      delayLongPress={longPressMs}
       accessibilityRole="link"
       accessibilityLabel={[title, caption].filter(Boolean).join(', ')}
+      accessibilityActions={
+        onLongPress && longPressLabel ? [{ name: 'longpress', label: longPressLabel }] : undefined
+      }
+      onAccessibilityAction={
+        onLongPress && longPressLabel
+          ? (e) => e.nativeEvent.actionName === 'longpress' && onLongPress()
+          : undefined
+      }
       style={{ width }}
     >
       {art}
+      {below}
       {label}
     </Press>
   )

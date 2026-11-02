@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C6 Search on the phone (client-search.md#mobile), from the prototype's mobile/more.tsx: the
 // field, quick picks while it's empty, then a section per kind as you type, the best-matching kind
-// first. Movies three a row; collections and people in rows that scroll. A person searches their
-// name. Kinds the phone doesn't show yet (`discover`) are skipped, as the API asks of clients. The
+// first. Movies three a row; collections and people in rows that scroll, a person opening their
+// page. Kinds the phone doesn't show yet (`discover`) are skipped, as the API asks of clients. The
 // query lives in this screen, which stays mounted under a result, so Back finds it as it was.
 import type { SearchSection } from '@highsea-tv/api-contract'
 import { useSearch } from '@highsea-tv/client/data'
@@ -14,6 +14,7 @@ import { Image } from 'expo-image'
 import { router } from 'expo-router'
 import { useState } from 'react'
 import { ScrollView, View } from 'react-native'
+import { FilmPoster } from '../../../cards.tsx'
 import { Grid, GUTTER, Screen } from '../../../kit.tsx'
 import { search as messages } from '../../../messages.ts'
 import { Header, Reachable, useServerName } from '../../../shell.tsx'
@@ -25,7 +26,7 @@ const KINDS = ['movies', 'collections', 'people'] as const
 type Shown = Extract<SearchSection, { kind: (typeof KINDS)[number] }>
 const shown = (s: SearchSection): s is Shown => (KINDS as readonly string[]).includes(s.kind)
 
-function Results({ section, onPerson }: { section: Shown; onPerson: (name: string) => void }) {
+function Results({ section }: { section: Shown }) {
   const f = useFormat()
   const media = useMedia()
   const width = usePosterWidth()
@@ -36,16 +37,7 @@ function Results({ section, onPerson }: { section: Shown; onPerson: (name: strin
           <Grid
             items={section.items}
             keyOf={(m) => String(m.id)}
-            render={(m, w) => (
-              <Poster
-                title={m.title}
-                src={media(m.art.poster)}
-                width={w}
-                onPress={() => router.push(`/movies/${m.id}`)}
-                showTitle
-                caption={m.year ? String(m.year) : undefined}
-              />
-            )}
+            render={(m, w) => <FilmPoster item={m} width={w} />}
           />
         </View>
       )
@@ -79,8 +71,8 @@ function Results({ section, onPerson }: { section: Shown; onPerson: (name: strin
           {section.items.map((p) => (
             <Press
               key={p.id}
-              onPress={() => onPerson(p.name)}
-              accessibilityRole="button"
+              onPress={() => router.push(`/people/${p.id}`)}
+              accessibilityRole="link"
               accessibilityLabel={`${p.name}, ${f.moviesHere(p.titles)}`}
               style={{ width: 72, alignItems: 'center', gap: 4 }}
             >
@@ -162,7 +154,7 @@ export default function Search() {
                     {section.items.length}
                   </Text>
                 </Text>
-                <Results section={section} onPerson={setQ} />
+                <Results section={section} />
               </View>
             ))}
           </View>

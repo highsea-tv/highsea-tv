@@ -3,14 +3,23 @@
 // renderer by the `react-native` condition, so each app's bundle carries only its own.
 // - The web client's build (apps/web/dist, after `bun run --filter @highsea-tv/web build`) has no
 //   React Native and none of the library's native renderer.
-// - The phone's bundle (Metro, through `expo export:embed`) has none of the web renderer: no
-//   tailwind-merge, no react-dom and no `ui/src/web`.
-// `bun scripts/bundles.ts [web] [phone]` checks both, or the ones named. CI runs it after the builds.
+// - The phone's and the TV's bundles (Metro, through `expo export:embed`; the TV's with EXPO_TV=1
+//   on react-native-tvos) have none of the web renderer: no tailwind-merge, no react-dom and no
+//   `ui/src/web`.
+// `bun scripts/bundles.ts [web] [phone] [tv]` checks all three, or the ones named. CI runs it
+// after the builds.
 import { spawnSync } from 'node:child_process'
 import { mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
 
 const ROOT = join(import.meta.dir, '..')
+
+/** What a React Native app's bundle must not contain. */
+const NATIVE = [
+  ['the web renderer', /packages\/ui\/src\/web\//],
+  ['tailwind-merge', /tailwind-merge|twMerge/],
+  ['react-dom', /react-dom\.production|ReactDOMSharedInternals/],
+] as const
 
 /** What a bundle must not contain, with why. */
 export const FORBIDDEN = {
@@ -21,11 +30,8 @@ export const FORBIDDEN = {
     ],
     ['the native renderer', /packages\/ui\/src\/native\//],
   ],
-  phone: [
-    ['the web renderer', /packages\/ui\/src\/web\//],
-    ['tailwind-merge', /tailwind-merge|twMerge/],
-    ['react-dom', /react-dom\.production|ReactDOMSharedInternals/],
-  ],
+  phone: NATIVE,
+  tv: NATIVE,
 } as const satisfies Record<string, readonly (readonly [string, RegExp])[]>
 
 /** What `text`, one bundle's files joined, has that it mustn't. */
@@ -56,13 +62,9 @@ function web() {
   return offences('web', read(dist))
 }
 
-/** The phone check on a bundle already built into `out`. */
-export function phoneFrom(out: string) {
-  return offences('phone', read(out))
-}
-
-function phone() {
-  const out = join(ROOT, '.dev/bundles/phone')
+/** A React Native app's iOS bundle, built into .dev/bundles/<kind> and checked. */
+function native(kind: 'phone' | 'tv', app: string, env: Record<string, string> = {}) {
+  const out = join(ROOT, `.dev/bundles/${kind}`)
   mkdirSync(out, { recursive: true })
   const run = spawnSync(
     'bunx',
@@ -82,18 +84,25 @@ function phone() {
       '--assets-dest',
       out,
     ],
-    { cwd: join(ROOT, 'apps/mobile'), stdio: 'inherit' },
+    { cwd: join(ROOT, app), stdio: 'inherit', env: { ...process.env, ...env } },
   )
-  if (run.status !== 0) throw new Error('the phone’s bundle did not build')
-  return phoneFrom(out)
+  if (run.status !== 0) throw new Error(`the ${kind}’s bundle did not build`)
+  return offences(kind, read(out))
 }
 
 if (import.meta.main) {
   const asked = process.argv.slice(2)
-  const kinds = asked.length ? asked : ['web', 'phone']
+  const kinds = asked.length ? asked : ['web', 'phone', 'tv']
   let failed = false
   for (const kind of kinds) {
-    const found = kind === 'web' ? web() : kind === 'phone' ? phone() : [`no bundle named ${kind}`]
+    const found =
+      kind === 'web'
+        ? web()
+        : kind === 'phone'
+          ? native('phone', 'apps/mobile')
+          : kind === 'tv'
+            ? native('tv', 'apps/tv', { EXPO_TV: '1' })
+            : [`no bundle named ${kind}`]
     console.log(found.length ? `${kind}: carries ${found.join(', ')}` : `${kind}: clean`)
     failed ||= found.length > 0
   }

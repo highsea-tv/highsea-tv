@@ -2,12 +2,12 @@
 // Checkboxes, radios and switches (controls.md › Looks), each in a row with its words at the
 // control's height and text. A checkbox's and a radio's mark is the spec's icon inside its inset,
 // edged in `control-edge` (3:1) and filled with `accent-fill` when on; the checkbox takes the
-// thumb's corner (the control's corner less the inset), the radio is round. On the phone a switch
-// is iOS's own UISwitch, which people expect (mobile.md › Platform conventions), tinted with the
-// spec's off and on roles; tvOS has no UISwitch, so the TV draws the same two roles. On touch the
-// row's target reaches 44 through the hit area.
+// thumb's corner (the control's corner less the inset), the radio is round. A switch is drawn as
+// the web's is (web/switch.tsx) and the prototype's phone shows it: a round 40 × 24 track in
+// `control-edge`, `accent-fill` when on, with an 18 thumb 3 in, before its words; the TV draws the
+// same at its rule's size. On touch the row's target reaches 44 through the hit area.
 import type { ReactNode } from 'react'
-import { Switch as RNSwitch, View } from 'react-native'
+import { View } from 'react-native'
 import type { ToggleCommon } from '../shared/controls.ts'
 import { ControlPress, ControlText, useControllable } from './control.tsx'
 import { Icon } from './icon.tsx'
@@ -102,19 +102,8 @@ function ToggleRow({
         gap: m.gap,
       }}
     >
-      {role === 'switch' ? (
-        <>
-          <Words m={m} label={words} hint={hint} off={disabled} />
-          {mark(on, m)}
-        </>
-      ) : (
-        <>
-          <View style={{ opacity: disabled ? tokens.controls.disabledOpacity : 1 }}>
-            {mark(on, m)}
-          </View>
-          <Words m={m} label={words} hint={hint} off={disabled} />
-        </>
-      )}
+      <View style={{ opacity: disabled ? tokens.controls.disabledOpacity : 1 }}>{mark(on, m)}</View>
+      <Words m={m} label={words} hint={hint} off={disabled} />
     </ControlPress>
   )
 }
@@ -165,49 +154,28 @@ export function Radio(props: ToggleProps) {
   )
 }
 
-/** A switch beside its words, the whole row pressable. */
+/** A switch before its words, the whole row pressable. */
 export function Switch(props: ToggleProps) {
-  const theme = useTheme()
-  const looks = tokens.controls.looks
-  return (
-    <ToggleRow
-      {...props}
-      role="switch"
-      mark={(on, m) =>
-        theme.platform === 'tv' ? (
-          <TvTrack on={on} m={m} />
-        ) : (
-          <RNSwitch
-            value={on}
-            // the row takes the press; the switch shows it, and VoiceOver reads the row
-            accessibilityElementsHidden
-            importantForAccessibility="no-hide-descendants"
-            disabled={props.disabled}
-            trackColor={{
-              true: theme.colors[looks.toggleOn.fill],
-              false: theme.colors[looks.toggleOff.fill],
-            }}
-            ios_backgroundColor={theme.colors[looks.toggleOff.fill]}
-            // React Native's iOS Switch sets alignSelf: 'flex-start' (Switch.js); centre it in the row
-            style={{ alignSelf: 'center', pointerEvents: 'none' }}
-          />
-        )
-      }
-    />
-  )
+  return <ToggleRow {...props} role="switch" mark={(on, m) => <Track on={on} m={m} />} />
 }
 
-/** The TV's switch: a track in the off or on role with a `text` thumb, the spec's icon inside its inset. */
-function TvTrack({ on, m }: { on: boolean; m: ControlPoints }) {
+/**
+ * The switch's track: on the phone the web's 40 × 24 with an 18 thumb 3 in (switch.tsx); on the
+ * TV the spec's icon inside its inset, twice as wide as it's tall.
+ */
+function Track({ on, m }: { on: boolean; m: ControlPoints }) {
   const theme = useTheme()
   const looks = tokens.controls.looks
-  const height = m.icon + m.inset * 2
+  const tv = theme.platform === 'tv'
+  const inset = tv ? m.inset : 3
+  const thumb = tv ? m.icon : 18
+  const height = thumb + inset * 2
   return (
     <View
       style={{
-        width: height * 2 - m.inset * 2,
+        width: tv ? height * 2 - inset * 2 : 40,
         height,
-        padding: m.inset,
+        padding: inset,
         borderRadius: tokens.radius.pill,
         alignItems: on ? 'flex-end' : 'flex-start',
         backgroundColor: theme.colors[on ? looks.toggleOn.fill : looks.toggleOff.fill],
@@ -215,17 +183,18 @@ function TvTrack({ on, m }: { on: boolean; m: ControlPoints }) {
     >
       <View
         style={{
-          width: m.icon,
-          height: m.icon,
+          width: thumb,
+          height: thumb,
           borderRadius: tokens.radius.pill,
           backgroundColor: theme.colors[on ? looks.toggleOn.label : 'text'],
+          boxShadow: tv ? undefined : '0 1px 3px rgba(0, 0, 0, 0.3)',
         }}
       />
     </View>
   )
 }
 
-/** A settings row's switch: its words, a hint under them, and the switch at the end. */
+/** A settings row's switch: the switch, then its words with a hint under them. */
 export function SwitchRow({
   label,
   hint,
