@@ -147,6 +147,9 @@ export function createClient(ctx: Ctx, { library }: { library: Library }) {
       directors: crew.flatMap((c, i) =>
         c.job === 'Director' ? [toApiCredit(c, tmdbId, 'crew', i)] : [],
       ),
+      crew: crew.flatMap((c, i) =>
+        c.job === 'Director' || c.job === 'Producer' ? [] : [toApiCredit(c, tmdbId, 'crew', i)],
+      ),
       videos: (meta?.videos ?? []).map(toApiVideo),
       collection: meta?.collection ?? null,
       versions: versions.map((v) => {

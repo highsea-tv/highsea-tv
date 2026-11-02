@@ -3,6 +3,7 @@
 // controls. Theme and sound change this device at once; the home layout saves to the server, so
 // it follows the person; servers and devices act on the account.
 
+import { playbackOptions, type QualityCap, type SettingsSectionId } from '@highsea-tv/client/prefs'
 import { relative } from '@highsea-tv/core/format'
 import { createTheme, SOUND_EVENTS, themeCss } from '@highsea-tv/tokens'
 import {
@@ -40,19 +41,10 @@ import {
   useServerName,
 } from './data.ts'
 import { GetTheAppsDialog } from './get-the-apps.tsx'
-import {
-  audioLanguages,
-  qualityCaps,
-  subtitleLanguages,
-  useAppearance,
-  useDevicePrefs,
-  usePlaybackSettings,
-  useThemeEverywhere,
-} from './prefs.tsx'
+import { useAppearance, useDevicePrefs, usePlaybackSettings, useThemeEverywhere } from './prefs.tsx'
 import {
   APP_VERSION,
   NEXT_APP_VERSION,
-  type SettingsSectionId,
   useHomeLayout,
   useMyDevices,
   useThemeChoices,
@@ -204,6 +196,9 @@ function SoundSection({ platform }: { platform: ClientPlatform }) {
   )
 }
 
+/** Settings › Playback's choices, as the apps word them (@highsea-tv/client/prefs). */
+const choices = playbackOptions('en')
+
 /**
  * Playback: the languages a film or episode starts in, what happens when an episode ends, and how
  * much the server sends at home and away. Saved to the person, so every device follows.
@@ -213,17 +208,13 @@ function PlaybackSection() {
   return (
     <div className="grid max-w-[32rem] gap-5">
       <Field label="Audio language" hint="What a film or episode starts in, when it has it.">
-        <Select
-          value={p.audio}
-          onValueChange={(audio) => set({ audio })}
-          options={audioLanguages}
-        />
+        <Select value={p.audio} onValueChange={(audio) => set({ audio })} options={choices.audio} />
       </Field>
       <Field label="Subtitle language">
         <Select
           value={p.subtitles}
           onValueChange={(subtitles) => set({ subtitles })}
-          options={subtitleLanguages}
+          options={choices.subtitles}
         />
       </Field>
       <Field
@@ -253,15 +244,15 @@ function PlaybackSection() {
       <Field label="Quality at home" hint="On the same network as the server.">
         <Select
           value={p.qualityHome}
-          onValueChange={(qualityHome) => set({ qualityHome })}
-          options={qualityCaps}
+          onValueChange={(qualityHome) => set({ qualityHome: qualityHome as QualityCap })}
+          options={choices.quality}
         />
       </Field>
       <Field label="Quality away from home" hint="Lower uses less data and starts sooner.">
         <Select
           value={p.qualityAway}
-          onValueChange={(qualityAway) => set({ qualityAway })}
-          options={qualityCaps}
+          onValueChange={(qualityAway) => set({ qualityAway: qualityAway as QualityCap })}
+          options={choices.quality}
         />
       </Field>
       <p className="text-caption text-text-3">

@@ -13,6 +13,7 @@ import type { Ctx } from './context.ts'
 import {
   appKind,
   type Layer,
+  PLAYBACK_DEFAULTS,
   PREFERENCE_KEYS,
   type PreferenceKey,
   type PreferenceLayer,
@@ -75,6 +76,7 @@ export function createPreferences(ctx: Ctx, appearance: AppearanceService) {
       sound: s.sound[appKind(client)],
       volume: s.sound.volume,
       'admin.addMovie.defaults': null,
+      ...PLAYBACK_DEFAULTS,
     }
     const values = { ...server }
     const from = Object.fromEntries(PREFERENCE_KEYS.map((k) => [k, 'server'])) as Record<

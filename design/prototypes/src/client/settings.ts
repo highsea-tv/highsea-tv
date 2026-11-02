@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Client settings (C7, docs/product/client-settings.md), shared by web, mobile and TV: the
 // sections, the themes a device can pick, the person's home layout, and their own devices.
+import { type SettingsSectionId, settingsSections as sectionsOf } from '@highsea-tv/client/prefs'
 import { builtInThemes } from '@highsea-tv/tokens'
 import type { IconName } from '@highsea-tv/ui'
 import { useState } from 'react'
@@ -9,44 +10,13 @@ import type { HomeLayout } from '../mock/types.ts'
 import { useServer } from './data.ts'
 import { useAppearance } from './prefs.tsx'
 
-export type SettingsSectionId =
-  | 'appearance'
-  | 'sounds'
-  | 'playback'
-  | 'home'
-  | 'servers'
-  | 'devices'
-  | 'about'
-
+/** The sections, in order, as every app has them (@highsea-tv/client/prefs). */
 export const settingsSections: {
   id: SettingsSectionId
   label: string
   icon: IconName
   hint: string
-}[] = [
-  { id: 'appearance', label: 'Theme', icon: 'palette', hint: 'How this device looks.' },
-  { id: 'sounds', label: 'Sounds', icon: 'sound', hint: 'Interface sounds on this device.' },
-  {
-    id: 'playback',
-    label: 'Playback',
-    icon: 'play',
-    hint: 'Languages, what plays next, and quality, on every device.',
-  },
-  {
-    id: 'home',
-    label: 'Home screen',
-    icon: 'home',
-    hint: 'Reorder and hide rows, on every device.',
-  },
-  {
-    id: 'servers',
-    label: 'Servers',
-    icon: 'server',
-    hint: 'The servers you use, and signing out.',
-  },
-  { id: 'devices', label: 'Your devices', icon: 'phone', hint: 'Where you’re signed in.' },
-  { id: 'about', label: 'About', icon: 'info', hint: 'Versions and licences.' },
-]
+}[] = sectionsOf('en')
 
 /** Themes a device can pick: the server's default first, then built-ins, then the server's own. */
 export function useThemeChoices() {

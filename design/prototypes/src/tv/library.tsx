@@ -7,10 +7,10 @@
 // Movies is its own destination in the global nav (the owner, 2026-10-30), so the title stands
 // alone, with the sort, Unwatched and the genre as a row of choices on its right; Up from the grid
 // reaches them. An empty library says so, and choices that match nothing offer Show everything.
+import { ALL, arrange, genresOf, LETTERS, letterOf, type Sort } from '@highsea-tv/client/library'
 import { Chip, Icon } from '@highsea-tv/ui'
 import { type ReactNode, useLayoutEffect, useRef, useState } from 'react'
 import { useLibrary } from '../client/data.ts'
-import { ALL, arrange, genresOf, LETTERS, letterOf, type Sort } from '../web/library.tsx'
 import {
   TvButton,
   TvHead,
@@ -290,7 +290,7 @@ export function TvLibrary() {
       </TvMessage>
     )
   const titled = sort === 'title' && items.length > 0
-  const present = new Set(items.map((m) => letterOf(m.sortTitle)))
+  const present = new Set(items.map((m) => letterOf(m.title)))
   return (
     <>
       <TvLetterRail index={index} shown={titled} present={present} />
@@ -376,8 +376,8 @@ export function TvLibrary() {
                 className="grid grid-cols-7 gap-x-(--tv-poster-gap) gap-y-[1.6cqw]"
               >
                 {items.map((m, i) => {
-                  const l = letterOf(m.sortTitle)
-                  const firstOfLetter = i === 0 || letterOf(items[i - 1]?.sortTitle ?? '') !== l
+                  const l = letterOf(m.title)
+                  const firstOfLetter = i === 0 || letterOf(items[i - 1]?.title ?? '') !== l
                   return (
                     <li key={m.id} {...(firstOfLetter && titled ? { 'data-letter': l } : {})}>
                       <TvPoster item={m} href={tvHref(`/movies/${m.id}`)} />

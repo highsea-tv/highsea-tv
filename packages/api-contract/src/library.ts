@@ -102,6 +102,8 @@ export const ClientDetail = z
     studios: z.array(z.string()),
     cast: z.array(Credit),
     directors: z.array(Credit),
+    /** The rest of the crew TMDB lists, without the directors and producers (client-detail.md). */
+    crew: z.array(Credit),
     videos: z.array(Video),
     collection: CollectionRef.nullable(),
     versions: z.array(ClientVersion),

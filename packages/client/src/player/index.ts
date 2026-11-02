@@ -206,6 +206,109 @@ export function reportDue(s: PlayerState, now: number) {
   return s.reportedAt === null || now - s.reportedAt >= REPORT_MS
 }
 
+// ---------------------------------------------------------------------------------------------
+// Leaving the player and what plays next (prototype-gaps.md › 1.1, 1.2, 1.4 and 2.5), the same on
+// every app. Each app hands in its own history: the web's `history` with wouter, the native apps'
+// Expo Router.
+
+/** What the player needs of an app's history to leave it. */
+export type PlayerHistory = {
+  /** Whether the player was opened from a page of this app, so Back returns there. */
+  canGoBack(): boolean
+  back(): void
+  /** Puts another page in the player's place in the history. */
+  replace(to: string): void
+}
+
+/**
+ * Leaves the player for the page it was opened from, so Back there doesn't return to the player.
+ * Opened directly, `to` (the title's page) takes the player's place.
+ */
+export const leavePlayer = (h: PlayerHistory, to: string) =>
+  h.canGoBack() ? h.back() : h.replace(to)
+
+/** The next title takes the player's place, so leaving it still goes back where this began. */
+export const playNext = (h: Pick<PlayerHistory, 'replace'>, id: string | number) =>
+  h.replace(`/play/${id}`)
+
+/** What the player knows of an episode, once shows come; films have none. */
+export type EpisodeOf = {
+  show: { id: string | number; title: string }
+  code: string
+  title: string
+}
+
+type Titled = {
+  item: { id: string | number; title: string }
+  episode?: EpisodeOf | null
+}
+
+/** The title's page, where leaving a player opened directly goes: an episode's show. */
+export const titlePage = (d: Titled | undefined, id: string | number) =>
+  d?.episode ? `/shows/${d.episode.show.id}` : `/movies/${id}`
+
+/** The player's title and the line under it: an episode is its show, then "S1, E1 · Pilot". */
+export const titleLines = (d: Titled | undefined) =>
+  d?.episode
+    ? { title: d.episode.show.title, line: `${d.episode.code} · ${d.episode.title}` }
+    : { title: d?.item.title ?? '', line: null }
+
+/** How many of More like this Next up offers when nothing comes next by itself. */
+export const NEXT_CHOICES = 3
+
+/**
+ * Next up (player.md › Next up): the next episode or a collection's next part, which counts down;
+ * otherwise a few choices that play only when picked (prototype-gaps.md answer 4).
+ */
+export type UpNext<Item, Id = string | number, Still extends string | null = string | null> =
+  | {
+      kind: 'episode' | 'part'
+      id: Id
+      title: string
+      /** "S1, E2 · The Long Night", or the collection's name. */
+      line: string
+      still: Still
+      /** The next season's first episode: the card says the season starts. */
+      season: number | null
+    }
+  | { kind: 'choices'; items: Item[] }
+
+/**
+ * A film's Next up: its collection's next part (the server's `items/{type}/{id}/next`), else the
+ * first of More like this, as choices.
+ */
+export function filmUpNext<Item, Id, Still extends string | null>(
+  part: { id: Id; title: string; still: Still } | null,
+  collection: string | null,
+  related: Item[],
+): UpNext<Item, Id, Still> | null {
+  if (part)
+    return {
+      kind: 'part',
+      id: part.id,
+      title: part.title,
+      line: collection ?? '',
+      still: part.still,
+      season: null,
+    }
+  return related.length ? { kind: 'choices', items: related.slice(0, NEXT_CHOICES) } : null
+}
+
+/** Whether Next up counts down to play by itself: choices wait to be picked. */
+export const countsDown = (u: UpNext<unknown, unknown> | null | undefined) =>
+  !!u && u.kind !== 'choices'
+
+/**
+ * What Back does in the player (prototype-gaps.md › 1.2), as the Apple TV app does: it closes an
+ * open panel, hides controls that show while playing, and otherwise leaves. It never wakes the
+ * controls; paused, they always show, so Back leaves at once.
+ */
+export function backStep(s: { panel: boolean; shown: boolean; playing: boolean }) {
+  if (s.panel) return 'close-panel' as const
+  if (s.shown && s.playing) return 'hide' as const
+  return 'leave' as const
+}
+
 /** Seconds to seek to, kept inside the film. */
 export const clampSeek = (s: Pick<PlayerState, 'duration'>, to: number) =>
   Math.max(0, s.duration > 0 ? Math.min(s.duration, to) : to)

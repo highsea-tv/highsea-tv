@@ -1,6 +1,6 @@
 # The apps catch up with the prototypes
 
-- **Status:** Written on 2026-11-01 at the owner's request ("a plan for a new agent to begin bringing all of the prototype changes over into the actual apps"). Nothing is built yet. The [open questions](#open-questions-for-the-owner) come first: go through them with `/questions` before part A starts.
+- **Status:** Written on 2026-11-01 at the owner's request ("a plan for a new agent to begin bringing all of the prototype changes over into the actual apps"), and approved with [the owner's answers](#the-owners-answers) of 2026-11-01: every recommendation. Part A was built on 2026-11-01 and waits for the owner's review.
 - **Parent plans:** [phase-4-checkpoint-5.md](phase-4-checkpoint-5.md) (4.5b, the TV), [prototype-gaps.md](prototype-gaps.md) (stages 1 to 6, the prototype work this ports) and [design-system-1-1.md](design-system-1-1.md) (the controls every app now draws with).
 - **Gate:** Each part below stops for the owner's review, as the standing rules ask.
 
@@ -70,7 +70,7 @@ When part D is signed off, `apps/tv` is built to the prototype, which is what 4.
   - client-wide playback preferences (audio and subtitle languages, quality at home and away);
   - shows, music, playlists and profiles (the mock's `library.show*`, `library.music`, `library.songs`, `library.playlist*`, `playlists.*` and `profiles.*`).
 - **The compare sheets** (`scripts/sweeps/phone-compare.ts`, `tv-compare.ts`) were run on 2026-11-01. Both apps are behind on everything listed below, and their controls match the spec. One TV bug is unrelated to the prototype work: on Library, the floating tab bar covers the header and the A–Z chip, and the letter rail sits on the first column of posters. Part D fixes it.
-- **Waiting for the owner:** the review of prototype-gaps' stage 6 and of design system 1.1. See [question 4](#open-questions-for-the-owner).
+- **The owner's review** of prototype-gaps' stage 6 and of design system 1.1 comes before part A ([answer 4](#the-owners-answers)); on 2026-11-01 the owner said to start part A.
 
 ## The parts, and their gates
 
@@ -82,11 +82,46 @@ When part D is signed off, `apps/tv` is built to the prototype, which is what 4.
 | **D** | `apps/web` and `apps/desktop` | the web's tests, the playback run, the desktop build |
 | **E** | The specs, the guides and the full checks | `/checks full`, `/checkpoint-report` |
 
-The order is [question 3](#open-questions-for-the-owner)'s recommendation. Each part stops for the owner. Commits only when the owner asks, "Continue checkpoint 4.5b: …", with no attribution lines.
+The order is [answer 3](#the-owners-answers)'s. Each part stops for the owner. Commits only when the owner asks, "Continue checkpoint 4.5b: …", with no attribution lines.
 
 ## Progress
 
-Nothing yet.
+**Part A (2026-11-01), waiting for the owner's review.**
+
+- **A.1, the shared layer.** Into `@highsea-tv/client`, with tests (`packages/client/test`, 70 now):
+  - `player`: `leavePlayer` and `playNext` over a small history each app passes, `titlePage`, `titleLines`, `filmUpNext` (the next part, else three of More like this, which don't count down), `countsDown` and `backStep`.
+  - `library`: Continue watching's card page, menu words, toasts and long press, and `createLibraryText` (Information, Languages and quality, the people row, a person's page, roles).
+  - `servers`: the pairing code typed, scanned or from a link.
+  - `format`: captions and rows that count shows, and the server's name.
+  - `prefs`: Settings' sections in order, and the playback settings with their choices.
+  - `data`: `useContinueActions` (Mark as watched, Remove).
+  - The prototype imports each of these instead of its own copy: `detail-facts.ts`, `continue-menu.ts`, `pairing.ts`, `player.ts`, `settings.ts`, `data.ts` and the mock's Next up. Its 1,734 tests pass unchanged.
+  - **The clean-up after it (2026-11-01, on the owner's word):** the copies the first pass missed are gone too.
+    - The library's sorting, genres, Unwatched and A–Z rail now come from `@highsea-tv/client/library`, out of `web/library.tsx`. That module gains `LETTERS`, `letterOf` (by the sort title) and the sorts' and Show's words, and `arrange` now takes any item with the fields it reads.
+    - The playback settings' shape and choices come from `@highsea-tv/client/prefs` (`PlaybackPrefs`, `playbackOptions`). The prototype still saves them in the browser, as its stand-in for the server.
+    - The player's timings, Next up's countdown and `StreamState` come from `@highsea-tv/client/player`.
+    - Screens import `normalCode`, `SettingsSectionId`, `titlePage`, `titleLines` and the film page's words straight from the package. That leaves `detail-facts.ts` with only the show's people row and `pairing.ts` with only the mock's waiting TV.
+    - What stays in `design/prototypes/src/client/` is the prototype's own wiring: its hooks on the mock client, its browser-saved stand-ins for the server's preference layers, and the history adapter for `leavePlayer` and `playNext`.
+    - `apps/tv`'s library still has its own letter rail, which files by the title rather than the sort title. Part B moves it onto the package.
+- **A.2, Remove from Continue watching.** `POST /api/v1/items/{type}/{id}/dismiss` deletes the person's position and keeps their history, with `watch.updated`. No migration (call 1 below). ADR 0054's 2026-11-01 section.
+- **A.3, Playback settings on the apps.** Seven `playback.*` keys in ADR 0027's layers, written to the user layer by `usePlaybackPrefs`, and read by the play decision: the audio and subtitle languages when the title has no picks of its own, Only when the audio isn't in my language, and the quality cap at home, and under the remote ceiling away. ADR 0027's 2026-11-01 section. Settings › Playback in the admin is unchanged and doesn't overlap: it's how the server transcodes and the most it sends away.
+- **A.4, checked.** Everything the apps need is there:
+  - `items/{type}/{id}/next` gives the next part; the choices are the detail's `related`, which `filmUpNext` takes.
+  - Home's `spotlight` sections carry `HomeItem`s with the position for Play or Resume.
+  - `auth/pairing/{code}` and `/approve` give the waiting device's name, app and address.
+  - `system/info/public` has the server's name before sign-in.
+  - Added `crew` to `ClientDetail` (TMDB's crew without the directors and producers, as the mock has it), so Information's Written by and the people row match the prototype.
+- **ADR 0055's 2026-11-01 section** says what moved.
+- **Checks, under Node 26.11.1:** lint (1,603 files), typecheck, 12,746 tests, smoke, licences and audit are clean. The sweeps are clean too: 3,408 prototype pages, 329 keyboard walks, the D-pad, the server's admin pages, and playback in Chromium and Firefox. Found along the way: the contract test's `ClientDetail` sample had no `crew`, so it was added.
+
+Calls made (for the owner's review):
+
+1. **Dismiss without a flag.** For films, Continue watching is the position rows, so deleting the row is the whole change and playing again brings the film back. The plan's dismissed flag and migration wait for shows, where an episode would otherwise bring its show back through Next up.
+2. **The defaults change nothing.** The film's own audio, subtitles off, and the original quality at home and away, until a person chooses. The prototype's local copy starts with English subtitles for foreign films and 8 Mbit/s away. Say if the server should start there instead.
+3. **The subtitle language stands back once a title has picks.** Any saved pick for the title (a version, a track, an offset) counts, since a saved "off" can't be told from nothing saved.
+4. **Next up and Skip intros are stored now.** The plan left them for shows, but a film's next part counts down too. Skip intros does nothing until the server has intro markers for films.
+5. **The caps' pictures follow the prototype's labels** (20 and 8 Mbit/s are 1080p, 4 is 720p, 2 is 480p). Settings › Playback's remote ceiling maps 20 Mbit/s to 2160p, and the tighter of the two holds.
+6. **A film's own collections row** (Collections a title is in) isn't on the server's detail yet. It needs curation's collections by title, which is part D's or a later part's to add.
 
 ## How to port a screen (every part)
 
@@ -332,6 +367,12 @@ Hard-won notes from 2026-11-01:
    - **Recommended:** build them in part A, so every app's Settings has Playback from the start.
    - Or: leave Settings › Playback out of the apps until a later part, and port everything else first.
 
-## The owner's changes
-
 ## The owner's answers
+
+On 2026-11-01 the owner took every recommendation for questions 1 to 5:
+
+1. **Films only.** Shared modules keep the prototype's kind-aware types, but no Shows or Music tab, row, search group or button appears in the apps until its server phase. Nothing is faked.
+2. **Profiles are left out of this round,** and household profiles are scoped on the server on their own.
+3. **The order is A, B (the TV), C (the phone), D (the web and desktop app), then E.**
+4. **The owner reviews prototype-gaps' stage 6 and design system 1.1 before part A.** Stages 7 and 8 follow when the music phase and part E need them. Asked whether that review had happened, the owner said to start part A now.
+5. **Client-wide playback preferences are built in part A** (A.3), so every app's Settings has Playback from the start.

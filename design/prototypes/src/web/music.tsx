@@ -8,6 +8,7 @@
 // are a list (web/music-lists.tsx), and Playlists the person's own, with New playlist at the
 // right. Each view has its own address (/music, /music/artists, /music/songs, /music/playlists),
 // so Back returns to the one you were on.
+import { letterOf } from '@highsea-tv/client/library'
 import {
   Button,
   cn,
@@ -48,7 +49,7 @@ import {
 import { useSongs } from '../client/playlists.ts'
 import { usePlaylists } from '../client/song-menu.ts'
 import type { ClientArtist } from '../mock/types.ts'
-import { LetterIndex, letterOf, stuck } from './library.tsx'
+import { LetterIndex, stuck } from './library.tsx'
 import { NewPlaylist, WebPlaylistGrid, WebSongList } from './music-lists.tsx'
 import { gutter, webHref } from './shell.tsx'
 import { useWindowChrome } from './window.tsx'

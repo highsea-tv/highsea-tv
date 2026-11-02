@@ -10,6 +10,7 @@ import { mkdtempSync, rmSync } from 'node:fs'
 import type { AddressInfo } from 'node:net'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import type { PreferencePatch } from '@highsea-tv/api-contract'
 import { schema } from '@highsea-tv/db'
 import { ApiError, createClient } from '@highsea-tv/sdk'
 import { createApi } from '../src/api/app.ts'
@@ -117,6 +118,47 @@ describe('playing', () => {
       await code(api.playback.play({ params: item(SINTEL), body: { versionId: `ver_${TEARS}` } })),
     ).toBe('not-found')
     expect(await code(api.playback.play({ params: item(1), body: {} }))).toBe('not-found')
+  })
+
+  test('the person’s playback preferences start a film, until they pick for it', async () => {
+    const { api } = await serve()
+    const [srt, , ass] = [2, 3, 4].map((i) => `fil_${SINTEL}:${i}`) as [string, string, string]
+    const prefer = (values: PreferencePatch['values']) =>
+      api.preferences.save({ body: { layer: 'user', values } })
+    const subtitle = async () =>
+      (await api.playback.play({ params: item(SINTEL), body: {} })).decision.subtitle?.id ?? null
+    // off by default, as before
+    expect(await subtitle()).toBeNull()
+    await prefer({ 'playback.subtitles': 'ja' })
+    expect(await subtitle()).toBe(ass)
+    // English subtitles over English audio only when asked for
+    await prefer({ 'playback.subtitles': 'en', 'playback.onlyForeign': true })
+    expect(await subtitle()).toBeNull()
+    await prefer({ 'playback.onlyForeign': false })
+    expect(await subtitle()).toBe(srt)
+    // a language with no track plays without
+    await prefer({ 'playback.subtitles': 'fr', 'playback.audio': 'fr' })
+    const french = await api.playback.play({ params: item(SINTEL), body: {} })
+    expect(french.decision).toMatchObject({ audio: { id: `fil_${SINTEL}:1` }, subtitle: null })
+    // once they've picked for the title, its picks stand
+    await prefer({ 'playback.subtitles': 'en' })
+    await api.playback.setPrefs({ params: item(SINTEL), body: { subtitleId: null } })
+    expect(await subtitle()).toBeNull()
+    expect(
+      await code(
+        api.preferences.save({
+          body: { layer: 'user', values: { 'playback.qualityHome': '3' } },
+        } as never),
+      ),
+    ).toBe('invalid')
+  })
+
+  test('a quality cap at home holds the film under it', async () => {
+    const { api } = await serve()
+    await api.preferences.save({ body: { layer: 'user', values: { 'playback.qualityHome': '2' } } })
+    const capped = await api.playback.play({ params: item(SINTEL), body: {} })
+    expect(capped.decision.method).not.toBe('direct-play')
+    expect(capped.decision.bitrate ?? 0).toBeLessThanOrEqual(2_000_000)
   })
 
   test('a picture subtitle and styled ASS are burned in; each track says how it’d be sent', async () => {
@@ -315,6 +357,24 @@ describe('watch state', () => {
     await api.playback.unplayed({ params: item(SINTEL) })
     expect((await api.library.item({ params: item(SINTEL) })).item.watched).toBe(false)
     expect(runtime.db.select().from(schema.watchHistory).all()).toEqual([])
+  })
+
+  test('Remove from Continue watching forgets the place and keeps the viewings', async () => {
+    const { api, runtime } = await serve()
+    await api.playback.played({ params: item(SINTEL) })
+    await api.playback.itemProgress({ params: item(SINTEL), body: { position: 30 } })
+    expect((await api.library.item({ params: item(SINTEL) })).item.progress).toBe(0.3)
+    await api.playback.dismiss({ params: item(SINTEL) })
+    expect((await api.library.item({ params: item(SINTEL) })).item).toMatchObject({
+      watched: true,
+      progress: null,
+    })
+    expect(runtime.db.select().from(schema.watchPositions).all()).toEqual([])
+    expect(runtime.db.select().from(schema.watchHistory).get()).toMatchObject({ playCount: 1 })
+    // playing it again brings it back
+    await api.playback.itemProgress({ params: item(SINTEL), body: { position: 40 } })
+    expect((await api.library.item({ params: item(SINTEL) })).item.progress).toBe(0.4)
+    expect(await code(api.playback.dismiss({ params: item(999_999) }))).toBe('not-found')
   })
 
   test('the player’s picks are kept per person and title', async () => {

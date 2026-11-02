@@ -3,6 +3,7 @@
 // the posters seven a row with each one's seasons under it and how many episodes are left on the
 // art, and the alphabet rail at the left while sorted by title. Choosing a sort keeps focus on the
 // choice, as on every library (the owner, 2026-10-31).
+import { letterOf } from '@highsea-tv/client/library'
 import { Chip } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useShows } from '../client/data.ts'
@@ -14,7 +15,6 @@ import {
   seasonsCount,
   showGenresOf,
 } from '../client/shows.ts'
-import { letterOf } from '../web/library.tsx'
 import { TvButton, TvHead, TvMessage, TvTile, TvTileSkeleton, tvChip, tvHref } from './kit.tsx'
 import {
   motion,

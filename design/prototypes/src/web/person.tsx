@@ -6,16 +6,19 @@
 // films here, the one they're known for first, each poster with their role and the year; then the
 // shows they're in, and their albums when they're an artist here. Only what's on this server, as
 // Jellyfin and Infuse do: the household browses what it can play.
+import { createLibraryText } from '@highsea-tv/client/library'
 import { Button, CarouselRow, cn, EmptyState, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { usePerson } from '../client/data.ts'
-import { departmentTitle, hereOf, lifeOf, roleNames } from '../client/detail-facts.ts'
 import { MediaPosterSkeleton } from '../client/media-card.tsx'
 import { ShowPoster } from '../client/show-card.tsx'
 import { showYears } from '../client/shows.ts'
 import type { ClientPerson } from '../mock/types.ts'
 import { gutter, webHref } from './shell.tsx'
+
+/** What the page says about the title, as the apps word it (@highsea-tv/client/library). */
+const facts = createLibraryText('en')
 
 /** A biography this long or longer is cut at three lines, with More. */
 export const LONG_BIO = 240
@@ -80,7 +83,7 @@ export function WebPerson() {
       {/* the rows keep to the page's width, as the film page's do */}
       <div className="mx-auto grid w-full max-w-[1680px] grid-cols-[minmax(0,1fr)] gap-10">
         {p.departments.map(({ department, credits }) => (
-          <CarouselRow key={department} title={departmentTitle[department]}>
+          <CarouselRow key={department} title={facts.departmentTitle(department)}>
             {credits.map(({ item: m, role }) => (
               <Poster
                 key={m.id}
@@ -89,7 +92,7 @@ export function WebPerson() {
                 href={webHref(`/movies/${m.id}`)}
                 showTitle
                 titleSize="body"
-                caption={`${roleNames(role)} · ${m.year}`}
+                caption={`${facts.roleNames(role)} · ${m.year}`}
               />
             ))}
           </CarouselRow>
@@ -102,7 +105,7 @@ export function WebPerson() {
                 show={show}
                 href={webHref(`/shows/${show.id}`)}
                 titleSize="body"
-                caption={`${roleNames(role)} · ${showYears(show)}`}
+                caption={`${facts.roleNames(role)} · ${showYears(show)}`}
               />
             ))}
           </CarouselRow>
@@ -130,11 +133,11 @@ export function WebPerson() {
 
 /** "Acting · 3 movies, 2 shows and 4 albums here", then born and died. */
 export function Facts({ person: p, className }: { person: ClientPerson; className?: string }) {
-  const life = lifeOf(p)
+  const life = facts.lifeOf(p)
   return (
     <div className={cn('grid gap-1', className)}>
       <p>
-        {departmentTitle[p.knownFor]} · {hereOf(p)}
+        {facts.departmentTitle(p.knownFor)} · {facts.hereOf(p.counts)}
       </p>
       {life && <p className="text-text-3">{life}</p>}
     </div>

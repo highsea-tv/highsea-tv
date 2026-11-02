@@ -85,6 +85,15 @@ export const useMarkWatched = (id: number) =>
       : c.playback.unplayed({ params: { type: 'movie', id } }),
   )
 
+/**
+ * Continue watching's menu (prototype-gaps.md › 2.4): Mark as watched, or Remove from Continue
+ * watching, which forgets the place and keeps what's been watched (ADR 0054's 2026-11-01 section).
+ */
+export const useContinueActions = (id: number) => ({
+  markWatched: useAction((c) => c.playback.played({ params: { type: 'movie', id } })),
+  remove: useAction((c) => c.playback.dismiss({ params: { type: 'movie', id } })),
+})
+
 /** How long typing pauses before a search goes to the server. */
 export const SEARCH_SETTLE_MS = 150
 

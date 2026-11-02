@@ -5,10 +5,10 @@
 // jumping as the finger passes each letter, at once, as iOS does. A dimmed letter lands on the
 // nearest letter that has titles. From the keyboard each letter is a button, the dimmed ones
 // skipped, and a letter focuses its first title, as the web's index does. The letters are the
-// web's and the TV's (`LETTERS` and `letterOf` in web/library.tsx).
+// web's and the TV's (`LETTERS` and `letterOf` in @highsea-tv/client/library).
+import { LETTERS, letterOf } from '@highsea-tv/client/library'
 import { cn } from '@highsea-tv/ui'
 import { type ReactNode, type PointerEvent as ReactPointerEvent, useRef, useState } from 'react'
-import { LETTERS, letterOf } from '../web/library.tsx'
 
 /**
  * Where the letters start, for a list's sort keys (null for a title the sort doesn't index): the

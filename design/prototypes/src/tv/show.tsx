@@ -9,12 +9,13 @@
 // each with its number, title, two lines of synopsis, and length and air date under it. Choosing a
 // season keeps focus on the choice (the owner, 2026-10-31); Down from the seasons enters the
 // episodes at the one Play plays. Then More like this, Cast and crew, and About and Information.
+import { createLibraryText } from '@highsea-tv/client/library'
 import { Chip, cn, Icon, Rating, Skeleton } from '@highsea-tv/ui'
 import { useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useLongPress } from '../client/continue-menu.ts'
 import { useMarkEpisodes, useShow } from '../client/data.ts'
-import { names, role, showPeopleOf } from '../client/detail-facts.ts'
+import { showPeopleOf } from '../client/detail-facts.ts'
 import { UnwatchedCount } from '../client/show-card.tsx'
 import {
   airedDate,
@@ -53,6 +54,9 @@ import {
 } from './kit.tsx'
 import { TvMenu } from './song-menu.tsx'
 import { TvTracksPanel } from './tracks.tsx'
+
+/** What the page says about the title, as the apps word it (@highsea-tv/client/library). */
+const facts = createLibraryText('en')
 
 export function TvShow({ panel, onPanel }: { panel: boolean; onPanel: (open: boolean) => void }) {
   const { id, episode } = useParams<{ id: string; episode?: string }>()
@@ -180,13 +184,13 @@ function ShowPage({
               {d.cast.length > 0 && (
                 <p className="truncate">
                   <span className="text-text-3">Starring </span>
-                  {names(d.cast.slice(0, 3))}
+                  {facts.names(d.cast.slice(0, 3))}
                 </p>
               )}
               {d.creators.length > 0 && (
                 <p className="truncate">
                   <span className="text-text-3">Created by </span>
-                  {names(d.creators)}
+                  {facts.names(d.creators)}
                 </p>
               )}
             </div>
@@ -356,7 +360,7 @@ function ShowPage({
                         {c.name}
                       </p>
                       <p className="w-full truncate text-(length:--tv-text-pill) text-text-3 leading-[1.3]">
-                        {role(c)}
+                        {facts.role(c)}
                       </p>
                     </a>
                   </li>

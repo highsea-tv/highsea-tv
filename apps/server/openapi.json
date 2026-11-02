@@ -2690,13 +2690,63 @@
               },
               "admin.addMovie.defaults": {
                 "$ref": "#/components/schemas/AddMovieDefaults"
+              },
+              "playback.audio": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "original"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[a-z]{2,3}$"
+                  }
+                ]
+              },
+              "playback.subtitles": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "off"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[a-z]{2,3}$"
+                  }
+                ]
+              },
+              "playback.onlyForeign": {
+                "type": "boolean"
+              },
+              "playback.autoplayNext": {
+                "type": "boolean"
+              },
+              "playback.skipIntros": {
+                "type": "boolean"
+              },
+              "playback.qualityHome": {
+                "$ref": "#/components/schemas/QualityCap"
+              },
+              "playback.qualityAway": {
+                "$ref": "#/components/schemas/QualityCap"
               }
             },
             "required": [
               "theme",
               "sound",
               "volume",
-              "admin.addMovie.defaults"
+              "admin.addMovie.defaults",
+              "playback.audio",
+              "playback.subtitles",
+              "playback.onlyForeign",
+              "playback.autoplayNext",
+              "playback.skipIntros",
+              "playback.qualityHome",
+              "playback.qualityAway"
             ]
           },
           "from": {
@@ -2737,13 +2787,83 @@
                   "user",
                   "server"
                 ]
+              },
+              "playback.audio": {
+                "type": "string",
+                "enum": [
+                  "device",
+                  "client",
+                  "user",
+                  "server"
+                ]
+              },
+              "playback.subtitles": {
+                "type": "string",
+                "enum": [
+                  "device",
+                  "client",
+                  "user",
+                  "server"
+                ]
+              },
+              "playback.onlyForeign": {
+                "type": "string",
+                "enum": [
+                  "device",
+                  "client",
+                  "user",
+                  "server"
+                ]
+              },
+              "playback.autoplayNext": {
+                "type": "string",
+                "enum": [
+                  "device",
+                  "client",
+                  "user",
+                  "server"
+                ]
+              },
+              "playback.skipIntros": {
+                "type": "string",
+                "enum": [
+                  "device",
+                  "client",
+                  "user",
+                  "server"
+                ]
+              },
+              "playback.qualityHome": {
+                "type": "string",
+                "enum": [
+                  "device",
+                  "client",
+                  "user",
+                  "server"
+                ]
+              },
+              "playback.qualityAway": {
+                "type": "string",
+                "enum": [
+                  "device",
+                  "client",
+                  "user",
+                  "server"
+                ]
               }
             },
             "required": [
               "theme",
               "sound",
               "volume",
-              "admin.addMovie.defaults"
+              "admin.addMovie.defaults",
+              "playback.audio",
+              "playback.subtitles",
+              "playback.onlyForeign",
+              "playback.autoplayNext",
+              "playback.skipIntros",
+              "playback.qualityHome",
+              "playback.qualityAway"
             ]
           },
           "layers": {
@@ -2839,6 +2959,17 @@
           "released"
         ]
       },
+      "QualityCap": {
+        "type": "string",
+        "enum": [
+          "2",
+          "4",
+          "8",
+          "20",
+          "original"
+        ],
+        "description": "The original, or a cap in Mbit/s; the server’s remote limit still applies."
+      },
       "PreferenceLayer": {
         "type": "object",
         "properties": {
@@ -2856,6 +2987,49 @@
           },
           "admin.addMovie.defaults": {
             "$ref": "#/components/schemas/AddMovieDefaults"
+          },
+          "playback.audio": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "original"
+                ]
+              },
+              {
+                "type": "string",
+                "pattern": "^[a-z]{2,3}$"
+              }
+            ]
+          },
+          "playback.subtitles": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "off"
+                ]
+              },
+              {
+                "type": "string",
+                "pattern": "^[a-z]{2,3}$"
+              }
+            ]
+          },
+          "playback.onlyForeign": {
+            "type": "boolean"
+          },
+          "playback.autoplayNext": {
+            "type": "boolean"
+          },
+          "playback.skipIntros": {
+            "type": "boolean"
+          },
+          "playback.qualityHome": {
+            "$ref": "#/components/schemas/QualityCap"
+          },
+          "playback.qualityAway": {
+            "$ref": "#/components/schemas/QualityCap"
           }
         }
       },
@@ -2899,6 +3073,84 @@
               },
               "admin.addMovie.defaults": {
                 "$ref": "#/components/schemas/AddMovieDefaults"
+              },
+              "playback.audio": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "original"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[a-z]{2,3}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "playback.subtitles": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "enum": [
+                      "off"
+                    ]
+                  },
+                  {
+                    "type": "string",
+                    "pattern": "^[a-z]{2,3}$"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "playback.onlyForeign": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "playback.autoplayNext": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "playback.skipIntros": {
+                "type": [
+                  "boolean",
+                  "null"
+                ]
+              },
+              "playback.qualityHome": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/QualityCap"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
+              },
+              "playback.qualityAway": {
+                "allOf": [
+                  {
+                    "$ref": "#/components/schemas/QualityCap"
+                  },
+                  {
+                    "type": [
+                      "string",
+                      "null"
+                    ]
+                  }
+                ]
               }
             },
             "additionalProperties": false
@@ -5550,6 +5802,12 @@
               "$ref": "#/components/schemas/Credit"
             }
           },
+          "crew": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Credit"
+            }
+          },
           "videos": {
             "type": "array",
             "items": {
@@ -5580,6 +5838,7 @@
           "studios",
           "cast",
           "directors",
+          "crew",
           "videos",
           "collection",
           "versions",
@@ -22833,6 +23092,72 @@
         ],
         "summary": "Mark a title unwatched",
         "description": "As if never started: the viewings and where you stopped are cleared.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "enum": [
+                "movie"
+              ]
+            },
+            "required": true,
+            "name": "type",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/items/{type}/{id}/dismiss": {
+      "post": {
+        "tags": [
+          "Playback"
+        ],
+        "summary": "Remove a title from Continue watching",
+        "description": "Forgets where you stopped without marking it watched; its viewings are kept. Playing it again brings it back.",
         "x-highsea-access": "user",
         "security": [
           {

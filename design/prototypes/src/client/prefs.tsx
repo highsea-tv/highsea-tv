@@ -2,6 +2,7 @@
 // What each device remembers for itself (C7): its theme and its sound. Until someone changes
 // them, a device follows the server's defaults (A12). In the prototype the toolbar's theme and
 // sound stand in for those defaults, and a choice made here wins over them on that platform.
+import { type PlaybackPrefs, SERVER_THEME } from '@highsea-tv/client/prefs'
 import { createTheme, themeCss } from '@highsea-tv/tokens'
 import { useSoundPlayer } from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
@@ -17,7 +18,7 @@ export type DevicePrefs = {
   volume: number
 }
 
-const fallback: DevicePrefs = { theme: 'server', sound: null, volume: 0.8 }
+const fallback: DevicePrefs = { theme: SERVER_THEME, sound: null, volume: 0.8 }
 const key = (p: ClientPlatform) => `highsea-proto:prefs:${p}`
 const listeners = new Set<() => void>()
 
@@ -109,7 +110,7 @@ export function ApplyDevicePrefs({ platform }: { platform: ClientPlatform }) {
 
   useEffect(() => {
     const root = document.documentElement
-    if (prefs.theme === 'server') {
+    if (prefs.theme === SERVER_THEME) {
       root.dataset.theme = proto.theme
       return
     }
@@ -137,24 +138,13 @@ export function ApplyDevicePrefs({ platform }: { platform: ClientPlatform }) {
 /**
  * Playback (client-settings.md#playback): the person's own choices for what plays, kept with the
  * person in ADR 0027's layers, so every device they're signed in on follows them. The server's
- * Settings › Playback (how it transcodes) is separate. In the prototype the three platforms share
- * one copy, as the person's devices would.
+ * Settings › Playback (how it transcodes) is separate. The shape and the choices are
+ * `@highsea-tv/client/prefs`'s, as the apps have them; the prototype keeps one copy in the browser
+ * for its three platforms, as the person's devices would share one on the server. It starts with
+ * English subtitles and 8 Mbit/s away, to show those choices made; the server starts with none
+ * made (apps-catch-up.md, part A's call 2).
  */
-export type PlaybackSettings = {
-  /** 'original' plays the film's own language; otherwise a language code. */
-  audio: string
-  /** 'off', or a language code. */
-  subtitles: string
-  /** Subtitles only when the audio isn't in the subtitles' language. */
-  onlyForeign: boolean
-  autoplayNext: boolean
-  skipIntros: boolean
-  /** 'original', or a cap in Mbit/s. */
-  qualityHome: string
-  qualityAway: string
-}
-
-const playbackFallback: PlaybackSettings = {
+const playbackFallback: PlaybackPrefs = {
   audio: 'original',
   subtitles: 'en',
   onlyForeign: true,
@@ -164,37 +154,14 @@ const playbackFallback: PlaybackSettings = {
   qualityAway: '8',
 }
 
-export const audioLanguages = [
-  { value: 'original', label: 'Original language' },
-  { value: 'en', label: 'English' },
-  { value: 'de', label: 'German' },
-  { value: 'fr', label: 'French' },
-  { value: 'es', label: 'Spanish' },
-  { value: 'ja', label: 'Japanese' },
-]
-
-export const subtitleLanguages = [
-  { value: 'off', label: 'Off' },
-  ...audioLanguages.filter((x) => x.value !== 'original'),
-]
-
-/** Original, or a cap on the bitrate the server sends, with what it looks like. */
-export const qualityCaps = [
-  { value: 'original', label: 'Original', short: 'Original' },
-  { value: '20', label: '20 Mbit/s · 1080p', short: '20 Mbit/s' },
-  { value: '8', label: '8 Mbit/s · 1080p', short: '8 Mbit/s' },
-  { value: '4', label: '4 Mbit/s · 720p', short: '4 Mbit/s' },
-  { value: '2', label: '2 Mbit/s · 480p', short: '2 Mbit/s' },
-]
-
 const playbackKey = 'highsea-proto:prefs:playback'
 const playbackListeners = new Set<() => void>()
 
-function loadPlayback(): PlaybackSettings {
+function loadPlayback(): PlaybackPrefs {
   try {
     const raw = localStorage.getItem(playbackKey)
     return raw
-      ? { ...playbackFallback, ...(JSON.parse(raw) as Partial<PlaybackSettings>) }
+      ? { ...playbackFallback, ...(JSON.parse(raw) as Partial<PlaybackPrefs>) }
       : playbackFallback
   } catch {
     return playbackFallback
@@ -210,7 +177,7 @@ export function usePlaybackSettings() {
       playbackListeners.delete(on)
     }
   }, [])
-  const set = (patch: Partial<PlaybackSettings>) => {
+  const set = (patch: Partial<PlaybackPrefs>) => {
     const next = { ...loadPlayback(), ...patch }
     try {
       localStorage.setItem(playbackKey, JSON.stringify(next))

@@ -1,8 +1,20 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// C3 Library's arranging (client-library.md), shared by the web and the phone.
+// C3 Library's arranging (client-library.md), shared by the web and the phone, and the words the
+// title and person pages and Continue watching's menu share (apps-catch-up.md › A.1).
 import { describe, expect, test } from 'bun:test'
 import type { ClientItem } from '@highsea-tv/api-contract'
-import { ALL, arrange, genresOf } from '../src/library/index.ts'
+import {
+  ALL,
+  arrange,
+  createLibraryText,
+  type FactCredit,
+  genresOf,
+  LETTERS,
+  letterOf,
+  peopleOf,
+  previewOf,
+  videoLength,
+} from '../src/library/index.ts'
 
 const item = (id: number, title: string, x: Partial<ClientItem> = {}) =>
   ({
@@ -60,5 +72,128 @@ describe('library', () => {
       'Horror',
       'Science Fiction',
     ])
+  })
+
+  test('the letter a title files under, by its sort title', () => {
+    expect(LETTERS).toHaveLength(27)
+    expect(letterOf('The Matrix')).toBe('M')
+    expect(letterOf('an American Werewolf in London')).toBe('A')
+    expect(letterOf('12 Angry Men')).toBe('#')
+    expect(letterOf('Amélie')).toBe('A')
+  })
+
+  test('the sorts and Show, in the menu’s order and words', () => {
+    const text = createLibraryText('en')
+    expect(text.sorts).toEqual([
+      { value: 'title', label: 'Title' },
+      { value: 'added', label: 'Recently added' },
+      { value: 'year', label: 'Newest first' },
+      { value: 'rating', label: 'Highest rated' },
+    ])
+    expect(text.shows.map((x) => x.label)).toEqual(['All movies', 'Unwatched'])
+  })
+})
+
+describe('the title and person pages’ words', () => {
+  const text = createLibraryText('en')
+  const credit = (personId: number, name: string, x: Partial<FactCredit> = {}): FactCredit => ({
+    personId,
+    name,
+    character: null,
+    job: null,
+    ...x,
+  })
+  const film = {
+    item: { title: 'Sintel', releaseDate: '2010-09-27', runtimeMinutes: 15, genres: ['Animation'] },
+    certification: null,
+    directors: [credit(1, 'Colin Levy', { job: 'Director' })],
+    crew: [
+      credit(1, 'Colin Levy', { job: 'Director' }),
+      credit(2, 'Esther Wouda', { job: 'Screenplay' }),
+    ],
+    studios: ['Blender Foundation'],
+    originalTitle: 'Sintel',
+    versions: [
+      {
+        label: '1080p',
+        audio: [{ language: 'en' }],
+        subtitles: [{ language: 'en' }, { language: 'de' }],
+      },
+      { label: '4K', audio: [{ language: 'en' }], subtitles: [] },
+    ],
+  }
+
+  test('Information leaves out what isn’t known, and says when it isn’t rated', () => {
+    expect(text.informationOf(film)).toEqual([
+      ['Released', '27 September 2010'],
+      ['Runtime', '15m'],
+      ['Rated', 'Not rated'],
+      ['Genres', 'Animation'],
+      ['Directed by', 'Colin Levy'],
+      ['Written by', 'Esther Wouda'],
+      ['Studio', 'Blender Foundation'],
+    ])
+  })
+
+  test('each language once, by name', () => {
+    expect(text.languagesOf(film)).toEqual([
+      ['Versions', '1080p, 4K'],
+      ['Audio', 'English'],
+      ['Subtitles', 'English, German'],
+    ])
+    expect(text.languagesOf({ versions: [{ label: 'SD', audio: [], subtitles: [] }] })).toEqual([
+      ['Versions', 'SD'],
+      ['Audio', 'None listed'],
+      ['Subtitles', 'None'],
+    ])
+  })
+
+  test('cast and crew in one row, a director once', () => {
+    const cast = [credit(3, 'Halina Reijn', { character: 'Sintel' })]
+    const row = peopleOf({ cast, directors: film.directors, crew: film.crew })
+    expect(row.map((c) => c.name)).toEqual(['Halina Reijn', 'Colin Levy', 'Esther Wouda'])
+    expect(row.map(text.role)).toEqual(['Sintel', 'Director', 'Writer'])
+    expect(text.roleNames('Director, Original Music Composer')).toBe('Director, Music')
+  })
+
+  test('a person’s page: what’s here and their life', () => {
+    expect(text.hereOf({ films: 3 })).toBe('3 movies here')
+    expect(text.hereOf({ films: 3, shows: 2, albums: 1 })).toBe(
+      '3 movies, 2 shows and 1 album here',
+    )
+    expect(
+      text.lifeOf({
+        born: { date: '1895-10-04', place: 'Piqua, Kansas, USA' },
+        died: { date: '1966-02-01' },
+      }),
+    ).toBe('Born 4 October 1895 in Piqua, Kansas, USA · Died 1 February 1966')
+    expect(text.lifeOf({ born: null, died: null })).toBeNull()
+  })
+
+  test('Continue watching’s menu for a film and for an episode', () => {
+    expect(text.continueMenu({ id: 45745, title: 'Sintel' })).toEqual({
+      goTo: { label: 'Go to the film', path: '/movies/45745' },
+      markWatched: 'Mark as watched',
+      remove: 'Remove from Continue watching',
+      marked: 'Sintel marked as watched',
+      removed: {
+        title: 'Sintel removed from Continue watching',
+        description: 'It isn’t marked as watched.',
+      },
+    })
+    const episode = text.continueMenu({
+      id: 'e1',
+      title: 'Pilot',
+      show: { id: 's1', title: 'Harbor', code: 'S1 E1' },
+    })
+    expect(episode.goTo).toEqual({ label: 'Go to the show', path: '/shows/s1/episodes/e1' })
+    expect(episode.marked).toBe('Harbor, S1 E1 marked as watched')
+  })
+
+  test('the trailer and its length', () => {
+    expect(
+      previewOf({ videos: [{ kind: 'Clip' }, { kind: 'Teaser' }, { kind: 'Trailer' }] }),
+    ).toEqual({ kind: 'Teaser' })
+    expect(videoLength(124)).toBe('2:04')
   })
 })

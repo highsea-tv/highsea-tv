@@ -337,6 +337,17 @@ export const playback = {
     request: { params: ItemParams },
     responses: { ...noContent, ...errors('unauthorized', 'not-found') },
   }),
+  dismiss: createRoute({
+    method: 'post',
+    path: `${ITEMS}/{type}/{id}/dismiss`,
+    tags: ['Playback'],
+    summary: 'Remove a title from Continue watching',
+    description:
+      'Forgets where you stopped without marking it watched; its viewings are kept. Playing it again brings it back.',
+    ...access('user'),
+    request: { params: ItemParams },
+    responses: { ...noContent, ...errors('unauthorized', 'not-found') },
+  }),
   itemProgress: createRoute({
     method: 'post',
     path: `${ITEMS}/{type}/{id}/progress`,

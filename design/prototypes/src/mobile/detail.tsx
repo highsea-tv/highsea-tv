@@ -7,6 +7,13 @@
 // with, in a sheet), Mark as watched. Then More like this, the Collections it's in, Trailers and
 // extras, Cast and crew, and About, Information, and Languages and quality as cards.
 import {
+  createLibraryText,
+  type Fact,
+  peopleOf,
+  previewOf,
+  videoLength,
+} from '@highsea-tv/client/library'
+import {
   Button,
   cn,
   EmptyState,
@@ -22,16 +29,6 @@ import {
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { collectionCaption, left, runtime, useItem } from '../client/data.ts'
-import {
-  type Fact,
-  informationOf,
-  languagesOf,
-  names,
-  peopleOf,
-  previewOf,
-  role,
-  videoLength,
-} from '../client/detail-facts.ts'
 import { DownloadButton } from '../client/download-button.tsx'
 import { useMarkWatched } from '../client/item-more.tsx'
 import { TrailerDialog } from '../client/trailer.tsx'
@@ -40,6 +37,9 @@ import type { ClientDetail, Video } from '../mock/types.ts'
 import { WatchWith } from '../web/detail.tsx'
 import { MobileRow, PosterItems } from './home.tsx'
 import { BackBadge, gutter, mobileHref } from './shell.tsx'
+
+/** What the page says about the title, as the apps word it (@highsea-tv/client/library). */
+const facts = createLibraryText('en')
 
 /** The fade from the art into the page, under the logo. */
 export const fade = 'absolute inset-0 bg-[linear-gradient(0deg,var(--color-bg)_2%,transparent_55%)]'
@@ -163,13 +163,13 @@ export function MobileDetail() {
             {d.cast.length > 0 && (
               <p className="line-clamp-2">
                 <span className="text-text-3">Starring </span>
-                {names(d.cast.slice(0, 3))}
+                {facts.names(d.cast.slice(0, 3))}
               </p>
             )}
             {d.directors.length > 0 && (
               <p className="truncate">
                 <span className="text-text-3">Directed by </span>
-                {names(d.directors)}
+                {facts.names(d.directors)}
               </p>
             )}
           </div>
@@ -252,7 +252,7 @@ export function MobileDetail() {
                   className="aspect-square w-full rounded-full bg-s1 object-cover"
                 />
                 <p className="mt-1.5 truncate font-semibold text-[12px]">{c.name}</p>
-                <p className="truncate text-[12px] text-text-3">{role(c)}</p>
+                <p className="truncate text-[12px] text-text-3">{facts.role(c)}</p>
               </a>
             </li>
           ))}
@@ -264,8 +264,8 @@ export function MobileDetail() {
           {m.tagline && <p className="font-semibold text-[15px]">{m.tagline}</p>}
           <p className="text-[15px] text-text-2 leading-[1.55]">{m.synopsis}</p>
         </article>
-        <Facts title="Information" rows={informationOf(d)} />
-        <Facts title="Languages and quality" rows={languagesOf(d)} />
+        <Facts title="Information" rows={facts.informationOf(d)} />
+        <Facts title="Languages and quality" rows={facts.languagesOf(d)} />
       </section>
       <TrailerDialog video={trailer} onOpenChange={(o) => !o && setTrailer(null)} />
       <Sheet open={tracks} onOpenChange={setTracks}>

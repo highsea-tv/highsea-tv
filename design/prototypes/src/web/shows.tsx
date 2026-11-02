@@ -3,6 +3,7 @@
 // one library: the title and count, Show, Genre and Sort at the right, the A–Z index when sorted
 // by title, and a poster grid. Each poster counts the episodes left to watch on its art, as Plex
 // and Infuse do, and names its seasons under the title.
+import { letterOf } from '@highsea-tv/client/library'
 import { Button, cn, EmptyState, Select, Skeleton } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useShows } from '../client/data.ts'
@@ -18,7 +19,7 @@ import {
   showSorts,
   showsCount,
 } from '../client/shows.ts'
-import { LetterIndex, letterOf, stuck } from './library.tsx'
+import { LetterIndex, stuck } from './library.tsx'
 import { gutter, webHref } from './shell.tsx'
 import { useWindowChrome } from './window.tsx'
 

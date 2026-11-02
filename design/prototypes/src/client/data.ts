@@ -172,23 +172,15 @@ export const useMarkEpisodes = () => ({
   ),
 })
 
-/** "6 movies · 2010–2020". */
-/** "4 movies and 1 show", leaving out a kind it has none of. */
-export const titlesHere = (movies: number, shows: number) =>
-  [
-    movies ? `${movies} ${movies === 1 ? 'movie' : 'movies'}` : '',
-    shows ? `${shows} ${shows === 1 ? 'show' : 'shows'}` : '',
-  ]
-    .filter(Boolean)
-    .join(' and ')
+/** "4 movies and 1 show", leaving out a kind it has none of (@highsea-tv/client/format). */
+export const titlesHere = (movies: number, shows: number) => format.titlesHere(movies, shows)
 
 /** A collection's row, named by what's in it, the films first. */
-export const titlesRow = (movies: number, shows: number) =>
-  movies && shows ? 'Films and shows' : shows ? 'Shows' : 'Films'
+export const titlesRow = (movies: number, shows: number) => format.titlesRow(movies, shows)
 
-/** "4 movies and 1 show · 2006–2019"; with no shows, the shared caption every client has. */
+/** "6 movies · 2010–2020", or "4 movies and 1 show · 2006–2019". */
 export const collectionCaption = (c: { count: number; years: string; shows?: number }) =>
-  c.shows ? `${titlesHere(c.count, c.shows)} · ${c.years}` : format.caption(c)
+  format.caption(c)
 
 /** Narrows a Home row to one of films (and episodes): every row but shows' and music's. */
 export const isFilmSection = (s: HomeSection): s is FilmSection =>
@@ -208,7 +200,7 @@ export const searchSuggestions = [
 export const useServer = () => useQuery('server', (c) => c.system.server(), ['server.updated'])
 
 /** The server's name as its owner set it, and "this server" until it's known (prototype-gaps.md › 3.7). */
-export const useServerName = () => useServer().data?.name ?? 'this server'
+export const useServerName = () => format.serverName(useServer().data?.name)
 
 export const useKnownServers = () => useQuery('client:known', (c) => c.connect.known())
 

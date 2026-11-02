@@ -1,15 +1,25 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C3 Library browse, mobile (docs/product/client-library.md#mobile): a large title, the count and
 // one Sort and filter button that opens a sheet; then three posters a row.
+import {
+  ALL,
+  arrange,
+  createLibraryText,
+  genresOf,
+  type Show,
+  type Sort,
+} from '@highsea-tv/client/library'
 import { Button, Chip, cn, EmptyState, Sheet, SheetContent, Skeleton } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLibrary } from '../client/data.ts'
 import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
-import { ALL, arrange, genresOf, type Show, type Sort, shows, sorts } from '../web/library.tsx'
 import { LibraryNav } from './collections.tsx'
 import { LetterIndexed, useLetters } from './letter-index.tsx'
 import { PullToRefresh } from './pull.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
+
+/** The library's sorts and Unwatched, worded as the apps word them. */
+const text = createLibraryText('en')
 
 export function MobileLibrary() {
   const library = useLibrary()
@@ -21,7 +31,7 @@ export function MobileLibrary() {
   const shown = arrange(items, genre, sort, show === 'unwatched')
   const filtered = genre !== ALL || sort !== 'title' || show !== 'all'
   const letters = useLetters(
-    shown.map((m) => m.sortTitle),
+    shown.map((m) => m.title),
     sort === 'title' && library.status === 'success',
   )
   return (
@@ -110,7 +120,7 @@ export function MobileLibrary() {
               <fieldset className="grid gap-2">
                 <legend className="mb-2 font-mono text-label text-text-3 uppercase">Show</legend>
                 <div className="flex flex-wrap gap-2">
-                  {shows.map((x) => (
+                  {text.shows.map((x) => (
                     <Chip
                       key={x.value}
                       selected={show === x.value}
@@ -124,7 +134,7 @@ export function MobileLibrary() {
               <fieldset className="grid gap-2">
                 <legend className="mb-2 font-mono text-label text-text-3 uppercase">Sort by</legend>
                 <div className="flex flex-wrap gap-2">
-                  {sorts.map((s) => (
+                  {text.sorts.map((s) => (
                     <Chip
                       key={s.value}
                       selected={sort === s.value}

@@ -4,16 +4,19 @@
 // they're known for and how much of theirs is here, born and died, and the biography cut at four
 // lines with More. Then a row of posters for each department they worked in on the films here, the
 // one they're known for first, each with their role and the year; then their shows and albums.
+import { createLibraryText } from '@highsea-tv/client/library'
 import { Button, cn, EmptyState, Icon, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { usePerson } from '../client/data.ts'
-import { departmentTitle, hereOf, lifeOf, roleNames } from '../client/detail-facts.ts'
 import { ShowPoster } from '../client/show-card.tsx'
 import { showYears } from '../client/shows.ts'
 import { LONG_BIO } from '../web/person.tsx'
 import { MobileRow, MobileRowSkeleton } from './home.tsx'
 import { BackBadge, gutter, mobileHref } from './shell.tsx'
+
+/** What the page says about the title, as the apps word it (@highsea-tv/client/library). */
+const facts = createLibraryText('en')
 
 export function MobilePerson() {
   const { id } = useParams<{ id: string }>()
@@ -51,7 +54,7 @@ export function MobilePerson() {
       </div>
     )
   const p = found.data
-  const life = lifeOf(p)
+  const life = facts.lifeOf(p)
   return (
     <article aria-labelledby="name" className="relative grid gap-7 pb-6">
       {back}
@@ -72,7 +75,7 @@ export function MobilePerson() {
             {p.name}
           </h1>
           <p className="text-[14px] text-text-2">
-            {departmentTitle[p.knownFor]} · {hereOf(p)}
+            {facts.departmentTitle(p.knownFor)} · {facts.hereOf(p.counts)}
           </p>
           {life && <p className="text-[13px] text-text-3">{life}</p>}
         </div>
@@ -97,7 +100,7 @@ export function MobilePerson() {
         </div>
       )}
       {p.departments.map(({ department, credits }) => (
-        <MobileRow key={department} title={departmentTitle[department]}>
+        <MobileRow key={department} title={facts.departmentTitle(department)}>
           {credits.map(({ item: m, role }) => (
             <li key={m.id} className="w-[30%] shrink-0 snap-start">
               <Poster
@@ -105,7 +108,7 @@ export function MobilePerson() {
                 src={m.art.poster}
                 href={mobileHref(`/movies/${m.id}`)}
                 showTitle
-                caption={`${roleNames(role)} · ${m.year}`}
+                caption={`${facts.roleNames(role)} · ${m.year}`}
               />
             </li>
           ))}
@@ -118,7 +121,7 @@ export function MobilePerson() {
               <ShowPoster
                 show={show}
                 href={mobileHref(`/shows/${show.id}`)}
-                caption={`${roleNames(role)} · ${showYears(show)}`}
+                caption={`${facts.roleNames(role)} · ${showYears(show)}`}
               />
             </li>
           ))}

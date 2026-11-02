@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // An in-memory highsea server: state, the handlers behind each API call, and a simulation driven by
 // the clock. Screens never touch this directly; they go through the client (client.ts).
+import { filmUpNext } from '@highsea-tv/client/player'
 import { backdropArt, posterArt, stillArt } from '@highsea-tv/fixtures'
 
 import {
@@ -3647,19 +3648,11 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         // Next up: the collection's next part, else a few choices that wait to be picked
         const parts = tmdbCollections().find((c) => c.collection.id === meta?.collection?.id)
         const part = parts?.items[parts.items.findIndex((x) => x.id === id) + 1]
-        const upNext: ClientDetail['upNext'] =
-          parts && part
-            ? {
-                kind: 'part',
-                id: part.id,
-                title: part.title,
-                line: parts.collection.name,
-                still: part.art.still,
-                season: null,
-              }
-            : related.length
-              ? { kind: 'choices', items: related.slice(0, 3) }
-              : null
+        const upNext: ClientDetail['upNext'] = filmUpNext(
+          part ? { id: part.id, title: part.title, still: part.art.still } : null,
+          parts?.collection.name ?? null,
+          related,
+        )
         return {
           item: clientItem(m),
           versions,

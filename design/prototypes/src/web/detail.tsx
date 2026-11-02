@@ -8,6 +8,13 @@
 // like this, the Collections it's in, Trailers and extras, Cast and crew, and About, Information,
 // and Languages and quality as cards. The same media id as everywhere else (ADR 0014).
 import {
+  createLibraryText,
+  type Fact,
+  peopleOf,
+  previewOf,
+  videoLength,
+} from '@highsea-tv/client/library'
+import {
   Button,
   CarouselRow,
   cn,
@@ -27,16 +34,6 @@ import {
 import { type ReactElement, useState } from 'react'
 import { useParams } from 'wouter'
 import { collectionCaption, left, runtime, useDesktopApp, useItem } from '../client/data.ts'
-import {
-  type Fact,
-  informationOf,
-  languagesOf,
-  names,
-  peopleOf,
-  previewOf,
-  role,
-  videoLength,
-} from '../client/detail-facts.ts'
 import { DownloadButton } from '../client/download-button.tsx'
 import { useMarkWatched } from '../client/item-more.tsx'
 import { MediaPosterSkeleton } from '../client/media-card.tsx'
@@ -46,6 +43,9 @@ import { useAction } from '../mock/hooks.tsx'
 import type { ClientDetail, PlaybackPrefs, Video } from '../mock/types.ts'
 import { PosterRow } from './home.tsx'
 import { gutter, webHref } from './shell.tsx'
+
+/** What the page says about the title, as the apps word it (@highsea-tv/client/library). */
+const facts = createLibraryText('en')
 
 const OFF = 'off'
 
@@ -188,13 +188,13 @@ export function WebDetail() {
                 {d.cast.length > 0 && (
                   <p className="truncate">
                     <span className="text-text-3">Starring </span>
-                    {names(d.cast.slice(0, 3))}
+                    {facts.names(d.cast.slice(0, 3))}
                   </p>
                 )}
                 {d.directors.length > 0 && (
                   <p className="truncate">
                     <span className="text-text-3">Directed by </span>
-                    {names(d.directors)}
+                    {facts.names(d.directors)}
                   </p>
                 )}
               </div>
@@ -309,7 +309,7 @@ export function WebDetail() {
               <a
                 key={`${c.personId}:${c.job ?? 'cast'}`}
                 href={webHref(`/people/${c.personId}`)}
-                aria-label={`${c.name}, ${role(c)}`}
+                aria-label={`${c.name}, ${facts.role(c)}`}
                 className="group/person grid rounded-lg text-center outline-none focus-visible:ring-focus"
               >
                 <img
@@ -318,7 +318,7 @@ export function WebDetail() {
                   className="aspect-square w-full rounded-full bg-s1 object-cover transition-transform duration-300 group-hover/person:scale-105"
                 />
                 <p className="mt-2 truncate font-semibold text-caption text-text">{c.name}</p>
-                <p className="truncate text-caption text-text-3">{role(c)}</p>
+                <p className="truncate text-caption text-text-3">{facts.role(c)}</p>
               </a>
             ))}
           </CarouselRow>
@@ -385,8 +385,8 @@ function About({ detail: d }: { detail: ClientDetail }) {
         {m.tagline && <p className="font-semibold text-body">{m.tagline}</p>}
         <p className="text-body text-text-2">{m.synopsis}</p>
       </article>
-      <Facts title="Information" rows={informationOf(d)} />
-      <Facts title="Languages and quality" rows={languagesOf(d)} />
+      <Facts title="Information" rows={facts.informationOf(d)} />
+      <Facts title="Languages and quality" rows={facts.languagesOf(d)} />
     </section>
   )
 }

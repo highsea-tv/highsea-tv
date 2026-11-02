@@ -69,3 +69,34 @@ export const forget = (list: Known[], id: string) => list.filter((k) => k.id !==
 
 /** The keychain's key for a server's device token. */
 export const tokenKey = (id: string) => `highsea.token.${id.replace(/[^A-Za-z0-9._-]/g, '_')}`
+
+// ---------------------------------------------------------------------------------------------
+// Signing in a TV from another device (connectivity.md#pairing-a-tv-from-the-phone): the code's
+// rules, which the phone's Connect a device and the web's /link share. The server's codes are two
+// groups of three (`newCode` in @highsea-tv/auth) and it compares them without dashes or case.
+
+/** A code as typed or scanned, without its dash or spaces, in capitals. */
+export const normalCode = (code: string) => code.replace(/[^a-z0-9]/gi, '').toUpperCase()
+
+/** Whether what was typed could be a code: six characters, as the TV shows (with room for eight). */
+export const looksLikeCode = (code: string) => {
+  const n = normalCode(code).length
+  return n >= 6 && n <= 8
+}
+
+/** "KQ74PM" as the TV shows it, "KQ7-4PM". */
+export const showCode = (code: string) => {
+  const n = normalCode(code)
+  return n.length === 6 ? `${n.slice(0, 3)}-${n.slice(3)}` : n
+}
+
+/** The code in a scanned QR code: the /link address's `code`, a highsea:// link, or the code itself. */
+export function codeFrom(data: string): string | null {
+  try {
+    const url = new URL(data)
+    const q = url.searchParams.get('code')
+    if (q) return normalCode(q)
+    if (url.protocol === 'highsea:') return normalCode(url.pathname.split('/').pop() ?? '')
+  } catch {}
+  return looksLikeCode(data) ? normalCode(data) : null
+}

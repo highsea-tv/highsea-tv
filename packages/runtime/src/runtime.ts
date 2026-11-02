@@ -887,6 +887,8 @@ async function bootServer(options: BootOptions): Promise<Runtime> {
     deviceExists: (deviceId) => auth.devices.find(deviceId) !== null,
     transcodes,
     ceiling: () => playbackSettings.ceiling(),
+    // personalization is made further down; it's only read once a film starts
+    preferences: (userId, deviceId) => personalization.preferences.resolve(userId, deviceId).values,
     hardware: () => hardware.current(),
     ffprobe: ffprobeBinary(),
     subtitles: subtitles.clientTracks,

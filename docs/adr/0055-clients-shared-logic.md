@@ -42,3 +42,16 @@ Three things the web had kept to itself, and the phone needs too, moved into `@h
 - `player`'s `parseCues`: WebVTT's cues from the session's file, which React Native has no `TextTrack` to read.
 
 The player's `Base` gains `ios` and `tvos`. Each has a Bun test ([ADR 0059](0059-native-apps.md)).
+
+## 2026-11-01: what the prototype shared with itself (apps-catch-up.md › A.1)
+
+The prototype's client folder had grown rules every app needs and no app had: how the player is left and what plays next, Continue watching's menu, the film and person pages' facts, the pairing code's form and Settings' sections. They moved into `@highsea-tv/client`, with tests:
+
+- `player`: the timings (`NUDGE_MS`, `SEEK_S`, `SCRUB_MS`, `HIDE_MS`, `NEXT_UP_S`) and `StreamState`, as the prototype used them; `leavePlayer` and `playNext` over a small history (`canGoBack`, `back`, `replace`), so the browser, Expo Router and the TV's stack each pass their own; `titlePage`, `titleLines`, `filmUpNext` (a collection's next part, else three of More like this as choices, which don't count down: `countsDown`), and `backStep`, the player's Back in order (a panel, then the chrome while playing, then out).
+- `library`: `arrange` over any item with the fields it reads, the A–Z rail (`LETTERS`, `letterOf` by the sort title), the sorts' and Show's words, Continue watching's card page, its menu's words and toasts, the long press's length, and `createLibraryText`, the film page's Information and Languages, the people row with a director once, a person's page (what's here, their life) and roles in plain words. Language names come from `Intl.DisplayNames`, the code standing in where Hermes has none.
+- `servers`: the pairing code, typed, scanned or opened from a link (`normalCode`, `looksLikeCode`, `showCode`, `codeFrom`).
+- `format`: a collection's caption and row counting shows beside films, and the server's name with "this server" until it's known.
+- `prefs`: Settings' sections in order with their words and icons, and the person's playback settings (`usePlaybackPrefs`, the choices' words; [ADR 0027's 2026-11-01 section](0027-preferences-in-layers.md)).
+- `data`: Continue watching's Mark as watched and Remove ([ADR 0054's 2026-11-01 section](0054-watch-state.md)).
+
+The prototype now imports each of these from the package rather than keeping its own, as it did `format`, so the reference and the apps can't drift. Its screens import them directly, with no re-exports in between. What it keeps is its own wiring: its hooks over the mock, its stand-ins in the browser for the server's preference layers (the device's theme and sound, and the playback settings, in `PlaybackPrefs`' shape), and the browser's history for `leavePlayer` and `playNext`. The types stay kind-aware (an episode's show, a part or an episode next), but only films reach them until the server has shows.

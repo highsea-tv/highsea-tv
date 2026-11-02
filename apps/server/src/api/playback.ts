@@ -67,6 +67,11 @@ export function registerPlayback(app: OpenAPIHono<Env>) {
     return c.body(null, 204)
   })
 
+  app.openapi(routes.playback.dismiss, (c) => {
+    watch(c).dismiss(viewer(c).userId, c.req.valid('param').id)
+    return c.body(null, 204)
+  })
+
   app.openapi(routes.playback.itemProgress, (c) => {
     const { position, duration } = c.req.valid('json')
     return c.json(

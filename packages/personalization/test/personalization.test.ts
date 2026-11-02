@@ -4,10 +4,15 @@ import { AppError } from '@highsea-tv/core'
 import { schema } from '@highsea-tv/db'
 import { defaultSoundPack } from '@highsea-tv/tokens'
 import { eq } from 'drizzle-orm'
-import { appKind } from '../src/keys.ts'
+import { appKind, PLAYBACK_DEFAULTS } from '../src/keys.ts'
 import { checkMark } from '../src/marks.ts'
 import { normalize, ownerDefault, type WidgetPlacement, widgetDefinitions } from '../src/widgets.ts'
 import { png, setup, svg } from './helpers.ts'
+
+/** The playback keys, each from the server's defaults. */
+const playbackFromServer = Object.fromEntries(
+  Object.keys(PLAYBACK_DEFAULTS).map((k) => [k, 'server']),
+) as Record<keyof typeof PLAYBACK_DEFAULTS, 'server'>
 
 const reason = (fn: () => unknown) => {
   try {
@@ -252,6 +257,7 @@ describe('preferences', () => {
       sound: true,
       volume: 0.8,
       'admin.addMovie.defaults': null,
+      ...PLAYBACK_DEFAULTS,
     })
     expect(p.preferences.resolve('m', phone).values.sound).toBe(false)
     expect(p.preferences.resolve('m', null)).toMatchObject({ client: null, deviceId: null })
@@ -269,12 +275,14 @@ describe('preferences', () => {
       sound: true,
       volume: 0.2,
       'admin.addMovie.defaults': null,
+      ...PLAYBACK_DEFAULTS,
     })
     expect(view.from).toEqual({
       theme: 'client',
       sound: 'server',
       volume: 'device',
       'admin.addMovie.defaults': 'server',
+      ...playbackFromServer,
     })
     expect(seen.at(-1)).toEqual(
       expect.objectContaining({ topic: 'preferences.updated', ids: ['m'] }),

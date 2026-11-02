@@ -8,6 +8,3 @@ export const waiting = {
   app: 'highsea for Apple TV',
   address: '192.168.1.42',
 }
-
-/** A code as typed or scanned, without its dash or spaces, in capitals. */
-export const normalCode = (code: string) => code.replace(/[^a-z0-9]/gi, '').toUpperCase()

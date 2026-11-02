@@ -3,10 +3,14 @@
 import { describe, expect, test } from 'bun:test'
 import {
   addressesOf,
+  codeFrom,
   forget,
+  looksLikeCode,
   looksLocal,
+  normalCode,
   normalize,
   remember,
+  showCode,
   tokenKey,
 } from '../src/servers/index.ts'
 
@@ -54,5 +58,21 @@ describe('servers', () => {
   test('keychain keys are safe for SecureStore', () => {
     expect(tokenKey('srv_5k2m9x0q')).toBe('highsea.token.srv_5k2m9x0q')
     expect(tokenKey('a/b:c')).toBe('highsea.token.a_b_c')
+  })
+})
+
+describe('pairing codes', () => {
+  test('typed any way, a code compares without its dash, spaces or case', () => {
+    expect(normalCode(' kq7-4pm ')).toBe('KQ74PM')
+    expect(showCode('kq74pm')).toBe('KQ7-4PM')
+    expect(looksLikeCode('KQ7-4P')).toBe(false)
+    expect(looksLikeCode('KQ7-4PM')).toBe(true)
+  })
+
+  test('a scanned QR code: the /link address, a highsea:// link, or the code alone', () => {
+    expect(codeFrom('https://harbor.example.net/link?code=KQ7-4PM')).toBe('KQ74PM')
+    expect(codeFrom('highsea://link/kq7-4pm')).toBe('KQ74PM')
+    expect(codeFrom('KQ7-4PM')).toBe('KQ74PM')
+    expect(codeFrom('hello')).toBeNull()
   })
 })

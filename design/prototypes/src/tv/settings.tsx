@@ -7,24 +7,16 @@
 // and the quality, as on the other apps). Focus moving down the list
 // shows each section (as tvOS does); Right enters it, Left returns to the list. Theme and sound
 // apply to this TV; the home layout follows the person.
+import { playbackOptions, type QualityCap, type SettingsSectionId } from '@highsea-tv/client/prefs'
 import { relative } from '@highsea-tv/core/format'
 import { Chip, cn, type IconName, Mark } from '@highsea-tv/ui'
 import { type ReactNode, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useConnection, useKnownServers, useServer } from '../client/data.ts'
-import {
-  audioLanguages,
-  type PlaybackSettings,
-  qualityCaps,
-  subtitleLanguages,
-  useDevicePrefs,
-  usePlaybackSettings,
-  useThemeEverywhere,
-} from '../client/prefs.tsx'
+import { useDevicePrefs, usePlaybackSettings, useThemeEverywhere } from '../client/prefs.tsx'
 import { MAX_PROFILES, type Profile, usePeople } from '../client/profiles.ts'
 import {
   APP_VERSION,
-  type SettingsSectionId,
   settingsSections,
   useHomeLayout,
   useMyDevices,
@@ -174,10 +166,17 @@ function Choices({
   )
 }
 
+/** Settings › Playback's choices, as the apps word them (@highsea-tv/client/prefs). */
+const choices = playbackOptions('en')
+
 /** Playback, as on the other apps: the choices follow the person to every device. */
 function Playback() {
   const [p, set] = usePlaybackSettings()
-  const toggle = (key: keyof PlaybackSettings, label: string, on: boolean) => (
+  const toggle = (
+    key: 'onlyForeign' | 'autoplayNext' | 'skipIntros',
+    label: string,
+    on: boolean,
+  ) => (
     <TvButton primary={on} aria-pressed={on} onClick={() => set({ [key]: !on })}>
       {label}: {on ? 'On' : 'Off'}
     </TvButton>
@@ -187,17 +186,14 @@ function Playback() {
       <Choices
         name="audio"
         label="Audio"
-        options={audioLanguages.map((x) => ({
-          ...x,
-          short: x.value === 'original' ? 'Original' : undefined,
-        }))}
+        options={choices.audio}
         value={p.audio}
         onPick={(audio) => set({ audio })}
       />
       <Choices
         name="subtitles"
         label="Subtitles"
-        options={subtitleLanguages}
+        options={choices.subtitles}
         value={p.subtitles}
         onPick={(subtitles) => set({ subtitles })}
       />
@@ -215,16 +211,16 @@ function Playback() {
       <Choices
         name="home"
         label="At home"
-        options={qualityCaps}
+        options={choices.quality}
         value={p.qualityHome}
-        onPick={(qualityHome) => set({ qualityHome })}
+        onPick={(qualityHome) => set({ qualityHome: qualityHome as QualityCap })}
       />
       <Choices
         name="away"
         label="Away"
-        options={qualityCaps}
+        options={choices.quality}
         value={p.qualityAway}
-        onPick={(qualityAway) => set({ qualityAway })}
+        onPick={(qualityAway) => set({ qualityAway: qualityAway as QualityCap })}
       />
     </div>
   )

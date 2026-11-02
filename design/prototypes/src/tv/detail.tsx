@@ -12,20 +12,17 @@
 //   the Collections it's in, Trailers and extras, Cast and crew (round portraits, each opening the person's page), then About,
 //   Information and Languages as three cards, the long text kept off the first screen.
 // Back closes the panel or the trailer, then leaves.
+import {
+  createLibraryText,
+  type Fact,
+  peopleOf,
+  previewOf,
+  videoLength,
+} from '@highsea-tv/client/library'
 import { Button, cn, Icon, type IconName, QualityTag, Rating, Skeleton } from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'wouter'
 import { collectionCaption, left, runtime, useItem } from '../client/data.ts'
-import {
-  type Fact,
-  informationOf,
-  languagesOf,
-  names,
-  peopleOf,
-  previewOf,
-  role,
-  videoLength,
-} from '../client/detail-facts.ts'
 import { useMarkWatched } from '../client/item-more.tsx'
 import { CollectionTile } from '../kit/collection-art.tsx'
 import { useAction } from '../mock/hooks.tsx'
@@ -44,6 +41,9 @@ import {
   useRowNavigation,
 } from './kit.tsx'
 import { TvTracksPanel } from './tracks.tsx'
+
+/** What the page says about the title, as the apps word it (@highsea-tv/client/library). */
+const facts = createLibraryText('en')
 
 /** The fades over the art: the words' side and the foot, so the right half stays the picture's. */
 export const scrim =
@@ -154,13 +154,13 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
                 {d.cast.length > 0 && (
                   <p className="truncate">
                     <span className="text-text-3">Starring </span>
-                    {names(d.cast.slice(0, 3))}
+                    {facts.names(d.cast.slice(0, 3))}
                   </p>
                 )}
                 {d.directors.length > 0 && (
                   <p className="truncate">
                     <span className="text-text-3">Directed by </span>
-                    {names(d.directors)}
+                    {facts.names(d.directors)}
                   </p>
                 )}
               </div>
@@ -299,7 +299,7 @@ export function TvDetail({ panel, onPanel }: { panel: boolean; onPanel: (open: b
                         {c.name}
                       </p>
                       <p className="w-full truncate text-(length:--tv-text-pill) text-text-3 leading-[1.3]">
-                        {role(c)}
+                        {facts.role(c)}
                       </p>
                     </a>
                   </li>
@@ -411,8 +411,8 @@ function WatchedAction({ detail }: { detail: ClientDetail }) {
 /** About, Information, and Languages and quality: three cards, each a focus stop. */
 function About({ detail: d }: { detail: ClientDetail }) {
   const m = d.item
-  const info = informationOf(d)
-  const languages = languagesOf(d)
+  const info = facts.informationOf(d)
+  const languages = facts.languagesOf(d)
   const card =
     'grid content-start gap-[0.9cqw] rounded-(--tv-radius-poster) bg-s1/80 p-[1.6cqw] outline-none transition-lift focus-visible:scale-[1.015] focus-visible:bg-s2 focus-visible:shadow-(--tv-focus-shadow)'
   const heading = 'font-semibold text-(length:--tv-text-row-title)'

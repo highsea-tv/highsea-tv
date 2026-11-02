@@ -4,19 +4,22 @@
 // once the server has them; in M1 it's movies only, so there are no tabs. Sorted by title, an A–Z
 // index stands in its own column at the container's left, sticky under the top bar, and the grid
 // fills the rest (the owner, 2026-10-30).
+import {
+  ALL,
+  arrange,
+  createLibraryText,
+  genresOf,
+  LETTERS,
+  letterOf,
+  type Show,
+  type Sort,
+} from '@highsea-tv/client/library'
 import { Button, cn, EmptyState, Select, Skeleton } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLibrary } from '../client/data.ts'
 import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
-import type { ClientItem } from '../mock/types.ts'
 import { gutter, webHref } from './shell.tsx'
 import { useWindowChrome } from './window.tsx'
-
-export const LETTERS = ['#', ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ']
-export const letterOf = (sortTitle: string) => {
-  const c = sortTitle.charAt(0).toUpperCase()
-  return /[A-Z]/.test(c) ? c : '#'
-}
 
 // under the sticky top bar (80px and its border, and the desktop app's title bar above it), with
 // the page's gap; a letter's first title scrolls to the same line. The letters are square, 1.5rem
@@ -86,41 +89,8 @@ export function LetterIndex({
   )
 }
 
-export type Sort = 'title' | 'added' | 'year' | 'rating'
-
-export const sorts: { value: Sort; label: string }[] = [
-  { value: 'title', label: 'Title' },
-  { value: 'added', label: 'Recently added' },
-  { value: 'year', label: 'Newest first' },
-  { value: 'rating', label: 'Highest rated' },
-]
-
-export const ALL = 'all'
-
-export type Show = 'all' | 'unwatched'
-export const shows: { value: Show; label: string }[] = [
-  { value: 'all', label: 'All movies' },
-  { value: 'unwatched', label: 'Unwatched' },
-]
-
-/** The genre, then Unwatched (client-library.md#unwatched, checkpoint 4.0b), then the sort. */
-export function arrange(items: ClientItem[], genre: string, sort: Sort, unwatched = false) {
-  const shown = items.filter(
-    (m) => (genre === ALL || m.genres.includes(genre)) && !(unwatched && m.watched),
-  )
-  return [...shown].sort((a, b) =>
-    sort === 'added'
-      ? Date.parse(b.addedAt) - Date.parse(a.addedAt)
-      : sort === 'year'
-        ? b.year - a.year
-        : sort === 'rating'
-          ? b.rating - a.rating
-          : a.sortTitle.localeCompare(b.sortTitle),
-  )
-}
-
-export const genresOf = (items: ClientItem[]) =>
-  [...new Set(items.flatMap((m) => m.genres))].sort((a, b) => a.localeCompare(b))
+/** The library's sorts and Unwatched, worded as the apps word them. */
+const text = createLibraryText('en')
 
 export function WebLibrary() {
   const library = useLibrary()
@@ -131,7 +101,7 @@ export function WebLibrary() {
   const shown = arrange(items, genre, sort, show === 'unwatched')
   const place = useWindowChrome() === 'bar' ? 'bar' : 'under'
   const indexed = sort === 'title' && library.status !== 'error' && shown.length > 0
-  const present = new Set(shown.map((m) => letterOf(m.sortTitle)))
+  const present = new Set(shown.map((m) => letterOf(m.title)))
   return (
     <main className={cn('mx-auto w-full grid max-w-[1680px] gap-6 pt-6 pb-16', gutter)}>
       <div className="flex flex-wrap items-end gap-3">
@@ -149,7 +119,7 @@ export function WebLibrary() {
             aria-label="Show"
             value={show}
             onValueChange={(v) => setShow(v as Show)}
-            options={shows}
+            options={text.shows}
             className="w-40"
           />
           <Select
@@ -166,7 +136,7 @@ export function WebLibrary() {
             aria-label="Sort"
             value={sort}
             onValueChange={(v) => setSort(v as Sort)}
-            options={sorts}
+            options={text.sorts}
             className="w-44"
           />
         </div>
@@ -225,8 +195,8 @@ export function WebLibrary() {
               className="grid grid-cols-[repeat(auto-fill,minmax(9rem,1fr))] gap-x-4 gap-y-6"
             >
               {shown.map((m, i) => {
-                const l = letterOf(m.sortTitle)
-                const first = indexed && (i === 0 || letterOf(shown[i - 1]?.sortTitle ?? '') !== l)
+                const l = letterOf(m.title)
+                const first = indexed && (i === 0 || letterOf(shown[i - 1]?.title ?? '') !== l)
                 return (
                   <li
                     key={m.id}

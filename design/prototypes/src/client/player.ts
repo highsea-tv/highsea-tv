@@ -3,44 +3,36 @@
 // video in Phase 2: a still stands in for the frame, and the position runs on a real-time timer.
 // Picks (version, audio, subtitles, the subtitle nudge) save per title as they change, and the
 // position is reported on pause, on seek and on the way out, for Resume.
+import {
+  leavePlayer as leave,
+  NUDGE_MS,
+  playNext as next,
+  type StreamState,
+} from '@highsea-tv/client/player'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAction, useQuery } from '../mock/hooks.tsx'
 import type { ClientDetail, PlaybackPrefs } from '../mock/types.ts'
-import type { StreamState } from '../proto/state.ts'
 import { useStreamState } from './data.ts'
 import { musicPlayer } from './music-player.ts'
 import { usePlaybackSettings } from './prefs.tsx'
 
-/** One nudge of the subtitle timing, matching the admin's (movies.md#decisions). */
-export const NUDGE_MS = 50
-export const SEEK_S = 10
-/** Without a pointer, the scrubber's preview shows while scrubbing by key and this long after. */
-export const SCRUB_MS = 1000
-/** The chrome hides after this long without input while playing. */
-export const HIDE_MS = 3000
-
 type Navigate = (to: string, options?: { replace?: boolean }) => void
+
+/** The browser's history as @highsea-tv/client's player rules take it. */
+const browser = (navigate: Navigate) => ({
+  canGoBack: () => history.length > 1,
+  back: () => history.back(),
+  replace: (to: string) => navigate(to, { replace: true }),
+})
 
 /**
  * Leaves the player for the page it was opened from, so Back there doesn't return to the player.
  * Opened directly, `to` takes the player's place.
  */
-export const leavePlayer = (navigate: Navigate, to: string) =>
-  history.length > 1 ? history.back() : navigate(to, { replace: true })
+export const leavePlayer = (navigate: Navigate, to: string) => leave(browser(navigate), to)
 
 /** The next title takes the player's place, so leaving it still goes back where this began. */
-export const playNext = (navigate: Navigate, id: string) =>
-  navigate(`/play/${id}`, { replace: true })
-
-/** The title's page, where leaving a player opened directly goes: an episode's show. */
-export const titlePage = (d: ClientDetail | undefined, id: string) =>
-  d?.episode ? `/shows/${d.episode.show.id}` : `/movies/${id}`
-
-/** The player's title and the line under it: an episode is its show, then "S1, E1 · Pilot". */
-export const titleLines = (d: ClientDetail | undefined) =>
-  d?.episode
-    ? { title: d.episode.show.title, line: `${d.episode.code} · ${d.episode.title}` }
-    : { title: d?.item.title ?? '', line: null }
+export const playNext = (navigate: Navigate, id: string) => next(browser(navigate), id)
 
 export function usePlayer(id: string, fromStart: boolean) {
   const detail = useQuery(`client:item:${id}`, (c) => c.library.item(id))

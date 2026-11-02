@@ -5,19 +5,12 @@
 // reach; Audio and subtitles opens the same panel as the web, sized for touch. AirPlay (4.5a)
 // sends the film to another screen: iOS lists the screens, and while it plays there the phone
 // shows where, over the artwork, with the controls kept up.
+import { HIDE_MS, SEEK_S, titleLines, titlePage } from '@highsea-tv/client/player'
 import { Button, cn, EmptyState, Icon } from '@highsea-tv/ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock, useAirPlay } from '../client/data.ts'
-import {
-  HIDE_MS,
-  leavePlayer,
-  playNext,
-  SEEK_S,
-  titleLines,
-  titlePage,
-  usePlayer,
-} from '../client/player.ts'
+import { leavePlayer, playNext, usePlayer } from '../client/player.ts'
 import { NextUp, SkipButton, StreamMessage, StreamWaiting } from '../client/stream-states.tsx'
 import { PHONE } from '../kit/mobile/device.tsx'
 import { CueLine, Scrubber, TracksPanel, webStreamAction } from '../web/player.tsx'

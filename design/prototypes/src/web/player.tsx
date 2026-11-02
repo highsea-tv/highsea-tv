@@ -6,24 +6,26 @@
 // Picture in picture (4.2b) sits beside Full screen where the browser has the Picture-in-Picture
 // API (https://developer.mozilla.org/docs/Web/API/Picture-in-Picture_API); the prototype has no
 // video to hand it, so the frame shows what the tab shows while the film plays in its window.
+import {
+  HIDE_MS,
+  NUDGE_MS,
+  SCRUB_MS,
+  SEEK_S,
+  titleLines,
+  titlePage,
+} from '@highsea-tv/client/player'
 import { Button, cn, EmptyState, Icon, QualityTag } from '@highsea-tv/ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock } from '../client/data.ts'
 import {
-  HIDE_MS,
   leavePlayer,
-  NUDGE_MS,
   offsetHint,
   offsetLabel,
   PICTURE_TIMING,
   type Player,
   playNext,
-  SCRUB_MS,
-  SEEK_S,
   sampleCue,
-  titleLines,
-  titlePage,
   trickplayAt,
   usePlayer,
 } from '../client/player.ts'

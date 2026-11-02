@@ -6,11 +6,11 @@
 // department they worked in on the films here, the one they're known for first, each film with
 // their role under its title; then their shows and their albums. Focus starts on the first row;
 // Up and Down go row by row; Back goes back to wherever it was opened from.
+import { createLibraryText } from '@highsea-tv/client/library'
 import { Skeleton } from '@highsea-tv/ui'
 import { useRef, useState } from 'react'
 import { useParams } from 'wouter'
 import { usePerson } from '../client/data.ts'
-import { departmentTitle, hereOf, lifeOf, roleNames } from '../client/detail-facts.ts'
 import { UnwatchedCount } from '../client/show-card.tsx'
 import { showYears } from '../client/shows.ts'
 import { LONG_BIO } from '../web/person.tsx'
@@ -25,6 +25,9 @@ import {
   useInitialFocus,
   useRowNavigation,
 } from './kit.tsx'
+
+/** What the page says about the title, as the apps word it (@highsea-tv/client/library). */
+const facts = createLibraryText('en')
 
 export function TvPerson() {
   const { id } = useParams<{ id: string }>()
@@ -65,7 +68,7 @@ export function TvPerson() {
       </TvMessage>
     )
   const p = found.data
-  const life = lifeOf(p)
+  const life = facts.lifeOf(p)
   const long = (p.bio?.length ?? 0) >= LONG_BIO
   // the rows in order, so each knows the one above it: the films by department, the shows, the music
   const groups = [
@@ -115,7 +118,7 @@ export function TvPerson() {
                 {p.name}
               </h1>
               <p className="text-(length:--tv-text-meta) text-text-2">
-                {departmentTitle[p.knownFor]} · {hereOf(p)}
+                {facts.departmentTitle(p.knownFor)} · {facts.hereOf(p.counts)}
               </p>
               {life && <p className="text-(length:--tv-text-pill) text-text-3">{life}</p>}
               {/* the reverse of the artist page's Their films and shows (prototype-gaps.md › 3.5) */}
@@ -130,7 +133,7 @@ export function TvPerson() {
             </div>
           </section>
           {p.departments.map(({ department, credits }) => {
-            const roles = new Map(credits.map((c) => [c.item.id, roleNames(c.role)]))
+            const roles = new Map(credits.map((c) => [c.item.id, facts.roleNames(c.role)]))
             const group = `films-${department}`
             return (
               <div
@@ -141,7 +144,7 @@ export function TvPerson() {
               >
                 <TvFilmRow
                   group={group}
-                  title={departmentTitle[department]}
+                  title={facts.departmentTitle(department)}
                   goUp={above(group)}
                   items={credits.map((c) => c.item)}
                   hrefOf={(m) => tvHref(`/movies/${m.id}`)}
@@ -157,7 +160,7 @@ export function TvPerson() {
                   <li key={show.id} className="w-[12cqw] shrink-0">
                     <TvTile
                       title={show.title}
-                      caption={`${roleNames(role)} · ${showYears(show)}`}
+                      caption={`${facts.roleNames(role)} · ${showYears(show)}`}
                       src={show.art.poster}
                       href={tvHref(`/shows/${show.id}`)}
                       status={<UnwatchedCount show={show} />}

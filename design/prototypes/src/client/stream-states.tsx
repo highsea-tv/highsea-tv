@@ -3,6 +3,7 @@
 // way on every platform: Getting it ready and Buffering as a spinner with the chrome showing; a
 // stream that didn't start, and one stopped from Now playing, over a scrim with what to do next;
 // Next up as the credits start, and Skip intro and Skip credits over an episode's. Each platform passes its own button, so TV's take the D-pad.
+import { NEXT_UP_S } from '@highsea-tv/client/player'
 import { cn, Icon, Poster } from '@highsea-tv/ui'
 import { type ReactNode, useEffect, useState } from 'react'
 import type { UpNext } from '../mock/types.ts'
@@ -40,8 +41,6 @@ const text: Record<Size, { title: string; body: string; small: string; spinner: 
 
 /** The prototype's admin and message for a stopped stream; the product sends both with the stop. */
 const stoppedBy = { name: 'Ines', message: 'The server is restarting in five minutes.' }
-/** Seconds Next up counts down before the next film starts. */
-export const NEXT_UP_S = 10
 
 /** Getting it ready and Buffering: a spinner over the frame, under the chrome. */
 export function StreamWaiting({ player, size }: { player: Player; size: Size }) {

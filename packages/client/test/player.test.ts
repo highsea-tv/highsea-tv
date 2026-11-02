@@ -4,15 +4,19 @@
 import { describe, expect, test } from 'bun:test'
 import {
   BUFFERING_DELAY_MS,
+  backStep,
   baseProfile,
   chromeShown,
   clampSeek,
+  countsDown,
   createPlayerText,
   cuesAt,
   cueText,
   deviceReport,
+  filmUpNext,
   HIDE_MS,
   initialPlayer,
+  leavePlayer,
   NUDGE_LIMIT_MS,
   nextChange,
   nextUpIn,
@@ -21,9 +25,12 @@ import {
   type PlayerState,
   parseCues,
   playerReducer,
+  playNext,
   REPORT_MS,
   reportDue,
   streamState,
+  titleLines,
+  titlePage,
   trickplayTile,
 } from '../src/player/index.ts'
 
@@ -337,5 +344,88 @@ describe('the browser’s report', () => {
     ])
     expect(r.hdr).toEqual({ formats: [], dolbyVision: [] })
     expect(deviceReport('web-chromium', (t) => yes.has(t)).video?.[1]).not.toHaveProperty('tag')
+  })
+})
+
+describe('leaving the player', () => {
+  const history = (inApp: boolean) => {
+    const calls: string[] = []
+    return {
+      calls,
+      h: {
+        canGoBack: () => inApp,
+        back: () => calls.push('back'),
+        replace: (to: string) => calls.push(`replace ${to}`),
+      },
+    }
+  }
+
+  test('opened from the app, it goes back, so Back there doesn’t return to the player', () => {
+    const { calls, h } = history(true)
+    leavePlayer(h, '/movies/45745')
+    expect(calls).toEqual(['back'])
+  })
+
+  test('opened directly, the title’s page takes its place', () => {
+    const { calls, h } = history(false)
+    leavePlayer(h, '/movies/45745')
+    expect(calls).toEqual(['replace /movies/45745'])
+  })
+
+  test('the next title replaces the player', () => {
+    const { calls, h } = history(true)
+    playNext(h, 10378)
+    expect(calls).toEqual(['replace /play/10378'])
+  })
+
+  test('a film’s page and lines; an episode’s are its show’s', () => {
+    const film = { item: { id: 45745, title: 'Sintel' } }
+    expect(titlePage(film, 45745)).toBe('/movies/45745')
+    expect(titleLines(film)).toEqual({ title: 'Sintel', line: null })
+    const episode = {
+      item: { id: 'e1', title: 'Pilot' },
+      episode: { show: { id: 's1', title: 'Saltmarsh' }, code: 'S1, E1', title: 'Pilot' },
+    }
+    expect(titlePage(episode, 'e1')).toBe('/shows/s1')
+    expect(titleLines(episode)).toEqual({ title: 'Saltmarsh', line: 'S1, E1 · Pilot' })
+    expect(titleLines(undefined)).toEqual({ title: '', line: null })
+  })
+})
+
+describe('Back in the player', () => {
+  test('closes a panel, hides showing controls while playing, and otherwise leaves', () => {
+    expect(backStep({ panel: true, shown: true, playing: true })).toBe('close-panel')
+    expect(backStep({ panel: false, shown: true, playing: true })).toBe('hide')
+    expect(backStep({ panel: false, shown: false, playing: true })).toBe('leave')
+    // paused, the controls always show, so Back leaves at once
+    expect(backStep({ panel: false, shown: true, playing: false })).toBe('leave')
+  })
+})
+
+describe('Next up after a film', () => {
+  const related = [1, 2, 3, 4, 5]
+
+  test('the collection’s next part counts down', () => {
+    const u = filmUpNext({ id: 2, title: 'Part two', still: null }, 'The trilogy', related)
+    expect(u).toEqual({
+      kind: 'part',
+      id: 2,
+      title: 'Part two',
+      line: 'The trilogy',
+      still: null,
+      season: null,
+    })
+    expect(countsDown(u)).toBe(true)
+  })
+
+  test('otherwise three of More like this, which wait to be picked', () => {
+    const u = filmUpNext(null, null, related)
+    expect(u).toEqual({ kind: 'choices', items: [1, 2, 3] })
+    expect(countsDown(u)).toBe(false)
+  })
+
+  test('nothing at all when there’s nothing to offer', () => {
+    expect(filmUpNext(null, null, [])).toBeNull()
+    expect(countsDown(null)).toBe(false)
   })
 })

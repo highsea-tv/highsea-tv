@@ -148,12 +148,28 @@ export const AddMovieDefaults = z
   })
   .openapi('AddMovieDefaults')
 
+// The apps' own playback preferences (client-settings.md › Playback), as
+// @highsea-tv/personalization/keys has them
+const LANGUAGE = /^[a-z]{2,3}$/
+const PlaybackAudio = z.union([z.literal('original'), z.string().regex(LANGUAGE)])
+const PlaybackSubtitles = z.union([z.literal('off'), z.string().regex(LANGUAGE)])
+export const QualityCap = z.enum(['original', '20', '8', '4', '2']).openapi('QualityCap', {
+  description: 'The original, or a cap in Mbit/s; the server’s remote limit still applies.',
+})
+
 const PreferenceLayer = z
   .object({
     theme: z.string().regex(THEME_ID).optional(),
     sound: z.boolean().optional(),
     volume: z.number().min(0).max(1).optional(),
     'admin.addMovie.defaults': AddMovieDefaults.optional(),
+    'playback.audio': PlaybackAudio.optional(),
+    'playback.subtitles': PlaybackSubtitles.optional(),
+    'playback.onlyForeign': z.boolean().optional(),
+    'playback.autoplayNext': z.boolean().optional(),
+    'playback.skipIntros': z.boolean().optional(),
+    'playback.qualityHome': QualityCap.optional(),
+    'playback.qualityAway': QualityCap.optional(),
   })
   .openapi('PreferenceLayer')
 
@@ -168,6 +184,15 @@ export const Preferences = z
       volume: z.number(),
       /** Null until the person has added a movie. */
       'admin.addMovie.defaults': AddMovieDefaults.nullable(),
+      /** `original` is the film's own language. */
+      'playback.audio': PlaybackAudio,
+      'playback.subtitles': PlaybackSubtitles,
+      /** Subtitles only when the audio isn't in their language. */
+      'playback.onlyForeign': z.boolean(),
+      'playback.autoplayNext': z.boolean(),
+      'playback.skipIntros': z.boolean(),
+      'playback.qualityHome': QualityCap,
+      'playback.qualityAway': QualityCap,
     }),
     /** Which layer each value came from. */
     from: z.object({
@@ -175,6 +200,13 @@ export const Preferences = z
       sound: LayerName,
       volume: LayerName,
       'admin.addMovie.defaults': LayerName,
+      'playback.audio': LayerName,
+      'playback.subtitles': LayerName,
+      'playback.onlyForeign': LayerName,
+      'playback.autoplayNext': LayerName,
+      'playback.skipIntros': LayerName,
+      'playback.qualityHome': LayerName,
+      'playback.qualityAway': LayerName,
     }),
     layers: z.object({ device: PreferenceLayer, client: PreferenceLayer, user: PreferenceLayer }),
     client: ClientType.nullable(),
@@ -193,6 +225,13 @@ export const PreferencePatch = z
       sound: z.boolean().nullable().optional(),
       volume: z.number().min(0).max(1).nullable().optional(),
       'admin.addMovie.defaults': AddMovieDefaults.nullable().optional(),
+      'playback.audio': PlaybackAudio.nullable().optional(),
+      'playback.subtitles': PlaybackSubtitles.nullable().optional(),
+      'playback.onlyForeign': z.boolean().nullable().optional(),
+      'playback.autoplayNext': z.boolean().nullable().optional(),
+      'playback.skipIntros': z.boolean().nullable().optional(),
+      'playback.qualityHome': QualityCap.nullable().optional(),
+      'playback.qualityAway': QualityCap.nullable().optional(),
     }),
   })
   .openapi('PreferencePatch')
@@ -476,6 +515,7 @@ export const appearance = {
 export type WidgetPlacement = z.infer<typeof WidgetPlacement>
 export type WidgetLayout = z.infer<typeof WidgetLayout>
 export type Preferences = z.infer<typeof Preferences>
+export type PreferencePatch = z.infer<typeof PreferencePatch>
 export type AddMovieDefaults = z.infer<typeof AddMovieDefaults>
 export type HomeArrangement = z.infer<typeof HomeArrangement>
 export type Appearance = z.infer<typeof Appearance>

@@ -20,6 +20,16 @@ export const addMovieDefaults = z.strictObject({
 })
 export type AddMovieDefaults = z.output<typeof addMovieDefaults>
 
+/** A language as the apps name it: ISO 639-1 or 639-2, lower case. */
+const LANGUAGE = /^[a-z]{2,3}$/
+
+/**
+ * A cap on what the server sends one person (client-settings.md › Playback): the original, or a
+ * bitrate in Mbit/s. The server's own limit for remote streams still applies under it.
+ */
+export const QUALITY_CAPS = ['original', '20', '8', '4', '2'] as const
+export type QualityCap = (typeof QUALITY_CAPS)[number]
+
 export const preferenceSchemas = {
   theme: z.string().regex(THEME_ID),
   /** Interface sounds on this device. */
@@ -27,6 +37,18 @@ export const preferenceSchemas = {
   /** 0–1. */
   volume: z.number().min(0).max(1),
   'admin.addMovie.defaults': addMovieDefaults,
+  /** The audio a film starts in: `original`, its own language, or a language code. */
+  'playback.audio': z.union([z.literal('original'), z.string().regex(LANGUAGE)]),
+  /** Subtitles a film starts with: `off`, or a language code. */
+  'playback.subtitles': z.union([z.literal('off'), z.string().regex(LANGUAGE)]),
+  /** Subtitles only when the audio isn't in their language. */
+  'playback.onlyForeign': z.boolean(),
+  /** Next up plays by itself when its count ends. */
+  'playback.autoplayNext': z.boolean(),
+  /** Skip intro is pressed by itself. */
+  'playback.skipIntros': z.boolean(),
+  'playback.qualityHome': z.enum(QUALITY_CAPS),
+  'playback.qualityAway': z.enum(QUALITY_CAPS),
 } as const
 
 export type PreferenceKey = keyof typeof preferenceSchemas
@@ -47,6 +69,13 @@ export const preferenceLayer = z.strictObject({
   sound: preferenceSchemas.sound.optional(),
   volume: preferenceSchemas.volume.optional(),
   'admin.addMovie.defaults': addMovieDefaults.optional(),
+  'playback.audio': preferenceSchemas['playback.audio'].optional(),
+  'playback.subtitles': preferenceSchemas['playback.subtitles'].optional(),
+  'playback.onlyForeign': preferenceSchemas['playback.onlyForeign'].optional(),
+  'playback.autoplayNext': preferenceSchemas['playback.autoplayNext'].optional(),
+  'playback.skipIntros': preferenceSchemas['playback.skipIntros'].optional(),
+  'playback.qualityHome': preferenceSchemas['playback.qualityHome'].optional(),
+  'playback.qualityAway': preferenceSchemas['playback.qualityAway'].optional(),
 })
 export type PreferenceLayer = z.output<typeof preferenceLayer>
 
@@ -56,8 +85,33 @@ export const preferencePatch = z.strictObject({
   sound: preferenceSchemas.sound.nullable().optional(),
   volume: preferenceSchemas.volume.nullable().optional(),
   'admin.addMovie.defaults': addMovieDefaults.nullable().optional(),
+  'playback.audio': preferenceSchemas['playback.audio'].nullable().optional(),
+  'playback.subtitles': preferenceSchemas['playback.subtitles'].nullable().optional(),
+  'playback.onlyForeign': preferenceSchemas['playback.onlyForeign'].nullable().optional(),
+  'playback.autoplayNext': preferenceSchemas['playback.autoplayNext'].nullable().optional(),
+  'playback.skipIntros': preferenceSchemas['playback.skipIntros'].nullable().optional(),
+  'playback.qualityHome': preferenceSchemas['playback.qualityHome'].nullable().optional(),
+  'playback.qualityAway': preferenceSchemas['playback.qualityAway'].nullable().optional(),
 })
 export type PreferencePatch = z.output<typeof preferencePatch>
+
+/** The playback keys' defaults until a layer sets them (client-settings.md › Playback). */
+export const PLAYBACK_DEFAULTS = {
+  'playback.audio': 'original',
+  'playback.subtitles': 'off',
+  'playback.onlyForeign': true,
+  'playback.autoplayNext': true,
+  'playback.skipIntros': false,
+  'playback.qualityHome': 'original',
+  'playback.qualityAway': 'original',
+} as const satisfies Partial<Preferences>
+
+/** Height and bitrate under a person's cap, to lay under the server's own (ADR 0052). */
+export function capOf(cap: QualityCap): { bitrate: number; height: number } | null {
+  if (cap === 'original') return null
+  const mbps = Number(cap)
+  return { bitrate: mbps * 1_000_000, height: mbps <= 2 ? 480 : mbps <= 4 ? 720 : 1080 }
+}
 
 export const LAYERS = ['device', 'client', 'user', 'server'] as const
 export type Layer = (typeof LAYERS)[number]

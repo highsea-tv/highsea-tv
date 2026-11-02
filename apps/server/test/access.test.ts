@@ -73,6 +73,7 @@ const USER_ROUTES = [
   'metadata.recommendations',
   'movies.recent',
   'movies.upcoming',
+  'playback.dismiss',
   'playback.itemProgress',
   'playback.next',
   'playback.play',

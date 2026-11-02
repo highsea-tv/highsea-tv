@@ -5,21 +5,12 @@
 //   Play/Pause    play or pause, from anywhere
 // The chrome shows on any key and hides after 3 s while playing. A legend of the mapping sits
 // under the scrubber while the chrome shows.
+import { HIDE_MS, SCRUB_MS, SEEK_S, titleLines, titlePage } from '@highsea-tv/client/player'
 import { cn, Icon, QualityTag } from '@highsea-tv/ui'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { clock } from '../client/data.ts'
-import {
-  HIDE_MS,
-  leavePlayer,
-  playNext,
-  SCRUB_MS,
-  SEEK_S,
-  titleLines,
-  titlePage,
-  trickplayAt,
-  usePlayer,
-} from '../client/player.ts'
+import { leavePlayer, playNext, trickplayAt, usePlayer } from '../client/player.ts'
 import {
   NextUp,
   SkipButton,

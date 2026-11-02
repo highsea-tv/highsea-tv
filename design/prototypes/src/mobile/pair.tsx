@@ -2,10 +2,11 @@
 // Signing in a TV from the phone (connectivity.md#pairing-a-tv-from-the-phone, checkpoint 4.5a):
 // the TV shows a code and a QR code; the phone, already signed in, scans it (or takes the code
 // typed), asks once, and the TV is in. The words are the server's /link page's, so the two agree.
+import { normalCode } from '@highsea-tv/client/servers'
 import { Button, cn, EmptyState, Field, Icon, Input } from '@highsea-tv/ui'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
-import { normalCode, waiting } from '../client/pairing.ts'
+import { waiting } from '../client/pairing.ts'
 import { MobileScreen } from '../kit/mobile/device.tsx'
 import { gutter } from './shell.tsx'
 

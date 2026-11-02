@@ -30,7 +30,7 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0024](0024-two-step-passkeys-and-tvs.md) | Two-step verification and passkeys never reach the TV | Accepted; amended 2026-10-20 and 2026-10-29 (three times) |
 | [0025](0025-single-sign-on-and-proxy-auth.md) | Single sign-on by OIDC, and forward-auth proxy headers | Accepted |
 | [0026](0026-network-tls.md) | Plain HTTP always, built-in TLS beside it | Accepted |
-| [0027](0027-preferences-in-layers.md) | Preferences in layers, on the server | Accepted |
+| [0027](0027-preferences-in-layers.md) | Preferences in layers, on the server | Accepted; amended 2026-11-01 |
 | [0028](0028-files-the-owner-uploads.md) | Files the owner uploads: in the database, checked by their bytes | Accepted |
 | [0029](0029-external-services.md) | External services: one injected fetch, recorded responses | Accepted |
 | [0030](0030-metadata-cache.md) | The metadata cache: TMDB’s responses beside the library, under six months | Accepted |
@@ -57,8 +57,8 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0051](0051-playback-engine.md) | The playback engine: direct play, then direct stream, then HLS transcodes made on demand | Accepted; amended 2026-10-27 and 2026-10-28 (twice) |
 | [0052](0052-device-profiles.md) | Device profiles: what each client plays, built in and reported, in one shape | Accepted; amended 2026-10-27, 2026-10-28 (twice) and 2026-10-29 (three times) |
 | [0053](0053-clients-build-and-distribution.md) | The clients' build and distribution: Vite at /web, Tauri for desktop, Expo for mobile and TV | Proposed; the web part Accepted 2026-10-28, desktop 2026-10-29; amended 2026-10-29 (three times) |
-| [0054](0054-watch-state.md) | Watch state: positions, watched and the player's picks, per person and title | Accepted |
-| [0055](0055-clients-shared-logic.md) | The clients' shared logic: `@highsea-tv/client`, everything but the drawing | Accepted; amended 2026-10-29 |
+| [0054](0054-watch-state.md) | Watch state: positions, watched and the player's picks, per person and title | Accepted; amended 2026-11-01 |
+| [0055](0055-clients-shared-logic.md) | The clients' shared logic: `@highsea-tv/client`, everything but the drawing | Accepted; amended 2026-10-29 and 2026-11-01 |
 | [0056](0056-hardware-acceleration.md) | Hardware acceleration: four paths, each used only once a check on this host passes | Accepted; amended 2026-10-28 |
 | [0057](0057-installing-without-configuration.md) | Installing without configuration: graphics handed over by default, the user, time zone, folders and address detected, and highsea's own TMDB key | Accepted; amended 2026-10-29 |
 | [0058](0058-desktop-app.md) | The desktop app: Tauri around the web build, with the server reached through Rust | Accepted; amended 2026-10-29 |

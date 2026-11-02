@@ -13,6 +13,7 @@
 // length and air date, and two lines of synopsis, two to a row on a wide window, with the watched
 // check at the end. The season opens on the episode Play plays. Then More like this, Cast and
 // crew, and About with Information, as a film's page.
+import { createLibraryText, type Fact } from '@highsea-tv/client/library'
 import {
   Button,
   CarouselRow,
@@ -37,7 +38,7 @@ import {
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { useDesktopApp, useMarkEpisodes, useShow } from '../client/data.ts'
-import { type Fact, names, role, showPeopleOf } from '../client/detail-facts.ts'
+import { showPeopleOf } from '../client/detail-facts.ts'
 import { EpisodeDownload, GroupDownload } from '../client/download-button.tsx'
 import { episodeSource, type OfflineSource, seasonGroup } from '../client/downloads.ts'
 import { ShowPoster } from '../client/show-card.tsx'
@@ -66,6 +67,9 @@ import type {
 import { Facts, heroHeight, Round, scrim } from './detail.tsx'
 import { cardWidth } from './home.tsx'
 import { gutter, webHref } from './shell.tsx'
+
+/** What the page says about the title, as the apps word it (@highsea-tv/client/library). */
+const facts = createLibraryText('en')
 
 export function WebShow() {
   const { id } = useParams<{ id: string }>()
@@ -140,13 +144,13 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
               {d.cast.length > 0 && (
                 <p className="truncate">
                   <span className="text-text-3">Starring </span>
-                  {names(d.cast.slice(0, 3))}
+                  {facts.names(d.cast.slice(0, 3))}
                 </p>
               )}
               {d.creators.length > 0 && (
                 <p className="truncate">
                   <span className="text-text-3">Created by </span>
-                  {names(d.creators)}
+                  {facts.names(d.creators)}
                 </p>
               )}
             </div>
@@ -254,7 +258,7 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
               <a
                 key={`${c.personId}:${c.job ?? 'cast'}`}
                 href={webHref(`/people/${c.personId}`)}
-                aria-label={`${c.name}, ${role(c)}`}
+                aria-label={`${c.name}, ${facts.role(c)}`}
                 className="group/person grid rounded-lg text-center outline-none focus-visible:ring-focus"
               >
                 <img
@@ -263,7 +267,7 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
                   className="aspect-square w-full rounded-full bg-s1 object-cover transition-transform duration-300 group-hover/person:scale-105"
                 />
                 <p className="mt-2 truncate font-semibold text-caption text-text">{c.name}</p>
-                <p className="truncate text-caption text-text-3">{role(c)}</p>
+                <p className="truncate text-caption text-text-3">{facts.role(c)}</p>
               </a>
             ))}
           </CarouselRow>
@@ -341,7 +345,7 @@ export function informationOf(d: ClientShowDetail): Fact[] {
   const s = d.show
   const first = d.seasons.find((x) => x.number === 1)?.episodes[0]
   return [
-    ['Created by', names(d.creators)],
+    ['Created by', facts.names(d.creators)],
     ['First aired', first ? airedDate(first.aired) : String(s.year)],
     ['Status', s.endYear === null ? 'Still airing' : `Ended in ${s.endYear}`],
     ['Here', `${seasonsCount(s.seasons)} · ${episodesCount(s.episodes)}`],

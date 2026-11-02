@@ -2,6 +2,7 @@
 // The mobile tabs after Library: Search (C6, reference), Offline (C8, reference), and You (C8),
 // which leads to the settings (C7). docs/product/client-search.md, client-settings.md.
 
+import type { SettingsSectionId } from '@highsea-tv/client/prefs'
 import {
   Chip,
   ConfirmDialog,
@@ -35,7 +36,7 @@ import { songTime } from '../client/music.ts'
 import { useMusicPlayer } from '../client/music-player.ts'
 import { OfflineList } from '../client/offline-list.tsx'
 import { usePeople } from '../client/profiles.ts'
-import { type SettingsSectionId, settingsSections } from '../client/settings.ts'
+import { settingsSections } from '../client/settings.ts'
 import { SettingsSectionBody } from '../client/settings-sections.tsx'
 import { ShowPoster } from '../client/show-card.tsx'
 import { ProfileAvatar } from '../client/who.tsx'

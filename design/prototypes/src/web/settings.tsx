@@ -3,13 +3,14 @@
 // sections beside each other from medium widths, an index on a phone-width window; the account
 // page; and Downloads, which needs the desktop app.
 
+import type { SettingsSectionId } from '@highsea-tv/client/prefs'
 import { Button, cn, EmptyState, Icon } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { useDesktopApp, useServer } from '../client/data.ts'
 import { GetTheAppsDialog } from '../client/get-the-apps.tsx'
 import { OfflineList } from '../client/offline-list.tsx'
-import { type SettingsSectionId, settingsSections } from '../client/settings.ts'
+import { settingsSections } from '../client/settings.ts'
 import { SettingsSectionBody } from '../client/settings-sections.tsx'
 import { ProfileAvatar, useMe } from '../client/who.tsx'
 import { Soon } from '../kit/soon.tsx'

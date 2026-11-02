@@ -11,6 +11,7 @@
 // synopsis under them, with Download and the watched check at the end. The
 // season opens on the episode Play plays. Then More like this, Cast and crew, and About and
 // Information as cards.
+import { createLibraryText } from '@highsea-tv/client/library'
 import {
   Button,
   Chip,
@@ -26,7 +27,7 @@ import {
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { useMarkEpisodes, useShow } from '../client/data.ts'
-import { names, role, showPeopleOf } from '../client/detail-facts.ts'
+import { showPeopleOf } from '../client/detail-facts.ts'
 import { EpisodeDownload, GroupDownload } from '../client/download-button.tsx'
 import { episodeSource, type OfflineSource, seasonGroup } from '../client/downloads.ts'
 import { ShowPoster } from '../client/show-card.tsx'
@@ -55,6 +56,9 @@ import { Facts, fade, Named } from './detail.tsx'
 import { MobileRow } from './home.tsx'
 import { PullToRefresh } from './pull.tsx'
 import { BackBadge, gutter, mobileHref } from './shell.tsx'
+
+/** What the page says about the title, as the apps word it (@highsea-tv/client/library). */
+const facts = createLibraryText('en')
 
 export function MobileShow() {
   const { id } = useParams<{ id: string }>()
@@ -209,13 +213,13 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
             {d.cast.length > 0 && (
               <p className="line-clamp-2">
                 <span className="text-text-3">Starring </span>
-                {names(d.cast.slice(0, 3))}
+                {facts.names(d.cast.slice(0, 3))}
               </p>
             )}
             {d.creators.length > 0 && (
               <p className="truncate">
                 <span className="text-text-3">Created by </span>
-                {names(d.creators)}
+                {facts.names(d.creators)}
               </p>
             )}
           </div>
@@ -288,7 +292,7 @@ function ShowPage({ detail: d }: { detail: ClientShowDetail }) {
                   className="aspect-square w-full rounded-full bg-s1 object-cover"
                 />
                 <p className="mt-1.5 truncate font-semibold text-[12px]">{c.name}</p>
-                <p className="truncate text-[12px] text-text-3">{role(c)}</p>
+                <p className="truncate text-[12px] text-text-3">{facts.role(c)}</p>
               </a>
             </li>
           ))}

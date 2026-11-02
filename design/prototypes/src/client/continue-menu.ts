@@ -3,39 +3,35 @@
 // card on the web and desktop, a long press on the phone, a long press of OK on the TV. Go to the
 // film or the show (at the episode), Mark as watched, and Remove from Continue watching, which
 // forgets the place without marking the title watched.
+import { createLibraryText, LONG_PRESS_MS } from '@highsea-tv/client/library'
 import { toast } from '@highsea-tv/ui'
 import { useRef } from 'react'
 import { useAction } from '../mock/hooks.tsx'
 import type { ClientItem } from '../mock/types.ts'
 
-/** The film's page, or the show's at the episode. */
-export const cardPage = (item: ClientItem) =>
-  item.show ? `/shows/${item.show.id}/episodes/${item.id}` : `/movies/${item.id}`
+export { cardPage } from '@highsea-tv/client/library'
+export { LONG_PRESS_MS }
+
+const text = createLibraryText('en')
 
 export function useContinueMenu(item: ClientItem) {
   const film = useAction((c) => c.playback.setWatched(item.id, true))
   const episode = useAction((c) => c.library.setEpisodeWatched(item.id, true))
   const dismiss = useAction((c) => c.playback.dismiss(item.id))
-  const name = item.show ? `${item.show.title}, ${item.show.code}` : item.title
+  const words = text.continueMenu(item)
   return {
     /** "Go to the show", with the path on this app's routes. */
-    goTo: { label: item.show ? 'Go to the show' : 'Go to the film', path: cardPage(item) },
+    goTo: words.goTo,
     markWatched: async () => {
       await (item.show ? episode : film).run()
-      toast({ title: `${name} marked as watched` })
+      toast({ title: words.marked })
     },
     remove: async () => {
       await dismiss.run()
-      toast({
-        title: `${name} removed from Continue watching`,
-        description: 'It isn’t marked as watched.',
-      })
+      toast(words.removed)
     },
   }
 }
-
-/** How long a press is held before it opens the menu: the film page's hold of OK (client-detail.md). */
-export const LONG_PRESS_MS = 600
 
 /**
  * A long press on a card: a touch held (the phone), or OK held (the TV's remote, Enter here). The

@@ -98,6 +98,16 @@ export function createWatch({ db, clock }: { db: Db; clock: Clock }) {
   }
 
   /**
+   * Off Continue watching: the position goes and the history stays, so the title still counts as
+   * started and its plays are kept (apps-catch-up.md › A.2). Starting it again brings it back.
+   */
+  function dismiss(userId: string, itemId: string) {
+    db.delete(watchPositions)
+      .where(and(eq(watchPositions.userId, userId), eq(watchPositions.itemId, itemId)))
+      .run()
+  }
+
+  /**
    * Where the person is. Past `WATCHED_AT` of the duration, the title counts as watched, once per
    * viewing: a viewing that already crossed it (its position cleared) doesn't count again until it
    * starts over. Returns whether this report crossed it.
@@ -164,6 +174,15 @@ export function createWatch({ db, clock }: { db: Db; clock: Clock }) {
       : { ...NO_PREFS }
   }
 
+  /** Whether the person has picked anything for the item, so their language defaults stand back. */
+  function hasPrefs(userId: string, itemId: string): boolean {
+    return !!db
+      .select({ at: playbackPrefs.updatedAt })
+      .from(playbackPrefs)
+      .where(and(eq(playbackPrefs.userId, userId), eq(playbackPrefs.itemId, itemId)))
+      .get()
+  }
+
   /** Saves the picks that are given; the rest stay as they were. */
   function setPrefs(userId: string, itemId: string, patch: Partial<PlaybackPrefs>): PlaybackPrefs {
     const next = { ...prefs(userId, itemId), ...patch }
@@ -178,7 +197,7 @@ export function createWatch({ db, clock }: { db: Db; clock: Clock }) {
     return next
   }
 
-  return { position, played, unplayed, history, prefs, setPrefs }
+  return { position, played, unplayed, dismiss, history, prefs, hasPrefs, setPrefs }
 }
 
 export type Watch = ReturnType<typeof createWatch>

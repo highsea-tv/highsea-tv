@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The prototype toolbar's state. The chrome (toolbar and frame) owns it and persists it; the
 // screen inside the frame receives it over postMessage, or from URL parameters when opened alone.
+import type { StreamState } from '@highsea-tv/client/player'
 
 export type Platform = 'admin' | 'web' | 'mobile' | 'tv'
 export type DataState = 'populated' | 'empty' | 'loading' | 'error'
@@ -35,7 +36,6 @@ export type PhoneDownloads = 'built' | 'later'
  * from wherever the screen is, so every page can be reviewed with the bar showing.
  */
 export type MusicState = 'none' | 'playing'
-export type StreamState = 'normal' | 'preparing' | 'buffering' | 'failed' | 'stopped' | 'next-up'
 
 export type ProtoState = {
   width: Width
