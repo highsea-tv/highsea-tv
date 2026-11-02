@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Audio and subtitles on the TV (the prototype's tv/tracks.tsx): a panel from the right that
-// keeps focus inside it until Back closes it (react-native-tvos's TVFocusGuideView traps). It
+// Audio and subtitles on the TV (the prototype's tv/tracks.tsx): a dialog at the right of the
+// screen (@highsea-tv/ui/tv's TvSideDialog) that keeps focus inside it until Back closes it. It
 // takes focus on its first option as it opens, as the prototype's `data-panel-first`: a preferred
 // focus alone held the first time it opened and not after.
 // The movie page shares it now; the player adds the subtitle timing nudge.
 import type { ClientAudio, ClientSubtitle, ClientVersion } from '@highsea-tv/api-contract'
 import { useT } from '@highsea-tv/i18n/react'
 import { Icon, Text, useTheme } from '@highsea-tv/ui'
-import { alpha, Focusable, focusOn, type ViewHandle } from '@highsea-tv/ui/tv'
+import { Focusable, focusOn, TvSideDialog, type ViewHandle } from '@highsea-tv/ui/tv'
 import { type ReactNode, type Ref, useEffect, useRef } from 'react'
-import { TVFocusGuideView, View } from 'react-native'
+import { View } from 'react-native'
 import { useBack } from './back.ts'
 import { tracks as messages } from './messages.ts'
 
@@ -107,7 +107,7 @@ export function TvTracksPanel({
 }) {
   const t = useT(messages)
   const theme = useTheme()
-  const u = theme.u
+  const _u = theme.u
   useBack(onClose)
   const first = useRef<ViewHandle>(null)
   useEffect(() => {
@@ -117,26 +117,7 @@ export function TvTracksPanel({
   }, [])
   const several = versions.length > 1
   return (
-    <TVFocusGuideView
-      trapFocusUp
-      trapFocusDown
-      trapFocusLeft
-      trapFocusRight
-      accessibilityLabel={t('title')}
-      accessibilityViewIsModal
-      style={{
-        position: 'absolute',
-        top: 0,
-        bottom: 0,
-        right: 0,
-        zIndex: 30,
-        width: 32 * u,
-        gap: 1.6 * u,
-        paddingHorizontal: 2.4 * u,
-        paddingVertical: 3.2 * u,
-        backgroundColor: alpha(theme.colors.s1, 0.95),
-      }}
-    >
+    <TvSideDialog label={t('title')}>
       <Text variant="rowTitle" accessibilityRole="header">
         {t('title')}
       </Text>
@@ -167,6 +148,6 @@ export function TvTracksPanel({
       <Text variant="pill" color="text-3">
         {t('saved')}
       </Text>
-    </TVFocusGuideView>
+    </TvSideDialog>
   )
 }

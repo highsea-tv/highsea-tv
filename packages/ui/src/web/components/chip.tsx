@@ -21,6 +21,7 @@ const base = `inline-flex max-w-full shrink-0 cursor-pointer select-none items-c
 export function Chip({
   selected,
   icon,
+  iconEnd,
   removable = false,
   removeLabel = 'Remove',
   size = 'md',
@@ -41,6 +42,7 @@ export function Chip({
     >
       {icon && <Icon name={icon} className={s.icon} />}
       <span className="truncate">{children}</span>
+      {iconEnd && <Icon name={iconEnd} className={s.icon} />}
       {removable && (
         <>
           <Icon name="close" className={s.icon} />

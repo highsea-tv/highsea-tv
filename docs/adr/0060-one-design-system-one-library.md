@@ -37,3 +37,7 @@ The owner's goal is one design system that works with theming, and one shared co
 - Edges and selected states are visibly stronger than before in the built-in themes, since they now reach 3:1.
 - The library depends on both the DOM's and React Native's packages, with React Native's as optional peers. Each app installs only its own.
 - ADR 0008 and ADR 0059 get dated sections for the joined library.
+
+## 2026-11-02: the TV's own parts, and Chip's end icon (apps-catch-up.md › part B)
+
+The TV's page parts (the head, the page that scrolls by focus, the rows, a title's page and the side dialog; [ADR 0059's 2026-11-02 section](0059-native-apps.md)) are in the library as the React Native renderer's `tv` subpath, listed in `parity.ts` as native-only with their reasons. They draw their controls with the library's `Button` and `Chip`, at the TV rule's sizes, so the control spec still holds on the TV. `Chip` gains `iconEnd` on both renderers, for a choice that opens a menu (the TV library's Genre). It's drawn after the label, at the chip's icon size.

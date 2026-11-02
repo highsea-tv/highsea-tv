@@ -8,6 +8,7 @@ import {
   arrange,
   createLibraryText,
   type FactCredit,
+  filmographyOf,
   genresOf,
   LETTERS,
   letterOf,
@@ -195,5 +196,44 @@ describe('the title and person pages’ words', () => {
       previewOf({ videos: [{ kind: 'Clip' }, { kind: 'Teaser' }, { kind: 'Trailer' }] }),
     ).toEqual({ kind: 'Teaser' })
     expect(videoLength(124)).toBe('2:04')
+  })
+})
+
+describe('filmographyOf', () => {
+  const credit = (
+    id: number,
+    department: string,
+    role: string,
+    year: number,
+    inLibrary = true,
+  ) => ({
+    id,
+    year,
+    inLibrary,
+    role,
+    department,
+  })
+
+  test('puts the known-for department first, newest first, leaving out films not here', () => {
+    const rows = filmographyOf(
+      [
+        credit(1, 'Acting', 'Rick', 1990),
+        credit(2, 'Directing', 'Director', 2001),
+        credit(3, 'Directing', 'Director', 2010),
+        credit(4, 'Directing', 'Director', 2020, false),
+      ],
+      'Directing',
+    )
+    expect(rows.map((r) => r.department)).toEqual(['Directing', 'Acting'])
+    expect(rows[0]?.credits.map((c) => c.item.id)).toEqual([3, 2])
+  })
+
+  test('joins a film’s roles in one department', () => {
+    const rows = filmographyOf(
+      [credit(1, 'Writing', 'Screenplay', 2000), credit(1, 'Writing', 'Story', 2000)],
+      null,
+    )
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.credits[0]?.role).toBe('Screenplay, Story')
   })
 })

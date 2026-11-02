@@ -13,10 +13,13 @@
 import type { ClientItem, TrickplayManifest } from '@highsea-tv/api-contract'
 import { createFormat } from '@highsea-tv/client/format'
 import {
+  backStep,
   chromeShown,
+  countsDown,
   createPlayerText,
   cuesAt,
   cueText,
+  filmUpNext,
   HIDE_MS,
   NUDGE_MS,
   nextChange,
@@ -25,7 +28,9 @@ import {
   SEEK_S,
   streamState,
   trickplayTile,
+  type UpNext,
 } from '@highsea-tv/client/player'
+import { usePlaybackPrefs } from '@highsea-tv/client/prefs'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
 import { type Playback, TRANSCODE_LIMIT, usePlayback } from '@highsea-tv/native/playback'
@@ -359,16 +364,24 @@ function StreamMessage({ p, onBack }: { p: Playback; onBack: () => void }) {
   )
 }
 
-/** Next up: in a film's last seconds, the next one in its collection, counting down with it. */
+type FilmUpNext = UpNext<ClientItem, number, string | null>
+
+/**
+ * Next up (player.md › Next up), in a film's last seconds: its collection's next part, counting
+ * down with it when the person has Autoplay on, otherwise three of More like this, which play only
+ * when picked (filmUpNext in @highsea-tv/client/player).
+ */
 function NextUp({
   next,
   seconds,
+  counting,
   onPlay,
   onCancel,
 }: {
-  next: ClientItem
+  next: FilmUpNext
   seconds: number
-  onPlay: () => void
+  counting: boolean
+  onPlay: (id: number) => void
   onCancel: () => void
 }) {
   const t = useT(messages)
@@ -376,26 +389,71 @@ function NextUp({
   const u = theme.u
   const media = useMedia()
   const first = useFirstFocus()
+  const box = {
+    position: 'absolute',
+    right: tv.safe.x * u,
+    bottom: 14 * u,
+    width: (next.kind === 'choices' ? 46 : 30) * u,
+    gap: 1 * u,
+    padding: 1.4 * u,
+    borderRadius: 1 * u,
+    borderWidth: 1,
+    borderColor: theme.colors.line,
+    backgroundColor: alpha(theme.colors.bg, 0.8),
+    boxShadow: tokens.elevation[4].boxShadow,
+  } as const
+  if (next.kind === 'choices')
+    return (
+      <Ask style={box}>
+        <Text variant="eyebrow" color="text-2" accessibilityRole="header">
+          {t('moreLike')}
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 1 * u }}>
+          {next.items.map((item, i) => (
+            <Focusable
+              key={item.id}
+              ref={i === 0 ? first : undefined}
+              role="button"
+              label={item.title}
+              lift="none"
+              radius={0.4 * u}
+              onPress={() => onPlay(item.id)}
+              style={{ flex: 1, minWidth: 0 }}
+            >
+              {(focused) => (
+                <View style={{ gap: 0.6 * u }}>
+                  <Image
+                    source={media(item.art.backdrop)}
+                    style={{
+                      width: '100%',
+                      aspectRatio: 16 / 9,
+                      borderRadius: 0.4 * u,
+                      backgroundColor: theme.colors.s2,
+                    }}
+                    contentFit="cover"
+                  />
+                  <Text variant="pill" color={focused ? 'text' : 'text-2'} numberOfLines={1}>
+                    {item.title}
+                  </Text>
+                </View>
+              )}
+            </Focusable>
+          ))}
+        </View>
+        <View style={{ flexDirection: 'row' }}>
+          <Button variant="overlay" onPress={onCancel}>
+            {t('close')}
+          </Button>
+        </View>
+      </Ask>
+    )
   return (
-    <Ask
-      style={{
-        position: 'absolute',
-        right: tv.safe.x * u,
-        bottom: tv.safe.y * u,
-        width: 30 * u,
-        gap: 1.2 * u,
-        padding: 1.4 * u,
-        borderRadius: 1 * u,
-        borderWidth: 1,
-        borderColor: theme.colors.line,
-        backgroundColor: alpha(theme.colors.s1, 0.92),
-      }}
-    >
-      <View style={{ flexDirection: 'row', gap: 1.2 * u, alignItems: 'center' }}>
+    <Ask style={box}>
+      <View style={{ flexDirection: 'row', gap: 1 * u, alignItems: 'center' }}>
         <Image
-          source={media(next.art.backdrop)}
+          source={next.still ? media(next.still) : undefined}
           style={{
-            width: 9 * u,
+            width: 10 * u,
             aspectRatio: 16 / 9,
             borderRadius: 0.4 * u,
             backgroundColor: theme.colors.s2,
@@ -409,13 +467,13 @@ function NextUp({
           <Text variant="rowTitle" numberOfLines={1}>
             {next.title}
           </Text>
-          <Text variant="pill" color="text-2">
-            {t('startsIn', { seconds })}
+          <Text variant="pill" color="text-2" numberOfLines={1}>
+            {[next.line, counting ? t('startsIn', { seconds }) : null].filter(Boolean).join(' · ')}
           </Text>
         </View>
       </View>
       <View style={{ flexDirection: 'row', gap: 1 * u }}>
-        <Button ref={first} variant="primary" icon="play" onPress={onPlay}>
+        <Button ref={first} variant="primary" icon="play" onPress={() => onPlay(next.id)}>
           {t('playNow')}
         </Button>
         <Button variant="overlay" onPress={onCancel}>
@@ -462,7 +520,22 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
   const nextUp = useQuery(`client:next:${id}`, (c) =>
     c.playback.next({ params: { type: 'movie', id } }),
   )
-  const next = nextUp.data?.item ?? null
+  const d0 = p.detail.data
+  const next: FilmUpNext | null = nextUp.data
+    ? filmUpNext(
+        nextUp.data.item
+          ? {
+              id: nextUp.data.item.id,
+              title: nextUp.data.item.title,
+              still: nextUp.data.item.art.backdrop,
+            }
+          : null,
+        d0?.collection?.name ?? null,
+        d0?.related ?? [],
+      )
+    : null
+  const autoplay = usePlaybackPrefs().current?.autoplayNext ?? true
+  const counting = countsDown(next) && autoplay
   const stream = streamState(state, now, !!next)
   const message = stream === 'failed' || stream === 'stopped'
   const asking = message || stream === 'next-up'
@@ -521,16 +594,24 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
     focusOn(scrubber.current)
   }, [chrome, ready, panel, asking])
 
+  // the panel registers its own Back while it's open (TvTracksPanel), so its step is the panel's
   useBack(() => {
-    if (state.playing && chromeShown(state, Date.now(), false)) dispatch({ type: 'input', at: 0 })
+    const step = backStep({
+      panel,
+      shown: chromeShown(state, Date.now(), false),
+      playing: state.playing,
+    })
+    if (step === 'close-panel') setPanel(false)
+    else if (step === 'hide') dispatch({ type: 'input', at: 0 })
     else leave(id)
   })
 
   // at zero the next film plays; Cancel lets this one end as before
   const left = nextUpIn(state)
   useEffect(() => {
-    if (stream === 'next-up' && left === 0 && next) router.replace(`/play/${next.id}`)
-  }, [stream, left, next])
+    if (stream === 'next-up' && left === 0 && counting && next?.kind === 'part')
+      router.replace(`/play/${next.id}`)
+  }, [stream, left, counting, next])
 
   if (p.detail.status === 'error')
     return (
@@ -820,7 +901,8 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
         <NextUp
           next={next}
           seconds={left}
-          onPlay={() => router.replace(`/play/${next.id}`)}
+          counting={counting}
+          onPlay={(to) => router.replace(`/play/${to}`)}
           onCancel={() => dispatch({ type: 'cancel-next' })}
         />
       ) : null}

@@ -40,9 +40,11 @@ export function TvTile({
   src,
   wide = false,
   progress = null,
+  progressBelow = false,
   width,
   onPress,
   onLongPress,
+  delayLongPress,
   onFocus,
   onPlay,
   preferred,
@@ -54,10 +56,14 @@ export function TvTile({
   wide?: boolean
   /** 0–1. */
   progress?: number | null
+  /** The bar between the art and the title rather than on the art: Continue watching's. */
+  progressBelow?: boolean
   /** In units; a poster's is 10.5u, a wide tile's 17u. */
   width?: number
   onPress?: () => void
   onLongPress?: () => void
+  /** How long OK is held for `onLongPress`, in ms. */
+  delayLongPress?: number
   onFocus?: () => void
   /** What Play/Pause does while this tile is focused: a film's tile plays it. */
   onPlay?: () => void
@@ -83,6 +89,7 @@ export function TvTile({
       ref={ref}
       onPress={onPress}
       onLongPress={onLongPress}
+      delayLongPress={delayLongPress}
       onFocus={() => {
         focusedPlay.current = mine.current
         onFocus?.()
@@ -105,8 +112,13 @@ export function TvTile({
             ratio={wide ? 16 / 9 : 2 / 3}
             radius={radius}
             focused={focused}
-            progress={progress}
+            progress={progressBelow ? null : progress}
           />
+          {progressBelow && progress !== null ? (
+            <View style={{ marginTop: 0.9 * u }}>
+              <ProgressBar value={progress * 100} height={0.25} />
+            </View>
+          ) : null}
           <Text
             variant="meta"
             weight={600}
@@ -205,6 +217,7 @@ export function TvRow<T>({
   items,
   keyOf,
   wide = false,
+  itemWidth,
   render,
   onFocusItem,
   ref,
@@ -214,6 +227,8 @@ export function TvRow<T>({
   items: T[]
   keyOf: (item: T) => string | number
   wide?: boolean
+  /** Each item's width in units, when it isn't a poster's or a wide tile's. */
+  itemWidth?: number
   render: (item: T, at: { index: number; onFocus: () => void }) => ReactNode
   onFocusItem?: (item: T, index: number) => void
   ref?: Ref<ViewHandle>
@@ -222,7 +237,7 @@ export function TvRow<T>({
   const u = theme.u
   const { width } = useWindowDimensions()
   const reduced = useReducedMotion()
-  const w = (wide ? WIDE_WIDTH : tv.poster.width) * u
+  const w = (itemWidth ?? (wide ? WIDE_WIDTH : tv.poster.width)) * u
   const inset = tv.safe.x * u
   return (
     <View ref={ref} accessibilityRole="list" accessibilityLabel={title} style={{ gap: 0.8 * u }}>

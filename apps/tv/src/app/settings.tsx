@@ -4,38 +4,53 @@
 // Settings does; Right enters it and Left returns to the list, each a focus guide that remembers
 // where focus was. Theme and sound are this TV's, in the server's preference layers (ADR 0027),
 // with Use on all my devices as the person's own theme; the home layout follows the person; Your
-// devices signs others out. The words are the prototype's, the choices the phone's
-// (apps/mobile/src/settings.tsx).
+// devices signs others out. Playback's choices follow the person to every device (ADR 0027's
+// 2026-11-01 section). The sections, their names and hints are every app's
+// (@highsea-tv/client/prefs); the words are the prototype's, the choices the phone's
+// (apps/mobile/src/settings.tsx). Signing out asks first.
 import { useAppearance, useHomeLayout, useMyDevices, useServer } from '@highsea-tv/client/data'
-import { SERVER_THEME, useDevicePrefs } from '@highsea-tv/client/prefs'
-import { useT } from '@highsea-tv/i18n/react'
+import {
+  type PlaybackOption,
+  type PlaybackPrefs,
+  playbackOptions,
+  SERVER_THEME,
+  type SettingsSectionId,
+  settingsSections,
+  useDevicePrefs,
+  usePlaybackPrefs,
+} from '@highsea-tv/client/prefs'
+import { relative } from '@highsea-tv/core/format'
+import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { appVersion } from '@highsea-tv/native/device'
 import { useServers } from '@highsea-tv/native/servers'
 import { useSessionData } from '@highsea-tv/native/session'
 import { useAction } from '@highsea-tv/sdk/react'
 import { builtInThemes, createTheme } from '@highsea-tv/tokens'
 import { type NativeTheme, nativeTokens, toNativeTheme } from '@highsea-tv/tokens/native'
-import { Button, Text, tokens, useTheme } from '@highsea-tv/ui'
-import { alpha, Focusable, type ViewHandle } from '@highsea-tv/ui/tv'
+import { Button, Chip, Mark, Text, tokens, useTheme } from '@highsea-tv/ui'
+import { alpha, Focusable, focusOn, TvConfirm, type ViewHandle } from '@highsea-tv/ui/tv'
 import { router } from 'expo-router'
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useMemo, useRef, useState } from 'react'
 import { Alert, ScrollView, TVFocusGuideView, View } from 'react-native'
-import { GlobalNav, ServerIdentity } from '../kit.tsx'
+import { useBack } from '../back.ts'
+import { TvHead } from '../kit.tsx'
 import { home as homeMessages, settings as messages } from '../messages.ts'
 
 const tv = tokens.tv
 
-const SECTIONS = ['appearance', 'sounds', 'home', 'servers', 'devices', 'about'] as const
-type Section = (typeof SECTIONS)[number]
+type Section = SettingsSectionId
 
 /** The list's column, in units (the prototype's 24cqw). */
 const MENU = 24
 
 export default function Settings() {
   const t = useT(messages)
+  const locale = useLocale()
+  const sections = useMemo(() => settingsSections(locale), [locale])
   const theme = useTheme()
   const u = theme.u
   const [section, setSection] = useState<Section>('appearance')
+  const about = sections.find((x) => x.id === section)
   // the section in use, as the navigation's Down goes to it
   const [chosen, setChosen] = useState<ViewHandle | null>(null)
   // the first section takes focus as the screen opens, and only then. It stays preferred until the
@@ -44,14 +59,14 @@ export default function Settings() {
   const [opening, setOpening] = useState(true)
   return (
     <View style={{ flex: 1 }}>
-      <ServerIdentity />
+      <TvHead down={chosen} />
       <View
         style={{
           flex: 1,
           flexDirection: 'row',
           gap: 4 * u,
           paddingHorizontal: tv.safe.x * u,
-          paddingTop: 7 * u,
+          paddingTop: 1.6 * u,
           paddingBottom: tv.safe.y * u,
         }}
       >
@@ -61,18 +76,18 @@ export default function Settings() {
           </Text>
           {/* the whole column takes Left from the section, back to the one in use */}
           <TVFocusGuideView autoFocus style={{ flex: 1, gap: 0.3 * u }}>
-            {SECTIONS.map((s, i) => (
+            {sections.map((s, i) => (
               <Option
-                key={s}
-                ref={s === section ? setChosen : undefined}
+                key={s.id}
+                ref={s.id === section ? setChosen : undefined}
                 preferred={opening && i === 0}
-                current={s === section}
+                current={s.id === section}
                 onFocus={() => {
                   setOpening(false)
-                  setSection(s)
+                  setSection(s.id)
                 }}
               >
-                {t(`section.${s}`)}
+                {s.label}
               </Option>
             ))}
           </TVFocusGuideView>
@@ -82,11 +97,11 @@ export default function Settings() {
         <TVFocusGuideView
           key={section}
           autoFocus
-          accessibilityLabel={t(`section.${section}`)}
+          accessibilityLabel={about?.label}
           style={{ flex: 1, gap: 1.4 * u, paddingTop: 3.6 * u }}
         >
           <Text variant="meta" color="text-3">
-            {t(`hint.${section}`)}
+            {about?.hint}
           </Text>
           {/* a long section (a library's many genres on Home screen) scrolls, following focus as
           tvOS's scroll views do; it reaches past the column by the row's lift so that isn't cut, and
@@ -113,7 +128,6 @@ export default function Settings() {
           </View>
         </TVFocusGuideView>
       </View>
-      <GlobalNav down={chosen} />
     </View>
   )
 }
@@ -121,6 +135,7 @@ export default function Settings() {
 function Body({ section }: { section: Section }) {
   if (section === 'appearance') return <ThemeSection />
   if (section === 'sounds') return <SoundSection />
+  if (section === 'playback') return <PlaybackSection />
   if (section === 'home') return <HomeSection />
   if (section === 'servers') return <ServersSection />
   if (section === 'devices') return <DevicesSection />
@@ -412,16 +427,70 @@ function HomeSection() {
   )
 }
 
+/**
+ * Every server this TV has signed in to, the one in use marked; another is picked on the sign-in
+ * screen. Signing out asks first: the token is forgotten here whether or not the server heard,
+ * since it's this TV's.
+ */
 function ServersSection() {
   const t = useT(messages)
-  const u = useTheme().u
+  const locale = useLocale()
+  const theme = useTheme()
+  const u = theme.u
   const servers = useServers()
   const session = useSessionData()
   const name = useServerName()
   const out = useAction((c) => c.auth.signOut())
+  const [asking, setAsking] = useState(false)
+  const signOutButton = useRef<ViewHandle>(null)
+  const current = servers.current?.server.id
+  const now = Date.now()
+  const close = () => {
+    setAsking(false)
+    focusOn(signOutButton.current)
+  }
   return (
     <View style={{ gap: 1.2 * u }}>
-      <Text variant="synopsis" color="text-2">
+      <View accessibilityLabel={t('servers')} style={{ maxWidth: 44 * u, gap: 0.6 * u }}>
+        {servers.known.map((k) => {
+          const inUse = k.id === current
+          return (
+            <View
+              key={k.id}
+              style={{ flexDirection: 'row', alignItems: 'center', gap: 1 * u, minHeight: 3 * u }}
+            >
+              <Mark size={2 * u} />
+              <View style={{ flex: 1 }}>
+                <Text variant="button" weight={500} numberOfLines={1}>
+                  {k.name}
+                  {inUse ? (
+                    <Text variant="button" weight={500} color="text-3">
+                      {t('inUse')}
+                    </Text>
+                  ) : null}
+                </Text>
+                <Text variant="pill" color="text-3" numberOfLines={1}>
+                  {inUse
+                    ? (servers.current?.base() ?? '')
+                    : t(k.signedIn ? 'knownSignedIn' : 'knownSignedOut', {
+                        when: relative(new Date(k.lastSeen).toISOString(), now, locale),
+                      })}
+                </Text>
+              </View>
+              {inUse ? null : (
+                <Button
+                  variant="overlay"
+                  accessibilityLabel={t(k.signedIn ? 'switchTo' : 'signInTo', { name: k.name })}
+                  onPress={() => (k.signedIn ? void servers.use(k.id) : router.push('/connect'))}
+                >
+                  {k.signedIn ? t('switch') : t('signIn')}
+                </Button>
+              )}
+            </View>
+          )
+        })}
+      </View>
+      <Text variant="meta" color="text-3" style={{ maxWidth: 44 * u }}>
         {t('watching', { name, person: session.user.displayName })}
       </Text>
       <View style={{ flexDirection: 'row', gap: 1 * u }}>
@@ -429,21 +498,142 @@ function ServersSection() {
           {t('anotherServer')}
         </Button>
         <Button
+          ref={signOutButton}
           variant="overlay"
           icon="sign-out"
           disabled={out.pending}
-          // the token is forgotten here whether or not the server heard, since it's this TV's
-          onPress={() =>
+          onPress={() => setAsking(true)}
+        >
+          {t('signOutOf', { name })}
+        </Button>
+      </View>
+      {asking ? (
+        <SignOut
+          name={name}
+          onCancel={close}
+          onConfirm={() => {
+            setAsking(false)
             void out
               .run()
               .catch(() => {})
               .then(() => servers.signedOut())
               .catch(() => Alert.alert(t('signOutFailed')))
-          }
-        >
-          {t('signOut')}
-        </Button>
-      </View>
+          }}
+        />
+      ) : null}
+    </View>
+  )
+}
+
+/** Signing out, asked first. Back cancels. */
+function SignOut({
+  name,
+  onCancel,
+  onConfirm,
+}: {
+  name: string
+  onCancel: () => void
+  onConfirm: () => void
+}) {
+  const t = useT(messages)
+  useBack(onCancel)
+  return (
+    <TvConfirm
+      title={t('signOutAsk', { name })}
+      body={t('signOutBody')}
+      cancel={t('cancel')}
+      action={t('signOut')}
+      icon="sign-out"
+      onCancel={onCancel}
+      onConfirm={onConfirm}
+    />
+  )
+}
+
+/**
+ * Playback, as on the other apps: the languages and the quality at home and away, each a row of
+ * chips, the one chosen pressed. The choices follow the person to every device. Episodes' rows
+ * wait for shows.
+ */
+function PlaybackSection() {
+  const t = useT(messages)
+  const locale = useLocale()
+  const u = useTheme().u
+  const choices = useMemo(() => playbackOptions(locale), [locale])
+  const prefs = usePlaybackPrefs()
+  const failed = useSaveFailed()
+  const p = prefs.current
+  if (!p) return <Quiet>{t('loading')}</Quiet>
+  const set = (patch: Partial<PlaybackPrefs>) => void prefs.set(patch).catch(failed)
+  return (
+    <View style={{ gap: 0.9 * u }}>
+      <Choices
+        label={t('audio')}
+        options={choices.audio}
+        value={p.audio}
+        onPick={(audio) => set({ audio })}
+      />
+      <Choices
+        label={t('subtitles')}
+        options={choices.subtitles}
+        value={p.subtitles}
+        onPick={(subtitles) => set({ subtitles })}
+      />
+      {p.subtitles !== 'off' ? (
+        <View style={{ flexDirection: 'row', paddingLeft: 12 * u }}>
+          <Button
+            variant={p.onlyForeign ? 'primary' : 'overlay'}
+            onPress={() => set({ onlyForeign: !p.onlyForeign })}
+          >
+            {p.onlyForeign ? t('onlyForeignOn') : t('onlyForeignOff')}
+          </Button>
+        </View>
+      ) : null}
+      <Choices
+        label={t('atHome')}
+        options={choices.quality}
+        value={p.qualityHome}
+        onPick={(v) => set({ qualityHome: v as PlaybackPrefs['qualityHome'] })}
+      />
+      <Choices
+        label={t('away')}
+        options={choices.quality}
+        value={p.qualityAway}
+        onPick={(v) => set({ qualityAway: v as PlaybackPrefs['qualityAway'] })}
+      />
+    </View>
+  )
+}
+
+/** A setting's label and its choices as chips: a guide, so Left and Right stay in the row. */
+function Choices({
+  label,
+  options,
+  value,
+  onPick,
+}: {
+  label: string
+  options: PlaybackOption[]
+  value: string
+  onPick: (v: string) => void
+}) {
+  const u = useTheme().u
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 1 * u }}>
+      <Text variant="meta" color="text-2" style={{ width: 11 * u }}>
+        {label}
+      </Text>
+      <TVFocusGuideView
+        autoFocus
+        accessibilityLabel={label}
+        style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: 0.4 * u }}
+      >
+        {options.map((o) => (
+          <Chip key={o.value} selected={o.value === value} onPress={() => onPick(o.value)}>
+            {o.short ?? o.label}
+          </Chip>
+        ))}
+      </TVFocusGuideView>
     </View>
   )
 }

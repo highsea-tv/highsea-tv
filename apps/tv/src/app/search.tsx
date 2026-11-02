@@ -3,8 +3,8 @@
 // left and results on the right, updating as each letter lands. Right from the keyboard enters the
 // results and Left comes back, each to where focus last was. The keys are letters in alphabetical
 // rows of seven, with numbers and symbols on a second layout behind &123, so nothing moves between
-// them. Typing never moves focus off the keys; picking a suggestion or a person does go into the
-// results, since its button goes away. Results come in a section per kind, the best-matching first;
+// them. Typing never moves focus off the keys; picking a suggestion does go into the results, since
+// its button goes away; a person opens their page. Results come in a section per kind, the best-matching first;
 // kinds the TV doesn't show (`discover`) are skipped, as the API asks. The query lives in this
 // screen, which stays mounted under a result, so Back finds it as it was.
 import type { SearchSection } from '@highsea-tv/api-contract'
@@ -14,11 +14,11 @@ import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
 import { useServers } from '@highsea-tv/native/servers'
 import { Button, Text, tokens, useControl, useTheme } from '@highsea-tv/ui'
-import { focusOn, TvKey, TvTile, type ViewHandle } from '@highsea-tv/ui/tv'
+import { focusOn, TvGrid, TvKey, TvPage, TvTile, type ViewHandle } from '@highsea-tv/ui/tv'
 import { router } from 'expo-router'
 import { type Ref, useCallback, useEffect, useRef, useState } from 'react'
 import { TVFocusGuideView, useWindowDimensions, View } from 'react-native'
-import { GlobalNav, ServerIdentity, TvGrid, TvPage } from '../kit.tsx'
+import { TvHead } from '../kit.tsx'
 import { search as messages } from '../messages.ts'
 
 const tv = tokens.tv
@@ -50,7 +50,7 @@ export default function Search() {
   const [q, setQ] = useState('')
   const [layout, setLayout] = useState<keyof typeof LAYOUTS>('letters')
   const live = useSearch(q)
-  // a suggestion's or a person's button goes with its results, so focus follows it into the new
+  // a suggestion's button goes with its results, so focus follows it into the new
   // ones, or to the keys when there are none; typing never moves it. Until they come, what was
   // showing stays and keeps focus: were the button to go first, tvOS would hand focus to the root's
   // preferred view (the first key) on the way, and the keys would remember it. The render that
@@ -104,14 +104,24 @@ export default function Search() {
   const span = width / u - 2 * tv.safe.x - KEYS - GAP
   return (
     <View style={{ flex: 1 }}>
-      <ServerIdentity />
+      <TvHead down={down} />
+      {/* the title across both columns, as the other screens head theirs, so the field and the
+      results start level under it */}
+      <Text
+        variant="heroTitle"
+        size={2.6}
+        accessibilityRole="header"
+        style={{ paddingHorizontal: tv.safe.x * u, paddingTop: 1.6 * u }}
+      >
+        {t('title')}
+      </Text>
       <View
         style={{
           flex: 1,
           flexDirection: 'row',
           gap: GAP * u,
           paddingHorizontal: tv.safe.x * u,
-          paddingTop: 7 * u,
+          paddingTop: 1.6 * u,
           paddingBottom: tv.safe.y * u,
         }}
       >
@@ -235,7 +245,6 @@ export default function Search() {
                         span={span}
                         first={i === 0 ? firstResult : undefined}
                         arrive={i === 0 && arrive}
-                        onPerson={pick}
                       />
                     </View>
                   ))}
@@ -245,7 +254,6 @@ export default function Search() {
           )}
         </TVFocusGuideView>
       </View>
-      <GlobalNav down={down} />
     </View>
   )
 }
@@ -255,14 +263,12 @@ function Results({
   span,
   first,
   arrive,
-  onPerson,
 }: {
   section: Shown
   span: number
   first?: Ref<ViewHandle>
   /** The results just came for a pick: the first takes focus as it appears. */
   arrive: boolean
-  onPerson: (name: string) => void
 }) {
   const f = useFormat()
   const u = useTheme().u
@@ -321,7 +327,7 @@ function Results({
               hasTVPreferredFocus={arrive && i === 0}
               image={media(p.photo) ?? null}
               accessibilityLabel={`${p.name}, ${f.moviesHere(p.titles)}`}
-              onPress={() => onPerson(p.name)}
+              onPress={() => router.push(`/people/${p.id}`)}
             >
               {p.name}
             </Button>

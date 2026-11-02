@@ -1,6 +1,6 @@
 # The apps catch up with the prototypes
 
-- **Status:** Written on 2026-11-01 at the owner's request ("a plan for a new agent to begin bringing all of the prototype changes over into the actual apps"), and approved with [the owner's answers](#the-owners-answers) of 2026-11-01: every recommendation. Part A was built on 2026-11-01 and waits for the owner's review.
+- **Status:** Written on 2026-11-01 at the owner's request ("a plan for a new agent to begin bringing all of the prototype changes over into the actual apps"), and approved with [the owner's answers](#the-owners-answers) of 2026-11-01: every recommendation. Part A was approved by the owner on 2026-11-01, with its calls as made; part B has begun.
 - **Parent plans:** [phase-4-checkpoint-5.md](phase-4-checkpoint-5.md) (4.5b, the TV), [prototype-gaps.md](prototype-gaps.md) (stages 1 to 6, the prototype work this ports) and [design-system-1-1.md](design-system-1-1.md) (the controls every app now draws with).
 - **Gate:** Each part below stops for the owner's review, as the standing rules ask.
 
@@ -86,7 +86,7 @@ The order is [answer 3](#the-owners-answers)'s. Each part stops for the owner. C
 
 ## Progress
 
-**Part A (2026-11-01), waiting for the owner's review.**
+**Part A (2026-11-01), approved by the owner on 2026-11-01,** with every call as made (call 2: the server starts with no choices made). Committed as `10fba6a`.
 
 - **A.1, the shared layer.** Into `@highsea-tv/client`, with tests (`packages/client/test`, 70 now):
   - `player`: `leavePlayer` and `playNext` over a small history each app passes, `titlePage`, `titleLines`, `filmUpNext` (the next part, else three of More like this, which don't count down), `countsDown` and `backStep`.
@@ -122,6 +122,63 @@ Calls made (for the owner's review):
 4. **Next up and Skip intros are stored now.** The plan left them for shows, but a film's next part counts down too. Skip intros does nothing until the server has intro markers for films.
 5. **The caps' pictures follow the prototype's labels** (20 and 8 Mbit/s are 1080p, 4 is 720p, 2 is 480p). Settings › Playback's remote ceiling maps 20 Mbit/s to 2160p, and the tighter of the two holds.
 6. **A film's own collections row** (Collections a title is in) isn't on the server's detail yet. It needs curation's collections by title, which is part D's or a later part's to add.
+
+**Part B (2026-11-02), signed off by the owner on 2026-11-02.** `apps/tv` follows the TV prototype, films only.
+
+- **Shared parts, not copies (the owner, 2026-11-02).** Whatever another app on the TV's rule would need went into `@highsea-tv/ui/tv` as data-only components, with no router, server, media or sound. Rules every app needs went into `@highsea-tv/client`. `apps/tv` keeps the routes, the data hooks, Back and the head's destinations (`src/kit.tsx`).
+  - The page: `TvHead` and `TvHeadStop` (`head.tsx`), `TvPage`, `Kept`, `TvGrid` and `TvWords` (`page.tsx`), `TvAmbient`, and `TvLetterRail` (`rail.tsx`).
+  - The rows and cards: `TvFilmRow` (`film-row.tsx`), `TvFeaturedCard`, `TvMenu`, `TvConfirm` and `TvNoticeCard` (`cards.tsx`).
+  - A title's page (`detail.tsx`): `TvBackdrop`, `TvRoundAction`, `TvPersonTile`, `TvInfoCard`, `TvProgressLine` and `TvSideDialog`, which the tracks panel now uses.
+  - `Chip` gains `iconEnd` on both renderers, for the Genre choice that opens a menu.
+  - `@highsea-tv/client`: `filmographyOf` and `LONG_BIO` (`library`), and `inlineParts` (`format`), with tests.
+  - `parity.ts` gives each TV part its reason for being native only.
+- **The shell.** The head as the prototype draws it: Search as an icon, Home, Collections, Movies, then Alerts and the account, which opens Settings. Shows and Music are left out. The `library/` routes became `movies/` and `collections/`, and `people/[id]` and `alerts` are new. An unreachable server shows its name in the corner.
+- **Home:** the featured card, 16:9 Continue watching cards with their menu on a 0.6-second hold of OK, and the other rows as film rows that loop. An announcement that must be acknowledged comes first; the rest are on Alerts.
+- **Movies:** the A–Z rail in a column of its own (the package's `LETTERS` and `letterOf`, by the sort title), choices that keep focus, Unwatched, and Genre in a menu. "No movies yet" and "Nothing matches" with Show everything.
+- **Collections:** All, Video and Audio, with captions from the package. A collection's row is named by what's in it, and its error offers Collections.
+- **A film's page:** the full-bleed art and the hero (title, meta line, synopsis, Starring, Directed by, and the picks). Play or Resume, then round buttons for From the start, Audio and subtitles, and the Mark as watched toggle. Then More like this, the Collections row, Cast and crew linking to a person's page, and the About, Information and Languages cards. Its error offers Movies.
+- **A person's page:** the photo, what's here and their life, the biography with More and Less, and a film row per department, with focus on the first.
+- **Search:** the head, films, people (opening their page) and collections.
+- **Settings:** the shared sections. Playback has the A.3 choices, and Servers lists every server (the current one "· in use"), with Switch, Another server, and Sign out asking first. No Episodes row (films only).
+- **Alerts:** every live announcement, newest first, as focus stops. Opening it counts the new ones as seen, and they keep their "New" mark while it's open. When there are none, it says so and offers Home.
+- **The player:** Back by `backStep` (a panel, then the chrome while playing, then out). Next up by `filmUpNext`: the next part counts down when Autoplay is on, otherwise three of More like this wait to be picked. The error offers Home.
+- **Checks:** the D-pad walk's screens follow the new head (`DpadWalk.swift`), and `tv-compare.ts` pairs Movies, Collections and Alerts.
+- **Found and fixed while checking (2026-11-02):**
+  - **Up from Home's top row didn't reach the head when there was no featured card.** Home counted its rows from 1 whether or not the featured card was drawn, and the head takes focus only from row 0. Now the first row shown is row 0 (`src/app/index.tsx`). The walk found it: every entry through the head stayed on Home, and it walked Home again for each screen for 1.5 hours before it was stopped.
+  - **The Movies rail started too high,** with # and A behind the title. It took the grid's top from `onLayout`, measured in the grid's parent, and is placed over the screen; now it's measured with `measureInWindow`.
+  - **The walk itself (`DpadWalk.swift`, `tv.ts`, `tv-uitest.ts`):**
+    - a preflight (`testEntries`, about 85 s) checks every screen's entry lands before the walk starts;
+    - `WALK` lines print as the walk goes;
+    - a screen stops once its first view's stops are all reached, except Settings and the player, whose other panels count;
+    - a replay that lands elsewhere is tried three times before the walk gives up on that stop;
+    - `testPath` replays one path for finding why.
+- **Results, under Node 26.11.1:**
+
+  | Check | Result |
+  | --- | --- |
+  | Lint, typecheck | clean |
+  | Tests | 12,750 pass, 8 skip, 1 fail: an HLS ffmpeg test past its 5 s timeout while the simulator walked; its file alone passes (20 pass, 2 skip) |
+  | Smoke | ok |
+  | Licences, audit | clean (1,508 packages, 562 crates, 128 pods; zod's advisory excepted until 2026-11-29) |
+  | Controls, bundles | clean (bundles covers web and phone; the TV isn't in it yet) |
+  | Pages, keyboard, D-pad (prototypes) | clean: 3,408 pages, 329 walked, every TV focusable |
+  | Server sweep, playback | clean; Chromium and Firefox |
+  | TV walk (simulator) | every stop on every screen: Home 18, the film page 19, Search 43, Collections 14, Movies 53, Alerts 7, Settings 19 and 45 beyond, the player 2 and 1 beyond |
+  | TV compare | 8 pairs, gone through; the differences are the calls below |
+
+Calls made (for the owner's review):
+
+1. **No Trailer button, and no Trailers and extras row.** tvOS has no web view to play YouTube's player in. The owner left them out on the TV on 2026-11-02, until the server can fetch trailer files for the TV's own player.
+2. **The film's Collections row draws a collection's name only:** the detail's `collection` has no artwork.
+3. **The rating is a ★ and the number;** there are no quality tags or logos, since the server has none.
+4. **Loading is a spinner,** not the prototype's skeletons.
+5. **Settings' sections come from the shared `settingsSections`,** so their words match the other apps'.
+6. **The account opens Settings;** profiles wait for their phase.
+7. **The Genre menu is a Modal** over the page, focus kept in it.
+8. **Home's Bloom isn't drawn.** The featured card follows the title shown, but without the prototype's glow behind it.
+9. **The phone's own announcement parser** moves to `inlineParts` in part C.
+10. **With no featured card, Home lifts its first row** to the safe area's top, so the head scrolls away until Up takes focus to it. The prototype does the same (its `usePageOffset` keeps the page at rest only for the hero).
+11. **A play session an app was killed in lasts until it's idle for five minutes** (`IDLE_MS`), as `packages/stream` intends. The walk killed the player many times, and the compare sheet taken right after it showed "This film didn't start" over a playing picture; taken again later, the player was right. No change now; on 2026-11-02 the owner had a later server part end a device's earlier sessions when it starts a new one.
 
 ## How to port a screen (every part)
 
@@ -256,6 +313,7 @@ Against `design/prototypes/src/mobile/`, with `phone-compare.ts`'s 14 pairs:
 - **The player:** the shared `leavePlayer` and `upNext`, and the title lines.
 
 **Checks for part C:**
+- `bun scripts/bundles.ts`, with the TV added to it (the owner, 2026-11-02): its bundle carries only the native renderer;
 - `bun run --cwd apps/mobile test`;
 - `bun scripts/sweeps/phone.ts`;
 - `bun scripts/sweeps/phone-compare.ts`;
@@ -376,3 +434,11 @@ On 2026-11-01 the owner took every recommendation for questions 1 to 5:
 3. **The order is A, B (the TV), C (the phone), D (the web and desktop app), then E.**
 4. **The owner reviews prototype-gaps' stage 6 and design system 1.1 before part A.** Stages 7 and 8 follow when the music phase and part E need them. Asked whether that review had happened, the owner said to start part A now.
 5. **Client-wide playback preferences are built in part A** (A.3), so every app's Settings has Playback from the start.
+
+## The owner's answers at part B's review
+
+On 2026-11-02, reviewing part B, the owner took every recommendation for its three decisions:
+
+1. **Trailers stay off the TV** (no Trailer button, no Trailers and extras row) until the server can fetch trailer files the TV's own player can play.
+2. **A later server part ends a device's earlier play sessions** when that device starts a new one. Until then, idle sessions end after five minutes, as now.
+3. **The TV joins `scripts/bundles.ts` in part C** ([its checks](#part-c-appsmobile-to-the-prototype)).

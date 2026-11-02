@@ -2,20 +2,21 @@
 // Runs one of apps/tv/uitest's XCUITests on the booted Apple TV simulator, for tv.ts and
 // tv-compare.ts: the project generated with XcodeGen into a scratch folder, then `xcodebuild
 // test` (https://developer.apple.com/documentation/xctest/xcuiremote). Variables for the test go
-// through xcodebuild's TEST_RUNNER_ prefix (man xcodebuild).
-import { execFileSync, spawnSync } from 'node:child_process'
+// through xcodebuild's TEST_RUNNER_ prefix (man xcodebuild). Lines the test prints with `WALK ` are
+// shown as they come, so a long walk shows how far it has got.
+import { execFileSync, spawn } from 'node:child_process'
 import { cpSync, mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { ROOT } from './lib.ts'
 
 /** Runs `DpadWalk/<test>` and returns whether it passed, with its output's lines. */
-export function runUITest(udid: string, test: string, env: Record<string, string> = {}) {
+export async function runUITest(udid: string, test: string, env: Record<string, string> = {}) {
   const work = mkdtempSync(join(tmpdir(), 'highsea-tv-uitest-'))
   try {
     cpSync(join(ROOT, 'apps/tv/uitest'), work, { recursive: true })
     execFileSync('xcodegen', ['generate', '--quiet'], { cwd: work, stdio: 'inherit' })
-    const run = spawnSync(
+    const run = spawn(
       'xcodebuild',
       [
         'test',
@@ -32,23 +33,34 @@ export function runUITest(udid: string, test: string, env: Record<string, string
       ],
       {
         cwd: work,
-        encoding: 'utf8',
         env: {
           ...process.env,
           ...Object.fromEntries(Object.entries(env).map(([k, v]) => [`TEST_RUNNER_${k}`, v])),
         },
-        maxBuffer: 64 * 1024 * 1024,
       },
     )
-    const lines = `${run.stdout}${run.stderr}`.split('\n')
-    if (run.status !== 0)
+    const lines: string[] = []
+    let rest = ''
+    const take = (chunk: Buffer) => {
+      const parts = (rest + chunk.toString('utf8')).split('\n')
+      rest = parts.pop() ?? ''
+      for (const line of parts) {
+        lines.push(line)
+        if (line.includes('WALK ')) console.log(line.slice(line.indexOf('WALK ')))
+      }
+    }
+    run.stdout.on('data', take)
+    run.stderr.on('data', take)
+    const status = await new Promise<number | null>((done) => run.on('close', done))
+    if (rest) lines.push(rest)
+    if (status !== 0)
       console.error(
         lines
           .filter((l) => /error|failed/i.test(l))
           .slice(-20)
           .join('\n'),
       )
-    return { passed: run.status === 0, lines }
+    return { passed: status === 0, lines }
   } finally {
     rmSync(work, { recursive: true, force: true })
   }

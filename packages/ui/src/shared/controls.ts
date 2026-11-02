@@ -61,6 +61,8 @@ export type SegmentedCommon<V extends string = string, I extends string = string
 export type ChipCommon<I extends string = string> = {
   selected?: boolean
   icon?: I
+  /** After the label: a chevron on a chip that opens a menu (a library's Genre). */
+  iconEnd?: I
   /** Shows a remove mark after the label. */
   removable?: boolean
   size?: ControlSize

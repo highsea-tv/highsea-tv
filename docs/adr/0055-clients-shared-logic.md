@@ -55,3 +55,10 @@ The prototype's client folder had grown rules every app needs and no app had: ho
 - `data`: Continue watching's Mark as watched and Remove ([ADR 0054's 2026-11-01 section](0054-watch-state.md)).
 
 The prototype now imports each of these from the package rather than keeping its own, as it did `format`, so the reference and the apps can't drift. Its screens import them directly, with no re-exports in between. What it keeps is its own wiring: its hooks over the mock, its stand-ins in the browser for the server's preference layers (the device's theme and sound, and the playback settings, in `PlaybackPrefs`' shape), and the browser's history for `leavePlayer` and `playNext`. The types stay kind-aware (an episode's show, a part or an episode next), but only films reach them until the server has shows.
+
+## 2026-11-02: a person's films and announcements' words (apps-catch-up.md › part B)
+
+The TV's person page and Alerts added two rules every app needs, both with tests:
+
+- `library`: `filmographyOf`, a person's films grouped by department. What they're known for comes first, then TMDB's order, then any other department. Each group is newest first, with a role list joined in words, and only what's in the library. `LONG_BIO` is the length at which a biography gets More and Less. `departmentTitle` takes any department TMDB names.
+- `format`: `inlineParts`, an announcement's text split into plain, bold and link runs, so each app can draw them with its own text. A TV can't follow a link, so it shows the link's words. The phone's own parser moves to it in part C.

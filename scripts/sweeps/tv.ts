@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The TV app's D-pad walk (phase-4-checkpoint-5.md › Tests and checks, 4.5b): on Home, a film's
 // page, Search, the library, Settings and the player, every focus stop is reached from the first
-// with the remote's arrows, as dpad.ts checks the prototype's. It's an XCUITest
+// with the remote's arrows, as dpad.ts checks the prototype's. A preflight first checks that every
+// screen's entry lands, so a broken one fails in a minute rather than an hour into the walk. It's an XCUITest
 // (apps/tv/uitest/DpadWalk.swift) on XCUIRemote, so it drives tvOS's own focus engine; tv-uitest.ts
 // runs it.
 //
@@ -12,12 +13,15 @@ import { bootedTV, runUITest } from './tv-uitest.ts'
 
 const screens = process.argv.slice(2)
 const started = Date.now()
-const { passed, lines } = runUITest(
-  bootedTV(),
-  'testEveryStopIsReachable',
-  screens.length ? { WALK_SCREENS: screens.join(',') } : {},
-)
-for (const line of lines) if (line.includes('WALK ')) console.log(line.slice(line.indexOf('WALK ')))
+const env: Record<string, string> = screens.length ? { WALK_SCREENS: screens.join(',') } : {}
+const tv = bootedTV()
+// the preflight: every screen's entry lands, in about a minute, before a walk that takes an hour
+const entries = await runUITest(tv, 'testEntries', env)
+if (!entries.passed) {
+  console.error('✗ a screen’s entry didn’t land: fix it before walking')
+  process.exit(1)
+}
+const { passed } = await runUITest(tv, 'testEveryStopIsReachable', env)
 console.log(`tv: ${((Date.now() - started) / 1000).toFixed(0)} s`)
 if (!passed) {
   console.error('✗ the D-pad walk failed')

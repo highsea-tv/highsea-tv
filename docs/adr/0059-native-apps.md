@@ -54,3 +54,14 @@ Scoped at Phase 4's checkpoint 4.5 ([phase-4-checkpoint-5.md](../plans/phase-4-c
 ## 2026-11-01: ui-native joined with ui-web (design system 1.1)
 
 [ADR 0060](0060-one-design-system-one-library.md) joins `@highsea-tv/ui-native` and `@highsea-tv/ui-web` as one package, `@highsea-tv/ui`, chosen by the `react-native` export condition. The phone and the TV import `@highsea-tv/ui` (and `@highsea-tv/ui/tv`) and get the React Native renderer. Its controls take their sizes from the tokens' control spec: touch draws 36, with `hitSlop` making up 44, and the TV's controls are the TV rule of the same components rather than components of their own. The phone's Jest maps `react` to the app's copy, as Expo's Metro does in a workspace.
+
+## 2026-11-02: the TV's screens on shared parts (apps-catch-up.md › part B)
+
+Part B brought `apps/tv` up to the prototype. The TV's parts that any app on the TV's rule needs went into `@highsea-tv/ui/tv` rather than into the app, as data-only components that take words, artwork and actions as props and import no router, server, media or sound (the owner, 2026-11-02: one kit, extensible to clients still to come). They are:
+
+- the page: `TvHead` and `TvHeadStop`, `TvPage` and `Kept`, `TvGrid`, `TvWords`, `TvAmbient` and `TvLetterRail`;
+- the rows and cards: `TvFilmRow`, `TvFeaturedCard`, `TvNoticeCard` and `TvMenu`;
+- a title's page: `TvBackdrop`, `TvRoundAction`, `TvPersonTile`, `TvInfoCard` and `TvProgressLine`;
+- the dialogs: `TvSideDialog` and `TvConfirm`.
+
+`apps/tv` keeps only its wiring: the routes, the data hooks, Back and the head's destinations (`kit.tsx`). The library's `library/` routes became `movies/` and `collections/`, as the prototype's are, with `people/[id]` and `alerts` added. The player's Back follows `backStep`, and its Next up follows `filmUpNext`: the next part counts down when Autoplay is on, and three More like this choices wait to be picked. `src/shared/parity.ts` gives each of these parts its reason for being on the React Native side only.

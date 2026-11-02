@@ -101,3 +101,30 @@ export function createFormat(locale = 'en') {
 }
 
 export type Format = ReturnType<typeof createFormat>
+
+/** A run of an announcement's body: plain, bold, italic, or a link with its address. */
+export type InlinePart =
+  | { kind: 'text' | 'bold' | 'italic'; text: string }
+  | { kind: 'link'; text: string; url: string }
+
+const INLINE = /(\*\*[^*]+\*\*|_[^_]+_|\[[^\]]+\]\([^)\s]+\))/
+
+/**
+ * Announcement bodies' inline markdown, the part the composer offers (**bold**, _italic_ and
+ * [links](https://…)), as runs every app draws in its own way: the web and the phone open a link,
+ * a TV can't follow one and shows its words.
+ */
+export function inlineParts(text: string): InlinePart[] {
+  return text
+    .split(INLINE)
+    .filter((part) => part !== '')
+    .map((part): InlinePart => {
+      if (part.startsWith('**') && part.endsWith('**') && part.length > 4)
+        return { kind: 'bold', text: part.slice(2, -2) }
+      if (part.startsWith('_') && part.endsWith('_') && part.length > 2)
+        return { kind: 'italic', text: part.slice(1, -1) }
+      const link = /^\[([^\]]+)\]\(([^)\s]+)\)$/.exec(part)
+      if (link) return { kind: 'link', text: link[1] as string, url: link[2] as string }
+      return { kind: 'text', text: part }
+    })
+}

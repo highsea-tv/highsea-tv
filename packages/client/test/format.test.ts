@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The words and numbers under titles (ADR 0055), as the prototype's client shows them.
 import { describe, expect, test } from 'bun:test'
-import { createFormat } from '../src/format/index.ts'
+import { createFormat, inlineParts } from '../src/format/index.ts'
 
 const f = createFormat('en')
 
@@ -57,5 +57,19 @@ describe('format', () => {
     expect(f.serverName('Harbor')).toBe('Harbor')
     expect(f.serverName(null)).toBe('this server')
     expect(f.serverName('')).toBe('this server')
+  })
+})
+
+describe('inlineParts', () => {
+  test('splits bold, italic and links from the plain words', () => {
+    expect(inlineParts('Hi **all**, see _this_ and [notes](https://x.test/a).')).toEqual([
+      { kind: 'text', text: 'Hi ' },
+      { kind: 'bold', text: 'all' },
+      { kind: 'text', text: ', see ' },
+      { kind: 'italic', text: 'this' },
+      { kind: 'text', text: ' and ' },
+      { kind: 'link', text: 'notes', url: 'https://x.test/a' },
+      { kind: 'text', text: '.' },
+    ])
   })
 })

@@ -53,13 +53,16 @@ export const StopScope = createContext('')
 export type FocusableProps = {
   onPress?: () => void
   onLongPress?: () => void
+  /** How long OK is held for `onLongPress`, in ms (Pressable's own is 500). */
+  delayLongPress?: number
   onFocus?: () => void
   onBlur?: () => void
   /**
    * `button` lifts by 1.07, `poster` by 1.05 (focus.tv); `row`, a list's full-width row, by the
-   * prototype's 1.03 (its settings and server rows' `scale-[1.03]`).
+   * prototype's 1.03 (its settings and server rows' `scale-[1.03]`); a number for a card of its
+   * own (the TV's film row card's 1.04, Home's featured card's 1.015).
    */
-  lift?: 'button' | 'poster' | 'row' | 'none'
+  lift?: 'button' | 'poster' | 'row' | 'none' | number
   /** Whether the ring is drawn on this stop; a poster draws it around its art instead. */
   ring?: boolean
   /** The ring's corner radius, in points. */
@@ -81,6 +84,7 @@ export type FocusableProps = {
 export function Focusable({
   onPress,
   onLongPress,
+  delayLongPress,
   onFocus,
   onBlur,
   lift = 'button',
@@ -103,13 +107,15 @@ export function Focusable({
   const [focused, setFocused] = useState(false)
   const scale = useSharedValue(1)
   const to =
-    lift === 'button'
-      ? ring.scaleButton
-      : lift === 'poster'
-        ? ring.scalePoster
-        : lift === 'row'
-          ? ROW_SCALE
-          : 1
+    typeof lift === 'number'
+      ? lift
+      : lift === 'button'
+        ? ring.scaleButton
+        : lift === 'poster'
+          ? ring.scalePoster
+          : lift === 'row'
+            ? ROW_SCALE
+            : 1
   const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
   return (
     <AnimatedPressable
@@ -123,6 +129,7 @@ export function Focusable({
       focusable={!disabled}
       onPress={onPress}
       onLongPress={onLongPress}
+      delayLongPress={delayLongPress}
       onFocus={() => {
         setFocused(true)
         if (!reduced) scale.value = withSpring(to, tokens.springs.base)

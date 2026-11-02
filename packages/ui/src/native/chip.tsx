@@ -26,6 +26,7 @@ export function Chip({
   children,
   selected = false,
   icon,
+  iconEnd,
   removable,
   size,
   disabled,
@@ -72,6 +73,7 @@ export function Chip({
       <ControlText m={m} weight={look.weight} color={theme.colors[look.label]}>
         {children}
       </ControlText>
+      {iconEnd ? <Icon name={iconEnd} size={m.icon / theme.u} color={look.label} /> : null}
       {removable ? <Icon name="close" size={m.icon / theme.u} color={look.label} /> : null}
     </ControlPress>
   )

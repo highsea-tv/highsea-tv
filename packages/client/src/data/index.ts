@@ -127,6 +127,13 @@ export const useCollection = (id: string, client: ClientType) =>
     [...LIBRARY, CURATION_TOPICS.home],
   )
 
+/**
+ * A person and their filmography (client-people.md), with each credit saying whether its film is
+ * here. From TMDB through the server's cache, so a person nobody here has opened takes a moment.
+ */
+export const usePerson = (id: number) =>
+  useQuery(`client:person:${id}`, (c) => c.metadata.person({ params: { id } }), LIBRARY)
+
 /** The owner's announcements for this person on this kind of app, by where they show. */
 export function useAnnouncements(client: ClientType) {
   const list = useQuery(
@@ -148,8 +155,12 @@ export function placements(all: ClientAnnouncement[]) {
     cards: dismissable.filter((a) => a.placements.includes('card')),
     /** Shown once as a toast on the web and desktop, then marked seen. */
     toasts: dismissable.filter((a) => a.placements.includes('toast')),
-    /** The newest, for the TV's pill. */
+    /** The newest unseen. */
     latest: unseen[0],
+    /** Every live one, newest first: the TV's Alerts. */
+    all,
+    /** Those not yet seen: the dot on the TV's bell, and what Alerts marks seen. */
+    unread: unseen,
   }
 }
 

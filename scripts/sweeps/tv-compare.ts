@@ -27,7 +27,9 @@ const PAIRS: Pair[] = [
   { name: 'home', screen: 'C2 Home', prototype: '/tv?launch=done' },
   { name: 'details', screen: 'C4 A movie', prototype: '/tv/movies/4' },
   { name: 'search', screen: 'C6 Search', prototype: '/tv/search' },
-  { name: 'library', screen: 'C3 Library', prototype: '/tv/movies' },
+  { name: 'collections', screen: 'C3 Collections', prototype: '/tv/collections' },
+  { name: 'movies', screen: 'C3 Movies', prototype: '/tv/movies' },
+  { name: 'alerts', screen: 'Alerts', prototype: '/tv/alerts' },
   { name: 'settings', screen: 'C7 Settings', prototype: '/tv/profile' },
   {
     name: 'player',
@@ -76,7 +78,7 @@ try {
   if (prototypes?.pid) process.kill(-prototypes.pid, 'SIGTERM')
 }
 
-const { passed } = runUITest(bootedTV(), 'testScreenshots', { SHOTS: out })
+const { passed } = await runUITest(bootedTV(), 'testScreenshots', { SHOTS: out })
 const problems = passed ? [] : ['the screenshots stopped early (the output is above)']
 
 // the review's pages, the prototype on the left as in compare.ts

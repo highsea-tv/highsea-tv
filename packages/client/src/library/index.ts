@@ -167,6 +167,57 @@ export type Department =
   | 'Camera'
   | 'Editing'
 
+/** The order a person's rows come in after the one they're known for: TMDB's departments'. */
+const DEPARTMENT_ORDER: readonly Department[] = [
+  'Acting',
+  'Directing',
+  'Writing',
+  'Production',
+  'Sound',
+  'Camera',
+  'Editing',
+]
+
+/** A biography this long or longer is cut, with More to show the rest (client-people.md). */
+export const LONG_BIO = 240
+
+/**
+ * A person's films here, a row per department (client-people.md): the one they're known for first,
+ * then TMDB's order, each newest first, a film's roles in one department joined ("Director,
+ * Writer"). Credits for films not here are left out; a department with none is too. Its title is
+ * `departmentTitle`'s.
+ */
+export function filmographyOf<
+  C extends {
+    id: number
+    year: number | null
+    inLibrary: boolean
+    role: string
+    department: string
+  },
+>(credits: C[], knownFor: string | null) {
+  const here = credits.filter((c) => c.inLibrary)
+  // TMDB's other departments (Art, Lighting, Crew) come last, as they first appear
+  const known: readonly string[] = DEPARTMENT_ORDER
+  const others = [...new Set(here.map((c) => c.department))].filter((d) => !known.includes(d))
+  const order = [knownFor, ...known, ...others].filter(
+    (d, i, all): d is string => !!d && all.indexOf(d) === i,
+  )
+  return order.flatMap((department) => {
+    const films = new Map<number, { item: C; role: string }>()
+    for (const c of here) {
+      if (c.department !== department) continue
+      const had = films.get(c.id)
+      films.set(
+        c.id,
+        had ? { item: had.item, role: `${had.role}, ${c.role}` } : { item: c, role: c.role },
+      )
+    }
+    const list = [...films.values()].sort((a, b) => (b.item.year ?? 0) - (a.item.year ?? 0))
+    return list.length > 0 ? [{ department, credits: list }] : []
+  })
+}
+
 /** The trailer the page's Trailer button plays: the first trailer, or a teaser before release. */
 export const previewOf = <V extends { kind: string }>(d: { videos: V[] }): V | undefined =>
   d.videos.find((x) => x.kind === 'Trailer' || x.kind === 'Teaser')
@@ -244,7 +295,7 @@ export function createLibraryText(locale = 'en') {
         .map((x) => roles[x] ?? x)
         .join(', '),
     /** Each department's row on a person's page, named by what they did. */
-    departmentTitle: (d: Department) => departments[d],
+    departmentTitle: (d: string) => departments[d as Department] ?? d,
 
     /** Information: when, how long, the rating, the genres and who made it. */
     informationOf(d: FactsOf): Fact[] {

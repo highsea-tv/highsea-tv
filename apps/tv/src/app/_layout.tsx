@@ -184,10 +184,12 @@ function Nav({ phase }: { phase: Phase }) {
         <Stack.Protected guard={phase === 'in'} redirectTo={start}>
           <Stack.Screen name="index" />
           <Stack.Screen name="search" />
-          <Stack.Screen name="library/index" />
-          <Stack.Screen name="library/collections" />
+          <Stack.Screen name="movies/index" />
           <Stack.Screen name="movies/[id]" />
+          <Stack.Screen name="collections/index" />
           <Stack.Screen name="collections/[id]" />
+          <Stack.Screen name="people/[id]" />
+          <Stack.Screen name="alerts" />
           <Stack.Screen name="settings" />
           <Stack.Screen name="play/[id]" />
         </Stack.Protected>
@@ -208,7 +210,7 @@ function Unreachable() {
   const name = current.server.name
   return (
     <View style={[StyleSheet.absoluteFill, { backgroundColor: background }]}>
-      <ServerIdentity />
+      <ServerIdentity corner />
       <TvMessage
         title={t('unreachableTitle', { name })}
         actions={
