@@ -42,8 +42,9 @@ Two columns from expanded (the form at 22–28rem, the preview beside it and sti
 - **Featured section:**
   - **Title** and **After the title** (the lighter suffix: "by Ines", "Restored and scored");
   - **Layout**: Hero, Row, Spotlight, with what each means;
-  - **Titles**: **Pick them** (search the playable library, add, reorder by the drag handle, remove) or **Use a rule**: Recently added (7, 30 or 90 days), a genre, or **a collection**: the server's own collections first ([collections.md](collections.md)), then TMDB's. It replaces the free-text saved filter. A rule shows what it picks now: "Right now this picks 10 titles, and keeps up as the library changes", with their posters;
-  - **Taglines on the hero** (hero only): a line per title in place of its synopsis;
+  - **Titles**: **Pick them** (search the playable library, films and shows together, add, reorder by the drag handle, remove; "Films and shows. Only titles people can play show up.", a show marked **Show**) or **Use a rule**: Recently added (7, 30 or 90 days), a genre, or **a collection**: the server's own collections first ([collections.md](collections.md)), then TMDB's. It replaces the free-text saved filter. A rule shows what it picks now: "Right now this picks 10 titles, and keeps up as the library changes", with their posters;
+  - **Shows in a section** (prototype-gaps.md › stage 6): a picked show sits among the films in the owner's order, with its own poster and backdrop and the tagline as a film's. A show can play when an episode has a file. In the apps its card opens the show, **Play** starts the episode it's on (its first when it's new), and its line reads "3 seasons · 2019–present · Drama". A collection rule brings the collection's shows after its films; Recently added and a genre stay films (shows have Home's own Recently added shows);
+  - **Taglines on the hero** (hero only): a line per title, film or show, in place of its synopsis;
   - **Who sees it** and **When**, as above;
   - **Add to home** or **Save changes**, **Cancel**, and **Delete** when editing.
 

@@ -337,13 +337,19 @@ describe('A14, A16, A17 reference pages', () => {
   test('wanted: the missing list searches, and the calendar moves by month', async () => {
     const { mock, user } = await open('/admin/wanted')
     const rows = () => page().getAllByRole('button', { name: /^Search for / })
-    expect(rows().length).toBe(2)
+    // two movies and two episodes (stage 6), in one table with a filter for the kind
+    expect(rows().length).toBe(4)
+    expect(page().getByRole('button', { name: 'Search for Ghost Signal S02E01' })).toBeTruthy()
     await clean()
-    await user.click(page().getByRole('button', { name: 'Search all 2' }))
+    await user.click(page().getByRole('radio', { name: /^Episodes/ }))
+    expect(rows().length).toBe(2)
+    await user.click(page().getByRole('radio', { name: 'All' }))
+    await user.click(page().getByRole('button', { name: 'Search all 4' }))
     await settle()
     expect(
       mock.servers.populated.state.items.find((m) => m.title === 'Royal Wedding')?.status,
     ).toBe('downloading')
+    expect(page().getByText('Nothing missing')).toBeTruthy()
     await user.click(page().getByRole('tab', { name: 'Calendar' }))
     await settle()
     const month = page().getByRole('heading', { level: 2 }).textContent
@@ -369,13 +375,15 @@ describe('A14, A16, A17 reference pages', () => {
     await clean(confirm)
   })
 
-  test('manual import: matched files import; the unmatched one waits for a movie', async () => {
+  test('manual import: matched files import; the unmatched one waits for a match', async () => {
     const { mock, user } = await open('/admin/activity/import')
     await settle()
-    expect(page().getByRole('button', { name: 'Import 2 files' })).toBeTruthy()
-    expect(page().getByText('Didn’t match a movie. Choose one.')).toBeTruthy()
+    // two films, an episode and a double episode match; the last file matches nothing
+    expect(page().getByRole('button', { name: 'Import 4 files' })).toBeTruthy()
+    expect(page().getByText('Saltmarsh · S01E01–E02')).toBeTruthy()
+    expect(page().getByText('Didn’t match a movie or an episode. Choose one.')).toBeTruthy()
     await clean()
-    await user.click(page().getByRole('button', { name: 'Import 2 files' }))
+    await user.click(page().getByRole('button', { name: 'Import 4 files' }))
     await settle()
     const status = (t: string) =>
       mock.servers.populated.state.items.find((m) => m.title === t)?.status

@@ -137,6 +137,14 @@ As built in 6a and 6b (`packages/api-contract/src/downloads.ts`). Every route is
   - **Import into the library:** a finished manual torrent offers it in the sheet's More menu, opening A17 on its folder (answer 7). Built in 6b.
 - **Download client settings are the owner's** (the checkpoint's judgement call 13); A7 and A8 stay staff.
 
+## Episodes (prototype-gaps stage 6, 2026-11-01)
+
+- **Queue:** the column is Title; an episode's download reads "Night Shift at Hollow Creek · S03E06", linked to the show, the release name below. Empty: the copy names movies and episodes.
+- **History** names an episode the same way, linked to the show.
+- **Downloads:** an episode's torrent has **Open the show** where a film's has Open the movie.
+- **Seeded:** Night.Shift.at.Hollow.Creek.S03E06 at 64% in the queue (category tv). With it, three downloads are active from the start, so the last film waits in the queue.
+- **Data:** `QueueItem.episode` (`{ show, code, title }`).
+
 ## Open questions
 
 - **Peers tab.** The roadmap lists peers in the torrent detail; the mock has counts only. Is a peer list (address, client, flags, rates) worth showing?

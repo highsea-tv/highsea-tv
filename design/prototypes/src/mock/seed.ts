@@ -160,6 +160,7 @@ function seedCollections(now: number): SmartCollection[] {
     artwork: null,
     include: [],
     exclude: [],
+    shows: [],
     sort: 'rating',
     descending: true,
     limit: null,
@@ -186,6 +187,7 @@ function seedCollections(now: number): SmartCollection[] {
       summary: 'Ines’s favourites, in her order.',
       rules: null,
       include: ['metropolis', 'sintel', 'his-girl-friday', 'the-general', 'charade', 'spring'],
+      shows: ['saltmarsh'],
       sort: 'manual',
       updatedAt: iso(now - 9 * DAY),
     },
@@ -219,6 +221,8 @@ function seedCollections(now: number): SmartCollection[] {
       name: 'Scored by Jan Morgenstern',
       summary: 'Blender’s composer, from Elephants Dream on.',
       rules: all('g-jan', when('c-jan', 'composer', 'includes', ['jan-morgenstern'])),
+      // a show he scored too, picked by hand: rules match films only
+      shows: ['the-lantern-keepers'],
       sort: 'release',
       descending: false,
     },
@@ -295,7 +299,7 @@ const users = (now: number): User[] => [
     displayName: 'Kids',
     role: 'user',
     permissions: [],
-    libraries: ['movies'],
+    libraries: ['movies', 'shows'],
     twoFactor: false,
     lastSeen: iso(now - 2 * DAY),
     invited: false,
@@ -436,8 +440,12 @@ const fs: Record<string, FsNode> = {
   },
   '/data/downloads/complete': { device: 'data', children: [] },
   '/data/downloads/incomplete': { device: 'data', children: [] },
-  '/data/media': { device: 'data', children: ['/data/media/movies', '/data/media/tv'] },
+  '/data/media': {
+    device: 'data',
+    children: ['/data/media/movies', '/data/media/music', '/data/media/tv'],
+  },
   '/data/media/movies': { device: 'data', children: [] },
+  '/data/media/music': { device: 'data', children: [] },
   '/data/media/tv': { device: 'data', children: [] },
   '/mnt': { device: 'root', children: ['/mnt/nas'] },
   '/mnt/nas': { device: 'nas', children: ['/mnt/nas/movies', '/mnt/nas/backups'] },
@@ -1373,6 +1381,38 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
       now,
     ),
   ]
+  // an episode downloading (stage 6 of the prototypes' gaps): Night Shift at Hollow Creek's
+  // S03E06, at 64% as the shows' mock has it
+  {
+    const base = torrent(
+      't-nightshift-s3e6',
+      byId('sintel'),
+      {
+        state: 'downloading',
+        progress: 0.64,
+        uhd: false,
+        down: 3.1 * MB,
+        up: 0.3 * MB,
+        indexer: 'Lighthouse',
+        addedAgo: 40 * MIN,
+      },
+      now,
+    )
+    const name = 'Night.Shift.at.Hollow.Creek.S03E06.1080p.WEB-DL.DDP5.1.H.264-NTb'
+    const size = Math.round(2.4 * GB)
+    torrents.push({
+      ...base,
+      name,
+      itemId: 'night-shift-at-hollow-creek-s3e6',
+      category: 'tv',
+      size,
+      downloaded: Math.round(size * 0.64),
+      eta: Math.round((size * 0.36) / (3.1 * MB)),
+      quality: 'WEB 1080p',
+      savePath: '/data/downloads/complete/tv',
+      files: [{ path: `${name}/${name}.mkv`, size, progress: 0.64, priority: 'normal' }],
+    })
+  }
   const history: HistoryEvent[] = [
     ...torrents.map(
       (t) =>

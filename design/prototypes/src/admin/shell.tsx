@@ -116,6 +116,7 @@ function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => vo
   const current = pageAt(location)
   const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
   const movies = useQuery('movies', (c) => c.movies.list(), ['item.updated'])
+  const shows = useQuery('admin-shows', (c) => c.shows.list(), ['shows.updated'])
   const queue = useQuery('queue', (c) => c.queue.list(), ['queue.updated'])
   const playing = useQuery('sessions', (c) => c.sessions.list(), ['sessions.updated'])
   // the rail is 64px: the mark alone (brand.tsx: the lockup needs 96px)
@@ -123,6 +124,7 @@ function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => vo
   const health = useQuery('health', (c) => c.system.health(), ['health.updated'])
   const counts: Record<string, number | undefined> = {
     movies: movies.data?.length || undefined,
+    shows: shows.data?.length || undefined,
     activity: queue.data?.length || undefined,
     'now-playing': playing.data?.sessions.length || undefined,
   }

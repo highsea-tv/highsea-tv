@@ -33,6 +33,7 @@ import {
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { QueueItem } from '../../mock/types.ts'
+import { episodeName, isEpisodeId, showHref } from '../episodes.ts'
 import { Loadable } from '../loadable.tsx'
 import { HistoryTable } from '../movies/detail.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
@@ -102,7 +103,7 @@ function Queue() {
         if (xs.length === 0)
           return (
             <EmptyState icon="downloads" title="The queue is empty">
-              Movies show here while they download and import, then move to History.
+              Movies and episodes show here while they download and import, then move to History.
             </EmptyState>
           )
         const counts = Object.fromEntries(
@@ -140,7 +141,7 @@ function Queue() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Movie</TableHead>
+                        <TableHead>Title</TableHead>
                         <TableHead>Quality</TableHead>
                         <TableHead numeric>Size</TableHead>
                         <TableHead>Progress</TableHead>
@@ -160,7 +161,12 @@ function Queue() {
                           <TableRow key={q.id}>
                             <TitleCell
                               title={
-                                q.itemId ? (
+                                q.episode ? (
+                                  // an episode: its show and number, to the show's page
+                                  <a href={showHref(q.episode.show)} className="hover:underline">
+                                    {q.title} · {q.episode.code}
+                                  </a>
+                                ) : q.itemId ? (
                                   <a
                                     href={adminHref(`/movies/${q.itemId}`)}
                                     className="hover:underline"
@@ -338,20 +344,31 @@ function ActivityHistory() {
     'activity-history',
     async (c) => {
       const [events, movies] = await Promise.all([c.history.list(), c.movies.list()])
-      return { events, titles: Object.fromEntries(movies.map((m) => [m.id, m.title])) }
+      const titles: Record<string, string> = Object.fromEntries(movies.map((m) => [m.id, m.title]))
+      const hrefs: Record<string, string> = {}
+      // an episode's events name its show and number, and open the show (stage 6)
+      for (const id of new Set(events.map((e) => e.itemId)))
+        if (!titles[id] && isEpisodeId(id)) {
+          const found = await c.shows.episode(id)
+          if (found) {
+            titles[id] = episodeName(found.show, found.episode)
+            hrefs[id] = showHref(found.show.id)
+          }
+        }
+      return { events, titles, hrefs }
     },
     ['history.updated'],
   )
   return (
     <Loadable query={data} what="the history">
-      {({ events, titles }) =>
+      {({ events, titles, hrefs }) =>
         events.length === 0 ? (
           <EmptyState icon="clock" title="No history yet">
             Every grab, import, rename and subtitle download is recorded here.
           </EmptyState>
         ) : (
           <TableFrame>
-            <HistoryTable events={events} titles={titles} showTitle />
+            <HistoryTable events={events} titles={titles} hrefs={hrefs} showTitle />
           </TableFrame>
         )
       }

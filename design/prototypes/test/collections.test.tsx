@@ -75,6 +75,7 @@ const draft = (rules: RuleCondition[], patch: Partial<SmartCollection> = {}): Sm
   rules: { kind: 'group', id: 'g', match: 'all', rules },
   include: [],
   exclude: [],
+  shows: [],
   sort: 'title',
   descending: false,
   limit: null,
@@ -253,7 +254,7 @@ describe('A19 collections', () => {
     expect(list.getAllByRole('listitem')).toHaveLength(6)
     expect(list.getByRole('link', { name: '2010s, 4.5 stars and up, in English' })).toBeTruthy()
     expect(list.getByText('Released 2010–2020, rated 4.5 or more, in English')).toBeTruthy()
-    expect(list.getByText(/4 films, 3 in the apps/)).toBeTruthy()
+    expect(list.getByText(/4 movies, 3 in the apps/)).toBeTruthy()
     expect(list.getByText('Picked')).toBeTruthy()
     expect(list.getByText(/Nothing matches yet/)).toBeTruthy()
     await clean()
@@ -309,6 +310,95 @@ describe('A19 collections', () => {
   test('a collection that isn’t there says so', async () => {
     await open('/admin/collections/nowhere')
     expect(page().getByText(/no collection with that id/)).toBeTruthy()
+  })
+})
+
+describe('shows in collections and featured sections (prototype-gaps.md › stage 6)', () => {
+  test('a collection’s shows are picked by hand, counted as the apps count them', async () => {
+    const mock = createMock()
+    const api = client(mock)
+    const staff = await saved(mock, 'sc-staff')
+    expect(staff.shows).toEqual(['saltmarsh'])
+    expect(staff.showsHere).toBe(1)
+    expect(staff.showsPlayable).toBe(1)
+    // rules match films only: the composer's show comes in as a pick beside them
+    const jan = await api.collections.preview(await saved(mock, 'sc-morgenstern'))
+    expect(jan.shows.map((x) => x.title)).toEqual(['The Lantern Keepers'])
+    expect(jan.items.some((m) => m.title === 'The Lantern Keepers')).toBe(false)
+
+    // shows alone are enough for a picked collection, and the apps list them
+    await api.collections.save({
+      ...draft([], { id: 'sc-shows', name: 'Shows only', rules: null, sort: 'manual' }),
+      shows: ['orbital', 'saltmarsh'],
+    })
+    const { collection, items, shows } = await api.library.collection('sc-shows', 'web')
+    expect(items).toEqual([])
+    expect(shows.map((x) => x.title)).toEqual(['Orbital', 'Saltmarsh'])
+    expect(collection.shows).toBe(2)
+    await expect(
+      api.collections.save(draft([], { id: 'sc-none', name: 'None', rules: null })),
+    ).rejects.toThrow(/film or show/)
+  })
+
+  test('the admin’s list and editor show the shows', async () => {
+    const { mock, user } = await open('/admin/collections/sc-staff')
+    const result = () => within(page().getByRole('region', { name: 'What it holds now' }))
+    await waitFor(() =>
+      expect(result().getByRole('list', { name: 'Shows in it' }).children).toHaveLength(1),
+    )
+    await user.type(page().getByRole('textbox', { name: 'Picked shows' }), 'orbit')
+    await settle()
+    const matches = within(page().getByRole('list', { name: 'Picked shows: matches' }))
+    await user.click(matches.getByRole('button', { name: /Orbital/ }))
+    expect(
+      within(page().getByRole('list', { name: 'Picked shows' })).getAllByRole('listitem'),
+    ).toHaveLength(2)
+    await waitFor(
+      () => expect(result().getByRole('list', { name: 'Shows in it' }).children).toHaveLength(2),
+      { timeout: 3000 },
+    )
+    await clean()
+    await user.click(page().getByRole('button', { name: 'Save changes' }))
+    await settle()
+    expect((await saved(mock, 'sc-staff')).shows).toEqual(['saltmarsh', 'orbital'])
+    expect(page().getByText(/6 movies and 2 shows, all in the apps/)).toBeTruthy()
+  })
+
+  test('a hand-picked featured section holds shows beside films, with their taglines', async () => {
+    const mock = createMock()
+    const c = client(mock)
+    const sintel = (await c.movies.list()).find((m) => m.title === 'Sintel')?.id ?? ''
+    const section = {
+      ...(await c.curation.section('fs-recent')),
+      title: 'Films and shows',
+      source: { kind: 'manual' as const, itemIds: ['saltmarsh', sintel] },
+      overrides: [{ itemId: 'saltmarsh', artwork: null, tagline: 'Salt, wind and secrets.' }],
+    }
+    const picked = await c.curation.resolve(section)
+    expect(picked.map((m) => m.title)).toEqual(['Saltmarsh', 'Sintel'])
+    const show = picked[0]
+    expect(show?.series?.play).toMatch(/^saltmarsh-s\d+e\d+$/)
+    expect(show?.tagline).toBe('Salt, wind and secrets.')
+    expect(picked[1]?.series).toBeUndefined()
+
+    await c.curation.saveSection(section)
+    const { location, user } = await (async () => {
+      const location = memoryLocation({ path: '/web', record: true })
+      const state = { ...defaultState, data: 'populated' as const, time: 'pause' as const }
+      await act(async () => {
+        render(<ScreenApp mock={mock} state={state} hook={location.hook} latency={0} />)
+      })
+      await settle()
+      return { location, user: userEvent.setup() }
+    })()
+    await acknowledge(user)
+    const row = page().getByRole('region', { name: 'Films and shows' })
+    // the show's card opens the show, as a film's opens the film
+    const links = within(row)
+      .getAllByRole('link')
+      .map((a) => a.getAttribute('href'))
+    expect(links).toContain('#/web/shows/saltmarsh')
+    expect(location.history.at(-1)).toBe('/web')
   })
 })
 

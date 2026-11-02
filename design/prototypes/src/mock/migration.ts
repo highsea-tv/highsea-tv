@@ -147,7 +147,8 @@ export function migrationApi(d: SettingsDeps) {
   }
 
   const radarrPreview = (maps: PathMapping[]): RadarrPreview => {
-    const roots = s.rootFolders.map((f) => f.path)
+    // Radarr's folders are movies': only the Movies folders count
+    const roots = s.rootFolders.filter((f) => f.kind === 'movies').map((f) => f.path)
     const rootFolders = RADARR_ROOTS.map((r) => {
       const path = mapped(r.radarr, maps)
       const status: RadarrPreview['rootFolders'][number]['status'] = roots.includes(path)

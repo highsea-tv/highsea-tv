@@ -246,6 +246,122 @@ export type DiscoverMovie = {
   inLibrary: boolean
 }
 
+// ---------------------------------------------------------------- shows in the admin (stage 6)
+
+/**
+ * Which episodes a show added watches, as Sonarr's Monitor choice: every one, only those not yet
+ * aired, those without a file, the first season, or none.
+ */
+export type ShowMonitor = 'all' | 'future' | 'missing' | 'first-season' | 'none'
+
+/**
+ * An episode as the admin sees it: watched for or not, and its file. `unaired` until its air
+ * date; `cutoff-unmet` when its file is below its profile's cutoff.
+ */
+export type EpisodeStatus = 'available' | 'missing' | 'downloading' | 'cutoff-unmet' | 'unaired'
+
+export type AdminEpisode = {
+  id: string
+  show: string
+  season: number
+  number: number
+  title: string
+  /** First aired, YYYY-MM-DD. */
+  aired: string
+  runtimeMinutes: number
+  monitored: boolean
+  status: EpisodeStatus
+  /** Its file, or null; a multi-episode file names every episode it holds in `episodes`. */
+  file: {
+    path: string
+    size: number
+    quality: string
+    releaseGroup: string | null
+    episodes: number[]
+  } | null
+  /** 0–100 while it downloads. */
+  progress?: number
+}
+
+export type AdminSeason = {
+  number: number
+  /** "Season 2", or "Specials". */
+  title: string
+  monitored: boolean
+  poster: string
+  episodes: AdminEpisode[]
+}
+
+/** A show in the admin's library: Sonarr's series. */
+export type AdminShow = {
+  id: string
+  tmdbId: number
+  title: string
+  sortTitle: string
+  year: number
+  endYear: number | null
+  /** Still making episodes, or not. */
+  airing: boolean
+  network: string
+  genres: string[]
+  synopsis: string
+  rating: number
+  certification: string
+  runtimeMinutes: number
+  monitored: boolean
+  qualityProfileId: string
+  languageProfileId: string
+  rootFolder: string
+  path: string
+  /** Files go in "Season 01" folders. */
+  seasonFolders: boolean
+  addedAt: ISODate
+  art: { poster: string; backdrop: string }
+  /** Seasons, specials not counted. */
+  seasons: number
+  /**
+   * Aired episodes monitored or with a file (Sonarr's count), how many of them have a file, and
+   * the whole show's.
+   */
+  episodes: { monitored: number; have: number; total: number }
+  /** Bytes on disk. */
+  size: number
+  /** The next monitored episode to air, or null. */
+  nextAiring: { id: string; code: string; title: string; aired: string } | null
+}
+
+/** `shows.get(id)`: a show with its seasons (specials first, as Sonarr lists them) and episodes. */
+export type AdminShowDetail = AdminShow & { seasonList: AdminSeason[] }
+
+/** A show TMDB knows, for Discover and Add a show. */
+export type DiscoverShow = {
+  id: string
+  tmdbId: number
+  title: string
+  year: number
+  endYear: number | null
+  seasons: number
+  network: string
+  genres: string[]
+  synopsis: string
+  rating: number
+  art: { poster: string; backdrop: string }
+  inLibrary: boolean
+}
+
+export type AddShowInput = {
+  tmdbId: number
+  title: string
+  year: number
+  qualityProfileId: string
+  languageProfileId: string
+  rootFolder: string
+  monitor: ShowMonitor
+  seasonFolders: boolean
+  /** Look for the missing episodes once it's added. */
+  search: boolean
+}
+
 // ---------------------------------------------------------------- metadata (media pages, ADR 0014)
 
 export type Department =
@@ -307,6 +423,9 @@ export type MovieMetadata = DiscoverMovie & {
 
 /** A title in a person's filmography, with their part in it. */
 export type PersonCredit = DiscoverMovie & { role: string; department: Department }
+
+/** A show someone is in, for the admin's person page (stage 6): TMDB's show, marked if it's here. */
+export type PersonShowCredit = DiscoverShow & { role: string; department: Department }
 
 /** An artist in the music library, with how many of their albums are here. */
 export type ClientArtist = {
@@ -564,6 +683,8 @@ export type Person = {
   born: { date: string; place: string } | null
   died: { date: string; place: string } | null
   credits: PersonCredit[]
+  /** Their shows, newest first (stage 6); left out by TMDB's own answer for the films. */
+  shows?: PersonShowCredit[]
 }
 
 export type AddMovieInput = {
@@ -701,6 +822,8 @@ export type QueueItem = {
   itemId: string | null
   title: string
   year: number | null
+  /** An episode's show and number ("S03E06"), when the item is an episode; `title` is the show's. */
+  episode?: { show: string; code: string; title: string }
   release: string
   quality: string | null
   size: number
@@ -747,7 +870,15 @@ export type BlocklistEntry = {
 export type ImportListSettings =
   | {
       kind: 'tmdb'
-      source: 'list' | 'popular' | 'top-rated' | 'upcoming' | 'now-playing'
+      /** Upcoming and Now playing are movies' charts; On the air and Airing today, shows'. */
+      source:
+        | 'list'
+        | 'popular'
+        | 'top-rated'
+        | 'upcoming'
+        | 'now-playing'
+        | 'on-the-air'
+        | 'airing-today'
       /** A TMDB list's number or address, for `source: 'list'`. */
       list?: string
     }
@@ -771,6 +902,8 @@ export type ImportListResult = {
 
 export type ImportList = {
   id: string
+  /** What the list adds: TMDB and Trakt lists hold movies or shows; a generic list, movies. */
+  kind: 'movies' | 'shows'
   name: string
   enabled: boolean
   settings: ImportListSettings
@@ -782,6 +915,8 @@ export type ImportList = {
   minimumAvailability: MinimumAvailability
   /** Searches for what it adds. */
   searchOnAdd: boolean
+  /** A list of shows: which episodes a show it adds watches for (stage 6). */
+  monitor?: ShowMonitor
   tags: string[]
   /** Titles on the list at the last check. */
   items: number
@@ -799,6 +934,11 @@ export type ImportCandidate = {
   language: string
   /** The movie it matched, by name; null when nothing did. */
   itemId: string | null
+  /**
+   * An episode file's match instead (stage 6): the show and the episodes in it, more than one for
+   * a double episode. `itemId` stays null for these.
+   */
+  episodes?: { show: string; episodeIds: string[] } | null
   /** Why it would be skipped, when it would. */
   skip: string | null
 }
@@ -951,7 +1091,7 @@ export type FeaturedSection = {
   title: string
   tagline: string | null
   layout: 'hero' | 'row' | 'spotlight'
-  source:
+  source: /** Films' ids and shows' together, in the owner's order. */
     | { kind: 'manual'; itemIds: string[] }
     /** `collection`: a TMDB collection's id or a smart collection's (`sc-…`). */
     | { kind: 'rule'; rule: 'recently-added' | 'genre' | 'collection'; value: string }
@@ -1090,6 +1230,11 @@ export type SmartCollection = {
   include: string[]
   /** Never include. */
   exclude: string[]
+  /**
+   * Shows picked by hand, in their order: rules match films only (prototype-gaps.md › stage 6).
+   * The apps list them after the films.
+   */
+  shows: string[]
   sort: CollectionSort
   /** Highest, newest, longest or Z first. */
   descending: boolean
@@ -1123,12 +1268,17 @@ export type CollectionPreview = {
   items: { id: string; title: string; year: number; poster: string; playable: boolean }[]
   /** The rules in words: "Released 2010–2020, rated 4.5 or more, in English". */
   words: string | null
+  /** Its shows, in their order; `playable` when an episode has a file, so the apps list it. */
+  shows: { id: string; title: string; year: number; poster: string; playable: boolean }[]
 }
 
 /** A collection in the admin's list. */
 export type CollectionSummary = SmartCollection & {
   matched: number
   playable: number
+  /** Its shows in the library, and of those the ones the apps list (an episode has a file). */
+  showsHere: number
+  showsPlayable: number
   /** Up to four posters for the mosaic. */
   mosaic: string[]
   words: string | null
@@ -1259,7 +1409,8 @@ export type RemoteAccess =
 export type SetupInput = {
   serverName: string
   owner: { username: string; displayName: string; password: string }
-  folders: { movies: string; downloads: string }
+  /** A folder for each kind of library, '' for a kind there's none of, and the downloads. */
+  folders: { movies: string; shows: string; music: string; downloads: string }
   indexers: string[]
   subtitleLanguages: string[]
   remoteAccess: RemoteAccess
@@ -1279,8 +1430,16 @@ export type SetupInput = {
 export type SetupDetected = {
   /** The host's name as a server name; null when the container's hostname is only its id. */
   serverName: string | null
-  /** A movies folder and a downloads folder under /data, or null to ask. */
-  folders: { movies: string; downloads: string } | null
+  /**
+   * A folder for each kind under /data (movies, tv, music; null for a kind it didn't find) and a
+   * downloads folder, or null to ask: when it found no downloads folder or no media folder at all.
+   */
+  folders: {
+    movies: string | null
+    shows: string | null
+    music: string | null
+    downloads: string
+  } | null
   /** The host's LAN address, with host networking; null in bridge mode, where the browser's is used. */
   address: string | null
   /** The graphics chip whose check passed at boot, or null for the processor. */
@@ -1351,6 +1510,12 @@ export type ClientItem = MediaItem & {
    * name over "S2, E6", and Go to opens the show at it. Null for a film.
    */
   show: { id: string; title: string; code: string; episode: string } | null
+  /**
+   * A show on a featured section's card, beside its films: the card opens the show, Play starts
+   * `play` (the episode it's on, or its first), and the meta line is its seasons and years.
+   * Absent for films and episodes.
+   */
+  series?: { seasons: number; endYear: number | null; play: string }
 }
 
 /** Recently played on Home: an album, or an artist played as a whole. */

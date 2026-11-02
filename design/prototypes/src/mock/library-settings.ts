@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The settings with calls of their own, as apps/server answers them: tags (checkpoint 8c), root
-// folders (checkpoint 4, with 8c's subtitle languages), General's Metadata (the TMDB key, kept as
+// folders (checkpoint 4, with 8c's subtitle languages; one list per kind since stage 6, each with
+// Scan now), General's Metadata (the TMDB key, kept as
 // its last four) and the indexer catalog's settings (checkpoint 5, the owner's alone). A key or a
 // folder with "wrong" in it is refused; a folder outside `/data` doesn't exist on the server.
 
 import type {
   CatalogSettings,
+  LibraryKind,
   MetadataSettings,
   RootFolderRow,
   SettingsDeps,
@@ -16,18 +18,49 @@ import type { MediaItem } from './types.ts'
 const TB = 1e12
 let made = 0
 
-export function librarySettingsApi(d: SettingsDeps, items: () => MediaItem[]) {
+/** The other kinds' libraries, for their folders' counts. */
+export type OtherLibraries = {
+  shows: () => { rootFolder: string; path: string }[]
+  /** The music library has no paths in the mock: it's all in the first music folder. */
+  music: () => { artists: unknown[]; albums: unknown[] }
+}
+
+const FILED: Record<LibraryKind, string> = {
+  movies: 'Movies are',
+  shows: 'Shows are',
+  music: 'Albums are',
+}
+
+export function librarySettingsApi(
+  d: SettingsDeps,
+  items: () => MediaItem[],
+  others: OtherLibraries = { shows: () => [], music: () => ({ artists: [], albums: [] }) },
+) {
   const s = d.settings
   const announce = () => d.emit({ type: 'settings.updated' })
+  const under = (f: { path: string }, x: { rootFolder: string; path: string }) =>
+    x.rootFolder === f.path || x.path.startsWith(`${f.path}/`)
 
-  /** How many movies are filed under each folder: the library's own count. */
-  const folders = (): RootFolderRow[] =>
-    s.rootFolders.map((f) => ({
-      ...f,
-      movies: items().filter(
-        (m) => m.type === 'movie' && (m.rootFolder === f.path || m.path.startsWith(`${f.path}/`)),
-      ).length,
-    }))
+  /** What's filed under each folder, by its kind: the libraries' own counts. */
+  const folders = (): RootFolderRow[] => {
+    const firstMusic = s.rootFolders.find((f) => f.kind === 'music')?.id
+    const music = others.music()
+    return s.rootFolders.map((f) => {
+      if (f.kind === 'music') {
+        const here = f.id === firstMusic
+        return {
+          ...f,
+          titles: here ? music.albums.length : 0,
+          artists: here ? music.artists.length : 0,
+        }
+      }
+      const titles =
+        f.kind === 'shows'
+          ? others.shows().filter((x) => under(f, x)).length
+          : items().filter((m) => m.type === 'movie' && under(f, m)).length
+      return { ...f, titles, artists: 0 }
+    })
+  }
 
   const tags = (): Tag[] =>
     [...s.tags]
@@ -91,12 +124,13 @@ export function librarySettingsApi(d: SettingsDeps, items: () => MediaItem[]) {
     },
 
     rootFolders: {
-      list: () => {
+      /** Every folder, or one kind's. */
+      list: (kind?: LibraryKind) => {
         d.requireStaff()
-        return folders()
+        return folders().filter((f) => !kind || f.kind === kind)
       },
       /** Checks the folder exists and the server can write to it, as the server does. */
-      add: (input: string) => {
+      add: (input: string, kind: LibraryKind = 'movies') => {
         d.requireStaff()
         const path = input.trim().replace(/\/+$/, '')
         if (!path.startsWith('/'))
@@ -120,11 +154,13 @@ export function librarySettingsApi(d: SettingsDeps, items: () => MediaItem[]) {
           throw d.fail(409, 'conflict', 'That folder is a root folder already, or inside one.')
         const folder: RootFolderRow = {
           id: `rf-new-${++made}`,
+          kind,
           path,
           free: 3.4 * TB,
           total: 16 * TB,
           accessible: true,
-          movies: 0,
+          titles: 0,
+          artists: 0,
           waiting: 0,
           languageProfileId: null,
         }
@@ -144,14 +180,27 @@ export function librarySettingsApi(d: SettingsDeps, items: () => MediaItem[]) {
         d.requireStaff()
         const f = folders().find((x) => x.id === id)
         if (!f) throw d.fail(404, 'not-found', 'There’s no such root folder.')
-        if (f.movies > 0)
+        if (f.titles > 0)
           throw d.fail(
             409,
             'conflict',
-            'Movies are filed under it. Move them to another folder first.',
+            `${FILED[f.kind]} filed under it. Move them to another folder first.`,
           )
         s.rootFolders = s.rootFolders.filter((x) => x.id !== id)
         announce()
+      },
+      /**
+       * Scan now: the library scan of one folder, as adding it queues. New folders it matches
+       * surely are added; the rest wait in Library import. Nothing new turns up in the mock.
+       */
+      scan: (id: string) => {
+        d.requireStaff()
+        const f = folders().find((x) => x.id === id)
+        if (!f) throw d.fail(404, 'not-found', 'There’s no such root folder.')
+        if (!f.accessible)
+          throw d.fail(409, 'conflict', `highsea can’t read ${f.path} now, so it can’t scan it.`)
+        announce()
+        return f
       },
     },
 

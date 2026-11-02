@@ -520,6 +520,7 @@ export function HistoryTable({
   events,
   showTitle,
   titles,
+  hrefs,
 }: {
   events: {
     id: string
@@ -532,6 +533,8 @@ export function HistoryTable({
   }[]
   showTitle?: boolean
   titles?: Record<string, string>
+  /** Where a title links when it isn't a movie's page: an episode's show (stage 6). */
+  hrefs?: Record<string, string>
 }) {
   const now = useNow()
   return (
@@ -539,7 +542,7 @@ export function HistoryTable({
       <TableHeader>
         <TableRow>
           <TableHead>Event</TableHead>
-          {showTitle && <TableHead>Movie</TableHead>}
+          {showTitle && <TableHead>Title</TableHead>}
           <TableHead>Release</TableHead>
           <TableHead>Source</TableHead>
           <TableHead numeric>When</TableHead>
@@ -556,7 +559,10 @@ export function HistoryTable({
             </TableCell>
             {showTitle && (
               <TableCell>
-                <a href={`#/admin/movies/${e.itemId}`} className="text-text hover:underline">
+                <a
+                  href={hrefs?.[e.itemId] ?? `#/admin/movies/${e.itemId}`}
+                  className="text-text hover:underline"
+                >
                   {titles?.[e.itemId] ?? e.itemId}
                 </a>
               </TableCell>

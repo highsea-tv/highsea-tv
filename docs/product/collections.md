@@ -17,24 +17,25 @@ Films grouped by the owner: by rules that keep themselves current ("released 201
 
 ## One kind of collection
 
-A collection has a name, a summary, artwork, and its films. The films come from **rules**, from **picks**, or both:
+A collection has a name, a summary, artwork, its films and its shows. The films come from **rules**, from **picks**, or both:
 
 - **Use rules:** the films that match, then **Always include** adds films whatever the rules say, and **Never include** leaves films out. A film in both lists is left out: Never include wins.
 - **Pick them:** no rules; the films picked, in the order they're dragged into. Switching back to rules restores the rules that were there.
+- **Shows** are picked by hand, in either kind, in the order they're dragged into (prototype-gaps.md › stage 6). Rules match films only: most fields are a film's (certification, runtime, studios, cast and crew, every File field), and rules that matched shows would change what saved collections hold. The apps list a collection's shows after its films. A picked collection can hold shows alone.
 - A collection with rules is **Smart**; one without is **Picked**. Both are listed together.
 
 ## Layout
 
 ### The list
 
-- Page header: "Collections", "Films grouped by rules that keep themselves up to date, or picked by hand. They show in every app’s library.", and **New collection**.
+- Page header: "Collections", "Films grouped by rules that keep themselves up to date, or films and shows picked by hand. They show in every app’s library.", and **New collection**.
 - One card each, in the order they were made:
-  - the artwork (the uploaded poster, or a mosaic of the first four posters, as Plex draws a smart collection's);
-  - the name (a link to the editor), **Smart** or **Picked**, and **Hidden in the apps** when films match but none has a file;
+  - the artwork (the uploaded poster, or a mosaic of the first four posters, films then shows, as Plex draws a smart collection's);
+  - the name (a link to the editor), **Smart** or **Picked**, and **Hidden in the apps** when it holds something but nothing the apps can show (no film with a file, no show with an episode);
   - the rules in words ("Released 2010–2020, rated 4.5 or more, in English");
-  - what it holds and who sees it: "4 films, 3 in the apps · Everyone", "6 films, all in the apps", "Nothing matches yet";
-  - **Edit**, and **Delete** with a confirmation: "It leaves every app’s library. The films in it stay in the library."
-- **Empty:** "No collections yet", "Describe the films you want, say from the 2010s, rated 4.5 or more, in English, and the collection keeps up as the library changes. Or pick films by hand.", and **Make one**.
+  - what it holds and who sees it, counted as the apps count them: "4 movies, 3 in the apps · Everyone", "6 movies and 1 show, all in the apps", "Nothing matches yet". "In the apps" counts films with a file and shows with an episode;
+  - **Edit**, and **Delete** with a confirmation: "It leaves every app’s library. What’s in it stays in the library."
+- **Empty:** "No collections yet", "Describe the films you want, say from the 2010s, rated 4.5 or more, in English, and the collection keeps up as the library changes. Or pick films and shows by hand.", and **Make one**.
 
 ### The editor
 
@@ -56,15 +57,18 @@ Two columns from expanded (the form, and the result beside it and sticky); stack
   - **Add a condition** adds a Year condition.
   - With no conditions: "No conditions yet, so every film is in it. Add one to narrow it down."
   - Errors show under the row once Save has been tried: "Choose at least one.", "Fill this in.", "Enter a number."; above the rules, "Finish the conditions marked below."
-- **Picked films** (Pick them): search the library, add, reorder by the drag handle (or the keyboard, as every sortable list), remove. "Pick at least one film." when there are none.
+- **Picked films** (Pick them): search the library, add, reorder by the drag handle (or the keyboard, as every sortable list), remove. "Pick at least one film or show." when there are neither.
 - **Exceptions** (Use rules): **Always include** and **Never include**, each a search with the chosen films listed.
+- **Shows** (both kinds): **Picked shows**, "Rules match films, so shows join by hand. The apps list them after the films, in this order.", a search over the admin's shows ("Search the shows"), added, reordered and removed as picked films are. A show without an episode file carries **No episodes**, as a film without one carries **No file**.
 - **Order:** **Sort by** Rating, Release date, Year, Date added, Title, Runtime, Popularity, At random (once a day), or Picked order; **Direction** (Highest first, Lowest first, and so on, in the field's words); **How many** (empty for all).
 - **Who sees it:** the audience of announcements and featured sections: Everyone, Roles, People or Apps.
 - **Save collection** (**Save changes** for a saved one), **Cancel**, and **Delete** for a saved one.
 - **Right now** (the region "What it holds now"), updating as the rules change:
-  - "4 films match; 3 have a file and show in the apps." Or "No films match yet. The apps don’t show it until one does.";
+  - "4 films match; 3 have a file and show in the apps." Or "No films match yet. The apps don’t show it until one does." (with shows and no films, "No films match yet.");
   - the rules in words;
-  - the posters in the collection's order; a film without a file is dimmed.
+  - the posters in the collection's order ("Films in it"); a film without a file is dimmed;
+  - with shows, "1 show picked; 1 has episodes and shows in the apps, after the films.", and their posters ("Shows in it"), a show with no episode file dimmed with "No episodes".
+- **How many** limits the films; the shows picked all show.
 
 ### The fields
 
@@ -111,19 +115,19 @@ The apps and the admin's list say what a collection is, in a sentence: "Released
 
 - **Library › Collections:** Movies and Collections are the library's two views (links on web and mobile, a pair of choices on TV). The grid holds the server's collections first, then TMDB's that have films here. A smart one (with rules) carries a **Smart** mark (the filter icon) on its art; a hand-picked one carries none, and its label reads "name, smart collection, 6 movies · 2010–2020".
 - **What a person sees:** only collections whose audience includes them, and in each only films they can play (with a file in Phase 3; parental controls come later). A collection with nothing to play is hidden, as an empty featured section is.
-- **The collection page:** "Smart collection" above the name ("Collection" for a hand-picked one or TMDB's), the count and years, the rules in words, the summary, then the films in the collection's order. Back on mobile falls back to Library › Collections.
+- **The collection page:** "Smart collection" above the name ("Collection" for a hand-picked one or TMDB's), the count and years ("4 movies and 1 show · 2006–2019"), the rules in words, the summary, then the films in the collection's order and its shows after them. Back on mobile falls back to Library › Collections.
 - **TV:** the nav goes down to Movies and Collections; from there Down reaches the grid and Right (on Movies) the sort. Focus starts on the first collection.
 
 ## States
 
 - **Loading:** skeleton posters (web, mobile), a spinner (TV); the editor's result keeps the last result while a new one is worked out ("Checking what it holds…" the first time).
 - **Error:** "Couldn’t load the collections" with **Try again**. A collection that's gone or hidden from this person: "That collection isn’t on this server.", "It may have been removed.", with **Collections** (web, mobile) or **Search** (TV).
-- **Saving:** the form says what's missing first ("Give the collection a name. The apps show it."); the server refuses the rest with the reason: "Give the collection a name.", "Add a rule, or pick at least one film.", "A collection can’t be one of its own rules.", "Groups go one level deep." In the toast "Couldn’t save the collection".
+- **Saving:** the form says what's missing first ("Give the collection a name. The apps show it."); the server refuses the rest with the reason: "Give the collection a name.", "Add a rule, or pick at least one film or show.", "A collection can’t be one of its own rules.", "Groups go one level deep." In the toast "Couldn’t save the collection".
 - **Deleting** a collection a featured section uses is refused: "The featured section “The silent era” draws on it. Choose another source for the section first."
 
 ## Events
 
-- `collections.updated`, to staff, when one is saved or deleted; the list, the editor's choices and the section composer refresh.
+- `collections.updated`, to staff, when one is saved or deleted; the list, the editor's choices and the section composer refresh. The list, the result and the shows' search also refresh on `shows.updated`.
 - The apps' Library › Collections and collection pages refresh on `collections.updated` and `movies.updated`.
 
 ## Accessibility

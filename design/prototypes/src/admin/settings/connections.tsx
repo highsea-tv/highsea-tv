@@ -4,7 +4,8 @@
 // it didn't, Edit and Remove, and the Server’s mail switch on an email connection. Add a connection
 // opens a dialog for that kind: its fields with secrets masked, the events as checkboxes, Test and
 // Save. Matrix and Browser join the kinds. This browser is a group of its own; the prototype adds it
-// by name from the user agent, without the real Push API. Changes save at once.
+// by name from the user agent, without the real Push API. Changes save at once. Since stage 6 the
+// events come in three sets, Movies, Shows (drawn for the TV series phase) and Every kind.
 import {
   Badge,
   Button,
@@ -58,7 +59,32 @@ const EVENT: Record<Event, string> = {
   update: 'Update',
   'movie-added': 'Movie added',
   'playback-started': 'Playback started',
+  'episode-grabbed': 'Episode grabbed',
+  'episode-imported': 'Episode imported',
+  'episode-upgraded': 'Episode upgraded',
+  'show-added': 'Show added',
+  'episode-playback-started': 'Episode playback started',
 }
+
+/** The dialog's sets: a season pack's grab, import or upgrade sends one message for the season. */
+const EVENT_SETS: { title: string; hint?: string; events: Event[] }[] = [
+  {
+    title: 'Movies',
+    events: ['grabbed', 'imported', 'upgraded', 'movie-added', 'playback-started'],
+  },
+  {
+    title: 'Shows',
+    hint: 'A whole season grabbed, imported or upgraded at once sends one message for the season.',
+    events: [
+      'episode-grabbed',
+      'episode-imported',
+      'episode-upgraded',
+      'show-added',
+      'episode-playback-started',
+    ],
+  },
+  { title: 'Every kind', events: ['download-failed', 'subtitle-added', 'health', 'update'] },
+]
 
 // ---------------------------------------------------------------- each kind's fields
 
@@ -246,7 +272,15 @@ const FIELDS: Record<Exclude<Kind, 'browser'>, Spec[]> = {
 }
 
 /** What a new connection hears until it’s changed: the things worth a message. */
-const DEFAULT_EVENTS: Event[] = ['imported', 'upgraded', 'download-failed', 'health', 'update']
+const DEFAULT_EVENTS: Event[] = [
+  'imported',
+  'upgraded',
+  'episode-imported',
+  'episode-upgraded',
+  'download-failed',
+  'health',
+  'update',
+]
 
 const isMasked = (v: unknown) => typeof v === 'string' && v.startsWith('••••')
 
@@ -590,20 +624,28 @@ function ConnectionForm({
         <fieldset className="grid gap-2 medium:col-span-2">
           <legend className="mb-1 font-medium text-text text-ui">Events</legend>
           <p className="text-caption text-text-3">What this connection hears.</p>
-          <div className="grid gap-2 rounded-md border border-line bg-s2 p-3 medium:grid-cols-2">
-            {NOTIFICATION_EVENTS.map((e) => (
-              <Field key={e} inline label={EVENT[e]}>
-                <Checkbox
-                  checked={events.includes(e)}
-                  onCheckedChange={(on) =>
-                    setEvents((old) =>
-                      on === true
-                        ? NOTIFICATION_EVENTS.filter((x) => x === e || old.includes(x))
-                        : old.filter((x) => x !== e),
-                    )
-                  }
-                />
-              </Field>
+          <div className="grid gap-4 rounded-md border border-line bg-s2 p-3">
+            {EVENT_SETS.map((set) => (
+              <fieldset key={set.title} className="grid gap-2">
+                <legend className="font-medium text-text-2 text-caption">{set.title}</legend>
+                {set.hint && <p className="text-caption text-text-3">{set.hint}</p>}
+                <div className="grid gap-2 medium:grid-cols-2">
+                  {set.events.map((e) => (
+                    <Field key={e} inline label={EVENT[e]}>
+                      <Checkbox
+                        checked={events.includes(e)}
+                        onCheckedChange={(on) =>
+                          setEvents((old) =>
+                            on === true
+                              ? NOTIFICATION_EVENTS.filter((x) => x === e || old.includes(x))
+                              : old.filter((x) => x !== e),
+                          )
+                        }
+                      />
+                    </Field>
+                  ))}
+                </div>
+              </fieldset>
             ))}
           </div>
         </fieldset>

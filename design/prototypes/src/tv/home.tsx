@@ -13,7 +13,14 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { BloomGlow } from '../client/bloom.tsx'
 import { useContinueMenu, useLongPress } from '../client/continue-menu.ts'
-import { isFilmSection, meta, qualityTags, useAnnouncements, useHome } from '../client/data.ts'
+import {
+  isFilmSection,
+  meta,
+  qualityTags,
+  titlePath,
+  useAnnouncements,
+  useHome,
+} from '../client/data.ts'
 import { homeMusicCard } from '../client/music.ts'
 import { UnwatchedCount } from '../client/show-card.tsx'
 import { seasonsCount } from '../client/shows.ts'
@@ -47,7 +54,7 @@ import { TvArtistTile } from './music.tsx'
 function FeaturedCard({ item }: { item: ClientItem }) {
   return (
     <a
-      href={tvHref(`/movies/${item.id}`)}
+      href={tvHref(titlePath(item))}
       data-focusable=""
       data-initial=""
       aria-label={`${item.title}, ${meta(item)}`}
@@ -271,7 +278,7 @@ function Row({
       suffix={section.suffix}
       goUp={goUp}
       items={section.items}
-      hrefOf={(m) => tvHref(`/movies/${m.id}`)}
+      hrefOf={(m) => tvHref(titlePath(m))}
       loop
     />
   )

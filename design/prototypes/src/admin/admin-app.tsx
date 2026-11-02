@@ -13,7 +13,7 @@ import { AnnouncementEditor } from './curation/announcement-editor.tsx'
 import { Curation } from './curation/curation.tsx'
 import { SectionEditor } from './curation/section-editor.tsx'
 import { Dashboard } from './dashboard/dashboard.tsx'
-import { Discover } from './discover/discover.tsx'
+import { Discover, discoverKinds } from './discover/discover.tsx'
 import { Downloads } from './downloads/downloads.tsx'
 import { Indexers, type IndexersTab, indexerTabs } from './indexers/indexers.tsx'
 import { Login } from './login.tsx'
@@ -43,6 +43,8 @@ import { UsersDevices } from './settings/users.tsx'
 import { Vpn } from './settings/vpn.tsx'
 import { Setup } from './setup/setup.tsx'
 import { AdminPage, AdminShell } from './shell.tsx'
+import { ShowDetail, showTabs } from './shows/detail.tsx'
+import { ShowsLibrary } from './shows/library.tsx'
 import { Subtitles, type SubtitlesTab, subtitleTabs } from './subtitles/subtitles.tsx'
 import { System, type SystemTab, systemTabs } from './system/system.tsx'
 import { Wanted, type WantedTab, wantedTabs } from './wanted/wanted.tsx'
@@ -85,8 +87,9 @@ function tabOr<T extends string>(tabs: readonly string[], tab: string, page: (t:
 
 /** The pages built so far, by id; the rest show a placeholder. */
 const built: Record<string, () => ReactNode> = {
-  discover: Discover,
+  discover: () => <Discover />,
   movies: MoviesLibrary,
+  shows: ShowsLibrary,
   collections: Collections,
   activity: () => <Activity />,
   'now-playing': () => <NowPlaying />,
@@ -142,6 +145,21 @@ export function AdminApp() {
             </Route>
             <Route path="/movies/:id/:tab">
               {(p) => tabOr(movieTabs, p.tab, () => <MovieDetail />)}
+            </Route>
+            <Route path="/discover/:kind">
+              {(p) =>
+                tabOr(
+                  discoverKinds.filter((k) => k !== 'movies'),
+                  p.kind,
+                  (k: 'shows') => <Discover kind={k} />,
+                )
+              }
+            </Route>
+            <Route path="/shows/:id">
+              <ShowDetail />
+            </Route>
+            <Route path="/shows/:id/:tab">
+              {(p) => tabOr(showTabs, p.tab, () => <ShowDetail />)}
             </Route>
             <Route path="/people/:id">
               <PersonPage />

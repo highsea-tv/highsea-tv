@@ -24,7 +24,7 @@ import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { BloomGlow } from '../client/bloom.tsx'
 import { useContinueMenu } from '../client/continue-menu.ts'
-import { isFilmSection, meta, qualityTags, useHome } from '../client/data.ts'
+import { isFilmSection, meta, playPath, qualityTags, titlePath, useHome } from '../client/data.ts'
 import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
 import { ShowPoster } from '../client/show-card.tsx'
 import { useVibrant } from '../client/vibrant.ts'
@@ -74,11 +74,11 @@ export function PosterRow({
           item={m}
           wide={wide}
           titleSize="body"
-          href={webHref(`/movies/${m.id}`)}
+          href={webHref(titlePath(m))}
           quality={qualityTags(m).slice(0, 1)}
           actions={
             <a
-              href={webHref(`/play/${m.id}`)}
+              href={webHref(playPath(m))}
               aria-label={`Play ${m.title}`}
               className="glass-badge grid size-9 place-items-center rounded-full text-text outline-none focus-visible:ring-focus"
             >
@@ -182,7 +182,7 @@ function Row({ section: s }: { section: HomeSection }) {
       title={s.title}
       suffix={s.suffix}
       items={s.items}
-      hrefOf={(m) => webHref(`/movies/${m.id}`)}
+      hrefOf={(m) => webHref(titlePath(m))}
       loop
     />
   )
@@ -202,7 +202,7 @@ function SpotlightRow({ section }: { section: FilmSection }) {
       {section.items.map((m) => (
         <a
           key={m.id}
-          href={webHref(`/movies/${m.id}`)}
+          href={webHref(titlePath(m))}
           className="group/spot grid min-w-0 content-start gap-3 rounded-poster outline-none"
         >
           <span className="block aspect-still overflow-hidden rounded-poster bg-s2 transition-lift group-hover/spot:scale-(--scale-poster) group-focus-visible/spot:scale-(--scale-poster) group-focus-visible/spot:ring-focus">
@@ -348,7 +348,7 @@ function FeaturedCard({
           screen readers; the buttons sit above it */}
       <div
         aria-hidden
-        onClick={() => navigate(`/movies/${item.id}`)}
+        onClick={() => navigate(titlePath(item))}
         className="absolute inset-0 cursor-pointer"
       />
       <div
@@ -374,10 +374,10 @@ function FeaturedCard({
         <p className="line-clamp-2 text-body text-text-2">{item.tagline ?? item.synopsis}</p>
         <div className="pointer-events-auto flex flex-wrap gap-2 pt-1">
           <Button variant="primary" icon="play" asChild>
-            <a href={webHref(`/play/${item.id}`)}>{resuming ? 'Resume' : 'Play'}</a>
+            <a href={webHref(playPath(item))}>{resuming ? 'Resume' : 'Play'}</a>
           </Button>
           <Button variant="secondary" icon="info" asChild>
-            <a href={webHref(`/movies/${item.id}`)}>More info</a>
+            <a href={webHref(titlePath(item))}>More info</a>
           </Button>
         </div>
       </div>

@@ -378,7 +378,8 @@ describe('A10 subtitles', () => {
     await user.click(page().getByRole('button', { name: 'Search all' }))
     await settle()
     expect(await client(mock).subtitles.wanted()).toEqual([])
-    expect(page().getByText('Every movie has its subtitles')).toBeTruthy()
+    expect(await client(mock).subtitles.wantedEpisodes()).toEqual([])
+    expect(page().getByText('Every movie and episode has its subtitles')).toBeTruthy()
 
     await user.click(page().getByRole('tab', { name: 'Languages' }))
     await user.click(page().getByRole('button', { name: 'Edit English and Spanish' }))

@@ -17,8 +17,8 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 
 - **Sidebar** ([admin.md › Sidebar](../design-language/platforms/admin.md#sidebar)):
   - the lockup at the top, or the mark alone in the rail;
-  - three nav groups separated by hairlines: Dashboard, Discover, Movies, Wanted, Activity, Downloads · Indexers, Subtitles, Curation · Settings, System;
-  - counts in mono `text-3` on Movies (the library size) and Activity (the queue length);
+  - three nav groups separated by hairlines: Dashboard, Discover, Movies, Shows (stage 6, [shows.md](shows.md)), Wanted, Activity, Downloads · Indexers, Subtitles, Curation · Settings, System;
+  - counts in mono `text-3` on Movies and Shows (each library's size) and Activity (the queue length);
   - the **server card** pinned to the bottom: a status dot, the server name, and "v{version} · {n} clients".
 - **Main area:** an optional announcement banner stack, then the page. Each page starts with a `PageHeader` row: the title, the search trigger (with a ⌘K hint at medium and up), and the page's actions.
 - **Status bar** (a labelled region, "Server status"), along the bottom of the main column:
@@ -46,7 +46,7 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 ## Interactions
 
 - **Navigation:** sidebar items are links (middle-click and ⌘-click open new tabs). In the compact sheet, choosing one closes the sheet. Each page change scrolls the main area to the top.
-- **Tabs in the address** (prototype-gaps.md, stage 5): a page's tabs are part of its address, so a tab can be linked, reloaded and reached with Back. The first tab is the page's own address (`/activity`), the rest a segment after it (`/activity/history`, `/movies/1/files`); one the page doesn't have draws not found. This holds for Activity, Now playing, Indexers, Subtitles, Wanted, System and a movie's page.
+- **Tabs in the address** (prototype-gaps.md, stage 5): a page's tabs are part of its address, so a tab can be linked, reloaded and reached with Back. The first tab is the page's own address (`/activity`), the rest a segment after it (`/activity/history`, `/movies/1/files`); one the page doesn't have draws not found. This holds for Activity, Now playing, Indexers, Subtitles, Wanted, System, a movie's page, a show's page (`/shows/{id}/files`) and Discover's Shows (`/discover/shows`).
 - **Skip to content:** the first Tab stop is a "Skip to content" link that moves focus to the main area.
 - **Command palette** (⌘K, or the search trigger):
   - **Go to:** every page, matched on label and keywords (for example "queue" finds Activity);
@@ -88,7 +88,7 @@ The frame every signed-in admin page sits in: where you are, how to get anywhere
 - `system.healthChecks()` → `GET /api/v1/system/health` (owners and admins), for the server card's dot. Refetched on `server.updated`.
 - `auth.session()` → `GET /api/v1/auth/session`: who's signed in, for the account menu.
 - Later, with their packages:
-  - `movies.list()` and `queue.list()`, for the sidebar counts and the palette's titles;
+  - `movies.list()` and `queue.list()`, for the sidebar counts and the palette's titles, and `shows.list()` for Shows' count;
   - `announcements.active()` → `GET /api/v1/me/announcements`, for live announcements to this user with `seen`;
   - `announcements.dismiss(id)` → `POST /api/v1/me/announcements/{id}/seen`;
   - `downloads.pauseAll()` and `downloads.resumeAll()`, for the palette actions;

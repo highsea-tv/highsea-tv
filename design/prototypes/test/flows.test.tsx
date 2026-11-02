@@ -267,7 +267,7 @@ describe('A2 setup', () => {
 
     expect(heading('Choose your folders')).toBeTruthy()
     await proceed(user)
-    expect(page().getByText('Pick a folder for movies.')).toBeTruthy()
+    expect(page().getByText('Pick a folder for movies, shows or music.')).toBeTruthy()
     await user.click(page().getAllByRole('button', { name: 'Browse' })[0] as HTMLElement)
     await settle()
     const picker = page().getByRole('dialog', { name: 'Choose the movies folder' })

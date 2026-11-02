@@ -3,7 +3,9 @@
 // row keeps its switch, name, kind, titles, whether it searches and its quality profile, and adds
 // the last check's result with Edit, Check now and Remove. Add a list and Edit open one form whose
 // fields follow the kind (TMDB, Trakt or a generic JSON list). Trakt's account, connected with a
-// device code, and the exclusions are groups below. Changes save at once.
+// device code, and the exclusions are groups below. Changes save at once. Since stage 6 (drawn for
+// the TV series phase) a TMDB or Trakt list adds movies or shows, each into its kind's folders; a
+// list of shows says which episodes the shows it adds watch for, in place of Minimum availability.
 import {
   Badge,
   Button,
@@ -27,12 +29,14 @@ import type {
   ImportListInput,
   ImportListSettings,
   MinimumAvailability,
+  ShowMonitor,
 } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { fieldOf, TagPicker, useAgo } from './parts.tsx'
 import { AreaPage, Group } from './settings.tsx'
 
 type Kind = ImportListSettings['kind']
+type Adds = ImportList['kind']
 type TmdbSource = Extract<ImportListSettings, { kind: 'tmdb' }>['source']
 type TraktSource = Extract<ImportListSettings, { kind: 'trakt' }>['source']
 type Test = { ok: boolean; message: string; found: number }
@@ -42,7 +46,10 @@ const KINDS: [Kind, string][] = [
   ['trakt', 'Trakt'],
   ['generic', 'Generic list'],
 ]
-const TMDB_SOURCES: TmdbSource[] = ['list', 'popular', 'top-rated', 'upcoming', 'now-playing']
+const TMDB_SOURCES: Record<Adds, TmdbSource[]> = {
+  movies: ['list', 'popular', 'top-rated', 'upcoming', 'now-playing'],
+  shows: ['list', 'popular', 'top-rated', 'on-the-air', 'airing-today'],
+}
 const TRAKT_SOURCES: TraktSource[] = ['list', 'trending', 'popular', 'anticipated', 'watchlist']
 const SOURCE: Record<TmdbSource | TraktSource, string> = {
   list: 'A list',
@@ -50,6 +57,8 @@ const SOURCE: Record<TmdbSource | TraktSource, string> = {
   'top-rated': 'Top rated',
   upcoming: 'Upcoming',
   'now-playing': 'Now playing',
+  'on-the-air': 'On the air',
+  'airing-today': 'Airing today',
   trending: 'Trending',
   anticipated: 'Anticipated',
   watchlist: 'Your watchlist',
@@ -60,11 +69,20 @@ const AVAILABILITY: [MinimumAvailability, string][] = [
   ['released', 'Released'],
 ]
 
+/** Which episodes a show the list adds watches for, as Add a show's Monitor. */
+const MONITOR: [ShowMonitor, string][] = [
+  ['all', 'Every episode'],
+  ['future', 'Episodes yet to air'],
+  ['missing', 'Episodes without a file'],
+  ['first-season', 'The first season'],
+  ['none', 'None'],
+]
+
 const titles = (n: number) => `${n} ${n === 1 ? 'title' : 'titles'}`
 
-/** What the form offers: folders and both kinds of profile. */
+/** What the form offers: each kind's folders and both kinds of profile. */
 type Options = {
-  folders: string[]
+  folders: Record<Adds, string[]>
   quality: { id: string; name: string }[]
   language: { id: string; name: string }[]
 }
@@ -78,8 +96,9 @@ function useOptions() {
         c.movies.qualityProfiles(),
         c.movies.languageProfiles(),
       ])
+      const of = (kind: Adds) => folders.filter((f) => f.kind === kind).map((f) => f.path)
       return {
-        folders: folders.map((f) => f.path),
+        folders: { movies: of('movies'), shows: of('shows') },
         quality: quality.map((p) => ({ id: p.id, name: p.name })),
         language: language.map((p) => ({ id: p.id, name: p.name })),
       }
@@ -90,6 +109,7 @@ function useOptions() {
 
 /** The list's input, from a saved list: what Edit and the row's quick changes send back. */
 const inputOf = (l: ImportList): ImportListInput => ({
+  kind: l.kind,
   name: l.name,
   enabled: l.enabled,
   settings: l.settings,
@@ -99,6 +119,7 @@ const inputOf = (l: ImportList): ImportListInput => ({
   monitored: l.monitored,
   minimumAvailability: l.minimumAvailability,
   searchOnAdd: l.searchOnAdd,
+  ...(l.kind === 'shows' ? { monitor: l.monitor ?? 'all' } : {}),
   tags: l.tags,
 })
 
@@ -121,13 +142,14 @@ export function ImportLists() {
     <AreaPage id="lists">
       <Group
         title="Lists"
-        description="highsea checks each list every 6 hours and adds new titles as monitored."
+        description="highsea checks each list every 6 hours and adds new movies and shows from it."
       >
         <Loadable query={lists} what="the import lists">
           {(ls) =>
             ls.length === 0 ? (
               <EmptyState icon="bookmark" title="No lists yet">
-                Add a TMDB list, a Trakt list or watchlist, or any list in the generic format.
+                Add a TMDB list, a Trakt list or watchlist, or any list of movies in the generic
+                format.
               </EmptyState>
             ) : (
               <ul aria-label="Lists" className="grid gap-2">
@@ -170,7 +192,7 @@ export function ImportLists() {
         open={!!removing}
         onOpenChange={(o) => !o && setRemoving(null)}
         title={`Remove ${removing?.name ?? ''}?`}
-        description="highsea stops checking it. The movies it added stay in the library."
+        description="highsea stops checking it. What it added stays in the library."
         confirmLabel="Remove"
         cancelLabel="Keep it"
         destructive
@@ -218,8 +240,8 @@ function Row({
         <div className="grid min-w-0 gap-0.5">
           <p className="text-text text-ui [overflow-wrap:anywhere]">{l.name}</p>
           <p className="text-caption text-text-3">
-            {kindLabel(l.settings)} · {titles(l.items)} ·{' '}
-            {l.searchOnAdd ? 'adds and searches' : 'adds without searching'}
+            {l.kind === 'shows' ? 'Shows' : 'Movies'} · {kindLabel(l.settings)} · {titles(l.items)}{' '}
+            · {l.searchOnAdd ? 'adds and searches' : 'adds without searching'}
           </p>
         </div>
         <Select
@@ -263,7 +285,10 @@ function Row({
           onClick={() =>
             sync.run().then(
               () =>
-                toast({ title: `Checking ${l.name}`, description: 'New titles appear in Movies.' }),
+                toast({
+                  title: `Checking ${l.name}`,
+                  description: `New titles appear in ${l.kind === 'shows' ? 'Shows' : 'Movies'}.`,
+                }),
               (e: Error) => toast.error('That didn’t work', { description: e.message }),
             )
           }
@@ -300,9 +325,10 @@ function draftOf(list: ImportList | null, o: Options): Draft {
     rest: list
       ? (({ settings: _, ...r }) => r)(inputOf(list))
       : {
+          kind: 'movies',
           name: '',
           enabled: true,
-          rootFolder: o.folders[0] ?? '',
+          rootFolder: o.folders.movies[0] ?? '',
           qualityProfileId: (o.quality.find((p) => p.id === 'qp-hd') ?? o.quality[0])?.id ?? '',
           languageProfileId: null,
           monitored: true,
@@ -345,7 +371,28 @@ function ListForm({
   const save = useAction((c, body: ImportListInput) =>
     list ? c.importLists.update(list.id, body) : c.importLists.add(body),
   )
-  const test = useAction((c, settings: ImportListSettings) => c.importLists.test(settings))
+  const test = useAction((c, settings: ImportListSettings) =>
+    c.importLists.test(settings, d.rest.kind),
+  )
+  const adds = d.rest.kind
+  const folders = o.folders[adds]
+  const noun = adds === 'shows' ? 'show' : 'movie'
+  /** Movies or shows: the folder follows, a generic list becomes TMDB, and a chart the kind lacks its first. */
+  const setAdds = (kind: Adds) => {
+    setTested(null)
+    setFailure(null)
+    setD((old) => ({
+      ...old,
+      kind: kind === 'shows' && old.kind === 'generic' ? 'tmdb' : old.kind,
+      tmdbSource: TMDB_SOURCES[kind].includes(old.tmdbSource) ? old.tmdbSource : 'popular',
+      rest: {
+        ...old.rest,
+        kind,
+        rootFolder: o.folders[kind][0] ?? '',
+        monitor: kind === 'shows' ? (old.rest.monitor ?? 'all') : undefined,
+      },
+    }))
+  }
   const set = (patch: Partial<Draft>) => {
     setTested(null)
     setFailure(null)
@@ -375,7 +422,16 @@ function ListForm({
     setFailure(null)
     if (Object.values(missing).some(Boolean) || blocked) return
     try {
-      const saved = await save.run({ ...d.rest, name: d.rest.name.trim(), settings: settingsOf(d) })
+      const { monitor, ...rest } = d.rest
+      const saved = await save.run({
+        ...rest,
+        name: d.rest.name.trim(),
+        settings: settingsOf(d),
+        // a list of shows watches for the episodes its Monitor picks
+        ...(adds === 'shows'
+          ? { monitor: monitor ?? 'all', monitored: (monitor ?? 'all') !== 'none' }
+          : {}),
+      })
       onClose()
       if (list) toast.success(`${saved.name} saved`)
       else
@@ -402,7 +458,7 @@ function ListForm({
     <DialogContent
       size="md"
       title={list ? `Edit ${list.name}` : 'Add a list'}
-      description="Movies on the list are added with the folder and profiles below."
+      description={`${adds === 'shows' ? 'Shows' : 'Movies'} on the list are added with the folder and profiles below.`}
       footer={
         <>
           <Button variant="ghost" onClick={onClose}>
@@ -422,12 +478,29 @@ function ListForm({
           submit()
         }}
       >
+        <Field
+          label="It adds"
+          hint={adds === 'shows' ? 'TMDB and Trakt lists can hold shows.' : undefined}
+          className="medium:col-span-2"
+        >
+          <SegmentedControl
+            aria-label="It adds"
+            value={adds}
+            onValueChange={(kind) => setAdds(kind as Adds)}
+            options={[
+              { value: 'movies', label: 'Movies' },
+              { value: 'shows', label: 'Shows' },
+            ]}
+          />
+        </Field>
         <Field label="Where the list lives" className="medium:col-span-2">
           <SegmentedControl
             aria-label="Where the list lives"
             value={d.kind}
             onValueChange={(kind) => set({ kind: kind as Kind })}
-            options={KINDS.map(([value, label]) => ({ value, label }))}
+            options={KINDS.filter(([value]) => adds === 'movies' || value !== 'generic').map(
+              ([value, label]) => ({ value, label }),
+            )}
           />
         </Field>
         {d.kind === 'tmdb' && (
@@ -444,7 +517,7 @@ function ListForm({
               <Select
                 value={d.tmdbSource}
                 onValueChange={(v) => set({ tmdbSource: v as TmdbSource })}
-                options={TMDB_SOURCES.map((s) => ({ value: s, label: SOURCE[s] }))}
+                options={TMDB_SOURCES[adds].map((s) => ({ value: s, label: SOURCE[s] }))}
               />
             </Field>
             {d.tmdbSource === 'list' && (
@@ -557,17 +630,17 @@ function ListForm({
         <Field
           label="Root folder"
           error={
-            o.folders.length === 0
-              ? 'Add a root folder in Media management first.'
+            folders.length === 0
+              ? `Add a ${adds === 'shows' ? 'Shows' : 'Movies'} folder in Media management first.`
               : err('rootFolder', missing.folder)
           }
           className="medium:col-span-2"
         >
           <Select
             value={d.rest.rootFolder || undefined}
-            disabled={o.folders.length === 0}
+            disabled={folders.length === 0}
             onValueChange={(rootFolder) => setRest({ rootFolder })}
-            options={o.folders.map((f) => ({ value: f, label: f }))}
+            options={folders.map((f) => ({ value: f, label: f }))}
             className="font-mono"
           />
         </Field>
@@ -590,33 +663,49 @@ function ListForm({
         </Field>
         <Field
           label="Tags"
-          hint="Given to every movie this list adds."
+          hint={`Given to every ${noun} this list adds.`}
           className="medium:col-span-2"
         >
           <TagPicker value={d.rest.tags} onChange={(tags) => setRest({ tags })} />
         </Field>
-        <Field label="Minimum availability" className="medium:col-span-2">
-          <Select
-            value={d.rest.minimumAvailability}
-            onValueChange={(v) => setRest({ minimumAvailability: v as MinimumAvailability })}
-            options={AVAILABILITY.map(([value, label]) => ({ value, label }))}
-          />
-        </Field>
-        <Field
-          inline
-          label="Monitored"
-          hint="highsea looks for the movies it adds."
-          className="medium:col-span-2"
-        >
-          <Switch
-            checked={d.rest.monitored}
-            onCheckedChange={(monitored) => setRest({ monitored })}
-          />
-        </Field>
+        {adds === 'shows' ? (
+          <Field
+            label="Monitor"
+            hint="Which episodes highsea looks for in each show it adds."
+            className="medium:col-span-2"
+          >
+            <Select
+              value={d.rest.monitor ?? 'all'}
+              onValueChange={(v) => setRest({ monitor: v as ShowMonitor })}
+              options={MONITOR.map(([value, label]) => ({ value, label }))}
+            />
+          </Field>
+        ) : (
+          <>
+            <Field label="Minimum availability" className="medium:col-span-2">
+              <Select
+                value={d.rest.minimumAvailability}
+                onValueChange={(v) => setRest({ minimumAvailability: v as MinimumAvailability })}
+                options={AVAILABILITY.map(([value, label]) => ({ value, label }))}
+              />
+            </Field>
+            <Field
+              inline
+              label="Monitored"
+              hint="highsea looks for the movies it adds."
+              className="medium:col-span-2"
+            >
+              <Switch
+                checked={d.rest.monitored}
+                onCheckedChange={(monitored) => setRest({ monitored })}
+              />
+            </Field>
+          </>
+        )}
         <Field
           inline
           label="Search when added"
-          hint="Search every indexer for each new movie at once."
+          hint={`Search every indexer for each new ${noun} at once.`}
           className="medium:col-span-2"
         >
           <Switch

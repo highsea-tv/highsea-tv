@@ -13,6 +13,7 @@ import type {
   SearchPerson,
 } from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'
+import { seasonsCount, showYears } from './shows.ts'
 
 export type ClientPlatform = 'web' | 'mobile' | 'tv'
 
@@ -285,8 +286,24 @@ export const runtime = format.runtime
 /** "52 min left", for Continue watching. */
 export const left = (item: ClientItem) => format.left(item)
 
-/** "2010 · 15m · Fantasy". */
-export const meta = (item: ClientItem) => format.meta(item)
+/** "2010 · 15m · Fantasy"; a featured show's "3 seasons · 2019–present · Drama" (showMeta). */
+export const meta = (item: ClientItem) =>
+  item.series
+    ? [
+        seasonsCount(item.series.seasons),
+        showYears({ year: item.year, endYear: item.series.endYear }),
+        item.genres[0],
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : format.meta(item)
+
+/** Where a card on Home opens: a film's page, or a featured show's (ClientItem.series). */
+export const titlePath = (item: ClientItem) =>
+  item.series ? `/shows/${item.id}` : `/movies/${item.id}`
+
+/** What Play on a card starts: the film, or the episode a featured show is on. */
+export const playPath = (item: ClientItem) => `/play/${item.series?.play ?? item.id}`
 
 /** The quality markers worth showing on artwork: the best version's. */
 export const qualityTags = (item: ClientItem) => item.quality.filter((q) => q !== '1080p')

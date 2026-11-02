@@ -2,7 +2,11 @@
 // Now playing (docs/product/now-playing.md; checkpoint 4.0b, built at 4.3): who's watching what,
 // and how each stream is sent. Positions move with the mock's clock. Each way of sending carries its
 // reasons in words, as the server will give them (ADR 0052's device profiles decide them).
+// Since stage 6 of the prototypes' gaps an episode and a song play here too: an episode of
+// Saltmarsh on the Apple TV and an album in the kitchen, with history for both.
+import { musicLibrary, songsOf } from './music.ts'
 import type { AccelerationPath } from './playback.ts'
+import { showsLibrary } from './shows.ts'
 import type { ClientType, ISODate, MediaItem } from './types.ts'
 
 export type DeliveryMethod = 'direct-play' | 'direct-stream' | 'transcode'
@@ -36,6 +40,8 @@ export type StreamSession = {
   startedAt: number
   /** The staff member's message when they stopped it. */
   stopped: { by: string; message: string; at: number } | null
+  /** For music: the songs after this one, which play in turn rather than the session ending. */
+  queue?: { itemId: string; runtime: number }[]
 }
 
 export type WatchRecord = {
@@ -67,7 +73,17 @@ export function seedSessions(
   now: number,
 ): SessionsRuntime {
   if (kind === 'empty') return { live: [], history: [] }
-  const runtime = (slug: string) => (items.find((m) => m.id === slug)?.runtimeMinutes ?? 15) * 60
+  const episodes = new Map(
+    showsLibrary(kind, now).flatMap((s) =>
+      s.seasons.flatMap((x) => x.episodes.map((e) => [e.id, e.runtimeMinutes * 60] as const)),
+    ),
+  )
+  const album = musicLibrary(kind, now).albums.find((a) => a.id === 'aurora-fields-low-tide-hours')
+  const songs = album ? songsOf(album).map((x) => ({ itemId: x.id, runtime: x.duration })) : []
+  const runtime = (slug: string) =>
+    episodes.get(slug) ??
+    songs.find((x) => x.itemId === slug)?.runtime ??
+    (items.find((m) => m.id === slug)?.runtimeMinutes ?? 15) * 60
   const live: StreamSession[] = [
     {
       id: 's-livingroom',
@@ -162,6 +178,55 @@ export function seedSessions(
       startedAt: now - 2 * MIN,
       stopped: null,
     },
+    {
+      id: 's-ines-saltmarsh',
+      userId: 'u-ines',
+      deviceName: 'Bedroom Fire TV',
+      client: 'androidtv',
+      itemId: 'saltmarsh-s2e4',
+      version: '1080p · H.264',
+      kind: 'stream',
+      state: 'playing',
+      position: 1_460,
+      runtime: runtime('saltmarsh-s2e4'),
+      method: 'direct-play',
+      reasons: [],
+      sent: '1080p · H.264 · EAC3 5.1',
+      mbps: 8.2,
+      network: 'lan',
+      address: '192.168.1.44',
+      hardware: null,
+      speed: 0,
+      startedAt: now - 25 * MIN,
+      stopped: null,
+    },
+    ...(songs[1]
+      ? [
+          {
+            id: 's-theo-kitchen',
+            userId: 'u-theo',
+            deviceName: 'Theo’s iPhone',
+            client: 'ios',
+            itemId: songs[1].itemId,
+            version: 'FLAC · 16-bit · 44.1 kHz',
+            kind: 'stream',
+            state: 'playing',
+            position: 74,
+            runtime: songs[1].runtime,
+            method: 'direct-play',
+            reasons: [],
+            sent: 'FLAC · 44.1 kHz · stereo',
+            mbps: 0.9,
+            network: 'lan',
+            address: '192.168.1.27',
+            hardware: null,
+            speed: 0,
+            startedAt: now - 6 * MIN,
+            stopped: null,
+            queue: songs.slice(2),
+          } satisfies StreamSession,
+        ]
+      : []),
   ]
   const record = (
     id: string,
@@ -174,7 +239,9 @@ export function seedSessions(
     ago: number,
     fraction: number,
   ): WatchRecord[] =>
-    items.some((m) => m.id === itemId)
+    items.some((m) => m.id === itemId) ||
+    episodes.has(itemId) ||
+    songs.some((x) => x.itemId === itemId)
       ? [
           {
             id,
@@ -201,6 +268,39 @@ export function seedSessions(
       'lan',
       2 * HOUR,
       0.35,
+    ),
+    ...record(
+      'w-ep-1',
+      'u-ines',
+      'Bedroom Fire TV',
+      'androidtv',
+      'saltmarsh-s2e3',
+      'direct-play',
+      'lan',
+      3 * HOUR,
+      1,
+    ),
+    ...record(
+      'w-song-1',
+      'u-theo',
+      'Theo’s iPhone',
+      'ios',
+      'aurora-fields-low-tide-hours-1',
+      'direct-play',
+      'lan',
+      4 * HOUR,
+      1,
+    ),
+    ...record(
+      'w-ep-2',
+      'u-ruth',
+      'Ruth’s iPhone',
+      'ios',
+      'night-shift-at-hollow-creek-s3e4',
+      'transcode',
+      'remote',
+      DAY + 5 * HOUR,
+      0.55,
     ),
     ...record(
       'w-2',
@@ -327,6 +427,13 @@ export function advanceSessions(r: SessionsRuntime, seconds: number, now: number
     if (s.stopped || s.state !== 'playing') continue
     const step = s.kind === 'download' ? seconds * s.speed : seconds * Math.min(1, s.speed || 1)
     s.position = Math.min(s.runtime, s.position + step)
+    // a song that ends gives way to the next in the queue, as a music player goes on
+    const next = s.position >= s.runtime ? s.queue?.shift() : undefined
+    if (next) {
+      s.itemId = next.itemId
+      s.runtime = next.runtime
+      s.position = 0
+    }
     changed = true
   }
   const before = r.live.length
@@ -336,15 +443,43 @@ export function advanceSessions(r: SessionsRuntime, seconds: number, now: number
   return changed || r.live.length !== before
 }
 
+/**
+ * What's playing, as the admin names it: a film by its title and year, an episode by its show,
+ * number and title ("Saltmarsh · S2, E4 · Strangers"), a song by its title, artist and album.
+ */
+export type PlayingItem =
+  | { kind: 'movie'; id: string; title: string; year: number | null; poster: string }
+  | {
+      kind: 'episode'
+      id: string
+      title: string
+      year: null
+      /** The show's poster. */
+      poster: string
+      show: { id: string; title: string }
+      /** "S2, E4", or "Special 1". */
+      code: string
+    }
+  | {
+      kind: 'song'
+      id: string
+      title: string
+      year: null
+      /** The album's cover. */
+      poster: string
+      artist: string
+      album: string
+    }
+
 /** A session as the admin shows it: who and what, by name. */
 export type SessionView = StreamSession & {
   user: { id: string; displayName: string }
-  item: { id: string; title: string; year: number | null; poster: string }
+  item: PlayingItem
 }
 
 export type WatchView = WatchRecord & {
   user: { id: string; displayName: string }
-  item: { id: string; title: string; year: number | null; poster: string }
+  item: PlayingItem
 }
 
 export type NowPlaying = {

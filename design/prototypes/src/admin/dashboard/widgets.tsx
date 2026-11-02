@@ -47,7 +47,9 @@ import type { HighseaClient } from '../../mock/client.ts'
 import { type Query, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { EventTopic, QueueItem } from '../../mock/types.ts'
 import { type WidgetKind, widgetDefinition } from '../../mock/widgets.ts'
+import { byDate, episodeDated, movieDated, showHref } from '../episodes.ts'
 import { behind, mbps, methods } from '../now-playing/delivery.ts'
+import { playingAspect, playingName } from '../now-playing/item.tsx'
 import { adminHref } from '../shell.tsx'
 import { indexerStatus, queueFilters, torrentStatus } from '../status.ts'
 
@@ -356,35 +358,48 @@ function Subtitles(props: WidgetProps) {
 // ---------------------------------------------------------------- upcoming
 
 function Upcoming(props: WidgetProps) {
-  const query = useWidgetQuery('upcoming', (c) => c.movies.upcoming(14), ['item.updated'])
+  // the mock's clock, which the shows' air dates are laid out from
+  const now = useNow()
+  const query = useWidgetQuery(
+    'upcoming',
+    async (c) => {
+      const [movies, episodes] = await Promise.all([
+        c.movies.upcoming(14),
+        c.shows.airing(now, now + 14 * 86_400_000),
+      ])
+      return [...movies.map(movieDated), ...episodes.map(episodeDated)].sort(byDate)
+    },
+    ['item.updated', 'shows.updated'],
+  )
   const clip = useClip<HTMLUListElement>(':scope > li')
   return (
     <Widget {...props} kind="upcoming" query={query} meta={() => 'next 14 days'}>
       {(xs) =>
         xs.length === 0 ? (
           <EmptyState size="sm" icon="calendar" title="Nothing due in the next 14 days">
-            Monitored movies show here before they release.
+            Monitored movies and episodes show here before they come out.
           </EmptyState>
         ) : (
           <>
             <ul ref={clip.ref} className={cn('grid content-start gap-2 text-ui', fill)}>
-              {xs.map((m, i) => (
-                <li key={m.id} className="flex min-w-0 items-center gap-2.5">
+              {xs.map((x, i) => (
+                <li key={x.key} className="flex min-w-0 items-center gap-2.5">
                   <Badge
                     dot={false}
                     tone={i === 0 ? 'accent' : 'neutral'}
                     className="w-16 justify-center"
                   >
-                    {shortDate(m.releaseDate)}
+                    {shortDate(x.date.toISOString())}
                   </Badge>
                   <a
-                    href={adminHref(`/movies/${m.id}`)}
+                    href={x.href}
+                    title={x.name}
                     className="min-w-0 flex-1 truncate text-text hover:underline"
                   >
-                    {m.title}
+                    {x.label}
                   </a>
-                  <span className="shrink-0 text-caption text-text-3">
-                    {m.versions.map((v) => v.label).join(' + ')}
+                  <span className="min-w-0 max-w-[40%] shrink-0 truncate text-caption text-text-3">
+                    {x.detail}
                   </span>
                 </li>
               ))}
@@ -458,6 +473,9 @@ function Announcement(props: WidgetProps) {
 
 // ---------------------------------------------------------------- queue
 
+/** A download's name: the film's title, or the show and the episode's number. */
+const queueName = (q: QueueItem) => (q.episode ? `${q.title} · ${q.episode.code}` : q.title)
+
 function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'mid' | 'stacked' }) {
   if (layout === 'stacked')
     return (
@@ -470,7 +488,7 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
               className="grid gap-1.5 border-line border-t px-(--size-widget-padding) py-2.5"
             >
               <div className="flex min-w-0 items-center gap-2">
-                <span className="min-w-0 flex-1 truncate text-text text-ui">{q.title}</span>
+                <span className="min-w-0 flex-1 truncate text-text text-ui">{queueName(q)}</span>
                 <Badge tone={s.tone}>{s.label}</Badge>
               </div>
               <Progress
@@ -511,7 +529,11 @@ function QueueRows({ items, layout }: { items: QueueItem[]; layout: 'table' | 'm
               <TableRow key={q.id} title={q.stateReason ?? undefined}>
                 <TitleCell
                   title={
-                    q.itemId ? (
+                    q.episode ? (
+                      <a href={showHref(q.episode.show)} className="hover:underline">
+                        {queueName(q)}
+                      </a>
+                    ) : q.itemId ? (
                       <a href={adminHref(`/movies/${q.itemId}`)} className="hover:underline">
                         {q.title}
                       </a>
@@ -583,7 +605,7 @@ function Queue(props: WidgetProps) {
         if (xs.length === 0)
           return (
             <EmptyState size="sm" icon="downloads" title="The queue is empty">
-              Movies you add show here while they download and import.
+              Movies and episodes show here while they download and import.
             </EmptyState>
           )
         const counts = Object.fromEntries(
@@ -691,19 +713,30 @@ const monthName = new Intl.DateTimeFormat('en-GB', { month: 'long', year: 'numer
 
 function Calendar(props: WidgetProps) {
   const now = useNow()
-  const query = useWidgetQuery('calendar', (c) => c.movies.upcoming(45), ['item.updated'])
   const today = new Date(now)
   const first = new Date(today.getFullYear(), today.getMonth(), 1)
   const days = new Date(today.getFullYear(), today.getMonth() + 1, 0).getDate()
   const lead = (first.getDay() + 6) % 7
+  // films still to come out, and this month's episodes, aired or not, as Wanted's calendar has them
+  const query = useWidgetQuery(
+    'calendar',
+    async (c) => {
+      const [movies, episodes] = await Promise.all([
+        c.movies.upcoming(45),
+        c.shows.airing(first.getTime() - 86_400_000, first.getTime() + 32 * 86_400_000),
+      ])
+      return [...movies.map(movieDated), ...episodes.map(episodeDated)].sort(byDate)
+    },
+    ['item.updated', 'shows.updated'],
+  )
   return (
     <Widget {...props} kind="calendar" query={query} meta={() => monthName.format(first)}>
       {(xs) => {
         const byDay = new Map<number, string[]>()
-        for (const m of xs) {
-          const d = new Date(m.releaseDate)
+        for (const x of xs) {
+          const d = x.date
           if (d.getMonth() === today.getMonth() && d.getFullYear() === today.getFullYear())
-            byDay.set(d.getDate(), [...(byDay.get(d.getDate()) ?? []), m.title])
+            byDay.set(d.getDate(), [...(byDay.get(d.getDate()) ?? []), x.name])
         }
         // the date each row starts on (zero or less is last month's tail)
         const weeks = Array.from(
@@ -763,7 +796,9 @@ function Calendar(props: WidgetProps) {
               </tbody>
             </table>
             {byDay.size === 0 && (
-              <p className="shrink-0 text-caption text-text-3">No releases this month.</p>
+              <p className="shrink-0 text-caption text-text-3">
+                No releases or episodes this month.
+              </p>
             )}
           </div>
         )
@@ -835,10 +870,16 @@ function NowPlaying(props: WidgetProps) {
             <ul ref={clip.ref} className={cn('grid content-start gap-3', fill)}>
               {np.sessions.map((s) => (
                 <li key={s.id} className="grid grid-cols-[32px_minmax(0,1fr)] items-center gap-3">
-                  <Poster title={s.item.title} src={s.item.poster} />
+                  <Poster
+                    title={playingName(s.item)}
+                    src={s.item.poster}
+                    aspect={playingAspect(s.item)}
+                  />
                   <div className="grid min-w-0 gap-1">
                     <div className="flex min-w-0 items-center justify-between gap-2">
-                      <span className="truncate text-text">{s.item.title}</span>
+                      <span className="truncate text-text" title={playingName(s.item)}>
+                        {playingName(s.item)}
+                      </span>
                       {behind(s) ? (
                         <Badge tone="danger">Can’t keep up</Badge>
                       ) : (
@@ -854,7 +895,7 @@ function NowPlaying(props: WidgetProps) {
                     <Progress
                       value={(s.position / s.runtime) * 100}
                       tone={behind(s) ? 'danger' : 'accent'}
-                      aria-label={`${s.item.title}, ${s.kind === 'download' ? 'made' : 'watched'} so far`}
+                      aria-label={`${playingName(s.item)}, ${s.kind === 'download' ? 'made' : s.item.kind === 'song' ? 'played' : 'watched'} so far`}
                     />
                   </div>
                 </li>

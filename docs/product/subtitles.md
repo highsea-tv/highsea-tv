@@ -106,6 +106,14 @@ As built in checkpoints 7a and 7b; the OpenAPI document at `/api/docs` has every
 - **The rules mean what the selects say:** Regular and forced wants two tracks; Without SDH takes an SDH track only when nothing else exists, and removes its SDH text; With or without SDH takes either.
 - **The cutoff** stops the search for the profile's other languages once the cutoff language is present, as Bazarr documents it.
 
+## Episodes (prototype-gaps stage 6, 2026-11-01)
+
+- **Wanted holds episodes beside films,** in one table with the kind filter Wanted uses (All, Movies · n, Episodes · n), above it "{n movies and m episodes} missing a language". The tab's count is both.
+- **An episode's row:** the show (to its page), then " · S04E01 · title", the file's path below, the missing languages, and **Search**, which looks for that episode's languages now.
+- **Search all missing** includes the episodes.
+- **Empty:** "Every movie and episode has its subtitles" · They show here when a language their profile asks for is missing.
+- **Data:** `subtitles.wantedEpisodes()` and `subtitles.searchEpisode(id)`.
+
 ## Answered questions
 
 Answered by the owner on 2026-10-21 ([checkpoint 7's plan](../plans/phase-3-checkpoint-7.md#the-owners-answers)):

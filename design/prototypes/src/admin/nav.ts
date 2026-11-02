@@ -32,6 +32,13 @@ export const pageGroups: Page[][] = [
       keywords: ['library'],
     },
     {
+      id: 'shows',
+      label: 'Shows',
+      icon: 'tv',
+      path: '/shows',
+      keywords: ['library', 'series', 'tv', 'seasons', 'episodes'],
+    },
+    {
       id: 'collections',
       label: 'Collections',
       icon: 'library',

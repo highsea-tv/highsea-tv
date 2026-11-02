@@ -84,7 +84,7 @@ const sorts = {
 } satisfies Record<string, { label: string; compare: (a: MediaItem, b: MediaItem) => number }>
 type Sort = keyof typeof sorts
 
-function useStored<T extends string>(key: string, initial: T): [T, (v: T) => void] {
+export function useStored<T extends string>(key: string, initial: T): [T, (v: T) => void] {
   const [value, setValue] = useState<T>(() => {
     try {
       return (localStorage.getItem(`highsea-proto:${key}`) as T | null) ?? initial

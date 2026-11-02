@@ -2,6 +2,7 @@
 
 - **Platforms:** Admin, every breakpoint.
 - **Prototype:** `#/admin/settings/users` (A13): People, Devices and API keys tabs.
+  - *Since [prototype-gaps.md](../plans/prototype-gaps.md)'s stage 6 (2026-11-01), drawn ahead of the server:* **Libraries › Choose** has Movies, Shows and Music, each its own checkbox, all ticked when Choose is picked ("Books join this list when the server has them."); with none ticked it warns, and the invite can't be made. The list reads "Movies and Shows". The mock applies it to every kind it serves: the clients' library, search, Home, people's pages and related titles leave out shows and music a person can't see, and movies too. Staff see every library, and the admin's own pages aren't filtered. The seeded child sees Movies and Shows.
 - **Roadmap:** [Phase 2 › A13](../roadmap.md#phase-2-design-prototypes-gate-user-sign-off), auth (roles, permissions, per-server device tokens, API keys), [gap analysis › permissions model](../roadmap.md#gap-analysis-what-a-true-end-to-end-replacement-still-needs).
 
 ## Purpose

@@ -20,12 +20,15 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  toast,
 } from '@highsea-tv/ui-web'
+import { useState } from 'react'
 import { Soon } from '../../kit/soon.tsx'
 import { useQuery } from '../../mock/hooks.tsx'
+import type { QualitySize } from '../../mock/settings.ts'
 import { adminHref } from '../shell.tsx'
 import { Area, options } from './parts.tsx'
-import { AreaPage, Group } from './settings.tsx'
+import { AreaPage, Group, SaveBar, useSettingsDraft } from './settings.tsx'
 import { VpnSummary } from './vpn.tsx'
 
 // ---------------------------------------------------------------- server
@@ -298,9 +301,19 @@ const presets = [
   { name: 'Remux + WEB 2160p', detail: 'Remuxes first, for big screens and big disks.' },
 ]
 
+const usedBy = ({ movies, shows }: { movies: number; shows: number }) =>
+  movies + shows === 0
+    ? 'Not used yet'
+    : `Used by ${movies === 1 ? '1 movie' : `${movies} movies`} and ${shows === 1 ? '1 show' : `${shows} shows`}`
+
 export function Profiles() {
   const profiles = useQuery('settings:profiles', (c) => c.movies.qualityProfiles())
   const formats = useQuery('settings:formats', (c) => c.movies.customFormats())
+  const usage = useQuery('settings:profile-usage', (c) => c.movies.profileUsage(), [
+    'settings.updated',
+    'movies.updated',
+    'shows.updated',
+  ])
   return (
     <AreaPage
       id="profiles"
@@ -312,7 +325,7 @@ export function Profiles() {
     >
       <Group
         title="Quality profiles"
-        description="Each movie uses one: what to download, and when to stop upgrading."
+        description="Each movie and each show uses one: what to download, and when to stop upgrading. Music has its own with the music library."
       >
         <ul className="grid gap-2">
           {(profiles.data ?? []).map((p) => (
@@ -335,6 +348,11 @@ export function Profiles() {
                   {p.upgradeAllowed ? `Upgrades until ${p.cutoff}` : 'No upgrades'} ·{' '}
                   {p.formats.length} custom format scores
                 </p>
+                {usage.data && (
+                  <p className="text-caption text-text-3">
+                    {usedBy(usage.data[p.id] ?? { movies: 0, shows: 0 })}
+                  </p>
+                )}
               </div>
               <Button size="sm" icon="edit" asChild>
                 <a href={adminHref(`/settings/profiles/${p.id}`)} aria-label={`Edit ${p.name}`}>
@@ -411,83 +429,158 @@ export function Profiles() {
   )
 }
 
+/**
+ * Sizes per kind (stage 6, drawn for the TV series phase): movies' per minute of the film, as
+ * Radarr's, and episodes' per minute of the episode, as Sonarr's. One table at a time, chosen
+ * above it; both drafts are kept, so switching loses nothing, and the save bar saves both.
+ */
 export function QualitySizes() {
+  const [kind, setKind] = useState<SizeKind>('movies')
+  const movies = useSettingsDraft('qualitySizes')
+  const episodes = useSettingsDraft('episodeSizes')
+  const s = kind === 'shows' ? episodes : movies
+  const minutes = kind === 'shows' ? 45 : 120
+  const dirty = movies.dirty || episodes.dirty
   return (
-    <Area
+    <AreaPage
       id="quality"
-      section="qualitySizes"
       actions={
         <Button icon="edit" asChild>
           <a href={adminHref('/settings/quality/sizes')}>Edit sizes</a>
         </Button>
       }
     >
-      {(rows, _set, replace) => (
+      <SegmentedControl
+        aria-label="Sizes for"
+        size="sm"
+        value={kind}
+        onValueChange={(k) => setKind(k as SizeKind)}
+        options={[
+          { value: 'movies', label: 'Movies' },
+          { value: 'shows', label: 'Shows' },
+        ]}
+        className="justify-self-start"
+      />
+      {s.query.status === 'error' ? (
+        <p className="text-badge-danger text-ui">
+          Couldn’t load these settings. {s.query.error.message}
+        </p>
+      ) : !s.draft ? (
+        <p aria-busy className="text-caption text-text-3">
+          Loading…
+        </p>
+      ) : (
         <Group
-          title="Sizes per minute of runtime"
-          description="A release outside the range is rejected; the preferred size wins a tie."
+          title={
+            kind === 'shows' ? 'Sizes per minute of an episode' : 'Sizes per minute of runtime'
+          }
+          description={
+            kind === 'shows'
+              ? 'A release outside the range is rejected; the preferred size wins a tie. A season pack is checked episode by episode.'
+              : 'A release outside the range is rejected; the preferred size wins a tie.'
+          }
         >
-          <TableFrame>
-            <Table aria-label="Sizes per minute of runtime">
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Quality</TableHead>
-                  <TableHead numeric>Min MB/min</TableHead>
-                  <TableHead numeric>Preferred</TableHead>
-                  <TableHead numeric>Max</TableHead>
-                  <TableHead numeric>A 2-hour film</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {rows.map((q, i) => {
-                  // An empty preferred or maximum is no limit (`null`), as TRaSH's defaults are.
-                  const cell = (key: 'min' | 'preferred' | 'max') => (
-                    <TableCell numeric>
-                      <Input
-                        type="number"
-                        min={0}
-                        aria-label={`${q.quality}: ${key === 'preferred' ? 'preferred' : key} MB per minute`}
-                        value={q[key] ?? ''}
-                        placeholder={key === 'min' ? undefined : '∞'}
-                        onChange={(e) =>
-                          replace(
-                            rows.map((r, j) =>
-                              j === i
-                                ? {
-                                    ...r,
-                                    [key]:
-                                      key !== 'min' && e.target.value === ''
-                                        ? null
-                                        : Number(e.target.value),
-                                  }
-                                : r,
-                            ),
-                          )
-                        }
-                        className="ms-auto w-20 text-end font-mono"
-                      />
-                    </TableCell>
-                  )
-                  return (
-                    <TableRow key={q.quality}>
-                      <TableCell className="text-text">{q.quality}</TableCell>
-                      {cell('min')}
-                      {cell('preferred')}
-                      {cell('max')}
-                      <TableCell numeric className="text-text-2">
-                        {q.max === null
-                          ? `${((q.min * 120) / 1000).toFixed(1)} GB or more`
-                          : `${((q.min * 120) / 1000).toFixed(1)}–${((q.max * 120) / 1000).toFixed(1)} GB`}
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          </TableFrame>
+          <SizeRows
+            key={kind}
+            rows={s.draft}
+            replace={s.replace}
+            minutes={minutes}
+            noun={kind === 'shows' ? 'episode' : 'film'}
+          />
         </Group>
       )}
-    </Area>
+      <SaveBar
+        dirty={dirty}
+        saving={movies.saving || episodes.saving}
+        onDiscard={() => {
+          movies.discard()
+          episodes.discard()
+        }}
+        onSave={() =>
+          Promise.all([movies.dirty && movies.save(), episodes.dirty && episodes.save()])
+            .then(() => toast.success('Settings saved'))
+            .catch((e: Error) => toast.error('Couldn’t save', { description: e.message }))
+        }
+      />
+    </AreaPage>
+  )
+}
+
+type SizeKind = 'movies' | 'shows'
+type SizeRow = QualitySize
+
+function SizeRows({
+  rows,
+  replace,
+  minutes,
+  noun,
+}: {
+  rows: SizeRow[]
+  replace: (rows: SizeRow[]) => void
+  minutes: number
+  noun: 'film' | 'episode'
+}) {
+  const gb = (perMinute: number) => ((perMinute * minutes) / 1000).toFixed(1)
+  const label = noun === 'film' ? 'Sizes per minute of runtime' : 'Sizes per minute of an episode'
+  return (
+    <TableFrame>
+      <Table aria-label={label}>
+        <TableHeader>
+          <TableRow>
+            <TableHead>Quality</TableHead>
+            <TableHead numeric>Min MB/min</TableHead>
+            <TableHead numeric>Preferred</TableHead>
+            <TableHead numeric>Max</TableHead>
+            <TableHead numeric>
+              {noun === 'film' ? 'A 2-hour film' : `A ${minutes}-minute episode`}
+            </TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {rows.map((q, i) => {
+            // An empty preferred or maximum is no limit (`null`), as TRaSH's defaults are.
+            const cell = (key: 'min' | 'preferred' | 'max') => (
+              <TableCell numeric>
+                <Input
+                  type="number"
+                  min={0}
+                  aria-label={`${q.quality}: ${key === 'preferred' ? 'preferred' : key} MB per minute`}
+                  value={q[key] ?? ''}
+                  placeholder={key === 'min' ? undefined : '∞'}
+                  onChange={(e) =>
+                    replace(
+                      rows.map((r, j) =>
+                        j === i
+                          ? {
+                              ...r,
+                              [key]:
+                                key !== 'min' && e.target.value === ''
+                                  ? null
+                                  : Number(e.target.value),
+                            }
+                          : r,
+                      ),
+                    )
+                  }
+                  className="ms-auto w-20 text-end font-mono"
+                />
+              </TableCell>
+            )
+            return (
+              <TableRow key={q.quality}>
+                <TableCell className="text-text">{q.quality}</TableCell>
+                {cell('min')}
+                {cell('preferred')}
+                {cell('max')}
+                <TableCell numeric className="text-text-2">
+                  {q.max === null ? `${gb(q.min)} GB or more` : `${gb(q.min)}–${gb(q.max)} GB`}
+                </TableCell>
+              </TableRow>
+            )
+          })}
+        </TableBody>
+      </Table>
+    </TableFrame>
   )
 }
 

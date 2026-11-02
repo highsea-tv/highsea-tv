@@ -488,11 +488,21 @@ function TorrentSheet({
                   Pause
                 </Button>
               )}
-              {t.itemId && (
-                <Button size="sm" icon="movie" onClick={() => navigate(`/movies/${t.itemId}`)}>
-                  Open the movie
-                </Button>
-              )}
+              {t.itemId &&
+                (/-s\d+e\d+$/.test(t.itemId) ? (
+                  // an episode's download opens its show (stage 6)
+                  <Button
+                    size="sm"
+                    icon="tv"
+                    onClick={() => navigate(`/shows/${t.itemId?.replace(/-s\d+e\d+$/, '')}`)}
+                  >
+                    Open the show
+                  </Button>
+                ) : (
+                  <Button size="sm" icon="movie" onClick={() => navigate(`/movies/${t.itemId}`)}>
+                    Open the movie
+                  </Button>
+                ))}
               <Button size="sm" variant="danger" icon="delete" onClick={() => setRemoving(true)}>
                 Remove
               </Button>

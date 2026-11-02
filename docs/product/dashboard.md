@@ -172,6 +172,13 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `dashboa
 - **Sounds for Customize.** Should picking up and dropping a widget play `select` and `back` when admin sound is on?
 - **Per-widget settings** and **multiple instances:** answered by the follow-up below (a settings dialog per widget; any widget more than once).
 
+## Episodes (prototype-gaps stage 6, 2026-11-01)
+
+- **Upcoming** holds the next 14 days' episodes beside films, soonest first: "Show · S03E05" (to the show), with the episode's title where a film shows its versions. Empty: "Monitored movies and episodes show here before they come out."
+- **Calendar** puts the month's episodes on their days with the same state colours. Empty: "No releases or episodes this month."
+- **Storage**'s TV part comes from the shows' sizes, taken out of Other.
+- **Queue** names an episode "Show · S03E06", linked to the show; **Now playing** names it as Now playing does. The widgets that count the library count shows too, and the "N more" links count what they leave out.
+
 ## Follow-up: customization on Homarr's level
 
 The owner asked on 2026-10-20 for the dashboard to become as customizable as [Homarr](https://github.com/homarr-labs/homarr)'s boards, with a visible grid while customizing. It comes after Phase 3, and its plan is [plans/dashboard-customization.md](../plans/dashboard-customization.md):

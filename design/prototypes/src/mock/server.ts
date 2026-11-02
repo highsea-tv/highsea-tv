@@ -10,7 +10,7 @@ import {
   qualityProfileSchema,
 } from '@highsea-tv/quality'
 import { type Clock, createEmitter, createRandom, type Emitter, iso } from './clock.ts'
-import { collectionShows, describe, evaluate, type Facts, fields, preview } from './collections.ts'
+import { describe, evaluate, type Facts, fields, preview } from './collections.ts'
 import { connectionsApi } from './connections.ts'
 import { librarySettingsApi } from './library-settings.ts'
 import { importListsApi } from './lists.ts'
@@ -35,8 +35,15 @@ import {
 } from './music.ts'
 import { type AccelerationPath, finishCheck, playbackStatus } from './playback.ts'
 import { GB, MB, type ServerState, seed } from './seed.ts'
-import { advanceSessions, type NowPlaying, type SessionView, type WatchView } from './sessions.ts'
+import {
+  advanceSessions,
+  type NowPlaying,
+  type PlayingItem,
+  type SessionView,
+  type WatchView,
+} from './sessions.ts'
 import type { CatalogSettings, Settings, SettingsDeps, SettingsSection } from './settings.ts'
+import { showAdminApi } from './show-admin.ts'
 import { type EpisodeSeed, type ShowSeed, showsLibrary } from './shows.ts'
 import type {
   AddMovieInput,
@@ -87,6 +94,8 @@ import type {
   MediaItem,
   MusicSource,
   Pairing,
+  Person,
+  PersonShowCredit,
   PlaybackPrefs,
   ProbeResult,
   QueuedSong,
@@ -108,6 +117,7 @@ import type {
   SubtitleSettings,
   SubtitleStats,
   SubtitleTrack,
+  SystemStatus,
   Torrent,
   TorrentLimits,
   User,
@@ -181,6 +191,13 @@ export const memoryStorage = (): Storage => {
     save: (k, v) => void (v === undefined ? m.delete(k) : m.set(k, JSON.stringify(v))),
   }
 }
+
+/** Episodes missing a subtitle language, kept per server so every client sees one list. */
+const episodeSubtitlesOn = new WeakMap<MockServer, { id: string; missing: string[] }[]>()
+
+/** The admin's episode number, as Sonarr writes it: "S03E06". */
+const adminEpisodeCode = (e: { season: number; number: number }) =>
+  `S${String(e.season).padStart(2, '0')}E${String(e.number).padStart(2, '0')}`
 
 function setItemStatus(state: ServerState, id: string | null, status: MediaItem['status']) {
   const m = state.items.find((x) => x.id === id)
@@ -375,6 +392,12 @@ export function createServer(
       state.pipeline.splice(state.pipeline.indexOf(p), 1)
       const t = state.torrents.find((x) => x.id === p.torrentId)
       const m = state.items.find((x) => x.id === p.itemId)
+      // an episode's download (stage 6) is imported by the shows' mock, so here it just seeds
+      if (!m && t && p.stage === 'importing') {
+        t.state = 'seeding'
+        queueChanged = torrentsChanged = true
+        continue
+      }
       // a Re-sync's step has no torrent
       if (!m || (!t && p.stage !== 'subtitle-sync')) continue
       if (p.stage === 'importing' && t) {
@@ -711,10 +734,12 @@ export function createApi(srv: MockServer, ctx: Ctx) {
   const storage = ctx.storage ?? memoryStorage()
   const now = () => srv.clock.now()
   let music: ClientMusic | undefined
-  const library = () => {
+  const allMusic = () => {
     music ??= musicLibrary(srv.kind, now())
     return music
   }
+  /** The music this person may play: none without Music among their libraries (stage 6). */
+  const library = (): ClientMusic => (sees('music') ? allMusic() : { artists: [], albums: [] })
   /** Home's Recently played, newest first: what library.queue was asked for, seeded with three. */
   let played: ({ album: string } | { artist: string })[] | undefined
   const recentlyPlayed = () => {
@@ -868,12 +893,12 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     return { ...s.show, unwatched, watched: episodes.length > 0 && unwatched === 0, next }
   }
   const showSeed = (id: string) => {
-    const s = showSeeds().find((x) => x.show.id === id)
+    const s = clientShows().find((x) => x.show.id === id)
     if (!s) throw new ApiError(404, 'not-found', 'That show isn’t on this server.')
     return s
   }
   const episodeSeed = (id: string) => {
-    for (const s of showSeeds())
+    for (const s of clientShows())
       for (const season of s.seasons) {
         const e = season.episodes.find((x) => x.id === id)
         if (e) return { show: s, episode: e }
@@ -992,6 +1017,13 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     return u
   }
   const staff = () => me().role === 'owner' || me().role === 'admin'
+  /** Library access (stage 6): Movies, Shows and Music are each given or not; staff see all. */
+  const sees = (kind: 'movies' | 'shows' | 'music') => {
+    const l = me().libraries
+    return staff() || l === 'all' || l.includes(kind)
+  }
+  /** The shows this person may watch, for the apps' calls; the admin's are showSeeds itself. */
+  const clientShows = () => (sees('shows') ? showSeeds() : [])
   const requireStaff = () => {
     if (!staff()) throw forbidden()
   }
@@ -1014,14 +1046,33 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     const u = state.users.find((x) => x.id === userId)
     return { id: userId, displayName: u?.displayName ?? 'Someone' }
   }
-  const what = (itemId: string) => {
+  /** What a session plays, by name: a film, an episode with its show, or a song with its album. */
+  const what = (itemId: string): PlayingItem => {
     const m = state.items.find((x) => x.id === itemId)
-    return {
-      id: itemId,
-      title: m?.title ?? 'Unknown',
-      year: m?.year ?? null,
-      poster: m?.art.poster ?? '',
-    }
+    if (m) return { kind: 'movie', id: itemId, title: m.title, year: m.year, poster: m.art.poster }
+    const ep = episodeSeed(itemId)
+    if (ep)
+      return {
+        kind: 'episode',
+        id: itemId,
+        title: ep.episode.title,
+        year: null,
+        poster: ep.show.show.art.poster,
+        show: { id: ep.show.show.id, title: ep.show.show.title },
+        code: episodeCode(ep.episode),
+      }
+    const song = trackOf(library(), itemId)
+    if (song)
+      return {
+        kind: 'song',
+        id: itemId,
+        title: song.title,
+        year: null,
+        poster: song.album.cover,
+        artist: song.album.artist.name,
+        album: song.album.title,
+      }
+    return { kind: 'movie', id: itemId, title: 'Unknown', year: null, poster: '' }
   }
   const nowPlaying = (): NowPlaying => {
     const sessions = state.sessions.live.map(
@@ -1063,14 +1114,78 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     return saved
   }
 
+  /** A manual import's episode file, when the shows it names are here (stage 6). */
+  const episodeFile = (
+    path: string,
+    size: number,
+    quality: string,
+    show: string,
+    episodeIds: string[],
+  ): ImportCandidate[] =>
+    episodeIds.every((id) => showAdmin.episode(id))
+      ? [
+          {
+            path,
+            size,
+            quality,
+            language: 'English',
+            itemId: null,
+            skip: null,
+            episodes: { show, episodeIds },
+          },
+        ]
+      : []
+  /** Manual import into episodes: each gets the file, and the history says so. */
+  const importEpisodes = (path: string, episodeIds: string[], mode: 'hardlink' | 'move') => {
+    const found = episodeIds.flatMap((id) => showAdmin.episode(id) ?? [])
+    const name = path.split('/').pop() ?? path
+    const numbers = found.map((x) => x.episode.number)
+    for (const { show, episode: e } of found) {
+      e.status = 'available'
+      delete e.progress
+      e.file = {
+        path: `${show.path}/Season ${String(e.season).padStart(2, '0')}/${name}`,
+        size: e.file?.size ?? Math.round(e.runtimeMinutes * 36 * MB),
+        quality: /2160p/.test(name)
+          ? 'Bluray-2160p'
+          : /BluRay/i.test(name)
+            ? 'Bluray-1080p'
+            : 'WEBDL-1080p',
+        releaseGroup: null,
+        episodes: numbers,
+      }
+      state.history.unshift({
+        id: `h-${now().toString(36)}-${e.id}`,
+        itemId: e.id,
+        type: 'imported',
+        date: iso(now()),
+        sourceTitle: name,
+        quality: null,
+        indexer: null,
+        message: mode === 'move' ? 'Moved by manual import' : 'Hardlinked by manual import',
+      })
+    }
+    srv.events.emit({ type: 'shows.updated' })
+  }
   const queueItem = (t: Torrent): QueueItem => {
     const m = state.items.find((x) => x.id === t.itemId)
+    // an episode's download is named by its show and number (stage 6)
+    const ep = !m && t.itemId ? showAdmin.episode(t.itemId) : null
     return {
       id: `q-${t.id}`,
       torrentId: t.id,
       itemId: t.itemId,
-      title: m?.title ?? t.name,
+      title: m?.title ?? ep?.show.title ?? t.name,
       year: m?.year ?? null,
+      ...(ep
+        ? {
+            episode: {
+              show: ep.show.id,
+              code: adminEpisodeCode(ep.episode),
+              title: ep.episode.title,
+            },
+          }
+        : {}),
       release: t.name,
       quality: t.quality,
       size: t.size,
@@ -1138,18 +1253,74 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       now(),
       state.collections.filter((x) => x.id !== except).map((x) => ({ id: x.id, name: x.name })),
     )
-  /** A collection's shows here, in its order (collectionShows). */
-  const shownIn = (id: string): ClientShow[] =>
-    (collectionShows[id] ?? []).flatMap((x) => {
-      const s = showSeeds().find((y) => y.show.id === x)
+  /** A collection's shows the apps list, in its order: picked by hand, as rules match films. */
+  const shownIn = (c: SmartCollection): ClientShow[] =>
+    c.shows.flatMap((x) => {
+      const s = clientShows().find((y) => y.show.id === x)
       return s ? [showOf(s)] : []
     })
+  /** A collection's shows as the admin sees them: every one in the library, and whether the apps list it. */
+  const showsOfCollection = (c: SmartCollection) => {
+    const listed = new Set(shownIn(c).map((s) => s.id))
+    const all = showAdmin.list()
+    return c.shows.flatMap((id) => {
+      const s = all.find((x) => x.id === id)
+      return s
+        ? [
+            {
+              id: s.id,
+              title: s.title,
+              year: s.year,
+              poster: s.art.poster,
+              playable: listed.has(s.id) && s.episodes.have > 0,
+            },
+          ]
+        : []
+    })
+  }
+  /**
+   * A show on a featured section's card, as a film's: its art, its synopsis or the section's
+   * tagline, and Play starting the episode it's on.
+   */
+  const featuredShow = (id: string, tagline: string | null): ClientItem[] => {
+    const seed = clientShows().find((x) => x.show.id === id)
+    const donor = watchable()[0]
+    if (!seed || !donor) return []
+    const s = showOf(seed)
+    const first = seed.seasons.find((x) => x.number !== 0)?.episodes[0]
+    const play = s.next?.episode.id ?? first?.id
+    if (!play) return []
+    return [
+      {
+        ...clientItem(
+          {
+            ...donor,
+            id: s.id,
+            title: s.title,
+            sortTitle: seed.show.sortTitle,
+            year: s.year,
+            runtimeMinutes: seed.show.runtimeMinutes,
+            genres: s.genres,
+            synopsis: s.synopsis,
+            rating: s.rating,
+            art: { ...s.art, still: s.art.backdrop },
+            versions: [],
+          },
+          tagline,
+        ),
+        progress: s.next?.kind === 'resume' ? s.next.episode.progress : null,
+        watched: s.watched,
+        quality: [],
+        series: { seasons: s.seasons, endYear: s.endYear, play },
+      },
+    ]
+  }
   /** A smart collection as the apps see it: playable titles only, in its own order, then its shows. */
   const clientSmart = (c: SmartCollection) => {
     const items = smartFacts(c)
       .filter((f) => playable(f.item))
       .map((f) => f.item)
-    const shows = shownIn(c.id)
+    const shows = shownIn(c)
     const art = items[0]?.art ?? shows[0]?.art
     if (!art) return null
     const years = [...items.map((m) => m.year), ...shows.map((s) => s.year)]
@@ -1221,9 +1392,11 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     const tagline = (id: string) => f.overrides.find((o) => o.itemId === id)?.tagline ?? null
     if (f.source.kind === 'manual') {
       const ids = f.source.itemIds
+      // films and shows, in the owner's order
       return ids.flatMap((id) => {
         const m = state.items.find((x) => x.id === id)
-        return m && playable(m) ? [clientItem(m, tagline(m.id))] : []
+        if (!m) return featuredShow(id, tagline(id))
+        return playable(m) ? [clientItem(m, tagline(m.id))] : []
       })
     }
     const { rule, value } = f.source
@@ -1241,7 +1414,10 @@ export function createApi(srv: MockServer, ctx: Ctx) {
                 })()
               : all.filter((m) => movieMetadata(state, m.id, now())?.collection?.id === value)
             : all
-    return picked.map((m) => clientItem(m, tagline(m.id)))
+    // a collection's shows follow its films, as in the apps' collection pages
+    const smart = rule === 'collection' ? state.collections.find((x) => x.id === value) : undefined
+    const shows = smart ? shownIn(smart).flatMap((x) => featuredShow(x.id, tagline(x.id))) : []
+    return [...picked.map((m) => clientItem(m, tagline(m.id))), ...shows]
   }
 
   // ffprobe's names for subtitles that are pictures: Blu-ray's PGS, DVD's VobSub, DVB's
@@ -1328,6 +1504,24 @@ export function createApi(srv: MockServer, ctx: Ctx) {
   }
 
   /** Available movies still missing a language their profile asks for. */
+  /**
+   * Episodes missing a subtitle language (stage 6): seeded, kept here, and cleared by a search.
+   * The shows' language profiles are drawn with the TV series phase.
+   */
+  const episodeSubtitles = () => {
+    let subtitleEpisodes = episodeSubtitlesOn.get(srv)
+    subtitleEpisodes ??=
+      srv.kind === 'empty'
+        ? []
+        : [
+            { id: 'saltmarsh-s4e1', missing: ['es'] },
+            { id: 'saltmarsh-s4e2', missing: ['es'] },
+            { id: 'the-lantern-keepers-s3e9', missing: ['en'] },
+            { id: 'night-shift-at-hollow-creek-s3e4', missing: ['en', 'es'] },
+          ]
+    episodeSubtitlesOn.set(srv, subtitleEpisodes)
+    return subtitleEpisodes
+  }
   const wantedSubtitles = () => {
     const results: { movie: MediaItem; missingLanguages: string[] }[] = []
     for (const m of state.items) {
@@ -1359,7 +1553,19 @@ export function createApi(srv: MockServer, ctx: Ctx) {
   }
   const lists = importListsApi(settingsDeps)
   const notifying = connectionsApi(settingsDeps)
-  const library_ = librarySettingsApi(settingsDeps, () => state.items)
+  const showAdmin = showAdminApi({
+    seeds: () => showSeeds(),
+    now,
+    requireStaff,
+    emit: () => srv.events.emit({ type: 'shows.updated' }),
+    fail: (status, code, message) => new ApiError(status, code, message),
+    folders: () =>
+      settingsDeps.settings.rootFolders.filter((f) => f.kind === 'shows').map((f) => f.path),
+  })
+  const library_ = librarySettingsApi(settingsDeps, () => state.items, {
+    shows: () => showAdmin.list(),
+    music: allMusic,
+  })
 
   return {
     system: {
@@ -1371,7 +1577,18 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         auth: { local: true, oidc: { name: 'Authentik' } },
       }),
       server: () => state.server,
-      status: () => state.status,
+      /** The disks' use by kind; TV is the shows' files (stage 6), taken out of what was Other. */
+      status: (): SystemStatus => {
+        const tv = showAdmin.list().reduce((n, x) => n + x.size, 0)
+        return {
+          ...state.status,
+          disks: state.status.disks.map((d, i) =>
+            i === 0 && d.usedBy.tv === 0 && tv > 0
+              ? { ...d, usedBy: { ...d.usedBy, tv, other: Math.max(0, d.usedBy.other - tv) } }
+              : d,
+          ),
+        }
+      },
       health: () => {
         requireStaff()
         return state.health
@@ -1508,7 +1725,12 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         srv.kind === 'populated'
           ? {
               serverName: 'Harbor',
-              folders: { movies: '/data/media/movies', downloads: '/data/downloads' },
+              folders: {
+                movies: '/data/media/movies',
+                shows: '/data/media/tv',
+                music: '/data/media/music',
+                downloads: '/data/downloads',
+              },
               address: '192.168.1.20:3000',
               graphics: { name: 'Intel UHD Graphics 770', path: 'VAAPI' },
             }
@@ -1666,10 +1888,52 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         if (!c) throw new ApiError(404, 'not-found', 'TMDB doesn’t know that collection')
         return c
       },
-      person: (id: string) => {
+      /** A person's films, and since stage 6 their shows, each marked if it's in the library. */
+      person: (id: string): Person => {
         const p = person(state, id)
-        if (!p) throw new ApiError(404, 'not-found', 'TMDB doesn’t know that person')
-        return p
+        const here = new Map(showAdmin.discover().map((x) => [x.id, x]))
+        const credited = showSeeds().flatMap((x) => {
+          const mine = [...x.cast, ...x.creators, ...x.crew].filter((c) => c.personId === id)
+          return mine.length === 0 ? [] : [{ seed: x, mine }]
+        })
+        const shows: PersonShowCredit[] = credited
+          .map(({ seed, mine }) => {
+            const s = seed.show
+            const known = here.get(s.id)
+            return {
+              ...(known ?? {
+                id: s.id,
+                tmdbId: 0,
+                title: s.title,
+                year: s.year,
+                endYear: s.endYear,
+                seasons: seed.seasons.filter((x) => x.number !== 0).length,
+                network: '',
+                genres: s.genres,
+                synopsis: s.synopsis,
+                rating: s.rating,
+                art: { poster: s.art.poster, backdrop: s.art.backdrop },
+                inLibrary: false,
+              }),
+              department: (mine[0] as Credit).department,
+              role: [...new Set(mine.map((c) => c.character ?? c.job))].join(', '),
+            }
+          })
+          .sort((a, b) => b.year - a.year || a.title.localeCompare(b.title))
+        if (p) return { ...p, shows }
+        const first = credited[0]?.mine[0]
+        if (!first) throw new ApiError(404, 'not-found', 'TMDB doesn’t know that person')
+        return {
+          id,
+          name: first.name,
+          photo: first.photo,
+          knownFor: first.department,
+          bio: null,
+          born: null,
+          died: null,
+          credits: [],
+          shows,
+        }
       },
     },
 
@@ -1737,7 +2001,9 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           monitored: input.monitored,
           minimumAvailability: input.minimumAvailability,
           languageProfileId: input.languageProfileId || 'lp-default',
-          rootFolder: input.rootFolder || '/data/media/movies',
+          rootFolder:
+            input.rootFolder ||
+            (state.settings.rootFolders.find((f) => f.kind === 'movies')?.path ?? ''),
           releaseDate: meta?.releaseDate ?? iso(now() - 30 * 86_400_000),
           addedAt: iso(now()),
           path: `${input.rootFolder}/${input.title} (${input.year})`,
@@ -2034,6 +2300,19 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         return newTorrent
       },
       qualityProfiles: () => state.qualityProfiles,
+      // How many movies and shows use each profile (stage 6): Settings › Profiles shows it, and a
+      // profile in use can't be deleted.
+      profileUsage: () =>
+        Object.fromEntries(
+          state.qualityProfiles.map((p) => [
+            p.id,
+            {
+              movies: state.items.filter((m) => m.versions.some((v) => v.qualityProfileId === p.id))
+                .length,
+              shows: showAdmin.list().filter((x) => x.qualityProfileId === p.id).length,
+            },
+          ]),
+        ) as Record<string, { movies: number; shows: number }>,
       customFormats: () => state.customFormats,
       // The editors (checkpoint 8a's prototype for 8c): save checks the profile or format as
       // @highsea-tv/quality's schema does, and the first issue comes back as the server's would.
@@ -2057,13 +2336,20 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
       deleteQualityProfile: (id: string) => {
         requireStaff()
-        // as Radarr: a profile a movie uses can't be deleted
+        // as Radarr and Sonarr: a profile a movie or a show uses can't be deleted
         const using = state.items.filter((m) => m.versions.some((v) => v.qualityProfileId === id))
+        const shows = showAdmin.list().filter((x) => x.qualityProfileId === id).length
         if (using.length > 0)
           throw new ApiError(
             409,
             'in-use',
             `${using.length === 1 ? '1 movie uses' : `${using.length} movies use`} this profile. Move ${using.length === 1 ? 'it' : 'them'} to another first.`,
+          )
+        if (shows > 0)
+          throw new ApiError(
+            409,
+            'in-use',
+            `${shows === 1 ? '1 show uses' : `${shows} shows use`} this profile. Move ${shows === 1 ? 'it' : 'them'} to another first.`,
           )
         state.qualityProfiles = state.qualityProfiles.filter((p) => p.id !== id)
         srv.events.emit({ type: 'settings.updated' })
@@ -2091,7 +2377,9 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         srv.events.emit({ type: 'settings.updated' })
       },
       languageProfiles: () => state.languageProfiles,
-      rootFolders: () => state.settings.rootFolders.map((f) => f.path),
+      /** The Movies folders (stage 6: each kind has its own). */
+      rootFolders: () =>
+        state.settings.rootFolders.filter((f) => f.kind === 'movies').map((f) => f.path),
     },
 
     queue: {
@@ -2404,6 +2692,24 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         requireStaff()
         return wantedSubtitles()
       },
+      /** Staff: episodes missing a language, beside the films (stage 6), soonest aired last. */
+      wantedEpisodes: () => {
+        requireStaff()
+        return episodeSubtitles().flatMap((w) => {
+          const found = showAdmin.episode(w.id)
+          return found ? [{ ...found, missingLanguages: w.missing }] : []
+        })
+      },
+      /** Staff: searches for one episode's missing languages; what's found leaves the list. */
+      searchEpisode: (id: string) => {
+        requireStaff()
+        const before = episodeSubtitles()
+        const after = before.filter((w) => w.id !== id)
+        episodeSubtitlesOn.set(srv, after)
+        if (after.length === before.length)
+          throw new ApiError(404, 'not-found', 'That episode isn’t missing subtitles.')
+        srv.events.emit({ type: 'subtitles.updated' })
+      },
       forItem: (id: string) => {
         return state.subtitles.filter((s) => s.itemId === id)
       },
@@ -2518,6 +2824,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
       searchAllMissing: () => {
         requireStaff()
+        episodeSubtitlesOn.set(srv, [])
         for (const { movie: m, missingLanguages } of wantedSubtitles()) {
           const f = fileFor(state, m)
           for (const language of missingLanguages)
@@ -2697,11 +3004,18 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         const infos = smartFields()
         return state.collections.map((c) => {
           const facts = smartFacts(c)
+          const shows = showsOfCollection(c)
           return {
             ...c,
             matched: facts.length,
             playable: facts.filter((f) => f.playable).length,
-            mosaic: facts.slice(0, 4).map((f) => f.item.art.poster),
+            showsHere: shows.length,
+            showsPlayable: shows.filter((x) => x.playable).length,
+            // films first, then shows, as the apps draw it
+            mosaic: [...facts.map((f) => f.item.art.poster), ...shows.map((x) => x.poster)].slice(
+              0,
+              4,
+            ),
             words: describe(c.rules, infos),
           }
         })
@@ -2720,13 +3034,16 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       /** What a draft holds right now: both counts, its titles in order, its rules in words. */
       preview: (c: SmartCollection): CollectionPreview => {
         requireStaff()
-        return preview(state, c, now(), [...state.collections.filter((x) => x.id !== c.id), c])
+        return {
+          ...preview(state, c, now(), [...state.collections.filter((x) => x.id !== c.id), c]),
+          shows: showsOfCollection(c),
+        }
       },
       save: (c: SmartCollection): SmartCollection => {
         requireStaff()
         if (!c.name.trim()) throw new ApiError(400, 'invalid', 'Give the collection a name.')
-        if (!c.rules && !c.include.length)
-          throw new ApiError(400, 'invalid', 'Add a rule, or pick at least one film.')
+        if (!c.rules && !c.include.length && !c.shows.length)
+          throw new ApiError(400, 'invalid', 'Add a rule, or pick at least one film or show.')
         if (c.rules && namesItself(c.rules, c.id))
           throw new ApiError(400, 'invalid', 'A collection can’t be one of its own rules.')
         if (
@@ -2839,7 +3156,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           )
           .filter((x) => x.items.length > 0)
         const u = me().id
-        const seeds = showSeeds()
+        const seeds = clientShows()
         // newest first: films part way, and each show once, at the episode it's on
         const continuing: ClientItem[] = []
         const nextUp: ClientItem[] = []
@@ -2974,7 +3291,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
 
     library: {
       /** Everything the household can watch. */
-      list: () => watchable().map((m) => clientItem(m)),
+      list: () => (sees('movies') ? watchable() : []).map((m) => clientItem(m)),
       /**
        * Everything here by name: movies by name, genre or person; shows by name or genre, and
        * episodes by title; the people credited on a film or a show; collections by name or a
@@ -2998,7 +3315,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           }
           people.set(c.personId, { ...p, [kind]: p[kind] + 1 })
         }
-        const titles = watchable().filter((m) => {
+        const titles = (sees('movies') ? watchable() : []).filter((m) => {
           const meta = movieMetadata(state, m.id, now())
           const credits = [...(meta?.cast ?? []), ...(meta?.crew ?? [])]
           // each person once per film, however many roles they had
@@ -3011,12 +3328,12 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         })
         // titles whose name matches come first
         const named = (m: MediaItem) => (has(m.title) ? 0 : 1)
-        const shows = showSeeds().filter((x) => {
+        const shows = clientShows().filter((x) => {
           const credits = [...x.cast, ...x.creators, ...x.crew]
           for (const c of new Map(credits.map((c) => [c.personId, c])).values()) credit(c, 'shows')
           return has(x.show.title) || x.show.genres.some((g) => g.toLowerCase().startsWith(q))
         })
-        const episodes = showSeeds()
+        const episodes = clientShows()
           .flatMap((x) =>
             x.seasons.flatMap((season) =>
               season.episodes
@@ -3100,7 +3417,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         return found
       },
       /** Every show the household can watch, with this person's place in each. */
-      shows: (): ClientShow[] => showSeeds().map(showOf),
+      shows: (): ClientShow[] => clientShows().map(showOf),
       /** A show with its seasons (specials last), its people, and shows that share a genre. */
       show: (id: string): ClientShowDetail => {
         const s = showSeed(id)
@@ -3115,7 +3432,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           cast: s.cast,
           creators: s.creators,
           crew: s.crew,
-          related: showSeeds()
+          related: clientShows()
             .filter((x) => x.show.id !== id && x.show.genres.some((g) => show.genres.includes(g)))
             .map((x) => ({ x, n: x.show.genres.filter((g) => show.genres.includes(g)).length }))
             .sort((a, b) => b.n - a.n || b.x.show.rating - a.x.show.rating)
@@ -3218,7 +3535,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
           watchable().some((m) =>
             [...(movieMetadata(state, m.id, now())?.crew ?? [])].some((c) => c.personId === id),
           ) ||
-          showSeeds().some((x) =>
+          clientShows().some((x) =>
             [...x.cast, ...x.creators, ...x.crew].some((c) => c.personId === id),
           )
         return { ...d, person: credited ? id : null }
@@ -3241,7 +3558,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         const p = person(state, id)
         const groups = new Map<Department, { item: ClientItem; role: string }[]>()
         const here: MediaItem[] = []
-        for (const m of watchable()) {
+        for (const m of sees('movies') ? watchable() : []) {
           const meta = movieMetadata(state, m.id, now())
           const mine = [...(meta?.cast ?? []), ...(meta?.crew ?? [])].filter(
             (c) => c.personId === id,
@@ -3259,7 +3576,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
             groups.set(department, list)
           }
         }
-        const shows = showSeeds().flatMap((x) => {
+        const shows = clientShows().flatMap((x) => {
           const mine = [...x.cast, ...x.creators, ...x.crew].filter((c) => c.personId === id)
           return mine.length === 0 ? [] : [{ seed: x, mine }]
         })
@@ -3695,12 +4012,41 @@ export function createApi(srv: MockServer, ctx: Ctx) {
             itemId: null,
             skip: null,
           },
+          // episode files (stage 6): one episode, and a double episode in one file
+          ...episodeFile(
+            `${path}/Night.Shift.at.Hollow.Creek.S03E05.1080p.WEB-DL.DDP5.1.H.264-NTb/Night.Shift.at.Hollow.Creek.S03E05.1080p.WEB-DL.mkv`,
+            2.3 * GB,
+            'WEB 1080p',
+            'night-shift-at-hollow-creek',
+            ['night-shift-at-hollow-creek-s3e5'],
+          ),
+          ...episodeFile(
+            `${path}/Saltmarsh.S01E01-E02.1080p.BluRay.x264-TLA/Saltmarsh.S01E01E02.1080p.BluRay.mkv`,
+            7.1 * GB,
+            'Bluray 1080p',
+            'saltmarsh',
+            ['saltmarsh-s1e1', 'saltmarsh-s1e2'],
+          ),
         ]
       },
-      /** Imports the files into their movies: hardlinked (or copied, or moved) and renamed. */
-      run: (files: { path: string; itemId: string }[], mode: 'hardlink' | 'move') => {
+      /**
+       * Imports the files into their movies, or their show's episodes: hardlinked (or copied, or
+       * moved) and renamed.
+       */
+      run: (
+        files: {
+          path: string
+          itemId?: string
+          episodes?: { show: string; episodeIds: string[] }
+        }[],
+        mode: 'hardlink' | 'move',
+      ) => {
         requireStaff()
         for (const f of files) {
+          if (f.episodes) {
+            importEpisodes(f.path, f.episodes.episodeIds, mode)
+            continue
+          }
           const m = state.items.find((x) => x.id === f.itemId)
           if (!m) continue
           m.status = 'available'
@@ -3877,6 +4223,8 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     },
     tags: library_.tags,
     rootFolders: library_.rootFolders,
+    /** Shows as the admin keeps them (stage 6, for the TV series phase). */
+    shows: showAdmin,
     importers: migrationApi(settingsDeps),
 
     settings: {

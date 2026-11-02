@@ -1,12 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// A14 Wanted and calendar (reference, docs/product/wanted.md): monitored movies with nothing yet,
-// ones below their profile's cutoff, and what's coming out, by month, with an iCal feed.
+// A14 Wanted and calendar (reference, docs/product/wanted.md): monitored movies and episodes with
+// nothing yet, ones below their profile's cutoff, and what's coming out or airing, by month, with
+// an iCal feed. Episodes joined the films in stage 6 of the prototypes' gaps: one table per tab,
+// with a filter for the kind, and the calendar's entries for both.
 import {
   Button,
   cn,
   EmptyState,
   Field,
   Input,
+  SegmentedControl,
   Table,
   TableBody,
   TableCell,
@@ -22,9 +25,18 @@ import {
   TitleCell,
   toast,
 } from '@highsea-tv/ui-web'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
+import type { HighseaClient } from '../../mock/client.ts'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { MediaItem } from '../../mock/types.ts'
+import {
+  byDate,
+  type Dated,
+  episodeCode,
+  episodeDated,
+  localDay,
+  movieDated,
+  showHref,
+} from '../episodes.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 import { useTabAddress } from '../tabs.ts'
@@ -32,18 +44,26 @@ import { useTabAddress } from '../tabs.ts'
 export const wantedTabs = ['missing', 'cutoff', 'calendar'] as const
 export type WantedTab = (typeof wantedTabs)[number]
 
+type Status = 'missing' | 'cutoff-unmet'
+
 const useMovies = () =>
   useQuery('wanted:movies', (c) => c.movies.list(), ['movies.updated', 'queue.updated'])
+
+const useEpisodes = (status: Status) =>
+  useQuery(`wanted:episodes:${status}`, (c) => c.shows.wanted(status), ['shows.updated'])
 
 export function Wanted({ tab = 'missing' }: { tab?: WantedTab }) {
   const setTab = useTabAddress<WantedTab>('/wanted', 'missing')
   const movies = useMovies()
-  const count = (s: MediaItem['status']) =>
-    (movies.data ?? []).filter((m) => m.monitored && m.status === s).length || undefined
+  const missing = useEpisodes('missing')
+  const cutoff = useEpisodes('cutoff-unmet')
+  const count = (s: Status) =>
+    (movies.data ?? []).filter((m) => m.monitored && m.status === s).length +
+      ((s === 'missing' ? missing : cutoff).data?.length ?? 0) || undefined
   return (
     <AdminPage
       title="Wanted"
-      description="Monitored movies highsea is still looking for, and what’s coming out."
+      description="Monitored movies and episodes highsea is still looking for, and what’s coming out."
     >
       <Tabs value={tab} onValueChange={(v) => setTab(v as WantedTab)} variant="line">
         <TabsList aria-label="Wanted sections">
@@ -75,35 +95,131 @@ const released = new Intl.DateTimeFormat('en-GB', {
   year: 'numeric',
 })
 
-function List({ status }: { status: 'missing' | 'cutoff-unmet' }) {
+type Kind = 'all' | 'movies' | 'episodes'
+
+/** One row of either kind: a film, or an episode with its show. */
+type Row = {
+  key: string
+  kind: 'movie' | 'episode'
+  art: string
+  title: ReactNode
+  /** The row's name in words, for Search's label and the toast. */
+  name: string
+  date: Date
+  /** Missing: the profile. Cutoff unmet: what it has and what the profile wants. */
+  quality: string
+  target: { movie: string } | { show: string; episode: string }
+}
+
+/** What Search and Search all ask for: films by id, episodes by show. */
+type Targets = Row['target'][]
+
+async function searchFor(c: HighseaClient, targets: Targets) {
+  const movies = targets.flatMap((t) => ('movie' in t ? [t.movie] : []))
+  if (movies.length) await c.movies.bulkSearch(movies)
+  for (const t of targets) if ('show' in t) await c.shows.search(t.show, { episode: t.episode })
+}
+
+function List({ status }: { status: Status }) {
   const movies = useMovies()
+  const episodes = useEpisodes(status)
   const profiles = useQuery('wanted:profiles', (c) => c.movies.qualityProfiles())
-  const search = useAction((c, ids: string[]) => c.movies.bulkSearch(ids))
+  const search = useAction(searchFor)
+  const [kind, setKind] = useState<Kind>('all')
   const cutoff = status === 'cutoff-unmet'
+  const profile = (id: string | undefined) => profiles.data?.find((x) => x.id === id)
   return (
     <Loadable query={movies} what="the wanted list">
       {(all) => {
-        const xs = all.filter((m) => m.monitored && m.status === status)
-        if (xs.length === 0)
+        const films: Row[] = all
+          .filter((m) => m.monitored && m.status === status)
+          .map((m) => {
+            const p = profile(m.versions[0]?.qualityProfileId)
+            return {
+              key: m.id,
+              kind: 'movie',
+              art: m.art.poster,
+              title: (
+                <a href={adminHref(`/movies/${m.id}`)} className="hover:underline">
+                  {m.title} ({m.year})
+                </a>
+              ),
+              name: m.title,
+              date: localDay(m.releaseDate),
+              quality: cutoff
+                ? `${m.quality[0] ?? 'Unknown'} · ${p?.cutoff ?? '—'}`
+                : (p?.name ?? '—'),
+              target: { movie: m.id },
+            }
+          })
+        const eps: Row[] = (episodes.data ?? []).map(({ show, episode: e }) => {
+          const p = profile(show.qualityProfileId)
+          const code = episodeCode(e.season, e.number)
+          return {
+            key: e.id,
+            kind: 'episode',
+            art: show.art.poster,
+            title: (
+              <>
+                <a href={showHref(show.id)} className="hover:underline">
+                  {show.title}
+                </a>
+                <span className="text-text-2">
+                  {' '}
+                  · {code} · {e.title}
+                </span>
+              </>
+            ),
+            name: `${show.title} ${code}`,
+            date: localDay(e.aired),
+            quality: cutoff
+              ? `${e.file?.quality ?? 'Unknown'} · ${p?.cutoff ?? '—'}`
+              : (p?.name ?? '—'),
+            target: { show: show.id, episode: e.id },
+          }
+        })
+        if (films.length + eps.length === 0)
           return (
             <EmptyState
               icon="success"
               title={cutoff ? 'Everything meets its cutoff' : 'Nothing missing'}
             >
               {cutoff
-                ? 'Every movie is at the quality its profile asks for.'
-                : 'Every released, monitored movie has a file.'}
+                ? 'Every movie and episode is at the quality its profile asks for.'
+                : 'Every released movie and aired episode that’s monitored has a file.'}
             </EmptyState>
           )
-        const go = (ids: string[], what: string) =>
+        const xs = kind === 'movies' ? films : kind === 'episodes' ? eps : [...films, ...eps]
+        const what = (rows: Row[]) => {
+          const n = rows.filter((r) => r.kind === 'movie').length
+          const e = rows.length - n
+          return [
+            n ? `${n} ${n === 1 ? 'movie' : 'movies'}` : '',
+            e ? `${e} ${e === 1 ? 'episode' : 'episodes'}` : '',
+          ]
+            .filter(Boolean)
+            .join(' and ')
+        }
+        const go = (rows: Row[], label: string) =>
           search
-            .run(ids)
+            .run(rows.map((r) => r.target))
             .then(() =>
-              toast({ title: `Searching for ${what}`, description: 'Results land in Activity.' }),
+              toast({ title: `Searching for ${label}`, description: 'Results land in Activity.' }),
             )
         return (
           <TableFrame>
             <TableToolbar>
+              <SegmentedControl
+                aria-label="Show"
+                size="sm"
+                value={kind}
+                onValueChange={(v) => setKind(v as Kind)}
+                options={[
+                  { value: 'all', label: 'All' },
+                  { value: 'movies', label: `Movies · ${films.length}` },
+                  { value: 'episodes', label: `Episodes · ${eps.length}` },
+                ]}
+              />
               <span className="me-auto text-caption text-text-3">
                 {cutoff
                   ? 'highsea upgrades these when a better release turns up. Search now to look today.'
@@ -113,63 +229,55 @@ function List({ status }: { status: 'missing' | 'cutoff-unmet' }) {
                 size="sm"
                 icon="search"
                 loading={search.pending}
-                onClick={() =>
-                  go(
-                    xs.map((m) => m.id),
-                    `${xs.length} movies`,
-                  )
-                }
+                disabled={xs.length === 0}
+                onClick={() => go(xs, what(xs))}
               >
                 Search all {xs.length}
               </Button>
             </TableToolbar>
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Movie</TableHead>
-                  <TableHead>Released</TableHead>
-                  <TableHead>{cutoff ? 'Has · wants' : 'Profile'}</TableHead>
-                  <TableHead>
-                    <span className="sr-only">Actions</span>
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {xs.map((m) => {
-                  const p = profiles.data?.find((x) => x.id === m.versions[0]?.qualityProfileId)
-                  return (
-                    <TableRow key={m.id}>
-                      <TitleCell
-                        art={m.art.poster}
-                        title={
-                          <a href={adminHref(`/movies/${m.id}`)} className="hover:underline">
-                            {m.title} ({m.year})
-                          </a>
-                        }
-                      />
-                      <TableCell className="text-text-2">
-                        {released.format(new Date(m.releaseDate))}
-                      </TableCell>
-                      <TableCell className="text-text-2">
-                        {cutoff
-                          ? `${m.quality[0] ?? 'Unknown'} · ${p?.cutoff ?? '—'}`
-                          : (p?.name ?? '—')}
-                      </TableCell>
+            {xs.length === 0 ? (
+              <p className="px-3.5 py-8 text-center text-caption text-text-3">
+                {kind === 'movies'
+                  ? cutoff
+                    ? 'Every movie meets its cutoff.'
+                    : 'No movies are missing.'
+                  : cutoff
+                    ? 'Every episode meets its cutoff.'
+                    : 'No episodes are missing.'}
+              </p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Title</TableHead>
+                    <TableHead>Released or aired</TableHead>
+                    <TableHead>{cutoff ? 'Has · wants' : 'Profile'}</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {xs.map((r) => (
+                    <TableRow key={r.key}>
+                      <TitleCell art={r.art} title={r.title} />
+                      <TableCell className="text-text-2">{released.format(r.date)}</TableCell>
+                      <TableCell className="text-text-2">{r.quality}</TableCell>
                       <TableCell className="text-end">
                         <Button
                           size="sm"
                           icon="search"
-                          aria-label={`Search for ${m.title}`}
-                          onClick={() => go([m.id], m.title)}
+                          aria-label={`Search for ${r.name}`}
+                          onClick={() => go([r], r.name)}
                         >
                           Search
                         </Button>
                       </TableCell>
                     </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
+                  ))}
+                </TableBody>
+              </Table>
+            )}
           </TableFrame>
         )
       }}
@@ -186,12 +294,11 @@ const sameDay = (a: Date, b: Date) =>
   a.getMonth() === b.getMonth() &&
   a.getDate() === b.getDate()
 
-const tone = (m: MediaItem) =>
-  m.status === 'available'
-    ? 'border-success/40 text-text'
-    : m.status === 'downloading' || m.status === 'queued'
-      ? 'border-accent/50 text-text'
-      : 'border-line-strong text-text-2'
+const tone: Record<Dated['state'], string> = {
+  available: 'border-success/40 text-text',
+  downloading: 'border-accent/50 text-text',
+  wanted: 'border-line-strong text-text-2',
+}
 
 function Calendar() {
   const movies = useMovies()
@@ -199,21 +306,30 @@ function Calendar() {
   const [offset, setOffset] = useState(0)
   const today = new Date(now)
   const first = new Date(today.getFullYear(), today.getMonth() + offset, 1)
+  const next = new Date(first.getFullYear(), first.getMonth() + 1, 1)
   const days = new Date(first.getFullYear(), first.getMonth() + 1, 0).getDate()
   const lead = (first.getDay() + 6) % 7
+  // a day either side, so an air date read in another time zone still lands in the month
+  const episodes = useQuery(
+    `wanted:airing:${first.getFullYear()}-${first.getMonth()}`,
+    (c) => c.shows.airing(first.getTime() - 86_400_000, next.getTime() + 86_400_000),
+    ['shows.updated'],
+  )
   const feed = 'https://harbor.example.net/feed/v1/calendar.ics?key=hs_7Kq2…'
   return (
     <Loadable query={movies} what="the calendar">
       {(all) => {
-        const inMonth = all.filter((m) => {
-          const d = new Date(m.releaseDate)
-          return (
-            m.monitored &&
-            d.getFullYear() === first.getFullYear() &&
-            d.getMonth() === first.getMonth()
+        const inMonth = [
+          ...all.filter((m) => m.monitored).map(movieDated),
+          ...(episodes.data ?? []).map(episodeDated),
+        ]
+          .filter(
+            (x) =>
+              x.date.getFullYear() === first.getFullYear() &&
+              x.date.getMonth() === first.getMonth(),
           )
-        })
-        const on = (day: number) => inMonth.filter((m) => new Date(m.releaseDate).getDate() === day)
+          .sort(byDate)
+        const on = (day: number) => inMonth.filter((x) => x.date.getDate() === day)
         return (
           <div className="grid gap-4">
             <div className="flex flex-wrap items-center gap-2">
@@ -256,7 +372,7 @@ function Calendar() {
                 </span>
               </span>
             </div>
-            {/* a month grid from medium; a list of release days on a phone */}
+            {/* a month grid from medium; a list of release and air days on a phone */}
             <div className="hidden overflow-hidden rounded-lg border border-line medium:block">
               <div className="grid grid-cols-7 border-line border-b bg-s1">
                 {weekdays.map((d) => (
@@ -281,8 +397,8 @@ function Calendar() {
                   return (
                     <li
                       key={day}
-                      aria-label={`${day} ${monthName.format(first)}${xs.length ? `: ${xs.map((m) => m.title).join(', ')}` : ''}`}
-                      className="grid min-h-24 content-start gap-1 border-line border-e border-b p-1.5"
+                      aria-label={`${day} ${monthName.format(first)}${xs.length ? `: ${xs.map((x) => x.name).join('; ')}` : ''}`}
+                      className="grid min-h-24 min-w-0 content-start gap-1 border-line border-e border-b p-1.5"
                     >
                       <span
                         className={cn(
@@ -292,16 +408,17 @@ function Calendar() {
                       >
                         {day}
                       </span>
-                      {xs.map((m) => (
+                      {xs.map((x) => (
                         <a
-                          key={m.id}
-                          href={adminHref(`/movies/${m.id}`)}
+                          key={x.key}
+                          href={x.href}
+                          title={x.name}
                           className={cn(
                             'truncate rounded-sm border px-1.5 py-0.5 text-caption outline-none hover:bg-s2 focus-visible:ring-focus',
-                            tone(m),
+                            tone[x.state],
                           )}
                         >
-                          {m.title}
+                          {x.label}
                         </a>
                       ))}
                     </li>
@@ -310,38 +427,40 @@ function Calendar() {
               </ol>
             </div>
             <ul
-              aria-label={`Releases in ${monthName.format(first)}`}
+              aria-label={`Releases and episodes in ${monthName.format(first)}`}
               className="grid gap-2 medium:hidden"
             >
               {inMonth.length === 0 ? (
                 <li className="text-caption text-text-3">
-                  Nothing monitored comes out this month.
+                  Nothing monitored comes out or airs this month.
                 </li>
               ) : (
-                [...inMonth]
-                  .sort((a, b) => Date.parse(a.releaseDate) - Date.parse(b.releaseDate))
-                  .map((m) => (
-                    <li key={m.id}>
-                      <a
-                        href={adminHref(`/movies/${m.id}`)}
-                        className={cn(
-                          'flex items-center gap-3 rounded-md border bg-s1 p-3 text-ui',
-                          tone(m),
+                inMonth.map((x) => (
+                  <li key={x.key}>
+                    <a
+                      href={x.href}
+                      className={cn(
+                        'flex items-center gap-3 rounded-md border bg-s1 p-3 text-ui',
+                        tone[x.state],
+                      )}
+                    >
+                      <span className="w-12 shrink-0 font-mono text-figure text-text-3">
+                        {x.date.getDate()} {first.toLocaleString('en-GB', { month: 'short' })}
+                      </span>
+                      <span className="min-w-0 [overflow-wrap:anywhere]">
+                        {x.label}
+                        {x.kind === 'episode' && (
+                          <span className="block text-caption text-text-3">{x.detail}</span>
                         )}
-                      >
-                        <span className="w-12 font-mono text-figure text-text-3">
-                          {new Date(m.releaseDate).getDate()}{' '}
-                          {first.toLocaleString('en-GB', { month: 'short' })}
-                        </span>
-                        {m.title}
-                      </a>
-                    </li>
-                  ))
+                      </span>
+                    </a>
+                  </li>
+                ))
               )}
             </ul>
             <Field
               label="Subscribe in your calendar app"
-              hint="An iCal feed of monitored releases. It carries a read-only key: revoke it in Users and devices › API keys."
+              hint="An iCal feed of monitored releases and episodes’ air dates. It carries a read-only key: revoke it in Users and devices › API keys."
             >
               <div className="flex gap-2">
                 <Input readOnly value={feed} className="font-mono" />

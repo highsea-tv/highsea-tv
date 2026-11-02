@@ -3,6 +3,8 @@
 // film is judged on, the fields the editor offers, the evaluator, and the rules in words. The facts
 // the seed doesn't carry (votes, keywords, countries, tags, certification where TMDB has none) are
 // derived from the title, so every run of the prototype sees the same library.
+// Rules match films only; a collection's shows are picked by hand (`SmartCollection.shows`), and
+// the server adds them (prototype-gaps.md › stage 6).
 import { movieMetadata } from './metadata.ts'
 import type { ServerState } from './seed.ts'
 import type {
@@ -18,16 +20,6 @@ import type {
 } from './types.ts'
 
 const DAY = 86_400_000
-
-/**
- * Shows in the seeded collections, by collection: a collection holds any mix of one family, so
- * films and shows sit together (collections.md › In the apps). The editor's rules and picks are
- * films' until the admin has shows (prototype-gaps.md › stage 6), so the clients' view adds these.
- */
-export const collectionShows: Record<string, string[]> = {
-  'sc-morgenstern': ['the-lantern-keepers'],
-  'sc-staff': ['saltmarsh'],
-}
 
 function hash(s: string): number {
   let h = 2166136261
@@ -763,12 +755,13 @@ export function evaluate(
   return c.limit ? result.slice(0, c.limit) : result
 }
 
+/** What a draft holds now, its films; the server adds its shows (`shows`), which rules don't match. */
 export function preview(
   state: ServerState,
   c: SmartCollection,
   now: number,
   all: SmartCollection[],
-): CollectionPreview {
+): Omit<CollectionPreview, 'shows'> {
   const items = evaluate(state, c, now, all)
   return {
     matched: items.length,

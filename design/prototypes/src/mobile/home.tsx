@@ -8,7 +8,7 @@ import { Button, cn, EmptyState, Icon, Sheet, SheetContent, Skeleton } from '@hi
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useContinueMenu, useLongPress } from '../client/continue-menu.ts'
-import { useHome } from '../client/data.ts'
+import { titlePath, useHome } from '../client/data.ts'
 import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
 import { homeMusicCard } from '../client/music.ts'
 import { ShowPoster } from '../client/show-card.tsx'
@@ -53,7 +53,7 @@ export function PosterItems({ items, wide = false }: { items: ClientItem[]; wide
     <>
       {items.map((m) => (
         <li key={m.id} className={cn('shrink-0 snap-start', wide ? 'w-[46%]' : 'w-[30%]')}>
-          <MediaPoster item={m} wide={wide} href={mobileHref(`/movies/${m.id}`)} />
+          <MediaPoster item={m} wide={wide} href={mobileHref(titlePath(m))} />
         </li>
       ))}
     </>
@@ -72,7 +72,7 @@ function Featured({ section }: { section: FilmSection }) {
         {section.items.map((m, i) => (
           <li key={m.id} className="w-[78%] shrink-0 snap-start">
             <a
-              href={mobileHref(`/movies/${m.id}`)}
+              href={mobileHref(titlePath(m))}
               className="relative isolate grid aspect-[4/5] content-end overflow-hidden rounded-lg outline-none transition-press focus-visible:ring-focus active:scale-97"
             >
               <img

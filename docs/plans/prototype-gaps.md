@@ -65,6 +65,34 @@ Eight stages, each reviewed by the owner before the next starts, as the owner's 
 
 ## Progress
 
+- **2026-11-01, stage 6 (Shows in the admin), for the owner's review:** in the prototype only, drawn ahead of the server's TV series phase, which builds it from here. `apps/server` and the guides are unchanged.
+  - **Shows** (`admin/shows/`, spec [shows.md](../product/shows.md)), in the sidebar after Movies with its count:
+    - the list, laid out as Movies is, with posters, monitored state, episode counts, size and the next airing;
+    - a show's page: its seasons, each folding open, with a Monitored switch and Search, and each episode's state (available, missing, downloading, cutoff unmet, unaired), file and Search; a Files tab;
+    - Add a show, from Discover (now Movies and Shows) and the palette, with the root folder, the profile and the monitor choice (all, future, missing, the first season, none);
+    - the admin's person page lists a person's shows.
+    - The mock's `show-admin.ts` gives the seeded shows the admin's fields, with Small Town Radio unmonitored and a double episode, Saltmarsh's first season below its cutoff, and four upcoming episodes, one of them downloading.
+  - **Libraries per kind:** Media management's Root folders is one list for each kind (Movies, Shows, Music), each with Add folder and Scan now; nothing is filed under a hard-coded path. Episode naming follows Sonarr's (standard, daily, multi-episode style, show and season folders). One set of quality profiles for movies and shows; quality sizes per kind; import lists that add shows; connections' events grouped Movies, Shows and Every kind.
+  - **Setup:** `setup.detect` finds a folder for each kind under `/data`, and Review lists each.
+  - **Library access per person:** Movies, Shows and Music, each its own checkbox; the mock hides a kind from anyone without it.
+  - **Now playing and history** name an episode "Show · S2, E4 · Title", linked to the show, and a song by its title, artist and album.
+  - **Episodes on the movies-only screens:** Wanted and its calendar, the dashboard's Upcoming, Calendar, Queue and Storage (its TV part), Activity's queue and history, Downloads (Open the show), Manual import, Subtitles' Wanted, collections and featured sections. Each spec has an "Episodes (prototype-gaps stage 6)" section.
+  - **Changes to locked layouts, for the owner's approval:**
+    - Manual import: the Movie column becomes **Matches**, a button that opens a new **Choose a match** dialog (a movie, or a show's episodes with checkboxes for a double episode);
+    - Wanted and Subtitles › Wanted gain a kind filter (All, Movies, Episodes) above one table;
+    - renamed columns: Wanted's Released becomes "Released or aired", and the queue's, history's and Now playing history's become Title.
+  - **Fixed from the sweeps:** a show's page ran 198px past a phone's edge, because the seasons sat in a grid with no column limit; it now has `grid-cols-[minmax(0,1fr)]`, and the episode tables scroll in their frames.
+  - **Additions to the design system:** none. Three were wanted and done without: an accordion (the seasons fold with a button in each header), a square TitleCell (a song's cover) and a multi-select (Choose a match uses checkboxes).
+  - **Calls I made, for review:**
+    - Movies and shows share quality profiles, as their qualities are the same; music doesn't use them.
+    - Rules in smart collections match films only; shows join a collection by hand.
+    - Now playing writes an episode's number as the apps do (S2, E4), and the admin's tables as Sonarr does (S02E04).
+    - A song in Now playing isn't linked, since music has no admin page until stage 7.
+  - **Checks (Node 26.11.1):**
+    - Biome and tsc on the prototypes;
+    - the prototype's 1,734 tests;
+    - the admin keyboard walk (168 pages), clean;
+    - the pages sweeps: admin (1,344, clean after the fix above), web (1,368), mobile (376) and TV (320), clean.
 - **2026-11-01, stage 5 (the admin level with the server), for the owner's review:**
   - **5.1, what shipped,** in the prototype, each in the built page's form:
     - **Settings › Import lists** (`settings/lists.tsx`): the rows with on and off, the last check, Edit, Check now and Remove; one dialog to add or edit a TMDB, Trakt or generic list, with Test, the root folder, profiles, tags, minimum availability and the switches; the Trakt account (the device code, Disconnect) and Exclusions.

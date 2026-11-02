@@ -2,7 +2,8 @@
 // Settings › Import lists (ADR 0045), as packages/lists answers it: lists checked at once rather
 // than every 6 hours, Trakt's device code approved on the second poll as the server's fake does,
 // and the exclusions. A list whose address or number says "wrong" can't be read, and a list whose
-// last check failed keeps failing until its source is edited.
+// last check failed keeps failing until its source is edited. Since stage 6 a TMDB or Trakt list
+// adds movies or shows, into a root folder of its kind; a generic list holds movies only.
 import { iso } from './clock.ts'
 import type { SettingsDeps } from './settings.ts'
 import type { ImportList, ImportListInput, ImportListSettings } from './types.ts'
@@ -44,12 +45,20 @@ export function importListsApi(d: SettingsDeps) {
   const validate = (input: ImportListInput) => {
     if (!input.name.trim())
       throw d.fail(400, 'invalid', 'Give the list a name.', { field: 'name', reason: 'required' })
-    if (!s.rootFolders.some((f) => f.path === input.rootFolder))
-      throw d.fail(400, 'invalid', 'That folder isn’t one of the root folders.', {
-        field: 'rootFolder',
-        reason: 'unknown',
-      })
     const x = input.settings
+    if (input.kind === 'shows' && x.kind === 'generic')
+      throw d.fail(400, 'invalid', 'A generic list holds movies only.', {
+        field: 'settings.kind',
+        reason: 'movies-only',
+      })
+    const kind = input.kind === 'shows' ? 'shows' : 'movies'
+    if (!s.rootFolders.some((f) => f.kind === kind && f.path === input.rootFolder))
+      throw d.fail(
+        400,
+        'invalid',
+        `That folder isn’t one of the ${kind === 'shows' ? 'Shows' : 'Movies'} folders.`,
+        { field: 'rootFolder', reason: 'unknown' },
+      )
     if (x.kind === 'trakt' && !s.trakt.available)
       throw d.fail(
         400,
@@ -146,7 +155,7 @@ export function importListsApi(d: SettingsDeps) {
       sync(row(id))
       announce()
     },
-    test: (settings: ImportListSettings): ImportListTest => {
+    test: (settings: ImportListSettings, kind: ImportList['kind'] = 'movies'): ImportListTest => {
       d.requireStaff()
       if (settings.kind === 'trakt' && !s.trakt.available)
         throw d.fail(400, 'invalid', 'This build of highsea doesn’t have its Trakt application.', {
@@ -154,7 +163,11 @@ export function importListsApi(d: SettingsDeps) {
         })
       if (unreadable(settings)) return { ok: false, message: readError(settings), found: 0 }
       const found = sizeOf(settings)
-      return { ok: true, message: `highsea can read this list: ${found} movies.`, found }
+      return {
+        ok: true,
+        message: `highsea can read this list: ${found} ${kind === 'shows' ? 'shows' : 'movies'}.`,
+        found,
+      }
     },
     traktConnect: (): TraktDeviceCode => {
       d.requireStaff()

@@ -71,6 +71,16 @@ Registry kind `now-playing`: 1 to 4 columns, 2 to 5 rows, default 2 × 3; owner 
 - **30 days of history** ([Phase 4 answer 10](../plans/phase-4-clients.md#the-owners-answers)): long enough for "who watched what last weekend", short enough not to be a record of people's viewing.
 - **Stop takes a message, not a reason list:** the owner knows their household; a free line says more than a menu.
 
+## Episodes and songs (prototype-gaps stage 6, 2026-11-01)
+
+- **What's playing** is named by its kind, in the session row, the history and the widget alike:
+  - a film: its title (to its page) and year;
+  - an episode: "Saltmarsh · S2, E4 · Strangers", the show linked to `/admin/shows/{id}` (the number as the apps write it, not the admin tables' S02E04);
+  - a song: "Wild Rooms · Aurora Fields · Low Tide Hours", unlinked (music has no admin page yet), its cover square.
+- A song's progress is "Played so far"; when it ends, the session moves to the album's next song.
+- **History's** column is Title, and the count reads "{n} titles played".
+- **Seeded:** an episode on the Bedroom Fire TV and a song on Theo's iPhone (FLAC), with history for two episodes and a song.
+
 ## Open questions
 
 - **Bandwidth over time:** a graph of what was sent, as Tautulli has? Left for after 1.0.
