@@ -39,12 +39,16 @@ import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { SessionView } from '../../mock/sessions.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
+import { useTabAddress } from '../tabs.ts'
 import { behind, clientIcon, mbps, methods, timecode, transcodedBy } from './delivery.ts'
 
-type Tab = 'now' | 'history'
+/** The tabs, each at its own address (/now-playing/{tab}, the first at /now-playing), so Back and links work. */
+export const nowPlayingTabs = ['now', 'history'] as const
+export type NowPlayingTab = (typeof nowPlayingTabs)[number]
+type Tab = NowPlayingTab
 
-export function NowPlaying() {
-  const [tab, setTab] = useState<Tab>('now')
+export function NowPlaying({ tab = 'now' }: { tab?: Tab }) {
+  const setTab = useTabAddress<Tab>('/now-playing', 'now')
   const live = useQuery('sessions', (c) => c.sessions.list(), ['sessions.updated'])
   return (
     <AdminPage

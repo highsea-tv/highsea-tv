@@ -11,6 +11,9 @@ import {
 } from '@highsea-tv/quality'
 import { type Clock, createEmitter, createRandom, type Emitter, iso } from './clock.ts'
 import { collectionShows, describe, evaluate, type Facts, fields, preview } from './collections.ts'
+import { connectionsApi } from './connections.ts'
+import { librarySettingsApi } from './library-settings.ts'
+import { importListsApi } from './lists.ts'
 import {
   collection,
   collectionRefs,
@@ -19,6 +22,7 @@ import {
   person,
   recommendations,
 } from './metadata.ts'
+import { migrationApi } from './migration.ts'
 import {
   albumDetail,
   allSongs,
@@ -32,7 +36,7 @@ import {
 import { type AccelerationPath, finishCheck, playbackStatus } from './playback.ts'
 import { GB, MB, type ServerState, seed } from './seed.ts'
 import { advanceSessions, type NowPlaying, type SessionView, type WatchView } from './sessions.ts'
-import type { Settings, SettingsSection } from './settings.ts'
+import type { CatalogSettings, Settings, SettingsDeps, SettingsSection } from './settings.ts'
 import { type EpisodeSeed, type ShowSeed, showsLibrary } from './shows.ts'
 import type {
   AddMovieInput,
@@ -116,11 +120,14 @@ import { allowed, normalize, roleDefault } from './widgets.ts'
 export class ApiError extends Error {
   readonly status: number
   readonly code: string
-  constructor(status: number, code: string, message: string) {
+  /** What the refusal is about (`field`, `reason`), when the server says. */
+  readonly details: Record<string, string> | undefined
+  constructor(status: number, code: string, message: string, details?: Record<string, string>) {
     super(message)
     this.name = 'ApiError'
     this.status = status
     this.code = code
+    this.details = details
   }
 }
 
@@ -1341,6 +1348,19 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     return results
   }
 
+  // the settings with calls of their own (prototype-gaps.md › 5.1)
+  const settingsDeps: SettingsDeps = {
+    settings: state.settings,
+    now,
+    emit: (e) => srv.events.emit(e),
+    requireStaff,
+    requireOwner,
+    fail: (status, code, message, details) => new ApiError(status, code, message, details),
+  }
+  const lists = importListsApi(settingsDeps)
+  const notifying = connectionsApi(settingsDeps)
+  const library_ = librarySettingsApi(settingsDeps, () => state.items)
+
   return {
     system: {
       publicInfo: () => ({
@@ -1536,6 +1556,8 @@ export function createApi(srv: MockServer, ctx: Ctx) {
     catalog: {
       list: () => state.catalog,
       starterPack: () => state.catalog.filter((d) => d.starter),
+      settings: () => library_.catalog.get(),
+      updateSettings: (patch: Partial<CatalogSettings>) => library_.catalog.update(patch),
     },
 
     indexers: {
@@ -2069,7 +2091,7 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         srv.events.emit({ type: 'settings.updated' })
       },
       languageProfiles: () => state.languageProfiles,
-      rootFolders: () => ['/data/media/movies', '/data/media/movies-4k'],
+      rootFolders: () => state.settings.rootFolders.map((f) => f.path),
     },
 
     queue: {
@@ -3846,6 +3868,17 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
     },
 
+    importLists: lists,
+    connections: notifying.connections,
+    pushSubscriptions: {
+      list: () => notifying.pushSubscriptions.list(me().id),
+      add: (label: string) => notifying.pushSubscriptions.add(me().id, label),
+      remove: (id: string) => notifying.pushSubscriptions.remove(me().id, id),
+    },
+    tags: library_.tags,
+    rootFolders: library_.rootFolders,
+    importers: migrationApi(settingsDeps),
+
     settings: {
       get: <K extends SettingsSection>(section: K): Settings[K] => {
         requireStaff()
@@ -3855,14 +3888,26 @@ export function createApi(srv: MockServer, ctx: Ctx) {
       },
       save: <K extends SettingsSection>(section: K, value: Settings[K]): Settings[K] => {
         requireStaff()
-        // security, backups and the VPN are the owner's alone (ADR 0032)
-        if (section === 'security' || section === 'backups' || section === 'vpn') requireOwner()
+        // security, backups and the VPN are the owner's alone (ADR 0032), and so is General
+        // (Region, Updates, Diagnostics and /metrics), which an admin reads
+        if (
+          section === 'security' ||
+          section === 'backups' ||
+          section === 'vpn' ||
+          section === 'general' ||
+          section === 'metrics'
+        )
+          requireOwner()
         if (section === 'vpn') return saveVpn(value as VpnSettings) as Settings[K]
         state.settings[section] = value
         srv.events.emit({ type: 'settings.updated' })
         if (section === 'playback') srv.events.emit({ type: 'playback.updated' })
         return value
       },
+      metadata: () => library_.metadata.get(),
+      saveMetadata: (input: { language: string; region: string; key?: string }) =>
+        library_.metadata.save(input),
+      removeMetadataKey: () => library_.metadata.removeKey(),
     },
   }
 }

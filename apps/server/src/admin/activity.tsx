@@ -45,9 +45,11 @@ import { type QueueFilter, queueFilters, torrentTone } from './downloads-status.
 import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
 import { AdminPage } from './shell.tsx'
+import { useTabAddress } from './tabs.ts'
 import { useRelative } from './time.ts'
 
-type Tab = 'queue' | 'history' | 'blocklist'
+export type ActivityTab = 'queue' | 'history' | 'blocklist'
+type Tab = ActivityTab
 type Filter = QueueFilter
 
 const historyIcon: Record<HistoryEvent['type'], ComponentProps<typeof Icon>['name']> = {
@@ -84,9 +86,9 @@ async function loadHistory(c: HighseaClient, pages: number) {
   return { items, more: Boolean(cursor) }
 }
 
-export function Activity() {
+export function Activity({ tab = 'queue' }: { tab?: Tab }) {
   const t = useT(messages)
-  const [tab, setTab] = useState<Tab>('queue')
+  const setTab = useTabAddress<Tab>('/activity', 'queue')
   const queue = useQuery('queue', loadQueue, QUEUE_LIVE)
   const blocklist = useQuery('blocklist', loadBlocklist, ['history.updated'])
   return (

@@ -60,9 +60,11 @@ import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
 import { AdminPage, useShell } from './shell.tsx'
 import { subtitles as messages } from './subtitles-messages.ts'
+import { useTabAddress } from './tabs.ts'
 import { useRelative } from './time.ts'
 
-type Tab = 'wanted' | 'providers' | 'languages' | 'scoring'
+export type SubtitlesTab = 'wanted' | 'providers' | 'languages' | 'scoring'
+type Tab = SubtitlesTab
 type LanguageRule = LanguageProfile['languages'][number]
 type ProfileDraft = Omit<LanguageProfile, 'id'> & { id: string | null }
 
@@ -70,9 +72,9 @@ const TOPICS = ['subtitles.updated']
 /** Movies a page of the wanted list adds. */
 const PAGE = 50
 
-export function Subtitles() {
+export function Subtitles({ tab = 'wanted' }: { tab?: Tab }) {
   const t = useT(messages)
-  const [tab, setTab] = useState<Tab>('wanted')
+  const setTab = useTabAddress<Tab>('/subtitles', 'wanted')
   const total = useQuery(
     'subtitles:wanted-total',
     async (c) => (await c.subtitles.wanted({ query: { limit: 1 } })).total,

@@ -41,7 +41,7 @@ The anatomy, the Overview's rows (cast, trailers, collection, More like this, Ab
 
 - `PageHeader`: the title; **Search**, **Interactive search**, and a More menu (Refresh metadata, Remove from library).
 - **Summary card:** the media page's, plus status and a quality tag per version, the path and the **Monitored** switch.
-- **Tabs** (line variant): Overview and Cast and crew, then:
+- **Tabs** (line variant), each with its own address (`/movies/{id}` for Overview, then `/movies/{id}/cast`, `files`, `history`, `search` and `subtitles`; one the film doesn't have draws not found): Overview and Cast and crew, then:
   - **Overview** gains **In the queue** while it's downloading (live progress), and **In the library** in the aside: versions with their profiles, subtitle profile, minimum availability, root folder. *As built (8c):* a **Tags** row after the subtitle profile ("None" without), and the Edit dialog's **Tags** picker, set together on save. Tags scope indexers and connections to the movies sharing one ([settings.md › Media management](settings.md)). The add dialog starts on its folder's default subtitle languages, when the folder has one, and follows a change of folder.
     - *As built (checkpoint 6a, 2026-10-20):* a card for each of the movie's downloads, where the prototype shows its first, since a movie with two versions can have two. Each moves live over `queue.updated`, with the state, progress, rate and ETA, and a stalled or blocked download's reason.
   - **Files:** one card per version: its size, path, each stream on one line (video: codec, resolution, HDR, bitrate; audio: codec, channels, language, default; subtitles: codec, language, forced, SDH), and the release name. A version without a file says "No file yet" or "Downloading".

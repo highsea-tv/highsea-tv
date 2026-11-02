@@ -83,7 +83,6 @@ export const lists = defineMessages({
   'form.enabled': 'Check this list',
   'form.required': 'Fill this in',
   'form.test': 'Test',
-  'form.testOk': '{message} ({count, plural, one {# title} other {# titles}})',
   'form.cancel': 'Cancel',
   'form.save': 'Save',
   'form.added': '{name} added',

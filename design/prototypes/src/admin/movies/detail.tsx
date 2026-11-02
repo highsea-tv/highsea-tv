@@ -66,10 +66,21 @@ import {
 } from '../media/sections.tsx'
 import { AdminPage } from '../shell.tsx'
 import { torrentStatus } from '../status.ts'
+import { useTabAddress } from '../tabs.ts'
 import { AddMovieDialog } from './add-dialog.tsx'
 import { movieStatus } from './library.tsx'
 
-type Tab = 'overview' | 'cast' | 'files' | 'history' | 'search' | 'subtitles'
+/** The tabs, each at its own address (`/movies/{id}/{tab}`, Overview at `/movies/{id}`). */
+export const movieTabs = ['overview', 'cast', 'files', 'history', 'search', 'subtitles'] as const
+type Tab = (typeof movieTabs)[number]
+
+/** The tab in the address, and moving to another as a step Back returns from. */
+function useTab(id: string, has: readonly Tab[] = movieTabs) {
+  const { tab } = useParams<{ tab?: string }>()
+  const shown = has.find((t) => t === tab) ?? 'overview'
+  const go = useTabAddress<Tab>(`/movies/${id}`, 'overview')
+  return [shown, go] as const
+}
 
 type Metadata = ReturnType<typeof useMovieMetadata>
 
@@ -101,13 +112,18 @@ export function MovieDetail() {
         <SummarySkeleton />
       </AdminPage>
     )
-  return meta.data.inLibrary ? <LibraryMovie id={id} meta={meta} /> : <MetadataMovie meta={meta} />
+  return meta.data.inLibrary ? (
+    <LibraryMovie id={id} meta={meta} />
+  ) : (
+    <MetadataMovie id={id} meta={meta} />
+  )
 }
 
 // ---------------------------------------------------------------- not in the library
 
-function MetadataMovie({ meta }: { meta: Metadata }) {
-  const [tab, setTab] = useState<Tab>('overview')
+function MetadataMovie({ id, meta }: { id: string; meta: Metadata }) {
+  // only the metadata's tabs; the library's own fall back to Overview until it's added
+  const [tab, setTab] = useTab(id, ['overview', 'cast'])
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
   const m = meta.data
 
@@ -156,7 +172,7 @@ function MetadataMovie({ meta }: { meta: Metadata }) {
 function LibraryMovie({ id, meta }: { id: string; meta: Metadata }) {
   const [, navigate] = useLocation()
   const movie = useQuery(`movie:${id}`, (c) => c.movies.get(id), ['item.updated', 'movies.updated'])
-  const [tab, setTab] = useState<Tab>('overview')
+  const [tab, setTab] = useTab(id)
   const [removing, setRemoving] = useState(false)
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
@@ -478,7 +494,7 @@ function FileStreams({ file: f }: { file: MediaFile }) {
         ))}
       </ul>
       <p className="text-caption text-text-3">
-        Release <span className="font-mono">{f.sceneName}</span>
+        Release <span className="font-mono [overflow-wrap:anywhere]">{f.sceneName}</span>
       </p>
     </>
   )

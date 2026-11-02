@@ -18,7 +18,7 @@ Subtitles are first class: highsea finds them for every movie it imports, scores
 
 - `PageHeader`: "Subtitles", one line of description.
 - **Stats** card: synced today, waiting to sync, average correction (ms), average confidence. Four across from medium, two on compact.
-- Tabs (line): **Wanted** (count), **Providers**, **Languages**, **Scoring and sync**.
+- Tabs (line): **Wanted** (count), **Providers**, **Languages**, **Scoring and sync**, at `/subtitles`, `/subtitles/providers`, `/subtitles/languages` and `/subtitles/scoring`. Settings' Subtitles card and `/settings/subtitles` open Providers.
 - **Wanted:** a `TableFrame`. Toolbar: "12 movies missing a language" and **Search all**. Columns: movie (path under it), the missing languages as badges, **Search**. Pages of 50, by title, with **Show more** (checkpoint 7a).
 - **Providers:** OpenSubtitles.com, Subdl and SubSource (checkpoint 7a). Columns: provider, account (the username or a masked key, "Needs an account", or "Not needed"), requests left today (a bar and "184/200"; warning tone under 10%; a dash when the provider doesn't say), an Enabled switch, and **Edit** for the owner. Under the table: "Subtitles provided by OpenSubtitles.com", as its terms ask of free keys.
 - **Edit dialog** (owner only, checkpoint 7a, built like A9's): the provider's fields (OpenSubtitles.com: username and password; Subdl and SubSource: an API key). A saved secret shows as set and stays blank to keep it. **Test** signs in without saving and says what happened; **Save** keeps the account.

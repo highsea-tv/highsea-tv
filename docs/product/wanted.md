@@ -16,7 +16,7 @@ What the library is still waiting for: monitored movies with no file yet, movies
 ## Layout
 
 - Page header: "Wanted", "Monitored movies highsea is still looking for, and what's coming out."
-- Line tabs: **Missing** and **Cutoff unmet** (with counts), **Calendar**; each has its own address.
+- Line tabs: **Missing** and **Cutoff unmet** (with counts), **Calendar**; each has its own address (`/wanted`, `/wanted/cutoff`, `/wanted/calendar`), and any other `/wanted/…` draws not found.
 - **Missing / Cutoff unmet:** a table: the poster and title (to the media page), Released, then the quality profile (Missing) or "has · wants" ("WEB 1080p · WEB 2160p", Cutoff unmet), and **Search** per row. Above it, why the list exists and **Search all {n}**.
 - **Calendar:**
   - the month ("October 2026") between **Previous month** and **Next month**, **This month** when away from it, and a key (In the library, Downloading, Wanted, by outline color);

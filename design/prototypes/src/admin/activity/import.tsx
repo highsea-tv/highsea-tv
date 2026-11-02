@@ -26,6 +26,7 @@ import {
 import { useEffect, useState } from 'react'
 import { useAction, useClient, useQuery } from '../../mock/hooks.tsx'
 import type { ImportCandidate } from '../../mock/types.ts'
+import { importedAs } from '../naming.ts'
 import { AdminPage, adminHref } from '../shell.tsx'
 
 type Row = ImportCandidate & { selected: boolean; done: boolean }
@@ -61,19 +62,10 @@ export function ManualImport() {
   useEffect(() => scan(), [])
 
   const movie = (id: string | null) => movies.data?.find((m) => m.id === id)
-  const format =
-    media.data && 'fileFormat' in media.data
-      ? media.data.fileFormat
-      : '{Movie Title} ({Release Year}) {Quality Full}'
   const becomes = (r: Row) => {
     const m = movie(r.itemId)
-    if (!m) return '—'
-    const ext = r.path.split('.').pop()
-    const name = format
-      .replace('{Movie Title}', m.title)
-      .replace('{Release Year}', String(m.year))
-      .replace('{Quality Full}', r.quality.replace(' ', '-'))
-    return `${m.title} (${m.year})/${name}.${ext}`
+    if (!m || !media.data || !('fileFormat' in media.data)) return '—'
+    return importedAs(media.data, m, r)
   }
   const chosen = (rows ?? []).filter((r) => r.selected && r.itemId && !r.done)
   const set = (i: number, patch: Partial<Row>) =>

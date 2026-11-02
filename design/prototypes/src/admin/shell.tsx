@@ -31,6 +31,7 @@ import {
   type ReactNode,
   useCallback,
   useContext,
+  useDeferredValue,
   useEffect,
   useMemo,
   useRef,
@@ -42,6 +43,7 @@ import { useClient, useNow, useQuery } from '../mock/hooks.tsx'
 import type { Announcement, StaffRole, UserRole } from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'
 import { pageAt, pageGroups } from './nav.ts'
+import { areaGroups } from './settings/settings.tsx'
 
 type Shell = {
   role: StaffRole
@@ -170,10 +172,23 @@ function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => vo
 
 // ---------------------------------------------------------------- palette
 
-function usePaletteGroups(shell: Pick<Shell, 'setCustomizing'>): CommandGroup[] {
+/**
+ * The palette searches what its trigger says (prototype-gaps.md › 5.2): the pages and actions, the
+ * library's movies, TMDB through Discover's results for what isn't in the library yet, and every
+ * Settings area by name.
+ */
+function usePaletteGroups(shell: Pick<Shell, 'setCustomizing'>, search: string): CommandGroup[] {
   const client = useClient()
   const [, navigate] = useLocation()
+  const owner = useRole() === 'owner'
   const movies = useQuery('movies', (c) => c.movies.list(), ['item.updated'])
+  const query = useDeferredValue(search.trim())
+  // nothing typed, nothing from TMDB: Discover's trending list would bury the pages
+  const tmdb = useQuery(
+    `palette-tmdb:${query}`,
+    (c) => (query ? c.movies.discover(query) : Promise.resolve([])),
+    ['item.updated'],
+  )
   return useMemo(() => {
     const go: CommandGroup = {
       heading: 'Go to',
@@ -256,8 +271,36 @@ function usePaletteGroups(shell: Pick<Shell, 'setCustomizing'>): CommandGroup[] 
         onSelect: () => navigate(`/movies/${m.id}`),
       })),
     }
-    return titles.items.length ? [go, actions, titles] : [go, actions]
-  }, [movies.data, navigate, client, shell])
+    const found: CommandGroup = {
+      heading: 'On TMDB',
+      items: (tmdb.data ?? [])
+        .filter((m) => !m.inLibrary)
+        .slice(0, 8)
+        .map((m) => ({
+          id: `tmdb-${m.id}`,
+          label: `${m.title} (${m.year})`,
+          icon: 'discover',
+          // the query itself, so cmdk's own filter keeps what TMDB matched by genre or year
+          keywords: [query, ...m.genres],
+          onSelect: () => navigate(`/movies/${m.id}`),
+        })),
+    }
+    const settings: CommandGroup = {
+      heading: 'Settings',
+      items: areaGroups
+        .flatMap((g) => g.areas)
+        .filter((a) => owner || !a.ownerOnly)
+        .map((a) => ({
+          id: `settings-${a.id}`,
+          label: a.label,
+          icon: a.icon,
+          // by name: cmdk's fuzzy match over the descriptions found something for every word
+          keywords: ['settings'],
+          onSelect: () => navigate(a.href ?? `/settings/${a.id}`),
+        })),
+    }
+    return [go, actions, titles, found, settings].filter((g) => g.items.length)
+  }, [movies.data, tmdb.data, query, owner, navigate, client, shell])
 }
 
 // ---------------------------------------------------------------- announcements
@@ -403,7 +446,8 @@ function StaffShell({ role, children }: { role: StaffRole; children: ReactNode }
     }),
     [role, customizing],
   )
-  const groups = usePaletteGroups(shell)
+  const [search, setSearch] = useState('')
+  const groups = usePaletteGroups(shell, search)
 
   return (
     <ShellContext.Provider value={shell}>
@@ -435,7 +479,16 @@ function StaffShell({ role, children }: { role: StaffRole; children: ReactNode }
             <Navigation mode="full" onNavigate={() => setMenu(false)} />
           </SheetContent>
         </Sheet>
-        <CommandPalette open={palette} onOpenChange={setPalette} groups={groups} />
+        <CommandPalette
+          open={palette}
+          onOpenChange={(open) => {
+            setPalette(open)
+            if (!open) setSearch('')
+          }}
+          onSearchChange={setSearch}
+          placeholder="Search the library, TMDB, Settings and actions"
+          groups={groups}
+        />
       </div>
     </ShellContext.Provider>
   )

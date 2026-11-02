@@ -125,19 +125,35 @@ export const areaGroups: { title: string; areas: Area[] }[] = [
         label: 'Download client',
         icon: 'downloads',
         description: 'The built-in torrent client: port, encryption and connections.',
+        ownerOnly: true,
       },
       {
         id: 'subtitles',
         label: 'Subtitles',
         icon: 'subtitles',
         description: 'Providers, languages and sync, on the Subtitles page.',
-        href: '/subtitles',
+        // its settings, not the Wanted list the page opens on
+        href: '/subtitles/providers',
       },
       {
         id: 'connections',
         label: 'Connections',
         icon: 'notification',
         description: 'Notifications to Discord, ntfy, email and more.',
+      },
+    ],
+  },
+  {
+    title: 'System',
+    // the one-time importers take another program's credentials: the owner's (ADR 0041)
+    areas: [
+      {
+        id: 'migration',
+        label: 'Migration',
+        icon: 'import',
+        description:
+          'Bring your library across from Radarr and your torrents from qBittorrent, once.',
+        ownerOnly: true,
       },
     ],
   },

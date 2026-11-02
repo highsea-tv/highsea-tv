@@ -175,7 +175,7 @@ export function Downloads() {
                     aria-label={t('category')}
                     options={[
                       { value: 'all', label: t('category.all') },
-                      ...used.map((c) => ({ value: c, label: c })),
+                      ...used.map((c) => ({ value: c, label: sentence(c) })),
                     ]}
                     className="w-44"
                   />
@@ -411,6 +411,9 @@ function LimitsDialog({
 // ---------------------------------------------------------------- add
 
 const LINK = /^(magnet:\?xt=urn:btih:|https?:\/\/.+)/i
+/** A category's name as a label: its own name, in sentence case (prototype-gaps.md, stage 5). */
+const sentence = (name: string) => name.charAt(0).toUpperCase() + name.slice(1)
+
 /** Torrents added without a category go here (judgement call 25). */
 const MANUAL = 'manual'
 
@@ -564,7 +567,7 @@ function AddTorrentDialog({
               onValueChange={setCategory}
               options={(categories.data ?? [{ name: MANUAL }])
                 .filter((c) => c.name !== 'movies')
-                .map((c) => ({ value: c.name, label: c.name }))}
+                .map((c) => ({ value: c.name, label: sentence(c.name) }))}
             />
           </Field>
           <Field inline label={t('add.start')}>

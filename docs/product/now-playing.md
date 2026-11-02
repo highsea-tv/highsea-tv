@@ -21,7 +21,7 @@ The owner and admins, like the rest of the admin ([answer 5](../plans/phase-4-ch
 
 ## Layout
 
-Two tabs: **Now** (with the count) and **Last 30 days**.
+Two tabs: **Now** (with the count) and **Last 30 days**, at `/now-playing` and `/now-playing/history`.
 
 ### Now
 

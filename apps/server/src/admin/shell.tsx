@@ -47,6 +47,8 @@ import { AnnouncementBanners } from './announcement-banners.tsx'
 import { moviePath } from './media-links.ts'
 import { shell as messages } from './messages.ts'
 import { type Page, pageAt, pageGroups, type Role } from './nav.ts'
+import { areaGroupsFor } from './settings-areas.ts'
+import { settings as settingsMessages } from './settings-messages.ts'
 import { system as systemMessages } from './system-messages.ts'
 import { useRelative } from './time.ts'
 
@@ -196,6 +198,8 @@ function Navigation({ mode, onNavigate }: { mode?: 'full'; onNavigate?: () => vo
 
 /** Movie titles are looked up as you type: a library can be far too big to list up front. */
 const PALETTE_MOVIES = 8
+/** TMDB's results for the same words, the films not in the library yet (prototype-gaps.md, stage 5). */
+const PALETTE_TMDB = 8
 
 /** Accents dropped, so "amelie" finds Amélie as the server's title filter does. */
 const plain = (s: string) => s.normalize('NFD').replace(/\p{M}/gu, '')
@@ -214,6 +218,13 @@ function usePaletteGroups(shell: Shell, search: string): CommandGroup[] {
     ['movies.updated'],
   )
   const titles = found.data?.items
+  const tmdb = useQuery(
+    `palette-tmdb:${query}`,
+    (c) => (query ? c.movies.discover({ query: { query, page: 1 } }) : Promise.resolve(null)),
+    ['movies.updated'],
+  )
+  const elsewhere = tmdb.data?.items
+  const ts = useT(settingsMessages)
   return useMemo(() => {
     const go: CommandGroup = {
       heading: t('palette.goTo'),
@@ -282,8 +293,34 @@ function usePaletteGroups(shell: Shell, search: string): CommandGroup[] {
         onSelect: () => router.push(moviePath(m.id)),
       })),
     }
-    return movies.items.length ? [go, actions, movies] : [go, actions]
-  }, [router, shell, signOut, t, titles])
+    const onTmdb: CommandGroup = {
+      heading: t('palette.tmdb'),
+      items: (elsewhere ?? [])
+        .filter((m) => !m.inLibrary)
+        .slice(0, PALETTE_TMDB)
+        .map((m) => ({
+          id: `tmdb-${m.id}`,
+          label: m.year ? t('palette.movie', { title: m.title, year: m.year }) : m.title,
+          icon: 'discover',
+          // the words typed, so cmdk keeps what TMDB matched another way (an original title)
+          keywords: [query, plain(m.title)],
+          onSelect: () => router.push(moviePath(m.id)),
+        })),
+    }
+    const settings: CommandGroup = {
+      heading: t('palette.settings'),
+      items: areaGroupsFor(shell.role)
+        .flatMap((g) => g.areas)
+        .map((a) => ({
+          id: `settings-${a.id}`,
+          label: ts(`area.${a.id}`),
+          icon: a.icon,
+          keywords: [t('palette.settings')],
+          onSelect: () => router.push(a.href ?? `/settings/${a.id}`),
+        })),
+    }
+    return [go, actions, movies, onTmdb, settings].filter((g) => g.items.length)
+  }, [router, shell, signOut, t, ts, titles, elsewhere, query])
 }
 
 // ---------------------------------------------------------------- status bar
@@ -479,6 +516,7 @@ export function AdminShell({ role: initialRole, children }: { role: Role; childr
           }}
           groups={groups}
           onSearchChange={setSearch}
+          placeholder={t('palette.placeholder')}
         />
         <AccountSheet open={account} onOpenChange={setAccount} />
       </div>

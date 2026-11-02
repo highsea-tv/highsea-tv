@@ -148,8 +148,8 @@ export const widgets = defineMessages({
   'health.error': 'Error',
 
   'page.indexers': 'Indexers',
-  'page.system': 'System',
-  'page.movies': 'Movies',
+  'page.calendar': 'Calendar',
+  'page.health': 'Health',
   'page.activity': 'Activity',
   'page.now-playing': 'Now playing',
   'playing.none': 'Nobody is watching',

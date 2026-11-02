@@ -35,11 +35,15 @@ import { useAction, useQuery } from '../../mock/hooks.tsx'
 import type { Language, LanguageProfile, LanguageRule, SubtitleSettings } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
+import { useTabAddress } from '../tabs.ts'
 
-type Tab = 'wanted' | 'providers' | 'languages' | 'scoring'
+/** The tabs, each at its own address (/subtitles/{tab}, the first at /subtitles), so Back and links work. */
+export const subtitleTabs = ['wanted', 'providers', 'languages', 'scoring'] as const
+export type SubtitlesTab = (typeof subtitleTabs)[number]
+type Tab = SubtitlesTab
 
-export function Subtitles() {
-  const [tab, setTab] = useState<Tab>('wanted')
+export function Subtitles({ tab = 'wanted' }: { tab?: Tab }) {
+  const setTab = useTabAddress<Tab>('/subtitles', 'wanted')
   const wanted = useQuery('subtitles-wanted', (c) => c.subtitles.wanted(), ['subtitles.updated'])
   return (
     <AdminPage

@@ -7,12 +7,10 @@
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from 'bun:test'
 import type { ReactNode } from 'react'
+import type { ActivityTab } from '../src/admin/activity.tsx'
+import { navigation, Routed } from './router.tsx'
 
-mock.module('next/navigation', () => ({
-  useRouter: () => ({ push: () => {} }),
-  usePathname: () => '/activity',
-  useSearchParams: () => new URLSearchParams(),
-}))
+mock.module('next/navigation', () => navigation)
 mock.module('../src/admin/shell.tsx', () => ({
   useShell: () => ({ role: 'owner' }),
   AdminPage: ({
@@ -256,7 +254,9 @@ const requested = (method: string, path: string) =>
 
 describe('A7 Activity', () => {
   test('the queue: rows, status, the reason a row needs attention, and the filters', async () => {
-    const { user, page } = await open(<Activity />)
+    const { user, page } = await open(
+      <Routed<ActivityTab> base="/activity">{(tab) => <Activity tab={tab} />}</Routed>,
+    )
     const row = within(page.getByRole('row', { name: /Sintel \(2010\)/ }))
     expect(row.getByText('Downloading')).toBeTruthy()
     expect(row.getByRole('link', { name: 'Sintel (2010)' }).getAttribute('href')).toBe(
@@ -273,7 +273,9 @@ describe('A7 Activity', () => {
   })
 
   test('fixes go by the queue row’s id', async () => {
-    const { user, page } = await open(<Activity />)
+    const { user, page } = await open(
+      <Routed<ActivityTab> base="/activity">{(tab) => <Activity tab={tab} />}</Routed>,
+    )
     await user.click(page.getByRole('button', { name: 'Pause Sintel' }))
     await settle()
     expect(requested('POST', '/api/v1/queue/q_1/pause')).toHaveLength(1)
@@ -296,7 +298,9 @@ describe('A7 Activity', () => {
   })
 
   test('history: each event’s movie, failed downloads, and Show more', async () => {
-    const { user, page } = await open(<Activity />)
+    const { user, page } = await open(
+      <Routed<ActivityTab> base="/activity">{(tab) => <Activity tab={tab} />}</Routed>,
+    )
     await user.click(page.getByRole('tab', { name: 'History' }))
     await settle()
     expect(page.getByText('Grabbed')).toBeTruthy()
@@ -311,7 +315,9 @@ describe('A7 Activity', () => {
   })
 
   test('the blocklist, and Unblock', async () => {
-    const { user, page } = await open(<Activity />)
+    const { user, page } = await open(
+      <Routed<ActivityTab> base="/activity">{(tab) => <Activity tab={tab} />}</Routed>,
+    )
     await user.click(page.getByRole('tab', { name: /Blocklist/ }))
     await settle()
     const row = within(page.getByRole('row', { name: /Sintel\.2010\.CAM-BAD/ }))
@@ -324,7 +330,9 @@ describe('A7 Activity', () => {
 
   test('an empty queue says so', async () => {
     state.queue = []
-    const { page } = await open(<Activity />)
+    const { page } = await open(
+      <Routed<ActivityTab> base="/activity">{(tab) => <Activity tab={tab} />}</Routed>,
+    )
     expect(page.getByText('The queue is empty')).toBeTruthy()
   })
 })

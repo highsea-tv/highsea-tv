@@ -389,7 +389,7 @@ function Upcoming(props: WidgetProps) {
                 </li>
               ))}
             </ul>
-            <More count={clip.hidden} page="Movies" path="/movies" />
+            <More count={clip.hidden} page="Calendar" path="/wanted/calendar" />
           </>
         )
       }
@@ -807,7 +807,7 @@ function SystemHealth(props: WidgetProps) {
                 </li>
               ))}
             </ul>
-            <More count={clip.hidden} page="System" path="/system" />
+            <More count={clip.hidden} page="Health" path="/system/health" />
           </>
         )
       }

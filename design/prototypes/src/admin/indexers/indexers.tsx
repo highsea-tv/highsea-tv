@@ -40,6 +40,7 @@ import type { CatalogDefinition, Indexer, IndexerPrivacy } from '../../mock/type
 import { Loadable } from '../loadable.tsx'
 import { AdminPage } from '../shell.tsx'
 import { indexerStatus } from '../status.ts'
+import { useTabAddress } from '../tabs.ts'
 
 const privacyLabel: Record<IndexerPrivacy, string> = {
   public: 'Public',
@@ -62,10 +63,13 @@ const changelog = [
   { version: '2026.09.20', notes: ['Keel: follows its new domain.'] },
 ]
 
-type Tab = 'installed' | 'catalog'
+/** The tabs, each at its own address (/indexers/{tab}, the first at /indexers), so Back and links work. */
+export const indexerTabs = ['installed', 'catalog'] as const
+export type IndexersTab = (typeof indexerTabs)[number]
+type Tab = IndexersTab
 
-export function Indexers() {
-  const [tab, setTab] = useState<Tab>('installed')
+export function Indexers({ tab = 'installed' }: { tab?: Tab }) {
+  const setTab = useTabAddress<Tab>('/indexers', 'installed')
   const installed = useQuery('indexers', (c) => c.indexers.list(), ['indexers.updated'])
   const server = useQuery('server', (c) => c.system.server(), ['server.updated'])
   const [notes, setNotes] = useState(false)
@@ -314,7 +318,7 @@ function Catalog({ installed }: { installed: Indexer[] }) {
                 onChange={(e) => setText(e.target.value)}
                 placeholder="Search the catalog"
                 aria-label="Search the catalog"
-                className="w-64"
+                className="w-full medium:w-64"
               />
               <SegmentedControl
                 aria-label="Privacy"

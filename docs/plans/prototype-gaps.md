@@ -65,6 +65,49 @@ Eight stages, each reviewed by the owner before the next starts, as the owner's 
 
 ## Progress
 
+- **2026-11-01, stage 5 (the admin level with the server), for the owner's review:**
+  - **5.1, what shipped,** in the prototype, each in the built page's form:
+    - **Settings › Import lists** (`settings/lists.tsx`): the rows with on and off, the last check, Edit, Check now and Remove; one dialog to add or edit a TMDB, Trakt or generic list, with Test, the root folder, profiles, tags, minimum availability and the switches; the Trakt account (the device code, Disconnect) and Exclusions.
+    - **Settings › Connections** (`settings/connections.tsx`): a dialog for each of the twelve kinds with its own fields and the server's events, Playback started among them; each row's last result, Test, Edit and Remove; Email's Server's mail switch; This browser.
+    - **Settings › Migration** (`settings/migration.tsx`), the owner's, in a new System group: Radarr and qBittorrent, each with Test, Preview and Import with its progress, and Radarr's path mappings.
+    - **Settings › General:** Region, Metadata (the TMDB key with Replace and Remove, the language and region), the indexer catalog (channel, automatic installs, extra catalogs), Updates and Diagnostics. Only the owner saves it; an admin sees it read-only.
+    - **Settings › Media management:** the naming previews from `@highsea-tv/media/naming`, and the Root folders and Tags groups (`settings/tags.tsx`), which Manage tags and the dialogs link to.
+    - Download client is the owner's, as built and as settings.md already said.
+    - The mock gained `lists.ts`, `connections.ts`, `migration.ts` and `library-settings.ts`; `reference.tsx` lost the old General, Media management, Import lists and Connections, its helpers moved to `parts.tsx`.
+  - **5.1's departures** (where the prototype took the built page's form):
+    - General: English only, the full IANA time zones; Updates loses "Install updates on their own" for the note about pulling the image; Diagnostics loses the usage counts and gains Crash reports and Metrics; Metadata and the catalog are new groups; saving is the owner's.
+    - Media management: Colons, Set folder permissions and Keep deleted files for are new; `{Edition}` became `{Edition Tags}`; the preview gains the `.en.srt` line; the hardlinks hint loses its "same disk" sentence; Root folders and Tags are new.
+    - Import lists: TMDB, Trakt and Generic list replace IMDb and Letterboxd; each row's last check, Edit, Check now and Remove, the dialog, the Trakt account and Exclusions are new.
+    - Connections: Matrix and Browser are new kinds, the events are the server's, each row gains its last result, Edit and Remove, and This browser is new.
+    - Migration is a new area, in a new System group.
+  - **5.2, the admin's own fixes,** in the prototype and in `apps/server`:
+    - **Settings › Subtitles:** the card opens Subtitles › Providers, and `/settings/subtitles` sends there (`app/(admin)/settings/subtitles/page.tsx`).
+    - **`/wanted/{anything}`** draws not found. The server's catch-all already did; the prototype's route now does.
+    - **Tabs in the address:** Activity (`/activity/history`, `/activity/blocklist`), Now playing (`/now-playing/history`), Indexers (`/indexers/catalog`), Subtitles (`/subtitles/providers`, `languages`, `scoring`) and a movie's tabs (`/movies/{id}/cast`, `files`, `history`, `search`, `subtitles`), through `useTabAddress` (`admin/tabs.ts` in each). The server's `[tab]` pages draw not found for any other tab. The hook drops the second change Radix's Tabs report for one click, which also stops Wanted and System pushing each tab twice.
+    - **The dashboard's "N more" links:** Upcoming's opens Wanted › Calendar, and System health's opens System › Health.
+    - **Add a torrent:** the categories in sentence case (Manual, Books).
+    - **One naming preview:** the prototype's manual import and Media management use `@highsea-tv/media/naming`, as the server already did.
+    - **The palette** also finds films on TMDB that aren't in the library (Discover's results, up to eight) and Settings' areas by name, with the placeholder "Search the library, TMDB, Settings and actions". It clears when it closes.
+    - **A list's Test** said its count twice ("24 movies. (24 titles)"); it now shows the service's message alone, in both.
+  - **Fixed from the sweeps:** at 390px with 200% text, the catalog's search box (16rem) pushed Indexers › Catalog past the screen, so it fills the row below medium, in both. The prototype's release name on a movie's Files tab now wraps, as the server's did. Both pages could only be swept once their tabs had addresses.
+  - **The guides:** discover.mdx (what the palette finds) and settings/index.mdx (the Subtitles card); the screenshot scripts and the server sweep open tabs by their addresses; Downloads, the dashboard and Import lists' screenshots retaken.
+  - **Additions to the design system:** none.
+  - **Calls I made, for review:**
+    - Add a torrent still starts on Manual, not on no category as the plan said: Manual is the category for torrents that aren't imported, which is what the dialog says.
+    - The palette offers TMDB films only when they aren't in the library, since the library's group already has them, and matches Settings' areas by name only: matching their descriptions matched nearly anything.
+    - A film that isn't in the library has only Overview and Cast, so its other tabs' addresses draw not found.
+    - Manage tags opens `/settings/media` without `#tags`, since the prototype's address is already a hash.
+    - Import what's already here opens Manual import, as the prototype has no library mode.
+    - This browser in the prototype adds a subscription named from the browser and doesn't use the Push API.
+    - Lists and connections refresh on `settings.updated`, having no topic of their own.
+  - **Left open:** Media management's Colons setting doesn't change the naming preview, since `@highsea-tv/media/naming` takes no colon option. It's the same on the server.
+  - **Tests:** the server's screen tests follow the tab addresses through `test/router.tsx`; Downloads expects Manual and Books, and the pipeline test the movie's Cast address.
+  - **Checks (Node 26.11.1):**
+    - Biome and tsc on the prototypes and the server;
+    - the prototype's 1,623 tests, the server's 485 and the docs' 775;
+    - the server sweep on the production build, clean;
+    - the admin keyboard walk (150 pages), clean;
+    - the admin pages sweep (1,200), clean after the two fixes above.
 - **2026-11-01, stage 4 (each app's own list), for the owner's review:**
   - **4.1, the web and desktop app:**
     - **Back and Forward** in the desktop app's top bar, after macOS's buttons (`HistoryButtons` in `web/window.tsx`). They work with Cmd+[ and Cmd+] on a Mac, Alt with the arrows on Windows and Linux, and the mouse's side buttons. Each is off when there's nowhere to go. A window narrower than medium leaves the chevrons out, since the sweep found the top bar overflowing at 390px with 200% text; the keys and the mouse's buttons still work there.

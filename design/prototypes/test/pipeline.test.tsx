@@ -126,8 +126,8 @@ describe('A6 media pages', () => {
     await user.click(within(dialog).getByRole('button', { name: 'Add and search' }))
     await settle()
     expect(mock.servers.populated.state.items.some((m) => m.id === '107')).toBe(true)
-    // same page, same address: only its library layer is new
-    expect(location.history).toEqual(['/admin/movies/107'])
+    // same page, same address: only its library layer is new (the tab is a step of its own)
+    expect(location.history).toEqual(['/admin/movies/107', '/admin/movies/107/cast'])
     await settle()
     expect(page().getByRole('tab', { name: 'Files' })).toBeTruthy()
     expect(page().queryByText('Not in the library')).toBeNull()

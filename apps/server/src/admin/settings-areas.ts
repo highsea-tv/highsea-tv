@@ -63,7 +63,8 @@ export const areaGroups: {
       { id: 'vpn', icon: 'shield', ownerOnly: true },
       // the port and encryption are network settings, the owner's (checkpoint 6's access table)
       { id: 'downloads', icon: 'downloads', ownerOnly: true },
-      { id: 'subtitles', icon: 'subtitles', href: '/subtitles' },
+      // its settings, not its wanted list (prototype-gaps.md, stage 5)
+      { id: 'subtitles', icon: 'subtitles', href: '/subtitles/providers' },
       { id: 'connections', icon: 'notification' },
     ],
   },

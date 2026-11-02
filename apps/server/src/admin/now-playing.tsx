@@ -55,18 +55,20 @@ import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
 import { nowPlaying as messages } from './now-playing-messages.ts'
 import { AdminPage } from './shell.tsx'
+import { useTabAddress } from './tabs.ts'
 import { useRelative } from './time.ts'
 
-type Tab = 'now' | 'history'
+export type NowPlayingTab = 'now' | 'history'
+type Tab = NowPlayingTab
 
 const methodLabel = (m: DeliveryMethod) => `method.${m}` as const
 
 export const useNowPlaying = () =>
   useQuery('sessions', (c) => c.sessions.list(), [SESSIONS_TOPICS.updated])
 
-export function NowPlayingPage() {
+export function NowPlayingPage({ tab = 'now' }: { tab?: Tab }) {
   const t = useT(messages)
-  const [tab, setTab] = useState<Tab>('now')
+  const setTab = useTabAddress<Tab>('/now-playing', 'now')
   const live = useNowPlaying()
   return (
     <AdminPage title={t('title')} description={t('description')}>

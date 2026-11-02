@@ -743,17 +743,53 @@ export type BlocklistEntry = {
   date: ISODate
 }
 
+/** Where an import list's movies come from (ADR 0045): TMDB, Trakt, or a generic JSON list. */
+export type ImportListSettings =
+  | {
+      kind: 'tmdb'
+      source: 'list' | 'popular' | 'top-rated' | 'upcoming' | 'now-playing'
+      /** A TMDB list's number or address, for `source: 'list'`. */
+      list?: string
+    }
+  | {
+      kind: 'trakt'
+      source: 'list' | 'trending' | 'popular' | 'anticipated' | 'watchlist'
+      /** A public list's address, for `source: 'list'`. */
+      list?: string
+    }
+  | { kind: 'generic'; url: string }
+
+/** An import list's last check: what it found, added and skipped, or why it failed. */
+export type ImportListResult = {
+  found: number
+  added: number
+  skipped: number
+  /** Titles the list named that TMDB couldn't match. */
+  unresolved: string[]
+  error: string | null
+}
+
 export type ImportList = {
   id: string
   name: string
-  kind: 'trakt' | 'imdb' | 'letterboxd' | 'tmdb'
   enabled: boolean
-  lastSync: ISODate | null
+  settings: ImportListSettings
+  rootFolder: string
+  qualityProfileId: string
+  /** null: the root folder's default. */
+  languageProfileId: string | null
+  monitored: boolean
+  minimumAvailability: MinimumAvailability
+  /** Searches for what it adds. */
+  searchOnAdd: boolean
+  tags: string[]
+  /** Titles on the list at the last check. */
   items: number
-  /** Adds what it finds as monitored, and searches for it. */
-  search: boolean
-  profileId: string
+  lastSync: ISODate | null
+  lastResult: ImportListResult | null
 }
+
+export type ImportListInput = Omit<ImportList, 'id' | 'items' | 'lastSync' | 'lastResult'>
 
 /** A file manual import (A17) found, and what highsea thinks it is. */
 export type ImportCandidate = {

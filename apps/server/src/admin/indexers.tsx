@@ -61,6 +61,7 @@ import { hoursText, minutesOf, ratioOf, ratioText } from './download-client-seed
 import { indexers as messages } from './indexers-messages.ts'
 import { Loadable } from './loadable.tsx'
 import { AdminPage } from './shell.tsx'
+import { useTabAddress } from './tabs.ts'
 import { TagPicker } from './tag-picker.tsx'
 import { tagsMessages } from './tags-messages.ts'
 import { useRelative } from './time.ts'
@@ -84,7 +85,8 @@ const privacyTone: Record<Privacy, BadgeTone> = {
 
 const LIVE = ['indexers.updated', 'health.updated', 'catalog.updated']
 
-type Tab = 'installed' | 'catalog'
+export type IndexersTab = 'installed' | 'catalog'
+type Tab = IndexersTab
 
 /** "English" for `en`, in the admin's language. */
 function useLanguageName() {
@@ -104,9 +106,9 @@ function useLanguageName() {
 export const isOneClick = (d: CatalogIndexer) =>
   d.privacy === 'public' && d.settings.every((f) => !f.required || f.default !== undefined)
 
-export function Indexers() {
+export function Indexers({ tab = 'installed' }: { tab?: Tab }) {
   const t = useT(messages)
-  const [tab, setTab] = useState<Tab>('installed')
+  const setTab = useTabAddress<Tab>('/indexers', 'installed')
   const installed = useQuery('indexers', (c) => c.indexers.list(), LIVE)
   const status = useQuery('catalog:status', (c) => c.catalog.status(), ['catalog.updated'])
   const [notes, setNotes] = useState(false)
@@ -484,7 +486,7 @@ function Catalog() {
                 onChange={(e) => setText(e.target.value)}
                 placeholder={t('catalog.search')}
                 aria-label={t('catalog.search')}
-                className="w-64"
+                className="w-full medium:w-64"
               />
               <SegmentedControl
                 aria-label={t('catalog.privacy')}

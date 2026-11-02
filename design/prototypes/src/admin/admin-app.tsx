@@ -4,8 +4,8 @@
 // can be walked end to end.
 import { Button, EmptyState } from '@highsea-tv/ui-web'
 import type { ReactNode } from 'react'
-import { Route, Switch, useLocation } from 'wouter'
-import { Activity } from './activity/activity.tsx'
+import { Redirect, Route, Switch, useLocation } from 'wouter'
+import { Activity, type ActivityTab, activityTabs } from './activity/activity.tsx'
 import { ManualImport } from './activity/import.tsx'
 import { Collections } from './collections/collections.tsx'
 import { CollectionEditor } from './collections/editor.tsx'
@@ -15,23 +15,24 @@ import { SectionEditor } from './curation/section-editor.tsx'
 import { Dashboard } from './dashboard/dashboard.tsx'
 import { Discover } from './discover/discover.tsx'
 import { Downloads } from './downloads/downloads.tsx'
-import { Indexers } from './indexers/indexers.tsx'
+import { Indexers, type IndexersTab, indexerTabs } from './indexers/indexers.tsx'
 import { Login } from './login.tsx'
 import { PersonPage } from './media/person.tsx'
-import { MovieDetail } from './movies/detail.tsx'
+import { MovieDetail, movieTabs } from './movies/detail.tsx'
 import { MoviesLibrary } from './movies/library.tsx'
 import { type Page, pageGroups } from './nav.ts'
-import { NowPlaying } from './now-playing/now-playing.tsx'
+import { NowPlaying, type NowPlayingTab, nowPlayingTabs } from './now-playing/now-playing.tsx'
 import { Appearance } from './settings/appearance.tsx'
+import { Connections } from './settings/connections.tsx'
 import { FormatEditor, ProfileEditor, SizeEditor } from './settings/editors.tsx'
+import { General } from './settings/general.tsx'
+import { ImportLists } from './settings/lists.tsx'
+import { MediaManagement } from './settings/media-management.tsx'
+import { Migration } from './settings/migration.tsx'
 import { Playback } from './settings/playback.tsx'
 import {
   Backups,
-  Connections,
   DownloadClient,
-  General,
-  ImportLists,
-  MediaManagement,
   Network,
   Profiles,
   QualitySizes,
@@ -42,9 +43,9 @@ import { UsersDevices } from './settings/users.tsx'
 import { Vpn } from './settings/vpn.tsx'
 import { Setup } from './setup/setup.tsx'
 import { AdminPage, AdminShell } from './shell.tsx'
-import { Subtitles } from './subtitles/subtitles.tsx'
-import { System, type SystemTab } from './system/system.tsx'
-import { Wanted, type WantedTab } from './wanted/wanted.tsx'
+import { Subtitles, type SubtitlesTab, subtitleTabs } from './subtitles/subtitles.tsx'
+import { System, type SystemTab, systemTabs } from './system/system.tsx'
+import { Wanted, type WantedTab, wantedTabs } from './wanted/wanted.tsx'
 
 /** A page a later checkpoint builds. */
 function Placeholder({ page }: { page: Page }) {
@@ -74,16 +75,24 @@ function NotFound() {
   )
 }
 
+/**
+ * A page's tab from its address (`/wanted/{tab}`), or the not-found page for one it hasn't: an
+ * address that names no tab draws nothing else.
+ */
+function tabOr<T extends string>(tabs: readonly string[], tab: string, page: (t: T) => ReactNode) {
+  return tabs.includes(tab) ? page(tab as T) : <NotFound />
+}
+
 /** The pages built so far, by id; the rest show a placeholder. */
 const built: Record<string, () => ReactNode> = {
   discover: Discover,
   movies: MoviesLibrary,
   collections: Collections,
-  activity: Activity,
-  'now-playing': NowPlaying,
+  activity: () => <Activity />,
+  'now-playing': () => <NowPlaying />,
   downloads: Downloads,
-  indexers: Indexers,
-  subtitles: Subtitles,
+  indexers: () => <Indexers />,
+  subtitles: () => <Subtitles />,
   curation: () => <Curation />,
   settings: SettingsIndex,
   system: () => <System />,
@@ -106,6 +115,9 @@ const settingsAreas: Record<string, () => ReactNode> = {
   playback: Playback,
   downloads: DownloadClient,
   connections: Connections,
+  migration: Migration,
+  // its settings live on the Subtitles page; an address typed by hand lands on them
+  subtitles: () => <Redirect to="/subtitles/providers" replace />,
 }
 
 const pages = pageGroups.flat().filter((p) => p.path !== '/')
@@ -128,6 +140,9 @@ export function AdminApp() {
             <Route path="/movies/:id">
               <MovieDetail />
             </Route>
+            <Route path="/movies/:id/:tab">
+              {(p) => tabOr(movieTabs, p.tab, () => <MovieDetail />)}
+            </Route>
             <Route path="/people/:id">
               <PersonPage />
             </Route>
@@ -140,10 +155,32 @@ export function AdminApp() {
             <Route path="/curation/featured/:id">
               <SectionEditor />
             </Route>
-            <Route path="/wanted/:tab">{(p) => <Wanted tab={p.tab as WantedTab} />}</Route>
-            <Route path="/system/:tab">{(p) => <System tab={p.tab as SystemTab} />}</Route>
+            <Route path="/wanted/:tab">
+              {(p) => tabOr(wantedTabs, p.tab, (t: WantedTab) => <Wanted tab={t} />)}
+            </Route>
+            <Route path="/system/:tab">
+              {(p) =>
+                tabOr(
+                  systemTabs.map((t) => t.id),
+                  p.tab,
+                  (t: SystemTab) => <System tab={t} />,
+                )
+              }
+            </Route>
             <Route path="/activity/import">
               <ManualImport />
+            </Route>
+            <Route path="/activity/:tab">
+              {(p) => tabOr(activityTabs, p.tab, (t: ActivityTab) => <Activity tab={t} />)}
+            </Route>
+            <Route path="/now-playing/:tab">
+              {(p) => tabOr(nowPlayingTabs, p.tab, (t: NowPlayingTab) => <NowPlaying tab={t} />)}
+            </Route>
+            <Route path="/indexers/:tab">
+              {(p) => tabOr(indexerTabs, p.tab, (t: IndexersTab) => <Indexers tab={t} />)}
+            </Route>
+            <Route path="/subtitles/:tab">
+              {(p) => tabOr(subtitleTabs, p.tab, (t: SubtitlesTab) => <Subtitles tab={t} />)}
             </Route>
             <Route path="/settings/profiles/formats/:id">{(p) => <FormatEditor id={p.id} />}</Route>
             <Route path="/settings/profiles/:id">{(p) => <ProfileEditor id={p.id} />}</Route>

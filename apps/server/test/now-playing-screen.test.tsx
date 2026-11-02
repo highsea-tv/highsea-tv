@@ -7,12 +7,10 @@ import './dom.ts'
 import { afterEach, beforeEach, describe, expect, mock, test } from 'bun:test'
 import type { NowPlaying, StreamSession, WatchRecord } from '@highsea-tv/api-contract'
 import type { ReactNode } from 'react'
+import type { NowPlayingTab } from '../src/admin/now-playing.tsx'
+import { navigation, Routed } from './router.tsx'
 
-mock.module('next/navigation', () => ({
-  useRouter: () => ({ push: () => {} }),
-  usePathname: () => '/now-playing',
-  useSearchParams: () => new URLSearchParams(),
-}))
+mock.module('next/navigation', () => navigation)
 mock.module('../src/admin/shell.tsx', () => ({
   useShell: () => ({ role: 'admin' }),
   AdminPage: ({ title, children }: { title: ReactNode; children?: ReactNode }) => (
@@ -123,7 +121,9 @@ async function open() {
     render(
       <ClientProvider client={client}>
         <TooltipProvider>
-          <NowPlayingPage />
+          <Routed<NowPlayingTab> base="/now-playing">
+            {(tab) => <NowPlayingPage tab={tab} />}
+          </Routed>
         </TooltipProvider>
       </ClientProvider>,
     )

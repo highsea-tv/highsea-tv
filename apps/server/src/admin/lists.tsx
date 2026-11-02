@@ -559,9 +559,7 @@ function ListForm({
               role="status"
               className={tested.ok ? 'text-caption text-text-2' : 'text-caption text-danger'}
             >
-              {tested.ok
-                ? t('form.testOk', { message: tested.message, count: tested.found })
-                : tested.message}
+              {tested.message}
             </p>
           )}
         </div>

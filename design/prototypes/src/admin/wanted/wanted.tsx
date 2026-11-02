@@ -23,19 +23,20 @@ import {
   toast,
 } from '@highsea-tv/ui-web'
 import { useState } from 'react'
-import { useLocation } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { MediaItem } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
+import { useTabAddress } from '../tabs.ts'
 
-export type WantedTab = 'missing' | 'cutoff' | 'calendar'
+export const wantedTabs = ['missing', 'cutoff', 'calendar'] as const
+export type WantedTab = (typeof wantedTabs)[number]
 
 const useMovies = () =>
   useQuery('wanted:movies', (c) => c.movies.list(), ['movies.updated', 'queue.updated'])
 
 export function Wanted({ tab = 'missing' }: { tab?: WantedTab }) {
-  const [, navigate] = useLocation()
+  const setTab = useTabAddress<WantedTab>('/wanted', 'missing')
   const movies = useMovies()
   const count = (s: MediaItem['status']) =>
     (movies.data ?? []).filter((m) => m.monitored && m.status === s).length || undefined
@@ -44,11 +45,7 @@ export function Wanted({ tab = 'missing' }: { tab?: WantedTab }) {
       title="Wanted"
       description="Monitored movies highsea is still looking for, and what’s coming out."
     >
-      <Tabs
-        value={tab}
-        onValueChange={(v) => navigate(v === 'missing' ? '/wanted' : `/wanted/${v}`)}
-        variant="line"
-      >
+      <Tabs value={tab} onValueChange={(v) => setTab(v as WantedTab)} variant="line">
         <TabsList aria-label="Wanted sections">
           <TabsTrigger value="missing" count={count('missing')}>
             Missing

@@ -183,7 +183,7 @@ describe('Settings › Import lists', () => {
     await user.type(dialog.getByLabelText('Address'), 'https://lists.example/blender.json')
     await user.click(dialog.getByRole('button', { name: 'Test' }))
     await settle()
-    expect(dialog.getByText('The list answered (3 titles)')).toBeTruthy()
+    expect(dialog.getByText('The list answered')).toBeTruthy()
     // a name is needed first
     await user.click(dialog.getByRole('button', { name: 'Save' }))
     expect(requested('POST', '/api/v1/import-lists')).toHaveLength(0)

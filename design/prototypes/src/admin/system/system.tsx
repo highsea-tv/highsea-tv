@@ -31,15 +31,15 @@ import {
   toast,
 } from '@highsea-tv/ui-web'
 import { useEffect, useState } from 'react'
-import { useLocation } from 'wouter'
 import { GetTheAppsDialog } from '../../client/get-the-apps.tsx'
 import { Soon } from '../../kit/soon.tsx'
 import { useAction, useClient, useNow, useQuery } from '../../mock/hooks.tsx'
 import type { Backup, HealthCheck, Job, LogEntry, ServerEvent } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref, useShell } from '../shell.tsx'
+import { useTabAddress } from '../tabs.ts'
 
-const tabs = [
+export const systemTabs = [
   { id: 'status', label: 'Status' },
   { id: 'health', label: 'Health' },
   { id: 'tasks', label: 'Tasks' },
@@ -49,23 +49,19 @@ const tabs = [
   { id: 'updates', label: 'Updates' },
 ] as const
 
-export type SystemTab = (typeof tabs)[number]['id']
+export type SystemTab = (typeof systemTabs)[number]['id']
 
 export function System({ tab: asked = 'status' }: { tab?: SystemTab }) {
-  const [, navigate] = useLocation()
+  const setTab = useTabAddress<SystemTab>('/system', 'status')
   // backups are the owner's alone; an admin doesn't see the tab (ADR 0032)
   const owner = useShell().role === 'owner'
-  const shown = tabs.filter((t) => owner || t.id !== 'backups')
+  const shown = systemTabs.filter((t) => owner || t.id !== 'backups')
   const tab = shown.some((t) => t.id === asked) ? asked : 'status'
   const health = useQuery('system:health', (c) => c.system.health(), ['health.updated'])
   const problems = (health.data ?? []).filter((h) => h.level === 'warning' || h.level === 'error')
   return (
     <AdminPage title="System" description="What the server is doing, and how it’s holding up.">
-      <Tabs
-        value={tab}
-        onValueChange={(v) => navigate(v === 'status' ? '/system' : `/system/${v}`)}
-        variant="line"
-      >
+      <Tabs value={tab} onValueChange={(v) => setTab(v as SystemTab)} variant="line">
         <TabsList aria-label="System sections">
           {shown.map((t) => (
             <TabsTrigger

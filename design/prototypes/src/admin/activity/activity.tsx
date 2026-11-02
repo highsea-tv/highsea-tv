@@ -37,11 +37,15 @@ import { Loadable } from '../loadable.tsx'
 import { HistoryTable } from '../movies/detail.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 import { queueFilters, torrentStatus } from '../status.ts'
+import { useTabAddress } from '../tabs.ts'
 
-type Tab = 'queue' | 'history' | 'blocklist'
+/** The tabs, each at its own address (/activity/{tab}, the first at /activity), so Back and links work. */
+export const activityTabs = ['queue', 'history', 'blocklist'] as const
+export type ActivityTab = (typeof activityTabs)[number]
+type Tab = ActivityTab
 
-export function Activity() {
-  const [tab, setTab] = useState<Tab>('queue')
+export function Activity({ tab = 'queue' }: { tab?: Tab }) {
+  const setTab = useTabAddress<Tab>('/activity', 'queue')
   const queue = useQuery('queue', (c) => c.queue.list(), ['queue.updated', 'torrents.updated'])
   const blocklist = useQuery('blocklist', (c) => c.blocklist.list(), ['history.updated'])
   return (

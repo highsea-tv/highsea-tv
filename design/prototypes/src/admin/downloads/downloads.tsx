@@ -142,7 +142,7 @@ export function Downloads() {
                     aria-label="Category"
                     options={[
                       { value: 'all', label: 'Every category' },
-                      ...categories.map((c) => ({ value: c, label: c })),
+                      ...categories.map((c) => ({ value: c, label: sentence(c) })),
                     ]}
                     className="w-44"
                   />
@@ -363,7 +363,8 @@ function AddTorrentDialog({
   onOpenChange: (o: boolean) => void
 }) {
   const [link, setLink] = useState('')
-  const [category, setCategory] = useState('movies')
+  // manual, not movies: the dialog says these aren't imported, and movies is the library's grabs
+  const [category, setCategory] = useState('manual')
   const [start, setStart] = useState(true)
   const [touched, setTouched] = useState(false)
   const add = useAction((c) =>
@@ -417,13 +418,16 @@ function AddTorrentDialog({
               className="font-mono"
             />
           </Field>
-          <Field label="Category" hint="Sets the folder it saves to.">
+          <Field
+            label="Category"
+            hint="Sets the folder it saves to. Add categories in Settings › Download client."
+          >
             <Select
               value={category}
               onValueChange={setCategory}
               options={[
-                { value: 'movies', label: 'movies' },
-                { value: 'manual', label: 'manual' },
+                { value: 'manual', label: 'Manual' },
+                { value: 'books', label: 'Books' },
               ]}
             />
           </Field>
@@ -435,6 +439,9 @@ function AddTorrentDialog({
     </Dialog>
   )
 }
+
+/** A category's name as a label: its own name, in sentence case. */
+const sentence = (name: string) => name.charAt(0).toUpperCase() + name.slice(1)
 
 // ---------------------------------------------------------------- detail
 

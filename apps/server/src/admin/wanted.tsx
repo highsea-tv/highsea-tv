@@ -43,11 +43,11 @@ import {
   TitleCell,
   toast,
 } from '@highsea-tv/ui-web'
-import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Loadable } from './loadable.tsx'
 import { moviePath } from './media-links.ts'
 import { AdminPage } from './shell.tsx'
+import { useTabAddress } from './tabs.ts'
 import { useNow } from './time.ts'
 import { wanted as messages } from './wanted-messages.ts'
 
@@ -86,16 +86,12 @@ const intlLocale = (locale: string) => (locale === 'en' ? 'en-GB' : locale)
 
 export function Wanted({ tab = 'missing' }: { tab?: WantedTab }) {
   const t = useT(messages)
-  const router = useRouter()
+  const setTab = useTabAddress<WantedTab>('/wanted', 'missing')
   const missing = useQuery('wanted:total:missing', (c) => loadTotal(c, 'missing'), LIVE)
   const cutoff = useQuery('wanted:total:cutoff', (c) => loadTotal(c, 'cutoff'), LIVE)
   return (
     <AdminPage title={t('title')} description={t('description')}>
-      <Tabs
-        value={tab}
-        onValueChange={(v) => router.push(v === 'missing' ? '/wanted' : `/wanted/${v}`)}
-        variant="line"
-      >
+      <Tabs value={tab} onValueChange={(v) => setTab(v as WantedTab)} variant="line">
         <TabsList aria-label={t('sections')}>
           <TabsTrigger value="missing" count={missing.data || undefined}>
             {t('tab.missing')}

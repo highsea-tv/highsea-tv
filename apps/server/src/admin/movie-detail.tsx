@@ -114,12 +114,15 @@ import { media } from './media-sections-messages.ts'
 import { shell } from './messages.ts'
 import { AVAILABILITY, loadHistory } from './movie-data.ts'
 import { movieDetail as messages, torrentState } from './movie-detail-messages.ts'
+import { AdminNotFound } from './not-found.tsx'
 import { AdminPage } from './shell.tsx'
+import { useTabAddress } from './tabs.ts'
 import { TagBadges, TagPicker, useTags } from './tag-picker.tsx'
 import { tagsMessages } from './tags-messages.ts'
 import { useRelative } from './time.ts'
 
-type Tab = 'overview' | 'cast' | 'files' | 'history' | 'search' | 'subtitles'
+export type MovieTab = 'overview' | 'cast' | 'files' | 'history' | 'search' | 'subtitles'
+type Tab = MovieTab
 
 /** Where Discover finds a title by name: its search is kept in the address (movies.md). */
 const discoverSearch = (title: string) => `/discover?q=${encodeURIComponent(title)}`
@@ -131,7 +134,7 @@ export const parseTmdbId = (raw: string) => (/^[1-9]\d{0,9}$/.test(raw) ? Number
  * `/movies/{tmdbId}`: the metadata in every state, and the library layer once the movie is added.
  * Adding or removing from the page swaps the layer at once; the next `movies.updated` confirms it.
  */
-export function MovieDetail({ id: raw }: { id: string }) {
+export function MovieDetail({ id: raw, tab = 'overview' }: { id: string; tab?: MovieTab }) {
   const id = parseTmdbId(raw)
   if (id === null)
     return (
@@ -139,7 +142,7 @@ export function MovieDetail({ id: raw }: { id: string }) {
         <MetadataError error={Object.assign(new Error(''), { status: 404 })} />
       </AdminPage>
     )
-  return <MovieById id={id} />
+  return <MovieById id={id} tab={tab} />
 }
 
 function Title() {
@@ -147,7 +150,7 @@ function Title() {
   return <>{t('movie')}</>
 }
 
-function MovieById({ id }: { id: number }) {
+function MovieById({ id, tab }: { id: number; tab: Tab }) {
   const t = useT(messages)
   const meta = useMovieMetadata(id)
   // what the page just did, until the metadata's own `inLibrary` catches up
@@ -171,21 +174,33 @@ function MovieById({ id }: { id: number }) {
     )
   const inLibrary = override ?? meta.data.inLibrary
   return inLibrary ? (
-    <LibraryMovie id={id} meta={meta} onRemoved={removed} />
+    <LibraryMovie id={id} tab={tab} meta={meta} onRemoved={removed} />
   ) : (
-    <MetadataMovie meta={meta} onAdded={() => setOverride(true)} />
+    <MetadataMovie id={id} tab={tab} meta={meta} onAdded={() => setOverride(true)} />
   )
 }
 
 // ---------------------------------------------------------------- not in the library
 
-function MetadataMovie({ meta, onAdded }: { meta: MetadataQuery; onAdded: () => void }) {
+function MetadataMovie({
+  id,
+  tab,
+  meta,
+  onAdded,
+}: {
+  id: number
+  tab: Tab
+  meta: MetadataQuery
+  onAdded: () => void
+}) {
   const t = useT(messages)
   const tm = useT(media)
-  const [tab, setTab] = useState<Tab>('overview')
+  const setTab = useTabAddress<Tab>(`/movies/${id}`, 'overview')
   const [adding, setAdding] = useState<DiscoverMovie[]>([])
   const m = meta.data
   if (!m) return null
+  // a film that isn't in the library has only Overview and Cast and crew
+  if (tab !== 'overview' && tab !== 'cast') return <AdminNotFound />
 
   return (
     <AdminPage
@@ -246,10 +261,12 @@ type Options = {
 
 function LibraryMovie({
   id,
+  tab,
   meta,
   onRemoved,
 }: {
   id: number
+  tab: Tab
   meta: MetadataQuery
   onRemoved: () => void
 }) {
@@ -271,7 +288,7 @@ function LibraryMovie({
   const m = latest && latest.base === movie.data ? latest.movie : movie.data
   const keep = (next: Movie) => setLatest({ base: movie.data, movie: next })
 
-  const [tab, setTab] = useState<Tab>('overview')
+  const setTab = useTabAddress<Tab>(`/movies/${id}`, 'overview')
   const [removing, setRemoving] = useState(false)
   const [deleteFiles, setDeleteFiles] = useState(false)
   const [exclude, setExclude] = useState(false)
