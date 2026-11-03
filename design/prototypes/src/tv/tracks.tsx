@@ -3,10 +3,10 @@
 // stays inside it until Back closes it. The item detail and the player share it; the player adds
 // the subtitle timing nudge (±50 ms on Left and Right) with its live preview line.
 import { NUDGE_MS } from '@highsea-tv/client/player'
+import type { ClientTrack, ClientVersion } from '@highsea-tv/mock/types'
 import { cn, Icon } from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
 import { offsetHint, offsetLabel, PICTURE_TIMING } from '../client/player.ts'
-import type { ClientTrack, ClientVersion } from '../mock/types.ts'
 import { NudgePreview } from '../web/player.tsx'
 
 const option =

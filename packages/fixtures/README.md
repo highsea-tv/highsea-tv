@@ -1,10 +1,10 @@
 # @highsea-tv/fixtures
 
-Sample titles and generated placeholder art, shared by [Storybook](../../apps/storybook/README.md) and the [Phase 2 prototypes](../../design/prototypes/README.md). Nothing here loads from the network, and the repo carries no third-party images.
+Sample titles and generated placeholder art, shared by the [prototypes](../../design/prototypes/README.md), the client and the server's tests. Nothing here loads from the network, and the repo carries no third-party images.
 
 | Export | Contents |
 | --- | --- |
-| `titles` | Blender Studio's ten best-known open movies (CC BY): the set Storybook and the e2e tests use |
+| `titles` | Blender Studio's ten best-known open movies (CC BY): the set the e2e tests use |
 | `library` | All forty titles: `titles`, then more open films and US public-domain features, for screens that need density |
 | `byId(id)` | One title from `library` |
 | `art(title)` | Its poster (2:3), still (16:9) and backdrop (16:9) as SVG data URIs |

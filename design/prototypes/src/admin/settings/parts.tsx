@@ -3,6 +3,7 @@
 // tag picker every edit dialog uses (apps/server's tag-picker.tsx), and reading a refused call's
 // field or reason (the server's `details`).
 import { relative } from '@highsea-tv/core/format'
+import type { Settings as AllSettings, SettingsSection, Tag } from '@highsea-tv/mock/settings'
 import {
   Badge,
   Button,
@@ -18,7 +19,6 @@ import {
 import type { ReactNode } from 'react'
 import { useLocation } from 'wouter'
 import { useNow, useQuery } from '../../mock/hooks.tsx'
-import type { Settings as AllSettings, SettingsSection, Tag } from '../../mock/settings.ts'
 import { AreaPage, SaveBar, useSettingsDraft } from './settings.tsx'
 
 /** An area backed by one settings section: loads it, keeps a draft, and shows the save bar. */

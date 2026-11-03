@@ -10,8 +10,8 @@ import { Press } from './press.tsx'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 
-/** The round icon's size, in points: a 44-point target on its own. */
-const ROUND = 44
+/** The round icon's size, in points: touch's 44-point target on its own. */
+const ROUND = tokens.targets.touch
 
 /** `#rrggbb` with an alpha, for the tint behind a round icon. */
 const tint = (hex: string, a: number) =>
@@ -43,7 +43,8 @@ export function NamedAction({
       accessibilityRole={toggle ? 'togglebutton' : 'button'}
       accessibilityLabel={label}
       accessibilityState={toggle ? { checked: pressed } : undefined}
-      style={{ width: 80, alignItems: 'center', gap: 6, paddingVertical: 4 }}
+      aria-checked={toggle ? pressed : undefined}
+      style={{ width: 80, alignItems: 'center', gap: 6, paddingVertical: tokens.space['1'] }}
     >
       <View
         style={{
@@ -55,7 +56,7 @@ export function NamedAction({
           backgroundColor: pressed ? theme.colors.text : tint(theme.colors.text, 0.1),
         }}
       >
-        <Icon name={icon} size={20} color={pressed ? 'bg' : 'text'} />
+        <Icon name={icon} size={tokens.icon.size.md} color={pressed ? 'bg' : 'text'} />
       </View>
       <Text variant="caption" color="text-2" align="center" numberOfLines={2}>
         {label}
@@ -137,8 +138,8 @@ export function FactsCard({
   return (
     <View
       style={{
-        gap: 8,
-        padding: 16,
+        gap: tokens.space['2'],
+        padding: tokens.space['4'],
         borderRadius: tokens.radius.lg,
         backgroundColor: theme.colors.s1,
       }}
@@ -148,7 +149,7 @@ export function FactsCard({
       </Text>
       {children}
       {facts?.map(([label, value]) => (
-        <View key={label} style={{ flexDirection: 'row', gap: 16 }}>
+        <View key={label} style={{ flexDirection: 'row', gap: tokens.space['4'] }}>
           <Text variant="callout" color="text-3" style={{ minWidth: 96 }}>
             {label}
           </Text>

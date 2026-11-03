@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// What every native control is built on (controls.md): one press target that's the touch rule's
-// Press on the phone (the press scale, a haptic, the 44 hit area) and the TV's focus stop on a TV
-// (the ring in `text`, the lift to focus.tv.scaleButton on spring.base; tv.md › Focus), and the
-// label's type from the control spec. Internal: the components export the props, not these.
+// What every native control is built on (controls.md): one press target that's Press with a
+// pointer or touch (the press scale, a haptic, and on touch the 44 hit area) and the TV's focus
+// stop on a TV (the ring in `text`, the lift to focus.tv.scaleButton on spring.base; tv.md ›
+// Focus), by the form factor's input, and the label's type from the control spec. Internal: the
+// components export the props, not these.
+import type { ColorRole, ControlLook } from '@highsea-tv/tokens'
 import { type ReactNode, type Ref, useState } from 'react'
 import {
   type AccessibilityRole,
@@ -15,8 +17,8 @@ import {
 } from 'react-native'
 import { family } from './fonts.ts'
 import type { ControlPoints } from './metrics.ts'
-import { Press } from './press.tsx'
-import { useTheme } from './theme.tsx'
+import { AT_REST, Press, type PressState } from './press.tsx'
+import { fontScaleFor, MAX_FONT_MULTIPLIER, useTheme } from './theme.tsx'
 import { Focusable, type ViewHandle } from './tv/focusable.tsx'
 
 export type ControlPressProps = {
@@ -40,9 +42,22 @@ export type ControlPressProps = {
   haptic?: boolean
   width?: DimensionValue
   testID?: string
-  style?: StyleProp<ViewStyle>
+  /** The target's style, or one for what it's showing: a pointer's hover, a press, the keyboard's focus. */
+  style?: StyleProp<ViewStyle> | ((state: PressState) => StyleProp<ViewStyle>)
   ref?: Ref<ViewHandle>
-  children: ReactNode | ((focused: boolean) => ReactNode)
+  /** The content, or content for its focus (the TV's, or the keyboard's) and what else it's showing. */
+  children: ReactNode | ((focused: boolean, state: PressState) => ReactNode)
+}
+
+/**
+ * A look as drawn: with a pointer over it, its hover roles over its own (controls.md › One look per
+ * kind; `hover` in the control spec's looks). Only a pointer hovers, so touch and the TV keep the look.
+ */
+export function lookAt<L extends ControlLook>(
+  look: L,
+  state: PressState,
+): Omit<L, 'fill' | 'label'> & { fill?: ColorRole; label: ColorRole } {
+  return state.hovered && look.hover ? { ...look, ...look.hover } : look
 }
 
 /** A control's press target, by the platform's rule. */
@@ -68,7 +83,7 @@ export function ControlPress({
   children,
 }: ControlPressProps) {
   const theme = useTheme()
-  if (theme.platform === 'tv') {
+  if (theme.formFactor.input === 'tv') {
     return (
       <Focusable
         ref={ref}
@@ -85,9 +100,9 @@ export function ControlPress({
         lift={lift}
         radius={radius}
         width={width}
-        style={[{ borderRadius: radius }, style]}
+        style={[{ borderRadius: radius }, typeof style === 'function' ? style(AT_REST) : style]}
       >
-        {children}
+        {typeof children === 'function' ? (focused) => children(focused, AT_REST) : children}
       </Focusable>
     )
   }
@@ -105,14 +120,17 @@ export function ControlPress({
       slop={slop}
       haptic={haptic}
       testID={testID}
-      style={[{ width, borderRadius: radius }, style]}
+      style={(s) => [
+        { width, borderRadius: radius },
+        typeof style === 'function' ? style(s) : style,
+      ]}
     >
       {children}
     </PhonePress>
   )
 }
 
-/** Press, with `children` that may ask whether it has focus (a keyboard or switch control on iPad). */
+/** Press, with `children` that may ask what it's showing (a keyboard's or switch control's focus, a pointer's hover). */
 function PhonePress({
   role,
   state,
@@ -121,32 +139,37 @@ function PhonePress({
   onBlur,
   ...props
 }: Omit<ControlPressProps, 'radius' | 'lift' | 'hasTVPreferredFocus' | 'width' | 'ref'>) {
-  const [focused, setFocused] = useState(false)
   return (
     <Press
       {...props}
       accessibilityRole={role}
       accessibilityState={{ ...state, disabled: !!props.disabled }}
-      onFocus={() => {
-        setFocused(true)
-        onFocus?.()
-      }}
-      onBlur={() => {
-        setFocused(false)
-        onBlur?.()
-      }}
+      // the same state as ARIA's attributes, which React Native reads too: react-native-web reads
+      // only these (its createDOMProps has no accessibilityState), so without them the web never
+      // says a checkbox is checked or a tab selected
+      aria-checked={state?.checked}
+      aria-selected={state?.selected}
+      aria-busy={state?.busy}
+      aria-expanded={state?.expanded}
+      onFocus={() => onFocus?.()}
+      onBlur={() => onBlur?.()}
     >
-      {typeof children === 'function' ? children(focused) : children}
+      {(s) => (typeof children === 'function' ? children(s.focused, s) : children)}
     </Press>
   )
 }
 
-/** A control's label in the spec's type: its text size, leading and the look's weight. */
-export function labelStyle(m: ControlPoints, weight: number): TextStyle {
+/**
+ * A control's label in the spec's type: its text size, leading and the look's weight, times
+ * `scale`, the ThemeProvider's `fontScale` held to the label's cap (fontScaleFor). The control's
+ * height is a minimum, so a grown label makes it taller.
+ */
+export function labelStyle(m: ControlPoints, weight: number, scale = 1): TextStyle {
+  const size = m.text * scale
   return {
     fontFamily: family(weight),
-    fontSize: m.text,
-    lineHeight: Math.round(m.text * m.leading),
+    fontSize: size,
+    lineHeight: Math.round(size * m.leading),
   }
 }
 
@@ -166,12 +189,13 @@ export function ControlText({
   style?: StyleProp<TextStyle>
   children: ReactNode
 }) {
-  const tv = useTheme().platform === 'tv'
+  const theme = useTheme()
+  const tv = theme.formFactor.input === 'tv'
   return (
     <RNText
-      maxFontSizeMultiplier={2}
+      maxFontSizeMultiplier={MAX_FONT_MULTIPLIER}
       numberOfLines={lines ?? (tv ? 1 : undefined)}
-      style={[labelStyle(m, weight), { color }, style]}
+      style={[labelStyle(m, weight, fontScaleFor(theme)), { color }, style]}
     >
       {children}
     </RNText>

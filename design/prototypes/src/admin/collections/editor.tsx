@@ -3,6 +3,9 @@
 // or films picked by hand; Always include and Never include; shows picked by hand, as rules match
 // films only; sort, limit and who sees it. Beside it, what the draft holds right now: both counts,
 // the rules in words and the posters, films then shows, as rules change.
+
+import { sortLabels } from '@highsea-tv/mock/collections'
+import type { CollectionSort, RuleGroup, SmartCollection } from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -18,9 +21,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { CollectionArt } from '../../kit/collection-art.tsx'
-import { sortLabels } from '../../mock/collections.ts'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { CollectionSort, RuleGroup, SmartCollection } from '../../mock/types.ts'
 import { AudienceField, audienceError } from '../curation/shared.tsx'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'

@@ -14,6 +14,7 @@
 // Each is a draft with the save bar, like every settings page (settings.md › Decisions).
 
 import { bytes } from '@highsea-tv/core/format'
+import { defaultEpisodeSizes } from '@highsea-tv/mock/settings'
 import { parse } from '@highsea-tv/parser'
 import {
   CONDITION_KINDS,
@@ -72,7 +73,6 @@ import {
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import { defaultEpisodeSizes } from '../../mock/settings.ts'
 import { AdminPage, adminHref } from '../shell.tsx'
 import { Group, SaveBar, useSettingsDraft } from './settings.tsx'
 

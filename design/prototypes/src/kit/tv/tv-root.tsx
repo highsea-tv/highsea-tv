@@ -4,6 +4,12 @@
 // library's controls at the TV rule (controls.md › One rule per platform): the `--control-*`
 // variables in cqw, which resolve against this root's inline-size container (1cqw = 1u, 19.2px at
 // 1080p), so a 36 control is 3.28u.
+//
+// Only the prototype's own TV screens run this navigator. On a route apps/client holds, the frame
+// loads the client's web export in its iframe instead (chrome/stage.tsx, `clientSrc`), a document
+// of its own whose stops the library's engine moves (@highsea-tv/ui's tv/engine.web.tsx). Two
+// navigators on one document would each move focus on every arrow, so this root must never be
+// drawn around the client.
 import { PlatformScope, useSound, useSpatialNavigation } from '@highsea-tv/ui'
 import { type ReactNode, useEffect, useLayoutEffect, useRef } from 'react'
 

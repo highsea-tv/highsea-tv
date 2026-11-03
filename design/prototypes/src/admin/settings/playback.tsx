@@ -7,6 +7,13 @@
 
 import { bytes } from '@highsea-tv/core/format'
 import {
+  type AccelerationPath,
+  type PathStatus,
+  type PlaybackSettings,
+  type PlaybackStatus,
+  pathLabel,
+} from '@highsea-tv/mock/playback'
+import {
   Badge,
   Button,
   cn,
@@ -20,13 +27,6 @@ import {
   toast,
 } from '@highsea-tv/ui'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import {
-  type AccelerationPath,
-  type PathStatus,
-  type PlaybackSettings,
-  type PlaybackStatus,
-  pathLabel,
-} from '../../mock/playback.ts'
 import { AreaPage, Group, SaveBar, useSettingsDraft } from './settings.tsx'
 import { CopyBlock } from './vpn.tsx'
 

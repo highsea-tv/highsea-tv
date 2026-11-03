@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Checkpoint 3 flows, walked as a user would: connect to a server and sign in; acknowledge the
-// owner's announcement and use the home; browse the library; open a title and play it, with the
-// player's tracks and subtitle nudge; and the connectivity states. The TV's D-pad moves need real
+// Checkpoint 3 flows, walked as a user would (connecting and signing in are apps/client's):
+// acknowledge the owner's announcement and use the home; browse the library; open a title and
+// play it, with the player's tracks and subtitle nudge; and the connectivity states. The TV's D-pad moves need real
 // layout, so they're walked in a browser before each checkpoint; here the TV screens are checked
 // for their content and their actions.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { createMock } from '@highsea-tv/mock/client'
 import { act, cleanup, render, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { memoryLocation } from 'wouter/memory-location'
-import { DISCOVERY_MS } from '../src/client/connect.ts'
 import { resetPeople, setAskOnLaunch } from '../src/client/profiles.ts'
-import { createMock } from '../src/mock/client.ts'
 import { type Connection, defaultState } from '../src/proto/state.ts'
 import { ScreenApp } from '../src/screen/screen.tsx'
 import { skipLaunch } from '../src/tv/tv-app.tsx'
@@ -53,46 +52,8 @@ async function acknowledge(user: ReturnType<typeof userEvent.setup>) {
   await settle()
 }
 
+// Choose a server, signing in and the TV's code are apps/client's (apps/client/test).
 describe('C1 connect', () => {
-  test('servers answer discovery over time; an address that answers leads to sign-in and 2FA', async () => {
-    const { location, user } = await open('/web/connect')
-    expect(page().getByText('Looking…')).toBeTruthy()
-    expect(page().queryByRole('button', { name: /^Den/ })).toBeNull()
-    await wait(DISCOVERY_MS + 100)
-    expect(page().getByRole('button', { name: /^Den/ })).toBeTruthy()
-    await clean()
-
-    await user.type(page().getByLabelText('Add a server by address'), 'nowhere.example')
-    await user.click(page().getByRole('button', { name: 'Connect' }))
-    await settle()
-    expect(page().getByText(/Nothing answered at nowhere\.example/)).toBeTruthy()
-
-    await user.clear(page().getByLabelText('Add a server by address'))
-    await user.type(page().getByLabelText('Add a server by address'), 'harbor.example.net')
-    await user.click(page().getByRole('button', { name: 'Connect' }))
-    await settle()
-    expect(page().getByRole('heading', { name: 'Sign in to Harbor' })).toBeTruthy()
-    expect(page().getByText(/Remotely, through/)).toBeTruthy()
-    await clean()
-
-    await user.type(page().getByLabelText('Username'), 'ines')
-    await user.type(page().getByLabelText('Password'), 'correct horse')
-    await user.click(page().getByRole('button', { name: 'Sign in' }))
-    await settle()
-    await user.type(page().getByLabelText('Code'), '123456')
-    await user.click(page().getByRole('button', { name: 'Verify' }))
-    await settle()
-    expect(location.history?.at(-1)).toBe('/web/')
-  })
-
-  test('the TV signs in by code, and shows the code and where to enter it', async () => {
-    await open('/tv/connect')
-    expect(page().getByRole('heading', { name: 'Sign in with your phone' })).toBeTruthy()
-    expect(page().getByText('KQ7-4PM')).toBeTruthy()
-    expect(page().getByRole('img', { name: 'QR code for the sign-in link' })).toBeTruthy()
-    await clean()
-  })
-
   test('unreachable: every client says so and offers a way out', async () => {
     await open('/web', 'offline')
     expect(page().getByText('Can’t reach Harbor')).toBeTruthy()
@@ -256,10 +217,10 @@ describe('C3 library', () => {
       expect.stringMatching(/^Alerts/),
       'Ines: profile and settings',
     ])
-    // Settings is reached through the profile, the avatar, not as a destination
+    // Settings is reached through the profile, the avatar, not as a destination: apps/client's
     expect(
       within(nav).getByRole('link', { name: 'Ines: profile and settings' }).getAttribute('href'),
-    ).toBe('#/tv/profile')
+    ).toBe('#/tv/settings')
     expect(page().getByRole('heading', { level: 1, name: 'Shows' })).toBeTruthy()
     // Shows is a library of its own since stage 2 of the prototypes' gaps
     const show = page()
@@ -371,25 +332,7 @@ describe('TV: the account’s profiles', () => {
     expect(page().getByRole('heading', { name: 'Enter Theo’s PIN' })).toBeTruthy()
   })
 
-  test('the profile: the profiles first, then a PIN set twice', async () => {
-    const { user } = await open('/tv/profile')
-    const row = within(page().getByRole('banner'))
-    expect(row.getByRole('button', { name: 'Ines, watching now' })).toBeTruthy()
-    await user.click(page().getByRole('button', { name: 'PIN' }))
-    page().getByRole('button', { name: 'PIN' }).focus()
-    await settle()
-    await user.click(page().getByRole('button', { name: 'Set a PIN' }))
-    await settle()
-    for (const d of '1234') await user.click(page().getByRole('button', { name: d }))
-    await settle()
-    expect(page().getByRole('dialog', { name: 'Enter it again' })).toBeTruthy()
-    for (const d of '1234') await user.click(page().getByRole('button', { name: d }))
-    await settle()
-    expect(page().getByText('On. Every device asks for it before watching as Ines.')).toBeTruthy()
-    expect(row.getByRole('button', { name: 'Ines, has a PIN, watching now' })).toBeTruthy()
-  })
-
-  test('adding a profile watches as it, and deleting one asks first', async () => {
+  test('adding a profile watches as it', async () => {
     const { location, user } = await open('/tv/who/new')
     const add = () => page().getByRole('button', { name: 'Add profile' }) as HTMLButtonElement
     expect(add().disabled).toBe(true)
@@ -416,16 +359,5 @@ describe('TV: the account’s profiles', () => {
     await settle()
     expect(location.history.at(-1)).toBe('/tv/')
     await clean()
-    await open('/tv/profile')
-    expect(page().getByRole('button', { name: 'SaMi J, watching now' })).toBeTruthy()
-    await user.click(page().getByRole('button', { name: 'Profiles' }))
-    await settle()
-    await user.click(page().getByRole('button', { name: 'Delete Ruth’s profile' }))
-    await settle()
-    expect(page().getByRole('dialog', { name: 'Delete Ruth’s profile?' })).toBeTruthy()
-    await user.click(page().getByRole('button', { name: 'Delete profile' }))
-    await settle()
-    expect(page().queryByRole('button', { name: 'Ruth' })).toBeNull()
-    expect(page().queryByRole('button', { name: 'Delete Ines’s profile' })).toBeNull()
   })
 })

@@ -28,7 +28,7 @@ import { defaultSoundPack } from './sound/pack.ts'
 import { NAVIGATE_THROTTLE_MS } from './sound/rules.ts'
 import { type ResolvedTheme, resolveTheme } from './theme.ts'
 import { type BuiltInThemeId, builtInThemes } from './themes.ts'
-import { fonts, mobileText, tracking, tvText, weights } from './typography.ts'
+import { fonts, mobileText, tracking, tvText, webText, weights } from './typography.ts'
 
 export type NativeTheme = {
   id: string
@@ -56,7 +56,7 @@ export const nativeTokens = {
   fonts,
   weights,
   tracking,
-  text: { mobile: mobileText, tv: tvText },
+  text: { mobile: mobileText, tv: tvText, web: webText },
   springs,
   durations,
   choreography,
@@ -68,8 +68,9 @@ export const nativeTokens = {
   focus,
   icon,
   targets,
-  /** The control spec (controls.md): touch in points, the TV in screen units. */
+  /** The control spec (controls.md): the pointer and touch in points, the TV in screen units. */
   controls: {
+    pointer: { md: controlMetrics('pointer'), sm: controlMetrics('pointer', 'sm') },
     touch: { md: controlMetrics('touch'), sm: controlMetrics('touch', 'sm') },
     tv: { md: controlMetrics('tv'), sm: controlMetrics('tv', 'sm') },
     buttonLooks,

@@ -4,6 +4,7 @@
 // the prototype. General, Media management, Import lists and Connections took the built admin's
 // form in prototype-gaps.md's stage 5 and have files of their own.
 
+import type { QualitySize } from '@highsea-tv/mock/settings'
 import { describeFormat } from '@highsea-tv/quality/browser'
 import {
   Badge,
@@ -25,7 +26,6 @@ import {
 import { useState } from 'react'
 import { Soon } from '../../kit/soon.tsx'
 import { useQuery } from '../../mock/hooks.tsx'
-import type { QualitySize } from '../../mock/settings.ts'
 import { adminHref } from '../shell.tsx'
 import { Area, options } from './parts.tsx'
 import { AreaPage, Group, SaveBar, useSettingsDraft } from './settings.tsx'

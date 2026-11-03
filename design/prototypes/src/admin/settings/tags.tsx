@@ -3,10 +3,11 @@
 // what carries it, Rename and Remove, and a field to add one. Changes are immediate actions, as
 // root folders are; removing asks first and says what the tag comes off. A refused label shows the
 // server's sentence under its field.
+
+import type { Tag } from '@highsea-tv/mock/settings'
 import { Button, ConfirmDialog, Dialog, DialogContent, Field, Input, toast } from '@highsea-tv/ui'
 import { type FormEvent, useState } from 'react'
 import { useAction } from '../../mock/hooks.tsx'
-import type { Tag } from '../../mock/settings.ts'
 import { Loadable } from '../loadable.tsx'
 import { useTags } from './parts.tsx'
 import { Group } from './settings.tsx'

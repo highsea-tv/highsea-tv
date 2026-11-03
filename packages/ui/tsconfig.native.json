@@ -5,5 +5,16 @@
     "lib": ["ES2023"],
     "types": ["bun"]
   },
-  "include": ["src/native", "src/shared", "test/native"]
+  "include": ["src/native", "src/shared", "test/native"],
+  "exclude": [
+    "src/native/**/*.web.ts",
+    "src/native/**/*.web.tsx",
+    "src/native/tv/spatial/navigator.ts",
+    "src/native/tv/spatial/index.ts",
+    "test/native/form-factor.test.tsx",
+    "test/native/navigator.test.ts",
+    "test/native/tv-engine.test.ts",
+    "test/native/engine-web.test.tsx",
+    "test/native/font-scale.test.tsx"
+  ]
 }

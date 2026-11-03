@@ -26,7 +26,6 @@ import {
   Poster,
   Progress,
   Rating,
-  RatingInput,
   SearchTrigger,
   SegmentedControl,
   ServerCard,
@@ -463,16 +462,6 @@ describe('Rating', () => {
   test('the value is in the label', () => {
     const { getByRole } = render(<Rating value={3.5} />)
     expect(getByRole('img', { name: 'Rated 3.5 out of 5' })).toBeTruthy()
-  })
-
-  test('RatingInput is a radio group of stars', async () => {
-    const user = userEvent.setup()
-    const onValueChange = mock()
-    const { getByRole } = render(
-      <RatingInput aria-label="Your rating" onValueChange={onValueChange} />,
-    )
-    await user.click(getByRole('radio', { name: '4 stars' }))
-    expect(onValueChange).toHaveBeenCalledWith(4)
   })
 })
 

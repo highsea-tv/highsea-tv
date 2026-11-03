@@ -8,13 +8,14 @@
 // (connectivity.md), with Add a server and Sign in a TV; Your devices signs others out; About names
 // the app and the server. Signing out asks first, as the prototype's does. Drawn as the prototype's
 // settings-sections.tsx: each row its own card (`Card`), radios and switches before their words.
-import type { ClientType } from '@highsea-tv/api-contract'
 import { useAppearance, useHomeLayout, useMyDevices, useServer } from '@highsea-tv/client/data'
 import {
+  deviceIcon,
   type PlaybackPrefs,
   playbackOptions,
   SERVER_THEME,
   type SettingsSectionId,
+  SOURCE,
   settingsSections,
   useDevicePrefs,
   usePlaybackPrefs,
@@ -32,7 +33,6 @@ import {
   Button,
   Field,
   Icon,
-  type IconName,
   Mark,
   Press,
   Radio,
@@ -64,13 +64,6 @@ export function useSections() {
 }
 
 export type SectionId = SettingsSectionId
-
-const deviceIcon = (c: ClientType): IconName =>
-  c === 'ios' || c === 'android'
-    ? 'phone'
-    : c === 'tvos' || c === 'androidtv' || c === 'webos' || c === 'tizen'
-      ? 'tv'
-      : 'laptop'
 
 function useSaveFailed() {
   const t = useT(messages)
@@ -238,7 +231,11 @@ function SoundSection() {
     <View style={{ gap: 16, alignItems: 'stretch' }}>
       <Switch
         label={t('sounds')}
-        hint={p.soundChosen ? t('setHere') : t(fallback ? 'followingOn' : 'followingOff', { name })}
+        hint={
+          p.soundChosen
+            ? t('setHere')
+            : t(fallback ? 'followingOn' : 'followingOff', { name, device: 'phone' })
+        }
         checked={p.sound}
         onCheckedChange={(sound) => void prefs.setSound(sound).catch(failed)}
       />
@@ -430,7 +427,7 @@ function useSignOut() {
   const name = useServerName()
   const out = useAction((c) => c.auth.signOut())
   const ask = () =>
-    Alert.alert(t('signOutAsk', { name }), t('signOutBody'), [
+    Alert.alert(t('signOutAsk', { name }), t('signOutBody', { device: 'phone' }), [
       { text: t('cancel'), style: 'cancel' },
       {
         text: t('signOutShort'),
@@ -526,7 +523,7 @@ function AboutSection() {
   const version = server.data?.version ?? ''
   // the prototype's two columns: the names in text-3 sized to the longest, the values beside them
   const lines: [string, string, boolean][] = [
-    [t('thisApp'), t('appVersion', { version: appVersion }), true],
+    [t('thisApp'), t('appVersion', { version: appVersion, os: 'iPhone' }), true],
     [t('server'), `${name} ${version}`, true],
     [t('licence'), t('free'), false],
   ]
@@ -549,12 +546,7 @@ function AboutSection() {
         </View>
       </View>
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8 }}>
-        <Button
-          size="sm"
-          onPress={() =>
-            void WebBrowser.openBrowserAsync('https://github.com/highsea-tv/highsea-tv')
-          }
-        >
+        <Button size="sm" onPress={() => void WebBrowser.openBrowserAsync(SOURCE)}>
           {t('source')}
         </Button>
       </View>

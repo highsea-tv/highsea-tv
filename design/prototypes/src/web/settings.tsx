@@ -1,84 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// C7 Settings and C8 Profile on the web and desktop (docs/product/client-settings.md): the
-// sections beside each other from medium widths, an index on a phone-width window; the account
-// page; and Downloads, which needs the desktop app.
+// C8 Profile on the web and desktop (docs/product/client-settings.md): the account page, and
+// Downloads, which needs the desktop app. C7 Settings is apps/client's (/settings).
 
-import type { SettingsSectionId } from '@highsea-tv/client/prefs'
 import { Button, cn, EmptyState, Icon } from '@highsea-tv/ui'
 import { useState } from 'react'
-import { useParams } from 'wouter'
 import { useDesktopApp, useServer } from '../client/data.ts'
 import { GetTheAppsDialog } from '../client/get-the-apps.tsx'
 import { OfflineList } from '../client/offline-list.tsx'
-import { settingsSections } from '../client/settings.ts'
-import { SettingsSectionBody } from '../client/settings-sections.tsx'
 import { ProfileAvatar, useMe } from '../client/who.tsx'
 import { Soon } from '../kit/soon.tsx'
 import { KeptIn } from './kept-in.tsx'
 import { gutter, webHref } from './shell.tsx'
-
-export function WebSettings() {
-  const { section } = useParams<{ section?: string }>()
-  const current = settingsSections.find((s) => s.id === section)
-  // Side by side once the page has room in rem, so 200% text gets the list-then-section pattern
-  // a phone gets, rather than a sliver of a column (a container query: rem there follows the text
-  // size, where a media query's wouldn't).
-  return (
-    <main
-      className={cn(
-        '@container mx-auto w-full grid max-w-[1100px] grid-cols-[minmax(0,1fr)] gap-6 py-8',
-        gutter,
-      )}
-    >
-      <h1 className="text-heading">Settings</h1>
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-8 @min-[42rem]:grid-cols-[14rem_minmax(0,1fr)]">
-        <nav
-          aria-label="Settings"
-          className={cn('grid content-start gap-1', current && 'hidden @min-[42rem]:grid')}
-        >
-          {settingsSections.map((s) => (
-            <a
-              key={s.id}
-              href={webHref(`/settings/${s.id}`)}
-              aria-current={(current?.id ?? 'appearance') === s.id ? 'page' : undefined}
-              className="flex items-center gap-3 rounded-md px-3 py-2.5 text-text-2 text-body outline-none hover:bg-text/6 hover:text-text focus-visible:ring-focus @min-[42rem]:aria-[current=page]:bg-text/8 @min-[42rem]:aria-[current=page]:text-text"
-            >
-              <Icon name={s.icon} size={18} />
-              <span className="grid">
-                {s.label}
-                <span className="text-caption text-text-3 @min-[42rem]:hidden">{s.hint}</span>
-              </span>
-            </a>
-          ))}
-        </nav>
-        <section
-          aria-labelledby="settings-section"
-          className={cn(
-            'grid grid-cols-[minmax(0,1fr)] content-start gap-4',
-            !current && 'hidden @min-[42rem]:grid',
-          )}
-        >
-          {current && (
-            <a
-              href={webHref('/settings')}
-              className="flex items-center gap-1 justify-self-start text-text-2 text-body @min-[42rem]:hidden"
-            >
-              <Icon name="chevron-left" size={16} />
-              Settings
-            </a>
-          )}
-          <h2 id="settings-section" className="text-title">
-            {(current ?? settingsSections[0])?.label}
-          </h2>
-          <SettingsSectionBody
-            id={(current?.id ?? 'appearance') as SettingsSectionId}
-            platform="web"
-          />
-        </section>
-      </div>
-    </main>
-  )
-}
 
 /** C8: who you are on this server. */
 export function WebProfile() {
@@ -125,7 +57,7 @@ export function WebProfile() {
             hint: 'Theme, sounds, home screen',
           },
           {
-            href: '/settings/devices',
+            href: '/settings?section=devices',
             icon: 'phone' as const,
             label: 'Your devices',
             hint: 'Where you’re signed in',

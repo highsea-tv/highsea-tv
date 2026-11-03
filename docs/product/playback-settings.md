@@ -1,7 +1,7 @@
 # Settings › Playback
 
 - **Platforms:** Admin, every breakpoint.
-- **Prototype:** `design/prototypes/src/admin/settings/playback.tsx` (`#/admin/settings/playback`), with its mock in `src/mock/playback.ts`. Prototyped at Phase 4's checkpoint 4.0b, 2026-10-23, and waiting for the owner's approval. In the prototype, Harbor has an Intel GPU whose VAAPI check passed two days ago; **Check** on Quick Sync runs a check that passes; **Prototype only · Fail the next check** makes the next one fail; **Prototype only · Fill the cache** puts the cache over its limit; and the empty server has no hardware.
+- **Prototype:** `design/prototypes/src/admin/settings/playback.tsx` (`#/admin/settings/playback`), with its mock in `packages/mock/src/playback.ts`. Prototyped at Phase 4's checkpoint 4.0b, 2026-10-23, and waiting for the owner's approval. In the prototype, Harbor has an Intel GPU whose VAAPI check passed two days ago; **Check** on Quick Sync runs a check that passes; **Prototype only · Fail the next check** makes the next one fail; **Prototype only · Fill the cache** puts the cache over its limit; and the empty server has no hardware.
 - **Built:** at 4.1 (transcoding on the processor, the remote ceiling and the cache) and 4.3 (hardware acceleration), on [ADR 0051](../adr/0051-playback-engine.md).
 - **Plan:** [phase-4-checkpoint-0.md › Settings › Playback](../plans/phase-4-checkpoint-0.md#settings--playback-admin).
 

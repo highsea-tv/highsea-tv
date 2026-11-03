@@ -14,6 +14,17 @@
 // one list per kind (Movies, Shows, Music), each folder with Scan now and its count of titles.
 import { bytes } from '@highsea-tv/core/format'
 import {
+  COLON_REPLACEMENTS,
+  type ColonReplacement,
+  type EpisodeNaming,
+  LIBRARY_KINDS,
+  type LibraryKind,
+  type MediaSettings,
+  MULTI_EPISODE_STYLES,
+  type MultiEpisodeStyle,
+  type RootFolderRow,
+} from '@highsea-tv/mock/settings'
+import {
   Badge,
   Button,
   ConfirmDialog,
@@ -26,17 +37,6 @@ import {
 } from '@highsea-tv/ui'
 import { type FormEvent, type ReactNode, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import {
-  COLON_REPLACEMENTS,
-  type ColonReplacement,
-  type EpisodeNaming,
-  LIBRARY_KINDS,
-  type LibraryKind,
-  type MediaSettings,
-  MULTI_EPISODE_STYLES,
-  type MultiEpisodeStyle,
-  type RootFolderRow,
-} from '../../mock/settings.ts'
 import { Loadable } from '../loadable.tsx'
 import {
   previewEpisodeFile,

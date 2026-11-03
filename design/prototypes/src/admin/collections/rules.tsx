@@ -2,6 +2,15 @@
 // The rule builder (docs/product/collections.md#rules): Match all or any of a list of conditions,
 // each a field, a comparison and a value, and groups one level deep. Fields come from the server
 // with their comparisons and choices; watch state shows, disabled, until playback brings it.
+
+import type {
+  RuleCondition,
+  RuleField,
+  RuleFieldInfo,
+  RuleGroup,
+  RuleOp,
+  RuleValue,
+} from '@highsea-tv/mock/types'
 import {
   Button,
   Chip,
@@ -13,14 +22,6 @@ import {
   Select,
 } from '@highsea-tv/ui'
 import { useState } from 'react'
-import type {
-  RuleCondition,
-  RuleField,
-  RuleFieldInfo,
-  RuleGroup,
-  RuleOp,
-  RuleValue,
-} from '../../mock/types.ts'
 
 const opLabels: Record<RuleOp, string> = {
   contains: 'contains',

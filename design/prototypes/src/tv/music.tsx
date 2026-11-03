@@ -8,6 +8,7 @@
 // the TV plays. Up from the grid reaches the sort; Left and Right cross between the view and the
 // sort.
 import { letterOf } from '@highsea-tv/client/library'
+import type { ClientArtist, ClientLibrarySong } from '@highsea-tv/mock/types'
 import { Chip, cn, Skeleton } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useMusic } from '../client/data.ts'
@@ -27,7 +28,6 @@ import {
 import { type PlayingFrom, useMusicPlayer } from '../client/music-player.ts'
 import { useSongs } from '../client/playlists.ts'
 import { usePlaylists } from '../client/song-menu.ts'
-import type { ClientArtist, ClientLibrarySong } from '../mock/types.ts'
 import {
   TvButton,
   TvHead,

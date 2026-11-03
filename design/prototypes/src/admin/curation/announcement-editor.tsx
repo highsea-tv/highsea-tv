@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The announcement composer (A11, docs/product/curation.md#announcement-composer): the message,
 // how loud it is, where it shows, who sees it and when, beside a live preview on each client.
+
+import type { Announcement, CurationPreview, Placement } from '@highsea-tv/mock/types'
 import {
   Button,
   Checkbox,
@@ -15,7 +17,6 @@ import {
 import { useEffect, useMemo, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { Announcement, CurationPreview, Placement } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 import { placementLabels } from './curation.tsx'

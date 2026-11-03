@@ -4,6 +4,13 @@
 // trailers, collection, More like this) and its About aside, and the Cast and crew tab.
 
 import { duration } from '@highsea-tv/core/format'
+import type {
+  Credit,
+  Department,
+  DiscoverMovie,
+  MovieMetadata,
+  Video,
+} from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -20,7 +27,6 @@ import {
 } from '@highsea-tv/ui'
 import { Fragment, type ReactNode, useState } from 'react'
 import { useNow, useQuery } from '../../mock/hooks.tsx'
-import type { Credit, Department, DiscoverMovie, MovieMetadata, Video } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { movieHref, personHref } from './links.ts'
 

@@ -53,3 +53,15 @@ At part C's review the owner found the phone still drawn as an iOS grouped list 
 - **`QualityTag`** is the web's pill (mono, uppercase, a `line-strong` edge, or glass over art); `Mark` takes `paint: 'mono'` for a nearby server, as the web's does; `Icon` takes `filled`.
 
 Settings' rows and Choose a server are drawn as the prototype draws them, as separate cards on `s1` with their controls first, inside the kit's `Flow` card for C1's steps.
+
+## 2026-11-03: one drawing replaces the two renderers (one client platform, part A)
+
+The control spec, the platform rules and the theme audit stand. What changes is how they're drawn: [ADR 0061](0061-one-client-platform.md) makes the React Native renderer, `src/native`, the one drawing of each component for every client, on the web through react-native-web. This supersedes "one package, two renderers". Design system 1.1's review folds into part A's (the plan's answer 7), so this ADR stays Proposed with it.
+
+- **`src/web` stays only for the admin**, `apps/web` and the prototypes' screens that haven't moved, and goes in part D, when the admin draws with the library through react-native-web. It lost the exports nothing drew. Its spatial focus moved to `src/native/tv/spatial/`, the web's TV focus engine behind `Focusable` (`@highsea-tv/ui/focus` points there now).
+- **What react-native-web leaves to the page, the native renderer does once:** the focus ring at `:focus-visible` and Space on checkboxes, radios, switches, tabs, options and the menu's checkable items (`dom.web.ts`), hover from `Pressable`, touch's hit area drawn as a layer where react-native-web drops `hitSlop`, and the web's scrollbar drawn over a `ScrollView` (`scrollbar.web.tsx`, in `PageScrollbar`'s measures from `src/shared/scrollbar.ts`). `Text` takes each input's own type scale, a pointer's from the web's.
+- **The form factor replaces the platform.** ThemeProvider resolves the form-factor rule's input and width class once (`input.ts` decides the device's input), and controls read it through `useControl` and screens through `useFormFactor`. On touch on the web, the control spec's `(pointer: coarse)` is how the rule finds a phone's browser.
+- **`parity.ts` is now the list of exceptions.** `BOTH` names each component drawn twice with its reason: the web renderer's copy kept until part D, or a platform pair such as `Scrollbar` and the TV's `FocusGuide`. `WEB_ONLY` and `NATIVE_ONLY` give the reason each side has something the other doesn't. `test/parity.test.ts` and `scripts/one-place.ts` hold the lists to what's drawn, and fail when a list drifts.
+- **About 50 literals in the native renderer moved onto existing tokens.** The ones left wait for values the owner approves, and are listed in `scripts/one-place-exceptions.json`.
+
+The bundle check's rule from this ADR stands, with the client's three bundles added: the web export carries no React Native of its own and none of `src/web`, and the iPhone's and the Apple TV's carry no `.web` file of the library's.

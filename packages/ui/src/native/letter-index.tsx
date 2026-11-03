@@ -8,12 +8,14 @@
 import { useRef, useState } from 'react'
 import { type GestureResponderEvent, View } from 'react-native'
 import { Text } from './text.tsx'
-import { useTheme } from './theme.tsx'
+import { tokens, useTheme } from './theme.tsx'
 
+// sizes on the space scale: the tokens have no size scale (scales.ts), and icon.size's 16 and 20
+// are icons' sizes, not a letter's
 /** Each letter's height, in points: 27 fit beside a list on the smallest phone. */
-const LETTER = 16
+const LETTER = tokens.space['4']
 /** The column's width, in the page's right gutter. */
-export const LETTER_INDEX_WIDTH = 20
+export const LETTER_INDEX_WIDTH = tokens.space['5']
 
 /** The nearest letter with titles: this one, then the ones after it, then the ones before. */
 export function nearestLetter(letters: readonly string[], l: string, present: Set<string>) {

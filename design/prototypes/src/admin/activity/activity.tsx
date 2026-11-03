@@ -4,6 +4,7 @@
 // the blocklist.
 
 import { bytes, duration, rate, relative } from '@highsea-tv/core/format'
+import type { QueueItem } from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -32,7 +33,6 @@ import {
 } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { QueueItem } from '../../mock/types.ts'
 import { episodeName, isEpisodeId, showHref } from '../episodes.ts'
 import { Loadable } from '../loadable.tsx'
 import { HistoryTable } from '../movies/detail.tsx'

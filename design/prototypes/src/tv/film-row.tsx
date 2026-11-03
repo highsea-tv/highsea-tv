@@ -10,12 +10,13 @@
 // with text-wrap: pretty so no line is left with one word, so nothing moves as focus does (the
 // owner, 2026-10-30). Home's rows loop (the owner, 2026-10-30): past the last film comes the
 // first again, either way, the posters running on without a seam.
+
+import type { ClientItem, ClientShow } from '@highsea-tv/mock/types'
 import { Poster, QualityTag, Skeleton, useSound } from '@highsea-tv/ui'
 import { useReducedMotion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
 import { meta, qualityTags } from '../client/data.ts'
 import { showMeta } from '../client/shows.ts'
-import type { ClientItem, ClientShow } from '../mock/types.ts'
 
 /** The posters' width; the fixed card is as tall as they are, at 16:9. */
 const poster = 10.5

@@ -11,6 +11,14 @@
 // connect flow is: the Lockup over a card with the step's title, Back as an arrow beside it.
 import type { SignInResult } from '@highsea-tv/api-contract'
 import { usePublicInfo } from '@highsea-tv/client/data'
+import {
+  hostOf,
+  OIDC_REDIRECT,
+  oidcMessage,
+  oidcStart,
+  reachedRemotely,
+  reasonOf,
+} from '@highsea-tv/client/gate'
 import { useT } from '@highsea-tv/i18n/react'
 import { deviceInput, pkce } from '@highsea-tv/native/device'
 import { useCurrent, useServers } from '@highsea-tv/native/servers'
@@ -30,12 +38,6 @@ type Step =
   | { kind: 'code'; challenge: string; recovery: boolean }
   | { kind: 'setup' }
   | { kind: 'sso' }
-
-const reasonOf = (e: unknown) =>
-  ((e as ApiError).details as { reason?: string } | undefined)?.reason
-
-const REDIRECT = 'highsea://oidc'
-const OIDC_REASONS = ['oidc-unknown', 'oidc-denied', 'challenge-expired']
 
 export default function SignIn() {
   const t = useT(messages)
@@ -121,19 +123,12 @@ export default function SignIn() {
     setStep({ kind: 'sso' })
     const failed = (reason?: string) => {
       setStep({ kind: 'form' })
-      setSsoError(
-        t(
-          reason && OIDC_REASONS.includes(reason)
-            ? (`oidc.${reason}` as 'oidc.oidc-unknown')
-            : 'oidc.other',
-          { name, provider },
-        ),
-      )
+      setSsoError(t(oidcMessage(reason), { name, provider }))
     }
     try {
       const { verifier, challenge } = await pkce()
-      const start = `${base}/api/v1/auth/oidc/start?app=ios&challenge=${challenge}`
-      const result = await WebBrowser.openAuthSessionAsync(start, REDIRECT)
+      const start = oidcStart(base, 'ios', challenge)
+      const result = await WebBrowser.openAuthSessionAsync(start, OIDC_REDIRECT)
       if (result.type !== 'success') return setStep({ kind: 'form' })
       const back = new URL(result.url)
       const reason = back.searchParams.get('error')
@@ -176,7 +171,7 @@ export default function SignIn() {
   const fieldError = error?.status === 401 ? error.message : undefined
   const alert = error && error.status !== 401 ? error.message : undefined
   const address = current.base() ?? current.server.addresses[0]?.url ?? ''
-  const remote = current.server.addresses.find((a) => address.startsWith(a.url))?.kind === 'remote'
+  const remote = reachedRemotely(current.server.addresses, address)
   const choose = () => router.push('/connect')
 
   if (step.kind === 'sso')
@@ -309,8 +304,8 @@ export default function SignIn() {
           </Text>
           <Text variant="caption" color="text-3" numberOfLines={1}>
             {remote
-              ? t('remoteAt', { address: address.replace(/^https?:\/\//, '') })
-              : t('localAt', { address: address.replace(/^https?:\/\//, '') })}
+              ? t('remoteAt', { address: hostOf(address) })
+              : t('localAt', { address: hostOf(address) })}
           </Text>
         </View>
       </View>

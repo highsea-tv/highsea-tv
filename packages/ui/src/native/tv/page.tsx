@@ -1,21 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A TV page's furniture (the prototype's kit.tsx): a page that scrolls to follow focus, the parts
 // in it that land where focus needs them, a grid of tiles, words where a grid would be, and the
-// ambient backdrop. None of it knows an app's data, so every app on the TV's rule shares it.
+// ambient backdrop. None of it knows an app's data, so every app on the TV's rule shares it. In a
+// browser, the engine pair (./engine.web.tsx) lands Kept parts and follows focus the same way.
 import { Image } from 'expo-image'
 import { createContext, type ReactNode, useContext, useState } from 'react'
-import {
-  ScrollView,
-  StyleSheet,
-  TVFocusGuideView,
-  useWindowDimensions,
-  View,
-  type ViewProps,
-} from 'react-native'
-import { useReducedMotion } from 'react-native-reanimated'
+import { StyleSheet, useWindowDimensions, View, type ViewProps } from 'react-native'
 import { Text } from '../text.tsx'
 import { tokens, useTheme } from '../theme.tsx'
 import { alpha } from './controls.tsx'
+import { FocusGuide, keptProps, TvScroll } from './engine'
 import { keptAt } from './model.ts'
 import type { TileSource } from './tiles.tsx'
 
@@ -39,6 +33,7 @@ export function Kept({ rest, children, ...props }: ViewProps & { rest?: boolean 
   return (
     <View
       {...props}
+      {...keptProps(rest === true)}
       onLayout={(e) => setH(e.nativeEvent.layout.height)}
       scrollSnapOffset={rest ? height : keptAt(keep, height, h)}
     >
@@ -64,17 +59,11 @@ export function TvPage({
   children: ReactNode
 }) {
   const theme = useTheme()
-  const reduced = useReducedMotion()
   return (
     <View style={{ flex: 1 }}>
-      <ScrollView
-        snapToAlignment="item"
-        scrollAnimationEnabled={!reduced}
-        showsVerticalScrollIndicator={false}
-        style={{ flex: 1 }}
-      >
+      <TvScroll keep={keep} style={{ flex: 1 }}>
         <KeepContext.Provider value={keep}>{children}</KeepContext.Provider>
-      </ScrollView>
+      </TvScroll>
       <View
         pointerEvents="none"
         style={{
@@ -115,7 +104,7 @@ export function TvGrid<T>({
   const lines: T[][] = []
   for (let i = 0; i < items.length; i += columns) lines.push(items.slice(i, i + columns))
   return (
-    <TVFocusGuideView autoFocus style={{ gap: 1.6 * u }}>
+    <FocusGuide autoFocus style={{ gap: 1.6 * u }}>
       {lines.map((line, r) => (
         <Kept key={keyOf(line[0] as T)} style={{ flexDirection: 'row', gap: gap * u }}>
           {line.map((item, c) => (
@@ -123,7 +112,7 @@ export function TvGrid<T>({
           ))}
         </Kept>
       ))}
-    </TVFocusGuideView>
+    </FocusGuide>
   )
 }
 

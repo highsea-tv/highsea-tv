@@ -4,9 +4,10 @@
 // goes on playing as the app moves from page to page, as Plex's, Emby's, Apple Music's and
 // Spotify's players do. There's no audio in the prototype: the position runs on a real-time
 // timer, and the song's loudness from the server's analysis stands in for what's heard.
+
+import type { MusicSource, QueuedSong } from '@highsea-tv/mock/types'
 import { useCallback, useEffect, useSyncExternalStore } from 'react'
 import { useClient } from '../mock/hooks.tsx'
-import type { MusicSource, QueuedSong } from '../mock/types.ts'
 import { useMusicState } from './data.ts'
 
 /** Previous restarts the song after this many seconds of it, as every music app's does. */

@@ -3,6 +3,8 @@
 // nothing yet, ones below their profile's cutoff, and what's coming out or airing, by month, with
 // an iCal feed. Episodes joined the films in stage 6 of the prototypes' gaps: one table per tab,
 // with a filter for the kind, and the calendar's entries for both.
+
+import type { HighseaClient } from '@highsea-tv/mock/client'
 import {
   Button,
   cn,
@@ -26,7 +28,6 @@ import {
   toast,
 } from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
-import type { HighseaClient } from '../../mock/client.ts'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
 import {
   byDate,

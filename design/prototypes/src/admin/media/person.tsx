@@ -2,6 +2,8 @@
 // A person's page (docs/product/media-pages.md#person-page): portrait, biography, their best-known
 // titles, then the filmography marked by library state, with Add for what isn't here yet. Since
 // stage 6 their shows follow the films (shows.md#person-page), with Add a show.
+
+import type { DiscoverMovie, DiscoverShow, Person, PersonShowCredit } from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -25,7 +27,6 @@ import {
 import { useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useQuery } from '../../mock/hooks.tsx'
-import type { DiscoverMovie, DiscoverShow, Person, PersonShowCredit } from '../../mock/types.ts'
 import { AddMovieDialog } from '../movies/add-dialog.tsx'
 import { AdminPage } from '../shell.tsx'
 import { AddShowDialog } from '../shows/add-dialog.tsx'

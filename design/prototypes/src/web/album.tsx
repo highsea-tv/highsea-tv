@@ -6,6 +6,8 @@
 // when it's here, is a link under them, so a score leads back to its film as the film's Music
 // credit leads to the composer. Then the songs, numbered, each with its length, as every music app
 // lists them, each with its ⋯ menu (web/song-menu.tsx); the release date and label under them; and the artist's other albums.
+
+import type { ClientAlbum, ClientSong } from '@highsea-tv/mock/types'
 import {
   Button,
   CarouselRow,
@@ -23,7 +25,6 @@ import { songSource } from '../client/downloads.ts'
 import { albumKind, albumMeta, albumSummary, releasedOn, songTime } from '../client/music.ts'
 import { useAlbumPlaying, useMusicPlayer, usePlayingFrom } from '../client/music-player.ts'
 import { PlayingBars } from '../client/waveform.tsx'
-import type { ClientAlbum, ClientSong } from '../mock/types.ts'
 import { gutter, webHref } from './shell.tsx'
 import { WebSongMenu } from './song-menu.tsx'
 

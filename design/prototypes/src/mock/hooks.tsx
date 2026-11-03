@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // React bindings for the mock client: a provider, a small query hook that refetches in place on
 // server events (so live values update without a loading flash), and an action hook.
+
+import type { HighseaClient } from '@highsea-tv/mock/client'
+import type { EventTopic } from '@highsea-tv/mock/types'
 import {
   createContext,
   type ReactNode,
@@ -10,8 +13,6 @@ import {
   useRef,
   useState,
 } from 'react'
-import type { HighseaClient } from './client.ts'
-import type { EventTopic } from './types.ts'
 
 const ClientContext = createContext<HighseaClient | null>(null)
 

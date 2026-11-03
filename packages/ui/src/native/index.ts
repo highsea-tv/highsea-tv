@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The design system's React Native renderer (ADR 0059; design system 1.1): the same components as
-// the web's, by name and props (src/shared), drawn for React Native at the phone's touch rule or
-// the TV's (controls.md), on @highsea-tv/tokens/native.
+// the web's, by name and props (src/shared), drawn for React Native at the form factor's rule (a
+// pointer's, touch's or the TV's, controls.md), on @highsea-tv/tokens/native.
 export * from './badge.tsx'
 export * from './banner.tsx'
 export * from './brand.tsx'
@@ -19,6 +19,7 @@ export * from './progress.tsx'
 export * from './qr-code.tsx'
 export * from './rating.tsx'
 export * from './row.tsx'
+export * from './scroll-view.tsx'
 export * from './segmented.tsx'
 export * from './select.tsx'
 export * from './sheet.tsx'

@@ -9,7 +9,7 @@
 // highsea account stays collapsed and explained, as C1 prototypes it. Drawn in C1's frame (Flow):
 // the Lockup over a card, the rows on the card itself, and Connect sized to its word.
 import type { PublicInfo } from '@highsea-tv/api-contract'
-import { normalize } from '@highsea-tv/client/servers'
+import { candidates, hostOf, seenWhen } from '@highsea-tv/client/gate'
 import { relative } from '@highsea-tv/core/format'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { useNearby } from '@highsea-tv/native/nearby'
@@ -70,16 +70,6 @@ function ForgetPanel({ translation, label }: { translation: SharedValue<number>;
       </Animated.View>
     </View>
   )
-}
-
-const hostOf = (url: string) => url.replace(/^https?:\/\//, '').replace(/\/$/, '')
-
-/** The addresses to try for what someone typed: normalize's guess, then the other scheme. */
-function candidates(typed: string): string[] | null {
-  const n = normalize(typed)
-  if (!n) return null
-  if (/^https?:\/\//i.test(typed.trim())) return [n]
-  return [n, n.startsWith('https:') ? n.replace(/^https:/, 'http:') : n.replace(/^http:/, 'https:')]
 }
 
 export default function Connect() {
@@ -195,10 +185,9 @@ export default function Connect() {
                   detail={t('knownLine', {
                     address: hostOf(k.addresses[0]?.url ?? ''),
                     signedIn: String(k.signedIn),
-                    when:
-                      now - k.lastSeen < 60_000
-                        ? 'now'
-                        : relative(new Date(k.lastSeen).toISOString(), now, locale),
+                    when: ((w) => (w === 'now' ? w : relative(w, now, locale)))(
+                      seenWhen(k.lastSeen, now),
+                    ),
                   })}
                   pending={pending === k.id}
                   disabled={pending !== null}

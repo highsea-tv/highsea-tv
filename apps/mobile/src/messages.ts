@@ -4,106 +4,32 @@
 // words the same screens (apps/web/src/messages.ts). What the apps share (running times, captions)
 // is in `@highsea-tv/client/format`. A server's public info doesn't name its owner, so its rows give
 // its address where the prototype has "Ines's server".
+import {
+  connectMessages,
+  forgetMessages,
+  shellMessages,
+  signInMessages,
+} from '@highsea-tv/client/gate'
+import { settingsPageMessages } from '@highsea-tv/client/prefs'
 import { defineMessages } from '@highsea-tv/i18n'
 
+// Choose a server, signing in and forgetting a server are every client's, in @highsea-tv/client/gate
+export { connectMessages as connect, forgetMessages as forget, signInMessages as signIn }
+
 export const shell = defineMessages({
-  home: 'Home',
-  search: 'Search',
-  library: 'Library',
-  offline: 'Offline',
-  you: 'You',
-  main: 'Main',
+  ...shellMessages,
   servers: 'Servers',
-  switchServer: 'Switch server',
-  remotely: 'Connected remotely',
   onNetwork: 'On this network',
   offLine: 'Can’t reach it right now',
   otherLine: '{signedIn, select, true {Signed in} other {Signed out}} · {when}',
-  addServer: 'Add a server',
   profile: '{name}: profile and settings',
   announcement: 'Announcement',
   gotIt: 'Got it',
-  unreachableTitle: 'Can’t reach {name}',
-  unreachableBody:
-    'highsea tried {name} on this network and at its remote address. It may be off, or the network may be down.',
-  tryAgain: 'Try again',
   notFoundTitle: 'There’s nothing here',
   notFoundBody: 'It may have moved. The tabs below lead everywhere.',
   goHome: 'Go home',
   loading: 'Loading',
   justNow: 'just now',
-})
-
-export const connect = defineMessages({
-  title: 'Choose a server',
-  back: 'Back',
-  yourServers: 'Your servers',
-  knownLine:
-    '{address} · {signedIn, select, true {signed in} other {signed out}} · {when, select, now {just now} other {{when}}}',
-  nearby: 'On this network',
-  looking: 'Looking…',
-  waiting: 'Waiting for your iPhone…',
-  lookAgain: 'Look again',
-  asking:
-    'Your iPhone is asking whether highsea may find devices on your local network. Choose Allow to look for servers.',
-  refused:
-    'highsea can’t look on this network. Allow it in Settings › Privacy & Security › Local Network, or add the server by address.',
-  onlyKnown: 'Only servers you already use answered.',
-  none: 'No servers answered. They may be on another network, or discovery may be off: add one by address.',
-  addLabel: 'Add a server by address',
-  addHint: 'Its name or IP, with the port if it isn’t 443: harbor.example.net, 192.168.1.20:3000.',
-  connect: 'Connect',
-  unreachable: 'Nothing answered at {address}. Check the address, and that the server is on.',
-  invalid: 'That isn’t an address. Try harbor.example.net or 192.168.1.20:3000.',
-  notSetUp: '{name} isn’t set up yet. Its owner sets it up in a browser, at {address}.',
-  cloud: 'Find my servers with a highsea account',
-  cloudDetail:
-    'Optional. If your server’s owner turned on highsea cloud, signing in with your highsea account lists every server shared with you, and connects through the relay when there’s no other way in. Your media never passes through it unless that’s the only route.',
-})
-
-/** Forgetting a server, from Choose a server, its sign-in or You › Servers. */
-export const forget = defineMessages({
-  forget: 'Forget {name}',
-  short: 'Forget',
-  thisServer: 'Forget this server',
-  confirm: 'Forget {name}?',
-  detail: 'This phone signs out of it and stops listing it. You can add it again later.',
-  cancel: 'Cancel',
-})
-
-export const signIn = defineMessages({
-  title: 'Sign in to {name}',
-  servers: 'Servers',
-  remoteAt: 'Remotely, through {address}',
-  localAt: 'On this network, at {address}',
-  username: 'Username',
-  password: 'Password',
-  signIn: 'Sign in',
-  or: 'or',
-  oidc: 'Sign in with {provider}',
-  oidcWait: 'Finish signing in with {provider}. highsea opens again when you’re done.',
-  'oidc.oidc-unknown': 'There’s no account on {name} for you yet. Ask its owner for an invite.',
-  'oidc.oidc-denied': '{provider} didn’t sign you in. Try again, or sign in with a password.',
-  'oidc.challenge-expired': 'That sign-in took too long or was already used. Start again.',
-  'oidc.other': 'Signing in with {provider} didn’t work. Try again.',
-  codeTitle: 'Two-step verification',
-  codeDetail: 'Enter the 6-digit code from your authenticator app.',
-  codeLabel: 'Code',
-  recoveryTitle: 'Use a recovery code',
-  recoveryDetail:
-    'Enter one of the recovery codes you saved when you set up two-step verification.',
-  recoveryLabel: 'Recovery code',
-  verify: 'Verify',
-  useRecovery: 'Use a recovery code',
-  useApp: 'Use the authenticator app',
-  otherAccount: 'Use another account',
-  setupTitle: 'Set up two-step verification',
-  setupDetail:
-    '{name} asks for two-step verification. Set it up on its sign-in page in a browser, then come back here.',
-  setupAction: 'Set it up in Safari',
-  localOff: 'Signing in with a password is off on {name}.',
-  failed: 'Couldn’t load the sign-in. {message}',
-  keychain: 'highsea couldn’t keep your sign-in in this iPhone’s keychain. Try again.',
 })
 
 export const home = defineMessages({
@@ -223,77 +149,15 @@ export const offline = defineMessages({
   emptyBody: 'Downloading films to this phone comes in the next update of the app.',
 })
 
+// Settings' words are every app's (@highsea-tv/client/prefs); You adds its own.
 export const you = defineMessages({
+  ...settingsPageMessages,
   title: 'You',
   'handle.owner': '@{username} · owner of {name}',
   'handle.admin': '@{username} · admin of {name}',
   'handle.user': '@{username} · member of {name}',
-  settings: 'Settings',
   downloads: 'Downloads',
-  signOut: 'Sign out of {name}',
-  signOutFailed: 'Couldn’t sign out. Try again.',
-  signOutAsk: 'Sign out of {name}?',
-  signOutBody: 'Your downloads stay on this phone. You can sign in again later.',
-  audioLanguage: 'Audio language',
-  audioLanguageHint: 'What a film starts in, when it has it.',
-  subtitleLanguage: 'Subtitle language',
-  onlyForeign: 'Only when the audio isn’t in my language',
-  onlyForeignHint: 'Subtitles stay off when you understand what’s said.',
-  qualityHome: 'Quality at home',
-  qualityHomeHint: 'On the same network as the server.',
-  qualityAway: 'Quality away from home',
-  qualityAwayHint: 'Lower uses less data and starts sooner.',
-  playbackFollows:
-    'These follow you to every device you’re signed in on. A film’s own choices win over them.',
-  missingTitle: 'There’s no setting here',
-  missingBody: 'It may have moved.',
-  loading: 'Loading…',
-  failed: 'Couldn’t load this. {message}',
-  saveFailed: 'Couldn’t save that. {message}',
-  themeDevice: 'Only this device changes. Everyone else keeps their own.',
-  themeEverywhere: 'All your devices change. Everyone else keeps their own.',
-  serverDefault: '{name}’s default',
-  builtIn: 'Built in',
-  fromServer: 'From {name}',
-  everywhere: 'Use on all my devices',
-  everywhereOff: 'Off: each device keeps its own theme.',
-  everywhereOn:
-    'Your phone, TV and computers use this theme too. Turn it off and each keeps it until you change it there.',
-  sounds: 'Interface sounds',
-  followingOn: 'Following {name}: on for the phone.',
-  followingOff: 'Following {name}: off for the phone.',
-  setHere: 'Set on this device.',
-  followAgain: 'Follow {name} again',
-  homeIntro: 'The featured hero stays on top. Your order follows you to every device.',
-  serverOrder: 'Use the server’s order',
-  showRow: 'Show {title}',
-  moveUp: 'Move {title} up',
-  moveDown: 'Move {title} down',
-  moveRow: 'Move {title}',
-  moved: '{title} moved to {index} of {count}',
-  homeRows: 'Home rows',
-  inUse: 'In use',
-  onNetwork: 'On this network · {address}',
-  remotely: 'Connected remotely · {address}',
-  unreachable: 'Can’t reach it right now',
-  signInServer: 'Sign in',
-  switchServer: 'Switch',
-  serversList: 'Servers',
-  devicesList: 'Your devices',
-  knownSignedIn: 'Signed in · last used {when}',
-  knownSignedOut: 'Signed out · last used {when}',
-  signInTv: 'Sign in a TV',
-  thisDevice: 'This device',
-  lastUsed: 'Last used {when}',
-  signOutDevice: 'Sign out {name}',
-  signOutShort: 'Sign out',
-  deviceSignedOut: '{name} is signed out',
-  cancel: 'Cancel',
-  thisApp: 'This app',
-  appVersion: 'highsea {version} for iPhone',
-  server: 'Server',
-  licence: 'Licence',
-  free: 'AGPL-3.0, free software',
+  // apps/client's About has no source link (the prototype's has none); this app keeps its own
   source: 'Source code',
 })
 

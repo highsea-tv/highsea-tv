@@ -4,9 +4,10 @@
 // to queue line the songs up after the one playing or at the end (and play them when nothing is);
 // Go to the album and Go to the artist; Add to playlist lists the person's own, with New playlist
 // first. The TV leaves playlists to the other apps.
+
+import type { ClientAlbum } from '@highsea-tv/mock/types'
 import { toast } from '@highsea-tv/ui'
 import { useAction, useClient, useQuery } from '../mock/hooks.tsx'
-import type { ClientAlbum } from '../mock/types.ts'
 import { musicPlayer } from './music-player.ts'
 
 export type SongMenuTarget = {

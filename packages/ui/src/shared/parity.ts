@@ -1,27 +1,78 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Which components each renderer has (design system 1.1, part B). Every component is in both, by
-// the same name, unless it's listed below with the reason one platform has none.
-// test/parity.test.ts reads both renderers' exports and holds them to this.
-import { CONTROLS } from '@highsea-tv/tokens'
+// The renderers' exceptions (one-client-platform.md › Part A): the native renderer (src/native) is
+// the one drawing of each component, on the phone, the TV and, through react-native-web, the web.
+// A component is drawn twice only where it's listed here with its reason:
+// - BOTH: drawn by both renderers, because the web renderer (src/web) stays for the admin, the
+//   guides and the prototypes until part D replaces it, or drawn per platform in a pair of
+//   platform files (`name.web.tsx` beside `name.tsx`);
+// - WEB_ONLY and NATIVE_ONLY: what only one renderer has, and why the other needs none.
+// test/parity.test.ts and scripts/one-place.ts read both renderers and hold them to these lists,
+// and fail when a list drifts from what's drawn.
 
-/** Drawn by both renderers, from one props type. */
-export const BOTH = [
-  ...CONTROLS,
-  'Badge',
-  'Banner',
-  'Disclosure',
-  'EmptyState',
-  'Icon',
-  'Lockup',
-  'MultiSelect',
-  'Poster',
-  'ProgressBar',
-  'QrCode',
-  'Rating',
-  // each renderer takes its own messages: the web's keyboard model, VoiceOver's actions
-  'SortableList',
-  'TitleCell',
-] as const
+/** Drawn twice, by name, with the reason. */
+export const BOTH: Record<string, string> = {
+  Badge:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Banner:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Button:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Checkbox:
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
+  Chip: "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Dialog:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Disclosure:
+    "The web renderer's is drawn by apps/web and the prototypes until part D moves them onto this one",
+  EmptyState:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Field:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Icon: "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Input:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Lockup:
+    "The web renderer's is drawn by the admin, the guides, apps/web and the prototypes until part D moves them onto this one",
+  Mark: "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  MultiSelect:
+    "The web renderer's is drawn by no app, only its own tests and fixtures, and goes with src/web in part D",
+  Poster:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  ProgressBar:
+    "The web renderer's is drawn by no app, only its own tests and fixtures, and goes with src/web in part D",
+  QrCode: "The web renderer's is drawn by the admin until part D moves them onto this one",
+  QualityTag:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Radio:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Rating:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  SearchField:
+    "The web renderer's is drawn by no app, only its own tests and fixtures, and goes with src/web in part D",
+  SegmentedControl:
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
+  Select:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Sheet:
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
+  SortableList:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Switch:
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+  Tabs: "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
+  Textarea:
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
+  TitleCell:
+    "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
+  // platform files behind a component: the web draws what react-native-web doesn't
+  Scrollbar:
+    'ScrollView’s own bar, drawn only on the web (scrollbar.web.tsx) where the browser’s takes a column; the phone and the TV keep the platform’s indicator',
+  // the TV's focus engine (tv/engine.tsx and tv/engine.web.tsx), behind Focusable and the TV's parts
+  FocusGuide:
+    'A region that steers TV focus: react-native-tvos’s TVFocusGuideView on the TVs, and on the web, which has none, marks the spatial focus engine reads (one-client-platform.md › A, question 5)',
+  TvScroll:
+    'A TV scroller that follows focus: a ScrollView landing each stop by its scrollSnapOffset on the TVs, and on the web a track the spatial focus engine moves, since react-native-web has neither prop. The track moves by transform behind a clipped view, so on the web a pointer’s wheel or drag doesn’t scroll a TvPage or a TvRow: only focus moves them, as on the TVs, which have no pointer',
+}
 
 /** Only on the web, and why no phone or TV screen needs it. */
 export const WEB_ONLY: Record<string, string> = {
@@ -33,10 +84,9 @@ export const WEB_ONLY: Record<string, string> = {
   ServerCard: "The web Sidebar's footer",
   PageHeader: "The admin's page title bar; native screens take the platform's navigation header",
   PageScrollbar:
-    'Drawn over the page where the browser hides its own; native views scroll natively',
+    "The document's own bar, for the web renderer's pages, which scroll the document; the native renderer's screens scroll in a ScrollView, which draws the same bar from the same measures on the web (Scrollbar)",
   SearchTrigger: "Opens the web's CommandPalette",
   CommandPalette: 'A keyboard-first command menu (cmdk); phones and TVs have no keyboard shortcuts',
-  Kbd: 'Shows a keyboard shortcut; phones and TVs have none',
   ModKey: "Names the platform's modifier key in a shortcut; phones and TVs have none",
   Table: 'Dense data tables are the admin’s, which is browser only; native lists use Row',
   TableFrame: "Part of the web's Table",
@@ -47,7 +97,6 @@ export const WEB_ONLY: Record<string, string> = {
   TableHead: "Part of the web's Table",
   TableCell: "Part of the web's Table",
   RowActions: "A web Table row's hover actions; touch has no hover",
-  WidgetGrid: "The admin dashboard's grid (ADR 0028), browser only",
   WidgetFrame: "The admin dashboard's widget, browser only",
   WidgetEditor: "Edits the admin dashboard's layout, browser only",
   Stat: 'A figure in an admin widget, browser only',
@@ -65,16 +114,12 @@ export const WEB_ONLY: Record<string, string> = {
     "The web's group around Radio (Radix); native screens choose one with SegmentedControl or rows",
   SelectItem: "Custom content in the web's Select; the native Select takes options",
   SelectGroup: "Custom content in the web's Select",
-  SelectSeparator: "Custom content in the web's Select",
   TabsList: "Radix's Tabs parts; native Tabs take their options as a prop",
   TabsTrigger: "Radix's Tabs parts",
   TabsContent: "Radix's Tabs parts",
-  DialogTrigger: "Radix's Dialog parts; the native Dialog is opened by its own prop",
-  DialogClose: "Radix's Dialog parts",
-  DialogContent: "Radix's Dialog parts",
+  DialogContent: "Radix's Dialog parts; the native Dialog is opened by its own prop",
   ConfirmDialog: "The admin's confirmation; native screens use the platform's alert",
-  SheetTrigger: "Radix's Sheet parts; the native Sheet is opened by its own prop",
-  SheetClose: "Radix's Sheet parts",
+  SheetClose: "Radix's Sheet parts; the native Sheet is opened and closed by its own props",
   SheetContent: "Radix's Sheet parts",
   Menu: "A dropdown menu; native screens use the platform's context menu or a Sheet",
   MenuTrigger: "Part of the web's Menu",
@@ -94,14 +139,13 @@ export const WEB_ONLY: Record<string, string> = {
   Toaster: "The web's toast stack (motion); native apps show the platform's own notices",
   BackdropHero: "The web client's hero; the TV draws its own with TvTile and the phone a Poster",
   CarouselRow: "The web's poster rows with arrow keys; native rows are the platform's FlatList",
-  RatingInput: "The admin's star rating, browser only",
   Progress: 'The old name of ProgressBar, kept until part C moves the apps',
   // the web's roots
   UIProvider:
     "The web's root (motion, tooltips, toasts, sound); native apps' root is ThemeProvider",
   SoundProvider: "The web's UI sound (Web Audio); native sound comes with 4.5b",
   PlatformScope:
-    "Sets a platform for the web's CSS variables (data-platform); React Native knows its platform",
+    "Sets a platform for the web's CSS variables (data-platform); React Native's is ThemeProvider's formFactor",
 }
 
 /** Only in React Native, and why the web has no counterpart. */
@@ -109,6 +153,8 @@ export const NATIVE_ONLY: Record<string, string> = {
   Avatar: 'The phone’s profile picture by initials; the web draws people in its own account menu.',
   Press:
     'React Native’s press feedback (scale, haptic, hit area); the web gets it from CSS and the DOM.',
+  ScrollView:
+    'React Native’s scroller with the web’s bar drawn over it on the web; the web renderer’s pages scroll the document, under PageScrollbar.',
   Row: 'The phone’s edge-to-edge row of posters in a FlatList; the web has CarouselRow.',
   Text: 'React Native draws text only inside <Text>; the web styles its elements with the tokens’ classes.',
   ThemeProvider:
@@ -123,7 +169,8 @@ export const NATIVE_ONLY: Record<string, string> = {
   TvKey: 'A key on the TV’s on-screen keyboard; the web has the device’s keyboard.',
   TvMessage: 'A message that fills the TV’s screen with its actions.',
   StopScope: 'Names the TV’s focus stops for the D-pad walk (apps/tv/uitest).',
-  Focusable: 'A stop for tvOS’s and Android TV’s focus engine; the web uses its own spatial focus.',
+  Focusable:
+    'A TV focus stop, drawn once: tvOS’s and Android TV’s focus engines move it, and in a browser the spatial focus engine (tv/engine.web.tsx); the web renderer’s screens mark their stops for the prototype’s.',
   KEEP: 'Where focus lands in a TV row or grid (tv.md › Focus).',
   HERO_DWELL_MS: 'How long the TV’s hero waits on a focused tile before it changes.',
   TRACK_SPRING: 'The TV row’s scroll spring as focus moves.',

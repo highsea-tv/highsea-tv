@@ -4,10 +4,10 @@
 // film or the show (at the episode), Mark as watched, and Remove from Continue watching, which
 // forgets the place without marking the title watched.
 import { createLibraryText, LONG_PRESS_MS } from '@highsea-tv/client/library'
+import type { ClientItem } from '@highsea-tv/mock/types'
 import { toast } from '@highsea-tv/ui'
 import { useRef } from 'react'
 import { useAction } from '../mock/hooks.tsx'
-import type { ClientItem } from '../mock/types.ts'
 
 export { cardPage } from '@highsea-tv/client/library'
 export { LONG_PRESS_MS }

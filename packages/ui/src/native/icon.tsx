@@ -19,7 +19,7 @@ export type IconProps = {
 export function Icon({ name, size, color = 'text', label, filled }: IconProps) {
   const theme = useTheme()
   const Glyph = icons[name]
-  const tv = theme.platform === 'tv'
+  const tv = theme.formFactor.input === 'tv'
   const px = (size ?? (tv ? tokens.icon.sizeTv.min : tokens.icon.size.md)) * theme.u
   return (
     <Glyph

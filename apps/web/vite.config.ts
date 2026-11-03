@@ -26,6 +26,13 @@ export default defineConfig(({ mode }) => {
     // the brand's web icons (favicon, touch icon) are served and copied as they are
     publicDir: fileURLToPath(new URL('../../packages/brand/assets/icons/web', import.meta.url)),
     plugins: [react(), tailwindcss()],
+    // one React for the app and the workspace packages it bundles. Bun's isolated installs give
+    // each package the React its own package.json names, so `@highsea-tv/native` (the player's
+    // engine) once brought a second copy, 19.3.0 against this app's 19.3.1, and its hooks failed
+    // with React's "Invalid hook call" in this bundle and in Bun's tests. Its devDependency now
+    // names 19.3.1, as `@highsea-tv/client`, `sdk` and `ui` do, and this keeps any later drift to
+    // one copy in the bundle (https://vite.dev/config/shared-options.html#resolve-dedupe)
+    resolve: { dedupe: ['react', 'react-dom'] },
     server: desktop
       ? { port: 3201, strictPort: true }
       : {

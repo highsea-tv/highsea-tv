@@ -3,9 +3,14 @@
 import { type Flow, flows } from '../flows.ts'
 import { platforms } from '../proto/state.ts'
 
-const platformLabel = Object.fromEntries(platforms.map((p) => [p.id, p.label]))
+const platformLabel: Record<string, string> = Object.fromEntries(
+  platforms.map((p) => [p.id, p.label]),
+)
 
-function FlowCard({ flow, onOpen }: { flow: Flow; onOpen: (path: string) => void }) {
+/** Opens a route. */
+type Open = (path: string) => void
+
+function FlowCard({ flow, onOpen }: { flow: Flow; onOpen: Open }) {
   const routes = Object.entries(flow.routes)
   return (
     <li className="grid content-start gap-2 rounded-md border border-line bg-s1 p-3.5">
@@ -45,7 +50,7 @@ function FlowCard({ flow, onOpen }: { flow: Flow; onOpen: (path: string) => void
   )
 }
 
-export function Launcher({ onOpen }: { onOpen: (path: string) => void }) {
+export function Launcher({ onOpen }: { onOpen: Open }) {
   const sections = [
     { id: 'admin', title: 'Server admin', items: flows.filter((f) => f.area === 'admin') },
     { id: 'clients', title: 'Clients', items: flows.filter((f) => f.area === 'client') },

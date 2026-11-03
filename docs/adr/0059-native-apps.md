@@ -65,3 +65,16 @@ Part B brought `apps/tv` up to the prototype. The TV's parts that any app on the
 - the dialogs: `TvSideDialog` and `TvConfirm`.
 
 `apps/tv` keeps only its wiring: the routes, the data hooks, Back and the head's destinations (`kit.tsx`). The library's `library/` routes became `movies/` and `collections/`, as the prototype's are, with `people/[id]` and `alerts` added. The player's Back follows `backStep`, and its Next up follows `filmUpNext`: the next part counts down when Autoplay is on, and three More like this choices wait to be picked. `src/shared/parity.ts` gives each of these parts its reason for being on the React Native side only.
+
+## 2026-11-03: `apps/client`, to replace `apps/mobile` and `apps/tv` (one client platform, part A)
+
+The two apps become one Expo project, `apps/client`, with the web ([ADR 0061](0061-one-client-platform.md)). This undoes "two apps, not one with a switch": one `app.config.ts` gives the iPhone's project, or the Apple TV's with `EXPO_TV=1`, which react-native-tvos's config plugin retargets ([Expo › Building for TV](https://docs.expo.dev/guides/building-for-tv/)). The two share `ios/`, so each prebuild starts it afresh. Both are on `react-native-tvos` 0.88 under the `react-native` alias. The Apple TV icon plugin moved to `@highsea-tv/native`'s `plugins/`, where `apps/tv` takes it too. A screen asks the form-factor rule, never `Platform.isTV` or the OS. What a device can do (haptics, the Menu key, a browser) still asks the platform.
+
+`apps/mobile` and `apps/tv` keep working, and keep shipping, until part B moves their screens and removes them. Until then `apps/client` installs beside them under its own identifiers and scheme.
+
+Two platform behaviours carried over from `apps/tv`:
+
+- **The Menu key** reaches the app on tvOS only while `TVEventControl.enableTVMenuKey()` holds it; letting it go at a screen's root sends Back to the Apple TV's home screen ([react-native-tvos › README](https://github.com/react-native-tvos/react-native-tvos#readme)). `apps/client/src/back-key.ts` holds it or lets it go, from `back.tsx`'s `BackKeys` in one place, and only where `Platform.isTVOS`. Android TV takes Back through `BackHandler` with nothing to hold, and the web's side (`back-key.web.ts`) hears Escape and Backspace as the remote's `menu`.
+- **expo-web-browser stays off tvOS.** It has no tvOS module ([Expo › WebBrowser](https://docs.expo.dev/versions/latest/sdk/webbrowser/)), and loading it there fails with a missing native module. So the TV's build leaves its config plugin out, and `apps/client/src/browser.ts` loads it only off the TV. The TV signs in from the phone, by code, and never needs a browser.
+
+The phone's and the TV's tests in `apps/client` run in Jest with `jest-expo`, as `apps/mobile`'s do. Its iPhone and Apple TV mock builds are captured by an XCUITest, `apps/client/uitest`, generated with XcodeGen as the TV's D-pad walk is, for the layout check.

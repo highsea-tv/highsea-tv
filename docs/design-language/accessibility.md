@@ -55,5 +55,5 @@ Sound never carries meaning on its own (see [sound](sound.md#accessibility)). It
 ## Verification
 
 - **Tokens:** every built-in theme passes the contrast policy in CI.
-- **Storybook:** the a11y addon (axe) is clean for every component story. Keyboard-only and D-pad walkthroughs are part of component review.
+- **Components:** axe is clean, in the three themes, for every screen of the client's web build (apps/client's `export:web`), which draws each component through the same React Native renderer as the phone and the TV. The sweeps (scripts/sweeps) take the build on in one-client-platform.md's part E; until then the prototypes' sweeps stand in. Keyboard-only and D-pad walkthroughs are part of component review.
 - **Phase 2 prototypes:** each flow is tested keyboard-only, with reduced motion, and at 200% text.

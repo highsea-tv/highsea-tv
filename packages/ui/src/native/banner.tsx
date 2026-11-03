@@ -31,8 +31,8 @@ export function Banner({
     <View
       style={{
         flexDirection: 'row',
-        gap: 12,
-        padding: 16,
+        gap: tokens.space['3'],
+        padding: tokens.space['4'],
         borderRadius: tokens.radius.lg,
         backgroundColor: theme.colors.s1,
         borderWidth: 1,
@@ -43,15 +43,15 @@ export function Banner({
         style={{
           width: 32,
           height: 32,
-          borderRadius: 16,
+          borderRadius: tokens.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: theme.colors['accent-soft'],
         }}
       >
-        <Icon name="announcement" size={16} color="accent-text" />
+        <Icon name="announcement" size={tokens.icon.size.sm} color="accent-text" />
       </View>
-      <View style={{ flex: 1, gap: 2, paddingVertical: 4 }}>
+      <View style={{ flex: 1, gap: tokens.space['0.5'], paddingVertical: tokens.space['1'] }}>
         <Text size={UI.size} style={{ lineHeight: line }} weight={600}>
           {title}
         </Text>
@@ -60,7 +60,7 @@ export function Banner({
             {children}
           </Text>
         ) : null}
-        {action ? <View style={{ marginTop: 8 }}>{action}</View> : null}
+        {action ? <View style={{ marginTop: tokens.space['2'] }}>{action}</View> : null}
       </View>
       {onDismiss ? (
         <View style={{ marginEnd: -6 }}>

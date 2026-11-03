@@ -2,8 +2,6 @@
 // What the three client apps share: their data calls, addresses and formatting. Each platform
 // draws its own screens (web, mobile and TV differ in layout, input and units), on the same data.
 import { createFormat } from '@highsea-tv/client/format'
-import { useEffect, useState } from 'react'
-import { useAction, useQuery } from '../mock/hooks.tsx'
 import type {
   ClientItem,
   ClientType,
@@ -11,7 +9,9 @@ import type {
   HomeSection,
   SearchKind,
   SearchPerson,
-} from '../mock/types.ts'
+} from '@highsea-tv/mock/types'
+import { useEffect, useState } from 'react'
+import { useAction, useQuery } from '../mock/hooks.tsx'
 import { useProto } from '../screen/screen.tsx'
 import { seasonsCount, showYears } from './shows.ts'
 

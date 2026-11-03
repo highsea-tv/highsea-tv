@@ -5,6 +5,7 @@
 // plays a transcode that can't keep up, and the empty server has nobody watching.
 
 import { duration, percent, relative } from '@highsea-tv/core/format'
+import type { SessionView } from '@highsea-tv/mock/sessions'
 import {
   Badge,
   Button,
@@ -36,7 +37,6 @@ import {
 } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { SessionView } from '../../mock/sessions.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 import { useTabAddress } from '../tabs.ts'

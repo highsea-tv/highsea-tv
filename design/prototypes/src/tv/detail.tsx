@@ -19,6 +19,7 @@ import {
   previewOf,
   videoLength,
 } from '@highsea-tv/client/library'
+import type { ClientDetail, PlaybackPrefs, Video } from '@highsea-tv/mock/types'
 import { Button, cn, Icon, type IconName, QualityTag, Rating, Skeleton } from '@highsea-tv/ui'
 import { useEffect, useRef, useState } from 'react'
 import { useParams } from 'wouter'
@@ -26,7 +27,6 @@ import { collectionCaption, left, runtime, useItem } from '../client/data.ts'
 import { useMarkWatched } from '../client/item-more.tsx'
 import { CollectionTile } from '../kit/collection-art.tsx'
 import { useAction } from '../mock/hooks.tsx'
-import type { ClientDetail, PlaybackPrefs, Video } from '../mock/types.ts'
 import { quiet } from './album.tsx'
 import { useBack } from './back.ts'
 import { TvFilmRow, TvFilmRowSkeleton } from './film-row.tsx'

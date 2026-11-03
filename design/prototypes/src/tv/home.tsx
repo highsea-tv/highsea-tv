@@ -7,6 +7,8 @@
 // Behind the featured card, a bloom in its most vibrant colour fills the screen and fades into the
 // background (the owner, 2026-10-30).
 // An announcement that must be acknowledged comes first, on its own.
+
+import type { ClientItem, FilmSection, HomeSection } from '@highsea-tv/mock/types'
 import { cn, Icon, QualityTag, Skeleton } from '@highsea-tv/ui'
 import { useReducedMotion } from 'motion/react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -26,7 +28,6 @@ import { UnwatchedCount } from '../client/show-card.tsx'
 import { seasonsCount } from '../client/shows.ts'
 import { useVibrant } from '../client/vibrant.ts'
 import { Inline } from '../kit/inline.tsx'
-import type { ClientItem, FilmSection, HomeSection } from '../mock/types.ts'
 import { useBack } from './back.ts'
 import { TvFilmRow, TvFilmRowSkeleton } from './film-row.tsx'
 import {

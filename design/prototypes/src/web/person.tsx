@@ -7,6 +7,7 @@
 // shows they're in, and their albums when they're an artist here. Only what's on this server, as
 // Jellyfin and Infuse do: the household browses what it can play.
 import { createLibraryText } from '@highsea-tv/client/library'
+import type { ClientPerson } from '@highsea-tv/mock/types'
 import { Button, CarouselRow, cn, EmptyState, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useParams } from 'wouter'
@@ -14,7 +15,6 @@ import { usePerson } from '../client/data.ts'
 import { MediaPosterSkeleton } from '../client/media-card.tsx'
 import { ShowPoster } from '../client/show-card.tsx'
 import { showYears } from '../client/shows.ts'
-import type { ClientPerson } from '../mock/types.ts'
 import { gutter, webHref } from './shell.tsx'
 
 /** What the page says about the title, as the apps word it (@highsea-tv/client/library). */

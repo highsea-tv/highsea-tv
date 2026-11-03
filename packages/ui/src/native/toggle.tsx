@@ -166,7 +166,7 @@ export function Switch(props: ToggleProps) {
 function Track({ on, m }: { on: boolean; m: ControlPoints }) {
   const theme = useTheme()
   const looks = tokens.controls.looks
-  const tv = theme.platform === 'tv'
+  const tv = theme.formFactor.input === 'tv'
   const inset = tv ? m.inset : 3
   const thumb = tv ? m.icon : 18
   const height = thumb + inset * 2
@@ -187,7 +187,8 @@ function Track({ on, m }: { on: boolean; m: ControlPoints }) {
           height: thumb,
           borderRadius: tokens.radius.pill,
           backgroundColor: theme.colors[on ? looks.toggleOn.label : 'text'],
-          boxShadow: tv ? undefined : '0 1px 3px rgba(0, 0, 0, 0.3)',
+          // elevation 2, the toggles' (elevation.md)
+          boxShadow: tv ? undefined : tokens.elevation[2].boxShadow,
         }}
       />
     </View>

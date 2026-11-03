@@ -4,11 +4,11 @@
 // changes the screen is checked with axe, and its classes join the stylesheet check.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { createClient, createMock, type Mock } from '@highsea-tv/mock/client'
+import { applyPreview } from '@highsea-tv/mock/server'
 import { act, cleanup, render, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { memoryLocation } from 'wouter/memory-location'
-import { createClient, createMock, type Mock } from '../src/mock/client.ts'
-import { applyPreview } from '../src/mock/server.ts'
 import { defaultState, type Role } from '../src/proto/state.ts'
 import { ScreenApp } from '../src/screen/screen.tsx'
 import { classes, collect, unknownClasses, violations } from './check.ts'
@@ -470,36 +470,6 @@ describe('C6–C8 clients', () => {
     expect(
       within(page().getByRole('region', { name: 'Movies' })).getAllByRole('link').length,
     ).toBeGreaterThan(0)
-    await clean()
-  })
-
-  test('home layout: hiding a row on one device hides it on every device', async () => {
-    const { mock, user } = await open('/mobile/you/home')
-    await user.click(page().getByRole('button', { name: 'Got it' }))
-    await settle()
-    await user.click(page().getByRole('switch', { name: 'Show Recently added' }))
-    await settle()
-    const sections = await client(mock).home.sections('tvos')
-    expect(sections.some((s) => s.title === 'Recently added')).toBe(false)
-    expect(sections[0]?.layout).toBe('hero')
-    // the drag handle's keyboard model: Space picks it up, Up moves it, Space drops it
-    act(() => page().getByRole('button', { name: 'Move The silent era' }).focus())
-    await user.keyboard(' {ArrowUp} ')
-    await settle()
-    const titles = (await client(mock).home.sections('web')).map((s) => s.title)
-    expect(titles.indexOf('The silent era')).toBeLessThan(titles.indexOf('Staff picks'))
-    await clean()
-  })
-
-  test('a device theme applies to that device only', async () => {
-    const { user } = await open('/web/settings/appearance')
-    await user.click(page().getByRole('button', { name: 'Got it' }))
-    await settle()
-    await user.click(page().getByRole('radio', { name: /OLED black/ }))
-    await settle()
-    expect(document.documentElement.dataset.theme).toBe('oled')
-    expect(JSON.parse(localStorage.getItem('highsea-proto:prefs:web') ?? '{}').theme).toBe('oled')
-    expect(localStorage.getItem('highsea-proto:prefs:tv')).toBeNull()
     await clean()
   })
 })

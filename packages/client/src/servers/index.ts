@@ -6,6 +6,9 @@
 import type { PublicInfo } from '@highsea-tv/api-contract'
 import type { Address, KnownServer } from '@highsea-tv/sdk'
 
+/** A server found on this network: its public info and the address it resolved to. */
+export type Nearby = { info: PublicInfo; base: string }
+
 export type Known = Omit<KnownServer, 'token'> & {
   /** When this app last reached it, in milliseconds since 1970. */
   lastSeen: number

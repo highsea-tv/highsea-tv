@@ -3,7 +3,9 @@
 // Android TV's, through the same react-native-tvos props), lifting on focus by the focus tokens'
 // scale on `spring.base` and drawing the ring, the `text` colour 0.2u wide with its dark drop
 // shadow. Reduced motion keeps the ring without the scale. The ring is a box shadow, so it never
-// moves the layout (https://reactnative.dev/docs/view-style-props#boxshadow).
+// moves the layout (https://reactnative.dev/docs/view-style-props#boxshadow). What moves focus is
+// the platform's engine (./engine, a platform pair): tvOS's and Android TV's own on the devices,
+// and the spatial focus engine in a browser. The drawing here is the same on all of them.
 import {
   type ComponentRef,
   createContext,
@@ -21,13 +23,9 @@ import {
   type View,
   type ViewStyle,
 } from 'react-native'
-import Animated, {
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated'
-import { tokens, useTheme } from '../theme.tsx'
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
+import { tokens, useMotionReduced, useTheme } from '../theme.tsx'
+import { requestFocus, useStop } from './engine'
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 
@@ -102,7 +100,7 @@ export function Focusable({
   children,
 }: FocusableProps) {
   const theme = useTheme()
-  const reduced = useReducedMotion()
+  const reduced = useMotionReduced()
   const scope = useContext(StopScope)
   const [focused, setFocused] = useState(false)
   const scale = useSharedValue(1)
@@ -117,16 +115,16 @@ export function Focusable({
             ? ROW_SCALE
             : 1
   const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
+  const stop = useStop(ref, { preferred, disabled })
   return (
     <AnimatedPressable
-      ref={ref}
+      {...stop.props}
+      ref={stop.ref}
       accessibilityRole={role}
       accessibilityLabel={label}
       accessibilityState={{ ...state, disabled, selected }}
       testID={`tv:${scope}${label ?? ''}`}
-      hasTVPreferredFocus={preferred}
       disabled={disabled}
-      focusable={!disabled}
       onPress={onPress}
       onLongPress={onLongPress}
       delayLongPress={delayLongPress}
@@ -145,6 +143,7 @@ export function Focusable({
         focused &&
           drawRing && { boxShadow: focusShadow(theme.colors.text, theme.u, theme.focusRingScale) },
         style,
+        stop.style,
         animated,
       ]}
     >
@@ -153,10 +152,7 @@ export function Focusable({
   )
 }
 
-/**
- * Moves focus to a mounted stop: react-native-tvos gives every host view `requestTVFocus()` on both
- * TVs (its View.js), which its types don't list.
- */
+/** Moves focus to a mounted stop, by the platform's engine (./engine's requestFocus). */
 export function focusOn(handle: ViewHandle | null | undefined) {
-  ;(handle as unknown as { requestTVFocus?: () => void } | null)?.requestTVFocus?.()
+  requestFocus(handle)
 }

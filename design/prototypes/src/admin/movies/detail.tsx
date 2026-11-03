@@ -7,6 +7,17 @@
 // confidence and offset; manual search and pick; re-sync).
 
 import { bytes, duration, percent, rate, relative } from '@highsea-tv/core/format'
+import type {
+  DiscoverMovie,
+  HistoryEventType,
+  MediaFile,
+  MediaItem,
+  Release,
+  Stream,
+  SubtitleSearchResult,
+  SubtitleTrack,
+  SyncStatus,
+} from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -43,17 +54,6 @@ import {
 import { Fragment, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type {
-  DiscoverMovie,
-  HistoryEventType,
-  MediaFile,
-  MediaItem,
-  Release,
-  Stream,
-  SubtitleSearchResult,
-  SubtitleTrack,
-  SyncStatus,
-} from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import {
   CastAndCrew,

@@ -18,6 +18,7 @@ import {
 } from '@highsea-tv/tokens'
 import { asc, eq } from 'drizzle-orm'
 import type { Ctx } from './context.ts'
+import { BUILT_IN_PACK } from './keys.ts'
 import { checkMark, type MarkType } from './marks.ts'
 
 /** What the apps play until someone changes it on their own device. */
@@ -49,7 +50,7 @@ export const defaultAppearance: AppearanceSettings = {
 }
 
 /** "Felt and wood" (brand direction › sound). Built in, and can't be deleted. */
-export const BUILT_IN_PACK = { id: defaultSoundPack.id, name: 'Felt and wood' } as const
+export { BUILT_IN_PACK } from './keys.ts'
 
 export const NAME_MAX = 40
 export const THEMES_MAX = 50

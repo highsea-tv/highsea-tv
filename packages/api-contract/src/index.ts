@@ -2,7 +2,7 @@
 // The public API's contract (ADR 0006): every route's method, path, inputs and responses, as zod
 // schemas with OpenAPI metadata. The server implements these routes; the SDK calls them; the
 // OpenAPI document is generated from them. The prototype's draft types
-// (design/prototypes/src/mock/types.ts) move here a route group at a time.
+// (packages/mock/src/types.ts) move here a route group at a time.
 export * from './accounts.ts'
 export * from './collections.ts'
 export * from './common.ts'

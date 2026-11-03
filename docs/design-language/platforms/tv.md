@@ -20,17 +20,17 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 
 | Region | Position / size |
 | --- | --- |
-| Server identity (mark + server name) | Top 3.2u, left 4.5u |
-| Announcement pill | Top 3.2u, right 4.5u |
+| Server identity (mark + server name) | Top 2.4u, left 2.4u |
+| Announcement pill | Top 2.4u, right 2.4u |
 | Hero artwork | Full width, top 62% of the screen; two layers that cross-fade |
-| Hero copy (eyebrow, title, meta, synopsis, actions) | Left 4.5u, top 7.5u, max width 38u |
-| Rows | Bottom 47% of the screen, left inset 4.5u, bleeding off the right edge; below the featured row they continue down the page |
+| Hero copy (eyebrow, title, meta, synopsis, actions) | Left 2.4u, top 7.5u, max width 38u |
+| Rows | Bottom 47% of the screen, left inset 2.4u, bleeding off the right edge; below the featured row they continue down the page |
 | Poster | 10.5u wide (2:3), with a 1.2u gap; the title (1.05u, 600) and the year (0.95u, `text-3`) under the art |
 | Wide tile (continue watching) | 16:9 with a progress bar 7% in from the edges |
 | Radii | Posters 0.5u (≈ 10px at 1080p); controls by the TV rule, `radius-sm` at 1.75 times (≈ 0.73u, [controls](../controls.md)); quality pills 0.3u |
 
 **Safe area.**
-- Text and focusable items stay at least 4.5u (≈ 86px) from the left and right edges, and 3.2u (≈ 61px) from the top and bottom. This meets the tvOS guideline of 80 × 60px.
+- Text and focusable items stay at least 2.4u (≈ 46px at 1080p) from every edge (`tv.safe` in the tokens). The owner tightened it from 4.5u and 3.2u on 2026-10-30, inside tvOS's guideline of 80 × 60 points, and confirmed it on 2026-11-03.
 - Artwork and rows may bleed past the safe area to the screen edge.
 - On platforms with overscan, the safe area grows to 5% on every side.
 

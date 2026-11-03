@@ -5,13 +5,14 @@
 // and actions as props, so any app on the TV's rule can draw them.
 import { Image } from 'expo-image'
 import type { Ref } from 'react'
-import { StyleSheet, TVFocusGuideView, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { Button } from '../button.tsx'
 import { Icon } from '../icon.tsx'
 import type { IconName } from '../icons.ts'
 import { Text } from '../text.tsx'
 import { tokens, useTheme } from '../theme.tsx'
 import { alpha } from './controls.tsx'
+import { FocusGuide } from './engine'
 import { Focusable, type ViewHandle } from './focusable.tsx'
 import type { TileSource } from './tiles.tsx'
 
@@ -161,7 +162,7 @@ export function TvMenu({
             </Text>
           ) : null}
         </View>
-        <TVFocusGuideView
+        <FocusGuide
           autoFocus
           trapFocusUp
           trapFocusDown
@@ -185,7 +186,7 @@ export function TvMenu({
               </Button>
             </View>
           ))}
-        </TVFocusGuideView>
+        </FocusGuide>
       </View>
     </View>
   )
@@ -250,7 +251,7 @@ export function TvConfirm({
         <Text variant="synopsis" color="text-2" style={{ textAlign: 'center' }}>
           {body}
         </Text>
-        <TVFocusGuideView
+        <FocusGuide
           autoFocus
           trapFocusUp
           trapFocusDown
@@ -264,7 +265,7 @@ export function TvConfirm({
           <Button variant="primary" icon={icon} onPress={onConfirm}>
             {action}
           </Button>
-        </TVFocusGuideView>
+        </FocusGuide>
       </View>
     </View>
   )
@@ -324,7 +325,11 @@ export function TvNoticeCard({
           }}
         >
           <View style={{ marginTop: 0.2 * u }}>
-            <Icon name={icon} size={1.6} color={warning ? 'badge-warning' : 'accent-text'} />
+            <Icon
+              name={icon}
+              size={tokens.icon.sizeTv.max}
+              color={warning ? 'badge-warning' : 'accent-text'}
+            />
           </View>
           <View style={{ flex: 1, minWidth: 0, gap: 0.6 * u }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 0.8 * u }}>
@@ -334,7 +339,7 @@ export function TvNoticeCard({
               {mark ? (
                 <View
                   style={{
-                    borderRadius: 999,
+                    borderRadius: tokens.radius.pill,
                     paddingHorizontal: 0.6 * u,
                     paddingVertical: 0.1 * u,
                     backgroundColor: theme.colors['accent-soft'],

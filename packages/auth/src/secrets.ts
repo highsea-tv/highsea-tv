@@ -25,5 +25,4 @@ export function newCode(groups = 2, group = 3): string {
   return parts.join('-')
 }
 
-/** Normalizes a typed code: case, spaces and dashes don't matter. */
-export const normalizeCode = (code: string) => code.toUpperCase().replace(/[^0-9A-Z]/g, '')
+export { normalizeCode } from './codes.ts'

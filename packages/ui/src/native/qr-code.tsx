@@ -2,12 +2,15 @@
 // A real QR code (qr-code.tsx in ui-web): the TV's sign-in link, for the phone to scan. The symbol
 // comes from `qrcode`'s create(), as on the web, drawn as one path with react-native-svg. It's
 // dark on light in every theme, as scanners expect, with the four-module quiet zone ISO/IEC 18004
-// asks for; the colours are the prototype's.
+// asks for: the default theme's text and background, whatever the theme.
 import { create, type QRCodeErrorCorrectionLevel } from 'qrcode'
 import { useMemo } from 'react'
 import Svg, { Path, Rect } from 'react-native-svg'
+import { tokens } from './theme.tsx'
 
 const QUIET = 4
+/** Dark on light in every theme: the default theme's own pair, not the person's. */
+const { bg: DARK, text: LIGHT } = tokens.themes.default.colors
 
 export function QrCode({
   value,
@@ -40,8 +43,8 @@ export function QrCode({
       accessibilityRole="image"
       accessibilityLabel={label}
     >
-      <Rect x={-QUIET} y={-QUIET} width={box} height={box} rx={1.5} fill="#ededee" />
-      <Path d={d} fill="#0b0b0c" />
+      <Rect x={-QUIET} y={-QUIET} width={box} height={box} rx={1.5} fill={LIGHT} />
+      <Path d={d} fill={DARK} />
     </Svg>
   )
 }

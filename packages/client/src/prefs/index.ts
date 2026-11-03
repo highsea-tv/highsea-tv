@@ -9,9 +9,15 @@
 // languages a film starts in, Next up and intros, and a quality cap at home and away, kept in the
 // user layer so every device they're signed in on plays the same way. The server applies them
 // when a film starts; Settings › Playback in the admin (how it transcodes) is separate.
-import type { Preferences } from '@highsea-tv/api-contract'
+import type { ClientType, Preferences } from '@highsea-tv/api-contract'
 import { createT, defineMessages } from '@highsea-tv/i18n'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
+import {
+  destinationMessages,
+  forgetMessages,
+  shellMessages,
+  signInMessages,
+} from '../gate/index.ts'
 
 /** The device's own theme before it chose one, as the server's default is named in the picker. */
 export const SERVER_THEME = 'server'
@@ -212,13 +218,134 @@ export const settingsMessages = defineMessages({
   playbackHint: 'Languages, what plays next, and quality, on every device.',
   home: 'Home screen',
   homeHint: 'Reorder and hide rows, on every device.',
-  servers: 'Servers',
+  servers: signInMessages.servers,
   serversHint: 'The servers you use, and signing out.',
   devices: 'Your devices',
   devicesHint: 'Where you’re signed in.',
   about: 'About',
   aboutHint: 'Versions and licences.',
 })
+
+/**
+ * Settings' words (C7, client-settings.md), every app's: what each section says and asks. The
+ * device it's on is `device`, `phone`, `tv` or `web`, where the words name it.
+ */
+export const settingsPageMessages = defineMessages({
+  settings: destinationMessages.settings,
+  sections: 'Settings sections',
+  signOut: 'Sign out of {name}',
+  signOutFailed: 'Couldn’t sign out. Try again.',
+  signedOut: 'Signed out of {name}',
+  signedOutBody: 'Your downloads stay on this device.',
+  signOutAsk: 'Sign out of {name}?',
+  signOutBody:
+    '{device, select, phone {Your downloads stay on this phone. You can sign in again later.} tv {Every profile on this TV signs out. You can sign in again with a code.} other {Your downloads stay on this device. You can sign in again later.}}',
+  audioLanguage: 'Audio language',
+  audioLanguageHint: 'What a film starts in, when it has it.',
+  subtitleLanguage: 'Subtitle language',
+  onlyForeign: 'Only when the audio isn’t in my language',
+  onlyForeignHint: 'Subtitles stay off when you understand what’s said.',
+  qualityHome: 'Quality at home',
+  qualityHomeHint: 'On the same network as the server.',
+  qualityAway: 'Quality away from home',
+  qualityAwayHint: 'Lower uses less data and starts sooner.',
+  playbackFollows:
+    'These follow you to every device you’re signed in on. A film’s own choices win over them.',
+  missingTitle: 'There’s no setting here',
+  missingBody: 'It may have moved.',
+  loading: 'Loading…',
+  failed: 'Couldn’t load this. {message}',
+  saveFailed: 'Couldn’t save that. {message}',
+  themeDevice: 'Only this device changes. Everyone else keeps their own.',
+  themeEverywhere: 'All your devices change. Everyone else keeps their own.',
+  serverDefault: '{name}’s default',
+  builtIn: 'Built in',
+  fromServer: 'From {name}',
+  everywhere: 'Use on all my devices',
+  everywhereOff: 'Off: each device keeps its own theme.',
+  everywhereOn:
+    'Your phone, TV and computers use this theme too. Turn it off and each keeps it until you change it there.',
+  sounds: 'Interface sounds',
+  followingOn:
+    'Following {name}: on for {device, select, tv {the TV} web {the web} other {the phone}}.',
+  followingOff:
+    'Following {name}: off for {device, select, tv {the TV} web {the web} other {the phone}}.',
+  setHere: 'Set on this device.',
+  followAgain: 'Follow {name} again',
+  homeIntro: 'The featured hero stays on top. Your order follows you to every device.',
+  serverOrder: 'Use the server’s order',
+  showRow: 'Show {title}',
+  moveUp: 'Move {title} up',
+  moveDown: 'Move {title} down',
+  moveRow: 'Move {title}',
+  moved: '{title} moved to {index} of {count}',
+  homeRows: 'Home rows',
+  'row.continue': 'Continue watching',
+  'row.recent': 'Recently added',
+  inUse: 'In use',
+  onNetwork: 'On this network · {address}',
+  remotely: 'Connected remotely · {address}',
+  unreachable: 'Can’t reach it right now',
+  signInServer: signInMessages.signIn,
+  switchServer: 'Switch',
+  serversList: settingsMessages.servers,
+  addServer: shellMessages.addServer,
+  devicesList: settingsMessages.devices,
+  knownSignedIn: 'Signed in · last used {when}',
+  knownSignedOut: 'Signed out · last used {when}',
+  signInTv: 'Sign in a TV',
+  thisDevice: 'This device',
+  lastUsed: 'Last used {when}',
+  signOutDevice: 'Sign out {name}',
+  signOutDeviceAsk: 'Sign out {name}?',
+  signOutDeviceBody: 'It needs a code or password to come back.',
+  signOutShort: 'Sign out',
+  deviceSignedOut: '{name} is signed out',
+  cancel: forgetMessages.cancel,
+  thisApp: 'This app',
+  appVersion: 'highsea {version}{os, select, none {} other { for {os}}}',
+  server: 'Server',
+  licence: 'Licence',
+  free: 'AGPL-3.0, free software',
+  serversNote: 'Each server keeps its own sign-in. Signing out of one leaves the others alone.',
+  getApps: 'Get the apps',
+  licences: 'Open-source licences',
+  diagnostics: 'Send diagnostics',
+  soon: 'Not in this version yet.',
+})
+
+/**
+ * Settings' words that only the TV says, where the remote's keys stand in for the phone's and the
+ * web's controls: the playback rows' short names, Up and Down to move a home row, and the theme's
+ * and sounds' buttons, which say their state as the prototype's tv/settings.tsx does.
+ */
+export const tvSettingsMessages = defineMessages({
+  audio: 'Audio',
+  subtitles: 'Subtitles',
+  atHome: 'At home',
+  away: 'Away',
+  homeIntro:
+    'OK shows or hides a row. Up and Down on Move change its place. It follows you to every device.',
+  up: 'Up',
+  down: 'Down',
+  everywhereOff: 'Use on all my devices: Off',
+  everywhereOn: 'Use on all my devices: On',
+  onlyThisTv: 'Only this TV changes.',
+  everywhereTv: 'Your phone and computers use this theme too.',
+  soundsOff: 'Interface sounds: Off',
+  soundsOn: 'Interface sounds: On',
+})
+
+/** Where highsea's source code is: About's link in the apps that still have one. */
+export const SOURCE = 'https://github.com/highsea-tv/highsea-tv'
+
+/** A device's icon in @highsea-tv/ui's set, by its kind of app, as Settings › Devices lists it. */
+export const deviceIcon = (c: ClientType) =>
+  c === 'ios' || c === 'android'
+    ? ('phone' as const)
+    : c === 'tvos' || c === 'androidtv' || c === 'webos' || c === 'tizen'
+      ? ('tv' as const)
+      : ('laptop' as const)
 
 /** Settings' sections (C7, client-settings.md), the same in every app and in this order. */
 export const SETTINGS_SECTIONS = [

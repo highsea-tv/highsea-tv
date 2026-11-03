@@ -5,6 +5,7 @@
 // (ADR 0032), so it has one shape; a user is sent to the web client instead (checkpoint 4.2a).
 
 import { bytes, relative } from '@highsea-tv/core/format'
+import type { Announcement, StaffRole, UserRole } from '@highsea-tv/mock/types'
 import {
   Banner,
   Button,
@@ -40,7 +41,6 @@ import {
 import { useLocation } from 'wouter'
 import { Cta, Inline } from '../kit/inline.tsx'
 import { useClient, useNow, useQuery } from '../mock/hooks.tsx'
-import type { Announcement, StaffRole, UserRole } from '../mock/types.ts'
 import { useProto } from '../screen/screen.tsx'
 import { pageAt, pageGroups } from './nav.ts'
 import { areaGroups } from './settings/settings.tsx'

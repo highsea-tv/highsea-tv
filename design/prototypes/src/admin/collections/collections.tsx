@@ -3,13 +3,14 @@
 // smart or picked by hand, with its mosaic, what it holds now (films and shows, counted as the apps
 // count them) and who sees it. Each opens the editor, where rules, exceptions and the live result
 // sit side by side.
+
+import type { CollectionSummary } from '@highsea-tv/mock/types'
 import { Badge, Button, ConfirmDialog, EmptyState, toast } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { titlesHere } from '../../client/data.ts'
 import { CollectionArt } from '../../kit/collection-art.tsx'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { CollectionSummary } from '../../mock/types.ts'
 import { audienceSummary, useUsers } from '../curation/shared.tsx'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'

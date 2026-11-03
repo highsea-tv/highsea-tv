@@ -2,7 +2,11 @@
 // The preference keys (ADR 0027): a typed list, each a zod schema. An unknown key is refused, never
 // stored. Layers resolve most specific first: device, then client type, then user, then the
 // server's defaults from Appearance. Browser-safe: clients import it as `/keys`.
+import { defaultSoundPack } from '@highsea-tv/tokens'
 import { z } from 'zod'
+
+/** The sound pack every server has (appearance.ts), "felt and wood" (docs/brand/direction.md#sound). */
+export const BUILT_IN_PACK = { id: defaultSoundPack.id, name: 'Felt and wood' } as const
 
 /** A theme id: a built-in one (`default`, `oled`, `high-contrast`) or one of the server's. */
 export const THEME_ID = /^[a-z0-9][a-z0-9-]{0,39}$/
@@ -125,3 +129,63 @@ const PHONE = new Set(['ios', 'android'])
 /** TVs, phones and tablets, or the web and desktop (the admin included). */
 export const appKind = (client: string | null): AppKind =>
   client && TV.has(client) ? 'tv' : client && PHONE.has(client) ? 'phone' : 'web'
+
+// ---------------------------------------------------------------- resolving
+
+/** The layers a person or an app changes, most specific first. */
+export const EDITABLE_LAYERS = ['device', 'client', 'user'] as const
+export type EditableLayer = (typeof EDITABLE_LAYERS)[number]
+export type PreferenceLayers = Record<EditableLayer, PreferenceLayer>
+
+/** The scope a layer is stored under: `user`, `client:tvos`, `device:{id}`. */
+export const scopeFor = (layer: EditableLayer, target?: string) =>
+  layer === 'user' ? 'user' : `${layer}:${target}`
+
+/** The server's defaults for one kind of app, from Appearance's theme and sounds. */
+export const serverPreferences = (
+  appearance: { defaultTheme: string; sound: Record<AppKind, boolean> & { volume: number } },
+  client: string | null,
+): Preferences => ({
+  theme: appearance.defaultTheme,
+  sound: appearance.sound[appKind(client)],
+  volume: appearance.sound.volume,
+  'admin.addMovie.defaults': null,
+  ...PLAYBACK_DEFAULTS,
+})
+
+/**
+ * Each key from the most specific layer that sets it, or the server's default. `usable` passes a
+ * value over when it no longer works (a theme deleted since), so the next layer shows through.
+ */
+export function resolveLayers(
+  server: Preferences,
+  layers: PreferenceLayers,
+  usable: (key: PreferenceKey, value: unknown) => boolean,
+): { values: Preferences; from: Record<PreferenceKey, Layer> } {
+  const values = { ...server }
+  const from = Object.fromEntries(PREFERENCE_KEYS.map((k) => [k, 'server'])) as Record<
+    PreferenceKey,
+    Layer
+  >
+  for (const key of PREFERENCE_KEYS)
+    for (const layer of EDITABLE_LAYERS) {
+      const value = layers[layer][key]
+      if (value !== undefined && usable(key, value)) {
+        ;(values as Record<string, unknown>)[key] = value
+        from[key] = layer
+        break
+      }
+    }
+  return { values, from }
+}
+
+/** A layer with a change applied: a value sets its key, `null` clears it. */
+export function patchLayer(layer: PreferenceLayer, patch: PreferencePatch): PreferenceLayer {
+  const next: Record<string, unknown> = { ...layer }
+  for (const [k, v] of Object.entries(patch)) {
+    if (v === undefined) continue
+    if (v === null) delete next[k]
+    else next[k] = v
+  }
+  return next as PreferenceLayer
+}

@@ -3,6 +3,8 @@
 // pages and collections: the folder, both profiles, monitoring, minimum availability and "Search
 // now", which hands the movie to the pipeline. Given several movies, it adds each with the same
 // options.
+
+import type { DiscoverMovie, MediaItem, MinimumAvailability } from '@highsea-tv/mock/types'
 import {
   Button,
   Checkbox,
@@ -16,7 +18,6 @@ import {
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { DiscoverMovie, MediaItem, MinimumAvailability } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 
 const availability: { value: MinimumAvailability; label: string }[] = [

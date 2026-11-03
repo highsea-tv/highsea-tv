@@ -3,18 +3,18 @@
 // the admin's list and editor and the apps' Library › Collections and collection pages.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
-import { act, cleanup, render, waitFor, within } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
-import { memoryLocation } from 'wouter/memory-location'
-import { createClient, createMock, type Mock } from '../src/mock/client.ts'
-import { evaluate } from '../src/mock/collections.ts'
+import { createClient, createMock, type Mock } from '@highsea-tv/mock/client'
+import { evaluate } from '@highsea-tv/mock/collections'
 import type {
   RuleCondition,
   RuleField,
   RuleOp,
   RuleValue,
   SmartCollection,
-} from '../src/mock/types.ts'
+} from '@highsea-tv/mock/types'
+import { act, cleanup, render, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { memoryLocation } from 'wouter/memory-location'
 import { defaultState, type Role } from '../src/proto/state.ts'
 import { ScreenApp } from '../src/screen/screen.tsx'
 import { collect, violations } from './check.ts'

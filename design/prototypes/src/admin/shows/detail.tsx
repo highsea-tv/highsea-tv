@@ -6,6 +6,13 @@
 // and Remove, and Search for the whole show, are in the header.
 
 import { bytes } from '@highsea-tv/core/format'
+import type {
+  AdminEpisode,
+  AdminSeason,
+  AdminShow,
+  AdminShowDetail,
+  EpisodeStatus,
+} from '@highsea-tv/mock/types'
 import {
   Badge,
   type BadgeTone,
@@ -44,13 +51,6 @@ import {
 import { useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type {
-  AdminEpisode,
-  AdminSeason,
-  AdminShow,
-  AdminShowDetail,
-  EpisodeStatus,
-} from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { MediaSummary, SummarySkeleton } from '../media/sections.tsx'
 import { AdminPage } from '../shell.tsx'

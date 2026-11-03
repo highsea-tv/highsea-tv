@@ -33,15 +33,6 @@
       "port": 3100
     },
     {
-      "name": "storybook",
-      "runtimeExecutable": "sh",
-      "runtimeArgs": [
-        "-c",
-        "export PATH=\"$HOME/.nvm/versions/node/v26.11.1/bin:$PATH\" && bun run storybook"
-      ],
-      "port": 6006
-    },
-    {
       "name": "server-dev",
       "runtimeExecutable": "sh",
       "runtimeArgs": [

@@ -2,6 +2,12 @@
 // A12 Appearance (docs/product/appearance.md): what every app inherits from the server. The name,
 // mark and accent; the default theme, and custom themes built with the theme engine's editor
 // (contrast audited, shareable by code); and sound defaults per kind of app.
+
+import type {
+  Appearance as AppearanceData,
+  CustomTheme,
+  SoundDefaults,
+} from '@highsea-tv/mock/types'
 import {
   type BuiltInThemeId,
   builtInThemes,
@@ -32,7 +38,6 @@ import {
 } from '@highsea-tv/ui'
 import { useEffect, useMemo, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { Appearance as AppearanceData, CustomTheme, SoundDefaults } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AreaPage, Group, SaveBar } from './settings.tsx'
 

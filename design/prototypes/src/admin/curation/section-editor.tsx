@@ -2,6 +2,8 @@
 // The featured-section composer (A11, docs/product/curation.md#section-composer): a title, a
 // layout, where its titles come from (films and shows picked by hand, or a rule that keeps itself
 // fresh), hero taglines, who sees it and when, beside the live client preview.
+
+import type { ClientItem, CurationPreview, FeaturedSection } from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -16,7 +18,6 @@ import {
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { ClientItem, CurationPreview, FeaturedSection } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 import { layoutLabels } from './curation.tsx'

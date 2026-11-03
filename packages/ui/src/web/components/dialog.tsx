@@ -8,8 +8,8 @@ import { cn } from '../lib/cn.ts'
 import { Button } from './button.tsx'
 
 export const Dialog = DialogPrimitive.Root
-export const DialogTrigger = DialogPrimitive.Trigger
-export const DialogClose = DialogPrimitive.Close
+const DialogTrigger = DialogPrimitive.Trigger
+const DialogClose = DialogPrimitive.Close
 
 const scrim =
   'fixed inset-0 z-50 glass-scrim data-[state=open]:animate-fade-in data-[state=closed]:animate-fade-out'
@@ -152,7 +152,6 @@ export function ConfirmDialog({
 // ---------- sheets
 
 export const Sheet = DialogPrimitive.Root
-export const SheetTrigger = DialogPrimitive.Trigger
 export const SheetClose = DialogPrimitive.Close
 
 export type SheetSide = 'bottom' | 'right' | 'left'

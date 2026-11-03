@@ -19,18 +19,18 @@
 // rule can draw one.
 import { Image } from 'expo-image'
 import { type ReactNode, type Ref, useCallback, useEffect, useRef, useState } from 'react'
-import { StyleSheet, TVFocusGuideView, useTVEventHandler, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import Animated, {
   FadeIn,
   FadeOut,
   useAnimatedStyle,
-  useReducedMotion,
   useSharedValue,
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
 import { Text } from '../text.tsx'
-import { tokens, useTheme } from '../theme.tsx'
+import { tokens, useMotionReduced, useTheme } from '../theme.tsx'
+import { FocusGuide, useRemote } from './engine'
 import { Focusable, StopScope, type ViewHandle } from './focusable.tsx'
 import { TRACK_SPRING } from './model.ts'
 import { focusedPlay, type TileSource } from './tiles.tsx'
@@ -109,7 +109,7 @@ export function TvFilmRow<T extends RowFilm>({
 }) {
   const theme = useTheme()
   const u = theme.u
-  const reduced = useReducedMotion()
+  const reduced = useMotionReduced()
   const [{ pos, dir }, setPos] = useState({ pos: 0, dir: 1 })
   const [focused, setFocused] = useState(false)
   const n = items.length
@@ -126,7 +126,7 @@ export function TvFilmRow<T extends RowFilm>({
     },
     [focused, loops, pos, n, onMove],
   )
-  useTVEventHandler(onEvent)
+  useRemote(onEvent)
   const item = items[at]
   // Play/Pause plays the card's film, whichever it holds now (tiles.tsx's focusedPlay)
   const playing = useRef(() => {})
@@ -207,7 +207,7 @@ export function TvFilmRow<T extends RowFilm>({
               )
             })}
           </View>
-          <TVFocusGuideView
+          <FocusGuide
             trapFocusLeft={focused && can(-1)}
             trapFocusRight={focused && can(1)}
             style={{ width: WIDE * u, height: HEIGHT * u }}
@@ -285,7 +285,7 @@ export function TvFilmRow<T extends RowFilm>({
                 </View>
               </Focusable>
             </StopScope.Provider>
-          </TVFocusGuideView>
+          </FocusGuide>
         </View>
       </View>
       {/* the card's film, described under the row, as wide as the card */}

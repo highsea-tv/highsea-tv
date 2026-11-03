@@ -10,12 +10,11 @@
 // Move down, and hears where it landed (AccessibilityInfo.announceForAccessibility).
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { AccessibilityInfo, Animated, PanResponder, View } from 'react-native'
-import { useReducedMotion } from 'react-native-reanimated'
 import { Icon } from './icon.tsx'
-import { tokens, useTheme } from './theme.tsx'
+import { tokens, useMotionReduced, useTheme } from './theme.tsx'
 
 /** Rows keep 8 apart (the prototype's `gap-2`). */
-const GAP = 8
+const GAP = tokens.space['2']
 
 export type SortableListMessages = {
   /** The handle's name: "Move Staff picks". */
@@ -122,7 +121,7 @@ function SortableRow({
   children: (handle: ReactNode) => ReactNode
 }) {
   const theme = useTheme()
-  const reduced = useReducedMotion()
+  const reduced = useMotionReduced()
   const follow = useRef(new Animated.Value(0)).current
   const aside = useRef(new Animated.Value(0)).current
   const height = useRef(56)
@@ -196,7 +195,7 @@ function SortableRow({
         opacity: disabled ? tokens.controls.disabledOpacity : 1,
       }}
     >
-      <Icon name="drag" size={16} color={lifted ? 'accent-text' : 'text-3'} />
+      <Icon name="drag" size={tokens.icon.size.sm} color={lifted ? 'accent-text' : 'text-3'} />
     </View>
   )
 
@@ -209,8 +208,8 @@ function SortableRow({
         minHeight: 56,
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 12,
-        paddingHorizontal: 12,
+        gap: tokens.space['3'],
+        paddingHorizontal: tokens.space['3'],
         paddingVertical: 10,
         borderRadius: tokens.radius.md,
         borderWidth: 1,

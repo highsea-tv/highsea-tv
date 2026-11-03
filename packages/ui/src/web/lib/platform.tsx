@@ -7,7 +7,7 @@
 // inherit through the DOM, `display: contents` elements included, so a scope needs no box of its
 // own. Components read sizes from the variables, so they mostly never ask; the hook is for those
 // that draw differently per platform (the TV's focus, for example).
-import type { ControlPlatform } from '@highsea-tv/tokens'
+import { COARSE_POINTER, type ControlPlatform } from '@highsea-tv/tokens'
 import { Slot } from 'radix-ui'
 import { type ComponentProps, createContext, useContext, useSyncExternalStore } from 'react'
 
@@ -34,16 +34,14 @@ export function PlatformScope({ platform, asChild, ...props }: PlatformScopeProp
   )
 }
 
-const COARSE = '(pointer: coarse)'
-
 function subscribe(change: () => void) {
   if (typeof matchMedia === 'undefined') return () => {}
-  const query = matchMedia(COARSE)
+  const query = matchMedia(COARSE_POINTER)
   query.addEventListener('change', change)
   return () => query.removeEventListener('change', change)
 }
 
-const coarse = () => typeof matchMedia !== 'undefined' && matchMedia(COARSE).matches
+const coarse = () => typeof matchMedia !== 'undefined' && matchMedia(COARSE_POINTER).matches
 
 /**
  * The platform controls here are drawn for: the nearest `PlatformScope`'s, else touch on a coarse

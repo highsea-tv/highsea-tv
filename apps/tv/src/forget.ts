@@ -11,7 +11,7 @@ export function useForget() {
   const t = useT(messages)
   const servers = useServers()
   return (id: string, name: string) =>
-    Alert.alert(t('confirm', { name }), t('detail'), [
+    Alert.alert(t('confirm', { name }), t('detail', { device: 'tv' }), [
       { text: t('cancel'), style: 'cancel' },
       { text: t('forget', { name }), style: 'destructive', onPress: () => void servers.remove(id) },
     ])

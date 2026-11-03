@@ -6,6 +6,16 @@
 // Save. Matrix and Browser join the kinds. This browser is a group of its own; the prototype adds it
 // by name from the user agent, without the real Push API. Changes save at once. Since stage 6 the
 // events come in three sets, Movies, Shows (drawn for the TV series phase) and Every kind.
+
+import {
+  CONNECTION_KINDS,
+  type Connection,
+  type ConnectionInput,
+  type ConnectionTest,
+  type NotificationEvent as Event,
+  type NotificationKind as Kind,
+  NOTIFICATION_EVENTS,
+} from '@highsea-tv/mock/settings'
 import {
   Badge,
   Button,
@@ -22,15 +32,6 @@ import {
 } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import {
-  CONNECTION_KINDS,
-  type Connection,
-  type ConnectionInput,
-  type ConnectionTest,
-  type NotificationEvent as Event,
-  type NotificationKind as Kind,
-  NOTIFICATION_EVENTS,
-} from '../../mock/settings.ts'
 import { Loadable } from '../loadable.tsx'
 import { fieldOf, TagPicker, useAgo } from './parts.tsx'
 import { AreaPage, Group } from './settings.tsx'

@@ -4,6 +4,12 @@
 // limits, language profiles (ordered, forced and SDH, cutoff), scoring and the automatic sync.
 
 import { percent } from '@highsea-tv/core/format'
+import type {
+  Language,
+  LanguageProfile,
+  LanguageRule,
+  SubtitleSettings,
+} from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -33,7 +39,6 @@ import {
 } from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { Language, LanguageProfile, LanguageRule, SubtitleSettings } from '../../mock/types.ts'
 import { episodeCode, episodeName, showHref } from '../episodes.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'

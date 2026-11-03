@@ -7,9 +7,10 @@
 // letter lies level with the tile, so its guide sends focus to the focused title's letter instead
 // (react-native-tvos's TVFocusGuideView `destinations`).
 import { useRef } from 'react'
-import { TVFocusGuideView, useWindowDimensions, View } from 'react-native'
+import { useWindowDimensions, View } from 'react-native'
 import { Text } from '../text.tsx'
 import { tokens, useTheme } from '../theme.tsx'
+import { FocusGuide } from './engine'
 import { Focusable, type ViewHandle } from './focusable.tsx'
 
 const tv = tokens.tv
@@ -43,7 +44,7 @@ export function TvLetterRail({
   // square: a share of the height to the safe area's foot, or the column's width if that's less
   const size = Math.min((height - top - tv.safe.y * u) / letters.length, RAIL_WIDTH * u)
   return (
-    <TVFocusGuideView
+    <FocusGuide
       destinations={to ? [to] : []}
       trapFocusUp
       trapFocusDown
@@ -61,7 +62,7 @@ export function TvLetterRail({
             disabled={!has}
             ring={false}
             lift={1.25}
-            radius={0.3 * u}
+            radius={tokens.tv.radius.pill * u}
             label={l}
             onPress={() => onLetter(l)}
           >
@@ -71,7 +72,7 @@ export function TvLetterRail({
                   height: size,
                   width: size,
                   alignSelf: 'center',
-                  borderRadius: 0.3 * u,
+                  borderRadius: tokens.tv.radius.pill * u,
                   alignItems: 'center',
                   justifyContent: 'center',
                   backgroundColor: focused ? theme.colors.text : 'transparent',
@@ -89,6 +90,6 @@ export function TvLetterRail({
           </Focusable>
         )
       })}
-    </TVFocusGuideView>
+    </FocusGuide>
   )
 }

@@ -3,8 +3,8 @@
 // `https://www.youtube-nocookie.com/embed/{key}?autoplay=1`, only once it's chosen, as the admin
 // does; the prototype stays offline, so the still and a note stand in for the player.
 import { videoLength } from '@highsea-tv/client/library'
+import type { Video } from '@highsea-tv/mock/types'
 import { Dialog, DialogContent } from '@highsea-tv/ui'
-import type { Video } from '../mock/types.ts'
 
 export function TrailerDialog({
   video: v,

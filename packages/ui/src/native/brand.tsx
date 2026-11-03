@@ -10,7 +10,7 @@ import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 
 export function Mark({
-  size = 24,
+  size = tokens.icon.size.lg,
   label,
   paint = 'brand',
 }: {
@@ -80,7 +80,14 @@ export function Lockup({ size = 17 }: { size?: number }) {
       <Mark size={Math.round(size * 1.15)} />
       <Text size={size} weight={600} style={{ letterSpacing: tracking, lineHeight: px * 1.15 }}>
         highsea
-        <Text size={size} weight={500} color="text-3" style={{ letterSpacing: tracking }}>
+        {/* the same line height as its parent: on the web a nested span keeps its own, which
+            would make the line taller than the mark (the web's lockup is `leading-none`) */}
+        <Text
+          size={size}
+          weight={500}
+          color="text-3"
+          style={{ letterSpacing: tracking, lineHeight: px * 1.15 }}
+        >
           {' tv'}
         </Text>
       </Text>

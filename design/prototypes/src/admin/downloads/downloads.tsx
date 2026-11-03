@@ -5,6 +5,7 @@
 // VPN binding, always visible, because a leak is the one failure that matters most here.
 
 import { bytes, duration, percent, rate, relative } from '@highsea-tv/core/format'
+import type { Torrent, TorrentFile, TorrentLimits } from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -39,7 +40,6 @@ import {
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { Torrent, TorrentFile, TorrentLimits } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
 import { torrentStatus } from '../status.ts'

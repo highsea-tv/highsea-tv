@@ -3,10 +3,10 @@
 // the TV shows a code and a QR code; the phone, already signed in, scans it (or takes the code
 // typed), asks once, and the TV is in. The words are the server's /link page's, so the two agree.
 import { normalCode } from '@highsea-tv/client/servers'
+import { waiting } from '@highsea-tv/mock/pairing'
 import { Button, cn, EmptyState, Field, Icon, Input } from '@highsea-tv/ui'
 import { type FormEvent, useEffect, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
-import { waiting } from '../client/pairing.ts'
 import { MobileScreen } from '../kit/mobile/device.tsx'
 import { gutter } from './shell.tsx'
 
@@ -38,7 +38,7 @@ export function MobileLinkScan() {
   return (
     <MobileScreen>
       <div className="grid gap-4 pt-1 pb-6">
-        <Back to="/you/servers" label="Servers" />
+        <Back to="/settings?section=servers" label="Servers" />
         <div className={cn('grid gap-1', gutter)}>
           <h1 className="font-semibold text-[28px] tracking-display">Connect a device</h1>
           <p className="text-[15px] text-text-2">
@@ -138,7 +138,7 @@ export function MobileLinkConfirm() {
           <EmptyState icon="success" title={`${waiting.device} is signed in`}>
             It opens Home on the TV now. Sign it out from You › Devices whenever you like.
           </EmptyState>
-          <Button variant="primary" onClick={() => navigate('/you/servers')}>
+          <Button variant="primary" onClick={() => navigate('/settings?section=servers')}>
             Done
           </Button>
         </div>
@@ -176,7 +176,7 @@ export function MobileLinkConfirm() {
             >
               Sign it in
             </Button>
-            <Button variant="ghost" onClick={() => navigate('/you/servers')}>
+            <Button variant="ghost" onClick={() => navigate('/settings?section=servers')}>
               Cancel
             </Button>
           </div>

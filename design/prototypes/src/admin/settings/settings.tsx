@@ -2,11 +2,12 @@
 // Settings (A12, A13 core; A15 reference: docs/product/settings.md). An index of every area in four
 // groups; each area is its own page, `/settings/{area}`, with the areas beside it from expanded
 // widths. Forms keep a draft and a save bar, so nothing changes until Save.
+
+import type { Settings as AllSettings, SettingsSection } from '@highsea-tv/mock/settings'
 import { Button, cn, EmptyState, Icon, type IconName } from '@highsea-tv/ui'
 import { type ReactNode, useEffect, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { Settings as AllSettings, SettingsSection } from '../../mock/settings.ts'
 import { AdminPage, adminHref, useShell } from '../shell.tsx'
 
 export type Area = {

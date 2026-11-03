@@ -1,0 +1,45 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The layout check's capture on the iPhone and the Apple TV (scripts/sweeps/layout.ts), generated
+# with XcodeGen (https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md): two UI
+# testing bundles, one per platform, from one source file. Neither has a target application: the
+# test launches the installed mock-mode client by its bundle identifier
+# (XCUIApplication(bundleIdentifier:)), as apps/tv/uitest does, so the client's generated project
+# stays as expo prebuild leaves it.
+name: LayoutCapture
+options:
+  bundleIdPrefix: tv.highsea.client
+  deploymentTarget:
+    iOS: "16.4"
+    tvOS: "16.4"
+settings:
+  base:
+    GENERATE_INFOPLIST_FILE: YES
+    SWIFT_VERSION: "5.0"
+    CODE_SIGN_IDENTITY: "-"
+    CODE_SIGN_STYLE: Manual
+targets:
+  LayoutPhone:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - Layout.swift
+  LayoutTV:
+    type: bundle.ui-testing
+    platform: tvOS
+    sources:
+      - Layout.swift
+schemes:
+  LayoutPhone:
+    build:
+      targets:
+        LayoutPhone: [test]
+    test:
+      targets:
+        - LayoutPhone
+  LayoutTV:
+    build:
+      targets:
+        LayoutTV: [test]
+    test:
+      targets:
+        - LayoutTV

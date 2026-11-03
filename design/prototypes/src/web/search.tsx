@@ -6,6 +6,7 @@
 // linked and Back returns to it: the web client's `/web/search?q=…`, and `/web/search/{text}` in the
 // prototype, whose hash can't carry a query.
 
+import type { SearchSection, SearchSong } from '@highsea-tv/mock/types'
 import { Chip, cn, Icon, Input, Poster } from '@highsea-tv/ui'
 import { useEffect } from 'react'
 import { useLocation, useParams } from 'wouter'
@@ -23,7 +24,6 @@ import { MediaPoster } from '../client/media-card.tsx'
 import { songTime } from '../client/music.ts'
 import { useMusicPlayer } from '../client/music-player.ts'
 import { ShowPoster } from '../client/show-card.tsx'
-import type { SearchSection, SearchSong } from '../mock/types.ts'
 import { ArtistCard } from './music.tsx'
 import { gutter, webHref } from './shell.tsx'
 

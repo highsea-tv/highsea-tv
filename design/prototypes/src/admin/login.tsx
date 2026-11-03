@@ -2,11 +2,12 @@
 // A18 Login (docs/product/login.md). Username and password, then a 6-digit code
 // when the account has two-factor on, or the server's single sign-on provider. The OIDC redirect
 // is simulated: a short wait stands in for the round trip to the provider.
+
+import type { ApiError } from '@highsea-tv/mock/server'
 import { Button, EmptyState, Field, Icon, Input, Lockup, Skeleton } from '@highsea-tv/ui'
 import { type FormEvent, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../mock/hooks.tsx'
-import type { ApiError } from '../mock/server.ts'
 
 export function Card({ children }: { children: ReactNode }) {
   return (

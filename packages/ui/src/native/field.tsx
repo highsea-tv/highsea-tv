@@ -16,7 +16,14 @@ import { family } from './fonts.ts'
 import { Icon, type IconName } from './icon.tsx'
 import type { ControlPoints } from './metrics.ts'
 import { Text } from './text.tsx'
-import { type Theme, tokens, useControl, useTheme } from './theme.tsx'
+import {
+  fontScaleFor,
+  MAX_FONT_MULTIPLIER,
+  type Theme,
+  tokens,
+  useControl,
+  useTheme,
+} from './theme.tsx'
 
 /** What a Field tells the control inside it. */
 type FieldState = { label: string; size?: ControlSize; invalid: boolean; disabled?: boolean }
@@ -96,7 +103,16 @@ type InputOwn = Pick<FieldCommon, 'size' | 'disabled'> & {
 
 export type InputProps = ComponentProps<typeof TextInput> & InputOwn
 
-function useInput({ size, disabled, invalid, mono, onFocus, onBlur }: InputProps) {
+function useInput({
+  size,
+  disabled,
+  invalid,
+  mono,
+  onFocus,
+  onBlur,
+  maxFontSizeMultiplier,
+}: InputProps) {
+  const cap = maxFontSizeMultiplier ?? MAX_FONT_MULTIPLIER
   const theme = useTheme()
   const field = useField()
   const m = useControl(size ?? field?.size)
@@ -114,7 +130,7 @@ function useInput({ size, disabled, invalid, mono, onFocus, onBlur }: InputProps
       placeholderTextColor: theme.colors[tokens.controls.looks.placeholder.label],
       selectionColor: theme.colors.accent,
       keyboardAppearance: 'dark' as const,
-      maxFontSizeMultiplier: 2,
+      maxFontSizeMultiplier: cap,
       onFocus: (e: Parameters<NonNullable<InputProps['onFocus']>>[0]) => {
         setFocused(true)
         onFocus?.(e)
@@ -127,8 +143,10 @@ function useInput({ size, disabled, invalid, mono, onFocus, onBlur }: InputProps
     text: {
       color: theme.colors.text,
       fontFamily: family(m.weight, mono ? 'mono' : 'sans'),
-      fontSize: m.text,
+      // the ThemeProvider's fontScale, as the OS's text size would grow it, to the same cap
+      fontSize: m.text * fontScaleFor(theme, cap),
     },
+    scale: fontScaleFor(theme, cap),
   }
 }
 
@@ -175,8 +193,8 @@ export function Textarea(props: InputProps) {
     onBlur: _b,
     ...rest
   } = props
-  const { theme, m, focused, off, bad, common, text } = useInput(props)
-  const line = Math.round(m.text * m.leading)
+  const { theme, m, focused, off, bad, common, text, scale } = useInput(props)
+  const line = Math.round(m.text * scale * m.leading)
   return (
     <TextInput
       {...common}

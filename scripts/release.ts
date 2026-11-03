@@ -20,7 +20,7 @@
 // The desktop app carries the same version (ADR 0050's 4.4 section): prepare sets it in
 // tauri.conf.json, its Cargo.toml and Cargo.lock, and its package.json, and check reads them.
 // Since 4.5a the phone app does too, from its package.json, which its app.config.ts reads, and
-// since 4.5b the TV app alike.
+// since 4.5b the TV app alike, and the one client (apps/client, one-client-platform.md) with them.
 import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { basename, join } from 'node:path'
@@ -46,6 +46,7 @@ const FILES = {
   desktopPackage: 'apps/desktop/package.json',
   mobilePackage: 'apps/mobile/package.json',
   tvPackage: 'apps/tv/package.json',
+  clientPackage: 'apps/client/package.json',
 }
 
 /** The desktop app's crate in Cargo.toml and Cargo.lock: its name line, then its version line. */
@@ -67,6 +68,7 @@ function desktopVersions(files: Files): [string, string | null][] {
     [FILES.desktopPackage, json(files.desktopPackage)],
     [FILES.mobilePackage, json(files.mobilePackage)],
     [FILES.tvPackage, json(files.tvPackage)],
+    [FILES.clientPackage, json(files.clientPackage)],
   ]
 }
 
@@ -317,6 +319,7 @@ export function prepare(version: string, date: string, files: Files, tags: strin
     desktopPackage: withJsonVersion(files.desktopPackage, version),
     mobilePackage: withJsonVersion(files.mobilePackage, version),
     tvPackage: withJsonVersion(files.tvPackage, version),
+    clientPackage: withJsonVersion(files.clientPackage, version),
   }
 }
 

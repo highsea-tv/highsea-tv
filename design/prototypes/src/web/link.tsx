@@ -5,10 +5,10 @@
 // `/web/link/{code}`. A computer has no camera to point, so it asks for the code, then the same
 // question the phone asks, in the same words.
 import { normalCode } from '@highsea-tv/client/servers'
+import { waiting } from '@highsea-tv/mock/pairing'
 import { Button, EmptyState, Field, Icon, Input } from '@highsea-tv/ui'
 import { type FormEvent, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
-import { waiting } from '../client/pairing.ts'
 import { gutter, webHref } from './shell.tsx'
 
 function Page({ children }: { children: React.ReactNode }) {

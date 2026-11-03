@@ -12,11 +12,10 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "typecheck": "bun run --filter '*' typecheck && tsc -p scripts/tsconfig.json",
-    "test": "bun test --isolate && bun run --filter @highsea-tv/mobile test",
+    "test": "bun test --isolate && bun run --filter @highsea-tv/mobile test && bun run --filter @highsea-tv/app test",
     "smoke": "node scripts/check-node.ts && node apps/server/scripts/smoke.ts",
     "check:node": "node scripts/check-node.ts",
     "explorations": "bunx serve design/explorations -l 4400",
-    "storybook": "bun run --filter @highsea-tv/storybook storybook",
     "prototypes": "bun run --filter @highsea-tv/prototypes dev",
     "docs": "bun run --filter @highsea-tv/docs dev",
     "web": "bun run --filter @highsea-tv/web dev",
@@ -24,6 +23,7 @@
     "audit": "bun scripts/audit.ts",
     "server": "bun run --filter @highsea-tv/server dev",
     "pin": "bun scripts/pin.ts",
+    "one-place": "bun scripts/one-place.ts",
     "catalog:build": "bun scripts/catalog.ts build"
   },
   "engines": {
@@ -31,6 +31,7 @@
     "node": "26.11.1"
   },
   "devDependencies": {
+    "@babel/parser": "7.29.9",
     "@biomejs/biome": "2.5.15",
     "@highsea-tv/catalog": "workspace:*",
     "@highsea-tv/importers": "workspace:*",
@@ -43,7 +44,7 @@
     "@types/bun": "^1.4.3",
     "axe-core": "4.14.0",
     "playwright-core": "1.63.0",
-    "typescript": "^7.0.2"
+    "typescript": "7.0.2"
   },
   "overrides": {
     "@dnd-kit/abstract": "0.5.0",

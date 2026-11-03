@@ -13,6 +13,7 @@ import {
   previewOf,
   videoLength,
 } from '@highsea-tv/client/library'
+import type { ClientDetail, Video } from '@highsea-tv/mock/types'
 import {
   Button,
   cn,
@@ -33,7 +34,6 @@ import { DownloadButton } from '../client/download-button.tsx'
 import { useMarkWatched } from '../client/item-more.tsx'
 import { TrailerDialog } from '../client/trailer.tsx'
 import { CollectionTile } from '../kit/collection-art.tsx'
-import type { ClientDetail, Video } from '../mock/types.ts'
 import { WatchWith } from '../web/detail.tsx'
 import { MobileRow, PosterItems } from './home.tsx'
 import { BackBadge, gutter, mobileHref } from './shell.tsx'

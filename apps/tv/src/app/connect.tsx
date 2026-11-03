@@ -7,6 +7,7 @@
 // picked from the ones answering on this network. With no server yet, the list comes first, and
 // when exactly one server answers and none is known, it's taken without asking.
 import type { Pairing } from '@highsea-tv/api-contract'
+import { hostOf, pairingLink, pairingPage } from '@highsea-tv/client/gate'
 import { useT } from '@highsea-tv/i18n/react'
 import { deviceInput } from '@highsea-tv/native/device'
 import { useNearby } from '@highsea-tv/native/nearby'
@@ -133,9 +134,7 @@ function Code({ onPassword, onServers }: { onPassword: () => void; onServers: ()
   }, [client, round])
 
   // the QR opens the phone app straight at the question (connectivity.md › Sign in a TV)
-  const link = pairing
-    ? `highsea://link?server=${encodeURIComponent(current?.server.id ?? '')}&code=${pairing.code}`
-    : null
+  const link = pairing ? pairingLink(current?.server.id ?? '', pairing.code) : null
   return (
     <>
       <View style={{ flex: 1, gap: 1.6 * u }}>
@@ -144,7 +143,7 @@ function Code({ onPassword, onServers }: { onPassword: () => void; onServers: ()
         <View style={{ gap: 0.8 * u }}>
           <Text variant="synopsis" color="text-2">
             {/* typed by hand, the page asks for the code itself; the QR carries it */}
-            {t('step1', { url: pairing?.url.split('?')[0] ?? '…' })}
+            {t('step1', { url: pairing ? pairingPage(pairing.url) : '…' })}
           </Text>
           <Text variant="synopsis" color="text-2">
             {t('step2', { code: pairing?.code ?? '…' })}
@@ -361,13 +360,13 @@ function Servers({ knownCount }: { knownCount: number }) {
     ...servers.known.map((k) => ({
       id: k.id,
       name: k.name,
-      line: k.addresses[0]?.url.replace(/^https?:\/\//, '').replace(/\/$/, '') ?? '',
+      line: hostOf(k.addresses[0]?.url ?? ''),
       pick: () => servers.use(k.id),
     })),
     ...others.map((n) => ({
       id: n.info.id,
       name: n.info.name,
-      line: n.base.replace(/^https?:\/\//, ''),
+      line: hostOf(n.base),
       pick: () => choose(n),
     })),
   ]

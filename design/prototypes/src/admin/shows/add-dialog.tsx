@@ -2,6 +2,8 @@
 // Add a show (docs/product/shows.md#add-a-show), shared by Discover, the Shows page and person
 // pages: the folder, both profiles, which episodes to monitor (Sonarr's Monitor choice), season
 // folders and "Start searching for missing episodes". Laid out as Add a movie is.
+
+import type { AdminShowDetail, DiscoverShow, ShowMonitor } from '@highsea-tv/mock/types'
 import {
   Button,
   Checkbox,
@@ -15,7 +17,6 @@ import {
 import { useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { AdminShowDetail, DiscoverShow, ShowMonitor } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { showPath } from '../media/links.ts'
 

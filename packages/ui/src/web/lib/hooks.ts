@@ -1,7 +1,6 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
-import { durations } from '@highsea-tv/tokens'
-import { useEffect, useState, useSyncExternalStore } from 'react'
+import { useSyncExternalStore } from 'react'
 
 /** Subscribes to a media query. Server renders and the first client render report `fallback`. */
 export function useMediaQuery(query: string, fallback = false): boolean {
@@ -24,21 +23,4 @@ export function useBreakpoint(): Breakpoint {
   const expanded = useMediaQuery('(min-width: 64rem)', true)
   const wide = useMediaQuery('(min-width: 90rem)')
   return wide ? 'wide' : expanded ? 'expanded' : medium ? 'medium' : 'compact'
-}
-
-export function usePrefersReducedMotion(): boolean {
-  return useMediaQuery('(prefers-reduced-motion: reduce)')
-}
-
-/**
- * Returns `value` once it has stayed the same for `ms` (default `duration.dwell`), so heavy work
- * bound to focus (hero artwork, prefetch) doesn't thrash while focus moves fast.
- */
-export function useDwell<T>(value: T, ms: number = durations.dwell): T {
-  const [settled, setSettled] = useState(value)
-  useEffect(() => {
-    const timer = setTimeout(() => setSettled(value), ms)
-    return () => clearTimeout(timer)
-  }, [value, ms])
-  return settled
 }

@@ -4,10 +4,10 @@
 // with axe, and the classes it renders join the stylesheet check.
 import './dom.ts'
 import { afterEach, beforeEach, describe, expect, test } from 'bun:test'
+import { createClient, createMock, type Mock } from '@highsea-tv/mock/client'
 import { act, cleanup, render, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { memoryLocation } from 'wouter/memory-location'
-import { createClient, createMock, type Mock } from '../src/mock/client.ts'
 import { defaultState, type Role } from '../src/proto/state.ts'
 import { ScreenApp } from '../src/screen/screen.tsx'
 import { classes, collect, unknownClasses, violations } from './check.ts'

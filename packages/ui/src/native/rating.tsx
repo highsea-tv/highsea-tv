@@ -4,7 +4,7 @@
 import { View } from 'react-native'
 import { Icon } from './icon.tsx'
 import { Text } from './text.tsx'
-import { useTheme } from './theme.tsx'
+import { tokens, useTheme } from './theme.tsx'
 
 export type RatingProps = {
   /** 0–max, fractions allowed. */
@@ -17,7 +17,12 @@ export type RatingProps = {
 
 const fmt = (v: number) => (Number.isInteger(v) ? String(v) : v.toFixed(1))
 
-export function Rating({ value, max = 5, size = 16, showValue = false }: RatingProps) {
+export function Rating({
+  value,
+  max = 5,
+  size = tokens.icon.size.sm,
+  showValue = false,
+}: RatingProps) {
   const theme = useTheme()
   const clamped = Math.min(max, Math.max(0, value))
   const px = size * theme.u

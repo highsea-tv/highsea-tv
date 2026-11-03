@@ -9,6 +9,7 @@
 // albums and songs), the best-matching first; an episode opens its show at it, a song plays. Back from a result returns to the
 // same query with the remote on that result.
 
+import type { SearchSection, SearchSong } from '@highsea-tv/mock/types'
 import { useEffect, useRef, useState } from 'react'
 import {
   collectionCaption,
@@ -23,7 +24,6 @@ import {
 import { useMusicPlayer } from '../client/music-player.ts'
 import { UnwatchedCount } from '../client/show-card.tsx'
 import { seasonsCount } from '../client/shows.ts'
-import type { SearchSection, SearchSong } from '../mock/types.ts'
 import { TvButton, TvHead, TvPoster, TvTile, tvHref, tvKey, useInitialFocus } from './kit.tsx'
 import { TvArtistTile } from './music.tsx'
 

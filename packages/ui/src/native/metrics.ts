@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The control spec's platform rule in points (controls.md › One rule per platform), with no React
-// Native in it so Bun can test it. The phone is the touch rule, already in points; the TV's values
-// are screen units, multiplied here by 1u in points (the ThemeProvider's `u`).
-import type { ControlMetrics, ControlSize } from '@highsea-tv/tokens'
+// Native in it so Bun can test it. The rule is the form factor's input (controls.md › The form
+// factor). The pointer's and touch's values are already in points (CSS pixels on the web); the
+// TV's are screen units, multiplied here by 1u in points (the ThemeProvider's `u`).
+import type { ControlMetrics, ControlSize, Input } from '@highsea-tv/tokens'
 import { nativeTokens } from '@highsea-tv/tokens/native'
 
 const spec = nativeTokens.controls
 
-/** A control's measurements in points, for the platform the theme is on. */
+/** A control's measurements in points, for the input the theme is drawn for. */
 export type ControlPoints = Omit<ControlMetrics, 'unit'>
 
-/** `controlMetrics` for the phone (touch) or the TV (its units times `u`). */
-export function controlPoints(
-  platform: 'mobile' | 'tv',
-  u: number,
-  size: ControlSize = 'md',
-): ControlPoints {
-  if (platform !== 'tv') {
-    const { unit: _, ...m } = spec.touch[size]
+/**
+ * `controlMetrics` for an input: a pointer's (no hit area) and touch's as they are, and the TV's
+ * units times `u`.
+ */
+export function controlPoints(input: Input, u: number, size: ControlSize = 'md'): ControlPoints {
+  if (input !== 'tv') {
+    const { unit: _, ...m } = spec[input][size]
     return m
   }
   const { unit: _, ...m } = spec.tv[size]
@@ -42,7 +42,7 @@ export type Insets = { top: number; bottom: number; left: number; right: number 
  * The invisible box that takes a touch control's target to `hit` without changing its size
  * (Pressable's `hitSlop`, https://reactnative.dev/docs/pressable#hitslop): half the shortfall on
  * each side, across only where the width is known and short (an icon button, a checkbox).
- * Nothing when the rule has no hit area (the TV) or the control already reaches it.
+ * Nothing when the rule has no hit area (a pointer's and the TV's) or the control already reaches it.
  */
 export function hitSlopFor(hit: number, height: number, width?: number): Insets | undefined {
   const v = Math.max(0, (hit - height) / 2)

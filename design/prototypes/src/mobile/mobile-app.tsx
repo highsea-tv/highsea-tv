@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The mobile client (C1–C8), drawn inside the phone's safe areas: connect, the five tabs (Home,
-// Search, Library, Offline, You), item detail, the player, settings under You, and signing in a
-// TV (4.5a).
+// The mobile client (C2–C8), drawn inside the phone's safe areas: the five tabs (Home, Search,
+// Library, Offline, You), item detail, the player, and signing in a TV (4.5a); connect, sign-in
+// and settings are apps/client's (chrome/client.ts).
 
 import { EmptyState } from '@highsea-tv/ui'
-import { Redirect, Route, Switch, useLocation } from 'wouter'
-import { ConnectFlow } from '../client/connect-flow.tsx'
+import { Redirect, Route, Switch } from 'wouter'
 import { SeedMusic } from '../client/music-player.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
-import { MobileScreen } from '../kit/mobile/device.tsx'
 import { MobileAlbum } from './album.tsx'
 import { MobileArtist } from './artist.tsx'
 import { MobileCollection } from './collection.tsx'
@@ -16,7 +14,7 @@ import { MobileCollections } from './collections.tsx'
 import { MobileDetail } from './detail.tsx'
 import { MobileHome } from './home.tsx'
 import { MobileLibrary } from './library.tsx'
-import { MobileOffline, MobileSearch, MobileSettingsScreen, MobileYou } from './more.tsx'
+import { MobileOffline, MobileSearch, MobileYou } from './more.tsx'
 import { MobileMusic } from './music.tsx'
 import { MobileNowPlaying } from './now-playing.tsx'
 import { MobileLinkConfirm, MobileLinkScan } from './pair.tsx'
@@ -26,19 +24,6 @@ import { MobilePlaylist } from './playlist.tsx'
 import { MobileShell } from './shell.tsx'
 import { MobileShow } from './show.tsx'
 import { MobileShows } from './shows.tsx'
-
-function Connect() {
-  const [, navigate] = useLocation()
-  return (
-    <MobileScreen>
-      <ConnectFlow
-        platform="mobile"
-        onSignedIn={() => navigate('/')}
-        className="min-h-full bg-transparent"
-      />
-    </MobileScreen>
-  )
-}
 
 export function MobileApp() {
   return (
@@ -53,9 +38,6 @@ export function MobileApp() {
 function Routes() {
   return (
     <Switch>
-      <Route path="/connect">
-        <Connect />
-      </Route>
       <Route path="/link">
         <MobileLinkScan />
       </Route>
@@ -176,11 +158,6 @@ function Routes() {
       <Route path="/you/who">
         <MobileShell>
           <MobileYou who />
-        </MobileShell>
-      </Route>
-      <Route path="/you/:section">
-        <MobileShell>
-          <MobileSettingsScreen />
         </MobileShell>
       </Route>
       <Route>

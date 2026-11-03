@@ -6,6 +6,8 @@
 // and each line opens its own editor in place. Since stage 6 the folders are one for each kind
 // (movies, shows and music, any of them left out) and the downloads. Progress is kept in the
 // browser, so a reload picks up where you left off.
+
+import type { Language, RemoteAccess, SetupDetected, SetupInput } from '@highsea-tv/mock/types'
 import {
   Badge,
   Banner,
@@ -30,7 +32,6 @@ import {
 import { type FormEvent, Fragment, type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useClient, useQuery } from '../../mock/hooks.tsx'
-import type { Language, RemoteAccess, SetupDetected, SetupInput } from '../../mock/types.ts'
 
 type StepId = 'owner' | 'folders' | 'review'
 

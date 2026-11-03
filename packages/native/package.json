@@ -6,16 +6,23 @@
   "type": "module",
   "exports": {
     "./device": "./src/device.ts",
-    "./discovery": "./src/discovery.ts",
+    "./discovery": {
+      "react-native": "./src/discovery-entry.ts",
+      "default": "./src/discovery.web.ts"
+    },
     "./format": "./src/format.ts",
     "./intl": "./src/intl.ts",
     "./media": "./src/media.ts",
     "./nearby": "./src/nearby.ts",
-    "./playback": "./src/playback.ts",
+    "./playback": {
+      "react-native": "./src/playback-entry.ts",
+      "default": "./src/playback.web.ts"
+    },
     "./servers": "./src/servers.tsx",
     "./session": "./src/session.tsx",
     "./sound": "./src/sound.ts",
-    "./theme": "./src/theme.ts"
+    "./theme": "./src/theme.ts",
+    "./web-host": "./src/web-host.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json"
@@ -25,7 +32,8 @@
     "@highsea-tv/client": "workspace:*",
     "@highsea-tv/i18n": "workspace:*",
     "@highsea-tv/sdk": "workspace:*",
-    "@highsea-tv/tokens": "workspace:*"
+    "@highsea-tv/tokens": "workspace:*",
+    "hls.js": "1.7.3"
   },
   "peerDependencies": {
     "@formatjs/intl-locale": "*",
@@ -58,7 +66,7 @@
     "expo-modules-core": "58.0.19",
     "expo-secure-store": "58.0.2",
     "expo-video": "58.0.11",
-    "react": "19.3.0",
+    "react": "19.3.1",
     "react-native": "npm:react-native-tvos@0.88.0-0"
   }
 }

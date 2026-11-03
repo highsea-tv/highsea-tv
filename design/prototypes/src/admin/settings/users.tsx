@@ -5,6 +5,17 @@
 // their own API keys (ADR 0032).
 
 import { relative } from '@highsea-tv/core/format'
+import type {
+  ApiKey,
+  ClientType,
+  CreatedApiKey,
+  Device,
+  Invite,
+  InviteInput,
+  Permission,
+  User,
+  UserRole,
+} from '@highsea-tv/mock/types'
 import {
   Badge,
   type BadgeTone,
@@ -41,17 +52,6 @@ import {
 } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type {
-  ApiKey,
-  ClientType,
-  CreatedApiKey,
-  Device,
-  Invite,
-  InviteInput,
-  Permission,
-  User,
-  UserRole,
-} from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { useShell } from '../shell.tsx'
 import { AreaPage } from './settings.tsx'

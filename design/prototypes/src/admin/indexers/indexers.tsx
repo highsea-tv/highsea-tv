@@ -5,6 +5,7 @@
 // tested before they're saved. The catalog's version and changelog sit in the page header.
 
 import { percent, relative } from '@highsea-tv/core/format'
+import type { CatalogDefinition, Indexer, IndexerPrivacy } from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -36,7 +37,6 @@ import {
 } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { CatalogDefinition, Indexer, IndexerPrivacy } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage } from '../shell.tsx'
 import { indexerStatus } from '../status.ts'

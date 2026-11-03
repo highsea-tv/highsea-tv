@@ -14,6 +14,14 @@
 // check at the end. The season opens on the episode Play plays. Then More like this, Cast and
 // crew, and About with Information, as a film's page.
 import { createLibraryText, type Fact } from '@highsea-tv/client/library'
+import type {
+  ClientEpisode,
+  ClientSeason,
+  ClientShow,
+  ClientShowDetail,
+  PlaybackPrefs,
+  Video,
+} from '@highsea-tv/mock/types'
 import {
   Button,
   CarouselRow,
@@ -56,14 +64,6 @@ import {
 } from '../client/shows.ts'
 import { TrailerDialog } from '../client/trailer.tsx'
 import { useAction } from '../mock/hooks.tsx'
-import type {
-  ClientEpisode,
-  ClientSeason,
-  ClientShow,
-  ClientShowDetail,
-  PlaybackPrefs,
-  Video,
-} from '../mock/types.ts'
 import { Facts, heroHeight, Round, scrim } from './detail.tsx'
 import { cardWidth } from './home.tsx'
 import { gutter, webHref } from './shell.tsx'

@@ -1,7 +1,7 @@
 # Now playing
 
 - **Platforms:** Admin, every breakpoint; a widget on the dashboard.
-- **Prototype:** `design/prototypes/src/admin/now-playing/` (`#/admin/now-playing`), with its mock in `src/mock/sessions.ts`, and the **Now playing** widget in `src/admin/dashboard/widgets.tsx`. Prototyped at Phase 4's checkpoint 4.0b, 2026-10-23, and waiting for the owner's approval. In the prototype, four sessions move with the mock's clock; **Prototype only · Slow a transcode** plays one that can't keep up; Stop plays a stopped session; and the empty server has nobody watching.
+- **Prototype:** `design/prototypes/src/admin/now-playing/` (`#/admin/now-playing`), with its mock in `packages/mock/src/sessions.ts`, and the **Now playing** widget in `src/admin/dashboard/widgets.tsx`. Prototyped at Phase 4's checkpoint 4.0b, 2026-10-23, and waiting for the owner's approval. In the prototype, four sessions move with the mock's clock; **Prototype only · Slow a transcode** plays one that can't keep up; Stop plays a stopped session; and the empty server has nobody watching.
 - **Built:** at 4.3 (sessions), on [ADR 0051](../adr/0051-playback-engine.md) and [ADR 0052](../adr/0052-device-profiles.md).
 - **Plan:** [phase-4-checkpoint-0.md › Now playing](../plans/phase-4-checkpoint-0.md#now-playing-admin-and-its-widget).
 

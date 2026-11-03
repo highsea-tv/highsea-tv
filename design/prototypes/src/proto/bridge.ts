@@ -2,7 +2,7 @@
 // The chrome and the screen talk over postMessage. The screen is an iframe so each platform gets a
 // real viewport (breakpoints, `h-screen`, safe areas); postMessage works even from file://, where
 // the two documents count as different origins.
-import type { CurationPreview } from '../mock/types.ts'
+import type { CurationPreview } from '@highsea-tv/mock/types'
 import type { ProtoState } from './state.ts'
 
 /** Chrome → screen, and the admin's curation composer → its client preview (A11). */

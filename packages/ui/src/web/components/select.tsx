@@ -118,7 +118,3 @@ export function SelectGroup({
     </SelectPrimitive.Group>
   )
 }
-
-export function SelectSeparator() {
-  return <SelectPrimitive.Separator className="mx-1 my-1.5 h-px bg-line" />
-}

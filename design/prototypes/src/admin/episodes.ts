@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Episodes as the admin's movie screens name them (stage 6 of docs/plans/prototype-gaps.md): the
 // show, then the number as Sonarr writes it ("Saltmarsh · S02E04"), linked to the show's page.
-import type { AdminEpisode, AdminShow, EpisodeStatus, MediaItem } from '../mock/types.ts'
+import type { AdminEpisode, AdminShow, EpisodeStatus, MediaItem } from '@highsea-tv/mock/types'
 import { adminHref } from './shell.tsx'
 
 /** "S03E05", or "S01E01–E02" for a file that holds two. */

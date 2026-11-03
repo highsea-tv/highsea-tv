@@ -8,6 +8,7 @@ import {
   type ControlSize,
   controlMetrics,
 } from './controls.ts'
+import { COARSE_POINTER } from './form-factor.ts'
 import { durations, springs, springToCss } from './motion.ts'
 import { COLOR_ROLES } from './roles.ts'
 import {
@@ -207,7 +208,7 @@ export function controlEntries(platform: ControlPlatform): Entries {
 const controlBlocks = () =>
   [
     block(':root', controlEntries('pointer')),
-    `@media (pointer: coarse) {\n${block(':root', controlEntries('touch'), '  ')}\n}`,
+    `@media ${COARSE_POINTER} {\n${block(':root', controlEntries('touch'), '  ')}\n}`,
     ...CONTROL_PLATFORMS.map((p) => block(`[data-platform="${p}"]`, controlEntries(p))),
   ].join('\n\n')
 

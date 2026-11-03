@@ -456,7 +456,7 @@ export const flows: Flow[] = [
     4,
     'Themes, sounds, home layout, servers, devices, about.',
     {
-      routes: { web: '/web/settings', mobile: '/mobile/you/appearance', tv: '/tv/profile' },
+      routes: { web: '/web/settings', mobile: '/mobile/settings', tv: '/tv/settings' },
       ready: true,
       spec: 'docs/product/client-settings.md',
       hints: [

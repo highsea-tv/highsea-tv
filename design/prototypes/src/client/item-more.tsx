@@ -3,9 +3,10 @@
 // unwatched once it is: a toggle among the film page's round buttons on every app since the
 // redesign of 2026-10-30, in place of the More menu and the TV's long press of OK. Watched means
 // played to the end, for this person only; marking it unwatched starts it again from the beginning.
+
+import type { ClientItem } from '@highsea-tv/mock/types'
 import { toast } from '@highsea-tv/ui'
 import { useAction } from '../mock/hooks.tsx'
-import type { ClientItem } from '../mock/types.ts'
 
 export function useMarkWatched(item: ClientItem) {
   const set = useAction((c, watched: boolean) => c.playback.setWatched(item.id, watched))

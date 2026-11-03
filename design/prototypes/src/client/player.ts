@@ -9,9 +9,9 @@ import {
   playNext as next,
   type StreamState,
 } from '@highsea-tv/client/player'
+import type { ClientDetail, PlaybackPrefs } from '@highsea-tv/mock/types'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAction, useQuery } from '../mock/hooks.tsx'
-import type { ClientDetail, PlaybackPrefs } from '../mock/types.ts'
 import { useStreamState } from './data.ts'
 import { musicPlayer } from './music-player.ts'
 import { usePlaybackSettings } from './prefs.tsx'

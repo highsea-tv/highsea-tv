@@ -3,7 +3,7 @@
 // updates live from server events, and shows its own loading, empty and error states. Each one
 // fills the size it's given: lists show the rows that fit and say how many more there are, graphs
 // and calendars stretch. The definitions (title, sizes, roles) are the server's:
-// src/mock/widgets.ts.
+// packages/mock/src/widgets.ts.
 
 import {
   bytes,
@@ -14,6 +14,9 @@ import {
   rateParts,
   shortDate,
 } from '@highsea-tv/core/format'
+import type { HighseaClient } from '@highsea-tv/mock/client'
+import type { EventTopic, QueueItem } from '@highsea-tv/mock/types'
+import { type WidgetKind, widgetDefinition } from '@highsea-tv/mock/widgets'
 import {
   Badge,
   Button,
@@ -43,10 +46,7 @@ import {
 } from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
-import type { HighseaClient } from '../../mock/client.ts'
 import { type Query, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { EventTopic, QueueItem } from '../../mock/types.ts'
-import { type WidgetKind, widgetDefinition } from '../../mock/widgets.ts'
 import { byDate, episodeDated, movieDated, showHref } from '../episodes.ts'
 import { behind, mbps, methods } from '../now-playing/delivery.ts'
 import { playingAspect, playingName } from '../now-playing/item.tsx'

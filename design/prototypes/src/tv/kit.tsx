@@ -3,6 +3,8 @@
 // posters with their titles, rows that scroll by focus, the server identity, the announcement
 // pill, and the global navigation, a top tab row on every screen but the player
 // (client-home.md#tv), with the alternatives the owner asked to compare.
+
+import type { ClientItem } from '@highsea-tv/mock/types'
 import { tv } from '@highsea-tv/tokens'
 import { Button, cn, Icon, type IconName, Mark, Poster, Skeleton, useSound } from '@highsea-tv/ui'
 import {
@@ -17,7 +19,6 @@ import { useLocation } from 'wouter'
 import { clientHref, useAnnouncements, useConnection, useServer } from '../client/data.ts'
 import { mediaCard } from '../client/media-card.tsx'
 import { type Profile, toneClass, usePeople } from '../client/profiles.ts'
-import type { ClientItem } from '../mock/types.ts'
 import { NowPlayingTab } from './now-playing.tsx'
 
 export const tvHref = (path: string) => clientHref('tv', path)
@@ -472,7 +473,7 @@ export function TvHead({
       <div className="flex items-center gap-[0.6cqw] justify-self-end">
         <NowPlayingTab current={active('/now-playing')} />
         <Alerts current={active('/alerts')} />
-        <Account current={active('/profile') || active('/settings')} />
+        <Account current={active('/settings')} />
       </div>
     </nav>
   )
@@ -534,7 +535,7 @@ function Account({ current }: { current: boolean }) {
   const { me } = usePeople()
   return (
     <a
-      href={tvHref('/profile')}
+      href={tvHref('/settings')}
       data-focusable=""
       aria-label={`${me.name}: profile and settings`}
       aria-current={current ? 'page' : undefined}

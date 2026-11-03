@@ -12,6 +12,13 @@
 // season opens on the episode Play plays. Then More like this, Cast and crew, and About and
 // Information as cards.
 import { createLibraryText } from '@highsea-tv/client/library'
+import type {
+  ClientEpisode,
+  ClientSeason,
+  ClientShow,
+  ClientShowDetail,
+  Video,
+} from '@highsea-tv/mock/types'
 import {
   Button,
   Chip,
@@ -44,13 +51,6 @@ import {
   useEpisodeTarget,
 } from '../client/shows.ts'
 import { TrailerDialog } from '../client/trailer.tsx'
-import type {
-  ClientEpisode,
-  ClientSeason,
-  ClientShow,
-  ClientShowDetail,
-  Video,
-} from '../mock/types.ts'
 import { informationOf, ShowTracksFields } from '../web/show.tsx'
 import { Facts, fade, Named } from './detail.tsx'
 import { MobileRow } from './home.tsx'

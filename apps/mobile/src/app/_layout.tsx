@@ -6,24 +6,16 @@
 // (https://docs.expo.dev/router/advanced/protected/). Choose a server stays open to everyone, for
 // Add a server. Each server gets its own client, so switching starts the app again on it.
 import '@highsea-tv/native/intl'
-import type { CurrentSession } from '@highsea-tv/api-contract'
-import { useSession } from '@highsea-tv/client/data'
 import { I18nProvider } from '@highsea-tv/i18n/react'
 import { ServersProvider, useServers } from '@highsea-tv/native/servers'
-import {
-  ReachableContext,
-  SessionContext,
-  unreachable,
-  useReachable,
-} from '@highsea-tv/native/session'
+import { ReachableProvider, SessionContext, useSessionGate } from '@highsea-tv/native/session'
 import { useAppTheme } from '@highsea-tv/native/theme'
-import { ApiError } from '@highsea-tv/sdk'
 import { ClientProvider } from '@highsea-tv/sdk/react'
 import { ThemeProvider, tokens } from '@highsea-tv/ui'
 import { type Href, router, Stack, usePathname, useRootNavigationState } from 'expo-router'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
-import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
+import { type ReactNode, useEffect, useRef } from 'react'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 
@@ -72,70 +64,26 @@ function Root() {
 }
 
 function SignedInGate() {
-  const session = useSession()
   const { signedOut } = useServers()
-  const refused =
-    session.status === 'error' && session.error instanceof ApiError && session.error.status === 401
-  // the first answer decides the screen; a refetch later keeps it while it loads
-  const [settled, setSettled] = useState(false)
-  const last = useRef<CurrentSession | null>(null)
-  if (session.status === 'success') last.current = session.data
-  useEffect(() => {
-    if (session.status !== 'loading') setSettled(true)
-  }, [session.status])
-
-  // a token the server no longer knows (signed out from You › Devices): drop it, and sign in
-  useEffect(() => {
-    if (refused) void signedOut()
-  }, [refused, signedOut])
-
-  if (!settled || refused) return null
+  // the first answer decides the screen (@highsea-tv/native/session's useSessionGate)
+  const gate = useSessionGate(() => void signedOut())
+  if (gate.phase === 'wait') return null
   // an unreachable server still opens the tabs, which say so (the prototype's Unreachable)
-  if (!last.current && session.status === 'error' && !unreachable(session.error))
+  if (gate.phase === 'signIn')
     return (
       <ThemeProvider>
         <Nav phase="signIn" />
       </ThemeProvider>
     )
   return (
-    <SessionContext.Provider value={last.current}>
-      <Reachable missing={!last.current} refetch={session.refetch}>
+    <SessionContext.Provider value={gate.session}>
+      <ReachableProvider missing={!gate.session} refetch={gate.refetch}>
         <Themed>
           <Nav phase="in" />
         </Themed>
-      </Reachable>
+      </ReachableProvider>
     </SessionContext.Provider>
   )
-}
-
-/** Unreachable while the server doesn't answer, or answered nobody's session yet. */
-function Reachable({
-  missing,
-  refetch,
-  children,
-}: {
-  missing: boolean
-  refetch: () => void
-  children: ReactNode
-}) {
-  const reachable = useReachable()
-  const again = useRef(refetch)
-  again.current = refetch
-  // the server came back after the app opened without it: load the session now
-  useEffect(() => {
-    if (missing && !reachable.offline) again.current()
-  }, [missing, reachable.offline])
-  const value = useMemo(
-    () => ({
-      offline: missing || reachable.offline,
-      retry: () => {
-        reachable.retry()
-        if (missing) again.current()
-      },
-    }),
-    [missing, reachable],
-  )
-  return <ReachableContext.Provider value={value}>{children}</ReachableContext.Provider>
 }
 
 function Themed({ children }: { children: ReactNode }) {

@@ -5,15 +5,16 @@
 // one download in each state, so the review sees them all, with a show's season and an album kept
 // beside the films; a download moves once a second. Episodes are kept under their show and season,
 // and songs under their album, as the Apple TV app and Apple Music group what's downloaded.
-import { useEffect, useSyncExternalStore } from 'react'
-import { useClient } from '../mock/hooks.tsx'
+
 import type {
   ClientAlbum,
   ClientEpisode,
   ClientItem,
   ClientShow,
   ClientSong,
-} from '../mock/types.ts'
+} from '@highsea-tv/mock/types'
+import { useEffect, useSyncExternalStore } from 'react'
+import { useClient } from '../mock/hooks.tsx'
 import { episodeCode } from './shows.ts'
 
 export type OfflineState =

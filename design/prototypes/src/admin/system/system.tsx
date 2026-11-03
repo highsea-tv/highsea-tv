@@ -4,6 +4,7 @@
 // with restore, and updates. The one place, with the sidebar's server card, that shows health.
 
 import { bytes, bytesParts, duration, percent, relative } from '@highsea-tv/core/format'
+import type { Backup, HealthCheck, Job, LogEntry, ServerEvent } from '@highsea-tv/mock/types'
 import {
   Badge,
   type BadgeTone,
@@ -34,7 +35,6 @@ import { useEffect, useState } from 'react'
 import { GetTheAppsDialog } from '../../client/get-the-apps.tsx'
 import { Soon } from '../../kit/soon.tsx'
 import { useAction, useClient, useNow, useQuery } from '../../mock/hooks.tsx'
-import type { Backup, HealthCheck, Job, LogEntry, ServerEvent } from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref, useShell } from '../shell.tsx'
 import { useTabAddress } from '../tabs.ts'

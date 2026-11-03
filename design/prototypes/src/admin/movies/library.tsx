@@ -4,6 +4,7 @@
 // remove. An item with two versions (1080p beside 4K HDR) is one row with both.
 
 import { shortDate } from '@highsea-tv/core/format'
+import type { MediaItem, MediaStatus, RuleCondition } from '@highsea-tv/mock/types'
 import {
   Badge,
   type BadgeTone,
@@ -40,7 +41,6 @@ import {
 import { useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { MediaItem, MediaStatus, RuleCondition } from '../../mock/types.ts'
 import { handoff } from '../collections/editor.tsx'
 import { ruleId } from '../collections/rules.tsx'
 import { Loadable, PosterSkeletons } from '../loadable.tsx'

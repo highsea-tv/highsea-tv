@@ -4,9 +4,10 @@
 // dialog is a card over a scrim in the middle of the screen; one that must be acknowledged has no
 // way out but its button.
 import type { ReactNode } from 'react'
-import { Modal, ScrollView, View } from 'react-native'
+import { Modal, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Button } from './button.tsx'
+import { ScrollView } from './scroll-view.tsx'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 
@@ -35,8 +36,8 @@ export function Sheet({
           style={{
             flexDirection: 'row',
             alignItems: 'center',
-            paddingHorizontal: 16,
-            paddingTop: 12,
+            paddingHorizontal: tokens.space['4'],
+            paddingTop: tokens.space['3'],
             minHeight: 56,
           }}
         >
@@ -52,7 +53,11 @@ export function Sheet({
           />
         </View>
         <ScrollView
-          contentContainerStyle={{ padding: 16, paddingBottom: insets.bottom + 24, gap: 12 }}
+          contentContainerStyle={{
+            padding: tokens.space['4'],
+            paddingBottom: insets.bottom + tokens.space['6'],
+            gap: tokens.space['3'],
+          }}
         >
           {children}
         </ScrollView>
@@ -88,15 +93,15 @@ export function Dialog({
         style={{
           flex: 1,
           justifyContent: 'center',
-          padding: 24,
+          padding: tokens.space['6'],
           backgroundColor: 'rgba(0,0,0,0.6)',
         }}
       >
         <View
           accessibilityViewIsModal
           style={{
-            gap: 16,
-            padding: 20,
+            gap: tokens.space['4'],
+            padding: tokens.space['5'],
             borderRadius: tokens.radius.lg,
             backgroundColor: theme.colors.s3,
             borderWidth: 1,

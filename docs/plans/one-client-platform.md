@@ -135,7 +135,37 @@ This is the largest change since Phase 3: every client screen moves once, and th
 
 ## Progress
 
-Nothing yet.
+### 2026-11-03: part A built, waiting for the owner's review
+
+- **`apps/client`** (`@highsea-tv/app`) is one Expo project, on SDK 58 and react-native-tvos 0.88, for the phone, the TV and the web.
+  - The web is built with `expo export -p web`, `web.output: 'single'` and `experiments.baseUrl: '/web'`. `EXPO_TV=1` at prebuild makes the TV project.
+  - It has one route tree and one shell, picked by the form-factor rule.
+  - Its first destinations, the proof, are the gate, Choose a server, its sign-in, the signed-in shell and Settings. Their shared parts are in `src/kit.tsx`.
+  - It was built and run on the iPhone simulator, the Apple TV simulator and the web.
+  - `apps/mobile`, `apps/tv` and `apps/web` still build and work. Their screens move in part B.
+- **The library on react-native-web.** `packages/ui/src/native` is the only drawing for the clients. Hover, the focus ring on Tab, Space on keyup, ARIA state, the drawn scrollbar and the 44 hit layer are each done once, in platform pairs (`dom.ts`/`dom.web.ts`, the scrollbar pair). 52 literal values moved onto tokens, and `parity.ts`'s `BOTH` has a reason for each of its 29 entries. `src/web` stays for the admin until part D.
+- **The form-factor rule** is in `@highsea-tv/tokens` (`form-factor.ts`, with `TV_REFERENCE` in `controls.ts`) and is read through `useFormFactor`.
+  - Input is pointer, touch or tv; width is compact (below 768), regular or tv.
+  - ThemeProvider also takes `fontScale` and `reducedMotion`.
+- **The mock as an SDK transport.** `@highsea-tv/mock` moved out of `design/prototypes`. It answers 22 routes and returns 501 for the rest. The new pure subpaths it needs are `@highsea-tv/core/errors`, `auth/codes` and `subtitles/providers/info`, and personalization's `keys.ts`.
+- **The prototypes' frames hold the client.** `bun run prototypes` serves the client's mock export (`apps/client/dist-mock`) at `/web`. A stamp of its inputs means it's rebuilt only when stale, and `HIGHSEA_CLIENT_EXPORT=0` skips it. The toolbar reaches the client through `@highsea-tv/mock/frame`, a postMessage channel that checks origins. The prototype's own copies of Choose a server, sign-in and Settings were deleted once the compare sheet had been made.
+- **Platform files:**
+  - `@highsea-tv/native/playback` plays the web through `<video>` and hls.js (`playback.web.ts`). `apps/web` plays through it now; the playback sweep passed in Chromium and Firefox.
+  - The TV's web focus engine sits behind `Focusable` (`packages/ui/src/native/tv/spatial`, `engine.web.tsx`). The D-pad walk reaches all 41 routes.
+  - `apps/client/test/platform-files.test.ts` holds the pattern: every `.web` file has a native pair, with an entry under `react-native`.
+- **Storybook is retired:** `apps/storybook` is removed.
+- **The checks:**
+  - `bun run one-place` fails when something is defined twice. It found 0 failures, with 36 listed exceptions until parts B to E.
+  - `scripts/sweeps/layout.ts` compares each screen's layout boxes and text from the accessibility tree, between the web and the iPhone and Apple TV simulators (an XCUITest in `apps/client/uitest`). The tolerance is 4 pt with no allowance for text shaping. In the final run, all 8 pairs matched.
+  - `bundles.ts` and `controls.ts` read `apps/client`. Wiring the client's bundles into CI is left for part C.
+  - The sweeps reach the client through the frames.
+- **Found and fixed on the way:**
+  - `letterSpacing: 0` turned kerning off on iOS, so Text leaves it unset.
+  - Fabric flattened labelled groups (`collapsable={false}`).
+  - The TV's Menu key is held through `TVEventControl.enableTVMenuKey()` and let go at a screen's root.
+  - expo-web-browser is loaded only off the TV.
+- **ADRs:** 0061 (Proposed) and dated sections in 0003, 0008, 0053, 0055, 0058, 0059 and 0060.
+- **Calls, prototype changes and questions:** these are in the checkpoint report. The owner reviews the converged screens on its compare sheet.
 
 ## ADRs
 
@@ -214,3 +244,22 @@ On 2026-11-02 the owner took every recommendation for questions 1 to 10 except 4
 8. Fumadocs, with the guides' drawn parts from the library (asked again after change 1).
 9. Part C's uncommitted work is part A's starting point, committed on its own when the owner says.
 10. **Changed by the owner:** no Storybook. `apps/storybook` is retired, and `apps/client` against the mock is the workbench.
+
+## The owner's answers at part A's review
+
+On 2026-11-03, reviewing part A, the owner took every recommendation for its 14 decisions, with one follow-up:
+
+1. Compact is below 768 for every client, and `spacing-layout.md` now says so. **Follow-up:** the admin keeps its own breakpoints (600, 1024 and 1440 in `scales.ts`, behind Tailwind's `medium:`) until part D moves it onto the rule. Nothing in the admin changes now.
+2. The TV's inset is 2.4u on every side (`tv.safe`). `platforms/tv.md` now says so, noting that it sits inside tvOS's 80 × 60 points by the owner's choice of 2026-10-30.
+3. The web's margins, posters per row, gaps between rows, and the compact-pointer and regular-touch layouts take the prototype's values, written into the guides as part B moves each screen.
+4. Pointer clients have a top bar, as prototyped. There's no sidebar.
+5. The toggle's shadow blur of 2 (elevation level 2) is approved.
+6. Hover on primary and danger buttons, and poster hover at 1.02, are added as library states in part B.
+7. The 143 listed values get a token set proposed for approval in part E.
+8. Text's mapping to the nearest style off the phone is approved.
+9. The drawn scrollbar's measures become tokens in part E.
+10. The TV's Theme rows take `radius-sm` through the control spec (`m.radius`), not `tv.radius.button`.
+11. TV pages in a browser scroll only as focus moves.
+12. Enter presses link stops in the TV's web focus engine.
+13. TypeScript is pinned at 7.0.2.
+14. Part A is committed now. Part C of the apps' catch-up was already committed (`c4bfed2`), so it's one commit. Nothing is pushed.

@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C5 Player on the web (docs/product/player.md#web-and-desktop), ported from
-// design/prototypes/src/web/player.tsx onto a real `<video>` (`playback.ts`). Over the picture:
-// the title and Back on top; the scrubber with its trickplay preview, the transport and the track
-// menu at the bottom; the Audio and subtitles panel with the timing nudge and its live preview.
+// design/prototypes/src/web/player.tsx onto a real `<video>`, which `@highsea-tv/native/playback`'s
+// web engine plays. Over the picture: the title and Back on top; the scrubber with its trickplay
+// preview, the transport and the track menu at the bottom; the Audio and subtitles panel with the
+// timing nudge and its live preview.
 // Subtitles come from a hidden `<track>` and are drawn here, with the person's offset added to
 // the cues' times (https://developer.mozilla.org/en-US/docs/Web/API/TextTrack), so the timing
 // changes without reloading. Keys: Space, ← and → 10 s, M, F and Esc, and the Media Session API
@@ -30,6 +31,7 @@ import {
   trickplayTile,
 } from '@highsea-tv/client/player'
 import { useT } from '@highsea-tv/i18n/react'
+import { type Playback, TRANSCODE_LIMIT, usePlayback } from '@highsea-tv/native/playback'
 import { ApiError } from '@highsea-tv/sdk'
 import { useQuery } from '@highsea-tv/sdk/react'
 import { Button, cn, EmptyState, Icon, QualityTag } from '@highsea-tv/ui'
@@ -38,7 +40,6 @@ import { useLocation, useParams } from 'wouter'
 import { trafficLightRoom, WindowFrame, windowChrome } from './desktop/window.tsx'
 import { inApp, media } from './host.ts'
 import { player as messages } from './messages.ts'
-import { type Playback, TRANSCODE_LIMIT, usePlayback } from './playback.ts'
 import { href } from './shell.tsx'
 
 const { clock } = createFormat()
@@ -154,7 +155,7 @@ function TracksPanel({ p, onClose }: { p: Playback; onClose: () => void }) {
   const d = p.detail.data
   if (!v || !d) return null
   // a track this device can't be sent at all; one the server burns in has its own line (4.3)
-  const picture = !!p.subtitle && !!p.session && !p.subtitleUrl && !p.burnt
+  const picture = p.pictureTrack
   // a version waiting for its file has nothing to play yet
   const versions = d.versions.filter((x) => x.playable || x.id === v.id)
   return (
@@ -586,7 +587,7 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
 
   // muting and picture in picture follow the video, whichever control changed them
   useEffect(() => {
-    const v = p.video.current
+    const v = p.player.video.current
     if (!v) return
     const sync = () => setMuted(v.muted)
     const enter = () => setPip(true)
@@ -599,7 +600,7 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
       v.removeEventListener('enterpictureinpicture', enter)
       v.removeEventListener('leavepictureinpicture', exitPip)
     }
-  }, [p.video])
+  }, [p.player.video])
 
   const d = p.detail.data
   // the keyboard's and headphones' media keys, and the browser's own controls
@@ -610,7 +611,7 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
       title: d.item.title,
       artwork: d.item.art.poster ? [{ src: media(d.item.art.poster) }] : [],
     })
-    const v = () => p.video.current
+    const v = () => p.player.video.current
     const handlers: [MediaSessionAction, MediaSessionActionHandler][] = [
       [
         'play',
@@ -635,10 +636,10 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
           ms.setActionHandler(action, null)
         } catch {}
     }
-  }, [d, p.video, p.seekBy, p.seekTo])
+  }, [d, p.player.video, p.seekBy, p.seekTo])
 
   const toggleMute = () => {
-    const v = p.video.current
+    const v = p.player.video.current
     if (v) v.muted = !v.muted
   }
   const toggleFullScreen = () => {
@@ -647,7 +648,7 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
   }
   const togglePip = () => {
     if (document.pictureInPictureElement) document.exitPictureInPicture().catch(() => {})
-    else p.video.current?.requestPictureInPicture().catch(() => {})
+    else p.player.video.current?.requestPictureInPicture().catch(() => {})
   }
 
   const onKey = (e: React.KeyboardEvent) => {
@@ -702,7 +703,7 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
     >
       {/* biome-ignore lint/a11y/useMediaCaption: subtitles are a hidden <track>, drawn by <Cues> */}
       <video
-        ref={p.attach}
+        ref={p.player.attach}
         playsInline
         preload="auto"
         // in the app the subtitles come from the server's scheme, another origin, which a track
@@ -745,7 +746,9 @@ function Player({ id, fromStart }: { id: number; fromStart: boolean }) {
           chrome && 'bottom-[22%]',
         )}
       >
-        {!pip && <Cues video={p.video} track={track} url={p.subtitleUrl} offsetMs={p.offsetMs} />}
+        {!pip && (
+          <Cues video={p.player.video} track={track} url={p.subtitleUrl} offsetMs={p.offsetMs} />
+        )}
       </div>
 
       {/* the player's own controls over the picture, which may stay round (controls.md › Rules) */}

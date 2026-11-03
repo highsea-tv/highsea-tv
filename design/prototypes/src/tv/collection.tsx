@@ -4,10 +4,11 @@
 // starts on the first title; Back goes back to wherever it was opened from. A collection holds
 // films and shows in any mix, so the row is named by what's in it: Films, Shows, or Films and
 // shows, the films first.
+
+import type { ClientItem, ClientShow } from '@highsea-tv/mock/types'
 import { Skeleton } from '@highsea-tv/ui'
 import { useParams } from 'wouter'
 import { titlesHere, titlesRow, useCollection } from '../client/data.ts'
-import type { ClientItem, ClientShow } from '../mock/types.ts'
 import { TvFilmRow, TvFilmRowSkeleton } from './film-row.tsx'
 import { TvButton, TvHead, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
 

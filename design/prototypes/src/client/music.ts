@@ -9,7 +9,7 @@ import type {
   ClientLibrarySong,
   DiscographyKind,
   HomeMusic,
-} from '../mock/types.ts'
+} from '@highsea-tv/mock/types'
 
 export type MusicView = 'albums' | 'artists' | 'songs' | 'playlists'
 

@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What Settings › VPN says, word for word from docs/product/vpn.md and the approved prototype
-// (design/prototypes/src/mock/vpn.ts: `vpnStatus` and `connectionFailure`). Lines the prototype
+// (packages/mock/src/vpn.ts: `vpnStatus` and `connectionFailure`). Lines the prototype
 // didn't need, because real data forces them, are marked; the checkpoint report lists them.
 
 export const failures = {

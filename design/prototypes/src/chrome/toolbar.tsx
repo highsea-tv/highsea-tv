@@ -22,6 +22,7 @@ import {
   webApps,
   widths,
 } from '../proto/state.ts'
+import { tClient } from './client.ts'
 
 type ToolbarProps = {
   state: ProtoState
@@ -32,15 +33,26 @@ type ToolbarProps = {
   now: number | null
   onNavigate: (path: string) => void
   onPlatform: (platform: Platform) => void
+  /** Whether the frame holds apps/client now (a route it holds, or one it went to from there). */
+  holding?: boolean
 }
 
 const control =
   'h-7 cursor-pointer rounded-[6px] border border-line bg-s2 px-2 font-mono text-[11px] text-text transition-tint hover:bg-s3 disabled:cursor-not-allowed disabled:opacity-40'
 
-function Group({ label, children }: { label: string; children: (id: string) => ReactNode }) {
+function Group({
+  label,
+  ignored = false,
+  children,
+}: {
+  label: string
+  /** A state the client in the frame doesn't follow yet: drawn dimmed, still usable. */
+  ignored?: boolean
+  children: (id: string) => ReactNode
+}) {
   const id = useId()
   return (
-    <div className="flex items-center gap-1.5">
+    <div className={`flex items-center gap-1.5 ${ignored ? 'opacity-50' : ''}`}>
       <label htmlFor={id} className="font-mono text-[10px] text-text-3 uppercase tracking-label">
         {label}
       </label>
@@ -53,15 +65,18 @@ function Toggle({
   label,
   pressed,
   onChange,
+  describedBy,
 }: {
   label: string
   pressed: boolean
   onChange: (pressed: boolean) => void
+  describedBy?: string
 }) {
   return (
     <button
       type="button"
       aria-pressed={pressed}
+      aria-describedby={describedBy}
       onClick={() => onChange(!pressed)}
       className={`${control} aria-pressed:border-accent aria-pressed:bg-accent-soft aria-pressed:text-accent-text`}
     >
@@ -77,11 +92,22 @@ const clockFormat = new Intl.DateTimeFormat('en-GB', {
   second: '2-digit',
 })
 
-export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatform }: ToolbarProps) {
+export function Toolbar({
+  state,
+  set,
+  path,
+  platform,
+  now,
+  onNavigate,
+  onPlatform,
+  holding = false,
+}: ToolbarProps) {
   const update = <K extends keyof ProtoState>(key: K, value: ProtoState[K]) =>
     set((s) => ({ ...s, [key]: value }))
   const flow = flowFor(path)
   const sized = platform === 'admin' || platform === 'web'
+  // the states apps/client doesn't follow yet (the frame channel's FrameState) are dimmed
+  const ignored = holding
   const [hintsOpen, setHintsOpen] = useState(false)
   const hints = useRef<HTMLDivElement>(null)
 
@@ -155,6 +181,10 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
           </button>
         ))}
       </fieldset>
+
+      {holding && (
+        <span className="font-mono text-[10px] text-text-3">{tClient('client.holding')}</span>
+      )}
 
       <Group label="Width">
         {(id) => (
@@ -250,7 +280,7 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
       )}
 
       {platform === 'web' && (
-        <Group label="App">
+        <Group label="App" ignored={ignored}>
           {(id) => (
             <select
               id={id}
@@ -270,7 +300,7 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
 
       {platform === 'web' && state.app === 'desktop' && (
         <>
-          <Group label="OS">
+          <Group label="OS" ignored={ignored}>
             {(id) => (
               <select
                 id={id}
@@ -286,7 +316,7 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
               </select>
             )}
           </Group>
-          <Group label="Update">
+          <Group label="Update" ignored={ignored}>
             {(id) => (
               <select
                 id={id}
@@ -343,7 +373,7 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
       )}
 
       {platform !== 'admin' && !/\/play\//.test(path) && (
-        <Group label="Music">
+        <Group label="Music" ignored={ignored}>
           {(id) => (
             <select
               id={id}
@@ -362,7 +392,7 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
       )}
 
       {platform === 'mobile' && /\/play\//.test(path) && (
-        <Group label="AirPlay">
+        <Group label="AirPlay" ignored={ignored}>
           {(id) => (
             <select
               id={id}
@@ -381,7 +411,7 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
       )}
 
       {platform === 'mobile' && /\/offline/.test(path) && (
-        <Group label="Downloads">
+        <Group label="Downloads" ignored={ignored}>
           {(id) => (
             <select
               id={id}
@@ -400,7 +430,7 @@ export function Toolbar({ state, set, path, platform, now, onNavigate, onPlatfor
       )}
 
       {platform !== 'admin' && /\/play\//.test(path) && (
-        <Group label="Stream">
+        <Group label="Stream" ignored={ignored}>
           {(id) => (
             <select
               id={id}

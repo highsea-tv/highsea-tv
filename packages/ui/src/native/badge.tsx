@@ -7,7 +7,7 @@ import { View } from 'react-native'
 import { Icon } from './icon.tsx'
 import type { IconName } from './icons.ts'
 import { Text } from './text.tsx'
-import { useTheme } from './theme.tsx'
+import { tokens, useTheme } from './theme.tsx'
 
 export type BadgeTone = 'neutral' | 'accent' | 'success' | 'warning' | 'danger' | 'info'
 
@@ -45,9 +45,9 @@ export function Badge({
         alignItems: 'center',
         alignSelf: 'flex-start',
         gap: 6 * theme.u,
-        paddingHorizontal: 8 * theme.u,
-        paddingVertical: 2 * theme.u,
-        borderRadius: 999,
+        paddingHorizontal: tokens.space['2'] * theme.u,
+        paddingVertical: tokens.space['0.5'] * theme.u,
+        borderRadius: tokens.radius.pill,
         backgroundColor: overlay ? glass : theme.colors[t.bg],
       }}
     >

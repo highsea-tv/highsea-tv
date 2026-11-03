@@ -6,12 +6,12 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | --- | --- | --- |
 | [0001](0001-design-first-sequencing.md) | Design-first sequencing | Accepted |
 | [0002](0002-bun-monorepo-multiple-apps.md) | Bun monorepo with multiple apps | Accepted |
-| [0003](0003-server-runtime-custom-entry.md) | Server runtime: custom Node entry hosting Next.js + Hono | Accepted; amended 2026-10-27 and 2026-10-28 |
+| [0003](0003-server-runtime-custom-entry.md) | Server runtime: custom Node entry hosting Next.js + Hono | Accepted; amended 2026-10-27, 2026-10-28 and 2026-11-03 |
 | [0004](0004-sqlite-drizzle.md) | SQLite + Drizzle for server data | Accepted |
 | [0005](0005-in-process-torrent-engine.md) | In-process TypeScript torrent engine | Accepted; amended by 0037 |
 | [0006](0006-public-api-openapi-sdk.md) | Public API: Hono + OpenAPI, typed SDK | Accepted |
 | [0007](0007-signed-independent-catalogs.md) | Signed catalogs released independently of apps | Accepted |
-| [0008](0008-clients-react-everywhere.md) | Clients: React everywhere | Accepted; amended 2026-11-01 |
+| [0008](0008-clients-react-everywhere.md) | Clients: React everywhere | Accepted; amended 2026-11-01 and 2026-11-03, and by 0061 |
 | [0009](0009-license-agpl.md) | License: AGPL-3.0-only | Accepted; amended 2026-10-29 (twice) |
 | [0010](0010-optional-highsea-cloud.md) | Optional highsea cloud | Accepted |
 | [0011](0011-no-compatibility-apis.md) | No compatibility APIs | Accepted |
@@ -56,13 +56,14 @@ Short records of decisions that shape the system. Each one is immutable once acc
 | [0050](0050-release-and-versioning.md) | Release and versioning: one SemVer version, two channels, a prepared commit and a gated workflow | Accepted; amended 2026-10-23, 2026-10-28 and 2026-10-29 (four times) |
 | [0051](0051-playback-engine.md) | The playback engine: direct play, then direct stream, then HLS transcodes made on demand | Accepted; amended 2026-10-27 and 2026-10-28 (twice) |
 | [0052](0052-device-profiles.md) | Device profiles: what each client plays, built in and reported, in one shape | Accepted; amended 2026-10-27, 2026-10-28 (twice) and 2026-10-29 (three times) |
-| [0053](0053-clients-build-and-distribution.md) | The clients' build and distribution: Vite at /web, Tauri for desktop, Expo for mobile and TV | Proposed; the web part Accepted 2026-10-28, desktop 2026-10-29; amended 2026-10-29 (three times) |
+| [0053](0053-clients-build-and-distribution.md) | The clients' build and distribution: Vite at /web, Tauri for desktop, Expo for mobile and TV | Proposed; the web part Accepted 2026-10-28, desktop 2026-10-29; amended 2026-10-29 (three times) and 2026-11-03, and by 0061 |
 | [0054](0054-watch-state.md) | Watch state: positions, watched and the player's picks, per person and title | Accepted; amended 2026-11-01 |
-| [0055](0055-clients-shared-logic.md) | The clients' shared logic: `@highsea-tv/client`, everything but the drawing | Accepted; amended 2026-10-29 and 2026-11-01 |
+| [0055](0055-clients-shared-logic.md) | The clients' shared logic: `@highsea-tv/client`, everything but the drawing | Accepted; amended 2026-10-29, 2026-11-01, 2026-11-02 (twice) and 2026-11-03, and by 0061 |
 | [0056](0056-hardware-acceleration.md) | Hardware acceleration: four paths, each used only once a check on this host passes | Accepted; amended 2026-10-28 |
 | [0057](0057-installing-without-configuration.md) | Installing without configuration: graphics handed over by default, the user, time zone, folders and address detected, and highsea's own TMDB key | Accepted; amended 2026-10-29 |
-| [0058](0058-desktop-app.md) | The desktop app: Tauri around the web build, with the server reached through Rust | Accepted; amended 2026-10-29 |
-| [0059](0059-native-apps.md) | The native apps: Expo on React Native, two apps sharing ui-native and the client | Proposed; amended 2026-10-29 and 2026-11-01 |
-| [0060](0060-one-design-system-one-library.md) | One design system and one component library, adaptive to the app it's in | Proposed |
+| [0058](0058-desktop-app.md) | The desktop app: Tauri around the web build, with the server reached through Rust | Accepted; amended 2026-10-29 and 2026-11-03, and by 0061 |
+| [0059](0059-native-apps.md) | The native apps: Expo on React Native, two apps sharing ui-native and the client | Proposed; amended 2026-10-29, 2026-11-01, 2026-11-02 and 2026-11-03, and by 0061 |
+| [0060](0060-one-design-system-one-library.md) | One design system and one component library, adaptive to the app it's in | Proposed; amended 2026-11-02 (twice) and 2026-11-03, and by 0061 |
+| [0061](0061-one-client-platform.md) | One client platform: every client and its prototype in one Expo project, drawn once in React Native | Proposed |
 
 Template: copy [`template.md`](template.md).

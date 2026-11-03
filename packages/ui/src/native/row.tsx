@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A row (mobile.md › Layout): its title, then items scrolling edge to edge with the first one on
 // the 16pt gutter, 8pt apart; posters about 30% of the row's width, so three show and a peek.
+import { formFactorLayouts } from '@highsea-tv/tokens'
 import type { ReactNode } from 'react'
 import { FlatList, useWindowDimensions, View } from 'react-native'
 import { Text } from './text.tsx'
@@ -10,9 +11,9 @@ const { gutter, posterGap } = tokens.mobile
 
 /**
  * The width of one poster in a row on this screen: a share of the row inside its gutters, as the
- * prototype's `w-[30%]` is of its padded list.
+ * prototype's `w-[30%]` is of its padded list. The phone's own share is its layout's.
  */
-export function usePosterWidth(share = 0.3) {
+export function usePosterWidth(share: number = formFactorLayouts['compact-touch'].itemShare) {
   return Math.round((useWindowDimensions().width - gutter * 2) * share)
 }
 

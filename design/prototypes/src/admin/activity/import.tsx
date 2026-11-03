@@ -5,6 +5,7 @@
 // or a show's episodes (several, for a double episode), chosen in one dialog.
 
 import { bytes } from '@highsea-tv/core/format'
+import type { AdminShowDetail, ImportCandidate, MediaItem } from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -28,7 +29,6 @@ import {
 } from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { useAction, useClient, useQuery } from '../../mock/hooks.tsx'
-import type { AdminShowDetail, ImportCandidate, MediaItem } from '../../mock/types.ts'
 import { episodeCode } from '../episodes.ts'
 import { buildEpisodeName, importedAs } from '../naming.ts'
 import { AdminPage, adminHref } from '../shell.tsx'

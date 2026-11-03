@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The status Settings › VPN and A8 show, worked out from the settings and what the tunnel last
-// reported. It follows the prototype's `vpnStatus` (design/prototypes/src/mock/vpn.ts) row for
+// reported. It follows the prototype's `vpnStatus` (packages/mock/src/vpn.ts) row for
 // row; the values are real instead of played.
 import { checkCopy as c, failures, labels } from './copy.ts'
 import type { VpnProviderDefinition } from './providers.ts'

@@ -5,11 +5,12 @@
 // All, the default, with Video and Audio as two sections, then each family on its own. The
 // collections are a poster grid, smart ones marked. Up from the grid reaches the choices, Up again
 // the nav; focus starts on the first collection.
+
+import type { ClientCollection } from '@highsea-tv/mock/types'
 import { Chip } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { collectionCaption, useCollections } from '../client/data.ts'
 import { CollectionTile } from '../kit/collection-art.tsx'
-import type { ClientCollection } from '../mock/types.ts'
 import {
   TvButton,
   TvHead,

@@ -1,8 +1,8 @@
 'use client'
 // SPDX-License-Identifier: AGPL-3.0-only
 import { type RefObject, useEffect } from 'react'
+import { createSpatialNavigator } from '../../native/tv/spatial/navigator.ts'
 import { useSound } from '../sound/context.tsx'
-import { createSpatialNavigator } from './navigator.ts'
 
 /**
  * Arrow-key (D-pad) navigation inside `ref` using the spatial model. Plays `navigate` on moves;

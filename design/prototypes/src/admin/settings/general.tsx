@@ -8,6 +8,14 @@
 // Updates and Diagnostics share one draft and the page's one Save bar, which saves each part that
 // changed. An admin sees them all, read-only. In the mock a key shorter than 16 characters, or
 // with "wrong" in it, is one TMDB refuses.
+
+import type {
+  CatalogSettings,
+  GeneralSettings,
+  LogLevel,
+  MetadataSettings,
+  MetricsSettings,
+} from '@highsea-tv/mock/settings'
 import {
   Badge,
   Button,
@@ -22,13 +30,6 @@ import {
 } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type {
-  CatalogSettings,
-  GeneralSettings,
-  LogLevel,
-  MetadataSettings,
-  MetricsSettings,
-} from '../../mock/settings.ts'
 import { Loadable } from '../loadable.tsx'
 import { adminHref, useShell } from '../shell.tsx'
 import { reasonOf } from './parts.tsx'

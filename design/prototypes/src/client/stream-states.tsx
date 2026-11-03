@@ -4,9 +4,9 @@
 // stream that didn't start, and one stopped from Now playing, over a scrim with what to do next;
 // Next up as the credits start, and Skip intro and Skip credits over an episode's. Each platform passes its own button, so TV's take the D-pad.
 import { NEXT_UP_S } from '@highsea-tv/client/player'
+import type { UpNext } from '@highsea-tv/mock/types'
 import { cn, Icon, Poster } from '@highsea-tv/ui'
 import { type ReactNode, useEffect, useState } from 'react'
-import type { UpNext } from '../mock/types.ts'
 import type { Player } from './player.ts'
 
 export type StreamAction = (props: {

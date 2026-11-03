@@ -26,7 +26,7 @@ export type ButtonSize = ControlSize
 const base = `inline-flex max-w-full shrink-0 cursor-pointer select-none items-center justify-center text-balance text-center [overflow-wrap:anywhere] border border-transparent font-medium transition-press focus-visible:scale-(--scale-button) [&_svg]:shrink-0 ${controlShape} ${controlHit} ${controlPress} ${controlDisabled}`
 
 /** The tokens' `buttonLooks` as classes (controls.md › Looks). */
-export const buttonVariants: Record<ButtonVariant, string> = {
+const buttonVariants: Record<ButtonVariant, string> = {
   // one per view (color.md): the accent fill with a 600 label, no subpixel thinning
   primary:
     'bg-accent-fill font-semibold text-on-accent [-webkit-font-smoothing:auto] hover:brightness-108',

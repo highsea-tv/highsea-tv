@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // VPN connections' shapes (docs/product/vpn.md), as the Settings › VPN prototype drew them
-// (design/prototypes/src/mock/vpn.ts): the settings the admin reads and writes, and the status
+// (packages/mock/src/vpn.ts): the settings the admin reads and writes, and the status
 // worked out from them and the tunnel.
 
 export type VpnMode = 'builtin' | 'container' | 'interface' | 'off'

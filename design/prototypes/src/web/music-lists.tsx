@@ -4,6 +4,8 @@
 // song's ⋯ menu; a row plays the list from there on. Playlists are the person's own, as square
 // mosaics of their first four covers, with New playlist at the right of the page's head, or in
 // the empty view, which says how to make one.
+
+import type { ClientLibrarySong, ClientPlaylist } from '@highsea-tv/mock/types'
 import { Button, cn, Dialog, DialogContent, EmptyState, Icon } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
@@ -12,7 +14,6 @@ import { type PlayingFrom, useMusicPlayer } from '../client/music-player.ts'
 import { PlaylistMosaic, PlaylistNameForm } from '../client/playlist-picker.tsx'
 import { PlayingBars } from '../client/waveform.tsx'
 import { useAction } from '../mock/hooks.tsx'
-import type { ClientLibrarySong, ClientPlaylist } from '../mock/types.ts'
 import { webHref } from './shell.tsx'
 import { WebSongMenu } from './song-menu.tsx'
 

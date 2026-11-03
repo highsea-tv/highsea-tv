@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The mobile tabs after Library: Search (C6, reference), Offline (C8, reference), and You (C8),
-// which leads to the settings (C7). docs/product/client-search.md, client-settings.md.
+// which leads to the settings (C7, apps/client's Settings at /settings). docs/product/client-search.md,
+// client-settings.md.
 
-import type { SettingsSectionId } from '@highsea-tv/client/prefs'
+import { settingsSections } from '@highsea-tv/client/prefs'
+import type { SearchSection, SearchSong } from '@highsea-tv/mock/types'
 import {
   Chip,
   ConfirmDialog,
@@ -16,7 +18,7 @@ import {
   toast,
 } from '@highsea-tv/ui'
 import { useState } from 'react'
-import { useLocation, useParams } from 'wouter'
+import { useLocation } from 'wouter'
 import {
   personCredits,
   searchedFor,
@@ -36,11 +38,8 @@ import { songTime } from '../client/music.ts'
 import { useMusicPlayer } from '../client/music-player.ts'
 import { OfflineList } from '../client/offline-list.tsx'
 import { usePeople } from '../client/profiles.ts'
-import { settingsSections } from '../client/settings.ts'
-import { SettingsSectionBody } from '../client/settings-sections.tsx'
 import { ShowPoster } from '../client/show-card.tsx'
 import { ProfileAvatar } from '../client/who.tsx'
-import type { SearchSection, SearchSong } from '../mock/types.ts'
 import { PullToRefresh } from './pull.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
 import { MobileWhoSheet } from './who-sheet.tsx'
@@ -337,9 +336,9 @@ export function MobileYou({ who = false }: { who?: boolean }) {
         className="mx-4 overflow-hidden rounded-lg border border-line bg-s1"
       >
         <ul className="divide-y divide-line">
-          {settingsSections.map((s) => (
+          {settingsSections().map((s) => (
             <li key={s.id}>
-              <a href={mobileHref(`/you/${s.id}`)} className={row}>
+              <a href={mobileHref(`/settings?section=${s.id}`)} className={row}>
                 <Icon name={s.icon} size={20} className="text-text-3" />
                 <span className="flex-1">{s.label}</span>
                 <Icon name="chevron-right" size={18} className="text-text-3" />
@@ -370,7 +369,7 @@ export function MobileYou({ who = false }: { who?: boolean }) {
           </a>
         </li>
         <li>
-          {/* asks first, as Forget this server does on the sign-in screen (connect-flow.tsx) */}
+          {/* asks first, as Forget this server does on apps/client's sign-in screen */}
           <ConfirmDialog
             trigger={
               <button type="button" className={cn(row, 'w-full cursor-pointer text-badge-danger')}>
@@ -397,35 +396,6 @@ export function MobileYou({ who = false }: { who?: boolean }) {
         // the sheet's open state is in the address, without an entry of its own in the history
         onOpenChange={(open) => navigate(open ? '/you/who' : '/you', { replace: true })}
       />
-    </div>
-  )
-}
-
-/** One settings section, as its own screen with a way back to You. */
-export function MobileSettingsScreen() {
-  const { section } = useParams<{ section: string }>()
-  const s = settingsSections.find((x) => x.id === section)
-  if (!s)
-    return (
-      <div className={cn('py-10', gutter)}>
-        <EmptyState icon="settings" title="There’s no setting here">
-          It may have moved.
-        </EmptyState>
-      </div>
-    )
-  return (
-    <div className="grid gap-4 pt-1">
-      <a
-        href={mobileHref('/you')}
-        className={cn('flex min-h-11 items-center gap-1 text-[15px] text-accent-text', gutter)}
-      >
-        <Icon name="chevron-left" size={20} />
-        You
-      </a>
-      <h1 className={cn('font-semibold text-[28px] tracking-display', gutter)}>{s.label}</h1>
-      <div className={gutter}>
-        <SettingsSectionBody id={s.id as SettingsSectionId} platform="mobile" />
-      </div>
     </div>
   )
 }

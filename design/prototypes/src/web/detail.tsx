@@ -14,6 +14,7 @@ import {
   previewOf,
   videoLength,
 } from '@highsea-tv/client/library'
+import type { ClientDetail, PlaybackPrefs, Video } from '@highsea-tv/mock/types'
 import {
   Button,
   CarouselRow,
@@ -40,7 +41,6 @@ import { MediaPosterSkeleton } from '../client/media-card.tsx'
 import { TrailerDialog } from '../client/trailer.tsx'
 import { CollectionTile } from '../kit/collection-art.tsx'
 import { useAction } from '../mock/hooks.tsx'
-import type { ClientDetail, PlaybackPrefs, Video } from '../mock/types.ts'
 import { PosterRow } from './home.tsx'
 import { gutter, webHref } from './shell.tsx'
 

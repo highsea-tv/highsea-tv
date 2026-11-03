@@ -7,6 +7,14 @@ import { mkdtempSync, readFileSync, rmSync } from 'node:fs'
 import { availableParallelism, tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { type Browser, chromium, type Page } from 'playwright-core'
+import {
+  type ClientPlatform,
+  clientPathOf,
+  FRAME_INPUTS,
+  heldByClient,
+  PHONE_SCREEN,
+  TV_SCREEN,
+} from '../../design/prototypes/src/chrome/client.ts'
 
 export const ROOT = join(import.meta.dir, '..', '..')
 
@@ -91,6 +99,49 @@ export const screenUrl = (route: string, query = '') => {
   const [path, own = ''] = route.split('?')
   const q = [own, query].filter(Boolean).join('&')
   return `${base}/index.html?screen&time=pause&sound=off${q ? `&${q}` : ''}#${path}`
+}
+
+/** Each client frame's size: the phone's 390 × 844, and the TV's 1080p screen. */
+export const CLIENT_FRAMES: Record<
+  Exclude<ClientPlatform, 'web'>,
+  { width: number; height: number }
+> = {
+  mobile: { width: PHONE_SCREEN.w, height: PHONE_SCREEN.h },
+  tv: { width: TV_SCREEN.w, height: TV_SCREEN.h },
+}
+
+/** The viewport a job opens at: a client frame's own size, or the width swept. */
+export const viewportFor = (route: string, width: number) => {
+  const platform = route.split('/')[1]
+  if (heldByClient(route) && (platform === 'mobile' || platform === 'tv'))
+    return CLIENT_FRAMES[platform]
+  return { width, height: heightFor(width) }
+}
+
+/**
+ * apps/client's address for a chrome route, opened on its own as the frame opens it
+ * (`/web<path>?ff=<input>`) on the server servePrototypes starts, with the toolbar's states as
+ * the prototypes' URL parameters, which the client reads in mock mode when it isn't framed
+ * (@highsea-tv/mock/frame's queryState).
+ */
+export const clientUrl = (route: string, platform: ClientPlatform, query = '') => {
+  const [path = '/', own = ''] = route.split('?')
+  const clientPath = clientPathOf(path) ?? '/'
+  const q = [`ff=${FRAME_INPUTS[platform]}`, 'time=pause', 'sound=off', own, query]
+    .filter(Boolean)
+    .join('&')
+  return `${base}/web${clientPath === '/' ? '/' : clientPath}?${q}`
+}
+
+/**
+ * A route's address: apps/client's where it holds the route (design/prototypes/src/chrome/client.ts),
+ * and otherwise the prototype's screen.
+ */
+export const routeUrl = (route: string, query = '') => {
+  const platform = route.split('/')[1]
+  return heldByClient(route) && (platform === 'web' || platform === 'mobile' || platform === 'tv')
+    ? clientUrl(route, platform, query)
+    : screenUrl(route, query)
 }
 
 /**

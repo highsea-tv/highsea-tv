@@ -4,11 +4,12 @@
 // Every class rendered here, chrome included, must also be a real utility (./check.ts).
 import './dom.ts'
 import { afterEach, describe, expect, test } from 'bun:test'
+import { createMock } from '@highsea-tv/mock/client'
 import { act, cleanup, render } from '@testing-library/react'
 import { memoryLocation } from 'wouter/memory-location'
+import { heldByClient } from '../src/chrome/client.ts'
 import { Launcher } from '../src/chrome/launcher.tsx'
 import { Toolbar } from '../src/chrome/toolbar.tsx'
-import { createMock } from '../src/mock/client.ts'
 import {
   type DataState,
   defaultState,
@@ -33,7 +34,7 @@ const rolesFor = (p: Platform): Role[] => (p === 'admin' ? ['owner', 'admin', 'u
 
 for (const [platform, routes] of Object.entries(screenRoutes) as [Platform, string[]][]) {
   describe(platform, () => {
-    for (const path of routes)
+    for (const path of routes.filter((r) => !heldByClient(r)))
       for (const role of rolesFor(platform))
         for (const data of dataStates)
           test(`${path} · ${data}${role === 'owner' ? '' : ` · ${role}`}`, async () => {

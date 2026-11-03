@@ -5,6 +5,8 @@
 // with the arrows and dots at its bottom right (the owner's answer 9, prototype-gaps.md); then
 // Continue watching, a spotlight's wider cards with their synopsis, and every other row with its
 // first slot fixed (film-row.tsx).
+
+import type { ClientItem, FilmSection, HomeSection } from '@highsea-tv/mock/types'
 import {
   Button,
   CarouselRow,
@@ -28,7 +30,6 @@ import { isFilmSection, meta, playPath, qualityTags, titlePath, useHome } from '
 import { MediaPoster, MediaPosterSkeleton } from '../client/media-card.tsx'
 import { ShowPoster } from '../client/show-card.tsx'
 import { useVibrant } from '../client/vibrant.ts'
-import type { ClientItem, FilmSection, HomeSection } from '../mock/types.ts'
 import { WebFilmRow, WebFilmRowSkeleton } from './film-row.tsx'
 import { ArtistCard } from './music.tsx'
 import { gutter, webHref } from './shell.tsx'

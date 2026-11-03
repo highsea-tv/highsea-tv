@@ -91,7 +91,15 @@ export function Poster({
         </View>
       )}
       {quality && quality.length > 0 && (
-        <View style={{ position: 'absolute', top: '7%', left: '7%', flexDirection: 'row', gap: 4 }}>
+        <View
+          style={{
+            position: 'absolute',
+            top: '7%',
+            left: '7%',
+            flexDirection: 'row',
+            gap: tokens.space['1'],
+          }}
+        >
           {quality.map((q) => (
             <QualityTag key={q}>{q}</QualityTag>
           ))}
@@ -124,7 +132,7 @@ export function Poster({
       </View>
     ) : null
   const label = showTitle ? (
-    <View style={{ marginTop: 8, gap: 2 }}>
+    <View style={{ marginTop: tokens.space['2'], gap: tokens.space['0.5'] }}>
       <Text variant="callout" weight={600} numberOfLines={2}>
         {title}
       </Text>

@@ -4,12 +4,13 @@
 // length; OK plays the list from there on, and OK held opens the song's menu. Playlists are the
 // person's own as tiles of their mosaic; the TV plays them, and they're made and changed in the
 // other apps.
+
+import type { ClientLibrarySong, ClientPlaylist } from '@highsea-tv/mock/types'
 import { cn } from '@highsea-tv/ui'
 import { useLongPress } from '../client/continue-menu.ts'
 import { songsCount, songTime } from '../client/music.ts'
 import { PlaylistMosaic } from '../client/playlist-picker.tsx'
 import { PlayingBars } from '../client/waveform.tsx'
-import type { ClientLibrarySong, ClientPlaylist } from '../mock/types.ts'
 import { song } from './album.tsx'
 import { tvHref } from './kit.tsx'
 

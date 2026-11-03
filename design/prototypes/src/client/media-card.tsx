@@ -3,8 +3,9 @@
 // still, with the title and year under it; an episode's is its still, its show and "S2, E6". Only Home's Continue watching shows how far you got,
 // as the bar under the art and the time left; nowhere else does a card show progress. The TV draws
 // its own focus stop around these props (tv/kit.tsx's TvPoster).
+
+import type { ClientItem } from '@highsea-tv/mock/types'
 import { cn, Poster, type PosterProps, Skeleton } from '@highsea-tv/ui'
-import type { ClientItem } from '../mock/types.ts'
 import { left } from './data.ts'
 
 export type MediaCardOptions = {

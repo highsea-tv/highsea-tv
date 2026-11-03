@@ -5,18 +5,15 @@
 // scroll view, so tvOS's focus engine reaches tiles past the screen's edge, and each tile lands
 // 30% in from the left, measured from centres (tv.md › Scrolling); the row is a focus guide with
 // `autoFocus`, so coming back to it lands on the tile left (react-native-tvos's TVFocusGuideView).
+// In a browser, the engine pair's FocusGuide and TvScroll do the same (./engine.web.tsx).
 import { Image } from 'expo-image'
 import { type ReactNode, type Ref, useEffect, useRef } from 'react'
-import { ScrollView, TVFocusGuideView, useWindowDimensions, View } from 'react-native'
-import Animated, {
-  useAnimatedStyle,
-  useReducedMotion,
-  useSharedValue,
-  withSpring,
-} from 'react-native-reanimated'
+import { useWindowDimensions, View } from 'react-native'
+import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
 import { ProgressBar } from '../progress.tsx'
 import { Text } from '../text.tsx'
-import { tokens, useTheme } from '../theme.tsx'
+import { tokens, useMotionReduced, useTheme } from '../theme.tsx'
+import { FocusGuide, TvScroll } from './engine'
 import { Focusable, focusShadow, StopScope, type ViewHandle } from './focusable.tsx'
 import { KEEP, keptAt, TRACK_SPRING } from './model.ts'
 
@@ -153,7 +150,7 @@ function Art({
   progress: number | null
 }) {
   const theme = useTheme()
-  const reduced = useReducedMotion()
+  const reduced = useMotionReduced()
   const scale = useSharedValue(1)
   useEffect(() => {
     scale.value = withSpring(focused && !reduced ? tokens.focus.tv.scalePoster : 1, TRACK_SPRING)
@@ -236,7 +233,6 @@ export function TvRow<T>({
   const theme = useTheme()
   const u = theme.u
   const { width } = useWindowDimensions()
-  const reduced = useReducedMotion()
   const w = (itemWidth ?? (wide ? WIDE_WIDTH : tv.poster.width)) * u
   const inset = tv.safe.x * u
   return (
@@ -249,12 +245,10 @@ export function TvRow<T>({
           </Text>
         ) : null}
       </Text>
-      <TVFocusGuideView autoFocus trapFocusLeft trapFocusRight>
-        <ScrollView
+      <FocusGuide autoFocus trapFocusLeft trapFocusRight>
+        <TvScroll
           horizontal
-          snapToAlignment="item"
-          scrollAnimationEnabled={!reduced}
-          showsHorizontalScrollIndicator={false}
+          keep={KEEP.row}
           contentContainerStyle={{
             gap: tv.poster.gap * u,
             paddingHorizontal: inset,
@@ -271,8 +265,8 @@ export function TvRow<T>({
               </StopScope.Provider>
             </View>
           ))}
-        </ScrollView>
-      </TVFocusGuideView>
+        </TvScroll>
+      </FocusGuide>
     </View>
   )
 }

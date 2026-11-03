@@ -10,6 +10,14 @@
 // season keeps focus on the choice (the owner, 2026-10-31); Down from the seasons enters the
 // episodes at the one Play plays. Then More like this, Cast and crew, and About and Information.
 import { createLibraryText } from '@highsea-tv/client/library'
+import type {
+  ClientEpisode,
+  ClientShowDetail,
+  ClientTrack,
+  ClientVersion,
+  PlaybackPrefs,
+  Video,
+} from '@highsea-tv/mock/types'
 import { Chip, cn, Icon, Rating, Skeleton } from '@highsea-tv/ui'
 import { useRef, useState } from 'react'
 import { useLocation, useParams } from 'wouter'
@@ -30,14 +38,6 @@ import {
   useEpisodeTarget,
 } from '../client/shows.ts'
 import { useAction } from '../mock/hooks.tsx'
-import type {
-  ClientEpisode,
-  ClientShowDetail,
-  ClientTrack,
-  ClientVersion,
-  PlaybackPrefs,
-  Video,
-} from '../mock/types.ts'
 import { informationOf } from '../web/show.tsx'
 import { Facts, RoundAction, scrim, TvTrailer } from './detail.tsx'
 import { TvFilmRowSkeleton } from './film-row.tsx'

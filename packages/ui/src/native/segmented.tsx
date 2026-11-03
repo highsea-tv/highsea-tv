@@ -6,7 +6,7 @@
 // target reaches 44 through the hit area; on the TV each is a focus stop.
 import { View } from 'react-native'
 import type { SegmentedCommon } from '../shared/controls.ts'
-import { ControlPress, ControlText, useControllable } from './control.tsx'
+import { ControlPress, ControlText, lookAt, useControllable } from './control.tsx'
 import { Icon, type IconName } from './icon.tsx'
 import { tokens, useControl, useTheme } from './theme.tsx'
 
@@ -70,10 +70,18 @@ function Segments<V extends string>({
               opacity: o.disabled ? tokens.controls.disabledOpacity : 1,
             }}
           >
-            {o.icon ? <Icon name={o.icon} size={m.icon / theme.u} color={look.label} /> : null}
-            <ControlText m={m} weight={look.weight} color={theme.colors[look.label]} lines={1}>
-              {o.label}
-            </ControlText>
+            {(_focused, state) => {
+              // a pointer over an unchosen segment turns its label to `text` (the track's hover)
+              const label = lookAt(look, o.disabled ? { ...state, hovered: false } : state).label
+              return (
+                <>
+                  {o.icon ? <Icon name={o.icon} size={m.icon / theme.u} color={label} /> : null}
+                  <ControlText m={m} weight={look.weight} color={theme.colors[label]} lines={1}>
+                    {o.label}
+                  </ControlText>
+                </>
+              )
+            }}
           </ControlPress>
         )
       })}
@@ -148,14 +156,22 @@ function LineTabs<V extends string>({
               opacity: o.disabled ? tokens.controls.disabledOpacity : 1,
             }}
           >
-            <ControlText
-              m={m}
-              weight={on ? looks.selected.weight : looks.track.weight}
-              color={theme.colors[on ? looks.selected.label : looks.track.label]}
-              lines={1}
-            >
-              {o.label}
-            </ControlText>
+            {(_focused, state) => (
+              <ControlText
+                m={m}
+                weight={on ? looks.selected.weight : looks.track.weight}
+                color={
+                  theme.colors[
+                    on
+                      ? looks.selected.label
+                      : lookAt(looks.track, o.disabled ? { ...state, hovered: false } : state).label
+                  ]
+                }
+                lines={1}
+              >
+                {o.label}
+              </ControlText>
+            )}
           </ControlPress>
         )
       })}

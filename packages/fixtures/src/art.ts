@@ -1,11 +1,42 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Placeholder artwork drawn as SVG, so the workbench needs no network and no licensed images.
-// Each title gets a stable, muted palette: a sky gradient, a low sun and layered hills.
+// Each title gets a stable, muted palette: a sky gradient, a low sun and layered hills. Colours
+// are picked in OKLCH, where equal steps look equal, and written as sRGB hex: Apple's CoreSVG,
+// which draws SVG on iOS and tvOS, paints `oklch()` black.
 
 function hash(s: string): number {
   let h = 2166136261
   for (const c of s) h = Math.imul(h ^ (c.codePointAt(0) ?? 0), 16777619)
   return h >>> 0
+}
+
+/**
+ * An OKLCH colour (lightness 0–100, chroma, hue in degrees) as sRGB hex, by CSS Color 4's
+ * conversion: OKLCH to Oklab, Oklab to linear sRGB, then sRGB's transfer function
+ * (https://www.w3.org/TR/css-color-4/#color-conversion-code). Channels outside sRGB are clipped;
+ * a few edge hues in these palettes clip, by under 1.2%, which doesn't show.
+ */
+export function oklch(lightness: number, chroma: number, hue: number): string {
+  const L = lightness / 100
+  const a = chroma * Math.cos((hue * Math.PI) / 180)
+  const b = chroma * Math.sin((hue * Math.PI) / 180)
+  const l = (L + 0.3963377774 * a + 0.2158037573 * b) ** 3
+  const m = (L - 0.1055613458 * a - 0.0638541728 * b) ** 3
+  const s = (L - 0.0894841775 * a - 1.291485548 * b) ** 3
+  const linear = [
+    4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s,
+    -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s,
+    -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s,
+  ]
+  return `#${linear
+    .map((c) => {
+      const v = Math.min(1, Math.max(0, c))
+      const srgb = v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055
+      return Math.round(srgb * 255)
+        .toString(16)
+        .padStart(2, '0')
+    })
+    .join('')}`
 }
 
 const svg = (w: number, h: number, body: string) =>
@@ -22,16 +53,16 @@ function scene(seed: string, w: number, h: number): string {
   const hill = (k: number, y: number, light: number) => {
     const a = h * y
     const b = h * (y - 0.06 - ((n >> (k * 3)) % 8) / 100)
-    return `<path d="M0 ${a} C${w * 0.3} ${b} ${w * 0.6} ${a + h * 0.05} ${w} ${b} V${h} H0Z" fill="oklch(${light}% 0.04 ${hue2})"/>`
+    return `<path d="M0 ${a} C${w * 0.3} ${b} ${w * 0.6} ${a + h * 0.05} ${w} ${b} V${h} H0Z" fill="${oklch(light, 0.04, hue2)}"/>`
   }
   return svg(
     w,
     h,
     `<defs><linearGradient id="s" x1="0" y1="0" x2="0" y2="1">` +
-      `<stop offset="0" stop-color="oklch(30% 0.05 ${hue})"/>` +
-      `<stop offset="1" stop-color="oklch(62% 0.08 ${hue2})"/></linearGradient></defs>` +
+      `<stop offset="0" stop-color="${oklch(30, 0.05, hue)}"/>` +
+      `<stop offset="1" stop-color="${oklch(62, 0.08, hue2)}"/></linearGradient></defs>` +
       `<rect width="${w}" height="${h}" fill="url(#s)"/>` +
-      `<circle cx="${w * sunX}" cy="${h * sunY}" r="${Math.min(w, h) * 0.14}" fill="oklch(90% 0.05 ${hue2})" opacity="0.85"/>` +
+      `<circle cx="${w * sunX}" cy="${h * sunY}" r="${Math.min(w, h) * 0.14}" fill="${oklch(90, 0.05, hue2)}" opacity="0.85"/>` +
       hill(1, 0.62, 34) +
       hill(2, 0.74, 24) +
       hill(3, 0.86, 15),
@@ -53,10 +84,10 @@ export function coverArt(title: string): string {
   const s = 600
   const ground =
     `<defs><linearGradient id="c" x1="0" y1="0" x2="1" y2="1">` +
-    `<stop offset="0" stop-color="oklch(34% 0.06 ${hue})"/>` +
-    `<stop offset="1" stop-color="oklch(20% 0.04 ${hue2})"/></linearGradient></defs>` +
+    `<stop offset="0" stop-color="${oklch(34, 0.06, hue)}"/>` +
+    `<stop offset="1" stop-color="${oklch(20, 0.04, hue2)}"/></linearGradient></defs>` +
     `<rect width="${s}" height="${s}" fill="url(#c)"/>`
-  const ink = (light: number, o = 0.85) => `fill="oklch(${light}% 0.07 ${hue2})" opacity="${o}"`
+  const ink = (light: number, o = 0.85) => `fill="${oklch(light, 0.07, hue2)}" opacity="${o}"`
   const cx = s * (0.35 + ((n >> 3) % 30) / 100)
   const cy = s * (0.35 + ((n >> 5) % 30) / 100)
   const motifs = [
@@ -64,7 +95,7 @@ export function coverArt(title: string): string {
     [0.42, 0.32, 0.22, 0.12]
       .map(
         (r, i) =>
-          `<circle cx="${cx}" cy="${cy}" r="${s * r}" fill="none" stroke="oklch(${78 - i * 8}% 0.06 ${hue2})" stroke-width="${s * 0.035}" opacity="0.7"/>`,
+          `<circle cx="${cx}" cy="${cy}" r="${s * r}" fill="none" stroke="${oklch(78 - i * 8, 0.06, hue2)}" stroke-width="${s * 0.035}" opacity="0.7"/>`,
       )
       .join(''),
     // a disc over a band
@@ -147,10 +178,10 @@ export function portraitArt(name: string): string {
     w,
     h,
     `<defs><linearGradient id="p" x1="0" y1="0" x2="0" y2="1">` +
-      `<stop offset="0" stop-color="oklch(42% 0.05 ${hue})"/>` +
-      `<stop offset="1" stop-color="oklch(24% 0.04 ${hue})"/></linearGradient></defs>` +
+      `<stop offset="0" stop-color="${oklch(42, 0.05, hue)}"/>` +
+      `<stop offset="1" stop-color="${oklch(24, 0.04, hue)}"/></linearGradient></defs>` +
       `<rect width="${w}" height="${h}" fill="url(#p)"/>` +
-      `<circle cx="${w / 2}" cy="${h * 0.4}" r="${w * 0.2}" fill="oklch(70% 0.03 ${hue})" opacity="0.55"/>` +
-      `<path d="M${w * 0.12} ${h} C${w * 0.12} ${h * 0.72} ${w * 0.3} ${h * 0.64} ${w / 2} ${h * 0.64} S${w * 0.88} ${h * 0.72} ${w * 0.88} ${h} Z" fill="oklch(70% 0.03 ${hue})" opacity="0.55"/>`,
+      `<circle cx="${w / 2}" cy="${h * 0.4}" r="${w * 0.2}" fill="${oklch(70, 0.03, hue)}" opacity="0.55"/>` +
+      `<path d="M${w * 0.12} ${h} C${w * 0.12} ${h * 0.72} ${w * 0.3} ${h * 0.64} ${w / 2} ${h * 0.64} S${w * 0.88} ${h * 0.72} ${w * 0.88} ${h} Z" fill="${oklch(70, 0.03, hue)}" opacity="0.55"/>`,
   )
 }

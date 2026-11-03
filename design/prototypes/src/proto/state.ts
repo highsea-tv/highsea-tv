@@ -1,121 +1,92 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The prototype toolbar's state. The chrome (toolbar and frame) owns it and persists it; the
 // screen inside the frame receives it over postMessage, or from URL parameters when opened alone.
+// Its shape and defaults are the mock's (@highsea-tv/mock/state), which answers by them; the
+// toolbar's labels and its storage are here.
 import type { StreamState } from '@highsea-tv/client/player'
+import {
+  type AirPlay,
+  type AppUpdate,
+  CONNECTIONS,
+  type Connection,
+  DATA_STATES,
+  type DataState,
+  type DesktopOs,
+  defaultState,
+  LANS,
+  type LocalNetwork,
+  type MusicState,
+  type PhoneDownloads,
+  PLATFORMS,
+  type Platform,
+  type ProtoState,
+  ROLES,
+  type Role,
+  THEMES,
+  type ThemeId,
+  TIMES,
+  type TimeMode,
+  type WebApp,
+  type Width,
+} from '@highsea-tv/mock/state'
 
-export type Platform = 'admin' | 'web' | 'mobile' | 'tv'
-export type DataState = 'populated' | 'empty' | 'loading' | 'error'
-export type Width = 'fluid' | 1440 | 1024 | 768 | 390
-export type ThemeId = 'default' | 'oled' | 'high-contrast' | 'harbor'
-/** Who's signed in: the owner, an admin, or a user (whom the admin sends to the web client). */
-export type Role = 'owner' | 'admin' | 'user'
-export type TimeMode = 'play' | 'pause' | 'fast'
-/** How a client reaches its server (connectivity.md): on the LAN, failed over to remote, or not. */
-export type Connection = 'local' | 'remote' | 'offline'
-/**
- * The player's stream (player.md#states, checkpoint 4.0b): as it should be, a first transcode
- * getting ready, buffering, failed, stopped from Now playing, or at the film's end with Next up.
- */
-/** The web platform as a browser, or inside the desktop app (Tauri), which keeps downloads (C8). */
-export type WebApp = 'browser' | 'desktop'
-/** The desktop app's computer (checkpoint 4.4a): its window chrome and folders differ by OS. */
-export type DesktopOs = 'mac' | 'windows' | 'linux'
-/** The desktop app's own update: none waiting, or downloaded and ready for a restart. */
-export type AppUpdate = 'none' | 'ready'
-/**
- * The local network permission (Apple TN3179) for the desktop app on macOS and the phone app on
- * iOS: granted, asking, refused.
- */
-export type LocalNetwork = 'allowed' | 'asking' | 'refused'
-/** The phone's player sent to an AirPlay screen (checkpoint 4.5a), or playing on the phone. */
-export type AirPlay = 'off' | 'on'
-/** Downloads on the phone: built (4.6), or not yet, as the app has them until then (4.5a). */
-export type PhoneDownloads = 'built' | 'later'
-/**
- * The music player (the universal player): nothing playing, or a song from Sintel's score playing
- * from wherever the screen is, so every page can be reviewed with the bar showing.
- */
-export type MusicState = 'none' | 'playing'
-
-export type ProtoState = {
-  width: Width
-  theme: ThemeId
-  data: DataState
-  role: Role
-  reducedMotion: boolean
-  /** Root font size at 200%, to test reflow. */
-  largeText: boolean
-  /** Sound per platform: on for TV, off elsewhere (sound.md#defaults). */
-  sound: Record<Platform, boolean>
-  time: TimeMode
-  connection: Connection
-  stream: StreamState
-  app: WebApp
-  os: DesktopOs
-  update: AppUpdate
-  lan: LocalNetwork
-  airplay: AirPlay
-  downloads: PhoneDownloads
-  music: MusicState
-  /** A client preview inside the admin (`?preview`): no prototype affordances. */
-  preview: boolean
+export type {
+  AirPlay,
+  AppUpdate,
+  Connection,
+  DataState,
+  DesktopOs,
+  LocalNetwork,
+  MusicState,
+  PhoneDownloads,
+  Platform,
+  ProtoState,
+  Role,
+  ThemeId,
+  TimeMode,
+  WebApp,
+  Width,
 }
+export { defaultState }
 
-export const defaultState: ProtoState = {
-  width: 'fluid',
-  theme: 'default',
-  data: 'populated',
-  role: 'owner',
-  reducedMotion: false,
-  largeText: false,
-  sound: { admin: false, web: false, mobile: false, tv: true },
-  time: 'play',
-  connection: 'local',
-  stream: 'normal',
-  app: 'browser',
-  os: 'mac',
-  update: 'none',
-  lan: 'allowed',
-  airplay: 'off',
-  downloads: 'built',
-  music: 'none',
-  preview: false,
-}
+/** Labels each value of one of the mock's lists, in its order: the list itself stays the mock's. */
+const labelled = <T extends string>(ids: readonly T[], labels: Record<T, string>) =>
+  ids.map((id) => ({ id, label: labels[id] }))
 
-export const platforms: { id: Platform; label: string }[] = [
-  { id: 'admin', label: 'Admin' },
-  { id: 'web', label: 'Web/desktop' },
-  { id: 'mobile', label: 'Mobile' },
-  { id: 'tv', label: 'TV' },
-]
+export const platforms: { id: Platform; label: string }[] = labelled(PLATFORMS, {
+  admin: 'Admin',
+  web: 'Web/desktop',
+  mobile: 'Mobile',
+  tv: 'TV',
+})
 
 export const widths: Width[] = ['fluid', 1440, 1024, 768, 390]
 
-export const themes: { id: ThemeId; label: string }[] = [
-  { id: 'default', label: 'Abyss Neutral' },
-  { id: 'oled', label: 'OLED black' },
-  { id: 'high-contrast', label: 'High contrast' },
-  { id: 'harbor', label: 'Harbor (custom)' },
-]
+export const themes: { id: ThemeId; label: string }[] = labelled(THEMES, {
+  default: 'Abyss Neutral',
+  oled: 'OLED black',
+  'high-contrast': 'High contrast',
+  harbor: 'Harbor (custom)',
+})
 
-export const dataStates: { id: DataState; label: string }[] = [
-  { id: 'populated', label: 'Populated' },
-  { id: 'empty', label: 'Empty' },
-  { id: 'loading', label: 'Loading' },
-  { id: 'error', label: 'Error' },
-]
+export const dataStates: { id: DataState; label: string }[] = labelled(DATA_STATES, {
+  populated: 'Populated',
+  empty: 'Empty',
+  loading: 'Loading',
+  error: 'Error',
+})
 
-export const roles: { id: Role; label: string }[] = [
-  { id: 'owner', label: 'Owner' },
-  { id: 'admin', label: 'Admin' },
-  { id: 'user', label: 'User' },
-]
+export const roles: { id: Role; label: string }[] = labelled(ROLES, {
+  owner: 'Owner',
+  admin: 'Admin',
+  user: 'User',
+})
 
-export const connections: { id: Connection; label: string }[] = [
-  { id: 'local', label: 'On the LAN' },
-  { id: 'remote', label: 'Remote' },
-  { id: 'offline', label: 'Unreachable' },
-]
+export const connections: { id: Connection; label: string }[] = labelled(CONNECTIONS, {
+  local: 'On the LAN',
+  remote: 'Remote',
+  offline: 'Unreachable',
+})
 
 export const webApps: { id: WebApp; label: string }[] = [
   { id: 'browser', label: 'Browser' },
@@ -133,11 +104,11 @@ export const appUpdates: { id: AppUpdate; label: string }[] = [
   { id: 'ready', label: 'Ready to restart' },
 ]
 
-export const localNetworks: { id: LocalNetwork; label: string }[] = [
-  { id: 'allowed', label: 'Allowed' },
-  { id: 'asking', label: 'Asking' },
-  { id: 'refused', label: 'Refused' },
-]
+export const localNetworks: { id: LocalNetwork; label: string }[] = labelled(LANS, {
+  allowed: 'Allowed',
+  asking: 'Asking',
+  refused: 'Refused',
+})
 
 export const airplays: { id: AirPlay; label: string }[] = [
   { id: 'off', label: 'On the phone' },
@@ -163,11 +134,11 @@ export const streamStates: { id: StreamState; label: string }[] = [
   { id: 'next-up', label: 'Next up' },
 ]
 
-export const timeModes: { id: TimeMode; label: string }[] = [
-  { id: 'play', label: 'Play' },
-  { id: 'pause', label: 'Pause' },
-  { id: 'fast', label: '10×' },
-]
+export const timeModes: { id: TimeMode; label: string }[] = labelled(TIMES, {
+  play: 'Play',
+  pause: 'Pause',
+  fast: '10×',
+})
 
 /** The platform a route belongs to: `#/admin/…`, `#/web/…`, `#/mobile/…`, `#/tv/…`. */
 export function platformOf(path: string): Platform | null {
@@ -213,11 +184,11 @@ export function stateFromParams(params: URLSearchParams, base: ProtoState): Prot
   const sound = params.get('sound')
   return {
     ...base,
-    data: pick('data', ['populated', 'empty', 'loading', 'error']) ?? base.data,
-    theme: pick('theme', ['default', 'oled', 'high-contrast', 'harbor']) ?? base.theme,
-    role: pick('role', ['owner', 'admin', 'user']) ?? base.role,
-    time: pick('time', ['play', 'pause', 'fast']) ?? base.time,
-    connection: pick('connection', ['local', 'remote', 'offline']) ?? base.connection,
+    data: pick('data', DATA_STATES) ?? base.data,
+    theme: pick('theme', THEMES) ?? base.theme,
+    role: pick('role', ROLES) ?? base.role,
+    time: pick('time', TIMES) ?? base.time,
+    connection: pick('connection', CONNECTIONS) ?? base.connection,
     stream:
       pick(
         'stream',
@@ -238,11 +209,7 @@ export function stateFromParams(params: URLSearchParams, base: ProtoState): Prot
         'update',
         appUpdates.map((x) => x.id),
       ) ?? base.update,
-    lan:
-      pick(
-        'lan',
-        localNetworks.map((x) => x.id),
-      ) ?? base.lan,
+    lan: pick('lan', LANS) ?? base.lan,
     airplay:
       pick(
         'airplay',

@@ -13,7 +13,7 @@
     "./native": "./src/native/index.ts",
     "./shared": "./src/shared/index.ts",
     "./styles.css": "./src/web/styles.css",
-    "./focus": "./src/web/focus/spatial.ts",
+    "./focus": "./src/native/tv/spatial/index.ts",
     "./icons": "./src/native/icons.ts",
     "./tv": "./src/native/tv/index.ts",
     "./tv/model": "./src/native/tv/model.ts"
@@ -21,7 +21,7 @@
   "scripts": {
     "build": "bun scripts/icons.ts",
     "check": "bun scripts/icons.ts --check",
-    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.native.json"
+    "typecheck": "tsc -p tsconfig.json && tsc -p tsconfig.native.json && tsc -p tsconfig.dom.json"
   },
   "peerDependencies": {
     "expo-haptics": "*",

@@ -2,9 +2,15 @@
 // What the shows pages share on every client: the library's filter and sorts (as Movies has them),
 // and the words for a show's years, its seasons, an episode's place and what Play plays, as the
 // Apple TV app writes them ("Resume S2, E6").
+
+import type {
+  ClientEpisode,
+  ClientShow,
+  ClientShowDetail,
+  NextEpisode,
+} from '@highsea-tv/mock/types'
 import { useEffect } from 'react'
 import { useParams } from 'wouter'
-import type { ClientEpisode, ClientShow, ClientShowDetail, NextEpisode } from '../mock/types.ts'
 
 export type ShowSort = 'title' | 'added' | 'year' | 'rating'
 export const showSorts: { value: ShowSort; label: string }[] = [

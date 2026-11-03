@@ -8,13 +8,14 @@
 // the browser's own: wheel, keys and the trackpad are untouched, and the bar is only a pointer
 // handle, hidden from assistive tech as the native one is.
 import { type PointerEvent as ReactPointerEvent, useEffect, useRef, useState } from 'react'
+import { SCROLLBAR } from '../../shared/scrollbar.ts'
 import { cn } from '../lib/cn.ts'
 
-const minThumb = 32
-// the handle is 6px wide, 8px while hovered or dragged, growing away from the edge
-const handle = 6
-// the strip that takes the pointer reaches this far past the handle, towards the page
-const reach = 8
+// the measures, shared with the native renderer's ScrollView on the web (src/shared/scrollbar.ts):
+// the handle is `handle` wide, `handleActive` while hovered or dragged, growing away from the edge,
+// in text-3 at `alpha`, `alphaActive` when active. Inline, so the values live only there
+const { minThumb, handle, handleActive, reach, alpha, alphaActive } = SCROLLBAR
+const tint = (a: number) => `color-mix(in srgb, var(--color-text-3) ${a * 100}%, transparent)`
 
 type Metrics = { top: number; height: number } | null
 
@@ -38,9 +39,11 @@ export type PageScrollbarProps = {
   className?: string
 }
 
-export function PageScrollbar({ inset = 6, className }: PageScrollbarProps) {
+export function PageScrollbar({ inset = SCROLLBAR.inset, className }: PageScrollbarProps) {
   const [thumb, setThumb] = useState<Metrics>(null)
   const [dragging, setDragging] = useState(false)
+  const [hovered, setHovered] = useState(false)
+  const active = dragging || hovered
   const drag = useRef<{ y: number; scroll: number } | null>(null)
   const strip = useRef<HTMLDivElement>(null)
 
@@ -91,7 +94,7 @@ export function PageScrollbar({ inset = 6, className }: PageScrollbarProps) {
   // a click on the track pages towards it, as the native bar does
   const onTrackDown = (e: ReactPointerEvent<HTMLDivElement>) => {
     if (!thumb) return
-    const page = document.documentElement.clientHeight * 0.875
+    const page = document.documentElement.clientHeight * SCROLLBAR.page
     window.scrollBy({ top: e.clientY - inset < thumb.top ? -page : page })
   }
 
@@ -101,8 +104,10 @@ export function PageScrollbar({ inset = 6, className }: PageScrollbarProps) {
       aria-hidden
       hidden={!thumb}
       onPointerDown={onTrackDown}
+      onPointerEnter={() => setHovered(true)}
+      onPointerLeave={() => setHovered(false)}
       style={{ top: inset, bottom: inset, width: inset + handle + reach }}
-      className={cn('group/scrollbar fixed end-0 z-40', className)}
+      className={cn('fixed end-0 z-40', className)}
     >
       {thumb && (
         <div
@@ -118,10 +123,11 @@ export function PageScrollbar({ inset = 6, className }: PageScrollbarProps) {
           className="absolute inset-x-0 top-0 flex justify-end"
         >
           <div
-            className={cn(
-              'h-full w-1.5 rounded-full bg-[color-mix(in_srgb,var(--color-text-3)_45%,transparent)] transition-tint group-hover/scrollbar:w-2 group-hover/scrollbar:bg-[color-mix(in_srgb,var(--color-text-3)_70%,transparent)]',
-              dragging && 'w-2 bg-[color-mix(in_srgb,var(--color-text-3)_70%,transparent)]',
-            )}
+            style={{
+              width: active ? handleActive : handle,
+              backgroundColor: tint(active ? alphaActive : alpha),
+            }}
+            className="h-full rounded-full transition-tint"
           />
         </div>
       )}

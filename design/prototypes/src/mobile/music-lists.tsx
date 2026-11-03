@@ -4,6 +4,8 @@
 // opens the menu too); a tap plays the list from there on. Playlists start with New playlist,
 // which asks for a name in a sheet and opens the new one, then the person's own with their mosaic
 // and count.
+
+import type { ClientLibrarySong, ClientPlaylist } from '@highsea-tv/mock/types'
 import { cn, EmptyState, Icon, Sheet, SheetContent } from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { useLocation } from 'wouter'
@@ -13,7 +15,6 @@ import { type PlayingFrom, useMusicPlayer } from '../client/music-player.ts'
 import { PlaylistMosaic, PlaylistNameForm } from '../client/playlist-picker.tsx'
 import { PlayingBars } from '../client/waveform.tsx'
 import { useAction } from '../mock/hooks.tsx'
-import type { ClientLibrarySong, ClientPlaylist } from '../mock/types.ts'
 import { mobileHref } from './shell.tsx'
 import { MobileSongMenu, MoreButton } from './song-menu.tsx'
 

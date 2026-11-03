@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The web/desktop client (C1–C8): connect, home, library, item detail, the player,
-// search, settings, the profile and downloads. The device's own theme and sound apply over all.
+// The web/desktop client (C2–C8): home, library, item detail, the player, search, the profile
+// and downloads; connect, sign-in and settings are apps/client's (chrome/client.ts). The device's own theme and sound apply over all.
 
 import { Button, EmptyState } from '@highsea-tv/ui'
 import { Redirect, Route, Switch, useLocation } from 'wouter'
-import { ConnectFlow } from '../client/connect-flow.tsx'
 import { useServerName } from '../client/data.ts'
 import { SeedMusic } from '../client/music-player.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
@@ -22,16 +21,11 @@ import { WebPerson } from './person.tsx'
 import { WebPlayer } from './player.tsx'
 import { WebPlaylist } from './playlist.tsx'
 import { WebSearch } from './search.tsx'
-import { WebDownloads, WebProfile, WebSettings } from './settings.tsx'
+import { WebDownloads, WebProfile } from './settings.tsx'
 import { WebShell, webHref } from './shell.tsx'
 import { WebShow } from './show.tsx'
 import { WebShows } from './shows.tsx'
 import { WindowFrame } from './window.tsx'
-
-function Connect() {
-  const [, navigate] = useLocation()
-  return <ConnectFlow onSignedIn={() => navigate('/')} />
-}
 
 export function WebApp() {
   const [location] = useLocation()
@@ -50,9 +44,6 @@ function Routes() {
   const server = useServerName()
   return (
     <Switch>
-      <Route path="/connect">
-        <Connect />
-      </Route>
       <Route path="/who">
         <WhoPage />
       </Route>
@@ -153,11 +144,6 @@ function Routes() {
       <Route path="/search/:q?">
         <WebShell>
           <WebSearch />
-        </WebShell>
-      </Route>
-      <Route path="/settings/:section?">
-        <WebShell>
-          <WebSettings />
         </WebShell>
       </Route>
       <Route path="/link/:code">

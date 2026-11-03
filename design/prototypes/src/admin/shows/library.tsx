@@ -5,6 +5,7 @@
 // whether it's still airing. The table selects rows for bulk edit, as Movies' does.
 
 import { bytes } from '@highsea-tv/core/format'
+import type { AdminShow } from '@highsea-tv/mock/types'
 import {
   Badge,
   type BadgeTone,
@@ -42,7 +43,6 @@ import {
 import { useMemo, useState } from 'react'
 import { useLocation } from 'wouter'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { AdminShow } from '../../mock/types.ts'
 import { Loadable, PosterSkeletons } from '../loadable.tsx'
 import { showHref } from '../media/links.ts'
 import { useStored } from '../movies/library.tsx'

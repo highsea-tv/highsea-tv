@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // What every server package shares: ids, errors, the clock, the logger, the event bus and secret
-// encryption. Framework-free. Clients import `@highsea-tv/core/format` and
-// `@highsea-tv/core/fetch`: the rest needs Node.
+// encryption. Framework-free. Clients import `@highsea-tv/core/format`, `@highsea-tv/core/errors`,
+// `@highsea-tv/core/fetch` and `@highsea-tv/core/events`: the rest needs Node.
 export * from './clock.ts'
 export * from './errors.ts'
 export * from './events.ts'

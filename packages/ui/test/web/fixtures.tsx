@@ -1,5 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Every component in its main states, for the stylesheet and accessibility checks.
+
+// not the package's: drawn inside its tooltips and widget editor, and shown here for the checks
+import { Kbd } from '../../src/web/components/kbd.tsx'
+import { WidgetGrid } from '../../src/web/components/widget.tsx'
 import {
   BackdropHero,
   Badge,
@@ -17,7 +21,6 @@ import {
   Field,
   Icon,
   Input,
-  Kbd,
   Lockup,
   Mark,
   Menu,
@@ -41,7 +44,6 @@ import {
   Radio,
   RadioGroup,
   Rating,
-  RatingInput,
   RowActions,
   SearchField,
   SearchTrigger,
@@ -49,7 +51,6 @@ import {
   Select,
   SelectGroup,
   SelectItem,
-  SelectSeparator,
   ServerCard,
   Sheet,
   SheetContent,
@@ -80,7 +81,6 @@ import {
   toast,
   UIProvider,
   WidgetFrame,
-  WidgetGrid,
 } from '../../src/web/index.ts'
 
 export function KitchenSink({ rail = false }: { rail?: boolean }) {
@@ -402,7 +402,6 @@ export function KitchenSink({ rail = false }: { rail?: boolean }) {
 
           <div className="flex items-center gap-4">
             <Rating value={3.5} showValue />
-            <RatingInput aria-label="Your rating" defaultValue={4} />
             <Mark size={16} label="highsea" />
             <Mark size={32} paint="mono" />
             <Icon name="seeding" label="Seeding" />
@@ -521,7 +520,6 @@ export const overlays = {
         <SelectItem value="hd">HD-1080p</SelectItem>
         <SelectItem value="uhd">Ultra-HD</SelectItem>
       </SelectGroup>
-      <SelectSeparator />
       <SelectItem value="any">Any</SelectItem>
     </Select>
   ),

@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { View } from 'react-native'
 import { Icon, type IconName } from './icon.tsx'
 import { Text } from './text.tsx'
-import { useTheme } from './theme.tsx'
+import { tokens, useTheme } from './theme.tsx'
 
 export function EmptyState({
   icon,
@@ -21,12 +21,18 @@ export function EmptyState({
 }) {
   const theme = useTheme()
   return (
-    <View style={{ alignItems: 'center', gap: 12 * theme.u, paddingVertical: 8 * theme.u }}>
+    <View
+      style={{
+        alignItems: 'center',
+        gap: tokens.space['3'] * theme.u,
+        paddingVertical: tokens.space['2'] * theme.u,
+      }}
+    >
       <View
         style={{
           width: 56 * theme.u,
           height: 56 * theme.u,
-          borderRadius: 28 * theme.u,
+          borderRadius: tokens.radius.pill,
           alignItems: 'center',
           justifyContent: 'center',
           backgroundColor: theme.colors[tone === 'error' ? 'badge-danger-bg' : 's2'],
@@ -49,7 +55,7 @@ export function EmptyState({
             alignSelf: 'stretch',
             flexDirection: 'row',
             justifyContent: 'center',
-            marginTop: 4 * theme.u,
+            marginTop: tokens.space['1'] * theme.u,
           }}
         >
           {action}

@@ -16,13 +16,12 @@ import {
   findChallenge,
   updateChallengeData,
 } from './challenges.ts'
+import { PAIRING_INTERVAL, PAIRING_TTL } from './codes.ts'
 import type { Ctx, DeviceInput, RequestMeta, SessionView } from './context.ts'
 import { newCode, normalizeCode, verifier } from './secrets.ts'
 import { issueDevice } from './sessions.ts'
 
-export const PAIRING_TTL = 10 * 60_000
-/** How often the TV should ask (RFC 8628 § 3.2's `interval`, which defaults to 5 seconds). */
-export const PAIRING_INTERVAL = 5
+export { PAIRING_INTERVAL, PAIRING_TTL } from './codes.ts'
 
 type Waiting = {
   codeHash: string

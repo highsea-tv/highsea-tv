@@ -46,6 +46,8 @@ These values are locked in [direction.md](../brand/direction.md#shape).
 
 TV doesn't use breakpoints. It is always laid out at 16:9 in screen units.
 
+The clients (web, desktop, phone and TV) don't use these breakpoints. They lay out by the form-factor rule (`form-factor.ts` in the tokens, read through `useFormFactor`): a window is **compact** below 768 and **regular** from 768, and the TV is its own class (the owner, 2026-11-03). These breakpoints stay the admin's until part D of the one client platform moves it onto the rule.
+
 ## Grids per platform
 
 | Platform | Grid | Details |

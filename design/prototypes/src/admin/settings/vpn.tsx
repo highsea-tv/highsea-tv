@@ -4,6 +4,15 @@
 // mock plays connecting, connected, down and the ways a connection fails.
 
 import {
+  providerById,
+  type VpnCheck,
+  type VpnMode,
+  type VpnProvider,
+  type VpnSettings,
+  type VpnStatus,
+  vpnProviders,
+} from '@highsea-tv/mock/vpn'
+import {
   Badge,
   type BadgeTone,
   Button,
@@ -21,15 +30,6 @@ import {
 } from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { useAction, useNow, useQuery } from '../../mock/hooks.tsx'
-import {
-  providerById,
-  type VpnCheck,
-  type VpnMode,
-  type VpnProvider,
-  type VpnSettings,
-  type VpnStatus,
-  vpnProviders,
-} from '../../mock/vpn.ts'
 import { AreaPage, Group, SaveBar, useSettingsDraft } from './settings.tsx'
 
 const modes: { id: VpnMode; label: string; line: string }[] = [

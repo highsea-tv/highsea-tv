@@ -30,6 +30,7 @@ import {
 } from '@highsea-tv/ui'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useLocation } from 'wouter'
+import { APP_VERSION, NEXT_APP_VERSION, restartToUpdate } from '../client/app-version.ts'
 import {
   clientHref,
   useAnnouncements,
@@ -42,8 +43,6 @@ import {
 } from '../client/data.ts'
 import { useMusicPlayer } from '../client/music-player.ts'
 import { toneClass, usePeople } from '../client/profiles.ts'
-import { APP_VERSION, NEXT_APP_VERSION } from '../client/settings.ts'
-import { restartToUpdate } from '../client/settings-sections.tsx'
 import { Cta, Inline } from '../kit/inline.tsx'
 import { useNow } from '../mock/hooks.tsx'
 import { MUSIC_BAR, MusicBar } from './music-bar.tsx'

@@ -6,12 +6,13 @@
 // show's, an album's) draws them.
 import { Image } from 'expo-image'
 import { type ReactNode, type Ref, useState } from 'react'
-import { StyleSheet, TVFocusGuideView, View } from 'react-native'
+import { StyleSheet, View } from 'react-native'
 import { Button } from '../button.tsx'
 import type { IconName } from '../icons.ts'
 import { Text } from '../text.tsx'
 import { tokens, useTheme } from '../theme.tsx'
 import { alpha } from './controls.tsx'
+import { FocusGuide } from './engine'
 import { Focusable, focusShadow, type ViewHandle } from './focusable.tsx'
 import type { TileSource } from './tiles.tsx'
 
@@ -296,7 +297,7 @@ export function TvProgressLine({
         style={{
           height: 0.3 * u,
           width: width * u,
-          borderRadius: 999,
+          borderRadius: tokens.radius.pill,
           overflow: 'hidden',
           backgroundColor: alpha(theme.colors.text, 0.2),
         }}
@@ -305,7 +306,7 @@ export function TvProgressLine({
           style={{
             height: '100%',
             width: `${Math.max(0, Math.min(1, progress)) * 100}%`,
-            borderRadius: 999,
+            borderRadius: tokens.radius.pill,
             backgroundColor: theme.colors.accent,
           }}
         />
@@ -336,7 +337,7 @@ export function TvSideDialog({
   const u = theme.u
   const inset = { x: (tv.safe.x / 2) * u, y: (tv.safe.y / 2) * u }
   return (
-    <TVFocusGuideView
+    <FocusGuide
       trapFocusUp
       trapFocusDown
       trapFocusLeft
@@ -359,6 +360,6 @@ export function TvSideDialog({
       }}
     >
       {children}
-    </TVFocusGuideView>
+    </FocusGuide>
   )
 }

@@ -3,11 +3,13 @@
 // is the product screen inside the frame, which can also be opened on its own; `index.html?emails`
 // previews the emails highsea sends.
 import './prototypes.css'
+// the downloaded logos, before the first mock is made (seed.ts)
+import './mock/local-logos.ts'
+import { browserStorage, createMock } from '@highsea-tv/mock/client'
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Chrome } from './chrome/chrome.tsx'
 import { EmailPreview } from './email/preview.tsx'
-import { browserStorage, createMock } from './mock/client.ts'
 import { FramedScreen } from './screen/screen.tsx'
 
 const root = document.getElementById('root')

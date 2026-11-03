@@ -5,6 +5,8 @@
 // it scores, when it's here, is a link under them. Then the songs, numbered, each with its length
 // and ⋯ (mobile/song-menu.tsx; a long press opens it too); the release date and label; and the
 // artist's other albums in a row.
+
+import type { ClientAlbum, ClientSong } from '@highsea-tv/mock/types'
 import { Button, cn, EmptyState, Icon, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useParams } from 'wouter'
@@ -15,7 +17,6 @@ import { songSource } from '../client/downloads.ts'
 import { albumKind, albumMeta, albumSummary, releasedOn, songTime } from '../client/music.ts'
 import { useAlbumPlaying, useMusicPlayer, usePlayingFrom } from '../client/music-player.ts'
 import { PlayingBars } from '../client/waveform.tsx'
-import type { ClientAlbum, ClientSong } from '../mock/types.ts'
 import { MobileRow } from './home.tsx'
 import { BackBadge, gutter, mobileHref } from './shell.tsx'
 import { MobileSongMenu, MoreButton } from './song-menu.tsx'

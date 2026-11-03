@@ -2,8 +2,9 @@
 // What a session plays, as Now playing, its history and the dashboard's widget name it
 // (docs/product/now-playing.md, stage 6 of the prototypes' gaps): a film by its title, an episode
 // by its show, number and title, linked to the show, and a song by its title, artist and album.
+
+import type { PlayingItem } from '@highsea-tv/mock/sessions'
 import type { PosterAspect } from '@highsea-tv/ui'
-import type { PlayingItem } from '../../mock/sessions.ts'
 import { adminHref } from '../shell.tsx'
 
 /** "Sintel", "Saltmarsh · S2, E4 · Strangers", "Wild Rooms · Aurora Fields · Low Tide Hours". */

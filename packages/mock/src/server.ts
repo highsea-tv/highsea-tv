@@ -1,0 +1,4259 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+// An in-memory highsea server: state, the handlers behind each API call, and a simulation driven by
+// the clock. Screens never touch this directly; they go through the client (client.ts).
+import { PAIRING_TTL } from '@highsea-tv/auth/codes'
+import { filmUpNext } from '@highsea-tv/client/player'
+import { backdropArt, posterArt, stillArt } from '@highsea-tv/fixtures'
+
+import {
+  type CustomFormat,
+  customFormatSchema,
+  type QualityProfile,
+  qualityProfileSchema,
+} from '@highsea-tv/quality'
+import { type Clock, createEmitter, createRandom, type Emitter, iso } from './clock.ts'
+import { describe, evaluate, type Facts, fields, preview } from './collections.ts'
+import { connectionsApi } from './connections.ts'
+import { librarySettingsApi } from './library-settings.ts'
+import { importListsApi } from './lists.ts'
+import {
+  collection,
+  collectionRefs,
+  knownTitles,
+  movieMetadata,
+  person,
+  recommendations,
+} from './metadata.ts'
+import { migrationApi } from './migration.ts'
+import {
+  albumDetail,
+  allSongs,
+  artistDetail,
+  musicLibrary,
+  queueOf,
+  scoreOf,
+  shuffled,
+  trackOf,
+} from './music.ts'
+import { waiting } from './pairing.ts'
+import { type AccelerationPath, finishCheck, playbackStatus } from './playback.ts'
+import { GB, MB, type ServerState, seed } from './seed.ts'
+import {
+  advanceSessions,
+  type NowPlaying,
+  type PlayingItem,
+  type SessionView,
+  type WatchView,
+} from './sessions.ts'
+import type { CatalogSettings, Settings, SettingsDeps, SettingsSection } from './settings.ts'
+import { showAdminApi } from './show-admin.ts'
+import { type EpisodeSeed, type ShowSeed, showsLibrary } from './shows.ts'
+import type {
+  AddMovieInput,
+  AddTorrentInput,
+  Announcement,
+  AnnouncementSummary,
+  ApiKey,
+  Appearance,
+  Audience,
+  Backup,
+  ClientAlbumDetail,
+  ClientArtistDetail,
+  ClientCollection,
+  ClientDetail,
+  ClientEpisode,
+  ClientItem,
+  ClientLibrarySong,
+  ClientMusic,
+  ClientPerson,
+  ClientPlaylist,
+  ClientPlaylistDetail,
+  ClientShow,
+  ClientShowDetail,
+  ClientTrack,
+  ClientType,
+  ClientVersion,
+  CollectionPreview,
+  CollectionRef,
+  CollectionSummary,
+  CreatedApiKey,
+  Credit,
+  CurationPreview,
+  CurationStatus,
+  CustomTheme,
+  Department,
+  FeaturedSection,
+  HardlinkCheck,
+  HomeLayout,
+  HomeMusic,
+  HomeSection,
+  ImportCandidate,
+  Indexer,
+  Invite,
+  InviteInput,
+  LanguageProfile,
+  LogEntry,
+  MediaFile,
+  MediaItem,
+  MusicSource,
+  Pairing,
+  Person,
+  PersonShowCredit,
+  PlaybackPrefs,
+  ProbeResult,
+  QueuedSong,
+  QueueItem,
+  Release,
+  RuleFieldInfo,
+  RuleGroup,
+  SearchPerson,
+  SearchResults,
+  SearchSection,
+  SectionSummary,
+  Server,
+  SetupDetected,
+  SetupInput,
+  SignInResult,
+  SmartCollection,
+  StaffRole,
+  SubtitleSearchResult,
+  SubtitleSettings,
+  SubtitleStats,
+  SubtitleTrack,
+  SystemStatus,
+  Torrent,
+  TorrentLimits,
+  User,
+  WidgetLayout,
+  WidgetPlacement,
+} from './types.ts'
+import { connectionFailure, type VpnSettings, vpnProviders, vpnStatus } from './vpn.ts'
+import { allowed, normalize, roleDefault } from './widgets.ts'
+
+export class ApiError extends Error {
+  readonly status: number
+  readonly code: string
+  /** What the refusal is about (`field`, `reason`), when the server says. */
+  readonly details: Record<string, string> | undefined
+  constructor(status: number, code: string, message: string, details?: Record<string, string>) {
+    super(message)
+    this.name = 'ApiError'
+    this.status = status
+    this.code = code
+    this.details = details
+  }
+}
+
+const forbidden = () =>
+  new ApiError(403, 'forbidden', 'Your account doesn’t have access to this. Ask the owner.')
+
+/** At most this many torrents download at once; the rest wait in the queue. */
+const ACTIVE_DOWNLOADS = 3
+const IMPORT_SECONDS = 8
+const SUBTITLE_SEARCH_SECONDS = 5
+const SUBTITLE_SYNC_SECONDS = 6
+const JOB_SECONDS = 4
+
+export type MockServer = {
+  kind: 'populated' | 'empty'
+  state: ServerState
+  clock: Clock
+  events: Emitter
+  /** Advances the simulation by `dt` simulated seconds. The clock calls this. */
+  step(dt: number): void
+  /** Stops listening to the clock. */
+  dispose(): void
+}
+
+export type Storage = { load(key: string): unknown; save(key: string, value: unknown): void }
+
+/** localStorage, wrapped: it can be missing or throw (private windows, file://, tests). */
+export const browserStorage: Storage = {
+  load(key) {
+    try {
+      const raw = globalThis.localStorage?.getItem(key)
+      return raw ? JSON.parse(raw) : undefined
+    } catch {
+      return undefined
+    }
+  },
+  save(key, value) {
+    try {
+      if (value === undefined) globalThis.localStorage?.removeItem(key)
+      else globalThis.localStorage?.setItem(key, JSON.stringify(value))
+    } catch {
+      // not remembered, still works
+    }
+  },
+}
+
+export const memoryStorage = (): Storage => {
+  const m = new Map<string, string>()
+  return {
+    load: (k) => (m.has(k) ? JSON.parse(m.get(k) as string) : undefined),
+    save: (k, v) => void (v === undefined ? m.delete(k) : m.set(k, JSON.stringify(v))),
+  }
+}
+
+/** Episodes missing a subtitle language, kept per server so every client sees one list. */
+const episodeSubtitlesOn = new WeakMap<MockServer, { id: string; missing: string[] }[]>()
+
+/** The admin's episode number, as Sonarr writes it: "S03E06". */
+const adminEpisodeCode = (e: { season: number; number: number }) =>
+  `S${String(e.season).padStart(2, '0')}E${String(e.number).padStart(2, '0')}`
+
+function setItemStatus(state: ServerState, id: string | null, status: MediaItem['status']) {
+  const m = state.items.find((x) => x.id === id)
+  if (m) m.status = status
+}
+
+function fileFor(state: ServerState, m: MediaItem): MediaFile | undefined {
+  const v = [...m.versions].reverse().find((x) => x.fileId)
+  return state.files.find((f) => f.id === v?.fileId)
+}
+
+function importTorrent(state: ServerState, clock: Clock, t: Torrent, m: MediaItem, now: number) {
+  if (t.files.some((f) => /\.(exe|lnk|scr|zipx)$/i.test(f.path))) {
+    t.state = 'import-blocked'
+    t.stateReason = 'The release contains an executable file. It wasn’t imported.'
+    return
+  }
+  t.state = 'seeding'
+  t.upRate = 600_000
+  const version = m.versions.find((v) => !v.fileId) ?? m.versions[m.versions.length - 1]
+  if (version) {
+    const uhd = t.name.includes('2160p')
+    const f: MediaFile = {
+      id: `f-${version.id}`,
+      itemId: m.id,
+      versionId: version.id,
+      path: `${m.path}/${m.title.replace(/[:/]/g, '')} (${m.year}) [${uhd ? '2160p' : '1080p'}].mkv`,
+      size: t.size - 40 * MB,
+      quality: {
+        resolution: uhd ? '2160p' : '1080p',
+        source: uhd ? 'WEB-DL' : 'Bluray',
+        codec: uhd ? 'HEVC' : 'x264',
+      },
+      releaseGroup: null,
+      sceneName: t.name,
+      addedAt: iso(now),
+      streams: [
+        {
+          index: 0,
+          type: 'video',
+          codec: uhd ? 'hevc' : 'h264',
+          width: uhd ? 3840 : 1920,
+          height: uhd ? 2160 : 1080,
+          hdr: t.name.includes('HDR') ? 'hdr10' : 'none',
+          bitrate: uhd ? 28_000_000 : 9_000_000,
+        },
+        {
+          index: 1,
+          type: 'audio',
+          codec: 'eac3',
+          language: 'en',
+          channels: '5.1',
+          title: null,
+          default: true,
+        },
+      ],
+    }
+    state.files = state.files.filter((x) => x.id !== f.id)
+    state.files.push(f)
+    version.fileId = f.id
+  }
+  m.status = 'available'
+  addHistory(state, clock, m, 'imported', `Hardlinked to ${m.path}`, t)
+}
+
+function addHistory(
+  state: ServerState,
+  clock: Clock,
+  m: MediaItem,
+  type: ServerState['history'][number]['type'],
+  message: string,
+  t?: Torrent,
+) {
+  state.history.unshift({
+    id: `h-${type}-${m.id}-${clock.now()}`,
+    itemId: m.id,
+    type,
+    date: iso(clock.now()),
+    sourceTitle: t?.name ?? m.title,
+    quality: t?.quality ?? null,
+    indexer: t?.indexer ?? null,
+    message,
+  })
+}
+
+/** A draft stays a draft; otherwise the schedule decides. */
+export function curationStatus(
+  schedule: { start: string; end: string | null },
+  now: number,
+  draft = false,
+): CurationStatus {
+  if (draft) return 'draft'
+  if (Date.parse(schedule.start) > now) return 'scheduled'
+  if (schedule.end && Date.parse(schedule.end) <= now) return 'ended'
+  return 'live'
+}
+
+/**
+ * A client preview (A11): this server shows the curation it's given, as if it were saved. The
+ * admin's composer runs the clients' home screens in a frame against their own copy of the server,
+ * so the draft never reaches the real one. The draft shows even if it was seen before.
+ */
+export function applyPreview(srv: MockServer, preview: CurationPreview, draftId?: string): void {
+  srv.state.announcements = structuredClone(preview.announcements)
+  srv.state.featured = structuredClone(preview.featured)
+  if (preview.collections) srv.state.collections = structuredClone(preview.collections)
+  if (draftId)
+    for (const [u, ids] of Object.entries(srv.state.seen))
+      srv.state.seen[u] = ids.filter((id) => id !== draftId)
+  srv.events.emit({ type: 'announcements.updated' })
+  srv.events.emit({ type: 'curation.updated' })
+}
+
+export function createServer(
+  kind: 'populated' | 'empty',
+  clock: Clock,
+  storage: Storage = memoryStorage(),
+): MockServer {
+  const state = seed(kind, clock.now())
+  const events = createEmitter()
+  const random = createRandom(kind === 'populated' ? 1 : 2)
+  /** Each downloading torrent wanders around its own base rate. */
+  const baseRate = new Map<string, number>(
+    state.torrents.filter((t) => t.downRate > 0).map((t) => [t.id, t.downRate]),
+  )
+  const jobEnds = new Map<string, number>()
+  let sinceSample = 0
+  let nextBackoff = clock.now() + 25 * 60_000
+
+  const savedName = storage.load(`server:${kind}:name`)
+  if (typeof savedName === 'string') {
+    state.server.name = savedName
+    state.server.branding.name = savedName
+  }
+
+  function step(dt: number) {
+    const now = clock.now()
+    let torrentsChanged = false
+    let queueChanged = false
+
+    // downloads
+    for (const t of state.torrents) {
+      if (t.state === 'downloading') {
+        const base = baseRate.get(t.id) ?? 6 * MB
+        t.downRate = Math.round(base * (0.82 + random() * 0.36))
+        t.upRate = Math.round(t.downRate * 0.08)
+        t.downloaded = Math.min(t.size, t.downloaded + t.downRate * dt)
+        t.uploaded += t.upRate * dt
+        t.progress = t.downloaded / t.size
+        t.ratio = t.uploaded / t.size
+        t.eta = Math.round((t.size - t.downloaded) / t.downRate)
+        for (const f of t.files) if (f.priority !== 'skip') f.progress = t.progress
+        if (t.downloaded >= t.size) {
+          t.state = 'importing'
+          t.progress = 1
+          t.downRate = 0
+          t.eta = null
+          t.completedAt = iso(now)
+          state.pipeline.push({
+            itemId: t.itemId ?? '',
+            torrentId: t.id,
+            stage: 'importing',
+            until: now + IMPORT_SECONDS * 1000,
+          })
+          queueChanged = true
+        }
+        torrentsChanged = true
+      } else if (t.state === 'seeding') {
+        t.upRate = Math.round((t.upRate || 600_000) * (0.85 + random() * 0.3))
+        t.uploaded += t.upRate * dt
+        t.ratio = t.uploaded / t.size
+        if (t.seedingRule.ratio !== null && t.ratio >= t.seedingRule.ratio) {
+          t.state = 'completed'
+          t.upRate = 0
+          queueChanged = true
+        }
+        torrentsChanged = true
+      }
+    }
+    const active = state.torrents.filter((t) => t.state === 'downloading').length
+    const next = state.torrents.find((t) => t.state === 'queued')
+    if (next && active < ACTIVE_DOWNLOADS) {
+      next.state = 'downloading'
+      baseRate.set(next.id, 6.5 * MB)
+      setItemStatus(state, next.itemId, 'downloading')
+      queueChanged = torrentsChanged = true
+    }
+
+    // the pipeline: import, then subtitle search, then subtitle sync
+    for (const p of [...state.pipeline]) {
+      if (now < p.until) continue
+      state.pipeline.splice(state.pipeline.indexOf(p), 1)
+      const t = state.torrents.find((x) => x.id === p.torrentId)
+      const m = state.items.find((x) => x.id === p.itemId)
+      // an episode's download (stage 6) is imported by the shows' mock, so here it just seeds
+      if (!m && t && p.stage === 'importing') {
+        t.state = 'seeding'
+        queueChanged = torrentsChanged = true
+        continue
+      }
+      // a Re-sync's step has no torrent
+      if (!m || (!t && p.stage !== 'subtitle-sync')) continue
+      if (p.stage === 'importing' && t) {
+        importTorrent(state, clock, t, m, now)
+        state.pipeline.push({
+          ...p,
+          stage: 'subtitle-search',
+          until: now + SUBTITLE_SEARCH_SECONDS * 1000,
+        })
+        queueChanged = torrentsChanged = true
+        events.emit({ type: 'item.updated', id: m.id })
+      } else if (p.stage === 'subtitle-search') {
+        const f = fileFor(state, m)
+        if (f && m.year >= 1930) {
+          state.subtitles.push({
+            id: `st-${f.id}-en`,
+            itemId: m.id,
+            fileId: f.id,
+            language: 'en',
+            kind: 'external',
+            format: 'srt',
+            forced: false,
+            hi: false,
+            provider: 'OpenSubtitles.com',
+            score: 96,
+            sync: { status: 'syncing', confidence: null, offsetMs: 0 },
+            path: f.path.replace(/\.mkv$/, '.en.srt'),
+          })
+          addHistory(
+            state,
+            clock,
+            m,
+            'subtitle-downloaded',
+            'English subtitles from OpenSubtitles (score 96)',
+          )
+          state.pipeline.push({
+            ...p,
+            stage: 'subtitle-sync',
+            until: now + SUBTITLE_SYNC_SECONDS * 1000,
+          })
+        }
+        events.emit({ type: 'subtitles.updated', itemId: m.id })
+      } else {
+        const track = state.subtitles.find((s) => s.itemId === m.id && s.sync.status === 'syncing')
+        if (track) {
+          track.sync = { status: 'synced', confidence: 0.93, offsetMs: -1840 }
+          addHistory(
+            state,
+            clock,
+            m,
+            'subtitle-synced',
+            'Synced to the audio: moved 1.84 s earlier, confidence 0.93',
+          )
+        }
+        events.emit({ type: 'subtitles.updated', itemId: m.id })
+      }
+    }
+
+    // scheduled jobs
+    let jobsChanged = false
+    for (const j of state.jobs) {
+      const end = jobEnds.get(j.id)
+      if (j.state === 'running' && end !== undefined) {
+        j.progress = Math.min(1, 1 - (end - now) / (JOB_SECONDS * 1000))
+        if (now >= end) {
+          j.state = 'idle'
+          j.progress = null
+          j.lastRun = iso(now)
+          j.nextRun = j.interval ? iso(now + j.interval * 1000) : null
+          jobEnds.delete(j.id)
+        }
+        jobsChanged = true
+      } else if (j.nextRun && now >= Date.parse(j.nextRun)) {
+        j.state = 'running'
+        j.progress = 0
+        jobEnds.set(j.id, now + JOB_SECONDS * 1000)
+        jobsChanged = true
+      }
+    }
+
+    // indexer health: backoffs end, and now and then one starts
+    let indexersChanged = false
+    for (const ix of state.indexers) {
+      if (ix.health === 'backoff' && ix.backoffUntil && now >= Date.parse(ix.backoffUntil)) {
+        ix.health = 'healthy'
+        ix.backoffUntil = null
+        ix.lastError = null
+        state.health = state.health.filter((h) => h.id !== `h-${ix.definitionId}`)
+        indexersChanged = true
+      }
+    }
+    if (kind === 'populated' && now >= nextBackoff) {
+      const ix = state.indexers.find((x) => x.definitionId === 'driftnet')
+      if (ix && ix.health === 'healthy') {
+        ix.health = 'backoff'
+        ix.backoffUntil = iso(now + 4 * 60_000)
+        ix.lastError = 'Driftnet answered with an error 3 times in a row (HTTP 502).'
+        state.health.push({
+          id: 'h-driftnet',
+          source: 'Indexers',
+          level: 'warning',
+          message: 'Driftnet is backing off after 3 failed searches. highsea retries in 4 minutes.',
+          since: iso(now),
+        })
+        indexersChanged = true
+      }
+      nextBackoff = now + 25 * 60_000
+    }
+
+    // speed samples every 10 simulated seconds, ten minutes kept
+    sinceSample += dt
+    if (sinceSample >= 10) {
+      sinceSample = 0
+      const down = state.torrents.reduce((s, t) => s + t.downRate, 0)
+      const up = state.torrents.reduce((s, t) => s + t.upRate, 0)
+      state.speeds.push({ t: now, down, up })
+      while (state.speeds.length > 60) state.speeds.shift()
+    }
+    state.status.cpu = Math.round((active > 0 ? 10 : 3) + random() * 6)
+
+    // the VPN: a connection takes a few seconds; a dropped tunnel reconnects on its own
+    const vpn = state.vpn
+    if ((vpn.phase === 'connecting' || vpn.phase === 'down') && now >= vpn.until) {
+      if (vpn.phase === 'down') {
+        vpn.phase = 'connecting'
+        vpn.until = now + 4_000
+      } else {
+        vpn.phase = 'connected'
+        vpn.connectedAt = now
+        vpn.checkedAt = now
+      }
+      events.emit({ type: 'vpn.updated' })
+      events.emit({ type: 'health.updated' })
+    }
+
+    // Settings › Playback: a hardware check takes a few seconds
+    for (const p of state.playback.paths)
+      if (p.checkingUntil > 0 && now >= p.checkingUntil) {
+        p.checkingUntil = 0
+        p.check = finishCheck(p, state.playback, now)
+        events.emit({ type: 'playback.updated' })
+      }
+
+    // Now playing: streams move on with the clock; a finished download leaves the list
+    if (advanceSessions(state.sessions, dt / 1000, now)) events.emit({ type: 'sessions.updated' })
+
+    events.emit({ type: 'tick', now })
+    if (torrentsChanged) events.emit({ type: 'torrents.updated' })
+    if (queueChanged) events.emit({ type: 'queue.updated' })
+    if (jobsChanged) events.emit({ type: 'jobs.updated' })
+    if (indexersChanged) {
+      events.emit({ type: 'indexers.updated' })
+      events.emit({ type: 'health.updated' })
+    }
+  }
+
+  const unsubscribe = clock.onAdvance((dt) => step(dt))
+  return { kind, state, clock, events, step, dispose: unsubscribe }
+}
+
+/** The languages every show's episodes have here, as the show's page offers them. */
+const showTracks: ClientShowDetail['tracks'] = {
+  audio: [
+    { id: 'en', label: 'English' },
+    { id: 'en-ad', label: 'English (audio description)' },
+    { id: 'de', label: 'German' },
+  ],
+  subtitles: [
+    { id: 'en', label: 'English' },
+    { id: 'en-sdh', label: 'English (SDH)' },
+    { id: 'de', label: 'German' },
+    { id: 'fr', label: 'French' },
+  ],
+}
+
+// ---------------------------------------------------------------- the API
+
+export type Ctx = { userId: string; storage?: Storage }
+
+/**
+ * The handlers behind each API call, grouped as @highsea-tv/sdk will group them. Each returns plain
+ * data; the client makes them async and applies the toolbar's data state.
+ */
+function generateReleases(m: MediaItem, state: ServerState): Release[] {
+  const isUhd = m.versions.some((v) => v.qualityProfileId === 'qp-uhd') || m.quality.includes('4K')
+  const cleanTitle = m.title.replace(/[^\w\s]/gi, '').replace(/\s+/g, '.')
+  const availableIndexers = state.indexers.filter((i) => i.enabled).map((i) => i.name)
+  const ix = (n: number, fallback: string) =>
+    availableIndexers[n % availableIndexers.length] ?? fallback
+
+  return [
+    {
+      guid: `rel-${m.id}-1`,
+      title: `${cleanTitle}.${m.year}.2160p.WEB-DL.DDP5.1.Atmos.DV.HDR.H.265-FLUX`,
+      indexerId: 'ix-anchorage',
+      indexer: ix(0, 'Anchorage'),
+      size: 14.8 * GB,
+      seeders: 86,
+      leechers: 12,
+      ageHours: 18,
+      quality: 'WEB 2160p',
+      customFormats: ['Dolby Vision', 'HDR10', 'x265'],
+      formatScore: 2600,
+      approved: isUhd,
+      reasons: isUhd
+        ? [
+            { kind: 'accepted', message: 'Matches target WEB 2160p' },
+            { kind: 'accepted', message: 'Dolby Vision format score +1500' },
+            { kind: 'accepted', message: 'HDR10 format score +1000' },
+            { kind: 'accepted', message: 'x265 codec bonus +100' },
+          ]
+        : [{ kind: 'rejected', message: 'Quality WEB 2160p is not allowed in HD-1080p profile' }],
+    },
+    {
+      guid: `rel-${m.id}-2`,
+      title: `${cleanTitle}.${m.year}.1080p.BluRay.x264.DTS-HD.MA.5.1-EPSiLON`,
+      indexerId: 'ix-driftnet',
+      indexer: ix(1, 'Driftnet'),
+      size: 8.4 * GB,
+      seeders: 42,
+      leechers: 5,
+      ageHours: 120,
+      quality: 'Bluray 1080p',
+      customFormats: ['DTS-HD MA'],
+      formatScore: 400,
+      approved: true,
+      reasons: [
+        { kind: 'accepted', message: 'Matches Bluray 1080p' },
+        { kind: 'accepted', message: 'DTS-HD MA audio format score +400' },
+      ],
+    },
+    {
+      guid: `rel-${m.id}-3`,
+      title: `${cleanTitle}.${m.year}.1080p.WEB-DL.AAC2.0.H.264-NTb`,
+      indexerId: 'ix-keel',
+      indexer: ix(2, 'Keel'),
+      size: 3.2 * GB,
+      seeders: 19,
+      leechers: 2,
+      ageHours: 240,
+      quality: 'WEB 1080p',
+      customFormats: [],
+      formatScore: 0,
+      approved: true,
+      reasons: [{ kind: 'accepted', message: 'Matches WEB 1080p' }],
+    },
+    {
+      guid: `rel-${m.id}-4`,
+      title: `${cleanTitle}.${m.year}.720p.HDTV.x264-DEADPOOL`,
+      indexerId: 'ix-flotsam',
+      indexer: ix(3, 'Flotsam'),
+      size: 1.1 * GB,
+      seeders: 2,
+      leechers: 0,
+      ageHours: 850,
+      quality: 'HDTV 720p',
+      customFormats: ['Low Quality'],
+      formatScore: -10000,
+      approved: false,
+      reasons: [
+        { kind: 'rejected', message: 'Low Quality format score (-10000) below minimum cutoff' },
+        { kind: 'rejected', message: 'Seeders (2) below minimum threshold of 3' },
+      ],
+    },
+    {
+      guid: `rel-${m.id}-5`,
+      title: `${cleanTitle}.${m.year}.CAM.XviD-UNKNOWN`,
+      indexerId: 'ix-public',
+      indexer: 'PublicTracker',
+      size: 700 * MB,
+      seeders: 0,
+      leechers: 1,
+      ageHours: 1200,
+      quality: 'CAM',
+      customFormats: ['Low Quality'],
+      formatScore: -10000,
+      approved: false,
+      reasons: [
+        { kind: 'rejected', message: 'Quality CAM is not allowed in any profile' },
+        { kind: 'rejected', message: 'No seeders available' },
+      ],
+    },
+  ]
+}
+
+function generateSubtitleResults(m: MediaItem, lang = 'en'): SubtitleSearchResult[] {
+  const cleanTitle = m.title.replace(/[^\w\s]/gi, '').replace(/\s+/g, '.')
+  return [
+    {
+      id: `sub-res-${m.id}-1`,
+      language: lang,
+      releaseName: `${cleanTitle}.${m.year}.2160p.WEB-DL.DDP5.1.Atmos.DV.HDR.H.265-FLUX`,
+      provider: 'OpenSubtitles.com',
+      score: 98,
+      forced: false,
+      hi: false,
+      format: 'srt',
+    },
+    {
+      id: `sub-res-${m.id}-2`,
+      language: lang,
+      releaseName: `${cleanTitle}.${m.year}.1080p.BluRay.x264.DTS-HD.MA.5.1-EPSiLON`,
+      provider: 'SubSource',
+      score: 92,
+      forced: false,
+      hi: true,
+      format: 'srt',
+    },
+    {
+      id: `sub-res-${m.id}-3`,
+      language: lang,
+      releaseName: `${cleanTitle}.${m.year}.Forced.Foreign.Parts.Only`,
+      provider: 'Subdl',
+      score: 85,
+      forced: true,
+      hi: false,
+      format: 'ass',
+    },
+    {
+      id: `sub-res-${m.id}-4`,
+      language: lang,
+      releaseName: `${cleanTitle}.${m.year}.Hearing.Impaired.CC`,
+      provider: 'OpenSubtitles.com',
+      score: 79,
+      forced: false,
+      hi: true,
+      format: 'vtt',
+    },
+  ]
+}
+
+export function createApi(srv: MockServer, ctx: Ctx) {
+  const { state } = srv
+  const storage = ctx.storage ?? memoryStorage()
+  const now = () => srv.clock.now()
+  let music: ClientMusic | undefined
+  const allMusic = () => {
+    music ??= musicLibrary(srv.kind, now())
+    return music
+  }
+  /** The music this person may play: none without Music among their libraries (stage 6). */
+  const library = (): ClientMusic => (sees('music') ? allMusic() : { artists: [], albums: [] })
+  /** Home's Recently played, newest first: what library.queue was asked for, seeded with three. */
+  let played: ({ album: string } | { artist: string })[] | undefined
+  const recentlyPlayed = () => {
+    played ??= library()
+      .albums.slice(0, 3)
+      .map((a) => ({ album: a.id }))
+    return played
+  }
+  /**
+   * Each person's own playlists (prototype-gaps.md › 3.8), seeded with two on their first read,
+   * the same on every load: a quiet one from the scores and the classical albums, and one from
+   * the rest.
+   */
+  type PlaylistSeed = {
+    id: string
+    name: string
+    entries: { entry: string; song: string }[]
+    updatedAt: string
+  }
+  const playlistsOf = new Map<string, PlaylistSeed[]>()
+  let entries = 0
+  const entry = (song: string) => ({ entry: `e${++entries}`, song })
+  const myPlaylists = () => {
+    const id = me().id
+    let mine = playlistsOf.get(id)
+    if (!mine) {
+      const songs = allSongs(library())
+      const quiet = songs.filter(
+        (s) => s.album.kind === 'soundtrack' || s.album.genres.includes('Classical'),
+      )
+      const rest = songs.filter((s) => !quiet.includes(s))
+      const every = <T>(xs: T[], n: number) =>
+        xs.length === 0
+          ? []
+          : Array.from({ length: Math.min(n, xs.length) }, (_, i) => xs[(i * 7) % xs.length] as T)
+      mine =
+        songs.length === 0
+          ? []
+          : [
+              {
+                id: `${id}-late`,
+                name: 'Late night',
+                entries: every(quiet, 9).map((s) => entry(s.id)),
+                updatedAt: iso(now() - 2 * 86_400_000),
+              },
+              {
+                id: `${id}-weekend`,
+                name: 'Weekend mornings',
+                entries: every(rest, 12).map((s) => entry(s.id)),
+                updatedAt: iso(now() - 9 * 86_400_000),
+              },
+            ]
+      playlistsOf.set(id, mine)
+    }
+    return mine
+  }
+  const playlistSeed = (id: string) => {
+    const p = myPlaylists().find((x) => x.id === id)
+    if (!p) throw new ApiError(404, 'not-found', 'That playlist isn’t yours, or has been deleted.')
+    return p
+  }
+  const playlistSongs = (p: PlaylistSeed) => {
+    const songs = new Map(allSongs(library()).map((s) => [s.id, s]))
+    return p.entries.flatMap((e) => {
+      const s = songs.get(e.song)
+      return s ? [{ ...s, entry: e.entry }] : []
+    })
+  }
+  const playlistOf = (p: PlaylistSeed): ClientPlaylist => {
+    const songs = playlistSongs(p)
+    return {
+      id: p.id,
+      name: p.name,
+      songs: songs.length,
+      duration: songs.reduce((t, s) => t + s.duration, 0),
+      covers: [...new Set(songs.map((s) => s.album.cover))].slice(0, 4),
+      updatedAt: p.updatedAt,
+    }
+  }
+  const touched = (p: PlaylistSeed) => {
+    p.updatedAt = iso(now())
+    srv.events.emit({ type: 'playlists.updated' })
+  }
+  const playlistName = (name: string) => {
+    const n = name.trim()
+    if (!n) throw new ApiError(400, 'invalid', 'A playlist needs a name.')
+    return n.slice(0, 100)
+  }
+
+  /**
+   * Titles and shows taken off Continue watching (watch.dismiss), per person, until they play
+   * them again.
+   */
+  const dismissed = new Set<string>()
+  let shows: ShowSeed[] | undefined
+  /** People whose seeded watch state for the shows is laid down: once each, on their first read. */
+  const seededShows = new Set<string>()
+  const showSeeds = () => {
+    shows ??= showsLibrary(srv.kind, now())
+    const u = me().id
+    if (!seededShows.has(u)) {
+      seededShows.add(u)
+      for (const s of shows)
+        for (const season of s.seasons)
+          for (const e of season.episodes)
+            if (e.seeded !== null)
+              state.watch.push({
+                userId: u,
+                itemId: e.id,
+                position: e.seeded,
+                updatedAt: iso(now()),
+              })
+    }
+    return shows
+  }
+  /** An episode with this person's watch state, as clientItem gives a film's. */
+  const episodeOf = ({ seeded: _, ...e }: EpisodeSeed): ClientEpisode => {
+    const w = state.watch.find((x) => x.userId === me().id && x.itemId === e.id)
+    const length = e.runtimeMinutes * 60
+    const progress = w && length ? w.position / length : null
+    const watched = progress !== null && progress >= 0.95
+    return {
+      ...e,
+      // a watched title plays from the start, as the server clears its place (ADR 0054)
+      position: watched ? 0 : (w?.position ?? 0),
+      progress: progress !== null && progress > 0 && progress < 0.95 ? progress : null,
+      watched,
+    }
+  }
+  const showOf = (s: ShowSeed): ClientShow => {
+    const episodes = s.seasons
+      .filter((x) => x.number !== 0)
+      .flatMap((x) => x.episodes.map(episodeOf))
+    const unwatched = episodes.filter((e) => !e.watched).length
+    const partway = episodes.find((e) => e.progress !== null)
+    let last = -1
+    episodes.forEach((e, i) => {
+      if (e.watched) last = i
+    })
+    const after = episodes.slice(last + 1).find((e) => !e.watched)
+    const first = episodes[0]
+    const next: ClientShow['next'] = partway
+      ? { episode: partway, kind: 'resume' }
+      : after
+        ? { episode: after, kind: last === -1 ? 'start' : 'next' }
+        : unwatched > 0
+          ? { episode: episodes.find((e) => !e.watched) as ClientEpisode, kind: 'next' }
+          : first
+            ? { episode: first, kind: 'again' }
+            : null
+    return { ...s.show, unwatched, watched: episodes.length > 0 && unwatched === 0, next }
+  }
+  const showSeed = (id: string) => {
+    const s = clientShows().find((x) => x.show.id === id)
+    if (!s) throw new ApiError(404, 'not-found', 'That show isn’t on this server.')
+    return s
+  }
+  const episodeSeed = (id: string) => {
+    for (const s of clientShows())
+      for (const season of s.seasons) {
+        const e = season.episodes.find((x) => x.id === id)
+        if (e) return { show: s, episode: e }
+      }
+    return null
+  }
+  const episodeCode = (e: { season: number; number: number }) =>
+    e.season === 0 ? `Special ${e.number}` : `S${e.season}, E${e.number}`
+  /**
+   * The episode after this one: the next in its season, then the next season's first. Specials
+   * follow only each other.
+   */
+  const episodeAfter = (s: ShowSeed, e: EpisodeSeed): EpisodeSeed | null => {
+    const run = s.seasons
+      .filter((x) => (e.season === 0 ? x.number === 0 : x.number !== 0))
+      .flatMap((x) => x.episodes)
+    return run[run.findIndex((x) => x.id === e.id) + 1] ?? null
+  }
+  /** An episode as a title, for the player and Home's cards: the show's art, its own still. */
+  const episodeItem = (s: ShowSeed, e: EpisodeSeed): ClientItem => {
+    const donor = watchable()[0]
+    if (!donor) throw new ApiError(404, 'not-found', 'That episode can’t play here.')
+    const code = episodeCode(e)
+    return {
+      ...clientItem({
+        ...donor,
+        id: e.id,
+        title: `${s.show.title} · ${code} · ${e.title}`,
+        sortTitle: s.show.sortTitle,
+        year: Number(e.aired.slice(0, 4)),
+        runtimeMinutes: e.runtimeMinutes,
+        genres: s.show.genres,
+        synopsis: e.synopsis,
+        rating: s.show.rating,
+        art: { poster: s.show.art.poster, backdrop: s.show.art.backdrop, still: e.still },
+      }),
+      show: { id: s.show.id, title: s.show.title, code, episode: e.title },
+    }
+  }
+  /**
+   * An episode as the player reads a title: the prototype's episodes have no files of their own,
+   * so it plays with the first film's versions and tracks, named for the show and the episode,
+   * with its intro and credits marked as the server's detection would mark them.
+   */
+  const episodeDetail = (s: ShowSeed, e: EpisodeSeed): ClientDetail => {
+    const donor = watchable()[0]
+    if (!donor) throw new ApiError(404, 'not-found', 'That episode can’t play here.')
+    const versions = versionsOf(donor)
+    const prefs = state.prefs[`${me().id}:${e.id}`] ?? {}
+    const version = versions.find((v) => v.id === prefs.versionId) ?? versions[0]
+    const code = episodeCode(e)
+    const length = e.runtimeMinutes * 60
+    // a cold open, then the titles; a pilot and the specials open on the story itself
+    const opens = e.season > 0 && !(e.season === 1 && e.number === 1)
+    const introStart = 40 + ((e.season * 31 + e.number * 17) % 80)
+    const after = episodeAfter(s, e)
+    const item = episodeItem(s, e)
+    return {
+      item,
+      versions,
+      cast: s.cast,
+      directors: [],
+      crew: s.creators,
+      related: [],
+      originalTitle: s.show.title,
+      certification: s.show.certification,
+      studios: [],
+      videos: [],
+      collection: null,
+      collections: [],
+      defaults: {
+        versionId: version?.id ?? '',
+        audioId: prefs.audioId ?? version?.audio.find((a) => a.default)?.id ?? null,
+        subtitleId: prefs.subtitleId !== undefined ? prefs.subtitleId : null,
+      },
+      episode: {
+        show: { id: s.show.id, title: s.show.title },
+        season: e.season,
+        number: e.number,
+        title: e.title,
+        code,
+        intro: opens ? { start: introStart, end: introStart + 52 } : null,
+        credits: length - 75,
+      },
+      soundtrack: null,
+      upNext: after
+        ? {
+            kind: 'episode',
+            id: after.id,
+            title: after.title,
+            line: episodeCode(after),
+            still: after.still,
+            season: after.season !== e.season ? after.season : null,
+          }
+        : null,
+    }
+  }
+  const setEpisodes = (episodes: EpisodeSeed[], watched: boolean) => {
+    const u = me().id
+    const ids = new Set(episodes.map((e) => e.id))
+    state.watch = state.watch.filter((x) => !(x.userId === u && ids.has(x.itemId)))
+    if (watched)
+      for (const e of episodes)
+        state.watch.push({
+          userId: u,
+          itemId: e.id,
+          position: e.runtimeMinutes * 60,
+          updatedAt: iso(now()),
+        })
+    srv.events.emit({ type: 'shows.updated' })
+    srv.events.emit({ type: 'watch.updated' })
+  }
+  const me = (): User => {
+    const u = state.users.find((x) => x.id === ctx.userId) ?? state.users[0]
+    // the server's code and reason (apps/server/src/api/guard.ts)
+    if (!u) throw new ApiError(401, 'unauthorized', 'Sign in first.', { reason: 'signed-out' })
+    return u
+  }
+  const staff = () => me().role === 'owner' || me().role === 'admin'
+  /** Library access (stage 6): Movies, Shows and Music are each given or not; staff see all. */
+  const sees = (kind: 'movies' | 'shows' | 'music') => {
+    const l = me().libraries
+    return staff() || l === 'all' || l.includes(kind)
+  }
+  /** The shows this person may watch, for the apps' calls; the admin's are showSeeds itself. */
+  const clientShows = () => (sees('shows') ? showSeeds() : [])
+  const requireStaff = () => {
+    if (!staff()) throw forbidden()
+  }
+  /** Inviting and managing people, security and backups are the owner's alone (ADR 0032). */
+  const requireOwner = () => {
+    if (me().role !== 'owner') throw forbidden()
+  }
+  /** The signed-in person's role, when they open the admin: a user never does. */
+  const staffRole = (): StaffRole => {
+    const { role } = me()
+    if (role === 'user') throw forbidden()
+    return role
+  }
+  const layoutKey = (scope: string) => `layout:${srv.kind}:${scope}`
+  const currentVpn = () =>
+    vpnStatus(state.settings.vpn, state.vpn, srv.clock.now(), state.settings.downloadClient.port)
+  const currentPlayback = () =>
+    playbackStatus(state.settings.playback, state.playback, srv.clock.now())
+  const who = (userId: string) => {
+    const u = state.users.find((x) => x.id === userId)
+    return { id: userId, displayName: u?.displayName ?? 'Someone' }
+  }
+  /** What a session plays, by name: a film, an episode with its show, or a song with its album. */
+  const what = (itemId: string): PlayingItem => {
+    const m = state.items.find((x) => x.id === itemId)
+    if (m) return { kind: 'movie', id: itemId, title: m.title, year: m.year, poster: m.art.poster }
+    const ep = episodeSeed(itemId)
+    if (ep)
+      return {
+        kind: 'episode',
+        id: itemId,
+        title: ep.episode.title,
+        year: null,
+        poster: ep.show.show.art.poster,
+        show: { id: ep.show.show.id, title: ep.show.show.title },
+        code: episodeCode(ep.episode),
+      }
+    const song = trackOf(library(), itemId)
+    if (song)
+      return {
+        kind: 'song',
+        id: itemId,
+        title: song.title,
+        year: null,
+        poster: song.album.cover,
+        artist: song.album.artist.name,
+        album: song.album.title,
+      }
+    return { kind: 'movie', id: itemId, title: 'Unknown', year: null, poster: '' }
+  }
+  const nowPlaying = (): NowPlaying => {
+    const sessions = state.sessions.live.map(
+      (s): SessionView => ({ ...s, user: who(s.userId), item: what(s.itemId) }),
+    )
+    const sending = sessions.filter((s) => !s.stopped && s.state === 'playing')
+    return {
+      sessions,
+      totalMbps: sending.reduce((n, s) => n + s.mbps, 0),
+      remoteMbps: sending.filter((s) => s.network === 'remote').reduce((n, s) => n + s.mbps, 0),
+      transcodes: sessions.filter((s) => !s.stopped && s.method === 'transcode').length,
+    }
+  }
+  /**
+   * New VPN settings: write-only secrets are taken in and dropped, then highsea connects again,
+   * or fails with the step's copy.
+   */
+  const saveVpn = (value: VpnSettings): VpnSettings => {
+    const failure = connectionFailure(value)
+    const { config, piaPassword, containerKey, ...rest } = value
+    const saved: VpnSettings = {
+      ...rest,
+      piaPasswordSet: rest.piaPasswordSet || (!!piaPassword && !failure),
+      containerKeySet: rest.containerKeySet || (!!containerKey && !failure),
+    }
+    if (failure) {
+      state.vpn.phase = 'failed'
+      state.vpn.failure = failure
+    } else if (saved.mode !== 'off') {
+      state.vpn.phase = 'connecting'
+      state.vpn.failure = null
+      state.vpn.until = srv.clock.now() + 4_000
+    }
+    // a failed configuration isn't kept, so the last good one stays on file
+    if (failure && config !== undefined) saved.configName = state.settings.vpn.configName
+    state.settings.vpn = saved
+    srv.events.emit({ type: 'settings.updated' })
+    srv.events.emit({ type: 'vpn.updated' })
+    return saved
+  }
+
+  /** A manual import's episode file, when the shows it names are here (stage 6). */
+  const episodeFile = (
+    path: string,
+    size: number,
+    quality: string,
+    show: string,
+    episodeIds: string[],
+  ): ImportCandidate[] =>
+    episodeIds.every((id) => showAdmin.episode(id))
+      ? [
+          {
+            path,
+            size,
+            quality,
+            language: 'English',
+            itemId: null,
+            skip: null,
+            episodes: { show, episodeIds },
+          },
+        ]
+      : []
+  /** Manual import into episodes: each gets the file, and the history says so. */
+  const importEpisodes = (path: string, episodeIds: string[], mode: 'hardlink' | 'move') => {
+    const found = episodeIds.flatMap((id) => showAdmin.episode(id) ?? [])
+    const name = path.split('/').pop() ?? path
+    const numbers = found.map((x) => x.episode.number)
+    for (const { show, episode: e } of found) {
+      e.status = 'available'
+      delete e.progress
+      e.file = {
+        path: `${show.path}/Season ${String(e.season).padStart(2, '0')}/${name}`,
+        size: e.file?.size ?? Math.round(e.runtimeMinutes * 36 * MB),
+        quality: /2160p/.test(name)
+          ? 'Bluray-2160p'
+          : /BluRay/i.test(name)
+            ? 'Bluray-1080p'
+            : 'WEBDL-1080p',
+        releaseGroup: null,
+        episodes: numbers,
+      }
+      state.history.unshift({
+        id: `h-${now().toString(36)}-${e.id}`,
+        itemId: e.id,
+        type: 'imported',
+        date: iso(now()),
+        sourceTitle: name,
+        quality: null,
+        indexer: null,
+        message: mode === 'move' ? 'Moved by manual import' : 'Hardlinked by manual import',
+      })
+    }
+    srv.events.emit({ type: 'shows.updated' })
+  }
+  const queueItem = (t: Torrent): QueueItem => {
+    const m = state.items.find((x) => x.id === t.itemId)
+    // an episode's download is named by its show and number (stage 6)
+    const ep = !m && t.itemId ? showAdmin.episode(t.itemId) : null
+    return {
+      id: `q-${t.id}`,
+      torrentId: t.id,
+      itemId: t.itemId,
+      title: m?.title ?? ep?.show.title ?? t.name,
+      year: m?.year ?? null,
+      ...(ep
+        ? {
+            episode: {
+              show: ep.show.id,
+              code: adminEpisodeCode(ep.episode),
+              title: ep.episode.title,
+            },
+          }
+        : {}),
+      release: t.name,
+      quality: t.quality,
+      size: t.size,
+      progress: t.progress,
+      downRate: t.downRate,
+      upRate: t.upRate,
+      eta: t.eta,
+      ratio: t.ratio,
+      state: t.state,
+      stateReason: t.stateReason,
+    }
+  }
+
+  const inAudience = (audience: Audience, u: User, client: ClientType) => {
+    if (audience.kind === 'roles') return audience.roles.includes(u.role)
+    if (audience.kind === 'users') return audience.userIds.includes(u.id)
+    if (audience.kind === 'clients') return audience.clients.includes(client)
+    return true
+  }
+  const visible = (a: { audience: Audience }, client: ClientType) =>
+    inAudience(a.audience, me(), client)
+  /** The people an audience reaches, on any app (invites not yet accepted don't count). */
+  const audienceOf = (audience: Audience) =>
+    state.users.filter(
+      (u) =>
+        !u.invited &&
+        (audience.kind === 'roles'
+          ? audience.roles.includes(u.role)
+          : audience.kind === 'users'
+            ? audience.userIds.includes(u.id)
+            : true),
+    )
+  const announcementStatus = (a: Announcement) =>
+    curationStatus(a.schedule, now(), a.status === 'draft')
+
+  // ---- the clients' view of the library (C2–C5)
+
+  /** A title the household can watch: some version has a file. */
+  const playable = (m: MediaItem) => m.type === 'movie' && m.versions.some((v) => v.fileId)
+  const languageName = (code: string) =>
+    code === 'zxx' ? 'No dialogue' : (state.languages.find((l) => l.code === code)?.name ?? code)
+  const clientItem = (m: MediaItem, tagline: string | null = null): ClientItem => {
+    const w = state.watch.find((x) => x.userId === me().id && x.itemId === m.id)
+    const length = m.runtimeMinutes * 60
+    const progress = w && length ? w.position / length : null
+    const watched = progress !== null && progress >= 0.95
+    return {
+      ...m,
+      // a watched title plays from the start, as the server clears its place (ADR 0054)
+      position: watched ? 0 : (w?.position ?? 0),
+      // nearly at the end counts as watched, not as something to resume
+      progress: progress !== null && progress < 0.95 ? progress : null,
+      tagline,
+      watched,
+      show: null,
+    }
+  }
+  const watchable = () => state.items.filter(playable)
+  // ---- smart collections (docs/product/collections.md)
+
+  const smartFacts = (c: SmartCollection): Facts[] => evaluate(state, c, now(), state.collections)
+  const smartFields = (except?: string): RuleFieldInfo[] =>
+    fields(
+      state,
+      now(),
+      state.collections.filter((x) => x.id !== except).map((x) => ({ id: x.id, name: x.name })),
+    )
+  /** A collection's shows the apps list, in its order: picked by hand, as rules match films. */
+  const shownIn = (c: SmartCollection): ClientShow[] =>
+    c.shows.flatMap((x) => {
+      const s = clientShows().find((y) => y.show.id === x)
+      return s ? [showOf(s)] : []
+    })
+  /** A collection's shows as the admin sees them: every one in the library, and whether the apps list it. */
+  const showsOfCollection = (c: SmartCollection) => {
+    const listed = new Set(shownIn(c).map((s) => s.id))
+    const all = showAdmin.list()
+    return c.shows.flatMap((id) => {
+      const s = all.find((x) => x.id === id)
+      return s
+        ? [
+            {
+              id: s.id,
+              title: s.title,
+              year: s.year,
+              poster: s.art.poster,
+              playable: listed.has(s.id) && s.episodes.have > 0,
+            },
+          ]
+        : []
+    })
+  }
+  /**
+   * A show on a featured section's card, as a film's: its art, its synopsis or the section's
+   * tagline, and Play starting the episode it's on.
+   */
+  const featuredShow = (id: string, tagline: string | null): ClientItem[] => {
+    const seed = clientShows().find((x) => x.show.id === id)
+    const donor = watchable()[0]
+    if (!seed || !donor) return []
+    const s = showOf(seed)
+    const first = seed.seasons.find((x) => x.number !== 0)?.episodes[0]
+    const play = s.next?.episode.id ?? first?.id
+    if (!play) return []
+    return [
+      {
+        ...clientItem(
+          {
+            ...donor,
+            id: s.id,
+            title: s.title,
+            sortTitle: seed.show.sortTitle,
+            year: s.year,
+            runtimeMinutes: seed.show.runtimeMinutes,
+            genres: s.genres,
+            synopsis: s.synopsis,
+            rating: s.rating,
+            art: { ...s.art, still: s.art.backdrop },
+            versions: [],
+          },
+          tagline,
+        ),
+        progress: s.next?.kind === 'resume' ? s.next.episode.progress : null,
+        watched: s.watched,
+        quality: [],
+        series: { seasons: s.seasons, endYear: s.endYear, play },
+      },
+    ]
+  }
+  /** A smart collection as the apps see it: playable titles only, in its own order, then its shows. */
+  const clientSmart = (c: SmartCollection) => {
+    const items = smartFacts(c)
+      .filter((f) => playable(f.item))
+      .map((f) => f.item)
+    const shows = shownIn(c)
+    const art = items[0]?.art ?? shows[0]?.art
+    if (!art) return null
+    const years = [...items.map((m) => m.year), ...shows.map((s) => s.year)]
+    const lo = Math.min(...years)
+    const hi = Math.max(...years)
+    const collection: ClientCollection = {
+      id: c.id,
+      name: c.name,
+      overview: c.summary,
+      art: { poster: c.artwork ?? art.poster, backdrop: art.backdrop },
+      count: items.length,
+      ...(shows.length > 0 ? { shows: shows.length } : {}),
+      years: lo === hi ? String(lo) : `${lo}–${hi}`,
+      smart: {
+        words: describe(c.rules, smartFields()),
+        mosaic: c.artwork
+          ? []
+          : [...items.map((m) => m.art.poster), ...shows.map((s) => s.art.poster)].slice(0, 4),
+      },
+    }
+    return { collection, items: items.map((m) => clientItem(m)), shows }
+  }
+  /** Does a collection's rule tree name the collection itself? */
+  const namesItself = (g: RuleGroup, id: string): boolean =>
+    g.rules.some((r) =>
+      r.kind === 'group'
+        ? namesItself(r, id)
+        : r.field === 'collection' && [r.value].flat().map(String).includes(id),
+    )
+
+  /**
+   * Collections with at least one title here: the smart ones this person and app are in the
+   * audience for, in the owner's order, then TMDB's, each with its titles oldest first.
+   */
+  const clientCollections = (client: ClientType = 'web') => [
+    ...state.collections.flatMap((c) => {
+      if (!visible(c, client)) return []
+      const found = clientSmart(c)
+      return found ? [found] : []
+    }),
+    ...tmdbCollections(),
+  ]
+  const tmdbCollections = () => {
+    const groups = new Map<string, { ref: CollectionRef; items: MediaItem[] }>()
+    for (const m of watchable()) {
+      const ref = movieMetadata(state, m.id, now())?.collection
+      if (!ref) continue
+      const g = groups.get(ref.id) ?? { ref, items: [] }
+      g.items.push(m)
+      groups.set(ref.id, g)
+    }
+    return [...groups.values()].map(({ ref, items }) => {
+      const sorted = [...items].sort((a, b) => a.year - b.year)
+      const first = sorted[0] as MediaItem
+      const last = sorted[sorted.length - 1] as MediaItem
+      const c: ClientCollection = {
+        id: ref.id,
+        name: ref.name,
+        overview: collection(state, ref.id)?.overview ?? '',
+        art: { poster: first.art.poster, backdrop: first.art.backdrop },
+        count: sorted.length,
+        years: first.year === last.year ? String(first.year) : `${first.year}–${last.year}`,
+      }
+      return { collection: c, items: sorted.map((m) => clientItem(m)), shows: [] as ClientShow[] }
+    })
+  }
+
+  const sectionItems = (f: FeaturedSection): ClientItem[] => {
+    const tagline = (id: string) => f.overrides.find((o) => o.itemId === id)?.tagline ?? null
+    if (f.source.kind === 'manual') {
+      const ids = f.source.itemIds
+      // films and shows, in the owner's order
+      return ids.flatMap((id) => {
+        const m = state.items.find((x) => x.id === id)
+        if (!m) return featuredShow(id, tagline(id))
+        return playable(m) ? [clientItem(m, tagline(m.id))] : []
+      })
+    }
+    const { rule, value } = f.source
+    const all = watchable()
+    const picked =
+      rule === 'recently-added'
+        ? [...all].sort((a, b) => Date.parse(b.addedAt) - Date.parse(a.addedAt)).slice(0, 12)
+        : rule === 'genre'
+          ? all.filter((m) => m.genres.some((g) => g.toLowerCase() === value.toLowerCase()))
+          : rule === 'collection'
+            ? value.startsWith('sc-')
+              ? (() => {
+                  const c = state.collections.find((x) => x.id === value)
+                  return c ? smartFacts(c).flatMap((f) => (playable(f.item) ? [f.item] : [])) : []
+                })()
+              : all.filter((m) => movieMetadata(state, m.id, now())?.collection?.id === value)
+            : all
+    // a collection's shows follow its films, as in the apps' collection pages
+    const smart = rule === 'collection' ? state.collections.find((x) => x.id === value) : undefined
+    const shows = smart ? shownIn(smart).flatMap((x) => featuredShow(x.id, tagline(x.id))) : []
+    return [...picked.map((m) => clientItem(m, tagline(m.id))), ...shows]
+  }
+
+  // ffprobe's names for subtitles that are pictures: Blu-ray's PGS, DVD's VobSub, DVB's
+  const PICTURE_CODECS = new Set(['hdmv_pgs_subtitle', 'dvd_subtitle', 'dvb_subtitle'])
+  const track = (
+    kind: ClientTrack['kind'],
+    id: string,
+    language: string,
+    detail: string | null,
+    isDefault: boolean,
+    picture = false,
+  ): ClientTrack => ({
+    id,
+    kind,
+    label: detail ? `${languageName(language)} · ${detail}` : languageName(language),
+    language,
+    detail,
+    default: isDefault,
+    picture,
+  })
+
+  const versionsOf = (m: MediaItem): ClientVersion[] =>
+    m.versions.flatMap((v) => {
+      const f = state.files.find((x) => x.id === v.fileId)
+      if (!f) return []
+      const video = f.streams.find((x) => x.type === 'video')
+      const audio = f.streams.flatMap((x) =>
+        x.type === 'audio'
+          ? [track('audio', `a${x.index}`, x.language, x.title ?? x.channels, x.default)]
+          : [],
+      )
+      const embedded = f.streams.flatMap((x) =>
+        x.type === 'subtitle'
+          ? [
+              track(
+                'subtitle',
+                `s${x.index}`,
+                x.language,
+                [
+                  x.forced && 'Forced',
+                  x.hi && 'SDH',
+                  PICTURE_CODECS.has(x.codec) && 'From the disc',
+                ]
+                  .filter(Boolean)
+                  .join(', ') || null,
+                x.default,
+                PICTURE_CODECS.has(x.codec),
+              ),
+            ]
+          : [],
+      )
+      const external = state.subtitles
+        .filter((t) => t.fileId === f.id && t.kind === 'external')
+        .map((t) =>
+          track(
+            'subtitle',
+            t.id,
+            t.language,
+            [t.forced && 'Forced', t.hi && 'SDH'].filter(Boolean).join(', ') || null,
+            false,
+          ),
+        )
+      const hdr = video && video.type === 'video' && video.hdr !== 'none' ? ' · HDR10' : ''
+      const res =
+        video && video.type === 'video' ? (video.height >= 2160 ? '4K' : `${video.height}p`) : ''
+      return [
+        {
+          id: v.id,
+          label: v.label,
+          detail: `${res}${hdr} · ${(video?.type === 'video' ? video.codec : '').toUpperCase()} · ${(f.size / 1e9).toFixed(1)} GB`,
+          audio,
+          // embedded first, then each language once
+          subtitles: [...embedded, ...external].filter(
+            (t, i, all) =>
+              all.findIndex((x) => x.language === t.language && x.detail === t.detail) === i,
+          ),
+        },
+      ]
+    })
+
+  const layoutFor = (role: StaffRole): WidgetPlacement[] => {
+    const saved = storage.load(layoutKey(`role:${role}`)) as WidgetPlacement[] | undefined
+    return (saved ?? roleDefault(role)).filter((w) => allowed(w.kind, role)).map(normalize)
+  }
+
+  /** Available movies still missing a language their profile asks for. */
+  /**
+   * Episodes missing a subtitle language (stage 6): seeded, kept here, and cleared by a search.
+   * The shows' language profiles are drawn with the TV series phase.
+   */
+  const episodeSubtitles = () => {
+    let subtitleEpisodes = episodeSubtitlesOn.get(srv)
+    subtitleEpisodes ??=
+      srv.kind === 'empty'
+        ? []
+        : [
+            { id: 'saltmarsh-s4e1', missing: ['es'] },
+            { id: 'saltmarsh-s4e2', missing: ['es'] },
+            { id: 'the-lantern-keepers-s3e9', missing: ['en'] },
+            { id: 'night-shift-at-hollow-creek-s3e4', missing: ['en', 'es'] },
+          ]
+    episodeSubtitlesOn.set(srv, subtitleEpisodes)
+    return subtitleEpisodes
+  }
+  const wantedSubtitles = () => {
+    const results: { movie: MediaItem; missingLanguages: string[] }[] = []
+    for (const m of state.items) {
+      if (m.status !== 'available') continue
+      const tracks = state.subtitles.filter((s) => s.itemId === m.id)
+      const embedded = state.files
+        .filter((f) => f.itemId === m.id)
+        .flatMap((f) => f.streams.filter((s) => s.type === 'subtitle').map((s) => s.language))
+      const profile = state.languageProfiles.find((lp) => lp.id === m.languageProfileId)
+      // a language is wanted until an external track or an embedded stream covers it
+      const missing = (profile?.languages ?? [])
+        .map((l) => l.code)
+        .filter((code) => !tracks.some((t) => t.language === code) && !embedded.includes(code))
+      if (missing.length > 0) {
+        results.push({ movie: m, missingLanguages: missing })
+      }
+    }
+    return results
+  }
+
+  // the settings with calls of their own (prototype-gaps.md › 5.1)
+  const settingsDeps: SettingsDeps = {
+    settings: state.settings,
+    now,
+    emit: (e) => srv.events.emit(e),
+    requireStaff,
+    requireOwner,
+    fail: (status, code, message, details) => new ApiError(status, code, message, details),
+  }
+  const lists = importListsApi(settingsDeps)
+  const notifying = connectionsApi(settingsDeps)
+  const showAdmin = showAdminApi({
+    seeds: () => showSeeds(),
+    now,
+    requireStaff,
+    emit: () => srv.events.emit({ type: 'shows.updated' }),
+    fail: (status, code, message) => new ApiError(status, code, message),
+    folders: () =>
+      settingsDeps.settings.rootFolders.filter((f) => f.kind === 'shows').map((f) => f.path),
+  })
+  const library_ = librarySettingsApi(settingsDeps, () => state.items, {
+    shows: () => showAdmin.list(),
+    music: allMusic,
+  })
+
+  return {
+    system: {
+      publicInfo: () => ({
+        id: state.server.id,
+        name: state.server.name,
+        version: state.server.version,
+        setupComplete: state.server.setupComplete,
+        auth: { local: true, oidc: { name: 'Authentik' } },
+      }),
+      server: () => state.server,
+      /** The disks' use by kind; TV is the shows' files (stage 6), taken out of what was Other. */
+      status: (): SystemStatus => {
+        const tv = showAdmin.list().reduce((n, x) => n + x.size, 0)
+        return {
+          ...state.status,
+          disks: state.status.disks.map((d, i) =>
+            i === 0 && d.usedBy.tv === 0 && tv > 0
+              ? { ...d, usedBy: { ...d.usedBy, tv, other: Math.max(0, d.usedBy.other - tv) } }
+              : d,
+          ),
+        }
+      },
+      health: () => {
+        requireStaff()
+        return state.health
+      },
+      jobs: () => state.jobs,
+      speeds: () => {
+        requireStaff()
+        return state.speeds
+      },
+      /** Starts a scheduled job now; it runs on the next tick. */
+      runJob: (id: string) => {
+        requireStaff()
+        const j = state.jobs.find((x) => x.id === id)
+        if (!j || j.state === 'running') return
+        j.nextRun = iso(now())
+        srv.events.emit({ type: 'jobs.updated' })
+      },
+      /** The server's log, newest first: imports, grabs, jobs, health and the odd error. */
+      logs: (): LogEntry[] => {
+        requireStaff()
+        const title = (id: string) => state.items.find((m) => m.id === id)?.title ?? 'A movie'
+        const fromHistory = state.history.map(
+          (h): LogEntry => ({
+            time: h.date,
+            level:
+              h.type === 'import-failed' ? 'error' : h.type === 'blocklisted' ? 'warn' : 'info',
+            logger:
+              h.type === 'grabbed' ? 'Download' : h.type === 'imported' ? 'Import' : 'History',
+            message:
+              h.type === 'grabbed'
+                ? `Grabbed ${h.sourceTitle} from ${h.indexer ?? 'an indexer'}`
+                : h.type === 'imported'
+                  ? `Imported ${title(h.itemId)} (${h.quality ?? 'unknown quality'})`
+                  : `${title(h.itemId)}: ${h.message ?? h.type}`,
+          }),
+        )
+        const fromHealth = state.health.map(
+          (c): LogEntry => ({
+            time: c.since,
+            level: c.level === 'error' ? 'error' : c.level === 'ok' ? 'info' : 'warn',
+            logger: c.source,
+            message: c.message,
+          }),
+        )
+        const fromJobs = state.jobs.flatMap((j): LogEntry[] =>
+          j.lastRun
+            ? [{ time: j.lastRun, level: 'info', logger: 'Jobs', message: `${j.name} finished` }]
+            : [],
+        )
+        const debug: LogEntry[] = [
+          {
+            time: iso(now() - 90_000),
+            level: 'debug',
+            logger: 'Discovery',
+            message: 'Answered a discovery broadcast from 192.168.1.44',
+          },
+          {
+            time: iso(now() - 260_000),
+            level: 'debug',
+            logger: 'Http',
+            message: 'GET /api/v1/home 200 in 14 ms (Living room Apple TV)',
+          },
+        ]
+        return [...fromHistory, ...fromHealth, ...fromJobs, ...debug].sort(
+          (a, b) => Date.parse(b.time) - Date.parse(a.time),
+        )
+      },
+      backups: () => {
+        requireOwner()
+        return [...state.backups].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))
+      },
+      backupNow: (): Backup => {
+        requireOwner()
+        const b: Backup = {
+          id: `b-${now().toString(36)}`,
+          createdAt: iso(now()),
+          size: 48_400_000,
+          kind: 'manual',
+        }
+        state.backups.unshift(b)
+        srv.events.emit({ type: 'jobs.updated' })
+        return b
+      },
+      /** Restores a backup: the server restarts on it. Media files aren't touched. */
+      restore: (id: string) => {
+        requireOwner()
+        if (!state.backups.some((b) => b.id === id))
+          throw new ApiError(404, 'not-found', 'That backup is gone.')
+      },
+      updates: () => ({
+        current: state.server.version,
+        latest: '1.0.1',
+        channel: state.settings.general.updateChannel,
+        notes: [
+          'Subtitle sync handles films with long silent openings.',
+          'The TV app remembers your place in long rows.',
+          'Fixes a crash when an indexer returns an empty page.',
+        ],
+      }),
+    },
+
+    auth: {
+      session: () => ({ user: me(), deviceId: 'd-admin', expiresAt: iso(now() + 30 * 86_400_000) }),
+      signIn: (input: { username: string; password: string }): SignInResult => {
+        if (input.password === 'wrong' || !input.password)
+          throw new ApiError(401, 'invalid-credentials', 'That username and password don’t match.')
+        if (input.password === 'locked')
+          throw new ApiError(429, 'rate-limited', 'Too many attempts. Try again in 5 minutes.')
+        const u = state.users.find((x) => x.username === input.username.toLowerCase()) ?? me()
+        if (u.twoFactor) return { status: 'two-factor', challenge: `ch-${u.id}` }
+        return {
+          status: 'signed-in',
+          session: { user: u, deviceId: 'd-admin', expiresAt: iso(now()) },
+        }
+      },
+      verifyTwoFactor: (input: { challenge: string; code: string }): SignInResult => {
+        if (!/^\d{6}$/.test(input.code) || input.code === '000000')
+          throw new ApiError(
+            401,
+            'invalid-code',
+            'That code didn’t work. Codes change every 30 seconds.',
+          )
+        return {
+          status: 'signed-in',
+          session: { user: me(), deviceId: 'd-admin', expiresAt: iso(now()) },
+        }
+      },
+    },
+
+    setup: {
+      // Harbor runs with host networking on a NAS whose graphics passed their check; the empty
+      // server runs in bridge mode, with its folders mounted somewhere other than /data
+      detect: (): SetupDetected =>
+        srv.kind === 'populated'
+          ? {
+              serverName: 'Harbor',
+              folders: {
+                movies: '/data/media/movies',
+                shows: '/data/media/tv',
+                music: '/data/media/music',
+                downloads: '/data/downloads',
+              },
+              address: '192.168.1.20:3000',
+              graphics: { name: 'Intel UHD Graphics 770', path: 'VAAPI' },
+            }
+          : { serverName: null, folders: null, address: null, graphics: null },
+      complete: (input: SetupInput) => {
+        state.server.name = input.serverName
+        state.server.branding.name = input.serverName
+        state.server.setupComplete = true
+        storage.save(`server:${srv.kind}:name`, input.serverName)
+        srv.events.emit({ type: 'server.updated' })
+        return state.server
+      },
+    },
+
+    fs: {
+      list: (path: string) => {
+        const node = state.fs[path]
+        if (!node) throw new ApiError(404, 'not-found', `${path} doesn’t exist on the server.`)
+        return (node.children ?? []).map((p) => ({
+          name: p.split('/').pop() ?? p,
+          path: p,
+          kind: 'folder' as const,
+        }))
+      },
+      checkHardlinks: (a: string, b: string): HardlinkCheck => {
+        const da = state.fs[a]?.device
+        const db = state.fs[b]?.device
+        if (!da || !db) return { ok: false, sameDevice: false, message: 'Pick both folders first.' }
+        return da === db
+          ? {
+              ok: true,
+              sameDevice: true,
+              message:
+                'Both folders are on the same disk, so imports are hardlinked: seeding takes no extra space.',
+            }
+          : {
+              ok: true,
+              sameDevice: false,
+              message:
+                'These folders are on different disks, so imports are copied. While a movie seeds, it takes twice the space.',
+            }
+      },
+    },
+
+    catalog: {
+      list: () => state.catalog,
+      starterPack: () => state.catalog.filter((d) => d.starter),
+      settings: () => library_.catalog.get(),
+      updateSettings: (patch: Partial<CatalogSettings>) => library_.catalog.update(patch),
+    },
+
+    indexers: {
+      list: () => {
+        requireStaff()
+        return state.indexers
+      },
+      catalog: () => state.catalog,
+      add: (definitionId: string, _settings: Record<string, string> = {}) => {
+        requireStaff()
+        const def = state.catalog.find((c) => c.id === definitionId)
+        if (!def) throw new ApiError(404, 'not-found', 'Indexer definition not found.')
+        const existing = state.indexers.find((i) => i.definitionId === definitionId)
+        if (existing) return existing
+        const newIndexer: Indexer = {
+          id: `ix-${def.id}`,
+          definitionId: def.id,
+          name: def.name,
+          privacy: def.privacy,
+          enabled: true,
+          priority: 25,
+          health: 'healthy',
+          backoffUntil: null,
+          lastError: null,
+          stats: {
+            queries24h: 0,
+            grabs24h: 0,
+            avgResponseMs: 145,
+            successRate: 1.0,
+          },
+        }
+        state.indexers.push(newIndexer)
+        srv.events.emit({ type: 'indexers.updated' })
+        srv.events.emit({ type: 'health.updated' })
+        return newIndexer
+      },
+      update: (id: string, patch: Partial<Indexer>) => {
+        requireStaff()
+        const ix = state.indexers.find((x) => x.id === id)
+        if (!ix) throw new ApiError(404, 'not-found', 'Indexer not found.')
+        Object.assign(ix, patch)
+        srv.events.emit({ type: 'indexers.updated' })
+        return ix
+      },
+      remove: (id: string) => {
+        requireStaff()
+        state.indexers = state.indexers.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'indexers.updated' })
+        srv.events.emit({ type: 'health.updated' })
+      },
+      test: (idOrDefId: string, settings?: Record<string, string>) => {
+        requireStaff()
+        const ix = state.indexers.find((x) => x.id === idOrDefId || x.definitionId === idOrDefId)
+        const def = state.catalog.find((x) => x.id === idOrDefId)
+        // the prototype's way to see a rejected key: type "wrong"
+        if (settings?.apiKey === 'wrong')
+          return {
+            ok: false,
+            message: `${def?.name ?? 'The indexer'} rejected the API key (401). Copy it again from your profile.`,
+            latencyMs: 210,
+          }
+        if (ix?.health === 'failing') {
+          return {
+            ok: false,
+            message: 'Connection timed out (504 Gateway Timeout).',
+            latencyMs: 3200,
+          }
+        }
+        return {
+          ok: true,
+          message: `Successfully connected to ${ix?.name ?? def?.name ?? 'indexer'}. 1,420 releases indexed in test category.`,
+          latencyMs: 165,
+        }
+      },
+      clearBackoff: (id: string) => {
+        requireStaff()
+        const ix = state.indexers.find((x) => x.id === id)
+        if (ix) {
+          ix.health = 'healthy'
+          ix.backoffUntil = null
+          ix.lastError = null
+          state.health = state.health.filter((h) => h.id !== `h-${ix.definitionId}`)
+          srv.events.emit({ type: 'indexers.updated' })
+          srv.events.emit({ type: 'health.updated' })
+        }
+      },
+      toggle: (id: string, enabled: boolean) => {
+        requireStaff()
+        const ix = state.indexers.find((x) => x.id === id)
+        if (!ix) throw new ApiError(404, 'not-found', 'Indexer not found.')
+        ix.enabled = enabled
+        srv.events.emit({ type: 'indexers.updated' })
+        return ix
+      },
+    },
+
+    metadata: {
+      movie: (id: string) => {
+        const m = movieMetadata(state, id, now())
+        if (!m) throw new ApiError(404, 'not-found', 'There’s no movie with that id')
+        return m
+      },
+      recommendations: (id: string) => recommendations(state, id),
+      collection: (id: string) => {
+        const c = collection(state, id)
+        if (!c) throw new ApiError(404, 'not-found', 'TMDB doesn’t know that collection')
+        return c
+      },
+      /** A person's films, and since stage 6 their shows, each marked if it's in the library. */
+      person: (id: string): Person => {
+        const p = person(state, id)
+        const here = new Map(showAdmin.discover().map((x) => [x.id, x]))
+        const credited = showSeeds().flatMap((x) => {
+          const mine = [...x.cast, ...x.creators, ...x.crew].filter((c) => c.personId === id)
+          return mine.length === 0 ? [] : [{ seed: x, mine }]
+        })
+        const shows: PersonShowCredit[] = credited
+          .map(({ seed, mine }) => {
+            const s = seed.show
+            const known = here.get(s.id)
+            return {
+              ...(known ?? {
+                id: s.id,
+                tmdbId: 0,
+                title: s.title,
+                year: s.year,
+                endYear: s.endYear,
+                seasons: seed.seasons.filter((x) => x.number !== 0).length,
+                network: '',
+                genres: s.genres,
+                synopsis: s.synopsis,
+                rating: s.rating,
+                art: { poster: s.art.poster, backdrop: s.art.backdrop },
+                inLibrary: false,
+              }),
+              department: (mine[0] as Credit).department,
+              role: [...new Set(mine.map((c) => c.character ?? c.job))].join(', '),
+            }
+          })
+          .sort((a, b) => b.year - a.year || a.title.localeCompare(b.title))
+        if (p) return { ...p, shows }
+        const first = credited[0]?.mine[0]
+        if (!first) throw new ApiError(404, 'not-found', 'TMDB doesn’t know that person')
+        return {
+          id,
+          name: first.name,
+          photo: first.photo,
+          knownFor: first.department,
+          bio: null,
+          born: null,
+          died: null,
+          credits: [],
+          shows,
+        }
+      },
+    },
+
+    movies: {
+      list: () => state.items.filter((m) => m.type === 'movie'),
+      get: (id: string) => {
+        const m = state.items.find((x) => x.id === id)
+        if (!m) throw new ApiError(404, 'not-found', 'That movie isn’t in the library.')
+        return m
+      },
+      upcoming: (days = 14) =>
+        state.items
+          .filter((m) => {
+            const d = Date.parse(m.releaseDate) - now()
+            return m.monitored && d > 0 && d < days * 86_400_000
+          })
+          .sort((a, b) => Date.parse(a.releaseDate) - Date.parse(b.releaseDate)),
+      recent: (limit = 8) =>
+        state.items
+          .filter((m) => m.status === 'available')
+          .sort((a, b) => Date.parse(b.addedAt) - Date.parse(a.addedAt))
+          .slice(0, limit),
+      discover: (query = '') => {
+        const q = query.trim().toLowerCase()
+        const all = knownTitles(state)
+        if (!q) return all
+        return all.filter(
+          (m) =>
+            m.title.toLowerCase().includes(q) ||
+            m.genres.some((g) => g.toLowerCase().includes(q)) ||
+            m.year.toString().includes(q),
+        )
+      },
+      add: (input: AddMovieInput) => {
+        requireStaff()
+        const existing = state.items.find(
+          (x) =>
+            (input.tmdbId && x.tmdbId === input.tmdbId) ||
+            x.title.toLowerCase() === input.title.toLowerCase(),
+        )
+        if (existing) return existing
+
+        // a title from the metadata cache keeps its media id; anything else takes the next one
+        const meta = state.discoverCatalog.find((d) => d.tmdbId === input.tmdbId)
+        const id =
+          meta?.id ??
+          String(
+            Math.max(0, ...[...state.items, ...state.discoverCatalog].map((x) => Number(x.id))) + 1,
+          )
+        const isUhd = input.qualityProfileId === 'qp-uhd'
+        const newItem: MediaItem = {
+          id,
+          type: 'movie',
+          parentId: null,
+          tmdbId: input.tmdbId ?? 1000000 + state.items.length,
+          title: input.title,
+          originalTitle: null,
+          sortTitle: input.title.toLowerCase().replace(/^(the|a|an)\s+/i, ''),
+          year: input.year,
+          runtimeMinutes: meta?.runtimeMinutes ?? 0,
+          genres: meta?.genres ?? [],
+          synopsis: meta?.synopsis ?? '',
+          rating: meta?.rating ?? 0,
+          status: 'missing',
+          monitored: input.monitored,
+          minimumAvailability: input.minimumAvailability,
+          languageProfileId: input.languageProfileId || 'lp-default',
+          rootFolder:
+            input.rootFolder ||
+            (state.settings.rootFolders.find((f) => f.kind === 'movies')?.path ?? ''),
+          releaseDate: meta?.releaseDate ?? iso(now() - 30 * 86_400_000),
+          addedAt: iso(now()),
+          path: `${input.rootFolder}/${input.title} (${input.year})`,
+          versions: [
+            {
+              id: `${id}-v1`,
+              label: isUhd ? '4K HDR' : '1080p',
+              qualityProfileId: input.qualityProfileId,
+              fileId: null,
+            },
+          ],
+          quality: isUhd ? ['4K', 'HDR'] : ['1080p'],
+          art: meta?.art ?? {
+            poster: posterArt(input.title),
+            backdrop: backdropArt(input.title),
+            still: stillArt(input.title),
+          },
+        }
+
+        state.items.push(newItem)
+
+        if (input.searchNow) {
+          const releases = generateReleases(newItem, state)
+          const chosen = releases.find((r) => r.approved) ?? releases[0]
+          if (chosen) {
+            const torrentId = `t-${id}-${Date.now().toString(36)}`
+            const newTorrent: Torrent = {
+              id: torrentId,
+              name: chosen.title,
+              infoHash: `hash-${id}-${Date.now().toString(36)}`,
+              itemId: id,
+              category: 'movies',
+              size: chosen.size,
+              downloaded: 0,
+              uploaded: 0,
+              progress: 0.05,
+              downRate: 18.5 * MB,
+              upRate: 1.2 * MB,
+              eta: 140,
+              peers: { connected: 34, total: 48 },
+              seeds: { connected: chosen.seeders, total: chosen.seeders + 10 },
+              ratio: 0,
+              state: 'downloading',
+              stateReason: null,
+              indexer: chosen.indexer,
+              quality: chosen.quality,
+              addedAt: iso(now()),
+              completedAt: null,
+              savePath: '/data/downloads/complete/movies',
+              files: [
+                {
+                  path: `${chosen.title}/${chosen.title}.mkv`,
+                  size: chosen.size - 40 * MB,
+                  progress: 0.05,
+                  priority: 'normal',
+                },
+              ],
+              trackers: [
+                {
+                  url: `udp://tracker.${chosen.indexer.toLowerCase()}.example:6969/announce`,
+                  status: 'working',
+                  peers: chosen.seeders,
+                  message: null,
+                },
+              ],
+              seedingRule: { ratio: 2, minutes: 7 * 24 * 60 },
+            }
+            state.torrents.unshift(newTorrent)
+            newItem.status = 'downloading'
+            state.history.unshift({
+              id: `h-grab-${id}-${now()}`,
+              itemId: id,
+              type: 'grabbed',
+              date: iso(now()),
+              sourceTitle: chosen.title,
+              quality: chosen.quality,
+              indexer: chosen.indexer,
+              message: `Grabbed from ${chosen.indexer} (format score ${chosen.formatScore})`,
+            })
+            srv.events.emit({ type: 'torrents.updated' })
+            srv.events.emit({ type: 'queue.updated' })
+            srv.events.emit({ type: 'history.updated' })
+          }
+        }
+
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'item.updated', id })
+        return newItem
+      },
+      update: (id: string, patch: Partial<MediaItem>) => {
+        requireStaff()
+        const m = state.items.find((x) => x.id === id)
+        if (!m) throw new ApiError(404, 'not-found', 'That movie isn’t in the library.')
+        Object.assign(m, patch)
+        srv.events.emit({ type: 'item.updated', id })
+        srv.events.emit({ type: 'movies.updated' })
+        return m
+      },
+      delete: (id: string, opts: { deleteFiles?: boolean } = {}) => {
+        requireStaff()
+        const m = state.items.find((x) => x.id === id)
+        if (!m) return
+        state.items = state.items.filter((x) => x.id !== id)
+        state.torrents = state.torrents.filter((t) => t.itemId !== id)
+        state.subtitles = state.subtitles.filter((s) => s.itemId !== id)
+        if (opts.deleteFiles) {
+          state.files = state.files.filter((f) => f.itemId !== id)
+        }
+        state.history.unshift({
+          id: `h-del-${id}-${now()}`,
+          itemId: id,
+          type: 'deleted',
+          date: iso(now()),
+          sourceTitle: m.title,
+          quality: null,
+          indexer: null,
+          message: opts.deleteFiles
+            ? 'Removed movie and deleted files from disk.'
+            : 'Removed movie from library.',
+        })
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.updated' })
+        srv.events.emit({ type: 'history.updated' })
+      },
+      bulkUpdate: (ids: string[], patch: Partial<MediaItem>) => {
+        requireStaff()
+        for (const id of ids) {
+          const m = state.items.find((x) => x.id === id)
+          if (m) Object.assign(m, patch)
+        }
+        srv.events.emit({ type: 'movies.updated' })
+      },
+      /** Moves each item's first version to the profile; extra versions keep their own. */
+      bulkSetQualityProfile: (ids: string[], profileId: string) => {
+        requireStaff()
+        if (!state.qualityProfiles.some((p) => p.id === profileId))
+          throw new ApiError(404, 'not-found', 'That quality profile doesn’t exist.')
+        for (const id of ids) {
+          const v = state.items.find((x) => x.id === id)?.versions[0]
+          if (v) v.qualityProfileId = profileId
+        }
+        srv.events.emit({ type: 'movies.updated' })
+      },
+      bulkDelete: (ids: string[], deleteFiles = false) => {
+        requireStaff()
+        for (const id of ids) {
+          state.items = state.items.filter((x) => x.id !== id)
+          state.torrents = state.torrents.filter((t) => t.itemId !== id)
+          state.subtitles = state.subtitles.filter((s) => s.itemId !== id)
+          if (deleteFiles) {
+            state.files = state.files.filter((f) => f.itemId !== id)
+          }
+        }
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.updated' })
+      },
+      bulkSearch: (ids: string[]) => {
+        requireStaff()
+        for (const id of ids) {
+          const m = state.items.find((x) => x.id === id)
+          if (!m || m.status === 'available' || m.status === 'downloading') continue
+          const releases = generateReleases(m, state)
+          const chosen = releases.find((r) => r.approved) ?? releases[0]
+          if (chosen) {
+            const torrentId = `t-${id}-${Date.now().toString(36)}`
+            const newTorrent: Torrent = {
+              id: torrentId,
+              name: chosen.title,
+              infoHash: `hash-${id}-${Date.now().toString(36)}`,
+              itemId: id,
+              category: 'movies',
+              size: chosen.size,
+              downloaded: 0,
+              uploaded: 0,
+              progress: 0.08,
+              downRate: 15.2 * MB,
+              upRate: 800_000,
+              eta: 180,
+              peers: { connected: 22, total: 38 },
+              seeds: { connected: chosen.seeders, total: chosen.seeders + 8 },
+              ratio: 0,
+              state: 'downloading',
+              stateReason: null,
+              indexer: chosen.indexer,
+              quality: chosen.quality,
+              addedAt: iso(now()),
+              completedAt: null,
+              savePath: '/data/downloads/complete/movies',
+              files: [
+                {
+                  path: `${chosen.title}/${chosen.title}.mkv`,
+                  size: chosen.size - 40 * MB,
+                  progress: 0.08,
+                  priority: 'normal',
+                },
+              ],
+              trackers: [
+                {
+                  url: `udp://tracker.${chosen.indexer.toLowerCase()}.example:6969/announce`,
+                  status: 'working',
+                  peers: chosen.seeders,
+                  message: null,
+                },
+              ],
+              seedingRule: { ratio: 2, minutes: 7 * 24 * 60 },
+            }
+            state.torrents.unshift(newTorrent)
+            m.status = 'downloading'
+          }
+        }
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.updated' })
+      },
+      files: (id: string) => {
+        return state.files.filter((f) => f.itemId === id)
+      },
+      history: (id: string) => {
+        return state.history.filter((h) => h.itemId === id)
+      },
+      interactiveSearch: (id: string) => {
+        requireStaff()
+        const m = state.items.find((x) => x.id === id)
+        if (!m) throw new ApiError(404, 'not-found', 'Movie not found.')
+        return generateReleases(m, state)
+      },
+      grabRelease: (id: string, releaseGuid: string) => {
+        requireStaff()
+        const m = state.items.find((x) => x.id === id)
+        if (!m) throw new ApiError(404, 'not-found', 'Movie not found.')
+        const releases = generateReleases(m, state)
+        const chosen = releases.find((r) => r.guid === releaseGuid) ?? releases[0]
+        if (!chosen) throw new ApiError(404, 'not-found', 'That release is no longer available.')
+        const torrentId = `t-${id}-${Date.now().toString(36)}`
+        const newTorrent: Torrent = {
+          id: torrentId,
+          name: chosen.title,
+          infoHash: `hash-${id}-${Date.now().toString(36)}`,
+          itemId: id,
+          category: 'movies',
+          size: chosen.size,
+          downloaded: 0,
+          uploaded: 0,
+          progress: 0.02,
+          downRate: 22.4 * MB,
+          upRate: 1.4 * MB,
+          eta: 110,
+          peers: { connected: 28, total: 42 },
+          seeds: { connected: chosen.seeders, total: chosen.seeders + 12 },
+          ratio: 0,
+          state: 'downloading',
+          stateReason: null,
+          indexer: chosen.indexer,
+          quality: chosen.quality,
+          addedAt: iso(now()),
+          completedAt: null,
+          savePath: '/data/downloads/complete/movies',
+          files: [
+            {
+              path: `${chosen.title}/${chosen.title}.mkv`,
+              size: chosen.size - 40 * MB,
+              progress: 0.02,
+              priority: 'normal',
+            },
+          ],
+          trackers: [
+            {
+              url: `udp://tracker.${chosen.indexer.toLowerCase()}.example:6969/announce`,
+              status: 'working',
+              peers: chosen.seeders,
+              message: null,
+            },
+          ],
+          seedingRule: { ratio: 2, minutes: 7 * 24 * 60 },
+        }
+        state.torrents.unshift(newTorrent)
+        m.status = 'downloading'
+        state.history.unshift({
+          id: `h-grab-${id}-${now()}`,
+          itemId: id,
+          type: 'grabbed',
+          date: iso(now()),
+          sourceTitle: chosen.title,
+          quality: chosen.quality,
+          indexer: chosen.indexer,
+          message: `Manually grabbed from ${chosen.indexer}`,
+        })
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.updated' })
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'history.updated' })
+        return newTorrent
+      },
+      qualityProfiles: () => state.qualityProfiles,
+      // How many movies and shows use each profile (stage 6): Settings › Profiles shows it, and a
+      // profile in use can't be deleted.
+      profileUsage: () =>
+        Object.fromEntries(
+          state.qualityProfiles.map((p) => [
+            p.id,
+            {
+              movies: state.items.filter((m) => m.versions.some((v) => v.qualityProfileId === p.id))
+                .length,
+              shows: showAdmin.list().filter((x) => x.qualityProfileId === p.id).length,
+            },
+          ]),
+        ) as Record<string, { movies: number; shows: number }>,
+      customFormats: () => state.customFormats,
+      // The editors (checkpoint 8a's prototype for 8c): save checks the profile or format as
+      // @highsea-tv/quality's schema does, and the first issue comes back as the server's would.
+      saveQualityProfile: (input: QualityProfile) => {
+        requireStaff()
+        const parsed = qualityProfileSchema.safeParse(input)
+        if (!parsed.success)
+          throw new ApiError(
+            400,
+            'invalid',
+            parsed.error.issues[0]?.message ?? 'Check the profile.',
+          )
+        const p = parsed.data
+        if (state.qualityProfiles.some((x) => x.id !== p.id && x.name === p.name))
+          throw new ApiError(409, 'conflict', `There’s a profile called ${p.name} already.`)
+        const i = state.qualityProfiles.findIndex((x) => x.id === p.id)
+        if (i >= 0) state.qualityProfiles[i] = p
+        else state.qualityProfiles.push(p)
+        srv.events.emit({ type: 'settings.updated' })
+        return p
+      },
+      deleteQualityProfile: (id: string) => {
+        requireStaff()
+        // as Radarr and Sonarr: a profile a movie or a show uses can't be deleted
+        const using = state.items.filter((m) => m.versions.some((v) => v.qualityProfileId === id))
+        const shows = showAdmin.list().filter((x) => x.qualityProfileId === id).length
+        if (using.length > 0)
+          throw new ApiError(
+            409,
+            'in-use',
+            `${using.length === 1 ? '1 movie uses' : `${using.length} movies use`} this profile. Move ${using.length === 1 ? 'it' : 'them'} to another first.`,
+          )
+        if (shows > 0)
+          throw new ApiError(
+            409,
+            'in-use',
+            `${shows === 1 ? '1 show uses' : `${shows} shows use`} this profile. Move ${shows === 1 ? 'it' : 'them'} to another first.`,
+          )
+        state.qualityProfiles = state.qualityProfiles.filter((p) => p.id !== id)
+        srv.events.emit({ type: 'settings.updated' })
+      },
+      saveCustomFormat: (input: CustomFormat) => {
+        requireStaff()
+        const parsed = customFormatSchema.safeParse(input)
+        if (!parsed.success)
+          throw new ApiError(400, 'invalid', parsed.error.issues[0]?.message ?? 'Check the format.')
+        const f = parsed.data
+        const i = state.customFormats.findIndex((x) => x.id === f.id)
+        // editing a preset makes it yours: the catalog's updates leave it alone from then on
+        const saved = i >= 0 ? { ...f, source: 'custom' as const } : f
+        if (i >= 0) state.customFormats[i] = saved
+        else state.customFormats.push(saved)
+        srv.events.emit({ type: 'settings.updated' })
+        return saved
+      },
+      deleteCustomFormat: (id: string) => {
+        requireStaff()
+        // and its scores go from every profile, as Radarr removes them
+        state.customFormats = state.customFormats.filter((f) => f.id !== id)
+        for (const p of state.qualityProfiles)
+          p.formats = p.formats.filter((s) => s.formatId !== id)
+        srv.events.emit({ type: 'settings.updated' })
+      },
+      languageProfiles: () => state.languageProfiles,
+      /** The Movies folders (stage 6: each kind has its own). */
+      rootFolders: () =>
+        state.settings.rootFolders.filter((f) => f.kind === 'movies').map((f) => f.path),
+    },
+
+    queue: {
+      list: () => state.torrents.filter((t) => t.itemId && t.state !== 'completed').map(queueItem),
+      pause: (torrentId: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === torrentId)
+        if (t) {
+          t.state = 'paused'
+          t.downRate = 0
+          t.eta = null
+          srv.events.emit({ type: 'torrents.updated' })
+          srv.events.emit({ type: 'queue.updated' })
+        }
+      },
+      resume: (torrentId: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === torrentId)
+        if (t) {
+          t.state = 'downloading'
+          t.downRate = 12 * MB
+          srv.events.emit({ type: 'torrents.updated' })
+          srv.events.emit({ type: 'queue.updated' })
+        }
+      },
+      remove: (torrentId: string, _deleteData = false) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === torrentId)
+        if (t?.itemId) {
+          const m = state.items.find((x) => x.id === t.itemId)
+          if (m && m.status === 'downloading') {
+            m.status = fileFor(state, m) ? 'available' : 'missing'
+          }
+        }
+        state.torrents = state.torrents.filter((x) => x.id !== torrentId)
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.updated' })
+        srv.events.emit({ type: 'movies.updated' })
+      },
+      forceImport: (torrentId: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === torrentId)
+        if (!t?.itemId) return
+        const m = state.items.find((x) => x.id === t.itemId)
+        if (!m) return
+        // remove executable or problematic file
+        t.files = t.files.filter((f) => !/\.(exe|lnk|scr|zipx)$/i.test(f.path))
+        t.state = 'importing'
+        t.stateReason = null
+        importTorrent(state, srv.clock, t, m, now())
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.updated' })
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'history.updated' })
+      },
+      searchAlternative: (torrentId: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === torrentId)
+        if (!t?.itemId) return
+        const m = state.items.find((x) => x.id === t.itemId)
+        if (!m) return
+        // add to blocklist
+        state.blocklist.unshift({
+          id: `bl-${t.id}-${now()}`,
+          itemId: m.id,
+          sourceTitle: t.name,
+          indexer: t.indexer ?? 'Unknown',
+          reason: t.stateReason ?? 'User marked release as bad',
+          date: iso(now()),
+        })
+        state.torrents = state.torrents.filter((x) => x.id !== torrentId)
+        const releases = generateReleases(m, state).filter((r) => r.title !== t.name)
+        const next = releases.find((r) => r.approved) ?? releases[0]
+        if (next) {
+          const newTorrent: Torrent = {
+            id: `t-${m.id}-${Date.now().toString(36)}`,
+            name: next.title,
+            infoHash: `hash-${m.id}-${Date.now().toString(36)}`,
+            itemId: m.id,
+            category: 'movies',
+            size: next.size,
+            downloaded: 0,
+            uploaded: 0,
+            progress: 0.04,
+            downRate: 16.8 * MB,
+            upRate: 1.1 * MB,
+            eta: 130,
+            peers: { connected: 24, total: 36 },
+            seeds: { connected: next.seeders, total: next.seeders + 6 },
+            ratio: 0,
+            state: 'downloading',
+            stateReason: null,
+            indexer: next.indexer,
+            quality: next.quality,
+            addedAt: iso(now()),
+            completedAt: null,
+            savePath: '/data/downloads/complete/movies',
+            files: [
+              {
+                path: `${next.title}/${next.title}.mkv`,
+                size: next.size - 40 * MB,
+                progress: 0.04,
+                priority: 'normal',
+              },
+            ],
+            trackers: [
+              {
+                url: `udp://tracker.${next.indexer.toLowerCase()}.example:6969/announce`,
+                status: 'working',
+                peers: next.seeders,
+                message: null,
+              },
+            ],
+            seedingRule: { ratio: 2, minutes: 7 * 24 * 60 },
+          }
+          state.torrents.unshift(newTorrent)
+        }
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.updated' })
+        srv.events.emit({ type: 'history.updated' })
+      },
+    },
+
+    history: {
+      list: () => state.history,
+      clear: () => {
+        requireStaff()
+        state.history = []
+        srv.events.emit({ type: 'history.updated' })
+      },
+    },
+
+    blocklist: {
+      list: () => state.blocklist,
+      remove: (id: string) => {
+        requireStaff()
+        state.blocklist = state.blocklist.filter((b) => b.id !== id)
+        srv.events.emit({ type: 'history.updated' })
+      },
+    },
+
+    downloads: {
+      list: () => {
+        requireStaff()
+        return state.torrents
+      },
+      get: (id: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === id)
+        if (!t) throw new ApiError(404, 'not-found', 'Torrent not found.')
+        return t
+      },
+      add: (input: AddTorrentInput) => {
+        requireStaff()
+        const name = input.urlOrMagnet.startsWith('magnet:')
+          ? decodeURIComponent(
+              input.urlOrMagnet.split('&dn=')[1]?.split('&')[0] ?? 'Custom.Magnet.Release',
+            )
+          : (input.urlOrMagnet.split('/').pop() ?? 'Custom.Torrent.Release')
+        const newTorrent: Torrent = {
+          id: `t-manual-${Date.now().toString(36)}`,
+          name,
+          infoHash: `hash-${Date.now().toString(36)}`,
+          itemId: null,
+          category: input.category || 'movies',
+          size: 4.8 * GB,
+          downloaded: 0,
+          uploaded: 0,
+          progress: 0.01,
+          downRate: input.startImmediately !== false ? 14.5 * MB : 0,
+          upRate: input.startImmediately !== false ? 800_000 : 0,
+          eta: input.startImmediately !== false ? 320 : null,
+          peers: { connected: 16, total: 30 },
+          seeds: { connected: 24, total: 32 },
+          ratio: 0,
+          state: input.startImmediately !== false ? 'downloading' : 'paused',
+          stateReason: null,
+          indexer: 'Manual',
+          quality: 'WEB 1080p',
+          addedAt: iso(now()),
+          completedAt: null,
+          savePath: input.savePath || '/data/downloads/complete/movies',
+          files: [
+            {
+              path: `${name}/${name}.mkv`,
+              size: 4.76 * GB,
+              progress: 0.01,
+              priority: 'normal',
+            },
+          ],
+          trackers: [
+            {
+              url: 'udp://tracker.open.example:6969/announce',
+              status: 'working',
+              peers: 24,
+              message: null,
+            },
+          ],
+          seedingRule: { ratio: 2, minutes: 7 * 24 * 60 },
+        }
+        state.torrents.unshift(newTorrent)
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.updated' })
+        return newTorrent
+      },
+      delete: (id: string, _deleteFiles = false) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === id)
+        if (t?.itemId) {
+          const m = state.items.find((x) => x.id === t.itemId)
+          if (m && m.status === 'downloading') {
+            m.status = fileFor(state, m) ? 'available' : 'missing'
+          }
+        }
+        state.torrents = state.torrents.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.updated' })
+        srv.events.emit({ type: 'movies.updated' })
+      },
+      pause: (id: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === id)
+        if (t) {
+          t.state = 'paused'
+          t.downRate = 0
+          t.eta = null
+          srv.events.emit({ type: 'torrents.updated' })
+          srv.events.emit({ type: 'queue.updated' })
+        }
+      },
+      resume: (id: string) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === id)
+        if (t) {
+          t.state = 'downloading'
+          t.downRate = 14 * MB
+          srv.events.emit({ type: 'torrents.updated' })
+          srv.events.emit({ type: 'queue.updated' })
+        }
+      },
+      pauseAll: () => {
+        requireStaff()
+        for (const t of state.torrents)
+          if (t.state === 'downloading' || t.state === 'queued' || t.state === 'stalled') {
+            t.state = 'paused'
+            t.downRate = 0
+            t.eta = null
+          }
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.updated' })
+      },
+      resumeAll: () => {
+        requireStaff()
+        for (const t of state.torrents) if (t.state === 'paused') t.state = 'queued'
+        srv.events.emit({ type: 'torrents.updated' })
+        srv.events.emit({ type: 'queue.updated' })
+      },
+      setFilePriority: (
+        torrentId: string,
+        filePath: string,
+        priority: 'skip' | 'normal' | 'high',
+      ) => {
+        requireStaff()
+        const t = state.torrents.find((x) => x.id === torrentId)
+        const f = t?.files.find((file) => file.path === filePath)
+        if (f) {
+          f.priority = priority
+          srv.events.emit({ type: 'torrents.updated' })
+        }
+      },
+      limits: () => {
+        requireStaff()
+        const v = currentVpn()
+        // the VPN line on Downloads reads the VPN's status (docs/product/vpn.md)
+        return {
+          ...state.torrentLimits,
+          vpnConnected: v.state === 'connected',
+          vpnInterface: v.provider ?? 'No VPN',
+          vpnIp: v.exitIp ?? '',
+        }
+      },
+      setLimits: (patch: Partial<TorrentLimits>) => {
+        requireStaff()
+        Object.assign(state.torrentLimits, patch)
+        srv.events.emit({ type: 'torrents.updated' })
+        return state.torrentLimits
+      },
+    },
+
+    subtitles: {
+      stats: (): SubtitleStats => {
+        requireStaff()
+        const synced = state.subtitles.filter((s) => s.sync.status === 'synced')
+        const waiting = state.subtitles.filter(
+          (s) =>
+            s.sync.status === 'syncing' ||
+            s.sync.status === 'queued' ||
+            s.sync.status === 'unsynced',
+        ).length
+        const avg = (xs: number[]) => (xs.length ? xs.reduce((a, b) => a + b, 0) / xs.length : 0)
+        return {
+          syncedToday: Math.min(synced.length, 12),
+          waiting,
+          avgOffsetMs: Math.round(avg(synced.map((s) => Math.abs(s.sync.offsetMs)))),
+          avgConfidence: avg(synced.map((s) => s.sync.confidence ?? 0)),
+        }
+      },
+      languages: () => state.languages,
+      wanted: () => {
+        requireStaff()
+        return wantedSubtitles()
+      },
+      /** Staff: episodes missing a language, beside the films (stage 6), soonest aired last. */
+      wantedEpisodes: () => {
+        requireStaff()
+        return episodeSubtitles().flatMap((w) => {
+          const found = showAdmin.episode(w.id)
+          return found ? [{ ...found, missingLanguages: w.missing }] : []
+        })
+      },
+      /** Staff: searches for one episode's missing languages; what's found leaves the list. */
+      searchEpisode: (id: string) => {
+        requireStaff()
+        const before = episodeSubtitles()
+        const after = before.filter((w) => w.id !== id)
+        episodeSubtitlesOn.set(srv, after)
+        if (after.length === before.length)
+          throw new ApiError(404, 'not-found', 'That episode isn’t missing subtitles.')
+        srv.events.emit({ type: 'subtitles.updated' })
+      },
+      forItem: (id: string) => {
+        return state.subtitles.filter((s) => s.itemId === id)
+      },
+      search: (id: string, language = 'en') => {
+        requireStaff()
+        const m = state.items.find((x) => x.id === id)
+        if (!m) throw new ApiError(404, 'not-found', 'Movie not found.')
+        return generateSubtitleResults(m, language)
+      },
+      download: (id: string, result: SubtitleSearchResult) => {
+        requireStaff()
+        const m = state.items.find((x) => x.id === id)
+        if (!m) throw new ApiError(404, 'not-found', 'Movie not found.')
+        const f = fileFor(state, m)
+        const newTrack: SubtitleTrack = {
+          id: `st-${id}-${result.language}-${Date.now().toString(36)}`,
+          itemId: id,
+          fileId: f?.id ?? `f-${id}-v1`,
+          language: result.language,
+          kind: 'external',
+          format: result.format,
+          forced: result.forced,
+          hi: result.hi,
+          provider: result.provider,
+          score: result.score,
+          sync: { status: 'synced', confidence: 0.96, offsetMs: -120 },
+          path: `${m.path}/${m.title} (${m.year}).${result.language}.${result.format}`,
+        }
+        state.subtitles.push(newTrack)
+        state.history.unshift({
+          id: `h-sub-${id}-${now()}`,
+          itemId: id,
+          type: 'subtitle-downloaded',
+          date: iso(now()),
+          sourceTitle: result.releaseName,
+          quality: null,
+          indexer: result.provider,
+          message: `Downloaded ${result.language.toUpperCase()} subtitles from ${result.provider} (score ${result.score})`,
+        })
+        srv.events.emit({ type: 'subtitles.updated', itemId: id })
+        srv.events.emit({ type: 'history.updated' })
+        return newTrack
+      },
+      /** Re-sync runs in the background, as the server's job does: Syncing, then the result. */
+      sync: (trackId: string) => {
+        requireStaff()
+        const track = state.subtitles.find((s) => s.id === trackId)
+        if (!track) throw new ApiError(404, 'not-found', 'Subtitle track not found.')
+        track.sync = { status: 'syncing', confidence: null, offsetMs: 0 }
+        state.pipeline.push({
+          itemId: track.itemId,
+          torrentId: '',
+          stage: 'subtitle-sync',
+          until: now() + SUBTITLE_SYNC_SECONDS * 1000,
+        })
+        srv.events.emit({ type: 'subtitles.updated', itemId: track.itemId })
+        return track
+      },
+      setOffset: (trackId: string, offsetMs: number) => {
+        requireStaff()
+        const track = state.subtitles.find((s) => s.id === trackId)
+        if (!track) throw new ApiError(404, 'not-found', 'Subtitle track not found.')
+        track.sync.offsetMs = offsetMs
+        srv.events.emit({ type: 'subtitles.updated', itemId: track.itemId })
+        return track
+      },
+      delete: (trackId: string) => {
+        requireStaff()
+        const track = state.subtitles.find((s) => s.id === trackId)
+        if (!track) return
+        state.subtitles = state.subtitles.filter((s) => s.id !== trackId)
+        srv.events.emit({ type: 'subtitles.updated', itemId: track.itemId })
+      },
+      providers: () => {
+        requireStaff()
+        return state.providers ?? []
+      },
+      settings: (): SubtitleSettings => {
+        requireStaff()
+        return state.subtitleSettings
+      },
+      saveSettings: (patch: Partial<SubtitleSettings>) => {
+        requireStaff()
+        Object.assign(state.subtitleSettings, patch)
+        srv.events.emit({ type: 'subtitles.updated' })
+        return state.subtitleSettings
+      },
+      toggleProvider: (id: string, enabled: boolean) => {
+        requireStaff()
+        const p = state.providers.find((x) => x.id === id)
+        if (!p) throw new ApiError(404, 'not-found', 'Provider not found.')
+        p.enabled = enabled
+        srv.events.emit({ type: 'subtitles.updated' })
+        return p
+      },
+      languageProfiles: () => state.languageProfiles,
+      saveLanguageProfile: (profile: LanguageProfile) => {
+        requireStaff()
+        const existingIdx = state.languageProfiles.findIndex((lp) => lp.id === profile.id)
+        if (existingIdx >= 0) {
+          state.languageProfiles[existingIdx] = profile
+        } else {
+          state.languageProfiles.push(profile)
+        }
+        srv.events.emit({ type: 'subtitles.updated' })
+        return profile
+      },
+      deleteLanguageProfile: (id: string) => {
+        requireStaff()
+        state.languageProfiles = state.languageProfiles.filter((lp) => lp.id !== id)
+        srv.events.emit({ type: 'subtitles.updated' })
+      },
+      searchAllMissing: () => {
+        requireStaff()
+        episodeSubtitlesOn.set(srv, [])
+        for (const { movie: m, missingLanguages } of wantedSubtitles()) {
+          const f = fileFor(state, m)
+          for (const language of missingLanguages)
+            state.subtitles.push({
+              id: `st-${m.id}-${language}-auto`,
+              itemId: m.id,
+              fileId: f?.id ?? `f-${m.id}-v1`,
+              language,
+              kind: 'external',
+              format: 'srt',
+              forced: false,
+              hi: false,
+              provider: 'OpenSubtitles.com',
+              score: 95,
+              sync: { status: 'synced', confidence: 0.94, offsetMs: -80 },
+              path: `${m.path}/${m.title} (${m.year}).${language}.srt`,
+            })
+        }
+        srv.events.emit({ type: 'subtitles.updated' })
+      },
+    },
+
+    announcements: {
+      /** The live announcements this user should see, not yet dismissed or acknowledged. */
+      /** For one client app; the admin by default. */
+      active: (client: ClientType = 'admin') => {
+        const seen = state.seen[me().id] ?? []
+        return state.announcements
+          .filter((a) => announcementStatus(a) === 'live' && visible(a, client))
+          .map((a) => ({ ...a, seen: seen.includes(a.id) }))
+      },
+      dismiss: (id: string) => {
+        const u = me().id
+        state.seen[u] = [...(state.seen[u] ?? []), id]
+        srv.events.emit({ type: 'announcements.updated' })
+      },
+    },
+
+    curation: {
+      /** Every announcement, newest first within live, scheduled, drafts, then ended. */
+      announcements: (): AnnouncementSummary[] => {
+        requireStaff()
+        const order: CurationStatus[] = ['live', 'scheduled', 'draft', 'ended']
+        return state.announcements
+          .map((a) => {
+            const audience = audienceOf(a.audience)
+            return {
+              ...a,
+              status: announcementStatus(a),
+              audienceSize: audience.length,
+              seenBy: audience.filter((u) => state.seen[u.id]?.includes(a.id)).length,
+            }
+          })
+          .sort((a, b) => order.indexOf(a.status) - order.indexOf(b.status))
+      },
+      announcement: (id: string): Announcement => {
+        requireStaff()
+        const a = state.announcements.find((x) => x.id === id)
+        if (!a) throw new ApiError(404, 'not-found', 'There’s no announcement with that id.')
+        return { ...a, status: announcementStatus(a) }
+      },
+      /** Saves a new or edited announcement. `status: 'draft'` keeps it off every screen. */
+      saveAnnouncement: (a: Announcement): Announcement => {
+        requireStaff()
+        if (!a.title.trim()) throw new ApiError(400, 'invalid', 'Give the announcement a title.')
+        if (!a.placements.length)
+          throw new ApiError(400, 'invalid', 'Choose at least one place to show it.')
+        if (a.schedule.end && Date.parse(a.schedule.end) <= Date.parse(a.schedule.start))
+          throw new ApiError(400, 'invalid', 'The end has to come after the start.')
+        const saved = { ...a, seen: false, status: announcementStatus(a) }
+        const i = state.announcements.findIndex((x) => x.id === a.id)
+        if (i >= 0) state.announcements[i] = saved
+        else state.announcements.unshift(saved)
+        srv.events.emit({ type: 'announcements.updated' })
+        return saved
+      },
+      /** Ends it now: it leaves every screen, and stays in the list as ended. */
+      endAnnouncement: (id: string) => {
+        requireStaff()
+        const a = state.announcements.find((x) => x.id === id)
+        if (!a) return
+        a.schedule = { ...a.schedule, end: iso(now()) }
+        a.status = 'ended'
+        srv.events.emit({ type: 'announcements.updated' })
+      },
+      deleteAnnouncement: (id: string) => {
+        requireStaff()
+        state.announcements = state.announcements.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'announcements.updated' })
+      },
+
+      /** The featured sections in the home screen's order, with what each resolves to now. */
+      sections: (): SectionSummary[] => {
+        requireStaff()
+        return [...state.featured]
+          .sort((a, b) => a.order - b.order)
+          .map((f) => {
+            const items = sectionItems(f)
+            return {
+              ...f,
+              status: curationStatus(f.schedule, now()) as SectionSummary['status'],
+              itemCount: items.length,
+              sample: items.slice(0, 6).map((m) => ({
+                id: m.id,
+                title: m.title,
+                poster: m.art.poster,
+              })),
+            }
+          })
+      },
+      section: (id: string): FeaturedSection => {
+        requireStaff()
+        const f = state.featured.find((x) => x.id === id)
+        if (!f) throw new ApiError(404, 'not-found', 'There’s no featured section with that id.')
+        return f
+      },
+      /** What rule sources can pick from: the library's genres and the known collections. */
+      ruleOptions: () => {
+        requireStaff()
+        return {
+          genres: [...new Set(watchable().flatMap((m) => m.genres))].sort(),
+          collections: collectionRefs(),
+          smart: state.collections.map((c) => ({ id: c.id, name: c.name })),
+        }
+      },
+      /** The titles a source picks right now (the composer's list). */
+      resolve: (f: FeaturedSection): ClientItem[] => {
+        requireStaff()
+        return sectionItems(f)
+      },
+      saveSection: (f: FeaturedSection): FeaturedSection => {
+        requireStaff()
+        if (!f.title.trim()) throw new ApiError(400, 'invalid', 'Give the section a title.')
+        if (f.source.kind === 'manual' && !f.source.itemIds.length)
+          throw new ApiError(400, 'invalid', 'Add at least one title.')
+        const i = state.featured.findIndex((x) => x.id === f.id)
+        if (i >= 0) state.featured[i] = f
+        else state.featured.push({ ...f, order: state.featured.length })
+        srv.events.emit({ type: 'curation.updated' })
+        return f
+      },
+      deleteSection: (id: string) => {
+        requireStaff()
+        state.featured = state.featured
+          .filter((x) => x.id !== id)
+          .sort((a, b) => a.order - b.order)
+          .map((f, order) => ({ ...f, order }))
+        srv.events.emit({ type: 'curation.updated' })
+      },
+      /** Puts the sections in this order (ids); any left out keep their place after them. */
+      reorderSections: (ids: string[]) => {
+        requireStaff()
+        const rank = (id: string) => {
+          const i = ids.indexOf(id)
+          return i < 0 ? ids.length + 1 : i
+        }
+        state.featured = [...state.featured]
+          .sort((a, b) => rank(a.id) - rank(b.id) || a.order - b.order)
+          .map((x, order) => ({ ...x, order }))
+        srv.events.emit({ type: 'curation.updated' })
+      },
+      /** The saved curation, for a preview to merge a draft into. */
+      snapshot: (): CurationPreview => {
+        requireStaff()
+        return {
+          announcements: state.announcements,
+          featured: state.featured,
+          collections: state.collections,
+        }
+      },
+    },
+
+    collections: {
+      /** Every collection, in the owner's order, with what it holds now. */
+      list: (): CollectionSummary[] => {
+        requireStaff()
+        const infos = smartFields()
+        return state.collections.map((c) => {
+          const facts = smartFacts(c)
+          const shows = showsOfCollection(c)
+          return {
+            ...c,
+            matched: facts.length,
+            playable: facts.filter((f) => f.playable).length,
+            showsHere: shows.length,
+            showsPlayable: shows.filter((x) => x.playable).length,
+            // films first, then shows, as the apps draw it
+            mosaic: [...facts.map((f) => f.item.art.poster), ...shows.map((x) => x.poster)].slice(
+              0,
+              4,
+            ),
+            words: describe(c.rules, infos),
+          }
+        })
+      },
+      get: (id: string): SmartCollection => {
+        requireStaff()
+        const c = state.collections.find((x) => x.id === id)
+        if (!c) throw new ApiError(404, 'not-found', 'There’s no collection with that id.')
+        return c
+      },
+      /** The fields the rule builder offers; `except` leaves a collection out of its own list. */
+      fields: (except?: string): RuleFieldInfo[] => {
+        requireStaff()
+        return smartFields(except)
+      },
+      /** What a draft holds right now: both counts, its titles in order, its rules in words. */
+      preview: (c: SmartCollection): CollectionPreview => {
+        requireStaff()
+        return {
+          ...preview(state, c, now(), [...state.collections.filter((x) => x.id !== c.id), c]),
+          shows: showsOfCollection(c),
+        }
+      },
+      save: (c: SmartCollection): SmartCollection => {
+        requireStaff()
+        if (!c.name.trim()) throw new ApiError(400, 'invalid', 'Give the collection a name.')
+        if (!c.rules && !c.include.length && !c.shows.length)
+          throw new ApiError(400, 'invalid', 'Add a rule, or pick at least one film or show.')
+        if (c.rules && namesItself(c.rules, c.id))
+          throw new ApiError(400, 'invalid', 'A collection can’t be one of its own rules.')
+        if (
+          c.rules?.rules.some((r) => r.kind === 'group' && r.rules.some((x) => x.kind === 'group'))
+        )
+          throw new ApiError(400, 'invalid', 'Groups go one level deep.')
+        const saved = { ...c, name: c.name.trim(), updatedAt: iso(now()) }
+        const i = state.collections.findIndex((x) => x.id === c.id)
+        if (i >= 0) state.collections[i] = saved
+        else state.collections.push(saved)
+        srv.events.emit({ type: 'collections.updated' })
+        // a featured section may draw on it
+        srv.events.emit({ type: 'curation.updated' })
+        return saved
+      },
+      remove: (id: string) => {
+        requireStaff()
+        const c = state.collections.find((x) => x.id === id)
+        if (!c) return
+        const feeds = state.featured.find(
+          (f) =>
+            f.source.kind === 'rule' && f.source.rule === 'collection' && f.source.value === id,
+        )
+        if (feeds)
+          throw new ApiError(
+            409,
+            'in-use',
+            `The featured section “${feeds.title}” draws on it. Choose another source for the section first.`,
+          )
+        state.collections = state.collections.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'collections.updated' })
+      },
+    },
+
+    connect: {
+      /** Servers this device has signed in to, for the switcher; this one by its current name. */
+      known: () =>
+        state.known.map((k) => (k.id === state.server.id ? { ...k, name: state.server.name } : k)),
+      /** LAN discovery (UDP broadcast and mDNS); answers arrive over a second or two. */
+      discover: () =>
+        state.discovered.map((d) =>
+          d.id === state.server.id ? { ...d, name: state.server.name } : d,
+        ),
+      /** What an address answers before signing in. */
+      probe: (address: string): ProbeResult => {
+        const a = address
+          .trim()
+          .toLowerCase()
+          .replace(/^https?:\/\//, '')
+          .replace(/\/$/, '')
+        if (!a || !/^[\w.-]+(:\d+)?$/.test(a))
+          throw new ApiError(
+            400,
+            'invalid-address',
+            'That doesn’t look like an address. Try harbor.example.net or 192.168.1.20.',
+          )
+        const harbor = state.known.find((k) => k.id === 'srv-harbor')
+        const local = state.discovered.find((d) => d.address === a || d.address.split(':')[0] === a)
+        if (local)
+          return {
+            id: local.id,
+            name: local.name,
+            version: local.version,
+            setupComplete: true,
+            auth: { local: true, oidc: null },
+            address: local.address,
+            reachability: 'local',
+          }
+        if (a.includes('harbor') && harbor)
+          return {
+            id: harbor.id,
+            name: harbor.name,
+            version: state.server.version,
+            setupComplete: true,
+            auth: { local: true, oidc: { name: 'Authentik' } },
+            address: a,
+            reachability: 'remote',
+          }
+        throw new ApiError(
+          504,
+          'unreachable',
+          `Nothing answered at ${a}. Check the address, and that the server is running and reachable from here.`,
+        )
+      },
+      /** Sign-in by code: the TV shows it, a signed-in phone or computer approves it. */
+      startPairing: (): Pairing => ({
+        code: waiting.code,
+        url: 'harbor.example.net/link',
+        expiresAt: iso(now() + PAIRING_TTL),
+      }),
+      forget: (id: string) => {
+        state.known = state.known.filter((k) => k.id !== id)
+      },
+    },
+
+    home: {
+      /** The home screen: featured sections in order, with Continue watching after the hero. */
+      sections: (client: ClientType = 'web'): HomeSection[] => {
+        const live = state.featured
+          .filter((f) => curationStatus(f.schedule, now()) === 'live' && visible(f, client))
+          .sort((a, b) => a.order - b.order)
+          .map(
+            (f): HomeSection => ({
+              id: f.id,
+              title: f.title,
+              suffix: f.tagline,
+              layout: f.layout,
+              items: sectionItems(f),
+            }),
+          )
+          .filter((x) => x.items.length > 0)
+        const u = me().id
+        const seeds = clientShows()
+        // newest first: films part way, and each show once, at the episode it's on
+        const continuing: ClientItem[] = []
+        const nextUp: ClientItem[] = []
+        const seen = new Set<string>()
+        for (const w of state.watch
+          .filter((x) => x.userId === u)
+          .sort((a, b) => Date.parse(b.updatedAt) - Date.parse(a.updatedAt))) {
+          const found = episodeSeed(w.itemId)
+          if (!found) {
+            const m = state.items.find((x) => x.id === w.itemId)
+            if (!m || !playable(m) || dismissed.has(`${u}:${m.id}`)) continue
+            const item = clientItem(m)
+            if (item.progress !== null) continuing.push(item)
+            continue
+          }
+          const id = found.show.show.id
+          if (seen.has(id) || dismissed.has(`${u}:${id}`)) continue
+          seen.add(id)
+          const next = showOf(found.show).next
+          const e =
+            next &&
+            found.show.seasons.flatMap((x) => x.episodes).find((x) => x.id === next.episode.id)
+          if (!next || !e) continue
+          if (next.kind === 'resume') continuing.push(episodeItem(found.show, e))
+          else if (next.kind === 'next') nextUp.push(episodeItem(found.show, e))
+        }
+        // still airing, watched before: the newest episode, when it isn't watched or already on a card
+        const fresh = seeds
+          .filter((x) => x.show.endYear === null && seen.has(x.show.id))
+          .flatMap((x) => {
+            const newest = x.seasons
+              .filter((season) => season.number !== 0)
+              .flatMap((season) => season.episodes)
+              .sort((a, b) => b.aired.localeCompare(a.aired))[0]
+            if (!newest || episodeOf(newest).watched) return []
+            const item = episodeItem(x, newest)
+            return [...continuing, ...nextUp].some((c) => c.id === item.id) ? [] : [item]
+          })
+        const row = (
+          id: string,
+          title: string,
+          layout: 'continue' | 'episodes',
+          items: ClientItem[],
+        ): HomeSection[] => (items.length ? [{ id, title, suffix: null, layout, items }] : [])
+        const watching = [
+          ...row('continue', 'Continue watching', 'continue', continuing),
+          ...row('next-up', 'Next up', 'episodes', nextUp),
+        ]
+        const added = [...seeds]
+          .sort((a, b) => b.show.addedAt.localeCompare(a.show.addedAt))
+          .slice(0, 12)
+          .map(showOf)
+        const music = library()
+        const recent = recentlyPlayed().flatMap((x): HomeMusic[] => {
+          if ('album' in x) {
+            const album = music.albums.find((a) => a.id === x.album)
+            return album ? [{ kind: 'album', album }] : []
+          }
+          const artist = music.artists.find((a) => a.id === x.artist)
+          return artist ? [{ kind: 'artist', artist }] : []
+        })
+        const later: HomeSection[] = [
+          ...row('new-episodes', 'New episodes', 'episodes', fresh),
+          ...(added.length
+            ? [
+                {
+                  id: 'recent-shows',
+                  title: 'Recently added shows',
+                  suffix: null,
+                  layout: 'shows' as const,
+                  items: added,
+                },
+              ]
+            : []),
+          ...(recent.length
+            ? [
+                {
+                  id: 'recent-music',
+                  title: 'Recently played',
+                  suffix: null,
+                  layout: 'music' as const,
+                  items: recent,
+                },
+              ]
+            : []),
+        ]
+        const [first, ...rest] = live
+        const all =
+          first?.layout === 'hero'
+            ? [first, ...watching, ...rest, ...later]
+            : [...watching, ...live, ...later]
+        // the person's own order and hidden rows; the hero stays on top
+        const mine = state.homeLayouts[me().id]
+        if (!mine) return all
+        const shown = all.filter((s) => !mine.hidden.includes(s.id))
+        const pinned = shown.filter((s) => s.layout === 'hero')
+        const rows = shown
+          .filter((s) => s.layout !== 'hero')
+          .sort((a, b) => {
+            const i = mine.order.indexOf(a.id)
+            const j = mine.order.indexOf(b.id)
+            return (i < 0 ? 999 : i) - (j < 0 ? 999 : j)
+          })
+        return [...pinned, ...rows]
+      },
+      /** The rows this person can arrange: everything below the hero, in their order. */
+      layout: (): HomeLayout & { rows: { id: string; title: string }[] } => {
+        const mine = state.homeLayouts[me().id] ?? { order: [], hidden: [] }
+        const rows = [
+          { id: 'continue', title: 'Continue watching' },
+          { id: 'next-up', title: 'Next up' },
+          ...[...state.featured]
+            .filter((f) => f.layout !== 'hero' && curationStatus(f.schedule, now()) === 'live')
+            .sort((a, b) => a.order - b.order)
+            .map((f) => ({ id: f.id, title: f.title })),
+          { id: 'new-episodes', title: 'New episodes' },
+          { id: 'recent-shows', title: 'Recently added shows' },
+          { id: 'recent-music', title: 'Recently played' },
+        ]
+        const pos = (id: string) => {
+          const i = mine.order.indexOf(id)
+          return i < 0 ? 999 + rows.findIndex((r) => r.id === id) : i
+        }
+        return { ...mine, rows: rows.sort((a, b) => pos(a.id) - pos(b.id)) }
+      },
+      saveLayout: (layout: HomeLayout) => {
+        state.homeLayouts[me().id] = layout
+        srv.events.emit({ type: 'curation.updated' })
+        return layout
+      },
+    },
+
+    library: {
+      /** Everything the household can watch. */
+      list: () => (sees('movies') ? watchable() : []).map((m) => clientItem(m)),
+      /**
+       * Everything here by name: movies by name, genre or person; shows by name or genre, and
+       * episodes by title; the people credited on a film or a show; collections by name or a
+       * part's name; artists, albums and songs by name. A kind whose names start with the query
+       * (at a word) ranks first, then one whose names contain it, then the rest, in the order
+       * below.
+       */
+      search: (query: string): SearchResults => {
+        const q = query.trim().toLowerCase()
+        if (!q) return { sections: [] }
+        const has = (text: string) => text.toLowerCase().includes(q)
+        const people = new Map<string, SearchPerson>()
+        const credit = (c: Credit, kind: 'films' | 'shows') => {
+          if (!has(c.name)) return
+          const p = people.get(c.personId) ?? {
+            id: c.personId,
+            name: c.name,
+            photo: c.photo,
+            films: 0,
+            shows: 0,
+          }
+          people.set(c.personId, { ...p, [kind]: p[kind] + 1 })
+        }
+        const titles = (sees('movies') ? watchable() : []).filter((m) => {
+          const meta = movieMetadata(state, m.id, now())
+          const credits = [...(meta?.cast ?? []), ...(meta?.crew ?? [])]
+          // each person once per film, however many roles they had
+          for (const c of new Map(credits.map((c) => [c.personId, c])).values()) credit(c, 'films')
+          return (
+            has(m.title) ||
+            m.genres.some((g) => g.toLowerCase().startsWith(q)) ||
+            credits.some((c) => has(c.name))
+          )
+        })
+        // titles whose name matches come first
+        const named = (m: MediaItem) => (has(m.title) ? 0 : 1)
+        const shows = clientShows().filter((x) => {
+          const credits = [...x.cast, ...x.creators, ...x.crew]
+          for (const c of new Map(credits.map((c) => [c.personId, c])).values()) credit(c, 'shows')
+          return has(x.show.title) || x.show.genres.some((g) => g.toLowerCase().startsWith(q))
+        })
+        const episodes = clientShows()
+          .flatMap((x) =>
+            x.seasons.flatMap((season) =>
+              season.episodes
+                .filter((e) => has(e.title))
+                .map((e) => ({
+                  id: e.id,
+                  show: { id: x.show.id, title: x.show.title },
+                  code: episodeCode(e),
+                  title: e.title,
+                  still: e.still,
+                })),
+            ),
+          )
+          .slice(0, 12)
+        const collections = clientCollections().filter(
+          ({ collection: c, items }) => has(c.name) || items.some((m) => has(m.title)),
+        )
+        const music = library()
+        const songs = music.albums
+          .flatMap((album) =>
+            (albumDetail(music, album.id)?.songs ?? [])
+              .filter((x) => has(x.title))
+              .map((x) => ({ ...x, album })),
+          )
+          .slice(0, 12)
+        const sections: SearchSection[] = [
+          {
+            kind: 'movies',
+            items: titles.sort((a, b) => named(a) - named(b)).map((m) => clientItem(m)),
+          },
+          {
+            kind: 'shows',
+            items: shows
+              .map(showOf)
+              .sort((a, b) => (has(a.title) ? 0 : 1) - (has(b.title) ? 0 : 1)),
+          },
+          { kind: 'episodes', items: episodes },
+          {
+            kind: 'people',
+            items: [...people.values()]
+              .sort((a, b) => b.films + b.shows - (a.films + a.shows))
+              .slice(0, 8),
+          },
+          { kind: 'collections', items: collections.map((c) => c.collection) },
+          {
+            kind: 'artists',
+            items: music.artists.filter((a) => has(a.name) || a.genres.some((g) => has(g))),
+          },
+          {
+            kind: 'albums',
+            items: music.albums.filter((a) => has(a.title) || has(a.artist.name)),
+          },
+          { kind: 'songs', items: songs },
+        ]
+        const nameOf = (x: { title: string } | { name: string }) =>
+          ('title' in x ? x.title : x.name).toLowerCase()
+        const rank = (section: SearchSection) => {
+          const names = (section.items as ({ title: string } | { name: string })[]).map(nameOf)
+          if (names.some((n) => n.split(/[\s:–-]+/).some((w) => w.startsWith(q)))) return 0
+          if (names.some((n) => n.includes(q))) return 1
+          return 2
+        }
+        return {
+          sections: sections
+            .filter((x) => x.items.length > 0)
+            .map((x, i) => ({ x, i, r: rank(x) }))
+            .sort((a, b) => a.r - b.r || a.i - b.i)
+            .map(({ x }) => x),
+        }
+      },
+      /** Collections on this server for this app: smart ones first, then TMDB's. */
+      collections: (client: ClientType = 'web'): ClientCollection[] =>
+        clientCollections(client).map((c) => c.collection),
+      /**
+       * A collection's titles on this server: a smart one's in its order, TMDB's oldest first, and
+       * its shows.
+       */
+      collection: (id: string, client: ClientType = 'web') => {
+        const found = clientCollections(client).find((c) => c.collection.id === id)
+        if (!found) throw new ApiError(404, 'not-found', 'That collection isn’t on this server.')
+        return found
+      },
+      /** Every show the household can watch, with this person's place in each. */
+      shows: (): ClientShow[] => clientShows().map(showOf),
+      /** A show with its seasons (specials last), its people, and shows that share a genre. */
+      show: (id: string): ClientShowDetail => {
+        const s = showSeed(id)
+        const show = showOf(s)
+        const prefs = state.prefs[`${me().id}:${id}`] ?? {}
+        const seasons = [...s.seasons].sort(
+          (a, b) => (a.number === 0 ? 1 : 0) - (b.number === 0 ? 1 : 0) || a.number - b.number,
+        )
+        return {
+          show,
+          seasons: seasons.map((x) => ({ ...x, episodes: x.episodes.map(episodeOf) })),
+          cast: s.cast,
+          creators: s.creators,
+          crew: s.crew,
+          related: clientShows()
+            .filter((x) => x.show.id !== id && x.show.genres.some((g) => show.genres.includes(g)))
+            .map((x) => ({ x, n: x.show.genres.filter((g) => show.genres.includes(g)).length }))
+            .sort((a, b) => b.n - a.n || b.x.show.rating - a.x.show.rating)
+            .slice(0, 12)
+            .map(({ x }) => showOf(x)),
+          // a trailer for shows first aired since 2015, as TMDB has for most newer series
+          videos:
+            show.year >= 2015
+              ? [
+                  {
+                    id: `${id}-trailer`,
+                    name: 'Official trailer',
+                    kind: 'Trailer',
+                    site: 'YouTube',
+                    key: `mock-${id}-trailer`,
+                    lengthSeconds: 96 + (show.title.length % 60),
+                    publishedAt: `${show.year}-01-15`,
+                    still: show.art.backdrop,
+                  },
+                ]
+              : [],
+          tracks: showTracks,
+          defaults: {
+            audioId: prefs.audioId ?? 'en',
+            subtitleId: prefs.subtitleId !== undefined ? prefs.subtitleId : null,
+          },
+        }
+      },
+      /** Mark an episode watched (to the end) or unwatched (from the start), for this person. */
+      setEpisodeWatched: (id: string, watched: boolean) => {
+        const found = episodeSeed(id)
+        if (!found) throw new ApiError(404, 'not-found', 'That episode is no longer here.')
+        setEpisodes([found.episode], watched)
+      },
+      /** Mark every episode of a season, or of the show when no season is given. */
+      setSeasonWatched: (show: string, season: number | null, watched: boolean) => {
+        const s = showSeed(show)
+        setEpisodes(
+          s.seasons
+            .filter((x) => (season === null ? x.number !== 0 : x.number === season))
+            .flatMap((x) => x.episodes),
+          watched,
+        )
+      },
+      /** Every artist and album the household can play; none on a server without music. */
+      music: (): ClientMusic => library(),
+      /** An album with its songs, and the film here it scores, matched by title. */
+      album: (id: string): ClientAlbumDetail => {
+        const d = albumDetail(library(), id)
+        if (!d) throw new ApiError(404, 'not-found', 'That album isn’t on this server.')
+        const title = scoreOf(d.album)
+        const film = title ? watchable().find((m) => m.title === title) : undefined
+        return { ...d, film: film ? clientItem(film) : null }
+      },
+      /**
+       * The songs to play: an album's in order, or an artist's, newest album first, shuffled when
+       * asked; each with its loudness for the player's scrubber.
+       */
+      queue: (source: MusicSource, shuffle = false): QueuedSong[] => {
+        if ('songs' in source || 'playlist' in source) {
+          const ids =
+            'songs' in source
+              ? source.songs
+              : playlistSongs(playlistSeed(source.playlist)).map((s) => s.id)
+          const q = ids.flatMap((id) => trackOf(library(), id) ?? [])
+          if (q.length === 0) throw new ApiError(404, 'not-found', 'There’s nothing here to play.')
+          return shuffle ? shuffled(q) : q
+        }
+        const q = queueOf(library(), source, shuffle)
+        if (!q) throw new ApiError(404, 'not-found', 'There’s nothing here to play.')
+        const key = 'album' in source ? source.album : source.artist
+        played = [
+          source,
+          ...recentlyPlayed().filter((x) => ('album' in x ? x.album : x.artist) !== key),
+        ].slice(0, 12)
+        srv.events.emit({ type: 'music.updated' })
+        return q
+      },
+      /**
+       * Songs for the queue by id, for a song's Play next and Add to queue; unlike `queue`, these
+       * aren't recorded as played.
+       */
+      tracks: (ids: string[]): QueuedSong[] => ids.flatMap((id) => trackOf(library(), id) ?? []),
+      /** Every song here, for Music's Songs; sorted and filtered by the client. */
+      songs: (): ClientLibrarySong[] => allSongs(library()),
+      /** The person's own playlists, the most recently changed first. */
+      playlists: (): ClientPlaylist[] =>
+        myPlaylists()
+          .map(playlistOf)
+          .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt)),
+      playlist: (id: string): ClientPlaylistDetail => {
+        const p = playlistSeed(id)
+        return { playlist: playlistOf(p), songs: playlistSongs(p) }
+      },
+      /** An artist with their albums by kind; their person page when they're in a film or show here. */
+      artist: (id: string): ClientArtistDetail => {
+        const d = artistDetail(library(), id)
+        if (!d) throw new ApiError(404, 'not-found', 'That artist isn’t on this server.')
+        const credited =
+          watchable().some((m) =>
+            [...(movieMetadata(state, m.id, now())?.crew ?? [])].some((c) => c.personId === id),
+          ) ||
+          clientShows().some((x) =>
+            [...x.cast, ...x.creators, ...x.crew].some((c) => c.personId === id),
+          )
+        return { ...d, person: credited ? id : null }
+      },
+      /**
+       * A person and everything here they're part of: the films by department (the one they're
+       * known for first, then TMDB's order; in each, newest first, with every role they had in the
+       * film), the shows newest first, and the albums when they're an artist here.
+       */
+      person: (id: string): ClientPerson => {
+        const order: Department[] = [
+          'Acting',
+          'Directing',
+          'Writing',
+          'Production',
+          'Sound',
+          'Camera',
+          'Editing',
+        ]
+        const p = person(state, id)
+        const groups = new Map<Department, { item: ClientItem; role: string }[]>()
+        const here: MediaItem[] = []
+        for (const m of sees('movies') ? watchable() : []) {
+          const meta = movieMetadata(state, m.id, now())
+          const mine = [...(meta?.cast ?? []), ...(meta?.crew ?? [])].filter(
+            (c) => c.personId === id,
+          )
+          if (mine.length === 0) continue
+          here.push(m)
+          for (const department of order) {
+            const roles = mine.filter((c) => c.department === department)
+            if (roles.length === 0) continue
+            const list = groups.get(department) ?? []
+            list.push({
+              item: clientItem(m),
+              role: roles.map((c) => c.character ?? c.job).join(', '),
+            })
+            groups.set(department, list)
+          }
+        }
+        const shows = clientShows().flatMap((x) => {
+          const mine = [...x.cast, ...x.creators, ...x.crew].filter((c) => c.personId === id)
+          return mine.length === 0 ? [] : [{ seed: x, mine }]
+        })
+        const music = library()
+        const artist = artistDetail(music, id)
+        const albums = artist
+          ? music.albums
+              .filter((a) => a.artist.id === id)
+              .sort((a, b) => b.year - a.year || a.sortTitle.localeCompare(b.sortTitle))
+          : []
+        const credit = shows[0]?.mine[0]
+        const name = p?.name ?? credit?.name ?? artist?.artist.name
+        if (!name) throw new ApiError(404, 'not-found', 'Nobody by that name is in anything here.')
+        // known for: TMDB's answer from the films, else what they did most in the shows, else music
+        const showDepartments = shows.flatMap((x) => x.mine.map((c) => c.department))
+        const knownFor: Department =
+          p?.knownFor ??
+          order.find((d) => showDepartments.filter((x) => x === d).length > 0) ??
+          'Sound'
+        const best = [...here].sort((a, b) => b.rating - a.rating)[0]
+        const bestShow = [...shows].sort((a, b) => b.seed.show.rating - a.seed.show.rating)[0]
+        return {
+          id,
+          name,
+          photo: p?.photo ?? credit?.photo ?? artist?.artist.photo ?? '',
+          knownFor,
+          bio: p?.bio ?? artist?.bio ?? null,
+          born: p?.born ?? null,
+          died: p?.died ?? null,
+          backdrop: best
+            ? clientItem(best).art.backdrop
+            : bestShow
+              ? bestShow.seed.show.art.backdrop
+              : (albums[0]?.cover ?? ''),
+          counts: { films: here.length, shows: shows.length, albums: albums.length },
+          departments: [knownFor, ...order.filter((x) => x !== knownFor)].flatMap((department) => {
+            const credits = groups.get(department)
+            return credits
+              ? [{ department, credits: credits.sort((a, b) => b.item.year - a.item.year) }]
+              : []
+          }),
+          shows: shows
+            .map(({ seed, mine }) => ({
+              show: showOf(seed),
+              role: mine.map((c) => c.character ?? c.job).join(', '),
+            }))
+            .sort((a, b) => b.show.year - a.show.year),
+          albums,
+          artist: artist ? id : null,
+        }
+      },
+      item: (id: string, client: ClientType = 'web'): ClientDetail => {
+        const episode = episodeSeed(id)
+        if (episode) return episodeDetail(episode.show, episode.episode)
+        const m = state.items.find((x) => x.id === id)
+        if (!m || !playable(m))
+          throw new ApiError(404, 'not-found', 'That title isn’t on this server.')
+        const meta = movieMetadata(state, id, now())
+        const versions = versionsOf(m)
+        const prefs = state.prefs[`${me().id}:${id}`] ?? {}
+        const version = versions.find((v) => v.id === prefs.versionId) ?? versions[0]
+        const related = recommendations(state, id, 24)
+          .flatMap((t) => {
+            const x = state.items.find((i) => i.id === t.id)
+            return x && playable(x) ? [clientItem(x)] : []
+          })
+          .slice(0, 12)
+        // Next up: the collection's next part, else a few choices that wait to be picked
+        const parts = tmdbCollections().find((c) => c.collection.id === meta?.collection?.id)
+        const part = parts?.items[parts.items.findIndex((x) => x.id === id) + 1]
+        const upNext: ClientDetail['upNext'] = filmUpNext(
+          part ? { id: part.id, title: part.title, still: part.art.still } : null,
+          parts?.collection.name ?? null,
+          related,
+        )
+        return {
+          item: clientItem(m),
+          versions,
+          cast: meta?.cast ?? [],
+          directors: meta?.crew.filter((c) => c.job === 'Director') ?? [],
+          crew: meta?.crew.filter((c) => c.job !== 'Director' && c.job !== 'Producer') ?? [],
+          related,
+          originalTitle: meta?.originalTitle ?? m.title,
+          certification: meta?.certification ?? null,
+          studios: meta?.studios ?? [],
+          videos: meta?.videos ?? [],
+          collection: meta?.collection ?? null,
+          collections: clientCollections(client)
+            .filter((c) => c.items.some((x) => x.id === id))
+            .map((c) => c.collection),
+          defaults: {
+            versionId: version?.id ?? '',
+            audioId:
+              prefs.audioId ??
+              version?.audio.find((a) => a.default)?.id ??
+              version?.audio[0]?.id ??
+              null,
+            subtitleId:
+              prefs.subtitleId !== undefined
+                ? prefs.subtitleId
+                : (version?.subtitles.find((t) => t.default)?.id ?? null),
+          },
+          episode: null,
+          upNext,
+          soundtrack: (() => {
+            const a = library().albums.find((x) => scoreOf(x) === m.title)
+            return a ? { id: a.id, title: a.title } : null
+          })(),
+        }
+      },
+    },
+
+    /**
+     * The person's own playlists (prototype-gaps.md › 3.8): made, renamed, added to, reordered
+     * and deleted on the web, desktop and phone; the TV only plays them.
+     */
+    playlists: {
+      create: (name: string, songs: string[] = []): ClientPlaylist => {
+        const p: PlaylistSeed = {
+          id: `pl-${Math.round(now()).toString(36)}-${++entries}`,
+          name: playlistName(name),
+          entries: songs.map(entry),
+          updatedAt: iso(now()),
+        }
+        myPlaylists().push(p)
+        touched(p)
+        return playlistOf(p)
+      },
+      rename: (id: string, name: string) => {
+        const p = playlistSeed(id)
+        p.name = playlistName(name)
+        touched(p)
+      },
+      /** Songs at the end, in the order given. */
+      add: (id: string, songs: string[]) => {
+        const p = playlistSeed(id)
+        p.entries.push(...songs.map(entry))
+        touched(p)
+      },
+      remove: (id: string, entry: string) => {
+        const p = playlistSeed(id)
+        p.entries = p.entries.filter((e) => e.entry !== entry)
+        touched(p)
+      },
+      /** The playlist's entries in their new order. */
+      reorder: (id: string, order: string[]) => {
+        const p = playlistSeed(id)
+        const by = new Map(p.entries.map((e) => [e.entry, e]))
+        p.entries = order.flatMap((e) => by.get(e) ?? [])
+        touched(p)
+      },
+      delete: (id: string) => {
+        const p = playlistSeed(id)
+        const mine = myPlaylists()
+        mine.splice(mine.indexOf(p), 1)
+        srv.events.emit({ type: 'playlists.updated' })
+      },
+    },
+    playback: {
+      prefs: (id: string): PlaybackPrefs => state.prefs[`${me().id}:${id}`] ?? {},
+      /** Remembers the picks for this title, for this user. */
+      setPrefs: (id: string, patch: PlaybackPrefs) => {
+        const key = `${me().id}:${id}`
+        state.prefs[key] = { ...state.prefs[key], ...patch }
+        srv.events.emit({ type: 'watch.updated' })
+        return state.prefs[key]
+      },
+      /** Reports the position (every few seconds while playing, and on pause or exit). */
+      progress: (id: string, position: number) => {
+        const u = me().id
+        const w = state.watch.find((x) => x.userId === u && x.itemId === id)
+        if (w) {
+          w.position = position
+          w.updatedAt = iso(now())
+        } else state.watch.push({ userId: u, itemId: id, position, updatedAt: iso(now()) })
+        // playing it again puts it back on Continue watching
+        dismissed.delete(`${u}:${id}`)
+        const show = episodeSeed(id)?.show.show.id
+        if (show) dismissed.delete(`${u}:${show}`)
+        srv.events.emit({ type: 'watch.updated' })
+      },
+      /** Mark as watched (to the end) or unwatched (from the start), for this user. */
+      setWatched: (id: string, watched: boolean) => {
+        const u = me().id
+        const m = state.items.find((x) => x.id === id)
+        if (!m) throw new ApiError(404, 'not-found', 'That movie is no longer here.')
+        state.watch = state.watch.filter((x) => !(x.userId === u && x.itemId === id))
+        if (watched)
+          state.watch.push({
+            userId: u,
+            itemId: id,
+            position: m.runtimeMinutes * 60,
+            updatedAt: iso(now()),
+          })
+        srv.events.emit({ type: 'watch.updated' })
+      },
+      /**
+       * Remove from Continue watching: forgets the place without marking it watched. For an
+       * episode the show leaves Continue watching and Next up until it's played again.
+       */
+      dismiss: (id: string) => {
+        const u = me().id
+        state.watch = state.watch.filter((x) => !(x.userId === u && x.itemId === id))
+        dismissed.add(`${u}:${episodeSeed(id)?.show.show.id ?? id}`)
+        srv.events.emit({ type: 'watch.updated' })
+      },
+    },
+
+    dashboard: {
+      layout: (): WidgetLayout => {
+        const u = me()
+        const role = staffRole()
+        const own = storage.load(layoutKey(`user:${u.id}`)) as WidgetPlacement[] | undefined
+        return {
+          scope: { kind: 'user', userId: u.id },
+          widgets: (own ?? layoutFor(role)).filter((w) => allowed(w.kind, role)).map(normalize),
+          updatedAt: iso(now()),
+          inherited: !own,
+        }
+      },
+      saveLayout: (widgets: WidgetPlacement[]) => {
+        const u = me()
+        const role = staffRole()
+        for (const w of widgets) if (!allowed(w.kind, role)) throw forbidden()
+        storage.save(layoutKey(`user:${u.id}`), widgets)
+        srv.events.emit({ type: 'layout.updated' })
+      },
+      /** Forgets the user's own layout, so they see their role's default again. */
+      resetLayout: () => {
+        staffRole()
+        storage.save(layoutKey(`user:${me().id}`), undefined)
+        srv.events.emit({ type: 'layout.updated' })
+      },
+      roleDefault: (role: StaffRole) => {
+        requireStaff()
+        return layoutFor(role)
+      },
+      saveRoleDefault: (role: StaffRole, widgets: WidgetPlacement[]) => {
+        requireOwner()
+        storage.save(
+          layoutKey(`role:${role}`),
+          widgets.filter((w) => allowed(w.kind, role)),
+        )
+        srv.events.emit({ type: 'layout.updated' })
+      },
+    },
+
+    users: {
+      list: () => {
+        requireStaff()
+        return state.users
+      },
+      /** A pending account and the single-use link that finishes it (valid for a week). */
+      invite: (input: InviteInput): Invite => {
+        requireOwner()
+        const name = input.displayName.trim()
+        if (!name)
+          throw new ApiError(400, 'invalid', 'Give them a name, as the household knows them.')
+        const username = name
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/^-|-$/g, '')
+        if (state.users.some((u) => u.username === username))
+          throw new ApiError(409, 'taken', `There’s already someone called ${name}.`)
+        const user: User = {
+          id: `u-${username}`,
+          username,
+          displayName: name,
+          role: input.role,
+          // staff hold every power by their role and see every library
+          permissions: input.role === 'admin' ? [] : ['request'],
+          libraries: input.role === 'admin' ? 'all' : input.libraries,
+          twoFactor: false,
+          lastSeen: null,
+          invited: true,
+        }
+        state.users.push(user)
+        srv.events.emit({ type: 'users.updated' })
+        return {
+          user,
+          link: `https://harbor.example.net/invite/${username.slice(0, 3).toUpperCase()}-${(now() % 9000) + 1000}`,
+          expiresAt: iso(now() + 7 * 86_400_000),
+        }
+      },
+      /**
+       * Role, permissions, libraries. Staff hold no permissions and see every library; making an
+       * admin a user ends their admin sessions and API keys at once.
+       */
+      update: (id: string, patch: Partial<Pick<User, 'role' | 'permissions' | 'libraries'>>) => {
+        requireOwner()
+        const u = state.users.find((x) => x.id === id)
+        if (!u) throw new ApiError(404, 'not-found', 'There’s no one with that id.')
+        if (u.role === 'owner' && patch.role && patch.role !== 'owner')
+          throw new ApiError(
+            400,
+            'owner',
+            'The owner stays the owner. Hand ownership over in Security first.',
+          )
+        if (patch.role === 'owner')
+          throw new ApiError(400, 'owner', 'There’s one owner. Hand ownership over in Security.')
+        const demoted = u.role === 'admin' && patch.role === 'user'
+        Object.assign(u, patch)
+        if (u.role === 'admin') Object.assign(u, { permissions: [], libraries: 'all' })
+        else if (demoted && !patch.permissions) u.permissions = ['request']
+        if (demoted) {
+          state.devices = state.devices.filter((d) => d.userId !== id || d.client !== 'admin')
+          state.apiKeys = state.apiKeys.filter((k) => k.userId !== id)
+        }
+        srv.events.emit({ type: 'users.updated' })
+        return u
+      },
+      remove: (id: string) => {
+        requireOwner()
+        const u = state.users.find((x) => x.id === id)
+        if (!u) return
+        if (u.role === 'owner') throw new ApiError(400, 'owner', 'The owner can’t be removed.')
+        if (u.id === me().id) throw new ApiError(400, 'self', 'You can’t remove yourself.')
+        state.users = state.users.filter((x) => x.id !== id)
+        state.devices = state.devices.filter((d) => d.userId !== id)
+        state.apiKeys = state.apiKeys.filter((k) => k.userId !== id)
+        srv.events.emit({ type: 'users.updated' })
+      },
+      /** Emails a link to choose a new password; their devices stay signed in. */
+      resetPassword: (id: string) => {
+        requireOwner()
+        return state.users.find((x) => x.id === id)?.displayName ?? ''
+      },
+    },
+
+    devices: {
+      list: () => {
+        requireStaff()
+        return state.devices
+      },
+      /** The signed-in person's own devices, for the clients' settings. */
+      mine: () => state.devices.filter((d) => d.userId === me().id),
+      /** Signs a device out: its token stops working at once. */
+      revoke: (id: string) => {
+        const d = state.devices.find((x) => x.id === id)
+        if (!d) return
+        // someone else's device: managing people, the owner's alone
+        if (d.userId !== me().id) requireOwner()
+        if (id === 'd-admin')
+          throw new ApiError(400, 'self', 'That’s the browser you’re using. Sign out instead.')
+        state.devices = state.devices.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'users.updated' })
+      },
+    },
+
+    apiKeys: {
+      /** The owner sees everyone's keys; an admin their own. */
+      list: () => {
+        requireStaff()
+        return me().role === 'owner'
+          ? state.apiKeys
+          : state.apiKeys.filter((k) => k.userId === me().id)
+      },
+      create: (name: string, scope: ApiKey['scope']): CreatedApiKey => {
+        requireStaff()
+        if (!name.trim()) throw new ApiError(400, 'invalid', 'Name the key after what will use it.')
+        const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789'
+        const pick = createRandom(now())
+        let secret = 'hs_'
+        for (let i = 0; i < 40; i++) secret += alphabet[Math.floor(pick() * alphabet.length)]
+        const key: ApiKey = {
+          id: `k-${now().toString(36)}`,
+          name: name.trim(),
+          prefix: secret.slice(0, 7),
+          scope,
+          userId: me().id,
+          createdAt: iso(now()),
+          lastUsed: null,
+        }
+        state.apiKeys.unshift(key)
+        srv.events.emit({ type: 'users.updated' })
+        return { ...key, secret }
+      },
+      revoke: (id: string) => {
+        requireStaff()
+        const k = state.apiKeys.find((x) => x.id === id)
+        if (k && k.userId !== me().id) requireOwner()
+        state.apiKeys = state.apiKeys.filter((x) => x.id !== id)
+        srv.events.emit({ type: 'users.updated' })
+      },
+    },
+
+    manualImport: {
+      /** What's in a folder that could be imported, matched to the library by name. */
+      scan: (path: string): ImportCandidate[] => {
+        requireStaff()
+        if (!state.fs[path])
+          throw new ApiError(404, 'not-found', `${path} doesn’t exist on the server.`)
+        if (path !== '/data/downloads/complete') return []
+        const find = (title: string) => state.items.find((m) => m.title === title)?.id ?? null
+        return [
+          {
+            path: `${path}/The.Last.Man.on.Earth.1964.720p.WEB-DL.AAC.x264-OLDIES/The.Last.Man.on.Earth.1964.720p.WEB-DL.mkv`,
+            size: 1.9 * GB,
+            quality: 'WEB 720p',
+            language: 'English',
+            itemId: find('The Last Man on Earth'),
+            skip: null,
+          },
+          {
+            path: `${path}/Royal Wedding (1951) [1080p]/Royal.Wedding.1951.1080p.BluRay.mkv`,
+            size: 6.4 * GB,
+            quality: 'Bluray 1080p',
+            language: 'English',
+            itemId: find('Royal Wedding'),
+            skip: null,
+          },
+          {
+            path: `${path}/Royal Wedding (1951) [1080p]/sample.mkv`,
+            size: 18 * MB,
+            quality: 'Bluray 1080p',
+            language: 'English',
+            itemId: find('Royal Wedding'),
+            skip: 'A sample (18 MB). Skipped.',
+          },
+          {
+            path: `${path}/home-movies/Lisbon 2019.mp4`,
+            size: 2.2 * GB,
+            quality: 'Unknown',
+            language: 'Unknown',
+            itemId: null,
+            skip: null,
+          },
+          // episode files (stage 6): one episode, and a double episode in one file
+          ...episodeFile(
+            `${path}/Night.Shift.at.Hollow.Creek.S03E05.1080p.WEB-DL.DDP5.1.H.264-NTb/Night.Shift.at.Hollow.Creek.S03E05.1080p.WEB-DL.mkv`,
+            2.3 * GB,
+            'WEB 1080p',
+            'night-shift-at-hollow-creek',
+            ['night-shift-at-hollow-creek-s3e5'],
+          ),
+          ...episodeFile(
+            `${path}/Saltmarsh.S01E01-E02.1080p.BluRay.x264-TLA/Saltmarsh.S01E01E02.1080p.BluRay.mkv`,
+            7.1 * GB,
+            'Bluray 1080p',
+            'saltmarsh',
+            ['saltmarsh-s1e1', 'saltmarsh-s1e2'],
+          ),
+        ]
+      },
+      /**
+       * Imports the files into their movies, or their show's episodes: hardlinked (or copied, or
+       * moved) and renamed.
+       */
+      run: (
+        files: {
+          path: string
+          itemId?: string
+          episodes?: { show: string; episodeIds: string[] }
+        }[],
+        mode: 'hardlink' | 'move',
+      ) => {
+        requireStaff()
+        for (const f of files) {
+          if (f.episodes) {
+            importEpisodes(f.path, f.episodes.episodeIds, mode)
+            continue
+          }
+          const m = state.items.find((x) => x.id === f.itemId)
+          if (!m) continue
+          m.status = 'available'
+          state.history.unshift({
+            id: `h-${now().toString(36)}-${m.id}`,
+            itemId: m.id,
+            type: 'imported',
+            date: iso(now()),
+            sourceTitle: f.path.split('/').pop() ?? f.path,
+            quality: null,
+            indexer: null,
+            message: mode === 'move' ? 'Moved by manual import' : 'Hardlinked by manual import',
+          })
+        }
+        srv.events.emit({ type: 'movies.updated' })
+        srv.events.emit({ type: 'history.updated' })
+        return files.length
+      },
+    },
+
+    appearance: {
+      /** Everyone reads it: clients take the default theme and sounds from here. */
+      get: (): Appearance & { branding: Server['branding'] } => ({
+        ...state.appearance,
+        branding: state.server.branding,
+      }),
+      save: (patch: Partial<Appearance> & { name?: string; accent?: string | null }) => {
+        requireStaff()
+        const { name, accent, ...rest } = patch
+        if (name !== undefined) {
+          if (!name.trim()) throw new ApiError(400, 'invalid', 'The server needs a name.')
+          state.server.name = name.trim()
+          state.server.branding.name = name.trim()
+          storage.save(`server:${srv.kind}:name`, name.trim())
+        }
+        if (accent !== undefined) state.server.branding.accent = accent
+        Object.assign(state.appearance, rest)
+        srv.events.emit({ type: 'server.updated' })
+        return state.appearance
+      },
+      saveTheme: (theme: CustomTheme) => {
+        requireStaff()
+        const i = state.appearance.themes.findIndex((t) => t.id === theme.id)
+        if (i >= 0) state.appearance.themes[i] = theme
+        else state.appearance.themes.push(theme)
+        srv.events.emit({ type: 'server.updated' })
+        return theme
+      },
+      deleteTheme: (id: string) => {
+        requireStaff()
+        state.appearance.themes = state.appearance.themes.filter((t) => t.id !== id)
+        if (state.appearance.defaultTheme === id) state.appearance.defaultTheme = 'default'
+        srv.events.emit({ type: 'server.updated' })
+      },
+    },
+
+    vpn: {
+      /** Staff: Downloads shows the VPN line. */
+      status: () => {
+        requireStaff()
+        return currentVpn()
+      },
+      providers: () => {
+        requireOwner()
+        return vpnProviders
+      },
+      check: () => {
+        requireOwner()
+        state.vpn.checkedAt = srv.clock.now()
+        srv.events.emit({ type: 'vpn.updated' })
+        return currentVpn()
+      },
+      reconnect: () => {
+        requireOwner()
+        if (state.settings.vpn.mode === 'off') return currentVpn()
+        state.vpn.phase = 'connecting'
+        state.vpn.until = srv.clock.now() + 4_000
+        srv.events.emit({ type: 'vpn.updated' })
+        return currentVpn()
+      },
+      /** The prototype's own control, to review the tunnel dropping; not in the API. */
+      simulateDrop: () => {
+        requireOwner()
+        if (state.vpn.phase !== 'connected') return currentVpn()
+        state.vpn.phase = 'down'
+        state.vpn.until = srv.clock.now() + 20_000
+        srv.events.emit({ type: 'vpn.updated' })
+        srv.events.emit({ type: 'health.updated' })
+        return currentVpn()
+      },
+    },
+
+    sessions: {
+      /** Staff: who's watching what now, and how each stream is sent (docs/product/now-playing.md). */
+      list: () => {
+        requireStaff()
+        return nowPlaying()
+      },
+      /** Staff: what was watched in the last 30 days, newest first. */
+      history: (q: { userId?: string } = {}) => {
+        requireStaff()
+        return state.sessions.history
+          .filter((w) => !q.userId || w.userId === q.userId)
+          .map((w): WatchView => ({ ...w, user: who(w.userId), item: what(w.itemId) }))
+      },
+      /**
+       * Staff: stops a stream, with a message the person sees in the player. Its row stays a
+       * moment to say so, then goes. Stopping a download cancels it; the device can start it again.
+       */
+      stop: (id: string, message: string) => {
+        requireStaff()
+        const s = state.sessions.live.find((x) => x.id === id)
+        if (!s) throw new ApiError(404, 'not_found', 'That stream has already ended.')
+        const now = srv.clock.now()
+        s.stopped = { by: me().displayName, message: message.trim(), at: now }
+        srv.events.emit({ type: 'sessions.updated' })
+        return nowPlaying()
+      },
+      /** The prototype's own control: a transcode that can't keep up, to review that state. */
+      simulateSlow: () => {
+        requireStaff()
+        const s = state.sessions.live.find((x) => x.method === 'transcode' && x.kind === 'stream')
+        if (s) {
+          s.speed = 0.7
+          s.hardware = null
+        }
+        srv.events.emit({ type: 'sessions.updated' })
+        return nowPlaying()
+      },
+    },
+
+    transcoding: {
+      /** Staff (answer 6): what highsea found, what it uses, and the caches. */
+      status: () => {
+        requireStaff()
+        return currentPlayback()
+      },
+      /** Transcodes a short clip on one path and reports its speed. */
+      check: (id: AccelerationPath) => {
+        requireStaff()
+        const p = state.playback.paths.find((x) => x.id === id)
+        if (p && p.id !== 'videotoolbox') p.checkingUntil = srv.clock.now() + 3_000
+        srv.events.emit({ type: 'playback.updated' })
+        return currentPlayback()
+      },
+      /** Empties the transcode cache; streams that are playing make their segments again. */
+      clearCache: () => {
+        requireStaff()
+        state.playback.transcodeBytes = 0
+        srv.events.emit({ type: 'playback.updated' })
+        return currentPlayback()
+      },
+      /** The prototype's own control, to review a failed check; not in the API. */
+      simulateFailure: () => {
+        requireStaff()
+        state.playback.failNext = true
+        return currentPlayback()
+      },
+      /** The prototype's own control, to review the cache over its limit; not in the API. */
+      simulateFull: () => {
+        requireStaff()
+        state.playback.transcodeBytes = (state.settings.playback.cacheLimitGb + 3.4) * 1e9
+        srv.events.emit({ type: 'playback.updated' })
+        return currentPlayback()
+      },
+    },
+
+    importLists: lists,
+    connections: notifying.connections,
+    pushSubscriptions: {
+      list: () => notifying.pushSubscriptions.list(me().id),
+      add: (label: string) => notifying.pushSubscriptions.add(me().id, label),
+      remove: (id: string) => notifying.pushSubscriptions.remove(me().id, id),
+    },
+    tags: library_.tags,
+    rootFolders: library_.rootFolders,
+    /** Shows as the admin keeps them (stage 6, for the TV series phase). */
+    shows: showAdmin,
+    importers: migrationApi(settingsDeps),
+
+    settings: {
+      get: <K extends SettingsSection>(section: K): Settings[K] => {
+        requireStaff()
+        // security, backups and the VPN are the owner's alone, even to read (ADR 0032)
+        if (section === 'security' || section === 'backups' || section === 'vpn') requireOwner()
+        return state.settings[section]
+      },
+      save: <K extends SettingsSection>(section: K, value: Settings[K]): Settings[K] => {
+        requireStaff()
+        // security, backups and the VPN are the owner's alone (ADR 0032), and so is General
+        // (Region, Updates, Diagnostics and /metrics), which an admin reads
+        if (
+          section === 'security' ||
+          section === 'backups' ||
+          section === 'vpn' ||
+          section === 'general' ||
+          section === 'metrics'
+        )
+          requireOwner()
+        if (section === 'vpn') return saveVpn(value as VpnSettings) as Settings[K]
+        state.settings[section] = value
+        srv.events.emit({ type: 'settings.updated' })
+        if (section === 'playback') srv.events.emit({ type: 'playback.updated' })
+        return value
+      },
+      metadata: () => library_.metadata.get(),
+      saveMetadata: (input: { language: string; region: string; key?: string }) =>
+        library_.metadata.save(input),
+      removeMetadataKey: () => library_.metadata.removeKey(),
+    },
+  }
+}
+
+export type Api = ReturnType<typeof createApi>

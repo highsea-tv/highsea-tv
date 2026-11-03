@@ -17,6 +17,7 @@
     "@highsea-tv/fixtures": "workspace:*",
     "@highsea-tv/i18n": "workspace:*",
     "@highsea-tv/media": "workspace:*",
+    "@highsea-tv/mock": "workspace:*",
     "@highsea-tv/notifications": "workspace:*",
     "@highsea-tv/parser": "workspace:*",
     "@highsea-tv/personalization": "workspace:*",

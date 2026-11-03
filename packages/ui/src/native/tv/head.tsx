@@ -12,12 +12,13 @@
 // The head holds no routes or data: an app hands it its parts and what each stop does, so another
 // app on the TV's rule lays out its own head the same way.
 import { type ReactNode, type Ref, useState } from 'react'
-import { TVFocusGuideView, View } from 'react-native'
+import { View } from 'react-native'
 import { Avatar } from '../brand.tsx'
 import { Icon } from '../icon.tsx'
 import type { IconName } from '../icons.ts'
 import { Text } from '../text.tsx'
 import { tokens, useTheme } from '../theme.tsx'
+import { FocusGuide } from './engine'
 import { Focusable, type ViewHandle } from './focusable.tsx'
 
 const tv = tokens.tv
@@ -51,7 +52,10 @@ export function TvHead({
   const u = useTheme().u
   const [inside, setInside] = useState(false)
   return (
-    <TVFocusGuideView
+    <FocusGuide
+      // until the goal is set, `destinations` is empty and the guide would be a stop itself;
+      // autoFocus hands focus on to the stop last focused in it, or its first
+      autoFocus
       accessibilityLabel={label}
       destinations={goal && reachable ? [goal] : []}
       onFocusEnter={() => setInside(true)}
@@ -74,9 +78,9 @@ export function TvHead({
         </View>
       </View>
       {inside && down ? (
-        <TVFocusGuideView destinations={[down]} style={{ alignSelf: 'stretch', height: 1 * u }} />
+        <FocusGuide destinations={[down]} style={{ alignSelf: 'stretch', height: 1 * u }} />
       ) : null}
-    </TVFocusGuideView>
+    </FocusGuide>
   )
 }
 
@@ -145,7 +149,7 @@ export function TvHeadStop({
             ) : avatar !== undefined ? (
               <Avatar name={avatar} size={AVATAR} />
             ) : icon ? (
-              <Icon name={icon} size={1.4} color={fg} />
+              <Icon name={icon} size={tokens.icon.sizeTv.min} color={fg} />
             ) : null}
             {dot ? (
               <View
@@ -155,7 +159,7 @@ export function TvHeadStop({
                   right: 0.45 * u,
                   width: 0.6 * u,
                   height: 0.6 * u,
-                  borderRadius: 0.3 * u,
+                  borderRadius: tokens.tv.radius.pill * u,
                   backgroundColor: theme.colors.accent,
                 }}
               />

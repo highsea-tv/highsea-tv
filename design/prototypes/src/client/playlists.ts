@@ -3,10 +3,11 @@
 // renamed, reordered, has songs removed and is deleted on the web, desktop and phone, as Apple
 // Music's and Spotify's are; the TV only plays them. A reorder shows at once, before the server
 // answers, so a dragged row doesn't jump back while the list reloads.
+
+import type { ClientPlaylistDetail } from '@highsea-tv/mock/types'
 import { toast } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useAction, useQuery } from '../mock/hooks.tsx'
-import type { ClientPlaylistDetail } from '../mock/types.ts'
 import { albumSummary } from './music.ts'
 
 export const useSongs = () =>

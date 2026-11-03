@@ -6,6 +6,15 @@
 // then Import, whose progress follows the simulated clock. qBittorrent's torrents come across
 // paused; Resume asks first that qBittorrent is stopped. Any address and key work in the mock
 // except one with "wrong" in it.
+
+import {
+  COPY_PROFILE,
+  type ImportStatus,
+  type PathMapping,
+  type QbittorrentPreview,
+  type RadarrPreview,
+} from '@highsea-tv/mock/migration'
+import type { EventTopic } from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -25,14 +34,6 @@ import {
 } from '@highsea-tv/ui'
 import { type ReactNode, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import {
-  COPY_PROFILE,
-  type ImportStatus,
-  type PathMapping,
-  type QbittorrentPreview,
-  type RadarrPreview,
-} from '../../mock/migration.ts'
-import type { EventTopic } from '../../mock/types.ts'
 import { adminHref } from '../shell.tsx'
 import { fieldOf } from './parts.tsx'
 import { AreaPage, Group } from './settings.tsx'

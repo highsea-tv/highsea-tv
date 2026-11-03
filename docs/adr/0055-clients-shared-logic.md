@@ -66,3 +66,13 @@ The TV's person page and Alerts added two rules every app needs, both with tests
 ## 2026-11-02: the phone on the shared rules (apps-catch-up.md › part C)
 
 Part C added no rules; the phone took up the ones parts A and B made. Its announcements are drawn from `inlineParts`, its player leaves with `leavePlayer` and `titlePage` and offers Next up through `filmUpNext` and `countsDown` (three of More like this when nothing comes next by itself, and a countdown only with Autoplay on), and its Settings take their sections from `settingsSections` and Playback from `usePlaybackPrefs`, as the TV's do.
+
+## 2026-11-03: the gate's rules, Settings' words, and the mock as a transport (one client platform, part A)
+
+Moving Choose a server, signing in and Settings into `apps/client` ([ADR 0061](0061-one-client-platform.md)) moved what those screens share besides drawing into this package, with tests:
+
+- `gate` (new): the gate every client opens on. It holds the addresses to try for what someone typed (`candidates`), how an address is shown (`hostOf`), whether it's reached remotely, single sign-on's start, its redirect and its reasons, the TV's pairing link, and the words, one catalog per step (`connectMessages`, `signInMessages`, `forgetMessages`, `shellMessages`, `destinationMessages`, `tvConnectMessages`). `apps/mobile` and `apps/tv` take the words from here too until part B removes them.
+- `prefs`: Settings' words in every app (`settingsPageMessages`) and the TV's own (`tvSettingsMessages`), a device's icon by its kind of app (`deviceIcon`), and About's link to the source (`SOURCE`).
+- `servers`: `Nearby`, a server found on the network with the address it resolved to. `@highsea-tv/native/nearby` re-exports it, and the mock's stand-in for Bonjour gives the same shape.
+
+The consequence this ADR left open, the prototype's hooks over a mock whose shapes differ, ends for the client. The mock is now its own package, `@highsea-tv/mock`, and its transport answers the SDK's own client in the contract's shapes, checked by each route's schemas. So the client in mock mode reads through these same hooks, with only the transport changed. The prototypes' screens that haven't moved keep their own hooks over the mock until part B moves them.

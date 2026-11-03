@@ -60,7 +60,6 @@ highsea.tv/
 │  ├─ assets/                source SVGs, sound source files, icon sources
 │  └─ prototypes/            clickable prototypes app (Vite + React) using real tokens + ui-web, mock data
 ├─ apps/
-│  ├─ storybook/             living style guide / component workbench
 │  ├─ server/                Next.js 16 admin UI + /api/v1 + background runtime
 │  └─ web/ desktop/ mobile/ tv/                                       [later]
 ├─ packages/

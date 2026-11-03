@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The TV client (C1–C7), in screen units with D-pad focus: sign-in, home, library, item detail,
-// the player, search and settings. Back goes up a level: each screen says what that means (close
+// The TV client (C2–C6), in screen units with D-pad focus: home, library, item detail, the
+// player and search; connect, sign-in and settings are apps/client's (chrome/client.ts). Back goes up a level: each screen says what that means (close
 // a panel, hide the player's chrome), else Home.
 import { useLayoutEffect, useMemo, useState } from 'react'
 import { Route, Switch, useLocation, useSearch } from 'wouter'
@@ -15,7 +15,6 @@ import { TvArtist } from './artist.tsx'
 import { BackContext, type BackRegistry, useBack } from './back.ts'
 import { TvCollection } from './collection.tsx'
 import { TvCollections } from './collections.tsx'
-import { TvConnect } from './connect.tsx'
 import { TvDetail } from './detail.tsx'
 import { TvHome } from './home.tsx'
 import { ServerIdentity, TvButton, TvHead, TvMessage, tvHref } from './kit.tsx'
@@ -26,7 +25,6 @@ import { TvPerson } from './person.tsx'
 import { TvPlayer } from './player.tsx'
 import { TvPlaylist } from './playlist.tsx'
 import { TvSearch } from './search.tsx'
-import { TvProfile } from './settings.tsx'
 import { TvShow } from './show.tsx'
 import { TvShows } from './shows.tsx'
 import { TvLaunch, TvNewProfile, TvWho } from './who.tsx'
@@ -145,9 +143,6 @@ function Screens() {
   if (connection === 'offline' && location !== '/connect') return <Unreachable />
   return (
     <Switch>
-      <Route path="/connect">
-        <TvConnect />
-      </Route>
       <Route path="/play/:id/start">
         <TvPlayer fromStart />
       </Route>
@@ -225,12 +220,6 @@ function Screens() {
       </Route>
       <Route path="/alerts">
         <TvAlerts />
-      </Route>
-      <Route path="/profile">
-        <TvProfile />
-      </Route>
-      <Route path="/settings">
-        <TvProfile />
       </Route>
       <Route>
         <NotFound />

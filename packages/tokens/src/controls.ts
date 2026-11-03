@@ -38,8 +38,11 @@ export const CONTROL_RADIUS = radius.sm
 /** The space between controls in one row, before scaling: wide enough that touch hit areas never overlap. */
 export const CONTROL_GAP = targets.touch - controlGeometry.md.height
 
-/** The TV's 1u at its reference width, 1920px (tv.md › Units). */
-const TV_UNIT_AT_REFERENCE = 19.2
+/** The TV's reference screen, 1080p (tv.md › Units): its 1u is a hundredth of the width. */
+export const TV_REFERENCE = { width: 1920, height: 1080 } as const
+
+/** The TV's 1u at its reference width (tv.md › Units). */
+const TV_UNIT_AT_REFERENCE = TV_REFERENCE.width / 100
 
 /**
  * One rule per platform:

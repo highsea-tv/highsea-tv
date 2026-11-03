@@ -8,8 +8,10 @@ import { TvApp } from './tv/tv-app.tsx'
 import { WebApp } from './web/web-app.tsx'
 
 /**
- * Every route the routes test renders, per platform. Grows with each checkpoint. A route may carry
- * the toolbar's state after `?` (`/web/downloads?app=desktop`), for the states a URL can open.
+ * Every route the routes test renders, per platform, and the sweeps visit. Grows with each
+ * checkpoint. A route may carry the toolbar's state after `?` (`/web/downloads?app=desktop`), for
+ * the states a URL can open. A route apps/client holds (chrome/client.ts) is swept in the client's
+ * export, and the routes test leaves it out: the prototype has no screen there.
  */
 export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> = {
   admin: [
@@ -135,8 +137,6 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/web/collections',
     '/web/collections/sc-2010s',
     '/web/settings',
-    '/web/settings/home',
-    '/web/settings/devices',
     '/web/profile',
     '/web/link',
     '/web/link/KQ7-4PM',
@@ -149,8 +149,6 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/web/play/4?app=desktop&os=windows',
     '/web/play/4?app=desktop&os=mac',
     '/web/downloads?app=desktop&os=windows',
-    '/web/settings/about',
-    '/web/settings/about?app=desktop&update=ready',
     '/web/connect?app=desktop&lan=asking',
     '/web/connect?app=desktop&lan=refused',
     '/web/play/4?stream=failed',
@@ -195,9 +193,7 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/mobile/offline',
     '/mobile/you',
     '/mobile/you/who',
-    '/mobile/you/appearance',
-    '/mobile/you/home',
-    '/mobile/you/servers',
+    '/mobile/settings',
     '/mobile/connect?lan=asking',
     '/mobile/connect?lan=refused',
     '/mobile/link',
@@ -243,7 +239,7 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/tv/music?music=playing',
     '/tv/collections/sc-2010s',
     '/tv/alerts',
-    '/tv/profile',
+    '/tv/settings',
     '/tv/who',
     '/tv/who/p-theo',
     '/tv/who/new',

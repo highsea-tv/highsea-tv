@@ -1,14 +1,40 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The control spec's platform rule in points (src/native/metrics.ts, controls.md): the phone's
-// touch rule, the TV's units turned into points, and the hit area that takes a touch target to 44.
+// The control spec's platform rule in points (src/native/metrics.ts, controls.md), by the form
+// factor's input: a pointer's rule, the phone's touch rule, the TV's units turned into points, and
+// the hit area that takes a touch target to 44.
 import { describe, expect, test } from 'bun:test'
 import { controlMetrics, targets } from '@highsea-tv/tokens'
 import { centredPadding, controlPoints, hitSlopFor } from '../../src/native/metrics.ts'
 
+describe('a pointer', () => {
+  test('draws the spec as it is: 36 and 30, with 14 and 13 text', () => {
+    const md = controlPoints('pointer', 1)
+    const sm = controlPoints('pointer', 1, 'sm')
+    const { unit: _md, ...pointerMd } = controlMetrics('pointer')
+    const { unit: _sm, ...pointerSm } = controlMetrics('pointer', 'sm')
+    expect(md).toEqual(pointerMd)
+    expect(sm).toEqual(pointerSm)
+    expect([md.height, sm.height]).toEqual([36, 30])
+    expect([md.text, sm.text]).toEqual([14, 13])
+    expect(md.radius).toBe(8)
+  })
+
+  test('has no hit area, so nothing slops past the drawn control', () => {
+    const m = controlPoints('pointer', 1)
+    expect(m.hit).toBe(0)
+    expect(hitSlopFor(m.hit, m.height)).toBeUndefined()
+    expect(hitSlopFor(m.hit, m.height, m.height)).toBeUndefined()
+  })
+
+  test('ignores the unit, which is 1 off the TV', () => {
+    expect(controlPoints('pointer', 19.2)).toEqual(controlPoints('pointer', 1))
+  })
+})
+
 describe('the phone', () => {
   test('draws the spec as it is, 36 and 30, with 16 text', () => {
-    const md = controlPoints('mobile', 1)
-    const sm = controlPoints('mobile', 1, 'sm')
+    const md = controlPoints('touch', 1)
+    const sm = controlPoints('touch', 1, 'sm')
     expect(md.height).toBe(36)
     expect(sm.height).toBe(30)
     expect(md.text).toBe(16)
@@ -18,7 +44,7 @@ describe('the phone', () => {
   })
 
   test('ignores the unit, which is 1 off the TV', () => {
-    expect(controlPoints('mobile', 19.2)).toEqual(controlPoints('mobile', 1))
+    expect(controlPoints('touch', 19.2)).toEqual(controlPoints('touch', 1))
   })
 })
 
@@ -68,7 +94,7 @@ describe('the hit area', () => {
   })
 
   test('never overlaps a neighbour at the row’s gap', () => {
-    const m = controlPoints('mobile', 1)
+    const m = controlPoints('touch', 1)
     const slop = hitSlopFor(m.hit, m.height, m.height)
     expect((slop?.right ?? 0) + (slop?.left ?? 0)).toBeLessThanOrEqual(m.rowGap)
   })
@@ -76,7 +102,7 @@ describe('the hit area', () => {
 
 describe('a label', () => {
   test('is centred in the control’s height', () => {
-    const m = controlPoints('mobile', 1)
+    const m = controlPoints('touch', 1)
     const line = Math.round(m.text * m.leading)
     expect(centredPadding(m) * 2 + line).toBe(m.height)
   })

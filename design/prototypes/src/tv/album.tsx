@@ -6,6 +6,8 @@
 // line under them, as the web's album page has it; the songs fill the right,
 // scrolling under focus while the column stays. Focus starts on Play; Right reaches the songs and
 // Left comes back. OK held on a song opens its menu, and on Play the album's (tv/song-menu.tsx).
+
+import type { ClientSong } from '@highsea-tv/mock/types'
 import { cn, Icon, Skeleton, useSound } from '@highsea-tv/ui'
 import { type RefObject, useEffect, useRef, useState } from 'react'
 import { useParams } from 'wouter'
@@ -14,7 +16,6 @@ import { useAlbum } from '../client/data.ts'
 import { albumKind, albumSummary, songTime } from '../client/music.ts'
 import { useAlbumPlaying, useMusicPlayer, usePlayingFrom } from '../client/music-player.ts'
 import { PlayingBars } from '../client/waveform.tsx'
-import type { ClientSong } from '../mock/types.ts'
 import { focusFrom, TvButton, TvHead, TvMessage, tvHref, useInitialFocus } from './kit.tsx'
 import { TvSongMenu } from './song-menu.tsx'
 

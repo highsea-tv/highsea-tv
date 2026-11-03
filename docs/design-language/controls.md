@@ -1,7 +1,7 @@
 # Controls
 
 - **Status:** design system 1.1, approved by the owner on 2026-11-01 ([the plan](../plans/design-system-1-1.md)).
-- **In code:** [`packages/tokens/src/controls.ts`](../../packages/tokens/src/controls.ts), the `--control-*` variables in the tokens' CSS, and `nativeTokens.controls`.
+- **In code:** [`packages/tokens/src/controls.ts`](../../packages/tokens/src/controls.ts), the `--control-*` variables in the tokens' CSS, and `nativeTokens.controls`. The form factor is in [`packages/tokens/src/form-factor.ts`](../../packages/tokens/src/form-factor.ts).
 
 A control is anything a person presses or types into: a button, an icon button, a text field, a select, a text area, a search field, a segmented control, tabs, a chip, a checkbox, a radio and a switch. Every control in every app is specified once, here, and drawn by one component in `@highsea-tv/ui`. Apps differ in layout and size because their screens and inputs differ. They never differ because a screen drew a control of its own.
 
@@ -29,10 +29,27 @@ Each platform's values come from the spec by its rule, never from numbers of its
 | **Touch** | The phone, and the web on a coarse pointer | As specified | 16 (`mobileText.body`), so iOS never zooms into a field | 44 (`targets.touch`), invisible |
 | **TV** | Apple TV and Android TV | 1.75 times, in screen units (1u is 19.2px at 1080p) | The TV's `button` (1.1u) and `pill` | None; the TV's icons never go under 1.4u |
 
-- **Touch keeps the drawn size.** An invisible box around each control reaches 44 without changing its size or the layout: `Pressable`'s `hitSlop` in React Native, and an `::after` box under `@media (pointer: coarse)` on the web.
+- **Touch keeps the drawn size.** An invisible box around each control reaches 44 without changing its size or the layout: `Pressable`'s `hitSlop` in React Native, an `::after` box under `@media (pointer: coarse)` in the web renderer, and in the native renderer on the web, where react-native-web drops `hitSlop`, a transparent layer reaching past the control by the same insets.
 - **Controls in a row keep at least an 8px gap** (`--control-row-gap`), so the 44 hit areas of 36 controls never overlap.
 - **On the web,** the tokens set the pointer's values on `:root` and touch's under `@media (pointer: coarse)`. Any element can set a platform with `data-platform="pointer"`, `"touch"` or `"tv"`. The prototypes' phone and TV frames do this, so they draw the library's real components at the phone's and the TV's rules.
-- **In React Native,** the TV rule applies when `Platform.isTV`, and touch otherwise.
+- **In React Native,** the rule is the form factor's input (below): the TV's on a TV, touch's on a phone and on the web with a coarse pointer, and the pointer's on the web with a mouse.
+
+## The form factor
+
+A screen's layout and its controls' rule come from one form factor: its input (pointer, touch or TV, the platforms above) joined with a width class.
+
+| Width class | Where |
+| --- | --- |
+| **Compact** | A phone upright, and a window narrower than 768 |
+| **Regular** | A phone on its side, a tablet, and a window 768 or wider |
+| **TV** | A TV, whatever its width |
+
+- **These aren't [spacing and layout](spacing-layout.md#breakpoints)'s breakpoints.** The rule's names are Apple's size classes, split at 768 by the [plan](../plans/one-client-platform.md). Spacing and layout's `compact` is below 600 (`breakpoints` in the tokens).
+- **An iPad runs the phone app in an iPhone's window** (`supportsTablet: false`), so it's compact or regular touch as that window is.
+- **It's defined once,** beside the control spec: the width class from 768, the form factors by name (`compact-touch`, `regular-pointer`, `tv` and the others) and the layouts the platform guides state, by their tokens. A form factor no guide describes has no layout of its own yet.
+- **In React Native,** `ThemeProvider` resolves it once and `useFormFactor()` reads it. The input is the TV's on a TV, touch on iOS and Android, and on the web a pointer unless the primary pointer is coarse (`COARSE_POINTER`, which the tokens' CSS uses too), followed as it changes. The width class follows the window. A page rendered on the server is drawn regular with a pointer, and the browser corrects it after hydrating.
+- **`ThemeProvider`'s `formFactor`** sets the input whatever the device, as the prototypes' frames do. Each frame is an iframe with its own window, so the phone's frame passes `touch`, the TV's `tv` and the web's nothing, and the width class follows the frame. An address's `?ff=` can carry an input or a whole form factor's name. An inner `ThemeProvider` without one keeps its outer one's.
+- **A screen asks the rule, never the OS.** It lays out by `useFormFactor()`, and its controls draw by the rule's input, so one screen is right on every device and in every frame.
 
 ## Rules
 

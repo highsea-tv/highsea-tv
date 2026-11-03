@@ -14,8 +14,8 @@ import {
   PREVIEW_FILE,
   PREVIEW_MOVIE,
 } from '@highsea-tv/media/naming'
+import type { MultiEpisodeStyle } from '@highsea-tv/mock/settings'
 import type { QualityName } from '@highsea-tv/quality'
-import type { MultiEpisodeStyle } from '../mock/settings.ts'
 
 /** Settings' preview: the folder format with Sintel. */
 export const previewFolder = (format: string) => buildFolderName(format, PREVIEW_MOVIE)

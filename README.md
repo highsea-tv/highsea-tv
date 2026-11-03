@@ -36,7 +36,7 @@ The compose files are at the root (`compose.yaml`, and `compose.bridge.yaml` whe
 
 | Path | What lives there |
 | --- | --- |
-| `apps/` | Applications: `server` (the self-hosted app), `docs` (the guides at docs.highsea.tv), `storybook`, and later `web`, `desktop`, `mobile`, `tv` |
+| `apps/` | Applications: `server` (the self-hosted app), `docs` (the guides at docs.highsea.tv), and later `web`, `desktop`, `mobile`, `tv` |
 | `packages/` | Modular packages: design system, contracts and SDK, server domain |
 | `catalog/` | Signed catalogs (indexers, presets, themes, sounds), released independently of the apps |
 | `design/` | Brand explorations, source assets, clickable prototypes |
@@ -53,7 +53,6 @@ Requires Bun 1.4 or later, and Node 26.11.1, the version in `.nvmrc`.
 bun install
 bun run lint
 bun run explorations   # serve the brand direction boards on http://localhost:4400
-bun run storybook      # the design system's components
 bun run prototypes     # the Phase 2 prototypes on http://localhost:4500
 bun run server         # the server, in development, on http://localhost:3000
 bun run docs           # the guides, on http://localhost:3100

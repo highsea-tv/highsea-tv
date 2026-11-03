@@ -6,6 +6,16 @@
 // device code, and the exclusions are groups below. Changes save at once. Since stage 6 (drawn for
 // the TV series phase) a TMDB or Trakt list adds movies or shows, each into its kind's folders; a
 // list of shows says which episodes the shows it adds watch for, in place of Minimum availability.
+
+import type { TraktDeviceCode } from '@highsea-tv/mock/lists'
+import type { ListExclusion, TraktStatus } from '@highsea-tv/mock/settings'
+import type {
+  ImportList,
+  ImportListInput,
+  ImportListSettings,
+  MinimumAvailability,
+  ShowMonitor,
+} from '@highsea-tv/mock/types'
 import {
   Badge,
   Button,
@@ -22,15 +32,6 @@ import {
 } from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
-import type { TraktDeviceCode } from '../../mock/lists.ts'
-import type { ListExclusion, TraktStatus } from '../../mock/settings.ts'
-import type {
-  ImportList,
-  ImportListInput,
-  ImportListSettings,
-  MinimumAvailability,
-  ShowMonitor,
-} from '../../mock/types.ts'
 import { Loadable } from '../loadable.tsx'
 import { fieldOf, TagPicker, useAgo } from './parts.tsx'
 import { AreaPage, Group } from './settings.tsx'

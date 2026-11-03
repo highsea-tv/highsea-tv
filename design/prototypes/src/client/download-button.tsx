@@ -3,6 +3,7 @@
 // desktop app: Download, then where it's got to, then Downloaded with Remove. The browser has no
 // Download: a page can't keep a film for offline (client-settings.md#offline).
 import { bytes } from '@highsea-tv/core/format'
+import type { ClientItem } from '@highsea-tv/mock/types'
 import {
   Button,
   type ControlSize,
@@ -13,7 +14,6 @@ import {
   Tooltip,
   toast,
 } from '@highsea-tv/ui'
-import type { ClientItem } from '../mock/types.ts'
 import { useServerName } from './data.ts'
 import {
   filmSource,
