@@ -71,7 +71,7 @@ Part B is the largest part of the plan: about 45 destinations, each with up to f
 
 ## Progress
 
-### 2026-11-03: B1 built, waiting for the owner's review
+### 2026-11-03: B1 built, signed off by the owner on 2026-11-03
 
 - **The screens, once each, in `apps/client`:** Home, Alerts (a TV page; the bell's popover on pointer, and Home's on touch), Library's Movies and Collections (one page with `?view=` on touch), a collection, a film, a person and Search, each on every form factor. Home draws films only; its shows and music rows come back in B3. Compositions kept per form factor are named in each screen's header comment: the TV's focus rows against the scrolling pages, and Home's three featured forms.
 - **The shell** holds what every screen shares: the announcements (the dialog, the TV's full-screen acknowledgement trapping focus, one toast region), the TV head's `down` context, the chrome over a page's art (`useChromeOverlay`, the pointer bar sticky with glass after 8 px, the TV head scrolling away as in the prototype), the touch header with the server switcher and avatar, and the bell's dot.
@@ -103,7 +103,7 @@ Part B is the largest part of the plan: about 45 destinations, each with up to f
   - language names on the devices (Hermes has no `Intl.DisplayNames`; a names catalog in `@highsea-tv/i18n` would serve both);
   - the layout check's tree-only differences (react-native-web's list and region groups, tvOS reading a focusable card as one label, offscreen TV shelves), not excused until the owner says.
 
-### 2026-11-03: what B1's review added, built and waiting for the owner's review
+### 2026-11-03: what B1's review added, signed off by the owner on 2026-11-03
 
 - **The top bar over a backdrop draws no line.** The line was the bar's own gradient: a background image starts at the padding box and repeats into the border box (CSS Backgrounds 3, `background-origin`), so the transparent bottom border showed a dark strip. The clear bar sets `backgroundOrigin: 'border-box'`, as the prototype's `bg-origin-border` does (`apps/client/src/app/(in)/_layout.tsx`, held by `test/shell-chrome.jest.tsx`).
 - **Trailer** on the web, the desktop app and the phone, not the TV, after From the start, as in the prototype (`apps/client/src/detail/trailer.tsx`). The first Trailer, or a Teaser before release, among YouTube's videos opens a dialog with `https://www.youtube-nocookie.com/embed/{key}`. The library draws it once: `StillFrame` holding an `Embed` pair, an `<iframe>` on the web (`embed.web.tsx`) and a `react-native-webview` WebView on the phone (`embed.tsx`). The phone's WebView loads a small page framing the same embed with `baseUrl https://highsea.tv`, since YouTube plays an embed only for a client its Referer names (YouTube API Services' required minimum functionality). `react-native-webview@14.0.1` is Expo SDK 58's own version. It's unlinked from the Apple TV's project, which has no WKWebView (`apps/client/react-native.config.js`). `/web`'s CSP and the desktop webview's allow `frame-src https://www.youtube-nocookie.com` (ADR 0003's and 0058's dated sections). In mock mode the dialog draws the still and the prototype's note, so no capture loads YouTube. Dialog gains an opt-in close button (`closable`).
@@ -120,6 +120,9 @@ Part B is the largest part of the plan: about 45 destinations, each with up to f
   - the server's own `languageName` copies (subtitles and media) still use `Intl.DisplayNames`, which works on Node; they could move onto the catalog later.
 
 ### 2026-11-03: the TV's gate, Alerts and Settings, from the owner's look at the TV
+
+The owner signed B1 off on 2026-11-03 with these, its review's additions and the items under For the owner above left as noted. B2 (the rest of the films apps) is next.
+
 
 - **Choose a server and its sign-in** had drawn their titles at the hero's size (5.2u) with the controls' own gaps, not the prototype's `tv/connect.tsx` (2f51779). They now take its sizes from `TV_GATE` (`apps/client/src/gate-sizes.ts`): the words 1.6u apart, the code's title 3.6u and the others 3u at `leading-[1]`, the steps 0.8u apart, the buttons 1u, and the servers a 44u list at 0.6u with its rows' padding.
 - **Alerts** stood under the head in flow, so the page's top fade fell on its title. Its head now lies over the page as on Movies and Collections (`useChromeOverlay`), and its title is a library page's `LibraryTitle`, the prototype's `h1`.
