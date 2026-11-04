@@ -24,7 +24,7 @@
 //   transparent layer reaches past the control by the same insets, and a press on it bubbles to
 //   the control's own element (onPress fires on the DOM's `click`).
 import * as Haptics from 'expo-haptics'
-import { type ReactNode, useRef, useState } from 'react'
+import { type ComponentRef, type ReactNode, type Ref, useRef, useState } from 'react'
 import {
   Platform,
   Pressable,
@@ -53,6 +53,11 @@ export type PressProps = Omit<PressableProps, 'style' | 'children'> & {
   children: ReactNode | ((state: PressState) => ReactNode)
   /** Draw the keyboard's focus ring (on by default; a part that draws its own turns it off). */
   ring?: boolean
+  /**
+   * Draw the ring inside the target rather than around it, for targets in a column that clips (the
+   * web renderer's `focus-ring-inset`).
+   */
+  ringInset?: boolean
   /** A light tap on press, for select-class actions. */
   haptic?: boolean
   /**
@@ -60,6 +65,8 @@ export type PressProps = Omit<PressableProps, 'style' | 'children'> & {
    * take the target to 44. Nothing with a pointer or on the TV.
    */
   slop?: { height: number; width?: number }
+  /** The target's view, for a screen to focus or measure it (a menu's trigger, a poster). */
+  ref?: Ref<ComponentRef<typeof View>>
 }
 
 export function Press({
@@ -77,6 +84,8 @@ export function Press({
   onKeyUp,
   slop,
   ring = true,
+  ringInset = false,
+  ref,
   ...props
 }: PressProps) {
   const theme = useTheme()
@@ -104,15 +113,25 @@ export function Press({
       ? {
           outlineStyle: 'solid',
           outlineWidth: tokens.focus.web.width * theme.focusRingScale,
-          outlineOffset: tokens.focus.web.offset,
+          outlineOffset: ringInset
+            ? -tokens.focus.web.width * theme.focusRingScale
+            : tokens.focus.web.offset,
           outlineColor: theme.colors.focus,
         }
       : undefined
   return (
     <AnimatedPressable
+      ref={ref as never}
+      // a button unless the part says otherwise: the part's props come after, so its `role` or
+      // `accessibilityRole` (a link, a tab, a menu's item) wins, and `role` above is read from them
       accessibilityRole="button"
       hitSlop={hitSlop}
       {...props}
+      // react-native-web's Pressable sets its own tabIndex, 0 unless disabled
+      // (exports/Pressable/index.js), which createDOMProps reads before `focusable`, so a press
+      // that's no Tab stop (`focusable={false}`) says so with -1 too, React Native's View's
+      // tabIndex (https://reactnative.dev/docs/view#tabindex-android)
+      {...(props.focusable === false ? { tabIndex: -1 as const } : null)}
       onPressIn={(e) => {
         setPressed(true)
         if (!reduced) scale.value = withSpring(tokens.controls.pressScale, quick)

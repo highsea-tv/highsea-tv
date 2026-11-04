@@ -1,111 +1,22 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The TV's larger parts (the prototype's tv/home.tsx and tv/settings.tsx): the featured card
-// across a page, a menu over a page that a held OK opens (Continue watching's, as the Apple TV
-// app's), and a question before something that can't be taken back. Each takes its words, artwork
-// and actions as props, so any app on the TV's rule can draw them.
+// The TV's larger parts (the prototype's tv/home.tsx and tv/settings.tsx): a menu over a page that
+// a held OK opens (Continue watching's, as the Apple TV app's), a question before something that
+// can't be taken back, and a notice that must be acknowledged. Each takes its words, artwork and
+// actions as props, so any app on the TV's rule can draw them. The featured card is FeaturedCard's
+// TV form now (../featured-card.tsx), TvFeaturedCard its old name (./aliases.ts).
 import { Image } from 'expo-image'
 import type { Ref } from 'react'
 import { StyleSheet, View } from 'react-native'
+import { alpha } from '../alpha.ts'
 import { Button } from '../button.tsx'
 import { Icon } from '../icon.tsx'
 import type { IconName } from '../icons.ts'
+import { type InlineRun, InlineText } from '../inline-text.tsx'
 import { Text } from '../text.tsx'
-import { tokens, useTheme } from '../theme.tsx'
-import { alpha } from './controls.tsx'
+import { useControl, useTheme } from '../theme.tsx'
 import { FocusGuide } from './engine'
 import { Focusable, type ViewHandle } from './focusable.tsx'
 import type { TileSource } from './tiles.tsx'
-
-/** The featured card's height and corner, in units. */
-const FEATURED = { height: 40.5, radius: 1.4 }
-
-/**
- * The featured title as one large card across the page, lifting only slightly on focus (at this
- * size a poster's lift would push it off the screen): its backdrop, with the title, the details
- * and the tagline low on the left. OK does `onPress`; on Home it opens the film.
- */
-export function TvFeaturedCard({
-  title,
-  meta,
-  tagline,
-  backdrop,
-  onPress,
-  preferred,
-  onFocus,
-  ref,
-}: {
-  title: string
-  meta: string
-  tagline: string
-  backdrop: TileSource | undefined
-  onPress: () => void
-  preferred?: boolean
-  onFocus?: () => void
-  ref?: Ref<ViewHandle>
-}) {
-  const theme = useTheme()
-  const u = theme.u
-  const radius = FEATURED.radius * u
-  return (
-    <Focusable
-      ref={ref}
-      role="link"
-      label={`${title}, ${meta}`}
-      lift={1.015}
-      radius={radius}
-      preferred={preferred}
-      onFocus={onFocus}
-      onPress={onPress}
-    >
-      <View
-        style={{
-          height: FEATURED.height * u,
-          borderRadius: radius,
-          overflow: 'hidden',
-          backgroundColor: theme.colors.s2,
-        }}
-      >
-        {backdrop ? (
-          <Image
-            source={backdrop}
-            style={StyleSheet.absoluteFill}
-            contentFit="cover"
-            accessibilityIgnoresInvertColors
-          />
-        ) : null}
-        <View
-          style={[
-            StyleSheet.absoluteFill,
-            {
-              experimental_backgroundImage:
-                'linear-gradient(90deg, rgba(0,0,0,0.7), transparent 55%), linear-gradient(0deg, rgba(0,0,0,0.6), transparent 45%)',
-            },
-          ]}
-        />
-        <View
-          style={{
-            position: 'absolute',
-            left: 2.8 * u,
-            bottom: 2.8 * u,
-            maxWidth: 34 * u,
-            gap: 0.8 * u,
-          }}
-        >
-          {/* the title, where the prototype has its logo: no server has logos yet */}
-          <Text variant="heroTitle" numberOfLines={2} accessibilityRole="header">
-            {title}
-          </Text>
-          <Text variant="meta" color="text-2">
-            {meta}
-          </Text>
-          <Text variant="synopsis" color="text-2" numberOfLines={2}>
-            {tagline}
-          </Text>
-        </View>
-      </View>
-    </Focusable>
-  )
-}
 
 export type TvMenuOption = {
   label: string
@@ -153,7 +64,7 @@ export function TvMenu({
     >
       <View style={{ width: columns > 1 ? across : width, maxWidth: '90%', gap: 1.2 * u }}>
         <View style={{ gap: 0.3 * u }}>
-          <Text variant="rowTitle" accessibilityRole="header">
+          <Text variant="rowTitle" accessibilityRole="header" aria-level={2}>
             {title}
           </Text>
           {detail ? (
@@ -244,6 +155,7 @@ export function TvConfirm({
           variant="heroTitle"
           size={2.2}
           accessibilityRole="header"
+          aria-level={2}
           style={{ textAlign: 'center' }}
         >
           {title}
@@ -271,103 +183,191 @@ export function TvConfirm({
   )
 }
 
-/** A run of a notice's body, as `@highsea-tv/client/format`'s `inlineParts` splits it. */
-export type TvInlineRun = { kind: 'text' | 'bold' | 'italic' | 'link'; text: string }
+/** The acknowledgement's card: its width, gap, inset, title, image's gap and icon, in units. */
+const ACKNOWLEDGE = {
+  width: 44,
+  gap: 1.4,
+  pad: 2.4,
+  title: 2.4,
+  leading: 1.15,
+  imageGap: 0.4,
+  icon: 1.1,
+}
 
 /**
- * A notice as a card in a list (the TV's Alerts): its icon, its title with a mark while it's new,
- * and its body, the bold and italic runs drawn as such and a link as its words, since a TV can't
- * follow one. A focus stop of its own, so the remote moves down through a list of them.
+ * A notice that must be acknowledged, as a screen of its own over everything (the TV prototype's
+ * tv/home.tsx AcknowledgeScreen): TvConfirm's card on the page's background, its image across the
+ * card's top at 21:9, a line naming who it's from with the announcement's icon, its title and
+ * body, and the one button that answers it. Focus starts on the button and can't leave it (a focus
+ * guide with every trap), so the head behind it can't be reached; Back is the app's to wire, and
+ * does nothing until it's answered. A TV can't follow a link, so the body's links are words.
  */
-export function TvNoticeCard({
+export function TvAcknowledge({
+  eyebrow,
   title,
   body,
-  icon = 'announcement',
-  warning,
-  mark,
-  preferred,
-  onFocus,
-  ref,
+  image,
+  action,
+  onAcknowledge,
 }: {
+  /** Who it's from: "From the server's owner". */
+  eyebrow: string
   title: string
-  body: readonly TvInlineRun[]
-  icon?: IconName
-  /** Drawn in the warning colour rather than the accent's. */
-  warning?: boolean
-  /** A pill beside the title: "New". */
-  mark?: string | null
-  preferred?: boolean
-  onFocus?: () => void
-  ref?: Ref<ViewHandle>
+  body: readonly InlineRun[]
+  image?: TileSource
+  /** The button's words: "Got it". */
+  action: string
+  onAcknowledge: () => void
 }) {
   const theme = useTheme()
   const u = theme.u
-  const radius = tokens.tv.radius.poster * u
+  const pad = ACKNOWLEDGE.pad * u
   return (
-    // biome-ignore lint/a11y/useValidAriaRole: React Native's accessibilityRole, which has `text`
-    <Focusable
-      ref={ref}
-      role="text"
-      label={mark ? `${title}, ${mark}` : title}
-      lift={1.015}
-      radius={radius}
-      preferred={preferred}
-      onFocus={onFocus}
+    <View
+      accessibilityViewIsModal
+      accessibilityLabel={title}
+      style={[
+        StyleSheet.absoluteFill,
+        {
+          zIndex: 40,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.colors.bg,
+        },
+      ]}
     >
-      {(focused) => (
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: 1.2 * u,
-            padding: 1.6 * u,
-            borderRadius: radius,
-            backgroundColor: focused ? theme.colors.s2 : theme.colors.s1,
-          }}
+      <View
+        style={{
+          maxWidth: ACKNOWLEDGE.width * u,
+          gap: ACKNOWLEDGE.gap * u,
+          padding: pad,
+          overflow: 'hidden',
+          borderRadius: 1 * u,
+          backgroundColor: theme.colors.s1,
+        }}
+      >
+        {image ? (
+          <Image
+            source={image}
+            style={{
+              marginHorizontal: -pad,
+              marginTop: -pad,
+              marginBottom: ACKNOWLEDGE.imageGap * u,
+              aspectRatio: 21 / 9,
+            }}
+            contentFit="cover"
+            accessibilityIgnoresInvertColors
+          />
+        ) : null}
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 0.6 * u }}>
+          <Icon name="announcement" size={ACKNOWLEDGE.icon} color="accent-text" />
+          <Text variant="eyebrow" color="accent-text">
+            {eyebrow}
+          </Text>
+        </View>
+        <Text
+          variant="heroTitle"
+          size={ACKNOWLEDGE.title}
+          accessibilityRole="header"
+          aria-level={2}
+          style={{ lineHeight: ACKNOWLEDGE.title * ACKNOWLEDGE.leading * u, letterSpacing: 0 }}
         >
-          <View style={{ marginTop: 0.2 * u }}>
-            <Icon
-              name={icon}
-              size={tokens.icon.sizeTv.max}
-              color={warning ? 'badge-warning' : 'accent-text'}
-            />
-          </View>
-          <View style={{ flex: 1, minWidth: 0, gap: 0.6 * u }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 0.8 * u }}>
-              <Text variant="button" style={{ flexShrink: 1 }}>
-                {title}
-              </Text>
-              {mark ? (
+          {title}
+        </Text>
+        <InlineText runs={body} variant="synopsis" />
+        <FocusGuide
+          autoFocus
+          trapFocusUp
+          trapFocusDown
+          trapFocusLeft
+          trapFocusRight
+          style={{ flexDirection: 'row' }}
+        >
+          <Button variant="primary" hasTVPreferredFocus onPress={onAcknowledge}>
+            {action}
+          </Button>
+        </FocusGuide>
+      </View>
+    </View>
+  )
+}
+
+export type TvRadioOption = { value: string; label: string }
+
+/**
+ * A choice of one from a list under its heading, on the TV (a film's Audio and subtitles, and the
+ * player's): each option a focus stop with the radio's role and `checked` (WAI-ARIA's radio group,
+ * https://www.w3.org/WAI/ARIA/apg/patterns/radio/), a check before the one chosen, drawn inverted
+ * (`text` under `bg`) while it has focus, as the TV prototype's menus draw their options.
+ */
+export function TvRadioGroup({
+  title,
+  options,
+  value,
+  onChange,
+  preferred,
+  firstRef,
+}: {
+  /** The group's heading, and its name to assistive tech: "Audio". */
+  title: string
+  options: readonly TvRadioOption[]
+  /** The option chosen. */
+  value: string
+  onChange: (value: string) => void
+  /** Focus starts on the first option when the screen appears. */
+  preferred?: boolean
+  /** The first option, for a screen to focus as it opens. */
+  firstRef?: Ref<ViewHandle>
+}) {
+  const theme = useTheme()
+  const m = useControl()
+  return (
+    <View accessibilityRole="radiogroup" accessibilityLabel={title} style={{ gap: m.inset }}>
+      <Text variant="eyebrow" color="text-3">
+        {title}
+      </Text>
+      {options.map((o, i) => {
+        const on = o.value === value
+        return (
+          <Focusable
+            key={o.value}
+            ref={i === 0 ? firstRef : undefined}
+            role="radio"
+            state={{ checked: on }}
+            label={o.label}
+            preferred={preferred && i === 0}
+            ring={false}
+            // a list's row lifts less than a button
+            lift="row"
+            radius={m.radius}
+            onPress={() => onChange(o.value)}
+          >
+            {(focused) => {
+              const fg = focused ? 'bg' : on ? 'text' : 'text-2'
+              return (
                 <View
                   style={{
-                    borderRadius: tokens.radius.pill,
-                    paddingHorizontal: 0.6 * u,
-                    paddingVertical: 0.1 * u,
-                    backgroundColor: theme.colors['accent-soft'],
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    gap: m.gap,
+                    minHeight: m.height,
+                    paddingHorizontal: m.fieldPad,
+                    borderRadius: m.radius,
+                    backgroundColor: focused ? theme.colors.text : 'transparent',
                   }}
                 >
-                  <Text variant="pill" color="accent-text">
-                    {mark}
+                  <View style={{ opacity: on ? 1 : 0 }}>
+                    <Icon name="check" size={m.icon / theme.u} color={fg} />
+                  </View>
+                  <Text variant="button" color={fg} numberOfLines={1} style={{ flexShrink: 1 }}>
+                    {o.label}
                   </Text>
                 </View>
-              ) : null}
-            </View>
-            <Text variant="synopsis" color="text-2">
-              {body.map((r, i) => (
-                <Text
-                  // biome-ignore lint/suspicious/noArrayIndexKey: the runs are stable for a given body
-                  key={i}
-                  variant="synopsis"
-                  color={r.kind === 'text' || r.kind === 'italic' ? 'text-2' : 'text'}
-                  weight={r.kind === 'bold' ? 600 : undefined}
-                  style={r.kind === 'italic' ? { fontStyle: 'italic' } : undefined}
-                >
-                  {r.text}
-                </Text>
-              ))}
-            </Text>
-          </View>
-        </View>
-      )}
-    </Focusable>
+              )
+            }}
+          </Focusable>
+        )
+      })}
+    </View>
   )
 }

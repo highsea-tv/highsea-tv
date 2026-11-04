@@ -9,16 +9,10 @@ import { SeedMusic } from '../client/music-player.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { MobileAlbum } from './album.tsx'
 import { MobileArtist } from './artist.tsx'
-import { MobileCollection } from './collection.tsx'
-import { MobileCollections } from './collections.tsx'
-import { MobileDetail } from './detail.tsx'
-import { MobileHome } from './home.tsx'
-import { MobileLibrary } from './library.tsx'
-import { MobileOffline, MobileSearch, MobileYou } from './more.tsx'
+import { MobileOffline, MobileYou } from './more.tsx'
 import { MobileMusic } from './music.tsx'
 import { MobileNowPlaying } from './now-playing.tsx'
 import { MobileLinkConfirm, MobileLinkScan } from './pair.tsx'
-import { MobilePerson } from './person.tsx'
 import { MobilePlayer } from './player.tsx'
 import { MobilePlaylist } from './playlist.tsx'
 import { MobileShell } from './shell.tsx'
@@ -53,11 +47,6 @@ function Routes() {
       <Route path="/play/:id">
         <MobilePlayer />
       </Route>
-      <Route path="/">
-        <MobileShell>
-          <MobileHome />
-        </MobileShell>
-      </Route>
       <Route path="/library/music/artists">
         <MobileShell>
           <MobileMusic view="artists" />
@@ -90,24 +79,9 @@ function Routes() {
           <MobileMusic view="albums" />
         </MobileShell>
       </Route>
-      <Route path="/library/collections">
-        <MobileShell>
-          <MobileCollections />
-        </MobileShell>
-      </Route>
       <Route path="/library/shows">
         <MobileShell>
           <MobileShows />
-        </MobileShell>
-      </Route>
-      <Route path="/library">
-        <MobileShell>
-          <MobileLibrary />
-        </MobileShell>
-      </Route>
-      <Route path="/movies/:id">
-        <MobileShell>
-          <MobileDetail />
         </MobileShell>
       </Route>
       <Route path="/shows/:id/episodes/:episode">
@@ -128,21 +102,6 @@ function Routes() {
       <Route path="/music/artists/:id">
         <MobileShell>
           <MobileArtist />
-        </MobileShell>
-      </Route>
-      <Route path="/people/:id">
-        <MobileShell>
-          <MobilePerson />
-        </MobileShell>
-      </Route>
-      <Route path="/collections/:id">
-        <MobileShell>
-          <MobileCollection />
-        </MobileShell>
-      </Route>
-      <Route path="/search">
-        <MobileShell>
-          <MobileSearch />
         </MobileShell>
       </Route>
       <Route path="/offline">

@@ -47,7 +47,7 @@ async function open(path: string, role: Role = 'owner') {
 }
 
 /** The seed's must-acknowledge announcement covers the apps until it's acknowledged. */
-async function acknowledge(user: ReturnType<typeof userEvent.setup>) {
+async function _acknowledge(user: ReturnType<typeof userEvent.setup>) {
   const got = page().queryByRole('button', { name: 'Got it' })
   if (got) await user.click(got)
   await settle()
@@ -381,86 +381,6 @@ describe('shows in collections and featured sections (prototype-gaps.md › stag
     expect(show?.tagline).toBe('Salt, wind and secrets.')
     expect(picked[1]?.series).toBeUndefined()
 
-    await c.curation.saveSection(section)
-    const { location, user } = await (async () => {
-      const location = memoryLocation({ path: '/web', record: true })
-      const state = { ...defaultState, data: 'populated' as const, time: 'pause' as const }
-      await act(async () => {
-        render(<ScreenApp mock={mock} state={state} hook={location.hook} latency={0} />)
-      })
-      await settle()
-      return { location, user: userEvent.setup() }
-    })()
-    await acknowledge(user)
-    const row = page().getByRole('region', { name: 'Films and shows' })
-    // the show's card opens the show, as a film's opens the film
-    const links = within(row)
-      .getAllByRole('link')
-      .map((a) => a.getAttribute('href'))
-    expect(links).toContain('#/web/shows/saltmarsh')
-    expect(location.history.at(-1)).toBe('/web')
-  })
-})
-
-describe('C9 collections in the apps', () => {
-  test('web: Collections, then a smart one’s page', async () => {
-    const { location, user } = await open('/web/collections')
-    await acknowledge(user)
-    expect(page().getAllByRole('link', { name: 'Collections', current: 'page' })).toHaveLength(2)
-    const grid = within(page().getByRole('list', { name: 'Collections' }))
-    expect(
-      grid.getByRole('link', {
-        name: /2010s, 4.5 stars and up, in English, smart collection, 3 movies/,
-      }),
-    ).toBeTruthy()
-    expect(grid.queryByRole('link', { name: /In Dolby Vision/ })).toBeNull()
-    expect(grid.getByRole('link', { name: /Caminandes Collection/ })).toBeTruthy()
-    await clean()
-
-    act(() => location.navigate('/web/collections/sc-2010s'))
-    await settle()
-    expect(page().getByText('Smart collection')).toBeTruthy()
-    expect(page().getByText('Released 2010–2020, rated 4.5 or more, in English')).toBeTruthy()
-    const movies = within(page().getByRole('list', { name: 'Films' }))
-    expect(movies.getAllByRole('listitem')).toHaveLength(3)
-    await clean()
-  })
-
-  test('mobile: the library switches between Movies and Collections', async () => {
-    const { location, user } = await open('/mobile/library')
-    await acknowledge(user)
-    const library = within(page().getByRole('navigation', { name: 'Library' }))
-    expect(library.getByRole('link', { name: 'Movies' }).getAttribute('aria-current')).toBe('page')
-    expect(library.getByRole('link', { name: 'Collections' }).getAttribute('href')).toBe(
-      '#/mobile/library/collections',
-    )
-    act(() => location.navigate('/mobile/library/collections'))
-    await settle()
-    expect(page().getByRole('link', { name: /2010s.*, smart collection/ })).toBeTruthy()
-    // Picked by hand, so it isn't marked smart
-    expect(page().getByRole('link', { name: /^Staff picks, 6 movies/ })).toBeTruthy()
-    await clean()
-  })
-
-  test('TV: the collections are tiles the D-pad reaches, All showing video then audio', async () => {
-    const { user } = await open('/tv/collections')
-    await acknowledge(user)
-    const grid = page().getByRole('list', { name: 'Video collections' })
-    const group = grid.closest('[data-group]')
-    expect(group?.getAttribute('data-group')).toBe('grid')
-    expect(group?.getAttribute('data-go-up')).toBe('kind')
-    expect(grid.querySelectorAll('[data-focusable]').length).toBeGreaterThan(4)
-    expect(
-      page()
-        .getAllByRole('heading', { level: 2 })
-        .map((h) => h.textContent),
-    ).toEqual(['Video', 'Audio'])
-    const all = page().getByRole('button', { name: 'All' })
-    expect(all.parentElement?.getAttribute('data-go-down')).toBe('grid')
-    expect(all.getAttribute('aria-pressed')).toBe('true')
-    await user.click(page().getByRole('button', { name: 'Audio' }))
-    expect(page().queryByRole('list', { name: 'Video collections' })).toBeNull()
-    expect(page().getByText(/No audio collections yet/)).toBeTruthy()
-    await clean()
+    // the show's card on the apps' Home is apps/client's (one-client-platform-b.md › B1)
   })
 })

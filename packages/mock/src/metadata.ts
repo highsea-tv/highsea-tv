@@ -693,7 +693,7 @@ function videos(t: DiscoverMovie, upcoming: boolean): Video[] {
       video('Featurette', 'Making of', 2, released + 30 * 86_400_000),
     ]
   // a restoration's re-release trailer, some time in the last decade
-  return [video('Trailer', 'Restoration trailer', 1, Date.UTC(2015 + (h % 9), h % 12, 1))]
+  return [video('Trailer', 'Restoration trailer', 1, new Date(2015 + (h % 9), h % 12, 1).getTime())]
 }
 
 // ---------------------------------------------------------------- the API

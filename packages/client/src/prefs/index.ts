@@ -11,6 +11,7 @@
 // when a film starts; Settings › Playback in the admin (how it transcodes) is separate.
 import type { ClientType, Preferences } from '@highsea-tv/api-contract'
 import { createT, defineMessages } from '@highsea-tv/i18n'
+import { languageName } from '@highsea-tv/i18n/languages'
 import { useAction, useQuery } from '@highsea-tv/sdk/react'
 import {
   destinationMessages,
@@ -183,14 +184,8 @@ export type PlaybackOption<V extends string = string> = { value: V; label: strin
 /** Settings › Playback's choices with their words, in the person's language. */
 export function playbackOptions(locale = 'en') {
   const t = createT(playbackMessages, locale)
-  let display: Intl.DisplayNames | null = null
-  try {
-    display = new Intl.DisplayNames([locale], { type: 'language' })
-  } catch {
-    // Hermes without Intl.DisplayNames: the code stands in
-  }
-  const name = (code: string) => display?.of(code) ?? code
-  const languages = PLAYBACK_LANGUAGES.map((code) => ({ value: code, label: name(code) }))
+  // From the names catalog, not Intl.DisplayNames, which Hermes lacks (packages/i18n/src/languages.ts)
+  const languages = PLAYBACK_LANGUAGES.map((code) => ({ value: code, label: languageName(code) }))
   return {
     audio: [
       { value: 'original', label: t('original'), short: t('qualityOriginal') },

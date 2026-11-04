@@ -12,12 +12,15 @@ export function EmptyState({
   children,
   action,
   tone = 'neutral',
+  level = 2,
 }: {
   icon: IconName
   title: string
   children?: string
   action?: ReactNode
   tone?: 'neutral' | 'error'
+  /** Its title's heading level: 2 by default, under the page's; 1 when it's all a screen holds. */
+  level?: number
 }) {
   const theme = useTheme()
   return (
@@ -40,7 +43,7 @@ export function EmptyState({
       >
         <Icon name={icon} size={26} color={tone === 'error' ? 'badge-danger' : 'text-2'} />
       </View>
-      <Text variant="title" align="center" accessibilityRole="header">
+      <Text variant="title" align="center" accessibilityRole="header" aria-level={level}>
         {title}
       </Text>
       {children ? (

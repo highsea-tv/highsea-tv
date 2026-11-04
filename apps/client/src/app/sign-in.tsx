@@ -63,8 +63,9 @@ import { ActivityIndicator, type TextInput, View } from 'react-native'
 import { useBack } from '../back.tsx'
 import { openAuthSession, openBrowser } from '../browser.ts'
 import { useForget } from '../forget.tsx'
+import { TV_GATE } from '../gate-sizes.ts'
 import { useDeviceClient, useDeviceInput, useKeepsServers } from '../host'
-import { Centered, GateFrame, MARK, Notice, SaidNote, TvIdentity } from '../kit.tsx'
+import { Centered, GateFrame, MARK, Notice, SaidNote, TvGateTitle, TvIdentity } from '../kit.tsx'
 import { mock } from '../transport.ts'
 
 const { space } = tokens
@@ -620,13 +621,11 @@ function TvCode({ onPassword }: { onPassword: () => void }) {
   const notice = unstarted ?? failure
   return (
     <>
-      <View style={{ flex: 1, gap: tokens.tv.poster.gap * u }}>
+      <View style={{ flex: 1, gap: TV_GATE.gap * u }}>
         <TvIdentity />
-        <Text variant="heroTitle" accessibilityRole="header">
-          {t('codeTitle')}
-        </Text>
+        <TvGateTitle size={TV_GATE.codeTitle}>{t('codeTitle')}</TvGateTitle>
         <SaidNote />
-        <View style={{ gap: m.gap }}>
+        <View style={{ gap: TV_GATE.stepsGap * u }}>
           <Text variant="synopsis" color="text-2">
             <Spliced
               words={t('step1', { url: SLOT })}
@@ -655,7 +654,7 @@ function TvCode({ onPassword }: { onPassword: () => void }) {
             {approved ? t('approved') : t('waiting')}
           </Text>
         </View>
-        <View style={{ flexDirection: 'row', gap: m.gap }}>
+        <View style={{ flexDirection: 'row', gap: TV_GATE.actionsGap * u }}>
           <Button variant="overlay" hasTVPreferredFocus icon="lock" onPress={onPassword}>
             {t('usePassword')}
           </Button>
@@ -778,11 +777,9 @@ function TvPassword({ onCancel }: { onCancel?: () => void }) {
   const fields: TvField[] = challenge ? ['code'] : ['username', 'password']
   const keys = challenge ? DIGITS : KEYS
   return (
-    <View style={{ flex: 1, gap: tokens.tv.poster.gap * u }}>
+    <View style={{ flex: 1, gap: TV_GATE.gap * u }}>
       <TvIdentity />
-      <Text variant="heroTitle" accessibilityRole="header">
-        {t('passwordTitle', { name })}
-      </Text>
+      <TvGateTitle>{t('passwordTitle', { name })}</TvGateTitle>
       <SaidNote />
       <View style={{ width: KEYBOARD * u, gap: m.gap }}>
         {challenge ? (
@@ -820,7 +817,7 @@ function TvPassword({ onCancel }: { onCancel?: () => void }) {
             </TvKey>
           ))}
         </View>
-        <View style={{ flexDirection: 'row', gap: m.gap }}>
+        <View style={{ flexDirection: 'row', gap: TV_GATE.actionsGap * u }}>
           <Button variant="overlay" icon="arrow-left" onPress={del}>
             {t('delete')}
           </Button>

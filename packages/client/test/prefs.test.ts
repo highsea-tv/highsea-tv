@@ -118,4 +118,23 @@ describe('playback settings', () => {
     ])
     expect(o.quality[2]?.short).toBe('8 Mbit/s')
   })
+
+  test('names the languages without Intl.DisplayNames, as on Hermes', () => {
+    // Hermes has no Intl.DisplayNames (https://github.com/facebook/hermes/blob/main/doc/IntlAPIs.md)
+    const real = Intl.DisplayNames
+    Object.defineProperty(Intl, 'DisplayNames', { value: undefined, configurable: true })
+    try {
+      const o = playbackOptions('en')
+      expect(o.audio.slice(1).map((x) => x.label)).toEqual([
+        'English',
+        'German',
+        'French',
+        'Spanish',
+        'Japanese',
+      ])
+      expect(o.subtitles.find((x) => x.value === 'ja')?.label).toBe('Japanese')
+    } finally {
+      Object.defineProperty(Intl, 'DisplayNames', { value: real, configurable: true })
+    }
+  })
 })

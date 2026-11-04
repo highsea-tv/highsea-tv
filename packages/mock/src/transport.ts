@@ -32,6 +32,21 @@
 //   announcements.active   GET    /api/v1/announcements
 //   announcements.seen     POST   /api/v1/announcements/{id}/seen
 //
+// And the films apps' (B1: Home, Library, Collections, a film, a person and Search), from films.ts:
+//
+//   home.sections          GET    /api/v1/home
+//   library.list           GET    /api/v1/items
+//   library.item           GET    /api/v1/items/{type}/{id}
+//   library.search         GET    /api/v1/search
+//   library.collections    GET    /api/v1/library/collections
+//   library.collection     GET    /api/v1/library/collections/{id}
+//   metadata.person        GET    /api/v1/people/{id}
+//   playback.prefs         GET    /api/v1/items/{type}/{id}/prefs
+//   playback.setPrefs      PUT    /api/v1/items/{type}/{id}/prefs
+//   playback.played        POST   /api/v1/items/{type}/{id}/played
+//   playback.unplayed      DELETE /api/v1/items/{type}/{id}/played
+//   playback.dismiss       POST   /api/v1/items/{type}/{id}/dismiss
+//
 // Every other contract route answers 501 with a body naming it. Adding one is one entry in
 // `answers` below, under its group and name as the contract has them: a function from the route's
 // checked input to its output, typed by the route's parsed request and the SDK's `Output`, so it
@@ -52,6 +67,7 @@ import {
   COLLECTION_TOPICS,
   CURATION_TOPICS,
   OPERATIONS_TOPICS,
+  PLAYBACK_TOPICS,
   RESET_TOPIC,
   routes,
   STAFF_TOPICS,
@@ -80,6 +96,7 @@ import { builtInThemes } from '@highsea-tv/tokens'
 import type { z } from 'zod'
 import { clientMessages } from './client.ts'
 import { EPOCH, iso } from './clock.ts'
+import { FilmRefused, filmsOf, type Refusal } from './films.ts'
 import { createMock, type Mock, userFor } from './mock.ts'
 import { waiting } from './pairing.ts'
 import { type Api, ApiError, createApi, type MockServer, type Storage } from './server.ts'
@@ -112,6 +129,12 @@ export const transportMessages = defineMessages({
   'transport.internal': 'Something went wrong on the server. It’s in the logs.',
   'transport.browser': 'Browser',
   'transport.oidcStart': 'That isn’t this server’s single sign-on address.',
+  // the server's own words for the films apps' refusals (packages/media, curation and metadata)
+  'transport.titleUnknown': 'That movie isn’t in the library.',
+  'transport.collectionUnknown': 'There’s no collection with that id.',
+  'transport.personUnknown': 'TMDB has no person with that id.',
+  'transport.versionUnknown': 'That version isn’t this title’s.',
+  'transport.badCursor': 'That page link has expired. Start from the first page.',
 })
 const t = createT(transportMessages)
 const tc = createT(clientMessages)
@@ -1007,6 +1030,39 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
     }
   }
 
+  // ---------------------------------------------------------------- the films apps' reads
+
+  const films = (ctx: Ctx) => filmsOf(ctx)
+  /** The kind of app asking: its device's, or the web's for a browser's session. */
+  const clientOf = (ctx: Ctx): AppClient => {
+    const c = ctx.caller?.device?.client
+    return !c || c === 'admin' ? 'web' : c
+  }
+  /** The films reads' refusals, as the server answers them: 404 for what isn't there, 400 otherwise. */
+  const refusals: Record<Refusal, () => AppError> = {
+    title: () => refuse('not-found', t('transport.titleUnknown')),
+    collection: () => refuse('not-found', t('transport.collectionUnknown')),
+    person: () => refuse('not-found', t('transport.personUnknown')),
+    version: () => refuse('invalid', t('transport.versionUnknown'), { reason: 'version' }),
+    cursor: () => refuse('invalid', t('transport.badCursor'), { reason: 'bad-cursor' }),
+  }
+  const found = <R>(fn: () => R): R => {
+    try {
+      return fn()
+    } catch (e) {
+      if (e instanceof FilmRefused) throw refusals[e.refusal]()
+      throw e
+    }
+  }
+  /** A change to a film's watch state, heard by the person's devices (packages/media's `announce`). */
+  const announce = (ctx: Ctx, id: number) =>
+    bus.emit({ topic: PLAYBACK_TOPICS.watch, ids: [`movie:${id}`], to: [ctx.userId] })
+  const watched = (ctx: Ctx, id: number, done: boolean) => {
+    found(() => quietly(() => films(ctx).played(id, done)))
+    announce(ctx, id)
+    return undefined
+  }
+
   // ---------------------------------------------------------------- the answers
 
   const answers: Answers = {
@@ -1175,6 +1231,7 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
     },
 
     home: {
+      sections: ({ query }, ctx) => films(ctx).home(query?.client ?? 'web'),
       layout: (_, { api }) => homeOf(api),
       saveLayout: ({ body }, ctx) => {
         const layout = { order: [...new Set(body.order)], hidden: [...new Set(body.hidden)] }
@@ -1186,6 +1243,36 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
 
     appearance: {
       get: () => appearanceOf(),
+    },
+
+    // the films apps' reads (films.ts); shows and music wait for B3
+    library: {
+      list: ({ query }, ctx) => found(() => films(ctx).list(query)),
+      item: ({ params }, ctx) => found(() => films(ctx).detail(params.id, clientOf(ctx))),
+      search: ({ query }, ctx) => films(ctx).search(query.query),
+      collections: ({ query }, ctx) => films(ctx).collections(query?.client ?? 'web'),
+      collection: ({ params, query }, ctx) =>
+        found(() => films(ctx).collectionPage(params.id, query?.client ?? 'web')),
+    },
+
+    metadata: {
+      person: ({ params }, ctx) => found(() => films(ctx).person(params.id)),
+    },
+
+    playback: {
+      prefs: ({ params }, ctx) => found(() => films(ctx).prefs(params.id)),
+      setPrefs: ({ params, body }, ctx) => {
+        const next = found(() => quietly(() => films(ctx).setPrefs(params.id, body)))
+        announce(ctx, params.id)
+        return next
+      },
+      played: ({ params }, ctx) => watched(ctx, params.id, true),
+      unplayed: ({ params }, ctx) => watched(ctx, params.id, false),
+      dismiss: ({ params }, ctx) => {
+        found(() => quietly(() => films(ctx).dismiss(params.id)))
+        announce(ctx, params.id)
+        return undefined
+      },
     },
 
     announcements: {

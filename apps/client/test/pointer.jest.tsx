@@ -2,7 +2,7 @@
 // The gate, the shell and Settings with a pointer, as a browser window draws them: the form factor
 // asked for is the pointer's (src/form-factor.ts). Choose a server, its sign-in, the top bar, and
 // Settings with its sections beside the one chosen, in a wide window.
-import { cleanup, fireEvent, screen } from '@testing-library/react-native'
+import { cleanup, fireEvent, screen, within } from '@testing-library/react-native'
 import { flush, fresh, signedIn } from './mock.ts'
 
 // a wide window, unless a test asks for a narrow one, which is drawn as touch's list
@@ -59,6 +59,61 @@ describe('the gate with a pointer', () => {
     expect(r.getPathname()).toBe('/search')
     expect(screen.getByRole('link', { name: 'Search' }).props['aria-current']).toBe('page')
     expect(screen.getByRole('link', { name: 'Home' }).props['aria-current']).toBeUndefined()
+  })
+
+  test('in a wide window, the bar has the prototype’s inset, centring and unchosen tabs', async () => {
+    // a 1440 window, the width the prototype's bar was compared at (web/shell.tsx's TopBar)
+    const { Dimensions } = require('react-native')
+    const was = { window: Dimensions.get('window'), screen: Dimensions.get('screen') }
+    const wide = { width: 1440, height: 900, scale: 2, fontScale: 1 }
+    Dimensions.set({ window: wide, screen: wide })
+    try {
+      await signedIn()
+      const flat = (el: { props: { style?: unknown } }) =>
+        require('react-native').StyleSheet.flatten(el.props.style) ?? {}
+      // the row inside the page's gutter (wide:px-16), its one line centred in the 80 (CSS's
+      // align-content: normal, where react-native-web's View packs lines at the start)
+      const row = screen.getByLabelText('Main').parent as { props: { style?: unknown } }
+      expect(flat(row)).toMatchObject({ paddingHorizontal: 64, alignContent: 'center' })
+      // the server is the prototype's ghost button, padded as a button is
+      const server = screen.getByRole('button', { name: 'Harbor, Switch server' })
+      expect(flat(server).paddingHorizontal).toBe(16)
+      // an unchosen destination at the prototype's text/65, the chosen one at full strength
+      const shown = (name: string) =>
+        flat(screen.getByRole('link', { name }).children[0] as { props: { style?: unknown } })
+      expect(shown('Movies').opacity).toBe(0.65)
+      expect(shown('Home').opacity).toBe(1)
+    } finally {
+      // unmounted first, so nothing drawn hears the window change back
+      await cleanup()
+      Dimensions.set(was)
+    }
+  })
+
+  test('in a narrow window, the bar is the narrow one: Search at its end, the rest a line below', async () => {
+    ;(globalThis as { __formFactor?: string }).__formFactor = 'compact-pointer'
+    const r = await signedIn()
+    expect(screen.getByRole('button', { name: 'Harbor, Switch server' })).toBeTruthy()
+    // the destinations' own line scrolls sideways, rather than wrapping the bar onto three
+    const nav = screen.getByLabelText('Main')
+    expect(nav.props.role).toBe('navigation')
+    expect(nav.props.horizontal).toBe(true)
+    for (const name of ['Home', 'Collections', 'Movies'])
+      expect(within(nav).getByRole('link', { name })).toBeTruthy()
+    // Search is the bar's icon, beside Alerts, not in the line
+    expect(within(nav).queryByRole('link', { name: 'Search' })).toBeNull()
+    // the server is the prototype's ghost button there too, and the unchosen pills its text/65
+    const { StyleSheet } = require('react-native')
+    const server = screen.getByRole('button', { name: 'Harbor, Switch server' })
+    expect(StyleSheet.flatten(server.props.style).paddingHorizontal).toBe(16)
+    const pill = (name: string) =>
+      StyleSheet.flatten(within(nav).getByText(name, { exact: true }).props.style).opacity
+    expect(pill('Movies')).toBe(0.65)
+    expect(pill('Home')).toBe(1)
+    expect(screen.getByRole('link', { name: 'Home' }).props['aria-current']).toBe('page')
+    await fireEvent.press(screen.getByRole('link', { name: 'Search' }))
+    await flush()
+    expect(r.getPathname()).toBe('/search')
   })
 
   test('opens Settings beside its sections, with About as this version has it', async () => {

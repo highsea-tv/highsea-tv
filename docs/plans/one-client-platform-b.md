@@ -1,0 +1,235 @@
+# One client platform, part B: every client screen once
+
+- **Status:** Scoped on 2026-11-03, after part A was committed (`2f51779`) and the owner said to start part B. Approved with [the owner's answers](#the-owners-answers) of 2026-11-03, every recommendation. Nothing is built yet; B1 is next.
+- **Parent plan:** [one-client-platform.md](one-client-platform.md), part B: "C1 to C8 and the player, moved into `apps/client` from the best of today's app and prototype code, each converged screen put beside its old prototypes for the owner." Its standing rules, architecture and answers all apply.
+
+## Read first
+
+1. The parent plan, especially [one copy of each screen](one-client-platform.md#one-copy-of-each-screen-laid-out-by-rule-b), [the prototypes are the clients](one-client-platform.md#the-prototypes-are-the-clients-a-b), its Progress entry for part A, and the owner's answers at part A's review.
+2. [ADR 0061](../adr/0061-one-client-platform.md), and 0055 (the shared logic).
+3. `apps/client`: its README, the root layout's gate, `(in)/_layout.tsx` (the shell), `(in)/settings.tsx` and `src/kit.tsx`. These are the pattern every screen follows.
+4. The specs: [connectivity](../product/connectivity.md), [client-home](../product/client-home.md), [client-library](../product/client-library.md), [client-detail](../product/client-detail.md), [player](../product/player.md), [client-search](../product/client-search.md), [client-settings](../product/client-settings.md), [desktop-app](../product/desktop-app.md), [shows](../product/shows.md) and [activity-downloads](../product/activity-downloads.md).
+5. The old code, to be read before each screen moves:
+   - the prototypes: `design/prototypes/src/{web,mobile,tv,client}`;
+   - the apps: `apps/web/src`, `apps/mobile/src` and `apps/tv/src`.
+6. The checks: `scripts/one-place.ts` with its exceptions, `scripts/sweeps/layout.ts`, and [prototype-gaps.md](prototype-gaps.md) for what stages 1 to 6 added.
+
+## Goal
+
+Every client destination is one screen file in `apps/client`, drawn with the library and laid out by the form-factor rule. The web, the desktop app, the phone and the TV all run it, and so do the prototypes' frames against the mock.
+
+When part B is done:
+
+- the prototype's own client screens are gone from `design/prototypes/src/{web,mobile,tv,client}`;
+- `one-place.ts`'s 134 screen exceptions marked "until B" are down to zero;
+- every converged screen has been approved by the owner beside its old prototype;
+- the layout check holds every destination equal between the web and both simulators.
+
+## Out of scope
+
+- **The builds and how they ship (part C):**
+  - the server serving the client's export at `/web`;
+  - the desktop app wrapping it;
+  - `native.yml`, `desktop.yml` and the release workflow;
+  - the end-to-end run's `/web` step;
+  - the playback sweep on the new web build.
+
+  `apps/mobile` and `apps/tv` are removed at the end of B2, with `native.yml` pointed at `apps/client`; `apps/web` stays, frozen, until part C (answer 2).
+- **The admin (part D)** and **the guides and the 143 values' tokens (part E).**
+- **New features.** Part B moves what the prototypes and apps already have, without adding to it. Downloads that actually download are 4.6. Shows and music on the server are their own phases. Android is 4.5c.
+- **Prototype-gaps' stages 7 and 8.** They wait for this plan, as the parent plan's answer 7 says.
+
+## Where things stand
+
+- **`apps/client`** has the gate, Choose a server, its sign-in, the shell, Settings and a not-found page, with placeholders for Home, Library, Movies, Collections, Search, Alerts and Offline (`src/app/(in)/`).
+- **The old copies of each destination, as files and lines:**
+
+| Source | Files | Lines | What it has |
+| --- | --- | --- | --- |
+| `design/prototypes/src/web` | 24 | 6,210 | Every destination, with shows, music, playlists, profiles, downloads and the desktop window |
+| `design/prototypes/src/mobile` | 23 | 5,103 | The same on the phone, with pairing, Who's watching and the music bar |
+| `design/prototypes/src/tv` | 24 | 6,775 | The same on the TV, with alerts and Who's watching |
+| `design/prototypes/src/client` | 27 | 4,106 | Shared logic and parts: the player's and music player's rules, shows, downloads, profiles, playlists, the stream's states, Get the apps, the trailer |
+| `apps/web/src` | 20 | 5,313 | Films only: Home, Library, collections, a film, Search, Settings, the player, and the desktop app's window, connect and updates |
+| `apps/mobile/src` | 26 | 5,444 | Films only, plus a person, pairing a TV, Offline and the player |
+| `apps/tv/src` | 18 | 4,789 | Films only, plus a person, Alerts and the player |
+
+- **What the prototypes draw that the server doesn't serve.** Shows, music, playlists and profiles read the mock's state directly, through the prototype's own hooks (`design/prototypes/src/client/data.ts`). There are no routes for them in `@highsea-tv/api-contract`, and the apps are films only. Their routes are drafted for the mock in B3, and the client hides what a server doesn't serve (answer 1).
+- **The mock** (`@highsea-tv/mock`) answers the SDK's 22 routes as a transport. It already has show, music and profile state (`shows.ts`, `music.ts`), but behind no route.
+
+## The size of this, and its parts
+
+Part B is the largest part of the plan: about 45 destinations, each with up to four old copies. It's built in three batches, each reviewed by the owner on its own compare sheet (question 3):
+
+- **B1, films:** Home, Library (Movies, Collections, a collection), a film's page, a person's page, Search and Alerts.
+- **B2, the rest of the films apps:**
+  - the player, with its states, Next up, picture in picture, AirPlay and trickplay;
+  - pairing a TV (`/link`), Who's watching, Get the apps and Profile;
+  - Offline and Downloads, as drawn (they don't download until 4.6);
+  - the desktop app's window chrome, Kept in and an update waiting, as host compositions.
+- **B3, shows, music and playlists**, on question 1's answer: Shows, a show's page and an episode, Music with albums, artists, songs and playlists, the music player and its queue, and Now playing.
+
+## Progress
+
+### 2026-11-03: B1 built, waiting for the owner's review
+
+- **The screens, once each, in `apps/client`:** Home, Alerts (a TV page; the bell's popover on pointer, and Home's on touch), Library's Movies and Collections (one page with `?view=` on touch), a collection, a film, a person and Search, each on every form factor. Home draws films only; its shows and music rows come back in B3. Compositions kept per form factor are named in each screen's header comment: the TV's focus rows against the scrolling pages, and Home's three featured forms.
+- **The shell** holds what every screen shares: the announcements (the dialog, the TV's full-screen acknowledgement trapping focus, one toast region), the TV head's `down` context, the chrome over a page's art (`useChromeOverlay`, the pointer bar sticky with glass after 8 px, the TV head scrolling away as in the prototype), the touch header with the server switcher and avatar, and the bell's dot.
+- **The library's parts, one per idea,** merged by form factor in `@highsea-tv/ui`: Row, FilmRow, NamedAction, PersonTile, FactsCard, LetterIndex and Poster; new are FeaturedCard, Pager, InlineText, NoticeCard, TvAcknowledge, TvRadioGroup, Menu, Popover, Skeleton and RowSkeleton, Certification, PersonPortrait, TitleBackdrop, Bloom, SectionHeading, HiddenHeading and FocusGuide. Hover is a library state (1.08 and 1.1 on buttons, 1.02 on posters). ADR 0060's dated section lists the props and the changes in meaning.
+- **The logic moved first:** `@highsea-tv/client/films` (the person's header and the films' words), `library`'s filmography and `playPath`, and `@highsea-tv/media/search`, which the server and the mock now share (`rankSections`, `rankByMatch`, `SEARCH_LIMIT`). ADR 0055's dated section has them.
+- **The mock** answers B1's routes from `packages/mock/src/films.ts`, with `SEED`'s contract ids (the film `10111`, the prototype's `4`), and raises `watch.updated`.
+- **The prototypes hand B1 to the client.** `src/chrome/client.ts` holds the routes (`CLIENT_ROUTES`, `CLIENT_EXACT`), and the prototype's own B1 copies and the tests that drove them are removed; each is covered by `apps/client`'s Jest. The prototypes' suite passes 1,474.
+- **The layout check** (`scripts/sweeps/layout.ts`, `apps/client/uitest/Layout.swift`) covers every B1 destination on the web, the iPhone and the Apple TV, opening each by its address. Of 24 pairs, 15 differ, all listed for the owner below; the sheets are outside the repo.
+- **The compare sheet** puts each of 83 old screens (2f51779) beside the client's, with a note on each that differs, outside the repo. Its first review found ten faults, and these were fixed before the sheet was remade:
+  - the pointer client below 768 draws the prototype's narrow top bar (the server, Search, Alerts and the profile on one line, the destinations as a scrolling line under it), and the Movies filters wrap there (react-native-web's View doesn't shrink by default);
+  - the browser's own outline is gone from text fields (react-native-web's TextInput resets the border but not the outline), and the top bar marks Search by colour only;
+  - the TV film page's words start under the head, so More like this peeks in at the foot again;
+  - the rating's stars keep their size on the web, where an `<svg>` shrinks;
+  - the TV's collection tiles draw the mosaic and the Smart badge;
+  - a collection that isn't on the server says so in the page's own words.
+  A second review of the remade sheet found the text a weight heavier and brighter than the prototype's: the client's export had no font smoothing, which the prototypes' styles set, and its unchosen tabs were `text-2` where the prototypes dim `text` to 65%. Both are fixed in the library, with the 1440 top bar's inset, height and centring (react-native-web's View sets `alignContent: 'flex-start'`). The recapture after it matches the prototype's text and bar; one difference left is that the bar's bottom rule crosses the backdrop on a film's and a person's page at 1440, which is on the owner's list.
+  Four of the first ten weren't the client's: the cut-off Staff picks card is the row's peek, the TV's announcement was dismissed by the capture script, Theo has seen Movie night in the seed, and the rest need the contract (below).
+- **Found and fixed on the way:**
+  - the TV person page scrolled under the head and drew past the screen: a part's own keep wasn't written on the web, and the ambient backdrop's transform counted toward the page's overflow (CSS Transforms 1 § 3);
+  - Pressables with `focusable={false}` kept a tab stop on the web (react-native-web's Pressable ignores `focusable`), so `press.tsx` sets `tabIndex: -1`;
+  - selected chips are `radio` and `checked` on the web and `button` and `selected` on iOS and tvOS, from the library's `chip.tsx`;
+  - a render loop in the shell's toasts.
+- **Left as they were, on judgement:** the back registry's and the not-found words' copies stay in `apps/mobile`, `apps/tv` and `apps/web`, which B2 and C delete; `one-place` reports none of them.
+- **Values without tokens** (part E): Home's 0.62 and 0.46 rows and the TV's 22u Continue watching (`apps/client/src/home/sizes.ts`), the TV's Alerts sizes, the phone's 17 section heading and the person's 15/1.45 biography. They're written into `docs/design-language/platforms/`.
+- **Waiting on the contract or the owner** (answered at B1's review, [below](#the-owners-answers-at-b1s-review)):
+  - title art (`Art` has no `logo`), the featured card's and More like this's quality badges (`ClientItem` has no quality), and Home's bloom (no palette colour on `art`);
+  - trailers on pointer clients (a YouTube embed, with `frame-src` in `/web`'s CSP; client-detail.md's open question);
+  - the server's own collections in Search (`ClientCollection.id` is TMDB's number);
+  - language names on the devices (Hermes has no `Intl.DisplayNames`; a names catalog in `@highsea-tv/i18n` would serve both);
+  - the layout check's tree-only differences (react-native-web's list and region groups, tvOS reading a focusable card as one label, offscreen TV shelves), not excused until the owner says.
+
+### 2026-11-03: what B1's review added, built and waiting for the owner's review
+
+- **The top bar over a backdrop draws no line.** The line was the bar's own gradient: a background image starts at the padding box and repeats into the border box (CSS Backgrounds 3, `background-origin`), so the transparent bottom border showed a dark strip. The clear bar sets `backgroundOrigin: 'border-box'`, as the prototype's `bg-origin-border` does (`apps/client/src/app/(in)/_layout.tsx`, held by `test/shell-chrome.jest.tsx`).
+- **Trailer** on the web, the desktop app and the phone, not the TV, after From the start, as in the prototype (`apps/client/src/detail/trailer.tsx`). The first Trailer, or a Teaser before release, among YouTube's videos opens a dialog with `https://www.youtube-nocookie.com/embed/{key}`. The library draws it once: `StillFrame` holding an `Embed` pair, an `<iframe>` on the web (`embed.web.tsx`) and a `react-native-webview` WebView on the phone (`embed.tsx`). The phone's WebView loads a small page framing the same embed with `baseUrl https://highsea.tv`, since YouTube plays an embed only for a client its Referer names (YouTube API Services' required minimum functionality). `react-native-webview@14.0.1` is Expo SDK 58's own version. It's unlinked from the Apple TV's project, which has no WKWebView (`apps/client/react-native.config.js`). `/web`'s CSP and the desktop webview's allow `frame-src https://www.youtube-nocookie.com` (ADR 0003's and 0058's dated sections). In mock mode the dialog draws the still and the prototype's note, so no capture loads YouTube. Dialog gains an opt-in close button (`closable`).
+- **Language names from a catalog,** `@highsea-tv/i18n/languages`: 186 names, exactly the codes the server's tracks use (`LANGUAGE_CODES`), in CLDR's English as Node's ICU gives them, with a regional tag falling back to its language. The clients no longer call `Intl.DisplayNames`, which Hermes lacks (its IntlAPIs.md), so the phone and the TV say English rather than en (ADR 0055's dated section).
+- **The layout check's exceptions, each with its reason** (`scripts/sweeps/layout.ts`, tested in `layout.test.ts`): react-native-web's list, region and group wrappers around paired nodes (`CONTAINER`); a field's own words (`FIELD_WORDS`); words inside a stop that tvOS reads as one label (`IN_STOP`); and the letter index, which XCUITest reports by its adjustable trait rather than as a field.
+- **The checks after it,** under Node 26.11.1: lint (1,758 files), typecheck, 12,848 tests pass with 8 skipped, and every app's Jest; `one-place`, `controls.ts` and `bundles.ts` clean; the pages sweep clean on 3,296 pages, the keyboard walk on 319, every TV focusable reachable, and the server's admin pages clean. Both mock-mode builds succeeded, the Apple TV's without the WebView. The layout check passes all 25 pairs, where B1's report had 15 differ, once the field rule also took a tvOS field that isn't being edited, which XCUITest reports as `other` with what's typed as its value. The compare sheet's film and person screens are recaptured.
+- **Found on the way:**
+  - "Directed by" on the phone wrapped because FactsCard fixed its labels at the widest label's measured width, and react-native-web's `onLayout` rounds that width to a whole pixel (`offsetWidth`). The labels now take it as `minWidth` and don't shrink, so it no longer wraps. This was a bug, not the wrap answer 7 accepted.
+  - The TV's About card is now read with its words (FactsCard's `says`): tvOS reads a focusable card only by its label.
+  - `apps/mobile`'s Chip test still expected the role Chip had before B1 (a button, selected); it now expects B1's toggle, checked.
+- **For the owner:**
+  - the contract's `Video` has no length, so the line under the trailer is its kind alone;
+  - YouTube's playback in the phone's WebView, and whether it accepts the desktop webview's `tauri://localhost` referrer, are untried on devices;
+  - the server's own `languageName` copies (subtitles and media) still use `Intl.DisplayNames`, which works on Node; they could move onto the catalog later.
+
+### 2026-11-03: the TV's gate, Alerts and Settings, from the owner's look at the TV
+
+- **Choose a server and its sign-in** had drawn their titles at the hero's size (5.2u) with the controls' own gaps, not the prototype's `tv/connect.tsx` (2f51779). They now take its sizes from `TV_GATE` (`apps/client/src/gate-sizes.ts`): the words 1.6u apart, the code's title 3.6u and the others 3u at `leading-[1]`, the steps 0.8u apart, the buttons 1u, and the servers a 44u list at 0.6u with its rows' padding.
+- **Alerts** stood under the head in flow, so the page's top fade fell on its title. Its head now lies over the page as on Movies and Collections (`useChromeOverlay`), and its title is a library page's `LibraryTitle`, the prototype's `h1`.
+- **Settings** now has a library page's title above its sections and panel, as the other pages do, on the owner's word. The prototype drew it as a row title beside the list.
+- Checks: lint, the client's typecheck, its 215 Jest tests, `one-place` and `controls.ts` clean; every TV focusable reachable; the layout check's TV pairs for the four screens the same (0 differences).
+
+## How each screen moves (B1 to B3)
+
+- **One file per destination** in `apps/client/src/app/`, with one composition per form factor only where the screens do different things, such as the TV's focus rows against the phone's scrolling page. Each of those is listed in the screen's header comment and in the report.
+- **The design to follow is the prototype's,** since it's locked. Where an app and its prototype differ, the prototype wins, and the app's code is reused where it already matches. Where the phone, TV and web prototypes differ only in size or columns, they become one layout with the rule's values. The owner approves each converged screen on the batch's compare sheet.
+- **Layout values the guides don't state** take the prototype's: the web's page margin by width, posters per row, the gap between rows, and the compact-pointer and regular-touch layouts. They're written into `docs/design-language/platforms/` as each screen moves (the owner's answer 3 at part A).
+- **The library's parts become one part per idea,** with a form for each form factor: `TvFilmRow` and `Row`, `TvPersonTile` and `PersonTile`, `TvInfoCard` and `FactsCard`. `parity.ts` lists any that can't.
+- **Hover** on primary and danger buttons, and poster hover at 1.02, are added as library states in B1 (the owner's answer 6 at part A).
+- **Logic moves to `@highsea-tv/client`** before its screen moves. That covers the prototype's `src/client` rules (the continue menu, downloads, profiles, playlists, shows and the music player) and anything an app keeps in its own files. Nothing is kept twice.
+- **Strings** go in `apps/client`'s catalogs, or the client's shared ones. The copies of the not-found words, the TV's `back.tsx` and `PAIRING_APPROVAL_MS` left by part A are removed in B1.
+- **The prototype's own copy is removed** once its screen is in `apps/client` and the old screen is on the compare sheet. The prototypes' routes then point their frames at the client (`src/chrome/client.ts`'s held routes).
+
+## The checks (B1 to B3)
+
+- **`one-place.ts`:** each batch removes its "until B" screen exceptions. A batch isn't done while any of its own exceptions are left.
+- **`layout.ts`:**
+  - every destination is captured on the web at compact-touch, regular-pointer and tv;
+  - the iPhone and Apple TV simulators capture it from the mock builds;
+  - mock seeds give each screen its data (question 4).
+- **The sweeps:** `pages.ts`, `keyboard.ts` and `dpad.ts` run against the client in the frames, in three themes and at 200% text.
+- **The player:** the playback sweep keeps running on `apps/web` until part C moves it. The client's player is checked in the frames and on both simulators, with Sintel from the mock's fixtures.
+- **Before each batch's report:** `/checks` full.
+
+## ADRs
+
+- **0061** gets a dated section per batch, covering what converged, the parts merged and any composition kept per form factor.
+- **0055** gets a dated section on the logic moved from the prototype's `src/client`.
+- If question 1 is answered as recommended, **0061** also records the draft routes for shows, music, playlists and profiles. It records how the client hides what a server doesn't serve.
+
+## Risks
+
+- **Every screen changes for someone.** Three designs become one. The compare sheets show each screen beside its old self at every form factor, and the owner approves batch by batch.
+- **The player is the hardest screen.** Its engines differ by platform (expo-video, and `<video>` with hls.js), and so do its subtitles (native cues, and the browser's `<track>`). Picture in picture, AirPlay and the TV's Back in steps are platform behaviours behind one screen. It moves in B2, after the simpler screens have settled the pattern.
+- **The web bundle grows** as screens move. It's measured at each batch against part A's 2.98 MB (661 kB gzipped).
+- **The simulators' builds are slow,** about ten minutes for both. The layout check runs once per batch rather than per screen, with its preflight first.
+
+## Open questions for the owner
+
+1. **Shows, music, playlists and profiles.**
+   **Recommended:** move them into `apps/client` with the rest. Their routes are drafted in `@highsea-tv/api-contract`, and the mock answers them. The real server doesn't serve them yet, so its answer leaves them out, and the client hides what a server doesn't have (Shows and Music in the navigation, profiles in Who's watching). The prototypes are then wholly the client, and these screens are ready for their phases.
+   Or: leave them in `design/prototypes` on the old renderer until their phases build them in `apps/client`. Part B is then smaller, but the prototypes keep a second set of client screens. `src/web` and the prototype's hooks also stay alive past part D.
+2. **When the old apps go.**
+   **Recommended:**
+   - `apps/mobile` and `apps/tv` are removed at the end of B2, once `apps/client` builds the phone and the TV with every films screen. `native.yml` points at `apps/client` then, a small piece of part C brought forward.
+   - `apps/web` stays, frozen, until part C moves `/web` and the desktop app onto the client's export, and is removed there.
+   - `one-place.ts` lists `apps/web` until C.
+
+   Or: all three stay frozen until part C removes them together. That's simpler, but three old apps stay beside the new one for longer.
+   Or: bring part C's switch of `/web` and the desktop app into part B, and remove all three in B. That's cleaner, but part B gets larger and its review is harder.
+3. **How the owner reviews.**
+   **Recommended:** three batches (B1 films, B2 the rest of the films apps, B3 shows and music), each stopping for review on its own compare sheet.
+   Or: build all of part B without stopping and review it once, as design system 1.1 was. It's faster, but the sheet is about 45 destinations at three form factors, and a change asked for in B1 then lands on every later screen too.
+4. **What the layout check covers.**
+   **Recommended:** every destination, on the web, the iPhone and the Apple TV, each from a mock seed. Then no screen can drift between targets unnoticed.
+   Or: the main screen of each section only (Home, Library, a film, Search, the player and Settings). That's quicker to run and keep up, but the rest is checked only by eye on the compare sheet.
+5. **The player's subtitles on the web.**
+   **Recommended:** the web keeps the browser's `<track>` with WebVTT, as `apps/web` does now, and the player screen draws its own cues only where the engine hands them over (expo-video on iOS, tvOS and Android). That keeps behaviour as it is today.
+   Or: the screen draws the cues itself on every platform, from the WebVTT it fetches. Subtitles then look the same everywhere, but the web gives up the browser's own caption settings and accessibility.
+
+## The owner's answers
+
+On 2026-11-03 the owner took every recommendation for questions 1 to 5:
+
+1. Shows, music, playlists and profiles move into `apps/client` in B3. Their routes are drafted in `@highsea-tv/api-contract` and the mock answers them. The real server doesn't serve them yet, and the client hides what a server doesn't have.
+2. `apps/mobile` and `apps/tv` are removed at the end of B2, with `native.yml` pointed at `apps/client`. `apps/web` stays, frozen, until part C moves `/web` and the desktop app onto the client's export. `one-place.ts` lists it until then.
+3. The owner reviews three gated batches, B1, B2 and B3, each on its own compare sheet.
+4. The layout check covers every destination on the web, the iPhone and the Apple TV, each from a mock seed.
+5. On the web, the player keeps the browser's `<track>` with WebVTT. The screen draws cues only where the engine hands them over (expo-video on iOS, tvOS and Android).
+
+## Questions at B1's review
+
+B1's [checkpoint report](#2026-11-03-b1-built-waiting-for-the-owners-review) left these for the owner:
+
+1. **The contract's gaps** (title art, quality on `ClientItem`, a palette colour, the server's collections in Search). **Recommended:** add them in a later server part; or before B2; or drop them and change the prototype.
+2. **Trailers on pointer clients.** **Recommended:** wait for trailer files on the server, as on the TV; or embed YouTube now on the web and desktop app; or never on the clients.
+3. **Language names on the devices** (Hermes has no `Intl.DisplayNames`). **Recommended:** a names catalog in `@highsea-tv/i18n`; or a polyfill; or codes.
+4. **The screens that changed on the compare sheet.** **Recommended:** approve all of them except the top bar's bottom line over a backdrop at 1440, which goes; or approve all; or revert all to the prototype.
+5. **A focused field's look.** **Recommended:** the control spec's focus edge; or the prototype's 3px soft accent ring.
+6. **The Search icon.** **Recommended:** Icon's standard 16 and 1.75; or 18 and 2.25 with a new stroke option.
+7. **"Directed by" at 390 on the web.** **Recommended:** let it wrap; or one line with an ellipsis.
+8. **The layout check's tree-only differences.** **Recommended:** excuse each with its documented reason; or change the roles until the trees match.
+
+Two follow-ups came from answer 2:
+
+9. **The embed's host.** **Recommended:** `www.youtube-nocookie.com`, YouTube's privacy-enhanced mode; or `www.youtube.com`.
+10. **The phone's trailers.** **Recommended:** wait for trailer files; or open YouTube outside highsea; or embed in a WebView.
+
+## The owner's answers at B1's review
+
+On 2026-11-03 the owner took every recommendation for questions 1 to 10 except 2 and 10:
+
+1. The contract's gaps wait for a later server part. B2 goes on with what's drawn now, and the screens pick them up when the server sends them.
+2. **Changed by the owner:** the web and the desktop app embed YouTube trailers now, from `ClientDetail.videos`. The TV stays without until the server keeps trailer files (the owner's call of 2026-11-02).
+3. Language names come from a catalog in `@highsea-tv/i18n`, used on every client.
+4. Every change on the sheet is approved except the top bar's bottom line, which goes over a backdrop on a film's and a person's page at 1440, as in the prototype.
+5. A focused field draws the control spec's focus edge.
+6. The Search icon keeps Icon's standard size and stroke.
+7. "Directed by" wraps at 390.
+8. The layout check excuses each tree-only difference in its exceptions, with its documented reason.
+9. The embed and `frame-src` use `www.youtube-nocookie.com` only.
+10. **Changed by the owner:** the phone plays the trailer in the app, in a WebView (react-native-webview through `/add-dependency`) holding the same privacy-enhanced embed.
+
+### What the answers add to B1, before its sign-off
+
+- The top bar draws no bottom line over a backdrop (answer 4).
+- A Trailer button on the web, the desktop app and the phone, opening the embed. On the web it's an `<iframe>` in a platform file. On the phone it's a WebView. `/web`'s CSP and the desktop webview allow `frame-src https://www.youtube-nocookie.com` (ADR 0003's and 0058's dated sections), and client-detail.md's open question is answered. The trailer's prototype (`design/prototypes/src/client/`) is the design to follow (answers 2, 9 and 10).
+- The names catalog in `@highsea-tv/i18n`, replacing `Intl.DisplayNames` in the clients (answer 3).
+- The layout check's exceptions, each with its reason (answer 8).

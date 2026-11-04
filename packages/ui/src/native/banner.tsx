@@ -4,11 +4,14 @@
 // Drawn at the web's measures, as the prototype's phone shows it: the `ui` size (13), a 32 disc
 // with a 16 icon, and the small ghost Dismiss. The body is text, or runs of it (inline links and
 // bold), which take the body's style.
+
+import { useT } from '@highsea-tv/i18n/react'
 import { adminText } from '@highsea-tv/tokens'
 import type { ReactNode } from 'react'
 import { View } from 'react-native'
 import { Button } from './button.tsx'
 import { Icon } from './icon.tsx'
+import { uiMessages } from './messages.ts'
 import { Text } from './text.tsx'
 import { tokens, useTheme } from './theme.tsx'
 
@@ -26,6 +29,7 @@ export function Banner({
   onDismiss?: () => void
 }) {
   const theme = useTheme()
+  const t = useT(uiMessages)
   const line = Math.round(UI.size * UI.leading * theme.u)
   return (
     <View
@@ -69,7 +73,7 @@ export function Banner({
             size="sm"
             icon="close"
             iconOnly
-            accessibilityLabel="Dismiss"
+            accessibilityLabel={t('dismiss')}
             onPress={onDismiss}
           />
         </View>

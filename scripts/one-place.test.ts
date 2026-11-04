@@ -330,7 +330,7 @@ describe('values', () => {
       'export function Row() {',
       '  const padding = 8',
       '  return (',
-      '    <View style={[styles.row, { padding, margin: PAD, borderRadius: BOX.radius, gap: pad(10) }, ring(true)]}>',
+      '    <View style={[styles.row, { padding, margin: PAD, borderRadius: BOX.radius, gap: Math.max(10, 0), rowGap: pad(3) }, ring(true)]}>',
       '      <Icon size={SIZE} />',
       '    </View>',
       '  )',

@@ -87,6 +87,17 @@ const PLATFORMS = new Set(['ios', 'android', 'native', 'web'])
  */
 const STYLE_SIZE =
   /^(?:(?:min|max)?(?:Width|Height)|width|height|flexBasis|fontSize|lineHeight|letterSpacing|padding\w*|margin\w*|gap|rowGap|columnGap|border\w*Radius|border\w*Width|shadowRadius|outline\w*|inset\w*|top|right|bottom|left|start|end|translateX|translateY)$/
+/**
+ * Style properties and props that take a scale (a transform's, https://reactnative.dev/docs/transforms,
+ * and the TV's Focusable `lift`), where only 1, no scale at all, is no literal.
+ */
+const SCALE = /^(?:scale[XY]?|lift)$/
+/**
+ * Functions that hand back a size given as their argument, so a number passed to them is a literal
+ * size: `Math.max(16, inset)`, `PixelRatio.roundToNearestPixel(2.8 * u)`. Any other function's
+ * numbers are its inputs, not sizes: `place(v, 0, 1)` is an index and two offsets.
+ */
+const PASS_THROUGH = new Set(['max', 'min', 'round', 'floor', 'ceil', 'roundToNearestPixel'])
 /** Props that take a size, on any element and as a component's defaults. */
 const PROP_SIZE =
   /^(?:size|iconSize|radius|strokeWidth|hitSlop|(?:min|max)?(?:Width|Height)|width|height|gap|padding\w*|margin\w*)$/
@@ -841,9 +852,18 @@ function literals(source: Source): Finding[] {
         if (isUnit(get(e, 'right'))) return sizes(get(e, 'left'), via, seen)
         return isUnit(get(e, 'left')) ? sizes(get(e, 'right'), via, seen) : []
       }
-      // `pad(12)`, `Math.max(16, inset)`, `PixelRatio.roundToNearestPixel(2.8 * u)`
-      case 'CallExpression':
-        return all(e, 'arguments').flatMap((x) => sizes(x, via, seen))
+      // `Math.max(16, inset)`, `PixelRatio.roundToNearestPixel(2.8 * u)`, and in any call a
+      // size worked out in its arguments (`pad(12 * u)`), but not another call's bare numbers
+      case 'CallExpression': {
+        const through = PASS_THROUGH.has(calleeName(e) ?? '')
+        return all(e, 'arguments').flatMap((x) => {
+          const b = bare(x)
+          const number =
+            b?.type === 'NumericLiteral' ||
+            (b?.type === 'UnaryExpression' && bare(get(b, 'argument'))?.type === 'NumericLiteral')
+          return number && !through ? [] : sizes(x, via, seen)
+        })
+      }
       default:
         return []
     }
@@ -947,6 +967,17 @@ function literals(source: Source): Finding[] {
         `${key}: ${textOf(source, node)}${via ? ` (from ${via})` : ''}, a literal size`,
       )
   }
+  const scale = (key: string, value: Node | undefined) => {
+    for (const { node, via } of sizes(value)) {
+      const n = bare(node)
+      if (n?.type === 'NumericLiteral' && Number(n.value) === 1) continue
+      add(
+        node,
+        `${node.start}`,
+        `${key}: ${textOf(source, node)}${via ? ` (from ${via})` : ''}, a literal scale`,
+      )
+    }
+  }
   const named = (key: string, value: Node | undefined) => {
     for (const s of strings(value))
       if (NAMED_COLOURS.has(s.text.toLowerCase()))
@@ -966,6 +997,7 @@ function literals(source: Source): Finding[] {
     if (n.type === 'ObjectProperty' && parent && styles.has(parent)) {
       const key = keyOf(get(n, 'key')) ?? ''
       if (STYLE_SIZE.test(key)) size(key, get(n, 'value'))
+      if (SCALE.test(key)) scale(key, get(n, 'value'))
       if (COLOUR.test(key) && !inMask) named(key, get(n, 'value'))
     } else if (n.type === 'JSXAttribute') {
       const key = nameOf(get(n, 'name')) ?? ''
@@ -973,6 +1005,7 @@ function literals(source: Source): Finding[] {
       const value = raw?.type === 'JSXExpressionContainer' ? get(raw, 'expression') : raw
       if (PROP_SIZE.test(key) || (STYLE_SIZE.test(key) && key !== 'start' && key !== 'end'))
         size(key, value)
+      if (SCALE.test(key)) scale(key, value)
       if (COLOUR.test(key) && !inMask) named(key, value)
     } else if (isFunction(n) && isComponent(n, parent)) {
       // a component's defaults: `{ size = 20 }`

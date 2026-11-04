@@ -4,36 +4,17 @@
 // as the bar under the art and the time left; nowhere else does a card show progress. The TV draws
 // its own focus stop around these props (tv/kit.tsx's TvPoster).
 
+import { type CardOptions, createFilmsText } from '@highsea-tv/client/films'
 import type { ClientItem } from '@highsea-tv/mock/types'
 import { cn, Poster, type PosterProps, Skeleton } from '@highsea-tv/ui'
-import { left } from './data.ts'
 
-export type MediaCardOptions = {
-  /** Home's 16:9 card: the still in place of the poster. */
-  wide?: boolean
-  /** Continue watching: the progress bar under the art and the time left, on a still. */
-  resume?: boolean
-}
+const films = createFilmsText('en')
 
-export function mediaCard(item: ClientItem, { wide = false, resume = false }: MediaCardOptions) {
-  const still = wide || resume
-  // an episode is its show's name over its place: "S2, E6 · 21 min left", or its title
-  const { show } = item
-  return {
-    title: show ? show.title : item.title,
-    src: still ? item.art.still : item.art.poster,
-    aspect: still ? ('still' as const) : ('poster' as const),
-    caption:
-      resume && item.progress !== null
-        ? show
-          ? `${show.code} · ${left(item)}`
-          : left(item)
-        : show
-          ? `${show.code} · ${show.episode}`
-          : String(item.year),
-    progress: resume ? (item.progress ?? 0) : null,
-    progressBelow: resume,
-  }
+/** The card's title, art and caption, as every app has them (@highsea-tv/client/films). */
+export function mediaCard(item: ClientItem, options: CardOptions) {
+  const card = films.card(item, options)
+  // the mock's art is always drawn: a poster or a still for every title
+  return { ...card, src: card.src ?? '' }
 }
 
 /** The card on the web and the phone, its title and caption shown under the art. */
@@ -43,7 +24,7 @@ export function MediaPoster({
   wide,
   resume,
   ...rest
-}: MediaCardOptions & { item: ClientItem; href: string } & Pick<
+}: CardOptions & { item: ClientItem; href: string } & Pick<
     PosterProps,
     'quality' | 'actions' | 'className' | 'titleSize'
   >) {
@@ -71,7 +52,7 @@ export function MediaPosterSkeleton({
   wide = false,
   resume = false,
   className,
-}: MediaCardOptions & { className?: string }) {
+}: CardOptions & { className?: string }) {
   return (
     <div aria-hidden className={cn('min-w-0', className)}>
       <Skeleton

@@ -74,7 +74,7 @@ Audience rules apply per client type, so an owner can address the TVs only, or l
 
 ## States
 
-- **Loading:** web: a hero block and a row of poster skeletons; mobile: two carousel cards and a row; TV: a spinner in the centre.
+- **Loading:** web: a hero block and a row of poster skeletons; mobile: two carousel cards and a row; TV: the featured card and a row of skeletons (B1 of the one client platform converged the TV onto the skeletons, for the owner's approval; it was a spinner).
 - **Empty:** "Nothing to watch yet" · When the server's owner adds films, shows or music, they show up here. (TV adds **Library**.)
 - **Error:** "Couldn't load the home screen" with the server's message and **Try again**.
 - **Live:** Continue watching follows playback; a new announcement arrives over SSE.

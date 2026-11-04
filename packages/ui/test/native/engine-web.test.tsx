@@ -146,6 +146,45 @@ describe('the TV focus engine in a browser', () => {
     destination.remove()
   })
 
+  test('a guide with autoFocus gives back the stop focused last in it, not the one in line', () => {
+    // Search on the TV: the keyboard beside its results, and Left from a result back to the last key
+    const { getByLabelText } = render(
+      <View>
+        <FocusGuide autoFocus>
+          <Stop label="A" role="button" />
+          <Stop label="B" role="button" />
+        </FocusGuide>
+        <Stop label="Sintel" role="link" />
+        <Stop label="Tears of Steel" role="link" />
+      </View>,
+    )
+    // happy-dom lays nothing out: the keys in a column, the results beside them
+    const box = (label: string, left: number, top: number) => {
+      const rect = { left, top, width: 100, height: 100, right: left + 100, bottom: top + 100 }
+      getByLabelText(label).getBoundingClientRect = () =>
+        ({ ...rect, x: left, y: top, toJSON: () => rect }) as DOMRect
+    }
+    box('A', 0, 0)
+    box('B', 0, 120)
+    box('Sintel', 200, 0)
+    box('Tears of Steel', 200, 120)
+    window.dispatchEvent(new Event('resize'))
+    const press = (key: string) =>
+      act(() => {
+        ;(document.activeElement ?? document.body).dispatchEvent(
+          new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true }),
+        )
+      })
+    act(() => getByLabelText('B').focus())
+    press('ArrowRight')
+    expect(document.activeElement).toBe(getByLabelText('Tears of Steel'))
+    press('ArrowUp')
+    expect(document.activeElement).toBe(getByLabelText('Sintel'))
+    // A is in line with Sintel; the guide hands back B, the key used last
+    press('ArrowLeft')
+    expect(document.activeElement).toBe(getByLabelText('B'))
+  })
+
   test('select reaches the remote while a stop has focus, and the stop is pressed once', async () => {
     const user = userEvent.setup()
     const heard: string[] = []

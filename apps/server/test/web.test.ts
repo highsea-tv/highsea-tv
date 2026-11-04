@@ -85,6 +85,18 @@ describe('/web', () => {
     }
   })
 
+  // a film's trailer frames YouTube's privacy-enhanced embed and nothing else (ADR 0003's
+  // 2026-11-03 section); everything else stays the page's own
+  test('the policy lets frames come from youtube-nocookie.com alone', async () => {
+    const { url } = await serve()
+    const res = await fetch(`${url}/web/movies/603`)
+    const directives = (res.headers.get('content-security-policy') ?? '').split('; ')
+    expect(directives.filter((d) => d.startsWith('frame-src'))).toEqual([
+      'frame-src https://www.youtube-nocookie.com',
+    ])
+    expect(directives).toContain("default-src 'self'")
+  })
+
   test('hashed assets are cached for good, and gzipped for browsers that ask', async () => {
     const { url } = await serve()
     const res = await fetch(`${url}/web/assets/index-Cx1a2b3c.js`, {

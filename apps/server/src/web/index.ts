@@ -62,6 +62,11 @@ export const CSP = [
   "connect-src 'self'",
   "media-src 'self' blob: data:",
   "worker-src 'self' blob:",
+  // a film's trailer: YouTube's privacy-enhanced embed, that host alone (ADR 0003's 2026-11-03
+  // section; https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-src).
+  // /web still serves apps/web until part C, which has no trailer; it's ready for the client's
+  // export (apps/client/src/detail/trailer-player.web.tsx) when that moves here
+  'frame-src https://www.youtube-nocookie.com',
   "object-src 'none'",
   "base-uri 'self'",
   "form-action 'self'",

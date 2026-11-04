@@ -6,14 +6,20 @@
 import { Image } from 'expo-image'
 import { createContext, type ReactNode, useContext, useState } from 'react'
 import { StyleSheet, useWindowDimensions, View, type ViewProps } from 'react-native'
+import { alpha } from '../alpha.ts'
 import { Text } from '../text.tsx'
 import { tokens, useTheme } from '../theme.tsx'
-import { alpha } from './controls.tsx'
-import { FocusGuide, keptProps, TvScroll } from './engine'
+import { FocusGuide, keptProps, TvScroll, type TvScrollProps } from './engine'
 import { keptAt } from './model.ts'
 import type { TileSource } from './tiles.tsx'
 
 const tv = tokens.tv
+
+/**
+ * The space between a TV page's rows, in units: under the head, between Home's featured card and
+ * its rows, and between a grid's lines (the TV prototype's pages' gap-[1.6cqw]).
+ */
+export const TV_ROW_GAP = 1.6
 
 /** Where a page's part lands, `keep` of the screen down, or null outside a TvPage. */
 const KeepContext = createContext<number | null>(null)
@@ -23,17 +29,28 @@ const KeepContext = createContext<number | null>(null)
  * the screen (react-native-tvos's `scrollSnapOffset`, worked out from its own height). Parts don't
  * nest: the outermost one decides. Outside a page it's a plain view. A part on the first screen can
  * `rest` instead: the page goes back to its top, as Home's does for the hero, since landing it a
- * screen down asks for a scroll above the top, which the page never goes past.
+ * screen down asks for a scroll above the top, which the page never goes past. A part can land
+ * at its own `keep`.
  */
-export function Kept({ rest, children, ...props }: ViewProps & { rest?: boolean }) {
-  const keep = useContext(KeepContext)
+export function Kept({
+  rest,
+  keep: own,
+  children,
+  ...props
+}: ViewProps & {
+  rest?: boolean
+  /** Where this part lands, over the page's `keep` (a person page's header and first row, 0.72). */
+  keep?: number
+}) {
+  const page = useContext(KeepContext)
+  const keep = page === null ? null : (own ?? page)
   const { height } = useWindowDimensions()
   const [h, setH] = useState(0)
   if (keep === null) return <View {...props}>{children}</View>
   return (
     <View
       {...props}
-      {...keptProps(rest === true)}
+      {...keptProps(rest === true, own)}
       onLayout={(e) => setH(e.nativeEvent.layout.height)}
       scrollSnapOffset={rest ? height : keptAt(keep, height, h)}
     >
@@ -52,16 +69,26 @@ export function Kept({ rest, children, ...props }: ViewProps & { rest?: boolean 
 export function TvPage({
   keep,
   fade = 3.2,
+  onScroll,
+  scrollEventThrottle,
   children,
 }: {
   keep: number
   fade?: number
+  /** The page scrolled, for the shell's chrome (TvScroll's, passed to its ScrollView). */
+  onScroll?: TvScrollProps['onScroll']
+  scrollEventThrottle?: number
   children: ReactNode
 }) {
   const theme = useTheme()
   return (
     <View style={{ flex: 1 }}>
-      <TvScroll keep={keep} style={{ flex: 1 }}>
+      <TvScroll
+        keep={keep}
+        style={{ flex: 1 }}
+        onScroll={onScroll}
+        scrollEventThrottle={scrollEventThrottle}
+      >
         <KeepContext.Provider value={keep}>{children}</KeepContext.Provider>
       </TvScroll>
       <View
@@ -72,7 +99,7 @@ export function TvPage({
           left: 0,
           right: 0,
           height: fade * theme.u,
-          experimental_backgroundImage: `linear-gradient(180deg, ${theme.colors.bg}, transparent)`,
+          backgroundImage: `linear-gradient(180deg, ${theme.colors.bg}, transparent)`,
         }}
       />
     </View>
@@ -104,7 +131,7 @@ export function TvGrid<T>({
   const lines: T[][] = []
   for (let i = 0; i < items.length; i += columns) lines.push(items.slice(i, i + columns))
   return (
-    <FocusGuide autoFocus style={{ gap: 1.6 * u }}>
+    <FocusGuide autoFocus style={{ gap: TV_ROW_GAP * u }}>
       {lines.map((line, r) => (
         <Kept key={keyOf(line[0] as T)} style={{ flexDirection: 'row', gap: gap * u }}>
           {line.map((item, c) => (
@@ -140,7 +167,13 @@ export function TvAmbient({ source }: { source: TileSource | undefined }) {
   const theme = useTheme()
   const u = theme.u
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="none">
+    // clipped to the screen: the art is drawn 1.1 times its size, and a transformed box still counts
+    // toward its ancestors' scrollable overflow (CSS Transforms 1 § 3, "the extent of the overflow
+    // area takes into account transformed elements", https://www.w3.org/TR/css-transforms-1/#transform-rendering),
+    // which in a browser widened the document past the screen by the 5% the art grows each way.
+    // React Native's `overflow: 'hidden'` clips its children on every platform
+    // (https://reactnative.dev/docs/layout-props#overflow); react-native-web writes it as CSS's.
+    <View style={[StyleSheet.absoluteFill, { overflow: 'hidden' }]} pointerEvents="none">
       {source ? (
         <Image
           source={source}
@@ -155,7 +188,7 @@ export function TvAmbient({ source }: { source: TileSource | undefined }) {
         style={[
           StyleSheet.absoluteFill,
           {
-            experimental_backgroundImage: `linear-gradient(90deg, ${theme.colors.bg} 10%, transparent 70%)`,
+            backgroundImage: `linear-gradient(90deg, ${theme.colors.bg} 10%, transparent 70%)`,
           },
         ]}
       />

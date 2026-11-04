@@ -10,11 +10,7 @@ import { Text } from '../text.tsx'
 import { useControl, useTheme } from '../theme.tsx'
 import { Focusable, type ViewHandle } from './focusable.tsx'
 
-/** `text` at an alpha, as the prototype's `bg-text/12`. */
-export const alpha = (hex: string, a: number) =>
-  `${hex.slice(0, 7)}${Math.round(a * 255)
-    .toString(16)
-    .padStart(2, '0')}`
+export { alpha } from '../alpha.ts'
 
 /** A key on the on-screen keyboard: a grid cell that fills with `text` on focus. */
 export function TvKey({
@@ -71,16 +67,25 @@ export function TvMessage({
   title,
   children,
   actions,
+  level = 1,
 }: {
   title: string
   children?: ReactNode
   actions: ReactNode
+  /** Its title's heading level: 1, as it's all the screen holds, unless the screen has its own. */
+  level?: number
 }) {
   const u = useTheme().u
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
       <View style={{ maxWidth: 46 * u, alignItems: 'center', gap: 1.4 * u }}>
-        <Text variant="heroTitle" size={2.4} align="center" accessibilityRole="header">
+        <Text
+          variant="heroTitle"
+          size={2.4}
+          align="center"
+          accessibilityRole="header"
+          aria-level={level}
+        >
           {title}
         </Text>
         {children ? (

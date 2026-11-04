@@ -34,6 +34,7 @@ const live = {
   store: memoryStore(false),
   cookie: false,
   rewrites: [] as Rewrite[],
+  holds: [] as { path: string; gate: Promise<void> }[],
   requests: [] as { method: string; url: string; bearer: boolean }[],
 }
 
@@ -57,7 +58,18 @@ export function fresh() {
   live.transport = newTransport()
   live.store = memoryStore(live.cookie)
   live.rewrites = []
+  live.holds = []
   live.requests = []
+}
+
+/** Keeps the server from answering requests to `path` until the returned release is called. */
+export function hold(path: string) {
+  let release = () => {}
+  const gate = new Promise<void>((r) => {
+    release = r
+  })
+  live.holds.push({ path, gate })
+  return release
 }
 
 /** Changes the requests that match from here on (the session refused, a pairing gone). */
@@ -88,7 +100,8 @@ export function transportModule() {
         url: call[0],
         bearer: headers.has('authorization'),
       })
-      return live.transport(...call)
+      const held = live.holds.find((h) => call[0].includes(h.path))
+      return held ? held.gate.then(() => live.transport(...call)) : live.transport(...call)
     },
     {
       nearby: (...a: Parameters<MockTransport['nearby']>) => live.transport.nearby(...a),
@@ -222,6 +235,27 @@ export async function signedIn(username = 'ruth') {
   await fireEvent.press(screen.getByRole('button', { name: 'Sign in' }))
   await flush()
   return r
+}
+
+/** Opens the app on the TV, chooses Harbor from the servers answering, and waits for the phone's approval. */
+export async function tvSignedIn() {
+  const r = await open()
+  await fireEvent.press(screen.getByLabelText(/^Harbor,/))
+  await flush(20_000)
+  return r
+}
+
+/**
+ * Presses Got it on the owner's announcement that must be acknowledged (the mock's seed has one,
+ * an-new-address), which the shell shows over every destination until it is: for tests that sign
+ * in to cover something else. Does nothing when none shows.
+ */
+export async function acknowledge() {
+  const got = screen.queryAllByRole('button', { name: 'Got it' })
+  const last = got[got.length - 1]
+  if (!last) return
+  await fireEvent.press(last)
+  await flush(500)
 }
 
 /** Whether a request went to the API path given. */

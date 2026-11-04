@@ -2,21 +2,32 @@
 // The layout check's comparison (layout.ts): the trees in shared words, and what counts as the
 // same screen, so a change to the matching or the tolerance that would let drift through fails.
 import { expect, describe as group, test } from 'bun:test'
+import { SEED } from '../../packages/mock/src/films.ts'
 import {
+  ANCHORS,
+  appliesTo,
   assess,
   type Capture,
+  CLIENT_SCHEME,
+  CONTAINER,
   compare,
   describe,
   EXCEPTIONS,
+  FIELD_WORDS,
   fieldGapFor,
   fromWeb,
   fromXCUI,
+  IN_STOP,
   type LayoutNode,
   normalizeName,
   notesOf,
   overlap,
   parseArgs,
+  ROUTES,
+  SCREENS,
+  type Screen,
   SIZES,
+  stepsFor,
   TEXT_SHAPING,
   TOLERANCE,
   type XCUIRaw,
@@ -209,6 +220,79 @@ group('the comparison', () => {
     expect(compare(web, capture('appletv', [other], 'sign-in', 1920)).pass).toBe(true)
     const moved = { ...other, box: { ...other.box, x: 640 } }
     expect(compare(web, capture('appletv', [moved], 'sign-in', 1920)).pass).toBe(false)
+  })
+
+  test('a web list around paired nodes is excused; one around nothing paired still fails', () => {
+    const list = { ...node('group', 'movies', 0, 100, 400, 300), raw: 'list' }
+    const tile = node('action', 'sintel 2010', 16, 120)
+    const c = compare(capture('compact-touch', [list, tile]), capture('iphone', [tile]))
+    expect(c.pass).toBe(true)
+    expect(c.excused.map((e) => e.reason)).toEqual([CONTAINER])
+    expect(compare(capture('compact-touch', [list]), capture('iphone', [])).pass).toBe(false)
+  })
+
+  test('a text inside a stop read as one is excused only where the stop’s name holds it', () => {
+    const card = {
+      ...node('other', 'about a film about a llama', 0, 100, 600, 300),
+      raw: 'labelled',
+    }
+    const words = node('text', 'a film about a llama', 20, 160, 500, 40)
+    const web = capture('tv', [card, words], 'film', 1920)
+    const c = compare(web, capture('appletv', [card], 'film', 1920))
+    expect(c.pass).toBe(true)
+    expect(c.excused.map((e) => e.reason)).toEqual([IN_STOP])
+    const stray = node('text', 'something else', 20, 160, 500, 40)
+    const web2 = capture('tv', [card, stray], 'film', 1920)
+    expect(compare(web2, capture('appletv', [card], 'film', 1920)).pass).toBe(false)
+  })
+
+  test('a field’s own words are excused inside the paired field, not beside it', () => {
+    const field = node('field', 'search', 60, 220, 900, 60)
+    const typed = node('text', 'tears', 68, 234, 50, 25)
+    const web = capture('tv', [field, typed], 'search', 1920)
+    expect(
+      compare(web, capture('appletv', [field], 'search', 1920)).excused.map((e) => e.reason),
+    ).toEqual([FIELD_WORDS])
+    const beside = node('text', 'tears', 68, 400, 50, 25)
+    const web2 = capture('tv', [field, beside], 'search', 1920)
+    expect(compare(web2, capture('appletv', [field], 'search', 1920)).pass).toBe(false)
+  })
+
+  test('on tvOS a field not being edited is an element whose value holds what’s typed', () => {
+    const web = node('other', 'search titles, genres and people', 46, 215, 576, 63)
+    const typed = node('text', 'tears', 68, 234, 50, 25)
+    const holds = { ...web, says: 'tears' }
+    const c = compare(
+      capture('tv', [web, typed], 'search', 1920),
+      capture('appletv', [holds], 'search', 1920),
+    )
+    expect(c.pass).toBe(true)
+    expect(c.excused.map((e) => e.reason)).toEqual([FIELD_WORDS])
+    const other = { ...web, says: 'sintel' }
+    expect(
+      compare(
+        capture('tv', [web, typed], 'search', 1920),
+        capture('appletv', [other], 'search', 1920),
+      ).pass,
+    ).toBe(false)
+  })
+
+  test('a device element’s value and placeholder are kept as what it says', () => {
+    const [n] = fromXCUI([
+      { type: 'textField', label: 'Search', value: 'tears', x: 0, y: 0, w: 10, h: 10, parent: -1 },
+    ])
+    expect(n?.says).toBe('tears')
+  })
+
+  test('the letter index’s kind differs by platform; another control’s doesn’t', () => {
+    const web = node('field', 'jump to a letter', 380, 232, 20, 432)
+    const native = { ...web, kind: 'other' as const }
+    expect(compare(capture('compact-touch', [web]), capture('iphone', [native])).pass).toBe(true)
+    const play = node('action', 'play', 0, 100)
+    expect(
+      compare(capture('compact-touch', [play]), capture('iphone', [{ ...play, kind: 'other' }]))
+        .pass,
+    ).toBe(false)
   })
 
   test('several nodes of one name pair nearest first', () => {
@@ -445,13 +529,164 @@ group('what a run must have', () => {
   })
 })
 
+group("B1's destinations", () => {
+  const all = ['compact-touch', 'regular-pointer', 'tv', 'iphone', 'appletv'] as const
+  // a node for each anchor, named as the anchor's own example
+  const EXAMPLES: Record<string, string> = {
+    'harbor’s row': 'harbor 192 168 1 20 3000',
+    'sign in with your phone': 'sign in with your phone',
+    'the password field': 'password',
+    'the you tab': 'you',
+    'the account’s settings stop': 'ines settings',
+    'library’s count of movies': '34 of 34 movies',
+    'movies’ count': '34 movies',
+    'tears of steel’s poster': 'tears of steel 2012',
+    'home’s staff picks': 'staff picks by ines',
+    'the a–z sort': 'a z',
+    'the collections title': 'collections',
+    'the alerts title': 'alerts',
+    'the count of collections': '7 collections',
+    'the caminandes collection': 'caminandes collection 3 movies 2013 2016',
+    'the collection’s title': 'caminandes collection',
+    'how many of its films are here': '3 movies here 2013 2016',
+    'the film’s title': 'tears of steel',
+    'cast and crew': 'cast and crew',
+    'the person’s name': 'buster keaton',
+    'when they were born': 'born 4 october 1895 in piqua kansas usa',
+    'the quick picks': 'fritz lang',
+    'the search field': 'search titles genres and people',
+    'tears of steel among the results': 'tears of steel 2012',
+    'that nothing matched': 'nothing on harbor matches qxzv',
+    'an announcement':
+      'harbor has a new remote address away from home the apps now connect through harbor example net',
+    'the settings title': 'settings',
+  }
+  const holding = (screen: Screen, target: Capture['target']) =>
+    capture(
+      target,
+      ANCHORS[screen](target).map((a, i) => {
+        const name = EXAMPLES[a.says.toLowerCase()]
+        if (!name) throw new Error(`no example for “${a.says}”`)
+        return node(a.kinds[0] as LayoutNode['kind'], name, 0, i * 50)
+      }),
+      screen,
+    )
+
+  test('every screen has an anchor at every target, and its example holds it', () => {
+    for (const screen of SCREENS)
+      for (const target of all) {
+        if (!appliesTo(screen, target)) continue
+        expect(ANCHORS[screen](target).length).toBeGreaterThan(0)
+        const r = assess({ screens: [screen], targets: ['web', 'phone', 'tv'] }, [
+          ...all.map((t) => holding(screen, t)).filter((c) => appliesTo(screen, c.target)),
+        ])
+        expect(r.problems).toEqual([])
+      }
+  })
+
+  test("a destination's anchors hold only on that destination", () => {
+    const destinations = SCREENS.filter((s) => ROUTES[s])
+    for (const target of all)
+      for (const here of destinations) {
+        if (!appliesTo(here, target)) continue
+        const shown = holding(here, target)
+        for (const other of destinations) {
+          if (other === here || !appliesTo(other, target)) continue
+          const r = assess({ screens: [other], targets: ['web'] }, [{ ...shown, screen: other }])
+          if (!(['compact-touch', 'regular-pointer', 'tv'] as string[]).includes(target)) continue
+          expect(r.problems.some((p) => p.includes(`${target} ${other}:`))).toBe(true)
+        }
+      }
+  })
+
+  test('every anchor a screen has must be there, each one named when it is missing', () => {
+    const film = holding('film', 'compact-touch')
+    const r = assess({ screens: ['film'], targets: ['web'] }, [
+      { ...film, nodes: film.nodes.slice(0, 1) },
+      holding('film', 'regular-pointer'),
+      holding('film', 'tv'),
+    ])
+    expect(r.problems).toEqual([
+      "compact-touch film: Cast and crew isn't there, so it's another screen",
+    ])
+  })
+
+  test('Alerts is the TV’s only: the phone and a pointer neither capture it nor compare it', () => {
+    expect(all.filter((t) => appliesTo('alerts', t))).toEqual(['tv', 'appletv'])
+    const r = assess({ screens: ['alerts'], targets: ['web', 'phone', 'tv'] }, [
+      holding('alerts', 'tv'),
+      holding('alerts', 'appletv'),
+    ])
+    expect(r.problems).toEqual([])
+    expect(r.comparisons.map((c) => `${c.web}:${c.native}`)).toEqual(['tv:appletv'])
+    // asked of the phone, there's no pair to compare, which isn't a failure; the web's tv still
+    // captures it
+    const phone = assess({ screens: ['alerts'], targets: ['web', 'phone'] }, [])
+    expect(phone.problems).toEqual(['tv alerts: not captured'])
+  })
+
+  test('a missing destination is a problem at each target that has it', () => {
+    const r = assess({ screens: ['person'], targets: ['web', 'phone', 'tv'] }, [])
+    expect(r.problems.filter((p) => p.endsWith('not captured'))).toEqual(
+      all.map((t) => `${t} person: not captured`),
+    )
+  })
+
+  test("the routes are apps/client's, with the mock's seeded ids", () => {
+    expect(ROUTES.film).toBe(`/movies/${SEED.film.id}`)
+    expect(ROUTES.person).toBe(`/people/${SEED.person.id}`)
+    expect(ROUTES.collection).toBe(`/collections/${SEED.collection.id}`)
+    expect(SCREENS.filter((s) => ROUTES[s])).toEqual([
+      'movies',
+      'collections',
+      'collection',
+      'film',
+      'person',
+      'search',
+      'search-results',
+      'search-none',
+      'alerts',
+    ])
+  })
+
+  test("a device's steps are its destinations in order, as links in the client's scheme", () => {
+    const phone = stepsFor('iphone', SCREENS)
+    expect(phone.map((s) => s.screen)).not.toContain('alerts')
+    expect(phone[0]).toEqual({
+      screen: 'movies',
+      url: `${CLIENT_SCHEME}://movies`,
+      anchors: ANCHORS.movies('iphone').map((a) => a.name.source),
+    })
+    expect(phone.find((s) => s.screen === 'search-results')?.url).toBe(
+      `${CLIENT_SCHEME}://search?q=tears`,
+    )
+    const tv = stepsFor('appletv', ['shell', 'film', 'alerts', 'settings'])
+    expect(tv.map((s) => s.screen)).toEqual(['film', 'alerts'])
+    expect(tv[0]?.url).toBe(`${CLIENT_SCHEME}://movies/${SEED.film.id}`)
+  })
+})
+
 group('the command line', () => {
   test('defaults to every target and screen, in order', () => {
     expect(parseArgs([])).toEqual({
       folder: undefined,
       preflight: false,
       plan: {
-        screens: ['connect', 'sign-in', 'shell', 'settings'],
+        screens: [
+          'connect',
+          'sign-in',
+          'shell',
+          'movies',
+          'collections',
+          'collection',
+          'film',
+          'person',
+          'search',
+          'search-results',
+          'search-none',
+          'alerts',
+          'settings',
+        ],
         targets: ['web', 'phone', 'tv'],
       },
     })
@@ -466,6 +701,11 @@ group('the command line', () => {
 
   test('refuses unknown screens and targets, repeats, and screens out of order', () => {
     expect(() => parseArgs(['--screens', 'home'])).toThrow("isn't a screen")
+    expect(() => parseArgs(['--screens', 'film,movies'])).toThrow('order')
+    expect(parseArgs(['--screens', 'film,search-results', '--targets', 'web']).plan).toEqual({
+      screens: ['film', 'search-results'],
+      targets: ['web'],
+    })
     expect(() => parseArgs(['--targets', 'android'])).toThrow("isn't a target")
     expect(() => parseArgs(['--targets', 'web,web'])).toThrow('twice')
     expect(() => parseArgs(['--screens', 'shell,connect'])).toThrow('order')

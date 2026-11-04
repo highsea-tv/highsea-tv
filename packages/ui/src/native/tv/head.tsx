@@ -13,6 +13,7 @@
 // app on the TV's rule lays out its own head the same way.
 import { type ReactNode, type Ref, useState } from 'react'
 import { View } from 'react-native'
+import { UNCHOSEN_ALPHA } from '../alpha.ts'
 import { Avatar } from '../brand.tsx'
 import { Icon } from '../icon.tsx'
 import type { IconName } from '../icons.ts'
@@ -28,6 +29,13 @@ const STOP = 2.6
 /** The account's round stop, and the avatar inside it. */
 const ACCOUNT = 3
 const AVATAR = 2.2
+
+/**
+ * The head's height from the screen's top, in units: its safe area and its tallest stop, the
+ * account's. A page laid under the head (a person's page, whose header sits over its art) clears
+ * it by this, then its own gap, rather than copying the account's size.
+ */
+export const TV_HEAD_HEIGHT = tv.safe.y + ACCOUNT
 
 export function TvHead({
   label,
@@ -129,7 +137,11 @@ export function TvHeadStop({
       onPress={() => (here ? undefined : onPress())}
     >
       {(focused) => {
-        const fg = focused ? 'bg' : here ? 'text' : 'text-2'
+        // the prototype's stops (tv/kit.tsx): `text-text/65`, `text` where they are, `bg` on the
+        // focus's fill. A one-colour glyph at an opacity draws as its colour at that alpha, and
+        // Text and Icon take colour roles only; the avatar keeps its own colours
+        const fg = focused ? 'bg' : 'text'
+        const dim = { opacity: focused || here ? 1 : UNCHOSEN_ALPHA }
         return (
           <View
             style={{
@@ -143,13 +155,15 @@ export function TvHeadStop({
             }}
           >
             {text ? (
-              <Text variant="button" color={fg} numberOfLines={1}>
+              <Text variant="button" color={fg} numberOfLines={1} style={dim}>
                 {text}
               </Text>
             ) : avatar !== undefined ? (
               <Avatar name={avatar} size={AVATAR} />
             ) : icon ? (
-              <Icon name={icon} size={tokens.icon.sizeTv.min} color={fg} />
+              <View style={dim}>
+                <Icon name={icon} size={tokens.icon.sizeTv.min} color={fg} />
+              </View>
             ) : null}
             {dot ? (
               <View

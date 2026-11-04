@@ -10,40 +10,16 @@ import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { TvRoot } from '../kit/tv/tv-root.tsx'
 import { useProto } from '../screen/screen.tsx'
 import { TvAlbum } from './album.tsx'
-import { TvAlerts } from './alerts.tsx'
 import { TvArtist } from './artist.tsx'
 import { BackContext, type BackRegistry, useBack } from './back.ts'
-import { TvCollection } from './collection.tsx'
-import { TvCollections } from './collections.tsx'
-import { TvDetail } from './detail.tsx'
-import { TvHome } from './home.tsx'
 import { ServerIdentity, TvButton, TvHead, TvMessage, tvHref } from './kit.tsx'
-import { TvLibrary } from './library.tsx'
 import { TvMusic } from './music.tsx'
 import { TvNowPlaying, useMusicKeys } from './now-playing.tsx'
-import { TvPerson } from './person.tsx'
 import { TvPlayer } from './player.tsx'
 import { TvPlaylist } from './playlist.tsx'
-import { TvSearch } from './search.tsx'
 import { TvShow } from './show.tsx'
 import { TvShows } from './shows.tsx'
 import { TvLaunch, TvNewProfile, TvWho } from './who.tsx'
-
-function Detail() {
-  const [panel, setPanel] = useState(false)
-  useBack(() => (panel ? setPanel(false) : history.back()))
-  return <TvDetail panel={panel} onPanel={setPanel} />
-}
-
-function Collection() {
-  useBack(() => history.back())
-  return <TvCollection />
-}
-
-function Person() {
-  useBack(() => history.back())
-  return <TvPerson />
-}
 
 function Album() {
   useBack(() => history.back())
@@ -149,15 +125,6 @@ function Screens() {
       <Route path="/play/:id">
         <TvPlayer />
       </Route>
-      <Route path="/">
-        <TvHome />
-      </Route>
-      <Route path="/collections">
-        <TvCollections />
-      </Route>
-      <Route path="/movies">
-        <TvLibrary />
-      </Route>
       <Route path="/shows/:id/episodes/:episode">
         <Show />
       </Route>
@@ -191,18 +158,6 @@ function Screens() {
       <Route path="/music">
         <TvMusic />
       </Route>
-      <Route path="/movies/:id">
-        <Detail />
-      </Route>
-      <Route path="/people/:id">
-        <Person />
-      </Route>
-      <Route path="/collections/:id">
-        <Collection />
-      </Route>
-      <Route path="/search">
-        <TvSearch />
-      </Route>
       {/* Settings is on the profile (the owner, 2026-10-30); its old address opens it too */}
       {/* who's watching, a profile's PIN, and adding a profile (the owner, 2026-10-30) */}
       {/* where the TV opens (the owner, 2026-10-30): who's watching, or straight in */}
@@ -217,9 +172,6 @@ function Screens() {
       </Route>
       <Route path="/who/:id">
         <TvWho />
-      </Route>
-      <Route path="/alerts">
-        <TvAlerts />
       </Route>
       <Route>
         <NotFound />

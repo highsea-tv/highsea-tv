@@ -12,7 +12,9 @@
 // simulator's screen, into SHOTS (a folder on the Mac, which the simulator's processes can write
 // to). Each capture prints `LAYOUT <screen>: n elements`, so the run shows how far it has got.
 // SCREENS (comma-separated, in order) stops after the last one named: the preflight takes only
-// `connect`.
+// `connect`. STEPS (JSON, from layout.ts) lists B1's destinations between the shell and Settings,
+// each opened by the client's link (`highsea-client://movies/…`) once signed in, and captured once
+// the names that only it has are on screen.
 //
 // On the iPhone it taps (XCUIElement.tap) and types (typeText) as Theo, who has no two-step
 // verification in the mock. On the Apple TV it moves the remote's focus to each stop by pressing
@@ -103,15 +105,42 @@ final class Layout: XCTestCase {
     #else
       let settings = element(NSPredicate(format: "label == 'You'"))
     #endif
-    XCTAssert(settings.waitForExistence(timeout: 40), "The shell never opened after signing in")
+    // the owner's announcement that must be acknowledged comes over the shell once its list has
+    // loaded, and on the TV hides it: Got it, as layout.ts does on the web
+    let gotIt = app.buttons.matching(NSPredicate(format: "label == 'Got it'")).firstMatch
+    let opened = Date().addingTimeInterval(40)
+    while !settings.exists && !gotIt.exists && Date() < opened {
+      Thread.sleep(forTimeInterval: 0.5)
+    }
+    #if os(tvOS)
+      acknowledge("shell", wait: 8)
+    #endif
+    XCTAssert(settings.waitForExistence(timeout: 20), "The shell never opened after signing in")
     #if !os(tvOS)
-      // the sheet can come up after the shell has opened, and again after a first Not Now
+      // the sheet can come up after the shell has opened, and again after a first Not Now; the
+      // announcement is answered once it's gone, so the tap lands on Got it
       try dismissSavePassword()
+      acknowledge("shell", wait: 8)
     #endif
     // Home's shelves load after the shell shows; no element says they're done
     Thread.sleep(forTimeInterval: 2)
     try capture("shell")
     if last == "shell" { return }
+
+    // B1's destinations, each opened by the client's link (XCUIApplication.open, iOS and tvOS
+    // 16.4: https://developer.apple.com/documentation/xcuiautomation/xcuiapplication/open(_:)),
+    // as layout.ts's STEPS has them: the screen, its link, and the names it must show first
+    for step in try steps() {
+      guard let url = URL(string: step.url) else {
+        throw LayoutFailure(description: "\(step.url) isn't a link")
+      }
+      app.open(url)
+      try arrive(step)
+      // the page's entrance and its images, which no element says are done
+      Thread.sleep(forTimeInterval: 2)
+      try capture(step.screen)
+    }
+    if last != "settings" { return }
 
     let title = element(
       NSPredicate(
@@ -158,6 +187,72 @@ final class Layout: XCTestCase {
       throw LayoutFailure(description: "iOS's Save Password sheet stayed up")
     }
   #endif
+
+  /**
+   * Presses Got it on the owner's announcement that must be acknowledged (apps/client's
+   * shell/announcements.tsx) when it's up, waiting `wait` seconds for it: a tap on the phone,
+   * Select on the TV, where it's a screen of its own that holds focus on Got it.
+   */
+  private func acknowledge(_ screen: String, wait: TimeInterval) {
+    let gotIt = app.buttons.matching(NSPredicate(format: "label == 'Got it'")).firstMatch
+    guard gotIt.waitForExistence(timeout: wait) || gotIt.exists else { return }
+    #if os(tvOS)
+      focus(gotIt)
+      XCUIRemote.shared.press(.select)
+    #else
+      gotIt.tap()
+    #endif
+    print("LAYOUT note: \(screen): acknowledged the owner's announcement")
+    let until = Date().addingTimeInterval(8)
+    while gotIt.exists && Date() < until { Thread.sleep(forTimeInterval: 0.25) }
+  }
+
+  /** One of layout.ts's B1 steps: the screen, the client's link to it, and its anchors. */
+  struct Step: Decodable {
+    let screen: String
+    let url: String
+    /** Regular expressions over a label as layout.ts's normalizeName leaves it. */
+    let anchors: [String]
+  }
+
+  /** STEPS, a JSON array of layout.ts's steps for this device, in order; none without it. */
+  private func steps() throws -> [Step] {
+    guard let json = env["STEPS"], !json.isEmpty else { return [] }
+    return try JSONDecoder().decode([Step].self, from: Data(json.utf8))
+  }
+
+  /** A label as layout.ts's normalizeName has it: case, quotes, punctuation and spacing out. */
+  private func normalize(_ s: String) -> String {
+    let folded = s.precomposedStringWithCompatibilityMapping.lowercased()
+      .replacingOccurrences(of: "[’'\"“”‘]", with: "", options: .regularExpression)
+      .replacingOccurrences(of: "[^\\p{L}\\p{N}]+", with: " ", options: .regularExpression)
+    return folded.trimmingCharacters(in: .whitespaces)
+  }
+
+  /** Waits until every anchor of the step names an element on screen, up to thirty seconds. */
+  private func arrive(_ step: Step) throws {
+    let patterns = try step.anchors.map { try NSRegularExpression(pattern: $0) }
+    let until = Date().addingTimeInterval(30)
+    while Date() < until {
+      // an announcement that comes late, and on the TV hides the page under it
+      acknowledge(step.screen, wait: 0)
+      var labels: [String] = []
+      func walk(_ s: XCUIElementSnapshot) {
+        if !s.label.isEmpty { labels.append(normalize(s.label)) }
+        for c in s.children { walk(c) }
+      }
+      if let root = try? app.snapshot() { walk(root) }
+      let found = patterns.allSatisfy { p in
+        labels.contains { l in
+          p.firstMatch(in: l, range: NSRange(l.startIndex..., in: l)) != nil
+        }
+      }
+      if found { return }
+      Thread.sleep(forTimeInterval: 0.5)
+    }
+    // captured anyway: layout.ts's assess says which anchor is missing, with the picture
+    print("LAYOUT note: \(step.screen) never showed all of its anchors in thirty seconds")
+  }
 
   /** Waits until `e`'s frame has stayed the same for a second, up to ten. */
   private func steady(_ e: XCUIElement, _ what: String) throws {

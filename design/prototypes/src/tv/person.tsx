@@ -6,14 +6,13 @@
 // department they worked in on the films here, the one they're known for first, each film with
 // their role under its title; then their shows and their albums. Focus starts on the first row;
 // Up and Down go row by row; Back goes back to wherever it was opened from.
-import { createLibraryText } from '@highsea-tv/client/library'
+import { createLibraryText, LONG_BIO } from '@highsea-tv/client/library'
 import { Skeleton } from '@highsea-tv/ui'
 import { useRef, useState } from 'react'
 import { useParams } from 'wouter'
 import { usePerson } from '../client/data.ts'
 import { UnwatchedCount } from '../client/show-card.tsx'
 import { showYears } from '../client/shows.ts'
-import { LONG_BIO } from '../web/person.tsx'
 import { TvFilmRow, TvFilmRowSkeleton } from './film-row.tsx'
 import {
   TvButton,

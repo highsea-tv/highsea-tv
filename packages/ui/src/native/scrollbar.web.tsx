@@ -11,13 +11,13 @@
 import { type ComponentRef, useEffect, useRef, useState } from 'react'
 import { PanResponder, View, type ViewStyle } from 'react-native'
 import { SCROLLBAR } from '../shared/scrollbar.ts'
+import { alpha } from './alpha.ts'
 import type {
   OWN_SCROLLBAR as nativeOwn,
   Scrollbar as nativeScrollbar,
   ScrollbarProps,
 } from './scrollbar.tsx'
 import { tokens, useTheme } from './theme.tsx'
-import { alpha } from './tv/controls.tsx'
 
 export type { ScrollbarProps }
 

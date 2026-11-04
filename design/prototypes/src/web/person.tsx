@@ -6,7 +6,7 @@
 // films here, the one they're known for first, each poster with their role and the year; then the
 // shows they're in, and their albums when they're an artist here. Only what's on this server, as
 // Jellyfin and Infuse do: the household browses what it can play.
-import { createLibraryText } from '@highsea-tv/client/library'
+import { createLibraryText, LONG_BIO } from '@highsea-tv/client/library'
 import type { ClientPerson } from '@highsea-tv/mock/types'
 import { Button, CarouselRow, cn, EmptyState, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui'
 import { useState } from 'react'
@@ -19,9 +19,6 @@ import { gutter, webHref } from './shell.tsx'
 
 /** What the page says about the title, as the apps word it (@highsea-tv/client/library). */
 const facts = createLibraryText('en')
-
-/** A biography this long or longer is cut at three lines, with More. */
-export const LONG_BIO = 240
 
 export function WebPerson() {
   const { id } = useParams<{ id: string }>()

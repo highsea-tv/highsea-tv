@@ -28,6 +28,8 @@ This layout is locked in [direction.md](../../brand/direction.md#layouts). From 
 - **Posters:**
   - about 30% of the screen width in rows, so about three visible plus a peek;
   - about 78% of the width in the featured carousel.
+- **Home's other rows** (the prototype's, kept when B1 moved Home to apps/client): Continue watching cards are 62% of the row, and still rows 46%, so two show with a peek. These are values in `apps/client/src/home/sizes.ts` (`HOME`), with no token yet (part E).
+- **A person's page** (B1): the round portrait is centred with the words under it; the biography is 15pt on a 1.45 line, cut at four lines with More. The section headings over its rows are 17pt. Neither size is a token yet (part E).
 
 ## Touch
 

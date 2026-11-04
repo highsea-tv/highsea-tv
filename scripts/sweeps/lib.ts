@@ -110,9 +110,12 @@ export const CLIENT_FRAMES: Record<
   tv: { width: TV_SCREEN.w, height: TV_SCREEN.h },
 }
 
+/** A route's platform, read before its query: `/tv?launch=done` is the TV's. */
+const platformOfRoute = (route: string) => route.split(/[/?]/)[1]
+
 /** The viewport a job opens at: a client frame's own size, or the width swept. */
 export const viewportFor = (route: string, width: number) => {
-  const platform = route.split('/')[1]
+  const platform = platformOfRoute(route)
   if (heldByClient(route) && (platform === 'mobile' || platform === 'tv'))
     return CLIENT_FRAMES[platform]
   return { width, height: heightFor(width) }
@@ -138,7 +141,7 @@ export const clientUrl = (route: string, platform: ClientPlatform, query = '') =
  * and otherwise the prototype's screen.
  */
 export const routeUrl = (route: string, query = '') => {
-  const platform = route.split('/')[1]
+  const platform = platformOfRoute(route)
   return heldByClient(route) && (platform === 'web' || platform === 'mobile' || platform === 'tv')
     ? clientUrl(route, platform, query)
     : screenUrl(route, query)

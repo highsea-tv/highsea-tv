@@ -43,6 +43,10 @@ Phase 4's answer 9. On web and mobile, **More** (an icon button after the play a
 - Watched means played to the end, for this person only. Marking it watched removes it from Continue watching; marking it unwatched starts it from the beginning next time ("It plays from the start next time.").
 - The toast says "{title} marked as watched" or "marked as unwatched".
 
+### Trailer
+
+On the web, in the desktop app and on the phone, not on the TV until the server keeps trailer files (the owner's answers 2, 9 and 10 at [B1's review](../plans/one-client-platform-b.md#the-owners-answers-at-b1s-review)). When the film has a trailer on YouTube (its first trailer, or a teaser before release), **Trailer** is a round action after From the start. It opens a large dialog titled with the video's name: the player in a 16:9 frame, YouTube's privacy-enhanced embed from `www.youtube-nocookie.com`, loaded only once the dialog opens and playing at once, and the video's kind under it (the prototype's "kind · length": the API has no length, as TMDB gives none). On the phone the embed is in a WebView. The prototype, which loads nothing from YouTube, draws the still with a note instead.
+
 ### Shows, people and soundtracks (prototype-gaps stage 3, 2026-11-01)
 
 - **A show's page has the film page's round buttons** beside Play: From the start (of the episode Play plays), **Trailer** when the show has one, **Audio and subtitles** (the show's languages, picked once and applied to every episode; the TV's panel says "Back closes. Saved for every episode."), **Mark show as watched**, drawn on its own so it stays when no episode is left, and in the desktop app and on the phone, **Download** for that episode.
@@ -59,7 +63,7 @@ Phase 4's answer 9. On web and mobile, **More** (an icon button after the play a
 
 ## States
 
-- **Loading:** web and mobile: skeletons for the title, buttons and text; TV: a spinner.
+- **Loading:** skeletons for the title, buttons and text on every form factor, the TV's at its sizes (B1 of the one client platform converged the TV onto the skeletons, for the owner's approval; it was a spinner).
 - **Not on this server** (removed, or never playable): "That title isn't on this server." with **Go home**.
 - **Not started / started:** Play, or Resume with what's left and Play from the start.
 - **One version:** no version choice; its description shows instead.
@@ -104,5 +108,5 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `library
 ## Open questions
 
 - **Version per device:** should the version pick be per device class (TV prefers 4K, phone prefers 1080p) rather than per title?
-- **Trailers on the clients:** the admin embeds them on click; should clients too?
+- ~~**Trailers on the clients:** the admin embeds them on click; should clients too?~~ Yes on the web, the desktop app and the phone, through YouTube's privacy-enhanced embed (a WebView on the phone); the TV waits for trailer files ([the owner's answers at B1's review](../plans/one-client-platform-b.md#the-owners-answers-at-b1s-review)).
 - ~~**Mark as watched / unwatched:** in a More menu (web, mobile) and a long-press of OK (TV)?~~ Yes ([Phase 4's answer 9](../plans/phase-4-clients.md#the-owners-answers)); prototyped at 4.0b, [above](#mark-as-watched).

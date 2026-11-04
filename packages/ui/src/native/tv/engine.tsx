@@ -12,6 +12,7 @@ import type { ComponentProps, ReactNode, Ref } from 'react'
 import {
   type PressableProps,
   ScrollView,
+  type ScrollViewProps,
   type StyleProp,
   TVFocusGuideView,
   useTVEventHandler,
@@ -79,6 +80,14 @@ export type TvScrollProps = {
   keep: number
   style?: StyleProp<ViewStyle>
   contentContainerStyle?: StyleProp<ViewStyle>
+  /**
+   * The view scrolled: ScrollView's own event, so a page can hand its scroll to the shell's
+   * chrome (https://reactnative.dev/docs/scrollview#onscroll). In a browser the track moves by
+   * transform, so it's called with the offset each time the engine moves it.
+   */
+  onScroll?: ScrollViewProps['onScroll']
+  /** How often onScroll fires while scrolling, in ms (https://reactnative.dev/docs/scrollview#scrolleventthrottle). */
+  scrollEventThrottle?: number
   children: ReactNode
 }
 
@@ -87,7 +96,14 @@ export type TvScrollProps = {
  * what's past the screen's edge, landing each child at its `scrollSnapOffset`
  * (`snapToAlignment="item"`), which the parts work out from `keep` (model.ts's keptAt).
  */
-export function TvScroll({ horizontal, style, contentContainerStyle, children }: TvScrollProps) {
+export function TvScroll({
+  horizontal,
+  style,
+  contentContainerStyle,
+  onScroll,
+  scrollEventThrottle,
+  children,
+}: TvScrollProps) {
   const reduced = useMotionReduced()
   return (
     <ScrollView
@@ -98,13 +114,18 @@ export function TvScroll({ horizontal, style, contentContainerStyle, children }:
       showsVerticalScrollIndicator={false}
       style={style}
       contentContainerStyle={contentContainerStyle}
+      onScroll={onScroll}
+      scrollEventThrottle={scrollEventThrottle}
     >
       {children}
     </ScrollView>
   )
 }
 
-/** What marks a TvPage's Kept part for the engine: nothing on the TVs, where its offset does. */
-export function keptProps(_rest: boolean): ViewProps {
+/**
+ * What marks a TvPage's Kept part for the engine, resting at the top or landing at its own `keep`
+ * when it has one: nothing on the TVs, where its offset does.
+ */
+export function keptProps(_rest: boolean, _keep?: number): ViewProps {
   return {}
 }

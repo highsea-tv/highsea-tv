@@ -27,7 +27,13 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 | Rows | Bottom 47% of the screen, left inset 2.4u, bleeding off the right edge; below the featured row they continue down the page |
 | Poster | 10.5u wide (2:3), with a 1.2u gap; the title (1.05u, 600) and the year (0.95u, `text-3`) under the art |
 | Wide tile (continue watching) | 16:9 with a progress bar 7% in from the edges |
+| Continue watching | Cards 22u wide, larger than a poster row's (the owner, 2026-10-30) |
+| Featured card | 1u above and below it, under the global navigation |
+| Alerts | A list up to 60u wide, 1.2u between announcements; with none, 1.4u between the words and the button back to Home |
+| A person | The portrait 13u round, beside the name and words, the biography cut at four lines; then a film row per department |
 | Radii | Posters 0.5u (≈ 10px at 1080p); controls by the TV rule, `radius-sm` at 1.75 times (≈ 0.73u, [controls](../controls.md)); quality pills 0.3u |
+
+The rows from Continue watching to A person are the prototypes' values, kept when B1 moved the screens to apps/client (`apps/client/src/home/sizes.ts`, `src/alerts/sizes.ts` and `@highsea-tv/ui`'s `PersonPortrait`). None is a token yet; part E gives them tokens once the owner approves the values.
 
 **Safe area.**
 - Text and focusable items stay at least 2.4u (≈ 46px at 1080p) from every edge (`tv.safe` in the tokens). The owner tightened it from 4.5u and 3.2u on 2026-10-30, inside tvOS's guideline of 80 × 60 points, and confirmed it on 2026-11-03.

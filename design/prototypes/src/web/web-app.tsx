@@ -3,24 +3,17 @@
 // and downloads; connect, sign-in and settings are apps/client's (chrome/client.ts). The device's own theme and sound apply over all.
 
 import { Button, EmptyState } from '@highsea-tv/ui'
-import { Redirect, Route, Switch, useLocation } from 'wouter'
+import { Route, Switch, useLocation } from 'wouter'
 import { useServerName } from '../client/data.ts'
 import { SeedMusic } from '../client/music-player.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { WhoPage } from '../client/who.tsx'
 import { WebAlbum } from './album.tsx'
 import { WebArtist } from './artist.tsx'
-import { WebCollection } from './collection.tsx'
-import { WebCollections } from './collections.tsx'
-import { WebDetail } from './detail.tsx'
-import { WebHome } from './home.tsx'
-import { WebLibrary } from './library.tsx'
 import { WebLink, WebLinkConfirm } from './link.tsx'
 import { WebMusic } from './music.tsx'
-import { WebPerson } from './person.tsx'
 import { WebPlayer } from './player.tsx'
 import { WebPlaylist } from './playlist.tsx'
-import { WebSearch } from './search.tsx'
 import { WebDownloads, WebProfile } from './settings.tsx'
 import { WebShell, webHref } from './shell.tsx'
 import { WebShow } from './show.tsx'
@@ -53,22 +46,7 @@ function Routes() {
       <Route path="/play/:id">
         <WebPlayer />
       </Route>
-      <Route path="/">
-        <WebShell overHero="bloom">
-          <WebHome />
-        </WebShell>
-      </Route>
       {/* the TV's destinations (the owner, 2026-10-30): Collections, Movies, Shows and Music */}
-      <Route path="/collections">
-        <WebShell>
-          <WebCollections />
-        </WebShell>
-      </Route>
-      <Route path="/movies">
-        <WebShell>
-          <WebLibrary />
-        </WebShell>
-      </Route>
       <Route path="/shows/:id/episodes/:episode">
         <WebShell overHero>
           <WebShow />
@@ -120,32 +98,6 @@ function Routes() {
         </WebShell>
       </Route>
       {/* the library's old addresses */}
-      <Route path="/library/collections">
-        <Redirect to="/collections" replace />
-      </Route>
-      <Route path="/library">
-        <Redirect to="/movies" replace />
-      </Route>
-      <Route path="/movies/:id">
-        <WebShell overHero>
-          <WebDetail />
-        </WebShell>
-      </Route>
-      <Route path="/people/:id">
-        <WebShell overHero>
-          <WebPerson />
-        </WebShell>
-      </Route>
-      <Route path="/collections/:id">
-        <WebShell>
-          <WebCollection />
-        </WebShell>
-      </Route>
-      <Route path="/search/:q?">
-        <WebShell>
-          <WebSearch />
-        </WebShell>
-      </Route>
       <Route path="/link/:code">
         <WebShell>
           <WebLinkConfirm />

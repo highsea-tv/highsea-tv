@@ -65,3 +65,40 @@ The control spec, the platform rules and the theme audit stand. What changes is 
 - **About 50 literals in the native renderer moved onto existing tokens.** The ones left wait for values the owner approves, and are listed in `scripts/one-place-exceptions.json`.
 
 The bundle check's rule from this ADR stands, with the client's three bundles added: the web export carries no React Native of its own and none of `src/web`, and the iPhone's and the Apple TV's carry no `.web` file of the library's.
+
+## 2026-11-03: the films' parts, merged by form factor (one client platform, part B1)
+
+B1 merged the films' parts that existed per platform into one component each, laid out by the form factor:
+- the rows: `Row`, `FilmRow`, `SectionHeading` and `RowSkeleton`, with the pointer's row on `CarouselRow`'s keys over a ScrollView;
+- the page parts: `NamedAction`, `PersonTile`, `FactsCard` and `LetterIndex`;
+- `Poster`, with its title size, actions, mosaic and skeleton.
+
+The TV's names stay as aliases (`src/native/tv/aliases.ts`) until B2.
+
+**New parts:** `FeaturedCard` (with tags), `Pager`, `InlineText`, `NoticeCard`, `TvAcknowledge`, `TvRadioGroup`, `Menu` (closing says how, and holds the focus's return), `Popover` (align, padded), `Skeleton`, `Certification`, `PersonPortrait`, `TitleBackdrop`, `Bloom` and `FocusGuide` (the TV), `HiddenHeading`, the TV's `Toast` with inline runs in one status region, and the library's own words (`uiMessages`, so `@highsea-tv/ui` now depends on `@highsea-tv/i18n`).
+
+**New props:**
+- `Button`: `hasPopup`, `expanded`, a ref, and its pressed state as `accessibilityState`.
+- `Chip`: `hasPopup`, `current` and the radio rule.
+- `Sheet`: `footer` and `onDismiss`.
+- `Dialog`: `size`; the pointer's is capped at 560.
+- `Text`: `leading`.
+- `Row`: `itemGap` and `titleHidden`.
+
+**Changes in meaning:**
+- The TV's `Badge`, `QualityTag` and `Rating` were drawn far too large and now take the TV's units.
+- Hover scales are 1.08 on a card, 1.1 on a small one, and 1.02 on a poster.
+- react-native-web drops `experimental_backgroundImage`, so gradients use `backgroundImage` there ([react-native-web's styles](https://necolas.github.io/react-native-web/docs/styling/)).
+
+**Not tokens yet:** the values B1 drew without tokens wait for part E and the owner's approval. They are the home and Alerts sizes in `apps/client/src/home/sizes.ts` and `src/alerts/sizes.ts`, the phone's 17 section heading, and the 15 / 1.45 biography.
+
+**Found by B1's compare sheet and fixed in the library:**
+- Text on the web is antialiased (`smoothing()` in `src/native/fonts.ts`, through react-native-web's `WebkitFontSmoothing` and `MozOsxFontSmoothing`), as the prototypes' `html` is; a label on an accent or danger fill keeps `auto`, as the web renderer's buttons do. The devices don't change.
+- Text fields draw no browser outline on the web: react-native-web's TextInput resets the border but not the outline, and an `auto` outline ignores a width, so only `outline-style: none` removes it ([CSS UI 4 § outline-style](https://www.w3.org/TR/css-ui-4/#outline-style)). The field's own edge shows focus.
+- `Rating`'s stars sit in boxes of their own size, since an `<svg>` shrinks in a CSS flex row where a View doesn't ([flexShrink](https://reactnative.dev/docs/layout-props#flexshrink)).
+- `TvTile` takes `artwork` and `status`, so the TV's collection tiles draw Poster's mosaic and the Smart mark.
+- `UNCHOSEN_ALPHA` (0.65, in `src/native/alpha.ts`) dims what isn't chosen in the TV head and the client's top bar, as the prototypes' `text-text/65`.
+
+**After B1's review (2026-11-03):**
+- `FactsCard`'s labels take the widest label's width as a minimum and don't shrink, rather than a fixed width. React Native Web's `onLayout` reports `offsetWidth`, which is rounded to a whole pixel (its UIManager's `getRect`), so a fixed width could fall a fraction short and wrap the widest label ("Directed by" at 390).
+- `FactsCard` takes `says`, the words its children draw. On the TV they're read with the title as the card's one stop, because a focusable view on tvOS is one accessibility element that VoiceOver reads by its label ([`accessible`](https://reactnative.dev/docs/accessibility#accessible)). The About card's synopsis was drawn but wasn't read.

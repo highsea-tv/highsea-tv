@@ -13,8 +13,34 @@ import { createT, defineMessages } from '@highsea-tv/i18n'
 import { type Input, TV_REFERENCE } from '@highsea-tv/tokens'
 import type { Platform } from '../proto/state.ts'
 
-/** The client's routes part A holds, by prefix: W7's gate, sign-in and Settings. */
-export const CLIENT_ROUTES = ['/connect', '/sign-in', '/settings'] as const
+/**
+ * The client's routes, by prefix: part A's gate, sign-in and Settings, and B1's films (a film, a
+ * person, a collection, Movies, Collections, Search and Alerts).
+ */
+export const CLIENT_ROUTES = [
+  '/connect',
+  '/sign-in',
+  '/settings',
+  '/movies',
+  '/people',
+  '/collections',
+  '/search',
+  '/alerts',
+] as const
+
+/**
+ * The client's routes held only as they are, since what's under them moves later: Home, and the
+ * phone's Library (its Shows and Music views are B3's, at `/library/shows` and `/library/music`).
+ */
+export const CLIENT_EXACT = ['/', '/library'] as const
+
+/**
+ * The prototypes' addresses the client keeps under another: the phone's Collections view is
+ * `/library?view=collections` in apps/client (src/library/library.tsx).
+ */
+const CLIENT_ALIASES: Record<string, string> = {
+  '/library/collections': '/library?view=collections',
+}
 
 export type ClientPlatform = Exclude<Platform, 'admin'>
 
@@ -53,13 +79,23 @@ export function clientPathOf(path: string): string | null {
   const [, platform, ...rest] = (at < 0 ? path : path.slice(0, at)).split('/')
   if (!isClientPlatform(platform)) return null
   const query = at < 0 ? '' : path.slice(at + 1)
-  return `${`/${rest.join('/')}`.replace(/\/+$/, '') || '/'}${query ? `?${query}` : ''}`
+  const route = `/${rest.join('/')}`.replace(/\/+$/, '') || '/'
+  const alias = CLIENT_ALIASES[route]
+  if (alias) return query ? `${alias}&${query}` : alias
+  return `${route}${query ? `?${query}` : ''}`
 }
 
-/** Whether the client holds a chrome route: a client platform's, under one of CLIENT_ROUTES. */
+/**
+ * Whether the client holds a chrome route: a client platform's, under one of CLIENT_ROUTES or
+ * one of CLIENT_EXACT itself.
+ */
 export function heldByClient(path: string): boolean {
   const rest = clientPathOf(path)?.split('?')[0]
-  return rest !== undefined && CLIENT_ROUTES.some((r) => rest === r || rest.startsWith(`${r}/`))
+  if (rest === undefined) return false
+  return (
+    (CLIENT_EXACT as readonly string[]).includes(rest) ||
+    CLIENT_ROUTES.some((r) => rest === r || rest.startsWith(`${r}/`))
+  )
 }
 
 /** The chrome's route for a client route the frame on `platform` reports. */

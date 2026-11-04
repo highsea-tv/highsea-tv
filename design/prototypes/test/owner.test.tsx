@@ -115,17 +115,17 @@ describe('A11 curation', () => {
       'Featured on Harbor',
       'Staff picks',
       'The silent era',
-      'Recently added',
+      'New this month',
     ])
     await clean()
     // the drag handle's keyboard model: Space picks it up, Up moves it, Space drops it
-    act(() => page().getByRole('button', { name: 'Move Recently added' }).focus())
+    act(() => page().getByRole('button', { name: 'Move New this month' }).focus())
     await user.keyboard(' {ArrowUp} ')
     await settle()
     expect(sections()).toEqual([
       'Featured on Harbor',
       'Staff picks',
-      'Recently added',
+      'New this month',
       'The silent era',
     ])
     const home = await client(mock).home.sections('web')
@@ -134,7 +134,7 @@ describe('A11 curation', () => {
       'Continue watching',
       'Next up',
       'Staff picks',
-      'Recently added',
+      'New this month',
       'The silent era',
       'New episodes',
       'Recently added shows',
@@ -410,67 +410,6 @@ describe('C6–C8 clients', () => {
     const { collection, items } = await client(mock).library.collection('caminandes')
     expect(collection.count).toBe(items.length)
     expect(items.map((m) => m.year)).toEqual([...items.map((m) => m.year)].sort())
-  })
-
-  test('web search: a collection opens, and Search keeps the query', async () => {
-    const { user, location } = await open('/web/search')
-    await user.click(page().getByRole('button', { name: 'Got it' }))
-    await settle()
-    await user.type(page().getByRole('searchbox'), 'caminandes')
-    await act(() => new Promise((r) => setTimeout(r, 200)))
-    await settle()
-    const collections = within(page().getByRole('region', { name: 'Collections' }))
-    expect(collections.getByRole('link', { name: /Caminandes Collection/ })).toBeTruthy()
-    await clean()
-    act(() => location.navigate('/web/collections/caminandes'))
-    await settle()
-    expect(page().getByRole('heading', { level: 1, name: 'Caminandes Collection' })).toBeTruthy()
-    await clean()
-    // Back to Search: the same history entry, so the query and its results are still there
-    act(() => location.navigate('/web/search'))
-    await settle()
-    expect((page().getByRole('searchbox') as HTMLInputElement).value).toBe('caminandes')
-    expect(page().getByRole('region', { name: 'Collections' })).toBeTruthy()
-  })
-
-  test('TV search: typing never takes focus off the keys', async () => {
-    const { user } = await open('/tv/search')
-    // a suggestion's button goes away with its results, so focus goes into them once
-    await user.click(page().getByRole('button', { name: 'Animation' }))
-    await act(() => new Promise((r) => setTimeout(r, 250)))
-    await settle()
-    const key = page().getByRole('button', { name: 's' })
-    act(() => key.focus())
-    await user.keyboard('{Enter}')
-    await act(() => new Promise((r) => setTimeout(r, 250)))
-    await settle()
-    expect(document.activeElement).toBe(key)
-    await clean()
-  })
-
-  test('TV collection: its titles as a row', async () => {
-    await open('/tv/collections/caminandes')
-    expect(page().getByRole('heading', { level: 1, name: 'Caminandes Collection' })).toBeTruthy()
-    // the row's fixed card holds the first film; every film is a poster on the strip behind it,
-    // the card's own hidden under it
-    const row = within(page().getByRole('region', { name: 'Films' }))
-    const [card, ...more] = row.getAllByRole('link')
-    expect(more).toHaveLength(0)
-    expect(card?.getAttribute('aria-label')).toStartWith('Caminandes')
-    expect(row.getAllByRole('listitem', { hidden: true })).toHaveLength(3)
-  })
-
-  test('web search: suggestions, then results', async () => {
-    const { user } = await open('/web/search')
-    await user.click(page().getByRole('button', { name: 'Got it' }))
-    await settle()
-    await user.click(page().getByRole('button', { name: 'Comedy' }))
-    await act(() => new Promise((r) => setTimeout(r, 200)))
-    await settle()
-    expect(
-      within(page().getByRole('region', { name: 'Movies' })).getAllByRole('link').length,
-    ).toBeGreaterThan(0)
-    await clean()
   })
 })
 

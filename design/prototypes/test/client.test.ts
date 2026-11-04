@@ -39,8 +39,39 @@ describe('the routes apps/client holds', () => {
     expect(heldByClient('/tv/sign-in')).toBe(true)
     expect(heldByClient('/web/settings/devices')).toBe(true)
     expect(heldByClient('/web/connections')).toBe(false)
-    expect(heldByClient('/mobile')).toBe(false)
     expect(heldByClient('/admin/settings')).toBe(false)
+  })
+
+  test('holds B1’s films, and Home and the phone’s Library only as they are', () => {
+    for (const path of [
+      '/mobile',
+      '/tv/',
+      '/web/movies',
+      '/web/movies/4',
+      '/mobile/people/buster-keaton',
+      '/tv/collections/caminandes',
+      '/mobile/search',
+      '/tv/alerts',
+      '/mobile/library',
+      '/mobile/library/collections',
+    ])
+      expect(heldByClient(path)).toBe(true)
+    for (const path of [
+      '/mobile/library/shows',
+      '/mobile/library/music',
+      '/web/shows/1',
+      '/tv/music',
+      '/web/play/4',
+      '/mobile/you',
+      '/web/moviesx',
+    ])
+      expect(heldByClient(path)).toBe(false)
+  })
+
+  test('the phone’s Collections view is the client’s Library at that view', () => {
+    expect(clientPathOf('/mobile/library/collections')).toBe('/library?view=collections')
+    expect(clientPathOf('/mobile/library/collections?x=1')).toBe('/library?view=collections&x=1')
+    expect(heldByClient(chromePathOf('mobile', '/library?view=collections'))).toBe(true)
   })
 
   test('a client route reported back is the chrome’s route on that platform', () => {

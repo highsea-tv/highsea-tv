@@ -37,9 +37,9 @@ A collection holds films and shows in any mix (prototype-gaps stage 4, 2026-11-0
 
 ## Interactions
 
-- **A person:** picking them searches their name, so the results are their films.
+- **A person:** picking them opens their page, with their films here (every prototype links to `/people/{id}`; the one client platform, 2026-11-03).
 - **TV:** the keyboard is a spatial grid; **Right** from its last column enters the results, **Left** from their first column comes back; **Up** from the keyboard opens the global navigation.
-- **TV focus:** typing never moves focus off the keyboard, however the results change. Focus moves on its own only when the button pressed goes away: a quick pick or a person hands focus to the first result (or back to the keys when there are none).
+- **TV focus:** typing never moves focus off the keyboard, however the results change. Focus moves on its own only when the button pressed goes away: a quick pick hands focus to the first result (or back to the keys when there are none).
 - **Sound:** TV only: `navigate`, `select`.
 
 ## Data
@@ -64,7 +64,7 @@ Through `@highsea-tv/sdk` (the contract is `@highsea-tv/api-contract`'s `library
 
 - **Sections by kind, ranked by match:** "lang" leads with Fritz Lang, "caminandes" with the films and then their collection. A fixed order would bury the kind the person meant.
 - **New kinds are new sections:** the response is a list of typed sections, and a client skips a kind it doesn't know, so older apps keep working when the server adds shows or music.
-- **People are found through their films,** so only people with something playable here appear, and picking one shows exactly that.
+- **People are found through their films,** so only people with something playable here appear, and their page shows exactly those.
 - **The query belongs to the visit:** Back restores it, a fresh visit doesn't. Recent searches, if they come, are a separate list.
 - **No search-as-you-type sounds on TV** beyond the keys' own.
 - **Reference fidelity:** voice search and recent searches are left for later.

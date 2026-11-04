@@ -3,8 +3,9 @@
 // renderers export, or one drawn per platform in a pair of platform files, is in BOTH with its
 // reason, and BOTH lists nothing else; a component only one renderer has is listed with its reason.
 // Read from the sources, as test/native/icons.test.ts does, since importing the native renderer
-// needs React Native, which Bun doesn't run. Only components (PascalCase) count: types, hooks and
-// helpers may differ. scripts/one-place.ts reads BOTH from its syntax for the same rule.
+// needs React Native, which Bun doesn't run. Components (PascalCase) and the constants screens lay
+// out by (SCREAMING_CASE) count: types, hooks and helpers may differ. scripts/one-place.ts reads
+// BOTH from its syntax for the same rule.
 import { describe, expect, test } from 'bun:test'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
@@ -13,24 +14,29 @@ import { BOTH, NATIVE_ONLY, WEB_ONLY } from '../src/shared/parity.ts'
 const SRC = join(import.meta.dirname, '../src')
 
 const isComponent = (name: string) => /^[A-Z]/.test(name) && name !== name.toUpperCase()
+/** A constant's name: `TV_HEAD_HEIGHT`, `LIFT`. */
+const isConstant = (name: string) => /^[A-Z][A-Z0-9_]*$/.test(name)
+/** What the lists are kept for: components, or constants. */
+type Kind = (name: string) => boolean
 
-/** PascalCase names a file declares as exported. */
-function declared(text: string): string[] {
+/** The names of a kind a file declares as exported. */
+function declared(text: string, kind: Kind = isComponent): string[] {
   const names: string[] = []
   for (const m of text.matchAll(/^export (?:async )?(?:function|const|class) ([A-Z]\w*)/gm))
-    if (isComponent(m[1] as string)) names.push(m[1] as string)
+    if (kind(m[1] as string)) names.push(m[1] as string)
   return names
 }
 
-/** The component names an index exports, through `export *` and `export { … } from`. */
-function exportsOf(index: string, seen = new Set<string>()): Set<string> {
+/** The names of a kind an index exports, through `export *` and `export { … } from`. */
+function exportsOf(index: string, kind: Kind = isComponent, seen = new Set<string>()): Set<string> {
   const names = new Set<string>()
   if (seen.has(index) || !existsSync(index)) return names
   seen.add(index)
   const text = readFileSync(index, 'utf8')
-  for (const name of declared(text)) names.add(name)
+  for (const name of declared(text, kind)) names.add(name)
   for (const m of text.matchAll(/^export \* from '(\.[^']+)'/gm))
-    for (const name of exportsOf(resolve(dirname(index), m[1] as string), seen)) names.add(name)
+    for (const name of exportsOf(resolve(dirname(index), m[1] as string), kind, seen))
+      names.add(name)
   for (const m of text.matchAll(/^export \{([^}]*)\} from '\.[^']+'/gm))
     for (const part of (m[1] as string).split(',')) {
       const name =
@@ -38,7 +44,7 @@ function exportsOf(index: string, seen = new Set<string>()): Set<string> {
           .trim()
           .split(/\s+as\s+/)
           .pop() ?? ''
-      if (!part.trim().startsWith('type ') && isComponent(name)) names.add(name)
+      if (!part.trim().startsWith('type ') && kind(name)) names.add(name)
     }
   return names
 }
@@ -65,6 +71,11 @@ const native = new Set([
   ...exportsOf(join(SRC, 'native/tv/index.ts')),
 ])
 const pairs = platformPairs(join(SRC, 'native'))
+const webConstants = exportsOf(join(SRC, 'web/index.ts'), isConstant)
+const nativeConstants = new Set([
+  ...exportsOf(join(SRC, 'native/index.ts'), isConstant),
+  ...exportsOf(join(SRC, 'native/tv/index.ts'), isConstant),
+])
 const twice = new Set([...[...web].filter((name) => native.has(name)), ...pairs])
 
 describe('parity', () => {
@@ -88,8 +99,28 @@ describe('parity', () => {
   })
 
   test('a component only React Native has is listed with its reason', () => {
-    const unlisted = [...native].filter((name) => !web.has(name) && !NATIVE_ONLY[name]?.trim())
+    // a pair of platform files the native renderer exports (FocusGuide) has its reason in BOTH
+    const unlisted = [...native].filter(
+      (name) => !web.has(name) && !NATIVE_ONLY[name]?.trim() && !pairs.has(name),
+    )
     expect(unlisted).toEqual([])
+  })
+
+  test('a constant only one renderer exports is listed with its reason, and only then', () => {
+    const only = (mine: Set<string>, theirs: Set<string>) =>
+      [...mine].filter((n) => !theirs.has(n)).sort()
+    expect(only(nativeConstants, webConstants).filter((n) => !NATIVE_ONLY[n]?.trim())).toEqual([])
+    expect(only(webConstants, nativeConstants).filter((n) => !WEB_ONLY[n]?.trim())).toEqual([])
+    expect(
+      Object.keys(NATIVE_ONLY)
+        .filter(isConstant)
+        .filter((n) => !nativeConstants.has(n) || webConstants.has(n)),
+    ).toEqual([])
+    expect(
+      Object.keys(WEB_ONLY)
+        .filter(isConstant)
+        .filter((n) => !webConstants.has(n) || nativeConstants.has(n)),
+    ).toEqual([])
   })
 
   test('nothing is listed as one platform’s that both have, or that neither has', () => {

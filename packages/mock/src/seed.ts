@@ -120,6 +120,11 @@ export type ServerState = {
   known: KnownServer[]
   /** Where each user is in each title (Continue watching, Resume). */
   watch: { userId: string; itemId: string; position: number; updatedAt: ISODate }[]
+  /**
+   * Titles each user marked watched, `${userId}:${itemId}`, kept apart from their place as the
+   * server's watch history is (ADR 0054). Absent in states saved before it.
+   */
+  played?: string[]
   /** Per user and title: the player's remembered picks, keyed `${userId}:${itemId}`. */
   prefs: Record<string, PlaybackPrefs>
   pipeline: PipelineStep[]
@@ -629,7 +634,7 @@ function item(t: Title, i: number, now: number): MediaItem {
     type: 'movie',
     parentId: null,
     title: t.title,
-    sortTitle: t.title.replace(/^(The|A) /, ''),
+    sortTitle: t.title.replace(/^(The|An|A) (?=\S)/, ''),
     year: t.year,
     runtimeMinutes: minutes(t.runtime),
     genres: [t.genre],
@@ -875,6 +880,10 @@ const defaultTorrentLimits: TorrentLimits = {
   vpnIp: '10.2.0.15',
 }
 
+/**
+ * The catalog's titles not yet added. Dates are local days, as the library's are; ratings are out of
+ * 5, as the type says, so the hand-written ones (TMDB's out of 10) are held to it.
+ */
 const discoverPool: DiscoverMovie[] = [
   {
     id: 'disc-charge',
@@ -886,7 +895,7 @@ const discoverPool: DiscoverMovie[] = [
     synopsis:
       'In an old battery factory, an elderly warrior finds himself hunted by security droids while retrieving a vital energy core.',
     rating: 8.2,
-    releaseDate: '2022-12-15T00:00:00.000Z',
+    releaseDate: iso(new Date(2022, 11, 15).getTime()),
     art: {
       poster: posterArt('Charge'),
       backdrop: backdropArt('Charge'),
@@ -904,7 +913,7 @@ const discoverPool: DiscoverMovie[] = [
     synopsis:
       'When a group of rowdy teenagers venture into an isolated forest, they encounter cheerful sprites with a deadly vendetta against litterbugs.',
     rating: 7.9,
-    releaseDate: '2021-10-29T00:00:00.000Z',
+    releaseDate: iso(new Date(2021, 9, 29).getTime()),
     art: {
       poster: posterArt('Sprite Fright'),
       backdrop: backdropArt('Sprite Fright'),
@@ -922,7 +931,7 @@ const discoverPool: DiscoverMovie[] = [
     synopsis:
       'On a desolate windswept island, a depressed sheep named Franck is offered the adventure of a lifetime by a mysterious salesman named Victor.',
     rating: 8.4,
-    releaseDate: '2015-08-10T00:00:00.000Z',
+    releaseDate: iso(new Date(2015, 7, 10).getTime()),
     art: {
       poster: posterArt('Cosmos Laundromat'),
       backdrop: backdropArt('Cosmos Laundromat'),
@@ -940,7 +949,7 @@ const discoverPool: DiscoverMovie[] = [
     synopsis:
       'Fueled by an acute craving for coffee, a solitary traveler journeys across dimensions and surrealist landscapes.',
     rating: 7.1,
-    releaseDate: '2020-05-29T00:00:00.000Z',
+    releaseDate: iso(new Date(2020, 4, 29).getTime()),
     art: {
       poster: posterArt('Coffee Run'),
       backdrop: backdropArt('Coffee Run'),
@@ -958,7 +967,7 @@ const discoverPool: DiscoverMovie[] = [
     synopsis:
       'Secret agent Hendrik IJzerbroot investigates a covert intelligence ring operating out of a quiet neighborhood barbershop.',
     rating: 7.8,
-    releaseDate: '2017-05-15T00:00:00.000Z',
+    releaseDate: iso(new Date(2017, 4, 15).getTime()),
     art: {
       poster: posterArt('Agent 327'),
       backdrop: backdropArt('Agent 327'),
@@ -976,7 +985,7 @@ const discoverPool: DiscoverMovie[] = [
     synopsis:
       'A brave warrior faces the greatest challenge of his life in a dark underground cavern filled with ancient perils.',
     rating: 7.4,
-    releaseDate: '2018-04-16T00:00:00.000Z',
+    releaseDate: iso(new Date(2018, 3, 16).getTime()),
     art: { poster: posterArt('Hero'), backdrop: backdropArt('Hero'), still: stillArt('Hero') },
     inLibrary: false,
   },
@@ -1090,7 +1099,7 @@ const discoverPool: DiscoverMovie[] = [
       inLibrary: false,
     }),
   ),
-]
+].map((d) => ({ ...d, rating: Math.min(5, Math.max(0, d.rating)) }))
 
 // ---------------------------------------------------------------- the two servers
 
@@ -1549,9 +1558,11 @@ function seedBySlug(kind: 'populated' | 'empty', now: number): ServerState {
       schedule: { start: iso(now - 14 * DAY), end: null },
       order: 2,
     },
+    // the owner's own row over the recently-added rule, named apart from Home's built-in Recently
+    // added (the real server seeds no featured sections; each is the owner's)
     {
       id: 'fs-recent',
-      title: 'Recently added',
+      title: 'New this month',
       tagline: null,
       layout: 'row',
       source: { kind: 'rule', rule: 'recently-added', value: '30d' },

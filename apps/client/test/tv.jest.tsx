@@ -4,7 +4,7 @@
 // Each test from a mock server and a store of its own (./mock.ts). The TV lists the servers
 // answering, takes the only one by itself (zero configuration), then shows its code for a phone to
 // approve; the mock approves it after PAIRING_APPROVAL_MS. A code that runs out is replaced.
-import { act, cleanup, fireEvent, screen } from '@testing-library/react-native'
+import { act, cleanup, fireEvent, screen, within } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { BackHandler, Platform, TVEventControl } from 'react-native'
 import { flush, fresh, open, rewrite, sent, server, words } from './mock.ts'
@@ -33,10 +33,18 @@ require('react-native-gesture-handler/jestSetup')
 beforeEach(fresh)
 
 /** Opens the app, chooses Harbor from the servers answering, and waits for the phone's approval. */
-const signedIn = async () => {
+const approved = async () => {
   const r = await open()
   await fireEvent.press(screen.getByLabelText(/^Harbor,/))
   await flush(20_000)
+  return r
+}
+
+/** Signed in, past the owner's announcement that must be acknowledged, which the shell shows first. */
+const signedIn = async () => {
+  const r = await approved()
+  await fireEvent.press(screen.getByRole('button', { name: 'Got it' }))
+  await flush()
   return r
 }
 
@@ -92,11 +100,21 @@ describe('the gate on the TV', () => {
   })
 
   test('approved from the phone, it signs in and opens the head', async () => {
-    const r = await signedIn()
+    const r = await approved()
     expect(r.getPathname()).toBe('/')
+    // the owner's announcement that must be acknowledged comes first, with the head hidden
+    expect(screen.getByText('Harbor has a new remote address')).toBeTruthy()
+    await fireEvent.press(screen.getByRole('button', { name: 'Got it' }))
+    await flush()
     const shown = words(screen.toJSON())
     for (const name of ['Home', 'Collections', 'Movies']) expect(shown).toContain(name)
-    expect(screen.getByText('This part of highsea comes with the next screens.')).toBeTruthy()
+    // the head's stops as the prototype's tv/kit.tsx: unchosen at `text-text/65`, the one shown
+    // in `text`
+    const { StyleSheet } = require('react-native')
+    const opacityOf = (name: string) =>
+      StyleSheet.flatten(screen.getByText(name, { exact: true }).props.style).opacity
+    expect(opacityOf('Collections')).toBe(0.65)
+    expect(opacityOf('Movies')).toBe(0.65)
   })
 })
 
@@ -119,17 +137,16 @@ describe('Back on tvOS', () => {
     expect(calls.at(-1)).toBe('go')
   })
 
-  test('Home lets the key go on a cold start, and a screen opened from it holds it again', async () => {
-    await signedIn()
+  // Home's own Back, to the featured card and then out, is home-tv.jest.tsx's
+  test('the announcement Home opens under lets the key go, and a screen opened after it holds it', async () => {
+    await approved()
+    // the shell's screen for an announcement that must be acknowledged, in Home's place
     expect(calls.at(-1)).toBe('go')
-    calls = []
+    await fireEvent.press(screen.getByRole('button', { name: 'Got it' }))
+    await flush()
     await act(() => router.push('/settings'))
     await flush()
-    expect(calls).toEqual(['hold'])
-    calls = []
-    await act(() => router.back())
-    await flush()
-    expect(calls).toEqual(['go'])
+    expect(calls.at(-1)).toBe('hold')
   })
 
   test('Unreachable on a cold start lets the key go, as the Home it stands in for does', async () => {
@@ -166,8 +183,19 @@ describe('Settings on the TV', () => {
     expect(stop('Playback').hasTVPreferredFocus).toBe(true)
     expect(stop('Theme').hasTVPreferredFocus).toBe(false)
     // Playback's choices as rows of chips, each a radio group, the one chosen selected
-    for (const row of ['Audio', 'Subtitles', 'At home', 'Away'])
-      expect(screen.getByLabelText(row).props.accessibilityRole).toBe('radiogroup')
+    for (const row of ['Audio', 'Subtitles', 'At home', 'Away']) {
+      const group = screen.getByLabelText(row)
+      expect(group.props.accessibilityRole).toBe('radiogroup')
+      // its chips are its radios: off the web buttons with the selected trait, since React
+      // Native gives `radio` no trait on tvOS (the library's RADIO), the one chosen selected
+      const radios = within(group).getAllByRole('button')
+      expect(radios.length).toBeGreaterThan(1)
+      const on = radios.filter((r) => r.props.accessibilityState?.selected === true)
+      expect(on).toHaveLength(1)
+      for (const r of radios) expect(r.props.accessibilityState?.checked).toBeUndefined()
+      for (const r of radios.filter((x) => x !== on[0]))
+        expect(r.props.accessibilityState).toMatchObject({ selected: false })
+    }
   })
 
   test('focus moving down the list shows each section, and keeps the first preferred no more', async () => {

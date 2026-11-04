@@ -149,6 +149,20 @@ describe('the title and person pages’ words', () => {
     ])
   })
 
+  test('names languages without Intl.DisplayNames, as on Hermes', () => {
+    // Hermes has no Intl.DisplayNames (https://github.com/facebook/hermes/blob/main/doc/IntlAPIs.md)
+    const real = Intl.DisplayNames
+    Object.defineProperty(Intl, 'DisplayNames', { value: undefined, configurable: true })
+    try {
+      const words = createLibraryText('en')
+      expect(words.languagesOf(film)[2]).toEqual(['Subtitles', 'English, German'])
+      expect(words.languageName('pt-BR')).toBe('Brazilian Portuguese')
+      expect(words.languageName('qq')).toBe('qq')
+    } finally {
+      Object.defineProperty(Intl, 'DisplayNames', { value: real, configurable: true })
+    }
+  })
+
   test('cast and crew in one row, a director once', () => {
     const cast = [credit(3, 'Halina Reijn', { character: 'Sintel' })]
     const row = peopleOf({ cast, directors: film.directors, crew: film.crew })

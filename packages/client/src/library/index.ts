@@ -5,6 +5,7 @@
 // i18n catalogs (ADR 0021).
 import type { ClientItem } from '@highsea-tv/api-contract'
 import { createT, defineMessages } from '@highsea-tv/i18n'
+import { languageName } from '@highsea-tv/i18n/languages'
 import { createFormat } from '../format/index.ts'
 
 export const SORTS = ['title', 'added', 'year', 'rating'] as const
@@ -73,6 +74,10 @@ export type ContinueCard = {
 /** The film's page, or the show's at the episode. */
 export const cardPage = (c: ContinueCard) =>
   c.show ? `/shows/${c.show.id}/episodes/${c.id}` : `/movies/${c.id}`
+
+/** The player at a title (Play, Resume, Continue watching's cards); `start` plays from the start. */
+export const playPath = (id: string | number, start = false) =>
+  `/play/${id}${start ? '?start=1' : ''}`
 
 export const libraryMessages = defineMessages({
   sortByTitle: 'Title',
@@ -235,12 +240,6 @@ export const videoLength = (s: number) => `${Math.floor(s / 60)}:${String(s % 60
 export function createLibraryText(locale = 'en') {
   const t = createT(libraryMessages, locale)
   const format = createFormat(locale)
-  // Hermes has no Intl.DisplayNames everywhere: then a language shows as its code
-  const display =
-    typeof Intl.DisplayNames === 'function'
-      ? new Intl.DisplayNames([locale], { type: 'language' })
-      : null
-  const languageName = (code: string) => (code && display?.of(code)) || code
   const longDate = (iso: string) =>
     new Date(iso).toLocaleDateString(locale === 'en' ? 'en-GB' : locale, {
       day: 'numeric',
@@ -284,6 +283,7 @@ export function createLibraryText(locale = 'en') {
       { value: 'all' as Show, label: t('allMovies') },
       { value: 'unwatched' as Show, label: t('unwatched') },
     ],
+    /** A language by name, from the catalog (Hermes has no Intl.DisplayNames). */
     languageName,
     names,
     /** Who they play, or their job in plain words. */

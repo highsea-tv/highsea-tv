@@ -4,14 +4,13 @@
 // they're known for and how much of theirs is here, born and died, and the biography cut at four
 // lines with More. Then a row of posters for each department they worked in on the films here, the
 // one they're known for first, each with their role and the year; then their shows and albums.
-import { createLibraryText } from '@highsea-tv/client/library'
+import { createLibraryText, LONG_BIO } from '@highsea-tv/client/library'
 import { Button, cn, EmptyState, Icon, Poster, Skeleton, SkeletonText } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useParams } from 'wouter'
 import { usePerson } from '../client/data.ts'
 import { ShowPoster } from '../client/show-card.tsx'
 import { showYears } from '../client/shows.ts'
-import { LONG_BIO } from '../web/person.tsx'
 import { MobileRow, MobileRowSkeleton } from './home.tsx'
 import { BackBadge, gutter, mobileHref } from './shell.tsx'
 

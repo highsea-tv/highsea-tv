@@ -64,11 +64,11 @@ describe('the gate', () => {
   test('signing in opens the shell, and reopened it opens signed in', async () => {
     const r = await signedIn()
     expect(r.getPathname()).toBe('/')
-    // the phone's tab bar, and a placeholder for a destination not built yet
+    // the phone's tab bar, and the owner's announcement that must be acknowledged over Home
     // iOS's tab bar: a container with the tab bar trait around buttons (src/kit.tsx's TAB_ROW)
     expect(screen.getByLabelText('Main').props.accessibilityRole).toBe('tabbar')
     expect(screen.getByRole('button', { name: 'Home', selected: true })).toBeTruthy()
-    expect(screen.getByText('This part of highsea comes with the next screens.')).toBeTruthy()
+    expect(screen.getByText('Harbor has a new remote address')).toBeTruthy()
     expect(store().tokens.size).toBe(1)
     await cleanup()
     const again = await open()

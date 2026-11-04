@@ -290,12 +290,43 @@ export const TvScroll: typeof nativeTvScroll = ({
   keep,
   style,
   contentContainerStyle,
+  onScroll,
   children,
 }) => {
   const track: Marked = { dataSet: { scroll: horizontal ? 'x' : 'y', keep: String(keep) } }
+  const el = useRef<HTMLElement | null>(null)
+  const told = useRef(onScroll)
+  told.current = onScroll
+  const listening = !!onScroll
+  // the navigator moves the track by its transform, so its offset is read from the style each time
+  // it changes (a MutationObserver on the attribute,
+  // https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver) and given as ScrollView's
+  // event's contentOffset, with the window's size and the track's as its layoutMeasurement and
+  // contentSize (https://reactnative.dev/docs/scrollview#onscroll); each move is one change, so
+  // there's nothing to throttle. The pattern reads what spatial/navigator.ts's `scrollTo` writes,
+  // `translateX(-offset px)` or `translateY(…)` (its `track.style.transform = …`): change the two
+  // together
+  useEffect(() => {
+    const at = el.current
+    const view = at?.parentElement
+    if (!listening || !at || !view) return
+    const observer = new MutationObserver(() => {
+      const moved = /translate([XY])\((-?[\d.]+)px\)/.exec(at.style.transform)
+      const offset = moved ? -Number(moved[2]) : 0
+      const contentOffset = horizontal ? { x: offset, y: 0 } : { x: 0, y: offset }
+      const layoutMeasurement = { width: view.clientWidth, height: view.clientHeight }
+      const contentSize = { width: at.scrollWidth, height: at.scrollHeight }
+      told.current?.({ nativeEvent: { contentOffset, layoutMeasurement, contentSize } } as never)
+    })
+    observer.observe(at, { attributes: true, attributeFilter: ['style'] })
+    return () => observer.disconnect()
+  }, [listening, horizontal])
   return (
     <View style={[style, { overflow: 'hidden' }]}>
       <View
+        ref={(node) => {
+          el.current = node as unknown as HTMLElement | null
+        }}
         {...track}
         // a sideways track is as wide as its stops, so the navigator reads where it ends
         style={[
@@ -309,5 +340,13 @@ export const TvScroll: typeof nativeTvScroll = ({
   )
 }
 
-export const keptProps: typeof nativeKeptProps = (rest) =>
-  ({ dataSet: { kept: rest ? 'rest' : 'center' } }) as Marked as ViewProps
+// A part's own `keep` is the navigator's `[data-keep]` on it (spatial/navigator.ts's keepFor, the
+// nearest from the item up to its track), as the TV prototype's `data-keep` on a person's first row.
+// Without it the part lands at the page's keep instead, as the TVs never do.
+export const keptProps: typeof nativeKeptProps = (rest, keep) =>
+  ({
+    dataSet: marks({
+      kept: rest ? 'rest' : 'center',
+      keep: keep === undefined ? false : String(keep),
+    }),
+  }) as Marked as ViewProps

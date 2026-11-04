@@ -9,10 +9,10 @@
 // once, on the input (React Native has no <label for>:
 // https://reactnative.dev/docs/accessibility#accessibilitylabel).
 import { type ComponentProps, createContext, type ReactNode, useContext, useState } from 'react'
-import { TextInput, View, type ViewStyle } from 'react-native'
+import { Platform, TextInput, type TextStyle, View, type ViewStyle } from 'react-native'
 import type { ControlSize, FieldCommon } from '../shared/controls.ts'
 import { ControlPress } from './control.tsx'
-import { family } from './fonts.ts'
+import { family, smoothing } from './fonts.ts'
 import { Icon, type IconName } from './icon.tsx'
 import type { ControlPoints } from './metrics.ts'
 import { Text } from './text.tsx'
@@ -94,6 +94,19 @@ export function fieldBox(theme: Theme, m: ControlPoints, focused: boolean, inval
   } satisfies ViewStyle
 }
 
+/**
+ * In a browser, the field look's edge is what shows focus, so the <input> or <textarea> inside
+ * draws no outline of its own. react-native-web 0.21's TextInput resets the element's border,
+ * background and appearance but not its outline (exports/TextInput's `textinput$raw`), so the
+ * browser's `:focus-visible` outline was drawn inside the field's edge, and inside a search field
+ * it cut the clear button off into a box of its own. That outline's style is `auto`, which ignores
+ * a width, so only `none` removes it (CSS UI 4 § outline-style), as the TV's web engine does
+ * (tv/engine.web.tsx). React Native's types list only the outline styles it draws itself
+ * (https://reactnative.dev/docs/view-style-props#outlinestyle); react-native-web passes this one
+ * on, and the native platforms never get it.
+ */
+const NO_BROWSER_OUTLINE = (Platform.OS === 'web' ? { outlineStyle: 'none' } : {}) as TextStyle
+
 type InputOwn = Pick<FieldCommon, 'size' | 'disabled'> & {
   /** Monospace, for codes and addresses. */
   mono?: boolean
@@ -145,6 +158,8 @@ function useInput({
       fontFamily: family(m.weight, mono ? 'mono' : 'sans'),
       // the ThemeProvider's fontScale, as the OS's text size would grow it, to the same cap
       fontSize: m.text * fontScaleFor(theme, cap),
+      ...NO_BROWSER_OUTLINE,
+      ...smoothing(),
     },
     scale: fontScaleFor(theme, cap),
   }

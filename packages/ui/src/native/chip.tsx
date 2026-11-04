@@ -4,13 +4,25 @@
 // `text-2` label; chosen, `control-selected` with a `text` label at 600. The TV's Sort and
 // Unwatched choices are this chip at the TV's rule, with its focus ring and lift.
 import type { Ref } from 'react'
-import type { AccessibilityProps } from 'react-native'
+import { type AccessibilityProps, type AccessibilityRole, Platform } from 'react-native'
 import type { ChipCommon } from '../shared/controls.ts'
 import { ControlPress, ControlText, lookAt } from './control.tsx'
 import { Icon, type IconName } from './icon.tsx'
 import { centredPadding } from './metrics.ts'
 import { tokens, useControl, useTheme } from './theme.tsx'
 import type { ViewHandle } from './tv/focusable.tsx'
+
+/**
+ * A choice of one among several (a theme, a chip in a radio group): `radio` on the web, with
+ * `checked` alone (https://www.w3.org/TR/wai-aria-1.2/#radio; `aria-selected` isn't a radio's).
+ * React Native gives `radio` no trait on iOS and tvOS (react-native-tvos 0.88's
+ * accessibilityPropsConversions.h) and VoiceOver speaks it as a value, so there it's a button with
+ * the selected trait, as UIKit's own lists of choices are
+ * (https://developer.apple.com/documentation/uikit/uiaccessibilitytraits/selected).
+ */
+export const RADIO: AccessibilityRole = Platform.OS === 'web' ? 'radio' : 'button'
+export const radioState = (on: boolean): { checked?: boolean; selected?: boolean } =>
+  Platform.OS === 'web' ? { checked: on } : { selected: on }
 
 export type ChipProps = ChipCommon<IconName> &
   Pick<AccessibilityProps, 'accessibilityLabel' | 'accessibilityHint'> & {
@@ -19,6 +31,25 @@ export type ChipProps = ChipCommon<IconName> &
     onFocus?: () => void
     /** tvOS's preferred focus when the screen appears (react-native-tvos). */
     hasTVPreferredFocus?: boolean
+    /**
+     * What it is to assistive tech. By default a toggle, `selected` read as pressed (React
+     * Native's `togglebutton` with `checked`, on the web a button with `aria-pressed`:
+     * https://www.w3.org/WAI/ARIA/apg/patterns/button/), since `aria-selected` isn't a button's
+     * (https://www.w3.org/TR/wai-aria-1.2/#aria-selected). `tab` in a row of tabs, or `option`, reads
+     * `selected` as the one chosen (WAI-ARIA's tabs pattern,
+     * https://www.w3.org/WAI/ARIA/apg/patterns/tabs/), and `radio` as checked.
+     */
+    accessibilityRole?: AccessibilityRole
+    /**
+     * It opens a menu or a dialog (`aria-haspopup`), as Button's: a filter chip's choices. Such a
+     * chip is a button, which has no selected state, so the filter in force is its label's to say.
+     */
+    hasPopup?: 'menu' | 'dialog'
+    /**
+     * A view chip that's the page shown (`aria-current="page"`, ControlPress's `current`): a
+     * button by default, the page being where the person is rather than a toggle that's on.
+     */
+    current?: 'page' | 'true'
     ref?: Ref<ViewHandle>
   }
 
@@ -35,6 +66,9 @@ export function Chip({
   onPress,
   onFocus,
   hasTVPreferredFocus,
+  accessibilityRole,
+  hasPopup,
+  current,
   ref,
 }: ChipProps) {
   const theme = useTheme()
@@ -42,6 +76,18 @@ export function Chip({
   const looks = tokens.controls.looks
   const look = selected ? looks.selected : looks.chip
   const edge = 'edge' in look ? look.edge : undefined
+  // a chip that opens a menu is a button, not a toggle: its `selected` is a filter in force; a
+  // view chip that's the page is a button whose `aria-current` says so
+  const role: AccessibilityRole =
+    accessibilityRole ?? (hasPopup || current ? 'button' : 'togglebutton')
+  const radio = role === 'radio'
+  const state = radio
+    ? radioState(selected)
+    : role === 'togglebutton'
+      ? { checked: selected }
+      : role === 'button'
+        ? {}
+        : { selected }
   return (
     <ControlPress
       ref={ref}
@@ -51,7 +97,10 @@ export function Chip({
       disabled={disabled}
       accessibilityLabel={accessibilityLabel ?? children}
       accessibilityHint={accessibilityHint}
-      state={{ selected }}
+      role={radio ? RADIO : role}
+      state={state}
+      hasPopup={hasPopup}
+      current={current}
       radius={tokens.radius.pill}
       slop={{ height: m.height }}
       style={{

@@ -64,14 +64,22 @@ export const BOTH: Record<string, string> = {
     "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   TitleCell:
     "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
+  Menu: "A menu of actions or choices: the web renderer's (Radix) is drawn by the admin and the prototypes until part D; this one is a Sheet by touch, a dropdown hung from its trigger with a pointer (WAI-ARIA's menu button pattern on react-native-web's Modal) and TvMenu on the TV",
+  Popover:
+    "A panel hung from a pointer's trigger: the web renderer's (Radix) is drawn by the admin and the prototypes until part D; this one is the pointer's only, on react-native-web's Modal, since touch and the TV show the same content in a Sheet or a dialog",
+  Skeleton:
+    "A loading placeholder: the web renderer's is drawn by the admin and the prototypes until part D; this one draws the same shimmer at every form factor",
+  SkeletonText: "Lines of Skeleton, as the web renderer's, until part D",
   // platform files behind a component: the web draws what react-native-web doesn't
   Scrollbar:
     'ScrollView’s own bar, drawn only on the web (scrollbar.web.tsx) where the browser’s takes a column; the phone and the TV keep the platform’s indicator',
+  Embed:
+    'StillFrame’s player, an embedded page: an <iframe> on the web and in the desktop app (embed.web.tsx), and a react-native-webview WebView on the phone, which has no iframe (embed.tsx)',
   // the TV's focus engine (tv/engine.tsx and tv/engine.web.tsx), behind Focusable and the TV's parts
   FocusGuide:
     'A region that steers TV focus: react-native-tvos’s TVFocusGuideView on the TVs, and on the web, which has none, marks the spatial focus engine reads (one-client-platform.md › A, question 5)',
   TvScroll:
-    'A TV scroller that follows focus: a ScrollView landing each stop by its scrollSnapOffset on the TVs, and on the web a track the spatial focus engine moves, since react-native-web has neither prop. The track moves by transform behind a clipped view, so on the web a pointer’s wheel or drag doesn’t scroll a TvPage or a TvRow: only focus moves them, as on the TVs, which have no pointer',
+    'A TV scroller that follows focus: a ScrollView landing each stop by its scrollSnapOffset on the TVs, and on the web a track the spatial focus engine moves, since react-native-web has neither prop. The track moves by transform behind a clipped view, so on the web a pointer’s wheel or drag doesn’t scroll a TvPage or a Row on the TV’s rule: only focus moves them, as on the TVs, which have no pointer',
 }
 
 /** Only on the web, and why no phone or TV screen needs it. */
@@ -104,9 +112,6 @@ export const WEB_ONLY: Record<string, string> = {
   StatusBar: "The admin's status bar, browser only",
   StatusItem: "Part of the admin's StatusBar",
   Stepper: "The admin's setup steps, browser only",
-  Skeleton:
-    "A loading placeholder in the web's layouts; native screens show the platform's activity indicator",
-  SkeletonText: "Part of the web's Skeleton",
   // web primitives that React Native draws another way, or the platform draws itself
   Label:
     "A <label> for a control; native fields take their label as Field's prop and accessibilityLabel",
@@ -121,7 +126,6 @@ export const WEB_ONLY: Record<string, string> = {
   ConfirmDialog: "The admin's confirmation; native screens use the platform's alert",
   SheetClose: "Radix's Sheet parts; the native Sheet is opened and closed by its own props",
   SheetContent: "Radix's Sheet parts",
-  Menu: "A dropdown menu; native screens use the platform's context menu or a Sheet",
   MenuTrigger: "Part of the web's Menu",
   MenuGroup: "Part of the web's Menu",
   MenuContent: "Part of the web's Menu",
@@ -129,14 +133,14 @@ export const WEB_ONLY: Record<string, string> = {
   MenuCheckboxItem: "Part of the web's Menu",
   MenuLabel: "Part of the web's Menu",
   MenuSeparator: "Part of the web's Menu",
-  Popover: 'A floating panel anchored to a pointer target; touch screens use a Sheet',
   PopoverTrigger: "Part of the web's Popover",
   PopoverClose: "Part of the web's Popover",
   PopoverAnchor: "Part of the web's Popover",
   PopoverContent: "Part of the web's Popover",
   Tooltip: 'Shown on hover and keyboard focus; touch and the TV have no hover',
   TooltipProvider: "The web's Tooltip delay",
-  Toaster: "The web's toast stack (motion); native apps show the platform's own notices",
+  Toaster:
+    "The web renderer's toast stack (motion), the admin's and the prototypes' until part D; the one client draws Toast where its screen stands, and the app takes it away",
   BackdropHero: "The web client's hero; the TV draws its own with TvTile and the phone a Poster",
   CarouselRow: "The web's poster rows with arrow keys; native rows are the platform's FlatList",
   Progress: 'The old name of ProgressBar, kept until part C moves the apps',
@@ -150,33 +154,73 @@ export const WEB_ONLY: Record<string, string> = {
 
 /** Only in React Native, and why the web has no counterpart. */
 export const NATIVE_ONLY: Record<string, string> = {
+  UNCHOSEN_ALPHA:
+    'An unchosen destination’s strength in the one client’s top bar and the TV’s head (the prototypes’ `text-text/65`); the web renderer draws no bar, and the admin writes the class itself.',
+  RADIO:
+    'A radio’s role per platform for the one client: `radio` on the web, a button with the selected trait on iOS and tvOS, which give `radio` no trait. The admin’s web renderer is DOM-only, where its SegmentedControl writes the radio role itself.',
+  radioState:
+    'A radio’s state for that role: `checked` on the web, `selected` on iOS and tvOS; the admin’s SegmentedControl sets its own aria-checked.',
   Avatar: 'The phone’s profile picture by initials; the web draws people in its own account menu.',
   Press:
     'React Native’s press feedback (scale, haptic, hit area); the web gets it from CSS and the DOM.',
   ScrollView:
     'React Native’s scroller with the web’s bar drawn over it on the web; the web renderer’s pages scroll the document, under PageScrollbar.',
-  Row: 'The phone’s edge-to-edge row of posters in a FlatList; the web has CarouselRow.',
+  Row: 'A titled row that scrolls sideways, at every form factor: edge to edge by touch, paged by its arrows with a pointer, kept in place by focus on the TV. The web renderer’s CarouselRow is the admin’s and the prototypes’ until part D.',
+  FilmRow:
+    'Home’s row of films, at every form factor: the card and its strip of posters with a pointer and on the TV, a Row of Posters by touch. The web renderer has none: apps/web draws its own until part C replaces it with apps/client.',
+  HiddenHeading:
+    'A heading only screen readers read, at its aria-level; the web renderer’s pages use the sr-only class on their own h1 until part C replaces apps/web with apps/client.',
+  SectionHeading:
+    'A section’s title with its suffix or count, which Row, FilmRow and Search’s sections share; the web renderer’s pages and CarouselRow write their own h2 until part C replaces apps/web with apps/client.',
   Text: 'React Native draws text only inside <Text>; the web styles its elements with the tokens’ classes.',
   ThemeProvider:
     'Passes the resolved theme and the platform’s rule down; on the web the tokens’ CSS variables do.',
   SwitchRow: 'A switch with its words and hint, the old shape of Switch kept for settings rows.',
-  // the phone's page parts (touch.tsx), as the TV's are below; the web draws its pages from the DOM
-  NamedAction: 'An icon in a circle with its name under it, a title’s actions on the phone.',
-  PersonTile: 'A person’s round portrait with their role, a title’s Cast and crew on the phone.',
-  FactsCard: 'A card of facts at a phone page’s foot; the web lays out its own as a grid.',
+  // a title page's parts (page-parts.tsx), at every form factor; the web renderer's pages lay theirs
+  // out from the DOM until part D
+  NamedAction:
+    'A title’s secondary action named by its icon: a circle with its name under it by touch, an icon button with its name in a tooltip with a pointer, and under it on focus on the TV.',
+  PersonTile:
+    'A person’s round portrait with their role, a title’s Cast and crew: the photo grows under a pointer, and it’s a focus stop on the TV. Its `result` layout is Search’s person: a 72 column with the name on two lines by touch, a chip of the photo, name and credits with a pointer, and a button with the photo on the TV.',
+  FactsCard:
+    'A card of facts at a title page’s foot, the web’s a step roomier, and a focus stop on the TV so the page scrolls to it.',
+  StillFrame:
+    'A still-shaped frame for what plays in place, a trailer’s player in its dialog, or the still with a note where nothing plays; the web renderer’s pages draw theirs from the DOM until part D.',
   LetterIndex:
-    'The phone’s A to Z index by touch, as iOS’s section index; the web’s list scrolls by pointer.',
+    'A library’s A to Z index: iOS’s section index by touch, a column of letter buttons with a pointer, the remote’s rail on the TV.',
   TvKey: 'A key on the TV’s on-screen keyboard; the web has the device’s keyboard.',
   TvMessage: 'A message that fills the TV’s screen with its actions.',
   StopScope: 'Names the TV’s focus stops for the D-pad walk (apps/tv/uitest).',
   Focusable:
     'A TV focus stop, drawn once: tvOS’s and Android TV’s focus engines move it, and in a browser the spatial focus engine (tv/engine.web.tsx); the web renderer’s screens mark their stops for the prototype’s.',
+  // the values a screen lays out beside the parts by; the web renderer's pages have them as classes
   KEEP: 'Where focus lands in a TV row or grid (tv.md › Focus).',
+  LIFT: 'How far a TV focus stop lifts, by what it is, for a screen drawing a stop of its own.',
+  AT_REST: 'A press target’s state with nothing on it, which the TV’s controls draw by.',
+  MAX_FONT_MULTIPLIER: 'How far React Native’s text grows with the system’s text size: 200%.',
+  FEATURED_SHARE: 'The phone’s featured card’s share of its row, for Home’s Row.',
+  FEATURED_GAP: 'The gap between the phone’s featured cards, for Home’s Row.',
+  LETTER_INDEX_WIDTH: 'The touch letter index’s column, which a list beside it leaves room for.',
+  POINTER_LETTER: 'A pointer’s letter index’s column, which a grid beside it leaves room for.',
+  RAIL_WIDTH: 'The TV’s letter rail’s column, which a grid beside it leaves room for.',
+  ROUND_ACTION_ROOM: 'The room under a row of the TV’s actions for the name shown on focus.',
+  TV_STAR: 'The TV’s rating star, in units, for a screen’s line beside a Rating.',
+  BACKDROP_HEIGHT: 'The TV’s title art’s height, one 16:9 screen, which the page’s words sit over.',
+  TV_HEAD_HEIGHT: 'The TV head’s height, which a page under it starts below.',
+  TV_ROW_GAP: 'The gap between a TV page’s rows, for a screen stacking its own.',
+  PHONE_SECTION_TITLE:
+    'The phone’s section title’s 17, which a screen’s own heading beside SectionHeading matches.',
   HERO_DWELL_MS: 'How long the TV’s hero waits on a focused tile before it changes.',
   TRACK_SPRING: 'The TV row’s scroll spring as focus moves.',
   WIDE_WIDTH: 'The TV’s wide tile, in screen units.',
-  TvTile: 'A TV tile with its focus lift and ring; the web has Poster.',
-  TvRow: 'A TV row that keeps the focused tile in place; the web has CarouselRow.',
+  TvTile: 'Poster’s TV form, a focus stop with its lift and ring, which Poster draws on the TV.',
+  // the old names of parts now drawn at every form factor (tv/aliases.ts), for apps/tv, frozen
+  TvRow: 'Row’s old name, for apps/tv, until B2.',
+  TvFilmRow: 'FilmRow’s old name, for apps/tv, until B2.',
+  TvRoundAction: 'NamedAction’s old name, for apps/tv, until B2.',
+  TvPersonTile: 'PersonTile’s old name, for apps/tv, until B2.',
+  TvInfoCard: 'FactsCard’s old name, for apps/tv, until B2.',
+  TvLetterRail: 'LetterIndex’s old name, for apps/tv, until B2.',
   // the TV's pages, on the TV's rule (tv.md); the web's screens draw theirs from the DOM's layout
   TvHead: 'The TV’s head of destinations, Alerts and the account; the web has its top bar.',
   TvHeadStop: 'One of the TV head’s focus stops.',
@@ -185,16 +229,42 @@ export const NATIVE_ONLY: Record<string, string> = {
   TvGrid: 'A TV grid of tiles that keeps its column as focus moves between rows.',
   TvWords: 'A TV page’s heading and words over its first row.',
   TvAmbient: 'The TV page’s blurred backdrop from the focused art; the web has none.',
-  TvLetterRail: 'The TV library’s A to Z rail for the remote; the web scrolls by pointer.',
-  TvFilmRow: 'A TV row of films whose focused card widens into its backdrop and actions.',
-  TvFeaturedCard: 'Home’s featured card on the TV, a focus stop that lifts slightly.',
-  TvMenu: 'A TV menu that keeps focus inside it until Back; the web has DropdownMenu.',
+  TvFeaturedCard: 'FeaturedCard’s old name, for apps/tv, until B2.',
+  TvMenu:
+    'Menu’s TV form, a menu over the page that keeps focus inside it until Back, which Menu draws on the TV and a TV screen may draw on its own.',
   TvConfirm: 'A TV confirmation with Cancel first and focus kept in it; the web has Dialog.',
-  TvNoticeCard: 'An announcement as a TV focus stop, on the Alerts page; the web has Banner.',
-  TvBackdrop: 'A title’s full-bleed art behind the TV’s first screen, faded where the words stand.',
-  TvRoundAction: 'An icon action beside Play whose name shows on focus, as the Apple TV app’s do.',
-  TvPersonTile: 'A person’s round portrait as a TV focus stop.',
-  TvInfoCard: 'A card of facts at a TV page’s foot, a focus stop so the page scrolls to it.',
+  TvNoticeCard: 'NoticeCard’s old name, for apps/tv, until B2.',
+  TvBackdrop: 'TitleBackdrop’s old name, for apps/tv, until B2.',
+  FeaturedCard:
+    'Home’s featured card at every form factor: a 4:5 card by touch, a banner with its actions and Pager with a pointer, a focus stop that lifts slightly on the TV. The web renderer’s BackdropHero is apps/web’s until part C.',
+  Bloom:
+    'The glow behind Home’s featured card in the art’s colour, with a pointer and on the TV; the web renderer’s Home has none until part C.',
+  Pager:
+    'The pointer’s featured card’s pages: its arrows and dots, the current one `aria-current`; touch swipes and the TV moves focus.',
+  InlineText:
+    'Inline markdown’s runs as nested Text, links pressed by touch or a pointer and only words on the TV; the web renderer’s pages write their own spans.',
+  NoticeCard:
+    'An announcement in Alerts’ list: a row by touch and with a pointer, a focus stop on the TV; the web renderer has Banner.',
+  Certification:
+    'A title’s certification in its edged box, the TV’s on its pill rule; the web renderer’s pages draw theirs from the DOM until part D.',
+  PersonPortrait:
+    'A person page’s round portrait at each form factor’s size, with the TV’s focus shadow; the web renderer’s pages draw theirs until part D.',
+  TitleBackdrop:
+    'A title’s art behind its page: in flow at 16:9 by touch, behind the words with a pointer and on the TV, faded where the words stand.',
+  Toast:
+    'A short notice on its own surface, the TV’s over rows; the web renderer’s Toaster is the admin’s stack.',
+  FeaturedCardSkeleton:
+    'FeaturedCard while Home loads, at each form factor’s size; the web renderer’s Home draws its own from Skeleton until part C.',
+  RowSkeleton:
+    'A Row while it loads, its title over posters or stills at the row’s width; the web renderer’s pages draw theirs from Skeleton until part C.',
+  FilmRowSkeleton:
+    'FilmRow while Home loads, at the sizes the row will have; the web renderer’s Home draws its own from Skeleton until part C.',
+  PosterSkeleton:
+    'A poster’s placeholder as Poster lays one out, the TV’s at TvTile’s measures; the web renderer’s pages draw theirs from Skeleton until part C.',
+  TvAcknowledge:
+    'An announcement the TV asks to have acknowledged, over the page with focus held on its one action.',
+  TvRadioGroup:
+    'A TV list of choices, one in force, as the player’s Audio and subtitles; the web has RadioGroup.',
   TvProgressLine: 'Where a title’s resume stands under its TV hero.',
   TvSideDialog: 'A TV dialog at the screen’s right that keeps focus until Back; the web has Sheet.',
 }

@@ -15,7 +15,8 @@ import {
   type TextStyle,
   type ViewStyle,
 } from 'react-native'
-import { family } from './fonts.ts'
+import { ariaRole } from './aria.ts'
+import { family, smoothing } from './fonts.ts'
 import type { ControlPoints } from './metrics.ts'
 import { AT_REST, Press, type PressState } from './press.tsx'
 import { fontScaleFor, MAX_FONT_MULTIPLIER, useTheme } from './theme.tsx'
@@ -26,6 +27,8 @@ export type ControlPressProps = {
   onLongPress?: () => void
   onFocus?: () => void
   onBlur?: () => void
+  /** A pointer came over the target or left it (nothing on touch or the TV, which don't hover). */
+  onHoverChange?: (hovered: boolean) => void
   /** tvOS's preferred focus when the screen appears (react-native-tvos's prop). */
   hasTVPreferredFocus?: boolean
   disabled?: boolean
@@ -33,6 +36,17 @@ export type ControlPressProps = {
   accessibilityHint?: string
   role?: AccessibilityRole
   state?: AccessibilityState
+  /**
+   * It opens a menu or a dialog: `aria-haspopup` on the web, WAI-ARIA's menu button pattern
+   * (https://www.w3.org/WAI/ARIA/apg/patterns/menu-button/), with `state.expanded` while it's open.
+   */
+  hasPopup?: 'menu' | 'dialog'
+  /**
+   * It's where the person is among a set (`aria-current`, https://www.w3.org/TR/wai-aria-1.2/#aria-current):
+   * `page` for a view chip that's the screen shown. The web reads it; React Native has no such
+   * state, so off the web it's the label's to say.
+   */
+  current?: 'page' | 'true'
   /** The drawn height, and the width when it's fixed, for touch's hit area. */
   slop?: { height: number; width?: number }
   /** The corner the TV's ring follows. */
@@ -66,12 +80,15 @@ export function ControlPress({
   onLongPress,
   onFocus,
   onBlur,
+  onHoverChange,
   hasTVPreferredFocus,
   disabled,
   accessibilityLabel,
   accessibilityHint,
   role = 'button',
   state,
+  hasPopup,
+  current,
   slop,
   radius,
   lift = 'button',
@@ -108,15 +125,19 @@ export function ControlPress({
   }
   return (
     <PhonePress
+      ref={ref}
       onPress={onPress}
       onLongPress={onLongPress}
       onFocus={onFocus}
       onBlur={onBlur}
+      onHoverChange={theme.formFactor.input === 'pointer' ? onHoverChange : undefined}
       disabled={disabled}
       accessibilityLabel={accessibilityLabel}
       accessibilityHint={accessibilityHint}
       role={role}
       state={state}
+      hasPopup={hasPopup}
+      current={current}
       slop={slop}
       haptic={haptic}
       testID={testID}
@@ -137,20 +158,26 @@ function PhonePress({
   children,
   onFocus,
   onBlur,
+  onHoverChange,
+  hasPopup,
+  current,
   ...props
-}: Omit<ControlPressProps, 'radius' | 'lift' | 'hasTVPreferredFocus' | 'width' | 'ref'>) {
+}: Omit<ControlPressProps, 'radius' | 'lift' | 'hasTVPreferredFocus' | 'width'>) {
   return (
     <Press
       {...props}
-      accessibilityRole={role}
+      onHoverIn={onHoverChange && (() => onHoverChange(true))}
+      onHoverOut={onHoverChange && (() => onHoverChange(false))}
       accessibilityState={{ ...state, disabled: !!props.disabled }}
       // the same state as ARIA's attributes, which React Native reads too: react-native-web reads
       // only these (its createDOMProps has no accessibilityState), so without them the web never
       // says a checkbox is checked or a tab selected
-      aria-checked={state?.checked}
+      {...ariaRole(role, state?.checked)}
       aria-selected={state?.selected}
       aria-busy={state?.busy}
       aria-expanded={state?.expanded}
+      {...(hasPopup ? { 'aria-haspopup': hasPopup } : null)}
+      {...(current ? ({ 'aria-current': current } as object) : null)}
       onFocus={() => onFocus?.()}
       onBlur={() => onBlur?.()}
     >
@@ -162,14 +189,16 @@ function PhonePress({
 /**
  * A control's label in the spec's type: its text size, leading and the look's weight, times
  * `scale`, the ThemeProvider's `fontScale` held to the label's cap (fontScaleFor). The control's
- * height is a minimum, so a grown label makes it taller.
+ * height is a minimum, so a grown label makes it taller. `filled`, a label on an accent or danger
+ * fill, keeps the web's own smoothing (fonts.ts's `smoothing`).
  */
-export function labelStyle(m: ControlPoints, weight: number, scale = 1): TextStyle {
+export function labelStyle(m: ControlPoints, weight: number, scale = 1, filled = false): TextStyle {
   const size = m.text * scale
   return {
     fontFamily: family(weight),
     fontSize: size,
     lineHeight: Math.round(size * m.leading),
+    ...smoothing(filled),
   }
 }
 
@@ -178,12 +207,15 @@ export function ControlText({
   weight,
   color,
   lines,
+  filled,
   style,
   children,
 }: {
   m: ControlPoints
   weight: number
   color: string
+  /** It's on an accent or danger fill (labelStyle). */
+  filled?: boolean
   /** The TV keeps a label on one line; the phone lets it wrap at 200% text. */
   lines?: number
   style?: StyleProp<TextStyle>
@@ -195,7 +227,7 @@ export function ControlText({
     <RNText
       maxFontSizeMultiplier={MAX_FONT_MULTIPLIER}
       numberOfLines={lines ?? (tv ? 1 : undefined)}
-      style={[labelStyle(m, weight, fontScaleFor(theme)), { color }, style]}
+      style={[labelStyle(m, weight, fontScaleFor(theme), filled), { color }, style]}
     >
       {children}
     </RNText>

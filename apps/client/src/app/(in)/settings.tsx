@@ -58,7 +58,7 @@ import {
   useFormFactor,
   useTheme,
 } from '@highsea-tv/ui'
-import { Focusable } from '@highsea-tv/ui/tv'
+import { Focusable, TV_HEAD_HEIGHT } from '@highsea-tv/ui/tv'
 import { type Href, router, useLocalSearchParams } from 'expo-router'
 import { createContext, type ReactNode, useContext, useMemo, useState } from 'react'
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native'
@@ -75,9 +75,13 @@ import {
   Soon,
   TAB,
   TAB_ROW,
+  useChromeOverlay,
   useConfirm,
   useSay,
+  useServerName,
 } from '../../kit.tsx'
+import { LibraryTitle } from '../../library/parts.tsx'
+import { TV_LIBRARY } from '../../library/sizes.ts'
 import { useOpenServer } from '../../open-server.ts'
 
 const { space } = tokens
@@ -89,12 +93,6 @@ const LIST_WIDTH = space['16'] * 3 + space['8']
 const Failure = createContext<(e: Error) => void>(() => {})
 
 const useSaveFailed = () => useContext(Failure)
-
-function useServerName() {
-  const server = useServer()
-  const current = useCurrent()
-  return server.data?.name ?? current.server.name
-}
 
 function useSections() {
   const locale = useLocale()
@@ -257,32 +255,32 @@ function TvSettings({ chosen }: { chosen: SettingsSectionId }) {
     router.navigate('/')
     return true
   })
+  // the head lies over the page, as on every other page of the TV's, with the page's title under it
+  useChromeOverlay()
   return (
     <View
       style={{
         flex: 1,
-        flexDirection: 'row',
-        gap: tokens.tv.rows.inset * u,
+        gap: TV_LIBRARY.pageGap * u,
         paddingHorizontal: tokens.tv.safe.x * u,
-        paddingTop: tokens.tv.poster.gap * u,
+        // clear of the head laid over the page
+        paddingTop: (TV_HEAD_HEIGHT + TV_LIBRARY.pageGap) * u,
         paddingBottom: tokens.tv.safe.y * u,
         backgroundColor: theme.colors.bg,
       }}
     >
-      {/* the sections are tabs, each showing its panel beside the list as focus reaches it. A view
-          with only a role and a label is flattened away by Fabric, taking them with it
-          (ViewShadowNode.cpp's formsView), so the labelled groups here keep their views */}
-      <View style={{ width: tokens.tv.poster.width * 2 * u, gap: m.gap }}>
-        {/* the title stays outside the tab row: a container with the tab bar trait gives
-            assistive technology its tabs only, so a header inside it isn't read */}
-        <Text variant="rowTitle" accessibilityRole="header">
-          {t('settings')}
-        </Text>
+      {/* the title stays outside the tab row: a container with the tab bar trait gives
+          assistive technology its tabs only, so a header inside it isn't read */}
+      <LibraryTitle>{t('settings')}</LibraryTitle>
+      <View style={{ flex: 1, flexDirection: 'row', gap: tokens.tv.rows.inset * u }}>
+        {/* the sections are tabs, each showing its panel beside the list as focus reaches it. A
+            view with only a role and a label is flattened away by Fabric, taking them with it
+            (ViewShadowNode.cpp's formsView), so the labelled groups here keep their views */}
         <View
           collapsable={false}
           accessibilityRole={TAB_ROW}
           accessibilityLabel={t('sections')}
-          style={{ gap: m.gap }}
+          style={{ width: tokens.tv.poster.width * 2 * u, gap: m.gap }}
         >
           {sections.map((s) => {
             const here = s.id === section
@@ -332,20 +330,20 @@ function TvSettings({ chosen }: { chosen: SettingsSectionId }) {
             )
           })}
         </View>
+        {about ? (
+          <View key={about.id} style={{ flex: 1, gap: m.rowGap }}>
+            <Text variant="meta" color="text-3">
+              {about.hint}
+            </Text>
+            <ScrollView
+              style={{ flex: 1 }}
+              contentContainerStyle={{ gap: m.rowGap, paddingBottom: m.height }}
+            >
+              <Section id={about.id} />
+            </ScrollView>
+          </View>
+        ) : null}
       </View>
-      {about ? (
-        <View key={about.id} style={{ flex: 1, gap: m.rowGap, paddingTop: m.height + m.gap }}>
-          <Text variant="meta" color="text-3">
-            {about.hint}
-          </Text>
-          <ScrollView
-            style={{ flex: 1 }}
-            contentContainerStyle={{ gap: m.rowGap, paddingBottom: m.height }}
-          >
-            <Section id={about.id} />
-          </ScrollView>
-        </View>
-      ) : null}
     </View>
   )
 }
@@ -827,6 +825,7 @@ function useSignOut() {
       say({
         title: t('signedOut', { name }),
         body: device === 'tv' ? undefined : t('signedOutBody'),
+        next: true,
       })
     } catch {
       setFailure(t('signOutFailed'))
@@ -1216,7 +1215,13 @@ function Choices({
         style={{ flex: 1, flexDirection: 'row', flexWrap: 'wrap', gap: m.gap }}
       >
         {options.map((o) => (
-          <Chip key={o.value} selected={o.value === value} onPress={() => onPick(o.value)}>
+          <Chip
+            key={o.value}
+            // one choice of the group's, which Chip reads as checked and selected
+            accessibilityRole="radio"
+            selected={o.value === value}
+            onPress={() => onPick(o.value)}
+          >
             {o.short ?? o.label}
           </Chip>
         ))}

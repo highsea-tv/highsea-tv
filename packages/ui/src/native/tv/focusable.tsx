@@ -6,6 +6,7 @@
 // moves the layout (https://reactnative.dev/docs/view-style-props#boxshadow). What moves focus is
 // the platform's engine (./engine, a platform pair): tvOS's and Android TV's own on the devices,
 // and the spatial focus engine in a browser. The drawing here is the same on all of them.
+
 import {
   type ComponentRef,
   createContext,
@@ -24,6 +25,7 @@ import {
   type ViewStyle,
 } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
+import { ariaRole } from '../aria.ts'
 import { tokens, useMotionReduced, useTheme } from '../theme.tsx'
 import { requestFocus, useStop } from './engine'
 
@@ -33,7 +35,28 @@ const AnimatedPressable = Animated.createAnimatedComponent(Pressable)
 export type ViewHandle = ComponentRef<typeof View>
 
 const ring = tokens.focus.tv
-const ROW_SCALE = 1.03
+
+/**
+ * How far a stop lifts on focus, by what it is: a button and a poster by the focus tokens' scales
+ * (focus.tv), and the rest by the TV prototype's own, named here once so no part writes a scale
+ * of its own:
+ * - `row`, a list's full-width row: its settings and server rows' `scale-[1.03]`;
+ * - `card`, the film row's card: 1.04;
+ * - `banner`, a card as wide as the page (Home's featured card, a notice, a film's facts), which
+ *   lifts only slightly: 1.015;
+ * - `letter`, the letter index's letter, small enough to need a larger lift: 1.25.
+ */
+export const LIFT = {
+  button: ring.scaleButton,
+  poster: ring.scalePoster,
+  row: 1.03,
+  card: 1.04,
+  banner: 1.015,
+  letter: 1.25,
+  none: 1,
+} as const
+
+export type Lift = keyof typeof LIFT
 
 /** The ring as a box shadow, at this theme's ring scale and unit. */
 export function focusShadow(text: string, u: number, scale = 1) {
@@ -55,12 +78,8 @@ export type FocusableProps = {
   delayLongPress?: number
   onFocus?: () => void
   onBlur?: () => void
-  /**
-   * `button` lifts by 1.07, `poster` by 1.05 (focus.tv); `row`, a list's full-width row, by the
-   * prototype's 1.03 (its settings and server rows' `scale-[1.03]`); a number for a card of its
-   * own (the TV's film row card's 1.04, Home's featured card's 1.015).
-   */
-  lift?: 'button' | 'poster' | 'row' | 'none' | number
+  /** How far it lifts on focus, by name (LIFT); a number is still taken, but no part passes one. */
+  lift?: Lift | number
   /** Whether the ring is drawn on this stop; a poster draws it around its art instead. */
   ring?: boolean
   /** The ring's corner radius, in points. */
@@ -69,6 +88,12 @@ export type FocusableProps = {
   preferred?: boolean
   disabled?: boolean
   label?: string
+  /**
+   * What the stop holds beyond its name (a card's facts, a notice's words): read after the label,
+   * since VoiceOver reads a focus stop as one element and none of what's inside it, but kept out of
+   * the stop's test id, which stays its label's.
+   */
+  description?: string | null
   role?: AccessibilityRole
   selected?: boolean
   /** More of the stop's state for VoiceOver: checked, expanded, busy. */
@@ -91,6 +116,7 @@ export function Focusable({
   preferred,
   disabled,
   label,
+  description,
   role = 'button',
   selected,
   state,
@@ -104,24 +130,15 @@ export function Focusable({
   const scope = useContext(StopScope)
   const [focused, setFocused] = useState(false)
   const scale = useSharedValue(1)
-  const to =
-    typeof lift === 'number'
-      ? lift
-      : lift === 'button'
-        ? ring.scaleButton
-        : lift === 'poster'
-          ? ring.scalePoster
-          : lift === 'row'
-            ? ROW_SCALE
-            : 1
+  const to = typeof lift === 'number' ? lift : LIFT[lift]
   const animated = useAnimatedStyle(() => ({ transform: [{ scale: scale.value }] }))
   const stop = useStop(ref, { preferred, disabled })
   return (
     <AnimatedPressable
       {...stop.props}
       ref={stop.ref}
-      accessibilityRole={role}
-      accessibilityLabel={label}
+      {...ariaRole(role, state?.checked)}
+      accessibilityLabel={description ? [label, description].filter(Boolean).join(', ') : label}
       accessibilityState={{ ...state, disabled, selected }}
       testID={`tv:${scope}${label ?? ''}`}
       disabled={disabled}

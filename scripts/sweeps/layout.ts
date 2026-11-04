@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The same screen everywhere (one-client-platform.md › Checks that fail on drift): each of part
-// A's proof screens (Choose a server, Harbor's sign-in, the shell, Settings) is captured from
+// A's proof screens (Choose a server, Harbor's sign-in, the shell on Home, Settings) and each of
+// B1's destinations (one-client-platform-b.md: Movies, Collections, a collection, a film, a
+// person, Search empty, with results and with none, and the TV's Alerts) is captured from
 // apps/client against the same mock on the web at each form factor, on the iPhone simulator and on
 // the Apple TV simulator, and the layouts are compared from their accessibility trees, not by eye.
 //
@@ -14,12 +16,16 @@
 //   XcodeGen and run by tv-uitest.ts's runUITest) launches the installed Release mock-mode build
 //   afresh and dumps one XCUIElement snapshot per screen: type, label and frame in points.
 //   `build` makes and installs those builds.
-// - **The steps are the same everywhere:** wait for discovery to finish (Look again, or the TV's count, shows), choose
-//   Harbor, sign in (as Theo by password on touch, by code on the TV, which the mock approves after
-//   8 seconds), then open Settings from the shell (the phone's You tab, the account in the TV's
-//   head).
+// - **The steps are the same everywhere:** wait for discovery to finish (Look again, or the TV's
+//   count, shows), choose Harbor, sign in (as Theo by password on touch, by code on the TV, which
+//   the mock approves after 8 seconds), press Got it on the owner's announcement that must be
+//   acknowledged (it comes over the shell, and on the TV hides it), then open each of B1's
+//   destinations by its address inside the running client (ROUTES: a history push on the web, the
+//   client's `highsea-client://` link on the devices), waiting for its anchors, and last open
+//   Settings from the shell (the phone's You tab, the account in the TV's head). Alerts is a page
+//   only on the TV (appliesTo), so only the TV pair has it.
 // - **The checks** (pure, `assess` and `compare`, tested in layout.test.ts): every capture the run
-//   asked for is there, has nodes, holds its screen's anchor (ANCHORS) and is the device's size
+//   asked for is there, has nodes, holds its screen's anchors (ANCHORS) and is the device's size
 //   (SIZES: the iPhone 17 Pro's 402 × 874 points and the Apple TV's 1920 × 1080, so both compare
 //   with the web 1:1 and nothing is scaled away). Nodes pair by name, a kind that fits (a labelled
 //   view with no role pairs only with a text, an image or a group, never a control) and nearness,
@@ -39,7 +45,8 @@
 //     lock in the temporary folder keeps two of these from overlapping; the TV's prebuild comes
 //     first and the phone's is put back after it, even when the TV's build fails.
 // bun scripts/sweeps/layout.ts [folder] [--targets web,phone,tv] [--screens connect,...] [--preflight]
-//     --preflight takes Choose a server only, on every target, in about a minute
+//     --preflight takes Choose a server only, on every target, in about a minute; --screens takes
+//     any of SCREENS in their order (`--screens film,person --targets web`, say)
 //
 // It needs a booted iPhone 17 Pro simulator and an Apple TV (1080p) simulator (PHONE_SIMULATOR,
 // TV_SIMULATOR pick them by UDID), xcodegen (brew install xcodegen), and Playwright's Chromium.
@@ -56,6 +63,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { SEED } from '../../packages/mock/src/films.ts'
 import { controlMetrics, TV_REFERENCE } from '../../packages/tokens/src/controls.ts'
 
 // ---------------------------------------------------------------- the comparison (pure)
@@ -66,7 +74,14 @@ export type Kind = 'action' | 'toggle' | 'field' | 'text' | 'image' | 'group' | 
 export type Box = { x: number; y: number; w: number; h: number }
 
 /** One node of a screen's tree: its kind, its name as read out, its box, and what it was raw. */
-export type LayoutNode = { kind: Kind; name: string; box: Box; raw: string }
+export type LayoutNode = {
+  kind: Kind
+  name: string
+  box: Box
+  raw: string
+  /** On a device, what the element reads besides its label: its value and placeholder. */
+  says?: string
+}
 
 export type Target = 'compact-touch' | 'regular-pointer' | 'tv' | 'iphone' | 'appletv'
 
@@ -106,6 +121,8 @@ export type Exception = {
   kind?: Kind
   /** Excuses a pair whose text differs, rather than a node on one side only. */
   differs?: boolean
+  /** Excuses a pair whose kind differs: the web's kind, then the device's. */
+  kinds?: readonly [Kind, Kind]
 }
 
 export const EXCEPTIONS: Exception[] = [
@@ -132,6 +149,12 @@ export const EXCEPTIONS: Exception[] = [
     screen: 'sign-in',
     differs: true,
     reason: 'the TV’s pairing code is new on every sign-in (RFC 8628)',
+  },
+  {
+    name: /^jump to a letter$/,
+    kinds: ['field', 'other'],
+    reason:
+      'the letter index is React Native’s adjustable role: a slider on the web (react-native-web’s role map), and on iOS a plain view with the adjustable trait, which XCUITest lists by its class as other while VoiceOver reads it as adjustable (XCUIElement.ElementType; UIAccessibilityTraits.adjustable)',
   },
 ]
 
@@ -295,7 +318,14 @@ export function fromXCUI(raw: XCUIRaw[]): LayoutNode[] {
     const name = normalizeName(r.label || (kind === 'field' ? (r.placeholder ?? '') : ''))
     if (!name && !keepsNameless(kind)) return
     if (kind !== 'group' && kind !== 'other') leaf.add(i)
-    out.push({ kind, name, box: { x: r.x, y: r.y, w: r.w, h: r.h }, raw: r.type })
+    const says = normalizeName([r.value, r.placeholder].filter(Boolean).join(' '))
+    out.push({
+      kind,
+      name,
+      box: { x: r.x, y: r.y, w: r.w, h: r.h },
+      raw: r.type,
+      ...(says ? { says } : {}),
+    })
   })
   return out
 }
@@ -367,7 +397,16 @@ export function overlap(a: Box, b: Box): number {
 }
 
 function excuse(f: Finding, screen: string, exceptions: Exception[]): Exception | undefined {
-  if (f.type === 'kind' || f.type === 'moved') return undefined
+  if (f.type === 'moved') return undefined
+  if (f.type === 'kind')
+    return exceptions.find(
+      (e) =>
+        e.kinds !== undefined &&
+        (e.screen === undefined || e.screen === screen) &&
+        e.kinds[0] === f.web.kind &&
+        e.kinds[1] === f.native.kind &&
+        e.name.test(f.web.name),
+    )
   const nodes = f.type === 'only-web' || f.type === 'only-native' ? [f.node] : [f.web, f.native]
   const side = f.type === 'only-web' ? 'web' : f.type === 'only-native' ? 'native' : undefined
   return exceptions.find(
@@ -408,6 +447,35 @@ function isFieldLabel(
       Math.abs(f.box.y - (n.box.y + n.box.h) - fieldGap) <= 1,
   )
 }
+
+/**
+ * A container the web's tree keeps and the device's has no element for: react-native-web renders a
+ * view's `role` as its ARIA role (list, region, group), which the browser's tree keeps as a node,
+ * while UIKit exposes only accessibility elements, a container's kind being a property of it
+ * (accessibilityContainerType) rather than an element XCUITest lists. Excused only around a node
+ * that's paired, so a container that's lost its contents still fails.
+ */
+export const CONTAINER =
+  'a list, region or group, which react-native-web keeps as an ARIA node and UIKit has no element for (a container’s accessibilityContainerType isn’t an element); checked to hold a paired node'
+
+/**
+ * A text inside a stop that reads as one: a focusable or labelled view on iOS and tvOS is one
+ * accessibility element, read by its label, which carries its texts (React Native's `accessible`),
+ * while the web's tree keeps each text under it. Excused only inside a paired stop whose name holds
+ * the text's words.
+ */
+export const IN_STOP =
+  'a text inside a stop that iOS reads as one element by its label (React Native’s `accessible`); checked against the paired stop, whose name holds it'
+
+/**
+ * What a field shows of its own (its placeholder, or what's typed): the web draws it as text inside
+ * the field, and the device reads it as the field's value or placeholder (XCUIElement's
+ * `value` and `placeholderValue`). Excused only inside a paired field, or inside a paired element whose
+ * value or placeholder holds the words: tvOS reports a text field that isn't being edited as an
+ * element of type `other` that carries what's typed as its value (XCUIElement.ElementType).
+ */
+export const FIELD_WORDS =
+  'a field’s own words (its placeholder or what’s typed), which the device reads as the field’s value; checked to lie inside the paired field'
 
 export type CompareOptions = {
   tolerance?: number
@@ -505,6 +573,38 @@ export function compare(
       excused.push({ finding: f, reason: FIELD_LABEL })
       continue
     }
+    if (f.type === 'only-web') {
+      const n = f.node
+      const reason =
+        n.kind === 'group' &&
+        ['list', 'region', 'group'].includes(n.raw) &&
+        pairs.some((p) => p.w !== n && inside(p.w.box, n.box))
+          ? CONTAINER
+          : n.kind === 'text' &&
+              pairs.some(
+                (p) =>
+                  inside(n.box, p.w.box) &&
+                  ((p.w.kind === 'field' && p.n.kind === 'field') ||
+                    ` ${p.n.says ?? ''} `.includes(` ${n.name} `)),
+              )
+            ? FIELD_WORDS
+            : n.kind !== 'group' &&
+                pairs.some(
+                  (p) =>
+                    p.as === 'same' &&
+                    p.w !== n &&
+                    p.w.kind !== 'group' &&
+                    p.w.name !== n.name &&
+                    ` ${p.w.name} `.includes(` ${n.name} `) &&
+                    inside(n.box, p.w.box),
+                )
+              ? IN_STOP
+              : undefined
+      if (reason) {
+        excused.push({ finding: f, reason })
+        continue
+      }
+    }
     const e = excuse(f, screen, exceptions)
     // an excused text that also moved still counts as moved
     if (e && f.type === 'text' && beyond(f.delta, tolerance, f.web))
@@ -571,9 +671,53 @@ export function describe(f: Finding): string {
 
 // ---------------------------------------------------------------- what a run must have (pure)
 
-/** The screens, in the order the steps reach them. */
-export const SCREENS = ['connect', 'sign-in', 'shell', 'settings'] as const
+/**
+ * The screens, in the order the steps reach them: part A's (Choose a server, the sign-in, the
+ * shell on Home, Settings) and B1's destinations between the shell and Settings, each opened by
+ * its address (ROUTES).
+ */
+export const SCREENS = [
+  'connect',
+  'sign-in',
+  'shell',
+  'movies',
+  'collections',
+  'collection',
+  'film',
+  'person',
+  'search',
+  'search-results',
+  'search-none',
+  'alerts',
+  'settings',
+] as const
 export type Screen = (typeof SCREENS)[number]
+
+/**
+ * B1's destinations by their address in apps/client's route tree (`src/app/(in)/`), with the
+ * mock's seeded ids that have every part a screen draws (packages/mock's SEED: Tears of Steel,
+ * Buster Keaton and the Caminandes Collection, by the contract's ids, which the routes take).
+ * Each is opened as a link: on the web by the address, on the devices by the client's URL scheme
+ * (XCUIApplication.open). On touch, Movies and Collections are the Library tab's two views
+ * (`/movies` goes to `/library`, `/collections` to `/library?view=collections`).
+ */
+export const ROUTES: Partial<Record<Screen, string>> = {
+  movies: '/movies',
+  collections: '/collections',
+  collection: `/collections/${SEED.collection.id}`,
+  film: `/movies/${SEED.film.id}`,
+  person: `/people/${SEED.person.id}`,
+  search: '/search',
+  'search-results': '/search?q=tears',
+  'search-none': '/search?q=qxzv',
+  alerts: '/alerts',
+}
+
+/**
+ * Whether a screen is one this form factor has. Alerts is a page only on the TV: with a pointer
+ * it's the bell's popover and the phone has none, so `/alerts` goes Home there.
+ */
+export const appliesTo = (screen: Screen, t: Target) => screen !== 'alerts' || tvLike(t)
 
 /** What a run is asked to capture: `web`, `phone` (the iPhone) and `tv` (the Apple TV). */
 export const TARGET_FLAGS = ['web', 'phone', 'tv'] as const
@@ -607,20 +751,84 @@ export const SIZES: Record<Target, { width: number; height: number }> = {
 const touchLike = (t: Target) => t === 'compact-touch' || t === 'iphone'
 const tvLike = (t: Target) => t === 'tv' || t === 'appletv'
 
-/** A node each screen must hold, so a capture of the wrong screen (or none) can't pass. */
-export const ANCHORS: Record<Screen, (t: Target) => { kinds: Kind[]; name: RegExp; says: string }> =
-  {
-    connect: () => ({ kinds: ['action'], name: /^harbor\b/, says: 'Harbor’s row' }),
-    'sign-in': (t) =>
-      tvLike(t)
-        ? { kinds: ['text'], name: /^sign in with your phone$/, says: 'Sign in with your phone' }
-        : { kinds: ['field'], name: /^password$/, says: 'the Password field' },
-    shell: (t) =>
-      touchLike(t)
-        ? { kinds: ['action', 'other'], name: /^you$/, says: 'the You tab' }
-        : { kinds: ['action', 'other'], name: / settings$/, says: 'the account’s settings stop' },
-    settings: () => ({ kinds: ['text'], name: /^settings$/, says: 'the Settings title' }),
-  }
+/** A node a screen must hold: one of these kinds, with a name that matches. */
+export type Anchor = { kinds: Kind[]; name: RegExp; says: string }
+
+/** Search's field: an input on touch and with a pointer, the TV's typed line read as one view. */
+const SEARCH_FIELD: Anchor = {
+  kinds: ['field', 'other'],
+  name: /^search titles genres and people$/,
+  says: 'the search field',
+}
+
+/**
+ * The nodes each screen must hold, every one of them, so a capture of the wrong screen (or none)
+ * can't pass. Each is something only that screen has; the devices' runs wait for the same names
+ * before they capture (Layout.swift's STEPS).
+ */
+export const ANCHORS: Record<Screen, (t: Target) => Anchor[]> = {
+  connect: () => [{ kinds: ['action'], name: /^harbor\b/, says: 'Harbor’s row' }],
+  'sign-in': (t) => [
+    tvLike(t)
+      ? { kinds: ['text'], name: /^sign in with your phone$/, says: 'Sign in with your phone' }
+      : { kinds: ['field'], name: /^password$/, says: 'the Password field' },
+  ],
+  shell: (t) => [
+    touchLike(t)
+      ? { kinds: ['action', 'other'], name: /^you$/, says: 'the You tab' }
+      : { kinds: ['action', 'other'], name: / settings$/, says: 'the account’s settings stop' },
+    { kinds: ['text'], name: /^staff picks by ines$/, says: 'Home’s Staff picks' },
+  ],
+  movies: (t) => [
+    touchLike(t)
+      ? { kinds: ['text'], name: /^\d+ of \d+ movies$/, says: 'Library’s count of movies' }
+      : tvLike(t)
+        ? { kinds: ['action'], name: /^a z$/, says: 'the A–Z sort' }
+        : { kinds: ['text'], name: /^\d+ movies$/, says: 'Movies’ count' },
+    { kinds: ['action'], name: /^tears of steel 2012$/, says: 'Tears of Steel’s poster' },
+  ],
+  collections: (t) => [
+    tvLike(t)
+      ? { kinds: ['text'], name: /^collections$/, says: 'the Collections title' }
+      : { kinds: ['text'], name: /^\d+ collections$/, says: 'the count of collections' },
+    { kinds: ['action'], name: /^caminandes collection\b/, says: 'the Caminandes Collection' },
+  ],
+  collection: () => [
+    { kinds: ['text'], name: /^caminandes collection$/, says: 'the collection’s title' },
+    { kinds: ['text'], name: /^\d+ movies here\b/, says: 'how many of its films are here' },
+  ],
+  film: () => [
+    { kinds: ['text'], name: /^tears of steel$/, says: 'the film’s title' },
+    { kinds: ['text'], name: /^cast and crew$/, says: 'Cast and crew' },
+  ],
+  person: () => [
+    { kinds: ['text'], name: /^buster keaton$/, says: 'the person’s name' },
+    { kinds: ['text'], name: /^born 4 october 1895\b/, says: 'when they were born' },
+  ],
+  search: () => [
+    SEARCH_FIELD,
+    { kinds: ['action'], name: /^fritz lang$/, says: 'the quick picks' },
+  ],
+  'search-results': () => [
+    SEARCH_FIELD,
+    { kinds: ['action'], name: /^tears of steel 2012$/, says: 'Tears of Steel among the results' },
+  ],
+  'search-none': () => [
+    SEARCH_FIELD,
+    { kinds: ['text'], name: /^nothing on harbor matches qxzv\b/, says: 'that nothing matched' },
+  ],
+  alerts: () => [
+    { kinds: ['text'], name: /^alerts$/, says: 'the Alerts title' },
+    { kinds: ['text'], name: /^harbor has a new remote address\b/, says: 'an announcement' },
+  ],
+  settings: () => [{ kinds: ['text'], name: /^settings$/, says: 'the Settings title' }],
+}
+
+/** Whether a capture's nodes hold every anchor; the ones missing, in words. */
+export const missingAnchors = (screen: Screen, t: Target, nodes: LayoutNode[]) =>
+  ANCHORS[screen](t).filter(
+    (a) => !nodes.some((n) => a.kinds.includes(n.kind) && a.name.test(n.name)),
+  )
 
 /** The control spec's gap between a field's label and the field, in points at the reference. */
 export const fieldGapFor = (input: 'touch' | 'tv') =>
@@ -648,6 +856,7 @@ export function assess(
   for (const flag of plan.targets)
     for (const target of CAPTURES_OF[flag])
       for (const screen of plan.screens) {
+        if (!appliesTo(screen, target)) continue
         const c = byKey.get(keyOf(target, screen))
         if (!c) {
           problems.push(`${target} ${screen}: not captured`)
@@ -664,9 +873,11 @@ export function assess(
           )
           continue
         }
-        const anchor = ANCHORS[screen](target)
-        if (!c.nodes.some((n) => anchor.kinds.includes(n.kind) && anchor.name.test(n.name))) {
-          problems.push(`${target} ${screen}: ${anchor.says} isn't there, so it's another screen`)
+        const missing = missingAnchors(screen, target, c.nodes)
+        if (missing.length) {
+          problems.push(
+            `${target} ${screen}: ${missing.map((a) => a.says).join(' and ')} isn't there, so it's another screen`,
+          )
           continue
         }
         usable.add(keyOf(target, screen))
@@ -676,6 +887,7 @@ export function assess(
   const wanted = PAIRS.filter((p) => plan.targets.includes('web') && plan.targets.includes(p.flag))
   for (const screen of plan.screens)
     for (const p of wanted) {
+      if (!appliesTo(screen, p.web)) continue
       const web = byKey.get(keyOf(p.web, screen))
       const device = byKey.get(keyOf(p.native, screen))
       if (
@@ -687,7 +899,9 @@ export function assess(
         continue
       comparisons.push(compare(web, device, { fieldGap: fieldGapFor(p.input), ...options }))
     }
-  if (wanted.length > 0 && comparisons.length === 0)
+  // a pair that none of the screens asked for has (Alerts, asked of the phone) has nothing to compare
+  const comparable = wanted.some((p) => plan.screens.some((s) => appliesTo(s, p.web)))
+  if (comparable && comparisons.length === 0)
     problems.push('nothing was compared: no pair had both sides captured and usable')
   return { comparisons, problems }
 }
@@ -751,9 +965,42 @@ export const notesOf = (target: Target, lines: string[]) =>
 const TITLES: Record<Screen, string> = {
   connect: 'C1 Choose a server',
   'sign-in': 'C1 Sign in to Harbor',
-  shell: 'The shell, on Home',
+  shell: 'C2 Home, in the shell',
+  movies: 'C3 Movies (the Library tab on the phone)',
+  collections: 'C3 Collections (the Library tab’s Collections on the phone)',
+  collection: 'A collection: the Caminandes Collection',
+  film: 'C4 A film: Tears of Steel',
+  person: 'A person: Buster Keaton',
+  search: 'C6 Search, empty',
+  'search-results': 'C6 Search for “tears”',
+  'search-none': 'C6 Search with nothing found',
+  alerts: 'Alerts (the TV only)',
   settings: 'C7 Settings',
 }
+
+/** The button that acknowledges an owner's announcement (announcements.tsx), normalized. */
+export const GOT_IT = 'got it'
+
+/** The client's own URL scheme (apps/client's app.config.ts), which the devices' links use. */
+export const CLIENT_SCHEME = 'highsea-client'
+
+/**
+ * A device's B1 steps for Layout.swift (its STEPS): each screen asked for that the device has, in
+ * order, its link in the client's scheme (Expo Router takes `highsea-client://movies/1` as
+ * `/movies/1`), and its anchors' patterns, which Layout.swift waits for before it captures.
+ */
+export const stepsFor = (target: Target, screens: readonly Screen[]) =>
+  screens.flatMap((screen) => {
+    const route = ROUTES[screen]
+    if (!route || !appliesTo(screen, target)) return []
+    return [
+      {
+        screen,
+        url: `${CLIENT_SCHEME}://${route.slice(1)}`,
+        anchors: ANCHORS[screen](target).map((a) => a.name.source),
+      },
+    ]
+  })
 
 /**
  * The iPhone 17 Pro's safe area in points, which the web's compact-touch emulates so both lay out
@@ -778,7 +1025,7 @@ const WEB_FORMS: WebForm[] = [
 
 const BUNDLES = { iphone: 'tv.highsea.client.mobile', appletv: 'tv.highsea.client.tv' } as const
 
-/** A device run is stopped after ten minutes: the four screens take under two. */
+/** A device run is stopped after ten minutes: part A's four screens and B1's nine take a few. */
 const DEVICE_TIMEOUT = 10 * 60 * 1000
 
 /** The node extraction, run in the page: role, name and box of each node the tree would have. */
@@ -1010,10 +1257,27 @@ if (import.meta.main) {
         }
         // waits for the page to stop changing (lib.ts's settle: no DOM change for 600 ms, its
         // longer quiet for the shell's data) and for its animations to end, then reads the tree
+        // a screen whose anchors take a while (a page's data) is waited for, up to 30 seconds
         const take = async (screen: Screen) => {
-          await settle(page, { quiet: 600, max: 4000 })
-          await settleAnimations(page)
-          const nodes = fromWeb(await page.evaluate(extractWeb))
+          let nodes: LayoutNode[] = []
+          const until = Date.now() + 30_000
+          for (;;) {
+            await settle(page, { quiet: 600, max: 4000 })
+            await settleAnimations(page)
+            nodes = fromWeb(await page.evaluate(extractWeb))
+            // an owner's announcement that came late, over a destination: Got it, as above
+            if (
+              ROUTES[screen] &&
+              Date.now() < until &&
+              nodes.some((n) => n.kind === 'action' && n.name === GOT_IT)
+            ) {
+              await page.getByRole('button', { name: 'Got it', exact: true }).first().click()
+              log(`${form.target} ${screen}: acknowledged the owner’s announcement`)
+              continue
+            }
+            if (!missingAnchors(screen, form.target, nodes).length || Date.now() > until) break
+            await page.waitForTimeout(500)
+          }
           captures.push({ target: form.target, screen, ...SIZES[form.target], nodes })
           await page.screenshot({ path: join(out, `${form.target}.${screen}.png`) })
           log(`${form.target} ${screen}: ${nodes.length} nodes`)
@@ -1052,9 +1316,38 @@ if (import.meta.main) {
               ? page.locator('[role=tab][aria-label="You"]')
               : page.locator('[aria-label$=", settings"]')
           // the TV's code is approved by the mock after 8 seconds (PAIRING_APPROVAL_MS)
-          await settings.first().waitFor({ timeout: 40_000 })
+          const gotIt = page.getByRole('button', { name: 'Got it', exact: true }).first()
+          await settings.first().or(gotIt).first().waitFor({ timeout: 40_000 })
+          // the owner's announcement that must be acknowledged (seed.ts's an-new-address) comes
+          // over the shell once its list has loaded, and on the TV hides it: Got it, as
+          // Layout.swift does, so Home and the destinations are captured as they are under it
+          if (
+            await gotIt.waitFor({ timeout: 8_000 }).then(
+              () => true,
+              () => false,
+            )
+          ) {
+            await gotIt.click()
+            log(`${form.target}: acknowledged the owner’s announcement`)
+          }
+          await settings.first().waitFor({ timeout: 20_000 })
           if (want.has('shell')) await take('shell')
           if (last === 'shell') continue
+          // B1's destinations, each opened by its address inside the running client, as a link
+          // opens one on the devices: pushed onto the history with a popstate, which React
+          // Navigation's web linking follows (https://reactnavigation.org/docs/web-support/). A
+          // page load would start the mock again, with its own person signed in rather than Theo
+          for (const screen of SCREENS) {
+            const route = ROUTES[screen]
+            if (!route || !want.has(screen) || !appliesTo(screen, form.target)) continue
+            await page.evaluate((path) => {
+              history.pushState(null, '', path)
+              dispatchEvent(new PopStateEvent('popstate', { state: null }))
+            }, `/web${route}`)
+            await take(screen)
+          }
+          if (last !== 'settings') continue
+          await settings.first().waitFor({ timeout: 20_000 })
           await settings.first().click()
           await page.getByText('Settings', { exact: true }).first().waitFor({ timeout: 20_000 })
           if (want.has('settings')) await take('settings')
@@ -1066,7 +1359,10 @@ if (import.meta.main) {
       }
     } finally {
       await browser.close()
-      stop()
+      // the preview may already have gone (ESRCH from its group's kill): nothing left to stop
+      try {
+        stop()
+      } catch {}
     }
   }
 
@@ -1112,7 +1408,11 @@ if (import.meta.main) {
     const run = await runUITest(
       udid,
       'testCapture',
-      { SHOTS: shots, SCREENS: screens.join(',') },
+      {
+        SHOTS: shots,
+        SCREENS: screens.join(','),
+        STEPS: JSON.stringify(stepsFor(d.target, screens)),
+      },
       {
         dir: 'apps/client/uitest',
         project: 'LayoutCapture',
@@ -1208,6 +1508,8 @@ function writeSheet(
       .join('')
     return `${head}${items ? `<ul>${items}</ul>` : ''}${excused ? `<details><summary>Excused</summary><ul>${excused}</ul></details>` : ''}`
   }
+  const notHere =
+    '<p class="note">Not a screen this form factor has (with a pointer Alerts is the bell’s popover, and the phone has none).</p>'
   const find = (screen: string, web: Target) =>
     comparisons.find((c) => c.screen === screen && c.web === web)
 
@@ -1218,13 +1520,17 @@ function writeSheet(
 <h2>${n} · ${html(TITLES[screen])}</h2>
 <h3>The phone</h3>
 <div class="row phone">${fig('Web, compact-touch 402 × 874', `compact-touch.${screen}`)}${fig('iPhone 17 Pro simulator', `iphone.${screen}`)}</div>
-${findingList(find(screen, 'compact-touch'))}
+${appliesTo(screen, 'compact-touch') ? findingList(find(screen, 'compact-touch')) : notHere}
 <h3>The TV</h3>
 <div class="row wide">${fig('Web, tv 1920 × 1080', `tv.${screen}`)}${fig('Apple TV simulator', `appletv.${screen}`)}</div>
 ${findingList(find(screen, 'tv'))}
 <h3>The web</h3>
-<div class="row wide one">${fig('Web, regular-pointer 1440 × 900', `regular-pointer.${screen}`)}</div>
-<p class="note">No device has this form factor, so it's here to look at, not compared.</p>
+${
+  appliesTo(screen, 'regular-pointer')
+    ? `<div class="row wide one">${fig('Web, regular-pointer 1440 × 900', `regular-pointer.${screen}`)}</div>
+<p class="note">No device has this form factor, so it's here to look at, not compared.</p>`
+    : notHere
+}
 </section>`
     })
     .join('\n')
@@ -1273,6 +1579,8 @@ ${sections}
         ...(['compact-touch', 'tv'] as const).flatMap((web) => {
           const c = find(screen, web)
           const native = web === 'tv' ? 'Apple TV' : 'iPhone'
+          if (!appliesTo(screen, web))
+            return [`- **${web}**: not a screen this form factor has`, '']
           if (!c) return [`- [ ] **${web} against the ${native}**: not compared`, '']
           return [
             `- [ ] **${web} against the ${native}**: ${c.pass ? 'the same' : `${c.findings.length} differences`} (${c.matched} matched, ${c.same} within tolerance, ${c.excused.length} excused)`,
@@ -1281,7 +1589,9 @@ ${sections}
             '',
           ]
         }),
-        `- [ ] **regular-pointer**: captured for review, ${captures.find((c) => c.target === 'regular-pointer' && c.screen === screen)?.nodes.length ?? 0} nodes`,
+        appliesTo(screen, 'regular-pointer')
+          ? `- [ ] **regular-pointer**: captured for review, ${captures.find((c) => c.target === 'regular-pointer' && c.screen === screen)?.nodes.length ?? 0} nodes`
+          : '- **regular-pointer**: not a screen this form factor has',
         '',
       ]
     }),

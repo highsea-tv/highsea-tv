@@ -120,7 +120,7 @@ The apps and the admin's list say what a collection is, in a sentence: "Released
 
 ## States
 
-- **Loading:** skeleton posters (web, mobile), a spinner (TV); the editor's result keeps the last result while a new one is worked out ("Checking what it holds…" the first time).
+- **Loading:** skeleton posters on every form factor (B1 of the one client platform converged the TV onto the skeletons, for the owner's approval; it was a spinner); the editor's result keeps the last result while a new one is worked out ("Checking what it holds…" the first time).
 - **Error:** "Couldn’t load the collections" with **Try again**. A collection that's gone or hidden from this person: "That collection isn’t on this server.", "It may have been removed.", with **Collections** (web, mobile) or **Search** (TV).
 - **Saving:** the form says what's missing first ("Give the collection a name. The apps show it."); the server refuses the rest with the reason: "Give the collection a name.", "Add a rule, or pick at least one film or show.", "A collection can’t be one of its own rules.", "Groups go one level deep." In the toast "Couldn’t save the collection".
 - **Deleting** a collection a featured section uses is refused: "The featured section “The silent era” draws on it. Choose another source for the section first."

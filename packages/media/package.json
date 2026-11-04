@@ -7,6 +7,7 @@
   "exports": {
     "./movies": "./src/movies/index.ts",
     "./naming": "./src/shared/naming.ts",
+    "./search": "./src/shared/search.ts",
     "./shared": "./src/shared/index.ts",
     "./testing": "./test/clips.ts"
   },

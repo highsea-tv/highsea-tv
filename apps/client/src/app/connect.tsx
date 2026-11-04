@@ -42,6 +42,7 @@ import Animated, { type SharedValue, useAnimatedStyle } from 'react-native-reani
 import { useBack, useLeaveOnBack } from '../back.tsx'
 
 import { useForget } from '../forget.tsx'
+import { TV_GATE } from '../gate-sizes.ts'
 import { useKeepsServers } from '../host'
 import {
   GateFrame,
@@ -52,6 +53,7 @@ import {
   SectionLabel,
   SectionNote,
   TV_MARK,
+  TvGateTitle,
   TvIdentity,
 } from '../kit.tsx'
 import { useOpenServer } from '../open-server.ts'
@@ -422,17 +424,15 @@ function TvServers() {
       style={{
         flex: 1,
         justifyContent: 'center',
-        gap: tokens.tv.poster.gap * u,
+        gap: TV_GATE.gap * u,
         paddingHorizontal: tokens.tv.safe.x * u,
         paddingVertical: tokens.tv.safe.y * u,
         backgroundColor: theme.colors.bg,
       }}
     >
       {servers.current ? <TvIdentity /> : <Mark size={TV_MARK} />}
-      <Text variant="heroTitle" accessibilityRole="header">
-        {t('serversTitle')}
-      </Text>
-      <View style={{ width: tokens.tv.hero.copyWidth * u, gap: m.gap }}>
+      <TvGateTitle>{t('serversTitle')}</TvGateTitle>
+      <View style={{ width: TV_GATE.listWidth * u, gap: TV_GATE.listGap * u }}>
         {rows.map((r, i) => (
           <Focusable
             key={r.id}
@@ -444,10 +444,10 @@ function TvServers() {
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              gap: m.gap,
+              gap: TV_GATE.rowGap * u,
               borderRadius: m.radius,
-              paddingHorizontal: m.pad,
-              paddingVertical: m.gap,
+              paddingHorizontal: TV_GATE.rowPadX * u,
+              paddingVertical: TV_GATE.rowPadY * u,
               backgroundColor: theme.colors['control-overlay'],
             }}
           >
@@ -470,7 +470,7 @@ function TvServers() {
             flexDirection: 'row',
             alignItems: 'center',
             gap: m.gap,
-            paddingHorizontal: m.pad,
+            paddingHorizontal: TV_GATE.rowPadX * u,
           }}
         >
           {nearby.scanning ? (
@@ -481,12 +481,12 @@ function TvServers() {
             {nearby.scanning ? t('looking') : t('answered', { count: rows.length })}
           </Text>
         </View>
-        {/* Look again, which also holds the remote's focus while nothing has answered yet */}
-        <View style={{ flexDirection: 'row' }}>
-          <Button icon="refresh" hasTVPreferredFocus={rows.length === 0} onPress={nearby.rescan}>
-            {c('lookAgain')}
-          </Button>
-        </View>
+      </View>
+      {/* Look again, which also holds the remote's focus while nothing has answered yet */}
+      <View style={{ flexDirection: 'row' }}>
+        <Button icon="refresh" hasTVPreferredFocus={rows.length === 0} onPress={nearby.rescan}>
+          {c('lookAgain')}
+        </Button>
       </View>
     </View>
   )

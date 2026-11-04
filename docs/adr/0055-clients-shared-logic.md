@@ -76,3 +76,20 @@ Moving Choose a server, signing in and Settings into `apps/client` ([ADR 0061](0
 - `servers`: `Nearby`, a server found on the network with the address it resolved to. `@highsea-tv/native/nearby` re-exports it, and the mock's stand-in for Bonjour gives the same shape.
 
 The consequence this ADR left open, the prototype's hooks over a mock whose shapes differ, ends for the client. The mock is now its own package, `@highsea-tv/mock`, and its transport answers the SDK's own client in the contract's shapes, checked by each route's schemas. So the client in mock mode reads through these same hooks, with only the transport changed. The prototypes' screens that haven't moved keep their own hooks over the mock until part B moves them.
+
+## 2026-11-03: the films' rules for every client (one client platform, part B1)
+
+B1 moved what the films' screens decide, without drawing, into `@highsea-tv/client`, so the client, the frozen apps until they go, and the prototype's remaining screens share one copy:
+
+- `films` (new): a film's and a person's words and their header lines (`personHeaderOf`, `useFilmsText`), each with its tests. The prototype's `media-card`, `item-more` and web `person` import it.
+- `library`: a person's films by department in the order of what they're known for (`filmographyOf`), the biography's cut (`LONG_BIO`), and a title's play address (`playPath(id, start)`), which replaces the hand-written `/play` paths.
+- Search's ranking moved into `@highsea-tv/media/search` (`fold`, `sortTitleOf`, `matchScore`, `rankSections`, `rankByMatch`, `SEARCH_LIMIT`). The server's client API and the mock both use it, so the mock ranks as the server does.
+
+The mock answers B1's routes from `packages/mock/src/films.ts`: Home's film sections, the library's lists, items and search, collections, a person, and the playback preferences and watch state (played, unplayed, dismissed), each raising `watch.updated` as the server does.
+
+Three gaps are left for later:
+- **The bloom has no colour.** The contract's `ClientItem.art` carries no palette colour, so the backdrop's bloom draws nothing until the server sends one.
+- **The featured card has no tags.** `ClientItem` has no `quality`, so the featured card's tags are empty.
+- **Languages show as codes on the devices.** Hermes has no `Intl.DisplayNames` ([Hermes' Intl APIs](https://github.com/facebook/hermes/blob/main/doc/IntlAPIs.md)), so `library` and `prefs` fall back to a language's code there ("en"), where the web shows "English".
+
+On 2026-11-03, at B1's review, the third gap closed: language names come from a catalog, `@highsea-tv/i18n/languages`, not `Intl.DisplayNames`, which Hermes doesn't implement ([Hermes' Intl APIs](https://github.com/facebook/hermes/blob/main/doc/IntlAPIs.md) lists what it has, and DisplayNames isn't among them). It names every code the server reports (`@highsea-tv/subtitles/shared`'s `LANGUAGE_CODES`: ISO 639-1 with `pt-BR`, `zh-Hans` and `zh-Hant`) in English, the one locale shipped, as CLDR does through Node's ICU, and `languageName` is the one function `library` and `prefs` use. A regional tag it doesn't list takes its base language's name, and an unknown code shows as itself. Its tests hold the names to `Intl.DisplayNames` and check that the function never calls it.

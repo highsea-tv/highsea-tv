@@ -7,7 +7,7 @@
 // the prototypes' 200% text, as Dynamic Type would draw it). Colour is a role, never a hex.
 import type { ColorRole } from '@highsea-tv/tokens'
 import { PixelRatio, Platform, Text as RNText, type TextProps as RNTextProps } from 'react-native'
-import { family } from './fonts.ts'
+import { family, smoothing } from './fonts.ts'
 import { fontScaleFor, MAX_FONT_MULTIPLIER, type Theme, tokens, useTheme } from './theme.tsx'
 
 type Scale = 'mobile' | 'tv' | 'web'
@@ -59,6 +59,12 @@ export type TextProps = RNTextProps & {
   mono?: boolean
   /** Points on the phone and with a pointer, units on the TV: overrides the variant's size. */
   size?: number
+  /**
+   * The line's height as a multiple of the drawn size, over the variant's leading (as CSS's
+   * unitless line-height, https://www.w3.org/TR/css-inline-3/#line-height-property): for running
+   * text set looser than its style. It keeps the style's headroom for a tight one.
+   */
+  leading?: number
   align?: 'left' | 'center' | 'right'
 }
 
@@ -84,12 +90,13 @@ export function textStyle(
   size?: number,
   weight?: number,
   cap?: number,
+  leading?: number,
 ) {
   const scale = SCALE[theme.formFactor.input]
   const styles = tokens.text[scale] as Record<string, Spec>
   const spec = styles[NEAREST[variant]?.[scale] ?? 'body'] ?? (tokens.text.mobile.body as Spec)
   const px = (size ?? spec.size) * theme.u * fontScaleFor(theme, cap)
-  const lineHeight = Math.round(px * spec.leading)
+  const lineHeight = Math.round(px * (leading ?? spec.leading))
   // a line tighter than the font's own (display titles) has its glyphs' tops cut off by the
   // text's frame on iOS, so the frame grows upward by the difference and the margin takes it
   // back: the layout keeps the tight leading
@@ -105,6 +112,7 @@ export function textStyle(
     // off (Core Text's kCTKernAttributeName), where the web's `letter-spacing: 0` keeps it
     letterSpacing: spec.tracking ? spec.tracking * px : undefined,
     textTransform: spec.uppercase ? ('uppercase' as const) : undefined,
+    ...smoothing(),
   }
 }
 
@@ -126,13 +134,14 @@ export function Text({
   weight,
   mono,
   size,
+  leading,
   align,
   style,
   maxFontSizeMultiplier = MAX_FONT_MULTIPLIER,
   ...props
 }: TextProps) {
   const theme = useTheme()
-  const base = textStyle(theme, variant, size, weight, maxFontSizeMultiplier ?? undefined)
+  const base = textStyle(theme, variant, size, weight, maxFontSizeMultiplier ?? undefined, leading)
   return (
     <RNText
       maxFontSizeMultiplier={maxFontSizeMultiplier}

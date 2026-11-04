@@ -1,21 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Titled art as a focus stop (kit.tsx's TvTile in the prototype): a poster or a wide tile, its
 // title and a caption under the art. The art lifts on focus and takes the ring; the words stay
-// put, clear of it, and the title turns from `text-2` to `text`. A row of them is a sideways
-// scroll view, so tvOS's focus engine reaches tiles past the screen's edge, and each tile lands
-// 30% in from the left, measured from centres (tv.md › Scrolling); the row is a focus guide with
-// `autoFocus`, so coming back to it lands on the tile left (react-native-tvos's TVFocusGuideView).
-// In a browser, the engine pair's FocusGuide and TvScroll do the same (./engine.web.tsx).
+// put, clear of it, and the title turns from `text-2` to `text`. It's Poster's TV form
+// (../poster.tsx), and a row of them is Row's (../row.tsx). Poster hands it a collection's mosaic
+// as `artwork` and its Smart mark as `status`, which lift with the art (kit/collection-art.tsx).
 import { Image } from 'expo-image'
 import { type ReactNode, type Ref, useEffect, useRef } from 'react'
-import { useWindowDimensions, View } from 'react-native'
+import { View } from 'react-native'
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated'
 import { ProgressBar } from '../progress.tsx'
 import { Text } from '../text.tsx'
 import { tokens, useMotionReduced, useTheme } from '../theme.tsx'
-import { FocusGuide, TvScroll } from './engine'
-import { Focusable, focusShadow, StopScope, type ViewHandle } from './focusable.tsx'
-import { KEEP, keptAt, TRACK_SPRING } from './model.ts'
+import { Focusable, focusShadow, type ViewHandle } from './focusable.tsx'
+import { TRACK_SPRING } from './model.ts'
 
 const tv = tokens.tv
 
@@ -35,6 +32,8 @@ export function TvTile({
   title,
   caption,
   src,
+  artwork,
+  status,
   wide = false,
   progress = null,
   progressBelow = false,
@@ -45,11 +44,16 @@ export function TvTile({
   onFocus,
   onPlay,
   preferred,
+  label,
   ref,
 }: {
   title: string
   caption: string
   src: TileSource | undefined
+  /** Drawn in the art's place over `src` (a collection's mosaic, Poster's). */
+  artwork?: ReactNode
+  /** A mark at the art's foot, at the start (a smart collection's), as Poster's status. */
+  status?: ReactNode
   wide?: boolean
   /** 0–1. */
   progress?: number | null
@@ -65,6 +69,8 @@ export function TvTile({
   /** What Play/Pause does while this tile is focused: a film's tile plays it. */
   onPlay?: () => void
   preferred?: boolean
+  /** What it's read as, over `title, caption`. */
+  label?: string
   ref?: Ref<ViewHandle>
 }) {
   const theme = useTheme()
@@ -98,13 +104,15 @@ export function TvTile({
       lift="none"
       ring={false}
       role="link"
-      label={`${title}, ${caption}`}
+      label={label ?? [title, caption].filter(Boolean).join(', ')}
       width={w}
     >
       {(focused) => (
         <>
           <Art
             src={src}
+            artwork={artwork}
+            status={status}
             title={title}
             ratio={wide ? 16 / 9 : 2 / 3}
             radius={radius}
@@ -136,6 +144,8 @@ export function TvTile({
 
 function Art({
   src,
+  artwork,
+  status,
   title,
   ratio,
   radius,
@@ -143,6 +153,8 @@ function Art({
   progress,
 }: {
   src: TileSource | undefined
+  artwork?: ReactNode
+  status?: ReactNode
   title: string
   ratio: number
   radius: number
@@ -170,7 +182,9 @@ function Art({
       ]}
     >
       <View style={{ flex: 1, borderRadius: radius, overflow: 'hidden' }}>
-        {src ? (
+        {artwork ? (
+          artwork
+        ) : src ? (
           <Image
             source={src}
             style={{ flex: 1 }}
@@ -184,7 +198,7 @@ function Art({
               flex: 1,
               justifyContent: 'flex-end',
               padding: '9%',
-              experimental_backgroundImage: `linear-gradient(160deg, ${theme.colors.s3}, ${theme.colors.s1})`,
+              backgroundImage: `linear-gradient(160deg, ${theme.colors.s3}, ${theme.colors.s1})`,
             }}
           >
             <Text variant="meta" weight={600} color="text-2" numberOfLines={3}>
@@ -192,6 +206,19 @@ function Art({
             </Text>
           </View>
         )}
+        {status ? (
+          <View
+            style={{
+              position: 'absolute',
+              left: '7%',
+              right: '7%',
+              bottom: progress === null ? '7%' : '14%',
+              flexDirection: 'row',
+            }}
+          >
+            {status}
+          </View>
+        ) : null}
         {progress !== null ? (
           <View style={{ position: 'absolute', left: '7%', right: '7%', bottom: '7%' }}>
             <ProgressBar value={progress * 100} height={0.25} />
@@ -199,74 +226,5 @@ function Art({
         ) : null}
       </View>
     </Animated.View>
-  )
-}
-
-/**
- * A titled row of tiles (kit.tsx's TvRow): the title at the safe area's inset, and the tiles in a
- * sideways scroll view that lands each focused tile with its centre 30% in (react-native-tvos's
- * `snapToAlignment="item"` with each tile's `scrollSnapOffset`). Item widths are known (posters
- * 10.5u, wide tiles 17u), so where they land is worked out, not measured.
- */
-export function TvRow<T>({
-  title,
-  suffix,
-  items,
-  keyOf,
-  wide = false,
-  itemWidth,
-  render,
-  onFocusItem,
-  ref,
-}: {
-  title: string
-  suffix?: string | null
-  items: T[]
-  keyOf: (item: T) => string | number
-  wide?: boolean
-  /** Each item's width in units, when it isn't a poster's or a wide tile's. */
-  itemWidth?: number
-  render: (item: T, at: { index: number; onFocus: () => void }) => ReactNode
-  onFocusItem?: (item: T, index: number) => void
-  ref?: Ref<ViewHandle>
-}) {
-  const theme = useTheme()
-  const u = theme.u
-  const { width } = useWindowDimensions()
-  const w = (itemWidth ?? (wide ? WIDE_WIDTH : tv.poster.width)) * u
-  const inset = tv.safe.x * u
-  return (
-    <View ref={ref} accessibilityRole="list" accessibilityLabel={title} style={{ gap: 0.8 * u }}>
-      <Text variant="rowTitle" style={{ paddingHorizontal: inset }} accessibilityRole="header">
-        {title}
-        {suffix ? (
-          <Text variant="rowTitle" weight={400} color="text-2">
-            {` ${suffix}`}
-          </Text>
-        ) : null}
-      </Text>
-      <FocusGuide autoFocus trapFocusLeft trapFocusRight>
-        <TvScroll
-          horizontal
-          keep={KEEP.row}
-          contentContainerStyle={{
-            gap: tv.poster.gap * u,
-            paddingHorizontal: inset,
-            paddingVertical: 1 * u,
-          }}
-        >
-          {items.map((item, index) => (
-            <View key={keyOf(item)} scrollSnapOffset={keptAt(KEEP.row, width, w)}>
-              <StopScope.Provider value={`${title}/${index}/`}>
-                {render(item, {
-                  index,
-                  onFocus: () => onFocusItem?.(item, index),
-                })}
-              </StopScope.Provider>
-            </View>
-          ))}
-        </TvScroll>
-      </FocusGuide>
-    </View>
   )
 }

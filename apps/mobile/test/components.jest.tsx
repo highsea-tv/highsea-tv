@@ -181,10 +181,13 @@ describe('Chip', () => {
         <Chip selected>Comedy</Chip>
       </>,
     )
-    const chip = screen.getByRole('button', { name: 'Drama' })
+    // a chip is a toggle by default, its `selected` read as on (the library's chip.tsx, since B1)
+    const chip = screen.getByRole('togglebutton', { name: 'Drama' })
     expect(style(chip).minHeight).toBe(36)
     expect(style(chip).borderRadius).toBe(tokens.radius.pill)
-    expect(screen.getByRole('button', { name: 'Comedy' })).toBeSelected()
+    expect(
+      screen.getByRole('togglebutton', { name: 'Comedy' }).props.accessibilityState.checked,
+    ).toBe(true)
   })
 })
 
