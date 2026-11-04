@@ -18,3 +18,20 @@ jest.mock(
 jest.mock('react-native-webview', () => ({
   WebView: (props) => require('react').createElement('WebView', props),
 }))
+// expo-video's native player isn't in Jest either: test/mock.ts's fake player and VideoView stand
+// in, one module shared by the copy @highsea-tv/native's playback resolves and the app's, so a test
+// reads the players the screen made (`require('expo-video').players`)
+// (a factory must be written inline, babel-plugin-jest-hoist's rule)
+jest.mock(
+  require.resolve('expo-video', {
+    paths: [require('node:path').resolve(__dirname, '../../packages/native')],
+  }),
+  () => {
+    globalThis.__video ??= require('./test/mock.ts').videoModule()
+    return globalThis.__video
+  },
+)
+jest.mock('expo-video', () => {
+  globalThis.__video ??= require('./test/mock.ts').videoModule()
+  return globalThis.__video
+})

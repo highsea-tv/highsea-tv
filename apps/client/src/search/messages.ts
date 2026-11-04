@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Search's words (client-search.md › States), once for every client: the apps' own copies
-// (apps/web's, apps/mobile's and apps/tv's `search`) gathered here. The field's words and the
+// (apps/web's and the old phone and TV apps' `search`) gathered here. The field's words and the
 // kinds' names are every app's, in @highsea-tv/client/films (createFilmsText().search).
 import { defineMessages } from '@highsea-tv/i18n'
 

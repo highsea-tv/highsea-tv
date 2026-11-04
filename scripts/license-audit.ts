@@ -3,8 +3,9 @@
 // be compatible with AGPL-3.0-only (ADR 0009). GPL-2.0-only, SSPL and anything unknown fail the
 // run, unless reviewed and listed in license-exceptions.json with the reason. Since 4.4a it also
 // reads the desktop app's crates, on every platform, from `cargo metadata` (ADR 0058), and since
-// 4.5a the phone app's CocoaPods pods, once a prebuild has made its iOS project (ADR 0059), and the
-// TV app's alike since 4.5b.
+// 4.5a the native app's CocoaPods pods, once a prebuild has made its project (ADR 0059): now the one
+// client's (apps/client/ios, ADR 0061), which holds the iPhone's or, after `prebuild:tv`, the Apple
+// TV's.
 import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
@@ -148,7 +149,7 @@ function crates(root: string) {
 }
 
 /**
- * An app's pods (the phone's or the TV's): each pod `Podfile.lock` names, with the licence from its spec. Every pod
+ * An app's pods (the iPhone's or the Apple TV's): each pod `Podfile.lock` names, with the licence from its spec. Every pod
  * comes from a package's podspec, which CocoaPods keeps as JSON in `Pods/Local Podspecs`
  * (https://guides.cocoapods.org/syntax/podspec.html#license: a string or `{ type, file }`), or from
  * the trunk (expo-image's SDWebImage and codecs), whose specs `pod install` keeps in
@@ -215,9 +216,7 @@ if (import.meta.main) {
   const bad: string[] = []
   const all = installed(root)
   const rust = crates(root)
-  const phone = pods(join(root, 'apps/mobile/ios'))
-  const tv = pods(join(root, 'apps/tv/ios'))
-  const ios = phone || tv ? new Map([...(phone ?? []), ...(tv ?? [])]) : null
+  const ios = pods(join(root, 'apps/client/ios'))
   for (const [pkg, license] of [...all, ...rust, ...(ios ?? [])]) {
     const name = pkg.slice(0, pkg.lastIndexOf('@'))
     if (!compatible(license) && !excepted.has(name) && !excepted.has(pkg))

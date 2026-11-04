@@ -1,69 +1,23 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The mobile tabs after Library: Search (C6, reference), Offline (C8, reference), and You (C8),
+// The mobile tabs after Library: Search (C6, reference) and You (C8),
 // which leads to the settings (C7, apps/client's Settings at /settings). docs/product/client-search.md,
 // client-settings.md.
 
 import { settingsSections } from '@highsea-tv/client/prefs'
-import { ConfirmDialog, cn, EmptyState, Field, Icon, Switch, toast } from '@highsea-tv/ui'
-import { useState } from 'react'
+import { ConfirmDialog, cn, Icon, toast } from '@highsea-tv/ui'
 import { useLocation } from 'wouter'
-import { useConnection, usePhoneDownloadsLater, useServer } from '../client/data.ts'
-import { useDownloads } from '../client/downloads.ts'
-import { OfflineList } from '../client/offline-list.tsx'
+import { useServer } from '../client/data.ts'
 import { usePeople } from '../client/profiles.ts'
 import { ProfileAvatar } from '../client/who.tsx'
-import { PullToRefresh } from './pull.tsx'
 import { gutter, Header, mobileHref } from './shell.tsx'
 import { MobileWhoSheet } from './who-sheet.tsx'
 
-// ---------------------------------------------------------------- offline
-
-export function MobileOffline() {
-  const [wifi, setWifi] = useState(true)
-  const downloads = useDownloads('mobile')
-  const connection = useConnection()
-  // pulling asks the server again, which renews what had expired (client-settings.md#offline);
-  // while it can't be reached, nothing changes and what's kept still plays
-  const refresh = () => {
-    if (connection === 'offline') return
-    for (const x of downloads.items) if (x.state === 'expired') downloads.renew(x.id)
-  }
-  // the app until 4.6 builds downloads: the tab stays, and says what's coming (4.5a)
-  const later = usePhoneDownloadsLater()
-  if (later)
-    return (
-      <div className="grid gap-5 pt-1">
-        <Header title="Offline" />
-        <div className={cn('py-6', gutter)}>
-          <EmptyState icon="download" title="Nothing downloaded">
-            Downloading films to this phone comes in the next update of the app.
-          </EmptyState>
-        </div>
-      </div>
-    )
-  return (
-    <PullToRefresh onRefresh={refresh}>
-      <div className="grid gap-5 pt-1">
-        <Header title="Offline" />
-        <div className={gutter}>
-          <OfflineList
-            app="mobile"
-            href={(x) => (x.kind === 'song' ? undefined : mobileHref(`/play/${x.id}`))}
-            settings={
-              <Field inline label="Download on Wi-Fi only">
-                <Switch checked={wifi} onCheckedChange={setWifi} />
-              </Field>
-            }
-          />
-        </div>
-      </div>
-    </PullToRefresh>
-  )
-}
-
 // ---------------------------------------------------------------- you
 
-/** You; at `/you/who`, with Switch profile's sheet open over it. */
+/**
+ * You at `/you/who`, with Switch profile's sheet open over it: profiles move with B3. `/you` itself is
+ * apps/client's Settings (chrome/client.ts).
+ */
 export function MobileYou({ who = false }: { who?: boolean }) {
   const server = useServer()
   const [, navigate] = useLocation()

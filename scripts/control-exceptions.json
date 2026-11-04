@@ -1,11 +1,5 @@
 [
   {
-    "file": "apps/mobile/src/app/play/[id].tsx",
-    "tag": "Pressable",
-    "contains": "showControls",
-    "reason": "The player's full-screen tap surface over the picture, which shows and hides the controls. It's the picture itself, not a control, and draws nothing."
-  },
-  {
     "file": "apps/server/src/admin/appearance.tsx",
     "tag": "input",
     "contains": "type=\"color\"",

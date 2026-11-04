@@ -22,8 +22,7 @@ export {
   tvConnectMessages as tvConnect,
 }
 
-// A copy of apps/mobile's and apps/tv's not-found words until part B, when those apps go and this
-// is the one catalog.
+// The words for an address that leads nowhere.
 export const notFound = defineMessages({
   title: 'There’s nothing here',
   body: 'It may have moved.',

@@ -3,8 +3,6 @@
 // on react-native-tvos's focus engine (the spatial focus engine in a browser, ./engine.web.tsx),
 // buttons, keys, chips, tiles and rows, and the layout and remote rules in model.ts.
 
-// the old names of parts now drawn at every form factor, until B2
-export * from './aliases.ts'
 export * from './cards.tsx'
 export * from './controls.tsx'
 export * from './detail.tsx'

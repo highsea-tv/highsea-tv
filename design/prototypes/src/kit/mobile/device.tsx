@@ -3,7 +3,7 @@
 // safe areas), and a momentum-scrolling content area between them. React Native comes in Phase 4;
 // these approximate it with web primitives (pt ≈ px). It draws the library's controls at the touch
 // rule (controls.md › One rule per platform): the spec's sizes, 16px text and an invisible 44 hit
-// area, as apps/mobile does with ui-native.
+// area, as apps/client does on the phone.
 import { Icon, PlatformScope } from '@highsea-tv/ui'
 import { type ReactNode, useLayoutEffect } from 'react'
 import { useNow } from '../../mock/hooks.tsx'

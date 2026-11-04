@@ -22,12 +22,13 @@ import { type Href, router, Stack, usePathname, useRootNavigationState } from 'e
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { createContext, type ReactNode, useContext, useEffect, useRef } from 'react'
-import { Platform } from 'react-native'
+import { Platform, View } from 'react-native'
 import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { BackKeys } from '../back.tsx'
+import { WindowChrome } from '../desktop/window.tsx'
 import { useBrandFonts } from '../fonts'
-import { useFrameChannel } from '../frame-channel.ts'
+import { FrameStateContext, useFrameChannel } from '../frame-channel.ts'
 import { HOME_SERVER } from '../host'
 import { SaidProvider } from '../kit.tsx'
 import { mock, transport } from '../transport.ts'
@@ -38,6 +39,12 @@ const background = tokens.themes.default.colors.bg
 
 /** The frame's theme while framed: the toolbar's choice outranks the person's own. */
 const FramedTheme = createContext<NativeTheme | undefined>(undefined)
+
+const PLAYER_OPTIONS = {
+  presentation: 'fullScreenModal',
+  animation: 'fade',
+  orientation: 'all',
+} as const
 
 export default function Layout() {
   const fonts = useBrandFonts()
@@ -64,13 +71,15 @@ export default function Layout() {
               reducedMotion={channel.reducedMotion}
             >
               <FramedTheme.Provider value={framed}>
-                {/* tvOS has no status bar */}
-                {Platform.isTV ? null : <StatusBar style="light" />}
-                <SaidProvider>
-                  <Launched.Provider value={launched}>
-                    <Root />
-                  </Launched.Provider>
-                </SaidProvider>
+                <FrameStateContext.Provider value={channel.toolbar}>
+                  {/* tvOS has no status bar */}
+                  {Platform.isTV ? null : <StatusBar style="light" />}
+                  <SaidProvider>
+                    <Launched.Provider value={launched}>
+                      <Root />
+                    </Launched.Provider>
+                  </SaidProvider>
+                </FrameStateContext.Provider>
               </FramedTheme.Provider>
             </ThemeProvider>
           </ServersProvider>
@@ -173,10 +182,23 @@ function Nav({ phase }: { phase: Phase }) {
       </Stack.Protected>
       <Stack.Protected guard={phase === 'in'} redirectTo={start}>
         <Stack.Screen name="(in)" />
+        {/* the player turns with the phone, over everything, and fades in (player.md › Phone) */}
+        <Stack.Screen name="play/[id]/index" options={PLAYER_OPTIONS} />
+        <Stack.Screen name="play/[id]/start" options={PLAYER_OPTIONS} />
       </Stack.Protected>
       <Stack.Screen name="connect" />
       <Stack.Screen name="+not-found" />
     </Stack>
   )
-  return tv ? <BackKeys>{stack}</BackKeys> : stack
+  if (tv) return <BackKeys>{stack}</BackKeys>
+  // the desktop app's window chrome above every screen but the player, which lays it over the
+  // film itself (WindowChrome's `overlay`); on a Mac, where there's no top bar, a strip moves the
+  // window. Nothing outside the desktop app
+  if (pathname.startsWith('/play/')) return stack
+  return (
+    <View style={{ flex: 1 }}>
+      <WindowChrome drag={phase !== 'in' || GATE.has(pathname)} />
+      <View style={{ flex: 1 }}>{stack}</View>
+    </View>
+  )
 }

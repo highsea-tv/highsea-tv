@@ -17,10 +17,12 @@ import {
   CircleX,
   Clapperboard,
   Clock,
+  Copy,
   Download,
   Ellipsis,
   Eye,
   Film,
+  Folder,
   Funnel,
   Globe,
   GripVertical,
@@ -131,6 +133,10 @@ export const icons = {
   tv: Tv,
   phone: Smartphone,
   laptop: Laptop,
+  // Get the apps' Copy (client/get-the-apps.tsx)
+  copy: Copy,
+  // the desktop app's Kept in (web/kept-in.tsx's Change)
+  folder: Folder,
 }
 
 export type IconName = keyof typeof icons

@@ -42,11 +42,16 @@ type MockTransport = ReturnType<typeof import('@highsea-tv/mock/transport').crea
 
 const listeners = new Set<(role: string) => void>()
 
+/** What a play session plays, for the player's tests (`transportModule({ media })`); none waits. */
+type Media = { clip: string; subtitles: string; duration: number }
+let media: Media | undefined
+
 function newTransport(): MockTransport {
   const Transport = require('@highsea-tv/mock/transport')
   return Transport.createMockFetch({
     latency: 0,
     storage: Transport.memoryStorage(),
+    media,
     onRole: (role: string) => {
       for (const l of [...listeners]) l(role)
     },
@@ -87,9 +92,11 @@ export const store = () => live.store
 export const server = () => live.transport
 
 /** src/transport.ts in mock mode, for `jest.mock('../src/transport.ts', …)`. */
-export function transportModule() {
+export function transportModule(options: { media?: Media } = {}) {
+  media = options.media
   const frame = require('@highsea-tv/mock/frame')
-  if (!live.transport) live.transport = newTransport()
+  // the first test's server may be up before this is asked for: it's made again with the media
+  if (!live.transport || media) live.transport = newTransport()
   const transport = Object.assign(
     (input: string, init: RequestInit = {}) => {
       let call: [string, RequestInit] = [input, init]
@@ -260,3 +267,95 @@ export async function acknowledge() {
 
 /** Whether a request went to the API path given. */
 export const sent = (path: string) => requests().filter((q) => q.url.includes(path))
+
+/**
+ * expo-video for `jest.mock`, which Jest has no native side for: a player that keeps its state
+ * and sends expo-video's events (https://docs.expo.dev/versions/latest/sdk/video/#videoplayerevents)
+ * as AVPlayer would, a source loading to ready at once, with `duration` seconds; and the views as
+ * host elements named VideoView and VideoAirPlayButton, with the props the screen gives them.
+ * The players made are in `players`, the last the screen's.
+ */
+export function videoModule(duration = 52) {
+  const { createElement, forwardRef, useImperativeHandle, useMemo } = require('react')
+  const players: FakePlayer[] = []
+  class FakePlayer {
+    listeners = new Map<string, Set<(e: unknown) => void>>()
+    playing = false
+    status = 'idle'
+    duration = 0
+    currentTime = 0
+    volume = 1
+    muted = false
+    playbackRate = 1
+    subtitleTrack: unknown = null
+    availableSubtitleTracks: unknown[] = []
+    source: unknown = null
+    timeUpdateEventInterval = 0
+    showNowPlayingNotification = false
+    staysActiveInBackground = false
+    allowsExternalPlayback = false
+    addListener(event: string, f: (e: unknown) => void) {
+      const set = this.listeners.get(event) ?? new Set()
+      set.add(f)
+      this.listeners.set(event, set)
+      return { remove: () => set.delete(f) }
+    }
+    emit(event: string, payload: unknown) {
+      for (const f of [...(this.listeners.get(event) ?? [])]) f(payload)
+    }
+    play() {
+      if (this.playing || !this.source) return
+      this.playing = true
+      this.emit('playingChange', { isPlaying: true })
+    }
+    pause() {
+      if (!this.playing) return
+      this.playing = false
+      this.emit('playingChange', { isPlaying: false })
+    }
+    replace(source: unknown) {
+      this.source = source
+      if (!source) {
+        this.playing = false
+        this.status = 'idle'
+      }
+    }
+    async replaceAsync(source: unknown) {
+      this.source = source
+      this.status = 'readyToPlay'
+      this.duration = duration
+      this.emit('sourceLoad', {})
+      this.emit('statusChange', { status: 'readyToPlay' })
+    }
+    /** The film at `seconds`, as AVPlayer's time updates say. */
+    at(seconds: number) {
+      this.currentTime = seconds
+      this.emit('timeUpdate', { currentTime: seconds })
+    }
+  }
+  const VideoView = forwardRef((props: object, ref: unknown) => {
+    useImperativeHandle(ref, () => ({
+      startPictureInPicture: jest.fn(async () => {
+        ;(props as { onPictureInPictureStart?: () => void }).onPictureInPictureStart?.()
+      }),
+      stopPictureInPicture: jest.fn(async () => {
+        ;(props as { onPictureInPictureStop?: () => void }).onPictureInPictureStop?.()
+      }),
+    }))
+    return createElement('VideoView', props)
+  })
+  return {
+    players,
+    useVideoPlayer: (_source: unknown, setup?: (p: FakePlayer) => void) =>
+      useMemo(() => {
+        const p = new FakePlayer()
+        setup?.(p)
+        players.push(p)
+        return p
+      }, []),
+    VideoView,
+    VideoAirPlayButton: (props: object) => createElement('VideoAirPlayButton', props),
+  }
+}
+
+export type FakeVideo = ReturnType<typeof videoModule>

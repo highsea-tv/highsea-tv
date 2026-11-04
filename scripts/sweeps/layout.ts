@@ -63,6 +63,7 @@ import {
 } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { HIDE_MS } from '../../packages/client/src/player/index.ts'
 import { SEED } from '../../packages/mock/src/films.ts'
 import { controlMetrics, TV_REFERENCE } from '../../packages/tokens/src/controls.ts'
 
@@ -151,10 +152,31 @@ export const EXCEPTIONS: Exception[] = [
     reason: 'the TV’s pairing code is new on every sign-in (RFC 8628)',
   },
   {
-    name: /^jump to a letter$/,
+    name: /^(?:jump to a letter|position)$/,
     kinds: ['field', 'other'],
     reason:
-      'the letter index is React Native’s adjustable role: a slider on the web (react-native-web’s role map), and on iOS a plain view with the adjustable trait, which XCUITest lists by its class as other while VoiceOver reads it as adjustable (XCUIElement.ElementType; UIAccessibilityTraits.adjustable)',
+      'the letter index and the player’s scrubber are React Native’s adjustable role: a slider on the web (react-native-web’s role map), and on iOS and tvOS a plain view with the adjustable trait, which XCUITest lists by its class as other while VoiceOver reads it as adjustable (XCUIElement.ElementType; UIAccessibilityTraits.adjustable)',
+  },
+  {
+    name: /(?:\bto go|\bfree on this phone)$/,
+    screen: 'downloads',
+    differs: true,
+    reason:
+      'the mock’s downloads move every second (createDownloads’ TICK_MS in @highsea-tv/client/downloads), so each side reads the sizes at its own moment',
+  },
+  {
+    name: /^\d{1,3}$/,
+    screen: 'downloads',
+    reason:
+      'a download’s percentage, which moves every second in the mock, so the two sides’ numbers don’t pair by name',
+  },
+  {
+    name: /^video$/,
+    screen: 'player',
+    side: 'native',
+    kind: 'other',
+    reason:
+      'expo-video’s VideoView, an AVPlayerViewController’s view, which UIKit exposes as an element; the web’s <video> is the picture under the controls and the browser’s tree gives it no name',
   },
 ]
 
@@ -427,7 +449,7 @@ function excuse(f: Finding, screen: string, exceptions: Exception[]): Exception 
  * field (`fieldGap`, within a point), with the field itself paired on the device.
  */
 export const FIELD_LABEL =
-  'a field’s drawn label, read on the device only as the field’s name (ui’s Field hides its Text from VoiceOver); checked against the field it labels'
+  'a field’s drawn label, read on the device only as the field’s or its Select’s name (ui’s Field hides its Text from VoiceOver); checked against the control it labels'
 
 function isFieldLabel(
   n: LayoutNode,
@@ -439,7 +461,7 @@ function isFieldLabel(
   if (n.kind !== 'text') return false
   return nodes.some(
     (f) =>
-      f.kind === 'field' &&
+      (f.kind === 'field' || f.kind === 'action') &&
       f.name === n.name &&
       pairedFields.has(f) &&
       Math.abs(f.box.x - n.box.x) <= tolerance &&
@@ -560,7 +582,14 @@ export function compare(
   for (const j of leftNative) raw.push({ type: 'only-native', node: native.nodes[j] as LayoutNode })
 
   const pairedFields = new Set(
-    pairs.filter((p) => p.w.kind === 'field' && p.n.kind === 'field').map((p) => p.w),
+    // a Field labels a text field, or a Select, which both trees read as an action
+    pairs
+      .filter(
+        (p) =>
+          (p.w.kind === 'field' && p.n.kind === 'field') ||
+          (p.w.kind === 'action' && p.n.kind === 'action'),
+      )
+      .map((p) => p.w),
   )
   const findings: Finding[] = []
   const excused: Excused[] = []
@@ -689,6 +718,9 @@ export const SCREENS = [
   'search-results',
   'search-none',
   'alerts',
+  'link-code',
+  'downloads',
+  'player',
   'settings',
 ] as const
 export type Screen = (typeof SCREENS)[number]
@@ -711,13 +743,28 @@ export const ROUTES: Partial<Record<Screen, string>> = {
   'search-results': '/search?q=tears',
   'search-none': '/search?q=qxzv',
   alerts: '/alerts',
+  // B2's: approving the mock's waiting TV, the phone's Offline, and the film playing (Sintel's
+  // clip, which the run's own server answers for the web and the simulators alike)
+  'link-code': '/link/KQ7-4PM',
+  downloads: '/offline',
+  player: `/play/${SEED.film.id}`,
 }
 
 /**
  * Whether a screen is one this form factor has. Alerts is a page only on the TV: with a pointer
  * it's the bell's popover and the phone has none, so `/alerts` goes Home there.
  */
-export const appliesTo = (screen: Screen, t: Target) => screen !== 'alerts' || tvLike(t)
+export const appliesTo = (screen: Screen, t: Target) =>
+  screen === 'alerts'
+    ? tvLike(t)
+    : // pairing approves a TV from a phone or a browser, and the TV keeps no downloads (B2)
+      screen === 'link-code'
+      ? !tvLike(t)
+      : // Offline is the phone's: a browser's /downloads says they live in the desktop app, and
+        // the player with a pointer hides all of itself while playing (the compare sheet has both)
+        screen === 'downloads' || screen === 'player'
+        ? t !== 'regular-pointer' && (screen === 'player' || !tvLike(t))
+        : true
 
 /** What a run is asked to capture: `web`, `phone` (the iPhone) and `tv` (the Apple TV). */
 export const TARGET_FLAGS = ['web', 'phone', 'tv'] as const
@@ -820,6 +867,21 @@ export const ANCHORS: Record<Screen, (t: Target) => Anchor[]> = {
   alerts: () => [
     { kinds: ['text'], name: /^alerts$/, says: 'the Alerts title' },
     { kinds: ['text'], name: /^harbor has a new remote address\b/, says: 'an announcement' },
+  ],
+  'link-code': () => [
+    { kinds: ['action'], name: /^sign it in$/, says: 'Sign it in' },
+    { kinds: ['text'], name: /\bkq7 4pm\b/, says: 'the TV’s code' },
+  ],
+  downloads: () => [
+    { kinds: ['text'], name: /^offline$/, says: 'the Offline title' },
+    { kinds: ['text'], name: /^\d+ films? ready\b/, says: 'what’s ready' },
+  ],
+  // the player as it settles, playing with its controls hidden (HIDE_MS): by touch the one
+  // stop that shows them, on the TV the scrubber, which stays a stop for the remote's seeking
+  player: (t) => [
+    tvLike(t)
+      ? { kinds: ['field', 'other'], name: /^position$/, says: 'the scrubber' }
+      : { kinds: ['action'], name: /^show controls$/, says: 'the stop that shows the controls' },
   ],
   settings: () => [{ kinds: ['text'], name: /^settings$/, says: 'the Settings title' }],
 }
@@ -975,6 +1037,9 @@ const TITLES: Record<Screen, string> = {
   'search-results': 'C6 Search for “tears”',
   'search-none': 'C6 Search with nothing found',
   alerts: 'Alerts (the TV only)',
+  'link-code': 'Connect a device: approving the TV’s KQ7-4PM (not on the TV)',
+  downloads: 'Offline (the phone; the TV keeps none)',
+  player: 'C5 The player: Tears of Steel, as Sintel’s clip',
   settings: 'C7 Settings',
 }
 
@@ -998,9 +1063,18 @@ export const stepsFor = (target: Target, screens: readonly Screen[]) =>
         screen,
         url: `${CLIENT_SCHEME}://${route.slice(1)}`,
         anchors: ANCHORS[screen](target).map((a) => a.name.source),
+        settle: settleFor(screen, target),
       },
     ]
   })
+
+/**
+ * How long a screen is left after its anchors show, in ms, for what no anchor can say: the TV's
+ * player fades its controls rather than removing them, so its scrubber is there from the start
+ * and the capture waits out HIDE_MS (by touch, Show controls appears only once they've hidden).
+ */
+export const settleFor = (screen: Screen, target: Target) =>
+  screen === 'player' && tvLike(target) ? HIDE_MS + 1000 : 0
 
 /**
  * The iPhone 17 Pro's safe area in points, which the web's compact-touch emulates so both lay out
@@ -1151,6 +1225,9 @@ if (import.meta.main) {
       LANG: 'en_US.UTF-8',
       LC_ALL: 'en_US.UTF-8',
       EXPO_PUBLIC_HIGHSEA_MOCK: '1',
+      // the player's clip, from the prototypes' server the run starts (servePrototypes, on its
+      // default port), which the simulators reach on the Mac's loopback (apps/client/src/transport.ts)
+      EXPO_PUBLIC_HIGHSEA_MOCK_MEDIA: `http://localhost:${process.env.SWEEP_PROTOTYPES_PORT ?? '4510'}/web/`,
     }
     const prebuild = (tv: boolean) => {
       log(`prebuild for the ${tv ? 'Apple TV' : 'iPhone'}`)
@@ -1278,6 +1355,13 @@ if (import.meta.main) {
             if (!missingAnchors(screen, form.target, nodes).length || Date.now() > until) break
             await page.waitForTimeout(500)
           }
+          // what no anchor says, as on the devices (settleFor), then read again
+          const rest = settleFor(screen, form.target)
+          if (rest) {
+            await page.waitForTimeout(rest)
+            await settleAnimations(page)
+            nodes = fromWeb(await page.evaluate(extractWeb))
+          }
           captures.push({ target: form.target, screen, ...SIZES[form.target], nodes })
           await page.screenshot({ path: join(out, `${form.target}.${screen}.png`) })
           log(`${form.target} ${screen}: ${nodes.length} nodes`)
@@ -1314,7 +1398,10 @@ if (import.meta.main) {
           const settings =
             form.target === 'compact-touch'
               ? page.locator('[role=tab][aria-label="You"]')
-              : page.locator('[aria-label$=", settings"]')
+              : tv
+                ? page.locator('[aria-label$=", settings"]')
+                : // with a pointer the avatar is the account menu (B2's account/menu.tsx)
+                  page.locator('[aria-label$=": profile and settings"]')
           // the TV's code is approved by the mock after 8 seconds (PAIRING_APPROVAL_MS)
           const gotIt = page.getByRole('button', { name: 'Got it', exact: true }).first()
           await settings.first().or(gotIt).first().waitFor({ timeout: 40_000 })
@@ -1347,8 +1434,19 @@ if (import.meta.main) {
             await take(screen)
           }
           if (last !== 'settings') continue
+          // back Home, since the player and Connect a device draw over the shell
+          await page.evaluate(() => {
+            history.pushState(null, '', '/web/')
+            dispatchEvent(new PopStateEvent('popstate', { state: null }))
+          })
           await settings.first().waitFor({ timeout: 20_000 })
           await settings.first().click()
+          // with a pointer the avatar opens the account menu, which has Settings
+          if (!tv && form.target !== 'compact-touch')
+            await page
+              .getByRole('menuitem', { name: /^Settings/ })
+              .first()
+              .click()
           await page.getByText('Settings', { exact: true }).first().waitFor({ timeout: 20_000 })
           if (want.has('settings')) await take('settings')
         } catch (e) {
@@ -1383,63 +1481,83 @@ if (import.meta.main) {
       scheme: 'LayoutTV',
     },
   ] as const
-  for (const d of devices) {
-    if (!plan.targets.includes(d.flag)) continue
-    const udid = booted(d.runtime, d.variable)
-    const bundle = BUNDLES[d.target]
-    let data: string
+  // the player's clip for the simulators: their mock builds fetch it from the prototypes' server
+  // on the Mac's loopback (EXPO_PUBLIC_HIGHSEA_MOCK_MEDIA, set by `build`), so it serves the same
+  // export again, held as the web's was, while they run
+  const media =
+    screens.includes('player') && devices.some((d) => plan.targets.includes(d.flag))
+      ? await (async () => {
+          process.env.HIGHSEA_CLIENT_EXPORT = '0'
+          const { servePrototypes } = await import('./lib.ts')
+          return servePrototypes()
+        })()
+      : undefined
+  try {
+    for (const d of devices) {
+      if (!plan.targets.includes(d.flag)) continue
+      const udid = booted(d.runtime, d.variable)
+      const bundle = BUNDLES[d.target]
+      let data: string
+      try {
+        data = execFileSync('xcrun', ['simctl', 'get_app_container', udid, bundle, 'data'], {
+          encoding: 'utf8',
+        }).trim()
+      } catch {
+        runProblems.push(
+          `${d.target}: ${bundle} isn't installed on ${udid}: run \`layout.ts build\``,
+        )
+        continue
+      }
+      // the servers it knows, so it opens on Choose a server (@highsea-tv/native's server-store)
+      try {
+        execFileSync('xcrun', ['simctl', 'terminate', udid, bundle], { stdio: 'ignore' })
+      } catch {
+        // it wasn't running
+      }
+      rmSync(join(data, 'Documents/servers.json'), { force: true })
+      const shots = mkdtempSync(join(tmpdir(), `highsea-layout-${d.target}-`))
+      log(`${d.target}: the XCUITest on ${udid}`)
+      const run = await runUITest(
+        udid,
+        'testCapture',
+        {
+          SHOTS: shots,
+          SCREENS: screens.join(','),
+          STEPS: JSON.stringify(stepsFor(d.target, screens)),
+        },
+        {
+          dir: 'apps/client/uitest',
+          project: 'LayoutCapture',
+          scheme: d.scheme,
+          testClass: 'Layout',
+          prefix: 'LAYOUT ',
+          timeout: DEVICE_TIMEOUT,
+        },
+      )
+      notes.push(...notesOf(d.target, run.lines))
+      if (run.timedOut) runProblems.push(`${d.target}: the capture was stopped after ten minutes`)
+      else if (!run.passed)
+        runProblems.push(`${d.target}: the capture failed (its output is above)`)
+      for (const screen of screens) {
+        const file = join(shots, `${screen}.json`)
+        if (!existsSync(file)) continue
+        const dump = JSON.parse(readFileSync(file, 'utf8')) as Dump
+        captures.push({
+          target: d.target,
+          screen,
+          width: dump.window.w,
+          height: dump.window.h,
+          nodes: fromXCUI(dump.nodes),
+        })
+        cpSync(join(shots, `${screen}.png`), join(out, `${d.target}.${screen}.png`))
+        cpSync(file, join(out, `${d.target}.${screen}.json`))
+      }
+      rmSync(shots, { recursive: true, force: true })
+    }
+  } finally {
     try {
-      data = execFileSync('xcrun', ['simctl', 'get_app_container', udid, bundle, 'data'], {
-        encoding: 'utf8',
-      }).trim()
-    } catch {
-      runProblems.push(`${d.target}: ${bundle} isn't installed on ${udid}: run \`layout.ts build\``)
-      continue
-    }
-    // the servers it knows, so it opens on Choose a server (@highsea-tv/native's server-store)
-    try {
-      execFileSync('xcrun', ['simctl', 'terminate', udid, bundle], { stdio: 'ignore' })
-    } catch {
-      // it wasn't running
-    }
-    rmSync(join(data, 'Documents/servers.json'), { force: true })
-    const shots = mkdtempSync(join(tmpdir(), `highsea-layout-${d.target}-`))
-    log(`${d.target}: the XCUITest on ${udid}`)
-    const run = await runUITest(
-      udid,
-      'testCapture',
-      {
-        SHOTS: shots,
-        SCREENS: screens.join(','),
-        STEPS: JSON.stringify(stepsFor(d.target, screens)),
-      },
-      {
-        dir: 'apps/client/uitest',
-        project: 'LayoutCapture',
-        scheme: d.scheme,
-        testClass: 'Layout',
-        prefix: 'LAYOUT ',
-        timeout: DEVICE_TIMEOUT,
-      },
-    )
-    notes.push(...notesOf(d.target, run.lines))
-    if (run.timedOut) runProblems.push(`${d.target}: the capture was stopped after ten minutes`)
-    else if (!run.passed) runProblems.push(`${d.target}: the capture failed (its output is above)`)
-    for (const screen of screens) {
-      const file = join(shots, `${screen}.json`)
-      if (!existsSync(file)) continue
-      const dump = JSON.parse(readFileSync(file, 'utf8')) as Dump
-      captures.push({
-        target: d.target,
-        screen,
-        width: dump.window.w,
-        height: dump.window.h,
-        nodes: fromXCUI(dump.nodes),
-      })
-      cpSync(join(shots, `${screen}.png`), join(out, `${d.target}.${screen}.png`))
-      cpSync(file, join(out, `${d.target}.${screen}.json`))
-    }
-    rmSync(shots, { recursive: true, force: true })
+      media?.()
+    } catch {}
   }
 
   // ---- the checks
@@ -1509,7 +1627,7 @@ function writeSheet(
     return `${head}${items ? `<ul>${items}</ul>` : ''}${excused ? `<details><summary>Excused</summary><ul>${excused}</ul></details>` : ''}`
   }
   const notHere =
-    '<p class="note">Not a screen this form factor has (with a pointer Alerts is the bell’s popover, and the phone has none).</p>'
+    '<p class="note">Not a screen this form factor has (with a pointer Alerts is the bell’s popover, and the phone has none; the TV neither approves a code nor keeps downloads).</p>'
   const find = (screen: string, web: Target) =>
     comparisons.find((c) => c.screen === screen && c.web === web)
 

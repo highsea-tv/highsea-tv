@@ -14,7 +14,7 @@
 //   a grid of posters at least 9rem wide, People as links with their photo, name and how many
 //   films they're in here, and the line saying what Search covers at the foot. The grid, the film
 //   posters and the films' words are the library's (../../library/parts.tsx);
-// - the TV, from the prototype's tv/search.tsx and apps/tv's: the on-screen keyboard down the left
+// - the TV, from the prototype's tv/search.tsx: the on-screen keyboard down the left
 //   (letters in alphabetical rows of seven, numbers and symbols behind &123, then &123, Space,
 //   Delete and Clear) and the results beside it, five a row. Typing never moves focus off the
 //   keys; a quick pick hands it to the first result, since its button goes away (or back to the
@@ -307,7 +307,7 @@ const LAYOUTS = {
 const PER_ROW = 7
 /**
  * The keyboard's column: three tenths of the screen's width, the prototype's `30cqw` (a unit is a
- * hundredth of the width, so 30u), as apps/tv's.
+ * hundredth of the width, so 30u).
  */
 const KEYBOARD_SHARE = 3 / 10
 /** Between the keyboard and the results, in units: the prototype's 3. */
@@ -331,7 +331,7 @@ function TvSearch({ search }: { search: Search }) {
   // when there are none; typing never moves it. Until they come, what was showing stays and keeps
   // focus: were the button to go first, tvOS would hand focus to the screen's preferred view (the
   // first key) on the way. The render that settles the query still has the old results (useQuery
-  // resets in its effect), so new ones are told apart from those by identity (as apps/tv's).
+  // resets in its effect), so new ones are told apart from those by identity.
   const [held, setHeld] = useState<{ search: Search; done: unknown } | null>(null)
   const [arrive, setArrive] = useState(false)
   // typing during a pick's wait ends it: what the keys type is never a pick, so it moves no focus

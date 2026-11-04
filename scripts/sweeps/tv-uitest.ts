@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Runs one XCUITest on a booted simulator, for tv.ts and tv-compare.ts (apps/tv/uitest's DpadWalk,
-// the default) and layout.ts (apps/client/uitest's Layout): the project generated with XcodeGen
+// Runs one XCUITest on a booted simulator, for tv.ts (apps/client/dpad-walk's DpadWalk, the
+// default) and layout.ts (apps/client/uitest's Layout): the project generated with XcodeGen
 // into a scratch folder, then `xcodebuild test`
 // (https://developer.apple.com/documentation/xctest/xcuiremote). Variables for the test go
 // through xcodebuild's TEST_RUNNER_ prefix (man xcodebuild). Lines the test prints with its prefix
@@ -27,7 +27,7 @@ export type UITestProject = {
 }
 
 const DPAD_WALK: UITestProject = {
-  dir: 'apps/tv/uitest',
+  dir: 'apps/client/dpad-walk',
   project: 'DpadWalk',
   scheme: 'DpadWalk',
   testClass: 'DpadWalk',

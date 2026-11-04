@@ -3,7 +3,7 @@
 // Android TV's Back into BackHandler's `hardwareBackPress`
 // (https://github.com/react-native-tvos/react-native-tvos#readme). On tvOS the Menu press reaches
 // the app only once `TVEventControl.enableTVMenuKey()` is called, and leaves it (to the Apple TV's
-// home screen) while it's disabled, as apps/tv's Remote does. The handler answers whether it took
+// home screen) while it's disabled. The handler answers whether it took
 // the press; one that didn't lets the platform have it: Android TV leaves the app, and on tvOS
 // useLeaveOnBack lets the press go where nothing handles it. In a browser, ./back-key.web.ts hears
 // the keyboard's Escape and Backspace in its place. Whether the Menu key is held is ../back.tsx's

@@ -16,7 +16,8 @@
 //   Back closes before it leaves the page.
 // Trailer opens the film's trailer in a dialog by touch and with a pointer (detail/trailer.tsx); the
 // TV has none until the server keeps trailer files (the owner's call of 2026-11-02, and answer 2 at
-// B1's review). Download waits for 4.6. Play goes to the player (B2).
+// B1's review). Download, on the phone under Play and in the desktop app after the actions, is
+// ../../../downloads/button.tsx's (none in a browser or on the TV). Play goes to the player (B2).
 import type { ClientDetail } from '@highsea-tv/api-contract'
 import { useItem } from '@highsea-tv/client/data'
 import { filmsMessages } from '@highsea-tv/client/films'
@@ -78,6 +79,7 @@ import {
 import { FilmSkeleton } from '../../../detail/skeletons.tsx'
 import { picksLine, TvTracks, useWatchWith, WatchWithFields } from '../../../detail/tracks.tsx'
 import { type Trailer, TrailerDialog, trailerOf } from '../../../detail/trailer.tsx'
+import { DownloadButton } from '../../../downloads/button.tsx'
 import { ROW_KEEP } from '../../../keep.ts'
 import { Notice, SaidNote, useChromeOverlay, useHeadDown } from '../../../kit.tsx'
 
@@ -156,6 +158,7 @@ function TouchFilm({ d, refresh }: FilmProps) {
               {t('notPlayable')}
             </Text>
           )}
+          <DownloadButton item={m} wide />
           {m.synopsis ? (
             <Text variant="body" numberOfLines={3}>
               {m.synopsis}
@@ -338,6 +341,7 @@ function PointerFilm({ d, refresh }: FilmProps) {
                 pressed={watched.on}
                 onPress={() => void watched.toggle()}
               />
+              <DownloadButton item={m} start={space['2']} />
             </View>
             <View style={{ maxWidth: space['16'] * 6 }}>
               {watched.error ? <Notice>{watched.error}</Notice> : <SaidNote />}

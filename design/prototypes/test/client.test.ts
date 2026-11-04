@@ -54,6 +54,13 @@ describe('the routes apps/client holds', () => {
       '/tv/alerts',
       '/mobile/library',
       '/mobile/library/collections',
+      '/mobile/you',
+      '/mobile/link',
+      '/web/link/KQ7-4PM',
+      '/web/profile',
+      '/web/play/10111',
+      '/mobile/play/10111/start',
+      '/tv/play/10111',
     ])
       expect(heldByClient(path)).toBe(true)
     for (const path of [
@@ -61,8 +68,9 @@ describe('the routes apps/client holds', () => {
       '/mobile/library/music',
       '/web/shows/1',
       '/tv/music',
-      '/web/play/4',
-      '/mobile/you',
+      '/web/play/1-s1e2',
+      '/tv/play/1-s1e2/start',
+      '/mobile/you/who',
       '/web/moviesx',
     ])
       expect(heldByClient(path)).toBe(false)

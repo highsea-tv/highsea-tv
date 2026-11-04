@@ -1,0 +1,84 @@
+# SPDX-License-Identifier: AGPL-3.0-only
+# The one client's iPhone build end to end (phase-4-checkpoint-5.md › Tests and checks; ADR 0061):
+# from a fresh install, add
+# the sweep's seeded server by address, sign in, find Sintel, play it until the controls hide, then
+# close the player, which ends the session. scripts/sweeps/phone.ts boots the server, installs the
+# app on a simulator, runs this, and checks the server saw the film played. Elements are found by
+# the labels VoiceOver reads, from the client's i18n catalogs (apps/client and @highsea-tv/client)
+# (https://docs.maestro.dev/api-reference/selectors).
+appId: tv.highsea.client.mobile
+env:
+  SERVER: http://localhost:3160
+  USERNAME: theo
+  PASSWORD: theo theo theo
+---
+- launchApp:
+    clearState: true
+    clearKeychain: true
+# iOS asks before an app looks on the local network; the simulator may not
+- tapOn:
+    text: Allow
+    optional: true
+
+# C1: Choose a server, by address
+- extendedWaitUntil:
+    visible: Choose a server
+    timeout: 20000
+- tapOn: Add a server by address
+- inputText: ${SERVER}
+- pressKey: Enter
+
+# its sign-in
+- extendedWaitUntil:
+    visible: Sign in to Harbor
+    timeout: 20000
+- tapOn: Username
+- inputText: ${USERNAME}
+- tapOn: Password
+- inputText: ${PASSWORD}
+- pressKey: Enter
+
+# iOS offers to keep the password (the fields are marked as a sign-in's); not this time
+# (while its sheet is up the app is hidden from the accessibility tree, so wait for either)
+- extendedWaitUntil:
+    visible: (Home|Not Now)
+    timeout: 20000
+- tapOn:
+    text: Not Now
+    optional: true
+- extendedWaitUntil:
+    visible: Home
+    timeout: 20000
+
+# Home, then Search
+- extendedWaitUntil:
+    visible: Search
+    timeout: 20000
+- tapOn: Search
+- tapOn: Search titles, genres and people
+- inputText: Sintel
+- tapOn:
+    text: Sintel, .*
+    retryTapIfNoChange: false
+
+# its page, and Play
+- extendedWaitUntil:
+    visible: Play
+    timeout: 20000
+- tapOn: Play
+
+# playing: Pause shows while it plays, and the controls hide after a few seconds of it
+- extendedWaitUntil:
+    visible: Pause
+    timeout: 60000
+- extendedWaitUntil:
+    notVisible: Pause
+    timeout: 20000
+- assertNotVisible: This film didn’t start
+- tapOn: Show controls
+- tapOn: Back to details
+# back on its page, which offers to resume where it was left ("Resume · 14 min left"; Maestro
+# matches the whole label)
+- extendedWaitUntil:
+    visible: Resume.*
+    timeout: 20000

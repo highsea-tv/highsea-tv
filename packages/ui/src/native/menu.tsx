@@ -36,6 +36,7 @@ import { focusedElement, holdFocusReturn } from './dom'
 import { Icon, type IconName } from './icon.tsx'
 import { Press } from './press.tsx'
 import { Sheet } from './sheet.tsx'
+import { Text } from './text.tsx'
 import { tokens, useControl, useTheme } from './theme.tsx'
 import { TvMenu } from './tv/cards.tsx'
 
@@ -58,6 +59,8 @@ const TOUCH_ITEM = tokens.targets.touch
 
 export type MenuOption = {
   label: string
+  /** A line under the label: Restart to update's "highsea 1.0.1 is ready. You have 1.0.0." */
+  detail?: string
   icon?: IconName
   onSelect: () => void
   /** The choice in force: checked, and focus starts on it. Makes the items choices (menuitemradio). */
@@ -177,9 +180,16 @@ function TouchMenu({ title, items, open, onClose: told }: MenuProps) {
             }}
           >
             {x.icon ? <Icon name={x.icon} color="text-2" /> : null}
-            <ControlText m={m} weight={400} color={theme.colors.text} style={{ flex: 1 }}>
-              {x.label}
-            </ControlText>
+            <View style={{ flex: 1 }}>
+              <ControlText m={m} weight={400} color={theme.colors.text}>
+                {x.label}
+              </ControlText>
+              {x.detail ? (
+                <Text variant="caption" color="text-3">
+                  {x.detail}
+                </Text>
+              ) : null}
+            </View>
             {x.current ? <Icon name="check" color="accent-text" /> : null}
           </Press>
         ))}
@@ -260,15 +270,17 @@ function PointerMenu({ title, items, open, onClose: told, anchor }: MenuProps) {
             return (
               <>
                 {x.icon ? <Icon name={x.icon} size={m.icon} color={color} /> : null}
-                <ControlText
-                  m={m}
-                  weight={400}
-                  color={theme.colors[color]}
-                  lines={1}
-                  style={{ flex: 1 }}
-                >
-                  {x.label}
-                </ControlText>
+                <View style={{ flex: 1 }}>
+                  <ControlText m={m} weight={400} color={theme.colors[color]} lines={1}>
+                    {x.label}
+                  </ControlText>
+                  {/* the prototype's MenuItem's second line, text-caption text-text-3 */}
+                  {x.detail ? (
+                    <Text variant="caption" color="text-3">
+                      {x.detail}
+                    </Text>
+                  ) : null}
+                </View>
                 {x.current ? <Icon name="check" size={m.icon} color="text" /> : null}
               </>
             )

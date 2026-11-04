@@ -17,6 +17,7 @@
 // accepted.
 import { CONTROL_PLATFORMS, type Input } from '@highsea-tv/tokens'
 import {
+  AIRPLAYS,
   CONNECTIONS,
   DATA_STATES,
   LANS,
@@ -24,9 +25,17 @@ import {
   type ProtoState,
   ROLES,
   type Role,
+  STREAMS,
   THEMES,
   TIMES,
 } from './state.ts'
+
+/** The toolbar's Desktop app, its computer and its update (state.ts's WebApp, DesktopOs, AppUpdate). */
+const WEB_APPS = ['browser', 'desktop'] as const satisfies readonly ProtoState['app'][]
+const DESKTOP_OSES = ['mac', 'windows', 'linux'] as const satisfies readonly ProtoState['os'][]
+const APP_UPDATES = ['none', 'ready'] as const satisfies readonly ProtoState['update'][]
+/** The toolbar's Downloads on the phone: built (4.6), or not yet (state.ts's PhoneDownloads). */
+const PHONE_DOWNLOADS = ['built', 'later'] as const satisfies readonly ProtoState['downloads'][]
 
 /** Every message's `channel`, so the chrome's other messages (bridge.ts) never collide. */
 export const FRAME_CHANNEL = 'highsea:frame'
@@ -46,6 +55,12 @@ export type FrameState = Pick<
   | 'time'
   | 'largeText'
   | 'reducedMotion'
+  | 'app'
+  | 'os'
+  | 'update'
+  | 'downloads'
+  | 'stream'
+  | 'airplay'
 >
 
 /** Chrome → client. `state` goes on `ready` and on every change; `navigate` on the chrome's own. */
@@ -92,7 +107,13 @@ function stateOf(v: unknown): FrameState | null {
     !oneOf(v.theme, THEMES) ||
     !oneOf(v.connection, CONNECTIONS) ||
     !oneOf(v.lan, LANS) ||
-    !oneOf(v.time, TIMES)
+    !oneOf(v.time, TIMES) ||
+    !oneOf(v.app, WEB_APPS) ||
+    !oneOf(v.os, DESKTOP_OSES) ||
+    !oneOf(v.update, APP_UPDATES) ||
+    !oneOf(v.downloads, PHONE_DOWNLOADS) ||
+    !oneOf(v.stream, STREAMS) ||
+    !oneOf(v.airplay, AIRPLAYS)
   )
     return null
   return {
@@ -105,6 +126,12 @@ function stateOf(v: unknown): FrameState | null {
     sound: { admin: !!sound.admin, web: !!sound.web, mobile: !!sound.mobile, tv: !!sound.tv },
     largeText: v.largeText,
     reducedMotion: v.reducedMotion,
+    app: v.app,
+    os: v.os,
+    update: v.update,
+    downloads: v.downloads,
+    stream: v.stream,
+    airplay: v.airplay,
   }
 }
 
@@ -119,6 +146,12 @@ export const frameStateOf = (state: ProtoState): FrameState => ({
   time: state.time,
   largeText: state.largeText,
   reducedMotion: state.reducedMotion,
+  app: state.app,
+  os: state.os,
+  update: state.update,
+  downloads: state.downloads,
+  stream: state.stream,
+  airplay: state.airplay,
 })
 
 /** What `queryState` reads: `URLSearchParams`, or anything with its `get`. */
@@ -148,6 +181,21 @@ export function queryState(query: Query): Partial<FrameState> {
   if (connection) out.connection = connection
   if (lan) out.lan = lan
   if (time) out.time = time
+  // the desktop app's host compositions (`?app=desktop&os=windows&update=ready`)
+  const app = pick('app', WEB_APPS)
+  const os = pick('os', DESKTOP_OSES)
+  const update = pick('update', APP_UPDATES)
+  if (app) out.app = app
+  if (os) out.os = os
+  if (update) out.update = update
+  // the phone's Offline before downloads (`?downloads=later`)
+  const downloads = pick('downloads', PHONE_DOWNLOADS)
+  if (downloads) out.downloads = downloads
+  // the player's states (`?stream=failed`, `?airplay=on`)
+  const stream = pick('stream', STREAMS)
+  const airplay = pick('airplay', AIRPLAYS)
+  if (stream) out.stream = stream
+  if (airplay) out.airplay = airplay
   const sound = query.get('sound')
   if (sound === 'on' || sound === 'off') {
     const on = sound === 'on'

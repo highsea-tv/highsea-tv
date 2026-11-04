@@ -263,23 +263,8 @@ describe('the controls’ rule', () => {
   })
 })
 
-describe('the old `platform` prop', () => {
-  test('`mobile` is touch, even on a web page with a mouse', () => {
-    const { result } = renderHook(read, { wrapper: provider({ platform: 'mobile' }) })
-    expect(result.current.formFactor.input).toBe('touch')
-    expect(result.current.theme.formFactor.input).toBe('touch')
-    expect(result.current.control).toEqual(controlPoints('touch', 1))
-    expect(result.current.theme.u).toBe(1)
-  })
-
-  test('`tv` is the TV, scaled by its unit', () => {
-    const { result } = renderHook(read, { wrapper: provider({ platform: 'tv' }) })
-    expect(result.current.formFactor).toBe(FORM_FACTORS.tv)
-    expect(result.current.theme.u).toBe(tvUnit(1280))
-    expect(result.current.control).toEqual(controlPoints('tv', tvUnit(1280)))
-  })
-
-  test('left out on a phone is touch, as its old default `mobile` was', () => {
+describe('without a form factor', () => {
+  test('left out on a phone is touch', () => {
     platform.OS = 'ios'
     size = { ...size, width: 390 }
     const { result } = renderHook(read, { wrapper: provider() })

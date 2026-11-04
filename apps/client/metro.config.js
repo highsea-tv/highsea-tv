@@ -7,8 +7,7 @@
 // 1. react-native from the app, on every platform. @highsea-tv/ui keeps its own react-native for its
 //    tests, and Bun's isolated installs give each peer set its own copy, so ui's components and the
 //    app would load two (https://docs.expo.dev/guides/monorepos/#duplicate-native-packages-within-monorepos):
-//    "Tried to register two views with the same name RCTText". apps/mobile and apps/tv have the
-//    same rule. On the web, Expo then aliases it to react-native-web, from the app too.
+//    "Tried to register two views with the same name RCTText". On the web, Expo then aliases it to react-native-web, from the app too.
 //
 // 2. On the web, one React. The monorepo guide's "duplicate React versions in a single app will
 //    cause runtime errors" holds there as well, and @highsea-tv/ui keeps React 19.3.1 for its own

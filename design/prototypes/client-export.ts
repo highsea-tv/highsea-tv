@@ -18,13 +18,15 @@
 // made in a folder of its own and renamed into place, so a run that fails leaves the last export
 // served (or the 503 below) and two runs at once never write into one folder
 // (apps/client/scripts/export-mock.ts).
-// HIGHSEA_CLIENT_EXPORT=0 serves whatever is there.
+// HIGHSEA_CLIENT_EXPORT=0 serves whatever is there. Beside it, at /web/mock-media/, the clip the
+// mock plays every film as (./mock-media.ts).
 import { spawnSync } from 'node:child_process'
 import { createReadStream, existsSync, readFileSync, statSync } from 'node:fs'
 import type { ServerResponse } from 'node:http'
 import { extname, join, normalize, sep } from 'node:path'
 import type { Connect, Plugin } from 'vite'
 import { inputsStamp, ROOT, STAMP_FILE } from '../../apps/client/scripts/stamp.ts'
+import { ensureMockMedia, mockMediaMiddleware } from './mock-media.ts'
 
 export { inputsStamp }
 
@@ -136,12 +138,17 @@ export function clientExport(): Plugin {
     name: 'highsea:client-export',
     buildStart() {
       ensureClientExport((m) => this.info(m))
+      ensureMockMedia((m) => this.info(m))
     },
     configureServer(server) {
+      ensureMockMedia()
+      server.middlewares.use(mockMediaMiddleware)
       server.middlewares.use(clientMiddleware)
     },
     configurePreviewServer(server) {
       ensureClientExport()
+      ensureMockMedia()
+      server.middlewares.use(mockMediaMiddleware)
       server.middlewares.use(clientMiddleware)
     },
   }

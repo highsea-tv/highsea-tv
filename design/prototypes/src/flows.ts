@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Every flow in the Phase 2 plan (docs/plans/phase-2-prototypes.md › flows): where it lives, which
 // platforms it covers and which checkpoint builds it. The launcher and the toolbar read this.
+import { SEED } from '@highsea-tv/mock/films'
 import type { Platform } from './proto/state.ts'
 
 export type Flow = {
@@ -405,7 +406,7 @@ export const flows: Flow[] = [
   client(
     'C4',
     'Item detail',
-    '/movies/4',
+    `/movies/${SEED.film.id}`,
     ['web', 'mobile', 'tv'],
     3,
     'Hero, play or resume, versions, cast, related, subtitle and audio defaults.',
@@ -420,7 +421,7 @@ export const flows: Flow[] = [
   client(
     'C5',
     'Player chrome',
-    '/play/4',
+    `/play/${SEED.film.id}`,
     ['web', 'mobile', 'tv'],
     3,
     'Scrubber, track and subtitle pickers, the subtitle offset nudge, the remote mapping.',

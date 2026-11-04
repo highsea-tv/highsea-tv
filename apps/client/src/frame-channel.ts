@@ -7,13 +7,34 @@
 // and in mock mode the address's toolbar states stand in for the chrome's (`mock.query`).
 // A real build, or the phone and the TV, never listens: without mock mode `mock` is undefined, and
 // the hook gives the `?ff=` setting alone.
+import type { FrameState } from '@highsea-tv/mock/frame'
 import type { ThemeId } from '@highsea-tv/mock/state'
 import type { FormFactorSetting } from '@highsea-tv/tokens'
 import { router, usePathname } from 'expo-router'
-import { useEffect, useRef, useState } from 'react'
+import { createContext, useContext, useEffect, useRef, useState } from 'react'
 import { formFactorOverride } from './form-factor'
 import { settingOf } from './frame.ts'
 import { mock } from './transport.ts'
+
+/**
+ * The toolbar's states that screens draw by in mock mode: the desktop app (`app`, `os`, `update`;
+ * desktop-app.md), the phone's Downloads (`downloads`) and its player on an AirPlay screen
+ * (`airplay`, player.md). From the address at first
+ * (`mock.query`), then the chrome's state. Every field is undefined outside mock mode.
+ */
+export type FrameToolbar = Partial<
+  Pick<FrameState, 'app' | 'os' | 'update' | 'downloads' | 'airplay'>
+>
+
+const TOOLBAR_KEYS = ['app', 'os', 'update', 'downloads', 'airplay'] as const
+
+const toolbarOf = (state: Partial<FrameState> | undefined): FrameToolbar => ({
+  app: state?.app,
+  os: state?.os,
+  update: state?.update,
+  downloads: state?.downloads,
+  airplay: state?.airplay,
+})
 
 export type FrameChannel = {
   /** What ThemeProvider's `formFactor` takes: the frame's input, or `?ff=`'s, or nothing. */
@@ -26,7 +47,18 @@ export type FrameChannel = {
   reducedMotion: boolean | undefined
   /** Inside the prototypes' chrome, in mock mode. */
   framed: boolean
+  /** The toolbar's states screens draw by (useFrameState); all undefined outside mock mode. */
+  toolbar: FrameToolbar
 }
+
+/** The root layout provides the channel's toolbar (src/app/_layout.tsx), beside FramedTheme. */
+export const FrameStateContext = createContext<FrameToolbar>({})
+
+/**
+ * The toolbar's states in mock mode, for screens and host hooks (host.web.ts's useDesktopApp):
+ * every field undefined in a real build, so a screen falls back to the device's own answer.
+ */
+export const useFrameState = (): FrameToolbar => useContext(FrameStateContext)
 
 /** Simulated seconds per real second for the toolbar's time, as the prototypes run the mock. */
 const SPEEDS = { play: 1, pause: 0, fast: 10 } as const
@@ -49,6 +81,7 @@ export function useFrameChannel(): FrameChannel {
     // off is no choice: the OS's setting stands (ThemeProvider reads it when this is undefined)
     reducedMotion: mock?.query.reducedMotion || undefined,
     framed: false,
+    toolbar: toolbarOf(mock?.query),
   }))
   const link = useRef<{ route(path: string): void } | null>(null)
   const route = useRef(pathname)
@@ -73,10 +106,23 @@ export function useFrameChannel(): FrameChannel {
           fontScale: state.largeText ? 2 : undefined,
           reducedMotion: state.reducedMotion || undefined,
           framed: true,
+          toolbar: toolbarOf(state),
         }
-        setChannel((c) =>
-          (Object.keys(next) as (keyof FrameChannel)[]).every((k) => c[k] === next[k]) ? c : next,
-        )
+        setChannel((c) => {
+          const same =
+            (Object.keys(next) as (keyof FrameChannel)[]).every(
+              (k) => k === 'toolbar' || c[k] === next[k],
+            ) && TOOLBAR_KEYS.every((k) => c.toolbar[k] === next.toolbar[k])
+          // the same toolbar keeps its object, so the context's readers don't render again
+          return same
+            ? c
+            : {
+                ...next,
+                toolbar: TOOLBAR_KEYS.every((k) => c.toolbar[k] === next.toolbar[k])
+                  ? c.toolbar
+                  : next.toolbar,
+              }
+        })
       },
       onNavigate: (path) => {
         if (path !== route.current) router.navigate(path as never)

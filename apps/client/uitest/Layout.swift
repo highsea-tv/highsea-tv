@@ -130,6 +130,7 @@ final class Layout: XCTestCase {
     // B1's destinations, each opened by the client's link (XCUIApplication.open, iOS and tvOS
     // 16.4: https://developer.apple.com/documentation/xcuiautomation/xcuiapplication/open(_:)),
     // as layout.ts's STEPS has them: the screen, its link, and the names it must show first
+    var scheme: String?
     for step in try steps() {
       guard let url = URL(string: step.url) else {
         throw LayoutFailure(description: "\(step.url) isn't a link")
@@ -138,15 +139,33 @@ final class Layout: XCTestCase {
       try arrive(step)
       // the page's entrance and its images, which no element says are done
       Thread.sleep(forTimeInterval: 2)
+      if let settle = step.settle, settle > 0 { Thread.sleep(forTimeInterval: settle / 1000) }
       try capture(step.screen)
+      scheme = url.scheme
     }
     if last != "settings" { return }
-
     let title = element(
       NSPredicate(
         format: "label == 'Settings' AND elementType == %d",
         XCUIElement.ElementType.staticText.rawValue))
-    try open(settings, until: title, "Settings")
+    if let scheme, let link = URL(string: "\(scheme):///settings") {
+      // after the steps, by the client's own link: the player and Connect a device draw over the
+      // shell, so You can't be tapped. A link opened over the player doesn't leave it (B2's gate
+      // report), so the phone leaves it first by its own Back to details
+      #if !os(tvOS)
+        let show = app.buttons["Show controls"]
+        if show.exists {
+          show.tap()
+          let leave = app.buttons["Back to details"]
+          if leave.waitForExistence(timeout: 5) { leave.tap() }
+          Thread.sleep(forTimeInterval: 2)
+        }
+      #endif
+      app.open(link)
+      XCTAssert(title.waitForExistence(timeout: 20), "Settings never opened from its link")
+    } else {
+      try open(settings, until: title, "Settings")
+    }
     // the page transition, as for the sign-in
     Thread.sleep(forTimeInterval: 2)
     try capture("settings")
@@ -213,6 +232,8 @@ final class Layout: XCTestCase {
     let url: String
     /** Regular expressions over a label as layout.ts's normalizeName leaves it. */
     let anchors: [String]
+    /** Milliseconds more after the anchors, for what no anchor says (layout.ts's settleFor). */
+    let settle: Double?
   }
 
   /** STEPS, a JSON array of layout.ts's steps for this device, in order; none without it. */

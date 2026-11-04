@@ -3,22 +3,21 @@
 // renderer by the `react-native` condition, so each app's bundle carries only its own.
 // - The web client's build (apps/web/dist, after `bun run --filter @highsea-tv/web build`) has no
 //   React Native and none of the library's native renderer.
-// - The phone's and the TV's bundles (Metro, through `expo export:embed`; the TV's with EXPO_TV=1
-//   on react-native-tvos) have none of the web renderer: no tailwind-merge, no react-dom and no
-//   `ui/src/web`, nor the spatial focus engine, which only a browser's TV focus uses.
-// - The one client (apps/client, one-client-platform.md › A) in its three bundles: the web's
-//   export (`export:web`, with source maps) draws with the native renderer through
-//   react-native-web, so it has no React Native itself and none of the DOM renderer; its iPhone
-//   and Apple TV bundles hold the phone's rule. Each takes its own side of a platform pair
-//   (apps/client/README.md › Platform files): the web no native side, the others no `.web` file.
+// - The one client (apps/client, ADR 0061) in its three bundles. Its iPhone and Apple TV bundles
+//   (Metro, through `expo export:embed`; the TV's with EXPO_TV=1 on react-native-tvos) have none of
+//   the web renderer: no tailwind-merge, no react-dom and no `ui/src/web`, nor the spatial focus
+//   engine, which only a browser's TV focus uses. Its web export (`export:web`, with source maps)
+//   draws with the native renderer through react-native-web, so it has no React Native itself and
+//   none of the DOM renderer. Each takes its own side of a platform pair (apps/client/README.md ›
+//   Platform files): the web no native side, the others no `.web` file.
 // - hls.js (the web's player engine, @highsea-tv/native/playback.web.ts) is in the web's builds as
 //   a chunk of its own, loaded only when a stream needs it, and never in the entry the page loads
 //   first; in apps/web always, in the client's web export once the web engine is in it. The
-//   phone's and the TV's bundles never carry it.
+//   client's phone and TV bundles never carry it.
 // No bundle built without mock mode (EXPO_PUBLIC_HIGHSEA_MOCK) carries the prototypes' mock.
-// `bun scripts/bundles.ts [web] [phone] [tv] [client-web] [client-phone] [client-tv]` checks the
-// ones named, or the first three. CI runs it after the builds for web, phone and tv; the client's
-// three run locally until one-client-platform.md's part C puts them in CI.
+// `bun scripts/bundles.ts [web] [client-phone] [client-tv] [client-web]` checks the ones named, or
+// the first three. CI runs it for web (ci.yml) and for client-phone and client-tv (native.yml); the
+// client's web export runs locally until one-client-platform.md's part C puts it in CI.
 import { spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readdirSync, readFileSync, statSync } from 'node:fs'
 import { join } from 'node:path'
@@ -88,8 +87,6 @@ const PAIRS = pairs()
 /** What a bundle must not contain, with why. */
 export const FORBIDDEN = {
   web: [REACT_NATIVE, ['the native renderer', /packages\/ui\/src\/native\//], ...NO_MOCK],
-  phone: NATIVE,
-  tv: NATIVE,
   'client-web': [
     REACT_NATIVE_ITSELF,
     ['the web renderer', /packages\/ui\/src\/web\//],
@@ -192,7 +189,7 @@ function clientWeb() {
   return [...offences('client-web', all), ...hlsOffences(entry, all, engine)]
 }
 
-type NativeKind = 'phone' | 'tv' | 'client-phone' | 'client-tv'
+type NativeKind = 'client-phone' | 'client-tv'
 
 /** A React Native app's iOS bundle, built into .dev/bundles/<kind> and checked. */
 function native(kind: NativeKind, app: string, env: Record<string, string> = {}) {
@@ -228,8 +225,6 @@ function native(kind: NativeKind, app: string, env: Record<string, string> = {})
 
 const BUILDS: Record<string, () => string[]> = {
   web,
-  phone: () => native('phone', 'apps/mobile'),
-  tv: () => native('tv', 'apps/tv', { EXPO_TV: '1' }),
   'client-web': clientWeb,
   'client-phone': () => native('client-phone', 'apps/client'),
   'client-tv': () => native('client-tv', 'apps/client', { EXPO_TV: '1' }),
@@ -237,7 +232,7 @@ const BUILDS: Record<string, () => string[]> = {
 
 if (import.meta.main) {
   const asked = process.argv.slice(2)
-  const kinds = asked.length ? asked : ['web', 'phone', 'tv']
+  const kinds = asked.length ? asked : ['web', 'client-phone', 'client-tv']
   let failed = false
   for (const kind of kinds) {
     const found = BUILDS[kind]?.() ?? [`no bundle named ${kind}`]

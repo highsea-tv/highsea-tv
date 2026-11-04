@@ -12,7 +12,7 @@
     "lint": "biome check .",
     "format": "biome format --write .",
     "typecheck": "bun run --filter '*' typecheck && tsc -p scripts/tsconfig.json",
-    "test": "bun test --isolate && bun run --filter @highsea-tv/mobile test && bun run --filter @highsea-tv/app test",
+    "test": "bun test --isolate && bun run --filter @highsea-tv/app test",
     "smoke": "node scripts/check-node.ts && node apps/server/scripts/smoke.ts",
     "check:node": "node scripts/check-node.ts",
     "explorations": "bunx serve design/explorations -l 4400",

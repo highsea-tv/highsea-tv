@@ -45,8 +45,6 @@ const SCREENS = 'apps/client/src/app'
 /** Where client files are drawn today besides apps/client. Each passes only as a listed exception. */
 const OTHER_SCREENS = [
   'apps/web/src',
-  'apps/mobile/src/app',
-  'apps/tv/src/app',
   'design/prototypes/src/web',
   'design/prototypes/src/mobile',
   'design/prototypes/src/tv',

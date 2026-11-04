@@ -2,8 +2,8 @@
 // The gate every client opens on (connectivity.md, one-client-platform.md › A): Choose a server,
 // signing in, and forgetting a server. What the phone's, the TV's and the web's screens share
 // besides drawing: the addresses to try for what someone typed, how an address is shown, single
-// sign-on's start and its reasons, the TV's pairing link, and the words, one catalog per step,
-// which apps/mobile and apps/tv take from here too. Pure.
+// sign-on's start and its reasons, the TV's pairing link, and the words, one catalog per step.
+// Pure.
 import { defineMessages } from '@highsea-tv/i18n'
 import type { Address } from '@highsea-tv/sdk'
 import { normalize } from '../servers/index.ts'

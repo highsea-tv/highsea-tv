@@ -26,7 +26,18 @@ export const CLIENT_ROUTES = [
   '/collections',
   '/search',
   '/alerts',
+  // B2's account: Connect a device and Profile
+  '/link',
+  '/profile',
+  // B2's downloads: the phone's Offline, and Downloads on the web and in the desktop app
+  '/offline',
+  '/downloads',
+  // B2's player, for films: an episode's stays the prototype's until B3 (EPISODE_PLAY)
+  '/play',
 ] as const
+
+/** An episode's player (`/play/<show>-s1e2`), which stays the prototype's until B3 moves shows. */
+const EPISODE_PLAY = /^\/play\/[^/]+-s\d+e\d+(\/|$)/
 
 /**
  * The client's routes held only as they are, since what's under them moves later: Home, and the
@@ -40,6 +51,8 @@ export const CLIENT_EXACT = ['/', '/library'] as const
  */
 const CLIENT_ALIASES: Record<string, string> = {
   '/library/collections': '/library?view=collections',
+  // the phone's You is the client's Settings, its account above the list (B2); /you/who is B3's
+  '/you': '/settings',
 }
 
 export type ClientPlatform = Exclude<Platform, 'admin'>
@@ -91,7 +104,7 @@ export function clientPathOf(path: string): string | null {
  */
 export function heldByClient(path: string): boolean {
   const rest = clientPathOf(path)?.split('?')[0]
-  if (rest === undefined) return false
+  if (rest === undefined || EPISODE_PLAY.test(rest)) return false
   return (
     (CLIENT_EXACT as readonly string[]).includes(rest) ||
     CLIENT_ROUTES.some((r) => rest === r || rest.startsWith(`${r}/`))

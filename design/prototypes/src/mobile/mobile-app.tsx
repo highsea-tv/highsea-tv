@@ -9,10 +9,9 @@ import { SeedMusic } from '../client/music-player.ts'
 import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { MobileAlbum } from './album.tsx'
 import { MobileArtist } from './artist.tsx'
-import { MobileOffline, MobileYou } from './more.tsx'
+import { MobileYou } from './more.tsx'
 import { MobileMusic } from './music.tsx'
 import { MobileNowPlaying } from './now-playing.tsx'
-import { MobileLinkConfirm, MobileLinkScan } from './pair.tsx'
 import { MobilePlayer } from './player.tsx'
 import { MobilePlaylist } from './playlist.tsx'
 import { MobileShell } from './shell.tsx'
@@ -32,12 +31,6 @@ export function MobileApp() {
 function Routes() {
   return (
     <Switch>
-      <Route path="/link">
-        <MobileLinkScan />
-      </Route>
-      <Route path="/link/:code">
-        <MobileLinkConfirm />
-      </Route>
       <Route path="/now-playing">
         <MobileNowPlaying />
       </Route>
@@ -102,16 +95,6 @@ function Routes() {
       <Route path="/music/artists/:id">
         <MobileShell>
           <MobileArtist />
-        </MobileShell>
-      </Route>
-      <Route path="/offline">
-        <MobileShell>
-          <MobileOffline />
-        </MobileShell>
-      </Route>
-      <Route path="/you">
-        <MobileShell>
-          <MobileYou />
         </MobileShell>
       </Route>
       <Route path="/you/who">

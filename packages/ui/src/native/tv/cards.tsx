@@ -3,7 +3,7 @@
 // a held OK opens (Continue watching's, as the Apple TV app's), a question before something that
 // can't be taken back, and a notice that must be acknowledged. Each takes its words, artwork and
 // actions as props, so any app on the TV's rule can draw them. The featured card is FeaturedCard's
-// TV form now (../featured-card.tsx), TvFeaturedCard its old name (./aliases.ts).
+// TV form now (../featured-card.tsx).
 import { Image } from 'expo-image'
 import type { Ref } from 'react'
 import { StyleSheet, View } from 'react-native'

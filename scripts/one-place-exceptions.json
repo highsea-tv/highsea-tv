@@ -51,29 +51,15 @@
     },
     {
       "rule": "screens",
-      "path": "apps/mobile/src/app/**",
-      "count": 17,
-      "until": "B",
-      "reason": "The iPhone app's screens. Part B moves each into apps/client and removes apps/mobile."
-    },
-    {
-      "rule": "screens",
-      "path": "apps/tv/src/app/**",
-      "count": 12,
-      "until": "B",
-      "reason": "The TV app's screens. Part B moves each into apps/client and removes apps/tv."
-    },
-    {
-      "rule": "screens",
       "path": "design/prototypes/src/web/**",
-      "count": 21,
+      "count": 18,
       "until": "B",
       "reason": "The web client's prototype screens. Part B moves each into apps/client, which the prototypes then run in their frames against the mock, and removes the folder."
     },
     {
       "rule": "screens",
       "path": "design/prototypes/src/mobile/**",
-      "count": 21,
+      "count": 20,
       "until": "B",
       "reason": "The phone's prototype screens. Part B moves each into apps/client, which the prototypes then run in their frames against the mock, and removes the folder."
     },
@@ -87,7 +73,7 @@
     {
       "rule": "screens",
       "path": "design/prototypes/src/client/**",
-      "count": 14,
+      "count": 13,
       "until": "B",
       "reason": "What the prototypes' web, phone and TV screens share: the continue menu, downloads, pairing and the rest the C2 to C8 screens draw. Their logic moves into @highsea-tv/client and their drawing into apps/client, and part B removes the folder."
     },
@@ -125,6 +111,55 @@
       "count": 1,
       "until": "E",
       "reason": "The dark glass over artwork (rgba(11,11,12,0.62)), Badge's overlay pill's and StillFrame's note's, from the prototype's glass-badge, moved out of badge.tsx (where it was excused) on 2026-11-03 so the two share it. It has no token. A new token value needs the owner's approval; part E removes this entry once it has one."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/desktop/window.tsx",
+      "count": 14,
+      "until": "E",
+      "reason": "The desktop app's window chrome stands in for the operating systems' own, as the prototype's web/window.tsx does: Windows' 46-wide caption buttons and its Close red (#c42b1c with a white glyph), macOS's three button colours, the caption glyphs' 10 box, 5 middle, 14 stroke and -2 overhang, and the title bar's 14 mark. They are the systems' measures, not highsea's, so they have no token; part E gives them tokens if the owner wants them in the design language."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/player/parts.tsx",
+      "count": 57,
+      "until": "E",
+      "reason": "The player's own measures from the prototype's players (web/player.tsx, mobile/player.tsx and tv/player.tsx), moved in B2 with its spaces and icon sizes on the scales: the round controls' 44 and 22 icon and the flipped replay, the scrubber's 4 track, 14 and 20 thumbs and the trickplay preview's 160, the scrims over the film (0.72 and 0.6 black, the glass's 0.62), Next up's and the message's widths and their 1 borders, and the TV's forms of the same in screen units. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/player/pointer.tsx",
+      "count": 24,
+      "until": "E",
+      "reason": "The player's own measures from the prototype's players (web/player.tsx, mobile/player.tsx and tv/player.tsx), moved in B2 with its spaces and icon sizes on the scales: the volume's 80 by 6 track, the big Play's 80 circle and 34 icon, the 0.7 and 0.75 black gradients, the panel's 352 width and 1 border, and the black behind the film. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/player/touch.tsx",
+      "count": 21,
+      "until": "E",
+      "reason": "The player's own measures from the prototype's players (web/player.tsx, mobile/player.tsx and tv/player.tsx), moved in B2 with its spaces and icon sizes on the scales: the 56 and 72 transport circles with their 28 and 36 icons, the 0.45 scrim, the times' 12 type in the 0.8 white, the title's 17, the cue's 84 and 24 lift, the safe area's 12 and 16 floors, and the black behind the film. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/player/tv.tsx",
+      "count": 55,
+      "until": "E",
+      "reason": "The player's own measures from the prototype's players (web/player.tsx, mobile/player.tsx and tv/player.tsx), moved in B2 with its spaces and icon sizes on the scales: the TV player's measures in screen units: the scrubber's 0.8 to 1.6 track, 1.4 thumb and the trickplay's 14 preview, the legend's and the pills' gaps, the 0.7 and 0.8 black scrims, the timing row's 46 and 30 widths, and the black behind the film. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/player/picture.tsx",
+      "count": 4,
+      "until": "E",
+      "reason": "The player's own measures from the prototype's players (web/player.tsx, mobile/player.tsx and tv/player.tsx), moved in B2 with its spaces and icon sizes on the scales: the AirPlay picker's 44 box and 28 button, iOS's own. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/player/picture.web.tsx",
+      "count": 2,
+      "until": "E",
+      "reason": "The player's own measures from the prototype's players (web/player.tsx, mobile/player.tsx and tv/player.tsx), moved in B2 with its spaces and icon sizes on the scales: the browser's subtitle colours (the text's #ededee on 0.6 black), set in ::cue. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
     },
     {
       "rule": "values",

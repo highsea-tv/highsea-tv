@@ -190,7 +190,7 @@ export const NATIVE_ONLY: Record<string, string> = {
     'A library’s A to Z index: iOS’s section index by touch, a column of letter buttons with a pointer, the remote’s rail on the TV.',
   TvKey: 'A key on the TV’s on-screen keyboard; the web has the device’s keyboard.',
   TvMessage: 'A message that fills the TV’s screen with its actions.',
-  StopScope: 'Names the TV’s focus stops for the D-pad walk (apps/tv/uitest).',
+  StopScope: 'Names the TV’s focus stops for the D-pad walk (scripts/sweeps/tv.ts).',
   Focusable:
     'A TV focus stop, drawn once: tvOS’s and Android TV’s focus engines move it, and in a browser the spatial focus engine (tv/engine.web.tsx); the web renderer’s screens mark their stops for the prototype’s.',
   // the values a screen lays out beside the parts by; the web renderer's pages have them as classes
@@ -214,13 +214,6 @@ export const NATIVE_ONLY: Record<string, string> = {
   TRACK_SPRING: 'The TV row’s scroll spring as focus moves.',
   WIDE_WIDTH: 'The TV’s wide tile, in screen units.',
   TvTile: 'Poster’s TV form, a focus stop with its lift and ring, which Poster draws on the TV.',
-  // the old names of parts now drawn at every form factor (tv/aliases.ts), for apps/tv, frozen
-  TvRow: 'Row’s old name, for apps/tv, until B2.',
-  TvFilmRow: 'FilmRow’s old name, for apps/tv, until B2.',
-  TvRoundAction: 'NamedAction’s old name, for apps/tv, until B2.',
-  TvPersonTile: 'PersonTile’s old name, for apps/tv, until B2.',
-  TvInfoCard: 'FactsCard’s old name, for apps/tv, until B2.',
-  TvLetterRail: 'LetterIndex’s old name, for apps/tv, until B2.',
   // the TV's pages, on the TV's rule (tv.md); the web's screens draw theirs from the DOM's layout
   TvHead: 'The TV’s head of destinations, Alerts and the account; the web has its top bar.',
   TvHeadStop: 'One of the TV head’s focus stops.',
@@ -229,12 +222,9 @@ export const NATIVE_ONLY: Record<string, string> = {
   TvGrid: 'A TV grid of tiles that keeps its column as focus moves between rows.',
   TvWords: 'A TV page’s heading and words over its first row.',
   TvAmbient: 'The TV page’s blurred backdrop from the focused art; the web has none.',
-  TvFeaturedCard: 'FeaturedCard’s old name, for apps/tv, until B2.',
   TvMenu:
     'Menu’s TV form, a menu over the page that keeps focus inside it until Back, which Menu draws on the TV and a TV screen may draw on its own.',
   TvConfirm: 'A TV confirmation with Cancel first and focus kept in it; the web has Dialog.',
-  TvNoticeCard: 'NoticeCard’s old name, for apps/tv, until B2.',
-  TvBackdrop: 'TitleBackdrop’s old name, for apps/tv, until B2.',
   FeaturedCard:
     'Home’s featured card at every form factor: a 4:5 card by touch, a banner with its actions and Pager with a pointer, a focus stop that lifts slightly on the TV. The web renderer’s BackdropHero is apps/web’s until part C.',
   Bloom:

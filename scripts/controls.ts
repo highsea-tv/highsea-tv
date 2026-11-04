@@ -23,8 +23,8 @@ export const WEB_DIRS = [
   'apps/docs/components',
   'design/prototypes/src',
 ]
-// apps/client is the one client (one-client-platform.md); a folder that isn't there yet is skipped
-export const NATIVE_DIRS = ['apps/client/src', 'apps/mobile/src', 'apps/tv/src']
+// apps/client is the one client (one-client-platform.md), on the phone, the TV and the web
+export const NATIVE_DIRS = ['apps/client/src']
 
 /** The library's controls (tokens' CONTROLS, and the names screens use for them). */
 const LIBRARY_CONTROLS = [

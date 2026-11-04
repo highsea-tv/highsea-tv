@@ -39,7 +39,17 @@ export type AppUpdate = 'none' | 'ready'
 export const LANS = ['allowed', 'asking', 'refused'] as const
 export type LocalNetwork = (typeof LANS)[number]
 /** The phone's player sent to an AirPlay screen (checkpoint 4.5a), or playing on the phone. */
-export type AirPlay = 'off' | 'on'
+export const AIRPLAYS = ['off', 'on'] as const
+export type AirPlay = (typeof AIRPLAYS)[number]
+/** The player's stream states, as `@highsea-tv/client/player`'s StreamState lists them. */
+export const STREAMS = [
+  'normal',
+  'preparing',
+  'buffering',
+  'failed',
+  'stopped',
+  'next-up',
+] as const satisfies readonly StreamState[]
 /** Downloads on the phone: built (4.6), or not yet, as the app has them until then (4.5a). */
 export type PhoneDownloads = 'built' | 'later'
 /**

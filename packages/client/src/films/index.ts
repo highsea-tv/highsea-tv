@@ -3,8 +3,8 @@
 // and its hero, a card's title and caption, the A–Z index's letters, the film page's picks of
 // version, audio and subtitles, its quality and lead line, a person's header, Search's kinds and
 // quick picks, a collection tile's label, the words after Mark as watched, and an announcement's
-// tone. Until B1 each app and the prototype had its own copy (apps/web, apps/mobile, apps/tv and
-// design/prototypes/src/client). Pure functions, in i18n catalogs (ADR 0021).
+// tone. Until B1 each app and the prototype had its own copy (apps/web, the phone and TV apps,
+// and design/prototypes/src/client). Pure functions, in i18n catalogs (ADR 0021).
 import { createT, defineMessages } from '@highsea-tv/i18n'
 import { createFormat } from '../format/index.ts'
 import { letterOf, libraryMessages } from '../library/index.ts'

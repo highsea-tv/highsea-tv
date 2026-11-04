@@ -30,5 +30,11 @@ export const useDeviceInput = (): (() => DeviceInput | undefined) => deviceInput
  */
 export const useKeepsServers = () => true
 
-/** The desktop app's system, for About's "for macOS"; none outside the desktop app. */
+/** The desktop app's system, for About's "for Mac"; none outside the desktop app. */
 export const useDesktopOs = (): string | undefined => undefined
+
+/**
+ * Whether the client runs inside the desktop app, so its host compositions draw (the window's
+ * chrome, Kept in, an update waiting; desktop-app.md): never on the phone or the TV.
+ */
+export const useDesktopApp = (): boolean => false

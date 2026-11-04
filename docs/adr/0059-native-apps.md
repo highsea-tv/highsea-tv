@@ -78,3 +78,7 @@ Two platform behaviours carried over from `apps/tv`:
 - **expo-web-browser stays off tvOS.** It has no tvOS module ([Expo › WebBrowser](https://docs.expo.dev/versions/latest/sdk/webbrowser/)), and loading it there fails with a missing native module. So the TV's build leaves its config plugin out, and `apps/client/src/browser.ts` loads it only off the TV. The TV signs in from the phone, by code, and never needs a browser.
 
 The phone's and the TV's tests in `apps/client` run in Jest with `jest-expo`, as `apps/mobile`'s do. Its iPhone and Apple TV mock builds are captured by an XCUITest, `apps/client/uitest`, generated with XcodeGen as the TV's D-pad walk is, for the layout check.
+
+## 2026-11-04: `apps/mobile` and `apps/tv` removed (one client platform, part B2)
+
+With B2, `apps/client` builds the phone and the TV with every films screen, so the two apps are removed ([ADR 0061](0061-one-client-platform.md)'s 2026-11-04 section). `native.yml` builds `apps/client` for iOS and tvOS. Maestro's flow moved to `apps/client/.maestro/`, and the TV's D-pad walk to `apps/client/dpad-walk` (its own XcodeGen project beside the layout check's `uitest/`), launching `tv.highsea.client.tv`. The licence audit reads the pods from `apps/client/ios`, which holds the iPhone's project or the Apple TV's after `prebuild:tv`.

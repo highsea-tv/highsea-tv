@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Checkpoint 3 flows, walked as a user would (connecting and signing in are apps/client's):
-// acknowledge the owner's announcement and use the home; browse the library; open a title and
-// play it, with the player's tracks and subtitle nudge; and the connectivity states. The TV's D-pad moves need real
+// acknowledge the owner's announcement and use the home; browse the library; and the connectivity
+// states (the player is apps/client's: its test/player.jest.tsx and player-tv.jest.tsx). The TV's D-pad moves need real
 // layout, so they're walked in a browser before each checkpoint; here the TV screens are checked
 // for their content and their actions.
 import './dom.ts'
@@ -103,35 +103,6 @@ describe('C3 library', () => {
       .getAllByRole('link')
       .find((a) => a.getAttribute('href')?.startsWith('#/tv/shows/'))
     expect(show).toBeTruthy()
-    await clean()
-  })
-})
-
-describe('C5 player', () => {
-  test('web: resumes, pauses, and the subtitle nudge saves for the title', async () => {
-    const { mock, user } = await open('/web/play/4')
-    // Tears of Steel was 35% through: 4:12 of 12:00
-    expect(page().getByRole('slider', { name: 'Position' }).getAttribute('aria-valuetext')).toBe(
-      '4:12 of 12:00',
-    )
-    await user.click(page().getByRole('button', { name: 'Pause' }))
-    expect(page().getByRole('button', { name: 'Play' })).toBeTruthy()
-    await user.click(page().getByRole('button', { name: 'Audio and subtitles' }))
-    const panel = page().getByRole('complementary', { name: 'Audio and subtitles' })
-    await user.click(within(panel).getByRole('radio', { name: 'English' }))
-    await user.click(within(panel).getByRole('button', { name: 'Show subtitles 50 ms later' }))
-    await user.click(within(panel).getByRole('button', { name: 'Show subtitles 50 ms later' }))
-    expect(within(panel).getByText('+100 ms')).toBeTruthy()
-    expect(page().getByText('I didn’t think anyone would find this place.')).toBeTruthy()
-    await settle()
-    expect(mock.servers.populated.state.prefs['u-ines:4']).toMatchObject({ subtitleOffsetMs: 100 })
-    await clean()
-  })
-
-  test('TV: the scrubber, the mapping legend and the tracks', async () => {
-    await open('/tv/play/4')
-    expect(page().getByRole('slider', { name: 'Position' })).toBeTruthy()
-    expect(page().getByText('◀ ▶ Seek 10 s')).toBeTruthy()
     await clean()
   })
 })

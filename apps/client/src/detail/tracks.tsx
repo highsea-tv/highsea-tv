@@ -3,7 +3,7 @@
 // on the server for every device) through @highsea-tv/client/films' picksOf, drawn two ways:
 // - WatchWith, touch's and a pointer's (the prototype's web/detail.tsx WatchWith, compact): a field
 //   for each, the version's detail in place of a menu when there's only one to play;
-// - TvTracks, the TV's (the prototype's tv/tracks.tsx, ported from apps/tv/src/tracks.tsx): a
+// - TvTracks, the TV's (the prototype's tv/tracks.tsx): a
 //   dialog at the right of the screen (@highsea-tv/ui/tv's TvSideDialog) that keeps focus inside it
 //   until Back closes it, taking focus on its first option as it opens.
 // A new version has its own tracks, so picking one clears the audio and subtitle picked for the
@@ -154,10 +154,13 @@ export function WatchWithFields({ w }: { w: WatchWith }) {
 export function TvTracks({
   w,
   onClose,
+  stayOpen = false,
   children,
 }: {
   w: WatchWith
   onClose: () => void
+  /** The player's: picking a subtitle keeps it open, for its timing under the groups. */
+  stayOpen?: boolean
   /** What the player adds under the groups: the subtitle timing. */
   children?: ReactNode
 }) {
@@ -211,7 +214,7 @@ export function TvTracks({
         value={w.subtitleValue}
         onChange={(id) => {
           w.pickSubtitle(id)
-          onClose()
+          if (!stayOpen) onClose()
         }}
         preferred={!several && version.audio.length === 0}
         firstRef={!several && version.audio.length === 0 ? first : undefined}

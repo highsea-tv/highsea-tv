@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A colour at an alpha, shared by every form factor's parts (the TV's re-exports it from
-// ./tv/controls.tsx, where apps/tv imports it).
+// ./tv/controls.tsx).
 
 /** The hex colours it takes: `#rgb`, `#rrggbb`, and either with an alpha of its own, which it replaces. */
 const HEX = /^#(?:[0-9a-f]{3,4}|[0-9a-f]{6}|[0-9a-f]{8})$/i

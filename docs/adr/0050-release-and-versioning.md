@@ -165,3 +165,7 @@ The phone app carries the release's version. Its `app.config.ts` reads `apps/mob
 ## 2026-10-29: the TV app's version (checkpoint 4.5b)
 
 The TV app carries the release's version as the phone does: its `app.config.ts` reads `apps/tv/package.json`, which `scripts/release.ts prepare` sets and `check` reads back. Nothing of it is built or uploaded by the release workflow until the Apple Developer membership and the owner's word ([ADR 0059](0059-native-apps.md)).
+
+## 2026-11-04: the phone's and the TV's version from `apps/client` (one client platform, part B2)
+
+`apps/mobile` and `apps/tv` are removed ([ADR 0061](0061-one-client-platform.md)'s 2026-11-04 section). The phone and the TV now carry the release's version from `apps/client/package.json`, which its `app.config.ts` reads and `scripts/release.ts prepare` already set; `prepare` and `check` no longer touch the two removed apps. Nothing is built or uploaded for them by the release workflow until the Apple Developer membership and the owner's word.

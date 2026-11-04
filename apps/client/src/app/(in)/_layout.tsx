@@ -30,7 +30,6 @@ import { useCurrent } from '@highsea-tv/native/servers'
 import { useMaybeSession, useReachableState } from '@highsea-tv/native/session'
 import { blur, web } from '@highsea-tv/tokens'
 import {
-  Avatar,
   alpha,
   Button,
   EmptyState,
@@ -51,7 +50,9 @@ import { type Href, Redirect, router, Stack, usePathname } from 'expo-router'
 import { type ReactNode, useEffect, useMemo, useRef, useState } from 'react'
 import { Animated, Platform, ScrollView, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { AccountMenu } from '../../account/menu.tsx'
 import { useLeaveOnBack } from '../../back.tsx'
+import { HistoryButtons, useDesktopTopBar } from '../../desktop/window.tsx'
 import { useForget } from '../../forget.tsx'
 import { useKeepsServers } from '../../host'
 import {
@@ -156,7 +157,8 @@ export default function Shell() {
             {content}
             <NoteRegion />
           </View>
-          <TabBar />
+          {/* Connect a device is a step of its own, without the tabs (the prototype's mobile/pair.tsx) */}
+          {isHere('/link', pathname) ? null : <TabBar />}
           {offline ? null : <ShellAnnouncements />}
         </View>
       </Asks>
@@ -393,6 +395,8 @@ function TopBar({ over = false, glass = false }: { over?: boolean; glass?: boole
   // line of their own that scrolls sideways, so nothing wraps or runs past the edge
   const compact = useFormFactor().widthClass === 'compact'
   const gutter = usePageGutter()
+  // the desktop app's drag region and, on a Mac, room for its window buttons (desktop/window.tsx)
+  const desktop = useDesktopTopBar(gutter)
   // a plain browser is its own server's: its name, with no list to switch to
   const keeps = useKeepsServers()
   const clear = over && !glass
@@ -465,7 +469,7 @@ function TopBar({ over = false, glass = false }: { over?: boolean; glass?: boole
   }
   if (compact)
     return (
-      <View style={fill}>
+      <View style={fill} {...desktop.drag}>
         <View
           style={{
             flexDirection: 'row',
@@ -474,6 +478,7 @@ function TopBar({ over = false, glass = false }: { over?: boolean; glass?: boole
             minHeight: TOP_BAR_HEIGHT,
             paddingHorizontal: gutter,
             paddingVertical: space['2'],
+            ...desktop.start,
           }}
         >
           {server}
@@ -533,7 +538,7 @@ function TopBar({ over = false, glass = false }: { over?: boolean; glass?: boole
   // row no wider than the page (max-w-[1680px], mx-auto) inside the page's gutter
   // (`px-4 medium:px-8 wide:px-16`, usePageGutter)
   return (
-    <View style={fill}>
+    <View style={fill} {...desktop.drag}>
       <View
         style={{
           flexDirection: 'row',
@@ -552,8 +557,10 @@ function TopBar({ over = false, glass = false }: { over?: boolean; glass?: boole
           minHeight: TOP_BAR_HEIGHT,
           paddingHorizontal: gutter,
           paddingVertical: space['2'],
+          ...desktop.start,
         }}
       >
+        <HistoryButtons />
         {server}
         <View
           role="navigation"
@@ -616,11 +623,9 @@ function BarLink({ d, pathname }: { d: Destination; pathname: string }) {
   )
 }
 
-/** The top bar's end: Alerts, then the profile. */
+/** The top bar's end: Alerts, then the account menu (../../account/menu.tsx). */
 function BarEnd() {
   const t = useT(shellMessages)
-  const m = useControl()
-  const person = useMaybeSession()?.user.displayName ?? ''
   const fresh = useHereAnnouncements().unread.length
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: space['2'] }}>
@@ -641,14 +646,7 @@ function BarEnd() {
           </View>
         )}
       />
-      <Press
-        onPress={() => go('/settings')}
-        accessibilityRole="button"
-        accessibilityLabel={t('account', { name: person })}
-        style={{ minHeight: m.height, justifyContent: 'center' }}
-      >
-        <Avatar name={person} size={m.height} />
-      </Press>
+      <AccountMenu />
     </View>
   )
 }

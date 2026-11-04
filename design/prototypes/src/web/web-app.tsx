@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The web/desktop client (C2–C8): home, library, item detail, the player, search, the profile
-// and downloads; connect, sign-in and settings are apps/client's (chrome/client.ts). The device's own theme and sound apply over all.
+// The web/desktop client (C2–C8): home, library, item detail, the player, search
+// and downloads; connect, sign-in, settings, Connect a device and the profile are apps/client's (chrome/client.ts). The device's own theme and sound apply over all.
 
 import { Button, EmptyState } from '@highsea-tv/ui'
 import { Route, Switch, useLocation } from 'wouter'
@@ -10,11 +10,9 @@ import { ApplyDevicePrefs } from '../client/prefs.tsx'
 import { WhoPage } from '../client/who.tsx'
 import { WebAlbum } from './album.tsx'
 import { WebArtist } from './artist.tsx'
-import { WebLink, WebLinkConfirm } from './link.tsx'
 import { WebMusic } from './music.tsx'
 import { WebPlayer } from './player.tsx'
 import { WebPlaylist } from './playlist.tsx'
-import { WebDownloads, WebProfile } from './settings.tsx'
 import { WebShell, webHref } from './shell.tsx'
 import { WebShow } from './show.tsx'
 import { WebShows } from './shows.tsx'
@@ -95,27 +93,6 @@ function Routes() {
       <Route path="/music">
         <WebShell>
           <WebMusic view="albums" />
-        </WebShell>
-      </Route>
-      {/* the library's old addresses */}
-      <Route path="/link/:code">
-        <WebShell>
-          <WebLinkConfirm />
-        </WebShell>
-      </Route>
-      <Route path="/link">
-        <WebShell>
-          <WebLink />
-        </WebShell>
-      </Route>
-      <Route path="/profile">
-        <WebShell>
-          <WebProfile />
-        </WebShell>
-      </Route>
-      <Route path="/downloads">
-        <WebShell>
-          <WebDownloads />
         </WebShell>
       </Route>
       <Route>

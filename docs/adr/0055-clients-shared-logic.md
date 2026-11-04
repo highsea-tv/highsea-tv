@@ -93,3 +93,9 @@ Three gaps are left for later:
 - **Languages show as codes on the devices.** Hermes has no `Intl.DisplayNames` ([Hermes' Intl APIs](https://github.com/facebook/hermes/blob/main/doc/IntlAPIs.md)), so `library` and `prefs` fall back to a language's code there ("en"), where the web shows "English".
 
 On 2026-11-03, at B1's review, the third gap closed: language names come from a catalog, `@highsea-tv/i18n/languages`, not `Intl.DisplayNames`, which Hermes doesn't implement ([Hermes' Intl APIs](https://github.com/facebook/hermes/blob/main/doc/IntlAPIs.md) lists what it has, and DisplayNames isn't among them). It names every code the server reports (`@highsea-tv/subtitles/shared`'s `LANGUAGE_CODES`: ISO 639-1 with `pt-BR`, `zh-Hans` and `zh-Hant`) in English, the one locale shipped, as CLDR does through Node's ICU, and `languageName` is the one function `library` and `prefs` use. A regional tag it doesn't list takes its base language's name, and an unknown code shows as itself. Its tests hold the names to `Intl.DisplayNames` and check that the function never calls it.
+
+## 2026-11-04: downloads, and the player's speeds (one client platform, part B2)
+
+B2 added `@highsea-tv/client/downloads`, from the prototype's `client/downloads.ts` and `offline-list.tsx`: the entries, their states and qualities, the sizes, the seeded films, the store with its one-second simulation (timers injectable for tests), `useDownloadsSnapshot`, and the lines the list draws (`readyLine`, `spaceLine`, `stateLine`, `sizeLine`, `groupLine`), with every word in `downloadsMessages`. Shows' and music's sources wait for B3. The store stands in for the device's download engine until 4.6, which gives it the server's copies through `/api/v1/offline`.
+
+`player` gains `SPEEDS` (0.5 to 2), from the prototype's web player; everything else the player decides was already there. `library`'s `playPath` is now `/play/{id}` or `/play/{id}/start`, the client's routes.

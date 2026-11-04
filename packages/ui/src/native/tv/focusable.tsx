@@ -66,7 +66,7 @@ export function focusShadow(text: string, u: number, scale = 1) {
 
 /**
  * Where a stop sits, for its test id: a row names each of its items (`Staff picks/0/`), since the
- * same film can be in several rows under the same label. The D-pad walk (apps/tv/uitest) tells
+ * same film can be in several rows under the same label. The D-pad walk (scripts/sweeps/tv.ts) tells
  * stops apart by these ids, which iOS and tvOS expose as accessibility identifiers.
  */
 export const StopScope = createContext('')

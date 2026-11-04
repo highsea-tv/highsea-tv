@@ -77,7 +77,7 @@ export const cardPage = (c: ContinueCard) =>
 
 /** The player at a title (Play, Resume, Continue watching's cards); `start` plays from the start. */
 export const playPath = (id: string | number, start = false) =>
-  `/play/${id}${start ? '?start=1' : ''}`
+  `/play/${id}${start ? '/start' : ''}`
 
 export const libraryMessages = defineMessages({
   sortByTitle: 'Title',

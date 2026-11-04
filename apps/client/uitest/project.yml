@@ -3,7 +3,7 @@
 # with XcodeGen (https://github.com/yonaskolb/XcodeGen/blob/master/Docs/ProjectSpec.md): two UI
 # testing bundles, one per platform, from one source file. Neither has a target application: the
 # test launches the installed mock-mode client by its bundle identifier
-# (XCUIApplication(bundleIdentifier:)), as apps/tv/uitest does, so the client's generated project
+# (XCUIApplication(bundleIdentifier:)), as apps/client/dpad-walk does, so the client's generated project
 # stays as expo prebuild leaves it.
 name: LayoutCapture
 options:

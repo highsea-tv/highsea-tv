@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // A film's page and a person's words (client-detail.md › States), once for every client: the
-// apps' own copies (apps/web's, apps/mobile's and apps/tv's `detail`, `tracks` and `person`)
+// apps' own copies (apps/web's and the old phone and TV apps' `detail`, `tracks` and `person`)
 // gathered here. Mark as watched's label and its words after, Off and a version with no sound are
 // every app's, in @highsea-tv/client/films (createFilmsText); the facts' labels are
 // @highsea-tv/client/library's. Back, Movies and Search are the library screens' (libraryScreenMessages).

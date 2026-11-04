@@ -102,3 +102,15 @@ The TV's names stay as aliases (`src/native/tv/aliases.ts`) until B2.
 **After B1's review (2026-11-03):**
 - `FactsCard`'s labels take the widest label's width as a minimum and don't shrink, rather than a fixed width. React Native Web's `onLayout` reports `offsetWidth`, which is rounded to a whole pixel (its UIManager's `getRect`), so a fixed width could fall a fraction short and wrap the widest label ("Directed by" at 390).
 - `FactsCard` takes `says`, the words its children draw. On the TV they're read with the title as the card's one stop, because a focusable view on tvOS is one accessibility element that VoiceOver reads by its label ([`accessible`](https://reactnative.dev/docs/accessibility#accessible)). The About card's synopsis was drawn but wasn't read.
+
+## 2026-11-04: what B2 added to the library (one client platform, part B2)
+
+B2 added no new parts; the player's round controls, scrubber, cue line and Next up card are the player's own (`apps/client/src/player/parts.tsx`), as [controls.md](../design-language/controls.md) lets the media players keep their shape. It added:
+
+- `MenuOption.detail`, a caption line under an option's label (Restart to update);
+- `ProgressBar`'s `tone` (`accent` or `neutral`) and `showValue`, as the web renderer's Progress has them;
+- the `folder` and `copy` icons, matching ui-web's.
+
+The TV's old names (`src/native/tv/aliases.ts`) and `ThemeProvider`'s `platform` prop, kept for `apps/tv` and `apps/mobile`, went with those apps.
+
+**Not tokens yet,** excepted in `scripts/one-place-exceptions.json` until part E and the owner's approval: the player's 163 measures (its 44 to 80 circles, the scrims, the scrubber, the TV's units, the `::cue` colours), and the desktop window's system measures (Windows' 46 buttons and Close red, macOS's three colours, the glyphs), which stand in for the operating systems' own chrome.

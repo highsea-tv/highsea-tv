@@ -29,11 +29,6 @@ import { useReducedMotion } from 'react-native-reanimated'
 import { useDeviceInput } from './input.ts'
 import { type ControlPoints, controlPoints } from './metrics.ts'
 
-/** The old name for the input, kept so apps/mobile and apps/tv needn't change: `mobile` is touch. */
-export type Platform = 'mobile' | 'tv'
-
-const PLATFORM_INPUTS = { mobile: 'touch', tv: 'tv' } as const satisfies Record<Platform, Input>
-
 export type Theme = NativeTheme & {
   /** The form factor the theme draws at, as `useFormFactor` gives it. */
   formFactor: FormFactor
@@ -90,7 +85,6 @@ function useWidth(tv: boolean): number {
 export function ThemeProvider({
   theme = nativeTokens.themes.default,
   formFactor,
-  platform,
   fontScale,
   reducedMotion,
   children,
@@ -103,8 +97,6 @@ export function ThemeProvider({
    * provider's, if any.
    */
   formFactor?: FormFactorSetting
-  /** The old name for `formFactor`'s input: `mobile` is touch, and `tv` the TV. */
-  platform?: Platform
   /**
    * What the type scale's sizes multiply by (2 for 200% text), whatever the OS's text size. The OS's
    * own still applies on top on a phone, up to Text's cap. Without it, the outer provider's, or 1.
@@ -115,9 +107,7 @@ export function ThemeProvider({
   children: ReactNode
 }) {
   const inherited = useContext(SettingContext)
-  const setting = settled(
-    formFactor ?? (platform ? PLATFORM_INPUTS[platform] : inherited.formFactor),
-  )
+  const setting = settled(formFactor ?? inherited.formFactor)
   const scale = fontScale ?? inherited.fontScale
   const motion = reducedMotion ?? inherited.reducedMotion
   const device = useDeviceInput()

@@ -24,6 +24,8 @@ export const HIDE_MS = 3000
 export const NEXT_UP_S = 10
 /** The position goes to the session this often while playing (and on pause, seek and leaving). */
 export const REPORT_MS = 10_000
+/** The speeds the web and desktop player offer, as YouTube's and Netflix's do (player.md). */
+export const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2] as const
 /** A stall shows Buffering only after this long, so a short one never flashes a spinner. */
 export const BUFFERING_DELAY_MS = 1000
 
@@ -497,6 +499,8 @@ export const playerMessages = defineMessages({
   hintOnTime: 'Subtitles match the audio track’s timing.',
   hintLater: 'Subtitles appear {ms} ms later.',
   hintEarlier: 'Subtitles appear {ms} ms earlier.',
+  speedNormal: 'Normal',
+  speed: '{speed}×',
 })
 
 export function createPlayerText(locale = 'en') {
@@ -508,5 +512,7 @@ export function createPlayerText(locale = 'en') {
     /** Plain words for the nudge's direction. */
     offsetHint: (ms: number) =>
       ms === 0 ? t('hintOnTime') : t(ms > 0 ? 'hintLater' : 'hintEarlier', { ms: Math.abs(ms) }),
+    /** "Normal" at 1, "1.5×" otherwise. */
+    speedLabel: (x: number) => (x === 1 ? t('speedNormal') : t('speed', { speed: x })),
   }
 }

@@ -123,7 +123,6 @@ const { SectionHeading } = await import('../../src/native/section-heading.tsx')
 const { HiddenHeading } = await import('../../src/native/hidden-heading.tsx')
 const { family } = await import('../../src/native/fonts.ts')
 const tvParts = await import('../../src/native/tv/index.ts')
-const tv = await import('../../src/native/tv/aliases.ts')
 const { focusedPlay } = await import('../../src/native/tv/tiles.tsx')
 const { KEEP } = await import('../../src/native/tv/model.ts')
 const { tokens } = await import('../../src/native/theme.tsx')
@@ -511,15 +510,6 @@ describe('FilmRow', () => {
       card().blur()
     })
     expect(focusedPlay.current).toBeNull()
-  })
-
-  test('the TV’s old name is the same part', () => {
-    expect(tv.TvFilmRow).toBe(FilmRow)
-    expect(tv.TvRow).toBe(Row)
-    expect(tv.TvRoundAction).toBe(NamedAction)
-    expect(tv.TvPersonTile).toBe(PersonTile)
-    expect(tv.TvInfoCard).toBe(FactsCard)
-    expect(tv.TvLetterRail).toBe(LetterIndex)
   })
 })
 

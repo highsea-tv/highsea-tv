@@ -6,6 +6,7 @@
   "type": "module",
   "exports": {
     "./data": "./src/data/index.ts",
+    "./downloads": "./src/downloads/index.ts",
     "./films": "./src/films/index.ts",
     "./format": "./src/format/index.ts",
     "./gate": "./src/gate/index.ts",
@@ -19,6 +20,7 @@
   },
   "dependencies": {
     "@highsea-tv/api-contract": "workspace:*",
+    "@highsea-tv/core": "workspace:*",
     "@highsea-tv/i18n": "workspace:*",
     "@highsea-tv/sdk": "workspace:*"
   },

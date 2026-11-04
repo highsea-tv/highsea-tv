@@ -559,6 +559,12 @@ group("B1's destinations", () => {
     'that nothing matched': 'nothing on harbor matches qxzv',
     'an announcement':
       'harbor has a new remote address away from home the apps now connect through harbor example net',
+    'sign it in': 'sign it in',
+    'the tv’s code': 'living room tv kq7 4pm',
+    'the offline title': 'offline',
+    'what’s ready': '1 film ready 2 5 gb 61 5 gb free on this phone',
+    'the scrubber': 'position',
+    'the stop that shows the controls': 'show controls',
     'the settings title': 'settings',
   }
   const holding = (screen: Screen, target: Capture['target']) =>
@@ -646,6 +652,9 @@ group("B1's destinations", () => {
       'search-results',
       'search-none',
       'alerts',
+      'link-code',
+      'downloads',
+      'player',
     ])
   })
 
@@ -656,7 +665,11 @@ group("B1's destinations", () => {
       screen: 'movies',
       url: `${CLIENT_SCHEME}://movies`,
       anchors: ANCHORS.movies('iphone').map((a) => a.name.source),
+      settle: 0,
     })
+    // the TV's player waits out the controls' hide, since its anchor is there from the start
+    expect(stepsFor('appletv', ['player'])[0]?.settle).toBeGreaterThan(3000)
+    expect(stepsFor('iphone', ['player'])[0]?.settle).toBe(0)
     expect(phone.find((s) => s.screen === 'search-results')?.url).toBe(
       `${CLIENT_SCHEME}://search?q=tears`,
     )
@@ -685,6 +698,9 @@ group('the command line', () => {
           'search-results',
           'search-none',
           'alerts',
+          'link-code',
+          'downloads',
+          'player',
           'settings',
         ],
         targets: ['web', 'phone', 'tv'],

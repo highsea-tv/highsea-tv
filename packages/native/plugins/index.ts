@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Config plugins the native apps use (ADR 0059), imported by each app.config.ts: apps/tv's and
-// apps/client's, and apps/mobile's.
+// Config plugins the native apps use (ADR 0059), imported by apps/client's app.config.ts.
 import { cpSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
 import {
@@ -39,7 +38,7 @@ const TV_ICONS = 'App Icon & Top Shelf Image'
  * shelf images) copied into the asset catalog whole and named as the app icon, as Xcode's tvOS
  * template does (https://developer.apple.com/design/human-interface-guidelines/app-icons#tvOS).
  * config-tv's appleTVImages wants each layer under a distinct file name, which the catalog doesn't
- * have, so it isn't used. apps/tv and apps/client's Apple TV build apply it.
+ * have, so it isn't used. apps/client's Apple TV build applies it.
  */
 export const withAppleTVIcons: ConfigPlugin = (config) => {
   config = withDangerousMod(config, [

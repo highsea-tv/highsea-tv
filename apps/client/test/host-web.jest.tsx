@@ -39,6 +39,6 @@ test('the desktop app’s webview keeps its servers', async () => {
   const { result } = await renderHook(() => host().useKeepsServers(), { wrapper })
   expect(result.current).toBe(true)
   expect((await renderHook(() => host().useDesktopOs(), { wrapper })).result.current).toEqual(
-    expect.stringMatching(/^(macOS|Windows|Linux)$/),
+    expect.stringMatching(/^(Mac|Windows|Linux)$/),
   )
 })

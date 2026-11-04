@@ -1,12 +1,15 @@
 # SPDX-License-Identifier: AGPL-3.0-only
-# The native apps (ADR 0059; phase-4-checkpoint-5.md › Builds and CI): on every pull request and
-# push to main that could change them, the phone app's Jest tests, its iOS project generated with
-# `expo prebuild` (https://docs.expo.dev/workflow/prebuild/), the licence audit over its pods, and
-# the app built for the iOS simulator with xcodebuild, signed ad hoc (`CODE_SIGN_IDENTITY=-`, no
-# certificate): an unsigned build gets no keychain entitlement, so it can't keep a sign-in, which
-# scripts/sweeps/phone.ts found. Nothing is signed with a certificate or uploaded here, and there
-# are no EAS builds (the plan's answer 10). The TV app (4.5b) is built the same way for the tvOS simulator, its project from `EXPO_TV=1 expo prebuild`
-# (https://docs.expo.dev/guides/building-for-tv/). Android joins in 4.5c.
+# The native builds of the one client (apps/client, ADR 0059 and 0061; one-client-platform-b.md ›
+# B2 brings this piece of part C forward): on every pull request and push to main that could change
+# them, the client's types and Jest tests, its iPhone project generated with `expo prebuild`
+# (https://docs.expo.dev/workflow/prebuild/), the licence audit over its pods, and the app built for
+# the iOS simulator with xcodebuild, signed ad hoc (`CODE_SIGN_IDENTITY=-`, no certificate): an
+# unsigned build gets no keychain entitlement, so it can't keep a sign-in, which
+# scripts/sweeps/phone.ts found. The Apple TV's is built the same way for the tvOS simulator, its
+# project from `EXPO_TV=1 expo prebuild` (`prebuild:tv`, https://docs.expo.dev/guides/building-for-tv/).
+# Nothing is signed with a certificate or uploaded here, and there are no EAS builds
+# (phase-4-checkpoint-5.md's answer 10). Android joins in 4.5c. The paths are the client and every
+# workspace package, since it reaches most of them through @highsea-tv/sdk and @highsea-tv/client.
 #
 # The runner's Xcode must be one Expo SDK 58 supports, so the image is macOS 26's
 # (https://github.com/actions/runner-images). Each action is pinned to a full commit SHA, with its
@@ -17,8 +20,7 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/mobile/**'
-      - 'apps/tv/**'
+      - 'apps/client/**'
       - 'packages/**'
       - 'bun.lock'
       - 'package.json'
@@ -26,8 +28,7 @@ on:
       - '.github/workflows/native.yml'
   pull_request:
     paths:
-      - 'apps/mobile/**'
-      - 'apps/tv/**'
+      - 'apps/client/**'
       - 'packages/**'
       - 'bun.lock'
       - 'package.json'
@@ -53,17 +54,18 @@ jobs:
         with:
           bun-version: 1.4.2
       - run: bun install --frozen-lockfile
+      # the Jest tests render every form factor (the TV's and touch's among them), so they run once
       - name: Types and the Jest tests
-        working-directory: apps/mobile
+        working-directory: apps/client
         run: |
           bun run typecheck
           bun run test --ci
-      # the phone's bundle draws with ui's native renderer only (ADR 0060)
+      # the phone's bundle draws with ui's native renderer only, and no `.web` side (ADR 0060, 0061)
       - name: The bundle carries no web renderer
-        run: bun scripts/bundles.ts phone
+        run: bun scripts/bundles.ts client-phone
       # the generated project, with its pods installed (prebuild runs `pod install`)
       - name: The iOS project
-        working-directory: apps/mobile
+        working-directory: apps/client
         env:
           CI: '1'
           EXPO_NO_TELEMETRY: '1'
@@ -71,7 +73,7 @@ jobs:
       - name: Licences, with the pods
         run: bun run licenses
       - name: The app, for the simulator
-        working-directory: apps/mobile/ios
+        working-directory: apps/client/ios
         run: |
           xcodebuild -workspace highsea.xcworkspace -scheme highsea -configuration Release \
             -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
@@ -88,22 +90,19 @@ jobs:
         with:
           bun-version: 1.4.2
       - run: bun install --frozen-lockfile
-      - name: Types
-        working-directory: apps/tv
-        run: bun run typecheck
-      # the TV's bundle draws with ui's native renderer only (ADR 0060)
+      # the TV's bundle draws with ui's native renderer only, and no `.web` side (ADR 0060, 0061)
       - name: The bundle carries no web renderer
-        run: bun scripts/bundles.ts tv
+        run: bun scripts/bundles.ts client-tv
       - name: The tvOS project
-        working-directory: apps/tv
+        working-directory: apps/client
         env:
           CI: '1'
           EXPO_NO_TELEMETRY: '1'
-        run: bun run prebuild
+        run: bun run prebuild:tv
       - name: Licences, with the pods
         run: bun run licenses
       - name: The app, for the simulator
-        working-directory: apps/tv/ios
+        working-directory: apps/client/ios
         run: |
           xcodebuild -workspace highsea.xcworkspace -scheme highsea -configuration Release \
             -sdk appletvsimulator -destination 'generic/platform=tvOS Simulator' \

@@ -43,6 +43,20 @@ afterEach(async () => {
   delete (globalThis as { __formFactor?: string }).__formFactor
 })
 
+/**
+ * Opens Settings from the top bar's account menu (src/account/menu.tsx). Its panel stays
+ * transparent until measured against the avatar, which Jest never lays out, so its items count as
+ * hidden; off the web they're buttons (the library's menuItemRole).
+ */
+async function openSettings() {
+  await fireEvent.press(screen.getByRole('button', { name: /: profile and settings$/ }))
+  await flush()
+  await fireEvent.press(
+    screen.getByRole('button', { name: 'Settings', includeHiddenElements: true }),
+  )
+  await flush()
+}
+
 describe('the gate with a pointer', () => {
   test('signs in, then opens the top bar with its destinations as links', async () => {
     const r = await signedIn()
@@ -118,8 +132,7 @@ describe('the gate with a pointer', () => {
 
   test('opens Settings beside its sections, with About as this version has it', async () => {
     const r = await signedIn()
-    await fireEvent.press(screen.getByRole('button', { name: /, settings$/ }))
-    await flush()
+    await openSettings()
     expect(r.getPathname()).toBe('/settings')
     // the sections beside the first, Theme, with no hint under the title: tabs, which iOS draws as
     // buttons in a tab bar (src/kit.tsx's TAB_ROW)
@@ -141,8 +154,7 @@ describe('the gate with a pointer', () => {
   test('in a narrow window, Settings is the list, then each section on its own', async () => {
     ;(globalThis as { __formFactor?: string }).__formFactor = 'compact-pointer'
     const r = await signedIn()
-    await fireEvent.press(screen.getByRole('button', { name: /, settings$/ }))
-    await flush()
+    await openSettings()
     expect(r.getPathname()).toBe('/settings')
     // the list with each section's hint, and no section chosen beside it
     expect(screen.getByText('How this device looks.')).toBeTruthy()

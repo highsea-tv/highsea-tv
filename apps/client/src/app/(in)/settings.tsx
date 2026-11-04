@@ -9,7 +9,7 @@
 //   each shown as focus reaches its name, with its hint above it; Playback's choices as rows of
 //   chips and Home's rows moved by Up and Down. The section asked for (or the first) takes focus
 //   as the screen opens, and only then (tv-choices-keep-focus).
-// The sections are ported from the phone's (apps/mobile/src/settings.tsx), drawn as the prototype's
+// The sections are drawn as the prototype's
 // client/settings-sections.tsx: each row its own card, radios and switches before their words.
 // Theme and sound are this device's, in the server's preference layers (ADR 0027), with Use on all
 // my devices as the person's own theme; Playback and the home layout follow the person; Servers is
@@ -36,7 +36,6 @@ import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { appVersion } from '@highsea-tv/native/device'
 import { useCurrent, useServers } from '@highsea-tv/native/servers'
 import { useSessionData } from '@highsea-tv/native/session'
-import { useAction } from '@highsea-tv/sdk/react'
 import { builtInThemes, createTheme } from '@highsea-tv/tokens'
 import { type NativeTheme, nativeTokens, toNativeTheme } from '@highsea-tv/tokens/native'
 import {
@@ -58,12 +57,25 @@ import {
   useFormFactor,
   useTheme,
 } from '@highsea-tv/ui'
-import { Focusable, TV_HEAD_HEIGHT } from '@highsea-tv/ui/tv'
-import { type Href, router, useLocalSearchParams } from 'expo-router'
-import { createContext, type ReactNode, useContext, useMemo, useState } from 'react'
+import { Focusable, focusOn, TV_HEAD_HEIGHT, type ViewHandle } from '@highsea-tv/ui/tv'
+import { type Href, router, useLocalSearchParams, useNavigation } from 'expo-router'
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { type StyleProp, StyleSheet, View, type ViewStyle } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { GetTheAppsDialog } from '../../account/get-the-apps.tsx'
+import { profileMessages } from '../../account/messages.ts'
+import { PersonHead } from '../../account/person.tsx'
+import { useSignOut } from '../../account/sign-out.tsx'
 import { useBack } from '../../back.tsx'
+import { AboutUpdate } from '../../desktop/update.tsx'
 import { useForget } from '../../forget.tsx'
 import { useDesktopOs, useDevice, useKeepsServers } from '../../host'
 import {
@@ -77,7 +89,6 @@ import {
   TAB_ROW,
   useChromeOverlay,
   useConfirm,
-  useSay,
   useServerName,
 } from '../../kit.tsx'
 import { LibraryTitle } from '../../library/parts.tsx'
@@ -120,6 +131,8 @@ const choose = (id: SettingsSectionId) => router.setParams({ section: id })
 /** The phone: the list, then each section on a screen of its own. */
 function TouchSettings({ chosen }: { chosen: SettingsSectionId | undefined }) {
   const t = useT(settingsPageMessages)
+  const p = useT(profileMessages)
+  const touch = useFormFactor().input === 'touch'
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const sections = useSections()
@@ -150,6 +163,8 @@ function TouchSettings({ chosen }: { chosen: SettingsSectionId | undefined }) {
           {section ? section.label : t('settings')}
         </Text>
       </View>
+      {/* the phone's You starts with who's signed in (the prototype's mobile/more.tsx) */}
+      {touch && !section ? <PersonHead /> : null}
       {section ? (
         <Section id={section.id} />
       ) : (
@@ -165,6 +180,14 @@ function TouchSettings({ chosen }: { chosen: SettingsSectionId | undefined }) {
               onPress={() => choose(s.id)}
             />
           ))}
+          {/* the prototype's You: Downloads, then Sign out (Switch profile waits for B3) */}
+          {touch ? (
+            <ListItem
+              icon="download"
+              title={p('downloads')}
+              onPress={() => router.navigate('/offline' as Href)}
+            />
+          ) : null}
           <SignOutItem />
         </View>
       )}
@@ -250,6 +273,25 @@ function TvSettings({ chosen }: { chosen: SettingsSectionId }) {
   // nothing hands it back to the first name
   const [opening, setOpening] = useState(true)
   const [first] = useState(chosen)
+  // and is handed it once its view exists: tvOS keeps focus where it was, on the head's avatar,
+  // when a screen whose stop is preferred opens over a focused one, as the player's stops do
+  // and again as the stack's fade ends, since a screen still fading in can't take it (native
+  // stack's `transitionEnd`: https://reactnavigation.org/docs/native-stack-navigator#events)
+  const firstStop = useRef<ViewHandle>(null)
+  const navigation = useNavigation()
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => focusOn(firstStop.current))
+    const off = navigation.addListener(
+      'transitionEnd' as never,
+      (e: { data?: { closing?: boolean } }) => {
+        if (!e.data?.closing) focusOn(firstStop.current)
+      },
+    )
+    return () => {
+      cancelAnimationFrame(frame)
+      off()
+    }
+  }, [navigation])
   const about = sections.find((s) => s.id === section) ?? sections[0]
   useBack(() => {
     router.navigate('/')
@@ -288,6 +330,7 @@ function TvSettings({ chosen }: { chosen: SettingsSectionId }) {
               <Focusable
                 key={s.id}
                 preferred={opening && s.id === first}
+                ref={s.id === first ? firstStop : undefined}
                 selected={here}
                 role={TAB}
                 lift="row"
@@ -785,7 +828,7 @@ function ServersSection() {
         ) : null}
         {device === 'phone' ? (
           // the phone approves a TV's code, so nobody types on the TV (connectivity.md › Sign in a
-          // TV); its screen, /link, comes with part B
+          // TV), on its screen, /link
           <Button icon="tv" onPress={() => router.push('/link' as Href)}>
             {t('signInTv')}
           </Button>
@@ -797,50 +840,6 @@ function ServersSection() {
       {prompt}
     </View>
   )
-}
-
-/** Asks first, then forgets this device's sign-in whether or not the server heard. */
-function useSignOut() {
-  const t = useT(settingsPageMessages)
-  const servers = useServers()
-  const name = useServerName()
-  const out = useAction((c) => c.auth.signOut())
-  const { ask, prompt } = useConfirm()
-  const device = useDevice()
-  const current = useCurrent()
-  const say = useSay()
-  const [failure, setFailure] = useState<string | null>(null)
-  const signOut = async () => {
-    setFailure(null)
-    try {
-      await out.run()
-    } catch {
-      // a device token is this device's own sign-in, forgotten whether or not the server heard; a
-      // browser's is the server's cookie, which only the server can end: starting again would
-      // sign straight back in with it
-      if (!current.token) return setFailure(t('signOutFailed'))
-    }
-    try {
-      await servers.signedOut()
-      say({
-        title: t('signedOut', { name }),
-        body: device === 'tv' ? undefined : t('signedOutBody'),
-        next: true,
-      })
-    } catch {
-      setFailure(t('signOutFailed'))
-    }
-  }
-  const run = () =>
-    ask({
-      title: t('signOutAsk', { name }),
-      body: t('signOutBody', { device }),
-      cancel: t('cancel'),
-      action: t('signOutShort'),
-      icon: 'sign-out',
-      run: () => void signOut(),
-    })
-  return { run, pending: out.pending, name, prompt, failure }
 }
 
 /** Servers' Sign out of {name}: a ghost button beside Add a server, as the prototype's. */
@@ -949,6 +948,7 @@ function AboutSection() {
   // a browser offers the apps; the apps, the desktop app among them, don't (desktop-app.md)
   const keeps = useKeepsServers()
   const browser = device === 'web' && !keeps
+  const [apps, setApps] = useState(false)
   // the prototype's line: the OS only in the desktop app
   const os = useDesktopOs()
   const version = server.data?.version ?? ''
@@ -976,12 +976,18 @@ function AboutSection() {
           ))}
         </View>
       </View>
+      {/* the desktop app's: up to date, or its update waiting (desktop-app.md › Updates) */}
+      <AboutUpdate />
       <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: space['2'] }}>
-        {/* Get the apps' dialog comes with part B */}
-        {browser ? <Soon icon="laptop">{t('getApps')}</Soon> : null}
+        {browser ? (
+          <Button size="sm" icon="laptop" hasPopup="dialog" onPress={() => setApps(true)}>
+            {t('getApps')}
+          </Button>
+        ) : null}
         <Soon>{t('licences')}</Soon>
         <Soon>{t('diagnostics')}</Soon>
       </View>
+      {browser ? <GetTheAppsDialog open={apps} onOpenChange={setApps} /> : null}
     </View>
   )
 }

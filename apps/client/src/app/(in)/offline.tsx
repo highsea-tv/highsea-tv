@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Offline: a placeholder under the shell until part B ports the screen (one-client-platform.md › B).
-import { destinationMessages } from '@highsea-tv/client/gate'
-import { useT } from '@highsea-tv/i18n/react'
-import { Coming } from '../../kit.tsx'
+// Offline, the phone's tab (client-settings.md#offline): the downloads screen, which also answers
+// /downloads (../../downloads/screen.tsx says what each device draws).
+import { DownloadsScreen } from '../../downloads/screen.tsx'
 
-export default function Placeholder() {
-  return <Coming title={useT(destinationMessages)('offline')} />
-}
+export default DownloadsScreen

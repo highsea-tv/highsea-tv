@@ -47,6 +47,16 @@
 //   playback.unplayed      DELETE /api/v1/items/{type}/{id}/played
 //   playback.dismiss       POST   /api/v1/items/{type}/{id}/dismiss
 //
+// And the player's (B2), from play.ts, which serves every film as one clip the caller hands in
+// (`media`) and follows the toolbar's stream state:
+//
+//   playback.play          POST   /api/v1/items/{type}/{id}/play
+//   playback.progress      POST   /api/v1/playback/sessions/{id}/progress
+//   playback.stop          DELETE /api/v1/playback/sessions/{id}
+//   playback.report        PUT    /api/v1/devices/current/profile
+//   playback.next          GET    /api/v1/items/{type}/{id}/next
+//   playback.trickplay     GET    /api/v1/items/{type}/{id}/trickplay
+//
 // Every other contract route answers 501 with a body naming it. Adding one is one entry in
 // `answers` below, under its group and name as the contract has them: a function from the route's
 // checked input to its output, typed by the route's parsed request and the SDK's `Output`, so it
@@ -70,6 +80,7 @@ import {
   PLAYBACK_TOPICS,
   RESET_TOPIC,
   routes,
+  SESSIONS_TOPICS,
   STAFF_TOPICS,
   TMDB_ATTRIBUTION,
   WIDGET_SOURCES,
@@ -99,6 +110,7 @@ import { EPOCH, iso } from './clock.ts'
 import { FilmRefused, filmsOf, type Refusal } from './films.ts'
 import { createMock, type Mock, userFor } from './mock.ts'
 import { waiting } from './pairing.ts'
+import { createPlays, type MockMedia } from './play.ts'
 import { type Api, ApiError, createApi, type MockServer, type Storage } from './server.ts'
 import { defaultState, type ProtoState, type Role } from './state.ts'
 import { DISCOVERY_MS, DISCOVERY_STAGGER_MS, PAIRING_APPROVAL_MS } from './timing.ts'
@@ -135,6 +147,10 @@ export const transportMessages = defineMessages({
   'transport.personUnknown': 'TMDB has no person with that id.',
   'transport.versionUnknown': 'That version isn’t this title’s.',
   'transport.badCursor': 'That page link has expired. Start from the first page.',
+  // the player's (packages/runtime's playback.ts)
+  'transport.sessionEnded': 'That play session has ended.',
+  'transport.stoppedBy': '{name} stopped this stream.',
+  'transport.notPlayable': 'That version has no file to play.',
 })
 const t = createT(transportMessages)
 const tc = createT(clientMessages)
@@ -150,7 +166,7 @@ type Method = Output<Routes['me']['devices']>[number]['method']
 /** What the toolbar sets that the transport reads: the rest of ProtoState is the chrome's. */
 export type TransportState = Pick<
   ProtoState,
-  'data' | 'role' | 'theme' | 'sound' | 'connection' | 'lan'
+  'data' | 'role' | 'theme' | 'sound' | 'connection' | 'lan' | 'stream' | 'airplay'
 >
 
 export type TransportOptions = {
@@ -163,6 +179,11 @@ export type TransportOptions = {
   state?: Partial<TransportState>
   /** How long, in real ms, a TV's code waits before the phone approves it. */
   approveAfterMs?: number
+  /**
+   * The clip every film plays as (play.ts), where the caller serves one: the web's mock export.
+   * Without it, a play session has no URL and the player waits, as on a first transcode.
+   */
+  media?: MockMedia
   /**
    * Signing in as someone else changed the role: the chrome sets its toolbar to it, so the next
    * `setState` doesn't sign them out again.
@@ -603,10 +624,18 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
     sound: { ...defaultState.sound },
     connection: defaultState.connection,
     lan: defaultState.lan,
+    stream: defaultState.stream,
+    airplay: defaultState.airplay,
     ...options.state,
   }
 
   const bus = createEventBus({ now: () => Date.now() })
+  const plays = createPlays({
+    media: options.media,
+    stream: () => state.stream,
+    now: () => Date.now(),
+    stopped: (id, to) => bus.emit({ topic: SESSIONS_TOPICS.stopped, ids: [id], to: [to] }),
+  })
   const srv = () => (state.data === 'empty' ? mock.servers.empty : mock.servers.populated)
 
   // Who is signed in, decided in one place: the toolbar's role picks its person (mock.ts's
@@ -1062,6 +1091,17 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
     announce(ctx, id)
     return undefined
   }
+  /** A live session of the caller's, or the 404 the runtime answers: who stopped it, when someone did. */
+  const session = (ctx: Ctx, id: string) => {
+    const s = plays.find(ctx.userId, id)
+    if (!s) throw refuse('not-found', t('transport.sessionEnded'))
+    if ('stopped' in s)
+      throw refuse('not-found', t('transport.stoppedBy', { name: s.stopped.by }), {
+        reason: 'stopped',
+        ...s.stopped,
+      })
+    return s
+  }
 
   // ---------------------------------------------------------------- the answers
 
@@ -1272,6 +1312,47 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
         found(() => quietly(() => films(ctx).dismiss(params.id)))
         announce(ctx, params.id)
         return undefined
+      },
+      play: ({ params, body }, ctx) => {
+        const f = films(ctx)
+        const d = found(() => f.detail(params.id, clientOf(ctx)))
+        const picks = f.prefs(params.id)
+        // the version asked for, then the pick, then the first, as the runtime's play has it
+        const wanted = body?.versionId ?? picks.versionId
+        const version = wanted ? d.versions.find((v) => v.id === wanted) : d.versions[0]
+        if (!version) throw refusals.version()
+        if (!version.playable) throw refuse('conflict', t('transport.notPlayable'))
+        return plays.play(
+          ctx.userId,
+          { item: d.item, version },
+          {
+            audioId: body?.audioId === undefined ? picks.audioId : body.audioId,
+            subtitleId: body?.subtitleId === undefined ? picks.subtitleId : body.subtitleId,
+            start: body?.start,
+          },
+        )
+      },
+      progress: ({ params, body }, ctx) => {
+        const s = session(ctx, params.id)
+        const done = found(() =>
+          quietly(() => films(ctx).place(s.tmdbId, body.position, s.duration)),
+        )
+        announce(ctx, s.tmdbId)
+        return { watched: done, ...plays.heard() }
+      },
+      stop: ({ params }, ctx) => {
+        plays.end(session(ctx, params.id))
+        return undefined
+      },
+      // kept by the runtime for the device; the mock's play answers every device alike
+      report: () => undefined,
+      next: ({ params }, ctx) => ({ item: found(() => films(ctx).next(params.id)) }),
+      // no sheets: the mock serves only the API, and the scrubber draws without previews
+      trickplay: ({ params, query }, ctx) => {
+        const d = found(() => films(ctx).detail(params.id, clientOf(ctx)))
+        const v = query?.versionId ?? d.versions[0]?.id
+        if (!v || !d.versions.some((x) => x.id === v)) throw refusals.version()
+        return plays.trickplay(v)
       },
     },
 
@@ -1568,7 +1649,16 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
   const setState = (patch: Partial<ProtoState>) => {
     const before = state
     const next: TransportState = { ...state }
-    for (const k of ['data', 'role', 'theme', 'sound', 'connection', 'lan'] as const)
+    for (const k of [
+      'data',
+      'role',
+      'theme',
+      'sound',
+      'connection',
+      'lan',
+      'stream',
+      'airplay',
+    ] as const)
       if (patch[k] !== undefined) (next as Record<string, unknown>)[k] = patch[k]
     state = next
     const changed = (k: keyof TransportState) =>
@@ -1607,6 +1697,7 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
       for (const s of [...streams]) s.kill()
       for (const release of [...held]) release(networkError())
       for (const stop of [...scans.values()]) stop()
+      plays.dispose()
     },
   })
 }

@@ -82,6 +82,8 @@ describe('messages', () => {
       stateMessage({ sound: { admin: true } as never }),
       stateMessage({ largeText: 'yes' as never }),
       stateMessage({ reducedMotion: undefined as never }),
+      stateMessage({ stream: 'paused' as never }),
+      stateMessage({ airplay: 'maybe' as never }),
       // a route can't be another site's address
       { channel: FRAME_CHANNEL, type: 'navigate', path: 'https://example.com/' },
       { channel: FRAME_CHANNEL, type: 'navigate', path: '//example.com/' },
@@ -148,6 +150,32 @@ describe('messages', () => {
     expect(q('text=200&motion=reduced')).toEqual({ largeText: true, reducedMotion: true })
     expect(q('text=100&motion=full')).toEqual({ largeText: false, reducedMotion: false })
     expect(q('data=busy&theme=neon&sound=loud&ff=touch')).toEqual({})
+    // the player's states
+    expect(q('stream=next-up&airplay=on')).toEqual({ stream: 'next-up', airplay: 'on' })
+    expect(q('stream=paused&airplay=maybe')).toEqual({})
+  })
+
+  test('the desktop app’s states: the app, its OS and an update waiting', () => {
+    const q = (s: string) => queryState(new URLSearchParams(s))
+    expect(q('app=desktop&os=windows&update=ready')).toEqual({
+      app: 'desktop',
+      os: 'windows',
+      update: 'ready',
+    })
+    expect(q('app=browser&os=linux&update=none')).toEqual({
+      app: 'browser',
+      os: 'linux',
+      update: 'none',
+    })
+    expect(q('app=tauri&os=amiga&update=soon')).toEqual({})
+    const desktop = stateMessage({ app: 'desktop', os: 'mac', update: 'ready' })
+    expect(parseFrameMessage(desktop)).toEqual(desktop)
+    for (const bad of [
+      stateMessage({ app: 'electron' as never }),
+      stateMessage({ os: 'beos' as never }),
+      stateMessage({ update: 'later' as never }),
+    ])
+      expect(parseFrameMessage(bad)).toBeNull()
   })
 
   test('importing it needs no DOM', () => {

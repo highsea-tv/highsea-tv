@@ -54,6 +54,7 @@ import {
   SEARCH_PEOPLE_POOL,
   sortTitleOf,
 } from '@highsea-tv/media/search'
+import { iso } from './clock.ts'
 import { describe, evaluate, fields } from './collections.ts'
 import {
   knownTitles,
@@ -370,6 +371,39 @@ export function filmsOf({ srv, api, userId }: FilmsCtx) {
     state.prefs[key(m.id)] = next
     changed()
     return prefs(id)
+  }
+
+  /**
+   * A report from the player (packages/media's `playback.position`): the place is kept, and past
+   * WATCHED_AT of `duration` the title is watched and its place cleared, as watchOf reads it.
+   */
+  function place(id: number, position: number, duration: number) {
+    const m = byTmdb(id)
+    const done = duration > 0 && position / duration >= WATCHED_AT
+    forget(m.id)
+    if (done) state.played = [...playedSet().add(key(m.id))]
+    else if (position > 0) {
+      // the film's own length, so Resume on its page reads the same fraction the player had
+      const length = m.runtimeMinutes * 60
+      const at = duration > 0 && length > 0 ? (position / duration) * length : position
+      state.watch.push({ userId, itemId: m.id, position: at, updatedAt: iso(srv.clock.now()) })
+    }
+    changed()
+    return done
+  }
+
+  /**
+   * GET /items/movie/{id}/next: the next film in the title's collection by release date, one not
+   * yet watched first, among the films with a file (packages/media's `next`).
+   */
+  function next(id: number): ClientItem | null {
+    const m = byTmdb(id)
+    const group = tmdbCollections(playable()).find((c) => c.ms.some((x) => x.id === m.id))
+    if (!group) return null
+    const after = group.ms.slice(group.ms.findIndex((x) => x.id === m.id) + 1)
+    const played = playedSet()
+    const pick = after.find((x) => !watchOf(x, played).watched) ?? after[0]
+    return pick ? item(pick, played) : null
   }
 
   // ------------------------------------------------------------ items
@@ -921,6 +955,8 @@ export function filmsOf({ srv, api, userId }: FilmsCtx) {
     dismiss,
     prefs,
     setPrefs,
+    place,
+    next,
     collections,
     collectionPage,
     home,

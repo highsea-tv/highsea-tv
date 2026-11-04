@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// The phone app end to end (phase-4-checkpoint-5.md › Tests and checks, 4.5a): the seeded server
-// from the production build, the app installed fresh on an iOS simulator, and Maestro's flow in
-// apps/mobile/.maestro signing Theo in by address, finding Sintel and playing it
-// (https://docs.maestro.dev/getting-started/run-a-sample-flow). Then the server's history says
+// The phone end to end (phase-4-checkpoint-5.md › Tests and checks, 4.5a), on the one client's
+// iPhone build (ADR 0061): the seeded server from the production build, the client installed fresh
+// on an iOS simulator, and Maestro's flow in apps/client/.maestro signing Theo in by address,
+// finding Sintel and playing it (https://docs.maestro.dev/getting-started/run-a-sample-flow). Then the server's history says
 // whether Theo's iPhone played it: a session from the `ios` client, ended by closing the player.
 //
 // `bun scripts/sweeps/phone.ts [path/to/highsea.app]`, with a simulator booted and Maestro on the
-// PATH. The app is a Release build for the simulator (it needs no Metro), by default the one
-// native.yml makes: in apps/mobile/ios, `xcodebuild -workspace highsea.xcworkspace -scheme highsea
+// PATH. The app is a Release build for the simulator without mock mode (it needs no Metro), by
+// default the one native.yml's ios job makes: `bun run --cwd apps/client prebuild`, then in
+// apps/client/ios `xcodebuild -workspace highsea.xcworkspace -scheme highsea
 // -configuration Release -sdk iphonesimulator -derivedDataPath build CODE_SIGN_IDENTITY=-
 // CODE_SIGNING_REQUIRED=NO build`. It's signed ad hoc: unsigned, it has no keychain and can't sign in.
 // PHONE_PORT moves the server; PHONE_SIMULATOR picks the simulator by UDID.
@@ -24,7 +25,7 @@ const THEO = { username: 'theo', password: 'theo theo theo' }
 const SINTEL = 45745
 const app =
   process.argv[2] ??
-  join(ROOT, 'apps/mobile/ios/build/Build/Products/Release-iphonesimulator/highsea.app')
+  join(ROOT, 'apps/client/ios/build/Build/Products/Release-iphonesimulator/highsea.app')
 if (!existsSync(app))
   throw new Error(
     `No app at ${app}: build it for the simulator first (this file's header says how)`,
@@ -39,7 +40,7 @@ let failed: string | null = null
 try {
   const { token } = await seed(server, OWNER, 'Phone script')
   // a fresh install: no servers, no keychain items (the flow's launchApp clears both too)
-  execFileSync('xcrun', ['simctl', 'uninstall', udid, 'tv.highsea.mobile'])
+  execFileSync('xcrun', ['simctl', 'uninstall', udid, 'tv.highsea.client.mobile'])
   execFileSync('xcrun', ['simctl', 'install', udid, app])
   const started = Date.now()
   try {
@@ -55,7 +56,7 @@ try {
         `USERNAME=${THEO.username}`,
         '-e',
         `PASSWORD=${THEO.password}`,
-        join(ROOT, 'apps/mobile/.maestro/sign-in-and-play.yaml'),
+        join(ROOT, 'apps/client/.maestro/sign-in-and-play.yaml'),
       ],
       { stdio: 'inherit' },
     )

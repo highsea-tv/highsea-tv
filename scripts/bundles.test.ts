@@ -16,16 +16,16 @@ describe('bundle check', () => {
   })
 
   test('finds the web renderer in the phone’s bundle', () => {
-    expect(offences('phone', '"../../packages/ui/src/web/button.tsx"')).toEqual([
+    expect(offences('client-phone', '"../../packages/ui/src/web/button.tsx"')).toEqual([
       'the web renderer',
     ])
-    expect(offences('phone', 'twMerge(a,b)')).toEqual(['tailwind-merge'])
-    expect(offences('phone', 'var a=1')).toEqual([])
+    expect(offences('client-phone', 'twMerge(a,b)')).toEqual(['tailwind-merge'])
+    expect(offences('client-phone', 'var a=1')).toEqual([])
   })
 
   test('holds the TV’s bundle to the phone’s rule', () => {
-    expect(offences('tv', 'ReactDOMSharedInternals')).toEqual(['react-dom'])
-    expect(offences('tv', 'var a=1')).toEqual([])
+    expect(offences('client-tv', 'ReactDOMSharedInternals')).toEqual(['react-dom'])
+    expect(offences('client-tv', 'var a=1')).toEqual([])
   })
 
   test('holds the client’s web bundle to react-native-web and its own side of each pair', () => {
@@ -64,7 +64,7 @@ describe('bundle check', () => {
 
   test('keeps the spatial focus engine to the web’s bundles', () => {
     const engine = '"/packages/ui/src/native/tv/spatial/navigator.ts"'
-    for (const kind of ['phone', 'tv', 'client-phone', 'client-tv'] as const)
+    for (const kind of ['client-phone', 'client-tv'] as const)
       expect(offences(kind, engine)).toEqual(['the spatial focus engine'])
     expect(offences('client-web', engine)).toEqual([])
     // the pure model beside it holds no DOM
@@ -73,7 +73,7 @@ describe('bundle check', () => {
 
   test('keeps hls.js out of the phone’s and the TV’s bundles', () => {
     const hls = '/node_modules/.bun/hls.js@1.7.3/node_modules/hls.js/dist/hls.mjs'
-    for (const kind of ['phone', 'tv', 'client-phone', 'client-tv'] as const)
+    for (const kind of ['client-phone', 'client-tv'] as const)
       expect(offences(kind, hls)).toEqual(['hls.js'])
     expect(offences('client-web', hls)).toEqual([])
     expect(offences('web', 'e.MANIFEST_LOADING="hlsManifestLoading"')).toEqual([])
@@ -89,7 +89,7 @@ describe('bundle check', () => {
   })
 
   test('finds the mock in any bundle built without mock mode', () => {
-    for (const kind of ['web', 'phone', 'tv', 'client-web', 'client-phone', 'client-tv'] as const)
+    for (const kind of ['web', 'client-web', 'client-phone', 'client-tv'] as const)
       expect(offences(kind, '"/packages/mock/src/transport.ts"')).toEqual(['the mock server'])
     expect(offences('client-web', '"/design/prototypes/src/mock/hooks.tsx"')).toEqual([
       'the mock server',
@@ -97,7 +97,7 @@ describe('bundle check', () => {
   })
 
   test('finds the prototypes’ frame channel by its name, minified or not', () => {
-    for (const kind of ['web', 'phone', 'tv', 'client-web', 'client-phone', 'client-tv'] as const)
+    for (const kind of ['web', 'client-web', 'client-phone', 'client-tv'] as const)
       expect(offences(kind, 'n.channel==="highsea:frame"')).toEqual([
         'the prototypes’ frame channel',
       ])
