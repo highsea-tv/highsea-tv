@@ -28,7 +28,7 @@ export type Trailer = ClientDetail['videos'][number]
  * The Trailer button's video: the first trailer, or a teaser before release (previewOf, as the
  * prototype's), from YouTube only, the one host the embed and `frame-src` allow (answer 9).
  */
-export const trailerOf = (d: ClientDetail): Trailer | undefined =>
+export const trailerOf = (d: Pick<ClientDetail, 'videos'>): Trailer | undefined =>
   previewOf({ videos: d.videos.filter((v) => v.site === 'YouTube') })
 
 export const trailerUrl = (key: string) =>

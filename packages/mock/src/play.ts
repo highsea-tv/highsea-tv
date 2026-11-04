@@ -56,7 +56,14 @@ export const STOP_AFTER_MS = 800
 const TTL_MS = 5 * 60_000
 
 /** A live session; every report saves its place at once, so leaving has nothing left to save. */
-type Session = { id: string; userId: string; tmdbId: number; duration: number }
+type Session = {
+  id: string
+  userId: string
+  tmdbId: number
+  /** A film, or an episode (B3), whose watch state the reports keep. */
+  type: ClientItem['type']
+  duration: number
+}
 
 /** What a session needs of the film: its place and the version's tracks, from films.ts's detail. */
 export type PlayFilm = { item: ClientItem; version: ClientVersion }
@@ -144,7 +151,7 @@ export function createPlays(o: {
             ? [{ kind: 'warning', code: 'method.transcode', message: 'Transcoding the video.' }]
             : [],
     }
-    sessions.set(id, { id, userId, tmdbId: film.item.id, duration })
+    sessions.set(id, { id, userId, tmdbId: film.item.id, type: film.item.type, duration })
     if (stream === 'stopped') {
       stopped.set(id, { userId, ...STOPPED_BY })
       setTimeout(() => {

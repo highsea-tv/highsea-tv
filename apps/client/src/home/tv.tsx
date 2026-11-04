@@ -7,7 +7,10 @@
 // from there leaves highsea (homeBack); with the menu open it closes the menu, focus going back to
 // its card, or to the row's next once the card has gone, and nowhere once Go to the film has left.
 // The head lies over the page and scrolls away with it (kit's useChromeOverlay), as the prototype's.
-import type { HomeItem, HomeSection } from '@highsea-tv/api-contract'
+// On a server that serves shows (B3): episodes on Continue watching (their show over "S2, E6",
+// resuming the episode), Next up's and New episodes' stills, and Recently added shows' posters;
+// music's rows are ../music/home.tsx's.
+import { type HomeItem, type HomeRow, isFilmRow } from '@highsea-tv/api-contract'
 import { heroOf, rowsOf } from '@highsea-tv/client/films'
 import { LONG_PRESS_MS } from '@highsea-tv/client/library'
 import { useFormat } from '@highsea-tv/native/format'
@@ -28,9 +31,11 @@ import { type NativeScrollEvent, type NativeSyntheticEvent, View } from 'react-n
 import { useBack, useLeaveOnBack } from '../back.tsx'
 import { useFilmsText } from '../films.ts'
 import { useChromeOverlay } from '../kit.tsx'
+import { TvMusicHomeRow } from '../music/home.tsx'
+import { ShowPoster } from '../shows/poster.tsx'
 import { HomeTvContinueMenu, type MenuClose } from './continue.tsx'
 import { bloomColor } from './featured.tsx'
-import { openTitle, playTitle } from './go.ts'
+import { openTitle, playCard, playTitle } from './go.ts'
 import { HOME } from './sizes.ts'
 
 const tv = tokens.tv
@@ -45,7 +50,7 @@ const WEIGHT: Record<MenuClose, number> = { stay: 0, gone: 1, leave: 2 }
 /** Of two closes for one choice, the one that says more: leaving wins, then the card going. */
 const weightier = (a: MenuClose, b: MenuClose) => (WEIGHT[b] > WEIGHT[a] ? b : a)
 
-export function HomeTv({ sections }: { sections: HomeSection[] }) {
+export function HomeTv({ sections }: { sections: HomeRow[] }) {
   const films = useFilmsText()
   const format = useFormat()
   const u = useTheme().u
@@ -59,7 +64,7 @@ export function HomeTv({ sections }: { sections: HomeSection[] }) {
     setLifted(e.nativeEvent.contentOffset.y > 0)
   }
 
-  const featured = heroOf(sections)?.items[0]
+  const featured = heroOf(sections.filter(isFilmRow))?.items[0]
   const rows = rowsOf(sections)
   const [menu, setMenu] = useState<HomeItem | null>(null)
   const cards = useRef(new Map<number, ViewHandle | null>())
@@ -92,7 +97,8 @@ export function HomeTv({ sections }: { sections: HomeSection[] }) {
     }
     const pending = { how }
     closing.current = pending
-    const row = rows.find((x) => x.layout === 'continue')?.items ?? []
+    const found = rows.find((x) => x.layout === 'continue')
+    const row = found && isFilmRow(found) ? found.items : []
     const i = row.findIndex((m) => m.id === menu.id)
     setMenu(null)
     setTimeout(() => {
@@ -137,7 +143,55 @@ export function HomeTv({ sections }: { sections: HomeSection[] }) {
             const title = films.rowTitle(section)
             return (
               <Kept key={section.id}>
-                {section.layout === 'continue' ? (
+                {section.layout === 'music' ? (
+                  <TvMusicHomeRow row={section} lead={lead} first={first} setOnFirst={setOnFirst} />
+                ) : section.layout === 'shows' ? (
+                  <Row
+                    title={title}
+                    suffix={section.suffix}
+                    items={section.items}
+                    keyOf={(x) => x.id}
+                    render={(x, at) => (
+                      <ShowPoster
+                        show={x}
+                        ref={lead && at.index === 0 ? first : undefined}
+                        preferred={lead && at.index === 0}
+                        onFocus={() => {
+                          at.onFocus()
+                          setOnFirst(lead && at.index === 0)
+                        }}
+                      />
+                    )}
+                  />
+                ) : section.layout === 'episodes' ? (
+                  <Row
+                    title={title}
+                    suffix={section.suffix}
+                    items={section.items}
+                    keyOf={(m) => m.id}
+                    itemWidth={HOME.tvContinueWidth}
+                    render={(m, at) => {
+                      const card = films.card(m, { wide: true })
+                      return (
+                        <Poster
+                          ref={lead && at.index === 0 ? first : undefined}
+                          preferred={lead && at.index === 0}
+                          title={card.title}
+                          caption={card.caption}
+                          src={media(card.src)}
+                          aspect="still"
+                          width={HOME.tvContinueWidth}
+                          onFocus={() => {
+                            at.onFocus()
+                            setOnFirst(lead && at.index === 0)
+                          }}
+                          onPress={() => playCard(m)}
+                          onPlay={() => playCard(m)}
+                        />
+                      )
+                    }}
+                  />
+                ) : section.layout === 'continue' ? (
                   <Row
                     title={title}
                     suffix={section.suffix}
@@ -164,8 +218,8 @@ export function HomeTv({ sections }: { sections: HomeSection[] }) {
                             at.onFocus()
                             setOnFirst(lead && at.index === 0)
                           }}
-                          onPress={() => playTitle(m.id)}
-                          onPlay={() => playTitle(m.id)}
+                          onPress={() => playCard(m)}
+                          onPlay={() => playCard(m)}
                           onLongPress={() => setMenu(m)}
                           longPressMs={LONG_PRESS_MS}
                         />

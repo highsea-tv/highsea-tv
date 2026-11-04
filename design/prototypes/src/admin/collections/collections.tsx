@@ -4,16 +4,18 @@
 // count them) and who sees it. Each opens the editor, where rules, exceptions and the live result
 // sit side by side.
 
+import { createFormat } from '@highsea-tv/client/format'
 import type { CollectionSummary } from '@highsea-tv/mock/types'
 import { Badge, Button, ConfirmDialog, EmptyState, toast } from '@highsea-tv/ui'
 import { useState } from 'react'
 import { useLocation } from 'wouter'
-import { titlesHere } from '../../client/data.ts'
 import { CollectionArt } from '../../kit/collection-art.tsx'
 import { useAction, useQuery } from '../../mock/hooks.tsx'
 import { audienceSummary, useUsers } from '../curation/shared.tsx'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref } from '../shell.tsx'
+
+const format = createFormat('en')
 
 /** "6 movies and 1 show, all in the apps", or how many of them the apps show. */
 export function holds(
@@ -21,7 +23,7 @@ export function holds(
 ): string {
   const all = c.matched + c.showsHere
   if (all === 0) return 'Nothing matches yet'
-  const what = titlesHere(c.matched, c.showsHere)
+  const what = format.titlesHere(c.matched, c.showsHere)
   const shown = c.playable + c.showsPlayable
   return shown === all ? `${what}, all in the apps` : `${what}, ${shown} in the apps`
 }

@@ -105,6 +105,15 @@ final class Layout: XCTestCase {
     #else
       let settings = element(NSPredicate(format: "label == 'You'"))
     #endif
+    #if os(tvOS)
+      // the TV's opening asks Who's watching? once it's signed in (B3's profiles, which the mock
+      // serves): the profile last here has the focus, and Select picks it, as layout.ts does
+      let lastHere = element(NSPredicate(format: "label CONTAINS ', Last here'"))
+      if lastHere.waitForExistence(timeout: 40) {
+        Thread.sleep(forTimeInterval: 0.5)
+        XCUIRemote.shared.press(.select)
+      }
+    #endif
     // the owner's announcement that must be acknowledged comes over the shell once its list has
     // loaded, and on the TV hides it: Got it, as layout.ts does on the web
     let gotIt = app.buttons.matching(NSPredicate(format: "label == 'Got it'")).firstMatch
@@ -140,6 +149,7 @@ final class Layout: XCTestCase {
       // the page's entrance and its images, which no element says are done
       Thread.sleep(forTimeInterval: 2)
       if let settle = step.settle, settle > 0 { Thread.sleep(forTimeInterval: settle / 1000) }
+      still()
       try capture(step.screen)
       scheme = url.scheme
     }
@@ -150,17 +160,7 @@ final class Layout: XCTestCase {
         XCUIElement.ElementType.staticText.rawValue))
     if let scheme, let link = URL(string: "\(scheme):///settings") {
       // after the steps, by the client's own link: the player and Connect a device draw over the
-      // shell, so You can't be tapped. A link opened over the player doesn't leave it (B2's gate
-      // report), so the phone leaves it first by its own Back to details
-      #if !os(tvOS)
-        let show = app.buttons["Show controls"]
-        if show.exists {
-          show.tap()
-          let leave = app.buttons["Back to details"]
-          if leave.waitForExistence(timeout: 5) { leave.tap() }
-          Thread.sleep(forTimeInterval: 2)
-        }
-      #endif
+      // shell, so You can't be tapped, and a link opened over the player closes it (B2's answer 1)
       app.open(link)
       XCTAssert(title.waitForExistence(timeout: 20), "Settings never opened from its link")
     } else {
@@ -358,6 +358,32 @@ final class Layout: XCTestCase {
       XCTAssert(target.hasFocus, "Couldn't move focus onto \(target.label)")
     }
   #endif
+
+  /**
+   * Waits until the screen stops moving: two snapshots a third of a second apart with every frame
+   * the same, for at most eight seconds. A focus lift's spring or a long list still laying out
+   * moves frames that no element says are done (XCUITest has no idle signal for React Native's
+   * animations).
+   */
+  private func still() {
+    func frames() -> [CGRect] {
+      var out: [CGRect] = []
+      func walk(_ s: XCUIElementSnapshot) {
+        out.append(s.frame)
+        for c in s.children { walk(c) }
+      }
+      if let root = try? app.snapshot() { walk(root) }
+      return out
+    }
+    let until = Date().addingTimeInterval(8)
+    var was = frames()
+    while Date() < until {
+      Thread.sleep(forTimeInterval: 0.33)
+      let now = frames()
+      if now == was { return }
+      was = now
+    }
+  }
 
   /** The screen's tree and its picture, as `<name>.json` and `<name>.png`. */
   private func capture(_ name: String) throws {

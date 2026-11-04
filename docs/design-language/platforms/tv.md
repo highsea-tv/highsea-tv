@@ -31,9 +31,13 @@ The home screen uses the **Hero + rows** layout, locked in [direction.md](../../
 | Featured card | 1u above and below it, under the global navigation |
 | Alerts | A list up to 60u wide, 1.2u between announcements; with none, 1.4u between the words and the button back to Home |
 | A person | The portrait 13u round, beside the name and words, the biography cut at four lines; then a film row per department |
+| A show's episodes | Stills 24u wide in a season's row; Cast and crew tiles 8u, as a film's page has them |
+| An album or a playlist | A left column 24u wide with an 18u cover and a 2.4u title, 4u from the songs |
+| Who's watching | Circles 9.5u, 2.8u apart, under a 3.2u title; at the opening, 11u circles 3u apart under a 3.6u title |
+| A PIN | A pad 17u wide with 0.8u between keys, under a 5.6u circle and a 2.4u title |
 | Radii | Posters 0.5u (≈ 10px at 1080p); controls by the TV rule, `radius-sm` at 1.75 times (≈ 0.73u, [controls](../controls.md)); quality pills 0.3u |
 
-The rows from Continue watching to A person are the prototypes' values, kept when B1 moved the screens to apps/client (`apps/client/src/home/sizes.ts`, `src/alerts/sizes.ts` and `@highsea-tv/ui`'s `PersonPortrait`). None is a token yet; part E gives them tokens once the owner approves the values.
+The rows from Continue watching to A PIN are the prototypes' values, kept when B1 and B3 moved the screens to apps/client (`apps/client/src/home/sizes.ts`, `src/alerts/sizes.ts`, `src/shows/sizes.ts`, `src/music/sizes.ts`, `src/profiles/sizes.ts` and `@highsea-tv/ui`'s `PersonPortrait`). None is a token yet; part E gives them tokens once the owner approves the values.
 
 **Safe area.**
 - Text and focusable items stay at least 2.4u (≈ 46px at 1080p) from every edge (`tv.safe` in the tokens). The owner tightened it from 4.5u and 3.2u on 2026-10-30, inside tvOS's guideline of 80 × 60 points, and confirmed it on 2026-11-03.

@@ -6,6 +6,7 @@
 import { routes } from '@highsea-tv/api-contract'
 import type { OpenAPIHono } from '@hono/zod-openapi'
 import type { Context } from 'hono'
+import { NotServed } from './drafts.ts'
 import { type Env, me } from './guard.ts'
 import { viewer } from './playback.ts'
 
@@ -23,6 +24,8 @@ export function registerLibrary(app: OpenAPIHono<Env>) {
 
   app.openapi(routes.library.item, async (c) => {
     const { type, id } = c.req.valid('param')
+    // an episode's address answers 501 before it gets here (drafts.ts)
+    if (type !== 'movie') throw new NotServed()
     return c.json(await client(c).item(type, id, viewer(c).userId), 200)
   })
 

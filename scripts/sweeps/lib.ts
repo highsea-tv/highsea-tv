@@ -129,8 +129,9 @@ export const viewportFor = (route: string, width: number) => {
  */
 export const clientUrl = (route: string, platform: ClientPlatform, query = '') => {
   const [path = '/', own = ''] = route.split('?')
-  const clientPath = clientPathOf(path) ?? '/'
-  const q = [`ff=${FRAME_INPUTS[platform]}`, 'time=pause', 'sound=off', own, query]
+  // an alias may carry its own query (the TV's `/start` is `/who?launch=1`)
+  const [clientPath = '/', aliased = ''] = (clientPathOf(path) ?? '/').split('?')
+  const q = [`ff=${FRAME_INPUTS[platform]}`, 'time=pause', 'sound=off', aliased, own, query]
     .filter(Boolean)
     .join('&')
   return `${base}/web${clientPath === '/' ? '/' : clientPath}?${q}`

@@ -31,7 +31,8 @@ export default function NotFound() {
       </Text>
       {/* a button hugs its words at the column's start (alignSelf), so its row is centred */}
       <View>
-        <Button variant="primary" onPress={() => router.replace('/')}>
+        {/* on the TV its one stop takes the first focus, as every TV screen's does */}
+        <Button variant="primary" hasTVPreferredFocus={tv} onPress={() => router.replace('/')}>
           {t('home')}
         </Button>
       </View>

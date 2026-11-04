@@ -24,6 +24,17 @@ export const Attribution = z
   })
   .openapi('Attribution')
 
+/**
+ * What a server can serve, in `PublicInfo.sources`: the dashboard's widget sources (shared with
+ * @highsea-tv/personalization's registry, which only the admin's widgets read), then the kinds the
+ * apps draw only when a server lists them. Shows, music and profiles are drafted with B3 of the one
+ * client platform: the prototypes' mock lists them, and the real server doesn't until it serves
+ * them, so the apps hide everything of theirs (one-client-platform-b.md, the owner's answer 1).
+ */
+export const CLIENT_SOURCES = ['shows', 'music', 'profiles'] as const
+export const SERVER_SOURCES = [...WIDGET_SOURCES, ...CLIENT_SOURCES] as const
+export type ClientSource = (typeof CLIENT_SOURCES)[number]
+
 export const PublicInfo = z
   .object({
     id: z.string().openapi({ example: 'srv_5k2m9x0q4r7t1v3w' }),
@@ -38,8 +49,11 @@ export const PublicInfo = z
       oidc: z.object({ name: z.string() }).nullable(),
       passkeys: z.boolean(),
     }),
-    /** What this server can do so far: clients show a widget only when its source is here. */
-    sources: z.array(z.enum(WIDGET_SOURCES)).openapi({ example: ['system', 'movies'] }),
+    /**
+     * What this server can do so far: the admin shows a widget only when its source is here, and
+     * the apps draw shows, music and profiles only when theirs is (`CLIENT_SOURCES`).
+     */
+    sources: z.array(z.enum(SERVER_SOURCES)).openapi({ example: ['system', 'movies'] }),
     /**
      * The data providers whose terms ask to be credited, for each app's About (TMDB's terms).
      * Empty when absent: discovery answers leave it out to stay small.

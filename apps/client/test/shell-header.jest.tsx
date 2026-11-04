@@ -8,7 +8,7 @@ import { act, cleanup, fireEvent, screen } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { renderRouter } from 'expo-router/testing-library'
 import { TouchHeader } from '../src/kit.tsx'
-import { APP, acknowledge, flush, fresh, type } from './mock.ts'
+import { acknowledge, appWith, flush, fresh, type } from './mock.ts'
 
 jest.mock('../src/form-factor', () => ({ formFactorOverride: () => 'compact-touch' }))
 jest.mock('../src/transport.ts', () => require('./mock.ts').transportModule())
@@ -39,13 +39,10 @@ afterEach(cleanup)
 /** Signs in as ruth, acknowledges the owner's announcement, and opens the route given. */
 async function at(path: string) {
   const r = await renderRouter(
-    {
-      appDir: APP,
-      overrides: {
-        '(in)/header-titled': () => <TouchHeader title="Library" />,
-        '(in)/header-server': () => <TouchHeader />,
-      },
-    },
+    appWith({
+      '(in)/header-titled': () => <TouchHeader title="Library" />,
+      '(in)/header-server': () => <TouchHeader />,
+    }),
     { initialUrl: '/' },
   )
   await flush(5000)

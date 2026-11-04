@@ -6,6 +6,7 @@
 import { createRoute, z } from '@hono/zod-openapi'
 import { ClientType, Role } from './accounts.ts'
 import { API_PREFIX, access, body, errors, IdParam, IsoDate, json, noContent } from './common.ts'
+import { ClientShow, HomeMusic } from './kinds.ts'
 import { ClientItem } from './library.ts'
 
 // ---------------------------------------------------------------- shapes
@@ -160,10 +161,41 @@ export const HomeSection = z
     title: z.string().nullable(),
     /** A curated-by suffix ("by Ines"). */
     suffix: z.string().nullable(),
-    layout: z.enum(['hero', 'row', 'spotlight', 'continue']),
+    /** `episodes` (drafted with B3): Next up and New episodes, whose items are episodes. */
+    layout: z.enum(['hero', 'row', 'spotlight', 'continue', 'episodes']),
     items: z.array(HomeItem),
   })
   .openapi('HomeSection')
+
+/**
+ * Drafted with B3: the rows of shows (Recently added shows) and music (Recently played) that only
+ * a server serving them sends, among the films' rows in the person's order.
+ */
+export const HomeMediaSection = z
+  .discriminatedUnion('layout', [
+    z.object({
+      id: z.string(),
+      title: z.string().nullable(),
+      suffix: z.string().nullable(),
+      layout: z.literal('shows'),
+      items: z.array(ClientShow),
+    }),
+    z.object({
+      id: z.string(),
+      title: z.string().nullable(),
+      suffix: z.string().nullable(),
+      layout: z.literal('music'),
+      items: z.array(HomeMusic),
+    }),
+  ])
+  .openapi('HomeMediaSection')
+
+/** A row of Home: the films' (HomeSection), or a drafted kind's. */
+export const HomeRow = z.union([HomeSection, HomeMediaSection]).openapi('HomeRow')
+
+/** A Home row of films (and episodes): every row but the drafted shows' and music's. */
+export const isFilmRow = (r: z.infer<typeof HomeRow>): r is z.infer<typeof HomeSection> =>
+  r.layout !== 'shows' && r.layout !== 'music'
 
 export const RuleOptions = z
   .object({
@@ -409,7 +441,7 @@ export const clientHome = {
       'The live featured sections in your audience, with Continue watching right after the hero, then Recently added and the genre rows; then your own order and hidden rows (`/me/home`). Only titles with a file; a section that picks nothing is left out.',
     ...access('user'),
     request: { query: ClientQuery },
-    responses: { 200: json(z.array(HomeSection), 'Sections'), ...errors('unauthorized') },
+    responses: { 200: json(z.array(HomeRow), 'Sections'), ...errors('unauthorized') },
   }),
 }
 
@@ -456,6 +488,8 @@ export type FeaturedSectionInput = z.infer<typeof FeaturedSectionInput>
 export type SectionSummary = z.infer<typeof SectionSummary>
 export type HomeItem = z.infer<typeof HomeItem>
 export type HomeSection = z.infer<typeof HomeSection>
+export type HomeMediaSection = z.infer<typeof HomeMediaSection>
+export type HomeRow = z.infer<typeof HomeRow>
 export type RuleOptions = z.infer<typeof RuleOptions>
 export type CurationPreviewInput = z.infer<typeof CurationPreviewInput>
 export type CurationPreview = z.infer<typeof CurationPreview>

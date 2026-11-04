@@ -9,7 +9,7 @@ import { router } from 'expo-router'
 import { renderRouter } from 'expo-router/testing-library'
 import { ScrollView, StyleSheet, View } from 'react-native'
 import { useChromeOverlay } from '../src/kit.tsx'
-import { APP, acknowledge, flush, fresh, type } from './mock.ts'
+import { acknowledge, appWith, flush, fresh, type } from './mock.ts'
 
 jest.mock('../src/form-factor', () => ({
   formFactorOverride: () => (globalThis as { __formFactor?: string }).__formFactor ?? 'tv',
@@ -55,10 +55,7 @@ function Under() {
 /** Signs in at the form factor given, acknowledges the owner's announcement, and opens the page. */
 async function under(formFactor: 'tv' | 'regular-pointer') {
   ;(globalThis as { __formFactor?: string }).__formFactor = formFactor
-  await renderRouter(
-    { appDir: APP, overrides: { '(in)/under-chrome': Under } },
-    { initialUrl: '/' },
-  )
+  await renderRouter(appWith({ '(in)/under-chrome': Under }), { initialUrl: '/' })
   await flush(5000)
   if (formFactor === 'tv') {
     await fireEvent.press(screen.getByLabelText(/^Harbor,/))

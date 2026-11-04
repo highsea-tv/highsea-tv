@@ -71,13 +71,17 @@ export type ContinueCard = {
   show?: { id: string | number; title: string; code: string } | null
 }
 
-/** The film's page, or the show's at the episode. */
+/** The film's page, or the show's opened at the episode (@highsea-tv/client/shows' showPath). */
 export const cardPage = (c: ContinueCard) =>
-  c.show ? `/shows/${c.show.id}/episodes/${c.id}` : `/movies/${c.id}`
+  c.show ? `/shows/${c.show.id}?episode=${c.id}` : `/movies/${c.id}`
 
 /** The player at a title (Play, Resume, Continue watching's cards); `start` plays from the start. */
 export const playPath = (id: string | number, start = false) =>
   `/play/${id}${start ? '/start' : ''}`
+
+/** A card's player: a film's, or an episode's (`/play/episode/{id}`, as episodePlayPath has it). */
+export const cardPlayPath = (c: { id: string | number; show?: object | null }, start = false) =>
+  c.show ? `/play/episode/${c.id}${start ? '/start' : ''}` : playPath(c.id, start)
 
 export const libraryMessages = defineMessages({
   sortByTitle: 'Title',
@@ -127,6 +131,17 @@ export const libraryMessages = defineMessages({
   born: 'Born {date}',
   bornIn: 'Born {date} in {place}',
   died: 'Died {date}',
+  // a show's Information (the prototype's web/show.tsx informationOf)
+  createdBy: 'Created by',
+  firstAired: 'First aired',
+  status: 'Status',
+  stillAiring: 'Still airing',
+  endedIn: 'Ended in {year}',
+  showHere: 'Here',
+  showHereIs:
+    '{seasons, plural, one {# season} other {# seasons}} · {episodes, plural, one {# episode} other {# episodes}}',
+  episodeLength: 'Episodes',
+  aboutMinutes: 'About {minutes} min each',
 })
 
 /** A person's credit on a title, as the page names it. */
@@ -312,6 +327,41 @@ export function createLibraryText(locale = 'en') {
         d.studios.length > 0 && [t('studio'), d.studios.join(', ')],
         d.originalTitle !== m.title && [t('originalTitle'), d.originalTitle],
         !!d.soundtrack && [t('soundtrack'), d.soundtrack.title, `/music/albums/${d.soundtrack.id}`],
+      ]
+      return facts.filter((x) => x !== false)
+    },
+
+    /**
+     * A show's Information: who created it, when it first aired (its first episode, else its
+     * year), whether it's still airing, how much of it is here, an episode's length, its rating
+     * and its genres.
+     */
+    showInformationOf(d: {
+      show: {
+        year: number
+        endYear: number | null
+        seasons: number
+        episodes: number
+        runtimeMinutes: number
+        certification: string
+        genres: string[]
+      }
+      creators: FactCredit[]
+      seasons: { number: number; episodes: { aired: string }[] }[]
+    }): Fact[] {
+      const s = d.show
+      const first = d.seasons.find((x) => x.number === 1)?.episodes[0]
+      const facts: (Fact | false)[] = [
+        d.creators.length > 0 && [t('createdBy'), names(d.creators)],
+        [t('firstAired'), first ? longDate(`${first.aired}T12:00:00Z`) : String(s.year)],
+        [t('status'), s.endYear === null ? t('stillAiring') : t('endedIn', { year: s.endYear })],
+        [t('showHere'), t('showHereIs', { seasons: s.seasons, episodes: s.episodes })],
+        s.runtimeMinutes > 0 && [
+          t('episodeLength'),
+          t('aboutMinutes', { minutes: s.runtimeMinutes }),
+        ],
+        [t('rated'), s.certification || t('notRated')],
+        s.genres.length > 0 && [t('genres'), s.genres.join(', ')],
       ]
       return facts.filter((x) => x !== false)
     },

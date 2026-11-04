@@ -2,10 +2,12 @@
 // The phone's Library tab (client-library.md#mobile, the prototype's mobile/library.tsx and
 // collections.tsx): the phone's header with its title and the account, Movies or Collections as a
 // pair of chips (`?view=`), then the view chosen (./movies.tsx, ./collections.tsx), each the page's
-// own scroller. Each view reads only its own answer, and its pull to refresh fetches that answer
+// own scroller. On a server that serves them (`useServes`, one-client-platform-b.md › B3), Shows
+// (../library/shows.tsx) and Music (../music/library.tsx) are views here too, in the prototype's
+// order: Movies, Shows, Collections, Music (mobile/collections.tsx's LibraryNav). Each view reads only its own answer, and its pull to refresh fetches that answer
 // again quietly, keeping what's on screen: the pull ends when the fetch settles, and says so when
 // it fails. A pointer and the TV have Movies and Collections as destinations of their own instead.
-import { useCollections, useLibrary } from '@highsea-tv/client/data'
+import { useCollections, useLibrary, useServes } from '@highsea-tv/client/data'
 import { useT } from '@highsea-tv/i18n/react'
 import { Chip, tokens, useControl, usePageGutter, useTheme } from '@highsea-tv/ui'
 import { type Href, router, useLocalSearchParams } from 'expo-router'
@@ -14,13 +16,23 @@ import { Platform, RefreshControl, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useDeviceClient } from '../host'
 import { TouchHeader, useSay } from '../kit.tsx'
+import { MusicView } from '../music/library.tsx'
 import { TouchCollections } from './collections.tsx'
 import { libraryScreenMessages as messages } from './messages.ts'
 import { TouchMovies } from './movies.tsx'
+import { ShowsView } from './shows.tsx'
 
 const { space } = tokens
 
-export type LibraryView = 'movies' | 'collections'
+export type LibraryView = 'movies' | 'shows' | 'collections' | 'music'
+
+/** Each view's address: Movies is the Library's own. */
+const VIEW_PATH: Record<LibraryView, string> = {
+  movies: '/library',
+  shows: '/library?view=shows',
+  collections: '/library?view=collections',
+  music: '/library?view=music',
+}
 
 /** How long a pull's mark stays at most, if the fetch never settles. */
 const REFRESH_LIMIT_MS = 10_000
@@ -32,7 +44,15 @@ export function TouchLibrary() {
   const gutter = usePageGutter()
   const insets = useSafeAreaInsets()
   const params = useLocalSearchParams<{ view?: string }>()
-  const view: LibraryView = params.view === 'collections' ? 'collections' : 'movies'
+  const shows = useServes('shows')
+  const music = useServes('music')
+  const views: LibraryView[] = [
+    'movies',
+    ...(shows ? (['shows'] as const) : []),
+    'collections',
+    ...(music ? (['music'] as const) : []),
+  ]
+  const view: LibraryView = views.find((v) => v !== 'movies' && v === params.view) ?? 'movies'
   const header = (
     <View style={{ paddingTop: insets.top + space['1'], gap: space['4'] }}>
       {/* the phone's header, as every destination's; it keeps its own gutter, so it stands out of
@@ -46,7 +66,7 @@ export function TouchLibrary() {
         accessibilityLabel={t('views')}
         style={{ flexDirection: 'row', gap: m.gap }}
       >
-        {(['movies', 'collections'] as const).map((v) => (
+        {views.map((v) => (
           <Chip
             key={v}
             // each view is a page of the Library's navigation, the one on view its current page
@@ -56,9 +76,8 @@ export function TouchLibrary() {
             current={view === v ? 'page' : undefined}
             onPress={() => {
               // in a browser each view is a page of its own, so its Back returns to the other
-              if (Platform.OS === 'web')
-                router.push((v === 'movies' ? '/library' : '/library?view=collections') as Href)
-              else router.setParams({ view: v === 'movies' ? undefined : v })
+              if (Platform.OS === 'web') router.push(VIEW_PATH[v] as Href)
+              else router.setParams({ view: v === 'movies' ? undefined : v, music: undefined })
             }}
           >
             {t(v)}
@@ -70,7 +89,15 @@ export function TouchLibrary() {
 
   return (
     <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-      {view === 'movies' ? <MoviesView header={header} /> : <CollectionsView header={header} />}
+      {view === 'movies' ? (
+        <MoviesView header={header} />
+      ) : view === 'shows' ? (
+        <ShowsView header={header} />
+      ) : view === 'music' ? (
+        <MusicView header={header} />
+      ) : (
+        <CollectionsView header={header} />
+      )}
     </View>
   )
 }
@@ -92,7 +119,7 @@ function CollectionsView({ header }: { header: ReactElement }) {
  * `refresh`, which keeps the old answer on screen), or REFRESH_LIMIT_MS at most; a fetch that
  * fails says so, and what's on screen stays.
  */
-function usePull(refresh: () => Promise<unknown>) {
+export function usePull(refresh: () => Promise<unknown>) {
   const t = useT(messages)
   const theme = useTheme()
   const say = useSay()

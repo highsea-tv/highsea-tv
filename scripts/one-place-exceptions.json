@@ -24,10 +24,6 @@
           "names": ["WebSettings"]
         },
         {
-          "path": "design/prototypes/src/mobile/more.tsx",
-          "names": ["MobileSettingsScreen"]
-        },
-        {
           "path": "design/prototypes/src/tv/settings.tsx"
         },
         {
@@ -46,36 +42,8 @@
       "rule": "screens",
       "path": "apps/web/src/**",
       "count": 17,
-      "until": "B",
-      "reason": "The web client's screens and their parts, drawn with the web renderer. Part B moves each screen into apps/client and removes apps/web."
-    },
-    {
-      "rule": "screens",
-      "path": "design/prototypes/src/web/**",
-      "count": 18,
-      "until": "B",
-      "reason": "The web client's prototype screens. Part B moves each into apps/client, which the prototypes then run in their frames against the mock, and removes the folder."
-    },
-    {
-      "rule": "screens",
-      "path": "design/prototypes/src/mobile/**",
-      "count": 20,
-      "until": "B",
-      "reason": "The phone's prototype screens. Part B moves each into apps/client, which the prototypes then run in their frames against the mock, and removes the folder."
-    },
-    {
-      "rule": "screens",
-      "path": "design/prototypes/src/tv/**",
-      "count": 18,
-      "until": "B",
-      "reason": "The TV's prototype screens. Part B moves each into apps/client, which the prototypes then run in their frames against the mock, and removes the folder."
-    },
-    {
-      "rule": "screens",
-      "path": "design/prototypes/src/client/**",
-      "count": 13,
-      "until": "B",
-      "reason": "What the prototypes' web, phone and TV screens share: the continue menu, downloads, pairing and the rest the C2 to C8 screens draw. Their logic moves into @highsea-tv/client and their drawing into apps/client, and part B removes the folder."
+      "until": "C",
+      "reason": "The web client's screens and their parts, drawn with the web renderer. Part C serves apps/client's web export at /web in the server and the desktop app, and removes apps/web (one-client-platform-b.md's answer 2)."
     },
     {
       "rule": "screens",
@@ -94,9 +62,9 @@
     {
       "rule": "screens",
       "path": "design/prototypes/src/admin/**",
-      "count": 47,
+      "count": 48,
       "until": "D",
-      "reason": "The admin's prototype, outside this rule until part D draws it with the library, as the admin."
+      "reason": "The admin's prototype, outside this rule until part D draws it with the library, as the admin. Get the apps (system/get-the-apps.tsx) moved in from the clients' shared folder in B3, for System › Status and the command palette."
     },
     {
       "rule": "values",
@@ -146,6 +114,55 @@
       "count": 55,
       "until": "E",
       "reason": "The player's own measures from the prototype's players (web/player.tsx, mobile/player.tsx and tv/player.tsx), moved in B2 with its spaces and icon sizes on the scales: the TV player's measures in screen units: the scrubber's 0.8 to 1.6 track, 1.4 thumb and the trickplay's 14 preview, the legend's and the pills' gaps, the 0.7 and 0.8 black scrims, the timing row's 46 and 30 widths, and the black behind the film. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/music-player/bar.tsx",
+      "count": 9,
+      "until": "E",
+      "reason": "The music bar's own measures from the prototype's web/music-bar.tsx, moved in B3: the queue panel's 384 (the web renderer's side sheet), the times' 12 type, the transport's 17 and 18 icons, and the scrim's 0.5 black. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/music-player/mini.tsx",
+      "count": 4,
+      "until": "E",
+      "reason": "The mini player's measures from the prototype's mobile/now-playing.tsx, moved in B3: its song's 15 and artist's 13 type, and its transport's 22 icons. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/music-player/now-playing.tsx",
+      "count": 15,
+      "until": "E",
+      "reason": "Now playing's measures by touch from the prototype's mobile/now-playing.tsx, moved in B3: the blurred cover's 1.5 scale, the 11 mono label and 13 type of where it plays from, the song's 22 and artist's 18, the times' 12, the transport's 22 and 34 icons, the volume's 16 icons, and the cover's 0.45 black shadow. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/music-player/now-playing-tv.tsx",
+      "count": 42,
+      "until": "E",
+      "reason": "Now playing's measures on the TV from the prototype's tv/now-playing.tsx, moved in B3, in screen units: the head's stop (2.6 high, a 2 cover, 0.7 gap, 0.3 and 1 padding, 1.2 bars), the 24 cover and its 4 gap, the 3 title, the 3.6 and 5 round controls with their 1.6 and 2 icons and 0.3 dot, the scrubber's 5 waveform, 0.6 padding and 0.2 playhead, Up next's 9 covers, the gaps between them, the cover's 0.9 paused scale and 0.5 black shadow, and the backdrop's 1.1 scale. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/music-player/parts.tsx",
+      "count": 1,
+      "until": "E",
+      "reason": "The queue's song times' 12 type, from the prototype's client/music-queue.tsx, moved in B3. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
+    },
+    {
+      "rule": "values",
+      "path": "apps/client/src/music/sizes.ts",
+      "count": 1,
+      "until": "E",
+      "reason": "The black under music's scrims over art and the playlist mosaic's shadow, from the prototypes' bg-black/50, bg-black/60 and rgba(0,0,0,0.35), moved in B3 and written once as BLACK with alpha(). No theme has a black, since these darken art whatever the theme. A new token value needs the owner's approval; part E removes this entry once it has one."
+    },
+    {
+      "rule": "values",
+      "path": "packages/ui/src/native/waveform.tsx",
+      "count": 3,
+      "until": "E",
+      "reason": "The waveform's own measures from the prototype's client/waveform.tsx, moved in B3: the time tooltip's 11 type, the playing mark's 14 default size, and its bars' 2 width. They have no token (controls.md lets the media players' own controls keep their own shape). A new token value needs the owner's approval; part E removes this entry once they have tokens."
     },
     {
       "rule": "values",
@@ -297,9 +314,9 @@
     {
       "rule": "values",
       "path": "packages/ui/src/native/tv/controls.tsx",
-      "count": 5,
+      "count": 7,
       "until": "E",
-      "reason": "TvMessage's spaces, its 46 width and its title at 2.4 in screen units, written before this check. The tokens have no TV spacing or size scale in units, and the hero title's type is 5.2 (tvText), so these need values the owner approves; part A (the library on the web) has none to move, and part E removes this entry once they have tokens."
+      "reason": "TvMessage's spaces, its 46 width and its title at 2.4 in screen units, written before this check. The tokens have no TV spacing or size scale in units, and the hero title's type is 5.2 (tvText), so these need values the owner approves; part A (the library on the web) has none to move, and part E removes this entry once they have tokens. B3 added the 0.5 dot and its 0.6 gap on a key that toggles (TvKey's `pressed`, the TV prototype's Shift)."
     },
     {
       "rule": "values",

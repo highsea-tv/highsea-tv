@@ -36,6 +36,8 @@ const DESKTOP_OSES = ['mac', 'windows', 'linux'] as const satisfies readonly Pro
 const APP_UPDATES = ['none', 'ready'] as const satisfies readonly ProtoState['update'][]
 /** The toolbar's Downloads on the phone: built (4.6), or not yet (state.ts's PhoneDownloads). */
 const PHONE_DOWNLOADS = ['built', 'later'] as const satisfies readonly ProtoState['downloads'][]
+/** The toolbar's Music: nothing playing, or a song playing (state.ts's MusicState). */
+const MUSIC_STATES = ['none', 'playing'] as const satisfies readonly ProtoState['music'][]
 
 /** Every message's `channel`, so the chrome's other messages (bridge.ts) never collide. */
 export const FRAME_CHANNEL = 'highsea:frame'
@@ -61,6 +63,7 @@ export type FrameState = Pick<
   | 'downloads'
   | 'stream'
   | 'airplay'
+  | 'music'
 >
 
 /** Chrome → client. `state` goes on `ready` and on every change; `navigate` on the chrome's own. */
@@ -113,7 +116,8 @@ function stateOf(v: unknown): FrameState | null {
     !oneOf(v.update, APP_UPDATES) ||
     !oneOf(v.downloads, PHONE_DOWNLOADS) ||
     !oneOf(v.stream, STREAMS) ||
-    !oneOf(v.airplay, AIRPLAYS)
+    !oneOf(v.airplay, AIRPLAYS) ||
+    !oneOf(v.music, MUSIC_STATES)
   )
     return null
   return {
@@ -132,6 +136,7 @@ function stateOf(v: unknown): FrameState | null {
     downloads: v.downloads,
     stream: v.stream,
     airplay: v.airplay,
+    music: v.music,
   }
 }
 
@@ -152,6 +157,7 @@ export const frameStateOf = (state: ProtoState): FrameState => ({
   downloads: state.downloads,
   stream: state.stream,
   airplay: state.airplay,
+  music: state.music,
 })
 
 /** What `queryState` reads: `URLSearchParams`, or anything with its `get`. */
@@ -196,6 +202,9 @@ export function queryState(query: Query): Partial<FrameState> {
   const airplay = pick('airplay', AIRPLAYS)
   if (stream) out.stream = stream
   if (airplay) out.airplay = airplay
+  // the music player's (`?music=playing`)
+  const music = pick('music', MUSIC_STATES)
+  if (music) out.music = music
   const sound = query.get('sound')
   if (sound === 'on' || sound === 'off') {
     const on = sound === 'on'

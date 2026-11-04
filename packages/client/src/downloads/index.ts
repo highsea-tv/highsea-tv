@@ -10,7 +10,14 @@
 // downloads are built). Episodes kept under their show and season and songs under their album are
 // drawn by the list already; their sources (a season's, an album's) come with shows and music in
 // B3. React without the DOM (useSyncExternalStore), so React Native imports it (ADR 0055).
-import type { ClientItem } from '@highsea-tv/api-contract'
+import type {
+  ClientAlbum,
+  ClientEpisode,
+  ClientItem,
+  ClientSeason,
+  ClientShow,
+  ClientSong,
+} from '@highsea-tv/api-contract'
 import { bytes } from '@highsea-tv/core/format'
 import { type createT, defineMessages } from '@highsea-tv/i18n'
 import { useSyncExternalStore } from 'react'
@@ -107,6 +114,57 @@ export const filmSource = (m: ClientItem): OfflineSource => ({
   minutes: m.runtimeMinutes ?? 0,
   caption: null,
   group: null,
+})
+
+/** What an album's songs are kept under (the prototype's client/downloads.ts). */
+export const albumGroup = (a: ClientAlbum): OfflineGroup => ({
+  kind: 'album',
+  id: a.id,
+  title: a.title,
+  artist: a.artist.name,
+  cover: a.cover,
+})
+
+/** A season of a show, which its episodes are kept under (the prototype's seasonGroup). */
+export const seasonGroup = (
+  show: Pick<ClientShow, 'id' | 'title'>,
+  season: Pick<ClientSeason, 'number' | 'title' | 'poster'>,
+): OfflineGroup => ({
+  kind: 'season',
+  id: `${show.id}:${season.number}`,
+  show: { id: String(show.id), title: show.title },
+  season: season.number,
+  title: season.title,
+  poster: season.poster,
+})
+
+/**
+ * An episode in its season as a download's source: its still, and its place ("S2, E3", the shows'
+ * words' episodeCode, which the caller gives in its language) as the caption.
+ */
+export const episodeSource = (
+  e: ClientEpisode,
+  group: OfflineGroup,
+  code: string,
+): OfflineSource => ({
+  id: String(e.id),
+  kind: 'episode',
+  title: e.title,
+  still: e.still,
+  minutes: e.runtimeMinutes ?? 0,
+  caption: code,
+  group,
+})
+
+/** A song on its album as a download's source: the cover is its art, its number its caption. */
+export const songSource = (song: ClientSong, a: ClientAlbum): OfflineSource => ({
+  id: song.id,
+  kind: 'song',
+  title: song.title,
+  still: a.cover,
+  minutes: song.duration / 60,
+  caption: String(song.number),
+  group: albumGroup(a),
 })
 
 export const offlineOf = (
@@ -396,6 +454,11 @@ export const downloadsMessages = defineMessages({
   stoppedButton: 'The download stopped',
   downloaded: 'Downloaded · plays offline for {days} more days',
   downloadedExpired: 'Downloaded · connect to {server} to keep watching it',
+  // a season's or an album's Download (the prototype's GroupDownload)
+  groupDone: '{done} of {count}',
+  groupKept: 'Downloaded · {size}',
+  groupRest: '{label} the rest',
+  groupTo: '{count} to {where}.',
   // until downloads are built (client-settings.md#offline)
   laterPhone: 'Downloading films to this phone comes in the next update of the app.',
   laterComputer: 'Downloading films to this computer comes in the next update of the app.',

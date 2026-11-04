@@ -12,19 +12,23 @@ export * from './downloads.ts'
 export * from './events.ts'
 export * from './importers.ts'
 export * from './indexers.ts'
+export * from './kinds.ts'
 export * from './library.ts'
 export * from './library-import.ts'
 export * from './lists.ts'
 export * from './metadata.ts'
 export * from './movies.ts'
+export * from './music.ts'
 export * from './operations.ts'
 export * from './personalization.ts'
 export * from './playback.ts'
 export * from './playback-settings.ts'
+export * from './profiles.ts'
 export * from './quality.ts'
 export * from './sessions.ts'
 export * from './settings.ts'
 export * from './setup.ts'
+export * from './shows.ts'
 export * from './subtitles.ts'
 export * from './system.ts'
 export * from './tags.ts'
@@ -53,14 +57,17 @@ import { libraryImport } from './library-import.ts'
 import { importLists } from './lists.ts'
 import { metadata } from './metadata.ts'
 import { movies, rootFolders } from './movies.ts'
+import { music, playlists } from './music.ts'
 import { operationsSettings } from './operations.ts'
 import { appearance, dashboard, home, preferences } from './personalization.ts'
 import { playback } from './playback.ts'
 import { playbackSettings, playbackStatusRoutes } from './playback-settings.ts'
+import { profiles } from './profiles.ts'
 import { quality } from './quality.ts'
 import { sessions } from './sessions.ts'
 import { settings } from './settings.ts'
 import { setup } from './setup.ts'
+import { shows } from './shows.ts'
 import { subtitles } from './subtitles.ts'
 import { system } from './system.ts'
 import { tags } from './tags.ts'
@@ -110,4 +117,9 @@ export const routes = {
   collections,
   announcements,
   tags,
+  // drafted with B3 (one-client-platform-b.md): the mock answers them, the server 501s
+  shows,
+  music,
+  playlists,
+  profiles,
 } as const

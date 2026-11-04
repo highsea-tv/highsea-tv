@@ -32,12 +32,12 @@ import {
   toast,
 } from '@highsea-tv/ui'
 import { useEffect, useState } from 'react'
-import { GetTheAppsDialog } from '../../client/get-the-apps.tsx'
 import { Soon } from '../../kit/soon.tsx'
 import { useAction, useClient, useNow, useQuery } from '../../mock/hooks.tsx'
 import { Loadable } from '../loadable.tsx'
 import { AdminPage, adminHref, useShell } from '../shell.tsx'
 import { useTabAddress } from '../tabs.ts'
+import { GetTheAppsDialog } from './get-the-apps.tsx'
 
 export const systemTabs = [
   { id: 'status', label: 'Status' },

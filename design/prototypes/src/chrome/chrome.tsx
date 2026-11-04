@@ -60,14 +60,8 @@ export function Chrome() {
   const [now, setNow] = useState<number | null>(null)
   // the path the screen last reported, so the chrome doesn't echo it back
   const [reported, setReported] = useState<string | null>(null)
-  // whether the frame holds the client: decided on the chrome's own navigation, and kept while the
-  // client reports where it went (adjusted while rendering, https://react.dev/learn/you-might-not-need-an-effect)
-  const [hold, setHold] = useState(() => ({ path, on: heldByClient(path) }))
-  let holding = hold.on
-  if (hold.path !== path) {
-    holding = reported === path && hold.on ? true : heldByClient(path)
-    setHold({ path, on: holding })
-  }
+  // every client platform's route is the client's since B3 (chrome/client.ts)
+  let holding = heldByClient(path)
   holding &&= platform !== null && platform !== 'admin'
   const holdingRef = useRef(holding)
   holdingRef.current = holding

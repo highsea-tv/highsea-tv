@@ -1,49 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// Which of the chrome's routes apps/client holds (one-client-platform.md › A): the destinations
-// part A moves, Choose a server and its sign-in, then Settings. A frame on one of them shows the
-// client's mock web export (served at /web by ../../client-export.ts) instead of the prototype's
-// screen; every other destination keeps its prototype screen until part B moves it.
+// The chrome's routes apps/client holds (one-client-platform.md › A, one-client-platform-b.md
+// › B3): since B3 every client platform's route. A frame there shows the client's mock web export
+// (served at /web by ../../client-export.ts); the prototype draws no client screen of its own.
 //
 // The chrome's route for a client route is the platform's prefix and the client's own path:
 // `#/mobile/connect` is the client at `/connect` in the phone's frame, and the client's `/` is
 // `#/mobile`. Once a frame holds the client, the routes it reports keep it there (signing in goes
-// on to the client's Home); the chrome's own navigation to a route the client doesn't hold
-// (the launcher, the toolbar, the back button) goes back to the prototype's screen.
+// on to the client's Home).
 import { createT, defineMessages } from '@highsea-tv/i18n'
 import { type Input, TV_REFERENCE } from '@highsea-tv/tokens'
 import type { Platform } from '../proto/state.ts'
-
-/**
- * The client's routes, by prefix: part A's gate, sign-in and Settings, and B1's films (a film, a
- * person, a collection, Movies, Collections, Search and Alerts).
- */
-export const CLIENT_ROUTES = [
-  '/connect',
-  '/sign-in',
-  '/settings',
-  '/movies',
-  '/people',
-  '/collections',
-  '/search',
-  '/alerts',
-  // B2's account: Connect a device and Profile
-  '/link',
-  '/profile',
-  // B2's downloads: the phone's Offline, and Downloads on the web and in the desktop app
-  '/offline',
-  '/downloads',
-  // B2's player, for films: an episode's stays the prototype's until B3 (EPISODE_PLAY)
-  '/play',
-] as const
-
-/** An episode's player (`/play/<show>-s1e2`), which stays the prototype's until B3 moves shows. */
-const EPISODE_PLAY = /^\/play\/[^/]+-s\d+e\d+(\/|$)/
-
-/**
- * The client's routes held only as they are, since what's under them moves later: Home, and the
- * phone's Library (its Shows and Music views are B3's, at `/library/shows` and `/library/music`).
- */
-export const CLIENT_EXACT = ['/', '/library'] as const
 
 /**
  * The prototypes' addresses the client keeps under another: the phone's Collections view is
@@ -51,8 +17,19 @@ export const CLIENT_EXACT = ['/', '/library'] as const
  */
 const CLIENT_ALIASES: Record<string, string> = {
   '/library/collections': '/library?view=collections',
-  // the phone's You is the client's Settings, its account above the list (B2); /you/who is B3's
+  // the phone's Shows view (B3)
+  '/library/shows': '/library?view=shows',
+  // the phone's Music view and its own views (B3)
+  '/library/music': '/library?view=music',
+  '/library/music/artists': '/library?view=music&music=artists',
+  '/library/music/songs': '/library?view=music&music=songs',
+  '/library/music/playlists': '/library?view=music&music=playlists',
+  // the phone's You is the client's Settings, its account above the list (B2), and its Switch
+  // profile sheet is Settings' `?who=1` (B3)
   '/you': '/settings',
+  '/you/who': '/settings?who=1',
+  // the TV's opening, Who's watching as highsea opens (B3)
+  '/start': '/who?launch=1',
 }
 
 export type ClientPlatform = Exclude<Platform, 'admin'>
@@ -99,17 +76,11 @@ export function clientPathOf(path: string): string | null {
 }
 
 /**
- * Whether the client holds a chrome route: a client platform's, under one of CLIENT_ROUTES or
- * one of CLIENT_EXACT itself.
+ * Whether the client holds a chrome route: since B3 every client platform's route is the
+ * client's (one-client-platform-b.md › B3), an address it doesn't know drawing its own not-found
+ * page; only the admin's are the prototype's own (part D).
  */
-export function heldByClient(path: string): boolean {
-  const rest = clientPathOf(path)?.split('?')[0]
-  if (rest === undefined || EPISODE_PLAY.test(rest)) return false
-  return (
-    (CLIENT_EXACT as readonly string[]).includes(rest) ||
-    CLIENT_ROUTES.some((r) => rest === r || rest.startsWith(`${r}/`))
-  )
-}
+export const heldByClient = (path: string): boolean => clientPathOf(path) !== null
 
 /** The chrome's route for a client route the frame on `platform` reports. */
 export const chromePathOf = (platform: ClientPlatform, clientPath: string) =>

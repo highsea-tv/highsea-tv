@@ -14,7 +14,7 @@
 import { type ReactNode, type Ref, useState } from 'react'
 import { View } from 'react-native'
 import { UNCHOSEN_ALPHA } from '../alpha.ts'
-import { Avatar } from '../brand.tsx'
+import { Avatar, type AvatarTone } from '../brand.tsx'
 import { Icon } from '../icon.tsx'
 import type { IconName } from '../icons.ts'
 import { Text } from '../text.tsx'
@@ -102,6 +102,7 @@ export function TvHeadStop({
   text,
   icon,
   avatar,
+  avatarTone,
   dot = false,
   here,
   onPress,
@@ -115,6 +116,8 @@ export function TvHeadStop({
   icon?: IconName
   /** A person's name, for their avatar. */
   avatar?: string
+  /** The avatar's colour: a profile's, when the server has profiles. */
+  avatarTone?: AvatarTone
   dot?: boolean
   here: boolean
   onPress: () => void
@@ -159,7 +162,7 @@ export function TvHeadStop({
                 {text}
               </Text>
             ) : avatar !== undefined ? (
-              <Avatar name={avatar} size={AVATAR} />
+              <Avatar name={avatar} size={AVATAR} tone={avatarTone} />
             ) : icon ? (
               <View style={dim}>
                 <Icon name={icon} size={tokens.icon.sizeTv.min} color={fg} />

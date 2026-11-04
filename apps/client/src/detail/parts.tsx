@@ -7,7 +7,7 @@
 import type { ClientDetail } from '@highsea-tv/api-contract'
 import { useCollections, useMarkWatched } from '@highsea-tv/client/data'
 import { filmsMessages, qualitiesOf } from '@highsea-tv/client/films'
-import { createLibraryText, peopleOf } from '@highsea-tv/client/library'
+import { createLibraryText, type FactCredit, peopleOf } from '@highsea-tv/client/library'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
 import { ApiError } from '@highsea-tv/sdk'
@@ -97,14 +97,41 @@ export function useTexts() {
  * elsewhere), the rating, the qualities it plays in, and Watched (the web's and the TV's line).
  */
 export function Meta({ d }: { d: ClientDetail }) {
-  const t = useT(detailMessages)
   const { films } = useTexts()
+  const it = d.item
+  return (
+    <MetaLine
+      lead={films.leadOf(it)}
+      certification={d.certification}
+      genres={it.genres}
+      rating={it.rating}
+      qualities={qualitiesOf(d.versions)}
+      watched={it.watched}
+    />
+  )
+}
+
+/** The meta line's parts, a film's (Meta) or a show's (its years and seasons as the lead). */
+export function MetaLine({
+  lead,
+  certification,
+  genres: all,
+  rating,
+  qualities = [],
+  watched,
+}: {
+  lead: string | null
+  certification: string | null
+  genres: string[]
+  rating: number
+  qualities?: string[]
+  watched: boolean
+}) {
+  const t = useT(detailMessages)
   const m = useControl()
   const input = useFormFactor().input
-  const it = d.item
-  const lead = films.leadOf(it)
   const variant = input === 'touch' ? 'callout' : input === 'tv' ? 'meta' : 'body'
-  const genres = it.genres.slice(0, input === 'touch' ? 1 : 2).join(' · ')
+  const genres = all.slice(0, input === 'touch' ? 1 : 2).join(' · ')
   return (
     <View
       style={{
@@ -120,19 +147,17 @@ export function Meta({ d }: { d: ClientDetail }) {
           {lead}
         </Text>
       ) : null}
-      {d.certification ? <Certification>{d.certification}</Certification> : null}
+      {certification ? <Certification>{certification}</Certification> : null}
       {genres ? (
         <Text variant={variant} color="text-2">
           {genres}
         </Text>
       ) : null}
-      {it.rating > 0 ? (
-        <Rating value={it.rating} size={input === 'tv' ? undefined : space['3']} />
-      ) : null}
-      {qualitiesOf(d.versions).map((q) => (
+      {rating > 0 ? <Rating value={rating} size={input === 'tv' ? undefined : space['3']} /> : null}
+      {qualities.map((q) => (
         <QualityTag key={q}>{q}</QualityTag>
       ))}
-      {it.watched && input !== 'touch' ? (
+      {watched && input !== 'touch' ? (
         <Text variant={variant} color="text-2">
           {t('watched')}
         </Text>
@@ -144,26 +169,42 @@ export function Meta({ d }: { d: ClientDetail }) {
 /** "Starring" the first three, and "Directed by", each on a line of its own. */
 export function Credits({ d, width }: { d: ClientDetail; width?: number }) {
   const t = useT(detailMessages)
+  return <CreditLines cast={d.cast} makers={d.directors} madeBy={t('directedBy')} width={width} />
+}
+
+/** "Starring" the first three, then who made it ("Directed by", or a show's "Created by"). */
+export function CreditLines({
+  cast,
+  makers,
+  madeBy,
+  width,
+}: {
+  cast: FactCredit[]
+  makers: FactCredit[]
+  madeBy: string
+  width?: number
+}) {
+  const t = useT(detailMessages)
   const { facts } = useTexts()
   const input = useFormFactor().input
   const variant = input === 'tv' ? 'meta' : 'caption'
-  if (d.cast.length === 0 && d.directors.length === 0) return null
+  if (cast.length === 0 && makers.length === 0) return null
   return (
     <View style={{ maxWidth: width }}>
-      {d.cast.length > 0 ? (
+      {cast.length > 0 ? (
         <Text variant={variant} color="text-2" numberOfLines={input === 'touch' ? 2 : 1}>
           <Text variant={variant} color="text-3">
             {t('starring')}
           </Text>
-          {facts.names(d.cast.slice(0, 3))}
+          {facts.names(cast.slice(0, 3))}
         </Text>
       ) : null}
-      {d.directors.length > 0 ? (
+      {makers.length > 0 ? (
         <Text variant={variant} color="text-2" numberOfLines={1}>
           <Text variant={variant} color="text-3">
-            {t('directedBy')}
+            {madeBy}
           </Text>
-          {facts.names(d.directors)}
+          {facts.names(makers)}
         </Text>
       ) : null}
     </View>

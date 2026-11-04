@@ -19,14 +19,14 @@ import { mock } from './transport.ts'
 /**
  * The toolbar's states that screens draw by in mock mode: the desktop app (`app`, `os`, `update`;
  * desktop-app.md), the phone's Downloads (`downloads`) and its player on an AirPlay screen
- * (`airplay`, player.md). From the address at first
+ * (`airplay`, player.md) and the music player's song (`music`). From the address at first
  * (`mock.query`), then the chrome's state. Every field is undefined outside mock mode.
  */
 export type FrameToolbar = Partial<
-  Pick<FrameState, 'app' | 'os' | 'update' | 'downloads' | 'airplay'>
+  Pick<FrameState, 'app' | 'os' | 'update' | 'downloads' | 'airplay' | 'music'>
 >
 
-const TOOLBAR_KEYS = ['app', 'os', 'update', 'downloads', 'airplay'] as const
+const TOOLBAR_KEYS = ['app', 'os', 'update', 'downloads', 'airplay', 'music'] as const
 
 const toolbarOf = (state: Partial<FrameState> | undefined): FrameToolbar => ({
   app: state?.app,
@@ -34,6 +34,7 @@ const toolbarOf = (state: Partial<FrameState> | undefined): FrameToolbar => ({
   update: state?.update,
   downloads: state?.downloads,
   airplay: state?.airplay,
+  music: state?.music,
 })
 
 export type FrameChannel = {

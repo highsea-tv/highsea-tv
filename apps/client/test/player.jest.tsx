@@ -5,12 +5,13 @@
 // happened with a way on; Audio and subtitles picks the subtitle, draws its lines where the engine
 // hands them over, and moves them by 50 ms a press, kept for the film; Next up counts down to the
 // next part; picture in picture and AirPlay are the phone's buttons, and playing on another screen
-// says so. With a pointer, the prototype's C5 cases moved here: the position, Pause and Play, the
+// says so; a link opened over it closes it. With a pointer, the prototype's C5 cases moved here: the position, Pause and Play, the
 // panel with the speed and the timing. And the web's subtitle is the browser's own `<track>`.
 import { SEED } from '@highsea-tv/mock/films'
 import { MOCK_CLIP, STOP_AFTER_MS } from '@highsea-tv/mock/play'
 import { act, cleanup, fireEvent, render, screen, within } from '@testing-library/react-native'
 import { router } from 'expo-router'
+import { navigationRef } from 'expo-router/build/global-state/navigationRef'
 import type { FakeVideo } from './mock.ts'
 import { flush, fresh, sent, server, signedIn } from './mock.ts'
 
@@ -274,6 +275,18 @@ describe('the player on the phone', () => {
     // the controls stay up there
     await flush(4000)
     expect(pause()).toBeTruthy()
+  })
+
+  test('a link opened over the player closes it and goes where it points (B2’s answer 1)', async () => {
+    await playing()
+    expect(screen.getByRole('header', { name: 'Tears of Steel' })).toBeTruthy()
+    // an incoming link is a NAVIGATE to its address, as Expo Router's linking dispatches it
+    await act(() => router.navigate('/settings' as never))
+    await flush(1000)
+    const stack = navigationRef.getRootState()?.routes[0]?.state
+    expect(stack?.routes.map((r) => r.name)).toEqual(['(in)', '(in)'])
+    expect(screen.queryByRole('header', { name: 'Tears of Steel' })).toBeNull()
+    expect(screen.getAllByText('Settings').length).toBeGreaterThan(0)
   })
 
   test('Play from the beginning starts at 0', async () => {

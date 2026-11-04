@@ -6,9 +6,32 @@
 
 import path from 'node:path'
 import { act, fireEvent, screen } from '@testing-library/react-native'
-import { renderRouter } from 'expo-router/testing-library'
+import { type MockContextConfig, renderRouter } from 'expo-router/testing-library'
 
 export const APP = path.resolve(__dirname, '../src/app')
+
+/**
+ * The real app directory with a test's own routes laid over it, for `renderRouter`. Expo Router's
+ * own `{ appDir, overrides }` names the files without their extensions
+ * (testing-library/context-stubs.js, requireContextWithOverrides), so the rule that keeps
+ * `+native-intent.ts` out of the routes, which looks for one (getRoutesCore.js), misses it and the
+ * file is refused as a route. The in-memory form keeps the names whole, so this builds that: each
+ * file by its name without extension, loaded when the router asks, then the test's routes.
+ */
+export function appWith(overrides: Record<string, unknown>): MockContextConfig {
+  const { default: requireContext } = jest.requireActual<{
+    default: (dir: string) => ((id: string) => unknown) & { keys: () => string[] }
+  }>('expo-router/build/testing-library/require-context-ponyfill')
+  const context = requireContext(APP)
+  const files: Record<string, unknown> = {}
+  for (const key of context.keys()) {
+    const name = key.replace(/^\.\//, '').replace(/\.[tj]sx?$/, '')
+    // the router only asks for the routes; the link's hook isn't one
+    if (name === '+native-intent') continue
+    Object.defineProperty(files, name, { enumerable: true, get: () => context(key) })
+  }
+  return { ...files, ...overrides } as MockContextConfig
+}
 
 /** Moves the fake clock on by `ms` and lets promises settle, a few times over. */
 export async function flush(ms = 50) {
@@ -36,6 +59,8 @@ const live = {
   rewrites: [] as Rewrite[],
   holds: [] as { path: string; gate: Promise<void> }[],
   requests: [] as { method: string; url: string; bearer: boolean }[],
+  /** The drafted kinds (B3) the mock says it serves: none unless a test asks, as a real server. */
+  served: new Set<Drafted>(),
 }
 
 type MockTransport = ReturnType<typeof import('@highsea-tv/mock/transport').createMockFetch>
@@ -65,6 +90,40 @@ export function fresh() {
   live.rewrites = []
   live.holds = []
   live.requests = []
+  live.served = new Set()
+}
+
+/**
+ * Has the mock say it serves profiles, as it does in the prototypes. Every other test leaves them
+ * out of public info's `sources`, as a real server does, so its client looks as it did at B2.
+ */
+export function serveProfiles() {
+  serve('profiles')
+}
+
+/** The kinds drafted in the contract (B3), which a real server doesn't serve yet. */
+export type Drafted = 'shows' | 'music' | 'profiles'
+
+/**
+ * Has the mock say it serves these drafted kinds, as it does in the prototypes. Every other test
+ * leaves shows, music and profiles out of public info's `sources`, as a real server does, so its
+ * client looks as it did at B2.
+ */
+export function serve(...kinds: Drafted[]) {
+  for (const k of kinds) live.served.add(k)
+}
+
+/** Public info without shows, music and profiles in its sources unless the test serves them. */
+async function withoutDrafted(url: string, answer: Promise<Response>): Promise<Response> {
+  const response = await answer
+  if (!url.includes('/system/info/public') || !response.ok) return response
+  const info = (await response.json()) as { sources?: string[] }
+  const drafted: readonly string[] = ['shows', 'music', 'profiles']
+  info.sources = info.sources?.filter((s) => !drafted.includes(s) || live.served.has(s as Drafted))
+  return new Response(JSON.stringify(info), {
+    status: response.status,
+    headers: response.headers,
+  })
 }
 
 /** Keeps the server from answering requests to `path` until the returned release is called. */
@@ -108,7 +167,8 @@ export function transportModule(options: { media?: Media } = {}) {
         bearer: headers.has('authorization'),
       })
       const held = live.holds.find((h) => call[0].includes(h.path))
-      return held ? held.gate.then(() => live.transport(...call)) : live.transport(...call)
+      const answer = held ? held.gate.then(() => live.transport(...call)) : live.transport(...call)
+      return withoutDrafted(call[0], answer)
     },
     {
       nearby: (...a: Parameters<MockTransport['nearby']>) => live.transport.nearby(...a),

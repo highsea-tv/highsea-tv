@@ -62,6 +62,7 @@ import { useBack } from './back.tsx'
 import { TV_GATE } from './gate-sizes.ts'
 import { header as headerMessages } from './messages.ts'
 import { useOpenServer } from './open-server.ts'
+import { useWatching } from './profiles/state.tsx'
 
 const { space } = tokens
 
@@ -894,7 +895,10 @@ const HEADER_AVATAR = space['8'] + space['1']
  */
 export function TouchHeader({ title }: { title?: string }) {
   const t = useT(shellMessages)
-  const person = useMaybeSession()?.user.displayName ?? ''
+  // the profile watching now when the server serves profiles (B3), else the person signed in
+  const watching = useWatching()
+  const signedIn = useMaybeSession()?.user.displayName ?? ''
+  const person = watching?.name ?? signedIn
   return (
     <View
       style={{
@@ -924,7 +928,7 @@ export function TouchHeader({ title }: { title?: string }) {
         slop={{ height: HEADER_AVATAR, width: HEADER_AVATAR }}
         style={{ marginStart: 'auto', borderRadius: HEADER_AVATAR / 2 }}
       >
-        <Avatar name={person} size={HEADER_AVATAR} />
+        <Avatar name={person} tone={watching?.tone} size={HEADER_AVATAR} />
       </Press>
     </View>
   )

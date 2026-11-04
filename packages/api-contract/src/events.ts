@@ -33,6 +33,21 @@ export const MEDIA_TOPICS = {
   metadata: 'metadata.updated',
 } as const
 
+/**
+ * The drafted kinds' topics (B3 of the one client platform), which only a server serving them
+ * raises:
+ * - `shows.updated`: the shows library or someone's place in a show changed;
+ * - `music.updated`: the music library, or Home's Recently played, changed;
+ * - `playlists.updated`: someone's playlists changed; to that person only;
+ * - `profiles.updated`: an account's profiles, or the one watching, changed; to that account only.
+ */
+export const DRAFT_TOPICS = {
+  shows: 'shows.updated',
+  music: 'music.updated',
+  playlists: 'playlists.updated',
+  profiles: 'profiles.updated',
+} as const
+
 /** `movie:603`: a title's id in `item.updated` and `metadata.updated` events. */
 export const topicId = (type: 'movie' | 'person' | 'collection', id: number) => `${type}:${id}`
 

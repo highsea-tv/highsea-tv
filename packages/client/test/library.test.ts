@@ -201,7 +201,7 @@ describe('the title and person pages’ words', () => {
       title: 'Pilot',
       show: { id: 's1', title: 'Harbor', code: 'S1 E1' },
     })
-    expect(episode.goTo).toEqual({ label: 'Go to the show', path: '/shows/s1/episodes/e1' })
+    expect(episode.goTo).toEqual({ label: 'Go to the show', path: '/shows/s1?episode=e1' })
     expect(episode.marked).toBe('Harbor, S1 E1 marked as watched')
   })
 

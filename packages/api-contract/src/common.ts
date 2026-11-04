@@ -84,6 +84,37 @@ export const access = <const A extends Access>(level: A) =>
 export const accessOf = (route: object): Access | undefined =>
   (route as Record<string, unknown>)[ACCESS_KEY] as Access | undefined
 
+/**
+ * A drafted route (one-client-platform-b.md › B3, the owner's answer 1): declared here so the SDK
+ * and the prototypes' mock answer it, but not served by the real server yet, which answers it 501
+ * Not Implemented ("the server does not support the functionality required to fulfill the request",
+ * RFC 9110 § 15.6.2) with the usual ErrorBody, `unavailable` and `{ reason: 'draft' }`. Marked in the
+ * OpenAPI document with the `x-highsea-draft` extension (OpenAPI 3.1 § 4.9, Specification
+ * Extensions) and a 501 response, so the document says which routes are drafts. A client learns
+ * what a server serves from `PublicInfo.sources` (`CLIENT_SOURCES`), never by calling a draft.
+ */
+export const DRAFT_KEY = 'x-highsea-draft'
+
+/** Why a draft answers 501, in the error's details. */
+export const DRAFT_REASON = 'draft'
+
+/** A draft's marks: the extension, and its 501 among the responses. */
+export const draft = () =>
+  ({
+    [DRAFT_KEY]: true,
+  }) as { 'x-highsea-draft': true }
+
+/** A draft's 501 response, beside its other errors. */
+export const notServed = {
+  501: {
+    description: 'Drafted: the server doesn’t serve this yet',
+    content: { 'application/json': { schema: ErrorBody } },
+  },
+} as const
+
+/** Whether a route is a draft the real server doesn't serve. */
+export const isDraft = (route: object) => (route as Record<string, unknown>)[DRAFT_KEY] === true
+
 /** ISO 8601 date-times, as the prototype's draft types have them. */
 export const IsoDate = z.iso.datetime().openapi({ example: '2026-10-17T20:15:00.000Z' })
 

@@ -7,7 +7,7 @@ import { useId } from 'react'
 import { View } from 'react-native'
 import Svg, { Circle, Defs, LinearGradient, Mask, Path, Rect, Stop } from 'react-native-svg'
 import { Text } from './text.tsx'
-import { tokens, useTheme } from './theme.tsx'
+import { tokens, useFormFactor, useTheme } from './theme.tsx'
 
 export function Mark({
   size = tokens.icon.size.lg,
@@ -95,10 +95,40 @@ export function Lockup({ size = 17 }: { size?: number }) {
   )
 }
 
-export function Avatar({ name, size = 36 }: { name: string; size?: number }) {
+/** A profile's colour: one of the tokens' soft pairs (the contract's PROFILE_TONES). */
+export type AvatarTone = 'accent' | 'info' | 'success' | 'warning' | 'danger'
+
+/** Each tone's soft pair, background then initial, as the prototype's client/profiles.ts toneClass. */
+const TONES = {
+  accent: ['accent-soft', 'accent-text'],
+  info: ['badge-info-bg', 'badge-info'],
+  success: ['badge-success-bg', 'badge-success'],
+  warning: ['badge-warning-bg', 'badge-warning'],
+  danger: ['badge-danger-bg', 'badge-danger'],
+} as const
+
+/**
+ * A person's or a profile's circle: the initial on its tone's soft pair (accent unless a profile
+ * has another colour). `ring` draws the prototype's mark around the one watching now: a `text`
+ * ring, offset from the circle by the page's background. A blank name draws the tone alone, as
+ * the prototype's colour swatches and its circle before the server answers.
+ */
+export function Avatar({
+  name,
+  size = 36,
+  tone = 'accent',
+  ring = false,
+}: {
+  name: string
+  size?: number
+  tone?: AvatarTone
+  ring?: boolean
+}) {
   const theme = useTheme()
+  const tv = useFormFactor().input === 'tv'
   const px = size * theme.u
-  return (
+  const [bg, fg] = TONES[tone]
+  const circle = (
     <View
       style={{
         width: px,
@@ -106,12 +136,32 @@ export function Avatar({ name, size = 36 }: { name: string; size?: number }) {
         borderRadius: px / 2,
         alignItems: 'center',
         justifyContent: 'center',
-        backgroundColor: theme.colors['accent-soft'],
+        backgroundColor: theme.colors[bg],
       }}
     >
-      <Text size={size * 0.42} weight={600} color="accent-text">
-        {(name.trim()[0] ?? '?').toUpperCase()}
-      </Text>
+      {name.trim() ? (
+        <Text size={size * 0.42} weight={600} color={fg}>
+          {(name.trim()[0] as string).toUpperCase()}
+        </Text>
+      ) : null}
+    </View>
+  )
+  if (!ring) return circle
+  // the prototype's ring-2 ring-text ring-offset-4 ring-offset-bg (on the TV its swatches' 0.2 ring
+  // and offset, the TV's focus width), as borders around the circle
+  const offset = tv ? tokens.focus.tv.width * theme.u : tokens.space['1']
+  const width = tv ? tokens.focus.tv.width * theme.u : tokens.focus.web.width
+  return (
+    <View
+      style={{
+        margin: -(offset + width),
+        padding: offset,
+        borderWidth: width,
+        borderColor: theme.colors.text,
+        borderRadius: px / 2 + offset + width,
+      }}
+    >
+      {circle}
     </View>
   )
 }

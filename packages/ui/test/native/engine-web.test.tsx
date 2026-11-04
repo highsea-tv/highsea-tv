@@ -236,4 +236,26 @@ describe('the TV focus engine in a browser', () => {
     await act(frame)
     expect(document.activeElement).toBe(getByLabelText('Home'))
   })
+  test('a preferred stop on a screen kept inert beneath is passed over for the live one', async () => {
+    // a navigator keeps the screen beneath in the document, inert: the first [data-initial] there
+    // takes no focus, so the live screen's preferred stop must
+    function Screen() {
+      const [shown, setShown] = useState(true)
+      return (
+        <View>
+          <div inert>
+            <Stop label="Home beneath" role="link" preferred />
+          </div>
+          <Stop label="Home" role="link" preferred />
+          {shown ? <Stop label="Got it" role="button" onPress={() => setShown(false)} /> : null}
+        </View>
+      )
+    }
+    const user = userEvent.setup()
+    const { getByLabelText } = render(<Screen />)
+    act(() => getByLabelText('Got it').focus())
+    await user.keyboard('{Enter}')
+    await act(frame)
+    expect(document.activeElement).toBe(getByLabelText('Home'))
+  })
 })

@@ -11,6 +11,7 @@ import { registerCollections } from './collections.ts'
 import { registerConnections } from './connections.ts'
 import { registerCuration } from './curation.ts'
 import { registerDownloads } from './downloads.ts'
+import { registerDrafts } from './drafts.ts'
 import { events } from './events.ts'
 import { type Env, guard, routeFor } from './guard.ts'
 import { registerImporters } from './importers.ts'
@@ -88,6 +89,8 @@ export function createApi(runtime: Runtime) {
   app.get(routes.system.events.path, events(runtime))
   app.openAPIRegistry.registerPath(routes.system.events)
 
+  // shows, music, playlists and profiles: drafts this server answers 501 (one-client-platform-b.md)
+  registerDrafts(app)
   registerSystem(app)
   registerOperations(app)
   registerAccounts(app)

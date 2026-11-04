@@ -18,7 +18,15 @@ import { useAppTheme } from '@highsea-tv/native/theme'
 import { ClientProvider } from '@highsea-tv/sdk/react'
 import type { NativeTheme } from '@highsea-tv/tokens/native'
 import { ThemeProvider, tokens, useFormFactor, useTheme } from '@highsea-tv/ui'
-import { type Href, router, Stack, usePathname, useRootNavigationState } from 'expo-router'
+import {
+  type Href,
+  router,
+  Stack,
+  useNavigationContainerRef,
+  usePathname,
+  useRootNavigationState,
+} from 'expo-router'
+import { CommonActions } from 'expo-router/react-navigation'
 import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { createContext, type ReactNode, useContext, useEffect, useRef } from 'react'
@@ -132,6 +140,32 @@ function Themed({ children }: { children: ReactNode }) {
   return <ThemeProvider theme={framed ?? theme}>{children}</ThemeProvider>
 }
 
+/** Whether a root route is one of the player's (a film's or an episode's). */
+const isPlayer = (name: string) => name.startsWith('play/')
+
+/**
+ * A link opened over the player (a `highsea://` link, a notification, the prototypes' chrome)
+ * closes it and goes where it points, stopping playback as Back does (B2's answer 1). Expo Router
+ * opens an incoming link as a NAVIGATE to its address, which pushes the shell again above the
+ * player's modal, so the player would stay drawn over it; once the place a link went is on top,
+ * the player's routes below it are taken out with React Navigation's `reset`, as its docs remove
+ * a screen from a stack (https://reactnavigation.org/docs/navigation-actions/#reset), and the
+ * player unmounts and ends its session.
+ */
+function useLinkLeavesPlayer(pathname: string) {
+  const ref = useNavigationContainerRef()
+  useEffect(() => {
+    if (pathname.startsWith('/play/')) return
+    const stack = ref.getRootState()?.routes[0]?.state
+    if (!stack?.key || !stack.routes.some((r) => isPlayer(r.name))) return
+    const routes = stack.routes.filter((r) => !isPlayer(r.name))
+    ref.dispatch({
+      ...CommonActions.reset({ ...stack, routes, index: routes.length - 1 } as never),
+      target: stack.key,
+    })
+  }, [pathname, ref])
+}
+
 /** Each phase's first screen. */
 const starts: Record<Phase, Href> = { connect: '/connect', signIn: '/sign-in', in: '/' }
 
@@ -167,6 +201,7 @@ function Nav({ phase }: { phase: Phase }) {
     if (phase === 'signIn' ? !GATE.has(pathname) : pathname === '/sign-in') return
     router.replace(starts[phase])
   }, [navigation?.key, phase, pathname, launched])
+  useLinkLeavesPlayer(pathname)
   // A screen the guard holds closed goes to this phase's first, not the navigator's anchor.
   const start = starts[phase]
   const stack = (
@@ -185,6 +220,8 @@ function Nav({ phase }: { phase: Phase }) {
         {/* the player turns with the phone, over everything, and fades in (player.md › Phone) */}
         <Stack.Screen name="play/[id]/index" options={PLAYER_OPTIONS} />
         <Stack.Screen name="play/[id]/start" options={PLAYER_OPTIONS} />
+        <Stack.Screen name="play/episode/[id]/index" options={PLAYER_OPTIONS} />
+        <Stack.Screen name="play/episode/[id]/start" options={PLAYER_OPTIONS} />
       </Stack.Protected>
       <Stack.Screen name="connect" />
       <Stack.Screen name="+not-found" />

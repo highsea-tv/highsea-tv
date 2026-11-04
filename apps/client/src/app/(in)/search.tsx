@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // C6 Search (client-search.md), one screen for every client: the field, quick picks while it's
 // empty, then a section per kind as the text settles (about 150 ms after the last letter), the
-// best-matching kind first. Films only for now (one-client-platform-b.md › B1): Movies,
-// Collections and People, from @highsea-tv/client/films; shows and music come in B3, and kinds no
-// client shows yet (`discover`) are skipped, as the API asks. Each result opens its page
-// (`/movies/{id}`, `/collections/{id}`, `/people/{id}`). The text is in the address as it settles
+// best-matching kind first: Movies, Collections and People, from @highsea-tv/client/films, and on a
+// server that serves shows (B3) Shows and Episodes; kinds no client shows yet (`discover`) are
+// skipped, as the API asks. Each result opens its page (`/movies/{id}`, `/collections/{id}`,
+// `/people/{id}`, `/shows/{id}`), an episode its show's opened at it (`/shows/{id}?episode=…`). The text is in the address as it settles
 // (`/search?q=…`, ../../search/query.ts), so a search can be linked, and Back from a result finds
 // it as it was. Two compositions, since the TV's is a different screen:
 // - touch and a pointer, one page laid out by the form factor, from the prototypes' mobile/more.tsx
@@ -20,7 +20,14 @@
 //   keys; a quick pick hands it to the first result, since its button goes away (or back to the
 //   keys when there are none).
 import type { SearchSection } from '@highsea-tv/api-contract'
-import { isShownKind, SEARCH_SUGGESTIONS, type SearchKind } from '@highsea-tv/client/films'
+import { useServes } from '@highsea-tv/client/data'
+import {
+  isShownKind,
+  SEARCH_SUGGESTIONS,
+  type SearchKind,
+  servedSearchKind,
+} from '@highsea-tv/client/films'
+import { showPath } from '@highsea-tv/client/shows'
 import { useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
 import { useMedia } from '@highsea-tv/native/media'
@@ -32,6 +39,7 @@ import {
   HiddenHeading,
   Icon,
   PersonTile,
+  Poster,
   ScrollView,
   SearchField,
   SectionHeading,
@@ -57,9 +65,11 @@ import {
   LibraryTitle,
 } from '../../library/parts.tsx'
 import { TV_LIBRARY } from '../../library/sizes.ts'
+import { MusicResults, TvMusicResults } from '../../music/search.tsx'
 import { useAnnounceResults } from '../../search/announce.ts'
 import { searchMessages } from '../../search/messages.ts'
 import { useSearchText } from '../../search/query.ts'
+import { ShowPoster } from '../../shows/poster.tsx'
 
 const { space } = tokens
 const tv = tokens.tv
@@ -69,9 +79,19 @@ type Search = ReturnType<typeof useSearchText>
 
 const open = (path: string) => router.push(path as Href)
 
-/** The sections a client shows, in the server's order. */
-const shownOf = (search: Search) =>
-  search.results.data?.sections.filter(isShownKind) as Shown[] | undefined
+/** An episode's still in a row on touch: the phone's 16:9 cards, as Home's (home/sizes.ts). */
+const STILL_SHARE = 0.62
+
+/**
+ * The sections a client shows, in the server's order: only the kinds this server serves, so a
+ * server without shows or music shows Search as B2 did.
+ */
+function useShownOf(search: Search) {
+  const serves = { shows: useServes('shows'), music: useServes('music') }
+  return search.results.data?.sections
+    .filter(isShownKind)
+    .filter((s) => servedSearchKind(s.kind, serves)) as Shown[] | undefined
+}
 
 /** What VoiceOver says as results come: how many, or that nothing matched. */
 function useAnnounced(sections: Shown[] | undefined, nothing: string) {
@@ -97,7 +117,7 @@ function PageSearch({ search }: { search: Search }) {
   const gutter = usePageGutter()
   const name = useServerName()
   const { q, setQ, results, settled } = search
-  const sections = shownOf(search)
+  const sections = useShownOf(search)
   const query = settled.trim()
   // the rows that scroll sideways on touch reach the screen's edges, so the page pads the rest
   const inset = { paddingHorizontal: touch ? gutter : 0 }
@@ -225,7 +245,45 @@ function PageResults({
   const f = useFormat()
   const media = useMedia()
   const rowWidth = usePosterWidth()
+  const stillWidth = usePosterWidth(STILL_SHARE)
   switch (section.kind) {
+    case 'shows':
+      return (
+        <View style={{ paddingHorizontal: touch ? gutter : 0 }}>
+          <LibraryGrid
+            items={section.items}
+            keyOf={(x) => String(x.id)}
+            render={(x, width) => <ShowPoster show={x} width={width} />}
+          />
+        </View>
+      )
+    case 'episodes': {
+      // stills with the show over "S2, E6", each opening the show at the episode (web/search.tsx)
+      const still = (e: (typeof section.items)[number], width: number) => (
+        <Poster
+          key={e.id}
+          title={e.title}
+          src={media(e.still)}
+          aspect="still"
+          width={width}
+          showTitle
+          caption={`${e.show.title} · ${e.code}`}
+          onPress={() => open(showPath(e.show.id, e.id))}
+        />
+      )
+      if (touch)
+        return (
+          <Sideways gutter={gutter} gap={tokens.mobile.posterGap}>
+            {section.items.map((e) => still(e, stillWidth))}
+          </Sideways>
+        )
+      return <StillGrid items={section.items} render={still} />
+    }
+    // music's kinds are b3-music's (../../music/search.tsx)
+    case 'artists':
+    case 'albums':
+    case 'songs':
+      return <MusicResults section={section} touch={touch} gutter={gutter} />
     case 'movies':
       return (
         <View style={{ paddingHorizontal: touch ? gutter : 0 }}>
@@ -281,6 +339,38 @@ function PageResults({
       )
     }
   }
+}
+
+/** The least an episode's still is with a pointer: the prototype's minmax(15rem, 1fr). */
+const STILL_MIN = space['16'] * 3 + space['12']
+
+/** Episodes' stills with a pointer, as many a row as fit at least STILL_MIN wide. */
+function StillGrid<T extends { id: number }>({
+  items,
+  render,
+}: {
+  items: readonly T[]
+  render: (item: T, width: number) => ReactNode
+}) {
+  const window = useWindowDimensions().width
+  const [across, setAcross] = useState<number | null>(null)
+  const w = across ?? window
+  const gap = space['4']
+  const columns = Math.max(1, Math.floor((w + gap) / (STILL_MIN + gap)))
+  const width = (w - gap * (columns - 1)) / columns
+  return (
+    <View
+      role="list"
+      onLayout={(e) => setAcross(e.nativeEvent.layout.width)}
+      style={{ flexDirection: 'row', flexWrap: 'wrap', columnGap: gap, rowGap: space['6'] }}
+    >
+      {items.map((item) => (
+        <View key={item.id} role="listitem" style={{ width }}>
+          {render(item, width)}
+        </View>
+      ))}
+    </View>
+  )
 }
 
 /** A row that scrolls sideways on touch, its first item on the gutter. */
@@ -350,7 +440,7 @@ function TvSearch({ search }: { search: Search }) {
   }, [fresh])
   const shown = held?.search ?? search
   const { results, settled } = shown
-  const sections = shownOf(shown)
+  const sections = useShownOf(shown)
   useAnnounced(held ? undefined : sections, t('nothing', { name, query: settled.trim() }))
 
   const firstKey = useRef<ViewHandle>(null)
@@ -557,6 +647,50 @@ function TvResults({
   const m = useControl()
   const media = useMedia()
   switch (section.kind) {
+    case 'shows':
+      return (
+        <TvGrid
+          items={section.items}
+          keyOf={(x) => x.id}
+          columns={5}
+          span={span}
+          render={(x, at) => (
+            <ShowPoster
+              show={x}
+              ref={at.index === 0 ? first : undefined}
+              preferred={arrive && at.index === 0}
+              width={at.width}
+            />
+          )}
+        />
+      )
+    case 'episodes':
+      return (
+        <TvGrid
+          items={section.items}
+          keyOf={(e) => e.id}
+          columns={3}
+          span={span}
+          render={(e, at) => (
+            <Poster
+              ref={at.index === 0 ? first : undefined}
+              preferred={arrive && at.index === 0}
+              title={e.title}
+              src={media(e.still)}
+              aspect="still"
+              width={at.width}
+              showTitle
+              caption={`${e.show.title} · ${e.code}`}
+              onPress={() => open(showPath(e.show.id, e.id))}
+            />
+          )}
+        />
+      )
+    // music's kinds are b3-music's (../../music/search.tsx)
+    case 'artists':
+    case 'albums':
+    case 'songs':
+      return <TvMusicResults section={section} span={span} first={first} arrive={arrive} />
     case 'movies':
       return (
         <TvGrid

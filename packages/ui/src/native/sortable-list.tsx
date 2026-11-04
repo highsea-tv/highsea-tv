@@ -9,7 +9,7 @@
 // which a settings list's rows are. VoiceOver moves a row with the handle's actions, Move up and
 // Move down, and hears where it landed (AccessibilityInfo.announceForAccessibility).
 import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { AccessibilityInfo, Animated, PanResponder, View } from 'react-native'
+import { AccessibilityInfo, Animated, PanResponder, StyleSheet, View } from 'react-native'
 import { Icon } from './icon.tsx'
 import { tokens, useMotionReduced, useTheme } from './theme.tsx'
 
@@ -34,6 +34,11 @@ export type SortableListProps<T> = {
   accessibilityLabel: string
   messages: SortableListMessages
   disabled?: boolean
+  /**
+   * `card` (the default): each row a card, 8 apart, as a settings list's. `line`: rows touching,
+   * each over a hairline in `line`, as a playlist's songs are (web/playlist.tsx's border-b rows).
+   */
+  look?: 'card' | 'line'
   /** The row's content; put `handle` first. */
   children: (item: T, handle: ReactNode) => ReactNode
 }
@@ -46,6 +51,7 @@ export function SortableList<T>({
   accessibilityLabel,
   messages,
   disabled,
+  look = 'card',
   children,
 }: SortableListProps<T>) {
   const [drag, setDrag] = useState<{ from: number; to: number; step: number } | null>(null)
@@ -59,7 +65,7 @@ export function SortableList<T>({
     AccessibilityInfo.announceForAccessibility(messages.moved(label(item), to + 1, items.length))
   }
   return (
-    <View accessibilityLabel={accessibilityLabel} style={{ gap: GAP }}>
+    <View accessibilityLabel={accessibilityLabel} style={{ gap: look === 'line' ? 0 : GAP }}>
       {items.map((item, i) => {
         // the rows between where the dragged one started and where it is now step aside
         const shift =
@@ -79,6 +85,7 @@ export function SortableList<T>({
             shift={shift}
             lifted={drag?.from === i}
             disabled={disabled}
+            look={look}
             messages={messages}
             onDrag={(to, step) => setDrag({ from: i, to, step })}
             onDrop={(to) => {
@@ -102,6 +109,7 @@ function SortableRow({
   shift,
   lifted,
   disabled,
+  look,
   messages,
   onDrag,
   onDrop,
@@ -114,6 +122,7 @@ function SortableRow({
   shift: number
   lifted: boolean
   disabled?: boolean
+  look: 'card' | 'line'
   messages: SortableListMessages
   onDrag: (to: number, step: number) => void
   onDrop: (to: number) => void
@@ -126,11 +135,11 @@ function SortableRow({
   const aside = useRef(new Animated.Value(0)).current
   const height = useRef(56)
   // the responder is made once, so it reads the latest props through this
-  const latest = useRef({ index, count, onDrag, onDrop })
-  latest.current = { index, count, onDrag, onDrop }
+  const latest = useRef({ index, count, onDrag, onDrop, look })
+  latest.current = { index, count, onDrag, onDrop, look }
   const target = (dy: number) => {
     const { index: i, count: n } = latest.current
-    const step = height.current + GAP
+    const step = height.current + (latest.current.look === 'line' ? 0 : GAP)
     return { to: Math.max(0, Math.min(n - 1, i + Math.round(dy / step))), step }
   }
 
@@ -204,21 +213,34 @@ function SortableRow({
       onLayout={(e) => {
         height.current = e.nativeEvent.layout.height
       }}
-      style={{
-        minHeight: 56,
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: tokens.space['3'],
-        paddingHorizontal: tokens.space['3'],
-        paddingVertical: 10,
-        borderRadius: tokens.radius.md,
-        borderWidth: 1,
-        borderColor: theme.colors[lifted ? 'accent' : 'line'],
-        backgroundColor: theme.colors.s1,
-        zIndex: lifted ? 10 : 0,
-        boxShadow: lifted ? tokens.elevation[3].boxShadow : undefined,
-        transform: [{ translateY: lifted ? follow : aside }],
-      }}
+      style={[
+        {
+          minHeight: 56,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: tokens.space['3'],
+          paddingHorizontal: tokens.space['3'],
+          paddingVertical: 10,
+          borderRadius: tokens.radius.md,
+          borderWidth: 1,
+          borderColor: theme.colors[lifted ? 'accent' : 'line'],
+          backgroundColor: theme.colors.s1,
+          zIndex: lifted ? 10 : 0,
+          boxShadow: lifted ? tokens.elevation[3].boxShadow : undefined,
+          transform: [{ translateY: lifted ? follow : aside }],
+        },
+        look === 'line' && {
+          minHeight: tokens.space['12'],
+          gap: tokens.space['1'],
+          paddingHorizontal: 0,
+          paddingVertical: 0,
+          borderRadius: lifted ? tokens.radius.sm : 0,
+          borderWidth: 0,
+          borderBottomWidth: StyleSheet.hairlineWidth,
+          borderColor: theme.colors.line,
+          backgroundColor: lifted ? theme.colors.s1 : 'transparent',
+        },
+      ]}
     >
       {children(handle)}
     </Animated.View>

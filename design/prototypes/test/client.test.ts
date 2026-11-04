@@ -26,23 +26,13 @@ describe('the routes apps/client holds', () => {
     expect(clientPathOf('/web/settings/?section=devices')).toBe('/settings?section=devices')
     expect(clientPathOf('/tv/settings?')).toBe('/settings')
     expect(heldByClient('/mobile/settings?section=servers')).toBe(true)
-    expect(heldByClient('/web/settingsx?section=devices')).toBe(false)
     expect(clientSrc('web', '/settings?section=devices')).toBe(
       '/web/settings?section=devices&ff=pointer',
     )
     expect(clientSrc('mobile', '/?section=devices')).toBe('/web/?section=devices&ff=touch')
   })
 
-  test('holds the client’s routes on the three client platforms, and only them', () => {
-    expect(heldByClient('/web/connect')).toBe(true)
-    expect(heldByClient('/mobile/connect?lan=asking')).toBe(true)
-    expect(heldByClient('/tv/sign-in')).toBe(true)
-    expect(heldByClient('/web/settings/devices')).toBe(true)
-    expect(heldByClient('/web/connections')).toBe(false)
-    expect(heldByClient('/admin/settings')).toBe(false)
-  })
-
-  test('holds B1’s films, and Home and the phone’s Library only as they are', () => {
+  test('holds every route on the three client platforms, and none of the admin’s (B3)', () => {
     for (const path of [
       '/mobile',
       '/tv/',
@@ -61,18 +51,36 @@ describe('the routes apps/client holds', () => {
       '/web/play/10111',
       '/mobile/play/10111/start',
       '/tv/play/10111',
+      // B3's shows and an episode's player
+      '/mobile/library/shows',
+      '/web/shows',
+      '/web/shows/1',
+      '/tv/shows/1?episode=101',
+      '/web/play/episode/101',
+      '/tv/play/episode/101/start',
+      // B3's Now playing
+      '/mobile/now-playing',
+      '/tv/now-playing',
+      // B3's Who's watching
+      '/web/who',
+      '/tv/who',
+      '/tv/who/p-theo',
+      '/tv/who/new',
+      '/mobile/you/who',
+      '/tv/start',
+      // B3's music
+      '/mobile/library/music',
+      '/mobile/library/music/playlists',
+      '/tv/music',
+      '/web/music/artists',
+      '/web/music/albums/a1',
+      '/mobile/music/playlists/pl-1',
+      // an address the client doesn't know draws its own not-found page
+      '/web/nowhere',
+      '/tv/musicx',
     ])
       expect(heldByClient(path)).toBe(true)
-    for (const path of [
-      '/mobile/library/shows',
-      '/mobile/library/music',
-      '/web/shows/1',
-      '/tv/music',
-      '/web/play/1-s1e2',
-      '/tv/play/1-s1e2/start',
-      '/mobile/you/who',
-      '/web/moviesx',
-    ])
+    for (const path of ['/admin', '/admin/settings', '/', '/webx'])
       expect(heldByClient(path)).toBe(false)
   })
 
@@ -80,6 +88,14 @@ describe('the routes apps/client holds', () => {
     expect(clientPathOf('/mobile/library/collections')).toBe('/library?view=collections')
     expect(clientPathOf('/mobile/library/collections?x=1')).toBe('/library?view=collections&x=1')
     expect(heldByClient(chromePathOf('mobile', '/library?view=collections'))).toBe(true)
+    expect(clientPathOf('/mobile/library/shows')).toBe('/library?view=shows')
+    expect(clientPathOf('/mobile/library/music')).toBe('/library?view=music')
+    expect(clientPathOf('/mobile/library/music/songs')).toBe('/library?view=music&music=songs')
+  })
+
+  test('the phone’s Who’s watching is a sheet over Settings, and the TV’s start its opening', () => {
+    expect(clientPathOf('/mobile/you/who')).toBe('/settings?who=1')
+    expect(clientPathOf('/tv/start')).toBe('/who?launch=1')
   })
 
   test('a client route reported back is the chrome’s route on that platform', () => {

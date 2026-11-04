@@ -37,6 +37,7 @@ import {
 } from './music.ts'
 import { waiting } from './pairing.ts'
 import { type AccelerationPath, finishCheck, playbackStatus } from './playback.ts'
+import { type ProfileTone, profilesOf } from './profiles.ts'
 import { GB, MB, type ServerState, seed } from './seed.ts'
 import {
   advanceSessions,
@@ -3738,6 +3739,18 @@ export function createApi(srv: MockServer, ctx: Ctx) {
         mine.splice(mine.indexOf(p), 1)
         srv.events.emit({ type: 'playlists.updated' })
       },
+    },
+    /**
+     * The account's profiles (profiles.ts): kept per account on this server, so every app sees
+     * the same, and a PIN is checked here, never in an app.
+     */
+    profiles: {
+      list: () => profilesOf(srv, me().id).list(),
+      create: (name: string, tone: ProfileTone) => profilesOf(srv, me().id).create(name, tone),
+      update: (id: string, patch: { name?: string; tone?: ProfileTone; pin?: string | null }) =>
+        profilesOf(srv, me().id).update(id, patch),
+      delete: (id: string) => profilesOf(srv, me().id).delete(id),
+      choose: (id: string, pin?: string) => profilesOf(srv, me().id).choose(id, pin, now()),
     },
     playback: {
       prefs: (id: string): PlaybackPrefs => state.prefs[`${me().id}:${id}`] ?? {},

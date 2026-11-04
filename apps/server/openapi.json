@@ -169,7 +169,10 @@
                 "downloads",
                 "subtitles",
                 "curation",
-                "playback"
+                "playback",
+                "shows",
+                "music",
+                "profiles"
               ]
             },
             "example": [
@@ -216,6 +219,1306 @@
           "notice",
           "url"
         ]
+      },
+      "ClientShow": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          },
+          "sortTitle": {
+            "type": "string"
+          },
+          "year": {
+            "type": "integer"
+          },
+          "endYear": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "certification": {
+            "type": "string"
+          },
+          "synopsis": {
+            "type": "string"
+          },
+          "runtimeMinutes": {
+            "type": "integer"
+          },
+          "seasons": {
+            "type": "integer"
+          },
+          "episodes": {
+            "type": "integer"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "art": {
+            "type": "object",
+            "properties": {
+              "poster": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "backdrop": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "logo": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "poster",
+              "backdrop",
+              "logo"
+            ]
+          },
+          "unwatched": {
+            "type": "integer"
+          },
+          "watched": {
+            "type": "boolean"
+          },
+          "next": {
+            "$ref": "#/components/schemas/NextEpisode"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "sortTitle",
+          "year",
+          "endYear",
+          "genres",
+          "rating",
+          "certification",
+          "synopsis",
+          "runtimeMinutes",
+          "seasons",
+          "episodes",
+          "addedAt",
+          "art",
+          "unwatched",
+          "watched",
+          "next"
+        ]
+      },
+      "NextEpisode": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "episode": {
+            "$ref": "#/components/schemas/ClientEpisode"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "resume",
+              "next",
+              "start",
+              "again"
+            ]
+          }
+        },
+        "required": [
+          "episode",
+          "kind"
+        ]
+      },
+      "ClientEpisode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "show": {
+            "type": "integer"
+          },
+          "season": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "synopsis": {
+            "type": "string"
+          },
+          "runtimeMinutes": {
+            "type": "integer"
+          },
+          "aired": {
+            "type": "string",
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "still": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "progress": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0
+          },
+          "watched": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "show",
+          "season",
+          "number",
+          "title",
+          "synopsis",
+          "runtimeMinutes",
+          "aired",
+          "still",
+          "progress",
+          "position",
+          "watched"
+        ]
+      },
+      "ClientShowDetail": {
+        "type": "object",
+        "properties": {
+          "show": {
+            "$ref": "#/components/schemas/ClientShow"
+          },
+          "seasons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientSeason"
+            }
+          },
+          "cast": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Credit"
+            }
+          },
+          "creators": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Credit"
+            }
+          },
+          "crew": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Credit"
+            }
+          },
+          "related": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientShow"
+            }
+          },
+          "videos": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Video"
+            }
+          },
+          "tracks": {
+            "type": "object",
+            "properties": {
+              "audio": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label"
+                  ]
+                }
+              },
+              "subtitles": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "id": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "id",
+                    "label"
+                  ]
+                }
+              }
+            },
+            "required": [
+              "audio",
+              "subtitles"
+            ]
+          },
+          "defaults": {
+            "type": "object",
+            "properties": {
+              "audioId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "subtitleId": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              }
+            },
+            "required": [
+              "audioId",
+              "subtitleId"
+            ]
+          }
+        },
+        "required": [
+          "show",
+          "seasons",
+          "cast",
+          "creators",
+          "crew",
+          "related",
+          "videos",
+          "tracks",
+          "defaults"
+        ]
+      },
+      "ClientSeason": {
+        "type": "object",
+        "properties": {
+          "number": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "poster": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "episodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientEpisode"
+            }
+          }
+        },
+        "required": [
+          "number",
+          "title",
+          "year",
+          "poster",
+          "episodes"
+        ]
+      },
+      "Credit": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "personId": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "photo": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+          },
+          "department": {
+            "$ref": "#/components/schemas/Department"
+          },
+          "character": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "job": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "personId",
+          "name",
+          "photo",
+          "department",
+          "character",
+          "job"
+        ]
+      },
+      "Department": {
+        "type": "string",
+        "enum": [
+          "Acting",
+          "Directing",
+          "Writing",
+          "Production",
+          "Sound",
+          "Camera",
+          "Editing",
+          "Art",
+          "Costume & Make-Up",
+          "Visual Effects",
+          "Crew",
+          "Lighting"
+        ]
+      },
+      "Video": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "Trailer",
+              "Teaser",
+              "Clip",
+              "Featurette",
+              "Behind the Scenes",
+              "Bloopers",
+              "Opening Credits"
+            ]
+          },
+          "site": {
+            "type": "string",
+            "enum": [
+              "YouTube",
+              "Vimeo"
+            ]
+          },
+          "key": {
+            "type": "string"
+          },
+          "official": {
+            "type": "boolean"
+          },
+          "publishedAt": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "still": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "kind",
+          "site",
+          "key",
+          "official",
+          "publishedAt",
+          "still"
+        ]
+      },
+      "ShowWatched": {
+        "type": "object",
+        "properties": {
+          "season": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "watched": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "season",
+          "watched"
+        ]
+      },
+      "ClientMusic": {
+        "type": "object",
+        "properties": {
+          "artists": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientArtist"
+            }
+          },
+          "albums": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientAlbum"
+            }
+          }
+        },
+        "required": [
+          "artists",
+          "albums"
+        ]
+      },
+      "ClientArtist": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "sortName": {
+            "type": "string"
+          },
+          "photo": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "albums": {
+            "type": "integer"
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "sortName",
+          "photo",
+          "albums",
+          "genres",
+          "addedAt"
+        ]
+      },
+      "ClientAlbum": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "sortTitle": {
+            "type": "string"
+          },
+          "artist": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "name"
+            ]
+          },
+          "year": {
+            "type": "integer"
+          },
+          "cover": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "tracks": {
+            "type": "integer"
+          },
+          "kind": {
+            "type": "string",
+            "enum": [
+              "album",
+              "ep",
+              "single",
+              "soundtrack",
+              "compilation"
+            ]
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "sortTitle",
+          "artist",
+          "year",
+          "cover",
+          "genres",
+          "tracks",
+          "kind",
+          "addedAt"
+        ]
+      },
+      "ClientLibrarySong": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ClientSong"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "album": {
+                "$ref": "#/components/schemas/ClientAlbum"
+              },
+              "plays": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "required": [
+              "album",
+              "plays"
+            ]
+          }
+        ]
+      },
+      "ClientSong": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0
+          }
+        },
+        "required": [
+          "id",
+          "number",
+          "title",
+          "duration"
+        ]
+      },
+      "ClientAlbumDetail": {
+        "type": "object",
+        "properties": {
+          "album": {
+            "$ref": "#/components/schemas/ClientAlbum"
+          },
+          "songs": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientSong"
+            }
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0
+          },
+          "released": {
+            "type": "string",
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "label": {
+            "type": "string"
+          },
+          "about": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "film": {
+            "$ref": "#/components/schemas/ClientItem"
+          },
+          "more": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientAlbum"
+            }
+          }
+        },
+        "required": [
+          "album",
+          "songs",
+          "duration",
+          "released",
+          "label",
+          "about",
+          "film",
+          "more"
+        ]
+      },
+      "ClientItem": {
+        "type": [
+          "object",
+          "null"
+        ],
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 603
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "movie",
+              "episode"
+            ]
+          },
+          "title": {
+            "type": "string"
+          },
+          "year": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "runtimeMinutes": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "genres": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "synopsis": {
+            "type": "string"
+          },
+          "rating": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 5,
+            "description": "Out of 5: TMDB’s vote_average (0–10) halved, to one decimal"
+          },
+          "voteCount": {
+            "type": "integer"
+          },
+          "releaseDate": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date",
+            "example": "1999-03-30"
+          },
+          "addedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          },
+          "status": {
+            "$ref": "#/components/schemas/MovieStatus"
+          },
+          "playable": {
+            "type": "boolean"
+          },
+          "art": {
+            "$ref": "#/components/schemas/Art"
+          },
+          "progress": {
+            "type": [
+              "number",
+              "null"
+            ],
+            "minimum": 0,
+            "maximum": 1
+          },
+          "position": {
+            "type": "number",
+            "minimum": 0
+          },
+          "watched": {
+            "type": "boolean"
+          },
+          "show": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              },
+              "code": {
+                "type": "string"
+              },
+              "episode": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "code",
+              "episode"
+            ]
+          },
+          "series": {
+            "type": "object",
+            "properties": {
+              "seasons": {
+                "type": "integer"
+              },
+              "endYear": {
+                "type": [
+                  "integer",
+                  "null"
+                ]
+              },
+              "play": {
+                "type": "integer"
+              }
+            },
+            "required": [
+              "seasons",
+              "endYear",
+              "play"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "title",
+          "year",
+          "runtimeMinutes",
+          "genres",
+          "synopsis",
+          "rating",
+          "voteCount",
+          "releaseDate",
+          "addedAt",
+          "status",
+          "playable",
+          "art",
+          "progress",
+          "position",
+          "watched"
+        ]
+      },
+      "MovieStatus": {
+        "type": "string",
+        "enum": [
+          "available",
+          "wanted",
+          "downloading",
+          "not-released",
+          "unmonitored"
+        ]
+      },
+      "Art": {
+        "type": "object",
+        "properties": {
+          "poster": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+          },
+          "backdrop": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
+          }
+        },
+        "required": [
+          "poster",
+          "backdrop"
+        ]
+      },
+      "ClientArtistDetail": {
+        "type": "object",
+        "properties": {
+          "artist": {
+            "$ref": "#/components/schemas/ClientArtist"
+          },
+          "bio": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "backdrop": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "songs": {
+            "type": "integer"
+          },
+          "person": {
+            "type": [
+              "integer",
+              "null"
+            ]
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string",
+                  "enum": [
+                    "albums",
+                    "singles",
+                    "soundtracks",
+                    "compilations"
+                  ]
+                },
+                "albums": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientAlbum"
+                  }
+                }
+              },
+              "required": [
+                "kind",
+                "albums"
+              ]
+            }
+          },
+          "similar": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ClientArtist"
+            }
+          }
+        },
+        "required": [
+          "artist",
+          "bio",
+          "backdrop",
+          "songs",
+          "person",
+          "sections",
+          "similar"
+        ]
+      },
+      "QueuedSong": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ClientSong"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "album": {
+                "$ref": "#/components/schemas/ClientAlbum"
+              },
+              "loudness": {
+                "type": "array",
+                "items": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            },
+            "required": [
+              "album",
+              "loudness"
+            ]
+          }
+        ]
+      },
+      "QueueRequest": {
+        "type": "object",
+        "properties": {
+          "source": {
+            "$ref": "#/components/schemas/MusicSource"
+          },
+          "shuffle": {
+            "type": "boolean",
+            "default": false
+          }
+        },
+        "required": [
+          "source"
+        ]
+      },
+      "MusicSource": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "album": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "album"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "artist": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "artist"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "playlist": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "playlist"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "songs": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "minItems": 1,
+                "maxItems": 500
+              }
+            },
+            "required": [
+              "songs"
+            ]
+          }
+        ]
+      },
+      "ClientPlaylist": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "songs": {
+            "type": "integer"
+          },
+          "duration": {
+            "type": "number",
+            "minimum": 0
+          },
+          "covers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-10-17T20:15:00.000Z"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "songs",
+          "duration",
+          "covers",
+          "updatedAt"
+        ]
+      },
+      "ClientPlaylistDetail": {
+        "type": "object",
+        "properties": {
+          "playlist": {
+            "$ref": "#/components/schemas/ClientPlaylist"
+          },
+          "songs": {
+            "type": "array",
+            "items": {
+              "allOf": [
+                {
+                  "$ref": "#/components/schemas/ClientLibrarySong"
+                },
+                {
+                  "type": "object",
+                  "properties": {
+                    "entry": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "entry"
+                  ]
+                }
+              ]
+            }
+          }
+        },
+        "required": [
+          "playlist",
+          "songs"
+        ]
+      },
+      "NewPlaylist": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "songs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "maxItems": 500,
+            "default": []
+          }
+        },
+        "required": [
+          "name"
+        ]
+      },
+      "Profiles": {
+        "type": "object",
+        "properties": {
+          "profiles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Profile"
+            }
+          },
+          "current": {
+            "type": "string"
+          },
+          "max": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "profiles",
+          "current",
+          "max"
+        ]
+      },
+      "Profile": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "tone": {
+            "type": "string",
+            "enum": [
+              "accent",
+              "info",
+              "success",
+              "warning",
+              "danger"
+            ]
+          },
+          "hasPin": {
+            "type": "boolean"
+          },
+          "main": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "tone",
+          "hasPin",
+          "main"
+        ]
+      },
+      "NewProfile": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "tone": {
+            "type": "string",
+            "enum": [
+              "accent",
+              "info",
+              "success",
+              "warning",
+              "danger"
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "tone"
+        ]
+      },
+      "ProfilePatch": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "tone": {
+            "type": "string",
+            "enum": [
+              "accent",
+              "info",
+              "success",
+              "warning",
+              "danger"
+            ]
+          },
+          "pin": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "pattern": "^\\d{4}$",
+            "example": "2580"
+          }
+        }
+      },
+      "ChooseProfile": {
+        "type": "object",
+        "properties": {
+          "pin": {
+            "type": "string",
+            "pattern": "^\\d{4}$",
+            "example": "2580"
+          }
+        }
       },
       "Server": {
         "type": "object",
@@ -3547,29 +4850,6 @@
           "inLibrary"
         ]
       },
-      "Art": {
-        "type": "object",
-        "properties": {
-          "poster": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
-          },
-          "backdrop": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
-          }
-        },
-        "required": [
-          "poster",
-          "backdrop"
-        ]
-      },
       "MovieMetadata": {
         "allOf": [
           {
@@ -3677,129 +4957,6 @@
               "fetchedAt"
             ]
           }
-        ]
-      },
-      "Credit": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "personId": {
-            "type": "integer"
-          },
-          "name": {
-            "type": "string"
-          },
-          "photo": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
-          },
-          "department": {
-            "$ref": "#/components/schemas/Department"
-          },
-          "character": {
-            "type": [
-              "string",
-              "null"
-            ]
-          },
-          "job": {
-            "type": [
-              "string",
-              "null"
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "personId",
-          "name",
-          "photo",
-          "department",
-          "character",
-          "job"
-        ]
-      },
-      "Department": {
-        "type": "string",
-        "enum": [
-          "Acting",
-          "Directing",
-          "Writing",
-          "Production",
-          "Sound",
-          "Camera",
-          "Editing",
-          "Art",
-          "Costume & Make-Up",
-          "Visual Effects",
-          "Crew",
-          "Lighting"
-        ]
-      },
-      "Video": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string"
-          },
-          "name": {
-            "type": "string"
-          },
-          "kind": {
-            "type": "string",
-            "enum": [
-              "Trailer",
-              "Teaser",
-              "Clip",
-              "Featurette",
-              "Behind the Scenes",
-              "Bloopers",
-              "Opening Credits"
-            ]
-          },
-          "site": {
-            "type": "string",
-            "enum": [
-              "YouTube",
-              "Vimeo"
-            ]
-          },
-          "key": {
-            "type": "string"
-          },
-          "official": {
-            "type": "boolean"
-          },
-          "publishedAt": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date-time",
-            "example": "2026-10-17T20:15:00.000Z"
-          },
-          "still": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "example": "/api/v1/images/movie/603/poster/w342/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "kind",
-          "site",
-          "key",
-          "official",
-          "publishedAt",
-          "still"
         ]
       },
       "CollectionRef": {
@@ -4220,16 +5377,6 @@
           "versions",
           "gone",
           "tags"
-        ]
-      },
-      "MovieStatus": {
-        "type": "string",
-        "enum": [
-          "available",
-          "wanted",
-          "downloading",
-          "not-released",
-          "unmonitored"
         ]
       },
       "MovieVersion": {
@@ -5659,110 +6806,6 @@
           "total"
         ]
       },
-      "ClientItem": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "example": 603
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "movie"
-            ]
-          },
-          "title": {
-            "type": "string"
-          },
-          "year": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "runtimeMinutes": {
-            "type": [
-              "integer",
-              "null"
-            ]
-          },
-          "genres": {
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          },
-          "synopsis": {
-            "type": "string"
-          },
-          "rating": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 5,
-            "description": "Out of 5: TMDB’s vote_average (0–10) halved, to one decimal"
-          },
-          "voteCount": {
-            "type": "integer"
-          },
-          "releaseDate": {
-            "type": [
-              "string",
-              "null"
-            ],
-            "format": "date",
-            "example": "1999-03-30"
-          },
-          "addedAt": {
-            "type": "string",
-            "format": "date-time",
-            "example": "2026-10-17T20:15:00.000Z"
-          },
-          "status": {
-            "$ref": "#/components/schemas/MovieStatus"
-          },
-          "playable": {
-            "type": "boolean"
-          },
-          "art": {
-            "$ref": "#/components/schemas/Art"
-          },
-          "progress": {
-            "type": [
-              "number",
-              "null"
-            ],
-            "minimum": 0,
-            "maximum": 1
-          },
-          "position": {
-            "type": "number",
-            "minimum": 0
-          },
-          "watched": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "id",
-          "type",
-          "title",
-          "year",
-          "runtimeMinutes",
-          "genres",
-          "synopsis",
-          "rating",
-          "voteCount",
-          "releaseDate",
-          "addedAt",
-          "status",
-          "playable",
-          "art",
-          "progress",
-          "position",
-          "watched"
-        ]
-      },
       "ClientDetail": {
         "type": "object",
         "properties": {
@@ -5828,6 +6871,9 @@
             "items": {
               "$ref": "#/components/schemas/ClientItem"
             }
+          },
+          "episode": {
+            "$ref": "#/components/schemas/EpisodePlace"
           }
         },
         "required": [
@@ -5967,6 +7013,73 @@
           "kind"
         ]
       },
+      "EpisodePlace": {
+        "type": "object",
+        "properties": {
+          "show": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ]
+          },
+          "season": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "number": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "title": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "intro": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "properties": {
+              "start": {
+                "type": "number"
+              },
+              "end": {
+                "type": "number"
+              }
+            },
+            "required": [
+              "start",
+              "end"
+            ]
+          },
+          "credits": {
+            "type": [
+              "number",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "show",
+          "season",
+          "number",
+          "title",
+          "code",
+          "intro",
+          "credits"
+        ]
+      },
       "SearchResults": {
         "type": "object",
         "properties": {
@@ -6066,6 +7179,111 @@
               "kind",
               "items"
             ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "shows"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ClientShow"
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "items"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "episodes"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SearchEpisode"
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "items"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "artists"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ClientArtist"
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "items"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "albums"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ClientAlbum"
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "items"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "songs"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/SearchSong"
+                }
+              }
+            },
+            "required": [
+              "kind",
+              "items"
+            ]
           }
         ]
       },
@@ -6124,6 +7342,66 @@
           "name",
           "photo",
           "titles"
+        ]
+      },
+      "SearchEpisode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer"
+          },
+          "show": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "integer"
+              },
+              "title": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "title"
+            ]
+          },
+          "code": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "still": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "show",
+          "code",
+          "title",
+          "still"
+        ]
+      },
+      "SearchSong": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/ClientSong"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "album": {
+                "$ref": "#/components/schemas/ClientAlbum"
+              }
+            },
+            "required": [
+              "album"
+            ]
+          }
         ]
       },
       "PlaySession": {
@@ -6647,17 +7925,7 @@
         "type": "object",
         "properties": {
           "item": {
-            "allOf": [
-              {
-                "$ref": "#/components/schemas/ClientItem"
-              },
-              {
-                "type": [
-                  "object",
-                  "null"
-                ]
-              }
-            ]
+            "$ref": "#/components/schemas/ClientItem"
           }
         },
         "required": [
@@ -12511,7 +13779,8 @@
               "hero",
               "row",
               "spotlight",
-              "continue"
+              "continue",
+              "episodes"
             ]
           },
           "items": {
@@ -12682,6 +13951,131 @@
           "client",
           "userId",
           "draft"
+        ]
+      },
+      "HomeRow": {
+        "anyOf": [
+          {
+            "$ref": "#/components/schemas/HomeSection"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "suffix": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "layout": {
+                "type": "string",
+                "enum": [
+                  "shows"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ClientShow"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "suffix",
+              "layout",
+              "items"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "title": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "suffix": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "layout": {
+                "type": "string",
+                "enum": [
+                  "music"
+                ]
+              },
+              "items": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/HomeMusic"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "title",
+              "suffix",
+              "layout",
+              "items"
+            ]
+          }
+        ]
+      },
+      "HomeMusic": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "album"
+                ]
+              },
+              "album": {
+                "$ref": "#/components/schemas/ClientAlbum"
+              }
+            },
+            "required": [
+              "kind",
+              "album"
+            ]
+          },
+          {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "artist"
+                ]
+              },
+              "artist": {
+                "$ref": "#/components/schemas/ClientArtist"
+              }
+            },
+            "required": [
+              "kind",
+              "artist"
+            ]
+          }
         ]
       },
       "CollectionSummary": {
@@ -13484,6 +14878,1644 @@
               "text/event-stream": {
                 "schema": {
                   "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shows": {
+      "get": {
+        "tags": [
+          "Shows"
+        ],
+        "summary": "Every show you can watch, with your place in each (draft)",
+        "description": "Sorted and filtered by the apps, as the prototypes do. Drafted: the server answers 501 until it has shows.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "responses": {
+          "200": {
+            "description": "The shows",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientShow"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shows/{id}": {
+      "get": {
+        "tags": [
+          "Shows"
+        ],
+        "summary": "A show with its seasons and episodes (draft)",
+        "description": "404 when the show isn’t here. Drafted: the server answers 501.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The show",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientShowDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/shows/{id}/watched": {
+      "put": {
+        "tags": [
+          "Shows"
+        ],
+        "summary": "Mark a season, or the whole show, watched or not (draft)",
+        "description": "Watched plays each episode to the end; unwatched forgets each place. One episode is marked with the playback routes and the `episode` type. Drafted: the server answers 501.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "integer",
+              "exclusiveMinimum": 0,
+              "example": 603
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ShowWatched"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Every artist and album you can play (draft)",
+        "description": "Empty on a server without music. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "responses": {
+          "200": {
+            "description": "The music",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientMusic"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/songs": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Every song here, for Music’s Songs (draft)",
+        "description": "Sorted and filtered by the apps. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "responses": {
+          "200": {
+            "description": "The songs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientLibrarySong"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/albums/{id}": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "An album with its songs (draft)",
+        "description": "404 when it isn’t here. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The album",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientAlbumDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/artists/{id}": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "An artist with their albums by kind (draft)",
+        "description": "404 when they aren’t here. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The artist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientArtistDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/queue": {
+      "post": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "The songs to play for an album, an artist, a playlist or songs (draft)",
+        "description": "An album's in order, an artist's newest album first, shuffled when asked; each with its loudness for the scrubber. An album or an artist played goes on Home's Recently played. 404 when there's nothing to play. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The queue",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QueuedSong"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/tracks": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Songs for the queue by id, for Play next and Add to queue (draft)",
+        "description": "Unlike the queue, these aren’t recorded as played; ids not here are left out. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string",
+              "maxLength": 4000,
+              "description": "Song ids, comma-separated"
+            },
+            "required": true,
+            "description": "Song ids, comma-separated",
+            "name": "ids",
+            "in": "query"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The songs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/QueuedSong"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/playlists": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Your own playlists, the most recently changed first (draft)",
+        "description": "Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "responses": {
+          "200": {
+            "description": "The playlists",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/ClientPlaylist"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Make a playlist, with songs in it or none (draft)",
+        "description": "Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewPlaylist"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The playlist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPlaylist"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/playlists/{id}": {
+      "get": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "A playlist and its songs (draft)",
+        "description": "404 when it isn't yours, or was deleted. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The playlist",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ClientPlaylistDetail"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Rename a playlist (draft)",
+        "description": "Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "name"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Delete a playlist (draft)",
+        "description": "Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/playlists/{id}/songs": {
+      "post": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Add songs at the end, in the order given (draft)",
+        "description": "Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "songs": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "maxItems": 500
+                  }
+                },
+                "required": [
+                  "songs"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/playlists/{id}/songs/{entry}": {
+      "delete": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Take one entry out of a playlist (draft)",
+        "description": "Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          },
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "entry",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/music/playlists/{id}/order": {
+      "put": {
+        "tags": [
+          "Music"
+        ],
+        "summary": "Put a playlist’s entries in a new order (draft)",
+        "description": "Entries left out are dropped. Drafted: the server answers 501 until it has music.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "entries": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "maxItems": 5000
+                  }
+                },
+                "required": [
+                  "entries"
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/profiles": {
+      "get": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Your account’s profiles, and the one watching now (draft)",
+        "description": "Drafted: the server answers 501 until it has profiles.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "responses": {
+          "200": {
+            "description": "The profiles",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profiles"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Add a profile (draft)",
+        "description": "409 once the account has its most. Drafted: the server answers 501 until it has profiles.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewProfile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The new profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/profiles/{id}": {
+      "patch": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Rename a profile, change its colour, or set or turn off its PIN (draft)",
+        "description": "Drafted: the server answers 501 until it has profiles.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ProfilePatch"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The profile",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profile"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Delete a profile and its watch history (draft)",
+        "description": "409 for the account’s own profile. Drafted: the server answers 501 until it has profiles.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Done"
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "conflict",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/me/profiles/{id}/choose": {
+      "post": {
+        "tags": [
+          "Profiles"
+        ],
+        "summary": "Watch as a profile, with its PIN when it has one (draft)",
+        "description": "A wrong PIN is 403 with `{ field: 'pin', reason: 'wrong-pin' }` (not 401, which would say the app isn't signed in: RFC 9110 § 15.5.2); after five wrong in a row, 429 with `{ reason: 'rate-limited', retryAfter: 60 }` for a minute. The profile watching now needs no PIN. Drafted: the server answers 501 until it has profiles.",
+        "x-highsea-access": "user",
+        "security": [
+          {
+            "session": []
+          },
+          {
+            "bearer": []
+          }
+        ],
+        "x-highsea-draft": true,
+        "parameters": [
+          {
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "name": "id",
+            "in": "path"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ChooseProfile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "The profiles, with this one watching",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Profiles"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "forbidden",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "not-found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "rate-limited",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "501": {
+            "description": "Drafted: the server doesn’t serve this yet",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
                 }
               }
             }
@@ -22446,7 +25478,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "movie"
+                "movie",
+                "episode"
               ]
             },
             "required": true,
@@ -22580,7 +25613,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "movie"
+                "movie",
+                "episode"
               ]
             },
             "required": true,
@@ -22878,7 +25912,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "movie"
+                "movie",
+                "episode"
               ]
             },
             "required": true,
@@ -22949,7 +25984,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "movie"
+                "movie",
+                "episode"
               ]
             },
             "required": true,
@@ -23042,7 +26078,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "movie"
+                "movie",
+                "episode"
               ]
             },
             "required": true,
@@ -23106,7 +26143,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "movie"
+                "movie",
+                "episode"
               ]
             },
             "required": true,
@@ -23172,7 +26210,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "movie"
+                "movie",
+                "episode"
               ]
             },
             "required": true,
@@ -23238,7 +26277,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "movie"
+                "movie",
+                "episode"
               ]
             },
             "required": true,
@@ -23339,7 +26379,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "movie"
+                "movie",
+                "episode"
               ]
             },
             "required": true,
@@ -23412,7 +26453,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "movie"
+                "movie",
+                "episode"
               ]
             },
             "required": true,
@@ -23504,7 +26546,8 @@
             "schema": {
               "type": "string",
               "enum": [
-                "movie"
+                "movie",
+                "episode"
               ]
             },
             "required": true,
@@ -33379,7 +36422,7 @@
                 "schema": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/components/schemas/HomeSection"
+                    "$ref": "#/components/schemas/HomeRow"
                   }
                 }
               }

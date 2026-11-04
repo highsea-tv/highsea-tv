@@ -58,7 +58,7 @@ import {
   useTheme,
 } from '@highsea-tv/ui'
 import { Focusable, focusOn, TV_HEAD_HEIGHT, type ViewHandle } from '@highsea-tv/ui/tv'
-import { type Href, router, useLocalSearchParams, useNavigation } from 'expo-router'
+import { type Href, router, useIsFocused, useLocalSearchParams, useNavigation } from 'expo-router'
 import {
   createContext,
   type ReactNode,
@@ -94,6 +94,15 @@ import {
 import { LibraryTitle } from '../../library/parts.tsx'
 import { TV_LIBRARY } from '../../library/sizes.ts'
 import { useOpenServer } from '../../open-server.ts'
+import { useProfilesState } from '../../profiles/state.tsx'
+import {
+  isProfileSection,
+  ProfileSection,
+  type ProfileSectionId,
+  TvWhoRow,
+  useProfileSections,
+} from '../../profiles/tv-settings.tsx'
+import { useProfilesText, WhoSheet } from '../../profiles/who.tsx'
 
 const { space } = tokens
 
@@ -137,6 +146,15 @@ function TouchSettings({ chosen }: { chosen: SettingsSectionId | undefined }) {
   const insets = useSafeAreaInsets()
   const sections = useSections()
   const section = sections.find((s) => s.id === chosen)
+  // Switch profile, when the server serves profiles and the account has more than one (B3): a
+  // sheet over You, open while the address says `?who=1` (the prototype's `/you/who`)
+  const profiles = useProfilesState()
+  const words = useProfilesText()
+  // only while You is the focused screen: the sheet is a Modal, which iOS keeps presented over a
+  // screen a link pushes above You (https://reactnavigation.org/docs/use-is-focused/)
+  const focused = useIsFocused()
+  const who = useLocalSearchParams<{ who?: string }>().who === '1' && focused
+  const switching = touch && !!profiles && profiles.profiles.length > 1
   return (
     <ScrollView
       style={{ flex: 1, backgroundColor: theme.colors.bg }}
@@ -180,7 +198,14 @@ function TouchSettings({ chosen }: { chosen: SettingsSectionId | undefined }) {
               onPress={() => choose(s.id)}
             />
           ))}
-          {/* the prototype's You: Downloads, then Sign out (Switch profile waits for B3) */}
+          {/* the prototype's You: Switch profile, Downloads, then Sign out */}
+          {switching ? (
+            <ListItem
+              icon="users"
+              title={words.switchProfile}
+              onPress={() => router.setParams({ who: '1' })}
+            />
+          ) : null}
           {touch ? (
             <ListItem
               icon="download"
@@ -191,6 +216,9 @@ function TouchSettings({ chosen }: { chosen: SettingsSectionId | undefined }) {
           <SignOutItem />
         </View>
       )}
+      {switching ? (
+        <WhoSheet open={who} onClose={() => router.setParams({ who: undefined })} />
+      ) : null}
     </ScrollView>
   )
 }
@@ -267,8 +295,14 @@ function TvSettings({ chosen }: { chosen: SettingsSectionId }) {
   const theme = useTheme()
   const u = theme.u
   const m = useControl()
-  const sections = useSections()
-  const [section, setSection] = useState(chosen)
+  const shared = useSections()
+  // the profile's PIN and the account's Profiles after Home screen, when the server serves them
+  const own = useProfileSections()
+  const sections = useMemo(() => {
+    const at = shared.findIndex((s) => s.id === 'home') + 1
+    return [...shared.slice(0, at), ...own, ...shared.slice(at)]
+  }, [shared, own])
+  const [section, setSection] = useState<SettingsSectionId | ProfileSectionId>(chosen)
   // the section asked for takes focus as the screen opens, and only then: once focus has moved,
   // nothing hands it back to the first name
   const [opening, setOpening] = useState(true)
@@ -313,6 +347,8 @@ function TvSettings({ chosen }: { chosen: SettingsSectionId }) {
     >
       {/* the title stays outside the tab row: a container with the tab bar trait gives
           assistive technology its tabs only, so a header inside it isn't read */}
+      {/* who's watching leads, when the server serves profiles (the prototype's tv/settings.tsx) */}
+      <TvWhoRow />
       <LibraryTitle>{t('settings')}</LibraryTitle>
       <View style={{ flex: 1, flexDirection: 'row', gap: tokens.tv.rows.inset * u }}>
         {/* the sections are tabs, each showing its panel beside the list as focus reaches it. A
@@ -382,7 +418,11 @@ function TvSettings({ chosen }: { chosen: SettingsSectionId }) {
               style={{ flex: 1 }}
               contentContainerStyle={{ gap: m.rowGap, paddingBottom: m.height }}
             >
-              <Section id={about.id} />
+              {isProfileSection(about.id) ? (
+                <ProfileSection id={about.id} />
+              ) : (
+                <Section id={about.id} />
+              )}
             </ScrollView>
           </View>
         ) : null}

@@ -146,7 +146,7 @@ function leave(host: WebHost, session: PlaySession, position: number, closing: b
  */
 type Engine<Player> = typeof native extends UsePlayback<unknown> ? UsePlayback<Player> : never
 
-export const usePlayback: Engine<WebPlayer> = (id, fromStart) => {
+export const usePlayback: Engine<WebPlayer> = (id, fromStart, type = 'movie') => {
   const client = useClient()
   const host = useWebHost()
   const hostRef = useRef(host)
@@ -165,6 +165,7 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart) => {
   const { session, live, generation, begin, stopped } = useSessionStart({
     client,
     id,
+    type,
     dispatch,
     started,
     // what this browser decodes goes to the server first, once per version (ADR 0052)
@@ -253,7 +254,7 @@ export const usePlayback: Engine<WebPlayer> = (id, fromStart) => {
       v.play().catch(() => {})
     },
   })
-  const c = useChoices(id, session)
+  const c = useChoices(id, session, type)
 
   const retry = useStarts(c, fromStart, () => stateRef.current.position, begin, started)
 

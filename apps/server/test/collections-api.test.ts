@@ -6,7 +6,7 @@
 import { afterEach, describe, expect, test } from 'bun:test'
 import { mkdirSync } from 'node:fs'
 import { join } from 'node:path'
-import type { SmartCollectionInput } from '@highsea-tv/api-contract'
+import { isFilmRow, type SmartCollectionInput } from '@highsea-tv/api-contract'
 import type { Fetch } from '@highsea-tv/core'
 import { createReplayFetch } from '@highsea-tv/metadata/replay'
 import { createApi } from '../src/api/app.ts'
@@ -161,7 +161,7 @@ describe('the admin', () => {
         schedule: { start: new Date().toISOString(), end: null },
       },
     })
-    const home = await memberApi.home.sections({ query: { client: 'web' } })
+    const home = (await memberApi.home.sections({ query: { client: 'web' } })).filter(isFilmRow)
     expect(home.find((s) => s.id === section.id)?.items.map((m) => m.id)).toEqual([SINTEL])
 
     expect(await failure(api.collections.remove({ params: { id: made.id } }))).toEqual({
@@ -173,7 +173,7 @@ describe('the admin', () => {
       params: { id: made.id },
       body: collection({ rules: null, include: [BIG_BUCK_BUNNY, SINTEL], sort: 'manual' }),
     })
-    const after = await memberApi.home.sections({ query: { client: 'web' } })
+    const after = (await memberApi.home.sections({ query: { client: 'web' } })).filter(isFilmRow)
     expect(after.find((s) => s.id === section.id)?.items.map((m) => m.id)).toEqual([
       BIG_BUCK_BUNNY,
       SINTEL,

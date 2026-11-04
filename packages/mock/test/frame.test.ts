@@ -84,6 +84,7 @@ describe('messages', () => {
       stateMessage({ reducedMotion: undefined as never }),
       stateMessage({ stream: 'paused' as never }),
       stateMessage({ airplay: 'maybe' as never }),
+      stateMessage({ music: 'loud' as never }),
       // a route can't be another site's address
       { channel: FRAME_CHANNEL, type: 'navigate', path: 'https://example.com/' },
       { channel: FRAME_CHANNEL, type: 'navigate', path: '//example.com/' },
@@ -153,6 +154,9 @@ describe('messages', () => {
     // the player's states
     expect(q('stream=next-up&airplay=on')).toEqual({ stream: 'next-up', airplay: 'on' })
     expect(q('stream=paused&airplay=maybe')).toEqual({})
+    // the music player's
+    expect(q('music=playing')).toEqual({ music: 'playing' })
+    expect(q('music=loud')).toEqual({})
   })
 
   test('the desktop app’s states: the app, its OS and an update waiting', () => {

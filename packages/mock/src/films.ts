@@ -159,14 +159,14 @@ const STATUS: Record<MediaStatus, ClientItem['status']> = {
 }
 
 /** A date as its day, in the zone the seed laid it out in (seed.ts uses local dates). */
-const dayOf = (date: string) => {
+export const dayOf = (date: string) => {
   const d = new Date(Date.parse(date))
   const p = (n: number) => String(n).padStart(2, '0')
   return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`
 }
-const isoOf = (date: string) => new Date(Date.parse(date)).toISOString()
+export const isoOf = (date: string) => new Date(Date.parse(date)).toISOString()
 /** TMDB's vote count isn't in the seed: derived from the title, as the mock's other facts are. */
-const votesOf = (title: string) => 120 + (hash(title) % 4800)
+export const votesOf = (title: string) => 120 + (hash(title) % 4800)
 const starsOf = (rating: number) => Math.min(5, Math.max(0, Math.round(rating * 10) / 10))
 /** Plain code order, as SQLite's BINARY collation compares text. */
 const byCode = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
@@ -181,7 +181,7 @@ const yearsOf = (years: number[]) => {
 const like = (hay: string | null | undefined, query: string) =>
   !!hay && hay.toLowerCase().includes(query.toLowerCase())
 
-const art = (a: { poster: string; backdrop: string }) => ({
+export const art = (a: { poster: string; backdrop: string }) => ({
   poster: a.poster || null,
   backdrop: a.backdrop || null,
 })
@@ -189,7 +189,7 @@ const art = (a: { poster: string; backdrop: string }) => ({
 /** A title the household can watch: some version has a file (the server's HAS_FILE). */
 const playableOf = (m: MediaItem) => m.type === 'movie' && m.versions.some((v) => v.fileId)
 
-function credit(c: Credit, titleId: number, kind: 'cast' | 'crew', i: number): ApiCredit {
+export function credit(c: Credit, titleId: number, kind: 'cast' | 'crew', i: number): ApiCredit {
   return {
     id: `${titleId}-${kind}-${i}`,
     personId: tmdbNumber(c.personId),
@@ -201,7 +201,7 @@ function credit(c: Credit, titleId: number, kind: 'cast' | 'crew', i: number): A
   }
 }
 
-const video = (v: Video): ApiVideo => ({
+export const video = (v: Video): ApiVideo => ({
   id: v.id,
   name: v.name,
   kind: v.kind,

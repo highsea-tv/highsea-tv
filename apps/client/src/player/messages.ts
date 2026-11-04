@@ -66,6 +66,9 @@ export const playerScreenMessages = defineMessages({
   startAgain: 'Start again',
   back: 'Back',
   nextUp: 'Next up',
+  // an episode's Next up (the prototype's client/stream-states.tsx)
+  nextEpisode: 'Next episode',
+  seasonStarts: 'Season {season} starts',
   moreLike: 'More like this',
   startsIn: 'Starts in {seconds} s',
   playNow: 'Play now',

@@ -2,13 +2,16 @@
 // The signed-in person as the server knows them (client-settings.md › C8): their avatar, their
 // name, and their username with their role on the server, at the top of Profile with a pointer and
 // of the phone's You (Settings' list), as the prototypes' web/settings.tsx WebProfile and
-// mobile/more.tsx MobileYou draw it. The prototype's sub-profile line ("A profile on @ines's
-// account") waits for profiles, which move with B3 (one-client-platform-b.md, answer 1).
+// mobile/more.tsx MobileYou draw it. When the server serves profiles (B3) it's the profile
+// watching now, in its colour, and a profile that isn't the account's own says whose account it's
+// on ("A profile on @ines's account"); a server without them draws the person as before.
 import { useT } from '@highsea-tv/i18n/react'
 import { useSessionData } from '@highsea-tv/native/session'
 import { Avatar, Text, tokens, useFormFactor } from '@highsea-tv/ui'
 import { View } from 'react-native'
 import { useServerName } from '../kit.tsx'
+import { whoMessages } from '../profiles/messages.ts'
+import { useWatching } from '../profiles/state.tsx'
 import { profileMessages } from './messages.ts'
 
 const { space } = tokens
@@ -24,14 +27,20 @@ const HEAD = {
 
 export function PersonHead() {
   const t = useT(profileMessages)
+  const w = useT(whoMessages)
   const { user } = useSessionData()
+  const watching = useWatching()
   const server = useServerName()
   const touch = useFormFactor().input === 'touch'
   const size = HEAD[touch ? 'touch' : 'page']
-  const line = t(`line.${user.role}`, { username: user.username, server })
+  const name = watching?.name ?? user.displayName
+  const line =
+    watching && !watching.main
+      ? w('subProfile', { username: user.username })
+      : t(`line.${user.role}`, { username: user.username, server })
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: size.gap }}>
-      <Avatar name={user.displayName} size={size.avatar} />
+      <Avatar name={name} tone={watching?.tone} size={size.avatar} />
       <View style={{ flex: 1, minWidth: 0 }}>
         <Text
           variant={touch ? 'title' : 'heading'}
@@ -39,7 +48,7 @@ export function PersonHead() {
           accessibilityRole={touch ? undefined : 'header'}
           numberOfLines={1}
         >
-          {user.displayName}
+          {name}
         </Text>
         <Text variant={touch ? 'caption' : 'body'} color={touch ? 'text-3' : 'text-2'}>
           {line}

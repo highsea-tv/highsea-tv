@@ -57,6 +57,33 @@
 //   playback.next          GET    /api/v1/items/{type}/{id}/next
 //   playback.trickplay     GET    /api/v1/items/{type}/{id}/trickplay
 //
+// And the drafted routes (B3), which the real server answers 501: shows', episodes' and music's
+// from kinds.ts (an episode also plays, and is marked, through the films' `{type}` routes above),
+// and the account's profiles from profiles.ts:
+//
+//   shows.list             GET    /api/v1/shows
+//   shows.show             GET    /api/v1/shows/{id}
+//   shows.watched          PUT    /api/v1/shows/{id}/watched
+//   music.library          GET    /api/v1/music
+//   music.songs            GET    /api/v1/music/songs
+//   music.album            GET    /api/v1/music/albums/{id}
+//   music.artist           GET    /api/v1/music/artists/{id}
+//   music.queue            POST   /api/v1/music/queue
+//   music.tracks           GET    /api/v1/music/tracks
+//   playlists.list         GET    /api/v1/music/playlists
+//   playlists.get          GET    /api/v1/music/playlists/{id}
+//   playlists.create       POST   /api/v1/music/playlists
+//   playlists.rename       PATCH  /api/v1/music/playlists/{id}
+//   playlists.add          POST   /api/v1/music/playlists/{id}/songs
+//   playlists.remove       DELETE /api/v1/playlists/{id}/songs/{entry}
+//   playlists.reorder      PUT    /api/v1/music/playlists/{id}/order
+//   playlists.delete       DELETE /api/v1/playlists/{id}
+//   profiles.list          GET    /api/v1/me/profiles
+//   profiles.create        POST   /api/v1/me/profiles
+//   profiles.update        PATCH  /api/v1/me/profiles/{id}
+//   profiles.delete        DELETE /api/v1/me/profiles/{id}
+//   profiles.choose        POST   /api/v1/me/profiles/{id}/choose
+//
 // Every other contract route answers 501 with a body naming it. Adding one is one entry in
 // `answers` below, under its group and name as the contract has them: a function from the route's
 // checked input to its output, typed by the route's parsed request and the SDK's `Output`, so it
@@ -74,6 +101,7 @@
 // the browser back, `highsea://oidc?code=…`, as `nearby` stands in for Bonjour.
 import {
   accessOf,
+  CLIENT_SOURCES,
   COLLECTION_TOPICS,
   CURATION_TOPICS,
   OPERATIONS_TOPICS,
@@ -82,6 +110,7 @@ import {
   routes,
   SESSIONS_TOPICS,
   STAFF_TOPICS,
+  type TITLE_TYPES,
   TMDB_ATTRIBUTION,
   WIDGET_SOURCES,
 } from '@highsea-tv/api-contract'
@@ -108,9 +137,11 @@ import type { z } from 'zod'
 import { clientMessages } from './client.ts'
 import { EPOCH, iso } from './clock.ts'
 import { FilmRefused, filmsOf, type Refusal } from './films.ts'
+import { type KindRefusal, KindRefused, kindsOf } from './kinds.ts'
 import { createMock, type Mock, userFor } from './mock.ts'
 import { waiting } from './pairing.ts'
 import { createPlays, type MockMedia } from './play.ts'
+import { MAX_PROFILES, type ProfileRefusal, ProfileRefused, profilesOf } from './profiles.ts'
 import { type Api, ApiError, createApi, type MockServer, type Storage } from './server.ts'
 import { defaultState, type ProtoState, type Role } from './state.ts'
 import { DISCOVERY_MS, DISCOVERY_STAGGER_MS, PAIRING_APPROVAL_MS } from './timing.ts'
@@ -151,6 +182,16 @@ export const transportMessages = defineMessages({
   'transport.sessionEnded': 'That play session has ended.',
   'transport.stoppedBy': '{name} stopped this stream.',
   'transport.notPlayable': 'That version has no file to play.',
+  // the drafted routes' (B3): shows, episodes and profiles
+  'transport.showUnknown': 'That show isn’t on this server.',
+  'transport.episodeUnknown': 'That episode isn’t on this server.',
+  'transport.profileUnknown': 'There’s no profile with that id.',
+  'transport.profilesFull': 'An account can have {max} profiles at most.',
+  'transport.profileMain': 'The account’s own profile can’t be deleted.',
+  'transport.profileName': 'A profile needs a name of 40 characters or fewer.',
+  'transport.profilePin': 'A PIN is four digits.',
+  'transport.wrongPin': 'That isn’t {name}’s PIN. Try again.',
+  'transport.pinRest': 'Too many tries. Try again in a minute.',
 })
 const t = createT(transportMessages)
 const tc = createT(clientMessages)
@@ -1032,7 +1073,8 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
       publicUrl: server.addresses.public,
       setupComplete: server.setupComplete,
       auth: { local: true, oidc: host.oidc, passkeys: host.passkeys },
-      sources: [...WIDGET_SOURCES],
+      // the mock serves the drafted kinds too (B3); the real server lists none of CLIENT_SOURCES
+      sources: [...WIDGET_SOURCES, ...CLIENT_SOURCES],
       attributions: [
         TMDB_ATTRIBUTION,
         // the runtime's credit for OpenSubtitles.com (runtime.ts's ATTRIBUTIONS), in the mock's words
@@ -1075,22 +1117,78 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
     version: () => refuse('invalid', t('transport.versionUnknown'), { reason: 'version' }),
     cursor: () => refuse('invalid', t('transport.badCursor'), { reason: 'bad-cursor' }),
   }
+  /** Shows' and episodes' refusals (kinds.ts), as the server will answer them. */
+  const kindRefusals: Record<KindRefusal, () => AppError> = {
+    show: () => refuse('not-found', t('transport.showUnknown')),
+    episode: () => refuse('not-found', t('transport.episodeUnknown')),
+    version: refusals.version,
+  }
+  /**
+   * Profiles' refusals (profiles.ts) as the drafted routes declare them: a wrong PIN is 403, not
+   * 401, which would say the app isn't signed in (RFC 9110 § 15.5.2); the fifth in a row is 429
+   * with its Retry-After in the details, as the sign-in's limiter answers (packages/auth).
+   */
+  const profileRefusal = (r: ProfileRefusal): AppError => {
+    switch (r.kind) {
+      case 'not-found':
+        return refuse('not-found', t('transport.profileUnknown'))
+      case 'full':
+        return refuse('conflict', t('transport.profilesFull', { max: MAX_PROFILES }), {
+          reason: 'full',
+        })
+      case 'main':
+        return refuse('conflict', t('transport.profileMain'), { reason: 'main' })
+      case 'invalid':
+        return refuse(
+          'invalid',
+          t(r.field === 'pin' ? 'transport.profilePin' : 'transport.profileName'),
+          { field: r.field },
+        )
+      case 'wrong-pin':
+        return refuse('forbidden', t('transport.wrongPin', { name: r.name }), {
+          field: 'pin',
+          reason: 'wrong-pin',
+        })
+      case 'resting':
+        return refuse('rate-limited', t('transport.pinRest'), {
+          reason: 'rate-limited',
+          retryAfter: r.retryAfter,
+        })
+    }
+  }
   const found = <R>(fn: () => R): R => {
     try {
       return fn()
     } catch (e) {
       if (e instanceof FilmRefused) throw refusals[e.refusal]()
+      if (e instanceof KindRefused) throw kindRefusals[e.refusal]()
+      if (e instanceof ProfileRefused) throw profileRefusal(e.refusal)
       throw e
     }
   }
+  /** Shows, episodes and music (kinds.ts), and the account's profiles (profiles.ts). */
+  const kinds = (ctx: Ctx) => kindsOf(ctx)
+  const profiles = (ctx: Ctx) => profilesOf(ctx.srv, ctx.userId)
   /** A change to a film's watch state, heard by the person's devices (packages/media's `announce`). */
-  const announce = (ctx: Ctx, id: number) =>
-    bus.emit({ topic: PLAYBACK_TOPICS.watch, ids: [`movie:${id}`], to: [ctx.userId] })
-  const watched = (ctx: Ctx, id: number, done: boolean) => {
-    found(() => quietly(() => films(ctx).played(id, done)))
-    announce(ctx, id)
+  type TitleType = (typeof TITLE_TYPES)[number]
+  const announce = (ctx: Ctx, id: number, type: TitleType = 'movie') =>
+    bus.emit({ topic: PLAYBACK_TOPICS.watch, ids: [`${type}:${id}`], to: [ctx.userId] })
+  const watched = (ctx: Ctx, type: TitleType, id: number, done: boolean) => {
+    found(() =>
+      quietly(() =>
+        type === 'episode' ? kinds(ctx).played(id, done) : films(ctx).played(id, done),
+      ),
+    )
+    announce(ctx, id, type)
     return undefined
   }
+  /** A title by its address: a film from films.ts, an episode (B3) from kinds.ts. */
+  const titleOf = (ctx: Ctx, type: TitleType, id: number) =>
+    found(() =>
+      type === 'episode'
+        ? kinds(ctx).detail(id, clientOf(ctx))
+        : films(ctx).detail(id, clientOf(ctx)),
+    )
   /** A live session of the caller's, or the 404 the runtime answers: who stopped it, when someone did. */
   const session = (ctx: Ctx, id: string) => {
     const s = plays.find(ctx.userId, id)
@@ -1271,7 +1369,8 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
     },
 
     home: {
-      sections: ({ query }, ctx) => films(ctx).home(query?.client ?? 'web'),
+      // the films' rows (films.ts) with shows' and music's (kinds.ts)
+      sections: ({ query }, ctx) => kinds(ctx).home(query?.client ?? 'web'),
       layout: (_, { api }) => homeOf(api),
       saveLayout: ({ body }, ctx) => {
         const layout = { order: [...new Set(body.order)], hidden: [...new Set(body.hidden)] }
@@ -1285,11 +1384,11 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
       get: () => appearanceOf(),
     },
 
-    // the films apps' reads (films.ts); shows and music wait for B3
+    // the films apps' reads (films.ts), with episodes, shows and music since B3 (kinds.ts)
     library: {
       list: ({ query }, ctx) => found(() => films(ctx).list(query)),
-      item: ({ params }, ctx) => found(() => films(ctx).detail(params.id, clientOf(ctx))),
-      search: ({ query }, ctx) => films(ctx).search(query.query),
+      item: ({ params }, ctx) => titleOf(ctx, params.type, params.id),
+      search: ({ query }, ctx) => kinds(ctx).search(query.query),
       collections: ({ query }, ctx) => films(ctx).collections(query?.client ?? 'web'),
       collection: ({ params, query }, ctx) =>
         found(() => films(ctx).collectionPage(params.id, query?.client ?? 'web')),
@@ -1300,23 +1399,39 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
     },
 
     playback: {
-      prefs: ({ params }, ctx) => found(() => films(ctx).prefs(params.id)),
+      prefs: ({ params }, ctx) =>
+        found(() =>
+          params.type === 'episode' ? kinds(ctx).prefs(params.id) : films(ctx).prefs(params.id),
+        ),
       setPrefs: ({ params, body }, ctx) => {
-        const next = found(() => quietly(() => films(ctx).setPrefs(params.id, body)))
-        announce(ctx, params.id)
+        const next = found(() =>
+          quietly(() =>
+            params.type === 'episode'
+              ? kinds(ctx).setPrefs(params.id, body)
+              : films(ctx).setPrefs(params.id, body),
+          ),
+        )
+        announce(ctx, params.id, params.type)
         return next
       },
-      played: ({ params }, ctx) => watched(ctx, params.id, true),
-      unplayed: ({ params }, ctx) => watched(ctx, params.id, false),
+      played: ({ params }, ctx) => watched(ctx, params.type, params.id, true),
+      unplayed: ({ params }, ctx) => watched(ctx, params.type, params.id, false),
       dismiss: ({ params }, ctx) => {
-        found(() => quietly(() => films(ctx).dismiss(params.id)))
-        announce(ctx, params.id)
+        found(() =>
+          quietly(() =>
+            params.type === 'episode'
+              ? kinds(ctx).dismiss(params.id)
+              : films(ctx).dismiss(params.id),
+          ),
+        )
+        announce(ctx, params.id, params.type)
         return undefined
       },
       play: ({ params, body }, ctx) => {
-        const f = films(ctx)
-        const d = found(() => f.detail(params.id, clientOf(ctx)))
-        const picks = f.prefs(params.id)
+        const d = titleOf(ctx, params.type, params.id)
+        const picks = found(() =>
+          params.type === 'episode' ? kinds(ctx).prefs(params.id) : films(ctx).prefs(params.id),
+        )
         // the version asked for, then the pick, then the first, as the runtime's play has it
         const wanted = body?.versionId ?? picks.versionId
         const version = wanted ? d.versions.find((v) => v.id === wanted) : d.versions[0]
@@ -1335,9 +1450,13 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
       progress: ({ params, body }, ctx) => {
         const s = session(ctx, params.id)
         const done = found(() =>
-          quietly(() => films(ctx).place(s.tmdbId, body.position, s.duration)),
+          quietly(() =>
+            s.type === 'episode'
+              ? kinds(ctx).place(s.tmdbId, body.position, s.duration)
+              : films(ctx).place(s.tmdbId, body.position, s.duration),
+          ),
         )
-        announce(ctx, s.tmdbId)
+        announce(ctx, s.tmdbId, s.type)
         return { watched: done, ...plays.heard() }
       },
       stop: ({ params }, ctx) => {
@@ -1346,14 +1465,84 @@ export function createMockFetch(options: TransportOptions = {}): MockTransport {
       },
       // kept by the runtime for the device; the mock's play answers every device alike
       report: () => undefined,
-      next: ({ params }, ctx) => ({ item: found(() => films(ctx).next(params.id)) }),
+      next: ({ params }, ctx) => ({
+        item: found(() =>
+          params.type === 'episode' ? kinds(ctx).next(params.id) : films(ctx).next(params.id),
+        ),
+      }),
       // no sheets: the mock serves only the API, and the scrubber draws without previews
       trickplay: ({ params, query }, ctx) => {
-        const d = found(() => films(ctx).detail(params.id, clientOf(ctx)))
+        const d = titleOf(ctx, params.type, params.id)
         const v = query?.versionId ?? d.versions[0]?.id
         if (!v || !d.versions.some((x) => x.id === v)) throw refusals.version()
         return plays.trickplay(v)
       },
+    },
+
+    // the drafted routes (B3, kinds.ts and profiles.ts): the mock's own events tell the apps
+    shows: {
+      list: (_, ctx) => kinds(ctx).list(),
+      show: ({ params }, ctx) => found(() => kinds(ctx).show(params.id)),
+      watched: ({ params, body }, ctx) => {
+        found(() => kinds(ctx).setWatched(params.id, body.season, body.watched))
+        return undefined
+      },
+    },
+
+    music: {
+      library: (_, ctx) => kinds(ctx).music(),
+      songs: (_, ctx) => kinds(ctx).songs(),
+      album: ({ params }, ctx) => kinds(ctx).album(params.id),
+      artist: ({ params }, ctx) => kinds(ctx).artist(params.id),
+      queue: ({ body }, ctx) => kinds(ctx).queue(body.source, body.shuffle),
+      tracks: ({ query }, ctx) =>
+        kinds(ctx).tracks(
+          query.ids
+            .split(',')
+            .map((x) => x.trim())
+            .filter(Boolean),
+        ),
+    },
+
+    playlists: {
+      list: (_, ctx) => kinds(ctx).playlists(),
+      get: ({ params }, ctx) => kinds(ctx).playlist(params.id),
+      create: ({ body }, ctx) => {
+        const p = ctx.api.playlists.create(body.name, body.songs)
+        return kinds(ctx).playlist(p.id).playlist
+      },
+      rename: ({ params, body }, ctx) => {
+        ctx.api.playlists.rename(params.id, body.name)
+        return undefined
+      },
+      add: ({ params, body }, ctx) => {
+        ctx.api.playlists.add(params.id, body.songs)
+        return undefined
+      },
+      remove: ({ params }, ctx) => {
+        ctx.api.playlists.remove(params.id, params.entry)
+        return undefined
+      },
+      reorder: ({ params, body }, ctx) => {
+        ctx.api.playlists.reorder(params.id, body.entries)
+        return undefined
+      },
+      delete: ({ params }, ctx) => {
+        ctx.api.playlists.delete(params.id)
+        return undefined
+      },
+    },
+
+    profiles: {
+      list: (_, ctx) => profiles(ctx).list(),
+      create: ({ body }, ctx) => found(() => profiles(ctx).create(body.name, body.tone)),
+      update: ({ params, body }, ctx) => found(() => profiles(ctx).update(params.id, body)),
+      delete: ({ params }, ctx) => {
+        found(() => profiles(ctx).delete(params.id))
+        return undefined
+      },
+      choose: ({ params, body }, ctx) =>
+        found(() => profiles(ctx).choose(params.id, body?.pin, ctx.srv.clock.now())),
     },
 
     announcements: {

@@ -160,6 +160,12 @@ export type LibraryGridListProps<T> = {
   bottom?: number
   /** The width class whose columns it draws; the window's, unless a page says otherwise. */
   widthClass?: WidthClass
+  /**
+   * Its own columns and gaps over the width class's: the phone's Music draws two albums a row and
+   * its lists one (mobile/music.tsx).
+   */
+  columns?: number
+  gap?: { column: number; row: number }
   refreshControl?: ReactElement<RefreshControlProps>
   onScroll?: (e: NativeSyntheticEvent<NativeScrollEvent>) => void
   /** Where the grid starts in the scroller, once the header is laid out. */
@@ -184,6 +190,8 @@ export function LibraryGridList<T>({
   lead,
   bottom = 0,
   widthClass,
+  columns: givenColumns,
+  gap: givenGap,
   refreshControl,
   onScroll,
   onGridTop,
@@ -196,7 +204,9 @@ export function LibraryGridList<T>({
   const window = useWindowDimensions().width
   const [laid, setLaid] = useState<number | null>(null)
   const span = Math.max(0, (laid ?? window) - 2 * inset - insetEnd)
-  const { columns, gap } = gridOf(klass, Math.max(0, span - (lead?.room ?? 0)))
+  const grid = gridOf(klass, Math.max(0, span - (lead?.room ?? 0)))
+  const columns = givenColumns ?? grid.columns
+  const gap = givenGap ?? grid.gap
   const rows = useMemo(() => {
     const out: T[][] = []
     for (let i = 0; i < items.length; i += columns) out.push(items.slice(i, i + columns))

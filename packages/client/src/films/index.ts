@@ -28,6 +28,11 @@ export const filmsMessages = defineMessages({
   searchMovies: 'Movies',
   searchCollections: 'Collections',
   searchPeople: 'People',
+  searchShows: 'Shows',
+  searchEpisodes: 'Episodes',
+  searchArtists: 'Artists',
+  searchAlbums: 'Albums',
+  searchSongs: 'Songs',
   off: 'Off',
   noAudio: 'No sound tracks',
 })
@@ -145,8 +150,21 @@ export function personHeaderOf<C extends PersonCredit>(credits: C[]) {
 
 // ---------------------------------------------------------------- Search
 
-/** The kinds the films apps show, in the server's order of best match. */
-export const SEARCH_KINDS = ['movies', 'collections', 'people'] as const
+/**
+ * The kinds the apps show, in the server's order of best match: the films' kinds, then shows and
+ * episodes (B3), which only a server that serves shows sends, and artists, albums and songs (B3),
+ * which only a server that serves music sends.
+ */
+export const SEARCH_KINDS = [
+  'movies',
+  'collections',
+  'people',
+  'shows',
+  'episodes',
+  'artists',
+  'albums',
+  'songs',
+] as const
 export type SearchKind = (typeof SEARCH_KINDS)[number]
 
 /** Quick picks for an empty search, as the prototype has them (design/prototypes/src/client/data.ts). */
@@ -163,6 +181,21 @@ export const SEARCH_SUGGESTIONS = [
 /** Whether the apps show a section of results: `discover` waits for requests. */
 export const isShownKind = <S extends { kind: string }>(s: S): s is S & { kind: SearchKind } =>
   (SEARCH_KINDS as readonly string[]).includes(s.kind)
+
+/** The search kinds that need shows or music served; the films' kinds need nothing. */
+const KIND_NEEDS: Partial<Record<SearchKind, 'shows' | 'music'>> = {
+  shows: 'shows',
+  episodes: 'shows',
+  artists: 'music',
+  albums: 'music',
+  songs: 'music',
+}
+
+/** Whether a kind of results is shown on a server that serves these (B3). */
+export const servedSearchKind = (kind: SearchKind, serves: { shows: boolean; music: boolean }) => {
+  const need = KIND_NEEDS[kind]
+  return !need || serves[need]
+}
 
 // ---------------------------------------------------------------- announcements
 
@@ -278,7 +311,17 @@ export function createFilmsText(locale = 'en') {
           ? t('searchMovies')
           : k === 'collections'
             ? t('searchCollections')
-            : t('searchPeople'),
+            : k === 'shows'
+              ? t('searchShows')
+              : k === 'episodes'
+                ? t('searchEpisodes')
+                : k === 'artists'
+                  ? t('searchArtists')
+                  : k === 'albums'
+                    ? t('searchAlbums')
+                    : k === 'songs'
+                      ? t('searchSongs')
+                      : t('searchPeople'),
     },
 
     /** The menus' words for Off and for a version with no sound. */

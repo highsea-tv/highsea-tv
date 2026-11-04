@@ -24,6 +24,7 @@
 // (useChromeOverlay), as a film's page does. Over a page, the TV's head scrolls away with it
 // (tv/kit.tsx's TvHead), and the top bar stays, clear until the page scrolls under it and then
 // glass (web/shell.tsx's TopBar).
+import { useServes } from '@highsea-tv/client/data'
 import { type destinationMessages, forgetMessages, shellMessages } from '@highsea-tv/client/gate'
 import { useT } from '@highsea-tv/i18n/react'
 import { useCurrent } from '@highsea-tv/native/servers'
@@ -68,6 +69,12 @@ import {
   TvIdentity,
   useServerName,
 } from '../../kit.tsx'
+import { MusicBar } from '../../music-player/bar.tsx'
+import { MiniPlayer } from '../../music-player/mini.tsx'
+import { MusicPlayerMount, useMusicShown } from '../../music-player/mount.tsx'
+import { NowPlayingStop } from '../../music-player/now-playing-tv.tsx'
+import { TvOpening } from '../../profiles/launch.tsx'
+import { ProfilesProvider, useWatching } from '../../profiles/state.tsx'
 import { AlertsPopover } from '../../shell/alerts.tsx'
 import {
   ShellAnnouncements,
@@ -102,6 +109,46 @@ const DESTINATIONS: Destination[] = [
   { path: '/movies', label: 'movies' },
 ]
 
+/**
+ * The destinations this server has: Shows and Music after Movies, as the prototype orders them,
+ * only on a server that serves them (`useServes`, one-client-platform-b.md › B3), so a server with
+ * films only draws B2's bar and head.
+ */
+function useDestinations(): Destination[] {
+  const shows = useServes('shows')
+  const music = useServes('music')
+  return useMemo(
+    () => [
+      ...DESTINATIONS,
+      ...(shows ? [{ path: '/shows', label: 'shows' } as const] : []),
+      ...(music ? [{ path: '/music', label: 'music' } as const] : []),
+    ],
+    [shows, music],
+  )
+}
+
+/** The phone's tabs on this server: Library owns Shows' and Music's pages where they're served. */
+function useTabs(): typeof TABS {
+  const shows = useServes('shows')
+  const music = useServes('music')
+  return useMemo(
+    () =>
+      TABS.map((tab) =>
+        tab.path === '/library'
+          ? {
+              ...tab,
+              owns: [
+                ...(tab.owns ?? []),
+                ...(shows ? ['/shows'] : []),
+                ...(music ? ['/music'] : []),
+              ],
+            }
+          : tab,
+      ),
+    [shows, music],
+  )
+}
+
 const isHere = (path: string, pathname: string) =>
   path === '/' ? pathname === '/' : pathname === path || pathname.startsWith(`${path}/`)
 
@@ -111,7 +158,18 @@ const isMarked = (d: Destination, pathname: string) =>
 
 const go = (path: string) => router.navigate(path as Href)
 
+// the account's profiles, when the server serves them (B3): who's watching for the avatar and the
+// account menu, and the TV's opening
 export default function Shell() {
+  return (
+    <ProfilesProvider>
+      <TvOpening />
+      <ShellBody />
+    </ProfilesProvider>
+  )
+}
+
+function ShellBody() {
   const theme = useTheme()
   const pathname = usePathname()
   const input = useFormFactor().input
@@ -134,7 +192,14 @@ export default function Shell() {
   }, [owner, scroll])
   // the announcements need the server; Unreachable stands alone
   const must = useHereAnnouncements().modal
-  const acknowledge = offline ? undefined : must
+  // the music player, mounted once over every route, drawn only while music is queued (B3)
+  const music = useMusicShown() && !offline
+  const nowPlaying = isHere('/now-playing', pathname)
+  // Who's watching stands alone, without the head or the top bar (B3's profiles)
+  const who = isHere('/who', pathname)
+  // an announcement to acknowledge waits while Who's watching is up, as the prototype's opening
+  // came before Home
+  const acknowledge = offline || who ? undefined : must
   const over = !offline && overlay !== null
   const content = offline ? (
     <Unreachable />
@@ -157,8 +222,12 @@ export default function Shell() {
             {content}
             <NoteRegion />
           </View>
-          {/* Connect a device is a step of its own, without the tabs (the prototype's mobile/pair.tsx) */}
-          {isHere('/link', pathname) ? null : <TabBar />}
+          {/* the mini player above the tabs, but not over Now playing, which it opens */}
+          {music && !nowPlaying && !isHere('/link', pathname) ? <MiniPlayer /> : null}
+          {/* Connect a device is a step of its own, without the tabs (the prototype's mobile/pair.tsx),
+              and so is Now playing */}
+          {isHere('/link', pathname) || nowPlaying ? null : <TabBar />}
+          <MusicPlayerMount />
           {offline ? null : <ShellAnnouncements />}
         </View>
       </Asks>
@@ -170,7 +239,7 @@ export default function Shell() {
     return (
       <Asks value={asks}>
         <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-          {over ? null : head}
+          {over || who ? null : head}
           <HeadGoal.Provider value={goal}>
             <View
               // hidden while an announcement must be acknowledged: nothing in it takes focus or
@@ -182,7 +251,7 @@ export default function Shell() {
               {content}
             </View>
           </HeadGoal.Provider>
-          {over && head ? (
+          {over && head && !who ? (
             <Over>
               <Animated.View
                 pointerEvents="box-none"
@@ -193,6 +262,7 @@ export default function Shell() {
             </Over>
           ) : null}
           {acknowledge ? <TvAnnouncement item={acknowledge} /> : null}
+          <MusicPlayerMount />
           <NoteRegion />
         </View>
       </Asks>
@@ -201,9 +271,12 @@ export default function Shell() {
   return (
     <Asks value={asks}>
       <View style={{ flex: 1, backgroundColor: theme.colors.bg }}>
-        {over ? null : <TopBar />}
+        {over || who ? null : <TopBar />}
         <View style={{ flex: 1 }}>{content}</View>
-        {over ? (
+        {/* the music bar along the window's foot, under the page so its foot stays clear */}
+        {music ? <MusicBar /> : null}
+        <MusicPlayerMount />
+        {over && !who ? (
           <Over>
             <TopBar over glass={scrolled} />
           </Over>
@@ -251,6 +324,7 @@ function TabBar() {
   const theme = useTheme()
   const insets = useSafeAreaInsets()
   const pathname = usePathname()
+  const tabs = useTabs()
   return (
     <View
       accessibilityRole={TAB_ROW}
@@ -264,7 +338,7 @@ function TabBar() {
         borderTopColor: theme.colors.line,
       }}
     >
-      {TABS.map((tab) => {
+      {tabs.map((tab) => {
         const here = isMarked(tab, pathname)
         const color = here ? 'accent-text' : 'text-3'
         return (
@@ -314,14 +388,18 @@ function Head({
 }) {
   const t = useT(shellMessages)
   const pathname = usePathname()
+  const destinations = useDestinations()
   const alerts = isHere('/alerts', pathname)
   const account = isHere('/settings', pathname)
   const landing =
     alerts || account
       ? null
-      : (DESTINATIONS.find((d) => isHere(d.path, pathname)) ?? DESTINATIONS[1])
+      : (destinations.find((d) => isHere(d.path, pathname)) ?? destinations[1])
   const fresh = useHereAnnouncements().unread.length
-  const person = useMaybeSession()?.user.displayName ?? ''
+  // the profile watching now, when the server serves profiles; else the person signed in
+  const watching = useWatching()
+  const signedIn = useMaybeSession()?.user.displayName ?? ''
+  const person = watching?.name ?? signedIn
   const [tab, setTab] = useState<ViewHandle | null>(null)
   const [bell, setBell] = useState<ViewHandle | null>(null)
   const [me, setMe] = useState<ViewHandle | null>(null)
@@ -334,7 +412,7 @@ function Head({
       down={down}
       reachable={reachable}
       start={<TvIdentity />}
-      center={DESTINATIONS.map((d) => (
+      center={destinations.map((d) => (
         <TvHeadStop
           key={d.path}
           ref={d === landing ? setTab : undefined}
@@ -348,6 +426,7 @@ function Head({
       ))}
       end={
         <>
+          <NowPlayingStop here={isHere('/now-playing', pathname)} disabled={!reachable} />
           <TvHeadStop
             ref={setBell}
             label={fresh ? t('alertsNew', { count: fresh }) : t('alerts')}
@@ -361,6 +440,7 @@ function Head({
             ref={setMe}
             label={t('account', { name: person })}
             avatar={person}
+            avatarTone={watching?.tone}
             here={account}
             disabled={!reachable}
             onPress={() => go('/settings')}
@@ -388,6 +468,7 @@ function TopBar({ over = false, glass = false }: { over?: boolean; glass?: boole
   const theme = useTheme()
   const m = useControl()
   const pathname = usePathname()
+  const destinations = useDestinations()
   const name = useServerName()
   const away = useMaybeSession()?.away ?? false
   // below 768 the bar is the prototype's narrow one (web/shell.tsx's TopBar under `medium:`): the
@@ -506,31 +587,33 @@ function TopBar({ over = false, glass = false }: { over?: boolean; glass?: boole
             paddingBottom: space['2'],
           }}
         >
-          {DESTINATIONS.filter((d) => !d.icon).map((d) => {
-            const here = isHere(d.path, pathname)
-            return (
-              <Press
-                key={d.path}
-                role="link"
-                accessibilityLabel={t(d.label)}
-                {...pageMark(here)}
-                onPress={() => go(d.path)}
-                style={{
-                  minHeight: COMPACT_NAV_HEIGHT - space['2'],
-                  justifyContent: 'center',
-                  paddingHorizontal: space['3'],
-                  borderRadius: tokens.radius.pill,
-                  // the prototype's aria-[current=page]:bg-text/10
-                  backgroundColor: here ? alpha(theme.colors.text, 0.1) : 'transparent',
-                }}
-              >
-                {/* unchosen, the prototype's text-text/65, as BarLink's */}
-                <Text variant="body" weight={600} style={{ opacity: here ? 1 : UNCHOSEN_ALPHA }}>
-                  {t(d.label)}
-                </Text>
-              </Press>
-            )
-          })}
+          {destinations
+            .filter((d) => !d.icon)
+            .map((d) => {
+              const here = isHere(d.path, pathname)
+              return (
+                <Press
+                  key={d.path}
+                  role="link"
+                  accessibilityLabel={t(d.label)}
+                  {...pageMark(here)}
+                  onPress={() => go(d.path)}
+                  style={{
+                    minHeight: COMPACT_NAV_HEIGHT - space['2'],
+                    justifyContent: 'center',
+                    paddingHorizontal: space['3'],
+                    borderRadius: tokens.radius.pill,
+                    // the prototype's aria-[current=page]:bg-text/10
+                    backgroundColor: here ? alpha(theme.colors.text, 0.1) : 'transparent',
+                  }}
+                >
+                  {/* unchosen, the prototype's text-text/65, as BarLink's */}
+                  <Text variant="body" weight={600} style={{ opacity: here ? 1 : UNCHOSEN_ALPHA }}>
+                    {t(d.label)}
+                  </Text>
+                </Press>
+              )
+            })}
         </ScrollView>
       </View>
     )
@@ -572,7 +655,7 @@ function TopBar({ over = false, glass = false }: { over?: boolean; glass?: boole
             marginHorizontal: 'auto',
           }}
         >
-          {DESTINATIONS.map((d) => (
+          {destinations.map((d) => (
             <BarLink key={d.path} d={d} pathname={pathname} />
           ))}
         </View>

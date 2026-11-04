@@ -17,6 +17,11 @@
 // An empty library says so; choices that match nothing say why, and with a pointer and on the TV
 // offer Show everything. The grids draw only the rows near the screen (./parts.tsx), so a letter
 // jumps to its first title's row, not to a measured place.
+//
+// Shows is laid out as Movies is (the prototype's web/shows.tsx: "so the two read as one
+// library"), so each composition takes a GridKind: what it lists, how it's arranged and lettered,
+// its words and its poster. MOVIES is here; ./shows.tsx has SHOWS_GRID.
+import type { ClientItem } from '@highsea-tv/api-contract'
 import { useLibrary } from '@highsea-tv/client/data'
 import {
   ALL,
@@ -30,6 +35,7 @@ import {
 } from '@highsea-tv/client/library'
 import { useLocale, useT } from '@highsea-tv/i18n/react'
 import { useFormat } from '@highsea-tv/native/format'
+import type { Query } from '@highsea-tv/sdk/react'
 import { springs, springToCss, web } from '@highsea-tv/tokens'
 import {
   Button,
@@ -63,6 +69,7 @@ import {
 import {
   type ReactElement,
   type ReactNode,
+  type Ref,
   useCallback,
   useContext,
   useEffect,
@@ -106,15 +113,90 @@ function useLibraryText() {
   return useMemo(() => createLibraryText(locale), [locale])
 }
 
+/** What a grid's parts hand its poster: its width on the TV, focus, and the letter's first. */
+export type PosterSlot = {
+  width?: number
+  ref?: Ref<ViewHandle>
+  preferred?: boolean
+  onFocus?: () => void
+}
+
+/** The words a kind's grid says that Movies' and Shows' word differently: its keys in the messages. */
+type KindWords = {
+  failed: 'failed' | 'showsFailed'
+  shown: 'shown' | 'showsShown'
+  showCount: 'showCount' | 'showsShowCount'
+  emptyTitle: 'emptyTitle' | 'showsEmptyTitle'
+  emptyBody: 'emptyBody' | 'showsEmptyBody'
+  noMatchTitle: 'noMatchTitle' | 'showsNoMatchTitle'
+  noMatchUnwatched: 'noMatchUnwatched' | 'showsNoMatchUnwatched'
+  noUnwatched: 'noUnwatched' | 'showsNoUnwatched'
+  watchedAllIn: 'watchedAllIn' | 'showsWatchedAllIn'
+}
+
+/**
+ * One kind of library grid. Its hooks are called where the composition calls them, so a kind is
+ * a module's constant, never made while rendering.
+ */
+export type GridKind<T extends { id: number }> = {
+  /** Its name in the screen's messages: the page's title and the grid's label. */
+  name: 'movies' | 'shows'
+  /** The library's icon when it's empty. */
+  icon: 'library' | 'series'
+  useItems: () => Query<T[]>
+  arrange: (items: T[], genre: string, sort: Sort, unwatched: boolean) => T[]
+  genresOf: (items: T[]) => string[]
+  /** The title its A–Z letter comes from. */
+  titleOf: (item: T) => string
+  /** Show's choices, the sorts and the count, in this locale. */
+  useWords: () => {
+    shows: { value: Show; label: string }[]
+    sorts: { value: Sort; label: string }[]
+    count: (n: number) => string
+  }
+  /** Its words in libraryScreenMessages, where they differ from Movies'. */
+  words: KindWords
+  poster: (item: T, slot: PosterSlot) => ReactElement
+}
+
+const MOVIE_WORDS = {
+  failed: 'failed',
+  shown: 'shown',
+  showCount: 'showCount',
+  emptyTitle: 'emptyTitle',
+  emptyBody: 'emptyBody',
+  noMatchTitle: 'noMatchTitle',
+  noMatchUnwatched: 'noMatchUnwatched',
+  noUnwatched: 'noUnwatched',
+  watchedAllIn: 'watchedAllIn',
+} as const satisfies KindWords
+
+/** Movies: every film on this server. */
+export const MOVIES: GridKind<ClientItem> = {
+  name: 'movies',
+  icon: 'library',
+  useItems: useLibrary,
+  arrange,
+  genresOf,
+  titleOf: (m) => m.title,
+  useWords: () => {
+    const text = useLibraryText()
+    const f = useFormat()
+    return { shows: text.shows, sorts: text.sorts, count: f.movies }
+  },
+  words: MOVIE_WORDS,
+  poster: (item, slot) => <LibraryPoster item={item} {...slot} />,
+}
+
 /** The choices in force and what they leave, the same at every form factor. */
-function useChoices(library: LibraryQuery) {
+function useChoices<T extends { id: number }>(kind: GridKind<T>, library: Query<T[]>) {
   const [genre, setGenre] = useState(ALL)
   const [sort, setSort] = useState<Sort>('title')
   const [show, setShow] = useState<Show>('all')
   const all = library.data ?? []
   const shown = useMemo(
-    () => arrange(library.data ?? [], genre, sort, show === 'unwatched'),
-    [library.data, genre, sort, show],
+    () => kind.arrange(library.data ?? [], genre, sort, show === 'unwatched'),
+    [kind, library.data, genre, sort, show],
   )
   const titled = sort === 'title' && library.status === 'success' && shown.length > 0
   // each letter's first title in a list sorted by title, by its place
@@ -122,13 +204,14 @@ function useChoices(library: LibraryQuery) {
     const out = new Map<string, number>()
     if (sort === 'title')
       shown.forEach((m, i) => {
-        const l = letterOf(m.title)
+        const l = letterOf(kind.titleOf(m))
         if (!out.has(l)) out.set(l, i)
       })
     return out
-  }, [shown, sort])
+  }, [kind, shown, sort])
   const present = useMemo(() => new Set(firsts.keys()), [firsts])
   return {
+    kind,
     library,
     all,
     shown,
@@ -148,22 +231,30 @@ function useChoices(library: LibraryQuery) {
   }
 }
 
-type Choices = ReturnType<typeof useChoices>
+type Choices<T extends { id: number }> = ReturnType<typeof useChoices<T>>
 
 /** Why the choices match nothing: the phone's and a pointer's words. */
-const noMatchOf = (show: Show) => (show === 'unwatched' ? 'noMatchUnwatched' : 'noMatch')
+const noMatchOf = (words: KindWords, show: Show) =>
+  show === 'unwatched' ? words.noMatchUnwatched : 'noMatch'
 
 /** The grid's place when there's nothing to draw in it: loading, an error, none, or no match. */
-function MoviesState({ c, everything }: { c: Choices; everything?: boolean }) {
+function GridState<T extends { id: number }>({
+  c,
+  everything,
+}: {
+  c: Choices<T>
+  everything?: boolean
+}) {
   const t = useT(messages)
-  const { library } = c
+  const { library, kind } = c
+  const w = kind.words
   if (library.status === 'loading') return <LibraryLoading />
   if (library.status === 'error')
     return (
       <EmptyState
         tone="error"
         icon="alert"
-        title={t('failed')}
+        title={t(w.failed)}
         action={<Button onPress={library.refetch}>{t('tryAgain')}</Button>}
       >
         {library.error.message}
@@ -171,8 +262,8 @@ function MoviesState({ c, everything }: { c: Choices; everything?: boolean }) {
     )
   if (c.all.length === 0)
     return (
-      <EmptyState icon="library" title={t('emptyTitle')}>
-        {t('emptyBody')}
+      <EmptyState icon={kind.icon} title={t(w.emptyTitle)}>
+        {t(w.emptyBody)}
       </EmptyState>
     )
   return everything ? (
@@ -181,17 +272,17 @@ function MoviesState({ c, everything }: { c: Choices; everything?: boolean }) {
       title={t('nothingTitle')}
       action={<Button onPress={c.everything}>{t('showEverything')}</Button>}
     >
-      {t(noMatchOf(c.show))}
+      {t(noMatchOf(w, c.show))}
     </EmptyState>
   ) : (
-    <EmptyState icon="filter" title={t('noMatchTitle')}>
-      {t(noMatchOf(c.show))}
+    <EmptyState icon="filter" title={t(w.noMatchTitle)}>
+      {t(noMatchOf(w, c.show))}
     </EmptyState>
   )
 }
 
 /** The scroller's offset as an animated value, so what follows it never re-renders the page. */
-function useScrolled() {
+export function useScrolled() {
   const [y] = useState(() => new Animated.Value(0))
   const onScroll = useMemo(
     () => Animated.event([{ nativeEvent: { contentOffset: { y } } }], { useNativeDriver: false }),
@@ -201,7 +292,7 @@ function useScrolled() {
 }
 
 /** Where a column that starts at `from` in the scroller stands, staying at `stuck` once there. */
-const stickyTop = (y: Animated.Value, from: number, stuck: number) =>
+export const stickyTop = (y: Animated.Value, from: number, stuck: number) =>
   from > stuck
     ? y.interpolate({
         inputRange: [0, from - stuck],
@@ -212,21 +303,32 @@ const stickyTop = (y: Animated.Value, from: number, stuck: number) =>
 
 // ---------------------------------------------------------------- touch
 
-export function TouchMovies({
+export function TouchMovies(props: {
+  library: LibraryQuery
+  header: ReactElement
+  refreshControl: ReactElement<RefreshControlProps>
+}) {
+  return <TouchGrid kind={MOVIES} {...props} />
+}
+
+/** A kind's grid as the phone's Library view draws it, under the Library's title and views. */
+export function TouchGrid<T extends { id: number }>({
+  kind,
   library,
   header,
   refreshControl,
 }: {
-  library: LibraryQuery
+  kind: GridKind<T>
+  library: Query<T[]>
   /** The Library's title and its views, above the count. */
   header: ReactElement
   refreshControl: ReactElement<RefreshControlProps>
 }) {
   const t = useT(messages)
-  const text = useLibraryText()
+  const text = kind.useWords()
   const gutter = usePageGutter()
   const insets = useSafeAreaInsets()
-  const c = useChoices(library)
+  const c = useChoices(kind, library)
   const { all, shown } = c
   const [open, setOpen] = useState(false)
   const filtered = c.genre !== ALL || c.sort !== 'title' || c.show !== 'all'
@@ -244,7 +346,7 @@ export function TouchMovies({
         ref={grid}
         items={c.library.status === 'success' ? shown : []}
         keyOf={(m) => String(m.id)}
-        label={t('movies')}
+        label={t(kind.name)}
         widthClass="compact"
         inset={gutter}
         insetEnd={c.titled ? space['2'] : 0}
@@ -259,7 +361,7 @@ export function TouchMovies({
               <View style={{ flex: 1 }}>
                 {library.status === 'success' ? (
                   <Text variant="caption" color="text-3">
-                    {t('shown', { shown: shown.length, total: all.length })}
+                    {t(kind.words.shown, { shown: shown.length, total: all.length })}
                   </Text>
                 ) : library.status === 'loading' ? (
                   <Skeleton height={space['3']} width={space['16'] + space['8']} />
@@ -271,8 +373,8 @@ export function TouchMovies({
             </View>
           </View>
         }
-        empty={<MoviesState c={c} />}
-        render={(m) => <LibraryPoster item={m} />}
+        empty={<GridState c={c} />}
+        render={(m) => kind.poster(m, {})}
       />
       {c.titled ? (
         <Animated.View
@@ -314,7 +416,7 @@ export function TouchMovies({
               {t('reset')}
             </Button>
             <Button variant="primary" onPress={() => setOpen(false)}>
-              {t('showCount', { count: shown.length })}
+              {t(kind.words.showCount, { count: shown.length })}
             </Button>
           </>
         }
@@ -335,7 +437,7 @@ export function TouchMovies({
             ))}
           </ChipGroup>
           <ChipGroup label={t('genre')}>
-            {[ALL, ...genresOf(all)].map((g) => (
+            {[ALL, ...kind.genresOf(all)].map((g) => (
               <Chip key={g} selected={c.genre === g} onPress={() => c.setGenre(g)}>
                 {g === ALL ? t('all') : g}
               </Chip>
@@ -360,15 +462,17 @@ function ChipGroup({ label, children }: { label: string; children: ReactNode }) 
 
 // ---------------------------------------------------------------- a pointer
 
-export function PointerMovies() {
+export const PointerMovies = () => <PointerGrid kind={MOVIES} />
+
+/** A kind's library page with a pointer: the web's and the desktop app's. */
+export function PointerGrid<T extends { id: number }>({ kind }: { kind: GridKind<T> }) {
   const t = useT(messages)
-  const f = useFormat()
-  const text = useLibraryText()
+  const text = kind.useWords()
   const theme = useTheme()
   const gutter = usePageGutter()
   const reduced = useMotionReduced()
   const { widthClass } = useFormFactor()
-  const c = useChoices(useLibrary())
+  const c = useChoices(kind, kind.useItems())
   const { library, all, shown } = c
   const grid = useRef<GridHandle>(null)
   const scrolled = useScrolled()
@@ -421,7 +525,7 @@ export function PointerMovies() {
         ref={grid}
         items={library.status === 'success' ? shown : []}
         keyOf={(m) => String(m.id)}
-        label={t('movies')}
+        label={t(kind.name)}
         inset={inset}
         lead={{ room: indexed ? indexWidth + space['4'] : 0, width: lead }}
         bottom={space['16']}
@@ -440,11 +544,11 @@ export function PointerMovies() {
           >
             <View style={{ gap: space['1'] }}>
               <Text variant="heading" accessibilityRole="header" aria-level={1}>
-                {t('movies')}
+                {t(kind.name)}
               </Text>
               {library.status === 'success' ? (
                 <Text variant="caption" color="text-3">
-                  {f.movies(all.length)}
+                  {text.count(all.length)}
                 </Text>
               ) : null}
             </View>
@@ -477,7 +581,7 @@ export function PointerMovies() {
                   onValueChange={c.setGenre}
                   options={[
                     { value: ALL, label: t('allGenres') },
-                    ...genresOf(all).map((g) => ({ value: g, label: g })),
+                    ...kind.genresOf(all).map((g) => ({ value: g, label: g })),
                   ]}
                 />
               </View>
@@ -492,17 +596,13 @@ export function PointerMovies() {
             </View>
           </View>
         }
-        empty={<MoviesState c={c} everything />}
-        render={(m, i) => (
-          <LibraryPoster
-            item={m}
-            ref={
-              c.titled && c.firsts.get(letterOf(m.title)) === i
-                ? firstOf(letterOf(m.title))
-                : undefined
-            }
-          />
-        )}
+        empty={<GridState c={c} everything />}
+        render={(m, i) => {
+          const l = letterOf(kind.titleOf(m))
+          return kind.poster(m, {
+            ref: c.titled && c.firsts.get(l) === i ? firstOf(l) : undefined,
+          })
+        }}
       />
       {indexed ? (
         <Animated.View
@@ -535,13 +635,17 @@ const TV_SORTS = ['title', 'added', 'year'] as const satisfies Sort[]
 /** How long the page's lift takes to settle, after which the first row is where it'll stay. */
 const LIFT_MS = springToCss(springs.base).duration
 
-export function TvMovies() {
+export const TvMovies = () => <TvLibraryGrid kind={MOVIES} />
+
+/** A kind's library page on the TV. */
+export function TvLibraryGrid<T extends { id: number }>({ kind }: { kind: GridKind<T> }) {
   const t = useT(messages)
   const theme = useTheme()
   const u = theme.u
   const m = useControl()
   const { width } = useWindowDimensions()
-  const c = useChoices(useLibrary())
+  const c = useChoices(kind, kind.useItems())
+  const w = kind.words
   const { library, all, shown } = c
   const goal = useContext(HeadGoal)
   // focus starts on the grid once; Show everything starts it there again
@@ -573,7 +677,7 @@ export function TvMovies() {
   if (library.status === 'error')
     return (
       <TvMessage
-        title={t('failed')}
+        title={t(w.failed)}
         actions={
           <Button variant="primary" hasTVPreferredFocus onPress={library.refetch}>
             {t('tryAgain')}
@@ -604,7 +708,7 @@ export function TvMovies() {
           <Kept
             style={{ flexDirection: 'row', alignItems: 'flex-end', gap: TV_LIBRARY.headGap * u }}
           >
-            <LibraryTitle>{t('movies')}</LibraryTitle>
+            <LibraryTitle>{t(kind.name)}</LibraryTitle>
             {/* nothing to sort or filter in an empty library */}
             {none ? null : (
               <View
@@ -639,14 +743,14 @@ export function TvMovies() {
                 >
                   {t('unwatched')}
                 </Chip>
-                <GenreChoice genres={genresOf(all)} value={c.genre} onPick={c.setGenre} />
+                <GenreChoice genres={kind.genresOf(all)} value={c.genre} onPick={c.setGenre} />
               </View>
             )}
           </Kept>
           {library.status === 'loading' ? (
             <LibraryLoading tv={2 * TV_COLUMNS} />
           ) : none ? (
-            <LibraryTvWords title={t('emptyTitle')}>{t('emptyBody')}</LibraryTvWords>
+            <LibraryTvWords title={t(w.emptyTitle)}>{t(w.emptyBody)}</LibraryTvWords>
           ) : shown.length === 0 ? (
             <LibraryTvWords
               title={t('nothingTitle')}
@@ -663,9 +767,9 @@ export function TvMovies() {
               }
             >
               {c.genre === ALL
-                ? t('noUnwatched')
+                ? t(w.noUnwatched)
                 : c.show === 'unwatched'
-                  ? t('watchedAllIn', { genre: c.genre })
+                  ? t(w.watchedAllIn, { genre: c.genre })
                   : t('nothingIn', { genre: c.genre })}
             </LibraryTvWords>
           ) : (
@@ -683,30 +787,25 @@ export function TvMovies() {
                 span={span}
                 keyOf={(x) => x.id}
                 render={(x, place) => {
-                  const l = letterOf(x.title)
+                  const l = letterOf(kind.titleOf(x))
                   const first = c.titled && c.firsts.get(l) === place.index
-                  return (
-                    <LibraryPoster
-                      item={x}
-                      width={place.width}
-                      ref={
-                        first
-                          ? (node) => {
-                              firsts.current.set(l, node)
-                            }
-                          : undefined
-                      }
-                      preferred={!arrived && place.index === 0}
-                      onFocus={() => {
-                        setArrived(true)
-                        setAt(l)
-                        if (place.index < TV_COLUMNS) {
-                          clearTimeout(settle.current ?? undefined)
-                          settle.current = setTimeout(measure, LIFT_MS)
+                  return kind.poster(x, {
+                    width: place.width,
+                    ref: first
+                      ? (node) => {
+                          firsts.current.set(l, node)
                         }
-                      }}
-                    />
-                  )
+                      : undefined,
+                    preferred: !arrived && place.index === 0,
+                    onFocus: () => {
+                      setArrived(true)
+                      setAt(l)
+                      if (place.index < TV_COLUMNS) {
+                        clearTimeout(settle.current ?? undefined)
+                        settle.current = setTimeout(measure, LIFT_MS)
+                      }
+                    },
+                  })
                 }}
               />
             </Animated.View>

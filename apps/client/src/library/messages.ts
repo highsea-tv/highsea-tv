@@ -10,6 +10,8 @@ export const libraryScreenMessages = defineMessages({
   views: 'Library',
   movies: 'Movies',
   collections: 'Collections',
+  shows: 'Shows',
+  music: 'Music',
   // the web's selects and the phone's sheet
   show: 'Show',
   genre: 'Genre',
@@ -46,6 +48,16 @@ export const libraryScreenMessages = defineMessages({
   watchedAllIn: 'You’ve watched everything in {genre}.',
   nothingIn: 'There’s nothing in {genre} here.',
   showEverything: 'Show everything',
+  // Shows, laid out as Movies is (the prototype's web/, mobile/ and tv/shows.tsx)
+  showsFailed: 'Couldn’t load the shows',
+  showsShown: '{shown} of {total} shows',
+  showsShowCount: 'Show {count, plural, one {# show} other {# shows}}',
+  showsEmptyTitle: 'No shows yet',
+  showsEmptyBody: 'When the server’s owner adds shows, they show up here.',
+  showsNoMatchTitle: 'No shows match',
+  showsNoMatchUnwatched: 'You’ve watched every episode here. Try another genre, or show all shows.',
+  showsNoUnwatched: 'You’ve watched every episode here.',
+  showsWatchedAllIn: 'You’ve watched every episode in {genre}.',
   // Collections
   collectionsFailed: 'Couldn’t load the collections',
   noCollectionsTitle: 'No collections yet',

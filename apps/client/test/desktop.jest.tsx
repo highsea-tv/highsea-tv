@@ -21,7 +21,7 @@ import {
 import { KeptIn } from '../src/desktop/kept-in.tsx'
 import { UpdateDot, useUpdateMenuOption } from '../src/desktop/update.tsx'
 import { historyKey, resetTrail, trafficLightInset, WindowChrome } from '../src/desktop/window.tsx'
-import { APP, acknowledge, flush, fresh, type } from './mock.ts'
+import { acknowledge, appWith, flush, fresh, type } from './mock.ts'
 
 jest.mock('../src/form-factor', () => ({
   formFactorOverride: () =>
@@ -134,7 +134,7 @@ const OVERRIDES = {
 
 /** Signs in with a pointer, acknowledges the owner's announcement, and opens `path`. */
 async function at(path: string) {
-  await renderRouter({ appDir: APP, overrides: OVERRIDES }, { initialUrl: '/' })
+  await renderRouter(appWith(OVERRIDES), { initialUrl: '/' })
   await flush(5000)
   await fireEvent.press(screen.getByRole('button', { name: /^Harbor/ }))
   await flush()

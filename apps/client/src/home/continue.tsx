@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // Continue watching (client-home.md › Continue watching): 16:9 stills with the bar under the art
-// and the time left, each resuming (`/play/{id}`), with a menu to go to the film, mark it watched,
-// or take it off the row. By the form factor:
+// and the time left, each resuming (`/play/{id}`, an episode's `/play/episode/{id}`), with a menu
+// to go to the film (an episode's show, opened at it), mark it watched, or take it off the row. By the form factor:
 // - touch: cards 62% of the row (the phone prototype's w-[62%]); holding one opens the menu, the
 //   library's Menu as a sheet (mobile/home.tsx ContinueCard), which VoiceOver offers as the card's
 //   action;
@@ -31,7 +31,7 @@ import { useMemo, useRef, useState } from 'react'
 import { useWindowDimensions, View } from 'react-native'
 import { useFilmsText } from '../films.ts'
 import { useSay } from '../kit.tsx'
-import { playTitle } from './go.ts'
+import { playCard } from './go.ts'
 import { homeMessages } from './messages.ts'
 import { HOME } from './sizes.ts'
 
@@ -40,7 +40,7 @@ function useMenu(item: HomeItem, onError: (message: string) => void) {
   const t = useT(homeMessages)
   const locale = useLocale()
   const words = useMemo(() => createLibraryText(locale).continueMenu(item), [locale, item])
-  const actions = useContinueActions(item.id)
+  const actions = useContinueActions(item.id, item.show ? 'episode' : 'movie')
   const say = useSay()
   const failed = (e: unknown) =>
     onError(t('changeFailed', { message: e instanceof Error ? e.message : String(e) }))
@@ -73,7 +73,7 @@ function useChoices(item: HomeItem, onClose: (how: MenuClose) => void): MenuOpti
   return [
     {
       label: menu.words.goTo.label,
-      icon: 'movie',
+      icon: item.show ? 'series' : 'movie',
       onSelect: () => {
         onClose('leave')
         menu.goTo()
@@ -160,7 +160,7 @@ function HomeContinueCard({
         caption={card.caption}
         progress={(card.progress ?? 0) * 100}
         progressBelow
-        onPress={() => playTitle(item.id)}
+        onPress={() => playCard(item)}
         onLongPress={pointer ? undefined : onMenu}
         longPressLabel={pointer ? undefined : label}
         longPressMs={LONG_PRESS_MS}

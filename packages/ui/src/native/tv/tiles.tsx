@@ -35,6 +35,8 @@ export function TvTile({
   artwork,
   status,
   wide = false,
+  square = false,
+  round = false,
   progress = null,
   progressBelow = false,
   width,
@@ -55,6 +57,10 @@ export function TvTile({
   /** A mark at the art's foot, at the start (a smart collection's), as Poster's status. */
   status?: ReactNode
   wide?: boolean
+  /** Music's square cover: an album's, a playlist's mosaic (tv/music.tsx's `TvTile square`). */
+  square?: boolean
+  /** An artist's round photo, its words centred (tv/music.tsx's TvArtistTile). */
+  round?: boolean
   /** 0–1. */
   progress?: number | null
   /** The bar between the art and the title rather than on the art: Continue watching's. */
@@ -86,7 +92,7 @@ export function TvTile({
     }
   }, [])
   const w = (width ?? (wide ? WIDE_WIDTH : tv.poster.width)) * u
-  const radius = tv.radius.poster * u
+  const radius = round ? tokens.radius.pill : tv.radius.poster * u
   return (
     <Focusable
       ref={ref}
@@ -114,7 +120,7 @@ export function TvTile({
             artwork={artwork}
             status={status}
             title={title}
-            ratio={wide ? 16 / 9 : 2 / 3}
+            ratio={wide ? 16 / 9 : square || round ? 1 : 2 / 3}
             radius={radius}
             focused={focused}
             progress={progressBelow ? null : progress}
@@ -129,11 +135,17 @@ export function TvTile({
             weight={600}
             color={focused ? 'text' : 'text-2'}
             numberOfLines={1}
+            align={round ? 'center' : undefined}
             style={{ marginTop: 1 * u }}
           >
             {title}
           </Text>
-          <Text variant="pill" color="text-3" numberOfLines={1}>
+          <Text
+            variant="pill"
+            color="text-3"
+            numberOfLines={1}
+            align={round ? 'center' : undefined}
+          >
             {caption}
           </Text>
         </>

@@ -16,6 +16,7 @@ import {
   qualitiesOf,
   rowsOf,
   SEARCH_KINDS,
+  servedSearchKind,
   toneOf,
   versionLabel,
 } from '../src/films/index.ts'
@@ -193,8 +194,25 @@ describe('a person, Search, collections and announcements', () => {
     expect(h.count).toBe(2)
   })
 
-  test('Search shows films, collections and people', () => {
-    expect(SEARCH_KINDS).toEqual(['movies', 'collections', 'people'])
+  test('Search shows films, collections and people, then shows and music where served', () => {
+    expect(SEARCH_KINDS).toEqual([
+      'movies',
+      'collections',
+      'people',
+      'shows',
+      'episodes',
+      'artists',
+      'albums',
+      'songs',
+    ])
+    const none = { shows: false, music: false }
+    expect(SEARCH_KINDS.filter((k) => servedSearchKind(k, none))).toEqual([
+      'movies',
+      'collections',
+      'people',
+    ])
+    expect(servedSearchKind('episodes', { shows: true, music: false })).toBe(true)
+    expect(servedSearchKind('songs', { shows: true, music: false })).toBe(false)
     expect(isShownKind({ kind: 'discover' })).toBe(false)
     expect(isShownKind({ kind: 'people' })).toBe(true)
     expect(text.search.kind('collections')).toBe('Collections')

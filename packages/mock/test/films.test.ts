@@ -6,7 +6,7 @@
 // time zone; and the empty server.
 import { describe, expect, test } from 'bun:test'
 import { join } from 'node:path'
-import { type ClientItem, routes } from '@highsea-tv/api-contract'
+import { type ClientItem, type HomeRow, isFilmRow, routes } from '@highsea-tv/api-contract'
 import { matchScore, sortTitleOf } from '@highsea-tv/media/search'
 import {
   type CreditEntry,
@@ -56,6 +56,17 @@ async function arranged(arrange?: (state: ReturnType<typeof stateOf>) => void) {
 }
 const stateOf = (mock: ReturnType<typeof createMock>) => mock.servers.populated.state
 
+/**
+ * Home's films, as B1 drew it: since B3 the mock also answers shows' and music's rows and
+ * episodes on Continue watching (kinds.test.ts has those), which these tests leave out.
+ */
+const filmRows = (rows: HomeRow[]) =>
+  rows
+    .filter(isFilmRow)
+    .filter((r) => r.layout !== 'episodes')
+    .map((r) => ({ ...r, items: r.items.filter((i) => i.type === 'movie') }))
+    .filter((r) => r.items.length > 0)
+
 const byCode = (a: string, b: string) => (a < b ? -1 : a > b ? 1 : 0)
 const playable = (m: MediaItem) => m.type === 'movie' && m.versions.some((v) => v.fileId)
 const filmsIn = (state: ReturnType<typeof stateOf>) => state.items.filter((m) => m.type === 'movie')
@@ -100,7 +111,7 @@ describe('the films reads', () => {
 describe('Home', () => {
   test('the hero on top, Continue watching, the featured rows, Recently added, then the genres', async () => {
     const { a, state } = await arranged()
-    const home = await a.home.sections({ query: { client: 'tvos' } })
+    const home = filmRows(await a.home.sections({ query: { client: 'tvos' } }))
     const films = filmsIn(state)
     const watchable = films.filter(playable)
 
@@ -175,7 +186,7 @@ describe('Home', () => {
         if (f.id === 'fs-staff') f.layout = 'hero'
       }
     })
-    const home = await a.home.sections({ query: { client: 'tvos' } })
+    const home = filmRows(await a.home.sections({ query: { client: 'tvos' } }))
     expect(home[0]).toMatchObject({ id: 'fs-staff', layout: 'hero' })
     expect(home.find((s) => s.id === 'fs-hero')?.layout).toBe('row')
     expect(home.filter((s) => s.layout === 'hero')).toHaveLength(1)
@@ -183,9 +194,9 @@ describe('Home', () => {
 
   test('the person’s own order and hidden rows apply below the hero', async () => {
     const { a } = await arranged()
-    const before = (await a.home.sections({ query: { client: 'tvos' } })).map((s) => s.id)
+    const before = filmRows(await a.home.sections({ query: { client: 'tvos' } })).map((s) => s.id)
     await a.home.saveLayout({ body: { order: ['recent', 'continue'], hidden: ['fs-staff'] } })
-    const after = (await a.home.sections({ query: { client: 'tvos' } })).map((s) => s.id)
+    const after = filmRows(await a.home.sections({ query: { client: 'tvos' } })).map((s) => s.id)
     const rest = before.filter((id) => !['fs-hero', 'recent', 'continue', 'fs-staff'].includes(id))
     expect(after).toEqual(['fs-hero', 'recent', 'continue', ...rest])
   })
@@ -330,7 +341,12 @@ describe('Search', () => {
     const tears = await a.library.search({ query: { query: 'tears of' } })
     expect(tears.sections[0]?.kind).toBe('movies')
     const caminandes = await a.library.search({ query: { query: 'caminandes' } })
-    expect(caminandes.sections.map((s) => s.kind)).toEqual(['movies', 'collections'])
+    // the films' kinds; since B3 a soundtrack's album matches too (kinds.test.ts)
+    const filmKinds = new Set(['movies', 'collections', 'people'])
+    expect(caminandes.sections.map((s) => s.kind).filter((k) => filmKinds.has(k))).toEqual([
+      'movies',
+      'collections',
+    ])
     const col = caminandes.sections[1]
     if (col?.kind !== 'collections') throw new Error('no collections')
     expect(col.items[0]?.id).toBe(Number(SEED.collection.id))
@@ -461,7 +477,7 @@ describe('watch state', () => {
     place(state, WATCHED_AT)
     const done = (await a.library.item({ params: movie })).item
     expect(done).toMatchObject({ progress: null, position: 0, watched: true })
-    const home = await a.home.sections({ query: { client: 'tvos' } })
+    const home = filmRows(await a.home.sections({ query: { client: 'tvos' } }))
     const continuing = home.find((s) => s.id === 'continue')
     expect(idsOf(continuing?.items ?? [])).not.toContain(SEED.film.id)
   })
@@ -489,8 +505,9 @@ describe('watch state', () => {
     const { a, state } = await arranged((s) => place(s, 0.5))
     const continuing = async () =>
       idsOf(
-        (await a.home.sections({ query: { client: 'tvos' } })).find((s) => s.id === 'continue')
-          ?.items ?? [],
+        filmRows(await a.home.sections({ query: { client: 'tvos' } })).find(
+          (s) => s.id === 'continue',
+        )?.items ?? [],
       )
     expect(await continuing()).toContain(SEED.film.id)
     await a.playback.dismiss({ params: movie })

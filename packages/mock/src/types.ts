@@ -1456,6 +1456,7 @@ export type ServerEvent =
   | { type: 'movies.updated' }
   | { type: 'music.updated' }
   | { type: 'playlists.updated' }
+  | { type: 'profiles.updated' }
   | { type: 'shows.updated' }
   | { type: 'history.updated' }
   | { type: 'jobs.updated' }

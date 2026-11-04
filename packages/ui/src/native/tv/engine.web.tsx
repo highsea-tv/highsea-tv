@@ -71,10 +71,15 @@ function refocusIfGone(left: EventTarget | null) {
     if (!(left instanceof HTMLElement) || left.isConnected) return
     const active = document.activeElement
     if (active && active !== document.body) return
-    const next =
-      document.querySelector<HTMLElement>('[data-initial]') ??
-      document.querySelector<HTMLElement>('[data-focusable]')
-    next?.focus({ preventScroll: true })
+    // the first that takes focus: a screen the navigator keeps under the current one is inert and
+    // undisplayed, and an inert or undisplayed element isn't focusable (HTML's "focusable area"),
+    // so its preferred stop, first in the document, would take nothing
+    for (const sel of ['[data-initial]', '[data-focusable]']) {
+      for (const next of document.querySelectorAll<HTMLElement>(sel)) {
+        next.focus({ preventScroll: true })
+        if (document.activeElement === next) return
+      }
+    }
   })
 }
 const onFocusOut = (e: FocusEvent) => {

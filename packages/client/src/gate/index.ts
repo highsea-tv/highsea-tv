@@ -90,6 +90,8 @@ export const destinationMessages = defineMessages({
   library: 'Library',
   movies: 'Movies',
   collections: 'Collections',
+  shows: 'Shows',
+  music: 'Music',
   offline: 'Offline',
   you: 'You',
   alerts: 'Alerts',

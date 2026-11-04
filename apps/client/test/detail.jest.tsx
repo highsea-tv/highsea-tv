@@ -7,7 +7,7 @@ import { SEED } from '@highsea-tv/mock/films'
 import { act, cleanup, fireEvent, screen } from '@testing-library/react-native'
 import { router } from 'expo-router'
 import { StyleSheet } from 'react-native'
-import { flush, fresh, rewrite, sent, signedIn, words } from './mock.ts'
+import { flush, fresh, rewrite, sent, serve, signedIn, words } from './mock.ts'
 
 // the phone, unless a test asks for a pointer's window
 jest.mock('../src/form-factor', () => ({
@@ -309,6 +309,8 @@ describe('a film’s page on the phone', () => {
   })
 
   test('Information links what has a page of its own', async () => {
+    // the score's album page is music's, which only a server that serves music has
+    serve('music')
     edit((body) => {
       body.soundtrack = { id: 'tears-score', title: 'Tears of Steel (Original Score)' }
     })

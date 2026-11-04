@@ -7,7 +7,7 @@
 // again, the reports' timer, and how a session stopped from Now playing is heard. What the
 // player's state does is `@highsea-tv/client/player`'s reducer. Nothing here imports a platform.
 import type { PlaySession } from '@highsea-tv/api-contract'
-import { useItem, usePicks } from '@highsea-tv/client/data'
+import { type TitleType, useItem, usePicks } from '@highsea-tv/client/data'
 import {
   type Cue,
   nudged,
@@ -38,9 +38,9 @@ export type Choice = { versionId?: string; audioId?: string | null; subtitleId: 
  * The person's choices for this film: the saved picks with this visit's changes over them, and
  * what they come to against the title and the current session. Each change is saved as it's made.
  */
-export function useChoices(id: number, session: PlaySession | null) {
-  const detail = useItem(id)
-  const { picks, save } = usePicks(id)
+export function useChoices(id: number, session: PlaySession | null, type: TitleType = 'movie') {
+  const detail = useItem(id, type)
+  const { picks, save } = usePicks(id, type)
   const [local, setLocal] = useState<Partial<Picks>>({})
 
   const d = detail.data
@@ -155,6 +155,8 @@ export function useStarts(
 export function useSessionStart(o: {
   client: HighseaClient
   id: number
+  /** A film, or an episode (B3), which plays through the same routes with its own type. */
+  type?: TitleType
   dispatch: Dispatch<PlayerEvent>
   started: RefObject<string | null>
   /** The built-in profile this platform starts from (ADR 0052), named as the server knows it. */
@@ -184,7 +186,7 @@ export function useSessionStart(o: {
       let s: PlaySession
       try {
         s = await client.playback.play({
-          params: { type: 'movie', id: latest.current.id },
+          params: { type: latest.current.type ?? 'movie', id: latest.current.id },
           body: { ...choice, ...(start === undefined ? {} : { start }), profile },
         })
       } catch (e) {
@@ -283,7 +285,11 @@ export function useReportTimer(state: RefObject<PlayerState>, report: () => void
 }
 
 /** Each engine's `usePlayback`: the same arguments, and the same API but for `Player`. */
-export type UsePlayback<Player> = (id: number, fromStart: boolean) => PlaybackApi<Player>
+export type UsePlayback<Player> = (
+  id: number,
+  fromStart: boolean,
+  type?: TitleType,
+) => PlaybackApi<Player>
 
 /**
  * What the player screen reads, the same from both engines. `Player` is the platform's handle

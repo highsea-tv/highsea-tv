@@ -13,7 +13,14 @@
 // sends nothing. Audio and subtitles is the film page's TvTracks, kept open on a pick, with the
 // subtitle timing under its groups.
 import { OFF, picksOf } from '@highsea-tv/client/films'
-import { backStep, chromeShown, NUDGE_MS, SCRUB_MS, SEEK_S } from '@highsea-tv/client/player'
+import {
+  backStep,
+  chromeShown,
+  NUDGE_MS,
+  SCRUB_MS,
+  SEEK_S,
+  titleLines,
+} from '@highsea-tv/client/player'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
 import type { Playback } from '@highsea-tv/native/playback'
@@ -37,6 +44,7 @@ import {
   clock,
   GLASS,
   NudgePreview,
+  nextHeading,
   type PlayerModel,
   Preview,
   playerText,
@@ -257,7 +265,7 @@ function TvNextUp({ m }: { m: PlayerModel }) {
         />
         <View style={{ flex: 1, minWidth: 0, gap: 0.2 * u }}>
           <Text variant="eyebrow" color="text-2" accessibilityRole="header">
-            {t('nextUp')}
+            {nextHeading(t, next)}
           </Text>
           <Text variant="rowTitle" numberOfLines={1}>
             {next.title}
@@ -374,7 +382,7 @@ export function TvPlayer({
       {picture}
       <View
         accessibilityRole="header"
-        accessibilityLabel={t('playing', { title: d?.item.title ?? '' })}
+        accessibilityLabel={t('playing', { title: titleLines(d).title })}
       />
       <View
         pointerEvents="none"
@@ -399,11 +407,11 @@ export function TvPlayer({
           >
             <View style={{ flex: 1, gap: 0.3 * u }}>
               <Text size={2.2} weight={600} numberOfLines={1}>
-                {d?.item.title ?? ''}
+                {titleLines(d).title}
               </Text>
-              {v ? (
+              {v || titleLines(d).line ? (
                 <Text variant="meta" color="text-2" numberOfLines={1}>
-                  {v.detail}
+                  {[titleLines(d).line, v?.detail].filter(Boolean).join(' · ')}
                 </Text>
               ) : null}
             </View>

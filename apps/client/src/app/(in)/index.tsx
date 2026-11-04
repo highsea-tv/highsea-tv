@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-// C2 Home (client-home.md), one screen for every client, films only for now: the featured section,
-// Continue watching with its menu, Recently added, the owner's rows and spotlights, and the owner's
-// announcements. Built-in rows have no title from the server; the shared words name them
+// C2 Home (client-home.md), one screen for every client: the featured section, Continue watching
+// with its menu, Recently added, the owner's rows and spotlights, and the owner's announcements;
+// on a server that serves them (B3), episodes on Continue watching, Next up, New episodes, Recently
+// added shows, and music's rows (useServedHomeRows: only the kinds the server serves). Built-in rows have no title from the server; the shared words name them
 // (the films' words' rowTitle). Laid out by the form factor, in three compositions, since each
 // prototype lays Home out its own way:
 // - touch (the prototype's mobile/home.tsx, the locked Tabs + carousel layout): kit's TouchHeader
@@ -19,8 +20,8 @@
 // destination (../../shell/announcements.tsx), as is what was said after a change (kit's useSay).
 // Rows with nothing in them aren't drawn (rowsOf). While Home loads, each draws it as it will be
 // (../../home/skeleton.tsx).
-import type { HomeSection } from '@highsea-tv/api-contract'
-import { useHome } from '@highsea-tv/client/data'
+import { isFilmRow, type HomeRow as Section } from '@highsea-tv/api-contract'
+import { useServedHomeRows } from '@highsea-tv/client/data'
 import { heroOf, rowsOf } from '@highsea-tv/client/films'
 import { shellMessages } from '@highsea-tv/client/gate'
 import { useT } from '@highsea-tv/i18n/react'
@@ -67,7 +68,7 @@ export default function Home() {
   return input === 'pointer' ? <PointerHome /> : <TouchHome />
 }
 
-type HomeQuery = ReturnType<typeof useHome>
+type HomeQuery = ReturnType<typeof useServedHomeRows>
 
 /** Loading, a failure, or nothing to show yet; null once there are sections to draw. */
 function States({ home }: { home: HomeQuery }) {
@@ -97,7 +98,7 @@ function States({ home }: { home: HomeQuery }) {
 // ---------------------------------------------------------------- touch
 
 function TouchHome() {
-  const home = useHome(useDeviceClient())
+  const home = useServedHomeRows(useDeviceClient())
   const a = useHereAnnouncements()
   const insets = useSafeAreaInsets()
   const theme = useTheme()
@@ -183,7 +184,7 @@ const messageOf = (e: unknown) => (e instanceof Error ? e.message : String(e))
 // ---------------------------------------------------------------- a pointer
 
 function PointerHome() {
-  const home = useHome(useDeviceClient())
+  const home = useServedHomeRows(useDeviceClient())
   const gutter = usePageGutter()
   return (
     <View style={{ flex: 1 }}>
@@ -209,8 +210,8 @@ function PointerHome() {
   )
 }
 
-function PointerSections({ sections }: { sections: HomeSection[] }) {
-  const hero = heroOf(sections)
+function PointerSections({ sections }: { sections: Section[] }) {
+  const hero = heroOf(sections.filter(isFilmRow))
   // the top bar lies over the page, clear until the page scrolls under it, as the prototype's
   // overHero="bloom"
   const chrome = useChromeOverlay()
@@ -266,7 +267,7 @@ function TvHome() {
   const t = useT(homeMessages)
   const s = useT(shellMessages)
   const kind = useDeviceClient()
-  const home = useHome(kind)
+  const home = useServedHomeRows(kind)
   if (home.status === 'loading')
     return (
       <AtRoot>

@@ -49,7 +49,7 @@ export { TRANSCODE_LIMIT } from './playback-shared.ts'
  */
 const clear = (player: VideoPlayer) => player.replace(null, true)
 
-export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart) => {
+export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart, type = 'movie') => {
   const client = useClient()
   const media = useMedia()
   const [state, dispatch] = useReducer(playerReducer, undefined, () => initialPlayer(Date.now()))
@@ -84,6 +84,7 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart) => {
   const { session, live, generation, begin, stopped } = useSessionStart({
     client,
     id,
+    type,
     dispatch,
     started,
     profile: () => playbackProfile,
@@ -110,7 +111,7 @@ export const usePlayback: UsePlayback<VideoPlayer> = (id, fromStart) => {
       if (current()) player.play()
     },
   })
-  const c = useChoices(id, session)
+  const c = useChoices(id, session, type)
   const { subtitle, subtitlePath } = c
   const burnt = c.burnt
   const d = c.detail.data

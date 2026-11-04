@@ -6,7 +6,8 @@
 // scrubber with its trickplay frame, the subtitle's lines where the engine hands its cues over,
 // the timing's live preview, the waiting badge, a stream's message and Next up's card, and Audio
 // and subtitles' lists. The TV's own are in ./tv.tsx.
-import type { ClientItem, TrickplayManifest } from '@highsea-tv/api-contract'
+import type { ClientDetail, ClientItem, TrickplayManifest } from '@highsea-tv/api-contract'
+import type { TitleType } from '@highsea-tv/client/data'
 import { createFormat } from '@highsea-tv/client/format'
 import {
   chromeShown,
@@ -29,6 +30,8 @@ import {
   type UpNext,
 } from '@highsea-tv/client/player'
 import { usePlaybackPrefs } from '@highsea-tv/client/prefs'
+import { episodePlayPath } from '@highsea-tv/client/shows'
+import type { T } from '@highsea-tv/i18n'
 import { useT } from '@highsea-tv/i18n/react'
 import { useMedia } from '@highsea-tv/native/media'
 import { type Playback, TRANSCODE_LIMIT } from '@highsea-tv/native/playback'
@@ -36,7 +39,7 @@ import { useQuery } from '@highsea-tv/sdk/react'
 import type { ColorRole } from '@highsea-tv/tokens'
 import { alpha, Button, Icon, type IconName, Press, Text, tokens, useTheme } from '@highsea-tv/ui'
 import { Image } from 'expo-image'
-import { router } from 'expo-router'
+import { type Href, router } from 'expo-router'
 import { type ReactNode, useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
@@ -60,37 +63,69 @@ export const GLASS = 'rgba(11,11,12,0.62)'
 export type FilmUpNext = UpNext<ClientItem, number, string | null>
 
 /**
+ * An episode's Next up (player.md › Episodes): the next episode, counting down, with its place as
+ * its line and the season it starts when it's another's first; none at the show's end.
+ */
+function episodeUpNext(n: ClientDetail | null, season: number | null): FilmUpNext | null {
+  const place = n?.episode
+  if (!n || !place) return null
+  return {
+    kind: 'episode',
+    id: n.item.id,
+    title: place.title,
+    line: place.code,
+    still: n.item.art.backdrop,
+    season: season !== null && place.season !== season ? place.season : null,
+  }
+}
+
+/** The next title takes the player's place: an episode's own address, or a film's. */
+const go = (kind: FilmUpNext['kind'], to: number) =>
+  kind === 'episode' ? router.replace(episodePlayPath(to) as Href) : playNext(router, to)
+
+/**
  * The player's clock and what it decides: the time the screen draws at, moved on only when
  * something is due (Buffering's delay, or the controls hiding); the stream's state; Next up, its
  * countdown and the next film playing at zero; the trickplay manifest; and leaving.
  */
-export function usePlayerModel(id: number, p: Playback, panel: boolean) {
+export function usePlayerModel(id: number, p: Playback, panel: boolean, type: TitleType = 'movie') {
   const { state, dispatch } = p
   const [now, setNow] = useState(() => Date.now())
 
   const versionId = p.version?.id
-  const trickplay = useQuery(`client:trickplay:${id}:${versionId ?? ''}`, (c) =>
+  const trickplay = useQuery(`client:trickplay:${type}:${id}:${versionId ?? ''}`, (c) =>
     versionId
-      ? c.playback.trickplay({ params: { type: 'movie', id }, query: { versionId } })
+      ? c.playback.trickplay({ params: { type, id }, query: { versionId } })
       : Promise.resolve(null),
   )
-  const nextUp = useQuery(`client:next:${id}`, (c) =>
-    c.playback.next({ params: { type: 'movie', id } }),
+  const nextUp = useQuery(`client:next:${type}:${id}`, (c) =>
+    c.playback.next({ params: { type, id } }),
   )
   const d = p.detail.data
-  const next: FilmUpNext | null = nextUp.data
-    ? filmUpNext(
-        nextUp.data.item
-          ? {
-              id: nextUp.data.item.id,
-              title: nextUp.data.item.title,
-              still: nextUp.data.item.art.backdrop,
-            }
-          : null,
-        d?.collection?.name ?? null,
-        d?.related ?? [],
-      )
-    : null
+  // an episode's next is the next episode, read as a title for its place: the card says when a
+  // season starts (the prototype's client/stream-states.tsx). Films read nothing more
+  const nextEpisodeId = type === 'episode' ? (nextUp.data?.item?.id ?? 0) : 0
+  const nextEpisode = useQuery(`client:episode:${nextEpisodeId}`, (c) =>
+    nextEpisodeId
+      ? c.library.item({ params: { type: 'episode', id: nextEpisodeId } })
+      : Promise.resolve(null),
+  )
+  const next: FilmUpNext | null =
+    type === 'episode'
+      ? episodeUpNext(nextEpisode.data ?? null, d?.episode?.season ?? null)
+      : nextUp.data
+        ? filmUpNext(
+            nextUp.data.item
+              ? {
+                  id: nextUp.data.item.id,
+                  title: nextUp.data.item.title,
+                  still: nextUp.data.item.art.backdrop,
+                }
+              : null,
+            d?.collection?.name ?? null,
+            d?.related ?? [],
+          )
+        : null
   const autoplay = usePlaybackPrefs().current?.autoplayNext ?? true
   const counting = countsDown(next) && autoplay
   const stream = streamState(state, now, !!next)
@@ -118,8 +153,7 @@ export function usePlayerModel(id: number, p: Playback, panel: boolean) {
 
   // at zero the next part plays; Cancel lets this one end as before. Choices never count down
   useEffect(() => {
-    if (stream === 'next-up' && left === 0 && counting && next?.kind === 'part')
-      playNext(router, next.id)
+    if (stream === 'next-up' && left === 0 && counting && next) go(next.kind, next.id)
   }, [stream, left, counting, next])
 
   const waiting = stream === 'preparing' || stream === 'buffering'
@@ -138,7 +172,8 @@ export function usePlayerModel(id: number, p: Playback, panel: boolean) {
     left,
     manifest: (trickplay.data?.manifest ?? null) as TrickplayManifest | null,
     leave: () => leavePlayer(router, titlePage(d, id)),
-    play: (to: number) => playNext(router, to),
+    /** Next up's Play now: the next episode, a collection's next part, or a choice. */
+    play: (to: number) => go(next?.kind ?? 'part', to),
     cancelNext: () => dispatch({ type: 'cancel-next' }),
   }
 }
@@ -681,7 +716,7 @@ export function NextUpCard({
           contentFit="cover"
         />
         <View style={{ flex: 1, minWidth: 0 }}>
-          {eyebrow(t('nextUp'))}
+          {eyebrow(nextHeading(t, next))}
           <Text variant="body" weight={600} numberOfLines={1}>
             {next.title}
           </Text>
@@ -700,6 +735,12 @@ export function NextUpCard({
       </View>
     </View>
   )
+}
+
+/** Next up's heading: Next episode, or the season it starts, for an episode; Next up otherwise. */
+export function nextHeading(t: T<typeof messages>, next: Exclude<FilmUpNext, { kind: 'choices' }>) {
+  if (next.kind !== 'episode') return t('nextUp')
+  return next.season !== null ? t('seasonStarts', { season: next.season }) : t('nextEpisode')
 }
 
 /** One choice in a list of them: the whole row, its check before it. */

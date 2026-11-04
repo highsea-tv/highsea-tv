@@ -31,7 +31,7 @@
 //   view with no role pairs only with a text, an image or a group, never a control) and nearness,
 //   then by place. compact-touch is compared with the iPhone, tv with the Apple TV. A matched node
 //   whose x, y, width or height differ by more than TOLERANCE fails (TEXT_SHAPING allows a
-//   text's size more, and is 0), as do a control whose kind differs, a text that
+//   text's size more, and is 0; DEPTH_SHARE a y far down a long list), as do a control whose kind differs, a text that
 //   differs and a node on one side only, unless EXCEPTIONS gives the reason. regular-pointer has
 //   no device to compare with, so it's captured for the sheet only. A run that could compare and
 //   compared nothing fails.
@@ -65,6 +65,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { HIDE_MS } from '../../packages/client/src/player/index.ts'
 import { SEED } from '../../packages/mock/src/films.ts'
+import { showNumber } from '../../packages/mock/src/kinds.ts'
 import { controlMetrics, TV_REFERENCE } from '../../packages/tokens/src/controls.ts'
 
 // ---------------------------------------------------------------- the comparison (pure)
@@ -108,6 +109,15 @@ export const TOLERANCE = 4
  * and the tests say so if an engine ever needs it again.
  */
 export const TEXT_SHAPING = 0
+
+/**
+ * How much more than the tolerance a node's y may differ, as a share of how far down the page it
+ * is. A long list's rows add their sub-point differences row by row: the run of 2026-11-04
+ * measured Music's 383 songs on the Apple TV 4.5 points lower than the web's at 12,000 points
+ * down (0.04%), every row's own size and spacing within a point. With 0.05%, a node in the first
+ * 8,000 points is held to the tolerance as before.
+ */
+export const DEPTH_SHARE = 0.0005
 
 /**
  * Nodes one side has by its platform's nature, and texts that differ by design, each with its
@@ -156,6 +166,20 @@ export const EXCEPTIONS: Exception[] = [
     kinds: ['field', 'other'],
     reason:
       'the letter index and the player’s scrubber are React Native’s adjustable role: a slider on the web (react-native-web’s role map), and on iOS and tvOS a plain view with the adjustable trait, which XCUITest lists by its class as other while VoiceOver reads it as adjustable (XCUIElement.ElementType; UIAccessibilityTraits.adjustable)',
+  },
+  {
+    name: /^(?:albums|artists|songs|playlists)$/,
+    screen: 'music',
+    kinds: ['action', 'other'],
+    reason:
+      'Music’s views are SegmentedControl’s tabs: a tab on the web (react-native-web’s role map), and on iOS a plain view in a container with the tab bar trait, since UIKit has no trait for one tab (UIAccessibilityTraits.tabBar), which XCUITest lists as other while VoiceOver reads it as a tab',
+  },
+  {
+    name: /^(?:albums|artists|songs|playlists)$/,
+    screen: 'songs',
+    kinds: ['action', 'other'],
+    reason:
+      'Songs is Music’s view, on the same tabs: Music’s views are SegmentedControl’s tabs: a tab on the web (react-native-web’s role map), and on iOS a plain view in a container with the tab bar trait, since UIKit has no trait for one tab (UIAccessibilityTraits.tabBar), which XCUITest lists as other while VoiceOver reads it as a tab',
   },
   {
     name: /(?:\bto go|\bfree on this phone)$/,
@@ -390,7 +414,7 @@ const beyond = (d: Delta, tolerance: number, n: LayoutNode) => {
   const th = text ? Math.max(tolerance, n.box.h * TEXT_SHAPING) : tolerance
   return (
     Math.abs(d.dx) > tolerance ||
-    Math.abs(d.dy) > tolerance ||
+    Math.abs(d.dy) > Math.max(tolerance, n.box.y * DEPTH_SHARE) ||
     Math.abs(d.dw) > tw ||
     Math.abs(d.dh) > th
   )
@@ -544,6 +568,9 @@ export function compare(
       for (const j of leftNative) {
         const a = web.nodes[i] as LayoutNode
         const b = native.nodes[j] as LayoutNode
+        // a web list or region is a container UIKit lists no element for (CONTAINER), so it never
+        // pairs by name: Music's list shares its name with the view's tab ("Albums")
+        if (a.kind === 'group' && (a.raw === 'list' || a.raw === 'region')) continue
         if (a.name && a.name === b.name && fits(a.kind, b.kind))
           found.push({ i, j, d: centreDistance(a.box, b.box) + (a.kind === b.kind ? 0 : 0.5) })
       }
@@ -703,7 +730,9 @@ export function describe(f: Finding): string {
 /**
  * The screens, in the order the steps reach them: part A's (Choose a server, the sign-in, the
  * shell on Home, Settings) and B1's destinations between the shell and Settings, each opened by
- * its address (ROUTES).
+ * its address (ROUTES). Offline comes before B3's screens: a device keeps one downloads store for
+ * the run, which ticks while any screen's Download button listens (createDownloads), and a show's
+ * and an album's have them, so after those its downloads would have moved on from the web's.
  */
 export const SCREENS = [
   'connect',
@@ -720,6 +749,14 @@ export const SCREENS = [
   'alerts',
   'link-code',
   'downloads',
+  'shows',
+  'show',
+  'music',
+  'songs',
+  'album',
+  'artist',
+  'now-playing',
+  'who',
   'player',
   'settings',
 ] as const
@@ -748,6 +785,17 @@ export const ROUTES: Partial<Record<Screen, string>> = {
   'link-code': '/link/KQ7-4PM',
   downloads: '/offline',
   player: `/play/${SEED.film.id}`,
+  // B3's, on the routes the mock answers (one-client-platform-b.md › B3): Shows and Saltmarsh by
+  // the mock's number for it, Music, its Songs, Sintel's score and The Hollow Pines, Now playing
+  // with nothing queued, and Who's watching. On touch, Shows and Music are Library's views
+  shows: '/shows',
+  show: `/shows/${showNumber('saltmarsh')}`,
+  music: '/music',
+  songs: '/music/songs',
+  album: '/music/albums/jan-morgenstern-sintel-original-score',
+  artist: '/music/artists/the-hollow-pines',
+  'now-playing': '/now-playing',
+  who: '/who',
 }
 
 /**
@@ -764,7 +812,10 @@ export const appliesTo = (screen: Screen, t: Target) =>
         // the player with a pointer hides all of itself while playing (the compare sheet has both)
         screen === 'downloads' || screen === 'player'
         ? t !== 'regular-pointer' && (screen === 'player' || !tvLike(t))
-        : true
+        : // with a pointer Now playing is the bar under the page, and its address goes Home (B3)
+          screen === 'now-playing'
+          ? t !== 'regular-pointer'
+          : true
 
 /** What a run is asked to capture: `web`, `phone` (the iPhone) and `tv` (the Apple TV). */
 export const TARGET_FLAGS = ['web', 'phone', 'tv'] as const
@@ -883,7 +934,42 @@ export const ANCHORS: Record<Screen, (t: Target) => Anchor[]> = {
       ? { kinds: ['field', 'other'], name: /^position$/, says: 'the scrubber' }
       : { kinds: ['action'], name: /^show controls$/, says: 'the stop that shows the controls' },
   ],
-  settings: () => [{ kinds: ['text'], name: /^settings$/, says: 'the Settings title' }],
+  shows: () => [{ kinds: ['action'], name: /^saltmarsh\b/, says: 'Saltmarsh’s poster' }],
+  show: () => [
+    { kinds: ['text'], name: /^saltmarsh$/, says: 'the show’s title' },
+    { kinds: ['action'], name: /^season 1\b/, says: 'its first season' },
+  ],
+  music: () => [{ kinds: ['action'], name: /^sintel original score\b/, says: 'Sintel’s score' }],
+  songs: (t) => [
+    // the TV's Songs draws no count: its first song instead
+    tvLike(t)
+      ? { kinds: ['action'], name: /^play afterglow\b/, says: 'the first song' }
+      : // by touch "383 of 383 songs" (what's shown of the library), with a pointer "383 songs"
+        { kinds: ['text'], name: /^\d+ (?:of \d+ )?songs$/, says: 'the count of songs' },
+  ],
+  album: () => [
+    { kinds: ['text'], name: /^sintel original score$/, says: 'the album’s title' },
+    { kinds: ['action'], name: /^shuffle$/, says: 'Shuffle' },
+  ],
+  artist: () => [{ kinds: ['text'], name: /^the hollow pines$/, says: 'the artist’s name' }],
+  'now-playing': () => [
+    { kinds: ['text'], name: /^nothings playing$/, says: 'that nothing’s playing' },
+  ],
+  who: (t) => [
+    // by touch, Switch profile's sheet over You; elsewhere a page of its own
+    t === 'compact-touch' || t === 'iphone'
+      ? { kinds: ['text'], name: /^switch profile$/, says: 'Switch profile’s title' }
+      : { kinds: ['text'], name: /^whos watching$/, says: 'Who’s watching' },
+    { kinds: ['action'], name: /^theo\b/, says: 'Theo’s profile' },
+  ],
+  settings: (t) => [
+    { kinds: ['text'], name: /^settings$/, says: 'the Settings title' },
+    // by touch, You leads with the profile watching now and lists Switch profile, both once the
+    // server's profiles have answered (the mock serves them; useProfilesState)
+    ...(t === 'compact-touch' || t === 'iphone'
+      ? [{ kinds: ['action'] as Kind[], name: /^switch profile$/, says: 'Switch profile' }]
+      : []),
+  ],
 }
 
 /** Whether a capture's nodes hold every anchor; the ones missing, in words. */
@@ -1040,6 +1126,14 @@ const TITLES: Record<Screen, string> = {
   'link-code': 'Connect a device: approving the TV’s KQ7-4PM (not on the TV)',
   downloads: 'Offline (the phone; the TV keeps none)',
   player: 'C5 The player: Tears of Steel, as Sintel’s clip',
+  shows: 'Shows (the Library tab’s Shows on the phone)',
+  show: 'A show: Saltmarsh',
+  music: 'Music (the Library tab’s Music on the phone)',
+  songs: 'Music’s Songs',
+  album: 'An album: Sintel (Original Score)',
+  artist: 'An artist: The Hollow Pines',
+  'now-playing': 'Now playing, with nothing queued (not with a pointer)',
+  who: 'Who’s watching',
   settings: 'C7 Settings',
 }
 
@@ -1072,6 +1166,8 @@ export const stepsFor = (target: Target, screens: readonly Screen[]) =>
  * How long a screen is left after its anchors show, in ms, for what no anchor can say: the TV's
  * player fades its controls rather than removing them, so its scrubber is there from the start
  * and the capture waits out HIDE_MS (by touch, Show controls appears only once they've hidden).
+ * What only moves (a focus lift's spring, a long list laying out) the devices wait out
+ * themselves: uitest's Layout.swift captures once two snapshots' frames are the same.
  */
 export const settleFor = (screen: Screen, target: Target) =>
   screen === 'player' && tvLike(target) ? HIDE_MS + 1000 : 0
@@ -1179,7 +1275,16 @@ function extractWeb(): WebRaw[] {
     }
     for (const c of e.children) walk(c)
   }
-  walk(document.body)
+  // an open modal dialog is all assistive technology reads (WAI-ARIA 1.2's aria-modal, whose
+  // content outside it is unavailable: https://www.w3.org/TR/wai-aria-1.2/#aria-modal), as iOS
+  // reads only a presented modal view; and its own box is UIKit's
+  // presentation, which XCUITest doesn't list, so only what's in it is read
+  const modals = [...document.querySelectorAll('[aria-modal="true"]')].filter((m) =>
+    m.checkVisibility({ opacityProperty: true, visibilityProperty: true }),
+  )
+  const modal = modals.at(-1)
+  if (modal) for (const c of modal.children) walk(c)
+  else walk(document.body)
   return out
 }
 
@@ -1402,6 +1507,21 @@ if (import.meta.main) {
                 ? page.locator('[aria-label$=", settings"]')
                 : // with a pointer the avatar is the account menu (B2's account/menu.tsx)
                   page.locator('[aria-label$=": profile and settings"]')
+          // the TV's opening asks Who's watching? once it's signed in (B3's profiles, which the
+          // mock serves): the profile last here has the focus, and OK picks it, as a person would
+          if (tv) {
+            const opening = page.getByRole('button', { name: /, Last here/ }).first()
+            if (
+              await opening.waitFor({ timeout: 30_000 }).then(
+                () => true,
+                () => false,
+              )
+            ) {
+              await page.waitForTimeout(500)
+              await page.keyboard.press('Enter')
+              log('tv: picked the profile last here at the opening')
+            }
+          }
           // the TV's code is approved by the mock after 8 seconds (PAIRING_APPROVAL_MS)
           const gotIt = page.getByRole('button', { name: 'Got it', exact: true }).first()
           await settings.first().or(gotIt).first().waitFor({ timeout: 40_000 })
@@ -1607,7 +1727,7 @@ function writeSheet(
     const src = shot(name)
     return `<figure><figcaption>${html(label)}</figcaption>${src ? `<img src="${src}" alt="${html(label)}">` : '<div class="none">Not captured</div>'}</figure>`
   }
-  const rule = `x and y within ${TOLERANCE} points, width and height within ${TOLERANCE} points${
+  const rule = `x and y within ${TOLERANCE} points (y within ${DEPTH_SHARE * 100}% of its depth when that's more), width and height within ${TOLERANCE} points${
     TEXT_SHAPING ? ` (a text's within ${TEXT_SHAPING * 100}% of itself when that's more)` : ''
   }`
   const findingList = (c: Comparison | undefined) => {

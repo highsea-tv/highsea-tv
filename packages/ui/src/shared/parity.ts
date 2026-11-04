@@ -56,7 +56,7 @@ export const BOTH: Record<string, string> = {
   Sheet:
     "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
   SortableList:
-    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
+    "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one. The native one's `look: 'line'` (a playlist's rows, B3) is what the web's takes as classes",
   Switch:
     "The web renderer's is drawn by the admin, apps/web and the prototypes until part D moves them onto this one",
   Tabs: "The web renderer's is drawn by the admin and the prototypes until part D moves them onto this one",
@@ -160,7 +160,8 @@ export const NATIVE_ONLY: Record<string, string> = {
     'A radio’s role per platform for the one client: `radio` on the web, a button with the selected trait on iOS and tvOS, which give `radio` no trait. The admin’s web renderer is DOM-only, where its SegmentedControl writes the radio role itself.',
   radioState:
     'A radio’s state for that role: `checked` on the web, `selected` on iOS and tvOS; the admin’s SegmentedControl sets its own aria-checked.',
-  Avatar: 'The phone’s profile picture by initials; the web draws people in its own account menu.',
+  Avatar:
+    'A person’s or a profile’s circle by initials, in the profile’s colour; the web draws people in its own account menu.',
   Press:
     'React Native’s press feedback (scale, haptic, hit area); the web gets it from CSS and the DOM.',
   ScrollView:
@@ -186,8 +187,17 @@ export const NATIVE_ONLY: Record<string, string> = {
     'A card of facts at a title page’s foot, the web’s a step roomier, and a focus stop on the TV so the page scrolls to it.',
   StillFrame:
     'A still-shaped frame for what plays in place, a trailer’s player in its dialog, or the still with a note where nothing plays; the web renderer’s pages draw theirs from the DOM until part D.',
+  EpisodeRow:
+    'A season’s episode on a show’s page by touch and with a pointer: the still with its progress, its words, and Mark as watched beside them; the web renderer has no show pages, and the TV lists episodes as stills in a Row.',
   LetterIndex:
     'A library’s A to Z index: iOS’s section index by touch, a column of letter buttons with a pointer, the remote’s rail on the TV.',
+  // the music player's (one-client-platform-b.md › B3); the web renderer's pages have none, since
+  // only apps/client plays music
+  Waveform:
+    'The music player’s scrubber as the song’s loudness, moving at the playhead while it plays: the web’s music bar, the phone’s Now playing, and the TV’s inside its focus stop.',
+  PlayingBars: 'The playing mark beside what’s playing, still while paused.',
+  Slider:
+    'A 0 to 1 slider by press, drag, the arrow keys and VoiceOver’s adjust, for the music player’s volume; the admin has no slider.',
   TvKey: 'A key on the TV’s on-screen keyboard; the web has the device’s keyboard.',
   TvMessage: 'A message that fills the TV’s screen with its actions.',
   StopScope: 'Names the TV’s focus stops for the D-pad walk (scripts/sweeps/tv.ts).',

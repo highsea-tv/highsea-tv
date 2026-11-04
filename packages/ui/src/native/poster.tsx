@@ -33,7 +33,13 @@ export type PosterProps = {
   title: string
   /** A URL, or a source with headers (a server's artwork needs the device's token). */
   src?: string | { uri: string; headers?: Record<string, string> } | null
-  aspect?: 'poster' | 'still'
+  /** A film's 2:3, a still's 16:9, or music's square cover (an album's, a playlist's mosaic). */
+  aspect?: 'poster' | 'still' | 'square'
+  /**
+   * Round art with the words centred under it: an artist's photo, as people are drawn
+   * (web/music.tsx's ArtistCard, tv/music.tsx's TvArtistTile). Takes the square aspect.
+   */
+  round?: boolean
   onPress?: () => void
   onLongPress?: () => void
   /** What the long press does, which VoiceOver offers among the poster's actions. */
@@ -80,7 +86,8 @@ export type PosterProps = {
 export function Poster({
   title,
   src,
-  aspect = 'poster',
+  aspect: aspectGiven = 'poster',
+  round = false,
   onPress,
   onLongPress,
   longPressLabel,
@@ -103,6 +110,7 @@ export function Poster({
 }: PosterProps) {
   const theme = useTheme()
   const input = theme.formFactor.input
+  const aspect = round ? 'square' : aspectGiven
   // a pointer over the poster, its actions included, and focus inside it (the actions')
   const [over, setOver] = useState(false)
   const [within, setWithin] = useState(false)
@@ -119,6 +127,8 @@ export function Poster({
         artwork={!src && mosaic && mosaic.length > 1 ? <Mosaic sources={mosaic} /> : undefined}
         status={status}
         wide={aspect === 'still'}
+        square={aspect === 'square'}
+        round={round}
         progress={progress === undefined ? null : progress / 100}
         progressBelow={progressBelow}
         width={width}
@@ -131,7 +141,7 @@ export function Poster({
         label={accessibilityLabel}
       />
     )
-  const ratio = aspect === 'poster' ? 2 / 3 : 16 / 9
+  const ratio = aspect === 'poster' ? 2 / 3 : aspect === 'square' ? 1 : 16 / 9
   // only a pointer lifts the art; touch draws it still, without the lift's animated view
   const Frame = input === 'pointer' ? Lifted : Still
   const art = (lifted: boolean) => (
@@ -140,7 +150,7 @@ export function Poster({
       style={{
         width: '100%',
         aspectRatio: ratio,
-        borderRadius: tokens.radius.poster * theme.u,
+        borderRadius: round ? tokens.radius.pill : tokens.radius.poster * theme.u,
         overflow: 'hidden',
         backgroundColor: theme.colors.s2,
         borderWidth: 1,
@@ -216,11 +226,18 @@ export function Poster({
       </View>
     ) : null
   const label = showTitle ? (
-    <View style={{ marginTop: tokens.space['2'], gap: tokens.space['0.5'] }}>
+    <View
+      style={{
+        marginTop: tokens.space['2'],
+        gap: tokens.space['0.5'],
+        alignItems: round ? 'center' : undefined,
+      }}
+    >
       <Text
         variant="callout"
         weight={600}
         numberOfLines={2}
+        align={round ? 'center' : undefined}
         {...(input === 'pointer' && titleSize === 'ui'
           ? { size: UI.size, style: { lineHeight: Math.round(UI.size * UI.leading) } }
           : null)}
@@ -228,7 +245,7 @@ export function Poster({
         {title}
       </Text>
       {caption ? (
-        <Text variant="caption" color="text-3">
+        <Text variant="caption" color="text-3" align={round ? 'center' : undefined}>
           {caption}
         </Text>
       ) : null}

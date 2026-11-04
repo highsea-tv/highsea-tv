@@ -6,7 +6,7 @@
 // volume, the time, Audio and subtitles, picture in picture and full screen at the bottom; Audio
 // and subtitles a panel at the right, with the speed. In the desktop app the window's own chrome
 // is drawn over the film (WindowChrome's overlay), with room left at the top for it.
-import { SEEK_S } from '@highsea-tv/client/player'
+import { SEEK_S, titleLines } from '@highsea-tv/client/player'
 import { useT } from '@highsea-tv/i18n/react'
 import type { Playback } from '@highsea-tv/native/playback'
 import { alpha, Button, Icon, QualityTag, Text, tokens, useTheme } from '@highsea-tv/ui'
@@ -134,7 +134,7 @@ export function PointerPlayer({
       {picture}
       <View
         accessibilityRole="header"
-        accessibilityLabel={t('playing', { title: d?.item.title ?? '' })}
+        accessibilityLabel={t('playing', { title: titleLines(d).title })}
       />
 
       {pip ? (
@@ -194,11 +194,11 @@ export function PointerPlayer({
           />
           <View style={{ flex: 1, minWidth: 0 }}>
             <Text variant="title" weight={600} numberOfLines={1}>
-              {d?.item.title ?? ''}
+              {titleLines(d).title}
             </Text>
-            {v?.detail ? (
+            {v?.detail || titleLines(d).line ? (
               <Text variant="caption" color="text-2" numberOfLines={1}>
-                {v.detail}
+                {[titleLines(d).line, v?.detail].filter(Boolean).join(' · ')}
               </Text>
             ) : null}
           </View>

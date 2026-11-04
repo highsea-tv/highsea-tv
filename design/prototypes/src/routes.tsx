@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 // The top-level routes, one tree per platform. Paths mirror the products: `#/admin/movies/1`
-// is the server's `/movies/[id]`; clients live under `#/web`, `#/mobile` and `#/tv`.
+// is the server's `/movies/[id]`; the clients' `#/web`, `#/mobile` and `#/tv` are apps/client's
+// (one-client-platform-b.md › B3), whose mock export the chrome's frames hold.
 import { Redirect, Route, Switch } from 'wouter'
 import { AdminApp } from './admin/admin-app.tsx'
-import { MobileApp } from './mobile/mobile-app.tsx'
-import { TvApp } from './tv/tv-app.tsx'
-import { WebApp } from './web/web-app.tsx'
 
 /**
  * Every route the routes test renders, per platform, and the sweeps visit. Grows with each
@@ -106,9 +104,9 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/web/who',
     '/web/movies',
     '/web/shows',
-    '/web/shows/the-lantern-keepers',
-    '/web/shows/saltmarsh',
-    '/web/shows/nobody',
+    '/web/shows/52615891',
+    '/web/shows/49727491',
+    '/web/shows/9',
     '/web/music',
     '/web/music/artists',
     '/web/music/songs',
@@ -170,9 +168,9 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/mobile/people/mara-ellison',
     '/mobile/people/nobody',
     '/mobile/library/shows',
-    '/mobile/shows/the-lantern-keepers',
-    '/mobile/shows/saltmarsh',
-    '/mobile/shows/nobody',
+    '/mobile/shows/52615891',
+    '/mobile/shows/49727491',
+    '/mobile/shows/9',
     '/mobile/library/collections',
     '/mobile/library/music',
     '/mobile/library/music/artists',
@@ -219,9 +217,9 @@ export const screenRoutes: Record<'admin' | 'web' | 'mobile' | 'tv', string[]> =
     '/tv/people/mara-ellison',
     '/tv/people/nobody',
     '/tv/shows',
-    '/tv/shows/the-lantern-keepers',
-    '/tv/shows/saltmarsh',
-    '/tv/shows/nobody',
+    '/tv/shows/52615891',
+    '/tv/shows/49727491',
+    '/tv/shows/9',
     '/tv/collections',
     '/tv/music',
     '/tv/music/songs',
@@ -252,15 +250,9 @@ export function Routes() {
       <Route path="/admin" nest>
         <AdminApp />
       </Route>
-      <Route path="/web" nest>
-        <WebApp />
-      </Route>
-      <Route path="/mobile" nest>
-        <MobileApp />
-      </Route>
-      <Route path="/tv" nest>
-        <TvApp />
-      </Route>
+      {/* every client platform's route is apps/client's, which the chrome's frames hold
+          (chrome/client.ts › heldByClient); outside the chrome nothing is drawn here */}
+      <Route path={/^\/(web|mobile|tv)(\/.*)?$/}>{null}</Route>
       <Route>
         <Redirect to="/admin" replace />
       </Route>

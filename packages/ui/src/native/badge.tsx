@@ -137,9 +137,9 @@ export function Certification({ children }: { children: string }) {
   const tv = theme.formFactor.input === 'tv'
   const u = theme.u
   return (
+    // no `accessible` or label of its own: its words are its text, which VoiceOver and the web's
+    // tree read alike (QualityTag's way)
     <View
-      accessible
-      accessibilityLabel={children}
       style={{
         alignSelf: 'flex-start',
         borderWidth: 1,

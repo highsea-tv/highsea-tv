@@ -11,6 +11,7 @@ import {
   CLIENT_SCHEME,
   CONTAINER,
   compare,
+  DEPTH_SHARE,
   describe,
   EXCEPTIONS,
   FIELD_WORDS,
@@ -175,6 +176,27 @@ group('the comparison', () => {
     expect(describe(c.findings[1] as never)).toContain('h -9')
   })
 
+  test('far down a long list a row may be lower by its depth’s share, never near the top', () => {
+    const deep = [node('action', 'play song', 107, 12000, 1766, 85)]
+    const lower = (dy: number) => [
+      { ...(deep[0] as LayoutNode), box: { ...(deep[0] as LayoutNode).box, y: 12000 + dy } },
+    ]
+    expect(compare(capture('tv', deep), capture('appletv', lower(12000 * DEPTH_SHARE))).pass).toBe(
+      true,
+    )
+    expect(
+      compare(capture('tv', deep), capture('appletv', lower(12000 * DEPTH_SHARE + 1))).pass,
+    ).toBe(false)
+    const near = [node('action', 'play song', 107, 300, 1766, 85)]
+    const nearLower = [
+      {
+        ...(near[0] as LayoutNode),
+        box: { ...(near[0] as LayoutNode).box, y: 300 + TOLERANCE + 1 },
+      },
+    ]
+    expect(compare(capture('tv', near), capture('appletv', nearLower)).pass).toBe(false)
+  })
+
   test('shared shifts are grouped, so the first node that moved stands out', () => {
     const native = screen.map((n, i) =>
       i === 0 ? n : { ...n, box: { ...n.box, x: n.box.x - 1, y: n.box.y - 5 } },
@@ -229,6 +251,16 @@ group('the comparison', () => {
     expect(c.pass).toBe(true)
     expect(c.excused.map((e) => e.reason)).toEqual([CONTAINER])
     expect(compare(capture('compact-touch', [list]), capture('iphone', [])).pass).toBe(false)
+  })
+
+  test('a web list never pairs by name with a device node of its name, as a tab', () => {
+    // Music's list is named as its view's tab is; iOS lists the tab, and no element for the list
+    const list = { ...node('group', 'albums', 0, 280, 400, 300), raw: 'list' }
+    const tab = node('other', 'albums', 16, 190, 90, 30)
+    const tile = node('action', 'sintel 2010', 16, 300)
+    const c = compare(capture('compact-touch', [tab, list, tile]), capture('iphone', [tab, tile]))
+    expect(c.pass).toBe(true)
+    expect(c.excused.map((e) => e.reason)).toEqual([CONTAINER])
   })
 
   test('a text inside a stop read as one is excused only where the stop’s name holds it', () => {
@@ -566,6 +598,20 @@ group("B1's destinations", () => {
     'the scrubber': 'position',
     'the stop that shows the controls': 'show controls',
     'the settings title': 'settings',
+    'saltmarsh’s poster': 'saltmarsh 2021',
+    'the show’s title': 'saltmarsh',
+    'its first season': 'season 1',
+    'sintel’s score': 'sintel original score 2010',
+    'the count of songs': '383 of 383 songs',
+    'the first song': 'play afterglow ferrous loom 2 32',
+    'the album’s title': 'sintel original score',
+    shuffle: 'shuffle',
+    'the artist’s name': 'the hollow pines',
+    'that nothing’s playing': 'nothings playing',
+    'who’s watching': 'whos watching',
+    'switch profile’s title': 'switch profile',
+    'switch profile': 'switch profile',
+    'theo’s profile': 'theo',
   }
   const holding = (screen: Screen, target: Capture['target']) =>
     capture(
@@ -654,6 +700,14 @@ group("B1's destinations", () => {
       'alerts',
       'link-code',
       'downloads',
+      'shows',
+      'show',
+      'music',
+      'songs',
+      'album',
+      'artist',
+      'now-playing',
+      'who',
       'player',
     ])
   })
@@ -700,6 +754,14 @@ group('the command line', () => {
           'alerts',
           'link-code',
           'downloads',
+          'shows',
+          'show',
+          'music',
+          'songs',
+          'album',
+          'artist',
+          'now-playing',
+          'who',
           'player',
           'settings',
         ],
